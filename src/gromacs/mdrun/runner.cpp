@@ -1306,6 +1306,7 @@ int Mdrunner::mdrunner()
         }
 
         auto accumulateGlobalsBuilder = compat::make_unique<AccumulateGlobalsBuilder>();
+        accumulateGlobalsBuilder->registerClient(constr.get());
 
         /* Now do whatever the user wants us to do (how flexible...) */
         Integrator integrator {

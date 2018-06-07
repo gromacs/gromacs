@@ -543,7 +543,8 @@ void gmx::Integrator::do_md()
     }
 
     // Prepare this before the first stage of global communication,
-    // and the first client module code that needs it.
+    // and the first client module code that needs it (currently
+    // do_constrain_first).
     AccumulateGlobals accumulateGlobals = accumulateGlobalsBuilder_->build();
 
     if (!ir->bContinuation && !bRerunMD)
@@ -632,7 +633,7 @@ void gmx::Integrator::do_md()
         }
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                         nullptr, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                        constr, &nullSignaller, state->box,
+                        &nullSignaller, state->box,
                         accumulateGlobals.getReductionView(),
                         &totalNumberOfBondedInteractions, &bSumEkinhOld, cglo_flags_iteration
                         | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
@@ -650,7 +651,7 @@ void gmx::Integrator::do_md()
 
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                         nullptr, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                        constr, &nullSignaller, state->box,
+                        &nullSignaller, state->box,
                         accumulateGlobals.getReductionView(),
                         nullptr, &bSumEkinhOld,
                         cglo_flags & ~CGLO_PRESSURE);
@@ -1032,7 +1033,7 @@ void gmx::Integrator::do_md()
             /* This may not be quite working correctly yet . . . . */
             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                             wcycle, enerd, nullptr, nullptr, nullptr, nullptr, mu_tot,
-                            constr, &nullSignaller, state->box,
+                            &nullSignaller, state->box,
                             accumulateGlobals.getReductionView(),
                             &totalNumberOfBondedInteractions, &bSumEkinhOld,
                             CGLO_GSTAT | CGLO_TEMPERATURE | CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS);
@@ -1207,7 +1208,7 @@ void gmx::Integrator::do_md()
                 wallcycle_stop(wcycle, ewcUPDATE);
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                                constr, &nullSignaller, state->box,
+                                &nullSignaller, state->box,
                                 accumulateGlobals.getReductionView(),
                                 &totalNumberOfBondedInteractions, &bSumEkinhOld,
                                 (bGStat ? CGLO_GSTAT : 0)
@@ -1263,7 +1264,7 @@ void gmx::Integrator::do_md()
                     /* This may not be quite working correctly yet . . . . */
                     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                                     wcycle, enerd, nullptr, nullptr, nullptr, nullptr, mu_tot,
-                                    constr, &nullSignaller, state->box,
+                                    &nullSignaller, state->box,
                                     accumulateGlobals.getReductionView(),
                                     nullptr, &bSumEkinhOld,
                                     CGLO_GSTAT | CGLO_TEMPERATURE);
@@ -1513,7 +1514,7 @@ void gmx::Integrator::do_md()
                 /* just compute the kinetic energy at the half step to perform a trotter step */
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                                constr, &nullSignaller, lastbox,
+                                &nullSignaller, lastbox,
                                 accumulateGlobals.getReductionView(),
                                 nullptr, &bSumEkinhOld,
                                 (bGStat ? CGLO_GSTAT : 0) | CGLO_TEMPERATURE
@@ -1607,7 +1608,7 @@ void gmx::Integrator::do_md()
 
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                                constr, &signaller,
+                                &signaller,
                                 lastbox,
                                 accumulateGlobals.getReductionView(),
                                 &totalNumberOfBondedInteractions, &bSumEkinhOld,

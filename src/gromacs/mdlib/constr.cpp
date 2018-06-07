@@ -65,6 +65,7 @@
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/settle.h"
 #include "gromacs/mdlib/shake.h"
+#include "gromacs/mdrunutility/accumulateglobals.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -86,6 +87,17 @@
 
 namespace gmx
 {
+
+namespace
+{
+constexpr bool c_debugBuild =
+#ifndef NDEBUG
+    true;
+#else
+    false;
+#endif
+
+}
 
 /* \brief Impl class for Constraints
  *
@@ -182,6 +194,8 @@ class Constraints::Impl
         t_nrnb           *nrnb = nullptr;
         //! Tracks wallcycle usage.
         gmx_wallcycle    *wcycle;
+        //! Tracks (in debug builds) whether the rmsd is safe to report
+        bool rmsdIsValid_ = false;
 };
 
 Constraints::~Constraints() = default;
@@ -360,6 +374,10 @@ Constraints::Impl::apply(bool                  bLog,
 
     wallcycle_start(wcycle, ewcCONSTR);
 
+    if (c_debugBuild)
+    {
+        rmsdIsValid_ = false;
+    }
     if (econq == ConstraintVariable::ForceDispl && !EI_ENERGY_MINIMIZATION(ir.eI))
     {
         gmx_incons("constrain called for forces displacements while not doing energy minimization, can not do this while the LINCS and SETTLE constraint connection matrices are mass weighted");
@@ -705,20 +723,35 @@ Constraints::Impl::apply(bool                  bLog,
     return bOK;
 }
 
-ArrayRef<real> Constraints::rmsdData() const
+int Constraints::getNumGlobalsRequired() const
 {
     if (impl_->lincsd)
     {
-        return lincs_rmsdData(impl_->lincsd);
+        return lincs_getNumGlobalsRequired();
     }
     else
     {
-        return EmptyArrayRef();
+        return 0;
     }
+}
+
+void Constraints::setViewForGlobals(AccumulateGlobals *,
+                                    ArrayRef<double> view)
+{
+    if (impl_->lincsd)
+    {
+        lincs_setViewForRmsd(impl_->lincsd, view);
+    }
+}
+
+void Constraints::notifyAfterCommunication()
+{
+    impl_->rmsdIsValid_ = true;
 }
 
 real Constraints::rmsd() const
 {
+    GMX_ASSERT(impl_->rmsdIsValid_, "Cannot return constraint RMSD until after reduction");
     if (impl_->lincsd)
     {
         return lincs_rmsd(impl_->lincsd);
