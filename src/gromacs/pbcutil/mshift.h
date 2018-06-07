@@ -53,7 +53,18 @@ typedef enum {
     egcolWhite, egcolGrey, egcolBlack, egcolNR
 } egCol;
 
-typedef struct t_graph {
+struct t_graph
+{
+    /* Described the connectivity between, potentially, multiple parts of
+     * the ilist that are internally chemically bonded together.
+     */
+    enum class BondedParts
+    {
+        Single,               /* All atoms are connected through chemical bonds */
+        MultipleDisconnected, /* There are multiple parts, e.g. monomers, that are all disconnected */
+        MultipleConnected     /* There are multiple parts, e.g. monomers, that are partially or fully connected between each other by interactions other than chemical bonds */
+    };
+
     int          at0;       /* The first atom the graph was constructed for */
     int          at1;       /* The last atom the graph was constructed for  */
     int          nnodes;    /* The number of nodes, nnodes=at_end-at_start  */
@@ -66,7 +77,8 @@ typedef struct t_graph {
     ivec        *ishift;    /* Shift for each particle                      */
     int          negc;
     egCol       *egc;       /* color of each node */
-} t_graph;
+    BondedParts  parts;     /* How chemically bonded parts are connected    */
+};
 
 #define SHIFT_IVEC(g, i) ((g)->ishift[i])
 
