@@ -56,7 +56,6 @@ struct t_trxframe;
 
 namespace gmx
 {
-class Constraints;
 class MDLogger;
 class SimulationSignaller;
 }
@@ -124,7 +123,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
                      t_state *state, t_mdatoms *mdatoms,
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
-                     tensor pres, rvec mu_tot, gmx::Constraints *constr,
+                     tensor pres, rvec mu_tot,
                      gmx::SimulationSignaller *signalCoordinator,
                      matrix box,
                      gmx::ArrayRef<double> accumulateGlobals,

@@ -64,6 +64,7 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdrunutility/accumulateglobals.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -212,7 +213,7 @@ class Lincs
         //! The Lagrange multipliers times -1.
         real               *mlambda = nullptr;
         //! Storage for the constraint RMS relative deviation output.
-        std::array<real, 2> rmsdData = {{0}};
+        ArrayRef<double>    rmsdData;
 };
 
 /*! \brief Define simd_width for memory allocation used for SIMD code */
@@ -226,11 +227,6 @@ static const int simd_width = 1;
    AlignedAllocator, which currently forces 128 byte alignment. */
 static const int align_bytes = 128;
 
-ArrayRef<real> lincs_rmsdData(Lincs *lincsd)
-{
-    return lincsd->rmsdData;
-}
-
 real lincs_rmsd(const Lincs *lincsd)
 {
     if (lincsd->rmsdData[0] > 0)
@@ -241,6 +237,18 @@ real lincs_rmsd(const Lincs *lincsd)
     {
         return 0;
     }
+}
+
+int lincs_getNumGlobalsRequired()
+{
+    return 2;
+}
+
+void lincs_setViewForRmsd(Lincs *lincsd, ArrayRef<double> rmsdView)
+{
+    GMX_RELEASE_ASSERT(rmsdView.size() == static_cast<unsigned int>(lincs_getNumGlobalsRequired()),
+                       "Incorrect number of RMSD variables for global accumulation");
+    lincsd->rmsdData = rmsdView;
 }
 
 /*! \brief Do a set of nrec LINCS matrix multiplications.
@@ -2424,6 +2432,7 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
     rvec      dx;
     bool      bOK, bWarn;
 
+    GMX_ASSERT(!lincsd->rmsdData.empty(), "Must have valid storage for LINCS RMSD globals");
     bOK = TRUE;
 
     /* This boolean should be set by a flag passed to this routine.
@@ -2436,7 +2445,8 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
     {
         if (bLog || bEner)
         {
-            lincsd->rmsdData = {0};
+            lincsd->rmsdData[0] = 0.;
+            lincsd->rmsdData[1] = 0.;
         }
 
         return bOK;
@@ -2536,7 +2546,8 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
         }
         else
         {
-            lincsd->rmsdData = {0};
+            lincsd->rmsdData[0] = 0.;
+            lincsd->rmsdData[1] = 0.;
         }
         if (bLog && fplog && lincsd->nc > 0)
         {

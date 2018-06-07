@@ -69,11 +69,15 @@ enum class ConstraintVariable : int;
 /* Abstract type for LINCS that is defined only in the file that uses it */
 class Lincs;
 
-/*! \brief Return the data for determining constraint RMS relative deviations. */
-ArrayRef<real> lincs_rmsdData(Lincs *lincsd);
-
 /*! \brief Return the RMSD of the constraint. */
 real lincs_rmsd(const Lincs *lincsd);
+
+/*! \brief Return the number of doubles required for global
+ * accumulation for determining constraint RMS relative deviations. */
+int lincs_getNumGlobalsRequired();
+
+/*! \brief Set the view to the memory in which the global RMSD will be accumulated */
+void lincs_setViewForRmsd(Lincs *lincsd, ArrayRef<double> rmsdView);
 
 /*! \brief Initializes and returns the lincs data struct. */
 Lincs *init_lincs(FILE *fplog, const gmx_mtop_t &mtop,

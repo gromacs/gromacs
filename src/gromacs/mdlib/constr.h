@@ -49,6 +49,7 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdrunutility/accumulateglobals.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -90,7 +91,7 @@ enum class ConstraintVariable : int
 
 /*! \libinternal
  * \brief Handles constraints */
-class Constraints
+class Constraints : public IAccumulateGlobalsClient
 {
     private:
         /*! \brief Constructor
@@ -115,7 +116,7 @@ class Constraints
         struct CreationHelper;
 
         //! Destructor.
-        ~Constraints();
+        virtual ~Constraints();
 
         /*! \brief Returns the total number of flexible constraints in the system. */
         int numFlexibleConstraints() const;
@@ -180,13 +181,22 @@ class Constraints
         //! Getter for use by domain decomposition.
         const int **atom2settle_moltype() const;
 
-        /*! \brief Return the data for reduction for determining
+        // From IAccumulateGlobalsClient
+        //! Return the number of values to compute constraint RMSD.
+        int getNumGlobalsRequired() const override;
+        /*! \brief Set the view of the memory for reduction for determining
          * constraint RMS relative deviations, or nullptr when not
-         * supported for any active constraints. */
-        ArrayRef<real> rmsdData() const;
-        /*! \brief Return the RMSD of the constraints when available. */
+         * supported for any active constraints.
+         *
+         * As the constraint RMSD is needed only at energy output
+         * steps, \c accumulateGlobals handles that behaviour itself,
+         * and so is unused here. */
+        void setViewForGlobals(AccumulateGlobals *accumulateGlobals,
+                               ArrayRef<double> view) override;
+        //! Called (in debug mode) after MPI reduction is complete.
+        void notifyAfterCommunication() override;
+        /*! \brief Return the RMSD of the constraints when computed. */
         real rmsd() const;
-
     private:
         //! Implementation type.
         class Impl;
