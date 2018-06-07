@@ -105,7 +105,7 @@ int add_binr(t_bin *b, gmx::ArrayRef<const real> r)
     return add_binr(b, r.size(), r.data());
 }
 
-int add_bind(t_bin *b, int nr, double r[])
+int add_bind(t_bin *b, int nr, const double r[])
 {
 #define MULT 4
     int     i, rest, index;
@@ -132,6 +132,11 @@ int add_bind(t_bin *b, int nr, double r[])
     b->nreal += nr;
 
     return index;
+}
+
+int add_bind(t_bin *b, gmx::ArrayRef<const double> r)
+{
+    return add_bind(b, r.size(), r.data());
 }
 
 void sum_bin(t_bin *b, const t_commrec *cr)
@@ -172,4 +177,9 @@ void extract_bind(t_bin *b, int index, int nr, double r[])
     {
         r[i] = rbuf[i];
     }
+}
+
+void extract_bind(t_bin *b, int index, gmx::ArrayRef<double> r)
+{
+    extract_bind(b, index, r.size(), r.data());
 }

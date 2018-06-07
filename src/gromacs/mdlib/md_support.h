@@ -39,6 +39,7 @@
 
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/arrayref.h"
 
 struct gmx_ekindata_t;
 struct gmx_enerdata_t;
@@ -125,7 +126,9 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx::Constraints *constr,
                      gmx::SimulationSignaller *signalCoordinator,
-                     matrix box, int *totalNumberOfBondedInteractions,
+                     matrix box,
+                     gmx::ArrayRef<double> accumulateGlobals,
+                     int *totalNumberOfBondedInteractions,
                      gmx_bool *bSumEkinhOld, int flags);
 /* Compute global variables during integration */
 

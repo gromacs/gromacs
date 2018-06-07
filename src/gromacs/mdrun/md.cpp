@@ -100,6 +100,7 @@
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdrunutility/accumulateglobals.h"
 #include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -564,6 +565,10 @@ void gmx::Integrator::do_md()
                          &bPMETunePrinting);
     }
 
+    // Prepare this before the first stage of global communication,
+    // and the first client module code that needs it.
+    AccumulateGlobals accumulateGlobals = accumulateGlobalsBuilder_->build();
+
     if (!ir->bContinuation && !bRerunMD)
     {
         if (state->flags & (1 << estV))
@@ -651,6 +656,7 @@ void gmx::Integrator::do_md()
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                         nullptr, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                         constr, &nullSignaller, state->box,
+                        accumulateGlobals.getReductionView(),
                         &totalNumberOfBondedInteractions, &bSumEkinhOld, cglo_flags_iteration
                         | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
     }
@@ -668,6 +674,7 @@ void gmx::Integrator::do_md()
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                         nullptr, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                         constr, &nullSignaller, state->box,
+                        accumulateGlobals.getReductionView(),
                         nullptr, &bSumEkinhOld,
                         cglo_flags & ~CGLO_PRESSURE);
     }
@@ -1053,6 +1060,7 @@ void gmx::Integrator::do_md()
             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                             wcycle, enerd, nullptr, nullptr, nullptr, nullptr, mu_tot,
                             constr, &nullSignaller, state->box,
+                            accumulateGlobals.getReductionView(),
                             &totalNumberOfBondedInteractions, &bSumEkinhOld,
                             CGLO_GSTAT | CGLO_TEMPERATURE | CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS);
             checkNumberOfBondedInteractions(fplog, cr, totalNumberOfBondedInteractions,
@@ -1226,6 +1234,7 @@ void gmx::Integrator::do_md()
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                 constr, &nullSignaller, state->box,
+                                accumulateGlobals.getReductionView(),
                                 &totalNumberOfBondedInteractions, &bSumEkinhOld,
                                 (bGStat ? CGLO_GSTAT : 0)
                                 | CGLO_ENERGY
@@ -1281,6 +1290,7 @@ void gmx::Integrator::do_md()
                     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                                     wcycle, enerd, nullptr, nullptr, nullptr, nullptr, mu_tot,
                                     constr, &nullSignaller, state->box,
+                                    accumulateGlobals.getReductionView(),
                                     nullptr, &bSumEkinhOld,
                                     CGLO_GSTAT | CGLO_TEMPERATURE);
                     wallcycle_start(wcycle, ewcUPDATE);
@@ -1527,6 +1537,7 @@ void gmx::Integrator::do_md()
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                 constr, &nullSignaller, lastbox,
+                                accumulateGlobals.getReductionView(),
                                 nullptr, &bSumEkinhOld,
                                 (bGStat ? CGLO_GSTAT : 0) | CGLO_TEMPERATURE
                                 );
@@ -1621,6 +1632,7 @@ void gmx::Integrator::do_md()
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                 constr, &signaller,
                                 lastbox,
+                                accumulateGlobals.getReductionView(),
                                 &totalNumberOfBondedInteractions, &bSumEkinhOld,
                                 (bGStat ? CGLO_GSTAT : 0)
                                 | (!EI_VV(ir->eI) || bRerunMD ? CGLO_ENERGY : 0)

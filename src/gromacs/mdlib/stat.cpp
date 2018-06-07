@@ -142,6 +142,7 @@ void global_stat(gmx_global_stat_t gs,
                  gmx_ekindata_t *ekind, gmx::Constraints *constr,
                  t_vcm *vcm,
                  int nsig, real *sig,
+                 gmx::ArrayRef<double> accumulateGlobals,
                  int *totalNumberOfBondedInteractions,
                  gmx_bool bSumEkinhOld, int flags)
 /* instead of current system, gmx_booleans for summing virial, kinetic energy, and other terms */
@@ -269,6 +270,11 @@ void global_stat(gmx_global_stat_t gs,
             ici   = add_binr(rb, DIM*DIM*vcm->nr, vcm->group_i[0][0]);
         }
     }
+    int accumulateGlobalsIndex = 0;
+    if (!accumulateGlobals.empty())
+    {
+        accumulateGlobalsIndex = add_bind(rb, accumulateGlobals.size(), accumulateGlobals.data());
+    }
 
     if (checkNumberOfBondedInteractions)
     {
@@ -366,6 +372,11 @@ void global_stat(gmx_global_stat_t gs,
             extract_binr(rb, icx, DIM*vcm->nr, vcm->group_x[0]);
             extract_binr(rb, ici, DIM*DIM*vcm->nr, vcm->group_i[0][0]);
         }
+    }
+
+    if (!accumulateGlobals.empty())
+    {
+        extract_bind(rb, accumulateGlobalsIndex, accumulateGlobals);
     }
 
     if (checkNumberOfBondedInteractions)
