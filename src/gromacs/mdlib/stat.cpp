@@ -46,7 +46,6 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/rbin.h"
@@ -139,7 +138,7 @@ void global_stat(const gmx_global_stat *gs,
                  const t_commrec *cr, gmx_enerdata_t *enerd,
                  tensor fvir, tensor svir, rvec mu_tot,
                  const t_inputrec *inputrec,
-                 gmx_ekindata_t *ekind, const gmx::Constraints *constr,
+                 gmx_ekindata_t *ekind,
                  t_vcm *vcm,
                  int nsig, real *sig,
                  gmx::ArrayRef<double> accumulateGlobals,
@@ -231,14 +230,6 @@ void global_stat(const gmx_global_stat *gs,
     if (bEner)
     {
         ie  = add_binr(rb, nener, copyenerd);
-        if (constr)
-        {
-            rmsdData = constr->rmsdData();
-            if (!rmsdData.empty())
-            {
-                irmsd = add_binr(rb, 2, rmsdData.data());
-            }
-        }
         if (!inputrecNeedMutot(inputrec))
         {
             imu = add_binr(rb, DIM, mu_tot);

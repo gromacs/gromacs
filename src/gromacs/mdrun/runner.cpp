@@ -1306,7 +1306,11 @@ int Mdrunner::mdrunner()
         }
 
         auto accumulateGlobalsBuilder = compat::make_unique<AccumulateGlobalsBuilder>();
-
+        if (constr)
+        {
+            accumulateGlobalsBuilder->registerClient(
+                    compat::not_null<Constraints *>(constr.get()));
+        }
         /* Now do whatever the user wants us to do (how flexible...) */
         Integrator integrator {
             fplog, cr, ms, mdlog, nfile, fnm,
