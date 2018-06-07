@@ -17,7 +17,7 @@ When using OpenCL builds and timing, a memory leak would lead to all system memo
 :issue:`2470`
 
 Fix MPI error after constraint failure during energy minimization
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 :issue:`2540`
 
@@ -53,6 +53,16 @@ introducing a different output method for PQR files that follows the
 standard.
 
 :issue:`2511`
+
+Added check for unallowed periodic setups
+"""""""""""""""""""""""""""""""""""""""""
+
+Long distances between atoms in bonded interactions could lead to incorrect
+periodicity removal. In such cases an inconsistent shift message was printed,
+but the run or analysis was not terminated and other, confusing, errors
+could be issued. Now an informative fatal error is issued.
+
+:issue:`2549`
 
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
