@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -116,6 +116,8 @@ t_vcm *init_vcm(FILE *fp, gmx_groups_t *groups, const t_inputrec *ir)
 
         snew(vcm->thread_vcm, gmx_omp_nthreads_get(emntDefault) * vcm->stride);
     }
+
+    vcm->nFreeze = ir->opts.nFreeze;
 
     return vcm;
 }
@@ -234,19 +236,38 @@ void calc_vcm_grp(int start, int homenr, t_mdatoms *md,
  * \note This routine should be called from within an OpenMP parallel region.
  *
  * \tparam numDimensions    Correct dimensions 0 to \p numDimensions-1
- * \param[in]     homenr    The number of atoms to correct
- * \param[in]     group_id  List of VCM group ids, when nullptr is passed all atoms are assumed to be in group 0
+ * \param[in]     mdatoms   The atom property and group information
  * \param[in,out] v         The velocities to correct
  * \param[in]     vcm       VCM data
  */
 template<int numDimensions>
 static void
-doStopComMotionLinear(int                   homenr,
-                      const unsigned short *group_id,
+doStopComMotionLinear(const t_mdatoms      &mdatoms,
                       rvec                 *v,
                       const t_vcm          &vcm)
 {
-    if (group_id == nullptr)
+    const int             homenr   = mdatoms.homenr;
+    const unsigned short *group_id = mdatoms.cVCM;
+
+    if (mdatoms.cFREEZE != nullptr)
+    {
+        GMX_RELEASE_ASSERT(vcm.nFreeze != nullptr, "Need freeze dimension info with freeze groups");
+
+#pragma omp for schedule(static)
+        for (int i = 0; i < homenr; i++)
+        {
+            unsigned short vcmGroup    = (group_id == nullptr ? 0 : group_id[i]);
+            unsigned short freezeGroup = mdatoms.cFREEZE[i];
+            for (int d = 0; d < numDimensions; d++)
+            {
+                if (vcm.nFreeze[freezeGroup][d] == 0)
+                {
+                    v[i][d] -= vcm.group_v[vcmGroup][d];
+                }
+            }
+        }
+    }
+    else if (group_id == nullptr)
     {
 #pragma omp for schedule(static)
         for (int i = 0; i < homenr; i++)
@@ -319,11 +340,14 @@ doStopComMotionAccelerationCorrection(int                   homenr,
     }
 }
 
-void do_stopcm_grp(int homenr, const unsigned short *group_id,
+void do_stopcm_grp(const t_mdatoms &mdatoms,
                    rvec x[], rvec v[], const t_vcm &vcm)
 {
     if (vcm.mode != ecmNO)
     {
+        const int             homenr   = mdatoms.homenr;
+        const unsigned short *group_id = mdatoms.cVCM;
+
         // cppcheck-suppress unreadVariable
         int gmx_unused nth = gmx_omp_nthreads_get(emntDefault);
 #pragma omp parallel num_threads(nth)
@@ -336,13 +360,13 @@ void do_stopcm_grp(int homenr, const unsigned short *group_id,
                 switch (vcm.ndim)
                 {
                     case 1:
-                        doStopComMotionLinear<1>(homenr, group_id, v, vcm);
+                        doStopComMotionLinear<1>(mdatoms, v, vcm);
                         break;
                     case 2:
-                        doStopComMotionLinear<2>(homenr, group_id, v, vcm);
+                        doStopComMotionLinear<2>(mdatoms, v, vcm);
                         break;
                     case 3:
-                        doStopComMotionLinear<3>(homenr, group_id, v, vcm);
+                        doStopComMotionLinear<3>(mdatoms, v, vcm);
                         break;
                 }
             }
