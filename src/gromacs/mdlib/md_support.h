@@ -55,6 +55,7 @@ struct t_trxframe;
 
 namespace gmx
 {
+class AccumulateGlobals;
 class Constraints;
 class MDLogger;
 class SimulationSignaller;
@@ -125,7 +126,9 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx::Constraints *constr,
                      gmx::SimulationSignaller *signalCoordinator,
-                     matrix box, int *totalNumberOfBondedInteractions,
+                     matrix box,
+                     gmx::AccumulateGlobals *accumulateGlobals,
+                     int *totalNumberOfBondedInteractions,
                      gmx_bool *bSumEkinhOld, int flags);
 /* Compute global variables during integration */
 
