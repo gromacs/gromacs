@@ -96,6 +96,7 @@
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdrun/logging.h"
 #include "gromacs/mdrun/multisim.h"
+#include "gromacs/mdrunutility/accumulateglobals.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -1304,6 +1305,8 @@ int Mdrunner::mdrunner()
                             fr->cginfo_mb);
         }
 
+        auto accumulateGlobalsBuilder = compat::make_unique<AccumulateGlobalsBuilder>();
+
         /* Now do whatever the user wants us to do (how flexible...) */
         Integrator integrator {
             fplog, cr, ms, mdlog, nfile, fnm,
@@ -1320,6 +1323,7 @@ int Mdrunner::mdrunner()
             mdAtoms.get(), nrnb, wcycle, fr,
             replExParams,
             membed,
+            accumulateGlobalsBuilder.get(),
             walltime_accounting
         };
         integrator.run(inputrec->eI);
