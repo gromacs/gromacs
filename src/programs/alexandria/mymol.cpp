@@ -1278,7 +1278,8 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             Qgeem_.setInfo(pd, 
                            &topology_->atoms,
                            iChargeDistributionModel,
-                           hfac, molProp()->getCharge(),
+                           hfac, 
+                           molProp()->getCharge(),
                            bHaveShells_);
                                                                                   
             auto q     = Qgeem_.q();

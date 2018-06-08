@@ -268,6 +268,16 @@ class MolGen
             return 0;
         }
         
+        gmx::MDLogger  mdlog()  const {return mdlog_; }
+        
+        int qcycle() const { return qcycle_;}
+        
+        int maxPot() const { return maxESP_;}
+        
+        double qtol() const { return qtol_;}
+        
+        gmx_bool bQsym() const { return qsymm_;}
+        
         //! \brief The atom to fix
         const char *fixchi() const { return fixchi_; }
 
