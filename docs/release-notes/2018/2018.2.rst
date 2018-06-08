@@ -54,6 +54,11 @@ standard.
 
 :issue:`2511`
 
+Fix crash in gmx solvate
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+gmx solvate would crash due to memory corruption when using multiple solvent
+molecule types.
+
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
