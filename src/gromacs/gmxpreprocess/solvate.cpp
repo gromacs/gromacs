@@ -206,10 +206,7 @@ static void sort_molecule(t_atoms **atoms_solvt, std::vector<RVec> *x,
         }
 
         /* put them back into the original arrays and throw away temporary arrays */
-        sfree(atoms->atomname);
-        sfree(atoms->resinfo);
-        sfree(atoms->atom);
-        sfree(atoms);
+        done_atom(atoms);
         *atoms_solvt = newatoms;
         std::swap(*x, newx);
         std::swap(*v, newv);
