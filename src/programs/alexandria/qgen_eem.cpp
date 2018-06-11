@@ -66,6 +66,10 @@ void QgenEem::setInfo(const Poldata            &pd,
     bHaveShell_                = haveShell;
     eQGEN_                     = eQGEN_OK;
     hardnessFactor_            = 1;
+    if (haveShell)
+    {
+        hardnessFactor_ = 4;
+    }
     chieq_                     = 0;
     Jcs_                       = 0;
     Jss_                       = 0;
@@ -263,6 +267,65 @@ void QgenEem::debugFun(FILE *fp)
     fprintf(fp, "\n");
 }
 
+void QgenEem::print(FILE *fp, t_atoms *atoms)
+{
+    auto  i = 0, j = 0;
+    rvec mu = { 0, 0, 0 };
+
+    if (eQGEN_ == eQGEN_OK)
+    {
+        if (fp)
+        {
+            fprintf(fp, "                                          Core                 Shell\n");
+            fprintf(fp, "Res  Atom   Nr       J0    _chi0  row   q   zeta        row    q     zeta\n");
+        }
+        for (i = j = 0; i < atoms->nr; i++)
+        {
+            for (auto m = 0; m < DIM; m++)
+            {
+                mu[m] += atoms->atom[i].q * x_[i][m] * ENM2DEBYE;
+            }
+            if (atoms->atom[i].ptype == eptAtom)
+            {
+                if (fp)
+                {
+                    fprintf(fp, "%4s %4s%5d %8g %8g",
+                            *(atoms->resinfo[atoms->atom[i].resind].name),
+                            *(atoms->atomname[i]), i+1, j00_[j], chi0_[j]);
+                    for (auto k = 0; k < nZeta_[j]; k++)
+                    {
+                        fprintf(fp, " %3d %8.5f %8.4f", row_[j][k], q_[j][k], zeta_[j][k]);
+                    }
+                    fprintf(fp, "\n");
+                }
+                j++;
+            }
+        }
+        if (fp)
+        {
+            fprintf(fp, "chieq = %10g\n|mu| = %8.3f ( %8.3f  %8.3f  %8.3f )\n",
+                    chieq_, norm(mu), mu[XX], mu[YY], mu[ZZ]);
+        }
+    }
+}
+
+const char *QgenEem::message() const
+{
+    switch (eQGEN_)
+    {
+        case eQGEN_OK:
+            return "Charge generation finished correctly";
+        case eQGEN_NOTCONVERGED:
+            return "Charge generation did not converge.";
+        case eQGEN_NOSUPPORT:
+            return "No charge generation support for (some of) the atomtypes.";
+        case eQGEN_ERROR:
+        default:
+            return "Unknown status %d in charge generation";
+    }
+    return nullptr;
+}
+
 double QgenEem::calcSij(int i, int j)
 {
     double dist, dism, Sij = 1.0;
@@ -433,17 +496,17 @@ void QgenEem::calcJcc(t_atoms *atoms)
                         {
                             Jcc *= calcSij(i, j);
                         }
-                        Jcc_[i][j] = Jcc_[j][i] = Jcc;
+                        Jcc_[i][j] = Jcc_[j][i] = (0.5 * Jcc);
                     }
                     else
                     {
-                        auto j0 = j00_[i];
+                        auto j0 = hardnessFactor_*j00_[i];
                         if (((iChargeDistributionModel_ == eqdYang) ||
                              (iChargeDistributionModel_ == eqdRappe)) &&
                             (atomnr_[i] == 1))
                         {
                             auto zetaH = 1.0698;
-                            j0 = (1+q_[i][0]/zetaH)*j0;                            
+                            j0 = (1+q_[i][0]/zetaH)*j0; /* Eqn. 21 in Rappe1991. */                      
                             if (j0 < 0 && !bWarned_)
                             {
                                 bWarned_ = true;
@@ -452,9 +515,8 @@ void QgenEem::calcJcc(t_atoms *atoms)
                         }
                         else
                         {
-                            Jcc_[i][i] = (j0 > 0) ? (2*j0) : 0;
-                        }
-                        
+                            Jcc_[i][i] = (j0 > 0) ? j0 : 0;
+                        }                        
                     }
                 }                
             }
@@ -486,57 +548,15 @@ void QgenEem::calcJcs(t_atoms *atoms,
                             zeta_[k][1],
                             row_[eem_ndx][0], 
                             row_[k][1]);
-                if (iChargeDistributionModel_ == eqdYang)
-                {
-                    Jcs *= calcSij(eem_ndx, k);
-                }
                 Jcs   *= q_[k][1];
                 Jcs_  += Jcs;
             }
         }
-        Jcs_ *= 1;
+        Jcs_ *= 0.5;
     }
     else
     {
         gmx_fatal(FARGS, "atom %d must be eptAtom, but it is not\n", top_ndx);
-    }
-}
-
-void QgenEem::calcJss(t_atoms *atoms,
-                      int      top_ndx,
-                      int      eem_ndx)
-{
-    auto l     = 0;
-    auto k     = 0;
-    auto Jss   = 0.0;
-    Jss_       = 0;
-    if (atoms->atom[top_ndx].ptype == eptShell)
-    {
-        for (l = k = 0; l < atoms->nr; l++)
-        {
-            if (atoms->atom[l].ptype == eptShell && (l != top_ndx))
-            {
-                k++;
-                Jss = calcJ(iChargeDistributionModel_,
-                            x_[top_ndx], 
-                            x_[l],
-                            zeta_[eem_ndx][1], 
-                            zeta_[k][1],
-                            row_[eem_ndx][1], 
-                            row_[k][1]);
-                if (iChargeDistributionModel_ == eqdYang)
-                {
-                    Jss *= calcSij(eem_ndx, k);
-                }
-                Jss  *= q_[k][1];
-                Jss_ += Jss;
-            }
-        }
-        Jss_ *= 0.5;
-    }
-    else
-    {
-        gmx_fatal(FARGS, "atom %d must be eptShell, but it is not\n", top_ndx);
     }
 }
 
@@ -548,14 +568,12 @@ void QgenEem::calcRhs(t_atoms *atoms)
     for (auto i = 0; i < natom_; i++)
     {   
         rhs_[i]   = 0;
-        rhs_[i]  -= (2*chi0_[i]);
+        rhs_[i]  -= chi0_[i];
         if (bHaveShell_)
         {
             calcJcs(atoms, coreIndex_[i], i);
-            //calcJss(atoms, shellIndex_[i], i);
-            rhs_[i]   -= (2*j00_[i])*hardnessFactor_*q_[i][1];
+            rhs_[i]   -= hardnessFactor_*j00_[i]*q_[i][1];
             rhs_[i]   -= Jcs_;
-            //rhs_[i]   -= Jss_;
             qshell    += q_[i][1];
         }       
     }    
@@ -599,65 +617,6 @@ void QgenEem::updatePositions(PaddedRVecVector x,
     }
 }
 
-void QgenEem::print(FILE *fp, t_atoms *atoms)
-{
-    auto  i = 0, j = 0;
-    rvec mu = { 0, 0, 0 };
-
-    if (eQGEN_ == eQGEN_OK)
-    {
-        if (fp)
-        {
-            fprintf(fp, "                                          Core                 Shell\n");
-            fprintf(fp, "Res  Atom   Nr       J0    _chi0  row   q   zeta        row    q     zeta\n");
-        }
-        for (i = j = 0; i < atoms->nr; i++)
-        {
-            for (auto m = 0; m < DIM; m++)
-            {
-                mu[m] += atoms->atom[i].q * x_[i][m] * ENM2DEBYE;
-            }
-            if (atoms->atom[i].ptype == eptAtom)
-            {
-                if (fp)
-                {
-                    fprintf(fp, "%4s %4s%5d %8g %8g",
-                            *(atoms->resinfo[atoms->atom[i].resind].name),
-                            *(atoms->atomname[i]), i+1, j00_[j], chi0_[j]);
-                    for (auto k = 0; k < nZeta_[j]; k++)
-                    {
-                        fprintf(fp, " %3d %8.5f %8.4f", row_[j][k], q_[j][k], zeta_[j][k]);
-                    }
-                    fprintf(fp, "\n");
-                }
-                j++;
-            }
-        }
-        if (fp)
-        {
-            fprintf(fp, "chieq = %10g\n|mu| = %8.3f ( %8.3f  %8.3f  %8.3f )\n",
-                    chieq_, norm(mu), mu[XX], mu[YY], mu[ZZ]);
-        }
-    }
-}
-
-const char *QgenEem::message() const
-{
-    switch (eQGEN_)
-    {
-        case eQGEN_OK:
-            return "Charge generation finished correctly";
-        case eQGEN_NOTCONVERGED:
-            return "Charge generation did not converge.";
-        case eQGEN_NOSUPPORT:
-            return "No charge generation support for (some of) the atomtypes.";
-        case eQGEN_ERROR:
-        default:
-            return "Unknown status %d in charge generation";
-    }
-    return nullptr;
-}
-
 void QgenEem::checkSupport(const Poldata &pd)
 {
     bool bSupport = true;
@@ -693,7 +652,7 @@ void QgenEem::solveQEem(FILE *fp)
         {
             lhs[i][j] = Jcc_[i][j];
         }
-        lhs[i][i] = hardnessFactor_*Jcc_[i][i];
+        lhs[i][i] = Jcc_[i][i];
     }
     for (j = 0; j < natom_; j++)
     {
@@ -701,7 +660,7 @@ void QgenEem::solveQEem(FILE *fp)
     }
     for (i = 0; i < natom_; i++)
     {
-        lhs[i][natom_] = -2;
+        lhs[i][natom_] = -1;
     }    
     lhs[natom_][natom_] = 0;
     if (matrix_invert(fp, n, lhs) == 0)
@@ -727,8 +686,7 @@ void QgenEem::solveQEem(FILE *fp)
             q_[i][0] = 1;
         }
     }
-    chieq_      = (q_[natom_][0]/2);
-    
+    chieq_      = q_[natom_][0];    
     qtot        = 0;
     if (bHaveShell_)
     {

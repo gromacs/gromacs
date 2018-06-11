@@ -275,17 +275,7 @@ void OptEEM::calcDeviation()
             converged = false;
             iter = 0;
             do
-            {         
-                mymol.Qgeem_.generateCharges(debug,
-                                             mymol.molProp()->getMolname().c_str(),
-                                             poldata(), 
-                                             &(mymol.topology_->atoms),
-                                             mymol.x());        
-                for (auto i = 0; i < mymol.mtop_->natoms; i++)
-                {
-                    mymol.mtop_->moltype[0].atoms.atom[i].q = 
-                        mymol.mtop_->moltype[0].atoms.atom[i].qB = mymol.topology_->atoms.atom[i].q;                         
-                }                                                        
+            {     
                 if (nullptr != mymol.shellfc_)
                 {
                     if (bFitAlpha_)
@@ -294,6 +284,19 @@ void OptEEM::calcDeviation()
                     }
                     mymol.computeForces(nullptr, commrec());
                 }
+                
+                mymol.Qgeem_.generateCharges(debug,
+                                             mymol.molProp()->getMolname().c_str(),
+                                             poldata(), 
+                                             &(mymol.topology_->atoms),
+                                             mymol.x());    
+                                                 
+                for (auto i = 0; i < mymol.mtop_->natoms; i++)
+                {
+                    mymol.mtop_->moltype[0].atoms.atom[i].q = 
+                        mymol.mtop_->moltype[0].atoms.atom[i].qB = mymol.topology_->atoms.atom[i].q;                         
+                }                                                        
+                
                 q       = mymol.Qgeem_.q(); 
                 EemRms  = 0;                  
                 for (auto i = 0; i < natom + 1; i++)
@@ -311,6 +314,7 @@ void OptEEM::calcDeviation()
                 mymol.mtop_->moltype[0].atoms.atom[i].q = 
                     mymol.mtop_->moltype[0].atoms.atom[i].qB = mymol.topology_->atoms.atom[i].q;                   
             } 
+            
             if (weight(ermsCHARGE))
             {
                 int    nChargeResidual = 0; // number of charge residuals added per molecule
