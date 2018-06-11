@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,15 +48,10 @@
 
 #include <string.h>
 
-#include <cmath>
-
 #include <algorithm>
-
-#include <lmstruct.h>
 
 #include "gromacs/correlationfunctions/integrate.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -394,9 +389,6 @@ static double lmc_errest_3_parm(double x, const double *a)
     }
 }
 
-/*! \brief function type for passing to fitting routine */
-typedef double (*t_lmcurve)(double x, const double *a);
-
 /*! \brief array of fitting functions corresponding to the pre-defined types */
 t_lmcurve lmcurves[effnNR+1] = {
     lmc_exp_one_parm, lmc_exp_one_parm, lmc_exp_two_parm,
@@ -414,104 +406,6 @@ double fit_function(const int eFitFn, const double parm[], const double x)
         return 0.0;
     }
     return lmcurves[eFitFn](x, parm);
-}
-
-/*! \brief lmfit_exp supports fitting of different functions
- *
- * This routine calls the Levenberg-Marquardt non-linear fitting
- * routine for fitting a data set with errors to a target function.
- * Fitting routines included in gromacs in src/external/lmfit.
- */
-static gmx_bool lmfit_exp(int          nfit,
-                          const double x[],
-                          const double y[],
-                          const double dy[],
-                          double       parm[],
-                          gmx_bool     bVerbose,
-                          int          eFitFn,
-                          int          nfix)
-{
-    double             chisq, ochisq;
-    gmx_bool           bCont;
-    int                j;
-    int                maxiter = 100;
-    lm_control_struct  control;
-    lm_status_struct  *status;
-    int                nparam = effnNparams(eFitFn);
-    int                p2;
-    gmx_bool           bSkipLast;
-
-    if ((eFitFn < 0) || (eFitFn >= effnNR))
-    {
-        fprintf(stderr, "fitfn = %d, should be in the range 0..%d\n",
-                eFitFn, effnNR-1);
-        return FALSE;
-    }
-    /* Using default control structure for double precision fitting that
-     * comes with the lmfit package (i.e. from the include file).
-     */
-    control            = lm_control_double;
-    control.verbosity  = (bVerbose ? 1 : 0);
-    control.n_maxpri   = 0;
-    control.m_maxpri   = 0;
-
-    snew(status, 1);
-    /* Initial params */
-    chisq  = 1e12;
-    j      = 0;
-    if (bVerbose)
-    {
-        printf("%4s  %10s  Parameters\n", "Step", "chi^2");
-    }
-    /* Check whether we have to skip some params */
-    if (nfix > 0)
-    {
-        do
-        {
-            p2        = 1 << (nparam-1);
-            bSkipLast = ((p2 & nfix) == p2);
-            if (bSkipLast)
-            {
-                nparam--;
-                nfix -= p2;
-            }
-        }
-        while ((nparam > 0) && (bSkipLast));
-        if (bVerbose)
-        {
-            printf("Using %d out of %d parameters\n", nparam, effnNparams(eFitFn));
-        }
-    }
-    do
-    {
-        ochisq = chisq;
-        gmx_lmcurve(nparam, parm, nfit, x, y, dy,
-                    lmcurves[eFitFn], &control, status);
-        chisq = gmx::square(status->fnorm);
-        if (bVerbose)
-        {
-            printf("status: fnorm = %g, nfev = %d, userbreak = %d\noutcome = %s\n",
-                   status->fnorm, status->nfev, status->userbreak,
-                   lm_infmsg[status->outcome]);
-        }
-        if (bVerbose)
-        {
-            int mmm;
-            printf("%4d  %8g", j, chisq);
-            for (mmm = 0; (mmm < effnNparams(eFitFn)); mmm++)
-            {
-                printf("  %8g", parm[mmm]);
-            }
-            printf("\n");
-        }
-        j++;
-        bCont = (fabs(ochisq - chisq) > fabs(control.ftol*chisq));
-    }
-    while (bCont && (j < maxiter));
-
-    sfree(status);
-
-    return TRUE;
 }
 
 /*! \brief Ensure the fitting parameters are well-behaved.
