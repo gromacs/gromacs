@@ -138,10 +138,6 @@ list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${PROPERTY_SOU
 tmpi_get_source_list(THREAD_MPI_SOURCES ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/src)
 list(APPEND LIBGROMACS_SOURCES ${THREAD_MPI_SOURCES})
 
-get_lmfit_properties(LMFIT_SOURCES LMFIT_LIBRARIES_TO_LINK LMFIT_INCLUDE_DIRECTORY LMFIT_INCLUDE_DIR_ORDER)
-include_directories(${LMFIT_INCLUDE_DIR_ORDER} SYSTEM "${LMFIT_INCLUDE_DIRECTORY}")
-list(APPEND LIBGROMACS_SOURCES ${LMFIT_SOURCES})
-
 configure_file(version.h.cmakein version.h)
 gmx_install_headers(
     analysisdata.h
@@ -260,6 +256,7 @@ set_target_properties(libgromacs PROPERTIES
                       VERSION ${LIBRARY_VERSION}
                       COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
+manage_lmfit()
 gmx_write_installed_header_list()
 
 # Only install the library in mdrun-only mode if it is actually necessary

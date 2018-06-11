@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,8 @@
 #include "gmxpre.h"
 
 #include "gromacs/correlationfunctions/expfit.h"
+
+#include "config.h"
 
 #include <cmath>
 
@@ -152,6 +154,10 @@ class ExpfitTest : public ::testing::Test
 //static var
 std::vector<ExpfitData> ExpfitTest::data_;
 
+// TODO calling test() leads to a fatal error, which we could in
+// principle test for.
+#if HAVE_LMFIT
+
 TEST_F (ExpfitTest, EffnEXP1) {
     double  param[] = {25};
     test(effnEXP1, param, 1e-5, 0);
@@ -201,6 +207,8 @@ TEST_F (ExpfitTest, EffnPRES) {
     double param[] = {0.6, 10, 7, 1, 0.25, 2};
     test(effnPRES, param, 1e-4, 1);
 }
+
+#endif
 
 }
 

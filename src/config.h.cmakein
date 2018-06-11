@@ -377,6 +377,9 @@
 /* Define if we have fedisableexcept */
 #cmakedefine01 HAVE_FEDISABLEEXCEPT
 
+/* Define if we have lmfit support */
+#cmakedefine01 HAVE_LMFIT
+
 /*! \endcond */
 
 #endif
