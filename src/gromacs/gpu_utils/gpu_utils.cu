@@ -680,8 +680,8 @@ bool canDetectGpus(std::string *errorMessage)
              * something wrong with the machine: driver-runtime
              * mismatch, all GPUs being busy in exclusive mode,
              * invalid CUDA_VISIBLE_DEVICES, or some other condition
-             * which should result in GROMACS issuing a warning a
-             * falling back to CPUs. */
+             * which should result in GROMACS issuing at least a
+             * warning. */
             errorMessage->assign(cudaGetErrorString(stat));
         }
 
