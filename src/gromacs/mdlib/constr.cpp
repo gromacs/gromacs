@@ -449,7 +449,7 @@ Constraints::Impl::apply(bool                  bLog,
 
     if (lincsd != nullptr)
     {
-        bOK = constrain_lincs(log, bLog, bEner, ir, step, lincsd, md, cr, ms,
+        bOK = constrain_lincs(bLog || bEner, ir, step, lincsd, md, cr, ms,
                               x, xprime, min_proj,
                               box, pbc_null, lambda, dvdlambda,
                               invdt, v, vir != nullptr, vir_r_m_dr,

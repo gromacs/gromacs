@@ -92,7 +92,7 @@ void set_lincs(const t_idef &idef, const t_mdatoms &md,
  *
  * \returns true if the constraining succeeded. */
 bool
-constrain_lincs(FILE *fplog, bool bLog, bool bEner,
+constrain_lincs(bool computeRmsd,
                 const t_inputrec &ir,
                 gmx_int64_t step,
                 Lincs *lincsd, const t_mdatoms &md,
