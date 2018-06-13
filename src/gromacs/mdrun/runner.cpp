@@ -846,11 +846,9 @@ int Mdrunner::mdrunner()
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
-        const rvec *xOnMaster = (SIMMASTER(cr) ? as_rvec_array(globalState->x.data()) : nullptr);
-
         cr->dd = init_domain_decomposition(fplog, cr, domdecOptions, mdrunOptions,
                                            &mtop, inputrec,
-                                           box, xOnMaster);
+                                           box, positionsFromStatePointer(globalState.get()));
         // Note that local state still does not exist yet.
     }
     else
