@@ -3531,7 +3531,8 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
                                    const MdrunOptions &mdrunOptions,
                                    const gmx_mtop_t *mtop,
                                    const t_inputrec *ir,
-                                   const matrix box, const rvec *xGlobal,
+                                   const matrix box,
+                                   gmx::ArrayRef<const gmx::RVec> xGlobal,
                                    gmx_ddbox_t *ddbox)
 {
     real               r_bonded         = -1;
@@ -3633,7 +3634,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
 
             if (MASTER(cr))
             {
-                dd_bonded_cg_distance(fplog, mtop, ir, xGlobal, box,
+                dd_bonded_cg_distance(fplog, mtop, ir, as_rvec_array(xGlobal.data()), box,
                                       options.checkBondedInteractions,
                                       &r_2b, &r_mb);
             }
@@ -3712,7 +3713,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
     {
         copy_ivec(options.numCells, dd->nc);
         set_dd_dim(fplog, dd);
-        set_ddbox_cr(cr, &dd->nc, ir, box, &comm->cgs_gl, xGlobal, ddbox);
+        set_ddbox_cr(cr, &dd->nc, ir, box, xGlobal, ddbox);
 
         if (options.numPmeRanks >= 0)
         {
@@ -3741,7 +3742,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
     }
     else
     {
-        set_ddbox_cr(cr, nullptr, ir, box, &comm->cgs_gl, xGlobal, ddbox);
+        set_ddbox_cr(cr, nullptr, ir, box, xGlobal, ddbox);
 
         /* We need to choose the optimal DD grid and possibly PME nodes */
         real limit =
@@ -4416,7 +4417,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
                                         const gmx_mtop_t *mtop,
                                         const t_inputrec *ir,
                                         const matrix box,
-                                        const rvec *xGlobal)
+                                        gmx::ArrayRef<const gmx::RVec> xGlobal)
 {
     gmx_domdec_t      *dd;
 
@@ -4471,8 +4472,7 @@ static gmx_bool test_dd_cutoff(t_commrec *cr,
 
     dd = cr->dd;
 
-    set_ddbox(dd, FALSE, ir, state->box,
-              TRUE, &dd->comm->cgs_gl, as_rvec_array(state->x.data()), &ddbox);
+    set_ddbox(dd, false, ir, state->box, true, state->x, &ddbox);
 
     LocallyLimited = 0;
 
@@ -6515,11 +6515,11 @@ void dd_partition_system(FILE                *fplog,
         clearDDStateIndices(dd, 0, 0);
         ncgindex_set = 0;
 
-        rvec *xGlobal = (DDMASTER(dd) ? as_rvec_array(state_global->x.data()) : nullptr);
+        auto xGlobal = (DDMASTER(dd) ? gmx::makeArrayRef(state_global->x) : gmx::EmptyArrayRef());
 
-        set_ddbox(dd, TRUE, ir,
+        set_ddbox(dd, true, ir,
                   DDMASTER(dd) ? state_global->box : nullptr,
-                  TRUE, cgs_gl, xGlobal,
+                  true, xGlobal,
                   &ddbox);
 
         distributeState(fplog, dd, state_global, *cgs_gl, ddbox, state_local, f);
@@ -6571,7 +6571,7 @@ void dd_partition_system(FILE                *fplog,
         dd_set_cginfo(dd->globalAtomGroupIndices, 0, dd->ncg_home, fr, comm->bLocalCG);
 
         set_ddbox(dd, bMasterState, ir, state_local->box,
-                  TRUE, &top_local->cgs, as_rvec_array(state_local->x.data()), &ddbox);
+                  true, state_local->x, &ddbox);
 
         bRedist = isDlbOn(comm);
     }
@@ -6590,7 +6590,7 @@ void dd_partition_system(FILE                *fplog,
             copy_rvec(comm->box_size, ddbox.box_size);
         }
         set_ddbox(dd, bMasterState, ir, state_local->box,
-                  bNStGlobalComm, &top_local->cgs, as_rvec_array(state_local->x.data()), &ddbox);
+                  bNStGlobalComm, state_local->x, &ddbox);
 
         bBoxChanged = TRUE;
         bRedist     = TRUE;
