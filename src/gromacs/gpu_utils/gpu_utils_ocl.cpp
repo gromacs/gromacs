@@ -151,7 +151,13 @@ static ocl_vendor_id_t get_vendor_id(char *vendor_name)
 
 
 //! This function is documented in the header file
-bool canDetectGpus(std::string *errorMessage)
+bool configurationCanDetectGpus()
+{
+    return true;
+}
+
+//! This function is documented in the header file
+bool environmentCanDetectGpus(std::string *errorMessage)
 {
     cl_uint numPlatforms;
     cl_int  status       = clGetPlatformIDs(0, nullptr, &numPlatforms);

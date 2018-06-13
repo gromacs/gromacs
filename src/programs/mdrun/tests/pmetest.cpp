@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,8 +97,9 @@ void PmeTest::SetUpTestCase()
     // there is no GPU support in the build.
     //
     // TODO report any error messages gracefully.
-    if (GMX_GPU == GMX_GPU_CUDA &&
-        canDetectGpus(nullptr))
+    if (GMX_GPU == GMX_GPU_CUDA && // TODO remove this part of the predicate when PME is supported on OpenCL
+        configurationCanDetectGpus() &&
+        environmentCanDetectGpus(nullptr))
     {
         findGpus(&gpuInfo);
         s_hasCompatibleCudaGpus = (gpuInfo.n_dev_compatible > 0);

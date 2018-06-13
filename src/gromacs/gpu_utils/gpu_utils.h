@@ -75,26 +75,42 @@ enum class GpuTaskCompletion
     Check /*<< Only check whether the task has completed */
 };
 
-/*! \brief Return whether GPUs can be detected
+/*! \brief Return whether GPUs might be able to be detected.
+ *
+ * Returns true when this is a build of \Gromacs configured to support
+ * GPU usage and thus detection.
+ *
+ * Does not throw. */
+GPU_FUNC_QUALIFIER
+bool configurationCanDetectGpus() GPU_FUNC_TERM_WITH_RETURN(false);
+
+/*! \brief Return whether GPUs can be detected by the runtime and driver.
  *
  * Returns true when this is a build of \Gromacs configured to support
  * GPU usage, and a valid device driver, ICD, and/or runtime was detected.
  *
- * \param[out] errorMessage  When returning false and non-nullptr was passed,
+ * This function is not intended to be called from build
+ * configurations that do not support GPUs, and there will be no
+ * descriptive message in that case. Prefer to have already called
+ * configurationCanDetectGpus(), and call this function only when
+ * suitable.
+ *
+ * \param[out] errorMessage  When returning false on a build configured with
+ *                           GPU support and non-nullptr was passed,
  *                           the string contains a descriptive message about
  *                           why GPUs cannot be detected.
  *
  * Does not throw. */
 GPU_FUNC_QUALIFIER
-bool canDetectGpus(std::string *GPU_FUNC_ARGUMENT(errorMessage)) GPU_FUNC_TERM_WITH_RETURN(false);
+bool environmentCanDetectGpus(std::string *GPU_FUNC_ARGUMENT(errorMessage)) GPU_FUNC_TERM_WITH_RETURN(false);
 
 /*! \brief Find all GPUs in the system.
  *
  *  Will detect every GPU supported by the device driver in use. Must
- *  only be called if canDetectGpus() has returned true. This routine
- *  also checks for the compatibility of each and fill the
- *  gpu_info->gpu_dev array with the required information on each the
- *  device: ID, device properties, status.
+ *  only be called if environmentCanDetectGpus() has returned
+ *  true. This routine also checks for the compatibility of each and
+ *  fill the gpu_info->gpu_dev array with the required information on
+ *  each the device: ID, device properties, status.
  *
  *  Note that this function leaves the GPU runtime API error state clean;
  *  this is implemented ATM in the CUDA flavor.
@@ -104,7 +120,7 @@ bool canDetectGpus(std::string *GPU_FUNC_ARGUMENT(errorMessage)) GPU_FUNC_TERM_W
  *  \param[in] gpu_info    pointer to structure holding GPU information.
  *
  *  \throws                InternalError if a GPU API returns an unexpected failure (because
- *                         the call to canDetectGpus() should always prevent this occuring)
+ *                         the call to environmentCanDetectGpus() should always prevent this occuring)
  */
 GPU_FUNC_QUALIFIER
 void findGpus(struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info)) GPU_FUNC_TERM

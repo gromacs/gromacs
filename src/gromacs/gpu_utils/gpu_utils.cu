@@ -650,7 +650,12 @@ static int is_gmx_supported_gpu_id(int dev_id, cudaDeviceProp *dev_prop)
     }
 }
 
-bool canDetectGpus(std::string *errorMessage)
+bool configurationCanDetectGpus()
+{
+    return true;
+}
+
+bool environmentCanDetectGpus(std::string *errorMessage)
 {
     cudaError_t        stat;
     int                driverVersion = -1;
@@ -680,8 +685,8 @@ bool canDetectGpus(std::string *errorMessage)
              * something wrong with the machine: driver-runtime
              * mismatch, all GPUs being busy in exclusive mode,
              * invalid CUDA_VISIBLE_DEVICES, or some other condition
-             * which should result in GROMACS issuing a warning a
-             * falling back to CPUs. */
+             * which should result in GROMACS issuing at least a
+             * warning. */
             errorMessage->assign(cudaGetErrorString(stat));
         }
 
@@ -720,7 +725,7 @@ void findGpus(gmx_gpu_info_t *gpu_info)
     if (stat != cudaSuccess)
     {
         GMX_THROW(gmx::InternalError("Invalid call of findGpus() when CUDA API returned an error, perhaps "
-                                     "canDetectGpus() was not called appropriately beforehand."));
+                                     "environmentCanDetectGpus() was not called appropriately beforehand."));
     }
 
     // We expect to start device support/sanity checks with a clean runtime error state

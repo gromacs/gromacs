@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,9 +91,6 @@ namespace gmx
 #    define _SC_NPROCESSORS_CONF _SC_NPROC_CONF
 #endif
 
-//! Constant used to help minimize preprocessed code
-static const bool bGPUBinary     = GMX_GPU != GMX_GPU_NONE;
-
 /*! \brief The hwinfo structure (common to all threads in this process).
  *
  * \todo This should become a shared_ptr owned by e.g. Mdrunner::runner()
@@ -116,8 +113,11 @@ static void gmx_detect_gpus(const gmx::MDLogger &mdlog, const t_commrec *cr)
 #endif
     bool             isMasterRankOfNode;
 
+    // TODO onfigurationCanDetectGpus() is currently called twice in
+    // this function, for clarity, but in master we can probably
+    // remove this one some time.
     hwinfo_g->gpu_info.bDetectGPUs =
-        (bGPUBinary && getenv("GMX_DISABLE_GPU_DETECTION") == nullptr);
+        (configurationCanDetectGpus() && getenv("GMX_DISABLE_GPU_DETECTION") == nullptr);
     if (!hwinfo_g->gpu_info.bDetectGPUs)
     {
         return;
@@ -160,16 +160,16 @@ static void gmx_detect_gpus(const gmx::MDLogger &mdlog, const t_commrec *cr)
     bool isOpenclPpRank = ((GMX_GPU == GMX_GPU_OPENCL) && thisRankHasDuty(cr, DUTY_PP));
 
     bool gpusCanBeDetected = false;
-    if (isMasterRankOfNode || isOpenclPpRank)
+    if ((isMasterRankOfNode || isOpenclPpRank) && configurationCanDetectGpus())
     {
         std::string errorMessage;
-        gpusCanBeDetected = canDetectGpus(&errorMessage);
+        gpusCanBeDetected = environmentCanDetectGpus(&errorMessage);
         if (!gpusCanBeDetected)
         {
             GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                    "NOTE: GPUs cannot be detected:\n"
-                    "      %s\n"
-                    "      Can not use GPU acceleration, will fall back to CPU kernels.",
+                    "NOTE: Detection of GPUs failed. The GPU API reported:\n"
+                    "      %s\n",
+                    "      GROMACS cannot run tasks on a GPU.",
                     errorMessage.c_str());
         }
     }
