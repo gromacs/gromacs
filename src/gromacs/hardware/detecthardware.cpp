@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -167,9 +167,9 @@ static void gmx_detect_gpus(const gmx::MDLogger &mdlog, const t_commrec *cr)
         if (!gpusCanBeDetected)
         {
             GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                    "NOTE: GPUs cannot be detected:\n"
-                    "      %s\n"
-                    "      Can not use GPU acceleration, will fall back to CPU kernels.",
+                    "NOTE: Detection of GPUs failed. The API reported:\n"
+                    "      %s\n",
+                    "      GROMACS cannot run tasks on a GPU.",
                     errorMessage.c_str());
         }
     }
