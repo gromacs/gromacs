@@ -1015,7 +1015,7 @@ Run setup
 ^^^^^^^^^
 
 * For an approximately spherical solute, use a rhombic dodecahedron unit cell.
-* When using a time-step of 2 fs, use :mdp:`cutoff-scheme` = :mdp-value:`constraints=h-bonds`
+* When using a time-step of 2 fs, use :mdp-value:`constraints=h-bonds`
   (and not :mdp-value:`constraints=all-bonds`), since this is faster, especially with GPUs,
   and most force fields have been parametrized with only bonds involving
   hydrogens constrained.
