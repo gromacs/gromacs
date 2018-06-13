@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -289,5 +289,26 @@ void set_box_rel(const t_inputrec *ir, t_state *state);
  * \param[inout] box     The corrected actual box dimensions
  */
 void preserve_box_shape(const t_inputrec *ir, matrix box_rel, matrix box);
+
+/*! \brief Returns an arrayRef to the positions in \p state when \p state!=null
+ *
+ * When \p state=nullptr, returns an empty arrayRef.
+ *
+ * \note The size returned is the number of atoms, without padding.
+ *
+ * \param[in] state  The state, can be nullptr
+ */
+static inline gmx::ArrayRef<const gmx::RVec>
+positionsFromStatePointer(const t_state *state)
+{
+    if (state)
+    {
+        return gmx::constArrayRefFromArray(state->x.data(), state->natoms);
+    }
+    else
+    {
+        return gmx::EmptyArrayRef();
+    }
+};
 
 #endif
