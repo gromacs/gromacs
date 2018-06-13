@@ -2277,26 +2277,20 @@ void set_lincs(const t_idef         &idef,
 }
 
 //! Issues a warning when LINCS constraints cannot be satisfied.
-static void lincs_warning(FILE *fplog,
-                          gmx_domdec_t *dd, const rvec *x, rvec *xprime, t_pbc *pbc,
+static void lincs_warning(gmx_domdec_t *dd, const rvec *x, rvec *xprime, t_pbc *pbc,
                           int ncons, int *bla, real *bllen, real wangle,
                           int maxwarn, int *warncount)
 {
     int  b, i, j;
     rvec v0, v1;
     real wfac, d0, d1, cosine;
-    char buf[STRLEN];
 
     wfac = std::cos(DEG2RAD*wangle);
 
-    sprintf(buf, "bonds that rotated more than %g degrees:\n"
+    fprintf(stderr,
+            "bonds that rotated more than %g degrees:\n"
             " atom 1 atom 2  angle  previous, current, constraint length\n",
             wangle);
-    fprintf(stderr, "%s", buf);
-    if (fplog)
-    {
-        fprintf(fplog, "%s", buf);
-    }
 
     for (b = 0; b < ncons; b++)
     {
@@ -2317,14 +2311,10 @@ static void lincs_warning(FILE *fplog,
         cosine = ::iprod(v0, v1)/(d0*d1);
         if (cosine < wfac)
         {
-            sprintf(buf, " %6d %6d  %5.1f  %8.4f %8.4f    %8.4f\n",
+            fprintf(stderr,
+                    " %6d %6d  %5.1f  %8.4f %8.4f    %8.4f\n",
                     ddglatnr(dd, i), ddglatnr(dd, j),
                     RAD2DEG*std::acos(cosine), d0, d1, bllen[b]);
-            fprintf(stderr, "%s", buf);
-            if (fplog)
-            {
-                fprintf(fplog, "%s", buf);
-            }
             if (!std::isfinite(d1))
             {
                 gmx_fatal(FARGS, "Bond length not finite.");
@@ -2401,7 +2391,7 @@ static void cconerr(const Lincs *lincsd,
     *imax      = im;
 }
 
-bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
+bool constrain_lincs(bool computeRmsd,
                      const t_inputrec &ir,
                      gmx_int64_t step,
                      Lincs *lincsd, const t_mdatoms &md,
@@ -2417,7 +2407,7 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
                      int maxwarn, int *warncount)
 {
     gmx_bool  bCalcDHDL;
-    char      buf[STRLEN], buf2[22], buf3[STRLEN];
+    char      buf2[22], buf3[STRLEN];
     int       i, p_imax;
     real      ncons_loc, p_ssd, p_max = 0;
     rvec      dx;
@@ -2433,7 +2423,7 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
 
     if (lincsd->nc == 0 && cr->dd == nullptr)
     {
-        if (bLog || bEner)
+        if (computeRmsd)
         {
             lincsd->rmsdData = {{0}};
         }
@@ -2487,7 +2477,7 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
             }
         }
 
-        if (bLog && fplog)
+        if (debug)
         {
             cconerr(lincsd, xprime, pbc,
                     &ncons_loc, &p_ssd, &p_max, &p_imax);
@@ -2518,15 +2508,15 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
 
-        if (bLog && fplog && lincsd->nc > 0)
+        if (debug && lincsd->nc > 0)
         {
-            fprintf(fplog, "   Rel. Constraint Deviation:  RMS         MAX     between atoms\n");
-            fprintf(fplog, "       Before LINCS          %.6f    %.6f %6d %6d\n",
+            fprintf(debug, "   Rel. Constraint Deviation:  RMS         MAX     between atoms\n");
+            fprintf(debug, "       Before LINCS          %.6f    %.6f %6d %6d\n",
                     std::sqrt(p_ssd/ncons_loc), p_max,
                     ddglatnr(cr->dd, lincsd->bla[2*p_imax]),
                     ddglatnr(cr->dd, lincsd->bla[2*p_imax+1]));
         }
-        if (bLog || bEner)
+        if (computeRmsd || debug)
         {
             cconerr(lincsd, xprime, pbc,
                     &ncons_loc, &p_ssd, &p_max, &p_imax);
@@ -2537,9 +2527,9 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
         {
             lincsd->rmsdData = {{0}};
         }
-        if (bLog && fplog && lincsd->nc > 0)
+        if (debug && lincsd->nc > 0)
         {
-            fprintf(fplog,
+            fprintf(debug,
                     "        After LINCS          %.6f    %.6f %6d %6d\n\n",
                     std::sqrt(p_ssd/ncons_loc), p_max,
                     ddglatnr(cr->dd, lincsd->bla[2*p_imax]),
@@ -2560,7 +2550,8 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
                 {
                     buf3[0] = 0;
                 }
-                sprintf(buf, "\nStep %s, time %g (ps)  LINCS WARNING%s\n"
+                fprintf(stderr,
+                        "\nStep %s, time %g (ps)  LINCS WARNING%s\n"
                         "relative constraint deviation after LINCS:\n"
                         "rms %.6f, max %.6f (between atoms %d and %d)\n",
                         gmx_step_str(step, buf2), ir.init_t+step*ir.delta_t,
@@ -2568,12 +2559,8 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
                         std::sqrt(p_ssd/ncons_loc), p_max,
                         ddglatnr(cr->dd, lincsd->bla[2*p_imax]),
                         ddglatnr(cr->dd, lincsd->bla[2*p_imax+1]));
-                if (fplog)
-                {
-                    fprintf(fplog, "%s", buf);
-                }
-                fprintf(stderr, "%s", buf);
-                lincs_warning(fplog, cr->dd, x, xprime, pbc,
+
+                lincs_warning(cr->dd, x, xprime, pbc,
                               lincsd->nc, lincsd->bla, lincsd->bllen,
                               ir.LincsWarnAngle, maxwarn, warncount);
             }
