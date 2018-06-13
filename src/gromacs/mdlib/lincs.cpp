@@ -2518,10 +2518,10 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
 
-        if (bLog && fplog && lincsd->nc > 0)
+        if (debug && lincsd->nc > 0)
         {
-            fprintf(fplog, "   Rel. Constraint Deviation:  RMS         MAX     between atoms\n");
-            fprintf(fplog, "       Before LINCS          %.6f    %.6f %6d %6d\n",
+            fprintf(debug, "   Rel. Constraint Deviation:  RMS         MAX     between atoms\n");
+            fprintf(debug, "       Before LINCS          %.6f    %.6f %6d %6d\n",
                     std::sqrt(p_ssd/ncons_loc), p_max,
                     ddglatnr(cr->dd, lincsd->bla[2*p_imax]),
                     ddglatnr(cr->dd, lincsd->bla[2*p_imax+1]));
@@ -2537,9 +2537,9 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
         {
             lincsd->rmsdData = {{0}};
         }
-        if (bLog && fplog && lincsd->nc > 0)
+        if (debug && lincsd->nc > 0)
         {
-            fprintf(fplog,
+            fprintf(debug,
                     "        After LINCS          %.6f    %.6f %6d %6d\n\n",
                     std::sqrt(p_ssd/ncons_loc), p_max,
                     ddglatnr(cr->dd, lincsd->bla[2*p_imax]),
