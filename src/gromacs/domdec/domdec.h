@@ -202,14 +202,15 @@ struct DomdecOptions
 };
 
 /*! \brief Initialized the domain decomposition, chooses the DD grid and PME ranks, return the DD struct */
-gmx_domdec_t *init_domain_decomposition(FILE                *fplog,
-                                        t_commrec           *cr,
-                                        const DomdecOptions &options,
-                                        const MdrunOptions  &mdrunOptions,
-                                        const gmx_mtop_t    *mtop,
-                                        const t_inputrec    *ir,
-                                        const matrix         box,
-                                        const rvec          *xGlobal);
+gmx_domdec_t *
+init_domain_decomposition(FILE                           *fplog,
+                          t_commrec                      *cr,
+                          const DomdecOptions            &options,
+                          const MdrunOptions             &mdrunOptions,
+                          const gmx_mtop_t               *mtop,
+                          const t_inputrec               *ir,
+                          const matrix                    box,
+                          gmx::ArrayRef<const gmx::RVec>  xGlobal);
 
 /*! \brief Initialize data structures for bonded interactions */
 void dd_init_bondeds(FILE              *fplog,
@@ -459,15 +460,16 @@ real dd_choose_grid(FILE *fplog,
 /* In domdec_box.c */
 
 /*! \brief Set the box and PBC data in \p ddbox */
-void set_ddbox(gmx_domdec_t *dd, gmx_bool bMasterState,
+void set_ddbox(gmx_domdec_t *dd, bool masterRankHasTheSystemState,
                const t_inputrec *ir, const matrix box,
-               gmx_bool bCalcUnboundedSize, const t_block *cgs, const rvec *x,
+               bool calculateUnboundedSize,
+               gmx::ArrayRef<const gmx::RVec> x,
                gmx_ddbox_t *ddbox);
 
 /*! \brief Set the box and PBC data in \p ddbox */
 void set_ddbox_cr(const t_commrec *cr, const ivec *dd_nc,
                   const t_inputrec *ir, const matrix box,
-                  const t_block *cgs, const rvec *x,
+                  gmx::ArrayRef<const gmx::RVec> x,
                   gmx_ddbox_t *ddbox);
 
 #endif

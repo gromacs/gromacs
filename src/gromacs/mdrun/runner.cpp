@@ -846,7 +846,12 @@ int Mdrunner::mdrunner()
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
-        const rvec *xOnMaster = (SIMMASTER(cr) ? as_rvec_array(globalState->x.data()) : nullptr);
+        gmx::ArrayRef<const gmx::RVec> xOnMaster;
+        if (SIMMASTER(cr))
+        {
+            /* Remove the padding from globalState->x */
+            xOnMaster= gmx::constArrayRefFromArray(globalState->x.data(), globalState->natoms);
+        }
 
         cr->dd = init_domain_decomposition(fplog, cr, domdecOptions, mdrunOptions,
                                            &mtop, inputrec,
