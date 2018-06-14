@@ -132,7 +132,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
         tfac = ndf/(3.0*natoms);
     }
 
-    gmx::BlockRanges mols;
+    gmx::RangePartitioning mols;
     if (bMol)
     {
         if (ndx)
@@ -212,9 +212,9 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                         {
                             GMX_RELEASE_ASSERT(mols.numBlocks() > 0, "Cannot access index[] from empty mols");
                             bSame = FALSE;
-                            for (ii = mols.index[ai]; !bSame && (ii < mols.index[ai+1]); ii++)
+                            for (ii = mols.block(ai).begin(); !bSame && ii < mols.block(ai).end(); ii++)
                             {
-                                for (jj = mols.index[aj]; !bSame && (jj < mols.index[aj+1]); jj++)
+                                for (jj = mols.block(aj).begin(); !bSame && jj < mols.block(aj).end(); jj++)
                                 {
                                     if (bPBC)
                                     {
@@ -366,7 +366,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                 if (bMol)
                 {
                     GMX_RELEASE_ASSERT(mols.numBlocks() > 0, "Cannot access index[] from empty mols");
-                    for (j = mols.index[i]; (j < mols.index[i+1]); j++)
+                    for (int j : mols.block(i))
                     {
                         fprintf(fp, "%d\n", j+1);
                     }
