@@ -999,7 +999,8 @@ gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
  * The atoms in \p g are assumed to be sorted.
  */
 bool
-gmx_ana_index_has_full_blocks(const gmx_ana_index_t *g, const gmx::BlockRanges *b)
+gmx_ana_index_has_full_blocks(const gmx_ana_index_t        *g,
+                              const gmx::RangePartitioning *b)
 {
     int  i, j, bi;
 
@@ -1008,17 +1009,17 @@ gmx_ana_index_has_full_blocks(const gmx_ana_index_t *g, const gmx::BlockRanges *
     while (i < g->isize)
     {
         /* Find the block that begins with the first unmatched atom */
-        while (bi < b->numBlocks() && b->index[bi] != g->index[i])
+        while (bi < b->numBlocks() && b->blockStart(bi) != g->index[i])
         {
             ++bi;
         }
         /* If not found, or if too large, return */
-        if (bi == b->numBlocks() || i + b->index[bi+1] -  b->index[bi] > g->isize)
+        if (bi == b->numBlocks() || i + b->blockSize(bi) > g->isize)
         {
             return false;
         }
         /* Check that the block matches the index */
-        for (j = b->index[bi]; j < b->index[bi+1]; ++j, ++i)
+        for (j = b->blockStart(bi); j < b->blockEnd(bi); ++j, ++i)
         {
             if (g->index[i] != j)
             {
@@ -1159,7 +1160,7 @@ gmx_ana_index_has_complete_elems(gmx_ana_index_t *g, e_index_t type,
 
         case INDEX_MOL:
         {
-            gmx::BlockRanges molecules = gmx_mtop_molecules(*top);
+            auto molecules = gmx_mtop_molecules(*top);
             return gmx_ana_index_has_full_blocks(g, &molecules);
         }
     }
