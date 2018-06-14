@@ -2353,8 +2353,8 @@ void init_forcerec(FILE                             *fp,
          */
         cgs       = &mtop->moltype[mtop->molblock.back().type].cgs;
         fr->n_tpi = cgs->index[cgs->nr] - cgs->index[cgs->nr-1];
-        gmx::BlockRanges molecules = gmx_mtop_molecules(*mtop);
-        if (fr->n_tpi != molecules.index[molecules.numBlocks()] - molecules.index[molecules.numBlocks() - 1])
+        gmx::RangePartitioning molecules = gmx_mtop_molecules(*mtop);
+        if (fr->n_tpi != molecules.blockSize(molecules.numBlocks() - 1))
         {
             gmx_fatal(FARGS, "The molecule to insert can not consist of multiple charge groups.\nMake it a single charge group.");
         }
