@@ -1066,14 +1066,14 @@ static void init_imd_prepare_mols_in_imdgroup(t_gmx_IMD_setup *IMDsetup, gmx_mto
         }
     }
 
-    gmx::BlockRanges gmols = gmx_mtop_molecules(*top_global);
+    gmx::RangePartitioning gmols = gmx_mtop_molecules(*top_global);
     snew(lmols.index, gmols.numBlocks() + 1);
     lmols.index[0] = 0;
 
     for (i = 0; i < gmols.numBlocks(); i++)
     {
-        gstart = gmols.index[i];
-        gend   = gmols.index[i+1];
+        gstart = gmols.blockStart(i);
+        gend   = gmols.blockEnd(i);
         count  = 0;
         for (ii = 0; ii < nat; ii++)
         {

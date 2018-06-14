@@ -58,24 +58,76 @@ namespace gmx
 
 /*! \brief Division of a range of indices into consecutive blocks
  *
- * A range of consecutive indices 0 to index[numBlocks()] is divided
+ * A range of consecutive indices 0 to rangeEnd() is divided
  * into numBlocks() consecutive blocks of consecutive indices.
- * Block b contains indices i for which index[b] <= i < index[b+1].
+ * Block b contains indices i for which blockStart(b) <= i < blockEnd(b).
  */
-struct BlockRanges
+class RangePartitioning
 {
-    /*! \brief Returns the number of blocks
-     *
-     * This should only be called on a valid struct. Validy is asserted
-     * (only) in debug mode.
-     */
-    int numBlocks() const
-    {
-        GMX_ASSERT(index.size() > 0, "numBlocks() should only be called on a valid BlockRanges struct");
-        return index.size() - 1;
-    }
+    public:
+        /*! \brief Returns the number of blocks */
+        int numBlocks() const
+        {
+            return index_.size() - 1;
+        }
 
-    std::vector<int> index; /**< The list of block begin/end indices */
+        /*! \brief Returns the size of the block with index \p blockIndex */
+        int blockSize(int blockIndex) const
+        {
+            return index_[blockIndex + 1] - index_[blockIndex];
+        }
+
+        /*! \brief Returns the start of block \p blockIndex */
+        int blockStart(int blockIndex) const
+        {
+            return index_[blockIndex];
+        }
+
+        /*! \brief Returns the end of block \p blockIndex */
+        int blockEnd(int blockIndex) const
+        {
+            return index_[blockIndex + 1];
+        }
+
+        /*! \brief Returns the end of the range, i.e. end(numBlocks() - 1) */
+        int rangeEnd() const
+        {
+            return index_.back();
+        }
+
+        /*! \brief Returns true when all blocks have size 0 or numBlocks()=0 */
+        bool hasOnlyOneSizedBlocks() const
+        {
+            return (index_.back() == numBlocks());
+        }
+
+        /*! \brief Appends a block of size \p blockSize at the end of the range
+         *
+         * \note blocksize has to be >= 1
+         */
+        void appendBlock(int blockSize)
+        {
+            GMX_ASSERT(blockSize > 0, "block sizes should be >= 1");
+            index_.push_back(index_.back() + blockSize);
+        }
+
+        /*! \brief Removes all blocks */
+        void clear()
+        {
+            index_.resize(1);
+        }
+
+        /*! \brief Sets the partitioning to \p numBlocks blocks each of size 1 */
+        void setOneSizedBlocks(int numBlocks);
+
+        /*! \brief Returns the raw block index array, avoid using this */
+        std::vector<int> &rawIndex()
+        {
+            return index_;
+        }
+
+    private:
+        std::vector<int> index_ = { 0 }; /**< The list of block begin/end indices */
 };
 
 }      // nsamespace gmx
@@ -84,6 +136,14 @@ struct BlockRanges
 /* Deprecated, C-style version of BlockRanges */
 typedef struct t_block
 {
+#ifdef __cplusplus
+    int blockSize(int blockIndex) const
+    {
+        GMX_ASSERT(blockIndex < nr, "blockIndex should be in range");
+        return index[blockIndex + 1] - index[blockIndex];
+    }
+#endif                     // __cplusplus
+
     int      nr;           /* The number of blocks          */
     int     *index;        /* Array of indices (dim: nr+1)  */
     int      nalloc_index; /* The allocation size for index */

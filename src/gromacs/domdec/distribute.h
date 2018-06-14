@@ -56,7 +56,6 @@ class t_state;
 void distributeState(FILE                *fplog,
                      gmx_domdec_t        *dd,
                      t_state             *state_global,
-                     const t_block       &cgs_gl,
                      const gmx_ddbox_t   &ddbox,
                      t_state             *state_local,
                      PaddedRVecVector    *f);

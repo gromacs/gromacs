@@ -45,6 +45,26 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
+void gmx::RangePartitioning::setOneSizedBlocks(int numBlocksToSet)
+{
+    if (!hasOnlyOneSizedBlocks())
+    {
+        clear();
+    }
+    if (numBlocksToSet < numBlocks())
+    {
+        index_.resize(numBlocksToSet + 1);
+    }
+    else if (numBlocksToSet > numBlocks())
+    {
+        int numBlocksToAdd = numBlocksToSet - numBlocks();
+        for (int b = 0; b < numBlocksToAdd; b++)
+        {
+            appendBlock(1);
+        }
+    }
+}
+
 void init_block(t_block *block)
 {
     block->nr           = 0;
