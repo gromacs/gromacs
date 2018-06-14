@@ -351,7 +351,7 @@ void dd_move_x(gmx_domdec_t *dd, matrix box, rvec x[], gmx_wallcycle *wcycle)
 
     comm = dd->comm;
 
-    const BlockRanges &atomGroups = dd->atomGroups();
+    const RangePartitioning &atomGroups = dd->atomGroups();
 
     nzone   = 1;
     nat_tot = comm->atomRanges.numHomeAtoms();
@@ -366,17 +366,14 @@ void dd_move_x(gmx_domdec_t *dd, matrix box, rvec x[], gmx_wallcycle *wcycle)
         cd = &comm->cd[d];
         for (const gmx_domdec_ind_t &ind : cd->ind)
         {
-            gmx::ArrayRef<const int>   index = ind.index;
             DDBufferAccess<gmx::RVec>  rvecBuf(comm->rvecBuffer, ind.nsend[nzone + 1]);
             rvec                      *buf   = as_rvec_array(rvecBuf.buffer.data());
             int                        n     = 0;
             if (!bPBC)
             {
-                for (int i = 0; i < ind.nsend[nzone]; i++)
+                for (int g : ind.index)
                 {
-                    int at0 = atomGroups.index[index[i]];
-                    int at1 = atomGroups.index[index[i] + 1];
-                    for (int j = at0; j < at1; j++)
+                    for (int j = atomGroups.blockStart(g); j < atomGroups.blockEnd(g); j++)
                     {
                         copy_rvec(x[j], buf[n]);
                         n++;
@@ -385,11 +382,9 @@ void dd_move_x(gmx_domdec_t *dd, matrix box, rvec x[], gmx_wallcycle *wcycle)
             }
             else if (!bScrew)
             {
-                for (int i = 0; i < ind.nsend[nzone]; i++)
+                for (int g : ind.index)
                 {
-                    int at0 = atomGroups.index[index[i]];
-                    int at1 = atomGroups.index[index[i] + 1];
-                    for (int j = at0; j < at1; j++)
+                    for (int j = atomGroups.blockStart(g); j < atomGroups.blockEnd(g); j++)
                     {
                         /* We need to shift the coordinates */
                         rvec_add(x[j], shift, buf[n]);
@@ -399,11 +394,9 @@ void dd_move_x(gmx_domdec_t *dd, matrix box, rvec x[], gmx_wallcycle *wcycle)
             }
             else
             {
-                for (int i = 0; i < ind.nsend[nzone]; i++)
+                for (int g : ind.index)
                 {
-                    int at0 = atomGroups.index[index[i]];
-                    int at1 = atomGroups.index[index[i]+1];
-                    for (int j = at0; j < at1; j++)
+                    for (int j = atomGroups.blockStart(g); j < atomGroups.blockEnd(g); j++)
                     {
                         /* Shift x */
                         buf[n][XX] = x[j][XX] + shift[XX];
@@ -466,7 +459,7 @@ void dd_move_f(gmx_domdec_t *dd, rvec f[], rvec *fshift, gmx_wallcycle *wcycle)
 
     comm = dd->comm;
 
-    const BlockRanges &atomGroups = dd->atomGroups();
+    const RangePartitioning &atomGroups = dd->atomGroups();
 
     nzone   = comm->zones.n/2;
     nat_tot = comm->atomRanges.end(DDAtomRanges::Type::Zones);
@@ -516,16 +509,13 @@ void dd_move_f(gmx_domdec_t *dd, rvec f[], rvec *fshift, gmx_wallcycle *wcycle)
             dd_sendrecv_rvec(dd, d, dddirForward,
                              sbuf, ind.nrecv[nzone+1],
                              buf,  ind.nsend[nzone+1]);
-            gmx::ArrayRef<const int> index = ind.index;
             /* Add the received forces */
             int                      n = 0;
             if (!bShiftForcesNeedPbc)
             {
-                for (int i = 0; i < ind.nsend[nzone]; i++)
+                for (int g : ind.index)
                 {
-                    int at0 = atomGroups.index[index[i]];
-                    int at1 = atomGroups.index[index[i] + 1];
-                    for (int j = at0; j < at1; j++)
+                    for (int j = atomGroups.blockStart(g); j < atomGroups.blockEnd(g); j++)
                     {
                         rvec_inc(f[j], buf[n]);
                         n++;
@@ -537,11 +527,9 @@ void dd_move_f(gmx_domdec_t *dd, rvec f[], rvec *fshift, gmx_wallcycle *wcycle)
                 /* fshift should always be defined if this function is
                  * called when bShiftForcesNeedPbc is true */
                 assert(NULL != fshift);
-                for (int i = 0; i < ind.nsend[nzone]; i++)
+                for (int g : ind.index)
                 {
-                    int at0 = atomGroups.index[index[i]];
-                    int at1 = atomGroups.index[index[i] + 1];
-                    for (int j = at0; j < at1; j++)
+                    for (int j = atomGroups.blockStart(g); j < atomGroups.blockEnd(g); j++)
                     {
                         rvec_inc(f[j], buf[n]);
                         /* Add this force to the shift force */
@@ -552,11 +540,9 @@ void dd_move_f(gmx_domdec_t *dd, rvec f[], rvec *fshift, gmx_wallcycle *wcycle)
             }
             else
             {
-                for (int i = 0; i < ind.nsend[nzone]; i++)
+                for (int g : ind.index)
                 {
-                    int at0 = atomGroups.index[index[i]];
-                    int at1 = atomGroups.index[index[i] + 1];
-                    for (int j = at0; j < at1; j++)
+                    for (int j = atomGroups.blockStart(g); j < atomGroups.blockEnd(g); j++)
                     {
                         /* Rotate the force */
                         f[j][XX] += buf[n][XX];
@@ -586,7 +572,7 @@ void dd_atom_spread_real(gmx_domdec_t *dd, real v[])
 
     comm = dd->comm;
 
-    const BlockRanges &atomGroups = dd->atomGroups();
+    const RangePartitioning &atomGroups = dd->atomGroups();
 
     nzone   = 1;
     nat_tot = comm->atomRanges.numHomeAtoms();
@@ -595,15 +581,12 @@ void dd_atom_spread_real(gmx_domdec_t *dd, real v[])
         cd = &comm->cd[d];
         for (const gmx_domdec_ind_t &ind : cd->ind)
         {
-            gmx::ArrayRef<const int>    index = ind.index;
             DDBufferAccess<gmx::RVec>   rvecBuf(comm->rvecBuffer, ind.nsend[nzone + 1]);
             real                       *buf  = as_rvec_array(rvecBuf.buffer.data())[0];
             int                         n    = 0;
-            for (int i = 0; i < ind.nsend[nzone]; i++)
+            for (int g : ind.index)
             {
-                int at0 = atomGroups.index[index[i]];
-                int at1 = atomGroups.index[index[i] + 1];
-                for (int j = at0; j < at1; j++)
+                for (int j = atomGroups.blockStart(g); j < atomGroups.blockEnd(g); j++)
                 {
                     buf[n] = v[j];
                     n++;
@@ -655,7 +638,7 @@ void dd_atom_sum_real(gmx_domdec_t *dd, real v[])
 
     comm = dd->comm;
 
-    const gmx::BlockRanges &atomGroups = dd->atomGroups();
+    const gmx::RangePartitioning &atomGroups = dd->atomGroups();
 
     nzone   = comm->zones.n/2;
     nat_tot = comm->atomRanges.end(DDAtomRanges::Type::Zones);
@@ -696,14 +679,11 @@ void dd_atom_sum_real(gmx_domdec_t *dd, real v[])
             dd_sendrecv_real(dd, d, dddirForward,
                              sbuf, ind.nrecv[nzone + 1],
                              buf,  ind.nsend[nzone + 1]);
-            gmx::ArrayRef<const int> index = ind.index;
             /* Add the received forces */
-            int                      n = 0;
-            for (int i = 0; i < ind.nsend[nzone]; i++)
+            int n = 0;
+            for (int g : ind.index)
             {
-                int at0 = atomGroups.index[index[i]];
-                int at1 = atomGroups.index[index[i] + 1];
-                for (int j = at0; j < at1; j++)
+                for (int j = atomGroups.blockStart(g); j < atomGroups.blockEnd(g); j++)
                 {
                     v[j] += buf[n];
                     n++;
@@ -1146,7 +1126,7 @@ void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
         if (i < dd->comm->atomRanges.end(DDAtomRanges::Type::Zones))
         {
             c = 0;
-            while (i >= dd->atomGroups().index[dd->comm->zones.cg_range[c+1]])
+            while (i >= dd->atomGroups().blockStart(dd->comm->zones.cg_range[c + 1]))
             {
                 c++;
             }
@@ -1514,26 +1494,24 @@ static void restoreAtomGroups(gmx_domdec_t *dd,
     gmx::ArrayRef<const int>  atomGroupsState        = state->cg_gl;
 
     std::vector<int>         &globalAtomGroupIndices = dd->globalAtomGroupIndices;
-    gmx::BlockRanges         &atomGroups             = dd->atomGroups_;
+    gmx::RangePartitioning   &atomGroups             = dd->atomGroups_;
 
     globalAtomGroupIndices.resize(atomGroupsState.size());
-    atomGroups.index.resize(atomGroupsState.size() + 1);
+    atomGroups.clear();
 
     /* Copy back the global charge group indices from state
      * and rebuild the local charge group to atom index.
      */
-    int atomIndex = 0;
     for (unsigned int i = 0; i < atomGroupsState.size(); i++)
     {
-        atomGroups.index[i]        = atomIndex;
         const int atomGroupGlobal  = atomGroupsState[i];
+        const int groupSize        = gcgs_index[atomGroupGlobal + 1] - gcgs_index[atomGroupGlobal];
         globalAtomGroupIndices[i]  = atomGroupGlobal;
-        atomIndex                 += gcgs_index[atomGroupGlobal + 1] - gcgs_index[atomGroupGlobal];
+        atomGroups.appendBlock(groupSize);
     }
-    atomGroups.index[atomGroupsState.size()] = atomIndex;
 
     dd->ncg_home = atomGroupsState.size();
-    dd->comm->atomRanges.setEnd(DDAtomRanges::Type::Home, atomIndex);
+    dd->comm->atomRanges.setEnd(DDAtomRanges::Type::Home, atomGroups.rangeEnd());
 
     set_zones_ncg_home(dd);
 }
@@ -1582,7 +1560,7 @@ static void make_dd_indices(gmx_domdec_t *dd,
     }
 
     /* Make the local to global and global to local atom index */
-    int a = dd->atomGroups().index[cg_start];
+    int a = dd->atomGroups().blockStart(cg_start);
     globalAtomIndices.resize(a);
     for (int zone = 0; zone < numZones; zone++)
     {
@@ -4748,21 +4726,21 @@ static void merge_cg_buffers(int ncell,
     }
 }
 
-static void make_cell2at_index(gmx_domdec_comm_dim_t *cd,
-                               int                    nzone,
-                               int                    cg0,
-                               const BlockRanges     &atomGroups)
+static void make_cell2at_index(gmx_domdec_comm_dim_t   *cd,
+                               int                      nzone,
+                               int                      atomGroupStart,
+                               const RangePartitioning &atomGroups)
 {
     /* Store the atom block boundaries for easy copying of communication buffers
      */
-    int cg = cg0;
+    int g = atomGroupStart;
     for (int zone = 0; zone < nzone; zone++)
     {
         for (gmx_domdec_ind_t &ind : cd->ind)
         {
-            ind.cell2at0[zone]  = atomGroups.index[cg];
-            cg                 += ind.nrecv[zone];
-            ind.cell2at1[zone]  = atomGroups.index[cg];
+            ind.cell2at0[zone]  = atomGroups.blockStart(g);
+            g                  += ind.nrecv[zone];
+            ind.cell2at1[zone]  = atomGroups.blockStart(g);
         }
     }
 }
@@ -4900,7 +4878,7 @@ get_zone_pulse_cgs(gmx_domdec_t *dd,
                    int zonei, int zone,
                    int cg0, int cg1,
                    gmx::ArrayRef<const int> globalAtomGroupIndices,
-                   const gmx::BlockRanges &atomGroups,
+                   const gmx::RangePartitioning &atomGroups,
                    int dim, int dim_ind,
                    int dim0, int dim1, int dim2,
                    real r_comm2, real r_bcomm2,
@@ -5141,7 +5119,7 @@ get_zone_pulse_cgs(gmx_domdec_t *dd,
             }
             vbuf.emplace_back(posPbc[XX], posPbc[YY], posPbc[ZZ]);
 
-            nat += atomGroups.index[cg+1] - atomGroups.index[cg];
+            nat += atomGroups.blockSize(cg);
         }
     }
 
@@ -5452,7 +5430,6 @@ static void setup_dd_communication(gmx_domdec_t *dd,
             /* Make space for the global cg indices */
             int numAtomGroupsNew = pos_cg + ind->nrecv[nzone];
             dd->globalAtomGroupIndices.resize(numAtomGroupsNew);
-            dd->atomGroups_.index.resize(numAtomGroupsNew + 1);
             /* Communicate the global cg indices */
             int *recv_i;
             if (cd->bInPlace)
@@ -5501,7 +5478,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                         cg_gl                              = dd->globalAtomGroupIndices[pos_cg];
                         fr->cginfo[pos_cg]                 = ddcginfo(cginfo_mb, cg_gl);
                         nrcg                               = GET_CGINFO_NATOMS(fr->cginfo[pos_cg]);
-                        dd->atomGroups_.index[pos_cg + 1]  = dd->atomGroups_.index[pos_cg] + nrcg;
+                        dd->atomGroups_.appendBlock(nrcg);
                         if (bBondComm)
                         {
                             /* Update the charge group presence,
@@ -5522,9 +5499,12 @@ static void setup_dd_communication(gmx_domdec_t *dd,
             else
             {
                 /* This part of the code is never executed with bBondComm. */
+                std::vector<int> &atomGroupsIndex = dd->atomGroups_.rawIndex();
+                atomGroupsIndex.resize(numAtomGroupsNew + 1);
+
                 merge_cg_buffers(nzone, cd, p, zone_cg_range,
                                  dd->globalAtomGroupIndices, recv_i, cg_cm, recv_vr,
-                                 dd->atomGroups_.index,
+                                 atomGroupsIndex,
                                  fr->cginfo_mb, fr->cginfo);
                 pos_cg += ind->nrecv[nzone];
             }
@@ -5891,11 +5871,11 @@ static void order_vec_cg(int                      n,
     }
 }
 
-static void order_vec_atom(int                       ncg,
-                           const gmx::BlockRanges   *atomGroups,
-                           const gmx_cgsort_t       *sort,
-                           gmx::ArrayRef<gmx::RVec>  v,
-                           gmx::ArrayRef<gmx::RVec>  buf)
+static void order_vec_atom(int                           ncg,
+                           const gmx::RangePartitioning *atomGroups,
+                           const gmx_cgsort_t           *sort,
+                           gmx::ArrayRef<gmx::RVec>      v,
+                           gmx::ArrayRef<gmx::RVec>      buf)
 {
     int a, atot, cg, cg0, cg1, i;
 
@@ -5911,8 +5891,8 @@ static void order_vec_atom(int                       ncg,
     a = 0;
     for (cg = 0; cg < ncg; cg++)
     {
-        cg0 = atomGroups->index[sort[cg].ind];
-        cg1 = atomGroups->index[sort[cg].ind+1];
+        cg0 = atomGroups->blockStart(sort[cg].ind);
+        cg1 = atomGroups->blockEnd(sort[cg].ind);
         for (i = cg0; i < cg1; i++)
         {
             copy_rvec(v[i], buf[a]);
@@ -6081,7 +6061,7 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
 {
     gmx_domdec_sort_t *sort;
     gmx_cgsort_t      *cgsort;
-    int                ncg_new, i, *ibuf, cgsize;
+    int                ncg_new, i, *ibuf;
 
     sort = dd->comm->sort;
 
@@ -6106,12 +6086,12 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
             ncg_new = 0;
     }
 
-    const gmx::BlockRanges &atomGroups = dd->atomGroups();
+    const gmx::RangePartitioning &atomGroups = dd->atomGroups();
 
     /* We alloc with the old size, since cgindex is still old */
-    DDBufferAccess<gmx::RVec>  rvecBuffer(dd->comm->rvecBuffer, atomGroups.index[dd->ncg_home]);
+    DDBufferAccess<gmx::RVec>     rvecBuffer(dd->comm->rvecBuffer, atomGroups.blockStart(dd->ncg_home));
 
-    const gmx::BlockRanges    *atomGroupsPtr = (dd->comm->bCGs ? &atomGroups : nullptr);
+    const gmx::RangePartitioning *atomGroupsPtr = (dd->comm->bCGs ? &atomGroups : nullptr);
 
     /* Remove the charge groups which are no longer at home here */
     dd->ncg_home = ncg_new;
@@ -6154,26 +6134,23 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
     /* Rebuild the local cg index */
     if (dd->comm->bCGs)
     {
-        ibuf[0] = 0;
+        /* We make a new, ordered atomGroups object and assign it to
+         * the old one. This causes some allocated overhead, but saves
+         * a copy back of the whole index.
+         */
+        gmx::RangePartitioning ordered;
         for (i = 0; i < dd->ncg_home; i++)
         {
-            cgsize    = atomGroups.index[cgsort[i].ind+1] - atomGroups.index[cgsort[i].ind];
-            ibuf[i+1] = ibuf[i] + cgsize;
+            ordered.appendBlock(atomGroups.blockSize(cgsort[i].ind));
         }
-        for (i = 0; i < dd->ncg_home+1; i++)
-        {
-            dd->atomGroups_.index[i] = ibuf[i];
-        }
+        dd->atomGroups_ = ordered;
     }
     else
     {
-        for (i = 0; i < dd->ncg_home+1; i++)
-        {
-            dd->atomGroups_.index[i] = i;
-        }
+        dd->atomGroups_.setOneSizedBlocks(dd->ncg_home);
     }
     /* Set the home atom number */
-    dd->comm->atomRanges.setEnd(DDAtomRanges::Type::Home, dd->atomGroups().index[dd->ncg_home]);
+    dd->comm->atomRanges.setEnd(DDAtomRanges::Type::Home, dd->atomGroups().blockStart(dd->ncg_home));
 
     if (fr->cutoff_scheme == ecutsVERLET)
     {
@@ -6522,7 +6499,7 @@ void dd_partition_system(FILE                *fplog,
                   TRUE, cgs_gl, xGlobal,
                   &ddbox);
 
-        distributeState(fplog, dd, state_global, *cgs_gl, ddbox, state_local, f);
+        distributeState(fplog, dd, state_global, ddbox, state_local, f);
 
         dd_make_local_cgs(dd, &top_local->cgs);
 
