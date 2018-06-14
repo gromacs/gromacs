@@ -215,7 +215,8 @@ static int get_bounds(const char *topnm,
     matrix          box;
 
     read_tpx(topnm, ir, box, &natoms, nullptr, nullptr, mtop);
-    snew(*ltop, 1);
+    *ltop = new gmx_localtop_t;
+    init_localtop(*ltop);
     top   = gmx_mtop_generate_local_top(mtop, ir->efep != efepNO);
     *ltop = top;
 
@@ -947,6 +948,12 @@ int gmx_nmr(int argc, char *argv[])
         do_view(oenv, opt2fn_null("-oten", NFILE, fnm), nxy);
     }
     output_env_done(oenv);
+
+    if (top)
+    {
+        done_localtop(top);
+        delete top;
+    }
 
     return 0;
 }

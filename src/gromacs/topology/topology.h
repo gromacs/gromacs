@@ -172,12 +172,18 @@ typedef struct t_topology
 } t_topology;
 
 void init_mtop(gmx_mtop_t *mtop);
+/*! \brief Fully initializes the old topology structure */
 void init_top(t_topology *top);
 void done_gmx_groups_t(gmx_groups_t *g);
+/*! \brief Fully clears the old topology structure */
 void done_top(t_topology *top);
 // Frees both t_topology and gmx_mtop_t when the former has been created from
 // the latter.
 void done_top_mtop(t_topology *top, gmx_mtop_t *mtop);
+/*! \brief Fully initializes the old local topology structure */
+void init_localtop(gmx_localtop_t *top);
+/*! \brief Fully clears the old local topology structure */
+void done_localtop(gmx_localtop_t *top);
 
 bool gmx_mtop_has_masses(const gmx_mtop_t *mtop);
 bool gmx_mtop_has_charges(const gmx_mtop_t *mtop);

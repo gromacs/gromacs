@@ -100,11 +100,11 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
         /* Currently gmx_generate_local_top allocates and returns a pointer.
          * We should implement a more elegant solution.
          */
-        gmx_localtop_t *tmpTop;
+        gmx_localtop_t *tmpTop = new gmx_localtop_t;
+        init_localtop(tmpTop);
 
         tmpTop = gmx_mtop_generate_local_top(top_global, ir->efep != efepNO);
-        *top   = *tmpTop;
-        sfree(tmpTop);
+        *top   = std::move(*tmpTop);
     }
 
     if (vsite)

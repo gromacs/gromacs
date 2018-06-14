@@ -151,7 +151,6 @@ int gmx_polystat(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    t_topology       *top;
     gmx_output_env_t *oenv;
     int               ePBC;
     int               isize, *index, nmol, *molind, mol, nat_min = 0, nat_max = 0;
@@ -185,7 +184,8 @@ int gmx_polystat(int argc, char *argv[])
         return 0;
     }
 
-    snew(top, 1);
+    t_topology *top = new t_topology;
+    init_top(top);
     ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm),
                         nullptr, box, &natoms, nullptr, nullptr, top);
 
@@ -529,6 +529,8 @@ int gmx_polystat(int argc, char *argv[])
     {
         do_view(oenv, opt2fn("-p", NFILE, fnm), "-nxy");
     }
+    done_top(top);
+    delete top;
 
     return 0;
 }

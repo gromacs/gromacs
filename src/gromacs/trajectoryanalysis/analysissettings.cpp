@@ -195,7 +195,7 @@ TopologyInformation::TopologyInformation()
 TopologyInformation::~TopologyInformation()
 {
     done_top_mtop(top_, mtop_.get());
-    sfree(top_);
+    delete top_;
     sfree(xtop_);
 }
 
@@ -204,7 +204,8 @@ t_topology *TopologyInformation::topology() const
 {
     if (top_ == nullptr && mtop_ != nullptr)
     {
-        snew(top_, 1);
+        top_ = new t_topology;
+        init_top(top_);
         *top_ = gmx_mtop_t_to_t_topology(mtop_.get(), false);
     }
     return top_;

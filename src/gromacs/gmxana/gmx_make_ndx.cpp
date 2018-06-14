@@ -1588,8 +1588,8 @@ int gmx_make_ndx(int argc, char *argv[])
 
     if (stxfile)
     {
-        t_topology *top;
-        snew(top, 1);
+        t_topology *top = new t_topology;
+        init_top(top);
         fprintf(stderr, "\nReading structure file\n");
         read_tps_conf(stxfile, top, &ePBC, &x, &v, box, FALSE);
         atoms = &top->atoms;
@@ -1599,6 +1599,8 @@ int gmx_make_ndx(int argc, char *argv[])
         }
         natoms  = atoms->nr;
         bNatoms = TRUE;
+        done_top(top);
+        delete top;
     }
     else
     {

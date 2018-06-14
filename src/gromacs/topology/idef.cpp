@@ -43,6 +43,7 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/txtdump.h"
+#include "gromacs/utility/smalloc.h"
 
 static void pr_harm(FILE *fp, const t_iparams *iparams, const char *r, const char *kr)
 {
@@ -443,4 +444,42 @@ void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef,
                      bShowParameters, idef->iparams);
         }
     }
+}
+
+void init_idef(t_idef *idef)
+{
+    idef->ntypes           = 0;
+    idef->atnr             = 0;
+    idef->functype         = nullptr;
+    idef->iparams          = nullptr;
+    idef->fudgeQQ          = 0.0;
+    idef->iparams_posres   = nullptr;
+    idef->iparams_fbposres = nullptr;
+    for (int f = 0; f < F_NRE; ++f)
+    {
+        idef->il[f].iatoms          = nullptr;
+        idef->il[f].nalloc          = 0;
+        idef->il[f].nr              = 0;
+        idef->il[f].nr_nonperturbed = 0;
+    }
+    idef->cmap_grid.cmapdata      = nullptr;
+    idef->iparams_posres_nalloc   = 0;
+    idef->iparams_fbposres_nalloc = 0;
+    idef->ilsort                  = 0;
+
+}
+
+void done_idef(t_idef *idef)
+{
+    sfree(idef->functype);
+    sfree(idef->iparams);
+    sfree(idef->iparams_posres);
+    sfree(idef->iparams_fbposres);
+    for (int f = 0; f < F_NRE; ++f)
+    {
+        sfree(idef->il[f].iatoms);
+    }
+
+    sfree(idef->cmap_grid.cmapdata);
+    init_idef(idef);
 }

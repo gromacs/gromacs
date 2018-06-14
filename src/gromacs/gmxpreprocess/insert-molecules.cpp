@@ -546,9 +546,9 @@ int InsertMolecules::run()
                   "or give explicit -box command line option");
     }
 
-    t_topology        *top_insrt;
+    t_topology        *top_insrt = new t_topology;
+    init_top(top_insrt);
     std::vector<RVec>  x_insrt;
-    snew(top_insrt, 1);
     {
         int         ePBC_dummy;
         matrix      box_dummy;
@@ -590,7 +590,7 @@ int InsertMolecules::run()
 
     done_atom(&atoms);
     done_top(top_insrt);
-    sfree(top_insrt);
+    delete top_insrt;
 
     return 0;
 }

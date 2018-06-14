@@ -105,9 +105,17 @@ void init_top(t_topology *top)
     init_block(&top->cgs);
     init_block(&top->mols);
     init_blocka(&top->excls);
+    init_idef(&(top->idef));
     open_symtab(&top->symtab);
 }
 
+void init_localtop(gmx_localtop_t *top)
+{
+    init_idef(&(top->idef));
+    init_atomtypes(&(top->atomtypes));
+    init_block(&top->cgs);
+    init_blocka(&top->excls);
+}
 
 gmx_moltype_t::gmx_moltype_t() :
     name(nullptr),
@@ -184,16 +192,7 @@ gmx_mtop_t::~gmx_mtop_t()
 
 void done_top(t_topology *top)
 {
-    sfree(top->idef.functype);
-    sfree(top->idef.iparams);
-    sfree(top->idef.cmap_grid.cmapdata);
-    for (int f = 0; f < F_NRE; ++f)
-    {
-        sfree(top->idef.il[f].iatoms);
-        top->idef.il[f].iatoms = nullptr;
-        top->idef.il[f].nalloc = 0;
-    }
-
+    done_idef(&(top->idef));
     done_atom(&(top->atoms));
 
     /* For GB */
@@ -211,26 +210,26 @@ void done_top_mtop(t_topology *top, gmx_mtop_t *mtop)
     {
         if (top != nullptr)
         {
-            for (int f = 0; f < F_NRE; ++f)
-            {
-                sfree(top->idef.il[f].iatoms);
-                top->idef.il[f].iatoms = nullptr;
-                top->idef.il[f].nalloc = 0;
-            }
             done_atom(&top->atoms);
             done_block(&top->cgs);
             done_blocka(&top->excls);
             done_block(&top->mols);
             done_symtab(&top->symtab);
             open_symtab(&mtop->symtab);
-            sfree(top->idef.functype);
-            sfree(top->idef.iparams);
-            sfree(top->idef.cmap_grid.cmapdata);
+            done_idef(&top->idef);
             done_atomtypes(&(top->atomtypes));
         }
 
         // Note that the rest of mtop will be freed by the destructor
     }
+}
+
+void done_localtop(gmx_localtop_t *top)
+{
+    done_idef(&(top->idef));
+    done_block(&(top->cgs));
+    done_blocka(&(top->excls));
+    done_atomtypes(&(top->atomtypes));
 }
 
 bool gmx_mtop_has_masses(const gmx_mtop_t *mtop)

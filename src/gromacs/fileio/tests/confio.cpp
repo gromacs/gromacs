@@ -94,11 +94,11 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
             if (testTop_ != nullptr)
             {
                 done_top(testTop_);
-                sfree(testTop_);
+                delete testTop_;
             }
             sfree(testX_);
             done_top(refTop_);
-            sfree(refTop_);
+            delete refTop_;
         }
 
         void writeReferenceFile()
@@ -110,7 +110,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
 
         void readReferenceFileTps()
         {
-            snew(testTop_, 1);
+            testTop_ = new t_topology;
             int  ePBC = -2;
             read_tps_conf(referenceFilename_.c_str(), testTop_,
                           &ePBC, &testX_, nullptr, testBox_, FALSE);
@@ -136,7 +136,8 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
 
         void generateReferenceTopology()
         {
-            snew(refTop_, 1);
+            refTop_ = new t_topology;
+            init_top(refTop_);
             open_symtab(&refTop_->symtab);
             if (GetParam() == efESP)
             {

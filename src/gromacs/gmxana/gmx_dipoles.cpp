@@ -1609,7 +1609,6 @@ int gmx_dipoles(int argc, char *argv[])
 #define NFILE asize(fnm)
     int               npargs;
     t_pargs          *ppa;
-    t_topology       *top;
     int               ePBC;
     int               k, natoms;
     matrix            box;
@@ -1666,7 +1665,8 @@ int gmx_dipoles(int argc, char *argv[])
         }
     }
 
-    snew(top, 1);
+    t_topology *top = new t_topology;
+    init_top(top);
     ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm), nullptr, box,
                         &natoms, nullptr, nullptr, top);
 
@@ -1703,5 +1703,7 @@ int gmx_dipoles(int argc, char *argv[])
     do_view(oenv, opt2fn("-d", NFILE, fnm), "-autoscale xy");
     do_view(oenv, opt2fn("-c", NFILE, fnm), "-autoscale xy");
 
+    done_top(top);
+    delete top;
     return 0;
 }

@@ -123,7 +123,6 @@ int gmx_sans(int argc, char *argv[])
     FILE                                 *fp;
     const char                           *fnTPX, *fnTRX, *fnDAT = nullptr;
     t_trxstatus                          *status;
-    t_topology                           *top  = nullptr;
     gmx_rmpbc_t                           gpbc = nullptr;
     gmx_bool                              bFFT = FALSE, bDEBYE = FALSE;
     gmx_bool                              bMC  = FALSE;
@@ -223,7 +222,8 @@ int gmx_sans(int argc, char *argv[])
     gnsf = gmx_neutronstructurefactors_init(fnDAT);
     fprintf(stderr, "Read %d atom names from %s with neutron scattering parameters\n\n", gnsf->nratoms, fnDAT);
 
-    snew(top, 1);
+    t_topology *top = new t_topology;
+    init_top(top);
     snew(grpname, 1);
     snew(index, 1);
 
@@ -370,6 +370,8 @@ int gmx_sans(int argc, char *argv[])
     sfree(sq);
 
     please_cite(stdout, "Garmay2012");
+    done_top(top);
+    delete top;
 
     return 0;
 }

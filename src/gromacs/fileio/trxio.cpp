@@ -1126,9 +1126,8 @@ void rewind_trj(t_trxstatus *status)
 t_topology *read_top(const char *fn, int *ePBC)
 {
     int         epbc, natoms;
-    t_topology *top;
-
-    snew(top, 1);
+    t_topology *top = new t_topology;
+    init_top(top);
     epbc = read_tpx_top(fn, nullptr, nullptr, &natoms, nullptr, nullptr, top);
     if (ePBC)
     {

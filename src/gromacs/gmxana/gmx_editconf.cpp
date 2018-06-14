@@ -792,8 +792,8 @@ int gmx_editconf(int argc, char *argv[])
                   " when using the -mead option\n");
     }
 
-    t_topology *top_tmp;
-    snew(top_tmp, 1);
+    t_topology *top_tmp = new t_topology;
+    init_top(top_tmp);
     read_tps_conf(infile, top_tmp, &ePBC, &x, &v, box, FALSE);
     t_atoms  &atoms = top_tmp->atoms;
     natom = atoms.nr;
@@ -1331,6 +1331,8 @@ int gmx_editconf(int argc, char *argv[])
     gmx_atomprop_destroy(aps);
 
     do_view(oenv, outfile, nullptr);
+    done_top(top_tmp);
+    delete top_tmp;
 
     return 0;
 }

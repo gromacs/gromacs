@@ -38,6 +38,7 @@
 #define GMX_TOPOLOGY_ATOMS_H
 
 #include <stdio.h>
+#include <vector>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -128,11 +129,20 @@ typedef struct t_atoms
     gmx_bool     havePdbInfo;   /* pdbinfo available                    */
 } t_atoms;
 
-typedef struct t_atomtypes
+struct t_atomtypes
 {
-    int           nr;           /* number of atomtypes                          */
-    int          *atomnumber;   /* Atomic number, used for QM/MM                */
-} t_atomtypes;
+    t_atomtypes() {};
+    ~t_atomtypes() {};
+
+    int  getNumberOfEntries() const { return atomnumber_.size(); };
+    int  getEntry(const int entry) const { return atomnumber_[entry]; };
+    bool isEmpty() const { return atomnumber_.empty(); };
+    void addElement(int atomnumber) { atomnumber_.push_back(atomnumber); };
+    void resetAtomtypes() { atomnumber_.clear(); };
+
+    private:
+        std::vector<int> atomnumber_; /* Atomic number, used for QM/MM                */
+};
 
 #define PERTURBED(a) (((a).mB != (a).m) || ((a).qB != (a).q) || ((a).typeB != (a).type))
 

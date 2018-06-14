@@ -529,8 +529,8 @@ int gmx_x2top(int argc, char *argv[])
     init_plist(plist);
 
     /* Read coordinates */
-    t_topology *top;
-    snew(top, 1);
+    t_topology *top = new t_topology;
+    init_top(top);
     read_tps_conf(opt2fn("-f", NFILE, fnm), top, &epbc, &x, nullptr, box, FALSE);
     t_atoms  *atoms = &top->atoms;
     natoms = atoms->nr;
@@ -622,6 +622,9 @@ int gmx_x2top(int argc, char *argv[])
            output_env_get_program_display_name(oenv));
     printf("         Please verify atomtypes and charges by comparison to other\n");
     printf("         topologies.\n");
+
+    done_top(top);
+    delete top;
 
     return 0;
 }

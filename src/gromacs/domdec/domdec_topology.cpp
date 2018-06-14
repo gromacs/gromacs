@@ -2202,10 +2202,9 @@ void dd_sort_local_top(gmx_domdec_t *dd, const t_mdatoms *mdatoms,
 
 gmx_localtop_t *dd_init_local_top(const gmx_mtop_t *top_global)
 {
-    gmx_localtop_t *top;
+    gmx_localtop_t *top = new gmx_localtop_t;
+    init_localtop(top);
     int             i;
-
-    snew(top, 1);
 
     top->idef.ntypes    = top_global->ffparams.ntypes;
     top->idef.atnr      = top_global->ffparams.atnr;

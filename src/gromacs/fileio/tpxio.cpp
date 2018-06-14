@@ -2304,29 +2304,32 @@ static void do_groups(t_fileio *fio, gmx_groups_t *groups,
 static void do_atomtypes(t_fileio *fio, t_atomtypes *atomtypes, gmx_bool bRead,
                          int file_version)
 {
-    int      j;
+    int      entryNumber = 0;
 
-    gmx_fio_do_int(fio, atomtypes->nr);
-    j = atomtypes->nr;
-    if (bRead)
-    {
-        snew(atomtypes->atomnumber, j);
-    }
+    gmx_fio_do_int(fio, entryNumber);
     if (bRead && file_version < tpxv_RemoveImplicitSolvation)
     {
-        std::vector<real> dummy(atomtypes->nr, 0);
+        std::vector<real> dummy(entryNumber, 0);
         gmx_fio_ndo_real(fio, dummy.data(), dummy.size());
         gmx_fio_ndo_real(fio, dummy.data(), dummy.size());
         gmx_fio_ndo_real(fio, dummy.data(), dummy.size());
     }
-    gmx_fio_ndo_int(fio, atomtypes->atomnumber, j);
+
+    int *tempAtomTypes = nullptr;
+    snew(tempAtomTypes, entryNumber);
+    gmx_fio_ndo_int(fio, tempAtomTypes, entryNumber);
+    for (int j = 0; j < entryNumber; j++)
+    {
+        atomtypes->addElement(tempAtomTypes[j]);
+    }
 
     if (bRead && file_version >= 60 && file_version < tpxv_RemoveImplicitSolvation)
     {
-        std::vector<real> dummy(atomtypes->nr, 0);
+        std::vector<real> dummy(entryNumber, 0);
         gmx_fio_ndo_real(fio, dummy.data(), dummy.size());
         gmx_fio_ndo_real(fio, dummy.data(), dummy.size());
     }
+    sfree(tempAtomTypes);
 }
 
 static void do_symtab(t_fileio *fio, t_symtab *symtab, gmx_bool bRead)

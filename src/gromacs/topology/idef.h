@@ -398,6 +398,8 @@ void pr_ffparams(FILE *fp, int indent, const char *title,
                  const gmx_ffparams_t *ffparams, gmx_bool bShowNumbers);
 void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef,
              gmx_bool bShowNumbers, gmx_bool bShowParameters);
+void init_idef(t_idef *idef);
+void done_idef(t_idef *idef);
 
 #ifdef __cplusplus
 }

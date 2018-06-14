@@ -762,7 +762,8 @@ int gmx_mindist(int argc, char *argv[])
 
     if (tpsfnm || resfnm || !ndxfnm)
     {
-        snew(top, 1);
+        top = new t_topology;
+        init_top(top);
         bTop = read_tps_conf(tpsfnm, top, &ePBC, &x, nullptr, box, FALSE);
         if (bPI && !bTop)
         {
@@ -817,6 +818,8 @@ int gmx_mindist(int argc, char *argv[])
     {
         do_view(oenv, numfnm, "-nxy");
     }
+    done_top(top);
+    delete top;
 
     return 0;
 }
