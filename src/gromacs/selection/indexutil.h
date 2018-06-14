@@ -331,7 +331,7 @@ gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
                          e_index_t type, bool bComplete);
 /** Checks whether a group consists of full blocks. */
 bool
-gmx_ana_index_has_full_blocks(const gmx_ana_index_t *g, const gmx::BlockRanges *b);
+gmx_ana_index_has_full_blocks(const gmx_ana_index_t *g, const gmx::RangePartitioning *b);
 /** Checks whether a group consists of full blocks. */
 bool
 gmx_ana_index_has_full_ablocks(gmx_ana_index_t *g, t_blocka *b);

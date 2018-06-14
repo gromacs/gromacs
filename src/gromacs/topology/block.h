@@ -58,24 +58,111 @@ namespace gmx
 
 /*! \brief Division of a range of indices into consecutive blocks
  *
- * A range of consecutive indices 0 to index[numBlocks()] is divided
+ * A range of consecutive indices 0 to full.range.end() is divided
  * into numBlocks() consecutive blocks of consecutive indices.
- * Block b contains indices i for which index[b] <= i < index[b+1].
+ * Block b contains indices i for which block(b).begin() <= i < block(b).end().
  */
-struct BlockRanges
+class RangePartitioning
 {
-    /*! \brief Returns the number of blocks
-     *
-     * This should only be called on a valid struct. Validy is asserted
-     * (only) in debug mode.
-     */
-    int numBlocks() const
-    {
-        GMX_ASSERT(index.size() > 0, "numBlocks() should only be called on a valid BlockRanges struct");
-        return index.size() - 1;
-    }
+    public:
+        /*! \brief Struct for returning the range of a block.
+         *
+         * Can be used in a range loop.
+         */
+        struct Block
+        {
+            public:
+                /*! \brief An interator that loops over integers */
+                struct iterator
+                {
+                    iterator(int value) : value_(value) {}    /**< Constructor */
+                    operator int () const { return value_; }  /**< Value */
+                    operator int &()      { return value_; }  /**< Reference */
+                    int operator* () const { return value_; } /**< Pointer */
+                    int value_;                               /**< The actual value */
+                };
 
-    std::vector<int> index; /**< The list of block begin/end indices */
+                /*! \brief Constructor */
+                Block(int begin,
+                      int end) :
+                    begin_(begin),
+                    end_(end)
+                {
+                }
+
+                /*! \brief Begin iterator/value */
+                const iterator begin() const { return begin_; };
+                /*! \brief End iterator/value */
+                const iterator end() const { return end_; };
+
+                /*! \brief The number of items in the block */
+                int size() const
+                {
+                    return end_ - begin_;
+                }
+
+                /*! \brief Returns whether \p index is within range of the block */
+                bool inRange(int index) const
+                {
+                    return (begin_ <= index && index < end_);
+                }
+
+            private:
+                const int begin_; /**< The start index of the block */
+                const int end_;   /**< The end index of the block */
+        };
+
+        /*! \brief Returns the number of blocks */
+        int numBlocks() const
+        {
+            return index_.size() - 1;
+        }
+
+        /*! \brief Returns the size of the block with index \p blockIndex */
+        Block block(int blockIndex) const
+        {
+            return Block(index_[blockIndex], index_[blockIndex + 1]);
+        }
+
+        /*! \brief Returns the full range */
+        Block fullRange() const
+        {
+            return Block(index_.front(), index_.back());
+        }
+
+        /*! \brief Returns true when all blocks have size 0 or numBlocks()=0 */
+        bool allBlocksHaveSizeOne() const
+        {
+            return (index_.back() == numBlocks());
+        }
+
+        /*! \brief Appends a block of size \p blockSize at the end of the range
+         *
+         * \note blocksize has to be >= 1
+         */
+        void appendBlock(int blockSize)
+        {
+            GMX_ASSERT(blockSize > 0, "block sizes should be >= 1");
+            index_.push_back(index_.back() + blockSize);
+        }
+
+        /*! \brief Removes all blocks */
+        void clear()
+        {
+            index_.resize(1);
+        }
+
+        /*! \brief Sets the partitioning to \p numBlocks blocks each of size 1 */
+        void setAllBlocksSizeOne(int numBlocks);
+
+        /*! \brief Returns the raw block index array, avoid using this */
+        std::vector<int> &rawIndex()
+        {
+            return index_;
+        }
+
+    private:
+        std::vector<int> index_ = { 0 }; /**< The list of block begin/end indices */
 };
 
 }      // nsamespace gmx
@@ -84,6 +171,14 @@ struct BlockRanges
 /* Deprecated, C-style version of BlockRanges */
 typedef struct t_block
 {
+#ifdef __cplusplus
+    int blockSize(int blockIndex) const
+    {
+        GMX_ASSERT(blockIndex < nr, "blockIndex should be in range");
+        return index[blockIndex + 1] - index[blockIndex];
+    }
+#endif                     // __cplusplus
+
     int      nr;           /* The number of blocks          */
     int     *index;        /* Array of indices (dim: nr+1)  */
     int      nalloc_index; /* The allocation size for index */

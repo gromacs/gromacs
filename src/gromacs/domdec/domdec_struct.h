@@ -180,12 +180,12 @@ struct gmx_domdec_t {
     gmx_domdec_specat_comm_t *constraint_comm = nullptr;
 
     /* The number of home atom groups */
-    int                     ncg_home = 0;
+    int                           ncg_home = 0;
     /* Global atom group indices for the home and all non-home groups */
-    std::vector<int>        globalAtomGroupIndices;
+    std::vector<int>              globalAtomGroupIndices;
     /* The atom groups for the home and all non-home groups, todo: make private */
-    gmx::BlockRanges        atomGroups_;
-    const gmx::BlockRanges &atomGroups() const
+    gmx::RangePartitioning        atomGroups_;
+    const gmx::RangePartitioning &atomGroups() const
     {
         return atomGroups_;
     }
