@@ -71,33 +71,24 @@
 #define DD_FLAG_BW(d) (1<<(16+(d)*2+1))
 
 static int compact_and_copy_vec_at(int ncg, int *move,
-                                   const gmx::BlockRanges &atomGroups,
+                                   const gmx::RangePartitioning &atomGroups,
                                    int nvec, int vec,
                                    rvec *src, gmx_domdec_comm_t *comm,
                                    gmx_bool bCompact)
 {
-    int m, icg, i, i0, i1, nrcg;
-    int home_pos;
-    int pos_vec[DIM*2];
+    int home_pos       = 0;
+    int pos_vec[DIM*2] = { 0 };
 
-    home_pos = 0;
-
-    for (m = 0; m < DIM*2; m++)
+    for (int g = 0; g < ncg; g++)
     {
-        pos_vec[m] = 0;
-    }
-
-    i0 = 0;
-    for (icg = 0; icg < ncg; icg++)
-    {
-        i1 = atomGroups.index[icg+1];
-        m  = move[icg];
+        const auto atomGroup = atomGroups.block(g);
+        int        m         = move[g];
         if (m == -1)
         {
             if (bCompact)
             {
                 /* Compact the home array in place */
-                for (i = i0; i < i1; i++)
+                for (int i : atomGroup)
                 {
                     copy_rvec(src[i], src[home_pos++]);
                 }
@@ -106,61 +97,49 @@ static int compact_and_copy_vec_at(int ncg, int *move,
         else
         {
             /* Copy to the communication buffer */
-            nrcg        = i1 - i0;
-            pos_vec[m] += 1 + vec*nrcg;
-            for (i = i0; i < i1; i++)
+            int numAtoms  = atomGroup.size();
+            pos_vec[m]   += 1 + vec*numAtoms;
+            for (int i : atomGroup)
             {
                 copy_rvec(src[i], comm->cgcm_state[m][pos_vec[m]++]);
             }
-            pos_vec[m] += (nvec - vec - 1)*nrcg;
+            pos_vec[m] += (nvec - vec - 1)*numAtoms;
         }
         if (!bCompact)
         {
-            home_pos += i1 - i0;
+            home_pos += atomGroup.size();
         }
-        i0 = i1;
     }
 
     return home_pos;
 }
 
 static int compact_and_copy_vec_cg(int ncg, int *move,
-                                   const gmx::BlockRanges &atomGroups,
+                                   const gmx::RangePartitioning &atomGroups,
                                    int nvec, rvec *src, gmx_domdec_comm_t *comm,
                                    gmx_bool bCompact)
 {
-    int m, icg, i0, i1, nrcg;
-    int home_pos;
-    int pos_vec[DIM*2];
+    int home_pos       = 0;
+    int pos_vec[DIM*2] = { 0 };
 
-    home_pos = 0;
-
-    for (m = 0; m < DIM*2; m++)
+    for (int g = 0; g < ncg; g++)
     {
-        pos_vec[m] = 0;
-    }
-
-    i0 = 0;
-    for (icg = 0; icg < ncg; icg++)
-    {
-        i1 = atomGroups.index[icg + 1];
-        m  = move[icg];
+        const auto atomGroup = atomGroups.block(g);
+        int        m         = move[g];
         if (m == -1)
         {
             if (bCompact)
             {
                 /* Compact the home array in place */
-                copy_rvec(src[icg], src[home_pos++]);
+                copy_rvec(src[g], src[home_pos++]);
             }
         }
         else
         {
-            nrcg = i1 - i0;
             /* Copy to the communication buffer */
-            copy_rvec(src[icg], comm->cgcm_state[m][pos_vec[m]]);
-            pos_vec[m] += 1 + nrcg*nvec;
+            copy_rvec(src[g], comm->cgcm_state[m][pos_vec[m]]);
+            pos_vec[m] += 1 + atomGroup.size()*nvec;
         }
-        i0 = i1;
     }
     if (!bCompact)
     {
@@ -170,28 +149,26 @@ static int compact_and_copy_vec_cg(int ncg, int *move,
     return home_pos;
 }
 
-static int compact_ind(int                 ncg,
-                       const int          *move,
-                       gmx::ArrayRef<int>  globalAtomGroupIndices,
-                       gmx::BlockRanges   *atomGroups,
-                       gmx::ArrayRef<int>  globalAtomIndices,
-                       gmx_ga2la_t        *ga2la,
-                       char               *bLocalCG,
-                       int                *cginfo)
+static int compact_ind(int                     numAtomGroups,
+                       const int              *move,
+                       gmx::ArrayRef<int>      globalAtomGroupIndices,
+                       gmx::RangePartitioning *atomGroups,
+                       gmx::ArrayRef<int>      globalAtomIndices,
+                       gmx_ga2la_t            *ga2la,
+                       char                   *bLocalCG,
+                       int                    *cginfo)
 {
     int home_pos = 0;
     int nat      = 0;
-    for (int cg = 0; cg < ncg; cg++)
+    for (int g = 0; g < numAtomGroups; g++)
     {
-        int a0 = atomGroups->index[cg];
-        int a1 = atomGroups->index[cg+1];
-        if (move[cg] == -1)
+        if (move[g] == -1)
         {
             /* Compact the home arrays in place.
              * Anything that can be done here avoids access to global arrays.
              */
-            atomGroups->index[home_pos] = nat;
-            for (int a = a0; a < a1; a++)
+            atomGroups->rawIndex()[home_pos] = nat;
+            for (int a : atomGroups->block(g))
             {
                 const int a_gl         = globalAtomIndices[a];
                 globalAtomIndices[nat] = a_gl;
@@ -199,58 +176,56 @@ static int compact_ind(int                 ncg,
                 ga2la_change_la(ga2la, a_gl, nat);
                 nat++;
             }
-            globalAtomGroupIndices[home_pos] = globalAtomGroupIndices[cg];
-            cginfo[home_pos]                 = cginfo[cg];
+            globalAtomGroupIndices[home_pos] = globalAtomGroupIndices[g];
+            cginfo[home_pos]                 = cginfo[g];
             /* The charge group remains local, so bLocalCG does not change */
             home_pos++;
         }
         else
         {
             /* Clear the global indices */
-            for (int a = a0; a < a1; a++)
+            for (int a : atomGroups->block(g))
             {
                 ga2la_del(ga2la, globalAtomIndices[a]);
             }
             if (bLocalCG)
             {
-                bLocalCG[globalAtomGroupIndices[cg]] = FALSE;
+                bLocalCG[globalAtomGroupIndices[g]] = FALSE;
             }
         }
     }
-    atomGroups->index[home_pos] = nat;
+    atomGroups->rawIndex()[home_pos] = nat;
 
     return home_pos;
 }
 
-static void clear_and_mark_ind(int                       ncg,
-                               const int                *move,
-                               gmx::ArrayRef<const int>  globalAtomGroupIndices,
-                               const gmx::BlockRanges   &atomGroups,
-                               gmx::ArrayRef<const int>  globalAtomIndices,
-                               gmx_ga2la_t              *ga2la,
-                               char                     *bLocalCG,
-                               int                      *cell_index)
+static void clear_and_mark_ind(int                           numAtomGroups,
+                               const int                    *move,
+                               gmx::ArrayRef<const int>      globalAtomGroupIndices,
+                               const gmx::RangePartitioning &atomGroups,
+                               gmx::ArrayRef<const int>      globalAtomIndices,
+                               gmx_ga2la_t                  *ga2la,
+                               char                         *bLocalCG,
+                               int                          *cell_index)
 {
-    for (int cg = 0; cg < ncg; cg++)
+    for (int g = 0; g < numAtomGroups; g++)
     {
-        if (move[cg] >= 0)
+        if (move[g] >= 0)
         {
-            int a0 = atomGroups.index[cg];
-            int a1 = atomGroups.index[cg + 1];
             /* Clear the global indices */
-            for (int a = a0; a < a1; a++)
+            for (int a : atomGroups.block(g))
             {
                 ga2la_del(ga2la, globalAtomIndices[a]);
             }
             if (bLocalCG)
             {
-                bLocalCG[globalAtomGroupIndices[cg]] = FALSE;
+                bLocalCG[globalAtomGroupIndices[g]] = FALSE;
             }
-            /* Signal that this cg has moved using the ns cell index.
+            /* Signal that this group has moved using the ns cell index.
              * Here we set it to -1. fill_grid will change it
              * from -1 to NSGRID_SIGNAL_MOVED_FAC*grid->ncells.
              */
-            cell_index[cg] = -1;
+            cell_index[g] = -1;
         }
     }
 }
@@ -271,14 +246,14 @@ static void print_cg_move(FILE *fplog,
     {
         fprintf(fplog, "%s %d moved more than the distance allowed by the domain decomposition (%f) in direction %c\n",
                 dd->comm->bCGs ? "The charge group starting at atom" : "Atom",
-                ddglatnr(dd, dd->atomGroups().index[cg]), limitd, dim2char(dim));
+                ddglatnr(dd, dd->atomGroups().block(cg).begin()), limitd, dim2char(dim));
     }
     else
     {
         /* We don't have a limiting distance available: don't print it */
         fprintf(fplog, "%s %d moved more than the distance allowed by the domain decomposition in direction %c\n",
                 dd->comm->bCGs ? "The charge group starting at atom" : "Atom",
-                ddglatnr(dd, dd->atomGroups().index[cg]), dim2char(dim));
+                ddglatnr(dd, dd->atomGroups().block(cg).begin()), dim2char(dim));
     }
     fprintf(fplog, "distance out of cell %f\n",
             dir == 1 ? pos_d - comm->cell_x1[dim] : pos_d - comm->cell_x0[dim]);
@@ -364,7 +339,7 @@ static void calc_cg_move(FILE *fplog, gmx_int64_t step,
                          ivec tric_dir, matrix tcm,
                          rvec cell_x0, rvec cell_x1,
                          rvec limitd, rvec limit0, rvec limit1,
-                         const gmx::BlockRanges &atomGroups,
+                         const gmx::RangePartitioning &atomGroups,
                          int cg_start, int cg_end,
                          rvec *cg_cm,
                          int *move)
@@ -382,8 +357,8 @@ static void calc_cg_move(FILE *fplog, gmx_int64_t step,
 
     for (cg = cg_start; cg < cg_end; cg++)
     {
-        k0   = atomGroups.index[cg];
-        k1   = atomGroups.index[cg + 1];
+        k0   = atomGroups.block(cg).begin();
+        k1   = atomGroups.block(cg).end();
         nrcg = k1 - k0;
         if (nrcg == 1)
         {
@@ -615,7 +590,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
 
     make_tric_corr_matrix(npbcdim, state->box, tcm);
 
-    const gmx::BlockRanges &atomGroups = dd->atomGroups();
+    const gmx::RangePartitioning &atomGroups = dd->atomGroups();
 
     nthread = gmx_omp_nthreads_get(emntDomdec);
 
@@ -659,7 +634,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
              * and the place where the charge group should go
              * in the next 6 bits. This saves some communication volume.
              */
-            nrcg = atomGroups.index[cg+1] - atomGroups.index[cg];
+            nrcg = atomGroups.block(cg).size();
             cggl_flag[ncg[mc]*DD_CGIBS+1] = nrcg | flag;
             ncg[mc] += 1;
             nat[mc] += nrcg;
@@ -767,7 +742,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
 
     /* Now we can remove the excess global atom-group indices from the list */
     dd->globalAtomGroupIndices.resize(home_pos_cg);
-    dd->atomGroups_.index.resize(home_pos_cg + 1);
+    dd->atomGroups_.rawIndex().resize(home_pos_cg + 1);
 
     /* We reuse the intBuffer without reacquiring since we are in the same scope */
     DDBufferAccess<int> &flagBuffer = moveBuffer;
@@ -929,7 +904,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                 /* Set the global charge group index and size */
                 const int globalAtomGroupIndex = flagBuffer.buffer[cg*DD_CGIBS];
                 dd->globalAtomGroupIndices.push_back(globalAtomGroupIndex);
-                dd->atomGroups_.index.push_back(dd->atomGroups_.index[home_pos_cg] + nrcg);
+                dd->atomGroups_.appendBlock(nrcg);
                 /* Copy the state from the buffer */
                 if (fr->cutoff_scheme == ecutsGROUP)
                 {
