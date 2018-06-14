@@ -1008,17 +1008,17 @@ gmx_ana_index_has_full_blocks(const gmx_ana_index_t *g, const gmx::BlockRanges *
     while (i < g->isize)
     {
         /* Find the block that begins with the first unmatched atom */
-        while (bi < b->numBlocks() && b->index[bi] != g->index[i])
+        while (bi < b->numBlocks() && b->start(bi) != g->index[i])
         {
             ++bi;
         }
         /* If not found, or if too large, return */
-        if (bi == b->numBlocks() || i + b->index[bi+1] -  b->index[bi] > g->isize)
+        if (bi == b->numBlocks() || i + b->blockSize(bi) > g->isize)
         {
             return false;
         }
         /* Check that the block matches the index */
-        for (j = b->index[bi]; j < b->index[bi+1]; ++j, ++i)
+        for (j = b->start(bi); j < b->end(bi); ++j, ++i)
         {
             if (g->index[i] != j)
             {

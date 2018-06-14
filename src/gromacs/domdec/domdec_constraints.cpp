@@ -256,7 +256,7 @@ static void atoms_to_settles(gmx_domdec_t *dd,
     {
         if (GET_CGINFO_SETTLE(cginfo[cg]))
         {
-            for (int a = dd->atomGroups().index[cg]; a < dd->atomGroups().index[cg+1]; a++)
+            for (int a = dd->atomGroups().start(cg); a < dd->atomGroups().end(cg); a++)
             {
                 int a_gl = dd->globalAtomIndices[a];
                 int a_mol;
@@ -350,7 +350,7 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
     {
         if (GET_CGINFO_CONSTR(cginfo[cg]))
         {
-            for (int a = dd->atomGroups().index[cg]; a < dd->atomGroups().index[cg+1]; a++)
+            for (int a = dd->atomGroups().start(cg); a < dd->atomGroups().end(cg); a++)
             {
                 int a_gl = dd->globalAtomIndices[a];
                 int molnr, a_mol;

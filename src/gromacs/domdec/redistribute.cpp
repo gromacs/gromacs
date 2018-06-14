@@ -90,7 +90,7 @@ static int compact_and_copy_vec_at(int ncg, int *move,
     i0 = 0;
     for (icg = 0; icg < ncg; icg++)
     {
-        i1 = atomGroups.index[icg+1];
+        i1 = atomGroups.end(icg);
         m  = move[icg];
         if (m == -1)
         {
@@ -143,7 +143,7 @@ static int compact_and_copy_vec_cg(int ncg, int *move,
     i0 = 0;
     for (icg = 0; icg < ncg; icg++)
     {
-        i1 = atomGroups.index[icg + 1];
+        i1 = atomGroups.end(icg);
         m  = move[icg];
         if (m == -1)
         {
@@ -183,14 +183,14 @@ static int compact_ind(int                 ncg,
     int nat      = 0;
     for (int cg = 0; cg < ncg; cg++)
     {
-        int a0 = atomGroups->index[cg];
-        int a1 = atomGroups->index[cg+1];
+        int a0 = atomGroups->start(cg);
+        int a1 = atomGroups->end(cg);
         if (move[cg] == -1)
         {
             /* Compact the home arrays in place.
              * Anything that can be done here avoids access to global arrays.
              */
-            atomGroups->index[home_pos] = nat;
+            atomGroups->rawIndex()[home_pos] = nat;
             for (int a = a0; a < a1; a++)
             {
                 const int a_gl         = globalAtomIndices[a];
@@ -217,7 +217,7 @@ static int compact_ind(int                 ncg,
             }
         }
     }
-    atomGroups->index[home_pos] = nat;
+    atomGroups->rawIndex()[home_pos] = nat;
 
     return home_pos;
 }
@@ -235,8 +235,8 @@ static void clear_and_mark_ind(int                       ncg,
     {
         if (move[cg] >= 0)
         {
-            int a0 = atomGroups.index[cg];
-            int a1 = atomGroups.index[cg + 1];
+            int a0 = atomGroups.start(cg);
+            int a1 = atomGroups.end(cg);
             /* Clear the global indices */
             for (int a = a0; a < a1; a++)
             {
@@ -271,14 +271,14 @@ static void print_cg_move(FILE *fplog,
     {
         fprintf(fplog, "%s %d moved more than the distance allowed by the domain decomposition (%f) in direction %c\n",
                 dd->comm->bCGs ? "The charge group starting at atom" : "Atom",
-                ddglatnr(dd, dd->atomGroups().index[cg]), limitd, dim2char(dim));
+                ddglatnr(dd, dd->atomGroups().start(cg)), limitd, dim2char(dim));
     }
     else
     {
         /* We don't have a limiting distance available: don't print it */
         fprintf(fplog, "%s %d moved more than the distance allowed by the domain decomposition in direction %c\n",
                 dd->comm->bCGs ? "The charge group starting at atom" : "Atom",
-                ddglatnr(dd, dd->atomGroups().index[cg]), dim2char(dim));
+                ddglatnr(dd, dd->atomGroups().start(cg)), dim2char(dim));
     }
     fprintf(fplog, "distance out of cell %f\n",
             dir == 1 ? pos_d - comm->cell_x1[dim] : pos_d - comm->cell_x0[dim]);
@@ -382,8 +382,8 @@ static void calc_cg_move(FILE *fplog, gmx_int64_t step,
 
     for (cg = cg_start; cg < cg_end; cg++)
     {
-        k0   = atomGroups.index[cg];
-        k1   = atomGroups.index[cg + 1];
+        k0   = atomGroups.start(cg);
+        k1   = atomGroups.end(cg);
         nrcg = k1 - k0;
         if (nrcg == 1)
         {
@@ -659,7 +659,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
              * and the place where the charge group should go
              * in the next 6 bits. This saves some communication volume.
              */
-            nrcg = atomGroups.index[cg+1] - atomGroups.index[cg];
+            nrcg = atomGroups.blockSize(cg);
             cggl_flag[ncg[mc]*DD_CGIBS+1] = nrcg | flag;
             ncg[mc] += 1;
             nat[mc] += nrcg;
@@ -767,7 +767,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
 
     /* Now we can remove the excess global atom-group indices from the list */
     dd->globalAtomGroupIndices.resize(home_pos_cg);
-    dd->atomGroups_.index.resize(home_pos_cg + 1);
+    dd->atomGroups_.rawIndex().resize(home_pos_cg + 1);
 
     /* We reuse the intBuffer without reacquiring since we are in the same scope */
     DDBufferAccess<int> &flagBuffer = moveBuffer;
@@ -929,7 +929,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                 /* Set the global charge group index and size */
                 const int globalAtomGroupIndex = flagBuffer.buffer[cg*DD_CGIBS];
                 dd->globalAtomGroupIndices.push_back(globalAtomGroupIndex);
-                dd->atomGroups_.index.push_back(dd->atomGroups_.index[home_pos_cg] + nrcg);
+                dd->atomGroups_.appendBlock(nrcg);
                 /* Copy the state from the buffer */
                 if (fr->cutoff_scheme == ecutsGROUP)
                 {

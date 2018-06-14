@@ -579,11 +579,11 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
                     {
                         if (mol_id == mem_p->mol_id[l])
                         {
-                            for (k = molecules.index[mol_id]; k < molecules.index[mol_id+1]; k++)
+                            for (k = molecules.start(mol_id); k < molecules.end(mol_id); k++)
                             {
                                 z_lip += r[k][ZZ];
                             }
-                            z_lip /=  molecules.index[mol_id+1] - molecules.index[mol_id];
+                            z_lip /= molecules.blockSize(mol_id);
                             if (z_lip < mem_p->zmed)
                             {
                                 nlower++;
@@ -606,7 +606,7 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
         snew(order, mem_p->nmol);
         for (i = 0; i < mem_p->nmol; i++)
         {
-            at = molecules.index[mem_p->mol_id[i]];
+            at = molecules.start(mem_p->mol_id[i]);
             pbc_dx(pbc, r[at], pos_ins->geom_cent[0], dr);
             if (pos_ins->pieces > 1)
             {
@@ -649,11 +649,11 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
             if (bRM)
             {
                 z_lip = 0;
-                for (k = molecules.index[mol_id]; k < molecules.index[mol_id+1]; k++)
+                for (k = molecules.start(mol_id); k < molecules.end(mol_id); k++)
                 {
                     z_lip += r[k][ZZ];
                 }
-                z_lip /= molecules.index[mol_id+1] - molecules.index[mol_id];
+                z_lip /= molecules.blockSize(mol_id);
                 if (nupper > nlower && z_lip < mem_p->zmed)
                 {
                     rm_p->mol[nrm]   = mol_id;
@@ -706,7 +706,7 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
     for (int i = 0; i < rm_p->nr; i++)
     {
         mol_id = rm_p->mol[i];
-        at     = molecules.index[mol_id];
+        at     = molecules.start(mol_id);
         block  = rm_p->block[i];
         mtop->molblock[block].nmol--;
         for (j = 0; j < mtop->moltype[mtop->molblock[block].type].atoms.nr; j++)

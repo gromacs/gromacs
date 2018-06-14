@@ -1072,8 +1072,8 @@ static void init_imd_prepare_mols_in_imdgroup(t_gmx_IMD_setup *IMDsetup, gmx_mto
 
     for (i = 0; i < gmols.numBlocks(); i++)
     {
-        gstart = gmols.index[i];
-        gend   = gmols.index[i+1];
+        gstart = gmols.start(i);
+        gend   = gmols.end(i);
         count  = 0;
         for (ii = 0; ii < nat; ii++)
         {

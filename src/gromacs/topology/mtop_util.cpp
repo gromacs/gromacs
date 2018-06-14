@@ -1033,9 +1033,10 @@ gmx::BlockRanges gmx_mtop_molecules(const gmx_mtop_t &mtop)
 {
     gmx::BlockRanges mols;
 
-    mols.index.resize(gmx_mtop_num_molecules(mtop) + 1);
+    // TODO: get rid of this direct access when t_block gets removed
+    mols.rawIndex().resize(gmx_mtop_num_molecules(mtop) + 1);
 
-    fillMoleculeIndices(mtop, mols.index);
+    fillMoleculeIndices(mtop, mols.rawIndex());
 
     return mols;
 }
