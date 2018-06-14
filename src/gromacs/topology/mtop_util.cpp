@@ -857,16 +857,9 @@ static void gen_local_top(const gmx_mtop_t *mtop,
     int                     ag;
 
     /* no copying of pointers possible now */
-
-    top->atomtypes.nr = mtop->atomtypes.nr;
-    if (mtop->atomtypes.atomnumber)
+    for (int i = 0; i < mtop->atomtypes.getNumberOfEntries(); i++)
     {
-        snew(top->atomtypes.atomnumber, top->atomtypes.nr);
-        std::copy(mtop->atomtypes.atomnumber, mtop->atomtypes.atomnumber + top->atomtypes.nr, top->atomtypes.atomnumber);
-    }
-    else
-    {
-        top->atomtypes.atomnumber = nullptr;
+        top->atomtypes.addElement(mtop->atomtypes.getEntry(i));
     }
 
     ffp = &mtop->ffparams;
@@ -1008,9 +1001,7 @@ gmx_localtop_t *
 gmx_mtop_generate_local_top(const gmx_mtop_t *mtop,
                             bool              freeEnergyInteractionsAtEnd)
 {
-    gmx_localtop_t *top;
-
-    snew(top, 1);
+    gmx_localtop_t *top = new gmx_localtop_t;
 
     gen_local_top(mtop, freeEnergyInteractionsAtEnd, true, top);
 

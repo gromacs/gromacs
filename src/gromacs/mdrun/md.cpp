@@ -485,7 +485,7 @@ void gmx::Integrator::do_md()
         /* Copy the pointer to the global state */
         state = state_global;
 
-        snew(top, 1);
+        top = new gmx_localtop_t;
         mdAlgorithmsSetupAtomData(cr, ir, top_global, top, fr,
                                   &graph, mdAtoms, constr, vsite, shellfc);
 
@@ -1944,5 +1944,5 @@ void gmx::Integrator::do_md()
 
     destroy_enerdata(enerd);
     sfree(enerd);
-    sfree(top);
+    delete top;
 }

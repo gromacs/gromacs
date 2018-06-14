@@ -529,8 +529,7 @@ int gmx_x2top(int argc, char *argv[])
     init_plist(plist);
 
     /* Read coordinates */
-    t_topology *top;
-    snew(top, 1);
+    t_topology *top = new t_topology;
     read_tps_conf(opt2fn("-f", NFILE, fnm), top, &epbc, &x, nullptr, box, FALSE);
     t_atoms  *atoms = &top->atoms;
     natoms = atoms->nr;

@@ -1442,8 +1442,7 @@ int gmx_chi(int argc, char *argv[])
     nbin     = 360/ndeg;
 
     /* Find the chi angles using atoms struct and a list of amino acids */
-    t_topology *top;
-    snew(top, 1);
+    t_topology *top = new t_topology;
     read_tps_conf(ftp2fn(efSTX, NFILE, fnm), top, &ePBC, &x, nullptr, box, FALSE);
     t_atoms    &atoms = top->atoms;
     if (atoms.pdbinfo == nullptr)

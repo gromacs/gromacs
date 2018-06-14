@@ -272,8 +272,8 @@ static void init_QMrec(int grpnr, t_QMrec *qm, int nr, int *atomarray,
     for (int i = 0; i < qm->nrQMatoms; i++)
     {
         const t_atom &atom = mtopGetAtomParameters(mtop, qm->indexQM[i], &molb);
-        qm->nelectrons       += mtop->atomtypes.atomnumber[atom.type];
-        qm->atomicnumberQM[i] = mtop->atomtypes.atomnumber[atom.type];
+        qm->nelectrons       += mtop->atomtypes.getEntry(atom.type);
+        qm->atomicnumberQM[i] = mtop->atomtypes.getEntry(atom.type);
     }
 
     qm->QMcharge       = ir->opts.QMcharge[grpnr];

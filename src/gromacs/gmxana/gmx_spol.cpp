@@ -150,7 +150,6 @@ static void spol_atom2molindex(int *n, int *index, const t_block *mols)
 
 int gmx_spol(int argc, char *argv[])
 {
-    t_topology  *top;
     t_atom      *atom;
     t_trxstatus *status;
     int          nrefat, natoms, nf, ntot;
@@ -220,7 +219,7 @@ int gmx_spol(int argc, char *argv[])
         return 0;
     }
 
-    snew(top, 1);
+    t_topology *top = new t_topology;
     // TODO: Only ePBC is used, not the full inputrec.
     t_inputrec  irInstance;
     t_inputrec *ir = &irInstance;

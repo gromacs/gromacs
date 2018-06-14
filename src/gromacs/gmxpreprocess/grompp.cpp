@@ -584,10 +584,9 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         fprintf(stderr, "processing coordinates...\n");
     }
 
-    t_topology *conftop;
+    t_topology *conftop = new t_topology;
     rvec       *x = nullptr;
     rvec       *v = nullptr;
-    snew(conftop, 1);
     read_tps_conf(confin, conftop, nullptr, &x, &v, state->box, FALSE);
     state->natoms = conftop->atoms.nr;
     if (state->natoms != sys->natoms)
@@ -623,7 +622,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
 
     nmismatch = check_atom_names(topfile, confin, sys, &conftop->atoms);
     done_top(conftop);
-    sfree(conftop);
+    delete conftop;
 
     if (nmismatch)
     {
@@ -826,7 +825,6 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
     rvec           *x, *v;
     dvec            sum;
     double          totmass;
-    t_topology     *top;
     matrix          box, invbox;
     int             natoms, npbcdim = 0;
     char            warn_buf[STRLEN];
@@ -834,11 +832,11 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
     t_params       *pr, *prfb;
     t_atom         *atom;
 
-    snew(top, 1);
+    t_topology *top = new t_topology;
     read_tps_conf(fn, top, nullptr, &x, &v, box, FALSE);
     natoms = top->atoms.nr;
     done_top(top);
-    sfree(top);
+    delete top;
     if (natoms != mtop->natoms)
     {
         sprintf(warn_buf, "The number of atoms in %s (%d) does not match the number of atoms in the topology (%d). Will assume that the first %d atoms in the topology and %s match.", fn, natoms, mtop->natoms, std::min(mtop->natoms, natoms), fn);

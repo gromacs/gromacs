@@ -130,8 +130,7 @@ int gmx_morph(int argc, char *argv[])
         return 0;
     }
 
-    t_topology *top;
-    snew(top, 1);
+    t_topology *top = new t_topology;
     read_tps_conf(opt2fn("-f1", NFILE, fnm), top, nullptr, &x1, nullptr, box, FALSE);
     nat1 = top->atoms.nr;
     read_tps_conf(opt2fn("-f2", NFILE, fnm), top, nullptr, &x2, nullptr, box, FALSE);

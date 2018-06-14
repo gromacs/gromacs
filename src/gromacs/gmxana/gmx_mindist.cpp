@@ -762,7 +762,7 @@ int gmx_mindist(int argc, char *argv[])
 
     if (tpsfnm || resfnm || !ndxfnm)
     {
-        snew(top, 1);
+        top = new t_topology;
         bTop = read_tps_conf(tpsfnm, top, &ePBC, &x, nullptr, box, FALSE);
         if (bPI && !bTop)
         {

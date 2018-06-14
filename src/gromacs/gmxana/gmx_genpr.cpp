@@ -159,8 +159,7 @@ int gmx_genpr(int argc, char *argv[])
     if (xfn != nullptr)
     {
         fprintf(stderr, "\nReading structure file\n");
-        t_topology *top = nullptr;
-        snew(top, 1);
+        t_topology *top = new t_topology;
         read_tps_conf(xfn, top, nullptr, &x, &v, box, FALSE);
         title = *top->name;
         atoms = &top->atoms;

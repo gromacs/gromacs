@@ -215,8 +215,7 @@ int gmx_dyndom(int argc, char *argv[])
         gmx_fatal(FARGS, "maxangle not given");
     }
 
-    t_topology *top;
-    snew(top, 1);
+    t_topology *top = new t_topology;
     read_tps_conf(opt2fn("-f", NFILE, fnm), top, nullptr, &x, &v, box, FALSE);
     t_atoms  &atoms = top->atoms;
     if (atoms.pdbinfo == nullptr)

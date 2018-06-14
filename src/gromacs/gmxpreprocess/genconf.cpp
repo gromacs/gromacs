@@ -180,8 +180,7 @@ int gmx_genconf(int argc, char *argv[])
 
     vol = nx*ny*nz; /* calculate volume in grid points (= nr. molecules) */
 
-    t_topology *top;
-    snew(top, 1);
+    t_topology *top = new t_topology;
     atoms = &top->atoms;
     read_tps_conf(opt2fn("-f", NFILE, fnm), top, &ePBC, &x, &v, box, FALSE);
     natoms = atoms->nr;
@@ -318,7 +317,7 @@ int gmx_genconf(int argc, char *argv[])
     sfree(vrot);
     sfree(xx);
     done_top(top);
-    sfree(top);
+    delete top;
     output_env_done(oenv);
 
     return 0;

@@ -1588,8 +1588,7 @@ int gmx_make_ndx(int argc, char *argv[])
 
     if (stxfile)
     {
-        t_topology *top;
-        snew(top, 1);
+        t_topology *top = new t_topology;
         fprintf(stderr, "\nReading structure file\n");
         read_tps_conf(stxfile, top, &ePBC, &x, &v, box, FALSE);
         atoms = &top->atoms;

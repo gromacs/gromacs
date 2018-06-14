@@ -644,14 +644,13 @@ static void add_solv(const char *fn, t_topology *top,
                      real defaultDistance, real scaleFactor,
                      real rshell, int max_sol)
 {
-    t_topology       *top_solvt;
     std::vector<RVec> x_solvt;
     std::vector<RVec> v_solvt;
     int               ePBC_solvt;
     matrix            box_solvt;
 
     char             *filename = gmxlibfn(fn);
-    snew(top_solvt, 1);
+    t_topology *top_solvt = new t_topology;
     readConformation(filename, top_solvt, &x_solvt, !v->empty() ? &v_solvt : nullptr,
                      &ePBC_solvt, box_solvt, "solvent");
     t_atoms *atoms_solvt = &top_solvt->atoms;
@@ -724,7 +723,7 @@ static void add_solv(const char *fn, t_topology *top,
             atoms_solvt->nr, atoms_solvt->nres);
 
     done_top(top_solvt);
-    sfree(top_solvt);
+    delete top_solvt;
 }
 
 static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
@@ -921,7 +920,6 @@ int gmx_solvate(int argc, char *argv[])
     gmx_atomprop_t aps;
 
     /* solute configuration data */
-    t_topology *top;
     int         ePBC = -1;
     matrix      box;
 
@@ -974,7 +972,7 @@ int gmx_solvate(int argc, char *argv[])
 
     std::vector<RVec> x;
     std::vector<RVec> v;
-    snew(top, 1);
+    t_topology *top = new t_topology;
     if (bProt)
     {
         /* Generate a solute configuration */
@@ -1022,7 +1020,7 @@ int gmx_solvate(int argc, char *argv[])
 
     gmx_atomprop_destroy(aps);
     done_top(top);
-    sfree(top);
+    delete top;
     output_env_done(oenv);
 
     return 0;

@@ -215,7 +215,7 @@ static int get_bounds(const char *topnm,
     matrix          box;
 
     read_tpx(topnm, ir, box, &natoms, nullptr, nullptr, mtop);
-    snew(*ltop, 1);
+    *ltop = new gmx_localtop_t;
     top   = gmx_mtop_generate_local_top(mtop, ir->efep != efepNO);
     *ltop = top;
 

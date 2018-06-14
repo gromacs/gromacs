@@ -73,8 +73,7 @@ void init_atom(t_atoms *at)
 
 void init_atomtypes(t_atomtypes *at)
 {
-    at->nr         = 0;
-    at->atomnumber = nullptr;
+    at->resetAtomtypes();
 }
 
 void done_atom(t_atoms *at)
@@ -90,8 +89,7 @@ void done_atom(t_atoms *at)
 
 void done_atomtypes(t_atomtypes *atype)
 {
-    atype->nr = 0;
-    sfree(atype->atomnumber);
+    atype->resetAtomtypes();
 }
 
 void add_t_atoms(t_atoms *atoms, int natom_extra, int nres_extra)
@@ -315,16 +313,15 @@ void pr_atoms(FILE *fp, int indent, const char *title, const t_atoms *atoms,
 void pr_atomtypes(FILE *fp, int indent, const char *title, const t_atomtypes *atomtypes,
                   gmx_bool bShowNumbers)
 {
-    int i;
     if (available(fp, atomtypes, indent, title))
     {
         indent = pr_title(fp, indent, title);
-        for (i = 0; i < atomtypes->nr; i++)
+        for (int i = 0; i < atomtypes->getNumberOfEntries(); i++)
         {
             pr_indent(fp, indent);
             fprintf(fp,
                     "atomtype[%3d]={atomnumber=%4d}\n",
-                    bShowNumbers ? i : -1, atomtypes->atomnumber[i]);
+                    bShowNumbers ? i : -1, atomtypes->getEntry(i));
         }
     }
 }

@@ -458,11 +458,9 @@ void copy_atomtype_atomtypes(gpp_atomtype_t ga, t_atomtypes *atomtypes)
 
     /* Copy the atomtype data to the topology atomtype list */
     ntype         = get_atomtype_ntypes(ga);
-    atomtypes->nr = ntype;
-    snew(atomtypes->atomnumber, ntype);
 
     for (i = 0; i < ntype; i++)
     {
-        atomtypes->atomnumber[i] = ga->atomnumber[i];
+        atomtypes->addElement(ga->atomnumber[i]);
     }
 }

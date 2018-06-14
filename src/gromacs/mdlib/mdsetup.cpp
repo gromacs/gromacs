@@ -104,7 +104,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
 
         tmpTop = gmx_mtop_generate_local_top(top_global, ir->efep != efepNO);
         *top   = *tmpTop;
-        sfree(tmpTop);
+        delete tmpTop;
     }
 
     if (vsite)

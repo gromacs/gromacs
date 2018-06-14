@@ -410,7 +410,7 @@ static void init_em(FILE *fplog, const char *title,
          */
         ems->f.resize(gmx::paddedRVecVectorSize(ems->s.natoms));
 
-        snew(*top, 1);
+        *top = new gmx_localtop_t;
         mdAlgorithmsSetupAtomData(cr, ir, top_global, *top, fr,
                                   graph, mdAtoms,
                                   constr, vsite, shellfc ? *shellfc : nullptr);

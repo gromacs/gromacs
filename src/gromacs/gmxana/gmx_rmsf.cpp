@@ -322,8 +322,7 @@ int gmx_rmsf(int argc, char *argv[])
 
     if (bReadPDB)
     {
-        t_topology *top_pdb;
-        snew(top_pdb, 1);
+        t_topology *top_pdb = new t_topology;
         /* Read coordinates twice */
         read_tps_conf(opt2fn("-q", NFILE, fnm), top_pdb, nullptr, nullptr, nullptr, pdbbox, FALSE);
         snew(pdbatoms, 1);
@@ -334,7 +333,7 @@ int gmx_rmsf(int argc, char *argv[])
         title = *top_pdb->name;
         snew(refatoms, 1);
         *refatoms = top_pdb->atoms;
-        sfree(top_pdb);
+        delete top_pdb;
     }
     else
     {
