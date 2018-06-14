@@ -1029,13 +1029,18 @@ static void fillMoleculeIndices(const gmx_mtop_t  &mtop,
     }
 }
 
-gmx::BlockRanges gmx_mtop_molecules(const gmx_mtop_t &mtop)
+gmx::RangePartitioning gmx_mtop_molecules(const gmx_mtop_t &mtop)
 {
-    gmx::BlockRanges mols;
+    gmx::RangePartitioning mols;
 
-    mols.index.resize(gmx_mtop_num_molecules(mtop) + 1);
-
-    fillMoleculeIndices(mtop, mols.index);
+    for (const gmx_molblock_t &molb : mtop.molblock)
+    {
+        int numAtomsPerMolecule = mtop.moltype[molb.type].atoms.nr;
+        for (int mol = 0; mol < molb.nmol; mol++)
+        {
+            mols.appendBlock(numAtomsPerMolecule);
+        }
+    }
 
     return mols;
 }
