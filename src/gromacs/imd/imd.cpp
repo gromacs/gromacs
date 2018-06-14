@@ -1047,7 +1047,6 @@ void IMD_finalize(gmx_bool bIMD, t_IMD *imd)
 static void init_imd_prepare_mols_in_imdgroup(t_gmx_IMD_setup *IMDsetup, gmx_mtop_t *top_global)
 {
     int      i, ii;
-    int      gstart, gend, count;
     t_block  lmols;
     int      nat;
     int     *ind;
@@ -1066,18 +1065,17 @@ static void init_imd_prepare_mols_in_imdgroup(t_gmx_IMD_setup *IMDsetup, gmx_mto
         }
     }
 
-    gmx::BlockRanges gmols = gmx_mtop_molecules(*top_global);
+    gmx::RangePartitioning gmols = gmx_mtop_molecules(*top_global);
     snew(lmols.index, gmols.numBlocks() + 1);
     lmols.index[0] = 0;
 
     for (i = 0; i < gmols.numBlocks(); i++)
     {
-        gstart = gmols.index[i];
-        gend   = gmols.index[i+1];
-        count  = 0;
+        auto mol   = gmols.block(i);
+        int  count = 0;
         for (ii = 0; ii < nat; ii++)
         {
-            if ((ind[ii] >= gstart) && (ind[ii] < gend))
+            if (mol.inRange(ind[ii]))
             {
                 count += 1;
             }
