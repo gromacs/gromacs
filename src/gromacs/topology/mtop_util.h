@@ -229,11 +229,11 @@ gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, bool freeEnergyInteractionsA
 /*!\brief Creates and returns a struct with begin/end atom indices of all molecules
  *
  * \param[in] mtop  The global topology
- * \returns A struct of type BlockRanges with numBlocks() equal to the number
+ * \returns A RangePartitioning object with numBlocks() equal to the number
  * of molecules and atom indices such that molecule m contains atoms a with:
  * index[m] <= a < index[m+1].
  */
-gmx::BlockRanges gmx_mtop_molecules(const gmx_mtop_t &mtop);
+gmx::RangePartitioning gmx_mtop_molecules(const gmx_mtop_t &mtop);
 
 
 /* Converts a gmx_mtop_t struct to t_topology.
