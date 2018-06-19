@@ -51,7 +51,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/main.h"
 #include "gromacs/mdtypes/commrec.h"
-#include "gromacs/mdtypes/forcerec.h" // only for gmx_enerdata_t
+#include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"

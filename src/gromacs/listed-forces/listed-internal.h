@@ -44,7 +44,7 @@
 #define GMX_LISTED_FORCES_LISTED_INTERNAL_H
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/bitmask.h"

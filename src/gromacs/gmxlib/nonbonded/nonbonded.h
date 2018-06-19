@@ -41,11 +41,13 @@
 
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/basedefinitions.h"
+
+struct gmx_grppairener_t;
+struct t_forcerec;
 
 void
 gmx_nonbonded_setup(t_forcerec *fr,

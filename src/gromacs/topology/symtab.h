@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,10 +38,6 @@
 #define GMX_TOPOLOGY_SYMTAB_H
 
 #include <stdio.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef struct t_symbuf
 {
@@ -123,9 +119,5 @@ void pr_symtab(FILE *fp, int indent, const char *title, t_symtab *symtab);
  * number of spaces the text should be indented. Title is used
  * to print a header text.
  */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

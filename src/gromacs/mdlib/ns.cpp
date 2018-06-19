@@ -57,6 +57,7 @@
 #include "gromacs/mdlib/nsgrid.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"

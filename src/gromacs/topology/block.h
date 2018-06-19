@@ -39,20 +39,11 @@
 
 #include <stdio.h>
 
-#ifdef __cplusplus
 #include <vector>
-#endif
 
 #include "gromacs/utility/basedefinitions.h"
-#ifdef __cplusplus
 #include "gromacs/utility/gmxassert.h"
-#endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#ifdef __cplusplus
 namespace gmx
 {
 
@@ -79,7 +70,6 @@ struct BlockRanges
 };
 
 }      // nsamespace gmx
-#endif // __cplusplus
 
 /* Deprecated, C-style version of BlockRanges */
 typedef struct t_block
@@ -89,7 +79,7 @@ typedef struct t_block
     int      nalloc_index; /* The allocation size for index */
 } t_block;
 
-typedef struct t_blocka
+struct t_blocka
 {
     int      nr;    /* The number of blocks              */
     int     *index; /* Array of indices in a (dim: nr+1) */
@@ -102,7 +92,7 @@ typedef struct t_blocka
     /* to terminate the table               */
     int nalloc_index;           /* The allocation size for index        */
     int nalloc_a;               /* The allocation size for a            */
-} t_blocka;
+};
 
 void init_block(t_block *block);
 void init_blocka(t_blocka *block);
@@ -129,9 +119,5 @@ void stupid_fill_blocka(t_blocka *grp, int natom);
 
 void pr_block(FILE *fp, int indent, const char *title, const t_block *block, gmx_bool bShowNumbers);
 void pr_blocka(FILE *fp, int indent, const char *title, const t_blocka *block, gmx_bool bShowNumbers);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

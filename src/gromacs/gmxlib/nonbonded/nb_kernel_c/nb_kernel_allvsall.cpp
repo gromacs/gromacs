@@ -43,6 +43,7 @@
 #include <math.h>
 
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/topology/block.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
