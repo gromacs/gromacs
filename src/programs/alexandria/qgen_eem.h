@@ -44,11 +44,17 @@
 struct t_atoms;
 
 enum {
-    eQGEN_OK, eQGEN_NOTCONVERGED, eQGEN_NOSUPPORT, eQGEN_ERROR, eQGEN_NR
+    eQGEN_OK, 
+    eQGEN_NOTCONVERGED, 
+    eQGEN_NOSUPPORT, 
+    eQGEN_ERROR, 
+    eQGEN_NR
 };
 
 enum ChargeGenerationAlgorithm {
-    eqgNONE, eqgEEM, eqgESP
+    eqgNONE, 
+    eqgEEM, 
+    eqgESP
 };
 
 namespace alexandria
@@ -68,12 +74,6 @@ class QgenEem
                      bool                     haveShell);
                      
         void updateInfo(const Poldata &pd);
-
-        int generateChargesSm(FILE            *fp,
-                              const Poldata    &pd,
-                              t_atoms         *atoms,  
-                              double          *chieq,
-                              PaddedRVecVector x);
 
         int generateCharges(FILE              *fp,
                             const std::string  molname,
@@ -101,28 +101,29 @@ class QgenEem
 
         double getZeta(int atom, int z);
 
-        void print(FILE *fp, t_atoms *atoms);
-
-        void debugFun(FILE *fp);
+        void dump(FILE *fp, t_atoms *atoms);
 
     private:
+        int                                                natom_;
+        int                                                eQGEN_;
         gmx_bool                                           bWarned_;
+        double                                             qtotal_;
+        double                                             chieq_;
+        double                                             hfac_;
+        double                                             Jcs_;
+        double                                             Jss_;
+        double                                             rms_;
+        double                                             hardnessFactor_;
+        gmx_bool                                           bAllocSave_;
+        gmx_bool                                           bHaveShell_;
         ChargeDistributionModel                            iChargeDistributionModel_;
-        int                                                natom_, eQGEN_;
-        double                                             qtotal_, chieq_, hfac_;
-        double                                             Jcs_, Jss_, rms_, hardnessFactor_;
-        /* For each atom i there is an elem, atomnr, chi0, rhs, j00 and x */
-        std::vector<std::string>                           elem_;
-        std::vector<int>                                   atomnr_;
+               
+        std::vector<int>                                   atomnr_, nZeta_, coreIndex_;
         std::vector<double>                                chi0_, rhs_, j00_;
-        std::vector<gmx::RVec>                             x_;
-        /* Jab is a matrix over atom pairs */
-        std::vector<std::vector<double>>                   Jcc_;
-        /* For each atom i there are nZeta[i] row, q and zeta entries */
-        std::vector<int>                                   nZeta_, coreIndex_, shellIndex_;
-        std::vector<std::vector<int> >                     row_;
-        bool                                               bAllocSave_, bHaveShell_;
-        std::vector<std::vector<double>>                   q_, zeta_, qsave_, zetasave_;
+        std::vector<gmx::RVec>                             x_;   
+        std::vector<std::string>                           elem_;            
+        std::vector<std::vector<int>>                      row_;       
+        std::vector<std::vector<double>>                   q_, zeta_, qsave_, zetasave_, Jcc_;
 
 
         double calcJ(ChargeDistributionModel iChargeDistributionModel,
@@ -140,10 +141,6 @@ class QgenEem
         void calcJcs(t_atoms *atoms,
                      int      top_ndx,
                      int      eem_ndx);
-        
-        void calcJss(t_atoms *atoms,
-                     int      top_ndx,
-                     int      eem_ndx);
 
         void solveQEem(FILE *fp);
         
@@ -151,10 +148,6 @@ class QgenEem
 
         double calcSij(int i, int j);
 
-        int generateChargesBultinck(FILE              *fp,
-                                    const Poldata     &pd,
-                                    t_atoms           *atoms,
-                                    PaddedRVecVector   x);
         void calcRhs(t_atoms *atoms);
 };
 }
