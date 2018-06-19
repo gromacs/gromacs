@@ -42,7 +42,6 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/nblist.h"
-#include "gromacs/topology/block.h"
 #include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
@@ -68,15 +67,17 @@ extern "C" {
 #define gmx_inline inline
 #endif
 
+struct t_blocka;
+
 /* Structure to collect kernel data not available in forcerec or mdatoms structures.
  * This is only used inside the nonbonded module.
  */
 typedef struct
 {
-    int                flags;
-    const t_blocka    *exclusions;
-    real *             lambda;
-    real *             dvdl;
+    int                    flags;
+    const struct t_blocka *exclusions;
+    real                  *lambda;
+    real                  *dvdl;
 
     /* pointers to tables */
     t_forcetable *     table_elec;

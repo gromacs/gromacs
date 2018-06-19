@@ -106,11 +106,6 @@
 
 #include "nbnxn_gpu_jit_support.h"
 
-const char *egrp_nm[egNR+1] = {
-    "Coul-SR", "LJ-SR", "Buck-SR",
-    "Coul-14", "LJ-14", nullptr
-};
-
 t_forcerec *mk_forcerec(void)
 {
     t_forcerec *fr;

@@ -46,9 +46,11 @@
 #include "gromacs/utility/arrayref.h"
 
 struct gmx_output_env_t;
+struct gmx_pme_t;
 struct gmx_update_t;
 struct MdrunOptions;
 struct nonbonded_verlet_t;
+struct t_forcerec;
 struct t_mdatoms;
 struct t_nrnb;
 

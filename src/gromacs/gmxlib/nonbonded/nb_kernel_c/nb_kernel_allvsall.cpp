@@ -44,6 +44,7 @@
 
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/functions.h"
+#include "gromacs/topology/block.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 

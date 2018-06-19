@@ -43,7 +43,6 @@
 #endif
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/topology/idef.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -109,36 +108,6 @@ extern "C" {
 enum {
     enbvdwNONE, enbvdwLJ, enbvdwBHAM, enbvdwTAB, enbvdwNR
 };
-
-enum {
-    egCOULSR, egLJSR, egBHAMSR,
-    egCOUL14, egLJ14, egNR
-};
-extern const char *egrp_nm[egNR+1];
-
-struct gmx_grppairener_t
-{
-    int   nener;      /* The number of energy group pairs     */
-    real *ener[egNR]; /* Energy terms for each pair of groups */
-};
-
-struct gmx_enerdata_t
-{
-    real                     term[F_NRE];         /* The energies for all different interaction types */
-    struct gmx_grppairener_t grpp;
-    double                   dvdl_lin[efptNR];    /* Contributions to dvdl with linear lam-dependence */
-    double                   dvdl_nonlin[efptNR]; /* Idem, but non-linear dependence                  */
-    int                      n_lambda;
-    int                      fep_state;           /*current fep state -- just for printing */
-    double                  *enerpart_lambda;     /* Partial energy for lambda and flambda[] */
-    real                     foreign_term[F_NRE]; /* alternate array for storing foreign lambda energies */
-    struct gmx_grppairener_t foreign_grpp;        /* alternate array for storing foreign lambda energies */
-};
-/* The idea is that dvdl terms with linear lambda dependence will be added
- * automatically to enerpart_lambda. Terms with non-linear lambda dependence
- * should explicitly determine the energies at foreign lambda points
- * when n_lambda > 0.
- */
 
 struct cginfo_mb_t
 {

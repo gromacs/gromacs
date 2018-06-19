@@ -41,10 +41,11 @@
 
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/mdlib/ebin.h"
-#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/enerdata.h"
 
 class energyhistory_t;
 struct gmx_ekindata_t;
+struct gmx_enerdata_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct t_expanded;
@@ -58,6 +59,8 @@ namespace gmx
 class Awh;
 class Constraints;
 }
+
+extern const char *egrp_nm[egNR+1];
 
 /* The functions & data structures here determine the content for outputting
    the .edr file; the file format and actual writing is done with functions

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,40 +32,35 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
- *
- * \brief This file declares functions for "pair" interactions
- * (i.e. listed non-bonded interactions, e.g. 1-4 interactions)
- *
- * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \inlibraryapi
- * \ingroup module_listed-forces
- */
-#ifndef GMX_LISTED_FORCES_PAIRS_H
-#define GMX_LISTED_FORCES_PAIRS_H
+#ifndef GMX_MDTYPES_TYPES_ENERDATA_H
+#define GMX_MDTYPES_TYPES_ENERDATA_H
 
-#include "gromacs/math/vec.h"
-#include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/topology/ifunc.h"
-#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/utility/real.h"
 
-struct gmx_grppairener_t;
-struct t_forcerec;
-struct t_graph;
-struct t_pbc;
+enum {
+    egCOULSR, egLJSR, egBHAMSR,
+    egCOUL14, egLJ14, egNR
+};
 
-/*! \brief Calculate VdW/charge listed pair interactions (usually 1-4
- * interactions).
- *
- * global_atom_index is only passed for printing error messages.
- */
-void
-do_pairs(int ftype, int nbonds, const t_iatom iatoms[], const t_iparams iparams[],
-         const rvec x[], rvec4 f[], rvec fshift[],
-         const struct t_pbc *pbc, const struct t_graph *g,
-         const real *lambda, real *dvdl, const t_mdatoms *md, const t_forcerec *fr,
-         const gmx_bool computeForcesOnly, gmx_grppairener_t *grppener,
-         int *global_atom_index);
+struct gmx_grppairener_t
+{
+    int   nener;      /* The number of energy group pairs     */
+    real *ener[egNR]; /* Energy terms for each pair of groups */
+};
+
+struct gmx_enerdata_t
+{
+    real                     term[F_NRE];         /* The energies for all different interaction types */
+    struct gmx_grppairener_t grpp;
+    double                   dvdl_lin[efptNR];    /* Contributions to dvdl with linear lam-dependence */
+    double                   dvdl_nonlin[efptNR]; /* Idem, but non-linear dependence                  */
+    int                      n_lambda;
+    int                      fep_state;           /*current fep state -- just for printing */
+    double                  *enerpart_lambda;     /* Partial energy for lambda and flambda[] */
+    real                     foreign_term[F_NRE]; /* alternate array for storing foreign lambda energies */
+    struct gmx_grppairener_t foreign_grpp;        /* alternate array for storing foreign lambda energies */
+};
 
 #endif
