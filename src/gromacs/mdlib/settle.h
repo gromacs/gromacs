@@ -45,6 +45,7 @@
 #define GMX_MDLIB_SETTLE_H
 
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/arrayref.h"
 
 struct gmx_cmap_t;
 struct gmx_mtop_t;
@@ -91,7 +92,7 @@ void csettle(settledata         *settled,          /* The SETTLE structure */
  * of coordinates working on settle type constraint.
  */
 void settle_proj(settledata *settled, ConstraintVariable econq,
-                 int nsettle, t_iatom iatoms[],
+                 int nsettle, gmx::ArrayRef<t_iatom> iatoms,
                  const t_pbc *pbc,   /* PBC data pointer, can be NULL  */
                  const rvec x[],
                  rvec *der, rvec *derp,

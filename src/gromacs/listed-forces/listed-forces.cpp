@@ -276,7 +276,6 @@ calc_one_bond(int thread,
 
     int      nat1, nbonds, efptFTYPE;
     real     v = 0;
-    t_iatom *iatoms;
     int      nb0, nbn;
 
     if (IS_RESTRAINT_TYPE(ftype))
@@ -294,7 +293,7 @@ calc_one_bond(int thread,
 
     nat1      = interaction_function[ftype].nratoms + 1;
     nbonds    = idef->il[ftype].nr/nat1;
-    iatoms    = idef->il[ftype].iatoms;
+    gmx::ArrayRef<const t_iatom> iatoms    = idef->il[ftype].iatoms;
 
     GMX_ASSERT(bondedThreading.il_thread_division[ftype*(bondedThreading.nthreads + 1) + bondedThreading.nthreads] == idef->il[ftype].nr, "The thread division should match the topology");
 
@@ -309,7 +308,7 @@ calc_one_bond(int thread,
                nice to account to its own subtimer, but first
                wallcycle needs to be extended to support calling from
                multiple threads. */
-            v = cmap_dihs(nbn, iatoms+nb0,
+            v = cmap_dihs(nbn, iatoms.data()+nb0,
                           idef->iparams, &idef->cmap_grid,
                           x, f, fshift,
                           pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
@@ -319,7 +318,7 @@ calc_one_bond(int thread,
         else if (ftype == F_ANGLES && bUseSIMD && computeForcesOnly)
         {
             /* No energies, shift forces, dvdl */
-            angles_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
+            angles_noener_simd(nbn, idef->il[ftype].iatoms.data()+nb0,
                                idef->iparams,
                                x, f,
                                pbc, g, lambda[efptFTYPE], md, fcd,
@@ -330,7 +329,7 @@ calc_one_bond(int thread,
         else if (ftype == F_UREY_BRADLEY && bUseSIMD && computeForcesOnly)
         {
             /* No energies, shift forces, dvdl */
-            urey_bradley_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
+            urey_bradley_noener_simd(nbn, idef->il[ftype].iatoms.data()+nb0,
                                      idef->iparams,
                                      x, f,
                                      pbc, g, lambda[efptFTYPE], md, fcd,
@@ -344,7 +343,7 @@ calc_one_bond(int thread,
 #if GMX_SIMD_HAVE_REAL
             if (bUseSIMD)
             {
-                pdihs_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
+                pdihs_noener_simd(nbn, idef->il[ftype].iatoms.data()+nb0,
                                   idef->iparams,
                                   x, f,
                                   pbc, g, lambda[efptFTYPE], md, fcd,
@@ -353,7 +352,7 @@ calc_one_bond(int thread,
             else
 #endif
             {
-                pdihs_noener(nbn, idef->il[ftype].iatoms+nb0,
+                pdihs_noener(nbn, idef->il[ftype].iatoms.data()+nb0,
                              idef->iparams,
                              x, f,
                              pbc, g, lambda[efptFTYPE], md, fcd,
@@ -365,7 +364,7 @@ calc_one_bond(int thread,
         else if (ftype == F_RBDIHS && bUseSIMD && computeForcesOnly)
         {
             /* No energies, shift forces, dvdl */
-            rbdihs_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
+            rbdihs_noener_simd(nbn, idef->il[ftype].iatoms.data()+nb0,
                                idef->iparams,
                                (const rvec*)x, f,
                                pbc, g, lambda[efptFTYPE], md, fcd,
@@ -375,7 +374,7 @@ calc_one_bond(int thread,
 #endif
         else
         {
-            v = interaction_function[ftype].ifunc(nbn, iatoms+nb0,
+            v = interaction_function[ftype].ifunc(nbn, iatoms.data()+nb0,
                                                   idef->iparams,
                                                   x, f, fshift,
                                                   pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
@@ -387,7 +386,7 @@ calc_one_bond(int thread,
         /* TODO The execution time for pairs might be nice to account
            to its own subtimer, but first wallcycle needs to be
            extended to support calling from multiple threads. */
-        do_pairs(ftype, nbn, iatoms+nb0, idef->iparams, x, f, fshift,
+        do_pairs(ftype, nbn, iatoms.data()+nb0, idef->iparams, x, f, fshift,
                  pbc, g, lambda, dvdl, md, fr,
                  computeForcesOnly, grpp, global_atom_index);
         v = 0;
@@ -642,7 +641,7 @@ void calc_listed_lambda(const t_idef *idef,
             const t_ilist &ilist     = idef->il[ftype];
             /* Create a temporary t_ilist with only perturbed interactions */
             t_ilist       &ilist_fe  = idef_fe.il[ftype];
-            ilist_fe.iatoms          = ilist.iatoms + ilist.nr_nonperturbed;
+            std::copy(ilist.iatoms.begin(), ilist.iatoms.begin()+ilist.nr_nonperturbed, ilist_fe.iatoms.begin());
             ilist_fe.nr_nonperturbed = 0;
             ilist_fe.nr              = ilist.nr - ilist.nr_nonperturbed;
             /* Set the work range of thread 0 to the perturbed bondeds */

@@ -143,7 +143,7 @@ void dd_clear_local_vsite_indices(gmx_domdec_t *dd)
 
 /*! \brief Walks over the constraints out from the local atoms into the non-local atoms and adds them to a list */
 static void walk_out(int con, int con_offset, int a, int offset, int nrec,
-                     int ncon1, const t_iatom *ia1, const t_iatom *ia2,
+                     int ncon1, gmx::ArrayRef<const t_iatom> ia1, gmx::ArrayRef<const t_iatom> ia2,
                      const t_blocka *at2con,
                      const gmx_ga2la_t *ga2la, gmx_bool bHomeConnect,
                      gmx_domdec_constraints_t *dc,
@@ -152,7 +152,7 @@ static void walk_out(int con, int con_offset, int a, int offset, int nrec,
                      ind_req_t *ireq)
 {
     int            a1_gl, a2_gl, a_loc, i, coni, b;
-    const t_iatom *iap;
+    gmx::ArrayRef<const t_iatom> iap;
 
     if (dc->gc_req[con_offset+con] == 0)
     {
@@ -166,12 +166,11 @@ static void walk_out(int con, int con_offset, int a, int offset, int nrec,
         dc->con_gl[dc->ncon]       = con_offset + con;
         dc->con_nlocat[dc->ncon]   = (bHomeConnect ? 1 : 0);
         dc->gc_req[con_offset+con] = 1;
-        if (il_local->nr + 3 > il_local->nalloc)
+        if (il_local->nr + 3 > il_local->getSize())
         {
-            il_local->nalloc = over_alloc_dd(il_local->nr+3);
-            srenew(il_local->iatoms, il_local->nalloc);
+            il_local->iatoms.resize(over_alloc_dd(il_local->nr+3));
         }
-        iap = constr_iatomptr(ncon1, ia1, ia2, con);
+        iap = gmx::constr_iatomptr(ncon1, ia1, ia2, con);
         il_local->iatoms[il_local->nr++] = iap[0];
         a1_gl = offset + iap[1];
         a2_gl = offset + iap[2];
@@ -269,7 +268,7 @@ static void atoms_to_settles(gmx_domdec_t *dd,
                 {
                     int      offset  = a_gl - a_mol;
 
-                    t_iatom *ia1     = mtop->moltype[molb->type].ilist[F_SETTLE].iatoms;
+                    std::vector<t_iatom> ia1     = mtop->moltype[molb->type].ilist[F_SETTLE].iatoms;
 
                     int      a_gls[3], a_locs[3];
                     gmx_bool bAssign = FALSE;
@@ -290,10 +289,9 @@ static void atoms_to_settles(gmx_domdec_t *dd,
 
                     if (bAssign)
                     {
-                        if (ils_local->nr+1+nral > ils_local->nalloc)
+                        if (ils_local->nr+1+nral > ils_local->getSize())
                         {
-                            ils_local->nalloc = over_alloc_dd(ils_local->nr+1+nral);
-                            srenew(ils_local->iatoms, ils_local->nalloc);
+                            ils_local->iatoms.resize(over_alloc_dd(ils_local->nr+1+nral));
                         }
 
                         ils_local->iatoms[ils_local->nr++] = ia1[settle*4];
@@ -336,7 +334,7 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
 {
     const t_blocka             *at2con;
     int                         ncon1;
-    t_iatom                    *ia1, *ia2, *iap;
+    std::vector<t_iatom>        ia1, ia2, iap;
     int                         a_loc, b_lo, offset, b_mol, i, con, con_offset;
 
     gmx_domdec_constraints_t   *dc     = dd->constraints;
@@ -376,7 +374,7 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
                 for (i = at2con->index[a_mol]; i < at2con->index[a_mol+1]; i++)
                 {
                     con = at2con->a[i];
-                    iap = constr_iatomptr(ncon1, ia1, ia2, con);
+                    iap = gmx::constr_iatomptr(ncon1, ia1, ia2, con);
                     if (a_mol == iap[1])
                     {
                         b_mol = iap[2];
@@ -398,10 +396,9 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
                             }
                             dc->con_gl[dc->ncon]     = con_offset + con;
                             dc->con_nlocat[dc->ncon] = 2;
-                            if (ilc_local->nr + 3 > ilc_local->nalloc)
+                            if (ilc_local->nr + 3 > ilc_local->getSize())
                             {
-                                ilc_local->nalloc = over_alloc_dd(ilc_local->nr + 3);
-                                srenew(ilc_local->iatoms, ilc_local->nalloc);
+                                ilc_local->iatoms.resize(over_alloc_dd(ilc_local->nr + 3));
                             }
                             b_lo = a_loc;
                             ilc_local->iatoms[ilc_local->nr++] = iap[0];
@@ -571,10 +568,9 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
             if (thread > t0_set)
             {
                 ilst = &dc->ils[thread];
-                if (ils_local->nr + ilst->nr > ils_local->nalloc)
+                if (ils_local->nr + ilst->nr > ils_local->getSize())
                 {
-                    ils_local->nalloc = over_alloc_large(ils_local->nr + ilst->nr);
-                    srenew(ils_local->iatoms, ils_local->nalloc);
+                    ils_local->iatoms.resize(over_alloc_large(ils_local->nr+ilst->nr)); 
                 }
                 for (ia = 0; ia < ilst->nr; ia++)
                 {
@@ -618,7 +614,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
         nral1 = 1 + NRAL(F_CONSTR);
         for (i = 0; i < ilc_local->nr; i += nral1)
         {
-            iap = ilc_local->iatoms + i;
+            iap = ilc_local->iatoms.data() + i;
             for (j = 1; j < nral1; j++)
             {
                 if (iap[j] < 0)
@@ -631,7 +627,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
         nral1 = 1 + NRAL(F_SETTLE);
         for (i = 0; i < ils_local->nr; i += nral1)
         {
-            iap = ils_local->iatoms + i;
+            iap = ils_local->iatoms.data() + i;
             for (j = 1; j < nral1; j++)
             {
                 if (iap[j] < 0)
@@ -694,7 +690,7 @@ void init_domdec_constraints(gmx_domdec_t     *dd,
                                        mtop->natoms/(2*dd->nnodes)));
 
     dc->nthread = gmx_omp_nthreads_get(emntDomdec);
-    snew(dc->ils, dc->nthread);
+    dc->ils = new t_ilist[dc->nthread];
 
     dd->constraint_comm = specat_comm_init(dc->nthread);
 }

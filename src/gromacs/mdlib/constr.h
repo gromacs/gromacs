@@ -248,10 +248,11 @@ const t_blocka *atom2constraints_moltype(const Constraints *constr);
 int countFlexibleConstraints(const t_ilist   *ilist,
                              const t_iparams *iparams);
 
-/*! \brief Macro for getting the constraint iatoms for a constraint number con
+/*! \brief Function to replace macro for getting the constraint iatoms for a constraint number con
  * which comes from a list where F_CONSTR and F_CONSTRNC constraints
  * are concatenated. */
-#define constr_iatomptr(nconstr, iatom_constr, iatom_constrnc, con) ((con) < (nconstr) ? (iatom_constr)+(con)*3 : (iatom_constrnc)+(con-nconstr)*3)
+std::vector<t_iatom> constr_iatomptr(int nconstr, gmx::ArrayRef<const t_iatom> iatom_constr, gmx::ArrayRef<const t_iatom> iatom_constrnc, int con);
+//#define constr_iatomptr(nconstr, iatom_constr, iatom_constrnc, con) ((con) < (nconstr) ? (iatom_constr)+(con)*3 : (iatom_constrnc)+(con-nconstr)*3)
 
 /*! \brief Returns whether there are inter charge group constraints */
 bool inter_charge_group_constraints(const gmx_mtop_t &mtop);

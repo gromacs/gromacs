@@ -551,12 +551,15 @@ Constraints::Impl::apply(bool                  bLog,
 
                         int start_th = (nsettle* th   )/nth;
                         int end_th   = (nsettle*(th+1))/nth;
+                        auto first = settle->iatoms.begin();
+                        auto end   = settle->iatoms.begin()+start_th*(1+NRAL(F_SETTLE));
+                        std::vector<t_iatom> selection(first, end); 
 
                         if (start_th >= 0 && end_th - start_th > 0)
                         {
                             settle_proj(settled, econq,
                                         end_th-start_th,
-                                        settle->iatoms+start_th*(1+NRAL(F_SETTLE)),
+                                        selection,
                                         pbc_null,
                                         x,
                                         xprime, min_proj, calcvir_atom_end,
@@ -796,15 +799,16 @@ int countFlexibleConstraints(const t_ilist   *ilist,
     {
         const int numIatomsPerConstraint = 3;
         int       ncon                   = ilist[ftype].nr /  numIatomsPerConstraint;
-        t_iatom  *ia                     = ilist[ftype].iatoms;
+        std::vector<t_iatom> ia                     = ilist[ftype].iatoms;
+        int position = 0;
         for (int con = 0; con < ncon; con++)
         {
-            if (iparams[ia[0]].constr.dA == 0 &&
-                iparams[ia[0]].constr.dB == 0)
+            if (iparams[ia[position]].constr.dA == 0 &&
+                iparams[ia[position]].constr.dB == 0)
             {
                 nflexcon++;
             }
-            ia += numIatomsPerConstraint;
+            position += numIatomsPerConstraint;
         }
     }
 
@@ -1187,5 +1191,24 @@ bool inter_charge_group_settles(const gmx_mtop_t &mtop)
 
     return bInterCG;
 }
+
+std::vector<t_iatom> constr_iatomptr(int nconstr, gmx::ArrayRef<const t_iatom> iatom_constr, gmx::ArrayRef<const t_iatom> iatom_constrnc, int con) 
+{
+    if (con < nconstr)
+    {
+        auto first = iatom_constr.begin();
+        auto last  = iatom_constr.begin() + (con * 3);
+        std::vector<t_iatom> result(first, last);
+        return result;
+    }
+    else
+    {
+        auto first = iatom_constrnc.begin();
+        auto last  = iatom_constrnc.begin() + ( (con-nconstr)*3);
+        std::vector<t_iatom> result(first, last);
+        return result;
+    } 
+}
+
 
 } // namespace

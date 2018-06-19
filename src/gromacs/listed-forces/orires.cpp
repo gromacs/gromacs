@@ -373,7 +373,7 @@ void print_orires_log(FILE *log, t_oriresdata *od)
 }
 
 real calc_orires_dev(const gmx_multisim_t *ms,
-                     int nfa, const t_iatom forceatoms[], const t_iparams ip[],
+                     int nfa, gmx::ArrayRef<const t_iatom> forceatoms, const t_iparams ip[],
                      const t_mdatoms *md, const rvec x[], const t_pbc *pbc,
                      t_fcdata *fcd, history_t *hist)
 {

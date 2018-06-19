@@ -44,6 +44,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/txtdump.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/arrayref.h"
 
 static void pr_harm(FILE *fp, const t_iparams *iparams, const char *r, const char *kr)
 {
@@ -313,7 +314,7 @@ void pr_ilist(FILE *fp, int indent, const char *title,
               gmx_bool bShowParameters, const t_iparams *iparams)
 {
     int      i, j, k, type, ftype;
-    t_iatom *iatoms;
+    gmx::ArrayRef<const t_iatom> iatoms;
 
     if (available(fp, ilist, indent, title) && ilist->nr > 0)
     {
@@ -328,7 +329,7 @@ void pr_ilist(FILE *fp, int indent, const char *title,
             for (i = j = 0; i < ilist->nr; )
             {
                 pr_indent(fp, indent+INDENT);
-                type  = *(iatoms++);
+                type  = iatoms[i];
                 ftype = functype[type];
                 if (bShowNumbers)
                 {
@@ -338,7 +339,7 @@ void pr_ilist(FILE *fp, int indent, const char *title,
                 printf("(%s)", interaction_function[ftype].name);
                 for (k = 0; k < interaction_function[ftype].nratoms; k++)
                 {
-                    fprintf(fp, " %3d", *(iatoms++));
+                    fprintf(fp, " %3d", iatoms[i]);
                 }
                 if (bShowParameters)
                 {
@@ -457,8 +458,7 @@ void init_idef(t_idef *idef)
     idef->iparams_fbposres = nullptr;
     for (int f = 0; f < F_NRE; ++f)
     {
-        idef->il[f].iatoms          = nullptr;
-        idef->il[f].nalloc          = 0;
+        idef->il[f].iatoms.clear();
         idef->il[f].nr              = 0;
         idef->il[f].nr_nonperturbed = 0;
     }
@@ -475,11 +475,6 @@ void done_idef(t_idef *idef)
     sfree(idef->iparams);
     sfree(idef->iparams_posres);
     sfree(idef->iparams_fbposres);
-    for (int f = 0; f < F_NRE; ++f)
-    {
-        sfree(idef->il[f].iatoms);
-    }
-
     sfree(idef->cmap_grid.cmapdata);
     init_idef(idef);
 }

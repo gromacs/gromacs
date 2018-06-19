@@ -260,7 +260,7 @@ void settle_set_constraints(settledata       *settled,
 
     if (nsettle > 0)
     {
-        const t_iatom *iatoms = il_settle->iatoms;
+        gmx::ArrayRef<const t_iatom> iatoms = il_settle->iatoms;
 
         /* Here we initialize the normal SETTLE parameters */
         if (settled->massw.mO < 0)
@@ -316,7 +316,7 @@ void settle_set_constraints(settledata       *settled,
 }
 
 void settle_proj(settledata *settled, ConstraintVariable econq,
-                 int nsettle, t_iatom iatoms[],
+                 int nsettle, gmx::ArrayRef<t_iatom> iatoms,
                  const t_pbc *pbc,
                  const rvec x[],
                  rvec *der, rvec *derp,

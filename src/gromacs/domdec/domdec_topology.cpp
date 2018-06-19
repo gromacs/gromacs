@@ -197,10 +197,11 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
         {
             int            nral = NRAL(ftype);
             const t_ilist *il   = &idef->il[ftype];
-            const t_iatom *ia   = il->iatoms;
+            gmx::ArrayRef<const t_iatom> ia   = il->iatoms;
+            int position = 0;
             for (int i = 0; i < il->nr; i += 1+nral)
             {
-                int a0 = gatindex[ia[1]];
+                int a0 = gatindex[ia[position+1]];
                 /* Check if this interaction is in
                  * the currently checked molblock.
                  */
@@ -225,7 +226,7 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
                             found = true;
                             for (int a = 0; a < nral; a++)
                             {
-                                if (gatindex[ia[1+a]] !=
+                                if (gatindex[ia[position + 1+a]] !=
                                     a_start + mol*nat_mol + ril->il[j_mol+2+a])
                                 {
                                     found = false;
@@ -243,7 +244,7 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
                         gmx_incons("Some interactions seem to be assigned multiple times");
                     }
                 }
-                ia += 1 + nral;
+                position += 1 + nral;
             }
         }
     }
@@ -516,7 +517,6 @@ static int low_make_reverse_ilist(const t_ilist *il_mt, const t_atom *atom,
 {
     int            ftype, nral, i, j, nlink, link;
     const t_ilist *il;
-    const t_iatom *ia;
     int            a;
     int            nint;
     gmx_bool       bVSite;
@@ -533,7 +533,7 @@ static int low_make_reverse_ilist(const t_ilist *il_mt, const t_atom *atom,
             il     = &il_mt[ftype];
             for (i = 0; i < il->nr; i += 1+nral)
             {
-                ia = il->iatoms + i;
+                gmx::ArrayRef<const t_iatom> ia(il->iatoms.begin() + i);
                 if (bLinkToAllAtoms)
                 {
                     if (bVSite)
@@ -855,20 +855,17 @@ void dd_make_reverse_top(FILE *fplog,
  * atom-indexing organization code with the ifunc-adding code, so that
  * they can see that nral is the same value. */
 static inline void
-add_ifunc_for_vsites(t_iatom *tiatoms, gmx_ga2la_t *ga2la,
+add_ifunc_for_vsites(gmx::ArrayRef<t_iatom> tiatoms, gmx_ga2la_t *ga2la,
                      int nral, gmx_bool bHomeA,
                      int a, int a_gl, int a_mol,
-                     const t_iatom *iatoms,
+                     gmx::ArrayRef<const t_iatom> iatoms,
                      t_ilist *il)
 {
-    t_iatom *liatoms;
-
-    if (il->nr+1+nral > il->nalloc)
+    if (il->nr+1+nral > il->getSize())
     {
-        il->nalloc = over_alloc_large(il->nr+1+nral);
-        srenew(il->iatoms, il->nalloc);
+        il->iatoms.resize(over_alloc_large(il->nr+1+nral));
     }
-    liatoms = il->iatoms + il->nr;
+    gmx::ArrayRef<t_iatom> liatoms(il->iatoms.begin() + il->nr);
     il->nr += 1 + nral;
 
     /* Copy the type */
@@ -903,18 +900,14 @@ add_ifunc_for_vsites(t_iatom *tiatoms, gmx_ga2la_t *ga2la,
 }
 
 /*! \brief Store a bonded interaction at the end of \p il */
-static inline void add_ifunc(int nral, t_iatom *tiatoms, t_ilist *il)
+static inline void add_ifunc(int nral, gmx::ArrayRef<t_iatom> tiatoms, t_ilist *il)
 {
-    t_iatom *liatoms;
-    int      k;
-
-    if (il->nr+1+nral > il->nalloc)
+    if (il->nr+1+nral > il->getSize())
     {
-        il->nalloc = over_alloc_large(il->nr+1+nral);
-        srenew(il->iatoms, il->nalloc);
+        il->iatoms.resize(over_alloc_large(il->nr+1+nral));
     }
-    liatoms = il->iatoms + il->nr;
-    for (k = 0; k <= nral; k++)
+    gmx::ArrayRef<t_iatom> liatoms(il->iatoms.begin() + il->nr);
+    for (int k = 0; k <= nral; k++)
     {
         liatoms[k] = tiatoms[k];
     }
@@ -924,7 +917,7 @@ static inline void add_ifunc(int nral, t_iatom *tiatoms, t_ilist *il)
 /*! \brief Store a position restraint in idef and iatoms, complex because the parameters are different for each entry */
 static void add_posres(int mol, int a_mol, int numAtomsInMolecule,
                        const gmx_molblock_t *molb,
-                       t_iatom *iatoms, const t_iparams *ip_in,
+                       gmx::ArrayRef<t_iatom> iatoms, const t_iparams *ip_in,
                        t_idef *idef)
 {
     int        n, a_molb;
@@ -968,7 +961,7 @@ static void add_posres(int mol, int a_mol, int numAtomsInMolecule,
 /*! \brief Store a flat-bottomed position restraint in idef and iatoms, complex because the parameters are different for each entry */
 static void add_fbposres(int mol, int a_mol, int numAtomsInMolecule,
                          const gmx_molblock_t *molb,
-                         t_iatom *iatoms, const t_iparams *ip_in,
+                         gmx::ArrayRef<t_iatom> iatoms, const t_iparams *ip_in,
                          t_idef *idef)
 {
     int        n, a_molb;
@@ -1185,10 +1178,9 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
 
             ild = &dest->il[ftype];
 
-            if (ild->nr + n > ild->nalloc)
+            if (ild->nr + n > ild->getSize())
             {
-                ild->nalloc = over_alloc_large(ild->nr+n);
-                srenew(ild->iatoms, ild->nalloc);
+                ild->iatoms.resize(over_alloc_large(ild->nr+n));
             }
 
             gmx_bool vpbc;
@@ -1298,12 +1290,11 @@ check_assign_interactions_atom(int i, int i_gl,
     while (j < ind_end)
     {
         int            ftype;
-        const t_iatom *iatoms;
         int            nral;
         t_iatom        tiatoms[1 + MAXATOMLIST];
 
         ftype  = rtil[j++];
-        iatoms = rtil + j;
+        gmx::ArrayRef<const t_iatom> iatoms = gmx::makeArrayRef(static_cast<const t_iatom *>(rtil + j));
         nral   = NRAL(ftype);
         if (ftype == F_SETTLE)
         {

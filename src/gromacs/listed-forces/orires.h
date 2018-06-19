@@ -45,8 +45,10 @@
 #define GMX_LISTED_FORCES_ORIRES_H
 
 #include <cstdio>
+#include <vector>
 
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/arrayref.h"
 
 struct gmx_mtop_t;
 struct gmx_multisim_t;
@@ -80,7 +82,7 @@ void init_orires(FILE                 *fplog,
  * Returns the weighted RMS deviation of the orientation restraints.
  */
 real calc_orires_dev(const gmx_multisim_t *ms,
-                     int nfa, const t_iatom fa[], const t_iparams ip[],
+                     int nfa, gmx::ArrayRef<const t_iatom> fa, const t_iparams ip[],
                      const t_mdatoms *md, const rvec x[],
                      const t_pbc *pbc, t_fcdata *fcd, history_t *hist);
 

@@ -38,6 +38,7 @@
 #define GMX_TOPOLOGY_IDEF_H
 
 #include <stdio.h>
+#include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -284,13 +285,14 @@ typedef int t_functype;
  * the remaining ones from nr_nonperturbed..(nr-1) are perturbed bonded
  * interactions.
  */
-typedef struct t_ilist
+struct t_ilist
 {
+    int getSize() const { return iatoms.size(); };
+
     int      nr;
     int      nr_nonperturbed;
-    t_iatom *iatoms;
-    int      nalloc;
-} t_ilist;
+    std::vector<t_iatom> iatoms;
+};
 
 /*
  * The struct t_ilist defines a list of atoms with their interactions.

@@ -283,7 +283,7 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
 
 void calc_disres_R_6(const t_commrec *cr,
                      const gmx_multisim_t *ms,
-                     int nfa, const t_iatom forceatoms[],
+                     int nfa, gmx::ArrayRef<const t_iatom> forceatoms,
                      const rvec x[], const t_pbc *pbc,
                      t_fcdata *fcd, history_t *hist)
 {
@@ -395,7 +395,7 @@ void calc_disres_R_6(const t_commrec *cr,
      * index in ta_disres() for indexing pair data in t_disresdata when
      * using thread parallelization.
      */
-    dd->forceatomsStart = forceatoms;
+    dd->forceatomsStart = forceatoms.data();
 
     dd->sumviol         = 0;
 }

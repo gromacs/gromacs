@@ -184,7 +184,7 @@ real do_fbposres_cylinder(int fbdim, rvec fm, rvec dx, real rfb, real kk, gmx_bo
  * Returns the flat-bottomed potential. Same PBC treatment as in
  * normal position restraints */
 real fbposres(int nbonds,
-              const t_iatom forceatoms[], const t_iparams forceparams[],
+              gmx::ArrayRef<const t_iatom> forceatoms, const t_iparams forceparams[],
               const rvec x[],
               gmx::ForceWithVirial *forceWithVirial,
               const t_pbc *pbc,
@@ -316,7 +316,7 @@ real fbposres(int nbonds,
  * from other bondeds */
 template<bool computeForce>
 real posres(int nbonds,
-            const t_iatom forceatoms[], const t_iparams forceparams[],
+            gmx::ArrayRef<const t_iatom> forceatoms, const t_iparams forceparams[],
             const rvec x[],
             gmx::ForceWithVirial *forceWithVirial,
             const struct t_pbc *pbc,

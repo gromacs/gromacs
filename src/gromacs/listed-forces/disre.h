@@ -48,6 +48,7 @@
 
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/arrayref.h"
 
 struct gmx_mtop_t;
 struct gmx_multisim_t;
@@ -78,7 +79,7 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
  */
 void calc_disres_R_6(const t_commrec *cr,
                      const gmx_multisim_t *ms,
-                     int nfa, const t_iatom *fa,
+                     int nfa, gmx::ArrayRef<const t_iatom> fa,
                      const rvec *x, const t_pbc *pbc,
                      t_fcdata *fcd, history_t *hist);
 
