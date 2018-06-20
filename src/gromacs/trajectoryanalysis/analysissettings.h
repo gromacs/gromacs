@@ -34,7 +34,7 @@
  */
 /*! \file
  * \brief
- * Declares gmx::TrajectoryAnalysisSettings and gmx::TopologyInformation.
+ * Declares gmx::TrajectoryAnalysisSettings.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
@@ -45,12 +45,8 @@
 
 #include <string>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/utility/classhelpers.h"
-
-struct gmx_mtop_t;
-struct t_topology;
 
 namespace gmx
 {
@@ -233,75 +229,6 @@ class TrajectoryAnalysisSettings
 
         PrivateImplPointer<Impl> impl_;
 
-        friend class TrajectoryAnalysisRunnerCommon;
-};
-
-/*! \brief
- * Topology information passed to a trajectory analysis module.
- *
- * This class is used to pass topology information to trajectory analysis
- * modules and to manage memory for them.  Having a single wrapper object
- * instead of passing each item separately makes TrajectoryAnalysisModule
- * interface simpler, and also reduces the need to change existing code if
- * additional information is added.
- *
- * Methods in this class do not throw if not explicitly stated.
- *
- * \inpublicapi
- * \ingroup module_trajectoryanalysis
- */
-class TopologyInformation
-{
-    public:
-        //! Returns true if a topology file was loaded.
-        bool hasTopology() const { return mtop_ != nullptr; }
-        //! Returns true if a full topology file was loaded.
-        bool hasFullTopology() const { return bTop_; }
-        //! Returns the loaded topology, or NULL if not loaded.
-        const gmx_mtop_t *mtop() const { return mtop_.get(); }
-        //! Returns the loaded topology, or NULL if not loaded.
-        t_topology *topology() const;
-        //! Returns the ePBC field from the topology.
-        int ePBC() const { return ePBC_; }
-        /*! \brief
-         * Gets the configuration from the topology.
-         *
-         * \param[out] x     Topology coordinate pointer to initialize.
-         *      (can be NULL, in which case it is not used).
-         * \param[out] box   Box size from the topology file
-         *      (can be NULL, in which case it is not used).
-         * \throws  APIError if topology coordinates are not available and
-         *      \p x is not NULL.
-         *
-         * If TrajectoryAnalysisSettings::efUseTopX has not been specified,
-         * \p x should be NULL.
-         *
-         * The pointer returned in \p *x should not be freed.
-         */
-        void getTopologyConf(rvec **x, matrix box) const;
-
-    private:
-        TopologyInformation();
-        ~TopologyInformation();
-
-        std::unique_ptr<gmx_mtop_t> mtop_;
-        //! The topology structure, or NULL if no topology loaded.
-        // TODO: Replace fully with mtop.
-        mutable t_topology  *top_;
-        //! true if full tpx file was loaded, false otherwise.
-        bool                 bTop_;
-        //! Coordinates from the topology (can be NULL).
-        rvec                *xtop_;
-        //! The box loaded from the topology file.
-        matrix               boxtop_;
-        //! The ePBC field loaded from the topology file.
-        int                  ePBC_;
-
-        GMX_DISALLOW_COPY_AND_ASSIGN(TopologyInformation);
-
-        /*! \brief
-         * Needed to initialize the data.
-         */
         friend class TrajectoryAnalysisRunnerCommon;
 };
 
