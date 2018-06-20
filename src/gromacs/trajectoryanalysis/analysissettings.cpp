@@ -45,13 +45,8 @@
 
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "analysissettings-impl.h"
 
@@ -178,55 +173,6 @@ TrajectoryAnalysisSettings::setHelpText(const ArrayRef<const char *const> &help)
     GMX_RELEASE_ASSERT(impl_->optionsModuleSettings_ != nullptr,
                        "setHelpText() called in invalid context");
     impl_->optionsModuleSettings_->setHelpText(help);
-}
-
-
-/********************************************************************
- * TopologyInformation
- */
-
-TopologyInformation::TopologyInformation()
-    : mtop_(nullptr), top_(nullptr), bTop_(false), xtop_(nullptr), ePBC_(-1)
-{
-    clear_mat(boxtop_);
-}
-
-
-TopologyInformation::~TopologyInformation()
-{
-    done_top_mtop(top_, mtop_.get());
-    sfree(top_);
-    sfree(xtop_);
-}
-
-
-t_topology *TopologyInformation::topology() const
-{
-    if (top_ == nullptr && mtop_ != nullptr)
-    {
-        snew(top_, 1);
-        *top_ = gmx_mtop_t_to_t_topology(mtop_.get(), false);
-    }
-    return top_;
-}
-
-
-void
-TopologyInformation::getTopologyConf(rvec **x, matrix box) const
-{
-    if (box)
-    {
-        copy_mat(const_cast<rvec *>(boxtop_), box);
-    }
-    if (x)
-    {
-        if (!xtop_)
-        {
-            *x = nullptr;
-            GMX_THROW(APIError("Topology coordinates requested without setting efUseTopX"));
-        }
-        *x = xtop_;
-    }
 }
 
 } // namespace gmx

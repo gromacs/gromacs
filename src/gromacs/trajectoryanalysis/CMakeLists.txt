@@ -39,6 +39,7 @@ gmx_install_headers(
     analysismodule.h
     analysissettings.h
     cmdlinerunner.h
+    topologyinformation.h
     )
 
 if (BUILD_TESTING)
