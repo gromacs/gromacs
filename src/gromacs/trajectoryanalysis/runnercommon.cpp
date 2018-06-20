@@ -48,8 +48,6 @@
 #include <algorithm>
 #include <string>
 
-#include "gromacs/compat/make_unique.h"
-#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
@@ -65,6 +63,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/trajectoryanalysis/topologyinformation.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -181,20 +180,7 @@ TrajectoryAnalysisRunnerCommon::Impl::initTopology(bool required)
     // Load the topology if requested.
     if (!topfile_.empty())
     {
-        topInfo_.mtop_ = gmx::compat::make_unique<gmx_mtop_t>();
-        readConfAndTopology(topfile_.c_str(), &topInfo_.bTop_, topInfo_.mtop_.get(),
-                            &topInfo_.ePBC_, &topInfo_.xtop_, nullptr,
-                            topInfo_.boxtop_);
-        // TODO: Only load this here if the tool actually needs it; selections
-        // take care of themselves.
-        for (gmx_moltype_t &moltype : topInfo_.mtop_->moltype)
-        {
-            if (!moltype.atoms.haveMass)
-            {
-                // Try to read masses from database, be silent about missing masses
-                atomsSetMassesBasedOnNames(&moltype.atoms, FALSE);
-            }
-        }
+        fillTopologyInformationFromTprFile(topfile_.c_str(), &topInfo_);
         if (hasTrajectory()
             && !settings_.hasFlag(TrajectoryAnalysisSettings::efUseTopX))
         {
