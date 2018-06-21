@@ -185,6 +185,8 @@ class Rdf : public TrajectoryAnalysisModule
         AnalysisDataAverageModulePointer          normAve_;
         //! Neighborhood search with `refSel_` as the reference positions.
         AnalysisNeighborhood                      nb_;
+        //! Topology exclusions used by neighborhood searching.
+        const gmx_localtop_t                     *localTop_;
 
         // User input options.
         double                                    binwidth_;
@@ -207,6 +209,7 @@ Rdf::Rdf()
     : surface_(SurfaceType_None),
       pairCounts_(new AnalysisDataSimpleHistogramModule()),
       normAve_(new AnalysisDataAverageModule()),
+      localTop_(nullptr),
       binwidth_(0.002), cutoff_(0.0), rmax_(0.0),
       normalization_(Normalization_Rdf), bNormalizationSet_(false), bXY_(false),
       bExclusions_(false),
@@ -375,12 +378,12 @@ Rdf::initAnalysis(const TrajectoryAnalysisSettings &settings,
                 GMX_THROW(InconsistentInputError("-excl only works with selections that consist of atoms"));
             }
         }
-        const t_topology *topology = top.topology();
-        if (topology->excls.nr == 0)
+        localTop_ = top.expandedTopology();
+        if (localTop_->excls.nr == 0)
         {
             GMX_THROW(InconsistentInputError("-excl is set, but the file provided to -s does not define exclusions"));
         }
-        nb_.setTopologyExclusions(&topology->excls);
+        nb_.setTopologyExclusions(&localTop_->excls);
     }
 }
 

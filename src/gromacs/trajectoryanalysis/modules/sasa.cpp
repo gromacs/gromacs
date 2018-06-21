@@ -378,7 +378,10 @@ class Sasa : public TrajectoryAnalysisModule
         double                  dgsDefault_;
         bool                    bIncludeSolute_;
 
-        t_topology             *top_;
+        //! Global topology corresponding to the input.
+        gmx_mtop_t             *mtop_;
+        //! Per-atom data corresponding to the input.
+        AtomsDataPtr            atoms_;
         //! Combined VdW and probe radii for each atom in the calculation group.
         std::vector<real>       radii_;
         /*! \brief
@@ -395,7 +398,8 @@ class Sasa : public TrajectoryAnalysisModule
 };
 
 Sasa::Sasa()
-    : solsize_(0.14), ndots_(24), dgsDefault_(0), bIncludeSolute_(true), top_(nullptr)
+    : solsize_(0.14), ndots_(24), dgsDefault_(0), bIncludeSolute_(true),
+      mtop_(nullptr), atoms_(nullptr)
 {
     //minarea_ = 0.5;
     registerAnalysisDataset(&area_, "area");
@@ -499,8 +503,8 @@ void
 Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
                    const TopologyInformation        &top)
 {
-    const t_atoms &atoms = top.topology()->atoms;
-    top_ = top.topology();
+    mtop_  = top.mtop();
+    atoms_ = top.copyAtoms();
 
     //bITP   = opt2bSet("-i", nfile, fnm);
     const bool bResAt =
@@ -534,7 +538,7 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
         }
         else
         {
-            if (strcmp(*(atoms.atomtype[0]), "?") == 0)
+            if (strcmp(*(atoms_->atomtype[0]), "?") == 0)
             {
                 GMX_THROW(InconsistentInputError("Your input tpr file is too old (does not contain atom types). Cannot not compute Delta G of solvation"));
             }
@@ -567,11 +571,11 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
     for (int i = 0; i < surfaceSel_.posCount(); i++)
     {
         const int ii     = atomIndices[i];
-        const int resind = atoms.atom[ii].resind;
+        const int resind = atoms_->atom[ii].resind;
         real      radius;
         if (!gmx_atomprop_query(aps, epropVDW,
-                                *(atoms.resinfo[resind].name),
-                                *(atoms.atomname[ii]), &radius))
+                                *(atoms_->resinfo[resind].name),
+                                *(atoms_->atomname[ii]), &radius))
         {
             ndefault++;
         }
@@ -580,8 +584,8 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
         {
             real dgsFactor;
             if (!gmx_atomprop_query(aps, epropDGsol,
-                                    *(atoms.resinfo[resind].name),
-                                    *(atoms.atomtype[ii]), &dgsFactor))
+                                    *(atoms_->resinfo[resind].name),
+                                    *(atoms_->atomtype[ii]), &dgsFactor))
             {
                 dgsFactor = dgsDefault_;
             }
@@ -681,8 +685,8 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
                     GMX_ASSERT(residueGroup == nextRow,
                                "Inconsistent (non-uniformly increasing) residue grouping");
                     const int atomIndex    = surfaceSel_.position(i).atomIndices()[0];
-                    const int residueIndex = atoms.atom[atomIndex].resind;
-                    avem->setXAxisValue(nextRow, atoms.resinfo[residueIndex].nr);
+                    const int residueIndex = atoms_->atom[atomIndex].resind;
+                    avem->setXAxisValue(nextRow, atoms_->resinfo[residueIndex].nr);
                     ++nextRow;
                 }
             }
@@ -954,7 +958,7 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
 
     if (bConnolly)
     {
-        if (fr.natoms != top_->atoms.nr)
+        if (fr.natoms != mtop_->natoms)
         {
             GMX_THROW(InconsistentInputError("Connolly plot (-q) is only supported for trajectories that contain all the atoms"));
         }
@@ -963,8 +967,8 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         // one else uses the topology after initialization, it may just work
         // even with future parallelization.
         connolly_plot(fnConnolly_.c_str(),
-                      nsurfacedots, surfacedots, fr.x, &top_->atoms,
-                      &top_->symtab, fr.ePBC, fr.box, bIncludeSolute_);
+                      nsurfacedots, surfacedots, fr.x, atoms_.get(),
+                      &mtop_->symtab, fr.ePBC, fr.box, bIncludeSolute_);
     }
 
     ah.startFrame(frnr, fr.time);

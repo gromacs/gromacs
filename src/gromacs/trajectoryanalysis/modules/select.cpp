@@ -310,6 +310,7 @@ class Select : public TrajectoryAnalysisModule
         ResidueNumbering                    resNumberType_;
         PdbAtomsSelection                   pdbAtoms_;
 
+        //! The input topology.
         const TopologyInformation          *top_;
         std::vector<int>                    totsize_;
         AnalysisData                        sdata_;
@@ -607,7 +608,6 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
     AnalysisDataHandle   idh = pdata->dataHandle(idata_);
     AnalysisDataHandle   mdh = pdata->dataHandle(mdata_);
     const SelectionList &sel = pdata->parallelSelections(sel_);
-    t_topology          *top = top_->topology();
 
     sdh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
@@ -638,7 +638,7 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
             const SelectionPosition &p = sel[g].position(i);
             if (sel[g].type() == INDEX_RES && !bResInd_)
             {
-                idh.setPoint(1, top->atoms.resinfo[p.mappedId()].nr);
+                idh.setPoint(1, top_->atoms()->resinfo[p.mappedId()].nr);
             }
             else
             {
@@ -679,28 +679,15 @@ Select::writeOutput()
     {
         GMX_RELEASE_ASSERT(top_->hasTopology(),
                            "Topology should have been loaded or an error given earlier");
-        t_atoms            atoms;
-        atoms = top_->topology()->atoms;
-        // Replace the pbdbinfo so that we can change it, without
-        // changing the content of top_, and never leak memory.
-        sfree_guard pdbinfoGuard;
+        auto atoms = top_->copyAtoms();
+        if (!atoms->havePdbInfo)
         {
-            t_pdbinfo *pdbinfo;
-            snew(pdbinfo, atoms.nr);
-            pdbinfoGuard.reset(pdbinfo);
-            if (atoms.havePdbInfo)
-            {
-                std::memcpy(pdbinfo, atoms.pdbinfo, atoms.nr*sizeof(*pdbinfo));
-            }
-            else
-            {
-                atoms.havePdbInfo = TRUE;
-            }
-            atoms.pdbinfo = pdbinfo;
+            snew(atoms->pdbinfo, atoms->nr);
+            atoms->havePdbInfo = TRUE;
         }
-        for (int i = 0; i < atoms.nr; ++i)
+        for (int i = 0; i < atoms->nr; ++i)
         {
-            atoms.pdbinfo[i].occup = 0.0;
+            atoms->pdbinfo[i].occup = 0.0;
         }
         for (size_t g = 0; g < sel_.size(); ++g)
         {
@@ -711,18 +698,20 @@ Select::writeOutput()
                 ArrayRef<const int>::const_iterator ai;
                 for (ai = atomIndices.begin(); ai != atomIndices.end(); ++ai)
                 {
-                    atoms.pdbinfo[*ai].occup += occupancyModule_->average(g, i);
+                    atoms->pdbinfo[*ai].occup += occupancyModule_->average(g, i);
                 }
             }
         }
 
-        t_trxframe fr;
+        std::vector<RVec> x = copyOf(top_->x());
+        t_trxframe        fr;
         clear_trxframe(&fr, TRUE);
         fr.bAtoms = TRUE;
-        fr.atoms  = &atoms;
+        fr.atoms  = atoms.get();
         fr.bX     = TRUE;
         fr.bBox   = TRUE;
-        top_->getTopologyConf(&fr.x, fr.box);
+        fr.x      = as_rvec_array(x.data());
+        top_->getBox(fr.box);
 
         switch (pdbAtoms_)
         {
@@ -752,9 +741,9 @@ Select::writeOutput()
             case PdbAtomsSelection_Selected:
             {
                 std::vector<int> indices;
-                for (int i = 0; i < atoms.nr; ++i)
+                for (int i = 0; i < atoms->nr; ++i)
                 {
-                    if (atoms.pdbinfo[i].occup > 0.0)
+                    if (atoms->pdbinfo[i].occup > 0.0)
                     {
                         indices.push_back(i);
                     }
