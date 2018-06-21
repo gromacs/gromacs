@@ -88,6 +88,12 @@ void done_atom(t_atoms *at)
     init_atom(at);
 }
 
+void done_and_delete_atoms(t_atoms *atoms)
+{
+    done_atom(atoms);
+    delete atoms;
+}
+
 void done_atomtypes(t_atomtypes *atype)
 {
     atype->nr = 0;
