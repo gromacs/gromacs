@@ -46,6 +46,7 @@
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/unique_cptr.h"
 
 enum {
     egcTC,    egcENER,   egcACC, egcFREEZE,
@@ -178,6 +179,8 @@ void done_top(t_topology *top);
 // Frees both t_topology and gmx_mtop_t when the former has been created from
 // the latter.
 void done_top_mtop(t_topology *top, gmx_mtop_t *mtop);
+void done_localtop(gmx_localtop_t *top);
+void done_and_sfree_localtop(gmx_localtop_t *top);
 
 bool gmx_mtop_has_masses(const gmx_mtop_t *mtop);
 bool gmx_mtop_has_charges(const gmx_mtop_t *mtop);
@@ -192,5 +195,8 @@ void pr_top(FILE *fp, int indent, const char *title, const t_topology *top,
 void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, real abstol);
 void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
                 int natoms0, int natoms1);
+
+//! Deleter for gmx_localtop_t, needed until it has a proper destructor.
+using ExpandedTopologyPtr = gmx::unique_cptr<gmx_localtop_t, done_and_sfree_localtop>;
 
 #endif
