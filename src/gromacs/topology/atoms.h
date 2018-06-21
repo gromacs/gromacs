@@ -139,6 +139,7 @@ typedef struct t_atomtypes
 void init_atom(t_atoms *at);
 void init_atomtypes(t_atomtypes *at);
 void done_atom(t_atoms *at);
+void done_and_delete_atoms(t_atoms *atoms);
 void done_atomtypes(t_atomtypes *at);
 
 void init_t_atoms(t_atoms *atoms, int natoms, gmx_bool bPdbinfo);
