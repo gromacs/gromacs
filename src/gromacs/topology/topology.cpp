@@ -233,6 +233,32 @@ void done_top_mtop(t_topology *top, gmx_mtop_t *mtop)
     }
 }
 
+void done_localtop(gmx_localtop_t *top)
+{
+    if (top == nullptr)
+    {
+        return;
+    }
+    sfree(top->idef.cmap_grid.cmapdata);
+    sfree(top->idef.functype);
+    sfree(top->idef.iparams);
+    done_block(&top->cgs);
+    done_blocka(&top->excls);
+    for (int f = 0; f < F_NRE; f++)
+    {
+        sfree(top->idef.il[f].iatoms);
+    }
+    sfree(top->idef.iparams_posres);
+    sfree(top->idef.iparams_fbposres);
+    done_atomtypes(&top->atomtypes);
+}
+
+void done_and_sfree_localtop(gmx_localtop_t *top)
+{
+    done_localtop(top);
+    sfree(top);
+}
+
 bool gmx_mtop_has_masses(const gmx_mtop_t *mtop)
 {
     if (mtop == nullptr)
