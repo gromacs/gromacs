@@ -178,6 +178,7 @@ void done_top(t_topology *top);
 // Frees both t_topology and gmx_mtop_t when the former has been created from
 // the latter.
 void done_top_mtop(t_topology *top, gmx_mtop_t *mtop);
+void done_localtop(gmx_localtop_t *top);
 
 bool gmx_mtop_has_masses(const gmx_mtop_t *mtop);
 bool gmx_mtop_has_charges(const gmx_mtop_t *mtop);

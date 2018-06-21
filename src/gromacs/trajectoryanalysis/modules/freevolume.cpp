@@ -61,6 +61,7 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
@@ -234,7 +235,7 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
     cutoff_               = 0;
     int            nnovdw = 0;
     gmx_atomprop_t aps    = gmx_atomprop_init();
-    t_atoms       *atoms  = &(top.topology()->atoms);
+    auto           atoms  = top.atoms();
 
     // Compute total mass
     mtot_ = 0;
@@ -244,7 +245,7 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
 
     // Extracts number of molecules
-    nmol_ = top.topology()->mols.nr;
+    nmol_ = gmx_mtop_num_molecules(*top.mtop());
 
     // Loop over atoms in the selection using an iterator
     const int           maxnovdw = 10;
