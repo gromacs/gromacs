@@ -95,12 +95,21 @@ class TrajectoryAnalysisSettings
             /*! \brief
              * Requests topology coordinates.
              *
-             * If this flag is specified, the coordinates loaded from the
+             * If this flag is specified, the position coordinates loaded from the
              * topology can be accessed, otherwise they are not loaded.
              *
              * \see TopologyInformation
              */
             efUseTopX        = 1<<1,
+            /*! \brief
+             * Requests topology coordinates.
+             *
+             * If this flag is specified, the velocity coordinates loaded from the
+             * topology can be accessed, otherwise they are not loaded.
+             *
+             * \see TopologyInformation
+             */
+            efUseTopV        = 1<<2,
             /*! \brief
              * Disallows the user from changing PBC handling.
              *
