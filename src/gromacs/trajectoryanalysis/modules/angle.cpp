@@ -410,6 +410,7 @@ Angle::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *setti
                                        .dynamicMask().storeVector(&sel2_)
                                        .multiValue()
                                        .description("Second analysis/vector selection"));
+
 }
 
 

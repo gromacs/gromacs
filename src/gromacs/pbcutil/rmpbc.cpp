@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,7 +49,9 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/trajectoryanalysis/topologyinformation.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -107,6 +109,13 @@ static t_graph *gmx_rmpbc_get_graph(gmx_rmpbc_t gpbc, int ePBC, int natoms)
     }
 
     return gr->gr;
+}
+
+gmx_rmpbc_t gmx_rmpbc_init(const gmx::TopologyInformation &topInfo)
+{
+    GMX_RELEASE_ASSERT(topInfo.hasTopology(), "Cannot remove PBC without a topology");
+
+    return gmx_rmpbc_init(&topInfo.expandedTopology()->idef, topInfo.ePBC(), topInfo.mtop()->natoms);
 }
 
 gmx_rmpbc_t gmx_rmpbc_init(const t_idef *idef, int ePBC, int natoms)
