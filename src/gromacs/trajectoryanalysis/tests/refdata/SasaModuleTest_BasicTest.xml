@@ -9,7 +9,7 @@
         <DataValues>
           <Int Name="Count">2</Int>
           <DataValue>
-            <Real Name="Value">11.879942829725929</Real>
+            <Real Name="Value">11.90491849132197</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">2.2198340537623622</Real>
@@ -21,7 +21,7 @@
       <DataFrame Name="Frame0">
         <Real Name="X">0</Real>
         <DataValues>
-          <Int Name="Count">155</Int>
+          <Int Name="Count">156</Int>
           <Int Name="DataSet">0</Int>
           <DataValue>
             <Real Name="Value">0.034174637584831476</Real>
@@ -318,7 +318,10 @@
             <Real Name="Value">0.15927874753700255</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0.40212385965949349</Real>
+            <Real Name="Value">0.24127431579569611</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.1858252054598363</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
@@ -490,7 +493,7 @@
           </DataValue>
         </DataValues>
         <DataValues>
-          <Int Name="Count">155</Int>
+          <Int Name="Count">156</Int>
           <Int Name="DataSet">1</Int>
           <DataValue>
             <Real Name="Value">0.034174637584831476</Real>
@@ -863,6 +866,10 @@
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0.03348309450196002</Real>
@@ -1088,7 +1095,7 @@
             <Real Name="Value">1.9788063529899724</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0.78071090715829228</Real>
+            <Real Name="Value">0.80568656875433131</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0.81812256327356647</Real>
@@ -1145,10 +1152,10 @@
         <DataValues>
           <Int Name="Count">2</Int>
           <DataValue>
-            <Real Name="Value">2.5505606048765408</Real>
+            <Real Name="Value">2.5541029121676888</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">751.90892342131383</Real>
+            <Real Name="Value">751.52137627960565</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
@@ -1223,7 +1230,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row5">
           <Int Name="Length">5</Int>
           <Real>6</Real>
-          <Real>0.781</Real>
+          <Real>0.806</Real>
           <Real>0.000</Real>
           <Real>0.060</Real>
           <Real>0.000</Real>
@@ -2061,7 +2068,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row98">
           <Int Name="Length">5</Int>
           <Real>99</Real>
-          <Real>0.402</Real>
+          <Real>0.241</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2069,7 +2076,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row99">
           <Int Name="Length">5</Int>
           <Real>100</Real>
-          <Real>0.000</Real>
+          <Real>0.186</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2077,17 +2084,17 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row100">
           <Int Name="Length">5</Int>
           <Real>101</Real>
-          <Real>0.033</Real>
           <Real>0.000</Real>
-          <Real>0.033</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
           <Real>0.000</Real>
         </Sequence>
         <Sequence Name="Row101">
           <Int Name="Length">5</Int>
           <Real>102</Real>
+          <Real>0.033</Real>
           <Real>0.000</Real>
-          <Real>0.000</Real>
-          <Real>0.000</Real>
+          <Real>0.033</Real>
           <Real>0.000</Real>
         </Sequence>
         <Sequence Name="Row102">
@@ -2109,7 +2116,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row104">
           <Int Name="Length">5</Int>
           <Real>105</Real>
-          <Real>0.080</Real>
+          <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2117,7 +2124,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row105">
           <Int Name="Length">5</Int>
           <Real>106</Real>
-          <Real>0.000</Real>
+          <Real>0.080</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2125,7 +2132,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row106">
           <Int Name="Length">5</Int>
           <Real>107</Real>
-          <Real>0.106</Real>
+          <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2133,7 +2140,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row107">
           <Int Name="Length">5</Int>
           <Real>108</Real>
-          <Real>0.000</Real>
+          <Real>0.106</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2157,7 +2164,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row110">
           <Int Name="Length">5</Int>
           <Real>111</Real>
-          <Real>0.159</Real>
+          <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2165,7 +2172,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row111">
           <Int Name="Length">5</Int>
           <Real>112</Real>
-          <Real>0.038</Real>
+          <Real>0.159</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2173,7 +2180,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row112">
           <Int Name="Length">5</Int>
           <Real>113</Real>
-          <Real>0.134</Real>
+          <Real>0.038</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2181,7 +2188,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row113">
           <Int Name="Length">5</Int>
           <Real>114</Real>
-          <Real>0.201</Real>
+          <Real>0.134</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2189,7 +2196,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row114">
           <Int Name="Length">5</Int>
           <Real>115</Real>
-          <Real>0.000</Real>
+          <Real>0.201</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2197,17 +2204,17 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row115">
           <Int Name="Length">5</Int>
           <Real>116</Real>
-          <Real>0.100</Real>
           <Real>0.000</Real>
-          <Real>0.100</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
           <Real>0.000</Real>
         </Sequence>
         <Sequence Name="Row116">
           <Int Name="Length">5</Int>
           <Real>117</Real>
+          <Real>0.100</Real>
           <Real>0.000</Real>
-          <Real>0.000</Real>
-          <Real>0.000</Real>
+          <Real>0.100</Real>
           <Real>0.000</Real>
         </Sequence>
         <Sequence Name="Row117">
@@ -2269,7 +2276,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row124">
           <Int Name="Length">5</Int>
           <Real>125</Real>
-          <Real>0.053</Real>
+          <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2277,7 +2284,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row125">
           <Int Name="Length">5</Int>
           <Real>126</Real>
-          <Real>0.038</Real>
+          <Real>0.053</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2285,7 +2292,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row126">
           <Int Name="Length">5</Int>
           <Real>127</Real>
-          <Real>0.186</Real>
+          <Real>0.038</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2293,7 +2300,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row127">
           <Int Name="Length">5</Int>
           <Real>128</Real>
-          <Real>0.053</Real>
+          <Real>0.186</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2301,7 +2308,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row128">
           <Int Name="Length">5</Int>
           <Real>129</Real>
-          <Real>0.027</Real>
+          <Real>0.053</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2309,7 +2316,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row129">
           <Int Name="Length">5</Int>
           <Real>130</Real>
-          <Real>0.151</Real>
+          <Real>0.027</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2317,7 +2324,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row130">
           <Int Name="Length">5</Int>
           <Real>131</Real>
-          <Real>0.186</Real>
+          <Real>0.151</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2325,7 +2332,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row131">
           <Int Name="Length">5</Int>
           <Real>132</Real>
-          <Real>0.133</Real>
+          <Real>0.186</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2333,7 +2340,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row132">
           <Int Name="Length">5</Int>
           <Real>133</Real>
-          <Real>0.186</Real>
+          <Real>0.133</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2341,7 +2348,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row133">
           <Int Name="Length">5</Int>
           <Real>134</Real>
-          <Real>0.000</Real>
+          <Real>0.186</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2349,17 +2356,17 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row134">
           <Int Name="Length">5</Int>
           <Real>135</Real>
-          <Real>0.201</Real>
           <Real>0.000</Real>
-          <Real>0.201</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
           <Real>0.000</Real>
         </Sequence>
         <Sequence Name="Row135">
           <Int Name="Length">5</Int>
           <Real>136</Real>
+          <Real>0.201</Real>
           <Real>0.000</Real>
-          <Real>0.000</Real>
-          <Real>0.000</Real>
+          <Real>0.201</Real>
           <Real>0.000</Real>
         </Sequence>
         <Sequence Name="Row136">
@@ -2381,7 +2388,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row138">
           <Int Name="Length">5</Int>
           <Real>139</Real>
-          <Real>0.159</Real>
+          <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2389,7 +2396,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row139">
           <Int Name="Length">5</Int>
           <Real>140</Real>
-          <Real>0.075</Real>
+          <Real>0.159</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2397,7 +2404,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row140">
           <Int Name="Length">5</Int>
           <Real>141</Real>
-          <Real>0.186</Real>
+          <Real>0.075</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2405,7 +2412,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row141">
           <Int Name="Length">5</Int>
           <Real>142</Real>
-          <Real>0.106</Real>
+          <Real>0.186</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2413,7 +2420,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row142">
           <Int Name="Length">5</Int>
           <Real>143</Real>
-          <Real>0.027</Real>
+          <Real>0.106</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2421,7 +2428,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row143">
           <Int Name="Length">5</Int>
           <Real>144</Real>
-          <Real>0.000</Real>
+          <Real>0.027</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2429,17 +2436,17 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row144">
           <Int Name="Length">5</Int>
           <Real>145</Real>
-          <Real>0.301</Real>
           <Real>0.000</Real>
-          <Real>0.301</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
           <Real>0.000</Real>
         </Sequence>
         <Sequence Name="Row145">
           <Int Name="Length">5</Int>
           <Real>146</Real>
+          <Real>0.301</Real>
           <Real>0.000</Real>
-          <Real>0.000</Real>
-          <Real>0.000</Real>
+          <Real>0.301</Real>
           <Real>0.000</Real>
         </Sequence>
         <Sequence Name="Row146">
@@ -2461,7 +2468,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row148">
           <Int Name="Length">5</Int>
           <Real>149</Real>
-          <Real>0.159</Real>
+          <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2469,7 +2476,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row149">
           <Int Name="Length">5</Int>
           <Real>150</Real>
-          <Real>0.113</Real>
+          <Real>0.159</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2477,7 +2484,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row150">
           <Int Name="Length">5</Int>
           <Real>151</Real>
-          <Real>0.186</Real>
+          <Real>0.113</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2485,7 +2492,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row151">
           <Int Name="Length">5</Int>
           <Real>152</Real>
-          <Real>0.212</Real>
+          <Real>0.186</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2493,7 +2500,7 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row152">
           <Int Name="Length">5</Int>
           <Real>153</Real>
-          <Real>0.053</Real>
+          <Real>0.212</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
           <Real>0.000</Real>
@@ -2501,14 +2508,22 @@ s1 legend "Standard deviation (nm\S2\N)"
         <Sequence Name="Row153">
           <Int Name="Length">5</Int>
           <Real>154</Real>
-          <Real>0.113</Real>
+          <Real>0.053</Real>
           <Real>0.000</Real>
-          <Real>0.113</Real>
+          <Real>0.000</Real>
           <Real>0.000</Real>
         </Sequence>
         <Sequence Name="Row154">
           <Int Name="Length">5</Int>
           <Real>155</Real>
+          <Real>0.113</Real>
+          <Real>0.000</Real>
+          <Real>0.113</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row155">
+          <Int Name="Length">5</Int>
+          <Real>156</Real>
           <Real>0.402</Real>
           <Real>0.000</Real>
           <Real>0.402</Real>
