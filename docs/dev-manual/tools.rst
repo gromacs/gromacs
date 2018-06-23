@@ -68,6 +68,19 @@ unit testing (CTest)
 
 regression tests
 
+clang-tidy
+  `clang-tidy <http://releases.llvm.org/6.0.0/tools/clang/tools/extra/docs/clang-tidy/index.html>`
+  is used for static code analysis. clang-tidy is easy to install. It is contained in
+  the llvm binary `package <http://releases.llvm.org/download.html#6.0.0>`. Only
+  version 6.0 is supported. Others might miss tests or give false positives.
+  It is run automatically on Jenkins for each commit. To run it manually, configure
+  with ``cmake -DGMX_CLANG_TIDY=ON -DGMX_OPENMP=no`` and then run make normally.
+  The name of the clang-tidy executable that CMake should search for be set with
+  ``-DCLANG_TIDY=...`, and the full path to it can be set with ``-DCLANG_TIDY_EXE=...``.
+  Many checks have fixes which automatically get applied when building with clang-tidy
+  enabled, so you may want to run this tool locally to apply the fixes before
+  you upload to Gerrit.
+
 cppcheck
   `cppcheck <http://cppcheck.sourceforge.net>`_ is used for static code
   analysis, and is run automatically on Jenkins for each commit.  Different rules
