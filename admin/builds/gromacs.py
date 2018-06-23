@@ -128,6 +128,10 @@ def do_build(context):
     if context.opts.x11:
         cmake_opts['GMX_X11'] = 'ON'
 
+    if context.opts.tidy:
+        cmake_opts['GMX_CLANG_TIDY'] = 'ON'
+        cmake_opts['CLANG_TIDY_EXE'] = context.env.cxx_compiler.replace("clang++", "clang-tidy")
+
     # At least hwloc on Jenkins produces a massive amount of reports about
     # memory leaks, which cannot be reasonably suppressed because ASAN cannot
     # produce a reasonable stack trace for them.
