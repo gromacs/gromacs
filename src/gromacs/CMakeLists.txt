@@ -268,7 +268,8 @@ gmx_manage_lmfit()
 target_link_libraries(libgromacs PRIVATE lmfit)
 
 if (GMX_CLANG_TIDY)
-   find_program(CLANG_TIDY_EXE NAMES "clang-tidy"
+   set(CLANG_TIDY "clang-tidy" CACHE STRING "Name of clang-tidy executable")
+   find_program(CLANG_TIDY_EXE NAMES "${CLANG_TIDY}"
        DOC "Path to clang-tidy executable")
    if(NOT CLANG_TIDY_EXE)
        message(ERROR "clang-tidy not found.")
