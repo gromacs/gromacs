@@ -162,7 +162,7 @@ void GpuParallel3dFft::perform3dFft(gmx_fft_direction  dir,
             break;
 
         default:
-            GMX_ASSERT(false, "Not implemented");
+            GMX_THROW(gmx::NotImplementedError("The chosen 3D-FFT case is not implemented on GPUs"));
             break;
     }
     handleClfftError(clfftEnqueueTransform(plan, direction,
