@@ -195,7 +195,7 @@ selectCompilerOptions(ocl_vendor_id_t deviceVendorId)
         }
     }
 
-    if ( ( deviceVendorId == OCL_VENDOR_AMD ) && getenv("GMX_OCL_DEBUG"))
+    if ( getenv("GMX_OCL_DEBUG"))
     {
         compilerOptions += " -g";
     }
