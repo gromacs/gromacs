@@ -253,7 +253,7 @@ gmx_multisim_t *init_multisystem(MPI_Comm                         comm,
         return nullptr;
     }
 
-    if (!GMX_LIB_MPI && multidirs.size() >= 1)
+    if (!GMX_LIB_MPI && !multidirs.empty())
     {
         gmx_fatal(FARGS, "mdrun -multidir is only supported when GROMACS has been "
                   "configured with a proper external MPI library.");

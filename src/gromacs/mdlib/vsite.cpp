@@ -2530,12 +2530,12 @@ void split_vsites_over_threads(const t_ilist   *ilist,
                 for (int t = 0; t < vsite->nthreads; t++)
                 {
                     /* Do we write to the force buffer of task t? */
-                    if (idTask->atomIndex[t].atom.size() > 0)
+                    if (!idTask->atomIndex[t].atom.empty())
                     {
                         idTask->spreadTask.push_back(t);
                     }
                     /* Does task t write to our force buffer? */
-                    if (vsite->tData[t]->idTask.atomIndex[thread].atom.size() > 0)
+                    if (!vsite->tData[t]->idTask.atomIndex[thread].atom.empty())
                     {
                         idTask->reduceTask.push_back(t);
                     }

@@ -1478,7 +1478,7 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
                      filename.c_str());
     gmx::TextLineWrapper wrapper;
     wrapper.settings().setLineLength(c_linewidth);
-    correctFormatMessage = wrapper.wrapToString(correctFormatMessage).c_str();
+    correctFormatMessage = wrapper.wrapToString(correctFormatMessage);
 
     double  **data;
     int       numColumns;

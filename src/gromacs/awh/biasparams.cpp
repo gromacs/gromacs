@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -175,7 +175,7 @@ double gaussianGeometryFactor(gmx::ArrayRef<const double> xArray)
         xScalar *= x;
     }
 
-    GMX_ASSERT(xArray.size() > 0, "We should have a non-empty input array");
+    GMX_ASSERT(!xArray.empty(), "We should have a non-empty input array");
     xScalar = std::pow(xScalar, 1.0/xArray.size());
 
     /* Look up zeta(x) */
