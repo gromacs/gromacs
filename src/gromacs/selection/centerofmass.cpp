@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,8 @@
 #include "gmxpre.h"
 
 #include "centerofmass.h"
+
+#include <cmath>
 
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -224,7 +226,7 @@ gmx_calc_cog_pbc(const gmx_mtop_t *top, rvec x[], const t_pbc *pbc,
                 rvec_add(xout, dx, xtest);
                 for (j = 0; j < DIM; ++j)
                 {
-                    if (fabs(xtest[j] - x[ai][j]) > tol)
+                    if (std::fabs(xtest[j] - x[ai][j]) > tol)
                     {
                         /* Here we have used the wrong image for contributing to the COM */
                         xout[j] += (xtest[j] - x[ai][j]) / nrefat;
@@ -293,7 +295,7 @@ gmx_calc_com_pbc(const gmx_mtop_t *top, rvec x[], const t_pbc *pbc,
                 rvec_add(xout, dx, xtest);
                 for (int j = 0; j < DIM; ++j)
                 {
-                    if (fabs(xtest[j] - x[ai][j]) > tol)
+                    if (std::fabs(xtest[j] - x[ai][j]) > tol)
                     {
                         /* Here we have used the wrong image for contributing to the COM */
                         xout[j] += mass * (xtest[j] - x[ai][j]);

@@ -132,7 +132,7 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atyp
                             cj0                  = get_atomtype_nbparam(j, 0, atype);
                             ci1                  = get_atomtype_nbparam(i, 1, atype);
                             cj1                  = get_atomtype_nbparam(j, 1, atype);
-                            plist->param[k].c[0] = std::sqrt(fabs(ci0*cj0));
+                            plist->param[k].c[0] = std::sqrt(std::fabs(ci0*cj0));
                             /* Negative sigma signals that c6 should be set to zero later,
                              * so we need to propagate that through the combination rules.
                              */

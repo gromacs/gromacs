@@ -282,7 +282,7 @@ void ewald_LRcorrection(int numAtomsLocal,
                                      * to normalise the relative position vector dx */
                                     if (ewcdr > R_ERF_R_INACC)
                                     {
-                                        fscal = rinv2*(vc - qqA*ewc_q*M_2_SQRTPI*exp(-ewcdr*ewcdr));
+                                        fscal = rinv2*(vc - qqA*ewc_q*M_2_SQRTPI*std::exp(-ewcdr*ewcdr));
                                     }
                                     else
                                     {
@@ -440,7 +440,7 @@ void ewald_LRcorrection(int numAtomsLocal,
                                     Vexcl_q     += vc;
                                     /* fscal is the scalar force pre-multiplied by rinv,
                                      * to normalise the relative position vector dx */
-                                    fscal        = rinv2*(vc-qqL*ewc_q*M_2_SQRTPI*exp(-ewc_q*ewc_q*dr2));
+                                    fscal        = rinv2*(vc-qqL*ewc_q*M_2_SQRTPI*std::exp(-ewc_q*ewc_q*dr2));
                                     dvdl_excl_q += (qqB - qqA)*v;
 
                                     /* The force vector is obtained by multiplication with

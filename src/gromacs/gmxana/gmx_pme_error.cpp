@@ -177,7 +177,7 @@ static real estimate_direct(
     r_coulomb = info->rcoulomb[0];
 
     e_dir  = 2.0 * info->q2all * gmx::invsqrt( info->q2allnr  *  r_coulomb * info->volume );
-    e_dir *= exp (-beta*beta*r_coulomb*r_coulomb);
+    e_dir *= std::exp (-beta*beta*r_coulomb*r_coulomb);
 
     return ONE_4PI_EPS0*e_dir;
 }

@@ -3496,7 +3496,7 @@ void do_index(const char* mdparin, const char *ndx,
                         else
                         {
                             fprintf(stderr, "%9.1f      %5.1f\n", ir->opts.anneal_time[i][j], ir->opts.anneal_temp[i][j]);
-                            if (fabs(ir->opts.anneal_temp[i][j]-ir->opts.anneal_temp[i][0]) > GMX_REAL_EPS)
+                            if (std::fabs(ir->opts.anneal_temp[i][j]-ir->opts.anneal_temp[i][0]) > GMX_REAL_EPS)
                             {
                                 warning_note(wi, "There is a temperature jump when your annealing loops back.\n");
                             }

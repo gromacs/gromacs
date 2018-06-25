@@ -123,8 +123,8 @@ static void tabulateStructureFactors(int natom, const rvec x[], int kmax, cvec *
 
         for (m = 0; (m < 3); m++)
         {
-            eir[1][i][m].re = cos(x[i][m]*lll[m]);
-            eir[1][i][m].im = sin(x[i][m]*lll[m]);
+            eir[1][i][m].re = std::cos(x[i][m]*lll[m]);
+            eir[1][i][m].im = std::sin(x[i][m]*lll[m]);
         }
         for (j = 2; (j < kmax); j++)
         {
@@ -242,7 +242,7 @@ real do_ewald(const t_inputrec *ir,
                 {
                     mz  = iz*lll[ZZ];
                     m2  = mx*mx+my*my+mz*mz;
-                    ak  = exp(m2*factor)/m2;
+                    ak  = std::exp(m2*factor)/m2;
                     akv = 2.0*ak*(1.0/m2-factor);
                     if (iz >= 0)
                     {

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -731,9 +731,9 @@ static void pr_simple_cmap(FILE *out, real lo, real hi, int nlevel, t_rgb rlo,
         fprintf(out, "\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n",
                 mapper[(i+i0) % NMAP],
                 (nlevel <= NMAP) ? ' ' : mapper[(i+i0)/NMAP],
-                static_cast<unsigned int>(round(255*r)),
-                static_cast<unsigned int>(round(255*g)),
-                static_cast<unsigned int>(round(255*b)),
+                static_cast<unsigned int>(std::round(255*r)),
+                static_cast<unsigned int>(std::round(255*g)),
+                static_cast<unsigned int>(std::round(255*b)),
                 lo+fac*(hi-lo));
     }
 }
@@ -839,9 +839,9 @@ static void write_xpm_map(FILE *out, int n_x, int n_y, int *nlevels,
         b   = (nlo*rlo.b+i*rhi.b)*invlevel;
         fprintf(out, "\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n",
                 mapper[i % NMAP], (*nlevels <= NMAP) ? ' ' : mapper[i/NMAP],
-                static_cast<unsigned int>(round(255*r)),
-                static_cast<unsigned int>(round(255*g)),
-                static_cast<unsigned int>(round(255*b)),
+                static_cast<unsigned int>(std::round(255*r)),
+                static_cast<unsigned int>(std::round(255*g)),
+                static_cast<unsigned int>(std::round(255*b)),
                 (nlo*lo+i*hi)*invlevel);
     }
 }
@@ -995,7 +995,7 @@ static void write_xpm_data_split(FILE *out, int n_x, int n_y, real **mat,
         {
             if (i < j)
             {
-                c = nlevel_bot+round((mat[i][j]-lo_top)*invlev_top);
+                c = nlevel_bot+std::round((mat[i][j]-lo_top)*invlev_top);
                 if ((c < nlevel_bot) || (c >= nlevel_bot+nlevel_top))
                 {
                     gmx_fatal(FARGS, "Range checking i = %d, j = %d, c = %d, bot = %d, top = %d matrix[i,j] = %f", i, j, c, nlevel_bot, nlevel_top, mat[i][j]);
@@ -1003,7 +1003,7 @@ static void write_xpm_data_split(FILE *out, int n_x, int n_y, real **mat,
             }
             else if (i > j)
             {
-                c = round((mat[i][j]-lo_bot)*invlev_bot);
+                c = std::round((mat[i][j]-lo_bot)*invlev_bot);
                 if ((c < 0) || (c >= nlevel_bot+nlevel_bot))
                 {
                     gmx_fatal(FARGS, "Range checking i = %d, j = %d, c = %d, bot = %d, top = %d matrix[i,j] = %f", i, j, c, nlevel_bot, nlevel_top, mat[i][j]);

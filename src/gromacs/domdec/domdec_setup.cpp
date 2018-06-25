@@ -463,7 +463,7 @@ static float comm_cost_est(real limit, real cutoff,
             /* Check if the box size is nearly identical,
              * in that case we prefer nx > ny  and ny > nz.
              */
-            if (fabs(bt[j] - bt[i]) < 0.01*bt[i] && nc[j] > nc[i])
+            if (std::fabs(bt[j] - bt[i]) < 0.01*bt[i] && nc[j] > nc[i])
             {
                 /* The XX/YY check is a bit compact. If nc[YY]==npme[YY]
                  * this means the swapped nc has nc[XX]==npme[XX],
