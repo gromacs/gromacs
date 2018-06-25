@@ -1,0 +1,8 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+2: Roland Schulz <roland.schulz@intel.com>
+Code-Review+2: Berk Hess <hess@kth.se>
+Submitted-by: Berk Hess <hess@kth.se>
+Submitted-at: Mon, 25 Jun 2018 10:30:25 +0200
+Reviewed-on: https://gerrit.gromacs.org/8013
+Project: gromacs
+Branch: refs/heads/master
