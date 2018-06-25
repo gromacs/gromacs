@@ -160,7 +160,7 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t                  *dd,
     }
     else
     {
-        AtomDistribution &ma = *dd->ma.get();
+        AtomDistribution &ma = *dd->ma;
 
         /* Copy the master coordinates to the global array */
         const t_block &cgs_gl    = dd->comm->cgs_gl;

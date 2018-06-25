@@ -125,7 +125,7 @@ static void distributeVecScatterv(gmx_domdec_t                   *dd,
 
     if (DDMASTER(dd))
     {
-        AtomDistribution &ma = *dd->ma.get();
+        AtomDistribution &ma = *dd->ma;
 
         get_commbuffer_counts(&ma, &sendCounts, &displacements);
 
@@ -283,7 +283,7 @@ getAtomGroupDistribution(FILE *fplog,
                          const t_block *cgs, rvec pos[],
                          gmx_domdec_t *dd)
 {
-    AtomDistribution &ma = *dd->ma.get();
+    AtomDistribution &ma = *dd->ma;
 
     /* Clear the count */
     for (int rank = 0; rank < dd->nnodes; rank++)

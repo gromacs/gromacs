@@ -1460,7 +1460,7 @@ static bondedtable_t *make_bonded_tables(FILE *fplog,
                 bool        madeTable     = false;
                 for (size_t j = 0; j < tabbfnm.size() && !madeTable; ++j)
                 {
-                    if (gmx::endsWith(tabbfnm[j].c_str(), patternToFind))
+                    if (gmx::endsWith(tabbfnm[j], patternToFind))
                     {
                         // Finally read the table from the file found
                         tab[i]    = make_bonded_table(fplog, tabbfnm[j].c_str(), NRAL(ftype1)-2);

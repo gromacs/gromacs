@@ -195,7 +195,7 @@ struct BiasOutputSetup
     {
         GMX_RELEASE_ASSERT(awhOutputFile_ != nullptr, "awhOutputFile() called without initialized AWH output file");
 
-        return *awhOutputFile_.get();
+        return *awhOutputFile_;
     }
 
     //! Return the a pointer to the friction output file data, can return nullptr
