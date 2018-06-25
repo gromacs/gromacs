@@ -1126,7 +1126,7 @@ static gmx_edsam_t ed_open(
         snew(ed->edpar, 1);
 
         // If we start from a checkpoint file, we already have an edsamHistory struct
-        if (oh->edsamHistory.get() == nullptr)
+        if (oh->edsamHistory == nullptr)
         {
             oh->edsamHistory = std::unique_ptr<edsamhistory_t>(new edsamhistory_t {});
         }

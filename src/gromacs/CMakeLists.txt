@@ -279,9 +279,8 @@ if (GMX_CLANG_TIDY)
    set_target_properties(libgromacs PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_EXE};--checks=\
        -clang-analyzer-security.insecureAPI.strcpy,-clang-analyzer-core.NullDereference,\
        bugprone-*,misc-*,readability-*,performance-*,mpi-*,-bugprone-integer-division,\
-       -readability-redundant-smartptr-get,-readability-redundant-string-cstr,-readability-simplify-boolean-expr,\
        -misc-misplaced-widening-cast,-readability-named-parameter,-performance-noexcept-move-constructor,\
-       -readability-misleading-indentation,-readability-container-size-empty,-misc-suspicious-string-compare,\
+       -readability-misleading-indentation,-misc-suspicious-string-compare,\
        -readability-redundant-control-flow,-performance-unnecessary-value-param,\
        -readability-static-definition-in-anonymous-namespace,-misc-suspicious-missing-comma,\
        -readability-redundant-member-init,-misc-misplaced-const,\
