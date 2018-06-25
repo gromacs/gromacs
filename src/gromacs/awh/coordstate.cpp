@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,7 +102,7 @@ int getSampleFromDistribution(ArrayRef<const double> distr,
     gmx::ThreeFry2x64<0>               rng(seed, gmx::RandomDomain::AwhBiasing);
     gmx::UniformRealDistribution<real> uniformRealDistr;
 
-    GMX_RELEASE_ASSERT(distr.size() > 0, "We need a non-zero length distribution to sample from");
+    GMX_RELEASE_ASSERT(!distr.empty(), "We need a non-zero length distribution to sample from");
 
     /* Generate the cumulative probability distribution function */
     std::vector<double> cumulativeDistribution(distr.size());
