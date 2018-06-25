@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -138,8 +138,8 @@ AnalysisHistogramSettings::AnalysisHistogramSettings(
             GMX_RELEASE_ASSERT(isDefined(settings.binWidth_),
                                "Rounding only makes sense with defined binwidth");
             binWidth_  = settings.binWidth_;
-            firstEdge_ = binWidth_ * floor(settings.min_ / binWidth_);
-            lastEdge_  = binWidth_ * ceil(settings.max_ / binWidth_);
+            firstEdge_ = binWidth_ * std::floor(settings.min_ / binWidth_);
+            lastEdge_  = binWidth_ * std::ceil(settings.max_ / binWidth_);
             binCount_  = static_cast<int>((lastEdge_ - firstEdge_) / binWidth_ + 0.5);
         }
         else

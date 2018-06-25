@@ -2464,7 +2464,7 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
         sprintf(buf, " Average PME mesh/force load: %5.3f\n", pmeForceRatio);
         fprintf(fplog, "%s", buf);
         fprintf(stderr, "%s", buf);
-        sprintf(buf, " Part of the total run time spent waiting due to PP/PME imbalance: %.1f %%\n", fabs(lossFractionPme)*100);
+        sprintf(buf, " Part of the total run time spent waiting due to PP/PME imbalance: %.1f %%\n", std::fabs(lossFractionPme)*100);
         fprintf(fplog, "%s", buf);
         fprintf(stderr, "%s", buf);
     }
@@ -2487,14 +2487,14 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
         fprintf(fplog, "%s\n", buf);
         fprintf(stderr, "%s\n", buf);
     }
-    if (numPmeRanks > 0 && fabs(lossFractionPme) >= DD_PERF_LOSS_WARN)
+    if (numPmeRanks > 0 && std::fabs(lossFractionPme) >= DD_PERF_LOSS_WARN)
     {
         sprintf(buf,
                 "NOTE: %.1f %% performance was lost because the PME ranks\n"
                 "      had %s work to do than the PP ranks.\n"
                 "      You might want to %s the number of PME ranks\n"
                 "      or %s the cut-off and the grid spacing.\n",
-                fabs(lossFractionPme*100),
+                std::fabs(lossFractionPme*100),
                 (lossFractionPme < 0) ? "less"     : "more",
                 (lossFractionPme < 0) ? "decrease" : "increase",
                 (lossFractionPme < 0) ? "decrease" : "increase");

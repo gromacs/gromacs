@@ -2375,8 +2375,8 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             vdwtab = fr->dispersionCorrectionTable->data;
 
             /* Round the cut-offs to exact table values for precision */
-            ri0  = static_cast<int>(floor(ic->rvdw_switch*scale));
-            ri1  = static_cast<int>(ceil(ic->rvdw*scale));
+            ri0  = static_cast<int>(std::floor(ic->rvdw_switch*scale));
+            ri1  = static_cast<int>(std::ceil(ic->rvdw*scale));
 
             /* The code below has some support for handling force-switching, i.e.
              * when the force (instead of potential) is switched over a limited

@@ -38,6 +38,8 @@
 
 #include <assert.h>
 
+#include <cmath>
+
 #include <algorithm>
 
 #include "gromacs/domdec/domdec_struct.h"
@@ -506,7 +508,7 @@ void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
                    to its current size.
                  */
 
-                change = fabs(dt*boxv[d][n]/box[d][d]);
+                change = std::fabs(dt*boxv[d][n]/box[d][d]);
 
                 if (change > maxchange)
                 {
@@ -1641,7 +1643,7 @@ void update_annealing_target_temp(t_inputrec *ir, real t, gmx_update_t *upd)
                 n     = static_cast<int>(t / pert);
                 thist = t - n*pert; /* modulo time */
                 /* Make sure rounding didn't get us outside the interval */
-                if (fabs(thist-pert) < GMX_REAL_EPS*100)
+                if (std::fabs(thist-pert) < GMX_REAL_EPS*100)
                 {
                     thist = 0;
                 }

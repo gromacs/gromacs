@@ -1282,7 +1282,7 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr,
              * the velocities. */
             if (re->type == ereTEMP || re->type == ereTL)
             {
-                scale_velocities(state, sqrt(re->q[ereTEMP][replica_id]/re->q[ereTEMP][re->destinations[replica_id]]));
+                scale_velocities(state, std::sqrt(re->q[ereTEMP][replica_id]/re->q[ereTEMP][re->destinations[replica_id]]));
             }
 
         }

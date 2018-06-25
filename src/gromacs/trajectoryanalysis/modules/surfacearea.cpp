@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2007, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -160,7 +160,7 @@ static std::vector<real> ico_dot_arc(int densit)
                 x = xus[3*i]-xus[3*j];
                 y = xus[1+3*i]-xus[1+3*j]; z = xus[2+3*i]-xus[2+3*j];
                 d = x*x+y*y+z*z;
-                if (fabs(a-d) > DP_TOL)
+                if (std::fabs(a-d) > DP_TOL)
                 {
                     continue;
                 }
@@ -182,7 +182,7 @@ static std::vector<real> ico_dot_arc(int densit)
                 x = xus[3*i]-xus[3*j];
                 y = xus[1+3*i]-xus[1+3*j]; z = xus[2+3*i]-xus[2+3*j];
                 d = x*x+y*y+z*z;
-                if (fabs(a-d) > DP_TOL)
+                if (std::fabs(a-d) > DP_TOL)
                 {
                     continue;
                 }
@@ -192,14 +192,14 @@ static std::vector<real> ico_dot_arc(int densit)
                     x = xus[3*i]-xus[3*k];
                     y = xus[1+3*i]-xus[1+3*k]; z = xus[2+3*i]-xus[2+3*k];
                     d = x*x+y*y+z*z;
-                    if (fabs(a-d) > DP_TOL)
+                    if (std::fabs(a-d) > DP_TOL)
                     {
                         continue;
                     }
                     x = xus[3*j]-xus[3*k];
                     y = xus[1+3*j]-xus[1+3*k]; z = xus[2+3*j]-xus[2+3*k];
                     d = x*x+y*y+z*z;
-                    if (fabs(a-d) > DP_TOL)
+                    if (std::fabs(a-d) > DP_TOL)
                     {
                         continue;
                     }
@@ -282,7 +282,7 @@ static std::vector<real> ico_dot_dod(int densit)
             x = xus[3*i]-xus[3*j];
             y = xus[1+3*i]-xus[1+3*j]; z = xus[2+3*i]-xus[2+3*j];
             d = x*x+y*y+z*z;
-            if (fabs(a-d) > DP_TOL)
+            if (std::fabs(a-d) > DP_TOL)
             {
                 continue;
             }
@@ -291,14 +291,14 @@ static std::vector<real> ico_dot_dod(int densit)
                 x = xus[3*i]-xus[3*k];
                 y = xus[1+3*i]-xus[1+3*k]; z = xus[2+3*i]-xus[2+3*k];
                 d = x*x+y*y+z*z;
-                if (fabs(a-d) > DP_TOL)
+                if (std::fabs(a-d) > DP_TOL)
                 {
                     continue;
                 }
                 x = xus[3*j]-xus[3*k];
                 y = xus[1+3*j]-xus[1+3*k]; z = xus[2+3*j]-xus[2+3*k];
                 d = x*x+y*y+z*z;
-                if (fabs(a-d) > DP_TOL)
+                if (std::fabs(a-d) > DP_TOL)
                 {
                     continue;
                 }
@@ -333,7 +333,7 @@ static std::vector<real> ico_dot_dod(int densit)
                 x = xus[3*i]-xus[3*j];
                 y = xus[1+3*i]-xus[1+3*j]; z = xus[2+3*i]-xus[2+3*j];
                 d = x*x+y*y+z*z;
-                if (fabs(a-d) > DP_TOL)
+                if (std::fabs(a-d) > DP_TOL)
                 {
                     continue;
                 }
@@ -356,7 +356,7 @@ static std::vector<real> ico_dot_dod(int densit)
                 x = xus[3*i]-xus[3*j];
                 y = xus[1+3*i]-xus[1+3*j]; z = xus[2+3*i]-xus[2+3*j];
                 d = x*x+y*y+z*z;
-                if (fabs(ai_d-d) > DP_TOL)
+                if (std::fabs(ai_d-d) > DP_TOL)
                 {
                     continue;
                 }
@@ -366,14 +366,14 @@ static std::vector<real> ico_dot_dod(int densit)
                     x = xus[3*i]-xus[3*k];
                     y = xus[1+3*i]-xus[1+3*k]; z = xus[2+3*i]-xus[2+3*k];
                     d = x*x+y*y+z*z;
-                    if (fabs(ai_d-d) > DP_TOL)
+                    if (std::fabs(ai_d-d) > DP_TOL)
                     {
                         continue;
                     }
                     x = xus[3*j]-xus[3*k];
                     y = xus[1+3*j]-xus[1+3*k]; z = xus[2+3*j]-xus[2+3*k];
                     d = x*x+y*y+z*z;
-                    if (fabs(adod-d) > DP_TOL)
+                    if (std::fabs(adod-d) > DP_TOL)
                     {
                         continue;
                     }

@@ -587,7 +587,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
             }
             else
             {
-                dwm_array[nval]  = fabs( cnval - lam_dg[fep_state-1] );
+                dwm_array[nval]  = std::fabs( cnval - lam_dg[fep_state-1] );
             }
 
             if (n0 > 0)
@@ -606,7 +606,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
             }
             else
             {
-                dwp_array[nval]  = fabs( cnval - lam_dg[fep_state] );
+                dwp_array[nval]  = std::fabs( cnval - lam_dg[fep_state] );
             }
 
         }

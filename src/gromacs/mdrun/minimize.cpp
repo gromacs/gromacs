@@ -1313,7 +1313,7 @@ Integrator::do_cg()
         }
 
         /* This is the max amount of increase in energy we tolerate */
-        tmp = sqrt(GMX_REAL_EPS)*fabs(s_a->epot);
+        tmp = std::sqrt(GMX_REAL_EPS)*fabs(s_a->epot);
 
         /* Accept the step if the energy is lower, or if it is not significantly higher
          * and the line derivative is still negative.
@@ -1452,7 +1452,7 @@ Integrator::do_cg()
             while ((epot_repl > s_a->epot || epot_repl > s_c->epot) &&
                    (nminstep < 20));
 
-            if (fabs(epot_repl - s_min->epot) < fabs(s_min->epot)*GMX_REAL_EPS ||
+            if (std::fabs(epot_repl - s_min->epot) < fabs(s_min->epot)*GMX_REAL_EPS ||
                 nminstep >= 20)
             {
                 /* OK. We couldn't find a significantly lower energy.
@@ -2003,7 +2003,7 @@ Integrator::do_lbfgs()
         // This is the max amount of increase in energy we tolerate.
         // By allowing VERY small changes (close to numerical precision) we
         // frequently find even better (lower) final energies.
-        tmp = sqrt(GMX_REAL_EPS)*fabs(sa->epot);
+        tmp = std::sqrt(GMX_REAL_EPS)*fabs(sa->epot);
 
         // Accept the step if the energy is lower in the new position C (compared to A),
         // or if it is not significantly higher and the line derivative is still negative.
@@ -2115,7 +2115,7 @@ Integrator::do_lbfgs()
             }
             while ((sb->epot > sa->epot || sb->epot > sc->epot) && (nminstep < 20));
 
-            if (fabs(sb->epot - Epot0) < GMX_REAL_EPS || nminstep >= 20)
+            if (std::fabs(sb->epot - Epot0) < GMX_REAL_EPS || nminstep >= 20)
             {
                 /* OK. We couldn't find a significantly lower energy.
                  * If ncorr==0 this was steepest descent, and then we give up.
@@ -2637,7 +2637,7 @@ Integrator::do_nm()
 
     /* added with respect to mdrun */
     int                       row, col;
-    real                      der_range = 10.0*sqrt(GMX_REAL_EPS);
+    real                      der_range = 10.0*std::sqrt(GMX_REAL_EPS);
     real                      x_min;
     bool                      bIsMaster = MASTER(cr);
     auto                      mdatoms   = mdAtoms->mdatoms();

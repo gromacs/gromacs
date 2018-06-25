@@ -41,6 +41,8 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include <cmath>
+
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/fileio/confio.h"
@@ -792,8 +794,8 @@ void pull_calc_coms(const t_commrec *cr,
                 for (i = 0; i < pgrp->nat_loc; i++)
                 {
                     ii                  = pgrp->ind_loc[i];
-                    pgrp->weight_loc[i] = csw*cos(twopi_box*x[ii][pull->cosdim]) +
-                        snw*sin(twopi_box*x[ii][pull->cosdim]);
+                    pgrp->weight_loc[i] = csw*std::cos(twopi_box*x[ii][pull->cosdim]) +
+                        snw*std::sin(twopi_box*x[ii][pull->cosdim]);
                 }
                 if (xp)
                 {

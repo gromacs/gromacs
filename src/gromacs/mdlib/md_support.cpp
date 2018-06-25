@@ -40,6 +40,7 @@
 #include "md_support.h"
 
 #include <climits>
+#include <cmath>
 
 #include <algorithm>
 
@@ -344,7 +345,7 @@ void setCurrentLambdasRerun(gmx_int64_t step, const t_lambda *fepvals,
         {
             /* find out between which two value of lambda we should be */
             real frac      = step*fepvals->delta_lambda;
-            int  fep_state = static_cast<int>(floor(frac*fepvals->n_lambda));
+            int  fep_state = static_cast<int>(std::floor(frac*fepvals->n_lambda));
             /* interpolate between this state and the next */
             /* this assumes that the initial lambda corresponds to lambda==0, which is verified in grompp */
             frac           = frac*fepvals->n_lambda - fep_state;
@@ -376,7 +377,7 @@ void setCurrentLambdasLocal(gmx_int64_t step, const t_lambda *fepvals,
         real frac = step*fepvals->delta_lambda;
         if (fepvals->n_lambda > 0)
         {
-            int fep_state = static_cast<int>(floor(frac*fepvals->n_lambda));
+            int fep_state = static_cast<int>(std::floor(frac*fepvals->n_lambda));
             /* interpolate between this state and the next */
             /* this assumes that the initial lambda corresponds to lambda==0, which is verified in grompp */
             frac          = frac*fepvals->n_lambda - fep_state;

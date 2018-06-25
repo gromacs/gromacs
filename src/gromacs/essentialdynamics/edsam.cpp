@@ -42,6 +42,8 @@
 #include <string.h>
 #include <time.h>
 
+#include <cmath>
+
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -771,7 +773,7 @@ static real flood_energy(t_edpar *edi, gmx_int64_t step)
     }
     else
     {
-        Vfl = edi->flood.Efl != 0 ? edi->flood.Efl*exp(-edi->flood.kT/2/edi->flood.Efl/edi->flood.alpha2*sum) : 0;
+        Vfl = edi->flood.Efl != 0 ? edi->flood.Efl*std::exp(-edi->flood.kT/2/edi->flood.Efl/edi->flood.alpha2*sum) : 0;
     }
 
     return Vfl;

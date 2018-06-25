@@ -452,8 +452,8 @@ static void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tp
         }
         if (j >= 2)
         {
-            if (fabs((fr.time-old_t1)-(old_t1-old_t2)) >
-                0.1*(fabs(fr.time-old_t1)+fabs(old_t1-old_t2)) )
+            if (std::fabs((fr.time-old_t1)-(old_t1-old_t2)) >
+                0.1*(std::fabs(fr.time-old_t1)+std::fabs(old_t1-old_t2)) )
             {
                 bShowTimestep = FALSE;
                 fprintf(stderr, "%sTimesteps at t=%g don't match (%g, %g)\n",
@@ -777,7 +777,7 @@ static void chk_enx(const char *fn)
         if (fnr >= 2)
         {
             if (fabs((fr->t-old_t1)-(old_t1-old_t2)) >
-                0.1*(fabs(fr->t-old_t1)+fabs(old_t1-old_t2)) )
+                0.1*(fabs(fr->t-old_t1)+std::fabs(old_t1-old_t2)) )
             {
                 bShowTStep = FALSE;
                 fprintf(stderr, "\nTimesteps at t=%g don't match (%g, %g)\n",

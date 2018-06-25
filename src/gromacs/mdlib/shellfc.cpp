@@ -41,6 +41,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <cmath>
 #include <cstdint>
 
 #include <algorithm>
@@ -863,7 +864,7 @@ static void check_pbc(FILE *fp, gmx::ArrayRef<gmx::RVec> x, int shell)
     now = shell-4;
     for (m = 0; (m < DIM); m++)
     {
-        if (fabs(x[shell][m]-x[now][m]) > 0.3)
+        if (std::fabs(x[shell][m]-x[now][m]) > 0.3)
         {
             pr_rvecs(fp, 0, "SHELL-X", as_rvec_array(x.data())+now, 5);
             break;
