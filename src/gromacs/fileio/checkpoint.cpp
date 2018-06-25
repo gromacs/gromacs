@@ -1884,7 +1884,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     }
 
     int flags_awhh = 0;
-    if (state->awhHistory != nullptr && state->awhHistory->bias.size() > 0)
+    if (state->awhHistory != nullptr && !state->awhHistory->bias.empty())
     {
         flags_awhh |= ( (1 << eawhhIN_INITIAL) |
                         (1 << eawhhEQUILIBRATEHISTOGRAM) |

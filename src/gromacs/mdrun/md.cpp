@@ -518,7 +518,7 @@ void gmx::Integrator::do_md()
             {
                 restore_energyhistory_from_state(mdebin, observablesHistory->energyHistory.get());
             }
-            else if (observablesHistory->energyHistory.get() != nullptr)
+            else if (observablesHistory->energyHistory != nullptr)
             {
                 /* We might have read an energy history from checkpoint.
                  * As we are not appending, we want to restart the statistics.
@@ -527,7 +527,7 @@ void gmx::Integrator::do_md()
                 observablesHistory->energyHistory = {};
             }
         }
-        if (observablesHistory->energyHistory.get() == nullptr)
+        if (observablesHistory->energyHistory == nullptr)
         {
             observablesHistory->energyHistory = std::unique_ptr<energyhistory_t>(new energyhistory_t {});
         }

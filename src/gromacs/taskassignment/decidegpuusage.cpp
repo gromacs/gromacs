@@ -217,7 +217,7 @@ decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuForNonbo
     {
         // PME can run well on a GPU shared with NB, and we permit
         // mdrun to default to try that.
-        return gpuIdsToUse.size() >= 1;
+        return !gpuIdsToUse.empty();
     }
 
     if (numRanksPerSimulation < 1)
