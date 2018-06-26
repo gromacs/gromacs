@@ -86,7 +86,7 @@ namespace
  *                                         that are eligible to run on GPUs.
  * \param[in]   gpuIds                     The user-supplied GPU IDs.
  */
-static GpuTaskAssignments
+GpuTaskAssignments
 buildTaskAssignment(const GpuTasksOnRanks  &gpuTasksOnRanksOfThisNode,
                     ArrayRef<const int>     gpuIds)
 {
@@ -120,7 +120,7 @@ buildTaskAssignment(const GpuTasksOnRanks  &gpuTasksOnRanksOfThisNode,
  *
  * Sharing GPUs among multiple ranks is possible via either user or
  * automated selection. */
-static bool isAnyGpuSharedBetweenRanks(const GpuTaskAssignments &gpuTaskAssignments)
+bool isAnyGpuSharedBetweenRanks(const GpuTaskAssignments &gpuTaskAssignments)
 {
     // Loop over all ranks i, looking on all higher ranks j whether
     // any tasks on them share GPU device IDs.

@@ -2882,7 +2882,6 @@ extern void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, gmx:
         }
         fprintf(fplog, "]\n");
     }
-    return;
 }
 
 

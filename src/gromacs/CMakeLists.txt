@@ -242,12 +242,12 @@ if (GMX_CLANG_TIDY)
        -readability-redundant-smartptr-get,-readability-redundant-string-cstr,-readability-simplify-boolean-expr,\
        -misc-misplaced-widening-cast,-readability-named-parameter,-performance-noexcept-move-constructor,\
        -readability-misleading-indentation,-readability-container-size-empty,-misc-suspicious-string-compare,\
-       -readability-redundant-control-flow,-performance-unnecessary-value-param,\
-       -readability-static-definition-in-anonymous-namespace,-misc-suspicious-missing-comma,\
-       -readability-redundant-member-init,-misc-misplaced-const,-performance-type-promotion-in-math-fn,\
+       -performance-unnecessary-value-param,\
+       -misc-suspicious-missing-comma,\
+       -misc-misplaced-const,-performance-type-promotion-in-math-fn,\
        -misc-incorrect-roundings,-misc-macro-parentheses,-readability-function-size,-readability-else-after-return,\
        -readability-inconsistent-declaration-parameter-name,-misc-throw-by-value-catch-by-reference,\
-       -readability-non-const-parameter,-readability-implicit-bool-conversion;-warnings-as-errors=*")
+       -readability-non-const-parameter,-readability-implicit-bool-conversion;-warnings-as-errors=*;-fix")
 endif()
 
 gmx_write_installed_header_list()

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,7 +63,7 @@ namespace
  * GPUs used (per node) can be different from the number of GPU IDs
  * used.
  */
-static size_t countUniqueGpuIdsUsed(const GpuTaskAssignments &gpuTaskAssignmentOnRanksOfThisNode)
+size_t countUniqueGpuIdsUsed(const GpuTaskAssignments &gpuTaskAssignmentOnRanksOfThisNode)
 {
     std::set<int> uniqueIds;
     for (const auto &assignmentsOnRank : gpuTaskAssignmentOnRanksOfThisNode)

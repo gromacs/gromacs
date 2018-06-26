@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -98,7 +98,7 @@ namespace
  *        gmx::alignedMalloc(). Just like system-provided routines, it provides
  *        memory that is aligned - but not padded.
  */
-gmx_unused static void *
+gmx_unused void *
 alignedMallocGeneric(std::size_t bytes, std::size_t alignment)
 {
     // The amount of extra memory (beyound what the user asked for) we need is:
@@ -138,7 +138,7 @@ alignedMallocGeneric(std::size_t bytes, std::size_t alignment)
  * \note  This is an internal routine that should only be called from
  *        gmx::alignedFree().
  */
-gmx_unused static void
+gmx_unused void
 alignedFreeGeneric(void *p)
 {
     if (p)
@@ -149,7 +149,7 @@ alignedFreeGeneric(void *p)
 }
 
 //! Implement malloc of \c bytes of memory, aligned to \c alignment.
-static void *mallocImpl(std::size_t bytes, std::size_t alignment)
+void *mallocImpl(std::size_t bytes, std::size_t alignment)
 {
     void   *    p;
 
@@ -172,7 +172,7 @@ static void *mallocImpl(std::size_t bytes, std::size_t alignment)
 }
 
 //! Free aligned memory allocated with mallocImpl().
-static void freeImpl(void *p)
+void freeImpl(void *p)
 {
     if (p)
     {

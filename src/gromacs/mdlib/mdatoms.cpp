@@ -61,7 +61,7 @@ namespace gmx
 {
 
 MDAtoms::MDAtoms()
-    : mdatoms_(nullptr), chargeA_()
+    : mdatoms_(nullptr)
 {
 }
 

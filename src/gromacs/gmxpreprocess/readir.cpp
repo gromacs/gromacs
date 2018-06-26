@@ -1587,8 +1587,6 @@ static void do_simtemp_params(t_inputrec *ir)
 
     snew(ir->simtempvals->temperatures, ir->fepvals->n_lambda);
     GetSimTemps(ir->fepvals->n_lambda, ir->simtempvals, ir->fepvals->all_lambda[efptTEMPERATURE]);
-
-    return;
 }
 
 static void do_wall_params(t_inputrec *ir,
@@ -1700,8 +1698,6 @@ static void read_expandedparams(int *ninp_p, t_inpfile **inp_p,
 
     *ninp_p   = ninp;
     *inp_p    = inp;
-
-    return;
 }
 
 /*! \brief Return whether an end state with the given coupling-lambda

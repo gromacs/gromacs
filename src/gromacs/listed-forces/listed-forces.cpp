@@ -88,7 +88,7 @@ isPairInteraction(int ftype)
 }
 
 /*! \brief Zero thread-local output buffers */
-static void
+void
 zero_thread_output(struct bonded_threading_t *bt, int thread)
 {
     if (!bt->haveBondeds)
@@ -139,7 +139,7 @@ zero_thread_output(struct bonded_threading_t *bt, int thread)
 #define MAX_BONDED_THREADS 256
 
 /*! \brief Reduce thread-local force buffers */
-static void
+void
 reduce_thread_forces(int n, rvec *f,
                      struct bonded_threading_t *bt,
                      int nthreads)
@@ -196,7 +196,7 @@ reduce_thread_forces(int n, rvec *f,
 }
 
 /*! \brief Reduce thread-local forces, shift forces and energies */
-static void
+void
 reduce_thread_output(int n, rvec *f, rvec *fshift,
                      real *ener, gmx_grppairener_t *grpp, real *dvdl,
                      struct bonded_threading_t *bt,
@@ -256,7 +256,7 @@ reduce_thread_output(int n, rvec *f, rvec *fshift,
 
 /*! \brief Calculate one element of the list of bonded interactions
     for this thread */
-static real
+real
 calc_one_bond(int thread,
               int ftype, const t_idef *idef,
               const rvec x[], rvec4 f[], rvec fshift[],

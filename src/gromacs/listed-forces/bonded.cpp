@@ -1832,7 +1832,6 @@ void make_dp_periodic(real *dp)  /* 1 flop? */
     {
         *dp += 2*M_PI;
     }
-    return;
 }
 
 /* As pdihs above, but without calculating energies and shift forces */

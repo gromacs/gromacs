@@ -1254,7 +1254,6 @@ convert_array_to_real_array(void       *from,
             gmx_incons("Illegal datatype when converting values to a real array!");
             return;
     }
-    return;
 }
 
 real getDistanceScaleFactor(gmx_tng_trajectory_t in)

@@ -270,7 +270,7 @@ Bias::Bias(int                             biasIndexInCollection,
     state_(awhBiasParams, params_.initialHistogramSize, dimParams_, grid_),
     thisRankDoesIO_(thisRankWillDoIO == ThisRankWillDoIO::Yes),
     biasForce_(ndim()),
-    alignedTempWorkSpace_(),
+
     tempForce_(ndim()),
     numWarningsIssued_(0)
 {
