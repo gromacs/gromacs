@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -88,9 +88,9 @@ class CommandLineHelpContext
         //! Creates a copy of the context.
         explicit CommandLineHelpContext(const CommandLineHelpContext &other);
         //! Moves the context.
-        CommandLineHelpContext(CommandLineHelpContext &&other);
+        CommandLineHelpContext(CommandLineHelpContext &&other) noexcept;
         //! Move-assigns the context.
-        CommandLineHelpContext &operator=(CommandLineHelpContext &&other);
+        CommandLineHelpContext &operator=(CommandLineHelpContext &&other) noexcept;
         ~CommandLineHelpContext();
 
         /*! \brief

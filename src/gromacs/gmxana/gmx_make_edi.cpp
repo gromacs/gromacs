@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -168,7 +168,8 @@ static int sscan_list(int *list[], const char *str, const char *listname)
         switch (status)
         {
             /* expect a number */
-            case sBefore: if (std::isdigit(c))
+            case sBefore:
+                if (std::isdigit(c))
                 {
                     start  = pos;
                     status = sNumber;
@@ -177,10 +178,12 @@ static int sscan_list(int *list[], const char *str, const char *listname)
                 else
                 {
                     status = sError;
-                } break;
+                }
+                break;
 
             /* have read a number, expect ',' or '-' */
-            case sNumber: if (c == ',')
+            case sNumber:
+                if (c == ',')
                 {
                     /*store number*/
                     srenew(*list, nvecs+1);
@@ -203,7 +206,8 @@ static int sscan_list(int *list[], const char *str, const char *listname)
                 else
                 {
                     status = sError;
-                } break;
+                }
+                break;
 
             /* have read a '-' -> expect a number */
             case sMinus:
@@ -215,7 +219,8 @@ static int sscan_list(int *list[], const char *str, const char *listname)
                 else
                 {
                     status = sError;
-                } break;
+                }
+                break;
 
             case sSteppedRange:
                 if (std::isdigit(c))
@@ -234,7 +239,8 @@ static int sscan_list(int *list[], const char *str, const char *listname)
                 else
                 {
                     status = sError;
-                } break;
+                }
+                break;
 
             /* have read the number after a minus, expect ',' or ':' */
             case sRange:
@@ -280,7 +286,8 @@ static int sscan_list(int *list[], const char *str, const char *listname)
                 else
                 {
                     status = sError;
-                } break;
+                }
+                break;
 
             /* format error occured */
             case sError:

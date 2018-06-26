@@ -1615,8 +1615,7 @@ int gmx_trjconv(int argc, char *argv[])
                     {
                         frout_time = tzero + frame*timestep;
                     }
-                    else
-                    if (bSetTime)
+                    else if (bSetTime)
                     {
                         frout_time += tshift;
                     }

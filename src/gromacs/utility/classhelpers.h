@@ -166,8 +166,8 @@ class PrivateImplPointer
         explicit PrivateImplPointer(Impl *ptr) : ptr_(ptr) {}
         //! \cond
         // Explicitly declared to work around MSVC problems.
-        PrivateImplPointer(PrivateImplPointer &&other) : ptr_(std::move(other.ptr_)) {}
-        PrivateImplPointer &operator=(PrivateImplPointer &&other)
+        PrivateImplPointer(PrivateImplPointer &&other) noexcept : ptr_(std::move(other.ptr_)) {}
+        PrivateImplPointer &operator=(PrivateImplPointer &&other) noexcept
         {
             ptr_ = std::move(other.ptr_);
             return *this;

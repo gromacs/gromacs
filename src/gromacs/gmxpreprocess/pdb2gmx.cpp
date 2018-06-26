@@ -2246,8 +2246,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
         {
             top_file2 = nullptr;
         }
-        else
-        if (bITP)
+        else if (bITP)
         {
             top_file2 = itp_file;
         }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -124,13 +124,13 @@ CommandLineHelpContext::CommandLineHelpContext(
 {
 }
 
-CommandLineHelpContext::CommandLineHelpContext(CommandLineHelpContext &&other)
+CommandLineHelpContext::CommandLineHelpContext(CommandLineHelpContext &&other) noexcept
     : impl_(std::move(other.impl_))
 {
 }
 
 CommandLineHelpContext &CommandLineHelpContext::operator=(
-        CommandLineHelpContext &&other)
+        CommandLineHelpContext &&other) noexcept
 {
     impl_ = std::move(other.impl_);
     return *this;

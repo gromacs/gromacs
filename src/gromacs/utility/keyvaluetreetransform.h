@@ -128,9 +128,9 @@ class KeyValueTreeTransformRulesScoped
             internal::KeyValueTreeTransformerImpl *impl,
             const KeyValueTreePath                &prefix);
         //! Supports returning the object from IKeyValueTreeTransformRules::scopedTransform().
-        KeyValueTreeTransformRulesScoped(KeyValueTreeTransformRulesScoped &&other);
+        KeyValueTreeTransformRulesScoped(KeyValueTreeTransformRulesScoped &&other) noexcept;
         //! Supports returning the object from IKeyValueTreeTransformRules::scopedTransform().
-        KeyValueTreeTransformRulesScoped &operator=(KeyValueTreeTransformRulesScoped &&other);
+        KeyValueTreeTransformRulesScoped &operator=(KeyValueTreeTransformRulesScoped &&other) noexcept;
         ~KeyValueTreeTransformRulesScoped();
 
         //! Returns the interface for adding rules to this scope.
