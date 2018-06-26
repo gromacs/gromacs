@@ -124,8 +124,8 @@ double pull_conversion_factor_internal2userinput(const t_pull_coord *pcrd)
     }
 }
 
-static std::string append_before_extension(std::string pathname,
-                                           std::string to_append)
+static std::string append_before_extension(const std::string &pathname,
+                                           const std::string &to_append)
 {
     /* Appends to_append before last '.' in pathname */
     size_t extPos = pathname.find_last_of('.');

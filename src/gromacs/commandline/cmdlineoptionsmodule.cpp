@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 #include "cmdlineoptionsmodule.h"
 
 #include <memory>
+#include <utility>
 
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
@@ -103,7 +104,7 @@ class CommandLineOptionsModule : public ICommandLineModule
 
         CommandLineOptionsModule(const char *name, const char *description,
                                  FactoryMethod factory)
-            : name_(name), description_(description), factory_(factory)
+            : name_(name), description_(description), factory_(std::move(factory))
         {
         }
         CommandLineOptionsModule(const char *name, const char *description,
@@ -216,7 +217,7 @@ int ICommandLineOptionsModule::runAsMain(
         int argc, char *argv[], const char *name, const char *description,
         FactoryMethod factory)
 {
-    CommandLineOptionsModule module(name, description, factory);
+    CommandLineOptionsModule module(name, description, std::move(factory));
     return CommandLineModuleManager::runAsMainSingleModule(argc, argv, &module);
 }
 
@@ -226,7 +227,7 @@ void ICommandLineOptionsModule::registerModuleFactory(
         const char *description, FactoryMethod factory)
 {
     CommandLineModulePointer module(
-            new CommandLineOptionsModule(name, description, factory));
+            new CommandLineOptionsModule(name, description, std::move(factory)));
     manager->addModule(std::move(module));
 }
 

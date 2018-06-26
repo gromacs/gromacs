@@ -178,7 +178,7 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
         sscanf(name, "%d", &resnr);
         sscanf(line+5, "%5s", resname);
 
-        if (!oldResFirst || oldres != resnr || strncmp(resname, oldresname, sizeof(resname)))
+        if (!oldResFirst || oldres != resnr || strncmp(resname, oldresname, sizeof(resname)) != 0)
         {
             oldres      = resnr;
             oldResFirst = TRUE;

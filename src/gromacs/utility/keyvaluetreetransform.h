@@ -346,8 +346,8 @@ class KeyValueTreeTransformRuleBuilder
         void setExpectedType(const std::type_index &type);
         void setToPath(const KeyValueTreePath &path);
         void setKeyMatchType(StringCompareType keyMatchType);
-        void addTransformToVariant(std::function<Variant(const Variant &)> transform);
-        void addTransformToObject(std::function<void(KeyValueTreeObjectBuilder *, const Variant &)> transform);
+        void addTransformToVariant(const std::function<Variant(const Variant &)> &transform);
+        void addTransformToObject(const std::function<void(KeyValueTreeObjectBuilder *, const Variant &)> &transform);
 
         class Data;
 

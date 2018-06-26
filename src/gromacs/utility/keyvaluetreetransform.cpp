@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -565,7 +565,7 @@ void KeyValueTreeTransformRuleBuilder::setKeyMatchType(StringCompareType keyMatc
 }
 
 void KeyValueTreeTransformRuleBuilder::addTransformToVariant(
-        std::function<Variant(const Variant &)> transform)
+        const std::function<Variant(const Variant &)> &transform)
 {
     data_->transform_ =
         [transform] (KeyValueTreeValueBuilder *builder, const KeyValueTreeValue &value)
@@ -575,7 +575,7 @@ void KeyValueTreeTransformRuleBuilder::addTransformToVariant(
 }
 
 void KeyValueTreeTransformRuleBuilder::addTransformToObject(
-        std::function<void(KeyValueTreeObjectBuilder *, const Variant &)> transform)
+        const std::function<void(KeyValueTreeObjectBuilder *, const Variant &)> &transform)
 {
     data_->transform_ =
         [transform] (KeyValueTreeValueBuilder *builder, const KeyValueTreeValue &value)

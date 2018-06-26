@@ -633,7 +633,7 @@ int gmx_confrms(int argc, char *argv[])
     {
         name1 = *atoms1->atomname[index1[i]];
         name2 = *atoms2->atomname[index2[i]];
-        if (std::strcmp(name1, name2))
+        if (std::strcmp(name1, name2) != 0)
         {
             if (warn < 20)
             {
