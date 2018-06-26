@@ -2588,7 +2588,7 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
     if (bRead)
     {
         gmx_fio_do_string(fio, buf);
-        if (std::strncmp(buf, "VERSION", 7))
+        if (std::strncmp(buf, "VERSION", 7) != 0)
         {
             gmx_fatal(FARGS, "Can not read file %s,\n"
                       "             this file is from a GROMACS version which is older than 2.0\n"

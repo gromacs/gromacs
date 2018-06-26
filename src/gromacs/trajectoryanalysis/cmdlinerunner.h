@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -112,7 +112,7 @@ class TrajectoryAnalysisCommandLineRunner
          * Does not throw.  All exceptions are caught and handled internally.
          */
         static int runAsMain(int argc, char *argv[],
-                             ModuleFactoryMethod factory);
+                             const ModuleFactoryMethod &factory);
         /*! \brief
          * Registers a command-line module that runs a given module.
          *
@@ -126,7 +126,7 @@ class TrajectoryAnalysisCommandLineRunner
          */
         static void registerModule(CommandLineModuleManager *manager,
                                    const char *name, const char *description,
-                                   ModuleFactoryMethod factory);
+                                   const ModuleFactoryMethod &factory);
         /*! \brief
          * Create a command-line module that runs the provided analysis module.
          *
