@@ -3565,7 +3565,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
     comm->bPMELoadBalDLBLimits = FALSE;
 
     /* Allocate the charge group/atom sorting struct */
-    snew(comm->sort, 1);
+    comm->sort = gmx::compat::make_unique<gmx_domdec_sort_t>();
 
     comm->bCGs = (ncg_mtop(mtop) < mtop->natoms);
 
@@ -5856,65 +5856,60 @@ static int comp_cgsort(const void *a, const void *b)
     return comp;
 }
 
-static void order_int_cg(int n, const gmx_cgsort_t *sort,
-                         int *a, int *buf)
+static void order_int_cg(gmx::ArrayRef<const gmx_cgsort_t>  sort,
+                         int                               *a,
+                         std::vector<int>                  *buffer)
 {
-    int i;
-
-    /* Order the data */
-    for (i = 0; i < n; i++)
+    /* Order the data into the temporary buffer.
+     * Note: Using push_back() instead of resize() results in slower code.
+     */
+    buffer->resize(sort.size());
+    size_t i = 0;
+    for (const gmx_cgsort_t &entry : sort)
     {
-        buf[i] = a[sort[i].ind];
+        (*buffer)[i++] = a[entry.ind];
     }
 
     /* Copy back to the original array */
-    for (i = 0; i < n; i++)
-    {
-        a[i] = buf[i];
-    }
+    std::copy(buffer->begin(), buffer->end(), a);
 }
 
-static void order_vec_cg(int                      n,
-                         const gmx_cgsort_t      *sort,
-                         rvec                    *v,
-                         gmx::ArrayRef<gmx::RVec> sortBuffer)
+static void order_vec_cg(gmx::ArrayRef<const gmx_cgsort_t>  sort,
+                         gmx::ArrayRef<gmx::RVec>           vector,
+                         gmx::ArrayRef<gmx::RVec>           sortBuffer)
 {
-    GMX_ASSERT(sortBuffer.size() >= static_cast<size_t>(n), "Need a sufficiently large sorting buffer");
-
-    rvec *buf = as_rvec_array(sortBuffer.data());
+    GMX_ASSERT(vector.size() >= sort.size(), "The vector needs to be sufficiently large");
+    GMX_ASSERT(sortBuffer.size() >= sort.size(), "Need a sufficiently large sorting buffer");
 
     /* Order the data */
-    for (int i = 0; i < n; i++)
+    for (size_t i = 0; i < sort.size(); i++)
     {
-        copy_rvec(v[sort[i].ind], buf[i]);
+        sortBuffer[i] = vector[sort[i].ind];
     }
 
     /* Copy back to the original array */
-    for (int i = 0; i < n; i++)
-    {
-        copy_rvec(buf[i], v[i]);
-    }
+    std::copy(sortBuffer.begin(), sortBuffer.begin() + sort.size(),
+              vector.begin());
 }
 
-static void order_vec_atom(int                           ncg,
-                           const gmx::RangePartitioning *atomGroups,
-                           const gmx_cgsort_t           *sort,
-                           gmx::ArrayRef<gmx::RVec>      v,
-                           gmx::ArrayRef<gmx::RVec>      buf)
+static void order_vec_atom(const gmx::RangePartitioning      *atomGroups,
+                           gmx::ArrayRef<const gmx_cgsort_t>  sort,
+                           gmx::ArrayRef<gmx::RVec>           v,
+                           gmx::ArrayRef<gmx::RVec>           buf)
 {
     if (atomGroups == nullptr)
     {
         /* Avoid the useless loop of the atoms within a cg */
-        order_vec_cg(ncg, sort, as_rvec_array(v.data()), buf);
+        order_vec_cg(sort, v, buf);
 
         return;
     }
 
     /* Order the data */
     int a = 0;
-    for (int g = 0; g < ncg; g++)
+    for (const gmx_cgsort_t &entry : sort)
     {
-        for (int i : atomGroups->block(sort[g].ind))
+        for (int i : atomGroups->block(entry.ind))
         {
             copy_rvec(v[i], buf[a]);
             a++;
@@ -5929,182 +5924,154 @@ static void order_vec_atom(int                           ncg,
     }
 }
 
-static void ordered_sort(int nsort2, gmx_cgsort_t *sort2,
-                         int nsort_new, gmx_cgsort_t *sort_new,
-                         gmx_cgsort_t *sort1)
+/* Returns whether a < b */
+static bool compareCgsort(const gmx_cgsort_t &a,
+                          const gmx_cgsort_t &b)
 {
-    int i1, i2, i_new;
-
-    /* The new indices are not very ordered, so we qsort them */
-    gmx_qsort_threadsafe(sort_new, nsort_new, sizeof(sort_new[0]), comp_cgsort);
-
-    /* sort2 is already ordered, so now we can merge the two arrays */
-    i1    = 0;
-    i2    = 0;
-    i_new = 0;
-    while (i2 < nsort2 || i_new < nsort_new)
-    {
-        if (i2 == nsort2)
-        {
-            sort1[i1++] = sort_new[i_new++];
-        }
-        else if (i_new == nsort_new)
-        {
-            sort1[i1++] = sort2[i2++];
-        }
-        else if (sort2[i2].nsc < sort_new[i_new].nsc ||
-                 (sort2[i2].nsc == sort_new[i_new].nsc &&
-                  sort2[i2].ind_gl < sort_new[i_new].ind_gl))
-        {
-            sort1[i1++] = sort2[i2++];
-        }
-        else
-        {
-            sort1[i1++] = sort_new[i_new++];
-        }
-    }
+    return (a.nsc < b.nsc ||
+            (a.nsc == b.nsc && a.ind_gl < b.ind_gl));
 }
 
-static int dd_sort_order(gmx_domdec_t *dd, t_forcerec *fr, int ncg_home_old)
+static void orderedSort(gmx::ArrayRef<const gmx_cgsort_t>  stationary,
+                        gmx::ArrayRef<gmx_cgsort_t>        moved,
+                        std::vector<gmx_cgsort_t>         *sort1)
 {
-    gmx_domdec_sort_t *sort;
-    gmx_cgsort_t      *cgsort, *sort_i;
-    int                ncg_new, nsort2, nsort_new, i, *a, moved;
+    /* The new indices are not very ordered, so we qsort them */
+    gmx_qsort_threadsafe(moved.data(), moved.size(), sizeof(moved[0]), comp_cgsort);
 
-    sort = dd->comm->sort;
+    /* stationary is already ordered, so now we can merge the two arrays */
+    sort1->resize(stationary.size() + moved.size());
+    std::merge(stationary.begin(), stationary.end(),
+               moved.begin(), moved.end(),
+               sort1->begin(),
+               compareCgsort);
+}
 
-    a = fr->ns->grid->cell_index;
+/* Set the sorting order for systems with charge groups, returned in sort->sort.
+ * The order is according to the global charge group index.
+ * This adds and removes charge groups that moved between domains.
+ */
+static void dd_sort_order(const gmx_domdec_t *dd,
+                          const t_forcerec   *fr,
+                          int                 ncg_home_old,
+                          gmx_domdec_sort_t  *sort)
+{
+    const int *a          = fr->ns->grid->cell_index;
 
-    moved = NSGRID_SIGNAL_MOVED_FAC*fr->ns->grid->ncells;
+    const int  movedValue = NSGRID_SIGNAL_MOVED_FAC*fr->ns->grid->ncells;
 
     if (ncg_home_old >= 0)
     {
+        std::vector<gmx_cgsort_t> &stationary = sort->stationary;
+        std::vector<gmx_cgsort_t> &moved      = sort->moved;
+
         /* The charge groups that remained in the same ns grid cell
          * are completely ordered. So we can sort efficiently by sorting
          * the charge groups that did move into the stationary list.
+         * Note: push_back() seems to be slightly slower than direct access.
          */
-        ncg_new   = 0;
-        nsort2    = 0;
-        nsort_new = 0;
-        for (i = 0; i < dd->ncg_home; i++)
+        stationary.clear();
+        moved.clear();
+        for (int i = 0; i < dd->ncg_home; i++)
         {
             /* Check if this cg did not move to another node */
-            if (a[i] < moved)
+            if (a[i] < movedValue)
             {
-                if (i >= ncg_home_old || a[i] != sort->sort[i].nsc)
+                gmx_cgsort_t entry;
+                entry.nsc    = a[i];
+                entry.ind_gl = dd->globalAtomGroupIndices[i];
+                entry.ind    = i;
+
+                if (i >= ncg_home_old || a[i] != sort->sorted[i].nsc)
                 {
                     /* This cg is new on this node or moved ns grid cell */
-                    if (nsort_new >= sort->sort_new_nalloc)
-                    {
-                        sort->sort_new_nalloc = over_alloc_dd(nsort_new+1);
-                        srenew(sort->sort_new, sort->sort_new_nalloc);
-                    }
-                    sort_i = &(sort->sort_new[nsort_new++]);
+                    moved.push_back(entry);
                 }
                 else
                 {
                     /* This cg did not move */
-                    sort_i = &(sort->sort2[nsort2++]);
+                    stationary.push_back(entry);
                 }
-                /* Sort on the ns grid cell indices
-                 * and the global topology index.
-                 * index_gl is irrelevant with cell ns,
-                 * but we set it here anyhow to avoid a conditional.
-                 */
-                sort_i->nsc    = a[i];
-                sort_i->ind_gl = dd->globalAtomGroupIndices[i];
-                sort_i->ind    = i;
-                ncg_new++;
             }
         }
+
         if (debug)
         {
-            fprintf(debug, "ordered sort cgs: stationary %d moved %d\n",
-                    nsort2, nsort_new);
+            fprintf(debug, "ordered sort cgs: stationary %zu moved %zu\n",
+                    stationary.size(), moved.size());
         }
         /* Sort efficiently */
-        ordered_sort(nsort2, sort->sort2, nsort_new, sort->sort_new,
-                     sort->sort);
+        orderedSort(stationary, moved, &sort->sorted);
     }
     else
     {
-        cgsort  = sort->sort;
-        ncg_new = 0;
-        for (i = 0; i < dd->ncg_home; i++)
+        std::vector<gmx_cgsort_t> &cgsort   = sort->sorted;
+        cgsort.clear();
+        cgsort.reserve(dd->ncg_home);
+        int                        numCGNew = 0;
+        for (int i = 0; i < dd->ncg_home; i++)
         {
             /* Sort on the ns grid cell indices
              * and the global topology index
              */
-            cgsort[i].nsc    = a[i];
-            cgsort[i].ind_gl = dd->globalAtomGroupIndices[i];
-            cgsort[i].ind    = i;
-            if (cgsort[i].nsc < moved)
+            gmx_cgsort_t entry;
+            entry.nsc    = a[i];
+            entry.ind_gl = dd->globalAtomGroupIndices[i];
+            entry.ind    = i;
+            cgsort.push_back(entry);
+            if (cgsort[i].nsc < movedValue)
             {
-                ncg_new++;
+                numCGNew++;
             }
         }
         if (debug)
         {
-            fprintf(debug, "qsort cgs: %d new home %d\n", dd->ncg_home, ncg_new);
+            fprintf(debug, "qsort cgs: %d new home %d\n", dd->ncg_home, numCGNew);
         }
         /* Determine the order of the charge groups using qsort */
-        gmx_qsort_threadsafe(cgsort, dd->ncg_home, sizeof(cgsort[0]), comp_cgsort);
-    }
+        gmx_qsort_threadsafe(cgsort.data(), dd->ncg_home, sizeof(cgsort[0]), comp_cgsort);
 
-    return ncg_new;
+        /* Remove the charge groups which are no longer at home here */
+        cgsort.resize(numCGNew);
+    }
 }
 
-static int dd_sort_order_nbnxn(gmx_domdec_t *dd, t_forcerec *fr)
+/* Returns the sorting order for atoms based on the nbnxn grid order in sort */
+static void dd_sort_order_nbnxn(const t_forcerec          *fr,
+                                std::vector<gmx_cgsort_t> *sort)
 {
-    gmx_cgsort_t *sort;
-    int           ncg_new, i, na;
-    const int    *a;
+    gmx::ArrayRef<const int> atomOrder = nbnxn_get_atomorder(fr->nbv->nbs.get());
 
-    sort = dd->comm->sort->sort;
-
-    nbnxn_get_atomorder(fr->nbv->nbs.get(), &a, &na);
-
-    ncg_new = 0;
-    for (i = 0; i < na; i++)
+    /* Using push_back() instead of this resize results in much slower code */
+    sort->resize(atomOrder.size());
+    gmx::ArrayRef<gmx_cgsort_t> buffer    = *sort;
+    size_t                      numSorted = 0;
+    for (int i : atomOrder)
     {
-        if (a[i] >= 0)
+        if (i >= 0)
         {
-            sort[ncg_new].ind = a[i];
-            ncg_new++;
+            /* The values of nsc and ind_gl are not used in this case */
+            buffer[numSorted++].ind = i;
         }
     }
-
-    return ncg_new;
+    sort->resize(numSorted);
 }
 
 static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state *state,
                           int ncg_home_old)
 {
-    gmx_domdec_sort_t *sort;
-    gmx_cgsort_t      *cgsort;
-    int                ncg_new, i, *ibuf;
-
-    sort = dd->comm->sort;
-
-    if (dd->ncg_home > sort->sort_nalloc)
-    {
-        sort->sort_nalloc = over_alloc_dd(dd->ncg_home);
-        srenew(sort->sort, sort->sort_nalloc);
-        srenew(sort->sort2, sort->sort_nalloc);
-    }
-    cgsort = sort->sort;
+    gmx_domdec_sort_t *sort = dd->comm->sort.get();
 
     switch (fr->cutoff_scheme)
     {
         case ecutsGROUP:
-            ncg_new = dd_sort_order(dd, fr, ncg_home_old);
+            dd_sort_order(dd, fr, ncg_home_old, sort);
             break;
         case ecutsVERLET:
-            ncg_new = dd_sort_order_nbnxn(dd, fr);
+            dd_sort_order_nbnxn(fr, &sort->sorted);
             break;
         default:
             gmx_incons("unimplemented");
-            ncg_new = 0;
     }
 
     const gmx::RangePartitioning &atomGroups = dd->atomGroups();
@@ -6115,8 +6082,8 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
 
     const gmx::RangePartitioning *atomGroupsPtr = (dd->comm->bCGs ? &atomGroups : nullptr);
 
-    /* Remove the charge groups which are no longer at home here */
-    dd->ncg_home = ncg_new;
+    /* Set the new home atom/charge group count */
+    dd->ncg_home = sort->sorted.size();
     if (debug)
     {
         fprintf(debug, "Set the new home charge group count to %d\n",
@@ -6124,46 +6091,44 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
     }
 
     /* Reorder the state */
+    gmx::ArrayRef<const gmx_cgsort_t> cgsort = sort->sorted;
+    GMX_RELEASE_ASSERT(cgsort.size() == static_cast<size_t>(dd->ncg_home), "We should sort all the home atom groups");
+
     if (state->flags & (1 << estX))
     {
-        order_vec_atom(dd->ncg_home, atomGroupsPtr, cgsort, state->x, rvecBuffer.buffer);
+        order_vec_atom(atomGroupsPtr, cgsort, state->x, rvecBuffer.buffer);
     }
     if (state->flags & (1 << estV))
     {
-        order_vec_atom(dd->ncg_home, atomGroupsPtr, cgsort, state->v, rvecBuffer.buffer);
+        order_vec_atom(atomGroupsPtr, cgsort, state->v, rvecBuffer.buffer);
     }
     if (state->flags & (1 << estCGP))
     {
-        order_vec_atom(dd->ncg_home, atomGroupsPtr, cgsort, state->cg_p, rvecBuffer.buffer);
+        order_vec_atom(atomGroupsPtr, cgsort, state->cg_p, rvecBuffer.buffer);
     }
 
     if (fr->cutoff_scheme == ecutsGROUP)
     {
         /* Reorder cgcm */
-        order_vec_cg(dd->ncg_home, cgsort, cgcm, rvecBuffer.buffer);
+        gmx::ArrayRef<gmx::RVec> cgcmRef = gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec *>(cgcm[0]), cgsort.size());
+        order_vec_cg(cgsort, cgcmRef, rvecBuffer.buffer);
     }
 
-    if (dd->ncg_home+1 > sort->ibuf_nalloc)
-    {
-        sort->ibuf_nalloc = over_alloc_dd(dd->ncg_home+1);
-        srenew(sort->ibuf, sort->ibuf_nalloc);
-    }
-    ibuf = sort->ibuf;
     /* Reorder the global cg index */
-    order_int_cg(dd->ncg_home, cgsort, dd->globalAtomGroupIndices.data(), ibuf);
+    order_int_cg(cgsort, dd->globalAtomGroupIndices.data(), &sort->intBuffer);
     /* Reorder the cginfo */
-    order_int_cg(dd->ncg_home, cgsort, fr->cginfo, ibuf);
+    order_int_cg(cgsort, fr->cginfo, &sort->intBuffer);
     /* Rebuild the local cg index */
     if (dd->comm->bCGs)
     {
         /* We make a new, ordered atomGroups object and assign it to
-         * the old one. This causes some allocated overhead, but saves
+         * the old one. This causes some allocation overhead, but saves
          * a copy back of the whole index.
          */
         gmx::RangePartitioning ordered;
-        for (i = 0; i < dd->ncg_home; i++)
+        for (const gmx_cgsort_t &entry : cgsort)
         {
-            ordered.appendBlock(atomGroups.block(cgsort[i].ind).size());
+            ordered.appendBlock(atomGroups.block(entry.ind).size());
         }
         dd->atomGroups_ = ordered;
     }
@@ -6182,11 +6147,11 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
     else
     {
         /* Copy the sorted ns cell indices back to the ns grid struct */
-        for (i = 0; i < dd->ncg_home; i++)
+        for (size_t i = 0; i < cgsort.size(); i++)
         {
             fr->ns->grid->cell_index[i] = cgsort[i].nsc;
         }
-        fr->ns->grid->nr = dd->ncg_home;
+        fr->ns->grid->nr = cgsort.size();
     }
 }
 

@@ -39,6 +39,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_internal.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_domdec_zones_t;
@@ -82,8 +83,8 @@ void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
 /* Return the number of x and y cells in the local grid */
 void nbnxn_get_ncells(nbnxn_search_t nbs, int *ncx, int *ncy);
 
-/* Return the order indices *a of the atoms on the ns grid, size n */
-void nbnxn_get_atomorder(const nbnxn_search_t nbs, const int **a, int *n);
+/* Return the order indices of the atoms on the pairlist search grid */
+gmx::ArrayRef<const int> nbnxn_get_atomorder(const nbnxn_search_t nbs);
 
 /* Renumber the atom indices on the grid to consecutive order */
 void nbnxn_set_atomorder(nbnxn_search_t nbs);
