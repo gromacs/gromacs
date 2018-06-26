@@ -259,7 +259,8 @@ void Bayes<T>::simulate()
     double                           prevEval        = 0;
     double                           deltaEval       = 0;
     double                           randProbability = 0;
-    double                           mcProbability   = 0;    
+    double                           mcProbability   = 0; 
+    double                           halfIter        = maxIter()/2;   
     parm_t                           sum, sum_of_sq;
     
     FILE                            *fpc             = nullptr;
@@ -300,22 +301,6 @@ void Bayes<T>::simulate()
         
         if ((deltaEval < 0) || (mcProbability > randProbability))
         {
-            double xiter = (1.0*iter)/nParam;
-            if (nullptr != fpc)
-            {
-                fprintf(fpc, "%8f", xiter);
-                for (auto value : param_)
-                {
-                    fprintf(fpc, "  %10g", value);
-                }
-                fprintf(fpc, "\n");
-                fflush(fpc);
-            }
-            if (nullptr != fpe)
-            {
-                fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
-                fflush(fpe);
-            }
             if (currEval < *minEval_)
             {
                 bestParam_ = param_;
@@ -327,7 +312,23 @@ void Bayes<T>::simulate()
         {
             param_[j] = storeParam;
         }
-        if (iter >= maxIter()/2)
+        double xiter = (1.0*iter)/nParam;
+        if (nullptr != fpc)
+        {
+            fprintf(fpc, "%8f", xiter);
+            for (auto value : param_)
+            {
+                fprintf(fpc, "  %10g", value);
+            }
+            fprintf(fpc, "\n");
+            fflush(fpc);
+        }
+        if (nullptr != fpe)
+        {
+            fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
+            fflush(fpe);
+        }
+        if (iter >= halfIter)
         {
             for (auto k = 0; k < nParam; k++)
             {

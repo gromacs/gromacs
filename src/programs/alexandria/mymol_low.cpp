@@ -503,16 +503,22 @@ void getLjParams(const Poldata     &pd,
         vdwj.resize(2, 0.0);
     }
 
+    auto si = vdwi[0]; 
+    auto ei = vdwi[1];
+    
+    auto sj = vdwj[0];
+    auto ej = vdwj[1];
+    
     switch (pd.getCombRule())
     {
         case eCOMB_GEOMETRIC:
-            *c6 = std::sqrt((vdwi[0]) * (vdwj[0]));
-            *cn = std::sqrt((vdwi[1]) * (vdwj[1]));
+            *c6 = std::sqrt(si * sj);
+            *cn = std::sqrt(ei * ej);
             break;
         case eCOMB_ARITHMETIC:
         {
-            double sig  = 0.5 * ((vdwi[0]) + (vdwj[0]));
-            double eps  = std::sqrt((vdwi[1]) + (vdwj[1]));
+            double sig  = 0.5 * (si + sj);
+            double eps  = std::sqrt(ei + ej);
             double sig6 = std::pow(sig, 6.0);
             *c6 = 4*eps*sig6;
             *cn = *c6 * sig6;
@@ -520,8 +526,8 @@ void getLjParams(const Poldata     &pd,
         break;
         case eCOMB_GEOM_SIG_EPS:
         {
-            double sig  = std::sqrt((vdwi[0]) * (vdwj[0]));
-            double eps  = std::sqrt((vdwi[1]) * (vdwj[1]));
+            double sig  = std::sqrt(si * sj);
+            double eps  = std::sqrt(si * sj);
             double sig6 = std::pow(sig, 6.0);
             *c6 = 4*eps*sig6;
             *cn = *c6 * sig6;
@@ -561,22 +567,30 @@ void getBhamParams(const Poldata     &pd,
         vdwj.resize(3, 0.0);
     }
 
+    auto si = vdwi[0]; 
+    auto ei = vdwi[1];
+    auto gi = vdwi[2];
+    
+    auto sj = vdwj[0];
+    auto ej = vdwj[1];
+    auto gj = vdwj[2];
+    
     switch (pd.getCombRule())
     {
         case eCOMB_GEOMETRIC:
-            *a = std::sqrt((vdwi[0]) * (vdwj[0]));
-            *b = std::sqrt((vdwi[1]) * (vdwj[1]));
-            *c = std::sqrt((vdwi[2]) * (vdwj[2]));
+            *a = std::sqrt(si * sj);
+            *b = std::sqrt(ei * ej);
+            *c = std::sqrt(gi * gj);
             break;
         case eCOMB_ARITHMETIC:
-            *a = 0.5 * ((vdwi[0]) + (vdwj[0]));
-            *b = std::sqrt((vdwi[1]) * (vdwj[1]));
-            *c = 0.5 * ((vdwi[2]) + (vdwj[2]));
+            *a = 0.5 * (si + sj);
+            *b = std::sqrt(ei * ej);
+            *c = 0.5 * (gi + gj);
             break;
         case eCOMB_KONG_MASON:
-            *a = std::sqrt((vdwi[0]) * (vdwj[0]));
-            *b = 2.0*(vdwi[1] * vdwj[1])/(vdwi[1] + vdwj[1]);
-            *c = 0.25*((vdwi[2]/vdwi[0])+(vdwj[2]/vdwj[0]))*((vdwi[0]) + (vdwj[0]));
+            *a = std::sqrt(si * sj);
+            *b = 2.0 * (ei * ej)/(ei + ej);
+            *c = *a * (0.5*((gi/si)+(gj/sj)));
             break;
         case eCOMB_GEOM_SIG_EPS:
         case eCOMB_NONE:

@@ -374,7 +374,10 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                 }
                 vctot           += velec;
             } /* End of coulomb interactions */
-
+            if (debug)
+            {
+                fprintf(debug, "vctot: %0.3f \n", vctot);
+            }
 
             /* VdW interaction. ivdw==0 means no interaction */
             if (ivdw != GMX_NBKERNEL_VDW_NONE)
@@ -514,7 +517,11 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                 }
                 vvdwtot         += vvdw;
             } /* end VdW interactions */
-
+            if (debug)
+            {
+                fprintf(debug, "vvdwtot: %0.3f \n", vvdwtot);
+            }
+            
             fscal            = felec+fvdw;
 
             tx               = fscal*dx;

@@ -1660,13 +1660,13 @@ void Optimization::calcDeviation()
                             fprintf(debug, "spHF: %g  optHF: %g  DeltaEn: %g\n", spHF, optHF, deltaEn);
 
                             fprintf(debug, "%s Chi2 %g Hform %g Emol %g  Ecalc %g Morse %g  "
-                                    "Hangle %g Langle %g PDIHS %g IDIHS %g Coul %g LJ %g BHAM %g POL %g  Force2 %g\n",
+                                    "Hangle %g Langle %g PDIHS %g IDIHS %g Coul %g LJ %g BHAM %g POL %g  Force %g\n",
                                     mymol.molProp()->getMolname().c_str(), ener, mymol.Hform_, Emol, mymol.Ecalc_,
                                     mymol.enerd_->term[F_MORSE], mymol.enerd_->term[F_UREY_BRADLEY],
                                     mymol.enerd_->term[F_LINEAR_ANGLES], mymol.enerd_->term[F_PDIHS],
                                     mymol.enerd_->term[F_IDIHS], mymol.enerd_->term[F_COUL_SR],
                                     mymol.enerd_->term[F_LJ], mymol.enerd_->term[F_BHAM],
-                                    mymol.enerd_->term[F_POLARIZATION], mymol.Force2_);
+                                    mymol.enerd_->term[F_POLARIZATION], sqrt(mymol.Force2_));
                         }
                     }
                 }
