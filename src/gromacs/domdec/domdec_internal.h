@@ -116,6 +116,7 @@ typedef struct
     int    flags;     /**< Bit flags that tell if DLB was limited, per dimension */
 } domdec_load_t;
 
+/*! \brief Data needed to sort an atom to the desired location in the local state */
 typedef struct
 {
     int  nsc;     /**< Neighborsearch grid cell index */
@@ -123,15 +124,13 @@ typedef struct
     int  ind;     /**< Local atom/charge group index */
 } gmx_cgsort_t;
 
+/*! \brief Temporary buffers for sorting atoms */
 typedef struct
 {
-    gmx_cgsort_t *sort;             /**< Sorted array of indices */
-    gmx_cgsort_t *sort2;            /**< Array of stationary atom/charge group indices */
-    int           sort_nalloc;      /**< Number of elements in both arrays of indices */
-    gmx_cgsort_t *sort_new;         /**< Array of moved atom/charge group indices */
-    int           sort_new_nalloc;  /**< Number of elements in array of moved atom/charge group indices */
-    int          *ibuf;             /**< Integer buffer used for sorting */
-    int           ibuf_nalloc;      /**< Number of elements allocated in the buffer */
+    std::vector<gmx_cgsort_t> sort;       /**< Sorted array of indices */
+    std::vector<gmx_cgsort_t> stationary; /**< Array of stationary atom/charge group indices */
+    std::vector<gmx_cgsort_t> moved;      /**< Array of moved atom/charge group indices */
+    std::vector<int>          intBuffer;  /**< Integer buffer for sorting */
 } gmx_domdec_sort_t;
 
 /*! \brief Manages atom ranges and order for the local state atom vectors */
@@ -380,7 +379,7 @@ struct gmx_domdec_comm_t
     t_block cgs_gl;               /**< The global charge groups, this defined the DD state (except for the DLB state) */
 
     /* Charge group / atom sorting */
-    gmx_domdec_sort_t *sort;      /**< Data structure for cg/atom sorting */
+    std::unique_ptr<gmx_domdec_sort_t> sort; /**< Data structure for cg/atom sorting */
 
     /* Are there charge groups? */
     gmx_bool bCGs;                /**< True when there are charge groups */

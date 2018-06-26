@@ -1524,16 +1524,14 @@ void nbnxn_get_ncells(nbnxn_search_t nbs, int *ncx, int *ncy)
     *ncy = nbs->grid[0].numCells[YY];
 }
 
-void nbnxn_get_atomorder(const nbnxn_search_t nbs, const int **a, int *n)
+gmx::ArrayRef<const int> nbnxn_get_atomorder(const nbnxn_search_t nbs)
 {
-    const nbnxn_grid_t *grid;
-
-    grid = &nbs->grid[0];
-
     /* Return the atom order for the home cell (index 0) */
-    *a  = nbs->a.data();
+    const nbnxn_grid_t &grid       = nbs->grid[0];
 
-    *n = grid->cxy_ind[grid->numCells[XX]*grid->numCells[YY]]*grid->na_sc;
+    int                 numIndices = grid.cxy_ind[grid.numCells[XX]*grid.numCells[YY]]*grid.na_sc;
+
+    return gmx::constArrayRefFromArray(nbs->a.data(), numIndices);
 }
 
 void nbnxn_set_atomorder(nbnxn_search_t nbs)
