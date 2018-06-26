@@ -75,6 +75,9 @@ void close_symtab(t_symtab *symtab);
  * Note that this does no work.
  */
 
+/*! \brief Returns a deep copy of \c symtab. */
+t_symtab *duplicateSymtab(const t_symtab *symtab);
+
 void free_symtab(t_symtab *symtab);
 /* Frees the space allocated by the symbol table itself */
 
