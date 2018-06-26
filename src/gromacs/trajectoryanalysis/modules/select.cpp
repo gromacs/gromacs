@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -680,21 +680,26 @@ Select::writeOutput()
                            "Topology should have been loaded or an error given earlier");
         t_atoms            atoms;
         atoms = top_->topology()->atoms;
-        t_pdbinfo         *pdbinfo;
-        snew(pdbinfo, atoms.nr);
-        const sfree_guard  pdbinfoGuard(pdbinfo);
-        if (atoms.havePdbInfo)
+        // Replace the pbdbinfo so that we can change it, without
+        // changing the content of top_, and never leak memory.
+        sfree_guard pdbinfoGuard;
         {
-            std::memcpy(pdbinfo, atoms.pdbinfo, atoms.nr*sizeof(*pdbinfo));
+            t_pdbinfo *pdbinfo;
+            snew(pdbinfo, atoms.nr);
+            pdbinfoGuard.reset(pdbinfo);
+            if (atoms.havePdbInfo)
+            {
+                std::memcpy(pdbinfo, atoms.pdbinfo, atoms.nr*sizeof(*pdbinfo));
+            }
+            else
+            {
+                atoms.havePdbInfo = TRUE;
+            }
+            atoms.pdbinfo = pdbinfo;
         }
-        else
-        {
-            atoms.havePdbInfo = TRUE;
-        }
-        atoms.pdbinfo = pdbinfo;
         for (int i = 0; i < atoms.nr; ++i)
         {
-            pdbinfo[i].occup = 0.0;
+            atoms.pdbinfo[i].occup = 0.0;
         }
         for (size_t g = 0; g < sel_.size(); ++g)
         {
@@ -705,7 +710,7 @@ Select::writeOutput()
                 ArrayRef<const int>::const_iterator ai;
                 for (ai = atomIndices.begin(); ai != atomIndices.end(); ++ai)
                 {
-                    pdbinfo[*ai].occup += occupancyModule_->average(g, i);
+                    atoms.pdbinfo[*ai].occup += occupancyModule_->average(g, i);
                 }
             }
         }
@@ -748,7 +753,7 @@ Select::writeOutput()
                 std::vector<int> indices;
                 for (int i = 0; i < atoms.nr; ++i)
                 {
-                    if (pdbinfo[i].occup > 0.0)
+                    if (atoms.pdbinfo[i].occup > 0.0)
                     {
                         indices.push_back(i);
                     }
