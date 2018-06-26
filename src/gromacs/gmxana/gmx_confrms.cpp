@@ -291,8 +291,7 @@ static int find_next_match_res(int *rnr1, int isize1,
             rr1 += dx;
             rr2 += dx;
         }
-        else
-        if (bFW)
+        else if (bFW)
         {
             rr1 += dx;
             rr2 += dy;

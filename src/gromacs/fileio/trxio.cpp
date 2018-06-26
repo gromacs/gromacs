@@ -718,8 +718,7 @@ static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
             fr->not_ok = DATA_NOT_OK;
         }
     }
-    else
-    if (!bOK)
+    else if (!bOK)
     {
         fr->not_ok = HEADER_NOT_OK;
     }
