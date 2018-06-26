@@ -2387,7 +2387,7 @@ int gmx_hbond(int argc, char *argv[])
         "n(t) can be defined as either all pairs that are not within contact distance r at time t",
         "(corresponding to leaving the -r2 option at the default value 0) or all pairs that",
         "are within distance r2 (corresponding to setting a second cut-off value with option -r2).",
-        "See mentioned literature for more details and definitions."
+        "See mentioned literature for more details and definitions.",
         "[PAR]",
 
         /*    "It is also possible to analyse specific hydrogen bonds with",

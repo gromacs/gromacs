@@ -255,7 +255,7 @@ int gmx_dos(int argc, char *argv[])
         "in the trajecotry with sufficiently high frequency such as to cover",
         "all vibrations. For flexible systems that would be around a few fs",
         "between saving. Properties based on the DoS are printed on the",
-        "standard output."
+        "standard output.",
         "Note that the density of states is calculated from the mass-weighted",
         "autocorrelation, and by default only from the square of the real",
         "component rather than absolute value. This means the shape can differ",

@@ -1020,7 +1020,7 @@ int gmx_analyze(int argc, char *argv[])
 
         "Option [TT]-power[tt] fits the data to [MATH]b t^a[math], which is accomplished",
         "by fitting to [MATH]a t + b[math] on log-log scale. All points after the first",
-        "zero or with a negative value are ignored.[PAR]"
+        "zero or with a negative value are ignored.[PAR]",
 
         "Option [TT]-luzar[tt] performs a Luzar & Chandler kinetics analysis",
         "on output from [gmx-hbond]. The input file can be taken directly",

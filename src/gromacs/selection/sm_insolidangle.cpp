@@ -342,7 +342,7 @@ static const char *const help_insolidangle[] = {
     "(default=5) of any position in [TT]POS_EXPR[tt] as seen from [TT]POS[tt]",
     "a position expression that evaluates to a single position), i.e., atoms",
     "in the solid angle spanned by the positions in [TT]POS_EXPR[tt] and",
-    "centered at [TT]POS[tt].[PAR]"
+    "centered at [TT]POS[tt].[PAR]",
 
     "Technically, the solid angle is constructed as a union of small cones",
     "whose tip is at [TT]POS[tt] and the axis goes through a point in",
