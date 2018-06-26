@@ -212,6 +212,41 @@ void close_symtab(t_symtab gmx_unused *symtab)
 {
 }
 
+// TODO this will go away when we use a
+// std::list<std::vector<std::string>>> for t_symtab.
+t_symtab *duplicateSymtab(const t_symtab *symtab)
+{
+    t_symtab *copySymtab;
+    snew(copySymtab, 1);
+    open_symtab(copySymtab);
+    t_symbuf *symbuf = symtab->symbuf;
+    if (symbuf != nullptr)
+    {
+        snew(copySymtab->symbuf, 1);
+    }
+    t_symbuf *copySymbuf = copySymtab->symbuf;
+    while (symbuf != nullptr)
+    {
+        snew(copySymbuf->buf, symbuf->bufsize);
+        copySymbuf->bufsize = symbuf->bufsize;
+        for (int i = 0; (i < symbuf->bufsize) && (i < symtab->nr); i++)
+        {
+            if (symbuf->buf[i])
+            {
+                copySymbuf->buf[i] = gmx_strdup(symbuf->buf[i]);
+            }
+        }
+        symbuf = symbuf->next;
+        if (symbuf != nullptr)
+        {
+            snew(copySymbuf->next, 1);
+            copySymbuf = copySymbuf->next;
+        }
+    }
+    copySymtab->nr = symtab->nr;
+    return copySymtab;
+}
+
 void done_symtab(t_symtab *symtab)
 {
     int       i;
