@@ -544,7 +544,7 @@ parseHwLoc(HardwareTopology::Machine *        machine,
     }
 
     hwloc_topology_destroy(topo);
-    return; // SupportLevel::Full or SupportLevel::FullWithDevices.
+// SupportLevel::Full or SupportLevel::FullWithDevices.
 }
 
 #endif

@@ -1430,8 +1430,6 @@ static void convertOldToNewGroupFormat(
     copyIndicesToGroup(indCations, nCations, g, cr);
     sfree(indAnions);
     sfree(indCations);
-
-    return;
 }
 
 

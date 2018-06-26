@@ -256,7 +256,7 @@ enum class OutputFileType
  * the output that mdrun writes. It would be better to define these
  * values in a single location.
  */
-static constexpr int maxAwhGraphs = 6;
+constexpr int maxAwhGraphs = 6;
 
 /*! \brief Constructs a legend for a standard awh output file */
 std::vector<std::string>makeLegend(const AwhBiasParams *awhBiasParams,
@@ -318,11 +318,8 @@ OutputFile::OutputFile(const std::string  filename,
     numDim_(0),
     firstGraphSubBlock_(0),
     numGraph_(0),
-    useKTForEnergy_(0),
-    scaleFactor_(),
-    legend_(),
-    xLabel_(),
-    yLabel_()
+    useKTForEnergy_(0)
+
 {
     // cppcheck-suppress useInitializationList
     baseFilename_ = filename.substr(0, filename.find('.'));

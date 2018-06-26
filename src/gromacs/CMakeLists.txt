@@ -282,9 +282,9 @@ if (GMX_CLANG_TIDY)
        bugprone-*,misc-*,readability-*,performance-*,mpi-*,\
        -misc-misplaced-widening-cast,-readability-named-parameter,\
        -misc-suspicious-string-compare,\
-       -readability-redundant-control-flow,-performance-unnecessary-value-param,\
-       -readability-static-definition-in-anonymous-namespace,-misc-suspicious-missing-comma,\
-       -readability-redundant-member-init,-misc-misplaced-const,\
+       -performance-unnecessary-value-param,\
+       -misc-suspicious-missing-comma,\
+       -misc-misplaced-const,\
        -misc-incorrect-roundings,-misc-macro-parentheses,-readability-function-size,-readability-else-after-return,\
        -readability-inconsistent-declaration-parameter-name,-misc-throw-by-value-catch-by-reference,\
        -readability-non-const-parameter,-readability-implicit-bool-conversion;-warnings-as-errors=*;-fix")

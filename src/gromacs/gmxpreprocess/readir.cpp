@@ -1587,8 +1587,6 @@ static void do_simtemp_params(t_inputrec *ir)
 
     snew(ir->simtempvals->temperatures, ir->fepvals->n_lambda);
     GetSimTemps(ir->fepvals->n_lambda, ir->simtempvals, ir->fepvals->all_lambda[efptTEMPERATURE]);
-
-    return;
 }
 
 static void do_wall_params(t_inputrec *ir,
@@ -1691,8 +1689,6 @@ static void read_expandedparams(std::vector<t_inpfile> *inp,
     expand->wl_ratio            = get_ereal(inp, "wl-ratio", 0.8, wi);
     expand->init_wl_delta       = get_ereal(inp, "init-wl-delta", 1.0, wi);
     expand->bWLoneovert         = get_eeenum(inp, "wl-oneovert", yesno_names, wi);
-
-    return;
 }
 
 /*! \brief Return whether an end state with the given coupling-lambda

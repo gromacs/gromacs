@@ -55,7 +55,7 @@ namespace gmx
 
 EnergyFrame::EnergyFrame(const t_enxframe &enxframe,
                          const std::map<std::string, int> indicesOfEnergyFields)
-    : values_(), step_(enxframe.step), time_(enxframe.t)
+    : step_(enxframe.step), time_(enxframe.t)
 {
     for (auto &index : indicesOfEnergyFields)
     {

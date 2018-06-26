@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,9 +75,7 @@ ekinstate_t::ekinstate_t() : bUpToDate(FALSE),
                              ekinf(nullptr),
                              ekinh_old(nullptr),
                              ekin_total(),
-                             ekinscalef_nhc(),
-                             ekinscaleh_nhc(),
-                             vscale_nhc(),
+
                              dekindl(0),
                              mvcos(0)
 {
@@ -231,24 +229,18 @@ t_state::t_state() : natoms(0),
                      flags(0),
                      fep_state(0),
                      lambda(),
-                     nosehoover_xi(),
-                     nosehoover_vxi(),
-                     nhpres_xi(),
-                     nhpres_vxi(),
-                     therm_integral(),
+
                      baros_integral(0),
                      veta(0),
                      vol0(0),
-                     x(),
-                     v(),
-                     cg_p(),
+
                      ekinstate(),
                      hist(),
                      dfhist(nullptr),
                      awhHistory(nullptr),
                      ddp_count(0),
-                     ddp_count_cg_gl(0),
-                     cg_gl()
+                     ddp_count_cg_gl(0)
+
 {
     // It would be nicer to initialize these with {} or {{0}} in the
     // above initialization list, but uncrustify doesn't understand

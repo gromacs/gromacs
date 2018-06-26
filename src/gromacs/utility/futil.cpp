@@ -592,12 +592,8 @@ void gmx_tmpnam(char *buf)
                   strerror(errno));
     }
     close(fd);
-
 #endif
-
     /* name in Buf should now be OK and file is CLOSED */
-
-    return;
 }
 
 FILE *gmx_fopen_temporary(char *buf)

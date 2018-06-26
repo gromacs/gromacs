@@ -97,7 +97,6 @@ static void p_integrate(double *result, double data[], int ndata, double slWidth
         }
         result[slice] = sum;
     }
-    return;
 }
 
 static void calc_potential(const char *fn, int **index, int gnx[],

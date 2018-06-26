@@ -63,9 +63,9 @@ namespace
 constexpr bool g_usingMpi = GMX_MPI;
 
 //! Helper function to prepare to all-gather the vector of non-bonded tasks on this node.
-static std::vector<int> allgather(const int &input,
-                                  int        numRanks,
-                                  MPI_Comm   communicator)
+std::vector<int> allgather(const int &input,
+                           int        numRanks,
+                           MPI_Comm   communicator)
 {
     std::vector<int> result(numRanks);
     if (g_usingMpi && numRanks > 1)
@@ -106,8 +106,8 @@ static std::vector<int> allgather(const int &input,
 }
 
 //! Helper function to compute allgatherv displacements.
-static std::vector<int> computeDisplacements(ArrayRef<const int> extentOnEachRank,
-                                             int                 numRanks)
+std::vector<int> computeDisplacements(ArrayRef<const int> extentOnEachRank,
+                                      int                 numRanks)
 {
     std::vector<int> displacements(numRanks + 1);
     displacements[0] = 0;
@@ -116,10 +116,10 @@ static std::vector<int> computeDisplacements(ArrayRef<const int> extentOnEachRan
 }
 
 //! Helper function to all-gather the vector of all GPU tasks on ranks of this node.
-static std::vector<GpuTask> allgatherv(ArrayRef<const GpuTask> input,
-                                       ArrayRef<const int>     extentOnEachRank,
-                                       ArrayRef<const int>     displacementForEachRank,
-                                       MPI_Comm                communicator)
+std::vector<GpuTask> allgatherv(ArrayRef<const GpuTask> input,
+                                ArrayRef<const int>     extentOnEachRank,
+                                ArrayRef<const int>     displacementForEachRank,
+                                MPI_Comm                communicator)
 {
     // Now allocate the vector and do the allgatherv
     int                  totalExtent = displacementForEachRank.back();
