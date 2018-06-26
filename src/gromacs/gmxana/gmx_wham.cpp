@@ -446,13 +446,13 @@ static void read_pdo_header(FILE * file, t_UmbrellaHeader * header, t_UmbrellaOp
     }
     ist.str(line);
     ist >> Buffer0 >> Buffer1 >> Buffer2;
-    if (std::strcmp(Buffer1, "UMBRELLA"))
+    if (std::strcmp(Buffer1, "UMBRELLA") != 0)
     {
         gmx_fatal(FARGS, "This does not appear to be a valid pdo file. Found %s, expected %s\n"
                   "(Found in first line: `%s')\n",
                   Buffer1, "UMBRELLA", line);
     }
-    if (std::strcmp(Buffer2, "3.0"))
+    if (std::strcmp(Buffer2, "3.0") != 0)
     {
         gmx_fatal(FARGS, "This does not appear to be a version 3.0 pdo file");
     }

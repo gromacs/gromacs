@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,7 @@
 
 #include "abstractdata.h"
 
+#include <utility>
 #include <vector>
 
 #include "gromacs/analysisdata/dataframe.h"
@@ -166,7 +167,7 @@ AbstractAnalysisData::requestStorage(int nframes)
 void
 AbstractAnalysisData::addModule(AnalysisDataModulePointer module)
 {
-    impl_->modules_.addModule(this, module);
+    impl_->modules_.addModule(this, std::move(module));
 }
 
 
@@ -178,7 +179,7 @@ AbstractAnalysisData::addColumnModule(int col, int span,
                        "Invalid columns specified for a column module");
     std::shared_ptr<AnalysisDataProxy> proxy(
             new AnalysisDataProxy(col, span, this));
-    proxy->addModule(module);
+    proxy->addModule(std::move(module));
     addModule(proxy);
 }
 

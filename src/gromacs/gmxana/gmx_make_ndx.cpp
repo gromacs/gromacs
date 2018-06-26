@@ -825,7 +825,7 @@ static int split_chain(const t_atoms *atoms, const rvec *x,
 
     while (ca_start < natoms)
     {
-        while ((ca_start < natoms) && std::strcmp(*atoms->atomname[ca_start], "CA"))
+        while ((ca_start < natoms) && std::strcmp(*atoms->atomname[ca_start], "CA") != 0)
         {
             ca_start++;
         }
@@ -849,7 +849,7 @@ static int split_chain(const t_atoms *atoms, const rvec *x,
                 {
                     i++;
                 }
-                while ((i < natoms) && std::strcmp(*atoms->atomname[i], "CA"));
+                while ((i < natoms) && std::strcmp(*atoms->atomname[i], "CA") != 0);
                 if (i < natoms)
                 {
                     rvec_sub(x[ca_end], x[i], vec);

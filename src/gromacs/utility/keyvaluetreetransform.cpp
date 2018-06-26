@@ -565,7 +565,7 @@ void KeyValueTreeTransformRuleBuilder::setKeyMatchType(StringCompareType keyMatc
 }
 
 void KeyValueTreeTransformRuleBuilder::addTransformToVariant(
-        std::function<Variant(const Variant &)> transform)
+        const std::function<Variant(const Variant &)> &transform)
 {
     data_->transform_ =
         [transform] (KeyValueTreeValueBuilder *builder, const KeyValueTreeValue &value)
@@ -575,7 +575,7 @@ void KeyValueTreeTransformRuleBuilder::addTransformToVariant(
 }
 
 void KeyValueTreeTransformRuleBuilder::addTransformToObject(
-        std::function<void(KeyValueTreeObjectBuilder *, const Variant &)> transform)
+        const std::function<void(KeyValueTreeObjectBuilder *, const Variant &)> &transform)
 {
     data_->transform_ =
         [transform] (KeyValueTreeValueBuilder *builder, const KeyValueTreeValue &value)

@@ -109,8 +109,8 @@ class OutputFile
          * \param[in] numBias    The total number of AWH biases in the system.
          * \param[in] biasIndex  The index of this bias.
          */
-        OutputFile(std::string        filename,
-                   std::string        baseTitle,
+        OutputFile(const std::string &filename,
+                   const std::string &baseTitle,
                    int                numBias,
                    int                biasIndex);
 
@@ -311,8 +311,8 @@ std::vector<std::string>makeLegend(const AwhBiasParams *awhBiasParams,
 
 } // namespace
 
-OutputFile::OutputFile(const std::string  filename,
-                       const std::string  baseTitle,
+OutputFile::OutputFile(const std::string &filename,
+                       const std::string &baseTitle,
                        int                numBias,
                        int                biasIndex) :
     numDim_(0),
