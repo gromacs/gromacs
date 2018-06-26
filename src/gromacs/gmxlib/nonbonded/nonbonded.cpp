@@ -313,7 +313,6 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
             }
         }
     }
-    return;
 }
 
 void do_nonbonded(const t_forcerec  *fr,

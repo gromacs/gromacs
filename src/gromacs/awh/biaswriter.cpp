@@ -66,7 +66,7 @@ namespace
  * the iterator of this map, which is based on the enum value
  * (and matches the order of the lines below).
  */
-static const std::map<AwhOutputEntryType, Normalization> outputTypeToNormalization =
+const std::map<AwhOutputEntryType, Normalization> outputTypeToNormalization =
 {
     { AwhOutputEntryType::MetaData,               Normalization::None },
     { AwhOutputEntryType::CoordValue,             Normalization::Coordinate },

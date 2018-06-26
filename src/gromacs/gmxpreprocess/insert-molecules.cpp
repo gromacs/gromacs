@@ -329,7 +329,7 @@ class InsertMolecules : public ICommandLineOptionsModule, public ITopologyProvid
         InsertMolecules()
             : bBox_(false), nmolIns_(0), nmolTry_(10), seed_(0),
               defaultDistance_(0.105), scaleFactor_(0.57), enumRot_(en_rotXYZ),
-              top_(), ePBC_(-1)
+              ePBC_(-1)
         {
             clear_rvec(newBox_);
             clear_rvec(deltaR_);
