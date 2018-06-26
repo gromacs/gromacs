@@ -65,7 +65,7 @@ int gmx_sans(int argc, char *argv[])
         "[THISMODULE] computes SANS spectra using Debye formula.",
         "It currently uses topology file (since it need to assigne element for each atom).",
         "[PAR]",
-        "Parameters:[PAR]"
+        "Parameters:[PAR]",
         "[TT]-pr[tt] Computes normalized g(r) function averaged over trajectory[PAR]",
         "[TT]-prframe[tt] Computes normalized g(r) function for each frame[PAR]",
         "[TT]-sq[tt] Computes SANS intensity curve averaged over trajectory[PAR]",

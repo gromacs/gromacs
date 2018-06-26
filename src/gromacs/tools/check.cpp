@@ -836,7 +836,7 @@ int gmx_check(int argc, char *argv[])
         "run input files this way, the default relative tolerance is reduced",
         "to 0.000001 and the absolute tolerance set to zero to find any differences",
         "not due to minor compiler optimization differences, although you can",
-        "of course still set any other tolerances through the options."
+        "of course still set any other tolerances through the options.",
         "Similarly a pair of trajectory files can be compared (using the [TT]-f2[tt]",
         "option), or a pair of energy files (using the [TT]-e2[tt] option).[PAR]",
         "For free energy simulations the A and B state topology from one",
