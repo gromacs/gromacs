@@ -243,7 +243,7 @@ if (GMX_CLANG_TIDY)
        -misc-misplaced-widening-cast,-readability-named-parameter,\
        -readability-container-size-empty,-misc-suspicious-string-compare,\
        -readability-redundant-control-flow,-performance-unnecessary-value-param,\
-       -readability-static-definition-in-anonymous-namespace,-misc-suspicious-missing-comma,\
+       -readability-static-definition-in-anonymous-namespace,\
        -readability-redundant-member-init,-misc-misplaced-const,-performance-type-promotion-in-math-fn,\
        -misc-incorrect-roundings,-misc-macro-parentheses,-readability-function-size,-readability-else-after-return,\
        -readability-inconsistent-declaration-parameter-name,-misc-throw-by-value-catch-by-reference,\

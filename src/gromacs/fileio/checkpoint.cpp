@@ -112,7 +112,7 @@ const char *est_names[estNR] =
     "x", "v", "sdx-unsupported", "CGp", "LD-rng-unsupported", "LD-rng-i-unsupported",
     "disre_initf", "disre_rm3tav",
     "orire_initf", "orire_Dtav",
-    "svir_prev", "nosehoover-vxi", "v_eta", "vol0", "nhpres_xi", "nhpres_vxi", "fvir_prev", "fep_state", "MC-rng-unsupported", "MC-rng-i-unsupported"
+    "svir_prev", "nosehoover-vxi", "v_eta", "vol0", "nhpres_xi", "nhpres_vxi", "fvir_prev", "fep_state", "MC-rng-unsupported", "MC-rng-i-unsupported",
     "barostat-integral"
 };
 

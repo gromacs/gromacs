@@ -105,7 +105,7 @@ int gmx_rms(int argc, char *argv[])
         "deviation (RMSD), the size-independent [GRK]rho[grk] similarity parameter",
         "([TT]rho[tt]) or the scaled [GRK]rho[grk] ([TT]rhosc[tt]), ",
         "see Maiorov & Crippen, Proteins [BB]22[bb], 273 (1995).",
-        "This is selected by [TT]-what[tt].[PAR]"
+        "This is selected by [TT]-what[tt].[PAR]",
 
         "Each structure from a trajectory ([TT]-f[tt]) is compared to a",
         "reference structure. The reference structure",

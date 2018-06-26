@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -342,7 +342,7 @@ static const char *const help_insolidangle[] = {
     "(default=5) of any position in [TT]POS_EXPR[tt] as seen from [TT]POS[tt]",
     "a position expression that evaluates to a single position), i.e., atoms",
     "in the solid angle spanned by the positions in [TT]POS_EXPR[tt] and",
-    "centered at [TT]POS[tt].[PAR]"
+    "centered at [TT]POS[tt].[PAR]",
 
     "Technically, the solid angle is constructed as a union of small cones",
     "whose tip is at [TT]POS[tt] and the axis goes through a point in",

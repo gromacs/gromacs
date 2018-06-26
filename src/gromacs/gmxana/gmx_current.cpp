@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -848,7 +848,7 @@ int gmx_current(int argc, char *argv[])
         "dielectric constant. To obtain a reasonable result, the index group has to be neutral.",
         "Furthermore, the routine is capable of extracting the static conductivity from the current ",
         "autocorrelation function, if velocities are given. Additionally, an Einstein-Helfand fit ",
-        "can be used to obtain the static conductivity."
+        "can be used to obtain the static conductivity.",
         "[PAR]",
         "The flag [TT]-caf[tt] is for the output of the current autocorrelation function and [TT]-mc[tt] writes the",
         "correlation of the rotational and translational part of the dipole moment in the corresponding",

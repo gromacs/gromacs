@@ -563,7 +563,7 @@ int gmx_hydorder(int argc, char *argv[])
         "[THISMODULE] computes the tetrahedrality order parameters around a ",
         "given atom. Both angle an distance order parameters are calculated. See",
         "P.-L. Chau and A.J. Hardwick, Mol. Phys., 93, (1998), 511-518.",
-        "for more details.[PAR]"
+        "for more details.[PAR]",
         "[THISMODULE] calculates the order parameter in a 3d-mesh in the box, and",
         "with 2 phases in the box gives the user the option to define a 2D interface in time",
         "separating the faces by specifying parameters [TT]-sgang1[tt] and",

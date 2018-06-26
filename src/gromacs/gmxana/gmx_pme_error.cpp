@@ -1077,7 +1077,7 @@ int gmx_pme_error(int argc, char *argv[])
         "if using the sPME algorithm. The flag [TT]-tune[tt] will determine",
         "the splitting parameter such that the error is equally",
         "distributed over the real and reciprocal space part.",
-        "The part of the error that stems from self interaction of the particles "
+        "The part of the error that stems from self interaction of the particles ",
         "is computationally demanding. However, a good a approximation is to",
         "just use a fraction of the particles for this term which can be",
         "indicated by the flag [TT]-self[tt].[PAR]",

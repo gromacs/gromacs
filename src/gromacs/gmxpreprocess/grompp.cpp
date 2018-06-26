@@ -1666,7 +1666,7 @@ int gmx_grompp(int argc, char *argv[])
         "interactions can be kept by turning off [TT]-rmvsbds[tt]. Additionally,",
         "all constraints for distances which will be constant anyway because",
         "of virtual site constructions will be removed. If any constraints remain",
-        "which involve virtual sites, a fatal error will result.[PAR]"
+        "which involve virtual sites, a fatal error will result.[PAR]",
 
         "To verify your run input file, please take note of all warnings",
         "on the screen, and correct where necessary. Do also look at the contents",
@@ -1676,7 +1676,7 @@ int gmx_grompp(int argc, char *argv[])
         "in a file called [TT]grompp.log[tt] (along with real debug info). You",
         "can see the contents of the run input file with the [gmx-dump]",
         "program. [gmx-check] can be used to compare the contents of two",
-        "run input files.[PAR]"
+        "run input files.[PAR]",
 
         "The [TT]-maxwarn[tt] option can be used to override warnings printed",
         "by [THISMODULE] that otherwise halt output. In some cases, warnings are",

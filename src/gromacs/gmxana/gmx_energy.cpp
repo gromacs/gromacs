@@ -1618,7 +1618,7 @@ int gmx_energy(int argc, char *argv[])
         "",
         "You always need to set the number of molecules [TT]-nmol[tt].",
         "The C[SUB]p[sub]/C[SUB]v[sub] computations do [BB]not[bb] include any corrections",
-        "for quantum effects. Use the [gmx-dos] program if you need that (and you do).[PAR]"
+        "for quantum effects. Use the [gmx-dos] program if you need that (and you do).[PAR]",
 
         "Option [TT]-odh[tt] extracts and plots the free energy data",
         "(Hamiltoian differences and/or the Hamiltonian derivative dhdl)",

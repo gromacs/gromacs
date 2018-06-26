@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2110,7 +2110,7 @@ int gmx_tune_pme(int argc, char *argv[])
         "[REF].tpr[ref] file; the last test (number [TT]ntpr[tt]) will have the Coulomb cutoff",
         "specified by [TT]-rmax[tt] with a somewhat smaller PME grid at the same time. ",
         "In this last test, the Fourier spacing is multiplied with [TT]rmax[tt]/rcoulomb. ",
-        "The remaining [REF].tpr[ref] files will have equally-spaced Coulomb radii (and Fourier "
+        "The remaining [REF].tpr[ref] files will have equally-spaced Coulomb radii (and Fourier ",
         "spacings) between these extremes. [BB]Note[bb] that you can set [TT]-ntpr[tt] to 1",
         "if you just seek the optimal number of PME-only ranks; in that case",
         "your input [REF].tpr[ref] file will remain unchanged.[PAR]",
@@ -2120,7 +2120,7 @@ int gmx_tune_pme(int argc, char *argv[])
         "are by default reset after 100 steps. For large systems (>1M atoms), as well as ",
         "for a higher accuracy of the measurements, you should set [TT]-resetstep[tt] to a higher value.",
         "From the 'DD' load imbalance entries in the md.log output file you",
-        "can tell after how many steps the load is sufficiently balanced. Example call:[PAR]"
+        "can tell after how many steps the load is sufficiently balanced. Example call:[PAR]",
         "[TT]gmx tune_pme -np 64 -s protein.tpr -launch[tt][PAR]",
         "After calling [gmx-mdrun] several times, detailed performance information",
         "is available in the output file [TT]perf.out[tt].",
