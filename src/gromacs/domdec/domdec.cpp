@@ -5792,7 +5792,9 @@ static void set_zones_size(gmx_domdec_t *dd,
         {
             if (zones->shift[zi][dim] == 0)
             {
-                for (z = zones->izone[zi].j0; z < zones->izone[zi].j1; z++)
+                /* We should only use zones up to zone_end */
+                int jZoneEnd = std::min(zones->izone[zi].j1, zone_end);
+                for (z = zones->izone[zi].j0; z < jZoneEnd; z++)
                 {
                     if (zones->shift[z][dim] > 0)
                     {
@@ -6819,6 +6821,7 @@ void dd_partition_system(FILE                *fplog,
 
     if (fr->cutoff_scheme == ecutsVERLET)
     {
+        /* When bSortCG=true, we have already set the size for zone 0 */
         set_zones_size(dd, state_local->box, &ddbox,
                        bSortCG ? 1 : 0, comm->zones.n,
                        0);
