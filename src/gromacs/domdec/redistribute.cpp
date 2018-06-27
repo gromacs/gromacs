@@ -787,7 +787,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                 fprintf(debug, "Sending ddim %d dir %d: ncg %d nat %d\n",
                         d, dir, sbuf[0], sbuf[1]);
             }
-            dd_sendrecv_int(dd, d, dir, sbuf, 2, rbuf, 2);
+            ddSendrecv(dd, d, dir, sbuf, 2, rbuf, 2);
 
             if ((ncg_recv+rbuf[0])*DD_CGIBS > comm->nalloc_int)
             {
@@ -796,18 +796,18 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
             }
 
             /* Communicate the charge group indices, sizes and flags */
-            dd_sendrecv_int(dd, d, dir,
-                            comm->cggl_flag[cdd], sbuf[0]*DD_CGIBS,
-                            comm->buf_int+ncg_recv*DD_CGIBS, rbuf[0]*DD_CGIBS);
+            ddSendrecv(dd, d, dir,
+                       comm->cggl_flag[cdd], sbuf[0]*DD_CGIBS,
+                       comm->buf_int+ncg_recv*DD_CGIBS, rbuf[0]*DD_CGIBS);
 
             nvs = ncg[cdd] + nat[cdd]*nvec;
             i   = rbuf[0]  + rbuf[1] *nvec;
             vec_rvec_check_alloc(&comm->vbuf, nvr+i);
 
             /* Communicate cgcm and state */
-            dd_sendrecv_rvec(dd, d, dir,
-                             comm->cgcm_state[cdd], nvs,
-                             comm->vbuf.v+nvr, i);
+            ddSendrecv(dd, d, dir,
+                       comm->cgcm_state[cdd], nvs,
+                       comm->vbuf.v+nvr, i);
             ncg_recv += rbuf[0];
             nvr      += i;
         }

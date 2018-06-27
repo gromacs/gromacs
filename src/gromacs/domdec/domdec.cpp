@@ -434,9 +434,9 @@ void dd_move_x(gmx_domdec_t *dd, matrix box, rvec x[], gmx_wallcycle *wcycle)
                 rbuf = comm->vbuf2.v;
             }
             /* Send and receive the coordinates */
-            dd_sendrecv_rvec(dd, d, dddirBackward,
-                             buf,  ind->nsend[nzone+1],
-                             rbuf, ind->nrecv[nzone+1]);
+            ddSendrecv(dd, d, dddirBackward,
+                       buf,  ind->nsend[nzone+1],
+                       rbuf, ind->nrecv[nzone+1]);
             if (!cd->bInPlace)
             {
                 int j = 0;
@@ -515,9 +515,9 @@ void dd_move_f(gmx_domdec_t *dd, rvec f[], rvec *fshift, gmx_wallcycle *wcycle)
                 }
             }
             /* Communicate the forces */
-            dd_sendrecv_rvec(dd, d, dddirForward,
-                             sbuf, ind->nrecv[nzone+1],
-                             buf,  ind->nsend[nzone+1]);
+            ddSendrecv(dd, d, dddirForward,
+                       sbuf, ind->nrecv[nzone+1],
+                       buf,  ind->nsend[nzone+1]);
             const int *index = ind->index;
             /* Add the received forces */
             int        n = 0;
@@ -622,9 +622,9 @@ void dd_atom_spread_real(gmx_domdec_t *dd, real v[])
                 rbuf = &comm->vbuf2.v[0][0];
             }
             /* Send and receive the coordinates */
-            dd_sendrecv_real(dd, d, dddirBackward,
-                             buf,  ind->nsend[nzone+1],
-                             rbuf, ind->nrecv[nzone+1]);
+            ddSendrecv(dd, d, dddirBackward,
+                       buf,  ind->nsend[nzone+1],
+                       rbuf, ind->nrecv[nzone+1]);
             if (!cd->bInPlace)
             {
                 int j = 0;
@@ -683,9 +683,9 @@ void dd_atom_sum_real(gmx_domdec_t *dd, real v[])
                 }
             }
             /* Communicate the forces */
-            dd_sendrecv_real(dd, d, dddirForward,
-                             sbuf, ind->nrecv[nzone+1],
-                             buf,  ind->nsend[nzone+1]);
+            ddSendrecv(dd, d, dddirForward,
+                       sbuf, ind->nrecv[nzone+1],
+                       buf,  ind->nsend[nzone+1]);
             const int *index = ind->index;
             /* Add the received forces */
             int        n = 0;
@@ -740,9 +740,9 @@ static void dd_sendrecv_ddzone(const gmx_domdec_t *dd,
         vbuf_s[i*ZBS+2][2] = 0;
     }
 
-    dd_sendrecv_rvec(dd, ddimind, direction,
-                     vbuf_s, n_s*ZBS,
-                     vbuf_r, n_r*ZBS);
+    ddSendrecv(dd, ddimind, direction,
+               vbuf_s, n_s*ZBS,
+               vbuf_r, n_r*ZBS);
 
     for (i = 0; i < n_r; i++)
     {
@@ -849,9 +849,9 @@ static void dd_move_cellx(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
             /* Communicate the extremes forward */
             bUse = (bPBC || dd->ci[dim] > 0);
 
-            dd_sendrecv_rvec(dd, d, dddirForward,
-                             extr_s+d, dd->ndim-d-1,
-                             extr_r+d, dd->ndim-d-1);
+            ddSendrecv(dd, d, dddirForward,
+                       extr_s+d, dd->ndim-d-1,
+                       extr_r+d, dd->ndim-d-1);
 
             if (bUse)
             {
@@ -5493,9 +5493,9 @@ static void setup_dd_communication(gmx_domdec_t *dd,
             ind->nsend[nzone]   = nsend;
             ind->nsend[nzone+1] = nat;
             /* Communicate the number of cg's and atoms to receive */
-            dd_sendrecv_int(dd, dim_ind, dddirBackward,
-                            ind->nsend, nzone+2,
-                            ind->nrecv, nzone+2);
+            ddSendrecv(dd, dim_ind, dddirBackward,
+                       ind->nsend, nzone+2,
+                       ind->nrecv, nzone+2);
 
             /* The rvec buffer is also required for atom buffers of size nsend
              * in dd_move_x and dd_move_f.
@@ -5542,9 +5542,9 @@ static void setup_dd_communication(gmx_domdec_t *dd,
             {
                 recv_i = comm->buf_int2;
             }
-            dd_sendrecv_int(dd, dim_ind, dddirBackward,
-                            comm->buf_int, nsend,
-                            recv_i,        ind->nrecv[nzone]);
+            ddSendrecv(dd, dim_ind, dddirBackward,
+                       comm->buf_int, nsend,
+                       recv_i,        ind->nrecv[nzone]);
 
             /* Make space for cg_cm */
             dd_check_alloc_ncg(fr, state, f, pos_cg + ind->nrecv[nzone]);
@@ -5565,9 +5565,9 @@ static void setup_dd_communication(gmx_domdec_t *dd,
             {
                 recv_vr = comm->vbuf2.v;
             }
-            dd_sendrecv_rvec(dd, dim_ind, dddirBackward,
-                             comm->vbuf.v, nsend,
-                             recv_vr,      ind->nrecv[nzone]);
+            ddSendrecv(dd, dim_ind, dddirBackward,
+                       comm->vbuf.v, nsend,
+                       recv_vr,      ind->nrecv[nzone]);
 
             /* Make the charge group index */
             if (cd->bInPlace)
