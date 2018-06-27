@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2012,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 #define GMX_DOMDEC_DOMDEC_NETWORK_H
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 
 struct gmx_domdec_t;
 
@@ -60,25 +61,62 @@ enum {
 /*! \brief Move integers in the communication region one cell along
  * the domain decomposition
  *
- * Moves in the dimension indexed by ddimind, either forward
+ * Moves in the dimension indexed by ddDimensionIndex, either forward
  * (direction=dddirFoward) or backward (direction=dddirBackward).
  */
 void
 dd_sendrecv_int(const struct gmx_domdec_t *dd,
-                int ddimind, int direction,
+                int ddDimensionIndex, int direction,
                 int *buf_s, int n_s,
                 int *buf_r, int n_r);
 
+/*! \brief Move integers in the communication region one cell along
+ * the domain decomposition
+ *
+ * Moves in the dimension indexed by ddDimensionIndex, either forward
+ * (direction=dddirFoward) or backward (direction=dddirBackward).
+ */
+void
+ddSendrecv(const struct gmx_domdec_t *dd,
+           int                        ddDimensionIndex,
+           int                        direction,
+           gmx::ArrayRef<int>         sendBuffer,
+           gmx::ArrayRef<int>         receiveBuffer);
+
 /*! \brief Move reals in the comm. region one cell along the domain decomposition
  *
- * Moves in the dimension indexed by ddimind, either forward
+ * Moves in the dimension indexed by ddDimensionIndex, either forward
  * (direction=dddirFoward) or backward (direction=dddirBackward).
  */
 void
 dd_sendrecv_real(const struct gmx_domdec_t *dd,
-                 int ddimind, int direction,
+                 int ddDimensionIndex, int direction,
                  real *buf_s, int n_s,
                  real *buf_r, int n_r);
+
+/*! \brief Move reals in the comm. region one cell along the domain decomposition
+ *
+ * Moves in the dimension indexed by ddDimensionIndex, either forward
+ * (direction=dddirFoward) or backward (direction=dddirBackward).
+ */
+void
+ddSendrecv(const struct gmx_domdec_t *dd,
+           int                        ddDimensionIndex,
+           int                        direction,
+           gmx::ArrayRef<real>        sendBuffer,
+           gmx::ArrayRef<real>        receiveBuffer);
+
+/*! \brief Move revc's in the comm. region one cell along the domain decomposition
+ *
+ * Moves in dimension indexed by ddDimensionIndex, either forward
+ * (direction=dddirFoward) or backward (direction=dddirBackward).
+ */
+void
+ddSendrecv(const struct gmx_domdec_t *dd,
+           int                        ddDimensionIndex,
+           int                        direction,
+           gmx::ArrayRef<gmx::RVec>   sendBuffer,
+           gmx::ArrayRef<gmx::RVec>   receiveBuffer);
 
 /*! \brief Move revc's in the comm. region one cell along the domain decomposition
  *
