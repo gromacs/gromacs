@@ -276,7 +276,7 @@ void Bayes<T>::simulate()
     }
     if (nullptr != xvgEpot())
     {
-        fpe = xvgropen(xvgEpot(), "Parameter energy", "iteration", "kT", oenv());
+        fpe = xvgropen(xvgEpot(), "Parameter energy", "iteration", "\\f{12}c\\S2\\f{4}", oenv());
     }
 
     nParam = param_.size();
