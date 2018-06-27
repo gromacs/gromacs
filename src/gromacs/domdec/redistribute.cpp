@@ -248,14 +248,14 @@ static void print_cg_move(FILE *fplog,
     {
         fprintf(fplog, "%s %d moved more than the distance allowed by the domain decomposition (%f) in direction %c\n",
                 dd->comm->bCGs ? "The charge group starting at atom" : "Atom",
-                ddglatnr(dd, dd->atomGroups().block(cg).begin()), limitd, dim2char(dim));
+                ddglatnr(dd, dd->atomGrouping().block(cg).begin()), limitd, dim2char(dim));
     }
     else
     {
         /* We don't have a limiting distance available: don't print it */
         fprintf(fplog, "%s %d moved more than the distance allowed by the domain decomposition in direction %c\n",
                 dd->comm->bCGs ? "The charge group starting at atom" : "Atom",
-                ddglatnr(dd, dd->atomGroups().block(cg).begin()), dim2char(dim));
+                ddglatnr(dd, dd->atomGrouping().block(cg).begin()), dim2char(dim));
     }
     fprintf(fplog, "distance out of cell %f\n",
             dir == 1 ? pos_d - comm->cell_x1[dim] : pos_d - comm->cell_x0[dim]);
@@ -590,7 +590,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
 
     make_tric_corr_matrix(npbcdim, state->box, tcm);
 
-    const gmx::RangePartitioning &atomGroups = dd->atomGroups();
+    const gmx::RangePartitioning &atomGrouping = dd->atomGrouping();
 
     nthread = gmx_omp_nthreads_get(emntDomdec);
 
@@ -604,7 +604,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
         {
             calc_cg_move(fplog, step, dd, state, tric_dir, tcm,
                          cell_x0, cell_x1, limitd, limit0, limit1,
-                         atomGroups,
+                         atomGrouping,
                          ( thread   *dd->ncg_home)/nthread,
                          ((thread+1)*dd->ncg_home)/nthread,
                          fr->cutoff_scheme == ecutsGROUP ? cg_cm : as_rvec_array(state->x.data()),
@@ -634,7 +634,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
              * and the place where the charge group should go
              * in the next 6 bits. This saves some communication volume.
              */
-            nrcg = atomGroups.block(cg).size();
+            nrcg = atomGrouping.block(cg).size();
             cggl_flag[ncg[mc]*DD_CGIBS+1] = nrcg | flag;
             ncg[mc] += 1;
             nat[mc] += nrcg;
@@ -677,7 +677,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
              * but that could give rise to rounding issues.
              */
             home_pos_cg =
-                compact_and_copy_vec_cg(dd->ncg_home, move, dd->atomGroups(),
+                compact_and_copy_vec_cg(dd->ncg_home, move, dd->atomGrouping(),
                                         nvec, cg_cm, comm, bCompact);
             break;
         case ecutsVERLET:
@@ -686,7 +686,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
              * many conditionals for both for with and without charge groups.
              */
             home_pos_cg =
-                compact_and_copy_vec_cg(dd->ncg_home, move, dd->atomGroups(),
+                compact_and_copy_vec_cg(dd->ncg_home, move, dd->atomGrouping(),
                                         nvec, as_rvec_array(state->x.data()), comm, FALSE);
             if (bCompact)
             {
@@ -700,18 +700,18 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
 
     vec         = 0;
     home_pos_at =
-        compact_and_copy_vec_at(dd->ncg_home, move, dd->atomGroups(),
+        compact_and_copy_vec_at(dd->ncg_home, move, dd->atomGrouping(),
                                 nvec, vec++, as_rvec_array(state->x.data()),
                                 comm, bCompact);
     if (bV)
     {
-        compact_and_copy_vec_at(dd->ncg_home, move, dd->atomGroups(),
+        compact_and_copy_vec_at(dd->ncg_home, move, dd->atomGrouping(),
                                 nvec, vec++, as_rvec_array(state->v.data()),
                                 comm, bCompact);
     }
     if (bCGP)
     {
-        compact_and_copy_vec_at(dd->ncg_home, move, dd->atomGroups(),
+        compact_and_copy_vec_at(dd->ncg_home, move, dd->atomGrouping(),
                                 nvec, vec++, as_rvec_array(state->cg_p.data()),
                                 comm, bCompact);
     }
@@ -719,7 +719,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
     if (bCompact)
     {
         compact_ind(dd->ncg_home, move,
-                    dd->globalAtomGroupIndices, &dd->atomGroups_, dd->globalAtomIndices,
+                    dd->globalAtomGroupIndices, &dd->atomGrouping_, dd->globalAtomIndices,
                     dd->ga2la, comm->bLocalCG,
                     fr->cginfo);
     }
@@ -735,14 +735,14 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
         }
 
         clear_and_mark_ind(dd->ncg_home, move,
-                           dd->globalAtomGroupIndices, dd->atomGroups(), dd->globalAtomIndices,
+                           dd->globalAtomGroupIndices, dd->atomGrouping(), dd->globalAtomIndices,
                            dd->ga2la, comm->bLocalCG,
                            moved);
     }
 
     /* Now we can remove the excess global atom-group indices from the list */
     dd->globalAtomGroupIndices.resize(home_pos_cg);
-    dd->atomGroups_.reduceNumBlocks(home_pos_cg);
+    dd->atomGrouping_.reduceNumBlocks(home_pos_cg);
 
     /* We reuse the intBuffer without reacquiring since we are in the same scope */
     DDBufferAccess<int> &flagBuffer = moveBuffer;
@@ -904,7 +904,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                 /* Set the global charge group index and size */
                 const int globalAtomGroupIndex = flagBuffer.buffer[cg*DD_CGIBS];
                 dd->globalAtomGroupIndices.push_back(globalAtomGroupIndex);
-                dd->atomGroups_.appendBlock(nrcg);
+                dd->atomGrouping_.appendBlock(nrcg);
                 /* Copy the state from the buffer */
                 if (fr->cutoff_scheme == ecutsGROUP)
                 {

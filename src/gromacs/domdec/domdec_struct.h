@@ -184,10 +184,10 @@ struct gmx_domdec_t {
     /* Global atom group indices for the home and all non-home groups */
     std::vector<int>              globalAtomGroupIndices;
     /* The atom groups for the home and all non-home groups, todo: make private */
-    gmx::RangePartitioning        atomGroups_;
-    const gmx::RangePartitioning &atomGroups() const
+    gmx::RangePartitioning        atomGrouping_;
+    const gmx::RangePartitioning &atomGrouping() const
     {
-        return atomGroups_;
+        return atomGrouping_;
     }
     /* Local atom to local atom-group index, only used for checking bondeds */
     std::vector<int> localAtomGroupFromAtom;
