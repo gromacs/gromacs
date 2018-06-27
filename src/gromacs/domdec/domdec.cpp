@@ -5307,7 +5307,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
         bool distanceIsTriclinic = false;
         for (i = 0; i <= dim_ind; i++)
         {
-            if (ddbox->tric_dir[dim])
+            if (ddbox->tric_dir[dd->dim[i]])
             {
                 distanceIsTriclinic = true;
             }
