@@ -494,10 +494,10 @@ static void distributeAtomGroups(FILE *fplog, gmx_domdec_t *dd,
 
     /* Determine the home charge group sizes */
     const t_block &globalAtomGroups = dd->comm->cgs_gl;
-    dd->atomGroups_.clear();
+    dd->atomGrouping_.clear();
     for (int i = 0; i < dd->ncg_home; i++)
     {
-        dd->atomGroups_.appendBlock(globalAtomGroups.blockSize(dd->globalAtomGroupIndices[i]));
+        dd->atomGrouping_.appendBlock(globalAtomGroups.blockSize(dd->globalAtomGroupIndices[i]));
     }
 
     if (debug)
