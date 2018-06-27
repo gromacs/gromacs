@@ -754,95 +754,58 @@ static void print_ddzone(FILE *fp, int d, int i, int j, gmx_ddzone_t *zone)
             zone->p1_0, zone->p1_1);
 }
 
-
-#define DDZONECOMM_MAXZONE  5
-#define DDZONECOMM_BUFSIZE  3
-
-static void dd_sendrecv_ddzone(const gmx_domdec_t *dd,
-                               int ddimind, int direction,
-                               gmx_ddzone_t *buf_s, int n_s,
-                               gmx_ddzone_t *buf_r, int n_r)
+/* Using the home grid size as input in cell_ns_x0 and cell_ns_x1
+ * takes the extremes over all home and remote zones in the halo
+ * and returns the results in cell_ns_x0 and cell_ns_x1.
+ * Note: only used with the group cut-off scheme.
+ */
+static void dd_move_cellx(gmx_domdec_t      *dd,
+                          const gmx_ddbox_t *ddbox,
+                          rvec               cell_ns_x0,
+                          rvec               cell_ns_x1)
 {
-#define ZBS  DDZONECOMM_BUFSIZE
-    rvec vbuf_s[DDZONECOMM_MAXZONE*ZBS];
-    rvec vbuf_r[DDZONECOMM_MAXZONE*ZBS];
-    int  i;
+    constexpr int      c_ddZoneCommMaxNumZones = 5;
+    gmx_ddzone_t       buf_s[c_ddZoneCommMaxNumZones];
+    gmx_ddzone_t       buf_r[c_ddZoneCommMaxNumZones];
+    gmx_ddzone_t       buf_e[c_ddZoneCommMaxNumZones];
+    gmx_domdec_comm_t *comm = dd->comm;
 
-    for (i = 0; i < n_s; i++)
+    rvec               extr_s[2];
+    rvec               extr_r[2];
+    for (int d = 1; d < dd->ndim; d++)
     {
-        vbuf_s[i*ZBS  ][0] = buf_s[i].min0;
-        vbuf_s[i*ZBS  ][1] = buf_s[i].max1;
-        vbuf_s[i*ZBS  ][2] = buf_s[i].min1;
-        vbuf_s[i*ZBS+1][0] = buf_s[i].mch0;
-        vbuf_s[i*ZBS+1][1] = buf_s[i].mch1;
-        vbuf_s[i*ZBS+1][2] = 0;
-        vbuf_s[i*ZBS+2][0] = buf_s[i].p1_0;
-        vbuf_s[i*ZBS+2][1] = buf_s[i].p1_1;
-        vbuf_s[i*ZBS+2][2] = 0;
+        int           dim = dd->dim[d];
+        gmx_ddzone_t &zp  = (d == 1) ? comm->zone_d1[0] : comm->zone_d2[0][0];
+
+        /* Copy the base sizes of the home zone */
+        zp.min0 = cell_ns_x0[dim];
+        zp.max1 = cell_ns_x1[dim];
+        zp.min1 = cell_ns_x1[dim];
+        zp.mch0 = cell_ns_x0[dim];
+        zp.mch1 = cell_ns_x1[dim];
+        zp.p1_0 = cell_ns_x0[dim];
+        zp.p1_1 = cell_ns_x1[dim];
     }
 
-    dd_sendrecv_rvec(dd, ddimind, direction,
-                     vbuf_s, n_s*ZBS,
-                     vbuf_r, n_r*ZBS);
-
-    for (i = 0; i < n_r; i++)
+    /* Loop backward over the dimensions and aggregate the extremes
+     * of the cell sizes.
+     */
+    for (int d = dd->ndim - 2; d >= 0; d--)
     {
-        buf_r[i].min0 = vbuf_r[i*ZBS  ][0];
-        buf_r[i].max1 = vbuf_r[i*ZBS  ][1];
-        buf_r[i].min1 = vbuf_r[i*ZBS  ][2];
-        buf_r[i].mch0 = vbuf_r[i*ZBS+1][0];
-        buf_r[i].mch1 = vbuf_r[i*ZBS+1][1];
-        buf_r[i].p1_0 = vbuf_r[i*ZBS+2][0];
-        buf_r[i].p1_1 = vbuf_r[i*ZBS+2][1];
-    }
-
-#undef ZBS
-}
-
-static void dd_move_cellx(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
-                          rvec cell_ns_x0, rvec cell_ns_x1)
-{
-    int                d, d1, dim, pos, buf_size, i, j, p, npulse, npulse_min;
-    gmx_ddzone_t      *zp;
-    gmx_ddzone_t       buf_s[DDZONECOMM_MAXZONE];
-    gmx_ddzone_t       buf_r[DDZONECOMM_MAXZONE];
-    gmx_ddzone_t       buf_e[DDZONECOMM_MAXZONE];
-    rvec               extr_s[2], extr_r[2];
-    rvec               dh;
-    real               dist_d, c = 0, det;
-    gmx_domdec_comm_t *comm;
-    gmx_bool           bPBC, bUse;
-
-    comm = dd->comm;
-
-    for (d = 1; d < dd->ndim; d++)
-    {
-        dim      = dd->dim[d];
-        zp       = (d == 1) ? &comm->zone_d1[0] : &comm->zone_d2[0][0];
-        zp->min0 = cell_ns_x0[dim];
-        zp->max1 = cell_ns_x1[dim];
-        zp->min1 = cell_ns_x1[dim];
-        zp->mch0 = cell_ns_x0[dim];
-        zp->mch1 = cell_ns_x1[dim];
-        zp->p1_0 = cell_ns_x0[dim];
-        zp->p1_1 = cell_ns_x1[dim];
-    }
-
-    for (d = dd->ndim-2; d >= 0; d--)
-    {
-        dim  = dd->dim[d];
-        bPBC = (dim < ddbox->npbcdim);
+        int  dim      = dd->dim[d];
+        bool applyPbc = (dim < ddbox->npbcdim);
 
         /* Use an rvec to store two reals */
         extr_s[d][0] = comm->cell_f0[d+1];
         extr_s[d][1] = comm->cell_f1[d+1];
         extr_s[d][2] = comm->cell_f1[d+1];
 
-        pos = 0;
+        int pos = 0;
+        GMX_ASSERT(pos < c_ddZoneCommMaxNumZones, "The buffers should be sufficiently large");
         /* Store the extremes in the backward sending buffer,
-         * so the get updated separately from the forward communication.
+         * so they get updated separately from the forward communication.
          */
-        for (d1 = d; d1 < dd->ndim-1; d1++)
+        for (int d1 = d; d1 < dd->ndim-1; d1++)
         {
             /* We invert the order to be able to use the same loop for buf_e */
             buf_s[pos].min0 = extr_s[d1][1];
@@ -870,11 +833,12 @@ static void dd_move_cellx(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
         /* We only need to communicate the extremes
          * in the forward direction
          */
-        npulse = comm->cd[d].numPulses();
-        if (bPBC)
+        int numPulses = comm->cd[d].numPulses();
+        int numPulsesMin;
+        if (applyPbc)
         {
             /* Take the minimum to avoid double communication */
-            npulse_min = std::min(npulse, dd->nc[dim]-1-npulse);
+            numPulsesMin = std::min(numPulses, dd->nc[dim] - 1 - numPulses);
         }
         else
         {
@@ -883,20 +847,21 @@ static void dd_move_cellx(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
              * the communication setup and therefore we simply
              * do all communication, but ignore some data.
              */
-            npulse_min = npulse;
+            numPulsesMin = numPulses;
         }
-        for (p = 0; p < npulse_min; p++)
+        for (int pulse = 0; pulse < numPulsesMin; pulse++)
         {
             /* Communicate the extremes forward */
-            bUse = (bPBC || dd->ci[dim] > 0);
+            bool receiveValidData = (applyPbc || dd->ci[dim] > 0);
 
+            int  numElements      = dd->ndim - d - 1;
             dd_sendrecv_rvec(dd, d, dddirForward,
-                             extr_s+d, dd->ndim-d-1,
-                             extr_r+d, dd->ndim-d-1);
+                             extr_s + d, numElements,
+                             extr_r + d, numElements);
 
-            if (bUse)
+            if (receiveValidData)
             {
-                for (d1 = d; d1 < dd->ndim-1; d1++)
+                for (int d1 = d; d1 < dd->ndim - 1; d1++)
                 {
                     extr_s[d1][0] = std::max(extr_s[d1][0], extr_r[d1][0]);
                     extr_s[d1][1] = std::min(extr_s[d1][1], extr_r[d1][1]);
@@ -905,27 +870,31 @@ static void dd_move_cellx(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
             }
         }
 
-        buf_size = pos;
-        for (p = 0; p < npulse; p++)
+        const int numElementsInBuffer = pos;
+        for (int pulse = 0; pulse < numPulses; pulse++)
         {
             /* Communicate all the zone information backward */
-            bUse = (bPBC || dd->ci[dim] < dd->nc[dim] - 1);
+            bool receiveValidData = (applyPbc || dd->ci[dim] < dd->nc[dim] - 1);
 
-            dd_sendrecv_ddzone(dd, d, dddirBackward,
-                               buf_s, buf_size,
-                               buf_r, buf_size);
+            static_assert(sizeof(gmx_ddzone_t) == c_ddzoneNumReals*sizeof(real), "Here we expect gmx_ddzone_t to consist of c_ddzoneNumReals reals (only)");
 
-            clear_rvec(dh);
-            if (p > 0)
+            int numReals = numElementsInBuffer*c_ddzoneNumReals;
+            ddSendrecv(dd, d, dddirBackward,
+                       gmx::arrayRefFromArray(&buf_s[0].min0, numReals),
+                       gmx::arrayRefFromArray(&buf_r[0].min0, numReals));
+
+            rvec dh = { 0 };
+            if (pulse > 0)
             {
-                for (d1 = d+1; d1 < dd->ndim; d1++)
+                for (int d1 = d + 1; d1 < dd->ndim; d1++)
                 {
                     /* Determine the decrease of maximum required
                      * communication height along d1 due to the distance along d,
                      * this avoids a lot of useless atom communication.
                      */
-                    dist_d = comm->cell_x1[dim] - buf_r[0].p1_0;
+                    real dist_d = comm->cell_x1[dim] - buf_r[0].p1_0;
 
+                    int  c;
                     if (ddbox->tric_dir[dim])
                     {
                         /* c is the off-diagonal coupling between the cell planes
@@ -937,7 +906,7 @@ static void dd_move_cellx(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
                     {
                         c = 0;
                     }
-                    det = (1 + c*c)*comm->cutoff*comm->cutoff - dist_d*dist_d;
+                    real det = (1 + c*c)*comm->cutoff*comm->cutoff - dist_d*dist_d;
                     if (det > 0)
                     {
                         dh[d1] = comm->cutoff - (c*dist_d + std::sqrt(det))/(1 + c*c);
@@ -951,22 +920,23 @@ static void dd_move_cellx(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
             }
 
             /* Accumulate the extremes over all pulses */
-            for (i = 0; i < buf_size; i++)
+            for (int i = 0; i < numElementsInBuffer; i++)
             {
-                if (p == 0)
+                if (pulse == 0)
                 {
                     buf_e[i] = buf_r[i];
                 }
                 else
                 {
-                    if (bUse)
+                    if (receiveValidData)
                     {
                         buf_e[i].min0 = std::min(buf_e[i].min0, buf_r[i].min0);
                         buf_e[i].max1 = std::max(buf_e[i].max1, buf_r[i].max1);
                         buf_e[i].min1 = std::min(buf_e[i].min1, buf_r[i].min1);
                     }
 
-                    if (dd->ndim == 3 && d == 0 && i == buf_size - 1)
+                    int d1;
+                    if (dd->ndim == 3 && d == 0 && i == numElementsInBuffer - 1)
                     {
                         d1 = 1;
                     }
@@ -974,7 +944,7 @@ static void dd_move_cellx(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
                     {
                         d1 = d + 1;
                     }
-                    if (bUse && dh[d1] >= 0)
+                    if (receiveValidData && dh[d1] >= 0)
                     {
                         buf_e[i].mch0 = std::max(buf_e[i].mch0, buf_r[i].mch0-dh[d1]);
                         buf_e[i].mch1 = std::max(buf_e[i].mch1, buf_r[i].mch1-dh[d1]);
@@ -985,13 +955,13 @@ static void dd_move_cellx(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
                  */
                 buf_s[i] = buf_r[i];
             }
-            if (((bPBC || dd->ci[dim]+npulse < dd->nc[dim]) && p == npulse-1) ||
-                (!bPBC && dd->ci[dim]+1+p == dd->nc[dim]-1))
+            if (((applyPbc || dd->ci[dim] + numPulses < dd->nc[dim]) && pulse == numPulses - 1) ||
+                (!applyPbc && dd->ci[dim] + 1 + pulse == dd->nc[dim] - 1))
             {
                 /* Store the extremes */
-                pos = 0;
+                int pos = 0;
 
-                for (d1 = d; d1 < dd->ndim-1; d1++)
+                for (int d1 = d; d1 < dd->ndim-1; d1++)
                 {
                     extr_s[d1][1] = std::min(extr_s[d1][1], buf_e[pos].min0);
                     extr_s[d1][0] = std::max(extr_s[d1][0], buf_e[pos].max1);
@@ -1001,7 +971,7 @@ static void dd_move_cellx(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
 
                 if (d == 1 || (d == 0 && dd->ndim == 3))
                 {
-                    for (i = d; i < 2; i++)
+                    for (int i = d; i < 2; i++)
                     {
                         comm->zone_d2[1-d][i] = buf_e[pos];
                         pos++;
@@ -1018,8 +988,8 @@ static void dd_move_cellx(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
 
     if (dd->ndim >= 2)
     {
-        dim = dd->dim[1];
-        for (i = 0; i < 2; i++)
+        int dim = dd->dim[1];
+        for (int i = 0; i < 2; i++)
         {
             if (debug)
             {
@@ -1031,10 +1001,10 @@ static void dd_move_cellx(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
     }
     if (dd->ndim >= 3)
     {
-        dim = dd->dim[2];
-        for (i = 0; i < 2; i++)
+        int dim = dd->dim[2];
+        for (int i = 0; i < 2; i++)
         {
-            for (j = 0; j < 2; j++)
+            for (int j = 0; j < 2; j++)
             {
                 if (debug)
                 {
@@ -1045,7 +1015,7 @@ static void dd_move_cellx(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
             }
         }
     }
-    for (d = 1; d < dd->ndim; d++)
+    for (int d = 1; d < dd->ndim; d++)
     {
         comm->cell_f_max0[d] = extr_s[d-1][0];
         comm->cell_f_min1[d] = extr_s[d-1][1];
@@ -6656,15 +6626,18 @@ void dd_partition_system(FILE                *fplog,
         wallcycle_sub_stop(wcycle, ewcsDD_REDIST);
     }
 
-    get_nsgrid_boundaries(ddbox.nboundeddim, state_local->box,
-                          dd, &ddbox,
-                          &comm->cell_x0, &comm->cell_x1,
-                          dd->ncg_home, fr->cg_cm,
-                          cell_ns_x0, cell_ns_x1, &grid_density);
-
-    if (bBoxChanged)
+    if (fr->cutoff_scheme == ecutsGROUP)
     {
-        comm_dd_ns_cell_sizes(dd, &ddbox, cell_ns_x0, cell_ns_x1, step);
+        get_nsgrid_boundaries(ddbox.nboundeddim, state_local->box,
+                              dd, &ddbox,
+                              &comm->cell_x0, &comm->cell_x1,
+                              dd->ncg_home, fr->cg_cm,
+                              cell_ns_x0, cell_ns_x1, &grid_density);
+
+        if (bBoxChanged)
+        {
+            comm_dd_ns_cell_sizes(dd, &ddbox, cell_ns_x0, cell_ns_x1, step);
+        }
     }
 
     switch (fr->cutoff_scheme)

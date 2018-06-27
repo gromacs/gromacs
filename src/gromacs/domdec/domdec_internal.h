@@ -241,7 +241,7 @@ typedef struct
     int      maxshift;  /**< The maximum shift for coordinate redistribution in PME */
 } gmx_ddpme_t;
 
-typedef struct
+struct gmx_ddzone_t
 {
     real min0;    /* The minimum bottom of this zone                        */
     real max1;    /* The maximum top of this zone                           */
@@ -250,7 +250,10 @@ typedef struct
     real mch1;    /* The maximum top communicaton height for this zone      */
     real p1_0;    /* The bottom value of the first cell in this zone        */
     real p1_1;    /* The top value of the first cell in this zone           */
-} gmx_ddzone_t;
+};
+
+/*! \brief The number of reals in gmx_ddzone_t */
+constexpr int c_ddzoneNumReals = 7;
 
 /*! \brief Forward declaration */
 template<typename T> class DDBufferAccess;
