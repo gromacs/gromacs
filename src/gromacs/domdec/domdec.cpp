@@ -5179,9 +5179,9 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                                    t_forcerec *fr,
                                    t_state *state, PaddedRVecVector *f)
 {
-    int                    dim_ind, dim, dim0, dim1, dim2, dimd, p, nat_tot;
+    int                    dim, dim0, dim1, dim2, dimd, p, nat_tot;
     int                    nzone, nzone_send, zone, zonei, cg0, cg1;
-    int                    c, i, cg, cg_gl, nrcg;
+    int                    c, cg, cg_gl, nrcg;
     int                   *zone_cg_range, pos_cg;
     gmx_domdec_comm_t     *comm;
     gmx_domdec_zones_t    *zones;
@@ -5289,16 +5289,16 @@ static void setup_dd_communication(gmx_domdec_t *dd,
 
     nat_tot = comm->atomRanges.numHomeAtoms();
     nzone   = 1;
-    for (dim_ind = 0; dim_ind < dd->ndim; dim_ind++)
+    for (int dim_ind = 0; dim_ind < dd->ndim; dim_ind++)
     {
         dim = dd->dim[dim_ind];
         cd  = &comm->cd[dim_ind];
 
         /* Check if we need to compute triclinic distances along this dim */
         bool distanceIsTriclinic = false;
-        for (i = 0; i <= dim_ind; i++)
+        for (int i = 0; i <= dim_ind; i++)
         {
-            if (ddbox->tric_dir[dim])
+            if (ddbox->tric_dir[dd->dim[i]])
             {
                 distanceIsTriclinic = true;
             }
@@ -5342,7 +5342,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                         sf2_round[dimd] = 1;
                         if (ddbox->tric_dir[dimd])
                         {
-                            for (i = dd->dim[dimd]+1; i < DIM; i++)
+                            for (int i = dd->dim[dimd]+1; i < DIM; i++)
                             {
                                 /* If we are shifted in dimension i
                                  * and the cell plane is tilted forward
@@ -5523,7 +5523,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                     /* The rvec buffer is also required for atom buffers
                      * of size nrecv in dd_move_x and dd_move_f.
                      */
-                    i = std::max(cd->ind[0].nrecv[nzone+1], ind->nrecv[nzone+1]);
+                    int i = std::max(cd->ind[0].nrecv[nzone+1], ind->nrecv[nzone+1]);
                     vec_rvec_check_alloc(&comm->vbuf2, i);
                 }
             }
