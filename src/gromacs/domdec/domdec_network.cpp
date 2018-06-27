@@ -58,100 +58,112 @@
 #define DDMASTERRANK(dd)   (dd->masterrank)
 
 
-void dd_sendrecv_int(const struct gmx_domdec_t gmx_unused *dd,
-                     int gmx_unused ddimind, int gmx_unused direction,
-                     int gmx_unused *buf_s, int gmx_unused n_s,
-                     int gmx_unused *buf_r, int gmx_unused n_r)
+/*! \brief Move data of type \p T in the communication region one cell along
+ * the domain decomposition
+ *
+ * Moves in the dimension indexed by ddDimensionIndex, either forward
+ * (direction=dddirFoward) or backward (direction=dddirBackward).
+ */
+template <typename T>
+static void
+ddSendrecv(const struct gmx_domdec_t gmx_unused *dd,
+           int gmx_unused                        ddDimensionIndex,
+           int gmx_unused                        direction,
+           T gmx_unused                         *sendBuffer,
+           int gmx_unused                        numElementsToSend,
+           T gmx_unused                         *receiveBuffer,
+           int gmx_unused                        numElementsToReceive)
 {
 #if GMX_MPI
-    int        rank_s, rank_r;
-    MPI_Status stat;
+    int           sendRank    = dd->neighbor[ddDimensionIndex][direction == dddirForward ? 0 : 1];
+    int           receiveRank = dd->neighbor[ddDimensionIndex][direction == dddirForward ? 1 : 0];
 
-    rank_s = dd->neighbor[ddimind][direction == dddirForward ? 0 : 1];
-    rank_r = dd->neighbor[ddimind][direction == dddirForward ? 1 : 0];
-
-    if (n_s && n_r)
+    constexpr int mpiTag      = 0;
+    MPI_Status    mpiStatus;
+    if (numElementsToSend > 0 && numElementsToReceive > 0)
     {
-        MPI_Sendrecv(buf_s, n_s*sizeof(int), MPI_BYTE, rank_s, 0,
-                     buf_r, n_r*sizeof(int), MPI_BYTE, rank_r, 0,
-                     dd->mpi_comm_all, &stat);
+        MPI_Sendrecv(sendBuffer,    numElementsToSend*sizeof(T),    MPI_BYTE,
+                     sendRank,      mpiTag,
+                     receiveBuffer, numElementsToReceive*sizeof(T), MPI_BYTE,
+                     receiveRank,   mpiTag,
+                     dd->mpi_comm_all,
+                     &mpiStatus);
     }
-    else if (n_s)
+    else if (numElementsToSend > 0)
     {
-        MPI_Send(    buf_s, n_s*sizeof(int), MPI_BYTE, rank_s, 0,
+        MPI_Send(    sendBuffer,    numElementsToSend*sizeof(T),    MPI_BYTE,
+                     sendRank,      mpiTag,
                      dd->mpi_comm_all);
     }
-    else if (n_r)
+    else if (numElementsToReceive > 0)
     {
-        MPI_Recv(    buf_r, n_r*sizeof(int), MPI_BYTE, rank_r, 0,
-                     dd->mpi_comm_all, &stat);
+        MPI_Recv(    receiveBuffer, numElementsToReceive*sizeof(T), MPI_BYTE,
+                     receiveRank,   mpiTag,
+                     dd->mpi_comm_all,
+                     &mpiStatus);
     }
 
-#endif
+#endif // GMX_MPI
 }
 
-void dd_sendrecv_real(const struct gmx_domdec_t gmx_unused *dd,
-                      int gmx_unused ddimind, int gmx_unused direction,
-                      real gmx_unused *buf_s, int gmx_unused n_s,
-                      real gmx_unused *buf_r, int gmx_unused n_r)
+void dd_sendrecv_int(const struct gmx_domdec_t *dd,
+                     int ddDimensionIndex, int direction,
+                     int *buf_s, int n_s,
+                     int *buf_r, int n_r)
 {
-#if GMX_MPI
-    int        rank_s, rank_r;
-    MPI_Status stat;
-
-    rank_s = dd->neighbor[ddimind][direction == dddirForward ? 0 : 1];
-    rank_r = dd->neighbor[ddimind][direction == dddirForward ? 1 : 0];
-
-    if (n_s && n_r)
-    {
-        MPI_Sendrecv(buf_s, n_s*sizeof(real), MPI_BYTE, rank_s, 0,
-                     buf_r, n_r*sizeof(real), MPI_BYTE, rank_r, 0,
-                     dd->mpi_comm_all, &stat);
-    }
-    else if (n_s)
-    {
-        MPI_Send(    buf_s, n_s*sizeof(real), MPI_BYTE, rank_s, 0,
-                     dd->mpi_comm_all);
-    }
-    else if (n_r)
-    {
-        MPI_Recv(    buf_r, n_r*sizeof(real), MPI_BYTE, rank_r, 0,
-                     dd->mpi_comm_all, &stat);
-    }
-
-#endif
+    ddSendrecv(dd, ddDimensionIndex, direction, buf_s, n_s, buf_r, n_r);
 }
 
-void dd_sendrecv_rvec(const struct gmx_domdec_t gmx_unused *dd,
-                      int gmx_unused ddimind, int gmx_unused direction,
-                      rvec gmx_unused *buf_s, int gmx_unused n_s,
-                      rvec gmx_unused *buf_r, int gmx_unused n_r)
+void
+ddSendrecv(const struct gmx_domdec_t *dd,
+           int                        ddDimensionIndex,
+           int                        direction,
+           gmx::ArrayRef<int>         sendBuffer,
+           gmx::ArrayRef<int>         receiveBuffer)
 {
-#if GMX_MPI
-    int        rank_s, rank_r;
-    MPI_Status stat;
+    ddSendrecv(dd, ddDimensionIndex, direction,
+               sendBuffer.data(), sendBuffer.size(),
+               receiveBuffer.data(), receiveBuffer.size());
+}
 
-    rank_s = dd->neighbor[ddimind][direction == dddirForward ? 0 : 1];
-    rank_r = dd->neighbor[ddimind][direction == dddirForward ? 1 : 0];
+void dd_sendrecv_real(const struct gmx_domdec_t *dd,
+                      int ddDimensionIndex, int direction,
+                      real *buf_s, int n_s,
+                      real *buf_r, int n_r)
+{
+    ddSendrecv(dd, ddDimensionIndex, direction, buf_s, n_s, buf_r, n_r);
+}
 
-    if (n_s && n_r)
-    {
-        MPI_Sendrecv(buf_s[0], n_s*sizeof(rvec), MPI_BYTE, rank_s, 0,
-                     buf_r[0], n_r*sizeof(rvec), MPI_BYTE, rank_r, 0,
-                     dd->mpi_comm_all, &stat);
-    }
-    else if (n_s)
-    {
-        MPI_Send(    buf_s[0], n_s*sizeof(rvec), MPI_BYTE, rank_s, 0,
-                     dd->mpi_comm_all);
-    }
-    else if (n_r)
-    {
-        MPI_Recv(    buf_r[0], n_r*sizeof(rvec), MPI_BYTE, rank_r, 0,
-                     dd->mpi_comm_all, &stat);
-    }
+void
+ddSendrecv(const struct gmx_domdec_t *dd,
+           int                        ddDimensionIndex,
+           int                        direction,
+           gmx::ArrayRef<real>        sendBuffer,
+           gmx::ArrayRef<real>        receiveBuffer)
+{
+    ddSendrecv(dd, ddDimensionIndex, direction,
+               sendBuffer.data(), sendBuffer.size(),
+               receiveBuffer.data(), receiveBuffer.size());
+}
 
-#endif
+void dd_sendrecv_rvec(const struct gmx_domdec_t *dd,
+                      int ddDimensionIndex, int direction,
+                      rvec *buf_s, int n_s,
+                      rvec *buf_r, int n_r)
+{
+    ddSendrecv(dd, ddDimensionIndex, direction, buf_s, n_s, buf_r, n_r);
+}
+
+void
+ddSendrecv(const struct gmx_domdec_t *dd,
+           int                        ddDimensionIndex,
+           int                        direction,
+           gmx::ArrayRef<gmx::RVec>   sendBuffer,
+           gmx::ArrayRef<gmx::RVec>   receiveBuffer)
+{
+    ddSendrecv(dd, ddDimensionIndex, direction,
+               as_rvec_array(sendBuffer.data()), sendBuffer.size(),
+               as_rvec_array(receiveBuffer.data()), receiveBuffer.size());
 }
 
 void dd_sendrecv2_rvec(const struct gmx_domdec_t gmx_unused *dd,
