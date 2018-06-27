@@ -407,6 +407,9 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     /* Charge group / atom sorting */
     std::unique_ptr<gmx_domdec_sort_t> sort; /**< Data structure for cg/atom sorting */
 
+    /* Update groups */
+    bool                   useUpdateGroups;          /**< True when update groups are used */
+
     /* Are there charge groups? */
     gmx_bool bCGs;                /**< True when there are charge groups */
 

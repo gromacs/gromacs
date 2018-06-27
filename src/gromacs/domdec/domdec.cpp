@@ -67,6 +67,7 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/constraintrange.h"
 #include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdlib/updategroups.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -2099,6 +2100,16 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     comm->sort = gmx::compat::make_unique<gmx_domdec_sort_t>();
 
     comm->bCGs = (ncg_mtop(mtop) < mtop->natoms);
+
+    comm->useUpdateGroups = false;
+    if (ir->cutoff_scheme == ecutsVERLET)
+    {
+        std::vector<gmx::RangePartitioning> updateGroups = gmx::makeUpdateGroups(*mtop);
+        if (!updateGroups.empty())
+        {
+            /* TODO: Initialize and enable update groups here */
+        }
+    }
 
     comm->bInterCGBondeds = ((ncg_mtop(mtop) > gmx_mtop_num_molecules(*mtop)) ||
                              mtop->bIntermolecularInteractions);
