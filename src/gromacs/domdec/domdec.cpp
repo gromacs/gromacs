@@ -354,7 +354,7 @@ void dd_move_x(gmx_domdec_t             *dd,
 
     comm = dd->comm;
 
-    const RangePartitioning &atomGroups = dd->atomGroups();
+    const RangePartitioning &atomGrouping = dd->atomGrouping();
 
     nzone   = 1;
     nat_tot = comm->atomRanges.numHomeAtoms();
@@ -376,7 +376,7 @@ void dd_move_x(gmx_domdec_t             *dd,
             {
                 for (int g : ind.index)
                 {
-                    for (int j : atomGroups.block(g))
+                    for (int j : atomGrouping.block(g))
                     {
                         sendBuffer[n] = x[j];
                         n++;
@@ -387,7 +387,7 @@ void dd_move_x(gmx_domdec_t             *dd,
             {
                 for (int g : ind.index)
                 {
-                    for (int j : atomGroups.block(g))
+                    for (int j : atomGrouping.block(g))
                     {
                         /* We need to shift the coordinates */
                         for (int d = 0; d < DIM; d++)
@@ -402,7 +402,7 @@ void dd_move_x(gmx_domdec_t             *dd,
             {
                 for (int g : ind.index)
                 {
-                    for (int j : atomGroups.block(g))
+                    for (int j : atomGrouping.block(g))
                     {
                         /* Shift x */
                         sendBuffer[n][XX] = x[j][XX] + shift[XX];
@@ -468,7 +468,7 @@ void dd_move_f(gmx_domdec_t             *dd,
 
     comm = dd->comm;
 
-    const RangePartitioning &atomGroups = dd->atomGroups();
+    const RangePartitioning &atomGrouping = dd->atomGrouping();
 
     nzone   = comm->zones.n/2;
     nat_tot = comm->atomRanges.end(DDAtomRanges::Type::Zones);
@@ -526,7 +526,7 @@ void dd_move_f(gmx_domdec_t             *dd,
             {
                 for (int g : ind.index)
                 {
-                    for (int j : atomGroups.block(g))
+                    for (int j : atomGrouping.block(g))
                     {
                         for (int d = 0; d < DIM; d++)
                         {
@@ -543,7 +543,7 @@ void dd_move_f(gmx_domdec_t             *dd,
                 assert(NULL != fshift);
                 for (int g : ind.index)
                 {
-                    for (int j : atomGroups.block(g))
+                    for (int j : atomGrouping.block(g))
                     {
                         for (int d = 0; d < DIM; d++)
                         {
@@ -562,7 +562,7 @@ void dd_move_f(gmx_domdec_t             *dd,
             {
                 for (int g : ind.index)
                 {
-                    for (int j : atomGroups.block(g))
+                    for (int j : atomGrouping.block(g))
                     {
                         /* Rotate the force */
                         f[j][XX] += receiveBuffer[n][XX];
@@ -594,7 +594,7 @@ void dd_atom_spread_real(gmx_domdec_t *dd, real v[])
 
     comm = dd->comm;
 
-    const RangePartitioning &atomGroups = dd->atomGroups();
+    const RangePartitioning &atomGrouping = dd->atomGrouping();
 
     nzone   = 1;
     nat_tot = comm->atomRanges.numHomeAtoms();
@@ -608,7 +608,7 @@ void dd_atom_spread_real(gmx_domdec_t *dd, real v[])
             int                         n    = 0;
             for (int g : ind.index)
             {
-                for (int j : atomGroups.block(g))
+                for (int j : atomGrouping.block(g))
                 {
                     buf[n] = v[j];
                     n++;
@@ -660,7 +660,7 @@ void dd_atom_sum_real(gmx_domdec_t *dd, real v[])
 
     comm = dd->comm;
 
-    const gmx::RangePartitioning &atomGroups = dd->atomGroups();
+    const gmx::RangePartitioning &atomGrouping = dd->atomGrouping();
 
     nzone   = comm->zones.n/2;
     nat_tot = comm->atomRanges.end(DDAtomRanges::Type::Zones);
@@ -707,7 +707,7 @@ void dd_atom_sum_real(gmx_domdec_t *dd, real v[])
             int n = 0;
             for (int g : ind.index)
             {
-                for (int j : atomGroups.block(g))
+                for (int j : atomGrouping.block(g))
                 {
                     v[j] += receiveBuffer[n];
                     n++;
@@ -1150,7 +1150,7 @@ void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
         if (i < dd->comm->atomRanges.end(DDAtomRanges::Type::Zones))
         {
             c = 0;
-            while (i >= dd->atomGroups().subRange(0, dd->comm->zones.cg_range[c + 1]).end())
+            while (i >= dd->atomGrouping().subRange(0, dd->comm->zones.cg_range[c + 1]).end())
             {
                 c++;
             }
@@ -1518,10 +1518,10 @@ static void restoreAtomGroups(gmx_domdec_t *dd,
     gmx::ArrayRef<const int>  atomGroupsState        = state->cg_gl;
 
     std::vector<int>         &globalAtomGroupIndices = dd->globalAtomGroupIndices;
-    gmx::RangePartitioning   &atomGroups             = dd->atomGroups_;
+    gmx::RangePartitioning   &atomGrouping             = dd->atomGrouping_;
 
     globalAtomGroupIndices.resize(atomGroupsState.size());
-    atomGroups.clear();
+    atomGrouping.clear();
 
     /* Copy back the global charge group indices from state
      * and rebuild the local charge group to atom index.
@@ -1531,11 +1531,11 @@ static void restoreAtomGroups(gmx_domdec_t *dd,
         const int atomGroupGlobal  = atomGroupsState[i];
         const int groupSize        = gcgs_index[atomGroupGlobal + 1] - gcgs_index[atomGroupGlobal];
         globalAtomGroupIndices[i]  = atomGroupGlobal;
-        atomGroups.appendBlock(groupSize);
+        atomGrouping.appendBlock(groupSize);
     }
 
     dd->ncg_home = atomGroupsState.size();
-    dd->comm->atomRanges.setEnd(DDAtomRanges::Type::Home, atomGroups.fullRange().end());
+    dd->comm->atomRanges.setEnd(DDAtomRanges::Type::Home, atomGrouping.fullRange().end());
 
     set_zones_ncg_home(dd);
 }
@@ -1584,7 +1584,7 @@ static void make_dd_indices(gmx_domdec_t *dd,
     }
 
     /* Make the local to global and global to local atom index */
-    int a = dd->atomGroups().subRange(cg_start, cg_start).begin();
+    int a = dd->atomGrouping().subRange(cg_start, cg_start).begin();
     globalAtomIndices.resize(a);
     for (int zone = 0; zone < numZones; zone++)
     {
@@ -5381,7 +5381,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                         /* Get the cg's for this pulse in this zone */
                         get_zone_pulse_cgs(dd, zonei, zone, cg0_th, cg1_th,
                                            dd->globalAtomGroupIndices,
-                                           dd->atomGroups(),
+                                           dd->atomGrouping(),
                                            dim, dim_ind, dim0, dim1, dim2,
                                            r_comm2, r_bcomm2,
                                            box, distanceIsTriclinic,
@@ -5503,7 +5503,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                         cg_gl                              = dd->globalAtomGroupIndices[pos_cg];
                         fr->cginfo[pos_cg]                 = ddcginfo(cginfo_mb, cg_gl);
                         nrcg                               = GET_CGINFO_NATOMS(fr->cginfo[pos_cg]);
-                        dd->atomGroups_.appendBlock(nrcg);
+                        dd->atomGrouping_.appendBlock(nrcg);
                         if (bBondComm)
                         {
                             /* Update the charge group presence,
@@ -5524,7 +5524,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
             else
             {
                 /* This part of the code is never executed with bBondComm. */
-                std::vector<int> &atomGroupsIndex = dd->atomGroups_.rawIndex();
+                std::vector<int> &atomGroupsIndex = dd->atomGrouping_.rawIndex();
                 atomGroupsIndex.resize(numAtomGroupsNew + 1);
 
                 merge_cg_buffers(nzone, cd, p, zone_cg_range,
@@ -5538,7 +5538,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
         if (!cd->receiveInPlace)
         {
             /* Store the atom block for easy copying of communication buffers */
-            make_cell2at_index(cd, nzone, zone_cg_range[nzone], dd->atomGroups());
+            make_cell2at_index(cd, nzone, zone_cg_range[nzone], dd->atomGrouping());
         }
         nzone += nzone;
     }
@@ -6107,13 +6107,13 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
             ncg_new = 0;
     }
 
-    const gmx::RangePartitioning &atomGroups = dd->atomGroups();
+    const gmx::RangePartitioning &atomGrouping = dd->atomGrouping();
 
     /* We alloc with the old size, since cgindex is still old */
-    GMX_ASSERT(atomGroups.numBlocks() == dd->ncg_home, "atomGroups and dd should be consistent");
-    DDBufferAccess<gmx::RVec>     rvecBuffer(dd->comm->rvecBuffer, atomGroups.fullRange().end());
+    GMX_ASSERT(atomGrouping.numBlocks() == dd->ncg_home, "atomGroups and dd should be consistent");
+    DDBufferAccess<gmx::RVec>     rvecBuffer(dd->comm->rvecBuffer, atomGrouping.fullRange().end());
 
-    const gmx::RangePartitioning *atomGroupsPtr = (dd->comm->bCGs ? &atomGroups : nullptr);
+    const gmx::RangePartitioning *atomGroupsPtr = (dd->comm->bCGs ? &atomGrouping : nullptr);
 
     /* Remove the charge groups which are no longer at home here */
     dd->ncg_home = ncg_new;
@@ -6163,16 +6163,16 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
         gmx::RangePartitioning ordered;
         for (i = 0; i < dd->ncg_home; i++)
         {
-            ordered.appendBlock(atomGroups.block(cgsort[i].ind).size());
+            ordered.appendBlock(atomGrouping.block(cgsort[i].ind).size());
         }
-        dd->atomGroups_ = ordered;
+        dd->atomGrouping_ = ordered;
     }
     else
     {
-        dd->atomGroups_.setAllBlocksSizeOne(dd->ncg_home);
+        dd->atomGrouping_.setAllBlocksSizeOne(dd->ncg_home);
     }
     /* Set the home atom number */
-    dd->comm->atomRanges.setEnd(DDAtomRanges::Type::Home, dd->atomGroups().fullRange().end());
+    dd->comm->atomRanges.setEnd(DDAtomRanges::Type::Home, dd->atomGrouping().fullRange().end());
 
     if (fr->cutoff_scheme == ecutsVERLET)
     {

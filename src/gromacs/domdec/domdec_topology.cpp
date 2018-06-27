@@ -1096,13 +1096,13 @@ static void add_vsite(gmx_ga2la_t *ga2la, const int *index, const int *rtil,
 /*! \brief Build the index that maps each local atom to its local atom group */
 static void makeLocalAtomGroupsFromAtoms(gmx_domdec_t *dd)
 {
-    const gmx::RangePartitioning &atomGroups = dd->atomGroups();
+    const gmx::RangePartitioning &atomGrouping = dd->atomGrouping();
 
     dd->localAtomGroupFromAtom.clear();
 
     for (size_t g = 0; g < dd->globalAtomGroupIndices.size(); g++)
     {
-        for (int gmx_unused a : atomGroups.block(g))
+        for (int gmx_unused a : atomGrouping.block(g))
         {
             dd->localAtomGroupFromAtom.push_back(g);
         }
@@ -1601,8 +1601,8 @@ static void set_no_exclusions_zone(const gmx_domdec_t       *dd,
                                    int                       iz,
                                    t_blocka                 *lexcls)
 {
-    const auto zone = dd->atomGroups().subRange(zones->cg_range[iz],
-                                                zones->cg_range[iz + 1]);
+    const auto zone = dd->atomGrouping().subRange(zones->cg_range[iz],
+                                                  zones->cg_range[iz + 1]);
 
     for (int a : zone)
     {
@@ -1633,13 +1633,13 @@ static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
 
     ga2la = dd->ga2la;
 
-    const auto jRange = dd->atomGroups().subRange(zones->izone[iz].jcg0,
-                                                  zones->izone[iz].jcg1);
+    const auto jRange = dd->atomGrouping().subRange(zones->izone[iz].jcg0,
+                                                    zones->izone[iz].jcg1);
 
     n_excl_at_max = dd->reverse_top->n_excl_at_max;
 
     /* We set the end index, but note that we might not start at zero here */
-    lexcls->nr = dd->atomGroups().subRange(0, cg_end).size();
+    lexcls->nr = dd->atomGrouping().subRange(0, cg_end).size();
 
     int n     = lexcls->nra;
     int count = 0;
@@ -1650,7 +1650,7 @@ static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
             lexcls->nalloc_a = over_alloc_large(n + (cg_end - cg_start)*n_excl_at_max);
             srenew(lexcls->a, lexcls->nalloc_a);
         }
-        const auto atomGroup = dd->atomGroups().block(cg);
+        const auto atomGroup = dd->atomGrouping().block(cg);
         if (GET_CGINFO_EXCL_INTER(cginfo[cg]) ||
             !GET_CGINFO_EXCL_INTRA(cginfo[cg]))
         {
@@ -1767,8 +1767,8 @@ static void make_exclusions_zone(gmx_domdec_t *dd,
 
     ga2la = dd->ga2la;
 
-    const auto jRange = dd->atomGroups().subRange(zones->izone[iz].jcg0,
-                                                  zones->izone[iz].jcg1);
+    const auto jRange = dd->atomGrouping().subRange(zones->izone[iz].jcg0,
+                                                    zones->izone[iz].jcg1);
 
     n_excl_at_max = dd->reverse_top->n_excl_at_max;
 
@@ -1845,7 +1845,7 @@ static void check_alloc_index(t_blocka *ba, int nindex_max)
 static void check_exclusions_alloc(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                                    t_blocka *lexcls)
 {
-    int nr = dd->atomGroups().subRange(0, zones->izone[zones->nizone - 1].cg1).size();
+    int nr = dd->atomGrouping().subRange(0, zones->izone[zones->nizone - 1].cg1).size();
 
     check_alloc_index(lexcls, nr);
 
@@ -1860,8 +1860,8 @@ static void finish_local_exclusions(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                                     t_blocka *lexcls)
 {
     const auto nonhomeIzonesAtomRange =
-        dd->atomGroups().subRange(zones->izone[0].cg1,
-                                  zones->izone[zones->nizone - 1].cg1);
+        dd->atomGrouping().subRange(zones->izone[0].cg1,
+                                    zones->izone[zones->nizone - 1].cg1);
 
     if (dd->n_intercg_excl == 0)
     {
@@ -2007,7 +2007,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                                       idef_t,
                                       vsite_pbc, vsite_pbc_nalloc,
                                       izone,
-                                      dd->atomGroups().subRange(cg0t, cg1t));
+                                      dd->atomGrouping().subRange(cg0t, cg1t));
 
                 if (izone < nzone_excl)
                 {
@@ -2022,7 +2022,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                         excl_t->nra = 0;
                     }
 
-                    if (dd->atomGroups().allBlocksHaveSizeOne() &&
+                    if (dd->atomGrouping().allBlocksHaveSizeOne() &&
                         !rt->bExclRequired)
                     {
                         /* No charge groups and no distance check required */
@@ -2092,7 +2092,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
 void dd_make_local_cgs(gmx_domdec_t *dd, t_block *lcgs)
 {
     lcgs->nr    = dd->globalAtomGroupIndices.size();
-    lcgs->index = dd->atomGroups_.rawIndex().data();
+    lcgs->index = dd->atomGrouping_.rawIndex().data();
 }
 
 void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
