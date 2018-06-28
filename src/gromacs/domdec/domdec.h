@@ -380,8 +380,10 @@ void dd_move_x_vsites(struct gmx_domdec_t *dd, const matrix box, rvec *x);
  * The local atom count for a constraint, possible values 2/1/0, is needed
  * to avoid not/double-counting contributions linked to the Lagrange
  * multiplier, such as the virial and free-energy derivatives.
+ *
+ * \note When \p dd = nullptr, an empty reference is returned.
  */
-int *dd_constraints_nlocalatoms(struct gmx_domdec_t *dd);
+gmx::ArrayRef<const int> dd_constraints_nlocalatoms(const gmx_domdec_t *dd);
 
 /* In domdec_top.c */
 
