@@ -89,6 +89,10 @@ struct gmx_domdec_constraints_t {
     /* Multi-threading stuff */
     int      nthread;           /**< Number of threads used for DD constraint setup */
     t_ilist *ils;               /**< Constraint ilist working arrays, size \p nthread */
+
+    /* Buffers for requesting atoms, TODO change pointer to std::vector */
+    std::vector<int> *requestedGlobalAtomIndices; /**< Buffers for requesting global atom indices, one per thread */
+
     //! @endcond
 };
 
@@ -149,7 +153,7 @@ static void walk_out(int con, int con_offset, int a, int offset, int nrec,
                      gmx_domdec_constraints_t *dc,
                      gmx_domdec_specat_comm_t *dcc,
                      t_ilist *il_local,
-                     ind_req_t *ireq)
+                     std::vector<int> *ireq)
 {
     int            a1_gl, a2_gl, a_loc, i, coni, b;
     const t_iatom *iap;
@@ -201,12 +205,7 @@ static void walk_out(int con, int con_offset, int a, int offset, int nrec,
     {
         assert(dcc);
         /* Add this non-home atom to the list */
-        if (ireq->n+1 > ireq->nalloc)
-        {
-            ireq->nalloc = over_alloc_large(ireq->n+1);
-            srenew(ireq->ind, ireq->nalloc);
-        }
-        ireq->ind[ireq->n++] = offset + a;
+        ireq->push_back(offset + a);
         /* Temporarily mark with -2, we get the index later */
         gmx_hash_set(dc->ga2la, offset+a, -2);
     }
@@ -246,7 +245,7 @@ static void atoms_to_settles(gmx_domdec_t *dd,
                              const int **at2settle_mt,
                              int cg_start, int cg_end,
                              t_ilist *ils_local,
-                             ind_req_t *ireq)
+                             std::vector<int> *ireq)
 {
     gmx_ga2la_t *ga2la = dd->ga2la;
     int          nral  = NRAL(F_SETTLE);
@@ -308,12 +307,7 @@ static void atoms_to_settles(gmx_domdec_t *dd,
                             {
                                 ils_local->iatoms[ils_local->nr++] = -a_gls[sa] - 1;
                                 /* Add this non-home atom to the list */
-                                if (ireq->n+1 > ireq->nalloc)
-                                {
-                                    ireq->nalloc = over_alloc_large(ireq->n+1);
-                                    srenew(ireq->ind, ireq->nalloc);
-                                }
-                                ireq->ind[ireq->n++] = a_gls[sa];
+                                ireq->push_back(a_gls[sa]);
                                 /* A check on double atom requests is
                                  * not required for settle.
                                  */
@@ -332,7 +326,7 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
                                  const int *cginfo,
                                  gmx::ArrayRef<const t_blocka> at2con_mt, int nrec,
                                  t_ilist *ilc_local,
-                                 ind_req_t *ireq)
+                                 std::vector<int> *ireq)
 {
     const t_blocka             *at2con;
     int                         ncon1;
@@ -431,9 +425,9 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
     if (debug)
     {
         fprintf(debug,
-                "Constraints: home %3d border %3d atoms: %3d\n",
+                "Constraints: home %3d border %3d atoms: %3zu\n",
                 nhome, dc->ncon-nhome,
-                dd->constraint_comm ? ireq->n : 0);
+                dd->constraint_comm ? ireq->size() : 0);
     }
 }
 
@@ -445,7 +439,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
 {
     gmx_domdec_constraints_t     *dc;
     t_ilist                      *ilc_local, *ils_local;
-    ind_req_t                    *ireq;
+    std::vector<int>             *ireq;
     gmx::ArrayRef<const t_blocka> at2con_mt;
     const int                   **at2settle_mt;
     gmx_hash_t                   *ga2la_specat;
@@ -476,8 +470,8 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
         // TODO Perhaps gmx_domdec_constraints_t should keep a valid constr?
         GMX_RELEASE_ASSERT(constr != nullptr, "Must have valid constraints object");
         at2con_mt = constr->atom2constraints_moltype();
-        ireq      = &dd->constraint_comm->ireq[0];
-        ireq->n   = 0;
+        ireq      = &dc->requestedGlobalAtomIndices[0];
+        ireq->clear();
     }
     else
     {
@@ -529,7 +523,6 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
                 {
                     int        cg0, cg1;
                     t_ilist   *ilst;
-                    ind_req_t *ireqt;
 
                     /* Distribute the settle check+assignments over
                      * dc->nthread or dc->nthread-1 threads.
@@ -547,15 +540,15 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
                     }
                     ilst->nr = 0;
 
-                    ireqt = &dd->constraint_comm->ireq[thread];
+                    std::vector<int> &ireqt = dc->requestedGlobalAtomIndices[thread];
                     if (thread > 0)
                     {
-                        ireqt->n = 0;
+                        ireqt.clear();
                     }
 
                     atoms_to_settles(dd, mtop, cginfo, at2settle_mt,
                                      cg0, cg1,
-                                     ilst, ireqt);
+                                     ilst, &ireqt);
                 }
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -565,7 +558,6 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
         for (thread = 1; thread < dc->nthread; thread++)
         {
             t_ilist   *ilst;
-            ind_req_t *ireqt;
             int        ia;
 
             if (thread > t0_set)
@@ -583,17 +575,8 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
                 ils_local->nr += ilst->nr;
             }
 
-            ireqt = &dd->constraint_comm->ireq[thread];
-            if (ireq->n+ireqt->n > ireq->nalloc)
-            {
-                ireq->nalloc = over_alloc_large(ireq->n+ireqt->n);
-                srenew(ireq->ind, ireq->nalloc);
-            }
-            for (ia = 0; ia < ireqt->n; ia++)
-            {
-                ireq->ind[ireq->n+ia] = ireqt->ind[ia];
-            }
-            ireq->n += ireqt->n;
+            const std::vector<int> &ireqt = dc->requestedGlobalAtomIndices[thread];
+            ireq->insert(ireq->end(), ireqt.begin(), ireqt.end());
         }
 
         if (debug)
@@ -696,5 +679,7 @@ void init_domdec_constraints(gmx_domdec_t     *dd,
     dc->nthread = gmx_omp_nthreads_get(emntDomdec);
     snew(dc->ils, dc->nthread);
 
-    dd->constraint_comm = specat_comm_init(dc->nthread);
+    dd->constraint_comm = new gmx_domdec_specat_comm_t;
+
+    dc->requestedGlobalAtomIndices = new std::vector<int>[dc->nthread];
 }
