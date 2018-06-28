@@ -66,7 +66,7 @@ struct AtomDistribution;
 struct gmx_domdec_comm_t;
 struct gmx_domdec_constraints_t;
 struct gmx_domdec_specat_comm_t;
-struct gmx_ga2la_t;
+class gmx_ga2la_t;
 struct gmx_hash_t;
 struct gmx_pme_comm_n_box_t;
 struct gmx_reverse_top_t;

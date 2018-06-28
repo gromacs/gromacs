@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,7 +35,8 @@
 /*! \libinternal \file
  * \brief
  * Defines structures and functions for mapping from global to local atom
- * indices. The functions are performance critical and should be inlined.
+ * indices using a direct list with the size of the total number of atoms.
+ * The functions are performance critical and should be inlined.
  *
  * \inlibraryapi
  * \ingroup module_domdec
@@ -45,32 +44,44 @@
  * \author Berk Hess <hess@kth.se>
  *
  */
-#ifndef GMX_DOMDEC_GA2LA_H
-#define GMX_DOMDEC_GA2LA_H
+#ifndef GMX_DOMDEC_GA2LA_DIRECT_H
+#define GMX_DOMDEC_GA2LA_DIRECT_H
 
 #include <algorithm>
 #include <vector>
 
 #include "gromacs/utility/basedefinitions.h"
 
-#include "ga2la_direct.h"
-#include "ga2la_hashed.h"
-
 /*! \libinternal \brief Global to local atom mapping
  *
  * Efficiently manages mapping from global atom indices to local atom indices
  * in the domain decomposition.
  */
-class gmx_ga2la_t
+class Ga2laDirect
 {
+    private:
+        /*! \libinternal \brief Structure for the local atom info for a plain list */
+        struct directEntry
+        {
+            int  la   = -1; /**< The local atom index */
+            int  cell = -1; /**< The DD zone index for neighboring domains, zone+zone otherwise */
+        };
+
     public:
         /*! \brief Constructor
          *
          * \param[in] numAtomsTotal  The total number of atoms in the system
-         * \param[in] numAtomsLocal  An estimate of the number of home+communicated atoms
          */
-        gmx_ga2la_t(int numAtomsTotal,
-                    int numAtomsLocal);
+        Ga2laDirect(int numAtomsTotal) :
+            table_(numAtomsTotal)
+        {
+        };
+
+        /*! \brief Returns whether the direct list is available */
+        bool isAvailable() const
+        {
+            return !table_.empty();
+        }
 
         /*! \brief Sets the entry for global atom a_gl
          *
@@ -82,14 +93,8 @@ class gmx_ga2la_t
                  int a_loc,
                  int cell)
         {
-            if (direct_.isAvailable())
-            {
-                direct_.set(a_gl, a_loc, cell);
-            }
-            else
-            {
-                hashed_.set(a_gl, a_loc, cell);
-            }
+            table_[a_gl].la   = a_loc;
+            table_[a_gl].cell = cell;
         }
 
         /*! \brief Delete the entry for global atom a_gl
@@ -98,14 +103,7 @@ class gmx_ga2la_t
          */
         void unset(int a_gl)
         {
-            if (direct_.isAvailable())
-            {
-                direct_.unset(a_gl);
-            }
-            else
-            {
-                hashed_.unset(a_gl);
-            }
+            table_[a_gl].cell = -1;
         }
 
         /*! \brief Change the local atom for entry with global atom a_gl
@@ -116,14 +114,7 @@ class gmx_ga2la_t
         void changeLocalAtom(int a_gl,
                              int a_loc)
         {
-            if (direct_.isAvailable())
-            {
-                direct_.changeLocalAtom(a_gl, a_loc);
-            }
-            else
-            {
-                hashed_.changeLocalAtom(a_gl, a_loc);
-            }
+            table_[a_gl].la = a_loc;
         }
 
         /*! \brief Returns whether the global atom a_gl available locally
@@ -137,14 +128,10 @@ class gmx_ga2la_t
                  int *a_loc,
                  int *cell) const
         {
-            if (direct_.isAvailable())
-            {
-                return direct_.get(a_gl, a_loc, cell);
-            }
-            else
-            {
-                return hashed_.get(a_gl, a_loc, cell);
-            }
+            *a_loc = table_[a_gl].la;
+            *cell  = table_[a_gl].cell;
+
+            return (table_[a_gl].cell >= 0);
         }
 
         /*! \brief Returns whether the global atom a_gl is a home atom
@@ -156,14 +143,9 @@ class gmx_ga2la_t
         bool getHome(int  a_gl,
                      int *a_loc) const
         {
-            if (direct_.isAvailable())
-            {
-                return direct_.getHome(a_gl, a_loc);
-            }
-            else
-            {
-                return hashed_.getHome(a_gl, a_loc);
-            }
+            *a_loc = table_[a_gl].la;
+
+            return (table_[a_gl].cell == 0);
         }
 
         /*! \brief Returns whether the global atom a_gl is a home atom
@@ -173,32 +155,20 @@ class gmx_ga2la_t
          */
         bool isHome(int a_gl) const
         {
-            if (direct_.isAvailable())
-            {
-                return direct_.isHome(a_gl);
-            }
-            else
-            {
-                return hashed_.isHome(a_gl);
-            }
+            return (table_[a_gl].cell == 0);
         }
 
         /*! \brief Clear all the entries in the list */
         void clear()
         {
-            if (direct_.isAvailable())
+            for (directEntry &entry : table_)
             {
-                direct_.clear();
-            }
-            else
-            {
-                hashed_.clear();
+                entry.cell = -1;
             }
         }
 
     private:
-        Ga2laDirect direct_; /**< Direct list */
-        Ga2laHashed hashed_; /**< Hash table */
+        std::vector<directEntry> table_; /**< The direct list */
 };
 
 #endif
