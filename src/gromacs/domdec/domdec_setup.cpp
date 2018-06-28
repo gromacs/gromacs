@@ -62,7 +62,6 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
 
 /*! \brief Margin for setting up the DD grid */
 #define DD_GRID_MARGIN_PRES_SCALE 1.05
@@ -70,53 +69,49 @@
 /*! \brief Factorize \p n.
  *
  * \param[in]    n     Value to factorize
- * \param[out]   fac   Pointer to array of factors (to be allocated in this function)
- * \param[out]   mfac  Pointer to array of the number of times each factor repeats in the factorization (to be allocated in this function)
- * \return             The number of unique factors
+ * \param[out]   fac   Vector of factors (to be allocated in this function)
+ * \param[out]   mfac  Vector with the number of times each factor repeats in the factorization (to be allocated in this function)
  */
-static int factorize(int n, int **fac, int **mfac)
+static void factorize(int               n,
+                      std::vector<int> *fac,
+                      std::vector<int> *mfac)
 {
-    int d, ndiv;
-
     if (n <= 0)
     {
         gmx_fatal(FARGS, "Can only factorize positive integers.");
     }
 
     /* Decompose n in factors */
-    snew(*fac, n/2);
-    snew(*mfac, n/2);
-    d    = 2;
-    ndiv = 0;
+    fac->clear();
+    mfac->clear();
+    int d = 2;
     while (n > 1)
     {
         while (n % d == 0)
         {
-            if (ndiv == 0 || (*fac)[ndiv-1] != d)
+            if (fac->empty() || fac->back() != d)
             {
-                ndiv++;
-                (*fac)[ndiv-1] = d;
+                fac->push_back(d);
+                mfac->push_back(1);
             }
-            (*mfac)[ndiv-1]++;
+            else
+            {
+                mfac->back()++;
+            }
             n /= d;
         }
         d++;
     }
-
-    return ndiv;
 }
 
 /*! \brief Find largest divisor of \p n smaller than \p n*/
 static gmx_bool largest_divisor(int n)
 {
-    int ndiv, *div, *mdiv, ldiv;
+    std::vector<int> div;
+    std::vector<int> mdiv;
+    factorize(n, &div, &mdiv);
 
-    ndiv = factorize(n, &div, &mdiv);
-    ldiv = div[ndiv-1];
-    sfree(div);
-    sfree(mdiv);
-
-    return ldiv;
+    return div.back();
 }
 
 /*! \brief Compute largest common divisor of \p n1 and \b n2 */
@@ -145,16 +140,13 @@ static gmx_bool fits_pme_ratio(int nrank_tot, int nrank_pme, float ratio)
 /*! \brief Returns TRUE when npme out of ntot ranks doing PME is expected to give reasonable performance */
 static gmx_bool fits_pp_pme_perf(int ntot, int npme, float ratio)
 {
-    int ndiv, *div, *mdiv, ldiv;
-    int npp_root3, npme_root2;
+    std::vector<int> div;
+    std::vector<int> mdiv;
+    factorize(ntot - npme, &div, &mdiv);
+    int ldiv = div.back();
 
-    ndiv = factorize(ntot - npme, &div, &mdiv);
-    ldiv = div[ndiv-1];
-    sfree(div);
-    sfree(mdiv);
-
-    npp_root3  = static_cast<int>(std::cbrt(ntot - npme) + 0.5);
-    npme_root2 = static_cast<int>(std::sqrt(static_cast<double>(npme)) + 0.5);
+    int npp_root3  = static_cast<int>(std::cbrt(ntot - npme) + 0.5);
+    int npme_root2 = static_cast<int>(std::sqrt(static_cast<double>(npme)) + 0.5);
 
     /* The check below gives a reasonable division:
      * factor 5 allowed at 5 or more PP ranks,
@@ -559,7 +551,8 @@ static void assign_factors(const gmx_domdec_t *dd,
                            const matrix box, const gmx_ddbox_t *ddbox,
                            int natoms, const t_inputrec *ir,
                            float pbcdxr, int npme,
-                           int ndiv, int *div, int *mdiv, ivec ir_try, ivec opt)
+                           int ndiv, const int *div, const int *mdiv,
+                           ivec ir_try, ivec opt)
 {
     int   x, y, i;
     float ce;
@@ -628,7 +621,7 @@ static real optimize_ncells(FILE *fplog,
                             gmx_bool bInterCGBondeds,
                             ivec nc)
 {
-    int      npp, npme, ndiv, *div, *mdiv, d, nmax;
+    int      npp, npme, d, nmax;
     double   pbcdxr;
     real     limit;
     ivec     itry;
@@ -720,17 +713,16 @@ static real optimize_ncells(FILE *fplog,
     }
 
     /* Decompose npp in factors */
-    ndiv = factorize(npp, &div, &mdiv);
+    std::vector<int> div;
+    std::vector<int> mdiv;
+    factorize(npp, &div, &mdiv);
 
     itry[XX] = 1;
     itry[YY] = 1;
     itry[ZZ] = 1;
     clear_ivec(nc);
     assign_factors(dd, limit, cutoff, box, ddbox, mtop->natoms, ir, pbcdxr,
-                   npme, ndiv, div, mdiv, itry, nc);
-
-    sfree(div);
-    sfree(mdiv);
+                   npme, div.size(), div.data(), mdiv.data(), itry, nc);
 
     return limit;
 }

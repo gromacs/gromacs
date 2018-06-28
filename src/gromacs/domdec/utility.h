@@ -44,7 +44,6 @@
 
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "domdec_internal.h"
 
