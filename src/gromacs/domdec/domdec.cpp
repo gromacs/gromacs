@@ -1594,14 +1594,14 @@ static void make_dd_indices(gmx_domdec_t *dd,
                 for (int a_gl = gcgs_index[cg_gl]; a_gl < gcgs_index[cg_gl+1]; a_gl++)
                 {
                     globalAtomIndices.push_back(a_gl);
-                    ga2la_set(dd->ga2la, a_gl, a, zone1);
+                    dd->ga2la->set(a_gl, a, zone1);
                     a++;
                 }
             }
             else
             {
                 globalAtomIndices.push_back(cg_gl);
-                ga2la_set(dd->ga2la, cg_gl, a, zone1);
+                dd->ga2la->set(cg_gl, a, zone1);
                 a++;
             }
         }
@@ -1674,7 +1674,7 @@ static void check_index_consistency(gmx_domdec_t *dd,
     {
         int a;
         int cell;
-        if (ga2la_get(dd->ga2la, i, &a, &cell))
+        if (dd->ga2la->get(i, &a, &cell))
         {
             if (a >= numAtomsInZones)
             {
@@ -1726,14 +1726,14 @@ static void clearDDStateIndices(gmx_domdec_t *dd,
     if (atomStart == 0)
     {
         /* Clear the whole list without searching */
-        ga2la_clear(dd->ga2la);
+        dd->ga2la->clear();
     }
     else
     {
         const int numAtomsInZones = dd->comm->atomRanges.end(DDAtomRanges::Type::Zones);
         for (int i = 0; i < numAtomsInZones; i++)
         {
-            ga2la_del(dd->ga2la, dd->globalAtomIndices[i]);
+            dd->ga2la->unset(dd->globalAtomIndices[i]);
         }
     }
 
@@ -4338,7 +4338,8 @@ static void set_ddgrid_parameters(FILE *fplog, gmx_domdec_t *dd, real dlb_scale,
     }
     natoms_tot = comm->cgs_gl.index[comm->cgs_gl.nr];
 
-    dd->ga2la = ga2la_init(natoms_tot, static_cast<int>(vol_frac*natoms_tot));
+    dd->ga2la  = new gmx_ga2la_t(natoms_tot,
+                                 static_cast<int>(vol_frac*natoms_tot));
 }
 
 /*! \brief Set some important DD parameters that can be modified by env.vars */
@@ -6675,7 +6676,7 @@ void dd_partition_system(FILE                *fplog,
         dd_resize_state(state_local, f, comm->atomRanges.numHomeAtoms());
 
         /* Rebuild all the indices */
-        ga2la_clear(dd->ga2la);
+        dd->ga2la->clear();
         ncgindex_set = 0;
 
         wallcycle_sub_stop(wcycle, ewcsDD_GRID);
