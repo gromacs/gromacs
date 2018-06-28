@@ -450,13 +450,19 @@ erfinv(float x);
  */
 constexpr int32_t exactDiv(int32_t a, int32_t b)
 {
-    return GMX_ASSERT(a%b == 0, "exactDiv called with non-divisible arguments"), a/b;
+#ifndef _MSVC_VER
+    GMX_ASSERT(a%b == 0, "exactDiv called with non-divisible arguments");
+#endif
+    return a/b;
 }
 
 //! Exact integer division, 64bit.
 constexpr int64_t exactDiv(int64_t a, int64_t b)
 {
-    return GMX_ASSERT(a%b == 0, "exactDiv called with non-divisible arguments"), a/b;
+#ifndef _MSVC_VER
+    GMX_ASSERT(a%b == 0, "exactDiv called with non-divisible arguments");
+#endif
+    return a/b;
 }
 
 } // namespace gmx
