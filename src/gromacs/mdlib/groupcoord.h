@@ -52,12 +52,8 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
-struct gmx_ga2la_t;
+class gmx_ga2la_t;
 struct t_commrec;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /*! \brief Select local atoms of a group.
  *
@@ -78,7 +74,7 @@ extern "C" {
  *                            in the communicate_group_positions routine.
  */
 
-extern void dd_make_local_group_indices(gmx_ga2la_t *ga2la,
+extern void dd_make_local_group_indices(const gmx_ga2la_t *ga2la,
                                         const int nr, int anrs[], int *nr_loc,
                                         int *anrs_loc[], int *nalloc_loc,
                                         int coll_ind[]);
@@ -208,7 +204,3 @@ extern void translate_x(rvec x[], const int nr, const rvec transvec);
  *
  */
 extern void rotate_x(rvec x[], const int nr, matrix rmat);
-
-#ifdef __cplusplus
-}
-#endif
