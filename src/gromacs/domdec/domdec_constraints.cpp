@@ -65,33 +65,32 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "domdec_specatomcomm.h"
 #include "domdec_vsite.h"
 #include "hash.h"
 
 /*! \brief Struct used during constraint setup with domain decomposition */
-struct gmx_domdec_constraints_t {
+struct gmx_domdec_constraints_t
+{
     //! @cond Doxygen_Suppress
-    int         *molb_con_offset; /**< Offset in the constraint array for each molblock */
-    int         *molb_ncon_mol;   /**< The number of constraints per molecule for each molblock */
+    std::vector<int>  molb_con_offset; /**< Offset in the constraint array for each molblock */
+    std::vector<int>  molb_ncon_mol;   /**< The number of constraints per molecule for each molblock */
 
-    int          ncon;            /**< The fully local and conneced constraints */
+    int               ncon;            /**< The fully local and conneced constraints */
     /* The global constraint number, only required for clearing gc_req */
-    int         *con_gl;          /**< Global constraint indices for local constraints */
-    int         *con_nlocat;      /**< Number of local atoms (2/1/0) for each constraint */
-    int          con_nalloc;      /**< Allocation size for \p con_gl and \p con_nlocat */
+    std::vector<int>  con_gl;          /**< Global constraint indices for local constraints */
+    std::vector<int>  con_nlocat;      /**< Number of local atoms (2/1/0) for each constraint */
 
-    char        *gc_req;          /**< Boolean that tells if a global constraint index has been requested; note: size global #constraints */
-    gmx_hash_t  *ga2la;           /**< Global to local communicated constraint atom only index */
+    std::vector<bool> gc_req;          /**< Boolean that tells if a global constraint index has been requested; note: size global #constraints */
+    gmx_hash_t       *ga2la;           /**< Global to local communicated constraint atom only index, TODO: get rid of the plain pointer */
 
     /* Multi-threading stuff */
-    int      nthread;           /**< Number of threads used for DD constraint setup */
-    t_ilist *ils;               /**< Constraint ilist working arrays, size \p nthread */
+    int                  nthread; /**< Number of threads used for DD constraint setup */
+    std::vector<t_ilist> ils;     /**< Constraint ilist working arrays, size \p nthread */
 
-    /* Buffers for requesting atoms, TODO change pointer to std::vector */
-    std::vector<int> *requestedGlobalAtomIndices; /**< Buffers for requesting global atom indices, one per thread */
+    /* Buffers for requesting atoms */
+    std::vector < std::vector < int>> requestedGlobalAtomIndices; /**< Buffers for requesting global atom indices, one per thread */
 
     //! @endcond
 };
@@ -107,29 +106,23 @@ void dd_move_x_constraints(gmx_domdec_t *dd, matrix box,
     }
 }
 
-int *dd_constraints_nlocalatoms(gmx_domdec_t *dd)
+gmx::ArrayRef<const int> dd_constraints_nlocalatoms(const gmx_domdec_t *dd)
 {
-    if (dd->constraints)
+    if (dd && dd->constraints)
     {
         return dd->constraints->con_nlocat;
     }
     else
     {
-        return nullptr;
+        return gmx::EmptyArrayRef();
     }
 }
 
 void dd_clear_local_constraint_indices(gmx_domdec_t *dd)
 {
-    gmx_domdec_constraints_t *dc;
-    int i;
+    gmx_domdec_constraints_t *dc = dd->constraints;
 
-    dc = dd->constraints;
-
-    for (i = 0; i < dc->ncon; i++)
-    {
-        dc->gc_req[dc->con_gl[i]] = 0;
-    }
+    std::fill(dc->gc_req.begin(), dc->gc_req.end(), false);
 
     if (dd->constraint_comm)
     {
@@ -158,18 +151,12 @@ static void walk_out(int con, int con_offset, int a, int offset, int nrec,
     int            a1_gl, a2_gl, a_loc, i, coni, b;
     const t_iatom *iap;
 
-    if (dc->gc_req[con_offset+con] == 0)
+    if (!dc->gc_req[con_offset + con])
     {
         /* Add this non-home constraint to the list */
-        if (dc->ncon+1 > dc->con_nalloc)
-        {
-            dc->con_nalloc = over_alloc_large(dc->ncon+1);
-            srenew(dc->con_gl, dc->con_nalloc);
-            srenew(dc->con_nlocat, dc->con_nalloc);
-        }
-        dc->con_gl[dc->ncon]       = con_offset + con;
-        dc->con_nlocat[dc->ncon]   = (bHomeConnect ? 1 : 0);
-        dc->gc_req[con_offset+con] = 1;
+        dc->con_gl.push_back(con_offset + con);
+        dc->con_nlocat.push_back(bHomeConnect ? 1 : 0);
+        dc->gc_req[con_offset + con] = true;
         if (il_local->nr + 3 > il_local->nalloc)
         {
             il_local->nalloc = over_alloc_dd(il_local->nr+3);
@@ -338,6 +325,9 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
 
     gmx_ga2la_t                *ga2la  = dd->ga2la;
 
+    dc->con_gl.clear();
+    dc->con_nlocat.clear();
+
     int mb    = 0;
     int nhome = 0;
     for (int cg = 0; cg < dd->ncg_home; cg++)
@@ -384,14 +374,8 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
                         /* Add this fully home constraint at the first atom */
                         if (a_mol < b_mol)
                         {
-                            if (dc->ncon+1 > dc->con_nalloc)
-                            {
-                                dc->con_nalloc = over_alloc_large(dc->ncon+1);
-                                srenew(dc->con_gl, dc->con_nalloc);
-                                srenew(dc->con_nlocat, dc->con_nalloc);
-                            }
-                            dc->con_gl[dc->ncon]     = con_offset + con;
-                            dc->con_nlocat[dc->ncon] = 2;
+                            dc->con_gl.push_back(con_offset + con);
+                            dc->con_nlocat.push_back(2);
                             if (ilc_local->nr + 3 > ilc_local->nalloc)
                             {
                                 ilc_local->nalloc = over_alloc_dd(ilc_local->nr + 3);
@@ -421,6 +405,9 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
             }
         }
     }
+
+    GMX_ASSERT(dc->con_gl.size() == static_cast<size_t>(dc->ncon), "con_gl size should match the number of constraints");
+    GMX_ASSERT(dc->con_nlocat.size() == static_cast<size_t>(dc->ncon), "con_nlocat size should match the number of constraints");
 
     if (debug)
     {
@@ -644,11 +631,11 @@ void init_domdec_constraints(gmx_domdec_t     *dd,
         fprintf(debug, "Begin init_domdec_constraints\n");
     }
 
-    snew(dd->constraints, 1);
-    dc = dd->constraints;
+    dd->constraints = new gmx_domdec_constraints_t;
+    dc              = dd->constraints;
 
-    snew(dc->molb_con_offset, mtop->molblock.size());
-    snew(dc->molb_ncon_mol, mtop->molblock.size());
+    dc->molb_con_offset.resize(mtop->molblock.size());
+    dc->molb_ncon_mol.resize(mtop->molblock.size());
 
     int ncon = 0;
     for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
@@ -663,11 +650,7 @@ void init_domdec_constraints(gmx_domdec_t     *dd,
 
     if (ncon > 0)
     {
-        snew(dc->gc_req, ncon);
-        for (int c = 0; c < ncon; c++)
-        {
-            dc->gc_req[c] = 0;
-        }
+        dc->gc_req.resize(ncon);
     }
 
     /* Use a hash table for the global to local index.
@@ -677,9 +660,9 @@ void init_domdec_constraints(gmx_domdec_t     *dd,
                                        mtop->natoms/(2*dd->nnodes)));
 
     dc->nthread = gmx_omp_nthreads_get(emntDomdec);
-    snew(dc->ils, dc->nthread);
+    dc->ils.resize(dc->nthread);
 
     dd->constraint_comm = new gmx_domdec_specat_comm_t;
 
-    dc->requestedGlobalAtomIndices = new std::vector<int>[dc->nthread];
+    dc->requestedGlobalAtomIndices.resize(dc->nthread);
 }
