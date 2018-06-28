@@ -53,24 +53,23 @@
  * anrs_loc[0..nr_loc]. The indices are saved in coll_ind[] for later reduction
  * in communicate_group_positions()
  */
-void dd_make_local_group_indices(gmx_ga2la_t     *ga2la,
-                                 const int        nr,         /* IN:  Total number of atoms in the group */
-                                 int              anrs[],     /* IN:  Global atom numbers of the groups atoms */
-                                 int             *nr_loc,     /* OUT: Number of group atoms found locally */
-                                 int             *anrs_loc[], /* OUT: Local atom numbers of the group  */
-                                 int             *nalloc_loc, /* IN+OUT: Allocation size of anrs_loc */
-                                 int              coll_ind[]) /* OUT (opt): Where is this position found in the collective array? */
+void
+dd_make_local_group_indices(const gmx_ga2la_t *ga2la,
+                            const int          nr,         /* IN:  Total number of atoms in the group */
+                            int                anrs[],     /* IN:  Global atom numbers of the groups atoms */
+                            int               *nr_loc,     /* OUT: Number of group atoms found locally */
+                            int               *anrs_loc[], /* OUT: Local atom numbers of the group  */
+                            int               *nalloc_loc, /* IN+OUT: Allocation size of anrs_loc */
+                            int                coll_ind[]) /* OUT (opt): Where is this position found in the collective array? */
 {
-    int  i, ii;
-    int  localnr;
-
+    GMX_ASSERT(ga2la, "We need a valid ga2la object");
 
     /* Loop over all the atom indices of the group to check
      * which ones are on the local node */
-    localnr = 0;
-    for (i = 0; i < nr; i++)
+    int localnr = 0;
+    for (int i = 0; i < nr; i++)
     {
-        if (ga2la_get_home(ga2la, anrs[i], &ii))
+        if (const int *ii = ga2la->findHome(anrs[i]))
         {
             /* The atom with this index is a home atom */
             if (localnr >= *nalloc_loc) /* Check whether memory suffices */
@@ -81,7 +80,7 @@ void dd_make_local_group_indices(gmx_ga2la_t     *ga2la,
                 srenew(*anrs_loc, *nalloc_loc);
             }
             /* Save the atoms index in the local atom numbers array */
-            (*anrs_loc)[localnr] = ii;
+            (*anrs_loc)[localnr] = *ii;
 
             if (coll_ind != nullptr)
             {

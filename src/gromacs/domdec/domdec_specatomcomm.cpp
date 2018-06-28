@@ -369,7 +369,7 @@ int setup_specat_communication(gmx_domdec_t               *dd,
                                const char                 *add_err)
 {
     int               nsend[2], nlast, nsend_zero[2] = {0, 0}, *nsend_ptr;
-    int               dim, ndir, nr, ns, nrecv_local, n0, start, indr, ind, buf[2];
+    int               dim, ndir, nr, ns, nrecv_local, n0, start, buf[2];
     int               nat_tot_specat, nat_tot_prev;
     gmx_bool          bPBC;
     gmx_specatsend_t *spas;
@@ -469,10 +469,14 @@ int setup_specat_communication(gmx_domdec_t               *dd,
             nsend[0]    = 0;
             for (int i = 0; i < nr; i++)
             {
-                indr = (*ireq)[start + i];
-                ind  = -1;
+                const int indr = (*ireq)[start + i];
+                int       ind;
                 /* Check if this is a home atom and if so ind will be set */
-                if (!ga2la_get_home(dd->ga2la, indr, &ind))
+                if (const int *homeIndex = dd->ga2la->findHome(indr))
+                {
+                    ind = *homeIndex;
+                }
+                else
                 {
                     /* Search in the communicated atoms */
                     ind = gmx_hash_get_minone(ga2la_specat, indr);
