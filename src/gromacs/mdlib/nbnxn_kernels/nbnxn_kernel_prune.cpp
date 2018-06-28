@@ -54,7 +54,7 @@ void nbnxn_kernel_cpu_prune(nonbonded_verlet_group_t *nbvg,
 {
     nbnxn_pairlist_set_t   *nbl_lists = &nbvg->nbl_lists;
 
-    GMX_ASSERT(nbl_lists->nbl[0]->nciOuter >= 0, "nciOuter<0, which signals an invalid pair-list");
+    //GMX_ASSERT(nbl_lists->nbl[0]->nciOuter >= 0, "nciOuter<0, which signals an invalid pair-list");
 
     // cppcheck-suppress unreadVariable
     int gmx_unused nthreads = gmx_omp_nthreads_get(emntNonbonded);
