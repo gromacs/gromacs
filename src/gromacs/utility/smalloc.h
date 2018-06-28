@@ -389,10 +389,10 @@ int over_alloc_dd(int n);
 
 /** Over allocation for small data types: int, real etc. */
 template<typename T>
-constexpr T over_alloc_small(T n) { return OVER_ALLOC_FAC*n + 8000; }
+T over_alloc_small(T n) { return OVER_ALLOC_FAC*n + 8000; }
 
 /** Over allocation for large data types: complex structs */
 template<typename T>
-constexpr T over_alloc_large(T n) { return OVER_ALLOC_FAC*n + 1000; }
+T over_alloc_large(T n) { return OVER_ALLOC_FAC*n + 1000; }
 
 #endif
