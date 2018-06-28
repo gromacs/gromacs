@@ -44,6 +44,8 @@
 #ifndef GMX_DOMDEC_DOMDEC_SPECATOMCOMM_H
 #define GMX_DOMDEC_DOMDEC_SPECATOMCOMM_H
 
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -51,43 +53,29 @@ struct gmx_domdec_t;
 struct gmx_hash_t;
 struct t_commrec;
 
-typedef struct {
-    int  nsend;
-    int *a;
-    int  a_nalloc;
-    int  nrecv;
-} gmx_specatsend_t;
-
-typedef struct {
-    int *ind;
-    int  nalloc;
-    int  n;
-} ind_req_t;
+/*! \internal \brief The communication setup along a single dimension */
+struct gmx_specatsend_t
+{
+    std::vector<int> a;     /**< The indices of atoms to send */
+    int              nrecv; /**< The number of atoms to receive */
+};
 
 /*! \internal \brief Struct with setup and buffers for special atom communication */
-struct gmx_domdec_specat_comm_t {
+struct gmx_domdec_specat_comm_t
+{
     /* The number of indices to receive during the setup */
-    int              nreq[DIM][2][2];  /**< The nr. of atoms requested, per DIM, direction and direct/indirect */
+    int               nreq[DIM][2][2] = {{{0}}}; /**< The nr. of atoms requested, per DIM, direction and direct/indirect */
     /* The atoms to send */
-    gmx_specatsend_t spas[DIM][2];     /**< The communication setup per DIM, direction */
-    gmx_bool        *bSendAtom;        /**< Work buffer that tells if spec.atoms should be sent */
-    int              bSendAtom_nalloc; /**< Allocation size of \p bSendAtom */
-    /* Send buffers */
-    int             *ibuf;             /**< Integer send buffer */
-    int              ibuf_nalloc;      /**< Allocation size of \p ibuf */
-    rvec            *vbuf;             /**< rvec send buffer */
-    int              vbuf_nalloc;      /**< Allocation size of \p vbuf */
-    rvec            *vbuf2;            /**< rvec send buffer */
-    int              vbuf2_nalloc;     /**< Allocation size of \p vbuf2 */
-    /* The range in the local buffer(s) for received atoms */
-    int              at_start;         /**< Start index of received atoms */
-    int              at_end;           /**< End index of received atoms */
+    gmx_specatsend_t  spas[DIM][2];              /**< The communication setup per DIM, direction */
+    std::vector<bool> sendAtom;                  /**< Work buffer that tells if spec.atoms should be sent */
 
-    /* The atom indices we need from the surrounding cells.
-     * We can gather the indices over nthread threads.
-     */
-    int        nthread;                /**< Number of threads used for spec.atom communication */
-    ind_req_t *ireq;                   /**< Index request buffer per thread, allocation size \p nthread */
+    /* Send buffers */
+    std::vector<int>       ibuf;       /**< Integer send buffer */
+    std::vector<gmx::RVec> vbuf;       /**< rvec send buffer */
+    std::vector<gmx::RVec> vbuf2;      /**< rvec send buffer */
+    /* The range in the local buffer(s) for received atoms */
+    int                    at_start;   /**< Start index of received atoms */
+    int                    at_end;     /**< End index of received atoms */
 };
 
 /*! \brief Communicates the force for special atoms, the shift forces are reduced with \p fshift != NULL */
@@ -110,9 +98,9 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
 
 /*! \brief Sets up the communication for special atoms
  *
- * \param[in]     dd         Domain decomposition struct
- * \param[in]     ireq List of requested atom indices
- * \param[in,out] spac   Special atom communication struct
+ * \param[in]     dd           Domain decomposition struct
+ * \param[in,out] ireq         List of requested atom indices, updated due to aggregation
+ * \param[in,out] spac         Special atom communication struct
  * \param[out]    ga2la_specat Global to local special atom index
  * \param[in]     at_start     Index in local state where to start storing communicated atoms
  * \param[in]     vbuf_fac     Buffer factor, 1 or 2 for communicating 1 or 2 vectors
@@ -120,7 +108,7 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
  * \param[in]     add_err      Text to add at the end of error message when atoms can't be found
  */
 int setup_specat_communication(gmx_domdec_t               *dd,
-                               ind_req_t                  *ireq,
+                               std::vector<int>           *ireq,
                                gmx_domdec_specat_comm_t   *spac,
                                gmx_hash_t                 *ga2la_specat,
                                int                         at_start,
