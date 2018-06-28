@@ -75,7 +75,7 @@ void nbnxn_kernel_cpu_prune(nonbonded_verlet_group_t *nbvg,
                 nbnxn_kernel_prune_ref(nbl, nbat, shift_vec, rlistInner);
                 break;
             default:
-                GMX_RELEASE_ASSERT(false, "kernel type not handled (yet)");
+                //GMX_RELEASE_ASSERT(false, "kernel type not handled (yet)");
         }
     }
 }
