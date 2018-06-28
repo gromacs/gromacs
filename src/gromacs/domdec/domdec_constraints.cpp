@@ -142,13 +142,13 @@ void dd_clear_local_vsite_indices(gmx_domdec_t *dd)
 static void walk_out(int con, int con_offset, int a, int offset, int nrec,
                      int ncon1, const t_iatom *ia1, const t_iatom *ia2,
                      const t_blocka *at2con,
-                     const gmx_ga2la_t *ga2la, gmx_bool bHomeConnect,
+                     const gmx_ga2la_t &ga2la, gmx_bool bHomeConnect,
                      gmx_domdec_constraints_t *dc,
                      gmx_domdec_specat_comm_t *dcc,
                      t_ilist *il_local,
                      std::vector<int> *ireq)
 {
-    int            a1_gl, a2_gl, a_loc, i, coni, b;
+    int            a1_gl, a2_gl, i, coni, b;
     const t_iatom *iap;
 
     if (!dc->gc_req[con_offset + con])
@@ -167,7 +167,8 @@ static void walk_out(int con, int con_offset, int a, int offset, int nrec,
         a1_gl = offset + iap[1];
         a2_gl = offset + iap[2];
         /* The following indexing code can probably be optizimed */
-        if (ga2la_get_home(ga2la, a1_gl, &a_loc))
+        int a_loc;
+        if (ga2la.getHome(a1_gl, &a_loc))
         {
             il_local->iatoms[il_local->nr++] = a_loc;
         }
@@ -176,7 +177,7 @@ static void walk_out(int con, int con_offset, int a, int offset, int nrec,
             /* We set this index later */
             il_local->iatoms[il_local->nr++] = -a1_gl - 1;
         }
-        if (ga2la_get_home(ga2la, a2_gl, &a_loc))
+        if (ga2la.getHome(a2_gl, &a_loc))
         {
             il_local->iatoms[il_local->nr++] = a_loc;
         }
@@ -214,7 +215,7 @@ static void walk_out(int con, int con_offset, int a, int offset, int nrec,
                 {
                     b = iap[1];
                 }
-                if (!ga2la_get_home(ga2la, offset+b, &a_loc))
+                if (!ga2la.findHome(offset + b))
                 {
                     walk_out(coni, con_offset, b, offset, nrec-1,
                              ncon1, ia1, ia2, at2con,
@@ -234,10 +235,10 @@ static void atoms_to_settles(gmx_domdec_t *dd,
                              t_ilist *ils_local,
                              std::vector<int> *ireq)
 {
-    gmx_ga2la_t *ga2la = dd->ga2la;
-    int          nral  = NRAL(F_SETTLE);
+    const gmx_ga2la_t &ga2la = *dd->ga2la;
+    int                nral  = NRAL(F_SETTLE);
 
-    int          mb    = 0;
+    int                mb    = 0;
     for (int cg = cg_start; cg < cg_end; cg++)
     {
         if (GET_CGINFO_SETTLE(cginfo[cg]))
@@ -264,7 +265,7 @@ static void atoms_to_settles(gmx_domdec_t *dd,
                     {
                         int a_glsa = offset + ia1[settle*(1+nral)+1+sa];
                         a_gls[sa]  = a_glsa;
-                        if (ga2la_get_home(ga2la, a_glsa, &a_locs[sa]))
+                        if (ga2la.getHome(a_glsa, &a_locs[sa]))
                         {
                             if (nlocal == 0 && a_gl == a_glsa)
                             {
@@ -286,7 +287,7 @@ static void atoms_to_settles(gmx_domdec_t *dd,
 
                         for (int sa = 0; sa < nral; sa++)
                         {
-                            if (ga2la_get_home(ga2la, a_gls[sa], &a_locs[sa]))
+                            if (ga2la.getHome(a_gls[sa], &a_locs[sa]))
                             {
                                 ils_local->iatoms[ils_local->nr++] = a_locs[sa];
                             }
@@ -323,7 +324,7 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
     gmx_domdec_constraints_t   *dc     = dd->constraints;
     gmx_domdec_specat_comm_t   *dcc    = dd->constraint_comm;
 
-    gmx_ga2la_t                *ga2la  = dd->ga2la;
+    const gmx_ga2la_t          &ga2la  = *dd->ga2la;
 
     dc->con_gl.clear();
     dc->con_nlocat.clear();
@@ -369,7 +370,7 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
                     {
                         b_mol = iap[1];
                     }
-                    if (ga2la_get_home(ga2la, offset+b_mol, &a_loc))
+                    if (ga2la.getHome(offset + b_mol, &a_loc))
                     {
                         /* Add this fully home constraint at the first atom */
                         if (a_mol < b_mol)
@@ -399,7 +400,7 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
                          */
                         walk_out(con, con_offset, b_mol, offset, nrec,
                                  ncon1, ia1, ia2, at2con,
-                                 dd->ga2la, TRUE, dc, dcc, ilc_local, ireq);
+                                 ga2la, TRUE, dc, dcc, ilc_local, ireq);
                     }
                 }
             }

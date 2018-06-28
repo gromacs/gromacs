@@ -174,7 +174,7 @@ static int compact_ind(int                     numAtomGroups,
                 const int a_gl         = globalAtomIndices[a];
                 globalAtomIndices[nat] = a_gl;
                 /* The cell number stays 0, so we don't need to set it */
-                ga2la_change_la(ga2la, a_gl, nat);
+                (*ga2la)[a_gl].la = nat;
                 nat++;
             }
             globalAtomGroupIndices[home_pos] = globalAtomGroupIndices[g];
@@ -187,7 +187,7 @@ static int compact_ind(int                     numAtomGroups,
             /* Clear the global indices */
             for (int a : atomGroups->block(g))
             {
-                ga2la_del(ga2la, globalAtomIndices[a]);
+                ga2la->erase(globalAtomIndices[a]);
             }
             if (bLocalCG)
             {
@@ -217,7 +217,7 @@ static void clear_and_mark_ind(int                           numAtomGroups,
             /* Clear the global indices */
             for (int a : atomGroups.block(g))
             {
-                ga2la_del(ga2la, globalAtomIndices[a]);
+                ga2la->erase(globalAtomIndices[a]);
             }
             if (bLocalCG)
             {
