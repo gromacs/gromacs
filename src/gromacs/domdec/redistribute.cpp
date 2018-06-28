@@ -57,7 +57,6 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "domdec_internal.h"
 #include "utility.h"

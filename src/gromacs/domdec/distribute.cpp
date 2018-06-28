@@ -54,7 +54,6 @@
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "atomdistribution.h"
 #include "cellsizes.h"
