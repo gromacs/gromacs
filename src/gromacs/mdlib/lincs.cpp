@@ -2252,12 +2252,9 @@ void set_lincs(const t_idef         &idef,
         srenew(li->tmpncc, li->ncc_alloc);
     }
 
-    if (DOMAINDECOMP(cr) && dd_constraints_nlocalatoms(cr->dd) != nullptr)
+    gmx::ArrayRef<const int> nlocat_dd = dd_constraints_nlocalatoms(cr->dd);
+    if (!nlocat_dd.empty())
     {
-        int *nlocat_dd;
-
-        nlocat_dd = dd_constraints_nlocalatoms(cr->dd);
-
         /* Convert nlocat from local topology to LINCS constraint indexing */
         for (con = 0; con < ncon_tot; con++)
         {
