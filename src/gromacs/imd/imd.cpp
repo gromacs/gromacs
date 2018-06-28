@@ -1664,7 +1664,6 @@ void IMD_apply_forces(gmx_bool bIMD, t_IMD *imd, const t_commrec *cr, rvec *f,
                       gmx_wallcycle *wcycle)
 {
     int              i, j;
-    int              locndx;
     t_gmx_IMD_setup *IMDsetup;
 
 
@@ -1687,9 +1686,10 @@ void IMD_apply_forces(gmx_bool bIMD, t_IMD *imd, const t_commrec *cr, rvec *f,
             j = IMDsetup->ind[IMDsetup->f_ind[i]];
 
             /* check if this is a local atom and find out locndx */
-            if (PAR(cr) && ga2la_get_home(cr->dd->ga2la, j, &locndx))
+            const int *locndx;
+            if (PAR(cr) && (locndx = cr->dd->ga2la->findHome(j)))
             {
-                j = locndx;
+                j = *locndx;
             }
 
             rvec_inc(f[j], IMDsetup->f[i]);
