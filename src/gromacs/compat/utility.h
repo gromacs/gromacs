@@ -32,61 +32,26 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
 /*! \libinternal \file
- * \brief
- * Declares gmx::LocalAtomSetManager
+ * \brief Provides backported functions/classes from utility
  *
- * \author Christian Blau <cblau@gwdg.de>
+ * \author Roland Schulz <roland.schulz@intel.com>
+ * \ingroup module_compat
  * \inlibraryapi
- * \ingroup module_domdec
  */
-
-#ifndef GMX_DOMDEC_LOCALATOMSETMANAGER_H
-#define GMX_DOMDEC_LOCALATOMSETMANAGER_H
-
-#include <memory>
-
-#include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/classhelpers.h"
-
-class gmx_ga2la_t;
-
+ #ifndef GMX_COMPAT_UTILITY_H
+ #define GMX_COMPAT_UTILITY_H
 namespace gmx
 {
-
-class LocalAtomSet;
-
-/*! \libinternal \brief
- * Hands out handles to local atom set indices and triggers index recalculation
- * for all sets upon domain decomposition if run in parallel.
- *
- * \inlibraryapi
- * \ingroup module_domdec
- */
-class LocalAtomSetManager
+namespace compat
 {
-    public:
-        LocalAtomSetManager();
-        ~LocalAtomSetManager();
-
-        /*! \brief Add a new atom set to be managed and give back a handle.
-         *
-         * \param[in] globalAtomIndex Indices of the atoms to be managed
-         * \returns Handle to LocalAtomSet.
-         */
-        LocalAtomSet add(ArrayRef<const int> globalAtomIndex);
-
-        /*! \brief Recalculate local and collective indices from ga2la.
-         * Uses global atom to local atom lookup structure to
-         * update atom indices.
-         */
-        void setIndicesInDomainDecomposition(const gmx_ga2la_t &ga2la);
-
-    private:
-        class Impl;
-        PrivateImplPointer<Impl> impl_;
-};
-
-} // namespace gmx
-
+//! Forms lvalue reference to const type of t
+template <class T>
+constexpr const T &as_const(T &t) noexcept
+{
+    return t;
+}
+}
+}
 #endif
