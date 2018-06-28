@@ -172,8 +172,9 @@ void init_domdec_vsites(gmx_domdec_t *dd, int n_intercg_vsite)
     /* Use a hash table for the global to local index.
      * The number of keys is a rough estimate, it will be optimized later.
      */
-    dd->ga2la_vsite = gmx_hash_init(std::min(n_intercg_vsite/20,
-                                             n_intercg_vsite/(2*dd->nnodes)));
+    int numKeysEstimate = std::min(n_intercg_vsite/20,
+                                   n_intercg_vsite/(2*dd->nnodes));
+    dd->ga2la_vsite = new gmx_hash_t(numKeysEstimate);
 
     dd->vsite_comm = new gmx_domdec_specat_comm_t;
 }

@@ -48,52 +48,57 @@
 #ifndef GMX_DOMDEC_HASH_H
 #define GMX_DOMDEC_HASH_H
 
-#include <stdio.h>
+#include <cstdio>
 
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
+//! Forward declation
+static void gmx_hash_realloc(gmx_hash_t *, int);
 
-struct t_commrec;
+//! Forward declation
+static void gmx_hash_clear(gmx_hash_t *);
 
 /*! \internal \brief Hashing key-generation helper struct */
 struct gmx_hash_e_t
 {
     public:
         //! The (unique) key for storing/looking up a value
-        int  key;
+        int  key  = -1;
         //! The value belonging to key
-        int  val;
+        int  val  = -1;
         //! Index for the next element in the array with indentical value key%mod, -1 if there is no next element
-        int  next;
+        int  next = -1;
 };
 
 /*! \internal \brief Hashing helper struct */
 struct gmx_hash_t
 {
     public:
+        //! Constructor
+        gmx_hash_t(int numKeysUsedEstimate)
+        {
+            gmx_hash_realloc(this, numKeysUsedEstimate);
+
+            gmx_hash_clear(this);
+        }
+
         //! Keys are looked up by first checking array index key%mod in hash
-        int           mod;
+        int                       mod;
         //! mask=log2(mod), used to replace a % by the faster & operation
-        int           mask;
-        //! Allocated size of hash
-        int           nalloc;
+        int                       mask;
         //! The actual array containing the keys, values and next indices
-        gmx_hash_e_t *hash;
+        std::vector<gmx_hash_e_t> hash;
         //! The number of keys stored
-        int           nkey;
+        int                       nkey;
         //! Index in hash where we should start searching for space to store a new key/value
-        int           start_space_search;
+        int                       start_space_search;
 };
 
 //! Clear all the entries in the hash table.
 static void gmx_hash_clear(gmx_hash_t *hash)
 {
-    int i;
-
-    for (i = 0; i < hash->nalloc; i++)
+    for (gmx_hash_e_t &entry : hash->hash)
     {
-        hash->hash[i].key  = -1;
-        hash->hash[i].next = -1;
+        entry.key  = -1;
+        entry.next = -1;
     }
     hash->start_space_search = hash->mod;
 
@@ -122,12 +127,11 @@ static void gmx_hash_realloc(gmx_hash_t *hash, int nkey_used_estimate)
         hash->mod *= 2;
     }
     hash->mask   = hash->mod - 1;
-    hash->nalloc = over_alloc_dd(hash->mod);
-    srenew(hash->hash, hash->nalloc);
+    hash->hash.resize(hash->mod);
 
     if (debug != nullptr)
     {
-        fprintf(debug, "Hash table mod %d nalloc %d\n", hash->mod, hash->nalloc);
+        fprintf(debug, "Hash table mod %d size %zu\n", hash->mod, hash->hash.size());
     }
 }
 
@@ -153,52 +157,29 @@ static inline void gmx_hash_clear_and_optimize(gmx_hash_t *hash)
     gmx_hash_clear(hash);
 }
 
-//! Initialize hash table.
-static inline gmx_hash_t *gmx_hash_init(int nkey_used_estimate)
-{
-    gmx_hash_t *hash;
-
-    snew(hash, 1);
-    hash->hash = nullptr;
-
-    gmx_hash_realloc(hash, nkey_used_estimate);
-
-    gmx_hash_clear(hash);
-
-    return hash;
-}
-
 //! Set the hash entry for key to value.
 static void gmx_hash_set(gmx_hash_t *hash, int key, int value)
 {
-    int ind, ind_prev, i;
-
-    ind = key & hash->mask;
+    unsigned int ind = (key & hash->mask);
 
     if (hash->hash[ind].key >= 0)
     {
         /* Search the last entry in the linked list for this index */
-        ind_prev = ind;
+        unsigned int ind_prev = ind;
         while (hash->hash[ind_prev].next >= 0)
         {
             ind_prev = hash->hash[ind_prev].next;
         }
         /* Search for space in the array */
         ind = hash->start_space_search;
-        while (ind < hash->nalloc && hash->hash[ind].key >= 0)
+        while (ind < hash->hash.size() && hash->hash[ind].key >= 0)
         {
             ind++;
         }
         /* If we are at the end of the list we need to increase the size */
-        if (ind == hash->nalloc)
+        if (ind == hash->hash.size())
         {
-            hash->nalloc = over_alloc_dd(ind+1);
-            srenew(hash->hash, hash->nalloc);
-            for (i = ind; i < hash->nalloc; i++)
-            {
-                hash->hash[i].key  = -1;
-                hash->hash[i].next = -1;
-            }
+            hash->hash.resize(hash->hash.size() + 1);
         }
         hash->hash[ind_prev].next = ind;
 
@@ -245,16 +226,13 @@ static inline void gmx_hash_del(gmx_hash_t *hash, int key)
         ind      = hash->hash[ind].next;
     }
     while (ind >= 0);
-
-    return;
 }
 
 //! Change the value for present hash entry for key.
 static inline void gmx_hash_change_value(gmx_hash_t *hash, int key, int value)
 {
-    int ind;
+    int ind = (key & hash->mask);
 
-    ind = key & hash->mask;
     do
     {
         if (hash->hash[ind].key == key)
@@ -266,16 +244,13 @@ static inline void gmx_hash_change_value(gmx_hash_t *hash, int key, int value)
         ind = hash->hash[ind].next;
     }
     while (ind >= 0);
-
-    return;
 }
 
 //! Change the hash value if already set, otherwise set the hash value.
 static inline void gmx_hash_change_or_set(gmx_hash_t *hash, int key, int value)
 {
-    int ind;
+    int ind = (key & hash->mask);
 
-    ind = key & hash->mask;
     do
     {
         if (hash->hash[ind].key == key)
@@ -289,16 +264,13 @@ static inline void gmx_hash_change_or_set(gmx_hash_t *hash, int key, int value)
     while (ind >= 0);
 
     gmx_hash_set(hash, key, value);
-
-    return;
 }
 
 //! Returns if the key is present, if the key is present *value is set.
 static inline gmx_bool gmx_hash_get(const gmx_hash_t *hash, int key, int *value)
 {
-    int ind;
+    int ind = (key & hash->mask);
 
-    ind = key & hash->mask;
     do
     {
         if (hash->hash[ind].key == key)
@@ -317,9 +289,8 @@ static inline gmx_bool gmx_hash_get(const gmx_hash_t *hash, int key, int *value)
 //! Returns the value or -1 if the key is not present.
 static int gmx_hash_get_minone(const gmx_hash_t *hash, int key)
 {
-    int ind;
+    int ind = (key & hash->mask);
 
-    ind = key & hash->mask;
     do
     {
         if (hash->hash[ind].key == key)

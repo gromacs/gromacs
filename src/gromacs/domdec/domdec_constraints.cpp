@@ -50,6 +50,7 @@
 
 #include <algorithm>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -83,7 +84,9 @@ struct gmx_domdec_constraints_t
     std::vector<int>  con_nlocat;      /**< Number of local atoms (2/1/0) for each constraint */
 
     std::vector<bool> gc_req;          /**< Boolean that tells if a global constraint index has been requested; note: size global #constraints */
-    gmx_hash_t       *ga2la;           /**< Global to local communicated constraint atom only index, TODO: get rid of the plain pointer */
+
+    /* Hash table for keeping track of requests */
+    std::unique_ptr<gmx_hash_t> ga2la; /**< Global to local communicated constraint atom only index */
 
     /* Multi-threading stuff */
     int                  nthread; /**< Number of threads used for DD constraint setup */
@@ -126,7 +129,7 @@ void dd_clear_local_constraint_indices(gmx_domdec_t *dd)
 
     if (dd->constraint_comm)
     {
-        gmx_hash_clear_and_optimize(dc->ga2la);
+        gmx_hash_clear_and_optimize(dc->ga2la.get());
     }
 }
 
@@ -188,13 +191,13 @@ static void walk_out(int con, int con_offset, int a, int offset, int nrec,
         dc->ncon++;
     }
     /* Check to not ask for the same atom more than once */
-    if (gmx_hash_get_minone(dc->ga2la, offset+a) == -1)
+    if (gmx_hash_get_minone(dc->ga2la.get(), offset+a) == -1)
     {
         assert(dcc);
         /* Add this non-home atom to the list */
         ireq->push_back(offset + a);
         /* Temporarily mark with -2, we get the index later */
-        gmx_hash_set(dc->ga2la, offset+a, -2);
+        gmx_hash_set(dc->ga2la.get(), offset+a, -2);
     }
 
     if (nrec > 0)
@@ -578,12 +581,12 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
 
         at_end =
             setup_specat_communication(dd, ireq, dd->constraint_comm,
-                                       dd->constraints->ga2la,
+                                       dd->constraints->ga2la.get(),
                                        at_start, 2,
                                        "constraint", " or lincs-order");
 
         /* Fill in the missing indices */
-        ga2la_specat = dd->constraints->ga2la;
+        ga2la_specat = dd->constraints->ga2la.get();
 
         nral1 = 1 + NRAL(F_CONSTR);
         for (i = 0; i < ilc_local->nr; i += nral1)
@@ -656,8 +659,9 @@ void init_domdec_constraints(gmx_domdec_t     *dd,
     /* Use a hash table for the global to local index.
      * The number of keys is a rough estimate, it will be optimized later.
      */
-    dc->ga2la = gmx_hash_init(std::min(mtop->natoms/20,
-                                       mtop->natoms/(2*dd->nnodes)));
+    int numKeysEstimate = std::min(mtop->natoms/20,
+                                   mtop->natoms/(2*dd->nnodes));
+    dc->ga2la = gmx::compat::make_unique<gmx_hash_t>(numKeysEstimate);
 
     dc->nthread = gmx_omp_nthreads_get(emntDomdec);
     dc->ils.resize(dc->nthread);
