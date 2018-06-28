@@ -48,8 +48,6 @@
 
 #include "gromacs/domdec/ga2la.h"
 
-struct gmx_ga2la_t;
-
 namespace gmx
 {
 
@@ -82,12 +80,11 @@ LocalAtomSetData::setLocalAndCollectiveIndices(const gmx_ga2la_t &ga2la)
 
     for (int iCollective = 0; iCollective < numAtomsGlobal; iCollective++)
     {
-        int  iLocal;
-        if (ga2la_get_home(&ga2la, globalIndex_[iCollective], &iLocal))
+        if (const int *iLocal = ga2la.findHome(globalIndex_[iCollective]))
         {
             /* Save the atoms index in the local atom numbers array */
             /* The atom with this index is a home atom. */
-            localIndex_.push_back(iLocal);
+            localIndex_.push_back(*iLocal);
 
             /* Keep track of where this local atom belongs in the collective index array.
              * This is needed when reducing the local arrays to a collective/global array

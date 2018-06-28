@@ -46,7 +46,7 @@
 
 #include "gromacs/utility/arrayref.h"
 
-struct gmx_ga2la_t;
+class gmx_ga2la_t;
 
 namespace gmx
 {
