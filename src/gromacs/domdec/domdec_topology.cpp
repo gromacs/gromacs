@@ -855,7 +855,7 @@ void dd_make_reverse_top(FILE *fplog,
  * atom-indexing organization code with the ifunc-adding code, so that
  * they can see that nral is the same value. */
 static inline void
-add_ifunc_for_vsites(t_iatom *tiatoms, gmx_ga2la_t *ga2la,
+add_ifunc_for_vsites(t_iatom *tiatoms, const gmx_ga2la_t &ga2la,
                      int nral, gmx_bool bHomeA,
                      int a, int a_gl, int a_mol,
                      const t_iatom *iatoms,
@@ -888,7 +888,7 @@ add_ifunc_for_vsites(t_iatom *tiatoms, gmx_ga2la_t *ga2la,
     for (int k = 2; k < 1+nral; k++)
     {
         int ak_gl = a_gl + iatoms[k] - a_mol;
-        if (!ga2la_get_home(ga2la, ak_gl, &tiatoms[k]))
+        if (!ga2la.getHome(ak_gl, &tiatoms[k]))
         {
             /* Copy the global index, convert later in make_local_vsites */
             tiatoms[k] = -(ak_gl + 1);
@@ -1002,7 +1002,8 @@ static void add_fbposres(int mol, int a_mol, int numAtomsInMolecule,
 }
 
 /*! \brief Store a virtual site interaction, complex because of PBC and recursion */
-static void add_vsite(gmx_ga2la_t *ga2la, const int *index, const int *rtil,
+static void add_vsite(const gmx_ga2la_t &ga2la,
+                      const int *index, const int *rtil,
                       int ftype, int nral,
                       gmx_bool bHomeA, int a, int a_gl, int a_mol,
                       const t_iatom *iatoms,
@@ -1330,7 +1331,7 @@ check_assign_interactions_atom(int i, int i_gl,
             /* The vsite construction goes where the vsite itself is */
             if (iz == 0)
             {
-                add_vsite(dd->ga2la, index, rtil, ftype, nral,
+                add_vsite(*dd->ga2la, index, rtil, ftype, nral,
                           TRUE, i, i_gl, i_mol,
                           iatoms, idef, vsite_pbc, vsite_pbc_nalloc);
             }
@@ -1383,7 +1384,7 @@ check_assign_interactions_atom(int i, int i_gl,
                 {
                     k_gl = iatoms[2];
                 }
-                if (!ga2la_get(dd->ga2la, k_gl, &a_loc, &kz))
+                if (!dd->ga2la->get(k_gl, &a_loc, &kz))
                 {
                     bUse = FALSE;
                 }
@@ -1445,7 +1446,7 @@ check_assign_interactions_atom(int i, int i_gl,
                     {
                         k_gl = iatoms[k];
                     }
-                    bLocal = ga2la_get(dd->ga2la, k_gl, &a_loc, &kz);
+                    bLocal = dd->ga2la->get(k_gl, &a_loc, &kz);
                     if (!bLocal || kz >= zones->n)
                     {
                         /* We do not have this atom of this interaction
@@ -1625,16 +1626,16 @@ static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                                    int iz,
                                    int cg_start, int cg_end)
 {
-    int               n_excl_at_max;
-    int               mb, mt, mol;
-    const t_blocka   *excls;
-    gmx_ga2la_t      *ga2la;
-    int               cell;
+    int                n_excl_at_max;
+    int                mb, mt, mol;
+    const t_blocka    *excls;
+    int                cell;
 
-    ga2la = dd->ga2la;
+    const gmx_ga2la_t &ga2la  = *dd->ga2la;
 
-    const auto jRange = dd->atomGroups().subRange(zones->izone[iz].jcg0,
-                                                  zones->izone[iz].jcg1);
+    const auto         jRange =
+        dd->atomGroups().subRange(zones->izone[iz].jcg0,
+                                  zones->izone[iz].jcg1);
 
     n_excl_at_max = dd->reverse_top->n_excl_at_max;
 
@@ -1694,7 +1695,7 @@ static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                          * to the DD cutoff (not cutoff_min as
                          * for the other bonded interactions).
                          */
-                        if (ga2la_get(ga2la, a_gl+aj_mol-a_mol, &jla, &cell))
+                        if (ga2la.get(a_gl + aj_mol - a_mol, &jla, &cell))
                         {
                             if (iz == 0 && cell == 0)
                             {
@@ -1762,13 +1763,13 @@ static void make_exclusions_zone(gmx_domdec_t *dd,
                                  int iz,
                                  int at_start, int at_end)
 {
-    gmx_ga2la_t *ga2la;
-    int          n_excl_at_max, n, at;
+    int                n_excl_at_max, n, at;
 
-    ga2la = dd->ga2la;
+    const gmx_ga2la_t &ga2la  = *dd->ga2la;
 
-    const auto jRange = dd->atomGroups().subRange(zones->izone[iz].jcg0,
-                                                  zones->izone[iz].jcg1);
+    const auto         jRange =
+        dd->atomGroups().subRange(zones->izone[iz].jcg0,
+                                  zones->izone[iz].jcg1);
 
     n_excl_at_max = dd->reverse_top->n_excl_at_max;
 
@@ -1806,7 +1807,7 @@ static void make_exclusions_zone(gmx_domdec_t *dd,
 
                 aj_mol = excls->a[j];
 
-                if (ga2la_get(ga2la, a_gl + aj_mol - a_mol, &at_j, &cell))
+                if (ga2la.get(a_gl + aj_mol - a_mol, &at_j, &cell))
                 {
                     /* This check is not necessary, but it can reduce
                      * the number of exclusions in the list, which in turn
