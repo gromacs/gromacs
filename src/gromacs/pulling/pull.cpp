@@ -1782,7 +1782,7 @@ void pull_constraint(struct pull_t *pull, const t_mdatoms *md, t_pbc *pbc,
     }
 }
 
-static void make_local_pull_group(gmx_ga2la_t *ga2la,
+static void make_local_pull_group(const gmx_ga2la_t *ga2la,
                                   pull_group_work_t *pg, int start, int end)
 {
     int i, ii;
@@ -1793,7 +1793,7 @@ static void make_local_pull_group(gmx_ga2la_t *ga2la,
         ii = pg->params.ind[i];
         if (ga2la)
         {
-            if (!ga2la_get_home(ga2la, ii, &ii))
+            if (!ga2la->getHome(ii, &ii))
             {
                 ii = -1;
             }
@@ -1848,8 +1848,6 @@ void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull, t_mdato
 
     for (g = 0; g < pull->ngroup; g++)
     {
-        int a;
-
         make_local_pull_group(ga2la, &pull->group[g],
                               0, md->homenr);
 
@@ -1859,7 +1857,7 @@ void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull, t_mdato
         if (!bMustParticipate &&
             (pull->group[g].nat_loc > 0 ||
              (pull->group[g].params.pbcatom >= 0 &&
-              ga2la_get_home(dd->ga2la, pull->group[g].params.pbcatom, &a))))
+              ga2la->findHome(pull->group[g].params.pbcatom))))
         {
             bMustParticipate = TRUE;
         }

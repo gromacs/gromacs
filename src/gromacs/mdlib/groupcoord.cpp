@@ -53,14 +53,17 @@
  * anrs_loc[0..nr_loc]. The indices are saved in coll_ind[] for later reduction
  * in communicate_group_positions()
  */
-void dd_make_local_group_indices(gmx_ga2la_t     *ga2la,
-                                 const int        nr,         /* IN:  Total number of atoms in the group */
-                                 int              anrs[],     /* IN:  Global atom numbers of the groups atoms */
-                                 int             *nr_loc,     /* OUT: Number of group atoms found locally */
-                                 int             *anrs_loc[], /* OUT: Local atom numbers of the group  */
-                                 int             *nalloc_loc, /* IN+OUT: Allocation size of anrs_loc */
-                                 int              coll_ind[]) /* OUT (opt): Where is this position found in the collective array? */
+void
+dd_make_local_group_indices(const gmx_ga2la_t *ga2la,
+                            const int          nr,         /* IN:  Total number of atoms in the group */
+                            int                anrs[],     /* IN:  Global atom numbers of the groups atoms */
+                            int               *nr_loc,     /* OUT: Number of group atoms found locally */
+                            int               *anrs_loc[], /* OUT: Local atom numbers of the group  */
+                            int               *nalloc_loc, /* IN+OUT: Allocation size of anrs_loc */
+                            int                coll_ind[]) /* OUT (opt): Where is this position found in the collective array? */
 {
+    GMX_ASSERT(ga2la, "We need a valid ga2la object");
+
     int  i, ii;
     int  localnr;
 
@@ -70,7 +73,7 @@ void dd_make_local_group_indices(gmx_ga2la_t     *ga2la,
     localnr = 0;
     for (i = 0; i < nr; i++)
     {
-        if (ga2la_get_home(ga2la, anrs[i], &ii))
+        if (ga2la->getHome(anrs[i], &ii))
         {
             /* The atom with this index is a home atom */
             if (localnr >= *nalloc_loc) /* Check whether memory suffices */
