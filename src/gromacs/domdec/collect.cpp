@@ -50,7 +50,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "atomdistribution.h"
 #include "distribute.h"
