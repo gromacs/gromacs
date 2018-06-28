@@ -63,12 +63,19 @@
 #ifdef GMX_DISABLE_ASSERTS
 #define GMX_RELEASE_ASSERT(condition, msg)
 #else
+#  ifdef _MSC_VER
+#define GMX_RELEASE_ASSERT(condition, msg) \
+((void) ((condition) ? (void)0 : \
+             ::gmx::internal::assertHandler(#condition, msg, \
+                                            GMX_CURRENT_FUNCTION, __FILE__, __LINE__)))
+#  else
 //Use IIFE to allow being used in constexpr context with older GCC versions
 //https://akrzemi1.wordpress.com/2017/05/18/asserts-in-constexpr-functions/
 #define GMX_RELEASE_ASSERT(condition, msg) \
-    ((void) ((condition) ? (void)0 : \
+((void) ((condition) ? (void)0 :                                        \
              [&](){::gmx::internal::assertHandler(#condition, msg,       \
                                                   GMX_CURRENT_FUNCTION, __FILE__, __LINE__); } ()))
+#  endif
 #endif
 /*! \def GMX_ASSERT
  * \brief
@@ -80,7 +87,11 @@
  * \see ::GMX_RELEASE_ASSERT
  */
 #ifdef NDEBUG
+#  ifdef _MSC_VER
+#define GMX_ASSERT(condition, msg)
+#  else
 #define GMX_ASSERT(condition, msg) ((void)0)
+#  endif
 #else
 #define GMX_ASSERT(condition, msg) GMX_RELEASE_ASSERT(condition, msg)
 #endif
