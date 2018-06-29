@@ -50,6 +50,8 @@
 #include <memory>
 #include <vector>
 
+#include <unordered_map>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -173,9 +175,9 @@ struct gmx_domdec_t {
     int  n_intercg_excl;
 
     /* Vsite stuff */
-    gmx_hash_t                *ga2la_vsite = nullptr;
-    gmx_domdec_specat_comm_t  *vsite_comm  = nullptr;
-    std::vector<int>           vsite_requestedGlobalAtomIndices;
+    std::unordered_map<int, int> *ga2la_vsite = nullptr;
+    gmx_domdec_specat_comm_t     *vsite_comm  = nullptr;
+    std::vector<int>              vsite_requestedGlobalAtomIndices;
 
     /* Constraint stuff */
     gmx_domdec_constraints_t *constraints     = nullptr;

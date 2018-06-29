@@ -60,8 +60,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "hash.h"
-
 void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                       rvec *f, rvec *fshift)
 {
@@ -359,17 +357,17 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
     }
 }
 
-int setup_specat_communication(gmx_domdec_t               *dd,
-                               std::vector<int>           *ireq,
-                               gmx_domdec_specat_comm_t   *spac,
-                               gmx_hash_t                 *ga2la_specat,
-                               int                         at_start,
-                               int                         vbuf_fac,
-                               const char                 *specat_type,
-                               const char                 *add_err)
+int setup_specat_communication(gmx_domdec_t                 *dd,
+                               std::vector<int>             *ireq,
+                               gmx_domdec_specat_comm_t     *spac,
+                               std::unordered_map<int, int> *ga2la_specat,
+                               int                           at_start,
+                               int                           vbuf_fac,
+                               const char                   *specat_type,
+                               const char                   *add_err)
 {
     int               nsend[2], nlast, nsend_zero[2] = {0, 0}, *nsend_ptr;
-    int               dim, ndir, nr, ns, nrecv_local, n0, start, indr, ind, buf[2];
+    int               dim, ndir, nr, ns, nrecv_local, n0, start, buf[2];
     int               nat_tot_specat, nat_tot_prev;
     gmx_bool          bPBC;
     gmx_specatsend_t *spas;
@@ -469,13 +467,21 @@ int setup_specat_communication(gmx_domdec_t               *dd,
             nsend[0]    = 0;
             for (int i = 0; i < nr; i++)
             {
-                indr = (*ireq)[start + i];
-                ind  = -1;
+                const int indr = (*ireq)[start + i];
+                int       ind  = -1;
                 /* Check if this is a home atom and if so ind will be set */
                 if (!ga2la_get_home(dd->ga2la, indr, &ind))
                 {
                     /* Search in the communicated atoms */
-                    ind = gmx_hash_get_minone(ga2la_specat, indr);
+                    auto search = ga2la_specat->find(indr);
+                    if (search != ga2la_specat->end())
+                    {
+                        ind = search->second;
+                    }
+                    else
+                    {
+                        ind = -1;
+                    }
                 }
                 if (ind >= 0)
                 {
@@ -550,7 +556,8 @@ int setup_specat_communication(gmx_domdec_t               *dd,
         /* Make a global to local index for the communication atoms */
         for (int i = nat_tot_prev; i < nat_tot_specat; i++)
         {
-            gmx_hash_change_or_set(ga2la_specat, dd->globalAtomIndices[i], i);
+            /* Note: here we can assign or insert */
+            (*ga2la_specat)[dd->globalAtomIndices[i]] = i;
         }
     }
 
@@ -565,9 +572,9 @@ int setup_specat_communication(gmx_domdec_t               *dd,
             {
                 for (int i = 0; i < numRequested; i++)
                 {
-                    int ind = gmx_hash_get_minone(ga2la_specat, (*ireq)[i]);
+                    auto search = ga2la_specat->find((*ireq)[i]);
                     fprintf(debug, " %s%d",
-                            (ind >= 0) ? "" : "!",
+                            (search != ga2la_specat->end()) ? "" : "!",
                             (*ireq)[i] + 1);
                 }
                 fprintf(debug, "\n");
@@ -577,7 +584,7 @@ int setup_specat_communication(gmx_domdec_t               *dd,
                 dd->ci[XX], dd->ci[YY], dd->ci[ZZ]);
         for (int i = 0; i < numRequested; i++)
         {
-            if (gmx_hash_get_minone(ga2la_specat, (*ireq)[i]) < 0)
+            if (ga2la_specat->find((*ireq)[i]) == ga2la_specat->end())
             {
                 fprintf(stderr, " %d", (*ireq)[i] + 1);
             }

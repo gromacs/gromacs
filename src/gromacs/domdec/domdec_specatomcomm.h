@@ -46,6 +46,8 @@
 
 #include <vector>
 
+#include <unordered_map>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -107,13 +109,13 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
  * \param[in]     specat_type  Name of the special atom, used for error message
  * \param[in]     add_err      Text to add at the end of error message when atoms can't be found
  */
-int setup_specat_communication(gmx_domdec_t               *dd,
-                               std::vector<int>           *ireq,
-                               gmx_domdec_specat_comm_t   *spac,
-                               gmx_hash_t                 *ga2la_specat,
-                               int                         at_start,
-                               int                         vbuf_fac,
-                               const char                 *specat_type,
-                               const char                 *add_err);
+int setup_specat_communication(gmx_domdec_t                 *dd,
+                               std::vector<int>             *ireq,
+                               gmx_domdec_specat_comm_t     *spac,
+                               std::unordered_map<int, int> *ga2la_specat,
+                               int                           at_start,
+                               int                           vbuf_fac,
+                               const char                   *specat_type,
+                               const char                   *add_err);
 
 #endif
