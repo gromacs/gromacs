@@ -186,7 +186,7 @@ class RangePartitioning
 
 }      // nsamespace gmx
 
-/* Deprecated, C-style version of BlockRanges */
+/* Deprecated, C-style version of RangePartitioning */
 typedef struct t_block
 {
 #ifdef __cplusplus
