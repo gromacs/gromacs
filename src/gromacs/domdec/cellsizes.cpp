@@ -59,7 +59,7 @@
 
 static void set_pme_maxshift(gmx_domdec_t *dd, gmx_ddpme_t *ddpme,
                              gmx_bool bUniform, const gmx_ddbox_t *ddbox,
-                             const real *cell_f)
+                             const real *cellFrac)
 {
     gmx_domdec_comm_t *comm;
     int                nc, ns, s;
@@ -102,20 +102,20 @@ static void set_pme_maxshift(gmx_domdec_t *dd, gmx_ddpme_t *ddpme,
         {
             /* PME slab s spreads atoms between box frac. s/ns and (s+1)/ns */
             pme_boundary = (real)s/ns;
-            while (sh+1 < ns &&
-                   ((s-(sh+1) >= 0 &&
-                     cell_f[xmax[s-(sh+1)   ]+1]     + range > pme_boundary) ||
-                    (s-(sh+1) <  0 &&
-                     cell_f[xmax[s-(sh+1)+ns]+1] - 1 + range > pme_boundary)))
+            while (sh + 1 < ns &&
+                   ((s - (sh + 1) >= 0 &&
+                     cellFrac[xmax[s - (sh + 1)     ] + 1]     + range > pme_boundary) ||
+                    (s - (sh + 1) <  0 &&
+                     cellFrac[xmax[s - (sh + 1) + ns] + 1] - 1 + range > pme_boundary)))
             {
                 sh++;
             }
             pme_boundary = (real)(s+1)/ns;
-            while (sh+1 < ns &&
-                   ((s+(sh+1) <  ns &&
-                     cell_f[xmin[s+(sh+1)   ]  ]     - range < pme_boundary) ||
-                    (s+(sh+1) >= ns &&
-                     cell_f[xmin[s+(sh+1)-ns]  ] + 1 - range < pme_boundary)))
+            while (sh + 1 < ns &&
+                   ((s + (sh + 1) <  ns &&
+                     cellFrac[xmin[s + (sh + 1)    ]  ]     - range < pme_boundary) ||
+                    (s + (sh + 1) >= ns &&
+                     cellFrac[xmin[s +(sh + 1) - ns]  ] + 1 - range < pme_boundary)))
             {
                 sh++;
             }
@@ -334,27 +334,24 @@ set_dd_cell_sizes_slb(gmx_domdec_t *dd, const gmx_ddbox_t *ddbox,
 
 
 static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
-                                                  int d, int dim, domdec_root_t *root,
+                                                  int d, int dim, RowMaster *rowMaster,
                                                   const gmx_ddbox_t *ddbox,
                                                   gmx_bool bUniform, gmx_int64_t step, real cellsize_limit_f, int range[])
 {
     gmx_domdec_comm_t *comm;
-    int                ncd, i, j, nmin, nmin_old;
-    gmx_bool           bLimLo, bLimHi;
-    real              *cell_size;
-    real               fac, halfway, cellsize_limit_f_i, region_size;
-    gmx_bool           bPBC, bLastHi = FALSE;
+    real               halfway, cellsize_limit_f_i, region_size;
+    gmx_bool           bLastHi  = FALSE;
     int                nrange[] = {range[0], range[1]};
 
-    region_size = root->cell_f[range[1]]-root->cell_f[range[0]];
+    region_size = rowMaster->cellFrac[range[1]] - rowMaster->cellFrac[range[0]];
 
     comm = dd->comm;
 
-    ncd = dd->nc[dim];
+    const int           ncd       = dd->nc[dim];
 
-    bPBC = (dim < ddbox->npbcdim);
+    const bool          dimHasPbc = (dim < ddbox->npbcdim);
 
-    cell_size = root->buf_ncd;
+    gmx::ArrayRef<real> cell_size = rowMaster->buf_ncd;
 
     if (debug)
     {
@@ -367,31 +364,32 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
      * it needs to be enlarged, which makes all the other cells smaller,
      * which could in turn make another cell smaller than allowed.
      */
-    for (i = range[0]; i < range[1]; i++)
+    for (int i = range[0]; i < range[1]; i++)
     {
-        root->bCellMin[i] = FALSE;
+        rowMaster->isCellMin[i] = false;
     }
-    nmin = 0;
+    int nmin = 0;
+    int nmin_old;
     do
     {
         nmin_old = nmin;
         /* We need the total for normalization */
-        fac = 0;
-        for (i = range[0]; i < range[1]; i++)
+        real fac = 0;
+        for (int i = range[0]; i < range[1]; i++)
         {
-            if (root->bCellMin[i] == FALSE)
+            if (!rowMaster->isCellMin[i])
             {
                 fac += cell_size[i];
             }
         }
         fac = ( region_size - nmin*cellsize_limit_f)/fac; /* substracting cells already set to cellsize_limit_f */
         /* Determine the cell boundaries */
-        for (i = range[0]; i < range[1]; i++)
+        for (int i = range[0]; i < range[1]; i++)
         {
-            if (root->bCellMin[i] == FALSE)
+            if (!rowMaster->isCellMin[i])
             {
                 cell_size[i] *= fac;
-                if (!bPBC && (i == 0 || i == dd->nc[dim] -1))
+                if (!dimHasPbc && (i == 0 || i == dd->nc[dim] - 1))
                 {
                     cellsize_limit_f_i = 0;
                 }
@@ -401,23 +399,24 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
                 }
                 if (cell_size[i] < cellsize_limit_f_i)
                 {
-                    root->bCellMin[i] = TRUE;
-                    cell_size[i]      = cellsize_limit_f_i;
+                    rowMaster->isCellMin[i] = true;
+                    cell_size[i]            = cellsize_limit_f_i;
                     nmin++;
                 }
             }
-            root->cell_f[i+1] = root->cell_f[i] + cell_size[i];
+            rowMaster->cellFrac[i + 1] = rowMaster->cellFrac[i] + cell_size[i];
         }
     }
     while (nmin > nmin_old);
 
-    i            = range[1]-1;
-    cell_size[i] = root->cell_f[i+1] - root->cell_f[i];
+    const int i  = range[1] - 1;
+    cell_size[i] = rowMaster->cellFrac[i + 1] - rowMaster->cellFrac[i];
     /* For this check we should not use DD_CELL_MARGIN,
      * but a slightly smaller factor,
      * since rounding could get use below the limit.
      */
-    if (bPBC && cell_size[i] < cellsize_limit_f*DD_CELL_MARGIN2/DD_CELL_MARGIN)
+    if (dimHasPbc &&
+        cell_size[i] < cellsize_limit_f*DD_CELL_MARGIN2/DD_CELL_MARGIN)
     {
         char buf[22];
         gmx_fatal(FARGS, "step %s: the dynamic load balancing could not balance dimension %c: box size %f, triclinic skew factor %f, #cells %d, minimum cell size %f\n",
@@ -426,7 +425,7 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
                   ncd, comm->cellsize_min[dim]);
     }
 
-    root->bLimited = (nmin > 0) || (range[0] > 0) || (range[1] < ncd);
+    rowMaster->dlbIsLimited = (nmin > 0) || (range[0] > 0) || (range[1] < ncd);
 
     if (!bUniform)
     {
@@ -438,31 +437,31 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
          * might be affected by a change and if the old state was ok,
          * the cells will at most be shrunk back to their old size.
          */
-        for (i = range[0]+1; i < range[1]; i++)
+        for (int i = range[0]+1; i < range[1]; i++)
         {
-            halfway = 0.5*(root->old_cell_f[i] + root->old_cell_f[i-1]);
-            if (root->cell_f[i] < halfway)
+            halfway = 0.5*(rowMaster->oldCellFrac[i] + rowMaster->oldCellFrac[i - 1]);
+            if (rowMaster->cellFrac[i] < halfway)
             {
-                root->cell_f[i] = halfway;
+                rowMaster->cellFrac[i] = halfway;
                 /* Check if the change also causes shifts of the next boundaries */
-                for (j = i+1; j < range[1]; j++)
+                for (int j = i + 1; j < range[1]; j++)
                 {
-                    if (root->cell_f[j] < root->cell_f[j-1] + cellsize_limit_f)
+                    if (rowMaster->cellFrac[j] < rowMaster->cellFrac[j - 1] + cellsize_limit_f)
                     {
-                        root->cell_f[j] =  root->cell_f[j-1] + cellsize_limit_f;
+                        rowMaster->cellFrac[j] =  rowMaster->cellFrac[j - 1] + cellsize_limit_f;
                     }
                 }
             }
-            halfway = 0.5*(root->old_cell_f[i] + root->old_cell_f[i+1]);
-            if (root->cell_f[i] > halfway)
+            halfway = 0.5*(rowMaster->oldCellFrac[i] + rowMaster->oldCellFrac[i + 1]);
+            if (rowMaster->cellFrac[i] > halfway)
             {
-                root->cell_f[i] = halfway;
+                rowMaster->cellFrac[i] = halfway;
                 /* Check if the change also causes shifts of the next boundaries */
-                for (j = i-1; j >= range[0]+1; j--)
+                for (int j = i - 1; j >= range[0] + 1; j--)
                 {
-                    if (root->cell_f[j] > root->cell_f[j+1] - cellsize_limit_f)
+                    if (rowMaster->cellFrac[j] > rowMaster->cellFrac[j + 1] - cellsize_limit_f)
                     {
-                        root->cell_f[j] = root->cell_f[j+1] - cellsize_limit_f;
+                        rowMaster->cellFrac[j] = rowMaster->cellFrac[j + 1] - cellsize_limit_f;
                     }
                 }
             }
@@ -478,36 +477,38 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
         /* Take care of the staggering of the cell boundaries */
         if (bUniform)
         {
-            for (i = range[0]; i < range[1]; i++)
+            for (int i = range[0]; i < range[1]; i++)
             {
-                root->cell_f_max0[i] = root->cell_f[i];
-                root->cell_f_min1[i] = root->cell_f[i+1];
+                rowMaster->bounds[i].cellFracLowerMax = rowMaster->cellFrac[i];
+                rowMaster->bounds[i].cellFracUpperMin = rowMaster->cellFrac[i + 1];
             }
         }
         else
         {
-            for (i = range[0]+1; i < range[1]; i++)
+            for (int i = range[0] + 1; i < range[1]; i++)
             {
-                bLimLo = (root->cell_f[i] < root->bound_min[i]);
-                bLimHi = (root->cell_f[i] > root->bound_max[i]);
+                const RowMaster::Bounds &bounds = rowMaster->bounds[i];
+
+                bool                     bLimLo = (rowMaster->cellFrac[i] < bounds.boundMin);
+                bool                     bLimHi = (rowMaster->cellFrac[i] > bounds.boundMax);
                 if (bLimLo && bLimHi)
                 {
                     /* Both limits violated, try the best we can */
                     /* For this case we split the original range (range) in two parts and care about the other limitiations in the next iteration. */
-                    root->cell_f[i] = 0.5*(root->bound_min[i] + root->bound_max[i]);
-                    nrange[0]       = range[0];
-                    nrange[1]       = i;
-                    dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, root, ddbox, bUniform, step, cellsize_limit_f, nrange);
+                    rowMaster->cellFrac[i] = 0.5*(bounds.boundMin + bounds.boundMax);
+                    nrange[0]              = range[0];
+                    nrange[1]              = i;
+                    dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, rowMaster, ddbox, bUniform, step, cellsize_limit_f, nrange);
 
                     nrange[0] = i;
                     nrange[1] = range[1];
-                    dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, root, ddbox, bUniform, step, cellsize_limit_f, nrange);
+                    dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, rowMaster, ddbox, bUniform, step, cellsize_limit_f, nrange);
 
                     return;
                 }
                 else if (bLimLo)
                 {
-                    /* root->cell_f[i] = root->bound_min[i]; */
+                    /* rowMaster->cellFrac[i] = rowMaster->boundMin[i]; */
                     nrange[1] = i;  /* only store violation location. There could be a LimLo violation following with an higher index */
                     bLastHi   = FALSE;
                 }
@@ -516,28 +517,28 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
                     bLastHi = TRUE;
                     if (nrange[1] < range[1])   /* found a LimLo before */
                     {
-                        root->cell_f[nrange[1]] = root->bound_min[nrange[1]];
-                        dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, root, ddbox, bUniform, step, cellsize_limit_f, nrange);
+                        rowMaster->cellFrac[nrange[1]] = rowMaster->bounds[1].boundMin;
+                        dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, rowMaster, ddbox, bUniform, step, cellsize_limit_f, nrange);
                         nrange[0] = nrange[1];
                     }
-                    root->cell_f[i] = root->bound_max[i];
-                    nrange[1]       = i;
-                    dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, root, ddbox, bUniform, step, cellsize_limit_f, nrange);
+                    rowMaster->cellFrac[i] = rowMaster->bounds[i].boundMax;
+                    nrange[1]              = i;
+                    dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, rowMaster, ddbox, bUniform, step, cellsize_limit_f, nrange);
                     nrange[0] = i;
                     nrange[1] = range[1];
                 }
             }
             if (nrange[1] < range[1])   /* found last a LimLo */
             {
-                root->cell_f[nrange[1]] = root->bound_min[nrange[1]];
-                dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, root, ddbox, bUniform, step, cellsize_limit_f, nrange);
+                rowMaster->cellFrac[nrange[1]] = rowMaster->bounds[nrange[1]].boundMin;
+                dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, rowMaster, ddbox, bUniform, step, cellsize_limit_f, nrange);
                 nrange[0] = nrange[1];
                 nrange[1] = range[1];
-                dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, root, ddbox, bUniform, step, cellsize_limit_f, nrange);
+                dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, rowMaster, ddbox, bUniform, step, cellsize_limit_f, nrange);
             }
             else if (nrange[0] > range[0]) /* found at least one LimHi */
             {
-                dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, root, ddbox, bUniform, step, cellsize_limit_f, nrange);
+                dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, rowMaster, ddbox, bUniform, step, cellsize_limit_f, nrange);
             }
         }
     }
@@ -545,81 +546,75 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
 
 
 static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
-                                       int d, int dim, domdec_root_t *root,
+                                       int d, int dim, RowMaster *rowMaster,
                                        const gmx_ddbox_t *ddbox,
                                        gmx_bool bDynamicBox,
                                        gmx_bool bUniform, gmx_int64_t step)
 {
-    gmx_domdec_comm_t *comm;
-    int                ncd, d1, i, pos;
-    real              *cell_size;
-    real               load_aver, load_i, imbalance, change, change_max, sc;
-    real               cellsize_limit_f, dist_min_f, dist_min_f_hard, space;
-    real               change_limit;
-    real               relax = 0.5;
-    gmx_bool           bPBC;
+    gmx_domdec_comm_t *comm    = dd->comm;
+    constexpr real     c_relax = 0.5;
     int                range[] = { 0, 0 };
 
-    comm = dd->comm;
-
     /* Convert the maximum change from the input percentage to a fraction */
-    change_limit = comm->dlb_scale_lim*0.01;
+    const real          change_limit = comm->dlb_scale_lim*0.01;
 
-    ncd = dd->nc[dim];
+    const int           ncd          = dd->nc[dim];
 
-    bPBC = (dim < ddbox->npbcdim);
+    const bool          bPBC = (dim < ddbox->npbcdim);
 
-    cell_size = root->buf_ncd;
+    gmx::ArrayRef<real> cell_size = rowMaster->buf_ncd;
 
     /* Store the original boundaries */
-    for (i = 0; i < ncd+1; i++)
+    for (int i = 0; i < ncd + 1; i++)
     {
-        root->old_cell_f[i] = root->cell_f[i];
+        rowMaster->oldCellFrac[i] = rowMaster->cellFrac[i];
     }
     if (bUniform)
     {
-        for (i = 0; i < ncd; i++)
+        for (int i = 0; i < ncd; i++)
         {
             cell_size[i] = 1.0/ncd;
         }
     }
     else if (dd_load_count(comm) > 0)
     {
-        load_aver  = comm->load[d].sum_m/ncd;
-        change_max = 0;
-        for (i = 0; i < ncd; i++)
+        real load_aver  = comm->load[d].sum_m/ncd;
+        real change_max = 0;
+        real load_i;
+        real change;
+        for (int i = 0; i < ncd; i++)
         {
             /* Determine the relative imbalance of cell i */
-            load_i    = comm->load[d].load[i*comm->load[d].nload+2];
-            imbalance = (load_i - load_aver)/(load_aver > 0 ? load_aver : 1);
+            load_i         = comm->load[d].load[i*comm->load[d].nload+2];
+            real imbalance = (load_i - load_aver)/(load_aver > 0 ? load_aver : 1);
             /* Determine the change of the cell size using underrelaxation */
-            change     = -relax*imbalance;
+            change     = -c_relax*imbalance;
             change_max = std::max(change_max, std::max(change, -change));
         }
         /* Limit the amount of scaling.
          * We need to use the same rescaling for all cells in one row,
          * otherwise the load balancing might not converge.
          */
-        sc = relax;
+        real sc = c_relax;
         if (change_max > change_limit)
         {
             sc *= change_limit/change_max;
         }
-        for (i = 0; i < ncd; i++)
+        for (int i = 0; i < ncd; i++)
         {
             /* Determine the relative imbalance of cell i */
-            load_i    = comm->load[d].load[i*comm->load[d].nload+2];
-            imbalance = (load_i - load_aver)/(load_aver > 0 ? load_aver : 1);
+            load_i         = comm->load[d].load[i*comm->load[d].nload+2];
+            real imbalance = (load_i - load_aver)/(load_aver > 0 ? load_aver : 1);
             /* Determine the change of the cell size using underrelaxation */
             change       = -sc*imbalance;
-            cell_size[i] = (root->cell_f[i+1]-root->cell_f[i])*(1 + change);
+            cell_size[i] = (rowMaster->cellFrac[i + 1] - rowMaster->cellFrac[i])*(1 + change);
         }
     }
 
-    cellsize_limit_f  = cellsize_min_dlb(comm, d, dim)/ddbox->box_size[dim];
-    cellsize_limit_f *= DD_CELL_MARGIN;
-    dist_min_f_hard   = grid_jump_limit(comm, comm->cutoff, d)/ddbox->box_size[dim];
-    dist_min_f        = dist_min_f_hard * DD_CELL_MARGIN;
+    real cellsize_limit_f  = cellsize_min_dlb(comm, d, dim)/ddbox->box_size[dim];
+    cellsize_limit_f      *= DD_CELL_MARGIN;
+    real dist_min_f_hard   = grid_jump_limit(comm, comm->cutoff, d)/ddbox->box_size[dim];
+    real dist_min_f        = dist_min_f_hard * DD_CELL_MARGIN;
     if (ddbox->tric_dir[dim])
     {
         cellsize_limit_f /= ddbox->skew_fac[dim];
@@ -632,71 +627,74 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
     if (d > 0 && !bUniform)
     {
         /* Make sure that the grid is not shifted too much */
-        for (i = 1; i < ncd; i++)
+        for (int i = 1; i < ncd; i++)
         {
-            if (root->cell_f_min1[i] - root->cell_f_max0[i-1] < 2 * dist_min_f_hard)
+            const RowMaster::Bounds &boundsNeighbor = rowMaster->bounds[i - 1];
+            RowMaster::Bounds       &bounds         = rowMaster->bounds[i];
+
+            if (bounds.cellFracUpperMin - boundsNeighbor.cellFracLowerMax < 2 * dist_min_f_hard)
             {
                 gmx_incons("Inconsistent DD boundary staggering limits!");
             }
-            root->bound_min[i] = root->cell_f_max0[i-1] + dist_min_f;
-            space              = root->cell_f[i] - (root->cell_f_max0[i-1] + dist_min_f);
+            bounds.boundMin = boundsNeighbor.cellFracLowerMax + dist_min_f;
+            real space       = rowMaster->cellFrac[i] - (boundsNeighbor.cellFracLowerMax + dist_min_f);
             if (space > 0)
             {
-                root->bound_min[i] += 0.5*space;
+                bounds.boundMin += 0.5*space;
             }
-            root->bound_max[i] = root->cell_f_min1[i] - dist_min_f;
-            space              = root->cell_f[i] - (root->cell_f_min1[i] - dist_min_f);
+            bounds.boundMax  = bounds.cellFracUpperMin - dist_min_f;
+            space            = rowMaster->cellFrac[i] - (bounds.cellFracUpperMin - dist_min_f);
             if (space < 0)
             {
-                root->bound_max[i] += 0.5*space;
+                rowMaster->bounds[i].boundMax += 0.5*space;
             }
             if (debug)
             {
                 fprintf(debug,
                         "dim %d boundary %d %.3f < %.3f < %.3f < %.3f < %.3f\n",
                         d, i,
-                        root->cell_f_max0[i-1] + dist_min_f,
-                        root->bound_min[i], root->cell_f[i], root->bound_max[i],
-                        root->cell_f_min1[i] - dist_min_f);
+                        boundsNeighbor.cellFracLowerMax + dist_min_f,
+                        bounds.boundMin, rowMaster->cellFrac[i], bounds.boundMax,
+                        bounds.cellFracUpperMin - dist_min_f);
             }
         }
     }
-    range[1]          = ncd;
-    root->cell_f[0]   = 0;
-    root->cell_f[ncd] = 1;
-    dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, root, ddbox, bUniform, step, cellsize_limit_f, range);
+    range[1]                 = ncd;
+    rowMaster->cellFrac[0]   = 0;
+    rowMaster->cellFrac[ncd] = 1;
+    dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, rowMaster, ddbox, bUniform, step, cellsize_limit_f, range);
 
 
     /* After the checks above, the cells should obey the cut-off
      * restrictions, but it does not hurt to check.
      */
-    for (i = 0; i < ncd; i++)
+    for (int i = 0; i < ncd; i++)
     {
         if (debug)
         {
             fprintf(debug, "Relative bounds dim %d  cell %d: %f %f\n",
-                    dim, i, root->cell_f[i], root->cell_f[i+1]);
+                    dim, i, rowMaster->cellFrac[i], rowMaster->cellFrac[i + 1]);
         }
 
         if ((bPBC || (i != 0 && i != dd->nc[dim]-1)) &&
-            root->cell_f[i+1] - root->cell_f[i] <
+            rowMaster->cellFrac[i + 1] - rowMaster->cellFrac[i] <
             cellsize_limit_f/DD_CELL_MARGIN)
         {
             char buf[22];
             fprintf(stderr,
                     "\nWARNING step %s: direction %c, cell %d too small: %f\n",
                     gmx_step_str(step, buf), dim2char(dim), i,
-                    (root->cell_f[i+1] - root->cell_f[i])
+                    (rowMaster->cellFrac[i + 1] - rowMaster->cellFrac[i])
                     *ddbox->box_size[dim]*ddbox->skew_fac[dim]);
         }
     }
 
-    pos = ncd + 1;
+    int pos = ncd + 1;
     /* Store the cell boundaries of the lower dimensions at the end */
-    for (d1 = 0; d1 < d; d1++)
+    for (int d1 = 0; d1 < d; d1++)
     {
-        root->cell_f[pos++] = comm->cell_f0[d1];
-        root->cell_f[pos++] = comm->cell_f1[d1];
+        rowMaster->cellFrac[pos++] = comm->cellsizesWithDlb[d1].fracLower;
+        rowMaster->cellFrac[pos++] = comm->cellsizesWithDlb[d1].fracUpper;
     }
 
     if (d < comm->npmedecompdim)
@@ -704,12 +702,12 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
         /* The master determines the maximum shift for
          * the coordinate communication between separate PME nodes.
          */
-        set_pme_maxshift(dd, &comm->ddpme[d], bUniform, ddbox, root->cell_f);
+        set_pme_maxshift(dd, &comm->ddpme[d], bUniform, ddbox, rowMaster->cellFrac.data());
     }
-    root->cell_f[pos++] = comm->ddpme[0].maxshift;
+    rowMaster->cellFrac[pos++] = comm->ddpme[0].maxshift;
     if (d >= 1)
     {
-        root->cell_f[pos++] = comm->ddpme[1].maxshift;
+        rowMaster->cellFrac[pos++] = comm->ddpme[1].maxshift;
     }
 }
 
@@ -717,15 +715,13 @@ static void relative_to_absolute_cell_bounds(gmx_domdec_t      *dd,
                                              const gmx_ddbox_t *ddbox,
                                              int                dimind)
 {
-    gmx_domdec_comm_t *comm;
-    int                dim;
-
-    comm = dd->comm;
+    gmx_domdec_comm_t        *comm      = dd->comm;
+    const DDCellsizesWithDlb &cellsizes = comm->cellsizesWithDlb[dimind];
 
     /* Set the cell dimensions */
-    dim                = dd->dim[dimind];
-    comm->cell_x0[dim] = comm->cell_f0[dimind]*ddbox->box_size[dim];
-    comm->cell_x1[dim] = comm->cell_f1[dimind]*ddbox->box_size[dim];
+    int dim            = dd->dim[dimind];
+    comm->cell_x0[dim] = cellsizes.fracLower*ddbox->box_size[dim];
+    comm->cell_x1[dim] = cellsizes.fracUpper*ddbox->box_size[dim];
     if (dim >= ddbox->nboundeddim)
     {
         comm->cell_x0[dim] += ddbox->box0[dim];
@@ -734,41 +730,39 @@ static void relative_to_absolute_cell_bounds(gmx_domdec_t      *dd,
 }
 
 static void distribute_dd_cell_sizes_dlb(gmx_domdec_t *dd,
-                                         int d, int dim, real *cell_f_row,
+                                         int d, int dim,
+                                         gmx::ArrayRef<real> cellFracRow,
                                          const gmx_ddbox_t *ddbox)
 {
-    gmx_domdec_comm_t *comm;
-    int                d1, pos;
-
-    comm = dd->comm;
+    gmx_domdec_comm_t &comm = *dd->comm;
 
 #if GMX_MPI
     /* Each node would only need to know two fractions,
      * but it is probably cheaper to broadcast the whole array.
      */
-    MPI_Bcast(cell_f_row, ddCellFractionBufferSize(dd, d)*sizeof(real), MPI_BYTE,
-              0, comm->mpi_comm_load[d]);
+    MPI_Bcast(cellFracRow.data(), ddCellFractionBufferSize(dd, d)*sizeof(real), MPI_BYTE,
+              0, comm.mpi_comm_load[d]);
 #endif
     /* Copy the fractions for this dimension from the buffer */
-    comm->cell_f0[d] = cell_f_row[dd->ci[dim]  ];
-    comm->cell_f1[d] = cell_f_row[dd->ci[dim]+1];
+    comm.cellsizesWithDlb[d].fracLower = cellFracRow[dd->ci[dim]    ];
+    comm.cellsizesWithDlb[d].fracUpper = cellFracRow[dd->ci[dim] + 1];
     /* The whole array was communicated, so set the buffer position */
-    pos = dd->nc[dim] + 1;
-    for (d1 = 0; d1 <= d; d1++)
+    int pos = dd->nc[dim] + 1;
+    for (int d1 = 0; d1 <= d; d1++)
     {
         if (d1 < d)
         {
             /* Copy the cell fractions of the lower dimensions */
-            comm->cell_f0[d1] = cell_f_row[pos++];
-            comm->cell_f1[d1] = cell_f_row[pos++];
+            comm.cellsizesWithDlb[d1].fracLower = cellFracRow[pos++];
+            comm.cellsizesWithDlb[d1].fracUpper = cellFracRow[pos++];
         }
         relative_to_absolute_cell_bounds(dd, ddbox, d1);
     }
     /* Convert the communicated shift from float to int */
-    comm->ddpme[0].maxshift = (int)(cell_f_row[pos++] + 0.5);
+    comm.ddpme[0].maxshift = (int)(cellFracRow[pos++] + 0.5);
     if (d >= 1)
     {
-        comm->ddpme[1].maxshift = (int)(cell_f_row[pos++] + 0.5);
+        comm.ddpme[1].maxshift = (int)(cellFracRow[pos++] + 0.5);
     }
 }
 
@@ -777,42 +771,39 @@ static void set_dd_cell_sizes_dlb_change(gmx_domdec_t *dd,
                                          gmx_bool bDynamicBox,
                                          gmx_bool bUniform, gmx_int64_t step)
 {
-    gmx_domdec_comm_t *comm;
-    int                d, dim, d1;
-    gmx_bool           bRowMember, bRowRoot;
-    real              *cell_f_row;
-
-    comm = dd->comm;
-
-    for (d = 0; d < dd->ndim; d++)
+    for (int d = 0; d < dd->ndim; d++)
     {
-        dim        = dd->dim[d];
-        bRowMember = TRUE;
-        bRowRoot   = TRUE;
-        for (d1 = d; d1 < dd->ndim; d1++)
+        const int dim         = dd->dim[d];
+        bool      isRowMember = true;
+        bool      isRowRoot   = true;
+        for (int d1 = d; d1 < dd->ndim; d1++)
         {
             if (dd->ci[dd->dim[d1]] > 0)
             {
                 if (d1 != d)
                 {
-                    bRowMember = FALSE;
+                    isRowMember = false;
                 }
-                bRowRoot = FALSE;
+                isRowRoot = false;
             }
         }
-        if (bRowMember)
+        if (isRowMember)
         {
-            if (bRowRoot)
+            DDCellsizesWithDlb  &cellsizes = dd->comm->cellsizesWithDlb[d];
+            gmx::ArrayRef<real>  cellFracRow;
+
+            if (isRowRoot)
             {
-                set_dd_cell_sizes_dlb_root(dd, d, dim, comm->root[d],
+                RowMaster *rowMaster = cellsizes.rowMaster.get();
+                set_dd_cell_sizes_dlb_root(dd, d, dim, rowMaster,
                                            ddbox, bDynamicBox, bUniform, step);
-                cell_f_row = comm->root[d]->cell_f;
+                cellFracRow = rowMaster->cellFrac;
             }
             else
             {
-                cell_f_row = comm->cell_f_row;
+                cellFracRow = cellsizes.fracRow;
             }
-            distribute_dd_cell_sizes_dlb(dd, d, dim, cell_f_row, ddbox);
+            distribute_dd_cell_sizes_dlb(dd, d, dim, cellFracRow, ddbox);
         }
     }
 }
