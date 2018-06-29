@@ -84,19 +84,36 @@ struct gmx_domdec_comm_dim_t
     bool                          receiveInPlace; /* Can we receive data in place?            */
 };
 
-/*! \brief Struct for load balancing along a dim on the root rank of that dim */
-typedef struct
+/*! \brief Load balancing data along a dim used on the master rank of that dim */
+struct RowMaster
 {
-    gmx_bool *bCellMin;    /**< Temp. var.: is this cell size at the limit    */
-    real     *cell_f;      /**< State var.: cell boundaries, box relative     */
-    real     *old_cell_f;  /**< Temp. var.: old cell size                     */
-    real     *cell_f_max0; /**< State var.: max lower bound., incl. neighbors */
-    real     *cell_f_min1; /**< State var.: min upper bound., incl. neighbors */
-    real     *bound_min;   /**< Temp. var.: lower limit for cell boundary     */
-    real     *bound_max;   /**< Temp. var.: upper limit for cell boundary     */
-    gmx_bool  bLimited;    /**< State var.: is DLB limited in this row        */
-    real     *buf_ncd;     /**< Temp. var.                                    */
-} domdec_root_t;
+    struct Bounds
+    {
+        real cellFracLowerMax; /**< State var.: max lower bound., incl. neighbors */
+        real cellFracUpperMin; /**< State var.: min upper bound., incl. neighbors */
+        real boundMin;         /**< Temp. var.: lower limit for cell boundary */
+        real boundMax;         /**< Temp. var.: upper limit for cell boundary */
+    };
+
+    std::vector<bool>   isCellMin;    /**< Temp. var.: is this cell size at the limit */
+    std::vector<real>   cellFrac;     /**< State var.: cell boundaries, box relative */
+    std::vector<real>   oldCellFrac;  /**< Temp. var.: old cell size */
+    std::vector<Bounds> bounds;       /**< Cell bounds */
+    bool                dlbIsLimited; /**< State var.: is DLB limited in this row */
+    std::vector<real>   buf_ncd;      /**< Temp. var.  */
+};
+
+/*! \brief Struct for managing cell sizes with DLB along a dimension */
+struct DDCellsizesWithDlb
+{
+    /* Cell sizes for dynamic load balancing */
+    std::unique_ptr<RowMaster> rowMaster;    /**< Cell row root struct, only available on the first rank in a row */
+    std::vector<real>          fracRow;      /**< The cell sizes, in fractions, along a row, not available on the first rank in a row */
+    real                       fracLower;    /**< The lower corner, in fractions, in triclinic space */
+    real                       fracUpper;    /**< The upper corner, in fractions, in triclinic space */
+    real                       fracLowerMax; /**< The maximum lower corner among all our neighbors */
+    real                       fracUpperMin; /**< The minimum upper corner among all our neighbors */
+};
 
 /*! \brief Struct for compute load commuication
  *
@@ -481,12 +498,7 @@ struct gmx_domdec_comm_t
     std::array<std::vector<gmx::RVec>, DIM*2> cgcm_state; /**< Charge group center comm. buffers */
 
     /* Cell sizes for dynamic load balancing */
-    domdec_root_t **root;              /**< Cell row root struct pointer, per dd DIM */
-    real           *cell_f_row;        /**< The cell sizes, in fractions, along a row */
-    real            cell_f0[DIM];      /**< The lower corner, in fractions, in triclinic space */
-    real            cell_f1[DIM];      /**< The upper corner, in fractions, in triclinic space */
-    real            cell_f_max0[DIM];  /**< The maximum lower corner among all our neighbors */
-    real            cell_f_min1[DIM];  /**< The minimum upper corner among all our neighbors */
+    std::vector<DDCellsizesWithDlb> cellsizesWithDlb;
 
     /* Stuff for load communication */
     gmx_bool        bRecordLoad;         /**< Should we record the load */

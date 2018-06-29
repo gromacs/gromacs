@@ -766,18 +766,20 @@ static void dd_move_cellx(gmx_domdec_t      *dd,
         zp.p1_1 = cell_ns_x1[dim];
     }
 
+    gmx::ArrayRef<DDCellsizesWithDlb> cellsizes = comm->cellsizesWithDlb;
+
     /* Loop backward over the dimensions and aggregate the extremes
      * of the cell sizes.
      */
     for (int d = dd->ndim - 2; d >= 0; d--)
     {
-        int  dim      = dd->dim[d];
-        bool applyPbc = (dim < ddbox->npbcdim);
+        const int  dim      = dd->dim[d];
+        const bool applyPbc = (dim < ddbox->npbcdim);
 
         /* Use an rvec to store two reals */
-        extr_s[d][0] = comm->cell_f0[d+1];
-        extr_s[d][1] = comm->cell_f1[d+1];
-        extr_s[d][2] = comm->cell_f1[d+1];
+        extr_s[d][0] = cellsizes[d + 1].fracLower;
+        extr_s[d][1] = cellsizes[d + 1].fracUpper;
+        extr_s[d][2] = cellsizes[d + 1].fracUpper;
 
         int pos = 0;
         GMX_ASSERT(pos < c_ddZoneCommMaxNumZones, "The buffers should be sufficiently large");
@@ -996,12 +998,12 @@ static void dd_move_cellx(gmx_domdec_t      *dd,
     }
     for (int d = 1; d < dd->ndim; d++)
     {
-        comm->cell_f_max0[d] = extr_s[d-1][0];
-        comm->cell_f_min1[d] = extr_s[d-1][1];
+        cellsizes[d].fracLowerMax = extr_s[d-1][0];
+        cellsizes[d].fracUpperMin = extr_s[d-1][1];
         if (debug)
         {
             fprintf(debug, "Cell fraction d %d, max0 %f, min1 %f\n",
-                    d, comm->cell_f_max0[d], comm->cell_f_min1[d]);
+                    d, cellsizes[d].fracLowerMax, cellsizes[d].fracUpperMin);
         }
     }
 }
@@ -1754,34 +1756,29 @@ static void clearDDStateIndices(gmx_domdec_t *dd,
     }
 }
 
-static gmx_bool check_grid_jump(gmx_int64_t     step,
-                                gmx_domdec_t   *dd,
-                                real            cutoff,
-                                gmx_ddbox_t    *ddbox,
-                                gmx_bool        bFatal)
+static bool check_grid_jump(gmx_int64_t         step,
+                            const gmx_domdec_t *dd,
+                            real                cutoff,
+                            const gmx_ddbox_t  *ddbox,
+                            gmx_bool            bFatal)
 {
-    gmx_domdec_comm_t *comm;
-    int                d, dim;
-    real               limit, bfac;
-    gmx_bool           bInvalid;
+    gmx_domdec_comm_t *comm    = dd->comm;
+    bool               invalid = false;
 
-    bInvalid = FALSE;
-
-    comm = dd->comm;
-
-    for (d = 1; d < dd->ndim; d++)
+    for (int d = 1; d < dd->ndim; d++)
     {
-        dim   = dd->dim[d];
-        limit = grid_jump_limit(comm, cutoff, d);
-        bfac  = ddbox->box_size[dim];
+        const DDCellsizesWithDlb &cellsizes = comm->cellsizesWithDlb[d];
+        const int                 dim       = dd->dim[d];
+        const real                limit     = grid_jump_limit(comm, cutoff, d);
+        real                      bfac      = ddbox->box_size[dim];
         if (ddbox->tric_dir[dim])
         {
             bfac *= ddbox->skew_fac[dim];
         }
-        if ((comm->cell_f1[d] - comm->cell_f_max0[d])*bfac <  limit ||
-                                                              (comm->cell_f0[d] - comm->cell_f_min1[d])*bfac > -limit)
+        if ((cellsizes.fracUpper - cellsizes.fracLowerMax)*bfac <  limit ||
+            (cellsizes.fracLower - cellsizes.fracUpperMin)*bfac > -limit)
         {
-            bInvalid = TRUE;
+            invalid = true;
 
             if (bFatal)
             {
@@ -1797,7 +1794,7 @@ static gmx_bool check_grid_jump(gmx_int64_t     step,
         }
     }
 
-    return bInvalid;
+    return invalid;
 }
 
 static float dd_force_load(gmx_domdec_comm_t *comm)
@@ -2100,8 +2097,6 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
 {
     gmx_domdec_comm_t *comm;
     domdec_load_t     *load;
-    domdec_root_t     *root = nullptr;
-    int                d, dim, i, pos;
     float              cell_frac = 0, sbuf[DD_NLOAD_MAX];
     gmx_bool           bSepPME;
 
@@ -2123,9 +2118,10 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
         comm->load[0].pme = comm->cycl[ddCyclPME];
     }
 
-    for (d = dd->ndim-1; d >= 0; d--)
+    for (int d = dd->ndim - 1; d >= 0; d--)
     {
-        dim = dd->dim[d];
+        const DDCellsizesWithDlb &cellsizes = comm->cellsizesWithDlb[d];
+        const int                 dim       = dd->dim[d];
         /* Check if we participate in the communication in this dimension */
         if (d == dd->ndim-1 ||
             (dd->ci[dd->dim[d+1]] == 0 && dd->ci[dd->dim[dd->ndim-1]] == 0))
@@ -2133,9 +2129,9 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
             load = &comm->load[d];
             if (isDlbOn(dd->comm))
             {
-                cell_frac = comm->cell_f1[d] - comm->cell_f0[d];
+                cell_frac = cellsizes.fracUpper - cellsizes.fracLower;
             }
-            pos = 0;
+            int pos = 0;
             if (d == dd->ndim-1)
             {
                 sbuf[pos++] = dd_force_load(comm);
@@ -2146,8 +2142,8 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
                     sbuf[pos++] = cell_frac;
                     if (d > 0)
                     {
-                        sbuf[pos++] = comm->cell_f_max0[d];
-                        sbuf[pos++] = comm->cell_f_min1[d];
+                        sbuf[pos++] = cellsizes.fracLowerMax;
+                        sbuf[pos++] = cellsizes.fracUpperMin;
                     }
                 }
                 if (bSepPME)
@@ -2167,8 +2163,8 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
                     sbuf[pos++] = comm->load[d+1].flags;
                     if (d > 0)
                     {
-                        sbuf[pos++] = comm->cell_f_max0[d];
-                        sbuf[pos++] = comm->cell_f_min1[d];
+                        sbuf[pos++] = cellsizes.fracLowerMax;
+                        sbuf[pos++] = cellsizes.fracUpperMin;
                     }
                 }
                 if (bSepPME)
@@ -2188,10 +2184,12 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
 #endif
             if (dd->ci[dim] == dd->master_ci[dim])
             {
-                /* We are the root, process this row */
+                /* We are the master along this row, process this row */
+                RowMaster *rowMaster = nullptr;
+
                 if (isDlbOn(comm))
                 {
-                    root = comm->root[d];
+                    rowMaster = cellsizes.rowMaster.get();
                 }
                 load->sum      = 0;
                 load->max      = 0;
@@ -2200,15 +2198,15 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
                 load->flags    = 0;
                 load->mdf      = 0;
                 load->pme      = 0;
-                pos            = 0;
-                for (i = 0; i < dd->nc[dim]; i++)
+                int pos        = 0;
+                for (int i = 0; i < dd->nc[dim]; i++)
                 {
                     load->sum += load->load[pos++];
                     load->max  = std::max(load->max, load->load[pos]);
                     pos++;
                     if (isDlbOn(dd->comm))
                     {
-                        if (root->bLimited)
+                        if (rowMaster->dlbIsLimited)
                         {
                             /* This direction could not be load balanced properly,
                              * therefore we need to use the maximum iso the average load.
@@ -2228,8 +2226,8 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
                         }
                         if (d > 0)
                         {
-                            root->cell_f_max0[i] = load->load[pos++];
-                            root->cell_f_min1[i] = load->load[pos++];
+                            rowMaster->bounds[i].cellFracLowerMax = load->load[pos++];
+                            rowMaster->bounds[i].cellFracUpperMin = load->load[pos++];
                         }
                     }
                     if (bSepPME)
@@ -2240,7 +2238,7 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
                         pos++;
                     }
                 }
-                if (isDlbOn(comm) && root->bLimited)
+                if (isDlbOn(comm) && rowMaster->dlbIsLimited)
                 {
                     load->sum_m *= dd->nc[dim];
                     load->flags |= (1<<d);
@@ -2257,7 +2255,7 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
         comm->load_max   += comm->load[0].max;
         if (isDlbOn(comm))
         {
-            for (d = 0; d < dd->ndim; d++)
+            for (int d = 0; d < dd->ndim; d++)
             {
                 if (comm->load[0].flags & (1<<d))
                 {
@@ -2547,7 +2545,6 @@ static void make_load_communicator(gmx_domdec_t *dd, int dim_ind, ivec loc)
     MPI_Comm           c_row;
     int                dim, i, rank;
     ivec               loc_c;
-    domdec_root_t     *root;
     gmx_bool           bPartOfGroup = FALSE;
 
     dim = dd->dim[dim_ind];
@@ -2569,27 +2566,27 @@ static void make_load_communicator(gmx_domdec_t *dd, int dim_ind, ivec loc)
         dd->comm->mpi_comm_load[dim_ind] = c_row;
         if (!isDlbDisabled(dd->comm))
         {
+            DDCellsizesWithDlb &cellsizes = dd->comm->cellsizesWithDlb[dim_ind];
+
             if (dd->ci[dim] == dd->master_ci[dim])
             {
                 /* This is the root process of this row */
-                snew(dd->comm->root[dim_ind], 1);
-                root = dd->comm->root[dim_ind];
-                snew(root->cell_f, ddCellFractionBufferSize(dd, dim_ind));
-                snew(root->old_cell_f, dd->nc[dim]+1);
-                snew(root->bCellMin, dd->nc[dim]);
+                cellsizes.rowMaster  = gmx::compat::make_unique<RowMaster>();
+
+                RowMaster &rowMaster = *cellsizes.rowMaster;
+                rowMaster.cellFrac.resize(ddCellFractionBufferSize(dd, dim_ind));
+                rowMaster.oldCellFrac.resize(dd->nc[dim] + 1);
+                rowMaster.isCellMin.resize(dd->nc[dim]);
                 if (dim_ind > 0)
                 {
-                    snew(root->cell_f_max0, dd->nc[dim]);
-                    snew(root->cell_f_min1, dd->nc[dim]);
-                    snew(root->bound_min, dd->nc[dim]);
-                    snew(root->bound_max, dd->nc[dim]);
+                    rowMaster.bounds.resize(dd->nc[dim]);
                 }
-                snew(root->buf_ncd, dd->nc[dim]);
+                rowMaster.buf_ncd.resize(dd->nc[dim]);
             }
             else
             {
                 /* This is not a root process, we only need to receive cell_f */
-                snew(dd->comm->cell_f_row, ddCellFractionBufferSize(dd, dim_ind));
+                cellsizes.fracRow.resize(ddCellFractionBufferSize(dd, dim_ind));
             }
         }
         if (dd->ci[dim] == dd->master_ci[dim])
@@ -2808,7 +2805,7 @@ static void setup_neighbor_relations(gmx_domdec_t *dd)
 
     if (!isDlbDisabled(dd->comm))
     {
-        snew(dd->comm->root, dd->ndim);
+        dd->comm->cellsizesWithDlb.resize(dd->ndim);
     }
 
     if (dd->comm->bRecordLoad)
@@ -3909,16 +3906,11 @@ static void set_dlb_limits(gmx_domdec_t *dd)
 
 static void turn_on_dlb(FILE *fplog, const t_commrec *cr, gmx_int64_t step)
 {
-    gmx_domdec_t      *dd;
-    gmx_domdec_comm_t *comm;
-    real               cellsize_min;
-    int                d, nc, i;
+    gmx_domdec_t      *dd           = cr->dd;
+    gmx_domdec_comm_t *comm         = dd->comm;
 
-    dd   = cr->dd;
-    comm = dd->comm;
-
-    cellsize_min = comm->cellsize_min[dd->dim[0]];
-    for (d = 1; d < dd->ndim; d++)
+    real               cellsize_min = comm->cellsize_min[dd->dim[0]];
+    for (int d = 1; d < dd->ndim; d++)
     {
         cellsize_min = std::min(cellsize_min, comm->cellsize_min[dd->dim[d]]);
     }
@@ -3952,23 +3944,25 @@ static void turn_on_dlb(FILE *fplog, const t_commrec *cr, gmx_int64_t step)
      * so we do not need to communicate this.
      * The grid is completely uniform.
      */
-    for (d = 0; d < dd->ndim; d++)
+    for (int d = 0; d < dd->ndim; d++)
     {
-        if (comm->root[d])
+        RowMaster *rowMaster = comm->cellsizesWithDlb[d].rowMaster.get();
+
+        if (rowMaster)
         {
             comm->load[d].sum_m = comm->load[d].sum;
 
-            nc = dd->nc[dd->dim[d]];
-            for (i = 0; i < nc; i++)
+            int nc = dd->nc[dd->dim[d]];
+            for (int i = 0; i < nc; i++)
             {
-                comm->root[d]->cell_f[i]    = i/(real)nc;
+                rowMaster->cellFrac[i] = i/static_cast<real>(nc);
                 if (d > 0)
                 {
-                    comm->root[d]->cell_f_max0[i] =  i   /(real)nc;
-                    comm->root[d]->cell_f_min1[i] = (i+1)/(real)nc;
+                    rowMaster->bounds[i].cellFracLowerMax =  i     /static_cast<real>(nc);
+                    rowMaster->bounds[i].cellFracUpperMin = (i + 1)/static_cast<real>(nc);
                 }
             }
-            comm->root[d]->cell_f[nc] = 1.0;
+            rowMaster->cellFrac[nc] = 1.0;
         }
     }
 }
