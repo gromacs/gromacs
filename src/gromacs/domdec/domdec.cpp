@@ -3485,8 +3485,10 @@ static gmx_domdec_comm_t *init_dd_comm()
 {
     gmx_domdec_comm_t *comm = new gmx_domdec_comm_t;
 
-    comm->n_load_have    = 0;
-    comm->n_load_collect = 0;
+    comm->n_load_have      = 0;
+    comm->n_load_collect   = 0;
+
+    comm->haveTurnedOffDlb = false;
 
     for (int i = 0; i < static_cast<int>(DDAtomRanges::Type::Number); i++)
     {
