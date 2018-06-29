@@ -50,6 +50,8 @@
 
 #include <algorithm>
 
+#include <unordered_map>
+
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -68,7 +70,6 @@
 
 #include "domdec_specatomcomm.h"
 #include "domdec_vsite.h"
-#include "hash.h"
 
 /*! \brief Struct used during constraint setup with domain decomposition */
 struct gmx_domdec_constraints_t
@@ -78,12 +79,14 @@ struct gmx_domdec_constraints_t
     std::vector<int>  molb_ncon_mol;   /**< The number of constraints per molecule for each molblock */
 
     int               ncon;            /**< The fully local and conneced constraints */
+
     /* The global constraint number, only required for clearing gc_req */
     std::vector<int>  con_gl;          /**< Global constraint indices for local constraints */
     std::vector<int>  con_nlocat;      /**< Number of local atoms (2/1/0) for each constraint */
 
-    std::vector<bool> gc_req;          /**< Boolean that tells if a global constraint index has been requested; note: size global #constraints */
-    gmx_hash_t       *ga2la;           /**< Global to local communicated constraint atom only index, TODO: get rid of the plain pointer */
+    /* Lists for storing requests and requested atom indices */
+    std::vector<bool>            gc_req; /**< Boolean that tells if a global constraint index has been requested; note: size global #constraints */
+    std::unordered_map<int, int> ga2la;  /**< Global to local communicated constraint atom only index, TODO: get rid of the plain pointer */
 
     /* Multi-threading stuff */
     int                  nthread; /**< Number of threads used for DD constraint setup */
@@ -126,15 +129,7 @@ void dd_clear_local_constraint_indices(gmx_domdec_t *dd)
 
     if (dd->constraint_comm)
     {
-        gmx_hash_clear_and_optimize(dc->ga2la);
-    }
-}
-
-void dd_clear_local_vsite_indices(gmx_domdec_t *dd)
-{
-    if (dd->vsite_comm)
-    {
-        gmx_hash_clear_and_optimize(dd->ga2la_vsite);
+        dc->ga2la.clear();
     }
 }
 
@@ -188,13 +183,13 @@ static void walk_out(int con, int con_offset, int a, int offset, int nrec,
         dc->ncon++;
     }
     /* Check to not ask for the same atom more than once */
-    if (gmx_hash_get_minone(dc->ga2la, offset+a) == -1)
+    if (dc->ga2la.find(offset + a) == dc->ga2la.end())
     {
         assert(dcc);
         /* Add this non-home atom to the list */
         ireq->push_back(offset + a);
         /* Temporarily mark with -2, we get the index later */
-        gmx_hash_set(dc->ga2la, offset+a, -2);
+        dc->ga2la.insert({offset + a, -2});
     }
 
     if (nrec > 0)
@@ -424,12 +419,11 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
                               gmx::Constraints *constr, int nrec,
                               t_ilist *il_local)
 {
-    gmx_domdec_constraints_t     *dc;
+    gmx_domdec_constraints_t     *dc = dd->constraints;
     t_ilist                      *ilc_local, *ils_local;
     std::vector<int>             *ireq;
     gmx::ArrayRef<const t_blocka> at2con_mt;
     const int                   **at2settle_mt;
-    gmx_hash_t                   *ga2la_specat;
     int at_end, i, j;
     t_iatom                      *iap;
 
@@ -444,8 +438,6 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
     // otherwise, when dd->bInterCGsettles is
     // true. dd->constraint_comm is unilaterally dereferenced before
     // the call to atoms_to_settles.
-
-    dc = dd->constraints;
 
     ilc_local = &il_local[F_CONSTR];
     ils_local = &il_local[F_SETTLE];
@@ -574,18 +566,16 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
 
     if (dd->constraint_comm)
     {
-        int nral1;
+        std::unordered_map<int, int> &ga2la_constraints = dc->ga2la;
 
         at_end =
             setup_specat_communication(dd, ireq, dd->constraint_comm,
-                                       dd->constraints->ga2la,
+                                       &ga2la_constraints,
                                        at_start, 2,
                                        "constraint", " or lincs-order");
 
         /* Fill in the missing indices */
-        ga2la_specat = dd->constraints->ga2la;
-
-        nral1 = 1 + NRAL(F_CONSTR);
+        int nral1 = 1 + NRAL(F_CONSTR);
         for (i = 0; i < ilc_local->nr; i += nral1)
         {
             iap = ilc_local->iatoms + i;
@@ -593,7 +583,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
             {
                 if (iap[j] < 0)
                 {
-                    iap[j] = gmx_hash_get_minone(ga2la_specat, -iap[j]-1);
+                    iap[j] = ga2la_constraints[-iap[j] - 1];
                 }
             }
         }
@@ -606,7 +596,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
             {
                 if (iap[j] < 0)
                 {
-                    iap[j] = gmx_hash_get_minone(ga2la_specat, -iap[j]-1);
+                    iap[j] = ga2la_constraints[-iap[j] - 1];
                 }
             }
         }
@@ -652,12 +642,6 @@ void init_domdec_constraints(gmx_domdec_t     *dd,
     {
         dc->gc_req.resize(ncon);
     }
-
-    /* Use a hash table for the global to local index.
-     * The number of keys is a rough estimate, it will be optimized later.
-     */
-    dc->ga2la = gmx_hash_init(std::min(mtop->natoms/20,
-                                       mtop->natoms/(2*dd->nnodes)));
 
     dc->nthread = gmx_omp_nthreads_get(emntDomdec);
     dc->ils.resize(dc->nthread);
