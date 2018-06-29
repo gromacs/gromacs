@@ -6578,18 +6578,15 @@ void dd_partition_system(FILE                *fplog,
         wallcycle_sub_stop(wcycle, ewcsDD_REDIST);
     }
 
-    if (fr->cutoff_scheme == ecutsGROUP)
-    {
-        get_nsgrid_boundaries(ddbox.nboundeddim, state_local->box,
-                              dd, &ddbox,
-                              &comm->cell_x0, &comm->cell_x1,
-                              dd->ncg_home, fr->cg_cm,
-                              cell_ns_x0, cell_ns_x1, &grid_density);
+    get_nsgrid_boundaries(ddbox.nboundeddim, state_local->box,
+                          dd, &ddbox,
+                          &comm->cell_x0, &comm->cell_x1,
+                          dd->ncg_home, fr->cg_cm,
+                          cell_ns_x0, cell_ns_x1, &grid_density);
 
-        if (bBoxChanged)
-        {
-            comm_dd_ns_cell_sizes(dd, &ddbox, cell_ns_x0, cell_ns_x1, step);
-        }
+    if (bBoxChanged)
+    {
+        comm_dd_ns_cell_sizes(dd, &ddbox, cell_ns_x0, cell_ns_x1, step);
     }
 
     switch (fr->cutoff_scheme)
