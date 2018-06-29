@@ -812,7 +812,8 @@ std::string getCoolQuote()
         { "This type of advanced sampling techniques... which are not so advanced, really.", "Viveca Lindahl, on AWH, at her thesis defense." },
         { "C++ is tricky. You can do everything. You can even make every mistake.", "Nicolai Josuttis, CppCon2017" },
         { "Why would the backup server database get corrupted anyway?", "Stefan Fleischmann -- system administrator, physicist, optimist." },
-        { "Teaching quantum computing is like teaching computer science at Hogwarts", "Thomas Sterling, ISC2018 keynote" },
+        { "Teaching quantum computing is like teaching computer science at Hogwarts.", "Thomas Sterling, ISC2018 keynote" },
+        { "It is unfortunate that the authors did not make better use of all the electric power energy that went into these massive computations.", "An anonymous referee" },
     };
 
     if (beCool())
