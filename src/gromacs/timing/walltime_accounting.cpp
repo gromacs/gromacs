@@ -237,7 +237,7 @@ walltime_accounting_set_valid_finish(gmx_walltime_accounting_t walltime_accounti
 
 //! Return whether the simulation finished in a way valid for reporting walltime.
 bool
-walltime_accounting_get_valid_finish(const gmx_walltime_accounting_t walltime_accounting)
+walltime_accounting_get_valid_finish(const gmx_walltime_accounting* walltime_accounting)
 {
     return walltime_accounting->isValidFinish;
 }

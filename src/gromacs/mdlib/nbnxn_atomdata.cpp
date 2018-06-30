@@ -792,7 +792,7 @@ static void copy_lj_to_nbat_lj_comb(const real *ljparam_type,
 
 /* Sets the atom type in nbnxn_atomdata_t */
 static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t    *nbat,
-                                         const nbnxn_search_t nbs,
+                                         const nbnxn_search  *nbs,
                                          const int           *type)
 {
     for (const nbnxn_grid_t &grid : nbs->grid)
@@ -811,7 +811,7 @@ static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t    *nbat,
 
 /* Sets the LJ combination rule parameters in nbnxn_atomdata_t */
 static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t    *nbat,
-                                            const nbnxn_search_t nbs)
+                                            const nbnxn_search  *nbs)
 {
     if (nbat->comb_rule != ljcrNONE)
     {
@@ -851,7 +851,7 @@ static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t    *nbat,
 
 /* Sets the charges in nbnxn_atomdata_t *nbat */
 static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t    *nbat,
-                                       const nbnxn_search_t nbs,
+                                       const nbnxn_search  *nbs,
                                        const real          *charge)
 {
     for (const nbnxn_grid_t &grid : nbs->grid)
@@ -906,7 +906,7 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t    *nbat,
  * using the original charge and LJ data, not nbnxn_atomdata_t.
  */
 static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t    *nbat,
-                                    const nbnxn_search_t nbs)
+                                    const nbnxn_search  *nbs)
 {
     real               *q;
     int                 stride_q, nsubc;
@@ -989,7 +989,7 @@ static void copy_egp_to_nbat_egps(const int *a, int na, int na_round,
 
 /* Set the energy group indices for atoms in nbnxn_atomdata_t */
 static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t    *nbat,
-                                            const nbnxn_search_t nbs,
+                                            const nbnxn_search  *nbs,
                                             const int           *atinfo)
 {
     if (nbat->nenergrp == 1)
@@ -1014,7 +1014,7 @@ static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t    *nbat,
 
 /* Sets all required atom parameter data in nbnxn_atomdata_t */
 void nbnxn_atomdata_set(nbnxn_atomdata_t    *nbat,
-                        const nbnxn_search_t nbs,
+                        const nbnxn_search  *nbs,
                         const t_mdatoms     *mdatoms,
                         const int           *atinfo)
 {
@@ -1048,7 +1048,7 @@ void nbnxn_atomdata_copy_shiftvec(gmx_bool          bDynamicBox,
 }
 
 /* Copies (and reorders) the coordinates to nbnxn_atomdata_t */
-void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
+void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search  *nbs,
                                      int                  locality,
                                      gmx_bool             FillLocal,
                                      rvec                *x,
@@ -1215,7 +1215,7 @@ nbnxn_atomdata_reduce_reals_simd(real gmx_unused * gmx_restrict dest,
 
 /* Add part of the force array(s) from nbnxn_atomdata_t to f */
 static void
-nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
+nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search *nbs,
                                     const nbnxn_atomdata_t *nbat,
                                     nbnxn_atomdata_output_t *out,
                                     int nfa,
@@ -1508,7 +1508,7 @@ static void nbnxn_atomdata_add_nbat_f_to_f_stdreduce(const nbnxn_atomdata_t *nba
 }
 
 /* Add the force array(s) from nbnxn_atomdata_t to f */
-void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
+void nbnxn_atomdata_add_nbat_f_to_f(nbnxn_search           *nbs,
                                     int                     locality,
                                     const nbnxn_atomdata_t *nbat,
                                     rvec                   *f,

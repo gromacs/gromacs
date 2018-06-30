@@ -306,7 +306,7 @@ struct nbnxn_search
     gmx_icell_set_x_t   *icell_set_x; /* Function for setting i-coords    */
 
     /* Thread-local work data */
-    std::vector<nbnxn_search_work_t> work;      /* Work array, one entry for each thread */
+    mutable std::vector<nbnxn_search_work_t> work; /* Work array, one entry for each thread */
 };
 
 

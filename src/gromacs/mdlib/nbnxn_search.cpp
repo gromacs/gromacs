@@ -96,7 +96,7 @@ static double Mcyc_av(const nbnxn_cycle_t *cc)
     return (double)cc->c*1e-6/cc->count;
 }
 
-static void nbs_cycle_print(FILE *fp, const nbnxn_search_t nbs)
+static void nbs_cycle_print(FILE *fp, const nbnxn_search *nbs)
 {
     fprintf(fp, "\n");
     fprintf(fp, "ns %4d grid %4.1f search %4.1f red.f %5.3f",
@@ -963,7 +963,7 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
 
 /* Print statistics of a pair list, used for debug output */
 static void print_nblist_statistics_simple(FILE *fp, const nbnxn_pairlist_t *nbl,
-                                           const nbnxn_search_t nbs, real rl)
+                                           const nbnxn_search *nbs, real rl)
 {
     const nbnxn_grid_t *grid;
     int                 cs[SHIFTS];
@@ -1012,7 +1012,7 @@ static void print_nblist_statistics_simple(FILE *fp, const nbnxn_pairlist_t *nbl
 
 /* Print statistics of a pair lists, used for debug output */
 static void print_nblist_statistics_supersub(FILE *fp, const nbnxn_pairlist_t *nbl,
-                                             const nbnxn_search_t nbs, real rl)
+                                             const nbnxn_search *nbs, real rl)
 {
     const nbnxn_grid_t *grid;
     int                 b;
@@ -1587,7 +1587,7 @@ static inline int findJClusterInJList(int                jCluster,
  * as masks in the pair-list for simple list entry iEntry.
  */
 static void
-setExclusionsForSimpleIentry(const nbnxn_search_t  nbs,
+setExclusionsForSimpleIentry(const nbnxn_search   *nbs,
                              nbnxn_pairlist_t     *nbl,
                              gmx_bool              diagRemoved,
                              int                   na_cj_2log,
@@ -1687,7 +1687,7 @@ const int max_nrj_fep = 40;
  * LJ parameters have been zeroed in the nbnxn data structure.
  * Simultaneously make a group pair list for the perturbed pairs.
  */
-static void make_fep_list(const nbnxn_search_t    nbs,
+static void make_fep_list(const nbnxn_search     *nbs,
                           const nbnxn_atomdata_t *nbat,
                           nbnxn_pairlist_t       *nbl,
                           gmx_bool                bDiagRemoved,
@@ -1889,7 +1889,7 @@ static inline int a_mod_wj(int a)
 }
 
 /* As make_fep_list above, but for super/sub lists. */
-static void make_fep_list_supersub(const nbnxn_search_t    nbs,
+static void make_fep_list_supersub(const nbnxn_search     *nbs,
                                    const nbnxn_atomdata_t *nbat,
                                    nbnxn_pairlist_t       *nbl,
                                    gmx_bool                bDiagRemoved,
@@ -2068,7 +2068,7 @@ static void make_fep_list_supersub(const nbnxn_search_t    nbs,
  * as masks in the pair-list for i-super-cluster list entry iEntry.
  */
 static void
-setExclusionsForGpuIentry(const nbnxn_search_t  nbs,
+setExclusionsForGpuIentry(const nbnxn_search   *nbs,
                           nbnxn_pairlist_t     *nbl,
                           gmx_bool              diagRemoved,
                           const nbnxn_sci_t    &iEntry,
@@ -2679,7 +2679,7 @@ static real nonlocal_vol2(const struct gmx_domdec_zones_t *zones, const rvec ls,
 }
 
 /* Estimates the average size of a full j-list for super/sub setup */
-static void get_nsubpair_target(const nbnxn_search_t  nbs,
+static void get_nsubpair_target(const nbnxn_search   *nbs,
                                 int                   iloc,
                                 real                  rlist,
                                 int                   min_ci_balanced,
@@ -2944,7 +2944,7 @@ static void combine_nblists(int nnbl, nbnxn_pairlist_t **nbl,
     }
 }
 
-static void balance_fep_lists(const nbnxn_search_t  nbs,
+static void balance_fep_lists(const nbnxn_search   *nbs,
                               nbnxn_pairlist_set_t *nbl_lists)
 {
     int       nnbl;
@@ -3200,7 +3200,7 @@ static int getBufferFlagShift(int numAtomsPerCluster)
 }
 
 /* Generates the part of pair-list nbl assigned to our thread */
-static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
+static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
                                      const nbnxn_grid_t *gridi,
                                      const nbnxn_grid_t *gridj,
                                      nbnxn_search_work_t *work,
@@ -3812,7 +3812,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     }
 }
 
-static void reduce_buffer_flags(const nbnxn_search_t        nbs,
+static void reduce_buffer_flags(const nbnxn_search         *nbs,
                                 int                         nsrc,
                                 const nbnxn_buffer_flags_t *dest)
 {
@@ -4118,7 +4118,7 @@ static void sort_sci(nbnxn_pairlist_t *nbl)
 }
 
 /* Make a local or non-local pair-list, depending on iloc */
-void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
+void nbnxn_make_pairlist(nbnxn_search         *nbs,
                          nbnxn_atomdata_t     *nbat,
                          const t_blocka       *excl,
                          real                  rlist,
