@@ -871,7 +871,7 @@ ener_file_t open_enx(const char *fn, const char *mode)
     return ef;
 }
 
-t_fileio *enx_file_pointer(const ener_file_t ef)
+t_fileio *enx_file_pointer(const ener_file* ef)
 {
     return ef->fio;
 }
