@@ -84,7 +84,7 @@ void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
 void nbnxn_get_ncells(nbnxn_search_t nbs, int *ncx, int *ncy);
 
 /* Return the order indices of the atoms on the pairlist search grid */
-gmx::ArrayRef<const int> nbnxn_get_atomorder(const nbnxn_search_t nbs);
+gmx::ArrayRef<const int> nbnxn_get_atomorder(const nbnxn_search* nbs);
 
 /* Renumber the atom indices on the grid to consecutive order */
 void nbnxn_set_atomorder(nbnxn_search_t nbs);

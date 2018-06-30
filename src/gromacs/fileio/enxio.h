@@ -159,7 +159,7 @@ void free_enxframe(t_enxframe *ef);
 
 ener_file_t open_enx(const char *fn, const char *mode);
 
-struct t_fileio *enx_file_pointer(const ener_file_t ef);
+struct t_fileio *enx_file_pointer(const ener_file* ef);
 
 /* Free the contents of ef */
 void close_enx(ener_file_t ef);

@@ -78,7 +78,7 @@ static real grid_atom_density(int        numAtoms,
     return numAtoms/(size[XX]*size[YY]*size[ZZ]);
 }
 
-static void set_grid_size_xy(const nbnxn_search_t  nbs,
+static void set_grid_size_xy(const nbnxn_search   *nbs,
                              nbnxn_grid_t         *grid,
                              int                   ddZone,
                              int                   numAtoms,
@@ -794,7 +794,7 @@ static void sort_cluster_on_flag(int                 numAtomsInCluster,
 /* Fill a pair search cell with atoms.
  * Potentially sorts atoms and sets the interaction flags.
  */
-static void fill_cell(const nbnxn_search_t   nbs,
+static void fill_cell(nbnxn_search          *nbs,
                       nbnxn_grid_t          *grid,
                       nbnxn_atomdata_t      *nbat,
                       int                    atomStart,
@@ -923,7 +923,7 @@ static void fill_cell(const nbnxn_search_t   nbs,
 }
 
 /* Spatially sort the atoms within one grid column */
-static void sort_columns_simple(const nbnxn_search_t nbs,
+static void sort_columns_simple(nbnxn_search *nbs,
                                 int dd_zone,
                                 nbnxn_grid_t *grid,
                                 int atomStart, int atomEnd,
@@ -987,7 +987,7 @@ static void sort_columns_simple(const nbnxn_search_t nbs,
 }
 
 /* Spatially sort the atoms within one grid column */
-static void sort_columns_supersub(const nbnxn_search_t nbs,
+static void sort_columns_supersub(nbnxn_search *nbs,
                                   int dd_zone,
                                   nbnxn_grid_t *grid,
                                   int atomStart, int atomEnd,
@@ -1221,7 +1221,7 @@ static void resizeForNumberOfCells(const nbnxn_grid_t &grid,
 }
 
 /* Determine in which grid cells the atoms should go */
-static void calc_cell_indices(const nbnxn_search_t  nbs,
+static void calc_cell_indices(nbnxn_search         *nbs,
                               int                   ddZone,
                               nbnxn_grid_t         *grid,
                               int                   atomStart,
@@ -1524,7 +1524,7 @@ void nbnxn_get_ncells(nbnxn_search_t nbs, int *ncx, int *ncy)
     *ncy = nbs->grid[0].numCells[YY];
 }
 
-gmx::ArrayRef<const int> nbnxn_get_atomorder(const nbnxn_search_t nbs)
+gmx::ArrayRef<const int> nbnxn_get_atomorder(const nbnxn_search *nbs)
 {
     /* Return the atom order for the home cell (index 0) */
     const nbnxn_grid_t &grid       = nbs->grid[0];
