@@ -1658,8 +1658,8 @@ static inline void get_dx_dd(int Nx, real gridx, real rc2, int xgi, real x,
 }
 
 
-#define calc_dx2(XI, YI, ZI, y) (gmx::square(XI-y[XX]) + gmx::square(YI-y[YY]) + gmx::square(ZI-y[ZZ]))
-#define calc_cyl_dx2(XI, YI, y) (gmx::square(XI-y[XX]) + gmx::square(YI-y[YY]))
+#define calc_dx2(XI, YI, ZI, y) (gmx::square((XI)-(y)[XX]) + gmx::square((YI)-(y)[YY]) + gmx::square((ZI)-(y)[ZZ]))
+#define calc_cyl_dx2(XI, YI, y) (gmx::square((XI)-(y)[XX]) + gmx::square((YI)-(y)[YY]))
 /****************************************************
  *
  *    F A S T   N E I G H B O R  S E A R C H I N G

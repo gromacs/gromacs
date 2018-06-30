@@ -45,6 +45,6 @@
 
 #include "pme-gpu-program-impl.h"
 
-PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *) {};
+PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t * /*unused*/) {};
 
 PmeGpuProgramImpl::~PmeGpuProgramImpl() = default;

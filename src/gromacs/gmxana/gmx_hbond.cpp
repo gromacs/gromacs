@@ -104,7 +104,7 @@ static gmx_bool    bDebug = FALSE;
 #define HB_NO 0
 #define HB_YES 1<<0
 #define HB_INS 1<<1
-#define HB_YESINS HB_YES|HB_INS
+#define HB_YESINS (HB_YES|HB_INS)
 #define HB_NR (1<<2)
 #define MAXHYDRO 4
 
@@ -245,8 +245,8 @@ static void add_frames(t_hbdata *hb, int nframes)
     hb->nframes = nframes;
 }
 
-#define OFFSET(frame) (frame / 32)
-#define MASK(frame)   (1 << (frame % 32))
+#define OFFSET(frame) ((frame) / 32)
+#define MASK(frame)   (1 << ((frame) % 32))
 
 static void _set_hb(unsigned int hbexist[], unsigned int frame, gmx_bool bValue)
 {
@@ -3399,7 +3399,7 @@ int gmx_hbond(int argc, char *argv[])
         char **legnames;
         char   buf[STRLEN];
 
-#define USE_THIS_GROUP(j) ( (j == gr0) || (bTwo && (j == gr1)) )
+#define USE_THIS_GROUP(j) ( ((j) == gr0) || (bTwo && ((j) == gr1)) )
 
         fp = xvgropen(opt2fn("-dan", NFILE, fnm),
                       "Donors and Acceptors", output_env_get_xvgr_tlabel(oenv), "Count", oenv);

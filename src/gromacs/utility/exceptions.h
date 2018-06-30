@@ -369,12 +369,16 @@ class GromacsException : public std::exception
  * form to make the simple syntax of GMX_THROW() possible.  To support this,
  * this operation needs to:
  *  - Allow setting information in a temporary to support
- *    `GMX_THROW(InvalidInputError(ex))`.  This is the reason for taking a
- *    const reference and the `const_cast`.
- *  - Return the same reference it takes in, instead of a base class.
- *    The compiler needs this information to throw the correct type of
- *    exception.  This would be tedious to achieve with a member function
- *    (without a lot of code duplication).
+ *    `GMX_THROW(InvalidInputError(ex))`.
+ *  - Return a copy the same class it takes in.  The compiler needs
+ *    this information to throw the correct type of exception.  This
+ *    would be tedious to achieve with a member function (without a
+ *    lot of code duplication).  Generally, \c ex will be a temporary,
+ *    copied twice and returned by value, which the compiler will
+ *    typically elide away (and anyway performance is not important
+ *    when throwing).  We are not using the typical
+ *    return-by-const-reference idiom for this operator so that
+ *    tooling can reliably see that we are throwing by value.
  *  - Provide convenient syntax for adding multiple items.  A non-member
  *    function that would require nested calls would look ugly for such cases.
  *
@@ -385,10 +389,10 @@ class GromacsException : public std::exception
  */
 template <class Exception, class Tag, class T>
 inline
-typename std::enable_if<std::is_base_of<GromacsException, Exception>::value, const Exception &>::type
-operator<<(const Exception &ex, const ExceptionInfo<Tag, T> &item)
+typename std::enable_if<std::is_base_of<GromacsException, Exception>::value, Exception>::type
+operator<<(Exception ex, const ExceptionInfo<Tag, T> &item)
 {
-    const_cast<Exception &>(ex).setInfo(item);
+    ex.setInfo(item);
     return ex;
 }
 
