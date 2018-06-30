@@ -89,5 +89,4 @@ function(gmx_manage_lmfit)
 
         set(HAVE_LMFIT_VALUE FALSE)
     endif()
-    set(HAVE_LMFIT ${HAVE_LMFIT_VALUE} CACHE BOOL "Whether lmfit library support is enabled")
 endfunction()
