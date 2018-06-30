@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -169,7 +169,7 @@ void clear_t_hack(t_hack *hack)
     }
 }
 
-#define safe_strdup(str) ((str != NULL) ? gmx_strdup(str) : NULL)
+#define safe_strdup(str) (((str) != NULL) ? gmx_strdup(str) : NULL)
 
 static void copy_t_rbonded(t_rbonded *s, t_rbonded *d)
 {

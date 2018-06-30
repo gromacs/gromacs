@@ -137,7 +137,7 @@ struct do_fspline
  * This code does not assume any memory alignment for the grid.
  */
     RVec
-    operator()(std::integral_constant<int, 4>) const
+    operator()(std::integral_constant<int, 4> /*unused*/) const
     {
         const int                      norder = nn*4;
         /* Pointer arithmetic alert, next six statements */
@@ -190,7 +190,7 @@ struct do_fspline
 #ifdef PME_SIMD4_SPREAD_GATHER
 /* Load order elements from unaligned memory into two 4-wide SIMD */
     template<int order>
-    static inline void loadOrderU(const real* data, std::integral_constant<int, order>,
+    static inline void loadOrderU(const real* data, std::integral_constant<int, order> /*unused*/,
                                   int offset, Simd4Real* S0, Simd4Real* S1)
     {
 #ifdef PME_SIMD4_UNALIGNED

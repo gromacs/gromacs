@@ -163,13 +163,13 @@ void principal_comp(int n, const int index[], t_atom atom[], rvec x[],
 
     /* Sort eigenvalues in ascending order */
 #define SWAPPER(i)          \
-    if (std::abs(dd[i+1]) < std::abs(dd[i])) {    \
+    if (std::abs(dd[(i)+1]) < std::abs(dd[i])) {    \
         temp = dd[i];         \
         for (j = 0; (j < NDIM); j++) { tvec[j] = ev[j][i]; } \
-        dd[i] = dd[i+1];          \
-        for (j = 0; (j < NDIM); j++) { ev[j][i] = ev[j][i+1]; }        \
-        dd[i+1] = temp;           \
-        for (j = 0; (j < NDIM); j++) { ev[j][i+1] = tvec[j]; }         \
+        dd[i] = dd[(i)+1];          \
+        for (j = 0; (j < NDIM); j++) { ev[j][i] = ev[j][(i)+1]; }        \
+        dd[(i)+1] = temp;           \
+        for (j = 0; (j < NDIM); j++) { ev[j][(i)+1] = tvec[j]; }         \
     }
     SWAPPER(0)
     SWAPPER(1)

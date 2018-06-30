@@ -93,7 +93,7 @@ static const int    nbnxnReferenceNstlist = 10;
 //! The values to try when switching
 const int           nstlist_try[] = { 20, 25, 40, 50, 80, 100 };
 //! Number of elements in the neighborsearch list trials.
-#define NNSTL  sizeof(nstlist_try)/sizeof(nstlist_try[0])
+#define NNSTL  (sizeof(nstlist_try)/sizeof(nstlist_try[0]))
 /* Increase nstlist until the size of the pair-list increased by
  * \p c_nbnxnListSizeFactor??? or more, but never more than
  * \p c_nbnxnListSizeFactor??? + \p c_nbnxnListSizeFactorMargin.

@@ -2771,7 +2771,7 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         v = as_rvec_array(state->v.data());
     }
 
-#define do_test(fio, b, p) if (bRead && (p != NULL) && !b) gmx_fatal(FARGS, "No %s in %s",#p, gmx_fio_getname(fio))
+#define do_test(fio, b, p) if (bRead && ((p) != NULL) && !(b)) gmx_fatal(FARGS, "No %s in %s",#p, gmx_fio_getname(fio))
 
     do_test(fio, tpx.bBox, state->box);
     if (tpx.bBox)

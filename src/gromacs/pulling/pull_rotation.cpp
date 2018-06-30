@@ -221,8 +221,8 @@ typedef struct gmx_enfrotgrp
 #endif
 
 /* Shortcuts for often used queries */
-#define ISFLEX(rg) ( (rg->eType == erotgFLEX) || (rg->eType == erotgFLEXT) || (rg->eType == erotgFLEX2) || (rg->eType == erotgFLEX2T) )
-#define ISCOLL(rg) ( (rg->eType == erotgFLEX) || (rg->eType == erotgFLEXT) || (rg->eType == erotgFLEX2) || (rg->eType == erotgFLEX2T) || (rg->eType == erotgRMPF) || (rg->eType == erotgRM2PF) )
+#define ISFLEX(rg) ( ((rg)->eType == erotgFLEX) || ((rg)->eType == erotgFLEXT) || ((rg)->eType == erotgFLEX2) || ((rg)->eType == erotgFLEX2T) )
+#define ISCOLL(rg) ( ((rg)->eType == erotgFLEX) || ((rg)->eType == erotgFLEXT) || ((rg)->eType == erotgFLEX2) || ((rg)->eType == erotgFLEX2T) || ((rg)->eType == erotgRMPF) || ((rg)->eType == erotgRM2PF) )
 
 
 /* Does any of the rotation groups use slab decomposition? */
@@ -1639,7 +1639,7 @@ static inline void shift_single_coord(const matrix box, rvec x, const ivec is)
 
 /* Determine the 'home' slab of this atom which is the
  * slab with the highest Gaussian weight of all */
-#define round(a) (int)(a+0.5)
+#define round(a) (int)((a)+0.5)
 static inline int get_homeslab(
         rvec curr_x,   /* The position for which the home slab shall be determined */
         rvec rotvec,   /* The rotation vector */

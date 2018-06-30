@@ -220,7 +220,7 @@ void get_pme_ener_vir_lj(struct pme_solve_work_t *work, int nthread,
 
 #if defined PME_SIMD_SOLVE
 /* Calculate exponentials through SIMD */
-inline static void calc_exponentials_q(int, int, real f, ArrayRef<const SimdReal> d_aligned, ArrayRef<const SimdReal> r_aligned, ArrayRef<SimdReal> e_aligned)
+inline static void calc_exponentials_q(int /*unused*/, int /*unused*/, real f, ArrayRef<const SimdReal> d_aligned, ArrayRef<const SimdReal> r_aligned, ArrayRef<SimdReal> e_aligned)
 {
     {
         SimdReal              f_simd(f);
@@ -265,7 +265,7 @@ inline static void calc_exponentials_q(int start, int end, real f, ArrayRef<real
 
 #if defined PME_SIMD_SOLVE
 /* Calculate exponentials through SIMD */
-inline static void calc_exponentials_lj(int, int, ArrayRef<SimdReal> r_aligned, ArrayRef<SimdReal> factor_aligned, ArrayRef<SimdReal> d_aligned)
+inline static void calc_exponentials_lj(int /*unused*/, int /*unused*/, ArrayRef<SimdReal> r_aligned, ArrayRef<SimdReal> factor_aligned, ArrayRef<SimdReal> d_aligned)
 {
     SimdReal              tmp_r, tmp_d, tmp_fac, d_inv, tmp_mk;
     const SimdReal        sqr_PI = sqrt(SimdReal(M_PI));
