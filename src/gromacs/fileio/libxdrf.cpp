@@ -69,7 +69,7 @@ const char *xdr_datatype_names[] =
  | with some routines to assist in this task (those are marked
  | static and cannot be called from user programs)
  */
-#define MAXABS INT_MAX-2
+#define MAXABS (INT_MAX-2)
 
 #ifndef SQR
 #define SQR(x) ((x)*(x))

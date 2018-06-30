@@ -73,8 +73,8 @@
 #include "gromacs/utility/smalloc.h"
 
 #define e2d(x) ENM2DEBYE*(x)
-#define EANG2CM  E_CHARGE*1.0e-10       /* e Angstrom to Coulomb meter */
-#define CM2D  SPEED_OF_LIGHT*1.0e+24    /* Coulomb meter to Debye */
+#define EANG2CM  (E_CHARGE*1.0e-10)       /* e Angstrom to Coulomb meter */
+#define CM2D  (SPEED_OF_LIGHT*1.0e+24)    /* Coulomb meter to Debye */
 
 typedef struct {
     int      nelem;
@@ -532,7 +532,7 @@ static void mol_quad(int k0, int k1, rvec x[], const t_atom atom[], rvec quad)
      * the individual components on the diagonal.
      */
 
-#define delta(a, b) (( a == b ) ? 1.0 : 0.0)
+#define delta(a, b) (( (a) == (b) ) ? 1.0 : 0.0)
 
     for (m = 0; (m < DIM); m++)
     {
@@ -587,10 +587,10 @@ static void mol_quad(int k0, int k1, rvec x[], const t_atom atom[], rvec quad)
      */
 
 #define SWAP(i)                                 \
-    if (dd[i+1] > dd[i]) {                      \
-        tmp     = dd[i];                              \
-        dd[i]   = dd[i+1];                          \
-        dd[i+1] = tmp;                            \
+    if (dd[(i)+1] > dd[i]) {                      \
+        tmp       = dd[i];                              \
+        dd[i]     = dd[(i)+1];                          \
+        dd[(i)+1] = tmp;                            \
     }
     SWAP(0);
     SWAP(1);

@@ -148,7 +148,7 @@ static real calc_cm(int natoms, const real mass[], rvec x[], rvec v[],
 
 #define PVEC(str, v) fprintf(log, \
                              "%s[X]: %10.5e  %s[Y]: %10.5e  %s[Z]: %10.5e\n", \
-                             str, v[0], str, v[1], str, v[2])
+                             str, (v)[0], str, (v)[1], str, (v)[2])
 #ifdef DEBUG
     PVEC("xcm", xcm);
     PVEC("acm", acm);

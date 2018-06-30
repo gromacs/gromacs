@@ -54,9 +54,9 @@
 #include "gromacs/utility/strdb.h"
 
 /* use bonded types definitions in hackblock.h */
-#define ekwRepl ebtsNR+1
-#define ekwAdd  ebtsNR+2
-#define ekwDel  ebtsNR+3
+#define ekwRepl (ebtsNR+1)
+#define ekwAdd  (ebtsNR+2)
+#define ekwDel  (ebtsNR+3)
 #define ekwNR   3
 const char *kw_names[ekwNR] = {
     "replace", "add", "delete"

@@ -150,7 +150,7 @@ gmx_noreturn static void g_error(int line, const char *file)
     gmx_fatal(FARGS, "Trying to print nonexistent graph (file %s, line %d)",
               file, line);
 }
-#define GCHECK(g) if (g == NULL) g_error(__LINE__, __FILE__)
+#define GCHECK(g) if ((g) == NULL) g_error(__LINE__, __FILE__)
 
 void p_graph(FILE *log, const char *title, t_graph *g)
 {

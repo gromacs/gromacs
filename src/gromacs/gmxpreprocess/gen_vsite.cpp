@@ -688,9 +688,9 @@ static void add_vsites(t_params plist[], int vsite_type[],
 
 /* cosine rule: a^2 = b^2 + c^2 - 2 b c cos(alpha) */
 /* get a^2 when a, b and alpha are given: */
-#define cosrule(b, c, alpha) ( gmx::square(b) + gmx::square(c) - 2*b*c*std::cos(alpha) )
+#define cosrule(b, c, alpha) ( gmx::square(b) + gmx::square(c) - 2*(b)*(c)*std::cos(alpha) )
 /* get cos(alpha) when a, b and c are given: */
-#define acosrule(a, b, c) ( (gmx::square(b)+gmx::square(c)-gmx::square(a))/(2*b*c) )
+#define acosrule(a, b, c) ( (gmx::square(b)+gmx::square(c)-gmx::square(a))/(2*(b)*(c)) )
 
 static int gen_vsites_6ring(t_atoms *at, int *vsite_type[], t_params plist[],
                             int nrfound, int *ats, real bond_cc, real bond_ch,
