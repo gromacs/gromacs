@@ -224,11 +224,11 @@ static void make_thread_local_ind(const pme_atomcomm_t *atc,
             dr  = xptr[j];                         \
                                                \
             /* dr is relative offset from lower cell limit */ \
-            data[order-1] = 0;                     \
-            data[1]       = dr;                          \
-            data[0]       = 1 - dr;                      \
+            data[(order)-1] = 0;                     \
+            data[1]         = dr;                          \
+            data[0]         = 1 - dr;                      \
                                                \
-            for (int k = 3; (k < order); k++)      \
+            for (int k = 3; (k < (order)); k++)      \
             {                                      \
                 div       = 1.0/(k - 1.0);               \
                 data[k-1] = div*dr*data[k-2];      \
@@ -240,24 +240,24 @@ static void make_thread_local_ind(const pme_atomcomm_t *atc,
                 data[0] = div*(1-dr)*data[0];      \
             }                                      \
             /* differentiate */                    \
-            dtheta[j][i*order+0] = -data[0];       \
-            for (int k = 1; (k < order); k++)      \
+            dtheta[j][i*(order)+0] = -data[0];       \
+            for (int k = 1; (k < (order)); k++)      \
             {                                      \
-                dtheta[j][i*order+k] = data[k-1] - data[k]; \
+                dtheta[j][i*(order)+k] = data[k-1] - data[k]; \
             }                                      \
                                                \
-            div           = 1.0/(order - 1);                 \
-            data[order-1] = div*dr*data[order-2];  \
-            for (int l = 1; (l < (order-1)); l++)  \
+            div             = 1.0/((order) - 1);                 \
+            data[(order)-1] = div*dr*data[(order)-2];  \
+            for (int l = 1; (l < ((order)-1)); l++)  \
             {                                      \
-                data[order-l-1] = div*((dr+l)*data[order-l-2]+    \
-                                       (order-l-dr)*data[order-l-1]); \
+                data[(order)-l-1] = div*((dr+l)*data[(order)-l-2]+    \
+                                         ((order)-l-dr)*data[(order)-l-1]); \
             }                                      \
             data[0] = div*(1 - dr)*data[0];        \
                                                \
-            for (int k = 0; k < order; k++)        \
+            for (int k = 0; k < (order); k++)        \
             {                                      \
-                theta[j][i*order+k]  = data[k];    \
+                theta[j][i*(order)+k]  = data[k];    \
             }                                      \
         }                                          \
     }
@@ -293,17 +293,17 @@ static void make_bsplines(splinevec theta, splinevec dtheta, int order,
 
 /* This has to be a macro to enable full compiler optimization with xlC (and probably others too) */
 #define DO_BSPLINE(order)                            \
-    for (ithx = 0; (ithx < order); ithx++)                    \
+    for (ithx = 0; (ithx < (order)); ithx++)                    \
     {                                                    \
         index_x = (i0+ithx)*pny*pnz;                     \
         valx    = coefficient*thx[ithx];                          \
                                                      \
-        for (ithy = 0; (ithy < order); ithy++)                \
+        for (ithy = 0; (ithy < (order)); ithy++)                \
         {                                                \
             valxy    = valx*thy[ithy];                   \
             index_xy = index_x+(j0+ithy)*pnz;            \
                                                      \
-            for (ithz = 0; (ithz < order); ithz++)            \
+            for (ithz = 0; (ithz < (order)); ithz++)            \
             {                                            \
                 index_xyz        = index_xy+(k0+ithz);   \
                 grid[index_xyz] += valxy*thz[ithz];      \

@@ -495,14 +495,14 @@ static float subc_bb_dist2_simd4(int                              si,
         Simd4Float        d2x, d2y, d2z;                       \
         Simd4Float        d2s, d2t;                            \
                                                  \
-        shi = si*NNBSBB_D*DIM;                       \
+        shi = (si)*NNBSBB_D*DIM;                       \
                                                  \
-        xi_l = load4(bb_i+shi+0*STRIDE_PBB);   \
-        yi_l = load4(bb_i+shi+1*STRIDE_PBB);   \
-        zi_l = load4(bb_i+shi+2*STRIDE_PBB);   \
-        xi_h = load4(bb_i+shi+3*STRIDE_PBB);   \
-        yi_h = load4(bb_i+shi+4*STRIDE_PBB);   \
-        zi_h = load4(bb_i+shi+5*STRIDE_PBB);   \
+        xi_l = load4((bb_i)+shi+0*STRIDE_PBB);   \
+        yi_l = load4((bb_i)+shi+1*STRIDE_PBB);   \
+        zi_l = load4((bb_i)+shi+2*STRIDE_PBB);   \
+        xi_h = load4((bb_i)+shi+3*STRIDE_PBB);   \
+        yi_h = load4((bb_i)+shi+4*STRIDE_PBB);   \
+        zi_h = load4((bb_i)+shi+5*STRIDE_PBB);   \
                                                  \
         dx_0 = xi_l - xj_h;                 \
         dy_0 = yi_l - yj_h;                 \
@@ -527,7 +527,7 @@ static float subc_bb_dist2_simd4(int                              si,
         d2s  = d2x + d2y;                   \
         d2t  = d2s + d2z;                   \
                                                  \
-        store4(d2+si, d2t);                      \
+        store4((d2)+(si), d2t);                      \
     }
 
 /* 4-wide SIMD code for nsi bb distances for bb format xxxxyyyyzzzz */

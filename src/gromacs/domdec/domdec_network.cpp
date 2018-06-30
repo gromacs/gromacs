@@ -55,7 +55,7 @@
 
 
 /*! \brief Returns the MPI rank of the domain decomposition master rank */
-#define DDMASTERRANK(dd)   (dd->masterrank)
+#define DDMASTERRANK(dd)   ((dd)->masterrank)
 
 
 /*! \brief Move data of type \p T in the communication region one cell along

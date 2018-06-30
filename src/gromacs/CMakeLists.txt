@@ -277,15 +277,20 @@ if (GMX_CLANG_TIDY)
    if(CMAKE_VERSION VERSION_LESS "3.6")
        message(ERROR "clang-tidy support requires cmake 3.6.")
    endif()
-   set_target_properties(libgromacs PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_EXE};--checks=\
-       -clang-analyzer-security.insecureAPI.strcpy,\
-       bugprone-*,misc-*,readability-*,performance-*,mpi-*,\
-       -misc-misplaced-widening-cast,-readability-named-parameter,\
-       -misc-misplaced-const,\
-       -misc-incorrect-roundings,-misc-macro-parentheses,-readability-function-size,-readability-else-after-return,\
-       -readability-inconsistent-declaration-parameter-name,-misc-throw-by-value-catch-by-reference,\
-       -readability-implicit-bool-conversion,\
-       modernize-use-nullptr,modernize-use-emplace;-warnings-as-errors=*;-fix")
+   set(CLANG_TIDY_CHECKS
+       "-clang-analyzer-security.insecureAPI.strcpy"
+       "bugprone-*" "misc-*" "readability-*" "performance-*" "mpi-*"
+       "-misc-misplaced-widening-cast"
+       "-misc-misplaced-const"
+       "-misc-incorrect-roundings" #TODO: #2562
+       "-readability-else-after-return"
+       "-readability-inconsistent-declaration-parameter-name"
+       "-readability-implicit-bool-conversion" #TODO: Remove gmx_bool
+       "modernize-use-nullptr" "modernize-use-emplace"
+       )
+   string(REPLACE ";" "," CLANG_TIDY_CHECKS "${CLANG_TIDY_CHECKS}")
+   set_target_properties(libgromacs PROPERTIES CXX_CLANG_TIDY
+       "${CLANG_TIDY_EXE};--checks=${CLANG_TIDY_CHECKS};-warnings-as-errors=*;-fix")
 endif()
 
 gmx_write_installed_header_list()

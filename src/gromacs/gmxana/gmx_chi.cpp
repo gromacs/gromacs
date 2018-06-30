@@ -130,7 +130,7 @@ static gmx_bool bAllowed(real phi, real psi)
 #define NPP asize(map)
     int                x, y;
 
-#define INDEX(ppp) (((static_cast<int> (360+ppp*RAD2DEG)) % 360)/6)
+#define INDEX(ppp) (((static_cast<int> (360+(ppp)*RAD2DEG)) % 360)/6)
     x = INDEX(phi);
     y = INDEX(psi);
 #undef INDEX
