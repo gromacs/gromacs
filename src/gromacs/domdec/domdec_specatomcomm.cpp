@@ -470,13 +470,10 @@ int setup_specat_communication(gmx_domdec_t               *dd,
             for (int i = 0; i < nr; i++)
             {
                 indr = (*ireq)[start + i];
-                ind  = -1;
-                /* Check if this is a home atom and if so ind will be set */
-                if (!dd->ga2la->getHome(indr, &ind))
-                {
-                    /* Search in the communicated atoms */
-                    ind = gmx_hash_get_minone(ga2la_specat, indr);
-                }
+                /* Check if this is a home atom */
+                const int* pInd = dd->ga2la->findHome(indr);
+                /* In not search in the communicated atoms */
+                ind = pInd ? *pInd : gmx_hash_get_minone(ga2la_specat, indr);
                 if (ind >= 0)
                 {
                     if (i < n0 || !spac->sendAtom[ind])

@@ -887,14 +887,10 @@ add_ifunc_for_vsites(t_iatom *tiatoms, const gmx_ga2la_t &ga2la,
 
     for (int k = 2; k < 1+nral; k++)
     {
-        int ak_gl = a_gl + iatoms[k] - a_mol;
-        if (!ga2la.getHome(ak_gl, &tiatoms[k]))
-        {
-            /* Copy the global index, convert later in make_local_vsites */
-            tiatoms[k] = -(ak_gl + 1);
-        }
-        // Note that ga2la_get_home always sets the third parameter if
-        // it returns TRUE
+        int        ak_gl = a_gl + iatoms[k] - a_mol;
+        const int* pla   = ga2la.findHome(ak_gl);
+        /* If not found, copy the global index, convert later in make_local_vsites */
+        tiatoms[k] = pla ? *pla : -(ak_gl + 1);
     }
     for (int k = 0; k < 1+nral; k++)
     {
@@ -1373,7 +1369,7 @@ check_assign_interactions_atom(int i, int i_gl,
                 /* This is a two-body interaction, we can assign
                  * analogous to the non-bonded assignments.
                  */
-                int k_gl, a_loc, kz;
+                int k_gl;
 
                 if (!bInterMolInteractions)
                 {
@@ -1384,12 +1380,14 @@ check_assign_interactions_atom(int i, int i_gl,
                 {
                     k_gl = iatoms[2];
                 }
-                if (!dd->ga2la->get(k_gl, &a_loc, &kz))
+                if (auto entry = dd->ga2la->find(k_gl))
                 {
                     bUse = FALSE;
                 }
                 else
                 {
+                    int       kz    = entry->cell;
+                    const int a_loc = entry->la;
                     if (kz >= zones->n)
                     {
                         kz -= zones->n;
@@ -1433,9 +1431,7 @@ check_assign_interactions_atom(int i, int i_gl,
                 clear_ivec(k_plus);
                 for (k = 1; k <= nral && bUse; k++)
                 {
-                    gmx_bool bLocal;
-                    int      k_gl, a_loc;
-                    int      kz;
+                    int      k_gl;
 
                     if (!bInterMolInteractions)
                     {
@@ -1446,8 +1442,8 @@ check_assign_interactions_atom(int i, int i_gl,
                     {
                         k_gl = iatoms[k];
                     }
-                    bLocal = dd->ga2la->get(k_gl, &a_loc, &kz);
-                    if (!bLocal || kz >= zones->n)
+                    const auto entry = dd->ga2la->find(k_gl);
+                    if (!entry || entry->cell >= zones->n)
                     {
                         /* We do not have this atom of this interaction
                          * locally, or it comes from more than one cell
@@ -1459,10 +1455,10 @@ check_assign_interactions_atom(int i, int i_gl,
                     {
                         int d;
 
-                        tiatoms[k] = a_loc;
+                        tiatoms[k] = entry->la;
                         for (d = 0; d < DIM; d++)
                         {
-                            if (zones->shift[kz][d] == 0)
+                            if (zones->shift[entry->cell][d] == 0)
                             {
                                 k_zero[d] = k;
                             }
@@ -1629,7 +1625,6 @@ static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     int                n_excl_at_max;
     int                mb, mt, mol;
     const t_blocka    *excls;
-    int                cell;
 
     const gmx_ga2la_t &ga2la  = *dd->ga2la;
 
@@ -1695,23 +1690,23 @@ static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                          * to the DD cutoff (not cutoff_min as
                          * for the other bonded interactions).
                          */
-                        if (ga2la.get(a_gl + aj_mol - a_mol, &jla, &cell))
+                        if (const auto entry = ga2la.find(a_gl + aj_mol - a_mol))
                         {
-                            if (iz == 0 && cell == 0)
+                            if (iz == 0 && entry->cell == 0)
                             {
-                                lexcls->a[n++] = jla;
+                                lexcls->a[n++] = entry->la;
                                 /* Check to avoid double counts */
-                                if (jla > la)
+                                if (entry->la > la)
                                 {
                                     count++;
                                 }
                             }
-                            else if (jRange.inRange(jla) &&
+                            else if (jRange.inRange(entry->la) &&
                                      (!bRCheck ||
-                                      dd_dist2(pbc_null, cg_cm, la2lc, la, jla) < rc2))
+                                      dd_dist2(pbc_null, cg_cm, la2lc, la, entry->la) < rc2))
                             {
                                 /* jla > la, since jRange.begin() > la */
-                                lexcls->a[n++] = jla;
+                                lexcls->a[n++] = entry->la;
                                 count++;
                             }
                         }
@@ -1803,19 +1798,19 @@ static void make_exclusions_zone(gmx_domdec_t *dd,
             excls = &moltype[mt].excls;
             for (j = excls->index[a_mol]; j < excls->index[a_mol + 1]; j++)
             {
-                int aj_mol, at_j, cell;
+                int aj_mol;
 
                 aj_mol = excls->a[j];
 
-                if (ga2la.get(a_gl + aj_mol - a_mol, &at_j, &cell))
+                if (const auto entry = ga2la.find(a_gl + aj_mol - a_mol))
                 {
                     /* This check is not necessary, but it can reduce
                      * the number of exclusions in the list, which in turn
                      * can speed up the pair list construction a bit.
                      */
-                    if (jRange.inRange(at_j))
+                    if (jRange.inRange(entry->la))
                     {
-                        lexcls->a[n++] = at_j;
+                        lexcls->a[n++] = entry->la;
                     }
                 }
             }

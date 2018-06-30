@@ -64,7 +64,7 @@ dd_make_local_group_indices(const gmx_ga2la_t *ga2la,
 {
     GMX_ASSERT(ga2la, "We need a valid ga2la object");
 
-    int  i, ii;
+    int  i;
     int  localnr;
 
 
@@ -73,7 +73,7 @@ dd_make_local_group_indices(const gmx_ga2la_t *ga2la,
     localnr = 0;
     for (i = 0; i < nr; i++)
     {
-        if (ga2la->getHome(anrs[i], &ii))
+        if (const int* pa = ga2la->findHome(anrs[i]))
         {
             /* The atom with this index is a home atom */
             if (localnr >= *nalloc_loc) /* Check whether memory suffices */
@@ -84,7 +84,7 @@ dd_make_local_group_indices(const gmx_ga2la_t *ga2la,
                 srenew(*anrs_loc, *nalloc_loc);
             }
             /* Save the atoms index in the local atom numbers array */
-            (*anrs_loc)[localnr] = ii;
+            (*anrs_loc)[localnr] = *pa;
 
             if (coll_ind != nullptr)
             {

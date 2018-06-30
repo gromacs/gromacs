@@ -1793,10 +1793,8 @@ static void make_local_pull_group(const gmx_ga2la_t *ga2la,
         ii = pg->params.ind[i];
         if (ga2la)
         {
-            if (!ga2la->getHome(ii, &ii))
-            {
-                ii = -1;
-            }
+            const int* pa = ga2la->findHome(ii);
+            ii = pa ? *pa : -1;
         }
         if (ii >= start && ii < end)
         {

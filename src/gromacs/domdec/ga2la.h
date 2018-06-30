@@ -83,12 +83,10 @@ class gmx_ga2la_t
             bUsingDirect ? data_.direct.~vector() : data_.hashed.~unordered_map();
         }
 
-        //! Return read/write reference to entry. Inserts entry if not found.
         Entry &operator[](int a_gl)
         {
             return bUsingDirect ? data_.direct[a_gl] : data_.hashed[a_gl];
         }
-
         /*! \brief Delete the entry for global atom a_gl
          *
          * \param[in]     a_gl  The global atom index
@@ -105,7 +103,6 @@ class gmx_ga2la_t
             }
         }
 
-        //! Finds entry in map. Returns nullptr if not found.
         const Entry* find(int a_gl) const
         {
             if (bUsingDirect)
@@ -126,7 +123,7 @@ class gmx_ga2la_t
             return (e && e->cell == 0) ? &(e->la) : nullptr;
         }
 
-        //! Clear all the entries in the list.
+        /*! \brief Clear all the entries in the list */
         void clear()
         {
             if (bUsingDirect)
@@ -137,29 +134,6 @@ class gmx_ga2la_t
             {
                 data_.hashed.clear();
             }
-        }
-
-        //DEPRECATED
-        bool getHome(int a_gl, int* la) const
-        {
-            if (const int* const pa = findHome(a_gl))
-            {
-                *la = *pa;
-                return true;
-            }
-            return false;
-        }
-
-        //DEPRECATED
-        bool get(int a_gl, int *la, int *cell) const
-        {
-            if (const Entry* const e = find(a_gl))
-            {
-                *la   = e->la;
-                *cell = e->cell;
-                return true;
-            }
-            return false;
         }
 
     private:

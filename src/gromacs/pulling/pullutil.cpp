@@ -136,13 +136,11 @@ static void pull_set_pbcatom(const t_commrec *cr, pull_group_work_t *pgrp,
                              const rvec *x,
                              rvec x_pbc)
 {
-    int a;
-
     if (cr != nullptr && DOMAINDECOMP(cr))
     {
-        if (cr->dd->ga2la->getHome(pgrp->params.pbcatom, &a))
+        if (const int* pa = cr->dd->ga2la->findHome(pgrp->params.pbcatom))
         {
-            copy_rvec(x[a], x_pbc);
+            copy_rvec(x[*pa], x_pbc);
         }
         else
         {
@@ -264,10 +262,8 @@ static void make_cyl_refgrps(const t_commrec *cr,
                 ii = pref->params.ind[i];
                 if (ga2la)
                 {
-                    if (!ga2la->getHome(pref->params.ind[i], &ii))
-                    {
-                        ii = -1;
-                    }
+                    const int* pa = ga2la->findHome(pref->params.ind[i]);
+                    ii = pa ? *pa : -1;
                 }
                 if (ii >= start && ii < end)
                 {

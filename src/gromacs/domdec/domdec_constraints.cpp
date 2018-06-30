@@ -167,19 +167,18 @@ static void walk_out(int con, int con_offset, int a, int offset, int nrec,
         a1_gl = offset + iap[1];
         a2_gl = offset + iap[2];
         /* The following indexing code can probably be optizimed */
-        int a_loc;
-        if (ga2la.getHome(a1_gl, &a_loc))
+        if (const int* a_loc = ga2la.findHome(a1_gl))
         {
-            il_local->iatoms[il_local->nr++] = a_loc;
+            il_local->iatoms[il_local->nr++] = *a_loc;
         }
         else
         {
             /* We set this index later */
             il_local->iatoms[il_local->nr++] = -a1_gl - 1;
         }
-        if (ga2la.getHome(a2_gl, &a_loc))
+        if (const int* a_loc = ga2la.findHome(a2_gl))
         {
-            il_local->iatoms[il_local->nr++] = a_loc;
+            il_local->iatoms[il_local->nr++] = *a_loc;
         }
         else
         {
@@ -258,14 +257,14 @@ static void atoms_to_settles(gmx_domdec_t *dd,
 
                     t_iatom *ia1     = mtop->moltype[molb->type].ilist[F_SETTLE].iatoms;
 
-                    int      a_gls[3], a_locs[3];
+                    int      a_gls[3];
                     gmx_bool bAssign = FALSE;
                     int      nlocal  = 0;
                     for (int sa = 0; sa < nral; sa++)
                     {
                         int a_glsa = offset + ia1[settle*(1+nral)+1+sa];
                         a_gls[sa]  = a_glsa;
-                        if (ga2la.getHome(a_glsa, &a_locs[sa]))
+                        if (ga2la.findHome(a_glsa))
                         {
                             if (nlocal == 0 && a_gl == a_glsa)
                             {
@@ -287,9 +286,9 @@ static void atoms_to_settles(gmx_domdec_t *dd,
 
                         for (int sa = 0; sa < nral; sa++)
                         {
-                            if (ga2la.getHome(a_gls[sa], &a_locs[sa]))
+                            if (const int* a_locs = ga2la.findHome(a_gls[sa]))
                             {
-                                ils_local->iatoms[ils_local->nr++] = a_locs[sa];
+                                ils_local->iatoms[ils_local->nr++] = *a_locs;
                             }
                             else
                             {
@@ -319,7 +318,7 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
     const t_blocka             *at2con;
     int                         ncon1;
     t_iatom                    *ia1, *ia2, *iap;
-    int                         a_loc, b_lo, offset, b_mol, i, con, con_offset;
+    int                         b_lo, offset, b_mol, i, con, con_offset;
 
     gmx_domdec_constraints_t   *dc     = dd->constraints;
     gmx_domdec_specat_comm_t   *dcc    = dd->constraint_comm;
@@ -370,7 +369,7 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
                     {
                         b_mol = iap[1];
                     }
-                    if (ga2la.getHome(offset + b_mol, &a_loc))
+                    if (const int* a_loc = ga2la.findHome(offset + b_mol))
                     {
                         /* Add this fully home constraint at the first atom */
                         if (a_mol < b_mol)
@@ -382,7 +381,7 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
                                 ilc_local->nalloc = over_alloc_dd(ilc_local->nr + 3);
                                 srenew(ilc_local->iatoms, ilc_local->nalloc);
                             }
-                            b_lo = a_loc;
+                            b_lo = *a_loc;
                             ilc_local->iatoms[ilc_local->nr++] = iap[0];
                             ilc_local->iatoms[ilc_local->nr++] = (a_gl == iap[1] ? a    : b_lo);
                             ilc_local->iatoms[ilc_local->nr++] = (a_gl == iap[1] ? b_lo : a   );
