@@ -143,7 +143,7 @@ int get_atomtype_ptype(int nt, gpp_atomtype_t ga)
     return ga->atom[nt].ptype;
 }
 
-int get_atomtype_batype(int nt, gpp_atomtype_t ga)
+int get_atomtype_batype(int nt, const gpp_atomtype* ga)
 {
     if ((nt < 0) || (nt >= ga->nr))
     {

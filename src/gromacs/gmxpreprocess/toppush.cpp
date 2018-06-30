@@ -1586,7 +1586,7 @@ static gmx_bool default_cmap_params(t_params bondtype[],
  */
 static int natom_match(t_param *pi,
                        int type_i, int type_j, int type_k, int type_l,
-                       const gpp_atomtype_t atype)
+                       const gpp_atomtype* atype)
 {
     if ((pi->ai() == -1 || get_atomtype_batype(type_i, atype) == pi->ai()) &&
         (pi->aj() == -1 || get_atomtype_batype(type_j, atype) == pi->aj()) &&

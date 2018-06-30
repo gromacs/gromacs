@@ -281,7 +281,6 @@ if (GMX_CLANG_TIDY)
        "-clang-analyzer-security.insecureAPI.strcpy"
        "bugprone-*" "misc-*" "readability-*" "performance-*" "mpi-*"
        "-misc-misplaced-widening-cast"
-       "-misc-misplaced-const"
        "-misc-incorrect-roundings" #TODO: #2562
        "-readability-else-after-return"
        "-readability-inconsistent-declaration-parameter-name"

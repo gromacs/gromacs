@@ -61,7 +61,7 @@ real get_atomtype_massB(int nt, gpp_atomtype_t at);
 real get_atomtype_qA(int nt, gpp_atomtype_t at);
 real get_atomtype_qB(int nt, gpp_atomtype_t at);
 int get_atomtype_ptype(int nt, gpp_atomtype_t at);
-int get_atomtype_batype(int nt, gpp_atomtype_t at);
+int get_atomtype_batype(int nt, const gpp_atomtype* at);
 int get_atomtype_atomnumber(int nt, gpp_atomtype_t at);
 
 /* Return the above variable for atomtype nt, or NOTSET if not found */
