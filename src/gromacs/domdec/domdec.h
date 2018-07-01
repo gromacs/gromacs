@@ -388,6 +388,7 @@ gmx::ArrayRef<const int> dd_constraints_nlocalatoms(const gmx_domdec_t *dd);
 /* In domdec_top.c */
 
 /*! \brief Print error output when interactions are missing */
+[[ noreturn ]]
 void dd_print_missing_interactions(FILE *fplog, struct t_commrec *cr,
                                    int local_count,
                                    const gmx_mtop_t *top_global,

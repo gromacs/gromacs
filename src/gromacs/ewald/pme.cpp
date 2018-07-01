@@ -568,7 +568,7 @@ bool gmx_pme_check_restrictions(int pme_order,
         std::string message = gmx::formatString(
                     "pme_order (%d) is larger than the maximum allowed value (%d). Modify and recompile the code if you really need such a high order.",
                     pme_order, PME_ORDER_MAX);
-        GMX_THROW(InconsistentInputError(message));
+        GMX_THROW(gmx::InconsistentInputError(message));
     }
 
     const int minGridSize = minimalPmeGridSize(pme_order);
@@ -583,7 +583,7 @@ bool gmx_pme_check_restrictions(int pme_order,
         std::string message = gmx::formatString(
                     "The PME grid sizes need to be >= 2*(pme_order-1) (%d)",
                     minGridSize);
-        GMX_THROW(InconsistentInputError(message));
+        GMX_THROW(gmx::InconsistentInputError(message));
     }
 
     /* Check for a limitation of the (current) sum_fftgrid_dd code.
@@ -633,7 +633,7 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
         fprintf(debug, "Creating PME data structures.\n");
     }
 
-    unique_cptr<gmx_pme_t, gmx_pme_destroy> pme(new gmx_pme_t());
+    gmx::unique_cptr<gmx_pme_t, gmx_pme_destroy> pme(new gmx_pme_t());
 
     pme->sum_qgrid_tmp       = nullptr;
     pme->sum_qgrid_dd_tmp    = nullptr;

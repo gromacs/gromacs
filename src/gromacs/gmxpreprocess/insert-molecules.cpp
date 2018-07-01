@@ -350,8 +350,6 @@ class InsertMolecules : public ICommandLineOptionsModule, public ITopologyProvid
         virtual int run();
 
     private:
-        void loadSolute();
-
         SelectionCollection selections_;
 
         std::string         inputConfFile_;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,7 @@ class IKeyValueTreeErrorHandler
         virtual bool onError(UserInputError *ex, const KeyValueTreePath &context) = 0;
 
     protected:
-        ~IKeyValueTreeErrorHandler();
+        virtual ~IKeyValueTreeErrorHandler();
 };
 
 //! \cond libapi

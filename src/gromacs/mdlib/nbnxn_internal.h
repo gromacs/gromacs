@@ -48,8 +48,6 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
-using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
-
 struct gmx_domdec_zones_t;
 
 
@@ -179,12 +177,12 @@ struct nbnxn_grid_t
     std::vector<int> nsubc;         /* The number of sub cells for each super cell */
 
     /* Bounding boxes */
-    std::vector<float>                                    bbcz;           /* Bounding boxes in z for the cells */
-    std::vector < nbnxn_bb_t, AlignedAllocator < nbnxn_bb_t>> bb;         /* 3D bounding boxes for the sub cells */
-    std::vector < nbnxn_bb_t, AlignedAllocator < nbnxn_bb_t>> bbjStorage; /* 3D j-bounding boxes for the case where
-                                                                           * the i- and j-cluster sizes are different */
-    gmx::ArrayRef<nbnxn_bb_t>                              bbj;           /* 3D j-bounding boxes */
-    std::vector < float, AlignedAllocator < float>>            pbb;       /* 3D b. boxes in xxxx format per super cell   */
+    std::vector<float>                                    bbcz;                /* Bounding boxes in z for the cells */
+    std::vector < nbnxn_bb_t, gmx::AlignedAllocator < nbnxn_bb_t>> bb;         /* 3D bounding boxes for the sub cells */
+    std::vector < nbnxn_bb_t, gmx::AlignedAllocator < nbnxn_bb_t>> bbjStorage; /* 3D j-bounding boxes for the case where
+                                                                                * the i- and j-cluster sizes are different */
+    gmx::ArrayRef<nbnxn_bb_t>                              bbj;                /* 3D j-bounding boxes */
+    std::vector < float, gmx::AlignedAllocator < float>>            pbb;       /* 3D b. boxes in xxxx format per super cell   */
 
     /* Bit-flag information */
     std::vector<int>          flags;     /* Flags for properties of clusters in each cell */

@@ -234,12 +234,12 @@ static void sum_forces(rvec f[], gmx::ArrayRef<const gmx::RVec> forceToAdd)
     }
 }
 
-static void pme_gpu_reduce_outputs(gmx_wallcycle_t            wcycle,
-                                   ForceWithVirial           *forceWithVirial,
-                                   ArrayRef<const gmx::RVec>  pmeForces,
-                                   gmx_enerdata_t            *enerd,
-                                   const tensor               vir_Q,
-                                   real                       Vlr_q)
+static void pme_gpu_reduce_outputs(gmx_wallcycle_t                 wcycle,
+                                   gmx::ForceWithVirial           *forceWithVirial,
+                                   gmx::ArrayRef<const gmx::RVec>  pmeForces,
+                                   gmx_enerdata_t                 *enerd,
+                                   const tensor                    vir_Q,
+                                   real                            Vlr_q)
 {
     wallcycle_start(wcycle, ewcPME_GPU_F_REDUCTION);
     GMX_ASSERT(forceWithVirial, "Invalid force pointer");
@@ -279,8 +279,8 @@ static void calc_virial(int start, int homenr, rvec x[], rvec f[],
 
 static void pull_potential_wrapper(const t_commrec *cr,
                                    const t_inputrec *ir,
-                                   matrix box, ArrayRef<const RVec> x,
-                                   ForceWithVirial *force,
+                                   matrix box, gmx::ArrayRef<const gmx::RVec> x,
+                                   gmx::ForceWithVirial *force,
                                    const t_mdatoms *mdatoms,
                                    gmx_enerdata_t *enerd,
                                    real *lambda,
@@ -303,10 +303,10 @@ static void pull_potential_wrapper(const t_commrec *cr,
     wallcycle_stop(wcycle, ewcPULLPOT);
 }
 
-static void pme_receive_force_ener(const t_commrec *cr,
-                                   ForceWithVirial *forceWithVirial,
-                                   gmx_enerdata_t  *enerd,
-                                   gmx_wallcycle_t  wcycle)
+static void pme_receive_force_ener(const t_commrec      *cr,
+                                   gmx::ForceWithVirial *forceWithVirial,
+                                   gmx_enerdata_t       *enerd,
+                                   gmx_wallcycle_t       wcycle)
 {
     real   e_q, e_lj, dvdl_q, dvdl_lj;
     float  cycles_ppdpme, cycles_seppme;
@@ -369,21 +369,21 @@ static void print_large_forces(FILE            *fp,
     }
 }
 
-static void post_process_forces(const t_commrec      *cr,
-                                gmx_int64_t           step,
-                                t_nrnb               *nrnb,
-                                gmx_wallcycle_t       wcycle,
-                                const gmx_localtop_t *top,
-                                matrix                box,
-                                rvec                  x[],
-                                rvec                  f[],
-                                ForceWithVirial      *forceWithVirial,
-                                tensor                vir_force,
-                                const t_mdatoms      *mdatoms,
-                                t_graph              *graph,
-                                t_forcerec           *fr,
-                                const gmx_vsite_t    *vsite,
-                                int                   flags)
+static void post_process_forces(const t_commrec           *cr,
+                                gmx_int64_t                step,
+                                t_nrnb                    *nrnb,
+                                gmx_wallcycle_t            wcycle,
+                                const gmx_localtop_t      *top,
+                                matrix                     box,
+                                rvec                       x[],
+                                rvec                       f[],
+                                gmx::ForceWithVirial      *forceWithVirial,
+                                tensor                     vir_force,
+                                const t_mdatoms           *mdatoms,
+                                t_graph                   *graph,
+                                t_forcerec                *fr,
+                                const gmx_vsite_t         *vsite,
+                                int                        flags)
 {
     if (fr->haveDirectVirialContributions)
     {
@@ -824,23 +824,23 @@ static void checkPotentialEnergyValidity(gmx_int64_t           step,
  * \todo Convert all other algorithms called here to ForceProviders.
  */
 static void
-computeSpecialForces(FILE                *fplog,
-                     const t_commrec     *cr,
-                     const t_inputrec    *inputrec,
-                     gmx::Awh            *awh,
-                     gmx_int64_t          step,
-                     double               t,
-                     gmx_wallcycle_t      wcycle,
-                     ForceProviders      *forceProviders,
-                     matrix               box,
-                     ArrayRef<const RVec> x,
-                     const t_mdatoms     *mdatoms,
-                     real                *lambda,
-                     int                  forceFlags,
-                     ForceWithVirial     *forceWithVirial,
-                     gmx_enerdata_t      *enerd,
-                     const gmx_edsam     *ed,
-                     gmx_bool             bNS)
+computeSpecialForces(FILE                          *fplog,
+                     const t_commrec               *cr,
+                     const t_inputrec              *inputrec,
+                     gmx::Awh                      *awh,
+                     gmx_int64_t                    step,
+                     double                         t,
+                     gmx_wallcycle_t                wcycle,
+                     ForceProviders                *forceProviders,
+                     matrix                         box,
+                     gmx::ArrayRef<const gmx::RVec> x,
+                     const t_mdatoms               *mdatoms,
+                     real                          *lambda,
+                     int                            forceFlags,
+                     gmx::ForceWithVirial          *forceWithVirial,
+                     gmx_enerdata_t                *enerd,
+                     const gmx_edsam               *ed,
+                     gmx_bool                       bNS)
 {
     const bool computeForces = (forceFlags & GMX_FORCE_FORCES);
 
@@ -849,8 +849,8 @@ computeSpecialForces(FILE                *fplog,
      */
     if (computeForces)
     {
-        ForceProviderInput  forceProviderInput(x, *mdatoms, t, box, *cr);
-        ForceProviderOutput forceProviderOutput(forceWithVirial, enerd);
+        gmx::ForceProviderInput  forceProviderInput(x, *mdatoms, t, box, *cr);
+        gmx::ForceProviderOutput forceProviderOutput(forceWithVirial, enerd);
 
         /* Collect forces from modules */
         forceProviders->calculateForces(forceProviderInput, &forceProviderOutput);
@@ -953,14 +953,14 @@ static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
  * \param[in]     flags            Force flags
  * \param[in]     wcycle           The wallcycle structure
  */
-static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t             *nbv,
-                                        const gmx_pme_t                *pmedata,
-                                        gmx::PaddedArrayRef<gmx::RVec> *force,
-                                        ForceWithVirial                *forceWithVirial,
-                                        rvec                            fshift[],
-                                        gmx_enerdata_t                 *enerd,
-                                        int                             flags,
-                                        gmx_wallcycle_t                 wcycle)
+static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv,
+                                        const gmx_pme_t                     *pmedata,
+                                        gmx::PaddedArrayRef<gmx::RVec>      *force,
+                                        gmx::ForceWithVirial                *forceWithVirial,
+                                        rvec                                 fshift[],
+                                        gmx_enerdata_t                      *enerd,
+                                        int                                  flags,
+                                        gmx_wallcycle_t                      wcycle)
 {
     bool isPmeGpuDone = false;
     bool isNbGpuDone  = false;
@@ -1448,7 +1448,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     }
 
     /* forceWithVirial uses the local atom range only */
-    ForceWithVirial forceWithVirial(forceRef, flags & GMX_FORCE_VIRIAL);
+    gmx::ForceWithVirial forceWithVirial(forceRef, flags & GMX_FORCE_VIRIAL);
 
     if (inputrec->bPull && pull_have_constraint(inputrec->pull_work))
     {
@@ -1971,7 +1971,7 @@ static void do_force_cutsGROUP(FILE *fplog,
     }
 
     /* forceWithVirial might need the full force atom range */
-    ForceWithVirial forceWithVirial(forceRef, flags & GMX_FORCE_VIRIAL);
+    gmx::ForceWithVirial forceWithVirial(forceRef, flags & GMX_FORCE_VIRIAL);
 
     if (inputrec->bPull && pull_have_constraint(inputrec->pull_work))
     {
@@ -2166,7 +2166,7 @@ void do_force(FILE                                     *fplog,
 }
 
 
-void do_constrain_first(FILE *fplog, Constraints *constr,
+void do_constrain_first(FILE *fplog, gmx::Constraints *constr,
                         t_inputrec *ir, t_mdatoms *md,
                         t_state *state)
 {
@@ -2205,7 +2205,7 @@ void do_constrain_first(FILE *fplog, Constraints *constr,
                   as_rvec_array(state->x.data()), as_rvec_array(state->x.data()), nullptr,
                   state->box,
                   state->lambda[efptBONDED], &dvdl_dum,
-                  nullptr, nullptr, ConstraintVariable::Positions);
+                  nullptr, nullptr, gmx::ConstraintVariable::Positions);
     if (EI_VV(ir->eI))
     {
         /* constrain the inital velocity, and save it */
@@ -2215,7 +2215,7 @@ void do_constrain_first(FILE *fplog, Constraints *constr,
                       as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), as_rvec_array(state->v.data()),
                       state->box,
                       state->lambda[efptBONDED], &dvdl_dum,
-                      nullptr, nullptr, ConstraintVariable::Velocities);
+                      nullptr, nullptr, gmx::ConstraintVariable::Velocities);
     }
     /* constrain the inital velocities at t-dt/2 */
     if (EI_STATE_VELOCITY(ir->eI) && ir->eI != eiVV)
@@ -2245,7 +2245,7 @@ void do_constrain_first(FILE *fplog, Constraints *constr,
                       as_rvec_array(state->x.data()), savex, nullptr,
                       state->box,
                       state->lambda[efptBONDED], &dvdl_dum,
-                      as_rvec_array(state->v.data()), nullptr, ConstraintVariable::Positions);
+                      as_rvec_array(state->v.data()), nullptr, gmx::ConstraintVariable::Positions);
 
         for (i = start; i < end; i++)
         {
