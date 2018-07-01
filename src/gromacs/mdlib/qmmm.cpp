@@ -183,6 +183,9 @@ static real call_QMroutine(const t_commrec gmx_unused *cr, const t_forcerec gmx_
     return (QMener);
 }
 
+#if !(GMX_QMMM_MOPAC || GMX_QMMM_GAMESS || GMX_QMMM_GAUSSIAN || GMX_QMMM_ORCA)
+[[ noreturn ]]
+#endif
 static void init_QMroutine(const t_commrec gmx_unused *cr, t_QMrec gmx_unused *qm, t_MMrec gmx_unused *mm)
 {
     /* makes a call to the requested QM routine (qm->QMmethod)

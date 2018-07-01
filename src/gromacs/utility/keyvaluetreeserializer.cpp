@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,7 +56,7 @@ class ValueSerializer
         static KeyValueTreeValue deserialize(ISerializer *serializer);
 
     private:
-        ValueSerializer();
+        ValueSerializer() = delete;
 
         typedef void (*SerializerFunction)(const KeyValueTreeValue &value, ISerializer *serializer);
         typedef void (*DeserializerFunction)(KeyValueTreeValueBuilder *builder, ISerializer *serializer);
@@ -257,7 +257,7 @@ void ValueSerializer::initSerializers()
         SERIALIZER('f', float),
         SERIALIZER('d', double),
     };
-    for (const auto item : s_serializers)
+    for (const auto &item : s_serializers)
     {
         s_deserializers[item.second.typeTag] = item.second.deserialize;
     }
