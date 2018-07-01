@@ -49,6 +49,10 @@
 #include <inttypes.h>
 #endif
 
+#if defined __cplusplus
+#include <cstddef>
+#endif
+
 /*! \brief
  * Boolean type for use in \Gromacs C code.
  *
@@ -71,6 +75,17 @@ typedef int gmx_bool;
 #endif
 /** Number of gmx_bool values. */
 #define BOOL_NR 2
+
+#if defined __cplusplus
+namespace gmx
+{
+/*! \brief Integer type for indexing into arrays or vectors
+ *
+ * Same as ptrdiff_t.
+ */
+using index = std::ptrdiff_t;
+}
+#endif
 
 /*! \name Fixed-width integer types
  *

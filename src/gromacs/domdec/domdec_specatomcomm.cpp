@@ -538,11 +538,11 @@ int setup_specat_communication(gmx_domdec_t               *dd,
             ns += spac->spas[d][1].a.size();
             nr += spac->spas[d][1].nrecv;
         }
-        if (static_cast<size_t>(vbuf_fac*ns) > spac->vbuf.size())
+        if (vbuf_fac*ns > gmx::index(spac->vbuf.size()))
         {
             spac->vbuf.resize(vbuf_fac*ns);
         }
-        if (vbuf_fac == 2 && static_cast<size_t>(vbuf_fac*nr) > spac->vbuf2.size())
+        if (vbuf_fac == 2 && vbuf_fac*nr > gmx::index(spac->vbuf2.size()))
         {
             spac->vbuf2.resize(vbuf_fac*nr);
         }
