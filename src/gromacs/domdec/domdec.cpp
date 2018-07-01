@@ -354,7 +354,7 @@ void dd_move_x(gmx_domdec_t             *dd,
 
     comm = dd->comm;
 
-    const RangePartitioning &atomGrouping = dd->atomGrouping();
+    const gmx::RangePartitioning &atomGrouping = dd->atomGrouping();
 
     nzone   = 1;
     nat_tot = comm->atomRanges.numHomeAtoms();
@@ -467,7 +467,7 @@ void dd_move_f(gmx_domdec_t             *dd,
 
     comm = dd->comm;
 
-    const RangePartitioning &atomGrouping = dd->atomGrouping();
+    const gmx::RangePartitioning &atomGrouping = dd->atomGrouping();
 
     nzone   = comm->zones.n/2;
     nat_tot = comm->atomRanges.end(DDAtomRanges::Type::Zones);
@@ -605,7 +605,7 @@ void dd_atom_spread_real(gmx_domdec_t *dd, real v[])
 
     comm = dd->comm;
 
-    const RangePartitioning &atomGrouping = dd->atomGrouping();
+    const gmx::RangePartitioning &atomGrouping = dd->atomGrouping();
 
     nzone   = 1;
     nat_tot = comm->atomRanges.numHomeAtoms();
@@ -3560,8 +3560,8 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
         comm->bInterCGMultiBody = FALSE;
     }
 
-    dd->bInterCGcons    = inter_charge_group_constraints(*mtop);
-    dd->bInterCGsettles = inter_charge_group_settles(*mtop);
+    dd->bInterCGcons    = gmx::inter_charge_group_constraints(*mtop);
+    dd->bInterCGsettles = gmx::inter_charge_group_settles(*mtop);
 
     if (ir->rlist == 0)
     {
@@ -3663,7 +3663,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
     if (dd->bInterCGcons && options.constraintCommunicationRange <= 0)
     {
         /* There is a cell size limit due to the constraints (P-LINCS) */
-        rconstr = constr_r_max(fplog, mtop, ir);
+        rconstr = gmx::constr_r_max(fplog, mtop, ir);
         if (fplog)
         {
             fprintf(fplog,
@@ -4726,10 +4726,10 @@ static void merge_cg_buffers(int ncell,
     }
 }
 
-static void make_cell2at_index(gmx_domdec_comm_dim_t   *cd,
-                               int                      nzone,
-                               int                      atomGroupStart,
-                               const RangePartitioning &atomGroups)
+static void make_cell2at_index(gmx_domdec_comm_dim_t        *cd,
+                               int                           nzone,
+                               int                           atomGroupStart,
+                               const gmx::RangePartitioning &atomGroups)
 {
     /* Store the atom block boundaries for easy copying of communication buffers
      */

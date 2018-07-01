@@ -57,9 +57,6 @@
 /* The stride of all the atom data arrays is equal to half the SIMD width */
 #define STRIDE     UNROLLJ
 
-// TODO: Remove when all kernels are in the gmx namespace
-using namespace gmx;
-
 #if !defined GMX_NBNXN_SIMD_2XNN && !defined GMX_NBNXN_SIMD_4XN
 #error "Must define an NBNxN kernel flavour before including NBNxN kernel utility functions"
 #endif
@@ -74,7 +71,7 @@ using namespace gmx;
  * a single SIMD register.
  */
 static inline void
-add_ener_grp_halves(SimdReal e_S, real *v0, real *v1, const int *offset_jj)
+add_ener_grp_halves(gmx::SimdReal e_S, real *v0, real *v1, const int *offset_jj)
 {
     for (int jj = 0; jj < (UNROLLJ/2); jj++)
     {
@@ -85,9 +82,9 @@ add_ener_grp_halves(SimdReal e_S, real *v0, real *v1, const int *offset_jj)
 #endif
 
 #if GMX_SIMD_HAVE_INT32_LOGICAL
-typedef SimdInt32    SimdBitMask;
+typedef gmx::SimdInt32    SimdBitMask;
 #else
-typedef SimdReal     SimdBitMask;
+typedef gmx::SimdReal     SimdBitMask;
 #endif
 
 
@@ -95,9 +92,10 @@ static inline void gmx_simdcall
 gmx_load_simd_2xnn_interactions(int                  excl,
                                 SimdBitMask          filter_S0,
                                 SimdBitMask          filter_S2,
-                                SimdBool            *interact_S0,
-                                SimdBool            *interact_S2)
+                                gmx::SimdBool       *interact_S0,
+                                gmx::SimdBool       *interact_S2)
 {
+    using namespace gmx;
 #if GMX_SIMD_HAVE_INT32_LOGICAL
     SimdInt32 mask_pr_S(excl);
     *interact_S0  = cvtIB2B( testBits( mask_pr_S & filter_S0 ) );

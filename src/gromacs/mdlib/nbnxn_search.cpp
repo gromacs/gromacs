@@ -131,19 +131,14 @@ enum class NbnxnLayout
     Gpu8x8x8   // i-cluster size 8, j-cluster size 8 + super-clustering
 };
 
+#if GMX_SIMD
 /* Returns the j-cluster size */
 template <NbnxnLayout layout>
 static constexpr int jClusterSize()
 {
-#if GMX_SIMD
     static_assert(layout == NbnxnLayout::NoSimd4x4 || layout == NbnxnLayout::Simd4xN || layout == NbnxnLayout::Simd2xNN, "Currently jClusterSize only supports CPU layouts");
 
     return layout == NbnxnLayout::Simd4xN ? GMX_SIMD_REAL_WIDTH : (layout == NbnxnLayout::Simd2xNN ? GMX_SIMD_REAL_WIDTH/2 : NBNXN_CPU_CLUSTER_I_SIZE);
-#else
-    static_assert(layout == NbnxnLayout::NoSimd4x4, "Currently without SIMD, jClusterSize only supports NoSimd4x4");
-
-    return NBNXN_CPU_CLUSTER_I_SIZE;
-#endif
 }
 
 /* Returns the j-cluster index given the i-cluster index */
@@ -219,6 +214,7 @@ static inline int xIndexFromCj(int cj)
         return cj*STRIDE_P8;
     }
 }
+#endif //GMX_SIMD
 
 gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type)
 {

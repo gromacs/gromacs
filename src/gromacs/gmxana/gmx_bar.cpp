@@ -3168,7 +3168,8 @@ static void read_barsim_edr(const char *fn, real *temp, sim_data_t *sd)
     snew(fr, 1);
 
     snew(native_lambda, 1);
-    start_lambda.lc = nullptr;
+    start_lambda.lc  = nullptr;
+    start_lambda.val = nullptr;
 
     while (do_enx(fp, fr))
     {
@@ -3320,7 +3321,7 @@ static void read_barsim_edr(const char *fn, real *temp, sim_data_t *sd)
             if (!lambda_vec_same(&start_lambda, native_lambda) )
             {
                 gmx_fatal(FARGS, "Native lambda not constant in file %s: started at %f, and becomes %f at time %f",
-                          fn, native_lambda, start_lambda, start_time);
+                          fn, native_lambda->val, start_lambda.val, start_time);
             }
             /* check the number of samples against the previous number */
             if ( ((nblocks_raw+nblocks_hist) != nsamples) || (nlam != 1 ) )

@@ -267,6 +267,48 @@ set_target_properties(libgromacs PROPERTIES
 gmx_manage_lmfit()
 target_link_libraries(libgromacs PRIVATE lmfit)
 
+set(IGNORED_CLANG_ALL_WARNINGS
+    "-Wno-c++98-compat -Wno-c++98-compat-pedantic" #No intention of C++98 compability
+    "-Wno-source-uses-openmp" #Don't warn for no-omp build
+    "-Wno-c++17-extensions"   #Allowed in attributes (compilers are required to ignore unknown attributes)
+    "-Wno-documentation-unknown-command" #Custom commands are used
+    #Following ones are undecided/TODO
+    "-Wno-missing-field-initializers"
+    "-Wno-sign-conversion"
+    "-Wno-disabled-macro-expansion"
+    "-Wno-cast-align"
+    "-Wno-undefined-reinterpret-cast"
+    "-Wno-covered-switch-default"
+    "-Wno-reserved-id-macro"
+    "-Wno-global-constructors"
+    "-Wno-unreachable-code"
+    "-Wno-comma"
+    "-Wno-unreachable-code-return"
+    "-Wno-exit-time-destructors"
+    "-Wno-unused-macros"
+    "-Wno-weak-vtables"
+    "-Wno-extra-semi"
+    "-Wno-switch-enum"
+    "-Wno-shadow-field-in-constructor"
+    "-Wno-unreachable-code-break"
+    "-Wno-conditional-uninitialized"
+    "-Wno-missing-variable-declarations"
+    "-Wno-float-conversion"
+    "-Wno-format-nonliteral"
+    "-Wno-shadow"
+    "-Wno-cast-qual"
+    "-Wno-shorten-64-to-32"
+    "-Wno-documentation"
+    "-Wno-used-but-marked-unused"
+    "-Wno-padded"
+    "-Wno-float-equal"
+    "-Wno-old-style-cast"
+    "-Wno-conversion"
+    "-Wno-double-promotion")
+string(REPLACE " " ";" IGNORED_CLANG_ALL_WARNINGS "${IGNORED_CLANG_ALL_WARNINGS}")
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^6\.0")
+   target_compile_options(libgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Weverything ${IGNORED_CLANG_ALL_WARNINGS}>)
+endif()
 if (GMX_CLANG_TIDY)
    set(CLANG_TIDY "clang-tidy" CACHE STRING "Name of clang-tidy executable")
    find_program(CLANG_TIDY_EXE NAMES "${CLANG_TIDY}"
