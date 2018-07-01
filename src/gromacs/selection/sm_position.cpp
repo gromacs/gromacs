@@ -253,7 +253,7 @@ static void set_pos_method_flags(gmx_ana_selmethod_t *method,
     {
         case gmx::PositionCalculationCollection::RequiredTopologyInfo::TopologyAndMasses:
             method->flags |= SMETH_REQMASS;
-        // fallthrough
+            [[fallthrough]];
         case gmx::PositionCalculationCollection::RequiredTopologyInfo::Topology:
             method->flags |= SMETH_REQTOP;
             break;

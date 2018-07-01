@@ -126,9 +126,7 @@ macro (gmx_c_flags)
     endif()
     # g++
     if(CMAKE_COMPILER_IS_GNUCXX)
-        if(NOT GMX_OPENMP)
-            GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
-        endif()
+        GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas -Wno-attributes" GMXC_CXXFLAGS)
         if (GMX_COMPILER_WARNINGS)
             GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall" GMXC_CXXFLAGS)
             # Problematic with CUDA
@@ -179,9 +177,7 @@ macro (gmx_c_flags)
             GMX_TEST_CFLAG(CFLAGS_DEBUG "-O0" GMXC_CFLAGS_DEBUG) #icc defaults to -O2 even with -g
             GMX_TEST_CFLAG(CFLAGS_FP_RELASSERT "-fp-model except -fp-model precise" GMXC_CFLAGS_RELWITHASSERT)
         else()
-            if(NOT GMX_OPENMP)
-                GMX_TEST_CFLAG(CFLAGS_PRAGMA "/wd3180" GMXC_CFLAGS)
-            endif()
+            GMX_TEST_CFLAG(CFLAGS_PRAGMA "/wd3180" GMXC_CFLAGS)
             if (GMX_COMPILER_WARNINGS)
 GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280" GMXC_CFLAGS)
             endif()
@@ -191,9 +187,7 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd1419 /wd1
 
     if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
         if (NOT WIN32) 
-            if(NOT GMX_OPENMP)
-                GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-wd3180" GMXC_CXXFLAGS)
-            endif()
+            GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-wd161 -wd1292" GMXC_CXXFLAGS) #unknown pragma+attribute
             if (GMX_COMPILER_WARNINGS)
                 if (GMX_GPU)
 # Suppress warnings from CUDA headers
@@ -214,9 +208,7 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd1419 /wd1
             GMX_TEST_CXXFLAG(CXXFLAGS_DEBUG "-O0" GMXC_CXXFLAGS_DEBUG)
             GMX_TEST_CXXFLAG(CXXFLAGS_FP_RELASSERT "-fp-model except -fp-model precise" GMXC_CXXFLAGS_RELWITHASSERT)
         else()
-            if(NOT GMX_OPENMP)
-                GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "/wd3180" GMXC_CFLAGS)
-            endif()
+            GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "/wd161 /wd1292" GMXC_CXXFLAGS) #unknown pragma+attribute	    
             if (GMX_COMPILER_WARNINGS)
 #809: exception specification for virtual function X is incompatible with that of overridden function
                 GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/W3 /wd177 /wd383 /wd411 /wd444 /wd809 /wd981 /wd1418 /wd1572 /wd1599 /wd2259 /wd2547 /wd3280 /wd11074 /wd11076 /wd2282" GMXC_CXXFLAGS)

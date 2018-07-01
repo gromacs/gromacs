@@ -122,29 +122,8 @@ class ElectricFieldData
             }
         }
 
-        /*! \brief Initiate the field values
-         *
-         * \param[in] a     Amplitude
-         * \param[in] omega Frequency
-         * \param[in] t0    Peak of the pulse
-         * \param[in] sigma Width of the pulse
-         */
-        void setField(real a, real omega, real t0, real sigma)
-        {
-            a_     = a;
-            omega_ = omega;
-            t0_    = t0;
-            sigma_ = sigma;
-        }
-
         //! Return the amplitude
         real a()     const { return a_; }
-        //! Return the frequency
-        real omega() const { return omega_; }
-        //! Return the time for the peak of the pulse
-        real t0()    const { return t0_; }
-        //! Return the width of the pulse (0 means inifinite)
-        real sigma() const { return sigma_; }
 
     private:
         //! Coeffient (V / nm)
@@ -208,31 +187,6 @@ class ElectricField final : public IMDModule,
          * \return The field strength in V/nm units
          */
         real field(int dim, real t) const;
-
-        /*! \brief Return amplitude of field
-         *
-         * \param[in] dim Direction of the field (XX, YY, ZZ)
-         * \return Amplitude of the field
-         */
-        real a(int dim)     const { return efield_[dim].a(); }
-        /*! \brief Return frequency of field (1/ps)
-         *
-         * \param[in] dim Direction of the field (XX, YY, ZZ)
-         * \return Frequency of the field
-         */
-        real omega(int dim) const { return efield_[dim].omega(); }
-        /*! \brief Return time of pulse peak
-         *
-         * \param[in] dim Direction of the field (XX, YY, ZZ)
-         * \return Time of pulse peak
-         */
-        real t0(int dim) const { return efield_[dim].t0(); }
-        /*! \brief Return width of the pulse
-         *
-         * \param[in] dim Direction of the field (XX, YY, ZZ)
-         * \return Width of the pulse
-         */
-        real sigma(int dim) const { return efield_[dim].sigma(); }
 
         /*! \brief Print the field components to a file
          *

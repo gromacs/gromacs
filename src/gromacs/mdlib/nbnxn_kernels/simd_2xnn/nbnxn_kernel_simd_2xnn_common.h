@@ -43,6 +43,9 @@
 
 #include <cstdint>
 
+namespace gmx
+{
+
 #if !GMX_SIMD_HAVE_HSIMD_UTIL_REAL
 #error "Half-simd utility operations are required for the 2xNN kernels"
 #endif
@@ -56,9 +59,6 @@
 
 /* The stride of all the atom data arrays is equal to half the SIMD width */
 #define STRIDE     UNROLLJ
-
-// TODO: Remove when all kernels are in the gmx namespace
-using namespace gmx;
 
 #if !defined GMX_NBNXN_SIMD_2XNN && !defined GMX_NBNXN_SIMD_4XN
 #error "Must define an NBNxN kernel flavour before including NBNxN kernel utility functions"
@@ -135,3 +135,4 @@ gmx_load_simd_2xnn_interactions(int                  excl,
 
 /* Assumes all LJ parameters are identical */
 /* #define FIX_LJ_C */
+}

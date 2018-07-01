@@ -44,6 +44,9 @@
 
 #include "config.h"
 
+namespace gmx
+{
+
 #ifndef GMX_SIMD_J_UNROLL_SIZE
 #error "Need to define GMX_SIMD_J_UNROLL_SIZE before including the 4xn kernel common header file"
 #endif
@@ -58,8 +61,6 @@
 #define STRIDE     (UNROLLI)
 #endif
 
-// TODO: Remove when all kernels are in the gmx namespace
-using namespace gmx;
 
 #if !defined GMX_NBNXN_SIMD_2XNN && !defined GMX_NBNXN_SIMD_4XN
 #error "Must define an NBNxN kernel flavour before including NBNxN kernel utility functions"
@@ -159,3 +160,4 @@ gmx_load_simd_4xn_interactions(int                               excl,
 
 /* Assumes all LJ parameters are identical */
 /* #define FIX_LJ_C */
+}

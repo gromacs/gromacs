@@ -274,6 +274,7 @@ static void print_cg_move(FILE *fplog,
             comm->cell_x0[dim], comm->cell_x1[dim]);
 }
 
+[[ noreturn ]]
 static void cg_move_error(FILE *fplog,
                           gmx_domdec_t *dd,
                           gmx_int64_t step, int cg, int dim, int dir,
