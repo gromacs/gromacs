@@ -120,7 +120,7 @@ static void dd_collect_cg(gmx_domdec_t  *dd,
             fprintf(debug, "Initial charge group distribution: ");
             for (int rank = 0; rank < dd->nnodes; rank++)
             {
-                fprintf(debug, " %zu", ma->domainGroups[rank].atomGroups.size());
+                fprintf(debug, " %td", ma->domainGroups[rank].atomGroups.size());
             }
             fprintf(debug, "\n");
         }

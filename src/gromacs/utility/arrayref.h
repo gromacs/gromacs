@@ -115,7 +115,7 @@ class ArrayRef
         //! Type of values stored in the container.
         typedef T         value_type;
         //! Type for representing size of the container.
-        typedef size_t    size_type;
+        typedef index     size_type;
         //! Type for representing difference between two container indices.
         typedef ptrdiff_t difference_type;
         //! Const reference to a container element.

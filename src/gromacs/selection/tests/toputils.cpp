@@ -194,7 +194,7 @@ void TopologyManager::initAtomTypes(const ArrayRef<const char *const> &types)
     }
     t_atoms &atoms = this->atoms();
     snew(atoms.atomtype, atoms.nr);
-    size_t   j = 0;
+    index    j = 0;
     for (int i = 0; i < atoms.nr; ++i, ++j)
     {
         if (j == types.size())
