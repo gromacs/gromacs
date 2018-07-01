@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,7 +72,8 @@ class AbstractOptionSection
         //! \cond libapi
         //! Initializes option properties with the given name.
         explicit AbstractOptionSection(const char *name) : name_(name) {}
-
+        //! Destructor
+        virtual ~AbstractOptionSection() {}
         /*! \brief
          * Creates a storage object corresponding to this section.
          *

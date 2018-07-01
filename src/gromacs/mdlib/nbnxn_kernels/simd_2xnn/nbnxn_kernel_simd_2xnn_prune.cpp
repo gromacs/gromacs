@@ -54,6 +54,7 @@ nbnxn_kernel_prune_2xnn(nbnxn_pairlist_t *         nbl,
                         real                       rlistInner)
 {
 #ifdef GMX_NBNXN_SIMD_2XNN
+    using namespace gmx;
     const nbnxn_ci_t * gmx_restrict ciOuter  = nbl->ciOuter;
     nbnxn_ci_t       * gmx_restrict ciInner  = nbl->ci;
 

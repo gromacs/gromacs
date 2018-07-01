@@ -195,7 +195,7 @@ class Constraints
 };
 
 /*! \brief Generate a fatal error because of too many LINCS/SETTLE warnings. */
-void too_many_constraint_warnings(int eConstrAlg, int warncount);
+[[ noreturn ]] void too_many_constraint_warnings(int eConstrAlg, int warncount);
 
 /*! \brief Returns whether constraint with parameter \p iparamsIndex is a flexible constraint */
 static inline bool isConstraintFlexible(const t_iparams *iparams,
