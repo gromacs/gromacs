@@ -100,11 +100,11 @@ class InteractiveTestHelper::Impl
         {
             checkOutput();
             line->clear();
-            const bool bPresent = (currentLine_ < inputLines_.size());
+            const bool bPresent = (currentLine_ < index(inputLines_.size()));
             if (bPresent)
             {
                 line->assign(inputLines_[currentLine_]);
-                if (bLastNewline_ || currentLine_ + 1 < inputLines_.size())
+                if (bLastNewline_ || currentLine_ + 1 < index(inputLines_.size()))
                 {
                     line->append("\n");
                 }
@@ -134,7 +134,7 @@ class InteractiveTestHelper::Impl
         TestReferenceChecker             checker_;
         ArrayRef<const char *const>      inputLines_;
         bool                             bLastNewline_;
-        size_t                           currentLine_;
+        index                            currentLine_;
         bool                             bHasOutput_;
         std::string                      currentOutput_;
         MockTextInputStream              inputStream_;

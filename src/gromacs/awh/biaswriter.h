@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -180,9 +180,9 @@ class BiasWriter
          * \param[in] metaDataType   The type of meta data to write.
          * \param[in] bias           The AWH Bias.
          */
-        void transferMetaDataToWriter(size_t             metaDataIndex,
-                                      AwhOutputMetaData  metaDataType,
-                                      const Bias        &bias);
+        void transferMetaDataToWriter(gmx::index             metaDataIndex,
+                                      AwhOutputMetaData      metaDataType,
+                                      const Bias            &bias);
 
         /*! \brief Transfer AWH point data to writer data blocks.
          *

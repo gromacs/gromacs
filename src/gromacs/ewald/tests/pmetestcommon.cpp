@@ -171,7 +171,7 @@ PmeSafePointer pmeInitAtoms(const t_inputrec         *inputRec,
                             const Matrix3x3          &box
                             )
 {
-    const size_t    atomCount = coordinates.size();
+    const index   atomCount = coordinates.size();
     GMX_RELEASE_ASSERT(atomCount == charges.size(), "Mismatch in atom data");
     PmeSafePointer  pmeSafe = pmeInitInternal(inputRec, mode, gpuInfo, pmeGpuProgram, atomCount, box);
     pme_atomcomm_t *atc     = nullptr;
@@ -374,7 +374,7 @@ void pmePerformGather(gmx_pme_t *pme, CodePath mode,
                       PmeForceOutputHandling inputTreatment, ForcesVector &forces)
 {
     pme_atomcomm_t *atc                     = &(pme->atc[0]);
-    const size_t    atomCount               = atc->n;
+    const index     atomCount               = atc->n;
     GMX_RELEASE_ASSERT(forces.size() == atomCount, "Invalid force buffer size");
     const bool      forceReductionWithInput = (inputTreatment == PmeForceOutputHandling::ReduceWithInput);
     const real      scale                   = 1.0;
@@ -404,13 +404,13 @@ void pmePerformGather(gmx_pme_t *pme, CodePath mode,
             GMX_ASSERT(forces.size() == stagingForces.size(), "Size of force buffers did not match");
             if (forceReductionWithInput)
             {
-                for (size_t i = 0; i != forces.size(); ++i)
+                for (index i = 0; i != forces.size(); ++i)
                 {
                     stagingForces[i] = forces[i];
                 }
             }
             pme_gpu_gather(pme->gpu, inputTreatment, reinterpret_cast<float *>(fftgrid));
-            for (size_t i = 0; i != forces.size(); ++i)
+            for (index i = 0; i != forces.size(); ++i)
             {
                 forces[i] = stagingForces[i];
             }
@@ -444,9 +444,9 @@ void pmeSetSplineData(const gmx_pme_t *pme, CodePath mode,
                       const SplineParamsDimVector &splineValues, PmeSplineDataType type, int dimIndex)
 {
     const pme_atomcomm_t *atc         = &(pme->atc[0]);
-    const size_t          atomCount   = atc->n;
-    const size_t          pmeOrder    = pme->pme_order;
-    const size_t          dimSize     = pmeOrder * atomCount;
+    const index           atomCount   = atc->n;
+    const index           pmeOrder    = pme->pme_order;
+    const index           dimSize     = pmeOrder * atomCount;
     GMX_RELEASE_ASSERT(dimSize == splineValues.size(), "Mismatch in spline data");
     real                 *splineBuffer = pmeGetSplineDataInternal(pme, type, dimIndex);
 
@@ -471,7 +471,7 @@ void pmeSetGridLineIndices(const gmx_pme_t *pme, CodePath mode,
                            const GridLineIndicesVector &gridLineIndices)
 {
     const pme_atomcomm_t       *atc         = &(pme->atc[0]);
-    const size_t                atomCount   = atc->n;
+    const index                 atomCount   = atc->n;
     GMX_RELEASE_ASSERT(atomCount == gridLineIndices.size(), "Mismatch in gridline indices size");
 
     IVec paddedGridSizeUnused, gridSize(0, 0, 0);
