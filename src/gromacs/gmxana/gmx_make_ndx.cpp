@@ -1609,7 +1609,7 @@ int gmx_make_ndx(int argc, char *argv[])
     /* read input file(s) */
     block  = new_blocka();
     gnames = nullptr;
-    printf("Going to read %zu old index file(s)\n", ndxInFiles.size());
+    printf("Going to read %td old index file(s)\n", ndxInFiles.size());
     if (!ndxInFiles.empty())
     {
         for (const std::string &ndxInFile : ndxInFiles)

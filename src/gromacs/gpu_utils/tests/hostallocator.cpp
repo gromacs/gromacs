@@ -111,7 +111,7 @@ template <typename T>
 void HostMemoryTest<T>::compareVectors(ConstViewType input,
                                        ConstViewType output) const
 {
-    for (size_t i = 0; i != input.size(); ++i)
+    for (index i = 0; i != input.size(); ++i)
     {
         EXPECT_EQ(input[i], output[i]) << "for index " << i;
     }
@@ -122,7 +122,7 @@ template <>
 void HostMemoryTest<RVec>::compareVectors(ConstViewType input,
                                           ConstViewType output) const
 {
-    for (size_t i = 0; i != input.size(); ++i)
+    for (index i = 0; i != input.size(); ++i)
     {
         EXPECT_EQ(input[i][XX], output[i][XX]) << "for index " << i;
         EXPECT_EQ(input[i][YY], output[i][YY]) << "for index " << i;

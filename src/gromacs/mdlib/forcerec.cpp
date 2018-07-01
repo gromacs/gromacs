@@ -1453,7 +1453,7 @@ static bondedtable_t *make_bonded_tables(FILE *fplog,
                 // being recognized and used for table 1.
                 std::string patternToFind = gmx::formatString("_%s%d.%s", tabext, i, ftp2ext(efXVG));
                 bool        madeTable     = false;
-                for (size_t j = 0; j < tabbfnm.size() && !madeTable; ++j)
+                for (gmx::index j = 0; j < tabbfnm.size() && !madeTable; ++j)
                 {
                     if (gmx::endsWith(tabbfnm[j], patternToFind))
                     {

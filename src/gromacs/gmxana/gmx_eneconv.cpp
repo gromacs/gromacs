@@ -122,10 +122,10 @@ static int *select_it(int nre, gmx_enxnm_t *nm, int *nset)
 
 static void sort_files(gmx::ArrayRef<std::string> files, real *settime)
 {
-    for (size_t i = 0; i < files.size(); i++)
+    for (gmx::index i = 0; i < files.size(); i++)
     {
-        size_t minidx = i;
-        for (size_t j = i + 1; j < files.size(); j++)
+        gmx::index minidx = i;
+        for (gmx::index j = i + 1; j < files.size(); j++)
         {
             if (settime[j] < settime[minidx])
             {
@@ -243,7 +243,7 @@ static void edit_files(gmx::ArrayRef<std::string> files, real *readtime,
         fprintf(stderr, "          File             Current start       New start\n"
                 "---------------------------------------------------------\n");
 
-        for (size_t i = 0; i < files.size(); i++)
+        for (gmx::index i = 0; i < files.size(); i++)
         {
             fprintf(stderr, "%25s   %10.3f             ", files[i].c_str(), readtime[i]);
             ok = FALSE;
@@ -294,7 +294,7 @@ static void edit_files(gmx::ArrayRef<std::string> files, real *readtime,
     }
     else
     {
-        for (size_t i = 0; i < files.size(); i++)
+        for (gmx::index i = 0; i < files.size(); i++)
         {
             settime[i] = readtime[i];
         }
@@ -314,7 +314,7 @@ static void edit_files(gmx::ArrayRef<std::string> files, real *readtime,
     fprintf(stderr, "\nSummary of files and start times used:\n\n"
             "          File                Start time\n"
             "-----------------------------------------\n");
-    for (size_t i = 0; i < files.size(); i++)
+    for (gmx::index i = 0; i < files.size(); i++)
     {
         switch (cont_type[i])
         {

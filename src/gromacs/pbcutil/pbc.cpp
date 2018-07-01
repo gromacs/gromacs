@@ -1433,7 +1433,7 @@ void put_atoms_in_box(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x)
 
     if (TRICLINIC(box))
     {
-        for (size_t i = 0; (i < x.size()); ++i)
+        for (gmx::index i = 0; (i < x.size()); ++i)
         {
             for (m = npbcdim-1; m >= 0; m--)
             {
@@ -1456,7 +1456,7 @@ void put_atoms_in_box(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x)
     }
     else
     {
-        for (size_t i = 0; (i < x.size()); ++i)
+        for (gmx::index i = 0; (i < x.size()); ++i)
         {
             for (d = 0; d < npbcdim; d++)
             {
@@ -1500,7 +1500,7 @@ void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box,
     shift_center[1] = shm12*shift_center[2];
     shift_center[2] = 0;
 
-    for (size_t i = 0; (i < x.size()); ++i)
+    for (gmx::index i = 0; (i < x.size()); ++i)
     {
         for (m = DIM-1; m >= 0; m--)
         {
@@ -1545,7 +1545,7 @@ void put_atoms_in_compact_unitcell(int ePBC, int ecenter, const matrix box,
     }
 
     calc_box_center(ecenter, box, box_center);
-    for (size_t i = 0; (i < x.size()); ++i)
+    for (gmx::index i = 0; (i < x.size()); ++i)
     {
         pbc_dx(&pbc, x[i], box_center, dx);
         rvec_add(box_center, dx, x[i]);

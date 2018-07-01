@@ -271,7 +271,7 @@ gmx_multisim_t *init_multisystem(MPI_Comm                         comm,
     MPI_Comm_size(comm, &numRanks);
     if (numRanks % multidirs.size() != 0)
     {
-        gmx_fatal(FARGS, "The number of ranks (%d) is not a multiple of the number of simulations (%zu)", numRanks, multidirs.size());
+        gmx_fatal(FARGS, "The number of ranks (%d) is not a multiple of the number of simulations (%td)", numRanks, multidirs.size());
     }
 
     int numRanksPerSim = numRanks/multidirs.size();
@@ -280,7 +280,7 @@ gmx_multisim_t *init_multisystem(MPI_Comm                         comm,
 
     if (debug)
     {
-        fprintf(debug, "We have %zu simulations, %d ranks per simulation, local simulation is %d\n", multidirs.size(), numRanksPerSim, rankWithinComm/numRanksPerSim);
+        fprintf(debug, "We have %td simulations, %d ranks per simulation, local simulation is %d\n", multidirs.size(), numRanksPerSim, rankWithinComm/numRanksPerSim);
     }
 
     ms       = new gmx_multisim_t;
