@@ -625,7 +625,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
             std::vector<int> &cggl_flag = comm->cggl_flag[mc];
 
             /* TODO: See if we can use push_back instead */
-            if (static_cast<size_t>((ncg[mc] + 1)*DD_CGIBS) > cggl_flag.size())
+            if ((ncg[mc] + 1)*DD_CGIBS > gmx::index(cggl_flag.size()))
             {
                 cggl_flag.resize((ncg[mc] + 1)*DD_CGIBS);
             }
@@ -949,7 +949,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
             else
             {
                 /* Reallocate the buffers if necessary  */
-                if (static_cast<size_t>((ncg[mc] + 1)*DD_CGIBS) > comm->cggl_flag[mc].size())
+                if ((ncg[mc] + 1)*DD_CGIBS > gmx::index(comm->cggl_flag[mc].size()))
                 {
                     comm->cggl_flag[mc].resize((ncg[mc] + 1)*DD_CGIBS);
                 }
