@@ -226,7 +226,7 @@ static void cp_warning(FILE *fp)
     fprintf(fp, "\nWARNING: Checkpoint file is corrupted or truncated\n\n");
 }
 
-static void cp_error()
+[[ noreturn ]] static void cp_error()
 {
     gmx_fatal(FARGS, "Checkpoint file corrupted/truncated, or maybe you are out of disk space?");
 }
