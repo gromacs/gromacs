@@ -33,8 +33,6 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
-
 #if GMX_SIMD_REAL_WIDTH >= 2*NBNXN_CPU_CLUSTER_I_SIZE
 #define STRIDE_S  (GMX_SIMD_REAL_WIDTH/2)
 #else
@@ -89,6 +87,7 @@ makeClusterListSimd2xnn(const nbnxn_grid_t *      gridj,
                         float                     rbb2,
                         int * gmx_restrict        numDistanceChecks)
 {
+    using namespace gmx;
     const real * gmx_restrict           x_ci_simd = nbl->work->x_ci_simd;
     const nbnxn_bb_t * gmx_restrict     bb_ci     = nbl->work->bb_ci;
 

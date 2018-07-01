@@ -50,8 +50,6 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 
-using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
-
 struct gmx_domdec_t;
 
 /*! \brief Set the SIMD PBC data from a normal t_pbc struct.
@@ -84,11 +82,12 @@ void set_pbc_simd(const t_pbc *pbc,
  * routine should be low. On e.g. Intel Haswell/Broadwell it takes 8 cycles.
  */
 static inline void gmx_simdcall
-pbc_correct_dx_simd(SimdReal         *dx,
-                    SimdReal         *dy,
-                    SimdReal         *dz,
-                    const real       *pbc_simd)
+pbc_correct_dx_simd(gmx::SimdReal         *dx,
+                    gmx::SimdReal         *dy,
+                    gmx::SimdReal         *dz,
+                    const real            *pbc_simd)
 {
+    using namespace gmx;
     SimdReal shz, shy, shx;
 
     shz = round(*dz * load<SimdReal>(pbc_simd+0*GMX_SIMD_REAL_WIDTH)); // load inv_bzz
@@ -117,10 +116,10 @@ pbc_correct_dx_simd(SimdReal         *dx,
  * This is the SIMD equivalent of the scalar version declared in pbc.h.
  */
 static inline void gmx_simdcall
-pbc_dx_aiuc(const real       *pbc_simd,
-            const SimdReal   *x1,
-            const SimdReal   *x2,
-            SimdReal         *dx)
+pbc_dx_aiuc(const real            *pbc_simd,
+            const gmx::SimdReal   *x1,
+            const gmx::SimdReal   *x2,
+            gmx::SimdReal         *dx)
 {
     for (int d = 0; d < DIM; d++)
     {
