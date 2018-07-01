@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,12 +69,12 @@ using PaddedRVecVector = std::vector < RVec, Allocator < RVec, AlignedAllocation
  *
  * \param[in] numAtoms  The number of atoms for which data will be stored in a PaddedRVecVector
  */
-static inline size_t paddedRVecVectorSize(size_t numAtoms)
+static inline index paddedRVecVectorSize(index numAtoms)
 {
     /* We need one real extra for 4-wide SIMD load/store of RVec.
      * But because the vector contains RVecs, we need to add 1 RVec.
      */
-    size_t simdScatterAccessSize;
+    index simdScatterAccessSize;
     if (numAtoms > 0)
     {
         simdScatterAccessSize = numAtoms + 1;
@@ -88,7 +88,7 @@ static inline size_t paddedRVecVectorSize(size_t numAtoms)
      * But because we don't want a dependence on the SIMD module,
      * we use GMX_REAL_MAX_SIMD_WIDTH here.
      */
-    size_t simdFlatAccesSize  = ((numAtoms + (GMX_REAL_MAX_SIMD_WIDTH - 1))/GMX_REAL_MAX_SIMD_WIDTH)*GMX_REAL_MAX_SIMD_WIDTH;
+    index simdFlatAccesSize  = ((numAtoms + (GMX_REAL_MAX_SIMD_WIDTH - 1))/GMX_REAL_MAX_SIMD_WIDTH)*GMX_REAL_MAX_SIMD_WIDTH;
 
     return std::max(simdScatterAccessSize, simdFlatAccesSize);
 }

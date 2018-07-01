@@ -109,7 +109,7 @@ int getSampleFromDistribution(ArrayRef<const double> distr,
 
     cumulativeDistribution[0] = distr[0];
 
-    for (size_t i = 1; i < distr.size(); i++)
+    for (gmx::index i = 1; i < distr.size(); i++)
     {
         cumulativeDistribution[i] = cumulativeDistribution[i - 1] + distr[i];
     }
