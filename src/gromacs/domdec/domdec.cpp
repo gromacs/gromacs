@@ -5862,7 +5862,7 @@ orderVector(gmx::ArrayRef<const gmx_cgsort_t>  sort,
             gmx::ArrayRef<T>                   vectorToSort,
             std::vector<T>                    *workVector)
 {
-    if (workVector->size() < sort.size())
+    if (gmx::index(workVector->size()) < sort.size())
     {
         workVector->resize(sort.size());
     }
@@ -6069,7 +6069,7 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
 
     /* Reorder the state */
     gmx::ArrayRef<const gmx_cgsort_t> cgsort = sort->sorted;
-    GMX_RELEASE_ASSERT(cgsort.size() == static_cast<size_t>(dd->ncg_home), "We should sort all the home atom groups");
+    GMX_RELEASE_ASSERT(cgsort.size() == dd->ncg_home, "We should sort all the home atom groups");
 
     if (state->flags & (1 << estX))
     {
@@ -6124,7 +6124,7 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
     else
     {
         /* Copy the sorted ns cell indices back to the ns grid struct */
-        for (size_t i = 0; i < cgsort.size(); i++)
+        for (gmx::index i = 0; i < cgsort.size(); i++)
         {
             fr->ns->grid->cell_index[i] = cgsort[i].nsc;
         }

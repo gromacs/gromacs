@@ -767,7 +767,7 @@ static void spread_vsite2(const t_iatom ia[], real a,
 void constructVsitesGlobal(const gmx_mtop_t         &mtop,
                            gmx::ArrayRef<gmx::RVec>  x)
 {
-    GMX_ASSERT(x.size() >= static_cast<size_t>(mtop.natoms), "x should contain the whole system");
+    GMX_ASSERT(x.size() >= static_cast<gmx::index>(mtop.natoms), "x should contain the whole system");
     GMX_ASSERT(!mtop.moleculeBlockIndices.empty(), "molblock indices are needed in constructVsitesGlobal");
 
     for (size_t mb = 0; mb < mtop.molblock.size(); mb++)

@@ -58,7 +58,7 @@ double calcVibrationalInternalEnergy(gmx::ArrayRef<const real> eigval,
     size_t nskip = linear ? 5 : 6;
     double Evib  = 0;
     double hbar  = PLANCK1/(2*M_PI);
-    for (size_t i = nskip; i < eigval.size(); i++)
+    for (gmx::index i = nskip; i < eigval.size(); i++)
     {
         if (eigval[i] > 0)
         {
@@ -90,7 +90,7 @@ double calcVibrationalHeatCapacity(gmx::ArrayRef<const real> eigval,
     size_t nskip = linear ? 5 : 6;
     double cv    = 0;
     double hbar  = PLANCK1/(2*M_PI);
-    for (size_t i = nskip; i < eigval.size(); i++)
+    for (gmx::index i = nskip; i < eigval.size(); i++)
     {
         if (eigval[i] > 0)
         {
@@ -165,7 +165,7 @@ double calcQuasiHarmonicEntropy(gmx::ArrayRef<const real> eigval,
     size_t nskip = bLinear ? 5 : 6;
     double S     = 0;
     double hbar  = PLANCK1/(2*M_PI);
-    for (size_t i = nskip; (i < eigval.size()); i++)
+    for (gmx::index i = nskip; (i < eigval.size()); i++)
     {
         if (eigval[i] > 0)
         {
@@ -204,7 +204,7 @@ double calcSchlitterEntropy(gmx::ArrayRef<const real> eigval,
                 static_cast<int>(eigval.size()), kteh, evcorr);
     }
     double deter = 0;
-    for (size_t i = nskip; i < eigval.size(); i++)
+    for (gmx::index i = nskip; i < eigval.size(); i++)
     {
         double dd    = 1+kteh*eigval[i]*evcorr;
         deter       += std::log(dd);
