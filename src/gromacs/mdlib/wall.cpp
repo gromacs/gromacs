@@ -106,7 +106,7 @@ void make_wall_tables(FILE *fplog,
     }
 }
 
-static void wall_error(int a, const rvec *x, real r)
+[[ noreturn ]] static void wall_error(int a, const rvec *x, real r)
 {
     gmx_fatal(FARGS,
               "An atom is beyond the wall: coordinates %f %f %f, distance %f\n"

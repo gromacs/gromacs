@@ -72,7 +72,8 @@ class AbstractOptionSection
         //! \cond libapi
         //! Initializes option properties with the given name.
         explicit AbstractOptionSection(const char *name) : name_(name) {}
-
+        //! Destructor
+        virtual ~AbstractOptionSection() {}
         /*! \brief
          * Creates a storage object corresponding to this section.
          *

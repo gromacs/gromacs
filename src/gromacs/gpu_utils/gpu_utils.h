@@ -176,7 +176,7 @@ void free_gpu(const gmx_device_info_t *CUDA_FUNC_ARGUMENT(deviceInfo)) CUDA_FUNC
  */
 GPU_FUNC_QUALIFIER
 gmx_device_info_t *getDeviceInfo(const gmx_gpu_info_t &GPU_FUNC_ARGUMENT(gpu_info),
-                                 int GPU_FUNC_ARGUMENT(deviceId)) GPU_FUNC_TERM_WITH_RETURN(NULL)
+                                 int GPU_FUNC_ARGUMENT(deviceId)) GPU_FUNC_TERM_WITH_RETURN(nullptr)
 
 /*! \brief Returns the device ID of the CUDA GPU currently in use.
  *

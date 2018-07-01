@@ -138,7 +138,7 @@ class ArrayRef
         /*! \brief
          * Constructs an empty reference.
          */
-        ArrayRef() : begin_(NULL), end_(NULL) {}
+        ArrayRef() : begin_(nullptr), end_(nullptr) {}
         /*! \brief
          * Constructs an empty reference.
          *

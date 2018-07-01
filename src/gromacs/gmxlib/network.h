@@ -116,7 +116,7 @@ const char *opt2fn_master(const char *opt, int nfile,
 /* Return the filename belonging to cmd-line option opt, or NULL when
  * no such option or not running on master */
 
-void
+[[ noreturn ]] void
 gmx_fatal_collective(int f_errno, const char *file, int line,
                      MPI_Comm comm, gmx_bool bMaster,
                      const char *fmt, ...);

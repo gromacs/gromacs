@@ -92,6 +92,7 @@ static void gmx_fio_check_nitem(int eio, int nitem, const char *file, int line)
 }
 
 /* output a data type error. */
+[[ noreturn ]]
 static void gmx_fio_fe(t_fileio *fio, int eio, const char *desc,
                        const char *srcfile, int line)
 {

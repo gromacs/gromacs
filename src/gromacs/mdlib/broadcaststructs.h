@@ -74,14 +74,14 @@ void snew_bc(const t_commrec *cr, T * &data, int numElements)
 }
 //! Convenience wrapper for gmx_bcast of a C-style array which needs allocation on non-master ranks.
 template <typename T>
-static void nblock_abc(const t_commrec *cr, int numElements, T **v)
+void nblock_abc(const t_commrec *cr, int numElements, T **v)
 {
     snew_bc(cr, v, numElements);
     nblock_bc(cr, numElements, *v);
 }
 //! Convenience wrapper for gmx_bcast of a std::vector which needs resizing on non-master ranks.
 template <typename T>
-static void nblock_abc(const t_commrec *cr, int numElements, std::vector<T> *v)
+void nblock_abc(const t_commrec *cr, int numElements, std::vector<T> *v)
 {
     if (!MASTER(cr))
     {

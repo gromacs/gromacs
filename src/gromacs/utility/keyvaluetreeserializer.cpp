@@ -56,7 +56,7 @@ class ValueSerializer
         static KeyValueTreeValue deserialize(ISerializer *serializer);
 
     private:
-        ValueSerializer();
+        ValueSerializer() = delete;
 
         typedef void (*SerializerFunction)(const KeyValueTreeValue &value, ISerializer *serializer);
         typedef void (*DeserializerFunction)(KeyValueTreeValueBuilder *builder, ISerializer *serializer);
@@ -257,7 +257,7 @@ void ValueSerializer::initSerializers()
         SERIALIZER('f', float),
         SERIALIZER('d', double),
     };
-    for (const auto item : s_serializers)
+    for (const auto &item : s_serializers)
     {
         s_deserializers[item.second.typeTag] = item.second.deserialize;
     }

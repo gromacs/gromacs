@@ -114,7 +114,10 @@ static void gmx_signal(int signum)
 {
 #if HAVE_SIGACTION
     struct sigaction act;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdisabled-macro-expansion"
     act.sa_handler = signal_handler;
+#pragma clang diagnostic pop
     sigemptyset(&act.sa_mask);
     act.sa_flags = SA_RESTART;
     sigaction(signum, &act, nullptr);

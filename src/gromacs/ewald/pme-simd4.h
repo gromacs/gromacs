@@ -45,6 +45,7 @@
  * This code does not assume any memory alignment for the grid.
  */
 {
+    using namespace gmx;
     Simd4Real ty_S0(thy[0]);
     Simd4Real ty_S1(thy[1]);
     Simd4Real ty_S2(thy[2]);
@@ -93,6 +94,7 @@
  * This code supports pme_order <= 5.
  */
 {
+    using namespace gmx;
     int              offset;
     int              index;
     Simd4Real        ty_S0(thy[0]);

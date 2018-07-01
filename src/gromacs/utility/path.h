@@ -116,7 +116,7 @@ class File
 
         static void returnFalseOnError(const NotFoundInfo &info);
         static void throwOnError(const NotFoundInfo &info);
-        static void throwOnNotFound(const NotFoundInfo &info);
+        [[ noreturn ]] static void throwOnNotFound(const NotFoundInfo &info);
 
         typedef void (*NotFoundHandler)(const NotFoundInfo &info);
 
