@@ -1303,7 +1303,7 @@ static void calc_cell_indices(nbnxn_search         *nbs,
     }
 
     /* Make sure the work array for sorting is large enough */
-    if (static_cast<size_t>(ncz_max*grid->na_sc*SGSF) > nbs->work[0].sortBuffer.size())
+    if (ncz_max*grid->na_sc*SGSF > gmx::index(nbs->work[0].sortBuffer.size()))
     {
         for (nbnxn_search_work_t &work : nbs->work)
         {

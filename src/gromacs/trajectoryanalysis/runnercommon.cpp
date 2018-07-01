@@ -213,7 +213,7 @@ TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
         return;
     }
     time_unit_t time_unit
-        = static_cast<time_unit_t>(settings_.timeUnit() + 1);
+        = static_cast<time_unit_t>(settings_.timeUnit() + 1); // NOLINT(misc-misplaced-widening-cast)
     output_env_init(&oenv_, getProgramContext(), time_unit, FALSE, exvgNONE, 0);
 
     int frflags = settings_.frflags();

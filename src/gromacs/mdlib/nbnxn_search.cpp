@@ -1729,7 +1729,7 @@ static void make_fep_list(const nbnxn_search     *nbs,
 
     ngid = nbat->nenergrp;
 
-    if (static_cast<std::size_t>(ngid*gridj->na_cj) > sizeof(gid_cj)*8)
+    if (ngid*gridj->na_cj > gmx::index(sizeof(gid_cj)*8))
     {
         gmx_fatal(FARGS, "The Verlet scheme with %dx%d kernels and free-energy only supports up to %d energy groups",
                   gridi->na_c, gridj->na_cj, (sizeof(gid_cj)*8)/gridj->na_cj);
