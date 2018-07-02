@@ -547,8 +547,8 @@ static int neq_str_sign(const char *a1, const char *a2)
 {
     int l1, l2, lm;
 
-    l1 = (int)strlen(a1);
-    l2 = (int)strlen(a2);
+    l1 = static_cast<int>(strlen(a1));
+    l2 = static_cast<int>(strlen(a2));
     lm = std::min(l1, l2);
 
     if (lm >= 1 &&
@@ -586,8 +586,8 @@ char *search_rtp(const char *key, int nrtp, t_restp rtp[])
             /* Allow a mismatch of at most a sign character (with warning) */
             n = neq_str_sign(key, rtp[i].resname);
             if (n >= best &&
-                n+1 >= (int)strlen(key) &&
-                n+1 >= (int)strlen(rtp[i].resname))
+                n+1 >= static_cast<int>(strlen(key)) &&
+                n+1 >= static_cast<int>(strlen(rtp[i].resname)))
             {
                 if (n == best)
                 {

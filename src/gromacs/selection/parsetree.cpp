@@ -1214,5 +1214,5 @@ bool
 _gmx_sel_parser_should_finish(yyscan_t scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
-    return (int)sc->sel.size() == _gmx_sel_lexer_exp_selcount(scanner);
+    return static_cast<int>(sc->sel.size()) == _gmx_sel_lexer_exp_selcount(scanner);
 }

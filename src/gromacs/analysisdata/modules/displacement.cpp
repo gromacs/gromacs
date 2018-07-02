@@ -212,7 +212,7 @@ AnalysisDataDisplacementModule::frameStarted(const AnalysisDataFrameHeader &head
     // Allocate memory for all the positions once it is possible.
     if (_impl->max_store == -1 && !_impl->bFirst)
     {
-        _impl->max_store = _impl->nmax * (int)(_impl->tmax/_impl->dt + 1);
+        _impl->max_store = _impl->nmax * static_cast<int>(_impl->tmax/_impl->dt + 1);
         srenew(_impl->oldval, _impl->max_store);
     }
 

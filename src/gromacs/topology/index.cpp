@@ -423,7 +423,7 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
         }
     }
     /* find matching or complement atoms */
-    for (i = 0; (i < (int)num_index_groups); i++)
+    for (i = 0; (i < num_index_groups); i++)
     {
         nra = 0;
         for (n = 0; (n < atoms->nr); n++)
@@ -470,7 +470,7 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
 
     if (bASK)
     {
-        for (i = 0; (i < (int)num_index_groups); i++)
+        for (i = 0; (i < num_index_groups); i++)
         {
             printf("Split %12s into %5d residues (y/n) ? ", constructing_data[i].group_name, npres);
             if (gmx_ask_yesno(bASK))
@@ -829,7 +829,7 @@ static void minstring(char *str)
 {
     int i;
 
-    for (i = 0; (i < (int)strlen(str)); i++)
+    for (i = 0; (i < static_cast<int>(strlen(str))); i++)
     {
         if (str[i] == '-')
         {

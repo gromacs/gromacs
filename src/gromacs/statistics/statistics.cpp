@@ -65,12 +65,12 @@ gmx_stats_t gmx_stats_init()
 
     snew(stats, 1);
 
-    return (gmx_stats_t) stats;
+    return static_cast<gmx_stats_t>(stats);
 }
 
 int gmx_stats_get_npoints(gmx_stats_t gstats, int *N)
 {
-    gmx_stats *stats = (gmx_stats *) gstats;
+    gmx_stats *stats = static_cast<gmx_stats *>(gstats);
 
     *N = stats->np;
 
@@ -79,7 +79,7 @@ int gmx_stats_get_npoints(gmx_stats_t gstats, int *N)
 
 void gmx_stats_free(gmx_stats_t gstats)
 {
-    gmx_stats *stats = (gmx_stats *) gstats;
+    gmx_stats *stats = static_cast<gmx_stats *>(gstats);
 
     sfree(stats->x);
     sfree(stats->y);

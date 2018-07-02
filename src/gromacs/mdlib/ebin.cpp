@@ -165,7 +165,7 @@ void add_ebin(t_ebin *eb, int index, int nener, const real ener[], gmx_bool bSum
         }
         else
         {
-            invmm = (1.0/(double)m)/((double)m+1.0);
+            invmm = (1.0/m)/(m+1.0);
 
             for (i = 0; (i < nener); i++)
             {

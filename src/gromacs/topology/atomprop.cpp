@@ -138,8 +138,8 @@ static int get_prop_index(aprop_t *ap, gmx_residuetype_t *restype,
         }
     }
 
-    *bExact = ((malen == (long int)strlen(atomnm)) &&
-               ((mrlen == (long int)strlen(resnm)) ||
+    *bExact = ((malen == static_cast<long int>(strlen(atomnm))) &&
+               ((mrlen == static_cast<long int>(strlen(resnm))) ||
                 ((mrlen == WILDPROT) && bProtWild) ||
                 ((mrlen == WILDCARD) && !bProtein && !bProtWild)));
 
@@ -213,7 +213,7 @@ static void add_prop(aprop_t *ap, gmx_residuetype_t *restype,
 
 static void read_prop(gmx_atomprop_t aps, int eprop, double factor)
 {
-    gmx_atomprop *ap2 = (gmx_atomprop*) aps;
+    gmx_atomprop *ap2 = static_cast<gmx_atomprop*>(aps);
     FILE         *fp;
     char          line[STRLEN], resnm[32], atomnm[32];
     double        pp;
@@ -247,7 +247,7 @@ static void read_prop(gmx_atomprop_t aps, int eprop, double factor)
 
 static void set_prop(gmx_atomprop_t aps, int eprop)
 {
-    gmx_atomprop *ap2           = (gmx_atomprop*) aps;
+    gmx_atomprop *ap2           = static_cast<gmx_atomprop*>(aps);
     const char   *fns[epropNR]  = { "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat", "elements.dat" };
     double        fac[epropNR]  = { 1.0,    1.0,  418.4, 1.0, 1.0 };
     double        def[epropNR]  = { 12.011, 0.14, 0.0, 2.2, -1 };
@@ -289,7 +289,7 @@ gmx_atomprop_t gmx_atomprop_init(void)
     aps->bWarned  = FALSE;
     aps->bWarnVDW = FALSE;
 
-    return (gmx_atomprop_t)aps;
+    return static_cast<gmx_atomprop_t>(aps);
 }
 
 static void destroy_prop(aprop_t *ap)
@@ -314,7 +314,7 @@ static void destroy_prop(aprop_t *ap)
 
 void gmx_atomprop_destroy(gmx_atomprop_t aps)
 {
-    gmx_atomprop *ap = (gmx_atomprop*) aps;
+    gmx_atomprop *ap = static_cast<gmx_atomprop*>(aps);
     int           p;
 
     if (aps == nullptr)
@@ -349,7 +349,7 @@ gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
                             int eprop, const char *resnm, const char *atomnm,
                             real *value)
 {
-    gmx_atomprop *ap = (gmx_atomprop*) aps;
+    gmx_atomprop *ap = static_cast<gmx_atomprop*>(aps);
     int           j;
 #define MAXQ 32
     char          atomname[MAXQ], resname[MAXQ];
@@ -403,7 +403,7 @@ gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
 
 char *gmx_atomprop_element(gmx_atomprop_t aps, int atomnumber)
 {
-    gmx_atomprop *ap = (gmx_atomprop*) aps;
+    gmx_atomprop *ap = static_cast<gmx_atomprop*>(aps);
     int           i;
 
     set_prop(aps, epropElement);
@@ -419,7 +419,7 @@ char *gmx_atomprop_element(gmx_atomprop_t aps, int atomnumber)
 
 int gmx_atomprop_atomnumber(gmx_atomprop_t aps, const char *elem)
 {
-    gmx_atomprop *ap = (gmx_atomprop*) aps;
+    gmx_atomprop *ap = static_cast<gmx_atomprop*>(aps);
     int           i;
 
     set_prop(aps, epropElement);

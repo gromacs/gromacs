@@ -361,7 +361,7 @@ int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
 static int
 process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
 {
-    gmx_cpp_t    handle = (gmx_cpp_t)*handlep;
+    gmx_cpp_t    handle = *handlep;
     int          i, i0, len, status;
     unsigned int i1;
     char        *inc_fn, *name;
@@ -567,7 +567,7 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
    recursively and no cpp directives are printed. */
 int cpp_read_line(gmx_cpp_t *handlep, int n, char buf[])
 {
-    gmx_cpp_t   handle = (gmx_cpp_t)*handlep;
+    gmx_cpp_t   handle = *handlep;
     int         i, nn, len, status;
     const char *ptr, *ptr2;
     char       *name;
@@ -669,7 +669,7 @@ int cpp_read_line(gmx_cpp_t *handlep, int n, char buf[])
                 ptr = buf;
                 while ((ptr2 = strstrw(ptr, defs[i].name)) != nullptr)
                 {
-                    strncat(name, ptr, (int)(ptr2-ptr));
+                    strncat(name, ptr, static_cast<int>(ptr2-ptr));
                     strcat(name, defs[i].def);
                     ptr = ptr2 + strlen(defs[i].name);
                 }
@@ -696,7 +696,7 @@ int cpp_cur_linenr(const gmx_cpp_t *handlep)
 /* Close the file! Return integer status. */
 int cpp_close_file(gmx_cpp_t *handlep)
 {
-    gmx_cpp_t handle = (gmx_cpp_t)*handlep;
+    gmx_cpp_t handle = *handlep;
 
     if (!handle)
     {
@@ -773,11 +773,11 @@ char *cpp_error(gmx_cpp_t *handlep, int status)
         "Invalid file handle",
         "File not open", "Unknown error", "Error status out of range"
     };
-    gmx_cpp_t   handle = (gmx_cpp_t)*handlep;
+    gmx_cpp_t   handle = *handlep;
 
     if (!handle)
     {
-        return (char *)ecpp[eCPP_INVALID_HANDLE];
+        return const_cast<char *>(ecpp[eCPP_INVALID_HANDLE]);
     }
 
     if ((status < 0) || (status >= eCPP_NR))

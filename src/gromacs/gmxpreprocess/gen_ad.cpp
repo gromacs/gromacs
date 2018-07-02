@@ -324,7 +324,7 @@ static int idcomp(const void *a, const void *b)
     }
     else
     {
-        return (int) (pa->a[2]-pb->a[2]);
+        return (pa->a[2]-pb->a[2]);
     }
 }
 
@@ -344,7 +344,7 @@ static void sort_id(int nr, t_param ps[])
     /* Now sort it */
     if (nr > 1)
     {
-        qsort(ps, nr, (size_t)sizeof(ps[0]), idcomp);
+        qsort(ps, nr, static_cast<size_t>(sizeof(ps[0])), idcomp);
     }
 }
 
@@ -361,7 +361,7 @@ static int n_hydro(const int a[], char ***atomname)
         {
             nh++;
         }
-        else if (((int)strlen(aname) > 1) && (c0 >= '0') && (c0 <= '9'))
+        else if ((static_cast<int>(strlen(aname)) > 1) && (c0 >= '0') && (c0 <= '9'))
         {
             c1 = toupper(aname[1]);
             if (c1 == 'H')
@@ -639,7 +639,7 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
     {
         if (excls[a].nr > 1)
         {
-            qsort(excls[a].e, excls[a].nr, (size_t)sizeof(int), int_comp);
+            qsort(excls[a].e, excls[a].nr, static_cast<size_t>(sizeof(int)), int_comp);
         }
     }
 }
@@ -1112,19 +1112,19 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     /* Sort angles with respect to j-i-k (middle atom first) */
     if (nang > 1)
     {
-        qsort(ang, nang, (size_t)sizeof(ang[0]), acomp);
+        qsort(ang, nang, static_cast<size_t>(sizeof(ang[0])), acomp);
     }
 
     /* Sort dihedrals with respect to j-k-i-l (middle atoms first) */
     if (ndih > 1)
     {
-        qsort(dih, ndih, (size_t)sizeof(dih[0]), dcomp);
+        qsort(dih, ndih, static_cast<size_t>(sizeof(dih[0])), dcomp);
     }
 
     /* Sort the pairs */
     if (npai > 1)
     {
-        qsort(pai, npai, (size_t)sizeof(pai[0]), pcomp);
+        qsort(pai, npai, static_cast<size_t>(sizeof(pai[0])), pcomp);
     }
     if (npai > 0)
     {

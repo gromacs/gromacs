@@ -549,7 +549,7 @@ static void cmp_idef(FILE *fp, const t_idef *id1, const t_idef *id2, real ftol, 
         {
             sprintf(buf1, "idef->functype[%d]", i);
             sprintf(buf2, "idef->iparam[%d]", i);
-            cmp_int(fp, buf1, i, (int)id1->functype[i], (int)id2->functype[i]);
+            cmp_int(fp, buf1, i, static_cast<int>(id1->functype[i]), static_cast<int>(id2->functype[i]));
             cmp_iparm(fp, buf2, id1->functype[i],
                       id1->iparams[i], id2->iparams[i], ftol, abstol);
         }

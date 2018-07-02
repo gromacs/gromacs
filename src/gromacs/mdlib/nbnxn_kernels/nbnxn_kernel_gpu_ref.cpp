@@ -370,7 +370,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
     {
         fprintf(debug, "number of half %dx%d atom pairs: %d after pruning: %d fraction %4.2f\n",
                 nbl->na_ci, nbl->na_ci,
-                nhwu, nhwu_pruned, nhwu_pruned/(double)nhwu);
+                nhwu, nhwu_pruned, nhwu_pruned/static_cast<double>(nhwu));
         fprintf(debug, "generic kernel pair interactions:            %d\n",
                 nhwu*nbl->na_ci/2*nbl->na_ci);
         fprintf(debug, "generic kernel post-prune pair interactions: %d\n",
@@ -378,6 +378,6 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
         fprintf(debug, "generic kernel non-zero pair interactions:   %d\n",
                 npair_tot);
         fprintf(debug, "ratio non-zero/post-prune pair interactions: %4.2f\n",
-                npair_tot/(double)(nhwu_pruned*gmx::exactDiv(nbl->na_ci, 2)*nbl->na_ci));
+                npair_tot/static_cast<double>(nhwu_pruned*gmx::exactDiv(nbl->na_ci, 2)*nbl->na_ci));
     }
 }

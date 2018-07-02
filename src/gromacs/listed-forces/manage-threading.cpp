@@ -466,8 +466,8 @@ void setup_bonded_threading(bonded_threading_t *bt,
         fprintf(debug, "Number of %d atom blocks to reduce: %d\n",
                 reduction_block_size, bt->nblock_used);
         fprintf(debug, "Reduction density %.2f for touched blocks only %.2f\n",
-                ctot*reduction_block_size/(double)numAtoms,
-                ctot/(double)bt->nblock_used);
+                ctot*reduction_block_size/static_cast<double>(numAtoms),
+                ctot/static_cast<double>(bt->nblock_used));
     }
 }
 
