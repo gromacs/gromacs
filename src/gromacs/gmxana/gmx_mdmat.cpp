@@ -382,7 +382,7 @@ int gmx_mdmat(int argc, char *argv[])
         sprintf(legend[2], "Mean");
         sprintf(legend[3], "# atoms");
         sprintf(legend[4], "Mean/# atoms");
-        xvgr_legend(fp, 5, (const char**)legend, oenv);
+        xvgr_legend(fp, 5, legend, oenv);
         for (i = 0; (i < nres); i++)
         {
             if (mean_n[i] == 0)

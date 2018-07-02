@@ -417,7 +417,7 @@ Integrator::do_tpi()
                 leg[e++] = gmx_strdup(str);
             }
         }
-        xvgr_legend(fp_tpi, 4+nener, (const char**)leg, oenv);
+        xvgr_legend(fp_tpi, 4+nener, leg, oenv);
         for (i = 0; i < 4+nener; i++)
         {
             sfree(leg[i]);
@@ -842,7 +842,7 @@ Integrator::do_tpi()
                           "\\betaU - log(V/<V>)", "count", oenv);
         sprintf(str, "number \\betaU > %g: %9.3e", bU_bin_limit, bin[0]);
         xvgr_subtitle(fp_tpi, str, oenv);
-        xvgr_legend(fp_tpi, 2, (const char **)tpid_leg, oenv);
+        xvgr_legend(fp_tpi, 2, tpid_leg, oenv);
         for (i = nbin-1; i > 0; i--)
         {
             bUlogV = -i/invbinw + bU_logV_bin_limit - refvolshift + log(V_all/frame);

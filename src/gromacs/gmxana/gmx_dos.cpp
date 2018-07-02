@@ -482,7 +482,7 @@ int gmx_dos(int argc, char *argv[])
         gmx_fatal(FARGS, "gmx_fft_init_1d_real returned %d", fftcode);
     }
     if ((fftcode = gmx_fft_1d_real(fft, GMX_FFT_REAL_TO_COMPLEX,
-                                   (void *)dos[MVACF], (void *)dos[DOS])) != 0)
+                                   dos[MVACF], dos[DOS])) != 0)
     {
         gmx_fatal(FARGS, "gmx_fft_1d_real returned %d", fftcode);
     }
