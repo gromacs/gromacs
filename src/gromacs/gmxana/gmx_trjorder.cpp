@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,10 +65,10 @@ t_order *order;
 
 static int ocomp(const void *a, const void *b)
 {
-    t_order *oa, *ob;
+    const t_order *oa, *ob;
 
-    oa = (t_order *)a;
-    ob = (t_order *)b;
+    oa = reinterpret_cast<const t_order*>(a);
+    ob = reinterpret_cast<const t_order*>(b);
 
     if (oa->d2 < ob->d2)
     {

@@ -299,11 +299,6 @@ static void set_p(t_param *p, const int ai[4], const real *c, char *s)
     set_p_string(p, s);
 }
 
-static int int_comp(const void *a, const void *b)
-{
-    return (*(int *)a) - (*(int *)b);
-}
-
 static int idcomp(const void *a, const void *b)
 {
     const t_param *pa, *pb;
@@ -640,7 +635,7 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
     {
         if (excls[a].nr > 1)
         {
-            qsort(excls[a].e, excls[a].nr, static_cast<size_t>(sizeof(int)), int_comp);
+            std::sort(excls[a].e, excls[a].e+excls[a].nr);
         }
     }
 }
