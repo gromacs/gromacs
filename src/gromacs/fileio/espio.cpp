@@ -88,7 +88,7 @@ static int get_espresso_word(FILE *fp, char word[])
             }
             else
             {
-                word[nc++] = (char)i;
+                word[nc++] = static_cast<char>(i);
             }
         }
     }

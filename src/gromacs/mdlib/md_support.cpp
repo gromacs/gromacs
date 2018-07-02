@@ -270,7 +270,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
          */
         enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, &dvdl_ekin,
                                        bEkinAveVel, bScaleEkin);
-        enerd->dvdl_lin[efptMASS] = (double) dvdl_ekin;
+        enerd->dvdl_lin[efptMASS] = static_cast<double>(dvdl_ekin);
 
         enerd->term[F_EKIN] = trace(ekind->ekin);
     }

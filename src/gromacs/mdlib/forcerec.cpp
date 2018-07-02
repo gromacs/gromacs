@@ -1203,8 +1203,8 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
         if (debug)
         {
             fprintf(debug, "Counted %d exclusions\n", nexcl);
-            fprintf(debug, "Average C6 parameter is: %10g\n", (double)csix);
-            fprintf(debug, "Average C12 parameter is: %10g\n", (double)ctwelve);
+            fprintf(debug, "Average C6 parameter is: %10g\n", csix);
+            fprintf(debug, "Average C12 parameter is: %10g\n", ctwelve);
         }
         fr->avcsix[q]    = csix;
         fr->avctwelve[q] = ctwelve;

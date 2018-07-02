@@ -1190,7 +1190,7 @@ void upd_mdebin(t_mdebin               *md,
             store_energy = enerd->term[F_ETOT];
             /* store_dh is dE */
             mde_delta_h_coll_add_dh(md->dhc,
-                                    (double)state->fep_state,
+                                    static_cast<double>(state->fep_state),
                                     store_energy,
                                     pv,
                                     store_dhdl,

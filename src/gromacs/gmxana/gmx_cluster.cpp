@@ -796,7 +796,7 @@ static rvec **read_whole_trj(const char *fn, int isize, const int index[], int s
     }
     while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "Allocated %lu bytes for frames\n",
-            (unsigned long) (max_nf*isize*sizeof(**xx)));
+            (max_nf*isize*sizeof(**xx)));
     fprintf(stderr, "Read %d frames from trajectory %s\n", i0, fn);
     *nframe = i0;
     sfree(x);

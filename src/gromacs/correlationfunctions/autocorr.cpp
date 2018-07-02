@@ -525,7 +525,7 @@ static void do_four_core(unsigned long mode, int nframes,
     sfree(cfour);
     for (j = 0; (j < nframes); j++)
     {
-        c1[j] = csum[j]/(real)(nframes-j);
+        c1[j] = csum[j]/static_cast<real>(nframes-j);
     }
 }
 

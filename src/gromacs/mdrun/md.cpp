@@ -1350,7 +1350,7 @@ void gmx::Integrator::do_md()
         elapsed_time = walltime_accounting_get_current_elapsed_time(walltime_accounting);
 
         /* Check whether everything is still allright */
-        if (((int)gmx_get_stop_condition() > handled_stop_condition)
+        if ((static_cast<int>(gmx_get_stop_condition()) > handled_stop_condition)
 #if GMX_THREAD_MPI
             && MASTER(cr)
 #endif
@@ -1391,7 +1391,7 @@ void gmx::Integrator::do_md()
                     "\n\nReceived the %s signal, stopping within %d steps\n\n",
                     gmx_get_signal_name(), nsteps_stop);
             fflush(stderr);
-            handled_stop_condition = (int)gmx_get_stop_condition();
+            handled_stop_condition = static_cast<int>(gmx_get_stop_condition());
         }
         else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
                  (max_hours > 0 && elapsed_time > max_hours*60.0*60.0*0.99) &&

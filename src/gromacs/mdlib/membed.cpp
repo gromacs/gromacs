@@ -448,7 +448,7 @@ static int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_
     /*membrane area within the box defined by the min and max coordinates of the embedded molecule*/
     mem_area = (pos_ins->xmax[XX]-pos_ins->xmin[XX])*(pos_ins->xmax[YY]-pos_ins->xmin[YY]);
     /*rough estimate of area per lipid, assuming there is only one type of lipid in the membrane*/
-    mem_p->lip_area = 2.0*mem_area/(double)nmolbox;
+    mem_p->lip_area = 2.0*mem_area/static_cast<double>(nmolbox);
 
     return mem_p->mem_at.nr;
 }
@@ -498,7 +498,7 @@ static void init_resize(t_block *ins_at, rvec *r_ins, pos_ins_t *pos_ins, mem_t 
 
         if (c > 0)
         {
-            svmul(1/(double)c, pos_ins->geom_cent[i], pos_ins->geom_cent[i]);
+            svmul(1/static_cast<double>(c), pos_ins->geom_cent[i], pos_ins->geom_cent[i]);
         }
 
         if (!bALLOW_ASYMMETRY)
@@ -1231,7 +1231,7 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
                "The area per lipid is %.4f nm^2.\n", mem_p->nmol, mem_p->lip_area);
 
         /* Maximum number of lipids to be removed*/
-        max_lip_rm = (int)(2*prot_area/mem_p->lip_area);
+        max_lip_rm = static_cast<int>(2*prot_area/mem_p->lip_area);
         printf("Maximum number of lipids that will be removed is %d.\n", max_lip_rm);
 
         printf("\nWill resize the protein by a factor of %.3f in the xy plane and %.3f in the z direction.\n"
@@ -1245,8 +1245,8 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
         membed->fac[0] = membed->fac[1] = xy_fac;
         membed->fac[2] = z_fac;
 
-        membed->xy_step = (xy_max-xy_fac)/(double)(it_xy);
-        membed->z_step  = (z_max-z_fac)/(double)(it_z-1);
+        membed->xy_step = (xy_max-xy_fac)/static_cast<double>(it_xy);
+        membed->z_step  = (z_max-z_fac)/static_cast<double>(it_z-1);
 
         resize(r_ins, as_rvec_array(state->x.data()), pos_ins, membed->fac);
 

@@ -714,11 +714,11 @@ static real energyDrift(const verletbuf_atomtype_t *att, int natt,
             /* Multiply by the number of atom pairs */
             if (j == i)
             {
-                pot *= (double)att[i].n*(att[i].n - 1)/2;
+                pot *= static_cast<double>(att[i].n)*(att[i].n - 1)/2;
             }
             else
             {
-                pot *= (double)att[i].n*att[j].n;
+                pot *= static_cast<double>(att[i].n)*att[j].n;
             }
             /* We need the line density to get the energy drift of the system.
              * The effective average r^2 is close to (rlist+sigma)^2.
@@ -1075,7 +1075,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     /* Search using bisection */
     ib0 = -1;
     /* The drift will be neglible at 5 times the max sigma */
-    ib1 = (int)(5*2*std::sqrt(kT_fac/mass_min)/resolution) + 1;
+    ib1 = static_cast<int>(5*2*std::sqrt(kT_fac/mass_min)/resolution) + 1;
     while (ib1 - ib0 > 1)
     {
         ib = (ib0 + ib1)/2;
