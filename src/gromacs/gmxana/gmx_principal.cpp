@@ -132,15 +132,15 @@ int gmx_principal(int argc, char *argv[])
 
     axis1 = xvgropen(opt2fn("-a1", NFILE, fnm), "Principal axis 1 (major axis)",
                      output_env_get_xvgr_tlabel(oenv), "Component (nm)", oenv);
-    xvgr_legend(axis1, DIM, (const char **)legend, oenv);
+    xvgr_legend(axis1, DIM, legend, oenv);
 
     axis2 = xvgropen(opt2fn("-a2", NFILE, fnm), "Principal axis 2 (middle axis)",
                      output_env_get_xvgr_tlabel(oenv), "Component (nm)", oenv);
-    xvgr_legend(axis2, DIM, (const char **)legend, oenv);
+    xvgr_legend(axis2, DIM, legend, oenv);
 
     axis3 = xvgropen(opt2fn("-a3", NFILE, fnm), "Principal axis 3 (minor axis)",
                      output_env_get_xvgr_tlabel(oenv), "Component (nm)", oenv);
-    xvgr_legend(axis3, DIM, (const char **)legend, oenv);
+    xvgr_legend(axis3, DIM, legend, oenv);
 
     sprintf(legend[XX], "Axis 1 (major)");
     sprintf(legend[YY], "Axis 2 (middle)");
@@ -148,7 +148,7 @@ int gmx_principal(int argc, char *argv[])
 
     fmoi  = xvgropen(opt2fn("-om", NFILE, fnm), "Moments of inertia around inertial axes",
                      output_env_get_xvgr_tlabel(oenv), "I (au nm\\S2\\N)", oenv);
-    xvgr_legend(fmoi, DIM, (const char **)legend, oenv);
+    xvgr_legend(fmoi, DIM, legend, oenv);
 
     for (i = 0; i < DIM; i++)
     {

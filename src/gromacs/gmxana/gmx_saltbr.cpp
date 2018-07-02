@@ -282,7 +282,7 @@ int gmx_saltbr(int argc, char *argv[])
 
                     if (nset[nnn] == 0)
                     {
-                        xvgr_legend(out[nnn], 1, (const char**)&buf, oenv);
+                        xvgr_legend(out[nnn], 1, &buf, oenv);
                     }
                     else
                     {

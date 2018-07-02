@@ -104,13 +104,13 @@ int many_auto_correl(std::vector<std::vector<real> > *c)
                     in[2*j+0] = (*c)[i][j];
                     in[2*j+1] = 0;
                 }
-                gmx_fft_1d(fft1, GMX_FFT_BACKWARD, (void *)in.data(), (void *)out.data());
+                gmx_fft_1d(fft1, GMX_FFT_BACKWARD, in.data(), out.data());
                 for (size_t j = 0; j < nfft; j++)
                 {
                     in[2*j+0] = (out[2*j+0]*out[2*j+0] + out[2*j+1]*out[2*j+1])/nfft;
                     in[2*j+1] = 0;
                 }
-                gmx_fft_1d(fft1, GMX_FFT_FORWARD, (void *)in.data(), (void *)out.data());
+                gmx_fft_1d(fft1, GMX_FFT_FORWARD, in.data(), out.data());
                 for (size_t j = 0; (j < nfft); j++)
                 {
                     (*c)[i][j] = out[2*j+0];

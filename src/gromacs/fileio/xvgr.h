@@ -137,7 +137,7 @@ void xvgrLegend(FILE                           *out,
                 const struct gmx_output_env_t  *oenv);
 /* Make a legend box, and also modifies the view to make room for the legend */
 
-void xvgr_legend(FILE *out, int nsets, const char** setnames,
+void xvgr_legend(FILE *out, int nsets, const char*const* setnames,
                  const struct gmx_output_env_t *oenv);
 /* Make a legend box, and also modifies the view to make room for the legend */
 

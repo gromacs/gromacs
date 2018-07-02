@@ -238,7 +238,7 @@ int gmx_polystat(int argc, char *argv[])
                 legp[d*DIM+d2] = gmx_strdup(buf);
             }
         }
-        xvgr_legend(outv, DIM*DIM, (const char**)legp, oenv);
+        xvgr_legend(outv, DIM*DIM, legp, oenv);
     }
     else
     {
