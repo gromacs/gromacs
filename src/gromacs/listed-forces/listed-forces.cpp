@@ -367,7 +367,7 @@ calc_one_bond(int thread,
             /* No energies, shift forces, dvdl */
             rbdihs_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
                                idef->iparams,
-                               (const rvec*)x, f,
+                               static_cast<const rvec*>(x), f,
                                pbc, g, lambda[efptFTYPE], md, fcd,
                                global_atom_index);
             v = 0;

@@ -310,9 +310,9 @@ directive str2dir (char *dstr)
 
     for (d = 0; (d < d_maxdir); d++)
     {
-        if (gmx_strcasecmp_min(ptr, dir2str((directive)d)) == 0)
+        if (gmx_strcasecmp_min(ptr, dir2str(static_cast<directive>(d))) == 0)
         {
-            return (directive)d;
+            return static_cast<directive>(d);
         }
     }
 
@@ -331,7 +331,7 @@ static void set_nec(directive **n, ...)
     va_start(ap, n);
     do
     {
-        d = (directive)va_arg(ap, int);
+        d = static_cast<directive>(va_arg(ap, int));
         srenew(*n, ++ind);
         (*n)[ind-1] = d;
     }
@@ -396,7 +396,7 @@ void DS_Init(DirStack **DS)
         {
             if (debug)
             {
-                fprintf(debug, "%20s:  ", dir2str((directive)i));
+                fprintf(debug, "%20s:  ", dir2str(static_cast<directive>(i)));
             }
             if (necessary[i])
             {

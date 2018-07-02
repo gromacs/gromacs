@@ -630,7 +630,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         CHECK(fep->sc_alpha != 0 && fep->sc_power != 1 && fep->sc_power != 2);
 
         sprintf(err_buf, "The soft-core sc-r-power is %d and can only be 6 or 48",
-                (int)fep->sc_r_power);
+                static_cast<int>(fep->sc_r_power));
         CHECK(fep->sc_alpha != 0 && fep->sc_r_power != 6.0 && fep->sc_r_power != 48.0);
 
         sprintf(err_buf, "Can't use positive delta-lambda (%g) if initial state/lambda does not start at zero", fep->delta_lambda);
@@ -1492,7 +1492,7 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN], char weight
         {
             for (j = 0; j < fep->n_lambda; j++)
             {
-                fep->all_lambda[i][j] = (double)count_fep_lambdas[i][j];
+                fep->all_lambda[i][j] = static_cast<double>(count_fep_lambdas[i][j]);
             }
             sfree(count_fep_lambdas[i]);
         }
@@ -1575,7 +1575,7 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN], char weight
     }
     if ((expand->nstexpanded < 0) && ir->bSimTemp)
     {
-        expand->nstexpanded = 2*(int)(ir->opts.tau_t[0]/ir->delta_t);
+        expand->nstexpanded = 2*static_cast<int>(ir->opts.tau_t[0]/ir->delta_t);
         /* if you don't specify nstexpanded when doing expanded ensemble simulated tempering, it is set to
            2*tau_t just to be careful so it's not to frequent  */
     }
@@ -2991,7 +2991,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
             {
                 if (nrdf_vcm[j] > nrdf_vcm_sub[j])
                 {
-                    nrdf_tc[i] += nrdf_uc*((double)na_vcm[j]/(double)na_tot)*
+                    nrdf_tc[i] += nrdf_uc*(static_cast<double>(na_vcm[j])/static_cast<double>(na_tot))*
                         (nrdf_vcm[j] - nrdf_vcm_sub[j])/nrdf_vcm[j];
                 }
                 if (debug)

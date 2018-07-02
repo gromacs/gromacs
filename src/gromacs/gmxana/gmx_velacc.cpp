@@ -362,7 +362,7 @@ int gmx_velacc(int argc, char *argv[])
 
         if (opt2bSet("-os", NFILE, fnm))
         {
-            calc_spectrum(counter/2, (real *) (c1[0]), (t1-t0)/2, opt2fn("-os", NFILE, fnm),
+            calc_spectrum(counter/2, (c1[0]), (t1-t0)/2, opt2fn("-os", NFILE, fnm),
                           oenv, bRecip);
             do_view(oenv, opt2fn("-os", NFILE, fnm), "-nxy");
         }

@@ -134,7 +134,7 @@ static int lcd(int n1, int n2)
 /*! \brief Returns TRUE when there are enough PME ranks for the ratio */
 static gmx_bool fits_pme_ratio(int nrank_tot, int nrank_pme, float ratio)
 {
-    return ((double)nrank_pme/(double)nrank_tot > 0.95*ratio);
+    return (static_cast<double>(nrank_pme)/static_cast<double>(nrank_tot) > 0.95*ratio);
 }
 
 /*! \brief Returns TRUE when npme out of ntot ranks doing PME is expected to give reasonable performance */
@@ -238,7 +238,7 @@ static int guess_npme(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir,
     {
         gmx_fatal(FARGS, "Could not find an appropriate number of separate PME ranks. i.e. >= %5f*#ranks (%d) and <= #ranks/2 (%d) and reasonable performance wise (grid_x=%d, grid_y=%d).\n"
                   "Use the -npme option of mdrun or change the number of ranks or the PME grid dimensions, see the manual for details.",
-                  ratio, (int)(0.95*ratio*nrank_tot + 0.5), nrank_tot/2, ir->nkx, ir->nky);
+                  ratio, static_cast<int>(0.95*ratio*nrank_tot + 0.5), nrank_tot/2, ir->nkx, ir->nky);
     }
     else
     {
@@ -491,7 +491,7 @@ static float comm_cost_est(real limit, real cutoff,
             }
             else
             {
-                comm_vol_xf = 1.0 - lcd(nc[i], npme[i])/(double)npme[i];
+                comm_vol_xf = 1.0 - lcd(nc[i], npme[i])/static_cast<double>(npme[i]);
             }
             comm_pme += 3*natoms*comm_vol_xf;
         }
@@ -646,7 +646,7 @@ static real optimize_ncells(FILE *fplog,
          * Here we ignore SIMD bondeds as they always do (fast) PBC.
          */
         count_bonded_distances(mtop, ir, &pbcdxr, nullptr);
-        pbcdxr /= (double)mtop->natoms;
+        pbcdxr /= static_cast<double>(mtop->natoms);
     }
     else
     {
@@ -689,7 +689,7 @@ static real optimize_ncells(FILE *fplog,
             fprintf(fplog, "The maximum allowed number of cells is:");
             for (d = 0; d < DIM; d++)
             {
-                nmax = (int)(ddbox->box_size[d]*ddbox->skew_fac[d]/limit);
+                nmax = static_cast<int>(ddbox->box_size[d]*ddbox->skew_fac[d]/limit);
                 if (d >= ddbox->npbcdim && nmax < 2)
                 {
                     nmax = 2;

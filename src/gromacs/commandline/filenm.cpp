@@ -158,7 +158,7 @@ gmx_bool ftp2bSet(int ftp, int nfile, const t_filenm fnm[])
     {
         if (ftp == fnm[i].ftp)
         {
-            return (gmx_bool) IS_SET(fnm[i]);
+            return static_cast<gmx_bool>(IS_SET(fnm[i]));
         }
     }
 
@@ -173,7 +173,7 @@ gmx_bool opt2bSet(const char *opt, int nfile, const t_filenm fnm[])
 
     if (fileOption)
     {
-        return (gmx_bool) IS_SET(*fileOption);
+        return static_cast<gmx_bool>(IS_SET(*fileOption));
     }
 
     GMX_RELEASE_ASSERT(false, "opt2bSet should be called with a valid option");

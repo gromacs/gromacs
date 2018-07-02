@@ -201,7 +201,7 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
     if (nah > 0)
     {
         /* Sort the list (necessary to be able to use bsearch */
-        qsort(aah, nah, (size_t)sizeof(**ah), compaddh);
+        qsort(aah, nah, static_cast<size_t>(sizeof(**ah)), compaddh);
     }
 
     /*
@@ -246,7 +246,7 @@ t_hackblock *search_h_db(int nh, t_hackblock ah[], char *key)
 
     ahkey.name = key;
 
-    result = static_cast<t_hackblock *>(bsearch(&ahkey, ah, nh, (size_t)sizeof(ah[0]), compaddh));
+    result = static_cast<t_hackblock *>(bsearch(&ahkey, ah, nh, static_cast<size_t>(sizeof(ah[0])), compaddh));
 
     return result;
 }

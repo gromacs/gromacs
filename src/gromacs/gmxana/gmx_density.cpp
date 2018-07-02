@@ -74,7 +74,7 @@ typedef struct {
 static int compare(void *a, void *b)
 {
     t_electron *tmp1, *tmp2;
-    tmp1 = (t_electron *)a; tmp2 = (t_electron *)b;
+    tmp1 = static_cast<t_electron *>(a); tmp2 = static_cast<t_electron *>(b);
 
     return std::strcmp(tmp1->atomname, tmp2->atomname);
 }
@@ -124,7 +124,7 @@ static int get_electrons(t_electron **eltab, const char *fn)
     /* sort the list */
     fprintf(stderr, "Sorting list..\n");
     qsort ((void*)*eltab, nr, sizeof(t_electron),
-           (int(*)(const void*, const void*))compare);
+           reinterpret_cast<int(*)(const void*, const void*)>(compare));
 
     return nr;
 }
@@ -276,10 +276,9 @@ static void calc_electron_density(const char *fn, int **index, const int gnx[],
                 sought.atomname = gmx_strdup(*(top->atoms.atomname[index[n][i]]));
 
                 /* now find the number of electrons. This is not efficient. */
-                found = (t_electron *)
-                    bsearch((const void *)&sought,
-                            (const void *)eltab, nr, sizeof(t_electron),
-                            (int(*)(const void*, const void*))compare);
+                found = static_cast<t_electron *>(bsearch((const void *)&sought,
+                                                          (const void *)eltab, nr, sizeof(t_electron),
+                                                          reinterpret_cast<int(*)(const void*, const void*)>(compare)));
 
                 if (found == nullptr)
                 {

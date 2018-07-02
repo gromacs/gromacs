@@ -574,7 +574,7 @@ static char **read_topol(const char *infile, const char *outfile,
             trim (pline);
 
             /* if there is something left... */
-            if ((int)strlen(pline) > 0)
+            if (static_cast<int>(strlen(pline)) > 0)
             {
                 if (pline[0] == OPENDIR)
                 {
@@ -900,7 +900,7 @@ static char **read_topol(const char *infile, const char *outfile,
                             break;
                         }
                         default:
-                            fprintf (stderr, "case: %d\n", (int)d);
+                            fprintf (stderr, "case: %d\n", static_cast<int>(d));
                             gmx_incons("unknown directive");
                     }
                 }

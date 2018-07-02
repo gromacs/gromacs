@@ -155,7 +155,7 @@ void signal_handler_install(void)
 
 gmx_stop_cond_t gmx_get_stop_condition(void)
 {
-    return (gmx_stop_cond_t)stop_condition;
+    return static_cast<gmx_stop_cond_t>(stop_condition);
 }
 
 void gmx_set_stop_condition(gmx_stop_cond_t recvd_stop_cond)
