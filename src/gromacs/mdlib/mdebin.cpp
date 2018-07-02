@@ -403,7 +403,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                     }
                 }
                 md->igrp[n] = get_ebin_space(md->ebin, md->nEc,
-                                             (const char **)gnm, unit_energy);
+                                             gnm, unit_energy);
                 n++;
             }
         }
@@ -462,7 +462,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         sprintf(buf, "T-%s", *(groups->grpname[ni]));
         grpnms[i] = gmx_strdup(buf);
     }
-    md->itemp = get_ebin_space(md->ebin, md->nTC, (const char **)grpnms,
+    md->itemp = get_ebin_space(md->ebin, md->nTC, grpnms,
                                unit_temp_K);
 
     if (md->etc == etcNOSEHOOVER)
@@ -484,7 +484,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                     }
                 }
                 md->itc = get_ebin_space(md->ebin, md->mde_n,
-                                         (const char **)grpnms, unit_invtime);
+                                         grpnms, unit_invtime);
                 if (md->bMTTK)
                 {
                     for (i = 0; (i < md->nTCP); i++)
@@ -499,7 +499,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                         }
                     }
                     md->itcb = get_ebin_space(md->ebin, md->mdeb_n,
-                                              (const char **)grpnms, unit_invtime);
+                                              grpnms, unit_invtime);
                 }
             }
             else
@@ -514,7 +514,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                     grpnms[2*i+1] = gmx_strdup(buf);
                 }
                 md->itc = get_ebin_space(md->ebin, md->mde_n,
-                                         (const char **)grpnms, unit_invtime);
+                                         grpnms, unit_invtime);
             }
         }
     }
@@ -527,7 +527,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
             sprintf(buf, "Lamb-%s", *(groups->grpname[ni]));
             grpnms[i] = gmx_strdup(buf);
         }
-        md->itc = get_ebin_space(md->ebin, md->mde_n, (const char **)grpnms, "");
+        md->itc = get_ebin_space(md->ebin, md->mde_n, grpnms, "");
     }
 
     for (i = 0; i < md->mde_n; i++)
@@ -550,7 +550,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
             sprintf(buf, "Uz-%s", *(groups->grpname[ni]));
             grpnms[3*i+ZZ] = gmx_strdup(buf);
         }
-        md->iu = get_ebin_space(md->ebin, 3*md->nU, (const char **)grpnms, unit_vel);
+        md->iu = get_ebin_space(md->ebin, 3*md->nU, grpnms, unit_vel);
         sfree(grpnms);
     }
 
@@ -871,7 +871,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
                                                           nsets */
         }
 
-        xvgr_legend(fp, nsetsextend, (const char **)setname, oenv);
+        xvgr_legend(fp, nsetsextend, setname, oenv);
 
         for (s = 0; s < nsetsextend; s++)
         {

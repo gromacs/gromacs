@@ -317,11 +317,11 @@ free_data_same(void *data)
 static int
 cmp_int(const void *a, const void *b)
 {
-    if (*(int *)a < *(int *)b)
+    if (*reinterpret_cast<const int*>(a) < *reinterpret_cast<const int*>(b))
     {
         return -1;
     }
-    if (*(int *)a > *(int *)b)
+    if (*reinterpret_cast<const int*>(a) > *reinterpret_cast<const int*>(b))
     {
         return 1;
     }

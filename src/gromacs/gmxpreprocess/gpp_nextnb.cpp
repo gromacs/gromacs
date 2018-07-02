@@ -56,10 +56,10 @@ typedef struct {
 static int
 bond_sort (const void *a, const void *b)
 {
-    sortable *sa, *sb;
+    const sortable *sa, *sb;
 
-    sa = (sortable *) a;
-    sb = (sortable *) b;
+    sa = reinterpret_cast<const sortable*>(a);
+    sb = reinterpret_cast<const sortable*>(b);
 
     if (sa->ai == sb->ai)
     {
@@ -74,7 +74,7 @@ bond_sort (const void *a, const void *b)
 static int
 compare_int (const void * a, const void * b)
 {
-    return ( *(int*)a - *(int*)b );
+    return ( *reinterpret_cast<const int*>(a) - *reinterpret_cast<const int*>(b) );
 }
 
 
@@ -214,7 +214,7 @@ static void nnb2excl(t_nextnb *nnb, t_blocka *excl)
         prints("nnb2excl before qsort", nr_of_sortables, s);
         if (nr_of_sortables > 1)
         {
-            qsort ((void *)s, nr_of_sortables, static_cast<size_t>(sizeof(s[0])), bond_sort);
+            qsort (s, nr_of_sortables, static_cast<size_t>(sizeof(s[0])), bond_sort);
             prints("nnb2excl after qsort", nr_of_sortables, s);
         }
 
@@ -399,7 +399,7 @@ void gen_nnb(t_nextnb *nnb, t_params plist[])
     prints("gen_excl before qsort", nrbonds, s);
     if (nrbonds > 1)
     {
-        qsort((void *) s, nrbonds, static_cast<size_t>(sizeof(sortable)), bond_sort);
+        qsort(s, nrbonds, static_cast<size_t>(sizeof(sortable)), bond_sort);
         prints("gen_excl after qsort", nrbonds, s);
     }
 

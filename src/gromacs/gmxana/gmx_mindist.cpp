@@ -369,10 +369,10 @@ static void dist_plot(const char *fn, const char *afile, const char *dfile,
             snew(leg, 1);
             sprintf(buf, "Internal in %s", grpn[0]);
             leg[0] = gmx_strdup(buf);
-            xvgr_legend(dist, 0, (const char**)leg, oenv);
+            xvgr_legend(dist, 0, leg, oenv);
             if (num)
             {
-                xvgr_legend(num, 0, (const char**)leg, oenv);
+                xvgr_legend(num, 0, leg, oenv);
             }
         }
         else
@@ -386,10 +386,10 @@ static void dist_plot(const char *fn, const char *afile, const char *dfile,
                     leg[j] = gmx_strdup(buf);
                 }
             }
-            xvgr_legend(dist, j, (const char**)leg, oenv);
+            xvgr_legend(dist, j, leg, oenv);
             if (num)
             {
-                xvgr_legend(num, j, (const char**)leg, oenv);
+                xvgr_legend(num, j, leg, oenv);
             }
         }
     }
@@ -401,10 +401,10 @@ static void dist_plot(const char *fn, const char *afile, const char *dfile,
             sprintf(buf, "%s-%s", grpn[0], grpn[i+1]);
             leg[i] = gmx_strdup(buf);
         }
-        xvgr_legend(dist, ng-1, (const char**)leg, oenv);
+        xvgr_legend(dist, ng-1, leg, oenv);
         if (num)
         {
-            xvgr_legend(num, ng-1, (const char**)leg, oenv);
+            xvgr_legend(num, ng-1, leg, oenv);
         }
     }
 
@@ -412,7 +412,7 @@ static void dist_plot(const char *fn, const char *afile, const char *dfile,
     {
         sprintf(buf, "%simum Distance", bMin ? "Min" : "Max");
         respertime = xvgropen(rfile, buf, output_env_get_time_label(oenv), "Distance (nm)", oenv);
-        xvgr_legend(respertime, ng-1, (const char**)leg, oenv);
+        xvgr_legend(respertime, ng-1, leg, oenv);
         if (bPrintResName && output_env_get_print_xvgr_codes(oenv) )
         {
             fprintf(respertime, "# ");
@@ -581,7 +581,7 @@ static void dist_plot(const char *fn, const char *afile, const char *dfile,
 
         sprintf(buf, "%simum Distance", bMin ? "Min" : "Max");
         res = xvgropen(rfile, buf, "Residue (#)", "Distance (nm)", oenv);
-        xvgr_legend(res, ng-1, (const char**)leg, oenv);
+        xvgr_legend(res, ng-1, leg, oenv);
         for (j = 0; j < nres; j++)
         {
             fprintf(res, "%4d", j+1);

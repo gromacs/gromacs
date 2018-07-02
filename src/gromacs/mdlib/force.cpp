@@ -333,7 +333,7 @@ void do_force_lowlevel(t_forcerec           *fr,
     }
 
     do_force_listed(wcycle, box, ir->fepvals, cr, ms,
-                    idef, (const rvec *) x, hist,
+                    idef, x, hist,
                     forceForUseWithShiftForces, forceWithVirial,
                     fr, &pbc, graph, enerd, nrnb, lambda, md, fcd,
                     DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr,

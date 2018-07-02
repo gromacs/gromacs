@@ -106,17 +106,6 @@ static void reset5(void)
     }
 }
 
-static int tpcomp(const void *a, const void *b)
-{
-    t_toppop *tpa;
-    t_toppop *tpb;
-
-    tpa = (t_toppop *)a;
-    tpb = (t_toppop *)b;
-
-    return static_cast<int>(1e7*(tpb->v-tpa->v));
-}
-
 static void add5(int ndr, real viol)
 {
     int i, mini;
@@ -140,7 +129,7 @@ static void print5(FILE *fp)
 {
     int i;
 
-    qsort(top, ntop, sizeof(top[0]), tpcomp);
+    std::sort(top, top+ntop, [](const t_toppop &a, const t_toppop &b) {return a.v > b.v; }); //reverse sort
     fprintf(fp, "Index:");
     for (i = 0; (i < ntop); i++)
     {
@@ -205,7 +194,7 @@ static void check_viol(FILE *log,
                (forceparams[forceatoms[i+n]].disres.label == label));
 
         calc_disres_R_6(nullptr, nullptr, n, &forceatoms[i],
-                        (const rvec*)x, pbc, fcd, nullptr);
+                        x, pbc, fcd, nullptr);
 
         if (fcd->disres.Rt_6[label] <= 0)
         {

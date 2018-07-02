@@ -54,22 +54,15 @@ typedef struct {
     int atom, sid;
 } t_sid;
 
-static int sid_comp(const void *a, const void *b)
+static bool sid_comp(const t_sid &sa, const t_sid &sb)
 {
-    t_sid *sa, *sb;
-    int    dd;
-
-    sa = (t_sid *)a;
-    sb = (t_sid *)b;
-
-    dd = sa->sid-sb->sid;
-    if (dd == 0)
+    if (sa.sid == sb.sid)
     {
-        return (sa->atom-sb->atom);
+        return sa.atom < sb.atom;
     }
     else
     {
-        return dd;
+        return sa.sid < sb.sid;
     }
 }
 
@@ -382,7 +375,7 @@ void gen_sblocks(FILE *fp, int at_start, int at_end,
     }
 
     /* Now sort the shake blocks... */
-    qsort(sid+at_start, at_end-at_start, static_cast<size_t>(sizeof(sid[0])), sid_comp);
+    std::sort(sid+at_start, sid+at_end, sid_comp);
 
     if (debug)
     {
