@@ -518,27 +518,14 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                         int *ncg_stay_home,
                         int *ncg_moved)
 {
-    int               *move;
-    int                npbcdim;
-    int                ncg[DIM*2] = { 0 }, nat[DIM*2] = { 0 };
-    int                i, cg, d, dim, dim2, dir, d2, d3;
-    int                mc, cdd, nrcg, ncg_recv, nvs, nvec, vec;
-    int                sbuf[2], rbuf[2];
-    int                home_pos_cg, home_pos_at, buf_pos;
-    real               pos_d;
-    matrix             tcm;
-    rvec              *cg_cm = nullptr, cell_x0, cell_x1, limitd, limit0, limit1;
-    cginfo_mb_t       *cginfo_mb;
-    gmx_domdec_comm_t *comm;
-    int               *moved;
-    int                nthread, thread;
+    gmx_domdec_comm_t *comm = dd->comm;
 
     if (dd->bScrewPBC)
     {
         check_screw_box(state->box);
     }
 
-    comm  = dd->comm;
+    rvec *cg_cm = nullptr;
     if (fr->cutoff_scheme == ecutsGROUP)
     {
         cg_cm = fr->cg_cm;
@@ -549,11 +536,12 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
     bool                bCGP = state->flags & (1<<estCGP);
 
     DDBufferAccess<int> moveBuffer(comm->intBuffer, dd->globalAtomGroupIndices.size());
-    move = moveBuffer.buffer.data();
+    int                *move = moveBuffer.buffer.data();
 
-    npbcdim = dd->npbcdim;
+    const int           npbcdim = dd->npbcdim;
 
-    for (d = 0; (d < DIM); d++)
+    rvec                cell_x0, cell_x1, limitd, limit0, limit1;
+    for (int d = 0; (d < DIM); d++)
     {
         limitd[d] = dd->comm->cellsize_min[d];
         if (d >= npbcdim && dd->ci[d] == 0)
@@ -587,17 +575,18 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
         }
     }
 
+    matrix tcm;
     make_tric_corr_matrix(npbcdim, state->box, tcm);
 
     const gmx::RangePartitioning &atomGrouping = dd->atomGrouping();
 
-    nthread = gmx_omp_nthreads_get(emntDomdec);
+    const int                     nthread = gmx_omp_nthreads_get(emntDomdec);
 
     /* Compute the center of geometry for all home charge groups
      * and put them in the box and determine where they should go.
      */
 #pragma omp parallel for num_threads(nthread) schedule(static)
-    for (thread = 0; thread < nthread; thread++)
+    for (int thread = 0; thread < nthread; thread++)
     {
         try
         {
@@ -612,14 +601,15 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
-    for (cg = 0; cg < dd->ncg_home; cg++)
+    int ncg[DIM*2] = { 0 };
+    int nat[DIM*2] = { 0 };
+    for (int cg = 0; cg < dd->ncg_home; cg++)
     {
         if (move[cg] >= 0)
         {
-            mc       = move[cg];
-            int flag = mc & ~DD_FLAG_NRCG;
-            mc       = mc & DD_FLAG_NRCG;
-            move[cg] = mc;
+            const int flag = move[cg] & ~DD_FLAG_NRCG;
+            const int mc   = move[cg] & DD_FLAG_NRCG;
+            move[cg]       = mc;
 
             std::vector<int> &cggl_flag = comm->cggl_flag[mc];
 
@@ -633,7 +623,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
              * and the place where the charge group should go
              * in the next 6 bits. This saves some communication volume.
              */
-            nrcg = atomGrouping.block(cg).size();
+            const int nrcg = atomGrouping.block(cg).size();
             cggl_flag[ncg[mc]*DD_CGIBS+1] = nrcg | flag;
             ncg[mc] += 1;
             nat[mc] += nrcg;
@@ -644,12 +634,12 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
     inc_nrnb(nrnb, eNR_RESETX, dd->ncg_home);
 
     *ncg_moved = 0;
-    for (i = 0; i < dd->ndim*2; i++)
+    for (int i = 0; i < dd->ndim*2; i++)
     {
         *ncg_moved += ncg[i];
     }
 
-    nvec = 1;
+    int nvec = 1;
     if (bV)
     {
         nvec++;
@@ -660,7 +650,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
     }
 
     /* Make sure the communication buffers are large enough */
-    for (mc = 0; mc < dd->ndim*2; mc++)
+    for (int mc = 0; mc < dd->ndim*2; mc++)
     {
         size_t nvr = ncg[mc] + nat[mc]*nvec;
         if (nvr > comm->cgcm_state[mc].size())
@@ -669,6 +659,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
         }
     }
 
+    int home_pos_cg;
     switch (fr->cutoff_scheme)
     {
         case ecutsGROUP:
@@ -697,8 +688,8 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
             home_pos_cg = 0;
     }
 
-    vec         = 0;
-    home_pos_at =
+    int vec         = 0;
+    int home_pos_at =
         compact_and_copy_vec_at(dd->ncg_home, move, dd->atomGrouping(),
                                 nvec, vec++, as_rvec_array(state->x.data()),
                                 comm, bCompact);
@@ -724,6 +715,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
     }
     else
     {
+        int *moved;
         if (fr->cutoff_scheme == ecutsVERLET)
         {
             moved = getMovedBuffer(comm, 0, dd->ncg_home);
@@ -746,27 +738,27 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
     /* We reuse the intBuffer without reacquiring since we are in the same scope */
     DDBufferAccess<int> &flagBuffer = moveBuffer;
 
-    cginfo_mb = fr->cginfo_mb;
+    const cginfo_mb_t   *cginfo_mb  = fr->cginfo_mb;
 
     *ncg_stay_home = home_pos_cg;
-    for (d = 0; d < dd->ndim; d++)
+    for (int d = 0; d < dd->ndim; d++)
     {
         DDBufferAccess<gmx::RVec> rvecBuffer(comm->rvecBuffer, 0);
 
-        dim      = dd->dim[d];
-        ncg_recv = 0;
-        int nvr  = 0;
-        for (dir = 0; dir < (dd->nc[dim] == 2 ? 1 : 2); dir++)
+        const int                 dim = dd->dim[d];
+        int ncg_recv                  = 0;
+        int                       nvr = 0;
+        for (int dir = 0; dir < (dd->nc[dim] == 2 ? 1 : 2); dir++)
         {
-            cdd = d*2 + dir;
+            const int cdd = d*2 + dir;
             /* Communicate the cg and atom counts */
-            sbuf[0] = ncg[cdd];
-            sbuf[1] = nat[cdd];
+            int       sbuf[2] = { ncg[cdd], nat[cdd] };
             if (debug)
             {
                 fprintf(debug, "Sending ddim %d dir %d: ncg %d nat %d\n",
                         d, dir, sbuf[0], sbuf[1]);
             }
+            int rbuf[2];
             ddSendrecv(dd, d, dir, sbuf, 2, rbuf, 2);
 
             flagBuffer.resize((ncg_recv + rbuf[0])*DD_CGIBS);
@@ -776,8 +768,8 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                        comm->cggl_flag[cdd].data(), sbuf[0]*DD_CGIBS,
                        flagBuffer.buffer.data() + ncg_recv*DD_CGIBS, rbuf[0]*DD_CGIBS);
 
-            nvs = ncg[cdd] + nat[cdd]*nvec;
-            i   = rbuf[0]  + rbuf[1] *nvec;
+            const int nvs = ncg[cdd] + nat[cdd]*nvec;
+            const int i   = rbuf[0]  + rbuf[1] *nvec;
             rvecBuffer.resize(nvr + i);
 
             /* Communicate cgcm and state */
@@ -796,8 +788,8 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
         }
 
         /* Process the received charge groups */
-        buf_pos = 0;
-        for (cg = 0; cg < ncg_recv; cg++)
+        int buf_pos = 0;
+        for (int cg = 0; cg < ncg_recv; cg++)
         {
             int   flag = flagBuffer.buffer[cg*DD_CGIBS + 1];
             rvec &pos  = as_rvec_array(rvecBuffer.buffer.data())[buf_pos];
@@ -821,11 +813,11 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                 }
             }
 
-            mc = -1;
+            int mc = -1;
             if (d < dd->ndim-1)
             {
                 /* Check which direction this cg should go */
-                for (d2 = d+1; (d2 < dd->ndim && mc == -1); d2++)
+                for (int d2 = d + 1; (d2 < dd->ndim && mc == -1); d2++)
                 {
                     if (isDlbOn(dd->comm))
                     {
@@ -834,7 +826,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                          * therefore we might need to redetermine where
                          * this cg should go.
                          */
-                        dim2 = dd->dim[d2];
+                        const int dim2 = dd->dim[d2];
                         /* If this cg crosses the box boundary in dimension d2
                          * we can use the communicated flag, so we do not
                          * have to worry about pbc.
@@ -849,10 +841,10 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                             /* Determine the location of this cg
                              * in lattice coordinates
                              */
-                            pos_d = rvecBuffer.buffer[buf_pos][dim2];
+                            real pos_d = rvecBuffer.buffer[buf_pos][dim2];
                             if (tric_dir[dim2])
                             {
-                                for (d3 = dim2+1; d3 < DIM; d3++)
+                                for (int d3 = dim2+1; d3 < DIM; d3++)
                                 {
                                     pos_d += pos[d3]*tcm[d3][dim2];
                                 }
@@ -897,7 +889,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                 }
             }
 
-            nrcg = flag & DD_FLAG_NRCG;
+            const int nrcg = flag & DD_FLAG_NRCG;
             if (mc == -1)
             {
                 /* Set the global charge group index and size */
@@ -921,14 +913,14 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                 }
 
                 rvec *rvecPtr = as_rvec_array(rvecBuffer.buffer.data());
-                for (i = 0; i < nrcg; i++)
+                for (int i = 0; i < nrcg; i++)
                 {
                     copy_rvec(rvecPtr[buf_pos++],
                               state->x[home_pos_at+i]);
                 }
                 if (bV)
                 {
-                    for (i = 0; i < nrcg; i++)
+                    for (int i = 0; i < nrcg; i++)
                     {
                         copy_rvec(rvecPtr[buf_pos++],
                                   state->v[home_pos_at+i]);
@@ -936,7 +928,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                 }
                 if (bCGP)
                 {
-                    for (i = 0; i < nrcg; i++)
+                    for (int i = 0; i < nrcg; i++)
                     {
                         copy_rvec(rvecPtr[buf_pos++],
                                   state->cg_p[home_pos_at+i]);
@@ -980,7 +972,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
         /* We need to clear the moved flags for the received atoms,
          * because the moved buffer will be passed to the nbnxn gridding call.
          */
-        moved = getMovedBuffer(comm, dd->ncg_home, home_pos_cg);
+        int *moved = getMovedBuffer(comm, dd->ncg_home, home_pos_cg);
 
         for (int i =  dd->ncg_home; i < home_pos_cg; i++)
         {
