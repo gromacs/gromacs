@@ -1136,7 +1136,7 @@ int gmx_rms(int argc, char *argv[])
     }
     if (nrms != 1)
     {
-        xvgr_legend(fp, nrms, (const char**)gn_rms, oenv);
+        xvgr_legend(fp, nrms, gn_rms, oenv);
     }
     for (i = 0; (i < teller); i++)
     {
@@ -1179,7 +1179,7 @@ int gmx_rms(int argc, char *argv[])
             {
                 fprintf(fp, "@ subtitle \"after lsq fit to mirror %s\"\n", bFit ? gn_fit : "");
             }
-            xvgr_legend(fp, nrms, (const char**)gn_rms, oenv);
+            xvgr_legend(fp, nrms, gn_rms, oenv);
         }
         for (i = 0; (i < teller); i++)
         {

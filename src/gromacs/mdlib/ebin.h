@@ -65,7 +65,7 @@ t_ebin *mk_ebin(void);
 //! Empty the contents of \c eb.
 void done_ebin(t_ebin *eb);
 
-int get_ebin_space(t_ebin *eb, int nener, const char *enm[], const char *unit);
+int get_ebin_space(t_ebin *eb, int nener, const char *const enm[], const char *unit);
 
 /* Create space in the energy bin and register names.
  * The enm array must be static, because the contents are not copied,

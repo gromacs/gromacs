@@ -299,7 +299,7 @@ static void histogram(const char *distfile, real binwidth, int n, int nset, real
 
 static int real_comp(const void *a, const void *b)
 {
-    real dif = *(real *)a - *(real *)b;
+    real dif = *reinterpret_cast<const real*>(a) - *reinterpret_cast<const real*>(b);
 
     if (dif < 0)
     {
@@ -440,7 +440,7 @@ static void estimate_error(const char *eefile, int nb_min, int resol, int n,
                 (n-1)*dt, n);
     }
     snew(leg, 2*nset);
-    xvgr_legend(fp, 2*nset, (const char**)leg, oenv);
+    xvgr_legend(fp, 2*nset, leg, oenv);
     sfree(leg);
 
     spacing = std::pow(2.0, 1.0/resol);
