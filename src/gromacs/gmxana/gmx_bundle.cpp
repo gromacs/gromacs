@@ -235,8 +235,7 @@ int gmx_bundle(int argc, char *argv[])
     t_atoms           outatoms;
     real              t, comp;
     char             *grpname[MAX_ENDS];
-    /* FIXME: The constness should not be cast away */
-    char             *anm = (char *)"CA", *rnm = (char *)"GLY";
+    char             *anm = const_cast<char*>("CA"), *rnm = const_cast<char*>("GLY");
     int               i, gnx[MAX_ENDS];
     int              *index[MAX_ENDS];
     t_bundle          bun;

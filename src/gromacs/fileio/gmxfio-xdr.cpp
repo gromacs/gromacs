@@ -357,7 +357,7 @@ gmx_bool gmx_fio_writee_string(t_fileio *fio, const char *item,
                                const char *desc, const char *srcfile, int line)
 {
     gmx_bool ret;
-    void    *it = (void*)item; /* ugh.. */
+    void    *it = const_cast<char*>(item); /* ugh.. */
     gmx_fio_lock(fio);
     ret = do_xdr(fio, it, 1, eioSTRING, desc, srcfile, line);
     gmx_fio_unlock(fio);

@@ -123,7 +123,7 @@ static int get_electrons(t_electron **eltab, const char *fn)
 
     /* sort the list */
     fprintf(stderr, "Sorting list..\n");
-    qsort ((void*)*eltab, nr, sizeof(t_electron),
+    qsort (*eltab, nr, sizeof(t_electron),
            reinterpret_cast<int(*)(const void*, const void*)>(compare));
 
     return nr;
@@ -276,8 +276,8 @@ static void calc_electron_density(const char *fn, int **index, const int gnx[],
                 sought.atomname = gmx_strdup(*(top->atoms.atomname[index[n][i]]));
 
                 /* now find the number of electrons. This is not efficient. */
-                found = static_cast<t_electron *>(bsearch((const void *)&sought,
-                                                          (const void *)eltab, nr, sizeof(t_electron),
+                found = static_cast<t_electron *>(bsearch(&sought,
+                                                          eltab, nr, sizeof(t_electron),
                                                           reinterpret_cast<int(*)(const void*, const void*)>(compare)));
 
                 if (found == nullptr)
@@ -538,7 +538,7 @@ static void plot_density(double *slDensity[], const char *afile, int nslices,
     den = xvgropen(afile,
                    title, xlabel, ylabel, oenv);
 
-    xvgr_legend(den, nr_grps, (const char**)grpname, oenv);
+    xvgr_legend(den, nr_grps, grpname, oenv);
 
     for (slice = 0; (slice < nslices); slice++)
     {
