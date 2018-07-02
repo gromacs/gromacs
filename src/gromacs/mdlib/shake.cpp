@@ -116,10 +116,10 @@ typedef struct {
 //! Compares sort blocks.
 static int pcomp(const void *p1, const void *p2)
 {
-    int          db;
-    int          min1, min2, max1, max2;
-    t_sortblock *a1 = (t_sortblock *)p1;
-    t_sortblock *a2 = (t_sortblock *)p2;
+    int                db;
+    int                min1, min2, max1, max2;
+    const t_sortblock *a1 = reinterpret_cast<const t_sortblock*>(p1);
+    const t_sortblock *a2 = reinterpret_cast<const t_sortblock*>(p2);
 
     db = a1->blocknr-a2->blocknr;
 

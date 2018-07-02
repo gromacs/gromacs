@@ -110,7 +110,7 @@ gmx_fft_init_many_1d(gmx_fft_t *        pfft,
 {
     gmx_fft_t              fft;
     FFTWPREFIX(complex)   *p1, *p2, *up1, *up2;
-    size_t                 pc;
+    char*                  pc;
     int                    i, j, k;
     int                    fftw_flags;
 
@@ -156,13 +156,13 @@ gmx_fft_init_many_1d(gmx_fft_t *        pfft,
      * In double precision the actual complex datatype will be 16 bytes,
      * so go to a char pointer and force an offset of 8 bytes instead.
      */
-    pc  = (size_t)p1;
+    pc  = reinterpret_cast<char*>(p1);
     pc += 8;
-    up1 = (FFTWPREFIX(complex) *)pc;
+    up1 = reinterpret_cast<FFTWPREFIX(complex) *>(pc);
 
-    pc  = (size_t)p2;
+    pc  = reinterpret_cast<char*>(p2);
     pc += 8;
-    up2 = (FFTWPREFIX(complex) *)pc;
+    up2 = reinterpret_cast<FFTWPREFIX(complex) *>(pc);
 
     /*                            int rank, const int *n, int howmany,
                                   fftw_complex *in, const int *inembed,
@@ -227,7 +227,7 @@ gmx_fft_init_many_1d_real(gmx_fft_t *        pfft,
 {
     gmx_fft_t              fft;
     real                  *p1, *p2, *up1, *up2;
-    size_t                 pc;
+    char*                  pc;
     int                    i, j, k;
     int                    fftw_flags;
 
@@ -273,13 +273,13 @@ gmx_fft_init_many_1d_real(gmx_fft_t *        pfft,
      * In double precision the actual complex datatype will be 16 bytes,
      * so go to a char pointer and force an offset of 8 bytes instead.
      */
-    pc  = (size_t)p1;
+    pc  = reinterpret_cast<char*>(p1);
     pc += 8;
-    up1 = (real *)pc;
+    up1 = reinterpret_cast<real*>(pc);
 
-    pc  = (size_t)p2;
+    pc  = reinterpret_cast<char*>(p2);
     pc += 8;
-    up2 = (real *)pc;
+    up2 = reinterpret_cast<real*>(pc);
 
     /*                                int rank, const int *n, int howmany,
                                       double *in, const int *inembed,
@@ -338,7 +338,7 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
 {
     gmx_fft_t              fft;
     real                  *p1, *p2, *up1, *up2;
-    size_t                 pc;
+    char*                  pc;
     int                    i, j, k;
     int                    fftw_flags;
 
@@ -384,13 +384,13 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
      * In double precision the actual complex datatype will be 16 bytes,
      * so go to a char pointer and force an offset of 8 bytes instead.
      */
-    pc  = (size_t)p1;
+    pc  = reinterpret_cast<char*>(p1);
     pc += 8;
-    up1 = (real *)pc;
+    up1 = reinterpret_cast<real*>(pc);
 
-    pc  = (size_t)p2;
+    pc  = reinterpret_cast<char*>(p2);
     pc += 8;
-    up2 = (real *)pc;
+    up2 = reinterpret_cast<real*>(pc);
 
 
     fft->plan[0][0][0] = FFTWPREFIX(plan_dft_c2r_2d)(nx, ny, reinterpret_cast<FFTWPREFIX(complex) *>(up1), up2, fftw_flags);
@@ -442,7 +442,7 @@ gmx_fft_1d               (gmx_fft_t                  fft,
                           void *                     in_data,
                           void *                     out_data)
 {
-    int           aligned   = ((((size_t)in_data | (size_t)out_data) & 0xf) == 0);
+    int           aligned   = (((size_t(in_data) | size_t(out_data)) & 0xf) == 0);
     int           inplace   = (in_data == out_data);
     int           isforward = (dir == GMX_FFT_FORWARD);
 
@@ -476,7 +476,7 @@ gmx_fft_1d_real          (gmx_fft_t                  fft,
                           void *                     in_data,
                           void *                     out_data)
 {
-    int           aligned   = ((((size_t)in_data | (size_t)out_data) & 0xf) == 0);
+    int           aligned   = (((size_t(in_data) | size_t(out_data)) & 0xf) == 0);
     int           inplace   = (in_data == out_data);
     int           isforward = (dir == GMX_FFT_REAL_TO_COMPLEX);
 
@@ -517,7 +517,7 @@ gmx_fft_2d_real          (gmx_fft_t                  fft,
                           void *                     in_data,
                           void *                     out_data)
 {
-    int           aligned   = ((((size_t)in_data | (size_t)out_data) & 0xf) == 0);
+    int           aligned   = (((size_t(in_data) | size_t(out_data)) & 0xf) == 0);
     int           inplace   = (in_data == out_data);
     int           isforward = (dir == GMX_FFT_REAL_TO_COMPLEX);
 

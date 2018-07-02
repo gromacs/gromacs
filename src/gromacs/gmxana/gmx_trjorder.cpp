@@ -65,10 +65,10 @@ static t_order *order;
 
 static int ocomp(const void *a, const void *b)
 {
-    t_order *oa, *ob;
+    const t_order *oa, *ob;
 
-    oa = (t_order *)a;
-    ob = (t_order *)b;
+    oa = reinterpret_cast<const t_order*>(a);
+    ob = reinterpret_cast<const t_order*>(b);
 
     if (oa->d2 < ob->d2)
     {

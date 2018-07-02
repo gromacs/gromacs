@@ -210,8 +210,8 @@ typedef struct {
 
 static int comp_minima(const void *a, const void *b)
 {
-    t_minimum *ma = (t_minimum *) a;
-    t_minimum *mb = (t_minimum *) b;
+    const t_minimum *ma = reinterpret_cast<const t_minimum*>(a);
+    const t_minimum *mb = reinterpret_cast<const t_minimum*>(b);;
 
     if (ma->ener < mb->ener)
     {
