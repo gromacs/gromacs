@@ -405,7 +405,7 @@ init_data_insolidangle(int /* npar */, gmx_ana_selparam_t *param)
 static void
 init_insolidangle(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t * /* param */, void *data)
 {
-    t_methoddata_insolidangle *surf = (t_methoddata_insolidangle *)data;
+    t_methoddata_insolidangle *surf = static_cast<t_methoddata_insolidangle *>(data);
     int                        i, c;
 
     if (surf->angcut <= 0)
@@ -444,7 +444,7 @@ init_insolidangle(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam
 static void
 free_data_insolidangle(void *data)
 {
-    t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)data;
+    t_methoddata_insolidangle *d = static_cast<t_methoddata_insolidangle *>(data);
     int                        i;
 
     if (d->tbin)
@@ -463,7 +463,7 @@ free_data_insolidangle(void *data)
 static void
 init_frame_insolidangle(const gmx::SelMethodEvalContext &context, void *data)
 {
-    t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)data;
+    t_methoddata_insolidangle *d = static_cast<t_methoddata_insolidangle *>(data);
     rvec                       dx;
     int                        i;
 
@@ -495,7 +495,7 @@ init_frame_insolidangle(const gmx::SelMethodEvalContext &context, void *data)
 static bool
 accept_insolidangle(rvec x, const t_pbc *pbc, void *data)
 {
-    t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)data;
+    t_methoddata_insolidangle *d = static_cast<t_methoddata_insolidangle *>(data);
     rvec                       dx;
 
     if (pbc)
@@ -594,7 +594,7 @@ _gmx_selelem_estimate_coverfrac(const gmx::SelectionTreeElement &sel)
 
     if (sel.type == SEL_EXPRESSION && sel.u.expr.method->name == sm_insolidangle.name)
     {
-        t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)sel.u.expr.mdata;
+        t_methoddata_insolidangle *d = static_cast<t_methoddata_insolidangle *>(sel.u.expr.mdata);
         if (d->cfrac < 0)
         {
             d->cfrac = estimate_covered_fraction(d);

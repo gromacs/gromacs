@@ -107,7 +107,7 @@ gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)
 
     tol = 2*(bDouble ? GMX_DOUBLE_EPS : GMX_FLOAT_EPS);
 
-    iq = (int)((a - b + tol*a)/c);
+    iq = static_cast<int>((a - b + tol*a)/c);
 
     if (fabs(a - b - c*iq) <= tol*fabs(a))
     {
@@ -233,7 +233,7 @@ int prec2ndec(real prec)
         gmx_fatal(FARGS, "DEATH HORROR prec (%g) <= 0 in prec2ndec", prec);
     }
 
-    return (int)(log(prec)/log(10.0)+0.5);
+    return static_cast<int>(log(prec)/log(10.0)+0.5);
 }
 
 real ndec2prec(int ndec)

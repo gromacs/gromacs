@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -129,7 +129,7 @@ static int register_cb(void *v, vmdplugin_t *p)
 
     if (strcmp(key, vmdplugin->filetype) == 0)
     {
-        vmdplugin->api = (molfile_plugin_t *)p;
+        vmdplugin->api = reinterpret_cast<molfile_plugin_t *>(p);
     }
     return VMDPLUGIN_SUCCESS;
 }
@@ -149,7 +149,7 @@ static int load_sharedlibrary_plugins(const char *fullpath, gmx_vmdplugin_t *vmd
     }
 
     ifunc = vmddlsym(handle, "vmdplugin_init");
-    if (!ifunc || ((initfunc)(ifunc))())
+    if (!ifunc || (reinterpret_cast<initfunc>(ifunc))())
     {
         printf("\nvmdplugin_init() for %s returned an error; plugin(s) not loaded.\n", fullpath);
         vmddlclose(handle);
@@ -166,7 +166,7 @@ static int load_sharedlibrary_plugins(const char *fullpath, gmx_vmdplugin_t *vmd
     else
     {
         /* Load plugins from the library.*/
-        ((regfunc)registerfunc)(vmdplugin, register_cb);
+        (reinterpret_cast<regfunc>(registerfunc))(vmdplugin, register_cb);
     }
 
     /* in case this library does not support the filetype, close it */
@@ -195,10 +195,10 @@ gmx_bool read_next_vmd_frame(gmx_vmdplugin_t *vmdplugin, t_trxframe *fr)
         snew(ts.velocities, fr->natoms*3);
     }
 #else
-    ts.coords = (float*)fr->x;
+    ts.coords = reinterpret_cast<float*>(fr->x);
     if (fr->bV)
     {
-        ts.velocities = (float*)fr->v;
+        ts.velocities = reinterpret_cast<float*>(fr->v);
     }
 #endif
 

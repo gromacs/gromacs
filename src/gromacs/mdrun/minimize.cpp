@@ -312,7 +312,7 @@ static void get_f_norm_max(const t_commrec *cr,
             if (sum[2*i] > fmax2)
             {
                 fmax2 = sum[2*i];
-                a_max = (int)(sum[2*i+1] + 0.5);
+                a_max = static_cast<int>(sum[2*i+1] + 0.5);
             }
         }
         sfree(sum);
@@ -548,7 +548,7 @@ static void write_em_traj(FILE *fplog, const t_commrec *cr,
     }
 
     mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags,
-                                     top_global, step, (double)step,
+                                     top_global, step, static_cast<double>(step),
                                      &state->s, state_global, observablesHistory,
                                      state->f);
 
@@ -1137,7 +1137,7 @@ Integrator::do_cg()
     if (MASTER(cr))
     {
         /* Copy stuff to the energy bin for easy printing etc. */
-        upd_mdebin(mdebin, FALSE, FALSE, (double)step,
+        upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(step),
                    mdatoms->tmass, enerd, &s_min->s, inputrec->fepvals, inputrec->expandedvals, s_min->s.box,
                    nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
@@ -1559,7 +1559,7 @@ Integrator::do_cg()
                 fflush(stderr);
             }
             /* Store the new (lower) energies */
-            upd_mdebin(mdebin, FALSE, FALSE, (double)step,
+            upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(step),
                        mdatoms->tmass, enerd, &s_min->s, inputrec->fepvals, inputrec->expandedvals, s_min->s.box,
                        nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
@@ -1802,7 +1802,7 @@ Integrator::do_lbfgs()
     if (MASTER(cr))
     {
         /* Copy stuff to the energy bin for easy printing etc. */
-        upd_mdebin(mdebin, FALSE, FALSE, (double)step,
+        upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(step),
                    mdatoms->tmass, enerd, state_global, inputrec->fepvals, inputrec->expandedvals, state_global->box,
                    nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
@@ -1887,7 +1887,7 @@ Integrator::do_lbfgs()
         }
 
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags,
-                                         top_global, step, (real)step, &ems.s, state_global, observablesHistory, ems.f);
+                                         top_global, step, static_cast<real>(step), &ems.s, state_global, observablesHistory, ems.f);
 
         /* Do the linesearching in the direction dx[point][0..(n-1)] */
 
@@ -2294,7 +2294,7 @@ Integrator::do_lbfgs()
                 fflush(stderr);
             }
             /* Store the new (lower) energies */
-            upd_mdebin(mdebin, FALSE, FALSE, (double)step,
+            upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(step),
                        mdatoms->tmass, enerd, state_global, inputrec->fepvals, inputrec->expandedvals, state_global->box,
                        nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
             do_log = do_per_step(step, inputrec->nstlog);
@@ -2510,7 +2510,7 @@ Integrator::do_steep()
             if ( (count == 0) || (s_try->epot < s_min->epot) )
             {
                 /* Store the new (lower) energies  */
-                upd_mdebin(mdebin, FALSE, FALSE, (double)count,
+                upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(count),
                            mdatoms->tmass, enerd, &s_try->s, inputrec->fepvals, inputrec->expandedvals,
                            s_try->s.box, nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
@@ -2734,7 +2734,7 @@ Integrator::do_nm()
     if (bIsMaster)
     {
         fprintf(stderr, "starting normal mode calculation '%s'\n%d steps.\n\n",
-                *(top_global->name), (int)inputrec->nsteps);
+                *(top_global->name), static_cast<int>(inputrec->nsteps));
     }
 
     nnodes = cr->nnodes;

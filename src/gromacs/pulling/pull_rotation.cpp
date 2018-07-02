@@ -1448,7 +1448,7 @@ static real opt_angle_analytic(
     }
     sfree(eigvec);
 
-    return (real) opt_angle;
+    return static_cast<real>(opt_angle);
 }
 
 

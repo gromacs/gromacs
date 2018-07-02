@@ -222,7 +222,7 @@ init_replica_exchange(FILE                            *fplog,
     bTemp    = repl_quantity(ms, re, ereTEMP, re->temp);
     if (ir->efep != efepNO)
     {
-        bLambda = repl_quantity(ms, re, ereLAMBDA, (real)ir->fepvals->init_fep_state);
+        bLambda = repl_quantity(ms, re, ereLAMBDA, static_cast<real>(ir->fepvals->init_fep_state));
     }
     if (re->type == -1)  /* nothing was assigned */
     {
@@ -337,7 +337,7 @@ init_replica_exchange(FILE                            *fplog,
             fprintf(fplog, "\nReplica exchange in lambda\n");
             for (i = 0; i < re->nrepl; i++)
             {
-                fprintf(fplog, " %3d", (int)re->q[re->type][re->ind[i]]);
+                fprintf(fplog, " %3d", static_cast<int>(re->q[re->type][re->ind[i]]));
             }
             fprintf(fplog, "\n");
             break;
@@ -350,7 +350,7 @@ init_replica_exchange(FILE                            *fplog,
             fprintf(fplog, "\n");
             for (i = 0; i < re->nrepl; i++)
             {
-                fprintf(fplog, " %5d", (int)re->q[ereLAMBDA][re->ind[i]]);
+                fprintf(fplog, " %5d", static_cast<int>(re->q[ereLAMBDA][re->ind[i]]));
             }
             fprintf(fplog, "\n");
             break;
@@ -869,7 +869,7 @@ test_for_replica_exchange(FILE                 *fplog,
         }
         for (i = 0; i < re->nrepl; i++)
         {
-            re->de[i][re->repl] = (enerd->enerpart_lambda[(int)re->q[ereLAMBDA][i]+1]-enerd->enerpart_lambda[0]);
+            re->de[i][re->repl] = (enerd->enerpart_lambda[static_cast<int>(re->q[ereLAMBDA][i])+1]-enerd->enerpart_lambda[0]);
         }
     }
 
@@ -1333,7 +1333,7 @@ void print_replica_exchange_statistics(FILE *fplog, struct gmx_repl_ex *re)
             }
             else
             {
-                re->prob[i] =  ((real)re->nexchange[i])/re->nattempt[i%2];
+                re->prob[i] =  (static_cast<real>(re->nexchange[i]))/re->nattempt[i%2];
             }
         }
         print_ind(fplog, "", re->nrepl, re->ind, nullptr);

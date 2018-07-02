@@ -117,7 +117,7 @@ static void divarc(real x1, real y1, real z1,
     GMX_ASSERT(d2 >= 0.5, "Vector 2 too short");
 
     phi  = safe_asin(dd/std::sqrt(d1*d2));
-    phi  = phi*((real)div1)/((real)div2);
+    phi  = phi*(static_cast<real>(div1))/(static_cast<real>(div2));
     sphi = sin(phi); cphi = cos(phi);
     s    = (x1*xd+y1*yd+z1*zd)/dd;
 
@@ -140,8 +140,8 @@ static std::vector<real> ico_dot_arc(int densit)
           xjk, yjk, zjk, xkj, ykj, zkj;
 
     /* calculate tessalation level */
-    a = std::sqrt((((real) densit)-2.)/10.);
-    const int  tess = (int) ceil(a);
+    a = std::sqrt(((static_cast<real>(densit))-2.)/10.);
+    const int  tess = static_cast<int>(ceil(a));
     const int  ndot = 10*tess*tess+2;
     GMX_RELEASE_ASSERT(ndot >= densit, "Inconsistent surface dot formula");
 
@@ -263,8 +263,8 @@ static std::vector<real> ico_dot_dod(int densit)
           xjk, yjk, zjk, xkj, ykj, zkj;
 
     /* calculate tesselation level */
-    a     = std::sqrt((((real) densit)-2.)/30.);
-    tess  = std::max((int) ceil(a), 1);
+    a     = std::sqrt(((static_cast<real>(densit))-2.)/30.);
+    tess  = std::max(static_cast<int>(ceil(a)), 1);
     const int ndot = 30*tess*tess+2;
     GMX_RELEASE_ASSERT(ndot >= densit, "Inconsistent surface dot formula");
 
@@ -487,21 +487,21 @@ static std::vector<real> make_unsp(int densit, int cubus)
         ico_cube = std::max(i-1, 0);
     }
     ico_cube_cb = ico_cube*ico_cube*ico_cube;
-    const real del_cube = 2./((real)ico_cube);
+    const real del_cube = 2./(static_cast<real>(ico_cube));
     snew(work, ndot);
     for (l = 0; l < ndot; l++)
     {
-        i = std::max((int) floor((1.+xus[3*l])/del_cube), 0);
+        i = std::max(static_cast<int>(floor((1.+xus[3*l])/del_cube)), 0);
         if (i >= ico_cube)
         {
             i = ico_cube-1;
         }
-        j = std::max((int) floor((1.+xus[1+3*l])/del_cube), 0);
+        j = std::max(static_cast<int>(floor((1.+xus[1+3*l])/del_cube)), 0);
         if (j >= ico_cube)
         {
             j = ico_cube-1;
         }
-        k = std::max((int) floor((1.+xus[2+3*l])/del_cube), 0);
+        k = std::max(static_cast<int>(floor((1.+xus[2+3*l])/del_cube)), 0);
         if (k >= ico_cube)
         {
             k = ico_cube-1;
@@ -561,7 +561,7 @@ nsc_dclm_pbc(const rvec *coords, const ArrayRef<const real> &radius, int nat,
              int index[], AnalysisNeighborhood *nb,
              const t_pbc *pbc)
 {
-    const real dotarea = FOURPI/(real) n_dot;
+    const real dotarea = FOURPI/static_cast<real>(n_dot);
 
     if (debug)
     {

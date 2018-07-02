@@ -301,7 +301,7 @@ static double estimate_pme_load_imbalance(struct gmx_pme_t *pme)
 
     /* pme_solve is roughly double the cost of an fft */
 
-    return (n1 + n2 + 3*n3)/(double)(6*pme->nkx*pme->nky*pme->nkz);
+    return (n1 + n2 + 3*n3)/static_cast<double>(6*pme->nkx*pme->nky*pme->nkz);
 }
 
 /*! \brief Initialize atom communication data structure */
@@ -809,7 +809,7 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
                     "      PME grid_x (%d) and grid_y (%d) should be divisible by #PME_ranks_x (%d)\n"
                     "      and PME grid_y (%d) and grid_z (%d) should be divisible by #PME_ranks_y (%d)\n"
                     "\n",
-                    (int)((imbal-1)*100 + 0.5),
+                    static_cast<int>((imbal-1)*100 + 0.5),
                     pme->nkx, pme->nky, pme->nnodes_major,
                     pme->nky, pme->nkz, pme->nnodes_minor);
         }

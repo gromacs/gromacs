@@ -191,7 +191,7 @@ void rename_atoms(const char *xlfile, const char *ffdir,
             if (isdigit(atombuf[0]))
             {
                 c = atombuf[0];
-                for (i = 0; ((size_t)i < strlen(atombuf)-1); i++)
+                for (i = 0; (static_cast<size_t>(i) < strlen(atombuf)-1); i++)
                 {
                     atombuf[i] = atombuf[i+1];
                 }
