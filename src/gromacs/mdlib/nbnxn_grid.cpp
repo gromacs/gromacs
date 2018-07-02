@@ -1285,7 +1285,7 @@ static void calc_cell_indices(nbnxn_search         *nbs,
     {
         fprintf(debug, "ns na_sc %d na_c %d super-cells: %d x %d y %d z %.1f maxz %d\n",
                 grid->na_sc, grid->na_c, grid->nc,
-                grid->numCells[XX], grid->numCells[YY], grid->nc/((double)(grid->numCells[XX]*grid->numCells[YY])),
+                grid->numCells[XX], grid->numCells[YY], grid->nc/(static_cast<double>(grid->numCells[XX]*grid->numCells[YY])),
                 ncz_max);
         if (gmx_debug_at)
         {
@@ -1383,7 +1383,7 @@ static void calc_cell_indices(nbnxn_search         *nbs,
         else
         {
             fprintf(debug, "ns non-zero sub-cells: %d average atoms %.2f\n",
-                    grid->nsubc_tot, (atomEnd - atomStart)/(double)grid->nsubc_tot);
+                    grid->nsubc_tot, (atomEnd - atomStart)/static_cast<double>(grid->nsubc_tot));
 
             print_bbsizes_supersub(debug, grid);
         }

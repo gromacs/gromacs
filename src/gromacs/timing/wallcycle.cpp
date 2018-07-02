@@ -1054,7 +1054,7 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
             GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                     "NOTE: %d %% of the run time was spent in pair search,\n"
                     "      you might want to increase nstlist (this has no effect on accuracy)\n",
-                    (int)(100*cyc_sum[ewcNS]/tot+0.5));
+                    static_cast<int>(100*cyc_sum[ewcNS]/tot+0.5));
         }
         else
         {
@@ -1062,8 +1062,8 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
                     "NOTE: %d %% of the run time was spent in domain decomposition,\n"
                     "      %d %% of the run time was spent in pair search,\n"
                     "      you might want to increase nstlist (this has no effect on accuracy)\n",
-                    (int)(100*cyc_sum[ewcDOMDEC]/tot+0.5),
-                    (int)(100*cyc_sum[ewcNS]/tot+0.5));
+                    static_cast<int>(100*cyc_sum[ewcDOMDEC]/tot+0.5),
+                    static_cast<int>(100*cyc_sum[ewcNS]/tot+0.5));
         }
     }
 
@@ -1072,7 +1072,7 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
         GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                 "NOTE: %d %% of the run time was spent communicating energies,\n"
                 "      you might want to use the -gcom option of mdrun\n",
-                (int)(100*cyc_sum[ewcMoveE]/tot+0.5));
+                static_cast<int>(100*cyc_sum[ewcMoveE]/tot+0.5));
     }
 }
 

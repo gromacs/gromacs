@@ -214,7 +214,7 @@ static void nnb2excl(t_nextnb *nnb, t_blocka *excl)
         prints("nnb2excl before qsort", nr_of_sortables, s);
         if (nr_of_sortables > 1)
         {
-            qsort ((void *)s, nr_of_sortables, (size_t)sizeof(s[0]), bond_sort);
+            qsort ((void *)s, nr_of_sortables, static_cast<size_t>(sizeof(s[0])), bond_sort);
             prints("nnb2excl after qsort", nr_of_sortables, s);
         }
 
@@ -399,7 +399,7 @@ void gen_nnb(t_nextnb *nnb, t_params plist[])
     prints("gen_excl before qsort", nrbonds, s);
     if (nrbonds > 1)
     {
-        qsort((void *) s, nrbonds, (size_t)sizeof(sortable), bond_sort);
+        qsort((void *) s, nrbonds, static_cast<size_t>(sizeof(sortable)), bond_sort);
         prints("gen_excl after qsort", nrbonds, s);
     }
 

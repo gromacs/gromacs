@@ -2084,7 +2084,7 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
     {
         sprintf(errbuf, "%s table number can not be perturbed %d!=%d",
                 interaction_function[ftype].longname,
-                (int)(param.c[0]+0.5), (int)(param.c[2]+0.5));
+                static_cast<int>(param.c[0]+0.5), static_cast<int>(param.c[2]+0.5));
         warning_error_and_exit(wi, errbuf, FARGS);
     }
 
@@ -2546,7 +2546,7 @@ void merge_excl(t_blocka *excl, t_block2 *b2, warninp_t wi)
         if (b2->nra[i] > 0)
         {
             /* remove double entries */
-            qsort(b2->a[i], (size_t)b2->nra[i], (size_t)sizeof(b2->a[i][0]), icomp);
+            qsort(b2->a[i], static_cast<size_t>(b2->nra[i]), static_cast<size_t>(sizeof(b2->a[i][0])), icomp);
             k = 1;
             for (j = 1; (j < b2->nra[i]); j++)
             {

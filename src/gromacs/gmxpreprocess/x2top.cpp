@@ -231,7 +231,7 @@ static void lo_set_force_const(t_params *plist, real c[], int nrfp, gmx_bool bRo
             if (bDih)
             {
                 c[0] *= c[2];
-                c[0]  = ((int)(c[0] + 3600)) % 360;
+                c[0]  = (static_cast<int>(c[0] + 3600)) % 360;
                 if (c[0] > 180)
                 {
                     c[0] -= 360;

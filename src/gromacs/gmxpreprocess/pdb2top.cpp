@@ -886,7 +886,7 @@ static void clean_bonds(t_params *ps)
         }
 
         /* Sort bonds */
-        qsort(ps->param, ps->nr, (size_t)sizeof(ps->param[0]), pcompar);
+        qsort(ps->param, ps->nr, static_cast<size_t>(sizeof(ps->param[0])), pcompar);
 
         /* remove doubles, keep the first one always. */
         j = 1;

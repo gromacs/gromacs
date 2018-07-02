@@ -310,7 +310,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
                            gmx_conect conect, gmx_bool bTerSepChains,
                            bool usePqrFormat)
 {
-    gmx_conect_t     *gc = (gmx_conect_t *)conect;
+    gmx_conect_t     *gc = static_cast<gmx_conect_t *>(conect);
     char              resnm[6], nm[6];
     int               i, ii;
     int               resind, resnr;
@@ -845,7 +845,7 @@ static void gmx_conect_addline(gmx_conect_t *con, char *line)
 
 void gmx_conect_dump(FILE *fp, gmx_conect conect)
 {
-    gmx_conect_t *gc = (gmx_conect_t *)conect;
+    gmx_conect_t *gc = static_cast<gmx_conect_t *>(conect);
     int           i;
 
     for (i = 0; (i < gc->nconect); i++)
@@ -894,7 +894,7 @@ gmx_bool gmx_conect_exist(gmx_conect conect, int ai, int aj)
 
 void gmx_conect_add(gmx_conect conect, int ai, int aj)
 {
-    gmx_conect_t *gc = (gmx_conect_t *)conect;
+    gmx_conect_t *gc = static_cast<gmx_conect_t *>(conect);
 
     /* if (!gc->bSorted)
        sort_conect(gc);*/

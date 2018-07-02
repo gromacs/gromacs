@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,12 +73,12 @@ void invertBoxMatrix(const matrix src, matrix dest)
 
 void invertMatrix(const matrix src, matrix dest)
 {
-    const real smallreal = (real)1.0e-24;
-    const real largereal = (real)1.0e24;
+    const real smallreal = static_cast<real>(1.0e-24);
+    const real largereal = static_cast<real>(1.0e24);
 
     real       determinant = det(src);
-    real       c           = (real)1.0/determinant;
-    real       fc          = (real)std::fabs(c);
+    real       c           = static_cast<real>(1.0)/determinant;
+    real       fc          = static_cast<real>(std::fabs(c));
 
     if ((fc <= smallreal) || (fc >= largereal))
     {
