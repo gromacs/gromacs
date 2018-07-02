@@ -87,7 +87,7 @@ static void pme_calc_pidx(int start, int end,
             xptr   = x[i];
             /* Fractional coordinates along box vectors */
             s     = nslab*(xptr[XX]*rxx + xptr[YY]*ryx + xptr[ZZ]*rzx);
-            si    = (int)(s + 2*nslab) % nslab;
+            si    = static_cast<int>(s + 2*nslab) % nslab;
             pd[i] = si;
             count[si]++;
         }
@@ -102,7 +102,7 @@ static void pme_calc_pidx(int start, int end,
             xptr   = x[i];
             /* Fractional coordinates along box vectors */
             s     = nslab*(xptr[YY]*ryy + xptr[ZZ]*rzy);
-            si    = (int)(s + 2*nslab) % nslab;
+            si    = static_cast<int>(s + 2*nslab) % nslab;
             pd[i] = si;
             count[si]++;
         }

@@ -241,12 +241,12 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
 
     /*for transpose we need to know the size for each processor not only our own size*/
 
-    N0  = (int*)malloc(P[0]*sizeof(int)); N1 = (int*)malloc(P[1]*sizeof(int));
-    M0  = (int*)malloc(P[0]*sizeof(int)); M1 = (int*)malloc(P[1]*sizeof(int));
-    K0  = (int*)malloc(P[0]*sizeof(int)); K1 = (int*)malloc(P[1]*sizeof(int));
-    oN0 = (int*)malloc(P[0]*sizeof(int)); oN1 = (int*)malloc(P[1]*sizeof(int));
-    oM0 = (int*)malloc(P[0]*sizeof(int)); oM1 = (int*)malloc(P[1]*sizeof(int));
-    oK0 = (int*)malloc(P[0]*sizeof(int)); oK1 = (int*)malloc(P[1]*sizeof(int));
+    N0  = static_cast<int*>(malloc(P[0]*sizeof(int))); N1 = static_cast<int*>(malloc(P[1]*sizeof(int)));
+    M0  = static_cast<int*>(malloc(P[0]*sizeof(int))); M1 = static_cast<int*>(malloc(P[1]*sizeof(int)));
+    K0  = static_cast<int*>(malloc(P[0]*sizeof(int))); K1 = static_cast<int*>(malloc(P[1]*sizeof(int)));
+    oN0 = static_cast<int*>(malloc(P[0]*sizeof(int))); oN1 = static_cast<int*>(malloc(P[1]*sizeof(int)));
+    oM0 = static_cast<int*>(malloc(P[0]*sizeof(int))); oM1 = static_cast<int*>(malloc(P[1]*sizeof(int)));
+    oK0 = static_cast<int*>(malloc(P[0]*sizeof(int))); oK1 = static_cast<int*>(malloc(P[1]*sizeof(int)));
 
     for (i = 0; i < P[0]; i++)
     {
@@ -430,7 +430,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         }
     }
 
-    plan = (fft5d_plan)calloc(1, sizeof(struct fft5d_plan_t));
+    plan = static_cast<fft5d_plan>(calloc(1, sizeof(struct fft5d_plan_t)));
 
 
     if (debug)
@@ -542,21 +542,21 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         {
             plan->p3d = FFTW(plan_guru_dft_r2c)(/*rank*/ 3, dims,
                                                          /*howmany*/ 0, /*howmany_dims*/ nullptr,
-                                                         (real*)lin, (FFTW(complex) *) lout,
+                                                         reinterpret_cast<real*>(lin), reinterpret_cast<FFTW(complex) *>(lout),
                                                          /*flags*/ fftwflags);
         }
         else if ((flags&FFT5D_REALCOMPLEX) && (flags&FFT5D_BACKWARD))
         {
             plan->p3d = FFTW(plan_guru_dft_c2r)(/*rank*/ 3, dims,
                                                          /*howmany*/ 0, /*howmany_dims*/ nullptr,
-                                                         (FFTW(complex) *) lin, (real*)lout,
+                                                         reinterpret_cast<FFTW(complex) *>(lin), reinterpret_cast<real*>(lout),
                                                          /*flags*/ fftwflags);
         }
         else
         {
             plan->p3d = FFTW(plan_guru_dft)(/*rank*/ 3, dims,
                                                      /*howmany*/ 0, /*howmany_dims*/ nullptr,
-                                                     (FFTW(complex) *) lin, (FFTW(complex) *) lout,
+                                                     reinterpret_cast<FFTW(complex) *>(lin), reinterpret_cast<FFTW(complex) *>(lout),
                                                      /*sign*/ (flags&FFT5D_BACKWARD) ? 1 : -1, /*flags*/ fftwflags);
         }
 #ifdef FFT5D_THREADS
@@ -576,7 +576,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
             fprintf(debug, "FFT5D: Plan s %d rC %d M %d pK %d C %d lsize %d\n",
                     s, rC[s], M[s], pK[s], C[s], lsize);
         }
-        plan->p1d[s] = (gmx_fft_t*)malloc(sizeof(gmx_fft_t)*nthreads);
+        plan->p1d[s] = static_cast<gmx_fft_t*>(malloc(sizeof(gmx_fft_t)*nthreads));
 
         /* Make sure that the init routines are only called by one thread at a time and in order
            (later is only important to not confuse valgrind)
@@ -1113,11 +1113,11 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
 #if GMX_MPI
                 if ((s == 0 && !(plan->flags&FFT5D_ORDER_YZ)) || (s == 1 && (plan->flags&FFT5D_ORDER_YZ)))
                 {
-                    MPI_Alltoall((real *)lout2, N[s]*pM[s]*K[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, (real *)lout3, N[s]*pM[s]*K[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, cart[s]);
+                    MPI_Alltoall(reinterpret_cast<real *>(lout2), N[s]*pM[s]*K[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, reinterpret_cast<real *>(lout3), N[s]*pM[s]*K[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, cart[s]);
                 }
                 else
                 {
-                    MPI_Alltoall((real *)lout2, N[s]*M[s]*pK[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, (real *)lout3, N[s]*M[s]*pK[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, cart[s]);
+                    MPI_Alltoall(reinterpret_cast<real *>(lout2), N[s]*M[s]*pK[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, reinterpret_cast<real *>(lout3), N[s]*M[s]*pK[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, cart[s]);
                 }
 #else
                 gmx_incons("fft5d MPI call without MPI configuration");

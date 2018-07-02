@@ -1923,7 +1923,7 @@ static int nsgrid_core(const t_commrec *cr,
                 /* Calculate range of cells in Y direction that have the shift ty */
                 if (bTriclinicY)
                 {
-                    ygi = (int)(Ny + (YI - grid_offset[YY])*grid_y) - Ny;
+                    ygi = static_cast<int>(Ny + (YI - grid_offset[YY])*grid_y) - Ny;
                 }
                 else
                 {
@@ -1941,7 +1941,7 @@ static int nsgrid_core(const t_commrec *cr,
                     /* Calculate range of cells in X direction that have the shift tx */
                     if (bTriclinicX)
                     {
-                        xgi = (int)(Nx + (XI - grid_offset[XX])*grid_x) - Nx;
+                        xgi = static_cast<int>(Nx + (XI - grid_offset[XX])*grid_x) - Nx;
                     }
                     else
                     {
@@ -2091,7 +2091,7 @@ void init_ns(FILE *fplog, const t_commrec *cr,
         const t_block *cgs = &molt.cgs;
         for (icg = 0; (icg < cgs->nr); icg++)
         {
-            nr_in_cg = std::max(nr_in_cg, (int)(cgs->index[icg+1]-cgs->index[icg]));
+            nr_in_cg = std::max(nr_in_cg, (cgs->index[icg+1]-cgs->index[icg]));
         }
     }
 

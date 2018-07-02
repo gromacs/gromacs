@@ -1084,7 +1084,7 @@ static void print_pme_loadbal_settings(pme_load_balancing_t *pme_lb,
     pp_ratio_temporary = pme_lb->setup[pme_lb->cur].rlistInner / pme_lb->setup[0].rlistInner;
     pp_ratio           = gmx::power3(pp_ratio_temporary);
     grid_ratio         = pme_grid_points(&pme_lb->setup[pme_lb->cur])/
-        (double)pme_grid_points(&pme_lb->setup[0]);
+        static_cast<double>(pme_grid_points(&pme_lb->setup[0]));
 
     fprintf(fplog, "\n");
     fprintf(fplog, "       P P   -   P M E   L O A D   B A L A N C I N G\n");

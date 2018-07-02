@@ -225,7 +225,7 @@ make_shake_sblock_serial(shakedata *shaked,
         fprintf(debug, "Going to sort constraints\n");
     }
 
-    qsort(sb, ncons, (size_t)sizeof(*sb), pcomp);
+    qsort(sb, ncons, sizeof(*sb), pcomp);
 
     if (debug)
     {
@@ -266,7 +266,7 @@ make_shake_sblock_serial(shakedata *shaked,
         }
         for (j = 0; (j <= shaked->nblocks); j++)
         {
-            fprintf(stderr, "sblock[%3d]=%5d\n", j, (int)shaked->sblock[j]);
+            fprintf(stderr, "sblock[%3d]=%5d\n", j, shaked->sblock[j]);
         }
         gmx_fatal(FARGS, "DEATH HORROR: "
                   "sblocks does not match idef->il[F_CONSTR]");

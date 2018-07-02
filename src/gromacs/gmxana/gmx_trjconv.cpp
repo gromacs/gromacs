@@ -523,7 +523,7 @@ static void do_trunc(const char *fn, real t0)
         {
             fprintf(stderr, "Do you REALLY want to truncate this trajectory (%s) at:\n"
                     "frame %d, time %g, bytes %ld ??? (type YES if so)\n",
-                    fn, j, t, (long int)fpos);
+                    fn, j, t, static_cast<long int>(fpos));
             if (1 != scanf("%s", yesno))
             {
                 gmx_fatal(FARGS, "Error reading user input");
@@ -1137,7 +1137,7 @@ int gmx_trjconv(int argc, char *argv[])
         if (opt2bSet("-fr", NFILE, fnm))
         {
             printf("Select groups of frame number indices:\n");
-            rd_index(opt2fn("-fr", NFILE, fnm), 1, &nrfri, (int **)&frindex, &frname);
+            rd_index(opt2fn("-fr", NFILE, fnm), 1, &nrfri, &frindex, &frname);
             if (debug)
             {
                 for (i = 0; i < nrfri; i++)

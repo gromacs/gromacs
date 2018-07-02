@@ -404,7 +404,7 @@ int gmx_convert_tpr(int argc, char *argv[])
         /* Determine total number of steps remaining */
         if (bExtend)
         {
-            ir->nsteps = ir->nsteps - (run_step - ir->init_step) + (int64_t)(extend_t/ir->delta_t + 0.5);
+            ir->nsteps = ir->nsteps - (run_step - ir->init_step) + static_cast<int64_t>(extend_t/ir->delta_t + 0.5);
             printf("Extending remaining runtime of by %g ps (now %s steps)\n",
                    extend_t, gmx_step_str(ir->nsteps, buf));
         }
@@ -414,7 +414,7 @@ int gmx_convert_tpr(int argc, char *argv[])
                    gmx_step_str(ir->nsteps, buf),
                    gmx_step_str(run_step, buf2),
                    run_t, until_t);
-            ir->nsteps = (int64_t)((until_t - run_t)/ir->delta_t + 0.5);
+            ir->nsteps = static_cast<int64_t>((until_t - run_t)/ir->delta_t + 0.5);
             printf("Extending remaining runtime until %g ps (now %s steps)\n",
                    until_t, gmx_step_str(ir->nsteps, buf));
         }

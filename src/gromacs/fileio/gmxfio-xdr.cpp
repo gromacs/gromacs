@@ -127,84 +127,84 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
             {
                 if (item && !fio->bRead)
                 {
-                    d = *((real *) item);
+                    d = *(static_cast<real *>(item));
                 }
                 res = xdr_double(fio->xdr, &d);
                 if (item)
                 {
-                    *((real *) item) = d;
+                    *(static_cast<real *>(item)) = d;
                 }
             }
             else
             {
                 if (item && !fio->bRead)
                 {
-                    f = *((real *) item);
+                    f = *(static_cast<real *>(item));
                 }
                 res = xdr_float(fio->xdr, &f);
                 if (item)
                 {
-                    *((real *) item) = f;
+                    *(static_cast<real *>(item)) = f;
                 }
             }
             break;
         case eioFLOAT:
             if (item && !fio->bRead)
             {
-                f = *((float *) item);
+                f = *(static_cast<float *>(item));
             }
             res = xdr_float(fio->xdr, &f);
             if (item)
             {
-                *((float *) item) = f;
+                *(static_cast<float *>(item)) = f;
             }
             break;
         case eioDOUBLE:
             if (item && !fio->bRead)
             {
-                d = *((double *) item);
+                d = *(static_cast<double *>(item));
             }
             res = xdr_double(fio->xdr, &d);
             if (item)
             {
-                *((double *) item) = d;
+                *(static_cast<double *>(item)) = d;
             }
             break;
         case eioINT:
             if (item && !fio->bRead)
             {
-                idum = *(int *) item;
+                idum = *static_cast<int *>(item);
             }
             res = xdr_int(fio->xdr, &idum);
             if (item)
             {
-                *(int *) item = idum;
+                *static_cast<int *>(item) = idum;
             }
             break;
         case eioINT64:
             if (item && !fio->bRead)
             {
-                sdum = *(int64_t *) item;
+                sdum = *static_cast<int64_t *>(item);
             }
             res = xdr_int64(fio->xdr, &sdum);
             if (item)
             {
-                *(int64_t *) item = sdum;
+                *static_cast<int64_t *>(item) = sdum;
             }
             break;
         case eioUCHAR:
             if (item && !fio->bRead)
             {
-                ucdum = *(unsigned char *) item;
+                ucdum = *static_cast<unsigned char *>(item);
             }
             res = xdr_u_char(fio->xdr, &ucdum);
             if (item)
             {
-                *(unsigned char *) item = ucdum;
+                *static_cast<unsigned char *>(item) = ucdum;
             }
             break;
         case eioNUCHAR:
-            ucptr = (unsigned char *) item;
+            ucptr = static_cast<unsigned char *>(item);
             res   = 1;
             for (j = 0; (j < nitem) && res; j++)
             {
@@ -214,12 +214,12 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
         case eioUSHORT:
             if (item && !fio->bRead)
             {
-                us = *(unsigned short *) item;
+                us = *static_cast<unsigned short *>(item);
             }
-            res = xdr_u_short(fio->xdr, (unsigned short *) &us);
+            res = xdr_u_short(fio->xdr, &us);
             if (item)
             {
-                *(unsigned short *) item = us;
+                *static_cast<unsigned short *>(item) = us;
             }
             break;
         case eioRVEC:
@@ -229,17 +229,17 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
                 {
                     for (m = 0; (m < DIM); m++)
                     {
-                        dvec[m] = ((real *) item)[m];
+                        dvec[m] = (static_cast<real *>(item))[m];
                     }
                 }
-                res = xdr_vector(fio->xdr, (char *) dvec, DIM,
+                res = xdr_vector(fio->xdr, reinterpret_cast<char *>(dvec), DIM,
                                  static_cast<unsigned int>(sizeof(double)),
-                                 (xdrproc_t) xdr_double);
+                                 reinterpret_cast<xdrproc_t>(xdr_double));
                 if (item)
                 {
                     for (m = 0; (m < DIM); m++)
                     {
-                        ((real *) item)[m] = dvec[m];
+                        (static_cast<real *>(item))[m] = dvec[m];
                     }
                 }
             }
@@ -249,17 +249,17 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
                 {
                     for (m = 0; (m < DIM); m++)
                     {
-                        fvec[m] = ((real *) item)[m];
+                        fvec[m] = (static_cast<real *>(item))[m];
                     }
                 }
-                res = xdr_vector(fio->xdr, (char *) fvec, DIM,
+                res = xdr_vector(fio->xdr, reinterpret_cast<char *>(fvec), DIM,
                                  static_cast<unsigned int>(sizeof(float)),
-                                 (xdrproc_t) xdr_float);
+                                 reinterpret_cast<xdrproc_t>(xdr_float));
                 if (item)
                 {
                     for (m = 0; (m < DIM); m++)
                     {
-                        ((real *) item)[m] = fvec[m];
+                        (static_cast<real *>(item))[m] = fvec[m];
                     }
                 }
             }
@@ -271,13 +271,13 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
             {
                 if (item)
                 {
-                    ptr = ((rvec *) item)[j];
+                    ptr = (static_cast<rvec *>(item))[j];
                 }
                 res = do_xdr(fio, ptr, 1, eioRVEC, desc, srcfile, line);
             }
             break;
         case eioIVEC:
-            iptr = (int *) item;
+            iptr = static_cast<int *>(item);
             res  = 1;
             for (m = 0; (m < DIM) && res; m++)
             {
@@ -301,7 +301,7 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
             {
                 if (!fio->bRead)
                 {
-                    slen = strlen((char *) item) + 1;
+                    slen = strlen(static_cast<char *>(item)) + 1;
                 }
                 else
                 {
@@ -324,7 +324,7 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
             }
             else
             {
-                cptr = (char *)item;
+                cptr = static_cast<char *>(item);
             }
             if (cptr)
             {

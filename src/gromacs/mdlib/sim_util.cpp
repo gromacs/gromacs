@@ -155,7 +155,7 @@ void print_time(FILE                     *out,
         {
             if (dt >= 300)
             {
-                finish = (time_t) (seconds_since_epoch + dt);
+                finish = static_cast<time_t>(seconds_since_epoch + dt);
                 gmx_ctime_r(&finish, timebuf, STRLEN);
                 sprintf(buf, "%s", timebuf);
                 buf[strlen(buf)-1] = '\0';
@@ -163,7 +163,7 @@ void print_time(FILE                     *out,
             }
             else
             {
-                fprintf(out, ", remaining wall clock time: %5d s          ", (int)dt);
+                fprintf(out, ", remaining wall clock time: %5d s          ", static_cast<int>(dt));
             }
         }
         else
@@ -197,7 +197,7 @@ void print_date_and_time(FILE *fplog, int nodeid, const char *title,
     {
         int    i;
         char   timebuf[STRLEN];
-        time_t temp_time = (time_t) the_time;
+        time_t temp_time = static_cast<time_t>(the_time);
 
         gmx_ctime_r(&temp_time, timebuf, STRLEN);
         for (i = 0; timebuf[i] >= ' '; i++)
@@ -2415,13 +2415,13 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
                  * Table has a scale factor since we have scaled it down to compensate
                  * for scaling-up c6/c12 with the derivative factors to save flops in analytical kernels.
                  */
-                fr->enershiftsix    = (real)(-1.0/(rc3*rc3)) - 6.0*vdwtab[8*ri0];
-                fr->enershifttwelve = (real)( 1.0/(rc9*rc3)) - 12.0*vdwtab[8*ri0 + 4];
+                fr->enershiftsix    = static_cast<real>(-1.0/(rc3*rc3)) - 6.0*vdwtab[8*ri0];
+                fr->enershifttwelve = static_cast<real>( 1.0/(rc9*rc3)) - 12.0*vdwtab[8*ri0 + 4];
             }
             else if (ic->vdw_modifier == eintmodPOTSHIFT)
             {
-                fr->enershiftsix    = (real)(-1.0/(rc3*rc3));
-                fr->enershifttwelve = (real)( 1.0/(rc9*rc3));
+                fr->enershiftsix    = static_cast<real>(-1.0/(rc3*rc3));
+                fr->enershifttwelve = static_cast<real>( 1.0/(rc9*rc3));
             }
 
             /* Add the constant part from 0 to rvdw_switch.

@@ -759,7 +759,7 @@ static void sort_pdbatoms(t_restp restp[],
         pdbi[i].anm1   = atomnm[1];
         pdbi[i].altloc = pdba->pdbinfo[i].altloc;
     }
-    qsort(pdbi, natoms, (size_t)sizeof(pdbi[0]), pdbicomp);
+    qsort(pdbi, natoms, static_cast<size_t>(sizeof(pdbi[0])), pdbicomp);
 
     /* pdba is sorted in pdbnew using the pdbi index */
     snew(a, natoms);

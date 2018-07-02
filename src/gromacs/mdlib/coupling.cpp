@@ -273,7 +273,7 @@ static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
         gmx_fatal(FARGS, "Barostat is coupled to a T-group with no degrees of freedom\n");
     }
     /* alpha factor for phase space volume, then multiply by the ekin scaling factor.  */
-    alpha  = 1.0 + DIM/((double)ir->opts.nrdf[0]);
+    alpha  = 1.0 + DIM/(static_cast<double>(ir->opts.nrdf[0]));
     alpha *= ekind->tcstat[0].ekinscalef_nhc;
     msmul(ekind->ekin, alpha, ekinmod);
     /* for now, we use Elr = 0, because if you want to get it right, you
@@ -1450,7 +1450,7 @@ static real vrescale_sumnoises(real                            nn,
         int  nn_int, i;
         real gauss;
 
-        nn_int = (int)(nn + 0.5);
+        nn_int = static_cast<int>(nn + 0.5);
 
         if (nn - nn_int < -ndeg_tol || nn - nn_int > ndeg_tol)
         {

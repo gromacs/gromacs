@@ -1139,7 +1139,7 @@ static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes,
 
     for (i = 0; i < nfile; i++)
     {
-        opt = (char *)fnm[i].opt;
+        opt = const_cast<char *>(fnm[i].opt);
         if (std::strcmp(opt, "-p") == 0)
         {
             /* do nothing; keep this file */
@@ -1923,7 +1923,7 @@ static void create_command_line_snippets(
     /********************/
     for (i = 0; i < nfile; i++)
     {
-        opt  = (char *)fnm[i].opt;
+        opt  = const_cast<char *>(fnm[i].opt);
         name = opt2fn(opt, nfile, fnm);
 
         /* Strbuf contains the options, now let's sort out where we need that */
@@ -2034,7 +2034,7 @@ static void couple_files_options(int nfile, t_filenm fnm[])
 
     for (i = 0; i < nfile; i++)
     {
-        opt    = (char *)fnm[i].opt;
+        opt    = const_cast<char *>(fnm[i].opt);
         bSet   = ((fnm[i].flag & ffSET) != 0);
         bBench = (0 == std::strncmp(opt, "-b", 2));
 

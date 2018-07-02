@@ -54,8 +54,8 @@ qsort_swapfunc(void *        a,
 
     if (swaptype <= 1)
     {
-        ia = (int *)a;
-        ib = (int *)b;
+        ia = static_cast<int *>(a);
+        ib = static_cast<int *>(b);
         for (; n > 0; ia += 1, ib += 1, n -= sizeof(int))
         {
             itmp      = *ia;
@@ -65,8 +65,8 @@ qsort_swapfunc(void *        a,
     }
     else
     {
-        ca = (char *)a;
-        cb = (char *)b;
+        ca = static_cast<char *>(a);
+        cb = static_cast<char *>(b);
         for (; n > 0; ca += 1, cb += 1, n -= 1)
         {
             ctmp       = *ca;
@@ -136,9 +136,9 @@ gmx_qsort(void *           base,
         return;
     }
 
-    cbase = (char *)base;
+    cbase = static_cast<char *>(base);
 
-    swaptype = (size_t)(cbase - (char *)nullptr) % sizeof(int) || size % sizeof(int) ? 2 : size == sizeof(int) ? 0 : 1;
+    swaptype = static_cast<size_t>(cbase - (char *)nullptr) % sizeof(int) || size % sizeof(int) ? 2 : size == sizeof(int) ? 0 : 1;
 
     if (nmemb < 7)
     {
@@ -164,12 +164,12 @@ gmx_qsort(void *           base,
         {
             /* Big arrays, pseudomedian of 9 */
             s  = (nmemb/8)*size;
-            pl = (char *)qsort_med3((void *)pl, (void *)((size_t)pl+s), (void *)((size_t)pl+2*s), compar);
-            pm = (char *)qsort_med3((void *)((size_t)pm-s), (void *)pm, (void *)((size_t)pm+s), compar);
-            pn = (char *)qsort_med3((void *)((size_t)pn-2*s), (void *)((size_t)pn-s), (void *)pn, compar);
+            pl = static_cast<char *>(qsort_med3((void *)pl, (void *)((size_t)pl+s), (void *)((size_t)pl+2*s), compar));
+            pm = static_cast<char *>(qsort_med3((void *)((size_t)pm-s), (void *)pm, (void *)((size_t)pm+s), compar));
+            pn = static_cast<char *>(qsort_med3((void *)((size_t)pn-2*s), (void *)((size_t)pn-s), (void *)pn, compar));
         }
         /* Mid-size, med of 3 */
-        pm = (char *)qsort_med3((void *)pl, (void *)pm, (void *)pn, compar);
+        pm = static_cast<char *>(qsort_med3((void *)pl, (void *)pm, (void *)pn, compar));
     }
 
     /* pv points to partition value */
@@ -180,8 +180,8 @@ gmx_qsort(void *           base,
     }
     else
     {
-        v  = *(int *)pm;
-        pv = (char*)(void*)&v;
+        v  = *reinterpret_cast<int *>(pm);
+        pv = static_cast<char*>((void*)&v);
     }
 
     pa = pb = cbase;

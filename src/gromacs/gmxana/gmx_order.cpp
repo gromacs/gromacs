@@ -637,7 +637,7 @@ static void calc_order(const char *fn, const int *index, int *a, rvec **order,
                     z1    = x1[a[index[i-1]+j]][axis];
                     z2    = x1[a[index[i+1]+j]][axis];
                     z_ave = 0.5 * (z1 + z2);
-                    slice = (int)((nslices*z_ave)/box[axis][axis]);
+                    slice = static_cast<int>((nslices*z_ave)/box[axis][axis]);
                     while (slice < 0)
                     {
                         slice += nslices;

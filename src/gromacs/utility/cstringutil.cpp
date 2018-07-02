@@ -127,7 +127,7 @@ void upstring (char *str)
 {
     int i;
 
-    for (i = 0; (i < (int)strlen(str)); i++)
+    for (i = 0; (i < static_cast<int>(strlen(str))); i++)
     {
         str[i] = toupper(str[i]);
     }
@@ -211,8 +211,8 @@ int gmx_strncasecmp_min(const char *str1, const char *str2, int n)
     char  ch1, ch2;
     char *stri1, *stri2;
 
-    stri1 = (char *)str1;
-    stri2 = (char *)str2;
+    stri1 = const_cast<char *>(str1);
+    stri2 = const_cast<char *>(str2);
     do
     {
         do

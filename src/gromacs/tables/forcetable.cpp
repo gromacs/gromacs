@@ -708,7 +708,7 @@ static void read_tables(FILE *fp, const char *fn,
             if (ns > 0)
             {
                 ssd /= ns;
-                sprintf(buf, "For the %d non-zero entries for table %d in %s the forces deviate on average %lld%% from minus the numerical derivative of the potential\n", ns, k, libfn, (long long int)(100*ssd+0.5));
+                sprintf(buf, "For the %d non-zero entries for table %d in %s the forces deviate on average %lld%% from minus the numerical derivative of the potential\n", ns, k, libfn, static_cast<long long int>(100*ssd+0.5));
                 if (debug)
                 {
                     fprintf(debug, "%s", buf);
@@ -1369,7 +1369,7 @@ t_forcetable *make_tables(FILE *out,
                 gmx_fatal(FARGS, "Tables in file %s not long enough for cut-off:\n"
                           "\tshould be at least %f nm\n", fn, rtab);
             }
-            table->n = (int)(rtab*td[0].tabscale + 0.5);
+            table->n = static_cast<int>(rtab*td[0].tabscale + 0.5);
         }
         table->scale = td[0].tabscale;
         nx0          = td[0].nx0;

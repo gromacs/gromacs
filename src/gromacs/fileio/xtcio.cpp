@@ -69,7 +69,7 @@ static int xdr_r2f(XDR *xdrs, real *r, gmx_bool gmx_unused bRead)
 
     return ret;
 #else
-    return xdr_float(xdrs, (float *)r);
+    return xdr_float(xdrs, static_cast<float *>(r));
 #endif
 }
 

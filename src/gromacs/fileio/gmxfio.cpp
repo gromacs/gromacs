@@ -478,7 +478,7 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
 
     snew(buf, CPT_CHK_LEN);
     /* the read puts the file position back to offset */
-    if ((gmx_off_t)fread(buf, 1, read_len, fio->fp) != read_len)
+    if (static_cast<gmx_off_t>(fread(buf, 1, read_len, fio->fp)) != read_len)
     {
         /* not fatal: md5sum check to prevent overwriting files
          * works (less safe) without
@@ -517,7 +517,7 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
 
     if (debug)
     {
-        fprintf(debug, "chksum %s readlen %ld\n", fio->fn, (long int)read_len);
+        fprintf(debug, "chksum %s readlen %ld\n", fio->fn, static_cast<long int>(read_len));
     }
 
     if (!ret)

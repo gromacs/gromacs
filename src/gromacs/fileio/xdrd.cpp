@@ -53,7 +53,7 @@ int xdr_real(XDR *xdrs, real *r)
 
     return ret;
 #else
-    return xdr_float(xdrs, (float *)r);
+    return xdr_float(xdrs, static_cast<float *>(r));
 #endif
 }
 

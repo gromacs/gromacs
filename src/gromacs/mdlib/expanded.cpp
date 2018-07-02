@@ -212,7 +212,7 @@ static gmx_bool CheckHistogramRatios(int nhisto, const real *histo, real ratio)
         bIfFlat = FALSE;
         return bIfFlat;
     }
-    nmean /= (real)nhisto;
+    nmean /= static_cast<real>(nhisto);
 
     bIfFlat = TRUE;
     for (i = 0; i < nhisto; i++)
@@ -387,7 +387,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
             GenerateGibbsProbabilities(weighted_lamee, p_k, &pks, 0, nlim-1);
             for (i = 0; i < nlim; i++)
             {
-                dfhist->wl_histo[i] += (real)p_k[i];
+                dfhist->wl_histo[i] += static_cast<real>(p_k[i]);
             }
 
             /* then increment weights (uses count) */
@@ -396,7 +396,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
 
             for (i = 0; i < nlim; i++)
             {
-                dfhist->sum_weights[i] -= dfhist->wl_delta*(real)p_k[i];
+                dfhist->sum_weights[i] -= dfhist->wl_delta*static_cast<real>(p_k[i]);
             }
             /* Alternate definition, using logarithms. Shouldn't make very much difference! */
             /*
@@ -448,7 +448,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
         for (nval = 0; nval < maxc; nval++)
         {
             /* constants for later use */
-            cnval = (real)(nval-expand->c_range);
+            cnval = static_cast<real>(nval-expand->c_range);
             /* actually, should be able to rewrite it w/o exponential, for better numerical stability */
             if (fep_state > 0)
             {
@@ -1063,7 +1063,7 @@ void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand,
             {
                 if (expand->elamstats == elamstatsWL)
                 {
-                    fprintf(outfile, " %8d", (int)dfhist->wl_histo[ifep]);
+                    fprintf(outfile, " %8d", static_cast<int>(dfhist->wl_histo[ifep]));
                 }
                 else
                 {
@@ -1268,7 +1268,7 @@ int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
     {
         if (log)
         {
-            fprintf(log, "\nStep %d: Weights have equilibrated, using criteria: %s\n", (int)step, elmceq_names[expand->elmceq]);
+            fprintf(log, "\nStep %" PRId64 ": Weights have equilibrated, using criteria: %s\n", step, elmceq_names[expand->elmceq]);
         }
     }
 
@@ -1370,7 +1370,7 @@ int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
                 dfhist->wl_delta *= expand->wl_scale;
                 if (log)
                 {
-                    fprintf(log, "\nStep %d: weights are now:", (int)step);
+                    fprintf(log, "\nStep %d: weights are now:", static_cast<int>(step));
                     for (i = 0; i < nlim; i++)
                     {
                         fprintf(log, " %.5f", dfhist->sum_weights[i]);

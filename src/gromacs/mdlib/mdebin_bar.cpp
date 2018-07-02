@@ -176,7 +176,7 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi, gmx_bool invert)
        Get this start value in number of histogram dxs from zero,
        as an integer.*/
 
-    dh->x0[hi] = (int64_t)floor(min_dh/dx);
+    dh->x0[hi] = static_cast<int64_t>(floor(min_dh/dx));
 
     min_dh_hist = (dh->x0[hi])*dx;
     max_dh_hist = (dh->x0[hi] + dh->nbins + 1)*dx;
@@ -192,7 +192,7 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi, gmx_bool invert)
            might lead to overflow with unpredictable results.*/
         if ( (f*dh->dh[i] >= min_dh_hist) && (f*dh->dh[i] <= max_dh_hist ) )
         {
-            bin = (unsigned int)( (f*dh->dh[i] - min_dh_hist)/dx );
+            bin = static_cast<unsigned int>( (f*dh->dh[i] - min_dh_hist)/dx );
         }
         else
         {
@@ -269,7 +269,7 @@ static void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
             blk->sub[2].type = xdr_datatype_float;
             for (i = 0; i < dh->ndh; i++)
             {
-                dh->dhf[i] = (float)dh->dh[i];
+                dh->dhf[i] = static_cast<float>(dh->dh[i]);
             }
             blk->sub[2].fval = dh->dhf;
             dh->written      = TRUE;

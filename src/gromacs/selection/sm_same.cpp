@@ -284,7 +284,7 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t                           **me
 static void
 init_same(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
-    t_methoddata_same *d = (t_methoddata_same *)data;
+    t_methoddata_same *d = static_cast<t_methoddata_same *>(data);
 
     d->val.ptr = param[0].val.u.ptr;
     d->as.ptr  = param[1].val.u.ptr;
@@ -306,7 +306,7 @@ init_same(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *para
 static void
 free_data_same(void *data)
 {
-    t_methoddata_same *d = (t_methoddata_same *)data;
+    t_methoddata_same *d = static_cast<t_methoddata_same *>(data);
 
     sfree(d->as_s_sorted);
     sfree(d);
@@ -332,7 +332,7 @@ cmp_int(const void *a, const void *b)
 static void
 init_frame_same_int(const gmx::SelMethodEvalContext & /*context*/, void *data)
 {
-    t_methoddata_same *d = (t_methoddata_same *)data;
+    t_methoddata_same *d = static_cast<t_methoddata_same *>(data);
     int                i, j;
 
     /* Collapse adjacent values, and check whether the array is sorted. */
@@ -385,7 +385,7 @@ static void
 evaluate_same_int(const gmx::SelMethodEvalContext & /*context*/,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_same     *d = (t_methoddata_same *)data;
+    t_methoddata_same     *d = static_cast<t_methoddata_same *>(data);
     int                    i, j;
 
     out->u.g->isize = 0;
@@ -454,13 +454,13 @@ evaluate_same_int(const gmx::SelMethodEvalContext & /*context*/,
 static int
 cmp_str(const void *a, const void *b)
 {
-    return strcmp(*(char **)a, *(char **)b);
+    return strcmp(*static_cast<char *const*>(a), *static_cast<char *const*>(b));
 }
 
 static void
 init_frame_same_str(const gmx::SelMethodEvalContext & /*context*/, void *data)
 {
-    t_methoddata_same *d = (t_methoddata_same *)data;
+    t_methoddata_same *d = static_cast<t_methoddata_same *>(data);
     int                i, j;
 
     /* Collapse adjacent values.
@@ -508,7 +508,7 @@ static void
 evaluate_same_str(const gmx::SelMethodEvalContext & /*context*/,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_same     *d = (t_methoddata_same *)data;
+    t_methoddata_same     *d = static_cast<t_methoddata_same *>(data);
     int                    j;
 
     out->u.g->isize = 0;

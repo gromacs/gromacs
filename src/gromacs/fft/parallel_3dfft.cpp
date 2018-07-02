@@ -83,10 +83,10 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t           *    pfft_setup,
         Nb = K; Mb = rN; Kb = M;  /* currently always true because ORDER_YZ always set */
     }
 
-    (*pfft_setup)->p1 = fft5d_plan_3d(rN, M, K, rcomm, flags, (t_complex**)real_data, complex_data, &buf1, &buf2, nthreads, realGridAllocation);
+    (*pfft_setup)->p1 = fft5d_plan_3d(rN, M, K, rcomm, flags, reinterpret_cast<t_complex**>(real_data), complex_data, &buf1, &buf2, nthreads, realGridAllocation);
 
     (*pfft_setup)->p2 = fft5d_plan_3d(Nb, Mb, Kb, rcomm,
-                                      (flags|FFT5D_BACKWARD|FFT5D_NOMALLOC)^FFT5D_ORDER_YZ, complex_data, (t_complex**)real_data, &buf1, &buf2, nthreads);
+                                      (flags|FFT5D_BACKWARD|FFT5D_NOMALLOC)^FFT5D_ORDER_YZ, complex_data, reinterpret_cast<t_complex**>(real_data), &buf1, &buf2, nthreads);
 
     return (*pfft_setup)->p1 != nullptr && (*pfft_setup)->p2 != nullptr;
 }
