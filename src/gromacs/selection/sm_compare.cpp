@@ -230,7 +230,7 @@ comparison_type_str(e_comparison_t cmpt)
 void
 _gmx_selelem_print_compare_info(FILE *fp, void *data)
 {
-    t_methoddata_compare *d = (t_methoddata_compare *)data;
+    t_methoddata_compare *d = static_cast<t_methoddata_compare *>(data);
 
     fprintf(fp, " \"");
     /* Print the left value */
@@ -352,7 +352,7 @@ convert_int_real(int n, t_compare_value *val)
     snew(rv, n);
     for (i = 0; i < n; ++i)
     {
-        rv[i] = (real)val->i[i];
+        rv[i] = static_cast<real>(val->i[i]);
     }
     /* Free the previous value if one is present. */
     sfree(val->r);
@@ -419,7 +419,7 @@ convert_real_int(int n, t_compare_value *val, e_comparison_t cmpt, bool bRight)
 static void
 init_compare(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
-    t_methoddata_compare *d = (t_methoddata_compare *)data;
+    t_methoddata_compare *d = static_cast<t_methoddata_compare *>(data);
     int                   n1, n2;
 
     /* Store the values */
@@ -486,7 +486,7 @@ init_compare(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *p
 static void
 free_data_compare(void *data)
 {
-    t_methoddata_compare *d = (t_methoddata_compare *)data;
+    t_methoddata_compare *d = static_cast<t_methoddata_compare *>(data);
 
     sfree(d->cmpop);
     if (d->left.flags & CMP_ALLOCINT)
@@ -518,7 +518,7 @@ free_data_compare(void *data)
 static void
 evaluate_compare_int(gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_compare *d = (t_methoddata_compare *)data;
+    t_methoddata_compare *d = static_cast<t_methoddata_compare *>(data);
     int                   i, i1, i2, ig;
     int                   a, b;
     bool                  bAccept;
@@ -567,7 +567,7 @@ evaluate_compare_int(gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 static void
 evaluate_compare_real(gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_compare *d = (t_methoddata_compare *)data;
+    t_methoddata_compare *d = static_cast<t_methoddata_compare *>(data);
     int                   i, i1, i2, ig;
     real                  a, b;
     bool                  bAccept;
@@ -607,7 +607,7 @@ static void
 evaluate_compare(const gmx::SelMethodEvalContext & /*context*/,
                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_compare *d = (t_methoddata_compare *)data;
+    t_methoddata_compare *d = static_cast<t_methoddata_compare *>(data);
 
     if (!((d->left.flags | d->right.flags) & CMP_REALVAL))
     {

@@ -171,7 +171,7 @@ init_data_permute(int /* npar */, gmx_ana_selparam_t *param)
 static void
 init_permute(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
-    t_methoddata_permute *d = (t_methoddata_permute *)data;
+    t_methoddata_permute *d = static_cast<t_methoddata_permute *>(data);
     int                   i;
 
     d->n    = param[1].val.nr;
@@ -204,7 +204,7 @@ init_permute(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *p
 static void
 init_output_permute(const gmx_mtop_t * /* top */, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_permute *d = (t_methoddata_permute *)data;
+    t_methoddata_permute *d = static_cast<t_methoddata_permute *>(data);
     int                   i, j, b;
 
     out->u.p->m.type = d->p.m.type;
@@ -229,7 +229,7 @@ init_output_permute(const gmx_mtop_t * /* top */, gmx_ana_selvalue_t *out, void 
 static void
 free_data_permute(void *data)
 {
-    t_methoddata_permute *d = (t_methoddata_permute *)data;
+    t_methoddata_permute *d = static_cast<t_methoddata_permute *>(data);
 
     sfree(d->rperm);
     delete d;
@@ -239,7 +239,7 @@ static void
 evaluate_permute(const gmx::SelMethodEvalContext & /*context*/,
                  gmx_ana_pos_t * /*p*/, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_permute *d = (t_methoddata_permute *)data;
+    t_methoddata_permute *d = static_cast<t_methoddata_permute *>(data);
     int                   i, j, b;
     int                   refid;
 

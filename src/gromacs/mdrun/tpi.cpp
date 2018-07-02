@@ -316,8 +316,8 @@ Integrator::do_tpi()
         fprintf(fplog, "\nWill insert %d atoms %s partial charges\n",
                 a_tp1-a_tp0, bCharge ? "with" : "without");
 
-        fprintf(fplog, "\nWill insert %d times in each frame of %s\n",
-                (int)nsteps, opt2fn("-rerun", nfile, fnm));
+        fprintf(fplog, "\nWill insert %" PRId64 " times in each frame of %s\n",
+                nsteps, opt2fn("-rerun", nfile, fnm));
     }
 
     if (!bCavity)
@@ -679,7 +679,7 @@ Integrator::do_tpi()
             {
                 if (debug)
                 {
-                    fprintf(debug, "\n  time %.3f, step %d: non-finite energy %f, using exp(-bU)=0\n", t, (int)step, epot);
+                    fprintf(debug, "\n  time %.3f, step %d: non-finite energy %f, using exp(-bU)=0\n", t, static_cast<int>(step), epot);
                 }
                 embU = 0;
             }
@@ -734,9 +734,9 @@ Integrator::do_tpi()
             }
             else
             {
-                i = (int)((bU_logV_bin_limit
-                           - (beta*epot - logV + refvolshift))*invbinw
-                          + 0.5);
+                i = static_cast<int>((bU_logV_bin_limit
+                                      - (beta*epot - logV + refvolshift))*invbinw
+                                     + 0.5);
                 if (i < 0)
                 {
                     i = 0;
@@ -751,13 +751,13 @@ Integrator::do_tpi()
             if (debug)
             {
                 fprintf(debug, "TPI %7d %12.5e %12.5f %12.5f %12.5f\n",
-                        (int)step, epot, x_tp[XX], x_tp[YY], x_tp[ZZ]);
+                        static_cast<int>(step), epot, x_tp[XX], x_tp[YY], x_tp[ZZ]);
             }
 
             if (dump_pdb && epot <= dump_ener)
             {
-                sprintf(str, "t%g_step%d.pdb", t, (int)step);
-                sprintf(str2, "t: %f step %d ener: %f", t, (int)step, epot);
+                sprintf(str, "t%g_step%d.pdb", t, static_cast<int>(step));
+                sprintf(str2, "t: %f step %d ener: %f", t, static_cast<int>(step), epot);
                 write_sto_conf_mtop(str, str2, top_global, as_rvec_array(state_global->x.data()), as_rvec_array(state_global->v.data()),
                                     inputrec->ePBC, state_global->box);
             }
@@ -848,7 +848,7 @@ Integrator::do_tpi()
             bUlogV = -i/invbinw + bU_logV_bin_limit - refvolshift + log(V_all/frame);
             fprintf(fp_tpi, "%6.2f %10d %12.5e\n",
                     bUlogV,
-                    (int)(bin[i]+0.5),
+                    static_cast<int>(bin[i]+0.5),
                     bin[i]*exp(-bUlogV)*V_all/VembU_all);
         }
         xvgrclose(fp_tpi);

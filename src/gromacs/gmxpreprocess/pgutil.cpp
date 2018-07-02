@@ -120,7 +120,7 @@ int search_atom(const char *type, int start,
         {
             if (anm[i] && gmx_strcasecmp(type, *(anm[i])) == 0)
             {
-                return (int) i;
+                return i;
             }
         }
         if (!(bNext && at[start].resind == at[natoms-1].resind))
@@ -140,7 +140,7 @@ int search_atom(const char *type, int start,
         {
             if (gmx_strcasecmp(type, *(anm[i])) == 0)
             {
-                return (int) i;
+                return i;
             }
         }
         if (start > 0)

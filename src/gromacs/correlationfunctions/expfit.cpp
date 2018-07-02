@@ -626,7 +626,7 @@ real do_lmfit(int ndata, const real c1[], real sig[], real dt, const real *x0,
             }
             else
             {
-                dy[j] = std::max(1.0e-7, (double)sig[i]);
+                dy[j] = std::max(1.0e-7, static_cast<double>(sig[i]));
             }
             if (debug)
             {
@@ -756,7 +756,7 @@ real fit_acf(int ncorr, int fitfn, const gmx_output_env_t *oenv, gmx_bool bVerbo
     {
         tendfit = ncorr*dt;
     }
-    nf_int = std::min(ncorr, (int)(tendfit/dt));
+    nf_int = std::min(ncorr, static_cast<int>(tendfit/dt));
     sum    = print_and_integrate(debug, nf_int, dt, c1, nullptr, 1);
 
     if (bPrint)
@@ -841,7 +841,7 @@ real fit_acf(int ncorr, int fitfn, const gmx_output_env_t *oenv, gmx_bool bVerbo
             sig[i] = sqrt(ct_estimate+dt*i);
         }
 
-        nf_int    = std::min(ncorr, (int)((tStart+1e-4)/dt));
+        nf_int    = std::min(ncorr, static_cast<int>((tStart+1e-4)/dt));
         sum       = print_and_integrate(debug, nf_int, dt, c1, nullptr, 1);
         tail_corr = do_lmfit(ncorr, c1, sig, dt, nullptr, tStart, tendfit, oenv,
                              bDebugMode(), fitfn, fitparm, 0, nullptr);

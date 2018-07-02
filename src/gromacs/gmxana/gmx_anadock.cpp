@@ -137,12 +137,12 @@ static gmx_bool bFreeSort = FALSE;
 
 static int pdbf_comp(const void *a, const void *b)
 {
-    t_pdbfile *pa, *pb;
-    real       x;
-    int        dc;
+    const t_pdbfile *pa, *pb;
+    real             x;
+    int              dc;
 
-    pa = *(t_pdbfile **)a;
-    pb = *(t_pdbfile **)b;
+    pa = *static_cast<t_pdbfile *const*>(a);
+    pb = *static_cast<t_pdbfile *const*>(b);
 
     dc = pa->cluster_id - pb->cluster_id;
 

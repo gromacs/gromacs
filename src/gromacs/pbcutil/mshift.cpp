@@ -810,7 +810,7 @@ void mk_mshift(FILE *log, t_graph *g, int ePBC,
         g->negc = nnodes;
         srenew(g->egc, g->negc);
     }
-    memset(g->egc, 0, (size_t)(nnodes*sizeof(g->egc[0])));
+    memset(g->egc, 0, static_cast<size_t>(nnodes*sizeof(g->egc[0])));
 
     nW = g->nbound;
     nG = 0;

@@ -419,7 +419,7 @@ static gmx_bool compartment_contains_atom(
         x += l;
     }
 
-    *distance_from_b = (real)fabs(x - bulkOffset*0.5*width);
+    *distance_from_b = static_cast<real>(fabs(x - bulkOffset*0.5*width));
 
     /* Return TRUE if we now are in area "????" */
     return (x >= w1) &&  (x < w2);

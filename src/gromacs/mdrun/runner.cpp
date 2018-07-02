@@ -1398,7 +1398,7 @@ int Mdrunner::mdrunner()
         gmx_fedisableexcept();
     }
 
-    rc = (int)gmx_get_stop_condition();
+    rc = static_cast<int>(gmx_get_stop_condition());
 
 #if GMX_THREAD_MPI
     /* we need to join all threads. The sub-threads join when they

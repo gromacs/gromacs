@@ -449,7 +449,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         if (*size <= 9)
         {
             return (xdr_vector(xdrs, reinterpret_cast<char *>(fp), static_cast<unsigned int>(size3),
-                               static_cast<unsigned int>(sizeof(*fp)), (xdrproc_t)xdr_float));
+                               static_cast<unsigned int>(sizeof(*fp)), reinterpret_cast<xdrproc_t>(xdr_float)));
         }
 
         if (xdr_float(xdrs, precision) == 0)
@@ -582,9 +582,9 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             return 0;
         }
 
-        if ((float)maxint[0] - (float)minint[0] >= MAXABS ||
-            (float)maxint[1] - (float)minint[1] >= MAXABS ||
-            (float)maxint[2] - (float)minint[2] >= MAXABS)
+        if (static_cast<float>(maxint[0]) - static_cast<float>(minint[0]) >= MAXABS ||
+            static_cast<float>(maxint[1]) - static_cast<float>(minint[1]) >= MAXABS ||
+            static_cast<float>(maxint[2]) - static_cast<float>(minint[2]) >= MAXABS)
         {
             /* turning value in unsigned by subtracting minint
              * would cause overflow
@@ -796,7 +796,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         {
             *precision = -1;
             return (xdr_vector(xdrs, reinterpret_cast<char *>(fp), static_cast<unsigned int>(size3),
-                               static_cast<unsigned int>(sizeof(*fp)), (xdrproc_t)xdr_float));
+                               static_cast<unsigned int>(sizeof(*fp)), reinterpret_cast<xdrproc_t>(xdr_float)));
         }
         if (xdr_float(xdrs, precision) == 0)
         {

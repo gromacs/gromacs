@@ -945,11 +945,11 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
         snew(dipsp, gnx_tot);
 
         /* we need a dummy file for gnuplot */
-        dip3d = (FILE *)gmx_ffopen("dummy.dat", "w");
+        dip3d = gmx_ffopen("dummy.dat", "w");
         fprintf(dip3d, "%f %f %f", 0.0, 0.0, 0.0);
         gmx_ffclose(dip3d);
 
-        dip3d = (FILE *)gmx_ffopen(fndip3d, "w");
+        dip3d = gmx_ffopen(fndip3d, "w");
         try
         {
             gmx::BinaryInformationSettings settings;

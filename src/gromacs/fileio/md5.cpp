@@ -212,7 +212,7 @@ md5_process(md5_state_t *pms, const md5_byte_t *data /*[64]*/)
             if (!((data - reinterpret_cast<const md5_byte_t *>(0)) & 3))
             {
                 /* data are properly aligned */
-                X = (const md5_word_t *)data;
+                X = reinterpret_cast<const md5_word_t *>(data);
             }
             else
             {
@@ -378,7 +378,7 @@ gmx_md5_append(md5_state_t *pms, const md5_byte_t *data, int nbytes)
     const md5_byte_t *p = data;
     int left            = nbytes;
     int offset          = (pms->count[0] >> 3) & 63;
-    md5_word_t nbits    = (md5_word_t)(nbytes << 3);
+    md5_word_t nbits    = static_cast<md5_word_t>(nbytes << 3);
 
     if (nbytes <= 0)
     {
@@ -436,7 +436,7 @@ gmx_md5_finish(md5_state_t *pms, md5_byte_t digest[16])
     /* Save the length before padding. */
     for (i = 0; i < 8; ++i)
     {
-        data[i] = (md5_byte_t)(pms->count[i >> 2] >> ((i & 3) << 3));
+        data[i] = static_cast<md5_byte_t>(pms->count[i >> 2] >> ((i & 3) << 3));
     }
     /* Pad to 56 bytes mod 64. */
     gmx_md5_append(pms, pad, ((55 - (pms->count[0] >> 3)) & 63) + 1);
@@ -444,6 +444,6 @@ gmx_md5_finish(md5_state_t *pms, md5_byte_t digest[16])
     gmx_md5_append(pms, data, 8);
     for (i = 0; i < 16; ++i)
     {
-        digest[i] = (md5_byte_t)(pms->abcd[i >> 2] >> ((i & 3) << 3));
+        digest[i] = static_cast<md5_byte_t>(pms->abcd[i >> 2] >> ((i & 3) << 3));
     }
 }

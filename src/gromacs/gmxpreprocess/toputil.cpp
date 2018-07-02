@@ -372,7 +372,7 @@ void print_blocka(FILE *out, const char *szName,
         for (i = 0; (i < block->nr); i++)
         {
             fprintf (out, "%6d", i+1);
-            for (j = block->index[i]; (j < ((int)block->index[i+1])); j++)
+            for (j = block->index[i]; (j < (block->index[i+1])); j++)
             {
                 fprintf (out, "%5d", block->a[j]+1);
             }
@@ -499,7 +499,7 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
                         tpnmB, at->atom[i].qB, at->atom[i].mB);
             }
             // Accumulate the total charge to help troubleshoot issues.
-            qtot += (double)at->atom[i].q;
+            qtot += static_cast<double>(at->atom[i].q);
             // Round it to zero if it is close to zero, because
             // printing -9.34e-5 confuses users.
             if (fabs(qtot) < 0.0001)

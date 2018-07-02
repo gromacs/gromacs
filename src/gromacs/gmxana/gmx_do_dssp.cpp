@@ -355,7 +355,7 @@ static void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string
     snew(total, mat->nmap);
     snew(leg, mat->nmap+1);
     leg[0] = "Structure";
-    for (s = 0; s < (size_t)mat->nmap; s++)
+    for (s = 0; s < static_cast<size_t>(mat->nmap); s++)
     {
         leg[s+1] = gmx_strdup(map[s].desc);
     }
@@ -384,7 +384,7 @@ static void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string
     xvgr_legend(fp, mat->nmap+1, leg, oenv);
 
     total_count = 0;
-    for (s = 0; s < (size_t)mat->nmap; s++)
+    for (s = 0; s < static_cast<size_t>(mat->nmap); s++)
     {
         total[s] = 0;
     }

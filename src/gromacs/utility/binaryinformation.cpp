@@ -239,7 +239,7 @@ void gmx_print_version_info(gmx::TextWriter *writer)
 #else
     writer->writeLine("Precision:          single");
 #endif
-    writer->writeLine(formatString("Memory model:       %u bit", (unsigned)(8*sizeof(void *))));
+    writer->writeLine(formatString("Memory model:       %u bit", static_cast<unsigned>(8*sizeof(void *))));
 
 #if GMX_THREAD_MPI
     writer->writeLine("MPI library:        thread_mpi");

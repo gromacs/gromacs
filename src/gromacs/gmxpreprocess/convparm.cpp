@@ -63,11 +63,11 @@ static int round_check(real r, int limit, int ftype, const char *name)
 
     if (r >= 0)
     {
-        i = (int)(r + 0.5);
+        i = static_cast<int>(r + 0.5);
     }
     else
     {
-        i = (int)(r - 0.5);
+        i = static_cast<int>(r - 0.5);
     }
 
     if (r-i > 0.01 || r-i < -0.01)
@@ -473,7 +473,7 @@ static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
         {
             if (ffparams->functype[type] == ftype)
             {
-                if (memcmp(&newparam, &ffparams->iparams[type], (size_t)sizeof(newparam)) == 0)
+                if (memcmp(&newparam, &ffparams->iparams[type], static_cast<size_t>(sizeof(newparam))) == 0)
                 {
                     return type;
                 }
@@ -484,7 +484,7 @@ static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
     {
         type = ffparams->ntypes;
     }
-    memcpy(&ffparams->iparams[type], &newparam, (size_t)sizeof(newparam));
+    memcpy(&ffparams->iparams[type], &newparam, static_cast<size_t>(sizeof(newparam)));
 
     ffparams->ntypes++;
     ffparams->functype[type] = ftype;
@@ -558,9 +558,9 @@ void convert_params(int atnr, t_params nbtypes[],
     ffp->iparams  = nullptr;
     ffp->reppow   = reppow;
 
-    enter_function(&(nbtypes[F_LJ]),  (t_functype)F_LJ,    comb, reppow, ffp, nullptr,
+    enter_function(&(nbtypes[F_LJ]),  static_cast<t_functype>(F_LJ),    comb, reppow, ffp, nullptr,
                    &maxtypes, TRUE, TRUE);
-    enter_function(&(nbtypes[F_BHAM]), (t_functype)F_BHAM,  comb, reppow, ffp, nullptr,
+    enter_function(&(nbtypes[F_BHAM]), static_cast<t_functype>(F_BHAM),  comb, reppow, ffp, nullptr,
                    &maxtypes, TRUE, TRUE);
 
     for (size_t mt = 0; mt < mtop->moltype.size(); mt++)
@@ -578,7 +578,7 @@ void convert_params(int atnr, t_params nbtypes[],
                                                  (flags & IF_VSITE) ||
                                                  (flags & IF_CONSTRAINT)))
             {
-                enter_function(&(plist[i]), (t_functype)i, comb, reppow,
+                enter_function(&(plist[i]), static_cast<t_functype>(i), comb, reppow,
                                ffp, &molt->ilist[i],
                                &maxtypes, FALSE, (i == F_POSRES  || i == F_FBPOSRES));
             }
@@ -620,7 +620,7 @@ void convert_params(int atnr, t_params nbtypes[],
                 }
                 else
                 {
-                    enter_function(&(plist[i]), (t_functype)i, comb, reppow,
+                    enter_function(&(plist[i]), static_cast<t_functype>(i), comb, reppow,
                                    ffp, &mtop->intermolecular_ilist[i],
                                    &maxtypes, FALSE, FALSE);
 
