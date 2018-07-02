@@ -610,30 +610,30 @@ static void atomcat(t_atoms *dest, const t_atoms *src, int copies,
     /* residue information */
     for (l = dest->nres, j = 0; (j < copies); j++, l += src->nres)
     {
-        memcpy((char *) &(dest->resinfo[l]), (char *) &(src->resinfo[0]),
-               (size_t)(src->nres*sizeof(src->resinfo[0])));
+        memcpy(reinterpret_cast<char *>(&(dest->resinfo[l])), reinterpret_cast<char *>(&(src->resinfo[0])),
+               static_cast<size_t>(src->nres*sizeof(src->resinfo[0])));
     }
 
     for (l = destnr, j = 0; (j < copies); j++, l += srcnr)
     {
-        memcpy((char *) &(dest->atom[l]), (char *) &(src->atom[0]),
-               (size_t)(srcnr*sizeof(src->atom[0])));
-        memcpy((char *) &(dest->atomname[l]), (char *) &(src->atomname[0]),
-               (size_t)(srcnr*sizeof(src->atomname[0])));
+        memcpy(reinterpret_cast<char *>(&(dest->atom[l])), reinterpret_cast<char *>(&(src->atom[0])),
+               static_cast<size_t>(srcnr*sizeof(src->atom[0])));
+        memcpy(reinterpret_cast<char *>(&(dest->atomname[l])), reinterpret_cast<char *>(&(src->atomname[0])),
+               static_cast<size_t>(srcnr*sizeof(src->atomname[0])));
         if (dest->haveType)
         {
-            memcpy((char *) &(dest->atomtype[l]), (char *) &(src->atomtype[0]),
-                   (size_t)(srcnr*sizeof(src->atomtype[0])));
+            memcpy(reinterpret_cast<char *>(&(dest->atomtype[l])), reinterpret_cast<char *>(&(src->atomtype[0])),
+                   static_cast<size_t>(srcnr*sizeof(src->atomtype[0])));
             if (dest->haveBState)
             {
-                memcpy((char *) &(dest->atomtypeB[l]), (char *) &(src->atomtypeB[0]),
-                       (size_t)(srcnr*sizeof(src->atomtypeB[0])));
+                memcpy(reinterpret_cast<char *>(&(dest->atomtypeB[l])), reinterpret_cast<char *>(&(src->atomtypeB[0])),
+                       static_cast<size_t>(srcnr*sizeof(src->atomtypeB[0])));
             }
         }
         if (dest->havePdbInfo)
         {
-            memcpy((char *) &(dest->pdbinfo[l]), (char *) &(src->pdbinfo[0]),
-                   (size_t)(srcnr*sizeof(src->pdbinfo[0])));
+            memcpy(reinterpret_cast<char *>(&(dest->pdbinfo[l])), reinterpret_cast<char *>(&(src->pdbinfo[0])),
+                   static_cast<size_t>(srcnr*sizeof(src->pdbinfo[0])));
         }
     }
 

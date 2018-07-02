@@ -101,7 +101,7 @@ static void set_pme_maxshift(gmx_domdec_t *dd, gmx_ddpme_t *ddpme,
         for (s = 0; s < ns; s++)
         {
             /* PME slab s spreads atoms between box frac. s/ns and (s+1)/ns */
-            pme_boundary = (real)s/ns;
+            pme_boundary = static_cast<real>(s)/ns;
             while (sh+1 < ns &&
                    ((s-(sh+1) >= 0 &&
                      cell_f[xmax[s-(sh+1)   ]+1]     + range > pme_boundary) ||
@@ -110,7 +110,7 @@ static void set_pme_maxshift(gmx_domdec_t *dd, gmx_ddpme_t *ddpme,
             {
                 sh++;
             }
-            pme_boundary = (real)(s+1)/ns;
+            pme_boundary = static_cast<real>(s+1)/ns;
             while (sh+1 < ns &&
                    ((s+(sh+1) <  ns &&
                      cell_f[xmin[s+(sh+1)   ]  ]     - range < pme_boundary) ||
@@ -765,10 +765,10 @@ static void distribute_dd_cell_sizes_dlb(gmx_domdec_t *dd,
         relative_to_absolute_cell_bounds(dd, ddbox, d1);
     }
     /* Convert the communicated shift from float to int */
-    comm->ddpme[0].maxshift = (int)(cell_f_row[pos++] + 0.5);
+    comm->ddpme[0].maxshift = static_cast<int>(cell_f_row[pos++] + 0.5);
     if (d >= 1)
     {
-        comm->ddpme[1].maxshift = (int)(cell_f_row[pos++] + 0.5);
+        comm->ddpme[1].maxshift = static_cast<int>(cell_f_row[pos++] + 0.5);
     }
 }
 

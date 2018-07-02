@@ -430,7 +430,7 @@ AwhReader::AwhReader(const AwhParams  *awhParams,
     {
         AwhBiasParams              *awhBiasParams = &awhParams->awhBiasParams[k];
 
-        int                         numSubBlocks  = (int)block->sub[subblockStart].fval[0];
+        int                         numSubBlocks  = static_cast<int>(block->sub[subblockStart].fval[0]);
 
         std::unique_ptr<OutputFile> awhOutputFile(new OutputFile(opt2fn("-o", numFileOptions, filenames), "AWH", awhParams->numBias, k));
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -82,7 +82,7 @@ void fflib_filename_base(const char *filename, char *filebase, int maxlen)
     {
         cptr = filename;
     }
-    if (strlen(filename) >= (size_t)maxlen)
+    if (strlen(filename) >= static_cast<size_t>(maxlen))
     {
         gmx_fatal(FARGS, "filename is longer (%d) than maxlen (%d)",
                   strlen(filename), maxlen);

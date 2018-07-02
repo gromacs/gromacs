@@ -876,7 +876,7 @@ void gmx_fwrite_tng(gmx_tng_trajectory_t gmx_tng,
     }
 
     tng_num_particles_get(tng, &nParticles);
-    if (nAtoms != (int)nParticles)
+    if (nAtoms != static_cast<int>(nParticles))
     {
         tng_implicit_num_particles_set(tng, nAtoms);
     }
@@ -1542,7 +1542,7 @@ gmx_bool gmx_read_next_tng_frame(gmx_tng_trajectory_t        gmx_tng_input,
             case TNG_TRAJ_VELOCITIES:
                 srenew(fr->v, fr->natoms);
                 convert_array_to_real_array(values,
-                                            (real *) fr->v,
+                                            reinterpret_cast<real *>(fr->v),
                                             getDistanceScaleFactor(gmx_tng_input),
                                             fr->natoms,
                                             DIM,
@@ -1638,11 +1638,11 @@ void gmx_print_tng_molecule_system(gmx_tng_trajectory_t gmx_tng_input,
         tng_molecule_name_get(input, molecule, str, 256);
         if (varNAtoms == TNG_CONSTANT_N_ATOMS)
         {
-            if ((int)molCntList[i] == 0)
+            if (static_cast<int>(molCntList[i]) == 0)
             {
                 continue;
             }
-            fprintf(stream, "Molecule: %s, count: %d\n", str, (int)molCntList[i]);
+            fprintf(stream, "Molecule: %s, count: %d\n", str, static_cast<int>(molCntList[i]));
         }
         else
         {

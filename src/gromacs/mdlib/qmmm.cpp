@@ -126,7 +126,7 @@ typedef struct {
 static int struct_comp(const void *a, const void *b)
 {
 
-    return (int)(((t_j_particle *)a)->j)-(int)(((t_j_particle *)b)->j);
+    return (((t_j_particle *)a)->j)-(((t_j_particle *)b)->j);
 
 } /* struct_comp */
 
@@ -701,13 +701,13 @@ void update_QMMMrec(const t_commrec  *cr,
 
 
             qsort(qm_i_particles, QMMMlist->nri,
-                  (size_t)sizeof(qm_i_particles[0]),
+                  static_cast<size_t>(sizeof(qm_i_particles[0])),
                   struct_comp);
             /* The mm_j_particles argument to qsort is not allowed to be NULL */
             if (mm_nr > 0)
             {
                 qsort(mm_j_particles, mm_nr,
-                      (size_t)sizeof(mm_j_particles[0]),
+                      static_cast<size_t>(sizeof(mm_j_particles[0])),
                       struct_comp);
             }
             /* remove multiples in the QM shift array, since in init_QMMM() we

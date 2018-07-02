@@ -243,14 +243,14 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
 
     if (nl->type == GMX_NBLIST_INTERACTION_FREE_ENERGY)
     {
-        nl->kernelptr_vf       = (void *) gmx_nb_free_energy_kernel;
-        nl->kernelptr_f        = (void *) gmx_nb_free_energy_kernel;
+        nl->kernelptr_vf       = reinterpret_cast<void *>(gmx_nb_free_energy_kernel);
+        nl->kernelptr_f        = reinterpret_cast<void *>(gmx_nb_free_energy_kernel);
         nl->simd_padding_width = 1;
     }
     else if (!gmx_strcasecmp_min(geom, "CG-CG"))
     {
-        nl->kernelptr_vf       = (void *) gmx_nb_generic_cg_kernel;
-        nl->kernelptr_f        = (void *) gmx_nb_generic_cg_kernel;
+        nl->kernelptr_vf       = reinterpret_cast<void *>(gmx_nb_generic_cg_kernel);
+        nl->kernelptr_f        = reinterpret_cast<void *>(gmx_nb_generic_cg_kernel);
         nl->simd_padding_width = 1;
     }
     else
@@ -259,18 +259,18 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
 
         for (i = 0; i < narch && nl->kernelptr_vf == nullptr; i++)
         {
-            nl->kernelptr_vf       = (void *) nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce");
+            nl->kernelptr_vf       = reinterpret_cast<void *>(nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce"));
             nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
         }
         for (i = 0; i < narch && nl->kernelptr_f == nullptr; i++)
         {
-            nl->kernelptr_f        = (void *) nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "Force");
+            nl->kernelptr_f        = reinterpret_cast<void *>(nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "Force"));
             nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
 
             /* If there is not force-only optimized kernel, is there a potential & force one? */
             if (nl->kernelptr_f == nullptr)
             {
-                nl->kernelptr_f        = (void *) nb_kernel_list_findkernel(nullptr, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce");
+                nl->kernelptr_f        = reinterpret_cast<void *>(nb_kernel_list_findkernel(nullptr, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce"));
                 nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
             }
         }
@@ -300,8 +300,8 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
          */
         if (nl->kernelptr_vf == nullptr && !gmx_strcasecmp_min(geom, "Particle-Particle"))
         {
-            nl->kernelptr_vf       = (void *) gmx_nb_generic_kernel;
-            nl->kernelptr_f        = (void *) gmx_nb_generic_kernel;
+            nl->kernelptr_vf       = reinterpret_cast<void *>(gmx_nb_generic_kernel);
+            nl->kernelptr_f        = reinterpret_cast<void *>(gmx_nb_generic_kernel);
             nl->simd_padding_width = 1;
             if (debug)
             {
@@ -405,12 +405,12 @@ void do_nonbonded(const t_forcerec  *fr,
                     if (flags & GMX_NONBONDED_DO_POTENTIAL)
                     {
                         /* Potential and force */
-                        kernelptr = (nb_kernel_t *)nlist[i].kernelptr_vf;
+                        kernelptr = reinterpret_cast<nb_kernel_t *>(nlist[i].kernelptr_vf);
                     }
                     else
                     {
                         /* Force only, no potential */
-                        kernelptr = (nb_kernel_t *)nlist[i].kernelptr_f;
+                        kernelptr = reinterpret_cast<nb_kernel_t *>(nlist[i].kernelptr_f);
                     }
 
                     if (nlist[i].type != GMX_NBLIST_INTERACTION_FREE_ENERGY && (flags & GMX_NONBONDED_DO_FOREIGNLAMBDA))

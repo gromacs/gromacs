@@ -169,9 +169,9 @@ int gmx_genconf(int argc, char *argv[])
     gmx::DefaultRandomEngine rng(seed);
 
     bTRX = ftp2bSet(efTRX, NFILE, fnm);
-    nx   = (int)(nrbox[XX]+0.5);
-    ny   = (int)(nrbox[YY]+0.5);
-    nz   = (int)(nrbox[ZZ]+0.5);
+    nx   = static_cast<int>(nrbox[XX]+0.5);
+    ny   = static_cast<int>(nrbox[YY]+0.5);
+    nz   = static_cast<int>(nrbox[ZZ]+0.5);
 
     if ((nx <= 0) || (ny <= 0) || (nz <= 0))
     {

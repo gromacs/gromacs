@@ -1843,7 +1843,7 @@ static float dd_force_load(gmx_domdec_comm_t *comm)
                  * is spurious CPU activity or MPI time, so we don't expect
                  * that changes in the GPU wait time matter a lot here.
                  */
-                gpu_wait *= (comm->cycl_n[ddCyclF] - 1)/(float)comm->cycl_n[ddCyclF];
+                gpu_wait *= (comm->cycl_n[ddCyclF] - 1)/static_cast<float>(comm->cycl_n[ddCyclF]);
             }
             /* Sum the wait times over the ranks that share the same GPU */
             MPI_Allreduce(&gpu_wait, &gpu_wait_sum, 1, MPI_FLOAT, MPI_SUM,
@@ -1874,7 +1874,7 @@ static void set_slb_pme_dim_f(gmx_domdec_t *dd, int dim, real **dim_f)
         }
         else
         {
-            (*dim_f)[i] = (real)i/(real)dd->nc[dim];
+            (*dim_f)[i] = static_cast<real>(i)/static_cast<real>(dd->nc[dim]);
         }
     }
     (*dim_f)[dd->nc[dim]] = 1;
@@ -2224,7 +2224,7 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
                         pos++;
                         if (d < dd->ndim-1)
                         {
-                            load->flags = (int)(load->load[pos++] + 0.5);
+                            load->flags = static_cast<int>(load->load[pos++] + 0.5);
                         }
                         if (d > 0)
                         {
@@ -2533,7 +2533,7 @@ static void dd_print_load_verbose(gmx_domdec_t *dd)
     }
     if (dd->nnodes > 1)
     {
-        fprintf(stderr, "imb F %2d%% ", (int)(dd_f_imbal(dd)*100+0.5));
+        fprintf(stderr, "imb F %2d%% ", static_cast<int>(dd_f_imbal(dd)*100+0.5));
     }
     if (dd->comm->cycl_n[ddCyclPME])
     {
@@ -3961,11 +3961,11 @@ static void turn_on_dlb(FILE *fplog, const t_commrec *cr, gmx_int64_t step)
             nc = dd->nc[dd->dim[d]];
             for (i = 0; i < nc; i++)
             {
-                comm->root[d]->cell_f[i]    = i/(real)nc;
+                comm->root[d]->cell_f[i]    = i/static_cast<real>(nc);
                 if (d > 0)
                 {
-                    comm->root[d]->cell_f_max0[i] =  i   /(real)nc;
-                    comm->root[d]->cell_f_min1[i] = (i+1)/(real)nc;
+                    comm->root[d]->cell_f_max0[i] =  i   /static_cast<real>(nc);
+                    comm->root[d]->cell_f_min1[i] = (i+1)/static_cast<real>(nc);
                 }
             }
             comm->root[d]->cell_f[nc] = 1.0;
@@ -4193,7 +4193,7 @@ static void set_cell_limits_dlb(gmx_domdec_t      *dd,
          * Later cellsize_limit is redetermined,
          * so we can not miss interactions due to this rounding.
          */
-        npulse = (int)(0.96 + comm->cutoff/comm->cellsize_limit);
+        npulse = static_cast<int>(0.96 + comm->cutoff/comm->cellsize_limit);
     }
     else
     {
@@ -4208,8 +4208,8 @@ static void set_cell_limits_dlb(gmx_domdec_t      *dd,
         for (d = 0; d < dd->ndim; d++)
         {
             dim      = dd->dim[d];
-            npulse_d = (int)(1 + dd->nc[dim]*comm->cutoff
-                             /(ddbox->box_size[dim]*ddbox->skew_fac[dim]*dlb_scale));
+            npulse_d = static_cast<int>(1 + dd->nc[dim]*comm->cutoff
+                                        /(ddbox->box_size[dim]*ddbox->skew_fac[dim]*dlb_scale));
             npulse_d_max = std::max(npulse_d_max, npulse_d);
         }
         npulse = std::min(npulse, npulse_d_max);
@@ -4327,12 +4327,12 @@ static void set_ddgrid_parameters(FILE *fplog, gmx_domdec_t *dd, real dlb_scale,
 
     if (ir->ePBC == epbcNONE)
     {
-        vol_frac = 1 - 1/(double)dd->nnodes;
+        vol_frac = 1 - 1/static_cast<double>(dd->nnodes);
     }
     else
     {
         vol_frac =
-            (1 + comm_box_frac(dd->nc, comm->cutoff, ddbox))/(double)dd->nnodes;
+            (1 + comm_box_frac(dd->nc, comm->cutoff, ddbox))/static_cast<double>(dd->nnodes);
     }
     if (debug)
     {
@@ -4470,7 +4470,7 @@ static gmx_bool test_dd_cutoff(t_commrec *cr,
             inv_cell_size *= DD_PRES_SCALE_MARGIN;
         }
 
-        np = 1 + (int)(cutoff_req*inv_cell_size*ddbox.skew_fac[dim]);
+        np = 1 + static_cast<int>(cutoff_req*inv_cell_size*ddbox.skew_fac[dim]);
 
         if (!isDlbDisabled(dd->comm) && (dim < ddbox.npbcdim) && (dd->comm->cd[d].np_dlb > 0))
         {
