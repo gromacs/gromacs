@@ -1,3 +1,0 @@
-CheckOptions:
-  - key:             misc-throw-by-value-catch-by-reference.CheckThrowTemporaries
-    value:           '0'
