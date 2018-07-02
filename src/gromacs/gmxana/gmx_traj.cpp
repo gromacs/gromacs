@@ -250,7 +250,7 @@ static void make_legend(FILE *fp, int ngrps, int isize, int index[],
             }
         }
     }
-    xvgr_legend(fp, j, (const char**)leg, oenv);
+    xvgr_legend(fp, j, leg, oenv);
 
     for (i = 0; i < j; i++)
     {

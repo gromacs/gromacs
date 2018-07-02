@@ -586,7 +586,7 @@ int gmx_nmr(int argc, char *argv[])
                     {
                         fprintf(fort, "%s", orinst_sub);
                     }
-                    xvgr_legend(fort, norsel, (const char**)odtleg, oenv);
+                    xvgr_legend(fort, norsel, odtleg, oenv);
                 }
                 if (bODT)
                 {
@@ -597,7 +597,7 @@ int gmx_nmr(int argc, char *argv[])
                     {
                         fprintf(fodt, "%s", orinst_sub);
                     }
-                    xvgr_legend(fodt, norsel, (const char**)odtleg, oenv);
+                    xvgr_legend(fodt, norsel, odtleg, oenv);
                 }
                 for (i = 0; i < norsel; i++)
                 {
@@ -627,7 +627,7 @@ int gmx_nmr(int argc, char *argv[])
                     }
                 }
             }
-            xvgr_legend(foten, bOvec ? nex*12 : nex*3, (const char**)otenleg, oenv);
+            xvgr_legend(foten, bOvec ? nex*12 : nex*3, otenleg, oenv);
             for (j = 0; j < 3; j++)
             {
                 sfree(otenleg[j]);
@@ -721,7 +721,7 @@ int gmx_nmr(int argc, char *argv[])
                     snew(leg[2*i+1], 32);
                     sprintf(leg[2*i+1], "i %s", pairleg[set[i]]);
                 }
-                xvgr_legend(fp_pairs, 2*nset, (const char**)leg, oenv);
+                xvgr_legend(fp_pairs, 2*nset, leg, oenv);
             }
 
             /*
