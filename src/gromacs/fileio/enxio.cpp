@@ -695,7 +695,7 @@ static gmx_bool do_eheader(ener_file_t ef, int *file_version, t_enxframe *fr,
                 *bOK = *bOK && gmx_fio_do_int(ef->fio, typenr);
                 *bOK = *bOK && gmx_fio_do_int(ef->fio, sub->nr);
 
-                sub->type = (xdr_datatype)typenr;
+                sub->type = static_cast<xdr_datatype>(typenr);
             }
         }
     }
@@ -821,7 +821,7 @@ ener_file_t open_enx(const char *fn, const char *mode)
         /* Now check whether this file is in single precision */
         if (!bWrongPrecision &&
             ((fr->e_size && (fr->nre == nre) &&
-              (nre*4*(long int)sizeof(float) == fr->e_size)) ) )
+              (nre*4*static_cast<long int>(sizeof(float)) == fr->e_size)) ) )
         {
             fprintf(stderr, "Opened %s as single precision energy file\n", fn);
             free_enxnms(nre, nms);
@@ -838,7 +838,7 @@ ener_file_t open_enx(const char *fn, const char *mode)
             }
 
             if (((fr->e_size && (fr->nre == nre) &&
-                  (nre*4*(long int)sizeof(double) == fr->e_size)) ))
+                  (nre*4*static_cast<long int>(sizeof(double)) == fr->e_size)) ))
             {
                 fprintf(stderr, "Opened %s as double precision energy file\n",
                         fn);
@@ -918,7 +918,7 @@ static void convert_full_sums(ener_old_t *ener_old, t_enxframe *fr)
             fr->ener[i].eav  = eav_all  - ener_old->ener_prev[i].eav
                 - gmx::square(ener_old->ener_prev[i].esum/(nstep_all - fr->nsum)
                               - esum_all/nstep_all)*
-                (nstep_all - fr->nsum)*nstep_all/(double)fr->nsum;
+                (nstep_all - fr->nsum)*nstep_all/static_cast<double>(fr->nsum);
             ener_old->ener_prev[i].esum = esum_all;
             ener_old->ener_prev[i].eav  = eav_all;
         }
@@ -1433,7 +1433,7 @@ static void cmp_eblocks(t_enxframe *fr1, t_enxframe *fr2, real ftol, real abstol
                     s1 = &(b1->sub[i]);
                     s2 = &(b2->sub[i]);
 
-                    cmp_int(stdout, buf, -1, (int)s1->type, (int)s2->type);
+                    cmp_int(stdout, buf, -1, static_cast<int>(s1->type), static_cast<int>(s2->type));
                     cmp_int64(stdout, buf, s1->nr, s2->nr);
 
                     if ((s1->type == s2->type) && (s1->nr == s2->nr))

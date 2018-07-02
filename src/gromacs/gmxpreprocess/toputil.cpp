@@ -372,7 +372,7 @@ void print_blocka(FILE *out, const char *szName,
         for (i = 0; (i < block->nr); i++)
         {
             fprintf (out, "%6d", i+1);
-            for (j = block->index[i]; (j < ((int)block->index[i+1])); j++)
+            for (j = block->index[i]; (j < (block->index[i+1])); j++)
             {
                 fprintf (out, "%5d", block->a[j]+1);
             }
@@ -504,7 +504,7 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
                 fprintf(out, " %6s %10g %10g",
                         tpnmB, at->atom[i].qB, at->atom[i].mB);
             }
-            qtot += (double)at->atom[i].q;
+            qtot += static_cast<double>(at->atom[i].q);
             if (fabs(qtot) < 4*GMX_REAL_EPS)
             {
                 qtot = 0;

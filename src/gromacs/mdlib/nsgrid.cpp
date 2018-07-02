@@ -321,7 +321,7 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
              * we will use the normal grid ns that checks all cells
              * that are within cut-off distance of the i-particle.
              */
-            grid->n[i] = (int)(size*inv_r_ideal + 0.5);
+            grid->n[i] = static_cast<int>(size*inv_r_ideal + 0.5);
             if (grid->n[i] < 2)
             {
                 grid->n[i] = 2;
@@ -336,13 +336,13 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
              * We can then beforehand exclude certain ns grid cells
              * for non-home i-particles.
              */
-            grid->ncpddc[i] = (int)(izones_size[i]*inv_r_ideal + 0.5);
+            grid->ncpddc[i] = static_cast<int>(izones_size[i]*inv_r_ideal + 0.5);
             if (grid->ncpddc[i] < 2)
             {
                 grid->ncpddc[i] = 2;
             }
             grid->cell_size[i] = izones_size[i]/grid->ncpddc[i];
-            grid->n[i]         = grid->ncpddc[i] + (int)(radd/grid->cell_size[i]) + 1;
+            grid->n[i]         = grid->ncpddc[i] + static_cast<int>(radd/grid->cell_size[i]) + 1;
         }
         if (debug)
         {

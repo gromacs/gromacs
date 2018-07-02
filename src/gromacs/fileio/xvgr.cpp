@@ -888,7 +888,7 @@ real **read_xvg_time(const char *fn,
                                 val_nalloc[set] = over_alloc_small(n);
                                 srenew(val[set], val_nalloc[set]);
                             }
-                            val[set][n] = (real)dbl;
+                            val[set][n] = static_cast<real>(dbl);
                         }
                     }
                     a++;
@@ -934,7 +934,7 @@ real **read_xvg_time(const char *fn,
             }
             if (n > 1)
             {
-                *dt = (real)((*t)[n-1]-(*t)[0])/(n-1.0);
+                *dt = static_cast<real>((*t)[n-1]-(*t)[0])/(n-1.0);
             }
             else
             {

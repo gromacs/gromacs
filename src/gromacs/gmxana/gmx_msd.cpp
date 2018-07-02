@@ -117,7 +117,7 @@ static t_corr *init_corr(int nrgrp, int type, int axis, real dim_factor,
     int      i;
 
     snew(curr, 1);
-    curr->type       = (msd_type)type;
+    curr->type       = static_cast<msd_type>(type);
     curr->axis       = axis;
     curr->ngrp       = nrgrp;
     curr->nrestart   = 0;

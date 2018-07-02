@@ -1420,7 +1420,7 @@ static real read_checked_edreal(FILE *file, const char *label)
     check(line, label);
     fgets2 (line, STRLEN, file);
     sscanf (line, max_ev_fmt_lf, &rdum);
-    return (real) rdum; /* always read as double and convert to single */
+    return static_cast<real>(rdum); /* always read as double and convert to single */
 }
 
 
@@ -1823,7 +1823,7 @@ static real rmsd_from_structure(rvec           *x,  /* The positions under consi
         rmsd += distance2(s->x[i], x[i]);
     }
 
-    rmsd /= (real) s->nr;
+    rmsd /= static_cast<real>(s->nr);
     rmsd  = sqrt(rmsd);
 
     return rmsd;

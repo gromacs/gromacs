@@ -246,7 +246,7 @@ const char *eIMDType_names[IMD_NR + 1] = {
 static void fill_header(IMDHeader *header, IMDMessageType type, gmx_int32_t length)
 {
     /* We (ab-)use htonl network function for the correct endianness */
-    header->type   = htonl((gmx_int32_t) type);
+    header->type   = htonl(static_cast<gmx_int32_t>(type));
     header->length = htonl(length);
 }
 
@@ -335,7 +335,7 @@ static int imd_handshake(IMDSocket *socket)
     fill_header(&header, IMD_HANDSHAKE, 1);
     header.length = IMDVERSION; /* client wants unswapped version */
 
-    return (imd_write_multiple(socket, (char *) &header, HEADERSIZE) != HEADERSIZE);
+    return (imd_write_multiple(socket, reinterpret_cast<char *>(&header), HEADERSIZE) != HEADERSIZE);
 }
 
 
@@ -346,7 +346,7 @@ static int imd_send_energies(IMDSocket *socket, const IMDEnergyBlock *energies, 
 
 
     recsize = HEADERSIZE + sizeof(IMDEnergyBlock);
-    fill_header((IMDHeader *) buffer, IMD_ENERGIES, 1);
+    fill_header(reinterpret_cast<IMDHeader *>(buffer), IMD_ENERGIES, 1);
     memcpy(buffer + HEADERSIZE, energies, sizeof(IMDEnergyBlock));
 
     return (imd_write_multiple(socket, buffer, recsize) != recsize);
@@ -359,14 +359,14 @@ static IMDMessageType imd_recv_header(IMDSocket *socket, gmx_int32_t *length)
     IMDHeader header;
 
 
-    if (imd_read_multiple(socket, (char *) &header, HEADERSIZE) != HEADERSIZE)
+    if (imd_read_multiple(socket, reinterpret_cast<char *>(&header), HEADERSIZE) != HEADERSIZE)
     {
         return IMD_IOERROR;
     }
     swap_header(&header);
     *length = header.length;
 
-    return (IMDMessageType) header.type;
+    return static_cast<IMDMessageType>(header.type);
 }
 
 
@@ -381,7 +381,7 @@ static int imd_recv_mdcomm(IMDSocket *socket, gmx_int32_t nforces, gmx_int32_t *
 
     /* reading indices */
     retsize  = sizeof(gmx_int32_t) * nforces;
-    retbytes = imd_read_multiple(socket, (char *) forcendx, retsize);
+    retbytes = imd_read_multiple(socket, reinterpret_cast<char *>(forcendx), retsize);
     if (retbytes != retsize)
     {
         return FALSE;
@@ -389,7 +389,7 @@ static int imd_recv_mdcomm(IMDSocket *socket, gmx_int32_t nforces, gmx_int32_t *
 
     /* reading forces as float array */
     retsize  = 3 * sizeof(float) * nforces;
-    retbytes = imd_read_multiple(socket, (char *) forces, retsize);
+    retbytes = imd_read_multiple(socket, reinterpret_cast<char *>(forces), retsize);
     if (retbytes != retsize)
     {
         return FALSE;
@@ -450,12 +450,12 @@ static int imd_send_rvecs(IMDSocket *socket, int nat, rvec *x, char *buffer)
     size = HEADERSIZE + 3 * sizeof(float) * nat;
 
     /* Prepare header */
-    fill_header((IMDHeader *) buffer, IMD_FCOORDS, (gmx_int32_t) nat);
+    fill_header(reinterpret_cast<IMDHeader *>(buffer), IMD_FCOORDS, static_cast<gmx_int32_t>(nat));
     for (i = 0; i < nat; i++)
     {
-        sendx[0] = (float) x[i][0] * NM2A;
-        sendx[1] = (float) x[i][1] * NM2A;
-        sendx[2] = (float) x[i][2] * NM2A;
+        sendx[0] = static_cast<float>(x[i][0]) * NM2A;
+        sendx[1] = static_cast<float>(x[i][1]) * NM2A;
+        sendx[2] = static_cast<float>(x[i][2]) * NM2A;
         memcpy(buffer + HEADERSIZE + i * tuplesize, sendx, tuplesize);
     }
 
@@ -618,7 +618,7 @@ static gmx_bool imd_tryconnect(t_gmx_IMD_setup *IMDsetup)
 static void imd_blockconnect(t_gmx_IMD_setup *IMDsetup)
 {
     /* do not wait for connection, when e.g. ctrl+c is pressed and we will terminate anyways. */
-    if (!((int) gmx_get_stop_condition() == gmx_stop_cond_none))
+    if (!(static_cast<int>(gmx_get_stop_condition()) == gmx_stop_cond_none))
     {
         return;
     }
@@ -626,7 +626,7 @@ static void imd_blockconnect(t_gmx_IMD_setup *IMDsetup)
     fprintf(stderr, "%s Will wait until I have a connection and IMD_GO orders.\n", IMDstr);
 
     /* while we have no clientsocket... 2nd part: we should still react on ctrl+c */
-    while ((!IMDsetup->clientsocket) && ((int) gmx_get_stop_condition() == gmx_stop_cond_none))
+    while ((!IMDsetup->clientsocket) && (static_cast<int>(gmx_get_stop_condition()) == gmx_stop_cond_none))
     {
         imd_tryconnect(IMDsetup);
 #if GMX_NATIVE_WINDOWS
@@ -966,7 +966,7 @@ static void imd_readcommand(t_gmx_IMD_setup *IMDsetup)
 
             /* Catch all rule for the remaining IMD types which we don't expect */
             default:
-                fprintf(stderr, " %s Received unexpected %s.\n", IMDstr, enum_name((int)itype, IMD_NR, eIMDType_names));
+                fprintf(stderr, " %s Received unexpected %s.\n", IMDstr, enum_name(static_cast<int>(itype), IMD_NR, eIMDType_names));
                 imd_fatal(IMDsetup, "Terminating connection\n");
                 break;
         } /* end switch */
@@ -1583,15 +1583,15 @@ void IMD_fill_energy_record(gmx_bool bIMD, t_IMD *imd, gmx_enerdata_t *enerd,
              * last global communication step are still on display in the viewer. */
             if (bHaveNewEnergies)
             {
-                ene->T_abs   = (float)  enerd->term[F_TEMP   ];
-                ene->E_pot   = (float)  enerd->term[F_EPOT   ];
-                ene->E_tot   = (float)  enerd->term[F_ETOT   ];
-                ene->E_bond  = (float)  enerd->term[F_BONDS  ];
-                ene->E_angle = (float)  enerd->term[F_ANGLES ];
-                ene->E_dihe  = (float)  enerd->term[F_PDIHS  ];
-                ene->E_impr  = (float)  enerd->term[F_IDIHS  ];
-                ene->E_vdw   = (float)  enerd->term[F_LJ     ];
-                ene->E_coul  = (float)  enerd->term[F_COUL_SR];
+                ene->T_abs   = static_cast<float>(enerd->term[F_TEMP   ]);
+                ene->E_pot   = static_cast<float>(enerd->term[F_EPOT   ]);
+                ene->E_tot   = static_cast<float>(enerd->term[F_ETOT   ]);
+                ene->E_bond  = static_cast<float>(enerd->term[F_BONDS  ]);
+                ene->E_angle = static_cast<float>(enerd->term[F_ANGLES ]);
+                ene->E_dihe  = static_cast<float>(enerd->term[F_PDIHS  ]);
+                ene->E_impr  = static_cast<float>(enerd->term[F_IDIHS  ]);
+                ene->E_vdw   = static_cast<float>(enerd->term[F_LJ     ]);
+                ene->E_coul  = static_cast<float>(enerd->term[F_COUL_SR]);
             }
         }
 #else

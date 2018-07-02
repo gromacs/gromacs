@@ -253,7 +253,7 @@ void calc_rffac(FILE *fplog, int eel, real eps_r, real eps_rf, real Rc, real Tem
         else
         {
             k1   = 1 + kappa*Rc;
-            k2   = eps_rf*gmx::square((real)(kappa*Rc));
+            k2   = eps_rf*gmx::square(static_cast<real>(kappa*Rc));
 
             *krf = ((eps_rf - eps_r)*k1 + 0.5*k2)/((2*eps_rf + eps_r)*k1 + k2)/(Rc*Rc*Rc);
         }

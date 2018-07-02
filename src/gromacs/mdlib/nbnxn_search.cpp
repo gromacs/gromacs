@@ -93,7 +93,7 @@ static void nbs_cycle_clear(nbnxn_cycle_t *cc)
 
 static double Mcyc_av(const nbnxn_cycle_t *cc)
 {
-    return (double)cc->c*1e-6/cc->count;
+    return static_cast<double>(cc->c)*1e-6/cc->count;
 }
 
 static void nbs_cycle_print(FILE *fp, const nbnxn_search *nbs)
@@ -737,7 +737,7 @@ static void check_excl_space(nbnxn_pairlist_t *nbl, int extra)
     if (nbl->nexcl+extra > nbl->excl_nalloc)
     {
         nbl->excl_nalloc = over_alloc_small(nbl->nexcl+extra);
-        nbnxn_realloc_void((void **)&nbl->excl,
+        nbnxn_realloc_void(reinterpret_cast<void **>(&nbl->excl),
                            nbl->nexcl*sizeof(*nbl->excl),
                            nbl->excl_nalloc*sizeof(*nbl->excl),
                            nbl->alloc, nbl->free);
@@ -755,12 +755,12 @@ static void check_cell_list_space_simple(nbnxn_pairlist_t *nbl,
     if (cj_max > nbl->cj_nalloc)
     {
         nbl->cj_nalloc = over_alloc_small(cj_max);
-        nbnxn_realloc_void((void **)&nbl->cj,
+        nbnxn_realloc_void(reinterpret_cast<void **>(&nbl->cj),
                            nbl->ncj*sizeof(*nbl->cj),
                            nbl->cj_nalloc*sizeof(*nbl->cj),
                            nbl->alloc, nbl->free);
 
-        nbnxn_realloc_void((void **)&nbl->cjOuter,
+        nbnxn_realloc_void(reinterpret_cast<void **>(&nbl->cjOuter),
                            nbl->ncj*sizeof(*nbl->cjOuter),
                            nbl->cj_nalloc*sizeof(*nbl->cjOuter),
                            nbl->alloc, nbl->free);
@@ -782,7 +782,7 @@ static void check_cell_list_space_supersub(nbnxn_pairlist_t *nbl,
     if (ncj4_max > nbl->cj4_nalloc)
     {
         nbl->cj4_nalloc = over_alloc_small(ncj4_max);
-        nbnxn_realloc_void((void **)&nbl->cj4,
+        nbnxn_realloc_void(reinterpret_cast<void **>(&nbl->cj4),
                            nbl->work->cj4_init*sizeof(*nbl->cj4),
                            nbl->cj4_nalloc*sizeof(*nbl->cj4),
                            nbl->alloc, nbl->free);
@@ -970,12 +970,12 @@ static void print_nblist_statistics_simple(FILE *fp, const nbnxn_pairlist_t *nbl
     fprintf(fp, "nbl nci %d ncj %d\n",
             nbl->nci, nbl->ncjInUse);
     fprintf(fp, "nbl na_sc %d rl %g ncp %d per cell %.1f atoms %.1f ratio %.2f\n",
-            nbl->na_sc, rl, nbl->ncjInUse, nbl->ncjInUse/(double)grid->nc,
-            nbl->ncjInUse/(double)grid->nc*grid->na_sc,
-            nbl->ncjInUse/(double)grid->nc*grid->na_sc/(0.5*4.0/3.0*M_PI*rl*rl*rl*grid->nc*grid->na_sc/(grid->size[XX]*grid->size[YY]*grid->size[ZZ])));
+            nbl->na_sc, rl, nbl->ncjInUse, nbl->ncjInUse/static_cast<double>(grid->nc),
+            nbl->ncjInUse/static_cast<double>(grid->nc)*grid->na_sc,
+            nbl->ncjInUse/static_cast<double>(grid->nc)*grid->na_sc/(0.5*4.0/3.0*M_PI*rl*rl*rl*grid->nc*grid->na_sc/(grid->size[XX]*grid->size[YY]*grid->size[ZZ])));
 
     fprintf(fp, "nbl average j cell list length %.1f\n",
-            0.25*nbl->ncjInUse/(double)std::max(nbl->nci, 1));
+            0.25*nbl->ncjInUse/static_cast<double>(std::max(nbl->nci, 1)));
 
     for (int s = 0; s < SHIFTS; s++)
     {
@@ -996,7 +996,7 @@ static void print_nblist_statistics_simple(FILE *fp, const nbnxn_pairlist_t *nbl
         }
     }
     fprintf(fp, "nbl cell pairs, total: %d excl: %d %.1f%%\n",
-            nbl->ncj, npexcl, 100*npexcl/(double)std::max(nbl->ncj, 1));
+            nbl->ncj, npexcl, 100*npexcl/static_cast<double>(std::max(nbl->ncj, 1)));
     for (int s = 0; s < SHIFTS; s++)
     {
         if (cs[s] > 0)
@@ -1022,9 +1022,9 @@ static void print_nblist_statistics_supersub(FILE *fp, const nbnxn_pairlist_t *n
     fprintf(fp, "nbl nsci %d ncj4 %d nsi %d excl4 %d\n",
             nbl->nsci, nbl->ncj4, nbl->nci_tot, nbl->nexcl);
     fprintf(fp, "nbl na_c %d rl %g ncp %d per cell %.1f atoms %.1f ratio %.2f\n",
-            nbl->na_ci, rl, nbl->nci_tot, nbl->nci_tot/(double)grid->nsubc_tot,
-            nbl->nci_tot/(double)grid->nsubc_tot*grid->na_c,
-            nbl->nci_tot/(double)grid->nsubc_tot*grid->na_c/(0.5*4.0/3.0*M_PI*rl*rl*rl*grid->nsubc_tot*grid->na_c/(grid->size[XX]*grid->size[YY]*grid->size[ZZ])));
+            nbl->na_ci, rl, nbl->nci_tot, nbl->nci_tot/static_cast<double>(grid->nsubc_tot),
+            nbl->nci_tot/static_cast<double>(grid->nsubc_tot)*grid->na_c,
+            nbl->nci_tot/static_cast<double>(grid->nsubc_tot)*grid->na_c/(0.5*4.0/3.0*M_PI*rl*rl*rl*grid->nsubc_tot*grid->na_c/(grid->size[XX]*grid->size[YY]*grid->size[ZZ])));
 
     sum_nsp  = 0;
     sum_nsp2 = 0;
@@ -1072,7 +1072,7 @@ static void print_nblist_statistics_supersub(FILE *fp, const nbnxn_pairlist_t *n
         {
             fprintf(fp, "nbl j-list #i-subcell %d %7d %4.1f\n",
                     b, c[b],
-                    100.0*c[b]/(double)(nbl->ncj4*c_nbnxnGpuJgroupSize));
+                    100.0*c[b]/static_cast<double>(nbl->ncj4*c_nbnxnGpuJgroupSize));
         }
     }
 }
@@ -2168,12 +2168,12 @@ setExclusionsForGpuIentry(const nbnxn_search   *nbs,
 static void nb_realloc_ci(nbnxn_pairlist_t *nbl, int n)
 {
     nbl->ci_nalloc = over_alloc_small(n);
-    nbnxn_realloc_void((void **)&nbl->ci,
+    nbnxn_realloc_void(reinterpret_cast<void **>(&nbl->ci),
                        nbl->nci*sizeof(*nbl->ci),
                        nbl->ci_nalloc*sizeof(*nbl->ci),
                        nbl->alloc, nbl->free);
 
-    nbnxn_realloc_void((void **)&nbl->ciOuter,
+    nbnxn_realloc_void(reinterpret_cast<void **>(&nbl->ciOuter),
                        nbl->nci*sizeof(*nbl->ciOuter),
                        nbl->ci_nalloc*sizeof(*nbl->ciOuter),
                        nbl->alloc, nbl->free);
@@ -2183,7 +2183,7 @@ static void nb_realloc_ci(nbnxn_pairlist_t *nbl, int n)
 static void nb_realloc_sci(nbnxn_pairlist_t *nbl, int n)
 {
     nbl->sci_nalloc = over_alloc_small(n);
-    nbnxn_realloc_void((void **)&nbl->sci,
+    nbnxn_realloc_void(reinterpret_cast<void **>(&nbl->sci),
                        nbl->nsci*sizeof(*nbl->sci),
                        nbl->sci_nalloc*sizeof(*nbl->sci),
                        nbl->alloc, nbl->free);
@@ -2863,7 +2863,7 @@ static void combine_nblists(int nnbl, nbnxn_pairlist_t **nbl,
     if (ncj4 > nblc->cj4_nalloc)
     {
         nblc->cj4_nalloc = over_alloc_small(ncj4);
-        nbnxn_realloc_void((void **)&nblc->cj4,
+        nbnxn_realloc_void(reinterpret_cast<void **>(&nblc->cj4),
                            nblc->ncj4*sizeof(*nblc->cj4),
                            nblc->cj4_nalloc*sizeof(*nblc->cj4),
                            nblc->alloc, nblc->free);
@@ -2871,7 +2871,7 @@ static void combine_nblists(int nnbl, nbnxn_pairlist_t **nbl,
     if (nexcl > nblc->excl_nalloc)
     {
         nblc->excl_nalloc = over_alloc_small(nexcl);
-        nbnxn_realloc_void((void **)&nblc->excl,
+        nbnxn_realloc_void(reinterpret_cast<void **>(&nblc->excl),
                            nblc->nexcl*sizeof(*nblc->excl),
                            nblc->excl_nalloc*sizeof(*nblc->excl),
                            nblc->alloc, nblc->free);
@@ -3329,7 +3329,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
     if (debug)
     {
         fprintf(debug, "nbl nc_i %d col.av. %.1f ci_block %d\n",
-                gridi->nc, gridi->nc/(double)(gridi->numCells[XX]*gridi->numCells[YY]), ci_block);
+                gridi->nc, gridi->nc/static_cast<double>(gridi->numCells[XX]*gridi->numCells[YY]), ci_block);
     }
 
     numDistanceChecks = 0;
@@ -3865,10 +3865,10 @@ static void print_reduction_cost(const nbnxn_buffer_flags_t *flags, int nout)
 
     fprintf(debug, "nbnxn reduction: #flag %d #list %d elem %4.2f, keep %4.2f copy %4.2f red %4.2f\n",
             flags->nflag, nout,
-            nelem/(double)(flags->nflag),
-            nkeep/(double)(flags->nflag),
-            ncopy/(double)(flags->nflag),
-            nred/(double)(flags->nflag));
+            nelem/static_cast<double>(flags->nflag),
+            nkeep/static_cast<double>(flags->nflag),
+            ncopy/static_cast<double>(flags->nflag),
+            nred/static_cast<double>(flags->nflag));
 }
 
 /* Copies the list entries from src to dest when cjStart <= *cjGlobal < cjEnd.
@@ -4074,7 +4074,7 @@ static void sort_sci(nbnxn_pairlist_t *nbl)
     if (work->sci_sort_nalloc != nbl->sci_nalloc)
     {
         work->sci_sort_nalloc = nbl->sci_nalloc;
-        nbnxn_realloc_void((void **)&work->sci_sort,
+        nbnxn_realloc_void(reinterpret_cast<void **>(&work->sci_sort),
                            0,
                            work->sci_sort_nalloc*sizeof(*work->sci_sort),
                            nbl->alloc, nbl->free);

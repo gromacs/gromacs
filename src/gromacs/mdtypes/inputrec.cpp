@@ -160,7 +160,7 @@ int ir_optimal_nsttcouple(const t_inputrec *ir)
     }
     else
     {
-        n = (int)(tau_min/(ir->delta_t*nmin) + 0.001);
+        n = static_cast<int>(tau_min/(ir->delta_t*nmin) + 0.001);
         if (n < 1)
         {
             n = 1;

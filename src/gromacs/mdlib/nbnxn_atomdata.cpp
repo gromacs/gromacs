@@ -119,36 +119,36 @@ void nbnxn_atomdata_realloc(nbnxn_atomdata_t *nbat, int n)
 
     int t;
 
-    nbnxn_realloc_void((void **)&nbat->type,
+    nbnxn_realloc_void(reinterpret_cast<void **>(&nbat->type),
                        nbat->natoms*sizeof(*nbat->type),
                        n*sizeof(*nbat->type),
                        nbat->alloc, nbat->free);
-    nbnxn_realloc_void((void **)&nbat->lj_comb,
+    nbnxn_realloc_void(reinterpret_cast<void **>(&nbat->lj_comb),
                        nbat->natoms*2*sizeof(*nbat->lj_comb),
                        n*2*sizeof(*nbat->lj_comb),
                        nbat->alloc, nbat->free);
     if (nbat->XFormat != nbatXYZQ)
     {
-        nbnxn_realloc_void((void **)&nbat->q,
+        nbnxn_realloc_void(reinterpret_cast<void **>(&nbat->q),
                            nbat->natoms*sizeof(*nbat->q),
                            n*sizeof(*nbat->q),
                            nbat->alloc, nbat->free);
     }
     if (nbat->nenergrp > 1)
     {
-        nbnxn_realloc_void((void **)&nbat->energrp,
+        nbnxn_realloc_void(reinterpret_cast<void **>(&nbat->energrp),
                            nbat->natoms/nbat->na_c*sizeof(*nbat->energrp),
                            n/nbat->na_c*sizeof(*nbat->energrp),
                            nbat->alloc, nbat->free);
     }
-    nbnxn_realloc_void((void **)&nbat->x,
+    nbnxn_realloc_void(reinterpret_cast<void **>(&nbat->x),
                        nbat->natoms*nbat->xstride*sizeof(*nbat->x),
                        n*nbat->xstride*sizeof(*nbat->x),
                        nbat->alloc, nbat->free);
     for (t = 0; t < nbat->nout; t++)
     {
         /* Allocate one element extra for possible signaling with GPUs */
-        nbnxn_realloc_void((void **)&nbat->out[t].f,
+        nbnxn_realloc_void(reinterpret_cast<void **>(&nbat->out[t].f),
                            nbat->natoms*nbat->fstride*sizeof(*nbat->out[t].f),
                            n*nbat->fstride*sizeof(*nbat->out[t].f),
                            nbat->alloc, nbat->free);
@@ -163,18 +163,18 @@ static void nbnxn_atomdata_output_init(nbnxn_atomdata_output_t *out,
                                        nbnxn_alloc_t *ma)
 {
     out->f = nullptr;
-    ma((void **)&out->fshift, SHIFTS*DIM*sizeof(*out->fshift));
+    ma(reinterpret_cast<void **>(&out->fshift), SHIFTS*DIM*sizeof(*out->fshift));
     out->nV = nenergrp*nenergrp;
-    ma((void **)&out->Vvdw, out->nV*sizeof(*out->Vvdw));
-    ma((void **)&out->Vc, out->nV*sizeof(*out->Vc  ));
+    ma(reinterpret_cast<void **>(&out->Vvdw), out->nV*sizeof(*out->Vvdw));
+    ma(reinterpret_cast<void **>(&out->Vc), out->nV*sizeof(*out->Vc  ));
 
     if (nb_kernel_type == nbnxnk4xN_SIMD_4xN ||
         nb_kernel_type == nbnxnk4xN_SIMD_2xNN)
     {
         int cj_size  = nbnxn_kernel_to_cluster_j_size(nb_kernel_type);
         out->nVS = nenergrp*nenergrp*stride*(cj_size>>1)*cj_size;
-        ma((void **)&out->VSvdw, out->nVS*sizeof(*out->VSvdw));
-        ma((void **)&out->VSc, out->nVS*sizeof(*out->VSc  ));
+        ma(reinterpret_cast<void **>(&out->VSvdw), out->nVS*sizeof(*out->VSvdw));
+        ma(reinterpret_cast<void **>(&out->VSc), out->nVS*sizeof(*out->VSc  ));
     }
     else
     {
@@ -337,7 +337,7 @@ static void set_lj_parameter_data(nbnxn_atomdata_t *nbat, gmx_bool bSIMD)
          * when it might not be used, but introducing the conditional code is not
          * really worth it.
          */
-        nbat->alloc((void **)&nbat->nbfp_aligned,
+        nbat->alloc(reinterpret_cast<void **>(&nbat->nbfp_aligned),
                     nt*nt*c_simdBestPairAlignment*sizeof(*nbat->nbfp_aligned));
         for (int i = 0; i < nt; i++)
         {
@@ -523,9 +523,9 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
         fprintf(debug, "There are %d atom types in the system, adding one for nbnxn_atomdata_t\n", ntype);
     }
     nbat->ntype = ntype + 1;
-    nbat->alloc((void **)&nbat->nbfp,
+    nbat->alloc(reinterpret_cast<void **>(&nbat->nbfp),
                 nbat->ntype*nbat->ntype*2*sizeof(*nbat->nbfp));
-    nbat->alloc((void **)&nbat->nbfp_comb, nbat->ntype*2*sizeof(*nbat->nbfp_comb));
+    nbat->alloc(reinterpret_cast<void **>(&nbat->nbfp_comb), nbat->ntype*2*sizeof(*nbat->nbfp_comb));
 
     /* A tolerance of 1e-5 seems reasonable for (possibly hand-typed)
      * force-field floating point parameters.
@@ -720,7 +720,7 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
         nbat->neg_2log++;
     }
     nbat->energrp = nullptr;
-    nbat->alloc((void **)&nbat->shift_vec, SHIFTS*sizeof(*nbat->shift_vec));
+    nbat->alloc(reinterpret_cast<void **>(&nbat->shift_vec), SHIFTS*sizeof(*nbat->shift_vec));
     nbat->xstride = (nbat->XFormat == nbatXYZQ ? STRIDE_XYZQ : DIM);
     nbat->fstride = (nbat->FFormat == nbatXYZQ ? STRIDE_XYZQ : DIM);
     nbat->x       = nullptr;
