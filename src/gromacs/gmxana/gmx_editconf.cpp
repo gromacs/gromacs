@@ -348,8 +348,8 @@ static void visualize_images(const char *fn, int ePBC, matrix box)
     atoms.nr = nat;
     snew(img, nat);
     /* FIXME: Constness should not be cast away */
-    c   = (char *) "C";
-    ala = (char *) "ALA";
+    c   = const_cast<char*>("C");
+    ala = const_cast<char*>("ALA");
     for (i = 0; i < nat; i++)
     {
         atoms.atomname[i]        = &c;
