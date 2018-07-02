@@ -386,10 +386,10 @@ void xvgrLegend(FILE                           *out,
 {
     xvgr_legend(out, setNames.size(), setNames.data(), oenv);
 }
-void xvgr_legend(FILE *out, int nsets, const char** setnames,
+void xvgr_legend(FILE *out, int nsets, const char*const* setnames,
                  const struct gmx_output_env_t *oenv)
 {
-    xvgr_legend<char const *>(out, nsets, setnames, oenv);
+    xvgr_legend<const char *>(out, nsets, setnames, oenv);
 }
 
 void xvgr_new_dataset(FILE *out, int nr_first, int nsets,
