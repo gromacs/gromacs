@@ -23,9 +23,9 @@ gcc-5 simd=ARM_NEON_ASIMD release-with-assert
 gcc-7 mpi no-openmp fftpack mdrun-only
 
 # Test MPMD PME with thread-MPI
-# Test newest icc at time of release
+# Test oldest supported icc
 # Test icc with AVX256 in double precision in release mode
-icc-18 simd=avx_256 npme=1 nranks=2 no-openmp  double fftpack release
+icc-17 simd=avx_256 npme=1 nranks=2 no-openmp  double fftpack release
 
 # Test CUDA build on a slave with no CUDA devices
 gcc-4.9 gpu cuda-7.0 openmp release-with-assert
@@ -58,10 +58,10 @@ gcc-6 gpu npme=1 nranks=2 opencl cuda-7.5 simd=sse2 release
 # Test no hwloc build, tests internal CPU topology detection (mainly for x86)
 gcc-5 gpu nranks=4 gpu_id=1 cuda-8.0 no-hwloc release-with-assert
 
-# Test oldest supported icc
 # Test icc on Windows
+# Test newest icc at time of release
 # Test icc with SIMD in mixed precision in release mode
-icc-16 msvc-2017 fftpack simd=avx2_256 release
+icc-18 msvc-2017 fftpack simd=avx2_256 release
 
 # Test ARM HPC compier toolchain with gcc-7
 gcc-7 armhpc-18.2 openmp simd=ARM_NEON_ASIMD release
