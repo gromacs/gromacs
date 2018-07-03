@@ -53,7 +53,7 @@ struct t_forcerec;
 struct t_fcdata;
 struct t_graph;
 struct t_inputrec;
-class t_state;
+class t_state_local;
 
 namespace gmx
 {
@@ -85,7 +85,7 @@ void relax_shell_flexcon(FILE                                     *log,
                          gmx::Constraints                         *constr,
                          gmx_enerdata_t                           *enerd,
                          t_fcdata                                 *fcd,
-                         t_state                                  *state,
+                         t_state_local                            *state,
                          gmx::PaddedArrayRef<gmx::RVec>            f,
                          tensor                                    force_vir,
                          const t_mdatoms                          *md,

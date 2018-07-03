@@ -74,12 +74,12 @@ struct AwhHistory;
 }
 
 /*
- * The t_state struct should contain all the (possibly) non-static
+ * The two t_state structs (t_state_global and t_state_local) should contain all the (possibly) non-static
  * information required to define the state of the system.
  * Currently the random seeds for SD and BD are missing.
  */
 
-/* \brief Enum for all entries in \p t_state
+/* \brief Enum for all entries in \p t_state_global or \p t_state_local
  *
  * These enums are used in flags as (1<<est...).
  * The order of these enums should not be changed,
@@ -182,13 +182,59 @@ typedef struct df_history_t
  * The local state with domain decomposition will have partial entries
  * for which \p stateEntryIsAtomProperty() is true. Some entries that
  * are used in the global state might not be present in the local state.
+ * To avoid confusion, two distinct classes for the global and the
+ * local state are introduced.
  * \todo Move pure observables history to ObservablesHistory.
  */
-class t_state
+class t_state_global
 {
     public:
         //! Constructor
-        t_state();
+        t_state_global();
+
+        // All things public
+        int                        natoms;         //!< Number of atoms, local + non-local; this is the size of \p x, \p v and \p cg_p, when used
+        int                        ngtc;           //!< The number of temperature coupling groups
+        int                        nnhpres;        //!< The NH-chain length for the MTTK barostat
+        int                        nhchainlength;  //!< The NH-chain length for temperature coupling
+        int                        flags;          //!< Set of bit-flags telling which entries are present, see enum at the top of the file
+        int                        fep_state;      //!< indicates which of the alchemical states we are in
+        std::array<real, efptNR>   lambda;         //!< Free-energy lambda vector
+        matrix                     box;            //!< Matrix of box vectors
+        matrix                     box_rel;        //!< Relative box vectors to preserve box shape
+        matrix                     boxv;           //!< Box velocities for Parrinello-Rahman P-coupling
+        matrix                     pres_prev;      //!< Pressure of the previous step for pcoupl
+        matrix                     svir_prev;      //!< Shake virial for previous step for pcoupl
+        matrix                     fvir_prev;      //!< Force virial of the previous step for pcoupl
+        std::vector<double>        nosehoover_xi;  //!< Nose-Hoover coordinates (ngtc)
+        std::vector<double>        nosehoover_vxi; //!< Nose-Hoover velocities (ngtc)
+        std::vector<double>        nhpres_xi;      //!< Pressure Nose-Hoover coordinates
+        std::vector<double>        nhpres_vxi;     //!< Pressure Nose-Hoover velocities
+        std::vector<double>        therm_integral; //!< Work exterted N-H/V-rescale T-coupling (ngtc)
+        double                     baros_integral; //!< For Berendsen P-coupling conserved quantity
+        real                       veta;           //!< Trotter based isotropic P-coupling
+        real                       vol0;           //!< Initial volume,required for computing MTTK conserved quantity
+        gmx::HostVector<gmx::RVec> x;              //!< The coordinates (natoms)
+        PaddedRVecVector           v;              //!< The velocities (natoms)
+        PaddedRVecVector           cg_p;           //!< p vector for conjugate gradient minimization
+
+        ekinstate_t                ekinstate;      //!< The state of the kinetic energy
+
+        /* History for special algorithms, should be moved to a history struct */
+        history_t                         hist;            //!< Time history for restraints
+        df_history_t                     *dfhist;          //!< Free-energy history for free energy analysis
+        std::shared_ptr<gmx::AwhHistory>  awhHistory;      //!< Accelerated weight histogram history
+
+        int                               ddp_count;       //!< The DD partitioning count for this state
+        int                               ddp_count_cg_gl; //!< The DD partitioning count for index_gl
+        std::vector<int>                  cg_gl;           //!< The global cg number of the local cgs
+};
+
+class t_state_local
+{
+    public:
+        //! Constructor
+        t_state_local();
 
         // All things public
         int                        natoms;         //!< Number of atoms, local + non-local; this is the size of \p x, \p v and \p cg_p, when used
@@ -254,17 +300,25 @@ typedef struct
 
 #endif // DOXYGEN
 
+/*! functions to copy data from state_global to state_local and back
+ * (use instead of assignment operator)
+ */
+void copyGlobalStateToLocalState(const t_state_global *state_global, t_state_local *state_local);
+void copyLocalStateToGlobalState(const t_state_local *state_local, t_state_global *state_global);
+
 //! Resizes the T- and P-coupling state variables
-void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength);
+void init_gtc_state_global(t_state_global *state, int ngtc, int nnhpres, int nhchainlength);
+void init_gtc_state_local(t_state_local *state, int ngtc, int nnhpres, int nhchainlength);
 
 //! Change the number of atoms represented by this state, allocating memory as needed.
-void state_change_natoms(t_state *state, int natoms);
+void state_change_natoms_global(t_state_global *state, int natoms);
+void state_change_natoms_local(t_state_local *state, int natoms);
 
 //! Allocates memory for free-energy history
-void init_dfhist_state(t_state *state, int dfhistNumLambda);
+void init_dfhist_state(t_state_local *state, int dfhistNumLambda);
 
 /*! \brief Compares two states, write the differences to stdout */
-void comp_state(const t_state *st1, const t_state *st2, gmx_bool bRMSD, real ftol, real abstol);
+void comp_state(const t_state_global *st1, const t_state_global *st2, gmx_bool bRMSD, real ftol, real abstol);
 
 /*! \brief Allocates an rvec pointer and copy the contents of v to it */
 rvec *makeRvecArray(gmx::ArrayRef<const gmx::RVec> v,
@@ -276,7 +330,7 @@ rvec *makeRvecArray(gmx::ArrayRef<const gmx::RVec> v,
  * \param[in]    ir      Input record
  * \param[inout] state   State
  */
-void set_box_rel(const t_inputrec *ir, t_state *state);
+void set_box_rel(const t_inputrec *ir, t_state_global *state);
 
 /*! \brief Make sure the relative box shape remains the same
  *
@@ -299,7 +353,20 @@ void preserve_box_shape(const t_inputrec *ir, matrix box_rel, matrix box);
  * \param[in] state  The state, can be nullptr
  */
 static inline gmx::ArrayRef<const gmx::RVec>
-positionsFromStatePointer(const t_state *state)
+positionsFromGlobalStatePointer(const t_state_global *state)
+{
+    if (state)
+    {
+        return gmx::constArrayRefFromArray(state->x.data(), state->natoms);
+    }
+    else
+    {
+        return gmx::EmptyArrayRef();
+    }
+};
+
+static inline gmx::ArrayRef<const gmx::RVec>
+positionsFromLocalStatePointer(const t_state_local *state)
 {
     if (state)
     {

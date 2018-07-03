@@ -1090,7 +1090,7 @@ static int do_cpt_footer(XDR *xd, int file_version)
 }
 
 static int do_cpt_state(XDR *xd,
-                        int fflags, t_state *state,
+                        int fflags, t_state_global *state,
                         FILE *list)
 {
     int             ret    = 0;
@@ -1099,7 +1099,7 @@ static int do_cpt_state(XDR *xd,
     // If reading, state->natoms was probably just read, so
     // allocations need to be managed. If writing, this won't change
     // anything that matters.
-    state_change_natoms(state, state->natoms);
+    state_change_natoms_global(state, state->natoms);
     for (int i = 0; (i < estNR && ret == 0); i++)
     {
         if (fflags & (1<<i))
@@ -1781,7 +1781,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                       int eIntegrator, int simulation_part,
                       gmx_bool bExpanded, int elamstats,
                       gmx_int64_t step, double t,
-                      t_state *state, ObservablesHistory *observablesHistory)
+                      t_state_global *state, ObservablesHistory *observablesHistory)
 {
     t_fileio            *fp;
     char                *fntemp; /* the temporary checkpoint file name */
@@ -2164,7 +2164,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                             int eIntegrator,
                             int *init_fep_state,
                             CheckpointHeaderContents *headerContents,
-                            t_state *state, gmx_bool *bReadEkin,
+                            t_state_global *state, gmx_bool *bReadEkin,
                             ObservablesHistory *observablesHistory,
                             gmx_bool bAppendOutputFiles, gmx_bool bForceAppend,
                             gmx_bool reproducibilityRequested)
@@ -2234,7 +2234,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         gmx_fatal(FARGS, "Checkpoint file is for a system with %d lambda states, while the current system consists of %d lambda states", headerContents->nlambda, nlambdaHistory);
     }
 
-    init_gtc_state(state, state->ngtc, state->nnhpres, headerContents->nhchainlength); /* need to keep this here to keep the tpr format working */
+    init_gtc_state_global(state, state->ngtc, state->nnhpres, headerContents->nhchainlength); /* need to keep this here to keep the tpr format working */
     /* write over whatever was read; we use the number of Nose-Hoover chains from the checkpoint */
 
     if (headerContents->eIntegrator != eIntegrator)
@@ -2494,7 +2494,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 
 void load_checkpoint(const char *fn, FILE **fplog,
                      const t_commrec *cr, const ivec dd_nc,
-                     t_inputrec *ir, t_state *state,
+                     t_inputrec *ir, t_state_global *state,
                      gmx_bool *bReadEkin,
                      ObservablesHistory *observablesHistory,
                      gmx_bool bAppend, gmx_bool bForceAppend,
@@ -2549,7 +2549,7 @@ void read_checkpoint_part_and_step(const char  *filename,
 }
 
 static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
-                                 gmx_int64_t *step, double *t, t_state *state,
+                                 gmx_int64_t *step, double *t, t_state_global *state,
                                  std::vector<gmx_file_position_t> *outputfiles)
 {
     int                      ret;
@@ -2628,7 +2628,7 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
 
 void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr)
 {
-    t_state                          state;
+    t_state_global                   state;
     int                              simulation_part;
     gmx_int64_t                      step;
     double                           t;
@@ -2669,7 +2669,7 @@ void list_checkpoint(const char *fn, FILE *out)
     t_fileio            *fp;
     int                  ret;
 
-    t_state              state;
+    t_state_global       state;
 
     fp = gmx_fio_open(fn, "r");
     CheckpointHeaderContents headerContents;
@@ -2745,9 +2745,9 @@ read_checkpoint_simulation_part_and_filenames(t_fileio                         *
                                               int                              *simulation_part,
                                               std::vector<gmx_file_position_t> *outputfiles)
 {
-    gmx_int64_t step = 0;
-    double      t;
-    t_state     state;
+    gmx_int64_t     step = 0;
+    double          t;
+    t_state_global  state;
 
     read_checkpoint_data(fp, simulation_part, &step, &t, &state, outputfiles);
     if (gmx_fio_close(fp) != 0)

@@ -51,7 +51,8 @@
 struct gmx_mtop_t;
 struct t_commrec;
 struct t_inputrec;
-class t_state;
+class t_state_global;
+class t_state_local;
 
 //! \internal \brief Options and settings for continuing from checkpoint
 struct ContinuationOptions
@@ -185,7 +186,7 @@ struct MdrunOptions
 };
 
 //! \brief Allocate and initialize node-local state entries
-void set_state_entries(t_state *state, const t_inputrec *ir);
+void set_state_entries(t_state_global *state, const t_inputrec *ir);
 
 //! \brief Broadcast inputrec and mtop and allocate node-specific settings
 void init_parallel(t_commrec *cr, t_inputrec *inputrec,
@@ -195,6 +196,6 @@ void init_parallel(t_commrec *cr, t_inputrec *inputrec,
 //
 // This is intended to be used with MPI parallelization without
 // domain decompostion (currently with NM and TPI).
-void broadcastStateWithoutDynamics(const t_commrec *cr, t_state *state);
+void broadcastStateWithoutDynamics(const t_commrec *cr, t_state_global *state);
 
 #endif

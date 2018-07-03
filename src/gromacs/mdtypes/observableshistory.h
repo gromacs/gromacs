@@ -41,7 +41,8 @@
  *
  * The container is used for storing the simulation state data that needs
  * to be written to / read from checkpoint file. This struct should only
- * contain pure observable data. Microstate data should be in t_state.
+ * contain pure observable data. Microstate data should be in t_state_global
+ * or t_state_local.
  * The state of the mdrun machinery is also stored elsewhere.
  *
  * \author Berk Hess

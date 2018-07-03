@@ -285,7 +285,7 @@ void increaseNstlist(FILE *fp, t_commrec *cr,
             {
                 gmx_incons("Changing nstlist with domain decomposition and unbounded dimensions is not implemented yet");
             }
-            t_state state_tmp;
+            t_state_local state_tmp;
             copy_mat(box, state_tmp.box);
             bDD = change_dd_cutoff(cr, &state_tmp, ir, rlist_new);
         }

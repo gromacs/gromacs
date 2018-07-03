@@ -2580,7 +2580,7 @@ gmx_edsam_t init_edsam(
         const t_inputrec       *ir,
         const t_commrec        *cr,
         gmx::Constraints       *constr,
-        const t_state          *globalState,
+        const t_state_global   *globalState,
         ObservablesHistory     *oh,
         const gmx_output_env_t *oenv,
         gmx_bool                bAppend)

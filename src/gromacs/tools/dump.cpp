@@ -80,13 +80,13 @@ static void list_tpx(const char *fn,
                      gmx_bool    bSysTop,
                      gmx_bool    bOriginalInputrec)
 {
-    FILE         *gp;
-    int           indent, i, j, **gcount, atot;
-    t_state       state;
-    t_tpxheader   tpx;
-    gmx_mtop_t    mtop;
-    gmx_groups_t *groups;
-    t_topology    top;
+    FILE           *gp;
+    int             indent, i, j, **gcount, atot;
+    t_state_global  state;
+    t_tpxheader     tpx;
+    gmx_mtop_t      mtop;
+    gmx_groups_t   *groups;
+    t_topology      top;
 
     read_tpxheader(fn, &tpx, TRUE);
     t_inputrec     ir;

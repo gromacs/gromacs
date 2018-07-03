@@ -50,14 +50,14 @@
 struct gmx_domdec_t;
 struct t_forcerec;
 struct t_nrnb;
-class t_state;
+class t_state_local;
 
 /*! \brief Redistribute the atoms to their, new, local domains */
 void dd_redistribute_cg(FILE             *fplog,
                         gmx_int64_t       step,
                         gmx_domdec_t     *dd,
                         ivec              tric_dir,
-                        t_state          *state,
+                        t_state_local    *state,
                         PaddedRVecVector *f,
                         t_forcerec       *fr,
                         gmx_bool          bCompact,

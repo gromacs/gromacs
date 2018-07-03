@@ -50,14 +50,15 @@
 struct gmx_ddbox_t;
 struct gmx_domdec_t;
 struct t_block;
-class t_state;
+class t_state_global;
+class t_state_local;
 
 /*! \brief Distributes the state from the master rank to all DD ranks */
 void distributeState(FILE                *fplog,
                      gmx_domdec_t        *dd,
-                     t_state             *state_global,
+                     t_state_global      *state_global,
                      const gmx_ddbox_t   &ddbox,
-                     t_state             *state_local,
+                     t_state_local       *state_local,
                      PaddedRVecVector    *f);
 
 #endif

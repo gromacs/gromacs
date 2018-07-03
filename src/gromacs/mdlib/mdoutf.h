@@ -52,6 +52,8 @@ struct ObservablesHistory;
 struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
+class t_state_global;
+class t_state_local;
 
 namespace gmx
 {
@@ -107,7 +109,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
                                       int mdof_flags,
                                       gmx_mtop_t *top_global,
                                       gmx_int64_t step, double t,
-                                      t_state *state_local, t_state *state_global,
+                                      t_state_local *state_local, t_state_global *state_global,
                                       ObservablesHistory *observablesHistory,
                                       gmx::ArrayRef<gmx::RVec> f_local);
 

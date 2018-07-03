@@ -53,7 +53,7 @@
 struct NbnxnListParameters;
 struct t_commrec;
 struct t_inputrec;
-class t_state;
+class t_state_local;
 
 namespace gmx
 {
@@ -99,7 +99,7 @@ void pme_loadbal_do(pme_load_balancing_t  *pme_lb,
                     const gmx::MDLogger   &mdlog,
                     const t_inputrec      *ir,
                     t_forcerec            *fr,
-                    t_state               *state,
+                    t_state_local         *state,
                     gmx_wallcycle_t        wcycle,
                     gmx_int64_t            step,
                     gmx_int64_t            step_rel,

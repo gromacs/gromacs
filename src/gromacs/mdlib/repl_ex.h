@@ -47,7 +47,8 @@ struct gmx_enerdata_t;
 struct gmx_multisim_t;
 struct t_commrec;
 struct t_inputrec;
-class t_state;
+class t_state_global;
+class t_state_local;
 
 /* The parameters for the replica exchange algorithm */
 struct ReplicaExchangeParameters
@@ -79,8 +80,8 @@ gmx_bool replica_exchange(FILE *fplog,
                           const t_commrec *cr,
                           const gmx_multisim_t *ms,
                           gmx_repl_ex_t re,
-                          t_state *state, const gmx_enerdata_t *enerd,
-                          t_state *state_local,
+                          t_state_global *state, const gmx_enerdata_t *enerd,
+                          t_state_local *state_local,
                           gmx_int64_t step, real time);
 /* Attempts replica exchange, should be called on all ranks.
  * Returns TRUE if this state has been exchanged.

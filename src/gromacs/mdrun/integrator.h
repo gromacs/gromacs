@@ -64,7 +64,7 @@ struct t_forcerec;
 struct t_filenm;
 struct t_inputrec;
 struct t_nrnb;
-class t_state;
+class t_state_global;
 
 namespace gmx
 {
@@ -136,7 +136,7 @@ struct Integrator
     //! Helper struct for force calculations.
     t_fcdata                        *fcd;
     //! Full simulation state (only non-nullptr on master rank).
-    t_state                         *state_global;
+    t_state_global                  *state_global;
     //! History of simulation observables.
     ObservablesHistory              *observablesHistory;
     //! Atom parameters for this domain.

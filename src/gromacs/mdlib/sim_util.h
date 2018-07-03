@@ -140,14 +140,14 @@ void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, gmx::ArrayR
 
 void do_constrain_first(FILE *log, gmx::Constraints *constr,
                         t_inputrec *inputrec, t_mdatoms *md,
-                        t_state *state);
+                        t_state_local *state);
 
 void init_md(FILE *fplog,
              const t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
              t_inputrec *ir, const gmx_output_env_t *oenv,
              const MdrunOptions &mdrunOptions,
              double *t, double *t0,
-             t_state *globalState, double *lam0,
+             t_state_global *globalState, double *lam0,
              t_nrnb *nrnb, gmx_mtop_t *mtop,
              gmx_update_t **upd,
              gmx::BoxDeformation *deform,

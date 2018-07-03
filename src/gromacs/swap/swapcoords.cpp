@@ -1452,7 +1452,7 @@ void init_swapcoords(
         t_inputrec             *ir,
         const char             *fn,
         gmx_mtop_t             *mtop,
-        const t_state          *globalState,
+        const t_state_global   *globalState,
         ObservablesHistory     *oh,
         t_commrec              *cr,
         const gmx_output_env_t *oenv,

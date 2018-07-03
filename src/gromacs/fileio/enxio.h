@@ -46,7 +46,7 @@ struct t_energy;
 struct t_enxframe;
 struct t_fileio;
 struct t_inputrec;
-class t_state;
+class t_state_global;
 
 /**************************************************************
  * These are the base datatypes + functions for reading and
@@ -177,7 +177,7 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr);
 
 void get_enx_state(const char *fn, real t,
                    const gmx_groups_t *groups, t_inputrec *ir,
-                   t_state *state);
+                   t_state_global *state);
 /*
  * Reads state variables from enx file fn at time t.
  * atoms and ir are required for determining which things must be read.

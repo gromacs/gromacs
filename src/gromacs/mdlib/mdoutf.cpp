@@ -250,7 +250,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
                                       int mdof_flags,
                                       gmx_mtop_t *top_global,
                                       gmx_int64_t step, double t,
-                                      t_state *state_local, t_state *state_global,
+                                      t_state_local *state_local, t_state_global *state_global,
                                       ObservablesHistory *observablesHistory,
                                       gmx::ArrayRef<gmx::RVec> f_local)
 {
@@ -283,8 +283,8 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
     }
     else
     {
-        /* We have the whole state locally: copy the local state pointer */
-        state_global = state_local;
+        /* We have the whole state locally: copy the local state (not just the pointer) */
+        copyLocalStateToGlobalState(state_local, state_global);
 
         f_global     = as_rvec_array(f_local.data());
     }

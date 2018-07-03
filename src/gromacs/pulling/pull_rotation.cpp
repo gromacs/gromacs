@@ -3659,7 +3659,7 @@ static int calc_mpi_bufsize(t_rot *rot)
 
 
 extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
-                     const t_commrec *cr, const t_state *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
+                     const t_commrec *cr, const t_state_global *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
                      const MdrunOptions &mdrunOptions)
 {
     t_rot          *rot;

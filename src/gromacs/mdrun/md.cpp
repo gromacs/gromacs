@@ -199,7 +199,7 @@ static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commre
  * \param[in,out] warnWhenNoV     When true, issue a warning when no velocities are present in \p rerunFrame; is set to false when a warning was issued
  */
 static void prepareRerunState(const t_trxframe  &rerunFrame,
-                              t_state           *globalState,
+                              t_state_global    *globalState,
                               bool               constructVsites,
                               const gmx_vsite_t *vsite,
                               const t_idef      &idef,
@@ -455,15 +455,15 @@ void gmx::Integrator::do_md()
              nfile, fnm, oenv, mdrunOptions);
 
     // Local state only becomes valid now.
-    std::unique_ptr<t_state> stateInstance;
-    t_state *                state;
+    std::unique_ptr<t_state_local> stateInstance;
+    t_state_local *                state;
+    stateInstance = gmx::compat::make_unique<t_state_local>();
+    state         = stateInstance.get();
 
     if (DOMAINDECOMP(cr))
     {
         top = dd_init_local_top(top_global);
 
-        stateInstance = gmx::compat::make_unique<t_state>();
-        state         = stateInstance.get();
         dd_init_local_state(cr->dd, state_global, state);
 
         /* Distribute the charge groups over the nodes from the master node */
@@ -477,13 +477,13 @@ void gmx::Integrator::do_md()
     }
     else
     {
-        state_change_natoms(state_global, state_global->natoms);
+        state_change_natoms_global(state_global, state_global->natoms);
         /* We need to allocate one element extra, since we might use
          * (unaligned) 4-wide SIMD loads to access rvec entries.
          */
         f.resize(gmx::paddedRVecVectorSize(state_global->natoms));
-        /* Copy the pointer to the global state */
-        state = state_global;
+        /* Copy the state (not just the pointer) */
+        copyGlobalStateToLocalState(state_global, state);
 
         snew(top, 1);
         mdAlgorithmsSetupAtomData(cr, ir, top_global, top, fr,
@@ -1697,11 +1697,11 @@ void gmx::Integrator::do_md()
             }
             if (bCalcEner)
             {
-                upd_mdebin(mdebin, bDoDHDL, bCalcEnerStep,
-                           t, mdatoms->tmass, enerd, state,
-                           ir->fepvals, ir->expandedvals, lastbox,
-                           shake_vir, force_vir, total_vir, pres,
-                           ekind, mu_tot, constr);
+                upd_mdebin_local(mdebin, bDoDHDL, bCalcEnerStep,
+                                 t, mdatoms->tmass, enerd, state,
+                                 ir->fepvals, ir->expandedvals, lastbox,
+                                 shake_vir, force_vir, total_vir, pres,
+                                 ekind, mu_tot, constr);
             }
             else
             {
@@ -1797,7 +1797,7 @@ void gmx::Integrator::do_md()
             (bGStatEveryStep ||
              (ir->nstpcouple > 0 && step % ir->nstpcouple == 0)))
         {
-            /* Store the pressure in t_state for pressure coupling
+            /* Store the pressure in t_state_local for pressure coupling
              * at the next MD step.
              */
             copy_mat(pres, state->pres_prev);

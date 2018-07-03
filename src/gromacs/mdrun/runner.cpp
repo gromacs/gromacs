@@ -499,12 +499,12 @@ int Mdrunner::mdrunner()
         please_cite(fplog, "Berendsen95a");
     }
 
-    std::unique_ptr<t_state> globalState;
+    std::unique_ptr<t_state_global> globalState;
 
     if (SIMMASTER(cr))
     {
         /* Only the master rank has the global state */
-        globalState = std::unique_ptr<t_state>(new t_state);
+        globalState = std::unique_ptr<t_state_global>(new t_state_global);
 
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, globalState.get(), &mtop);
@@ -662,7 +662,7 @@ int Mdrunner::mdrunner()
     {
         if (!MASTER(cr))
         {
-            globalState = std::unique_ptr<t_state>(new t_state);
+            globalState = std::unique_ptr<t_state_global>(new t_state_global);
         }
         broadcastStateWithoutDynamics(cr, globalState.get());
     }
@@ -740,9 +740,9 @@ int Mdrunner::mdrunner()
 #endif
 
     /* NMR restraints must be initialized before load_checkpoint,
-     * since with time averaging the history is added to t_state.
+     * since with time averaging the history is added to t_state_global.
      * For proper consistency check we therefore need to extend
-     * t_state here.
+     * t_state_global here.
      * So the PME-only nodes (if present) will also initialize
      * the distance restraints.
      */
@@ -820,7 +820,7 @@ int Mdrunner::mdrunner()
     {
         cr->dd = init_domain_decomposition(fplog, cr, domdecOptions, mdrunOptions,
                                            &mtop, inputrec,
-                                           box, positionsFromStatePointer(globalState.get()));
+                                           box, positionsFromGlobalStatePointer(globalState.get()));
         // Note that local state still does not exist yet.
     }
     else

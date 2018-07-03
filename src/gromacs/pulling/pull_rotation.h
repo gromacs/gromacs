@@ -61,7 +61,7 @@ struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
 struct t_rot;
-class t_state;
+class t_state_global;
 
 #ifdef __cplusplus
 extern "C" {
@@ -86,7 +86,7 @@ extern "C" {
  * \param mdrunOptions  Options for mdrun.
  */
 extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
-                     const t_commrec *cr, const t_state *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
+                     const t_commrec *cr, const t_state_global *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
                      const MdrunOptions &mdrunOptions);
 
 
