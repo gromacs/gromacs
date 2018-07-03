@@ -11,7 +11,7 @@
 
 # Test on ARM v7
 # Test ARM_NEON SIMD
-gcc-4.8 simd=ARM_NEON release-with-assert
+gcc-5 simd=ARM_NEON release-with-assert
 
 # Test on ARM v8
 # Test ARM_NEON_ASIMD SIMD
@@ -51,7 +51,7 @@ clang-5 openmp simd=avx_128_fma npme=1 nranks=2 mpi
 # Test CMAKE_BUILD_TYPE=Release
 # Test OpenCL
 # Test bundled clFFT (developed by AMD) on NVIDIA OpenCL
-gcc-4.8 gpu npme=1 nranks=2 opencl cuda-7.5 simd=sse2 release
+gcc-6 gpu npme=1 nranks=2 opencl cuda-7.5 simd=sse2 release
 
 # Test non-default use of mdrun -gpu_id
 # Test GPU-sharing among 4 PP ranks
