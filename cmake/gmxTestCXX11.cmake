@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -77,7 +77,7 @@ b bTest() {
 // constructor. This compiler check should only fail based on the compiler not GCC. The GCC version
 // is checked by the following STL check. It is known that all ICC>=15 have the proper move
 // constructor. Thus this check is disabled for ICC.
-#if !((defined __INTEL_COMPILER && __INTEL_COMPILER >= 1500) || (defined __ICL && __ICL >= 1500))
+#if !(defined __INTEL_COMPILER || defined __ICL)
 // Test that a subclass has a proper move constructor
 struct c {
   c() {};
@@ -139,8 +139,8 @@ int main() {
             message(FATAL_ERROR "GROMACS requires version 3.3 or later of the Clang C++ compiler for complete C++11 support")
         endif()
     elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-        if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "15.0")
-            message(FATAL_ERROR "GROMACS requires version 15.0 or later of the Intel C++ compiler for complete C++11 support")
+        if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "17.0.1")
+            message(FATAL_ERROR "GROMACS requires version 17.0.1 or later of the Intel C++ compiler for complete C++11 support")
         endif()
     elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
         if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "19.0.23026")
@@ -204,10 +204,6 @@ int main() {
   std::string message(\"hello\");
 }" CXX11_STDLIB_PRESENT)
     if(NOT CXX11_STDLIB_PRESENT)
-        if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "16.0.3")
-            message(FATAL_ERROR "GROMACS requires that the Intel C++ compiler use a compatible C++ standard library, for complete C++11 support, however not all compiler versions support all possible standard library implementations. In particular, before icc version 16.0.3, the gcc version 5 standard library was not supported. If you are affected by such a case you should probably update your compiler version. Consult the GROMACS installation guide to check exactly what is supported and how to direct the use of a standard library from an older gcc version (but at least version 4.8.1 is needed).")
-        else()
-            message(FATAL_ERROR "This version of GROMACS requires C++11-compatible standard library. Please use a newer compiler, and/or a newer standard library, or use the GROMACS 5.1.x release. Consult the installation guide for details before upgrading components.")
-        endif()
+        message(FATAL_ERROR "This version of GROMACS requires C++11-compatible standard library. Please use a newer compiler, and/or a newer standard library, or use the GROMACS 5.1.x release. Consult the installation guide for details before upgrading components.")
     endif()
 endfunction()
