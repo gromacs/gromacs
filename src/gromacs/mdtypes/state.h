@@ -268,7 +268,7 @@ void comp_state(const t_state *st1, const t_state *st2, gmx_bool bRMSD, real fto
 
 /*! \brief Allocates an rvec pointer and copy the contents of v to it */
 rvec *makeRvecArray(gmx::ArrayRef<const gmx::RVec> v,
-                    unsigned int                   n);
+                    gmx::index                     n);
 
 /*! \brief Determine the relative box components
  *

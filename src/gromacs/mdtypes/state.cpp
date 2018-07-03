@@ -205,7 +205,7 @@ void comp_state(const t_state *st1, const t_state *st2,
 }
 
 rvec *makeRvecArray(gmx::ArrayRef<const gmx::RVec> v,
-                    unsigned int                   n)
+                    gmx::index                     n)
 {
     GMX_ASSERT(v.size() >= n, "We can't copy more elements than the vector size");
 

@@ -477,7 +477,7 @@ int gmx_trjcat(int argc, char *argv[])
     gmx_bool          bNewFile, bIndex, bWrite;
     int              *cont_type;
     real             *readtime, *timest, *settime;
-    real              first_time  = 0, lasttime, last_ok_t = -1, timestep;
+    real              first_time  = 0, lasttime = 0, last_ok_t = -1, timestep;
     gmx_bool          lastTimeSet = FALSE;
     real              last_frame_time, searchtime;
     int               isize = 0, j;

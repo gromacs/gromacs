@@ -1508,7 +1508,7 @@ static void restoreAtomGroups(gmx_domdec_t *dd,
     /* Copy back the global charge group indices from state
      * and rebuild the local charge group to atom index.
      */
-    for (unsigned int i = 0; i < atomGroupsState.size(); i++)
+    for (gmx::index i = 0; i < atomGroupsState.size(); i++)
     {
         const int atomGroupGlobal  = atomGroupsState[i];
         const int groupSize        = gcgs_index[atomGroupGlobal + 1] - gcgs_index[atomGroupGlobal];
