@@ -214,7 +214,7 @@ rvec *makeRvecArray(gmx::ArrayRef<const gmx::RVec> v,
     snew(dest, n);
 
     const rvec *vPtr = as_rvec_array(v.data());
-    for (unsigned int i = 0; i < n; i++)
+    for (gmx::index i = 0; i < n; i++)
     {
         copy_rvec(vPtr[i], dest[i]);
     }
