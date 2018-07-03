@@ -115,7 +115,7 @@ compiler. Since we require full C++11 support the minimum supported
 compiler versions are
 
 * GNU (gcc) 4.8.1
-* Intel (icc) 15.0
+* Intel (icc) 17.0.1
 * LLVM (clang) 3.3
 * Microsoft (MSVC) 2015
 
