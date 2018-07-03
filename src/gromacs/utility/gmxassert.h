@@ -63,7 +63,7 @@
 #ifdef GMX_DISABLE_ASSERTS
 #define GMX_RELEASE_ASSERT(condition, msg)
 #else
-#  if !defined _MSC_VER || defined __INTEL_COMPILER
+#  if !defined _MSC_VER
 // Use an "immediately invoked function expression" to allow being
 // used in constexpr context with older GCC versions
 // https://akrzemi1.wordpress.com/2017/05/18/asserts-in-constexpr-functions/
