@@ -10,7 +10,7 @@ official NVIDIA CUDA compiler (nvcc).
 
 Increased the oldest cmake, compiler and CUDA versions required
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-We now require gcc-4.8.1, clang-3.3 and icc-15, so we can rely on full
+We now require gcc-4.8.1, clang-3.3 and icc-17.0.1, so we can rely on full
 C++11 support. We now also require CUDA-6.5 and CMake-3.4.3.
 
 Added check that CUDA available hardware and compiled code are compatible
