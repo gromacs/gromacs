@@ -45,8 +45,10 @@
 #include "gromacs/utility/basedefinitions.h"
 
 class energyhistory_t;
+class GlobalState;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
+class LocalState;
 struct MdrunOptions;
 struct ObservablesHistory;
 struct t_commrec;
@@ -107,7 +109,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
                                       int mdof_flags,
                                       gmx_mtop_t *top_global,
                                       int64_t step, double t,
-                                      t_state *state_local, t_state *state_global,
+                                      LocalState *state_local, GlobalState *state_global,
                                       ObservablesHistory *observablesHistory,
                                       gmx::ArrayRef<gmx::RVec> f_local);
 

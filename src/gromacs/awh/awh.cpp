@@ -404,7 +404,8 @@ void Awh::writeToEnergyFrame(int64_t      step,
 std::unique_ptr<Awh>
 prepareAwhModule(FILE                 *fplog,
                  const t_inputrec     &inputRecord,
-                 t_state              *stateGlobal,
+                 GlobalState          *stateGlobal,
+                 LocalState           *stateLocal,
                  const t_commrec      *commRecord,
                  const gmx_multisim_t *multiSimRecord,
                  const bool            startingFromCheckpoint,
@@ -433,6 +434,11 @@ prepareAwhModule(FILE                 *fplog,
     {
         // Initialize the AWH history here
         stateGlobal->awhHistory = awh->initHistoryFromState();
+    }
+    // Make sure that the global and the local state are on the same page
+    if (!DOMAINDECOMP(commRecord))
+    {
+        stateLocal->awhHistory = stateGlobal->awhHistory;
     }
     return awh;
 }

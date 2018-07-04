@@ -50,17 +50,18 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+class GlobalState;
 struct gmx_ddbox_t;
 struct gmx_domdec_t;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
 struct gmx_vsite_t;
 struct gmx_wallcycle;
+class LocalState;
 struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
 struct t_nrnb;
-class t_state;
 
 namespace gmx
 {
@@ -92,10 +93,10 @@ void dd_partition_system(FILE                    *fplog,
                          const t_commrec         *cr,
                          gmx_bool                 bMasterState,
                          int                      nstglobalcomm,
-                         t_state                 *state_global,
+                         GlobalState             *state_global,
                          const gmx_mtop_t        *top_global,
                          const t_inputrec        *ir,
-                         t_state                 *state_local,
+                         LocalState              *state_local,
                          PaddedVector<gmx::RVec> *f,
                          gmx::MDAtoms            *mdatoms,
                          gmx_localtop_t          *top_local,
@@ -121,7 +122,7 @@ void checkNumberOfBondedInteractions(const gmx::MDLogger  &mdlog,
                                      int                   totalNumberOfBondedInteractions,
                                      const gmx_mtop_t     *top_global,
                                      const gmx_localtop_t *top_local,
-                                     const t_state        *state,
+                                     const LocalState     *state,
                                      bool                 *shouldCheckNumberOfBondedInteractions);
 
 #endif

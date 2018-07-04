@@ -48,6 +48,7 @@
 
 #include "gromacs/topology/ifunc.h"
 
+class GlobalState;
 struct gmx_mtop_t;
 struct gmx_multisim_t;
 class history_t;
@@ -56,7 +57,6 @@ struct t_pbc;
 struct t_commrec;
 struct t_fcdata;
 struct t_oriresdata;
-class t_state;
 
 /*! \brief
  * Decides whether orientation restraints can work, and initializes
@@ -71,7 +71,7 @@ void init_orires(FILE                 *fplog,
                  const t_inputrec     *ir,
                  const t_commrec      *cr,
                  const gmx_multisim_t *ms,
-                 t_state              *globalState,
+                 GlobalState          *globalState,
                  t_oriresdata         *od);
 
 /*! \brief

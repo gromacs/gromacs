@@ -40,17 +40,18 @@
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/timing/wallcycle.h"
 
+class GlobalState;
 struct gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct gmx_global_stat;
 struct gmx_multisim_t;
 struct gmx_signalling_t;
+class LocalState;
 struct t_extmass;
 struct t_forcerec;
 struct t_grpopts;
 struct t_lambda;
 struct t_nrnb;
-class t_state;
 struct t_trxframe;
 
 namespace gmx
@@ -109,18 +110,18 @@ void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
 /* Set the lambda values in the global state from a frame read with rerun */
 void setCurrentLambdasRerun(int64_t step, const t_lambda *fepvals,
                             const t_trxframe *rerun_fr, const double *lam0,
-                            t_state *globalState);
+                            GlobalState *globalState);
 
 /* Set the lambda values at each step of mdrun when they change */
 void setCurrentLambdasLocal(int64_t step, const t_lambda *fepvals,
-                            const double *lam0, t_state *state);
+                            const double *lam0, LocalState *state);
 
 int multisim_min(const gmx_multisim_t *ms, int nmin, int n);
 /* Set an appropriate value for n across the whole multi-simulation */
 
 void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_inputrec *ir,
                      t_forcerec *fr, gmx_ekindata_t *ekind,
-                     t_state *state, t_mdatoms *mdatoms,
+                     LocalState *state, t_mdatoms *mdatoms,
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx::Constraints *constr,

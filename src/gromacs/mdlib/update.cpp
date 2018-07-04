@@ -1248,7 +1248,7 @@ static void calc_ke_part_visc(const matrix box, const rvec x[], const rvec v[],
     inc_nrnb(nrnb, eNR_EKIN, homenr);
 }
 
-void calc_ke_part(const t_state *state, const t_grpopts *opts, const t_mdatoms *md,
+void calc_ke_part(const LocalState *state, const t_grpopts *opts, const t_mdatoms *md,
                   gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel)
 {
     if (ekind->cosacc.cos_accel == 0)
@@ -1347,7 +1347,7 @@ void restore_ekinstate_from_state(const t_commrec *cr,
 
 void update_tcouple(int64_t           step,
                     const t_inputrec *inputrec,
-                    t_state          *state,
+                    LocalState       *state,
                     gmx_ekindata_t   *ekind,
                     const t_extmass  *MassQ,
                     const t_mdatoms  *md)
@@ -1427,7 +1427,7 @@ static void getThreadAtomRange(int numThreads, int threadIndex, int numAtoms,
 void update_pcouple_before_coordinates(FILE             *fplog,
                                        int64_t           step,
                                        const t_inputrec *inputrec,
-                                       t_state          *state,
+                                       LocalState       *state,
                                        matrix            parrinellorahmanMu,
                                        matrix            M,
                                        gmx_bool          bInitStep)
@@ -1448,7 +1448,7 @@ void update_pcouple_before_coordinates(FILE             *fplog,
 
 void constrain_velocities(int64_t                        step,
                           real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
-                          t_state                       *state,
+                          LocalState                    *state,
                           tensor                         vir_part,
                           gmx::Constraints              *constr,
                           gmx_bool                       bCalcVir,
@@ -1489,7 +1489,7 @@ void constrain_velocities(int64_t                        step,
 
 void constrain_coordinates(int64_t                        step,
                            real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
-                           t_state                       *state,
+                           LocalState                    *state,
                            tensor                         vir_part,
                            gmx_update_t                  *upd,
                            gmx::Constraints              *constr,
@@ -1528,7 +1528,7 @@ update_sd_second_half(int64_t                        step,
                       real                          *dvdlambda,   /* the contribution to be added to the bonded interactions */
                       const t_inputrec              *inputrec,    /* input record and box stuff	*/
                       const t_mdatoms               *md,
-                      t_state                       *state,
+                      LocalState                    *state,
                       const t_commrec               *cr,
                       t_nrnb                        *nrnb,
                       gmx_wallcycle_t                wcycle,
@@ -1595,7 +1595,7 @@ update_sd_second_half(int64_t                        step,
 
 void finish_update(const t_inputrec              *inputrec,  /* input record and box stuff	*/
                    const t_mdatoms               *md,
-                   t_state                       *state,
+                   LocalState                    *state,
                    const t_graph                 *graph,
                    t_nrnb                        *nrnb,
                    gmx_wallcycle_t                wcycle,
@@ -1689,7 +1689,7 @@ void update_pcouple_after_coordinates(FILE             *fplog,
                                       const matrix      forceVirial,
                                       const matrix      constraintVirial,
                                       const matrix      parrinellorahmanMu,
-                                      t_state          *state,
+                                      LocalState       *state,
                                       t_nrnb           *nrnb,
                                       gmx_update_t     *upd)
 {
@@ -1783,7 +1783,7 @@ void update_pcouple_after_coordinates(FILE             *fplog,
 void update_coords(int64_t                        step,
                    const t_inputrec              *inputrec, /* input record and box stuff	*/
                    const t_mdatoms               *md,
-                   t_state                       *state,
+                   LocalState                    *state,
                    gmx::PaddedArrayRef<gmx::RVec> f,        /* forces on home particles */
                    const t_fcdata                *fcd,
                    const gmx_ekindata_t          *ekind,

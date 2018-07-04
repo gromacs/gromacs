@@ -82,7 +82,7 @@ static void list_tpx(const char *fn,
 {
     FILE         *gp;
     int           indent, i, j, **gcount, atot;
-    t_state       state;
+    GlobalState   state;
     t_tpxheader   tpx;
     gmx_mtop_t    mtop;
     gmx_groups_t *groups;

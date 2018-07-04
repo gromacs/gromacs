@@ -201,7 +201,7 @@ t_block *dd_charge_groups_global(gmx_domdec_t *dd)
     return &dd->comm->cgs_gl;
 }
 
-void dd_store_state(gmx_domdec_t *dd, t_state *state)
+void dd_store_state(gmx_domdec_t *dd, LocalState *state)
 {
     int i;
 
@@ -3000,9 +3000,9 @@ gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
     return dd;
 }
 
-static gmx_bool test_dd_cutoff(t_commrec     *cr,
-                               const t_state &state,
-                               real           cutoffRequested)
+static gmx_bool test_dd_cutoff(t_commrec        *cr,
+                               const LocalState &state,
+                               real              cutoffRequested)
 {
     gmx_domdec_t *dd;
     gmx_ddbox_t   ddbox;
@@ -3069,9 +3069,9 @@ static gmx_bool test_dd_cutoff(t_commrec     *cr,
     return TRUE;
 }
 
-gmx_bool change_dd_cutoff(t_commrec     *cr,
-                          const t_state &state,
-                          real           cutoffRequested)
+gmx_bool change_dd_cutoff(t_commrec        *cr,
+                          const LocalState &state,
+                          real              cutoffRequested)
 {
     gmx_bool bCutoffAllowed;
 

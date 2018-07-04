@@ -55,8 +55,8 @@
 #include "distribute.h"
 #include "domdec_internal.h"
 
-static void dd_collect_cg(gmx_domdec_t  *dd,
-                          const t_state *state_local)
+static void dd_collect_cg(gmx_domdec_t     *dd,
+                          const LocalState *state_local)
 {
     if (state_local->ddp_count == dd->comm->master_cg_ddp_count)
     {
@@ -245,7 +245,7 @@ static void dd_collect_vec_gatherv(gmx_domdec_t                  *dd,
 }
 
 void dd_collect_vec(gmx_domdec_t                  *dd,
-                    const t_state                 *state_local,
+                    const LocalState              *state_local,
                     gmx::ArrayRef<const gmx::RVec> lv,
                     gmx::ArrayRef<gmx::RVec>       v)
 {
@@ -263,7 +263,7 @@ void dd_collect_vec(gmx_domdec_t                  *dd,
 
 
 void dd_collect_state(gmx_domdec_t *dd,
-                      const t_state *state_local, t_state *state)
+                      const LocalState *state_local, GlobalState *state)
 {
     int nh = state_local->nhchainlength;
 
