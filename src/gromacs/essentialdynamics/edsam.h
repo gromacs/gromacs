@@ -58,6 +58,7 @@
  *
  * The main type is defined only in edsam.cpp
  */
+class GlobalState;
 struct gmx_edsam;
 struct gmx_domdec_t;
 struct gmx_mtop_t;
@@ -66,7 +67,6 @@ struct ObservablesHistory;
 struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
-class t_state;
 
 namespace gmx
 {
@@ -125,7 +125,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
         const t_inputrec       *ir,
         const t_commrec        *cr,
         gmx::Constraints       *constr,
-        const t_state          *globalState,
+        const GlobalState      *globalState,
         ObservablesHistory     *oh,
         const gmx_output_env_t *oenv,
         gmx_bool                bAppend);
