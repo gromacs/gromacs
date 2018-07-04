@@ -846,7 +846,7 @@ static int prepare_x_q(real *q[], rvec *x[], const gmx_mtop_t *mtop, const rvec 
 
 
 /* Read in the tpr file and save information we need later in info */
-static void read_tpr_file(const char *fn_sim_tpr, t_inputinfo *info, t_state *state, gmx_mtop_t *mtop, t_inputrec *ir, real user_beta, real fracself)
+static void read_tpr_file(const char *fn_sim_tpr, t_inputinfo *info, GlobalState *state, gmx_mtop_t *mtop, t_inputrec *ir, real user_beta, real fracself)
 {
     read_tpx_state(fn_sim_tpr, ir, state, mtop);
 
@@ -908,7 +908,7 @@ static void bcast_info(t_inputinfo *info, const t_commrec *cr)
  * a) a homogeneous distribution of the charges
  * b) a total charge of zero.
  */
-static void estimate_PME_error(t_inputinfo *info, const t_state *state,
+static void estimate_PME_error(t_inputinfo *info, const GlobalState *state,
                                const gmx_mtop_t *mtop, FILE *fp_out, gmx_bool bVerbose, unsigned int seed,
                                t_commrec *cr)
 {
@@ -1080,7 +1080,7 @@ int gmx_pme_error(int argc, char *argv[])
     real            user_beta = -1.0;
     real            fracself  = 1.0;
     t_inputinfo     info;
-    t_state         state;        /* The state from the tpr input file */
+    GlobalState     state;        /* The state from the tpr input file */
     gmx_mtop_t      mtop;         /* The topology from the tpr input file */
     FILE           *fp = nullptr;
     t_commrec      *cr;

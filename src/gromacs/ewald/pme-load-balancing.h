@@ -50,10 +50,10 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/timing/wallcycle.h"
 
+class LocalState;
 struct NbnxnListParameters;
 struct t_commrec;
 struct t_inputrec;
-class t_state;
 
 namespace gmx
 {
@@ -99,7 +99,7 @@ void pme_loadbal_do(pme_load_balancing_t  *pme_lb,
                     const gmx::MDLogger   &mdlog,
                     const t_inputrec      *ir,
                     t_forcerec            *fr,
-                    t_state               *state,
+                    LocalState            *state,
                     gmx_wallcycle_t        wcycle,
                     int64_t                step,
                     int64_t                step_rel,

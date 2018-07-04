@@ -822,7 +822,7 @@ static void modify_PMEsettings(
         const char     *fn_best_tpr, /* tpr file with the best performance */
         const char     *fn_sim_tpr)  /* name of tpr file to be launched */
 {
-    t_state        state;
+    GlobalState    state;
     gmx_mtop_t     mtop;
     char           buf[200];
 
@@ -865,7 +865,7 @@ static void make_benchmark_tprs(
         FILE                 *fp)              /* Write the output here                         */
 {
     int           i, j, d;
-    t_state       state;
+    GlobalState   state;
     gmx_mtop_t    mtop;
     real          nlist_buffer;     /* Thickness of the buffer regions for PME-switch potentials */
     char          buf[200];
@@ -1979,7 +1979,7 @@ static float inspect_tpr(int nfile, t_filenm fnm[], real *rcoulomb)
     gmx_bool     bFree;     /* Is a free energy simulation requested?         */
     gmx_bool     bNM;       /* Is a normal mode analysis requested?           */
     gmx_bool     bSwap;     /* Is water/ion position swapping requested?      */
-    t_state      state;
+    GlobalState  state;
     gmx_mtop_t   mtop;
 
 

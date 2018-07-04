@@ -2709,7 +2709,7 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
 }
 
 static int do_tpx(t_fileio *fio, gmx_bool bRead,
-                  t_inputrec *ir, t_state *state, rvec *x, rvec *v,
+                  t_inputrec *ir, GlobalState *state, rvec *x, rvec *v,
                   gmx_mtop_t *mtop)
 {
     t_tpxheader     tpx;
@@ -2747,7 +2747,7 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     if (bRead)
     {
         state->flags = 0;
-        init_gtc_state(state, tpx.ngtc, 0, 0);
+        state->initializeCoupling(tpx.ngtc, 0, 0);
         if (x == nullptr)
         {
             // v is also nullptr by the above assertion, so we may
@@ -2761,7 +2761,7 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
             {
                 state->flags |= (1 << estV);
             }
-            state_change_natoms(state, tpx.natoms);
+            state->resize(tpx.natoms);
         }
     }
 
@@ -2901,7 +2901,7 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
             if (state->ngtc == 0)
             {
                 /* Reading old version without tcoupl state data: set it */
-                init_gtc_state(state, ir->opts.ngtc, 0, ir->opts.nhchainlength);
+                state->initializeCoupling(ir->opts.ngtc, 0, ir->opts.nhchainlength);
             }
             if (tpx.bTop && mtop)
             {
@@ -2955,20 +2955,20 @@ void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK)
 }
 
 void write_tpx_state(const char *fn,
-                     const t_inputrec *ir, const t_state *state, const gmx_mtop_t *mtop)
+                     const t_inputrec *ir, const GlobalState *state, const gmx_mtop_t *mtop)
 {
     t_fileio *fio;
 
     fio = open_tpx(fn, "w");
     do_tpx(fio, FALSE,
            const_cast<t_inputrec *>(ir),
-           const_cast<t_state *>(state), nullptr, nullptr,
+           const_cast<GlobalState *>(state), nullptr, nullptr,
            const_cast<gmx_mtop_t *>(mtop));
     close_tpx(fio);
 }
 
 void read_tpx_state(const char *fn,
-                    t_inputrec *ir, t_state *state, gmx_mtop_t *mtop)
+                    t_inputrec *ir, GlobalState *state, gmx_mtop_t *mtop)
 {
     t_fileio *fio;
 
@@ -2981,9 +2981,9 @@ int read_tpx(const char *fn,
              t_inputrec *ir, matrix box, int *natoms,
              rvec *x, rvec *v, gmx_mtop_t *mtop)
 {
-    t_fileio *fio;
-    t_state   state;
-    int       ePBC;
+    t_fileio    *fio;
+    GlobalState  state;
+    int          ePBC;
 
     fio     = open_tpx(fn, "r");
     ePBC    = do_tpx(fio, TRUE, ir, &state, x, v, mtop);
