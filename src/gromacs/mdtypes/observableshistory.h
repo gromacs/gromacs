@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,7 +41,8 @@
  *
  * The container is used for storing the simulation state data that needs
  * to be written to / read from checkpoint file. This struct should only
- * contain pure observable data. Microstate data should be in t_state.
+ * contain pure observable data. Microstate data should be in GlobalState
+ * or LocalState.
  * The state of the mdrun machinery is also stored elsewhere.
  *
  * \author Berk Hess
