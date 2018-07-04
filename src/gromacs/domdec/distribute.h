@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,11 +45,12 @@
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/utility/basedefinitions.h"
 
+class GlobalState;
 struct gmx_ddbox_t;
 struct gmx_domdec_t;
 struct gmx_mtop_t;
+class LocalState;
 struct t_block;
-class t_state;
 
 namespace gmx
 {
@@ -60,9 +61,9 @@ class MDLogger;
 void distributeState(const gmx::MDLogger     &mdlog,
                      gmx_domdec_t            *dd,
                      const gmx_mtop_t        &mtop,
-                     t_state                 *state_global,
+                     GlobalState             *state_global,
                      const gmx_ddbox_t       &ddbox,
-                     t_state                 *state_local,
+                     LocalState              *state_local,
                      PaddedVector<gmx::RVec> *f);
 
 #endif

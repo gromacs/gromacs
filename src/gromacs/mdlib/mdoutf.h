@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,8 +45,10 @@
 #include "gromacs/utility/basedefinitions.h"
 
 class energyhistory_t;
+class GlobalState;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
+class LocalState;
 struct MdrunOptions;
 struct ObservablesHistory;
 struct t_commrec;
@@ -107,7 +109,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
                                       int mdof_flags,
                                       gmx_mtop_t *top_global,
                                       int64_t step, double t,
-                                      t_state *state_local, t_state *state_global,
+                                      LocalState *state_local, GlobalState *state_global,
                                       ObservablesHistory *observablesHistory,
                                       gmx::ArrayRef<gmx::RVec> f_local);
 

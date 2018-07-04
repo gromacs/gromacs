@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,6 +58,7 @@
  *
  * The main type is defined only in edsam.cpp
  */
+class GlobalState;
 struct gmx_edsam;
 struct gmx_domdec_t;
 struct gmx_mtop_t;
@@ -66,7 +67,6 @@ struct ObservablesHistory;
 struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
-class t_state;
 
 namespace gmx
 {
@@ -128,7 +128,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
         const t_inputrec       *ir,
         const t_commrec        *cr,
         gmx::Constraints       *constr,
-        const t_state          *globalState,
+        const GlobalState      *globalState,
         ObservablesHistory     *oh,
         const gmx_output_env_t *oenv,
         gmx_bool                bAppend);

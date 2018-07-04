@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,7 +102,7 @@ void check_screw_box(const matrix box)
     }
 }
 
-void dd_resize_state(t_state                 *state,
+void dd_resize_state(LocalState              *state,
                      PaddedVector<gmx::RVec> *f,
                      int                      natoms)
 {
@@ -111,7 +111,7 @@ void dd_resize_state(t_state                 *state,
         fprintf(debug, "Resizing state: currently %d, required %d\n", state->natoms, natoms);
     }
 
-    state_change_natoms(state, natoms);
+    state->resize(natoms);
 
     if (f != nullptr)
     {
@@ -123,7 +123,7 @@ void dd_resize_state(t_state                 *state,
 }
 
 void dd_check_alloc_ncg(t_forcerec              *fr,
-                        t_state                 *state,
+                        LocalState              *state,
                         PaddedVector<gmx::RVec> *f,
                         int                      numChargeGroups)
 {

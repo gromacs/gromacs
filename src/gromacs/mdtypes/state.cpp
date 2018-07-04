@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,43 +83,42 @@ ekinstate_t::ekinstate_t() : bUpToDate(FALSE),
     clear_mat(ekin_total);
 };
 
-void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
+void detail::State::initializeCoupling(int numTemperatureCouplingGroups, int noseHooverChainLengthBarostat, int noseHooverChainLengthThermostat)
 {
-    state->ngtc          = ngtc;
-    state->nnhpres       = nnhpres;
-    state->nhchainlength = nhchainlength;
-    state->nosehoover_xi.resize(state->nhchainlength*state->ngtc, 0);
-    state->nosehoover_vxi.resize(state->nhchainlength*state->ngtc, 0);
-    state->therm_integral.resize(state->ngtc, 0);
-    state->baros_integral = 0.0;
-    state->nhpres_xi.resize(state->nhchainlength*nnhpres, 0);
-    state->nhpres_vxi.resize(state->nhchainlength*nnhpres, 0);
+    ngtc          = numTemperatureCouplingGroups;
+    nnhpres       = noseHooverChainLengthBarostat;
+    nhchainlength = noseHooverChainLengthThermostat;
+    nosehoover_xi.resize(nhchainlength*ngtc, 0);
+    nosehoover_vxi.resize(nhchainlength*ngtc, 0);
+    therm_integral.resize(ngtc, 0);
+    baros_integral = 0.0;
+    nhpres_xi.resize(nhchainlength*nnhpres, 0);
+    nhpres_vxi.resize(nhchainlength*nnhpres, 0);
 }
-
 
 /* Checkpoint code relies on this function having no effect if
    state->natoms is > 0 and passed as natoms. */
-void state_change_natoms(t_state *state, int natoms)
+void detail::State::resize(int newSize)
 {
-    state->natoms = natoms;
+    natoms = newSize;
 
     /* We need padding, since we might use SIMD access, but the
      * containers here all ensure that. */
-    if (state->flags & (1 << estX))
+    if (flags & (1 << estX))
     {
-        state->x.resizeWithPadding(natoms);
+        x.resizeWithPadding(natoms);
     }
-    if (state->flags & (1 << estV))
+    if (flags & (1 << estV))
     {
-        state->v.resizeWithPadding(natoms);
+        v.resizeWithPadding(natoms);
     }
-    if (state->flags & (1 << estCGP))
+    if (flags & (1 << estCGP))
     {
-        state->cg_p.resizeWithPadding(natoms);
+        cg_p.resizeWithPadding(natoms);
     }
 }
 
-void init_dfhist_state(t_state *state, int dfhistNumLambda)
+void init_dfhist_state(LocalState *state, int dfhistNumLambda)
 {
     if (dfhistNumLambda > 0)
     {
@@ -132,7 +131,7 @@ void init_dfhist_state(t_state *state, int dfhistNumLambda)
     }
 }
 
-void comp_state(const t_state *st1, const t_state *st2,
+void comp_state(const GlobalState *st1, const GlobalState *st2,
                 gmx_bool bRMSD, real ftol, real abstol)
 {
     int i, j, nc;
@@ -222,24 +221,24 @@ rvec *makeRvecArray(gmx::ArrayRef<const gmx::RVec> v,
     return dest;
 }
 
-t_state::t_state() : natoms(0),
-                     ngtc(0),
-                     nnhpres(0),
-                     nhchainlength(0),
-                     flags(0),
-                     fep_state(0),
-                     lambda(),
+detail::State::State() : natoms(0),
+                         ngtc(0),
+                         nnhpres(0),
+                         nhchainlength(0),
+                         flags(0),
+                         fep_state(0),
+                         lambda(),
 
-                     baros_integral(0),
-                     veta(0),
-                     vol0(0),
+                         baros_integral(0),
+                         veta(0),
+                         vol0(0),
 
-                     ekinstate(),
-                     hist(),
-                     dfhist(nullptr),
-                     awhHistory(nullptr),
-                     ddp_count(0),
-                     ddp_count_cg_gl(0)
+                         ekinstate(),
+                         hist(),
+                         dfhist(nullptr),
+                         awhHistory(nullptr),
+                         ddp_count(0),
+                         ddp_count_cg_gl(0)
 
 {
     // It would be nicer to initialize these with {} or {{0}} in the
@@ -253,9 +252,18 @@ t_state::t_state() : natoms(0),
     clear_mat(pres_prev);
     clear_mat(svir_prev);
     clear_mat(fvir_prev);
+};
+
+// Conversion constructor
+GlobalState::GlobalState(const LocalState &localState) : State(localState)
+{
+}
+// Conversion constructor
+LocalState::LocalState(const GlobalState &globalState) : State(globalState)
+{
 }
 
-void set_box_rel(const t_inputrec *ir, t_state *state)
+void set_box_rel(const t_inputrec *ir, GlobalState *state)
 {
     /* Make sure the box obeys the restrictions before we fix the ratios */
     correct_box(nullptr, 0, state->box, nullptr);
@@ -275,5 +283,17 @@ void preserve_box_shape(const t_inputrec *ir, matrix box_rel, matrix box)
     {
         const int ndim = ir->epct == epctSEMIISOTROPIC ? 2 : 3;
         do_box_rel(ndim, ir->deform, box_rel, box, false);
+    }
+}
+
+gmx::ArrayRef<const gmx::RVec> positionsFromStatePointer(const GlobalState *state)
+{
+    if (state)
+    {
+        return gmx::makeConstArrayRef(state->x).subArray(0, state->natoms);
+    }
+    else
+    {
+        return gmx::EmptyArrayRef();
     }
 }

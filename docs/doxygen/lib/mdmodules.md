@@ -3,7 +3,7 @@ mdrun modules {#page_mdmodules}
 
 Currently, most of mdrun is constructed as a set of C routines calling each
 other, and sharing data through a couple of common data structures (t_inputrec,
-t_forcerec, t_state etc.) that flow throughout the code.
+t_forcerec, GlobalState/LocalState etc.) that flow throughout the code.
 
 The electric field code (in `src/gromacs/applied-forces/`) implements an
 alternative concept that allows keeping everything related to the electric

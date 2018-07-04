@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@
 #include "gromacs/utility/real.h"
 
 class energyhistory_t;
+class GlobalState;
 struct gmx_enfrot;
 struct gmx_mtop_t;
 struct gmx_membed_t;
@@ -67,7 +68,6 @@ struct t_forcerec;
 struct t_filenm;
 struct t_inputrec;
 struct t_nrnb;
-class t_state;
 
 namespace gmx
 {
@@ -143,7 +143,7 @@ struct Integrator
     //! Helper struct for force calculations.
     t_fcdata                           *fcd;
     //! Full simulation state (only non-nullptr on master rank).
-    t_state                            *state_global;
+    GlobalState                        *state_global;
     //! History of simulation observables.
     ObservablesHistory                 *observablesHistory;
     //! Atom parameters for this domain.

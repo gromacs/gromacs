@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,13 +90,13 @@ static inline int dd_load_count(const gmx_domdec_comm_t *comm)
 }
 
 /*! \brief Resize the state and f, if !=nullptr, to natoms */
-void dd_resize_state(t_state                 *state,
+void dd_resize_state(LocalState              *state,
                      PaddedVector<gmx::RVec> *f,
                      int                      natoms);
 
 /*! \brief Enrsure fr, state and f, if != nullptr, can hold numChargeGroups atoms for the Verlet scheme and charge groups for the group scheme */
 void dd_check_alloc_ncg(t_forcerec              *fr,
-                        t_state                 *state,
+                        LocalState              *state,
                         PaddedVector<gmx::RVec> *f,
                         int                      numChargeGroups);
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -401,7 +401,7 @@ static int imd_recv_mdcomm(IMDSocket *socket, int32_t nforces, int32_t *forcendx
 #endif
 
 /* GROMACS specific functions for the IMD implementation */
-void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, const t_state *state,
+void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, const GlobalState *state,
                             const gmx_mtop_t *sys, int nfile, const t_filenm fnm[])
 {
     t_atoms IMDatoms;

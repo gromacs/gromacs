@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -252,7 +252,7 @@ static void cg_move_error(FILE *fplog,
               "This usually means that your system is not well equilibrated");
 }
 
-static void rotate_state_atom(t_state *state, int a)
+static void rotate_state_atom(LocalState *state, int a)
 {
     if (state->flags & (1 << estX))
     {
@@ -360,7 +360,7 @@ static int computeMoveFlag(const gmx_domdec_t &dd,
  */
 static void calc_cg_move(FILE *fplog, int64_t step,
                          gmx_domdec_t *dd,
-                         t_state *state,
+                         LocalState *state,
                          const ivec tric_dir, matrix tcm,
                          const rvec cell_x0, const rvec cell_x1,
                          const MoveLimits &moveLimits,
@@ -515,7 +515,7 @@ struct PbcAndFlag
  */
 static void calcGroupMove(FILE *fplog, int64_t step,
                           const gmx_domdec_t *dd,
-                          const t_state *state,
+                          const LocalState *state,
                           const ivec tric_dir, matrix tcm,
                           const rvec cell_x0, const rvec cell_x1,
                           const MoveLimits &moveLimits,
@@ -620,7 +620,7 @@ applyPbcAndSetMoveFlags(const gmx::UpdateGroupsCog      &updateGroupsCog,
 
 void dd_redistribute_cg(FILE *fplog, int64_t step,
                         gmx_domdec_t *dd, ivec tric_dir,
-                        t_state *state,
+                        LocalState *state,
                         PaddedVector<gmx::RVec> *f,
                         t_forcerec *fr,
                         t_nrnb *nrnb,

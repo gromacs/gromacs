@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -268,7 +268,7 @@ static void bcastPaddedRVecVector(const t_commrec *cr, gmx::PaddedVector<gmx::RV
     nblock_bc(cr, makeArrayRef(*v));
 }
 
-void broadcastStateWithoutDynamics(const t_commrec *cr, t_state *state)
+void broadcastStateWithoutDynamics(const t_commrec *cr, GlobalState *state)
 {
     GMX_RELEASE_ASSERT(!DOMAINDECOMP(cr), "broadcastStateWithoutDynamics should only be used for special cases without domain decomposition");
 

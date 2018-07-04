@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1160,7 +1160,7 @@ void PrintFreeEnergyInfoToFile(FILE *outfile, const t_lambda *fep, const t_expan
 }
 
 int ExpandedEnsembleDynamics(FILE *log, const t_inputrec *ir, const gmx_enerdata_t *enerd,
-                             t_state *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
+                             LocalState *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
                              int64_t step,
                              rvec *v, const t_mdatoms *mdatoms)
 /* Note that the state variable is only needed for simulated tempering, not

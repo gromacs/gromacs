@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -249,7 +249,7 @@ static void get_input(const char *membed_input, real *xy_fac, real *xy_max, real
 }
 
 /* Obtain the maximum and minimum coordinates of the group to be embedded */
-static int init_ins_at(t_block *ins_at, t_block *rest_at, t_state *state, pos_ins_t *pos_ins,
+static int init_ins_at(t_block *ins_at, t_block *rest_at, GlobalState *state, pos_ins_t *pos_ins,
                        gmx_groups_t *groups, int ins_grp_id, real xy_max)
 {
     int        i, gid, c = 0;
@@ -671,7 +671,7 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
 }
 
 /*remove all lipids and waters overlapping and update all important structures (e.g. state and mtop)*/
-static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state *state,
+static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, GlobalState *state,
                      t_block *ins_at, pos_ins_t *pos_ins)
 {
     int             j, k, n, rm, mol_id, at, block;
@@ -700,7 +700,7 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
     }
 
     mtop->natoms    -= n;
-    state_change_natoms(state, state->natoms - n);
+    state->resize(state->natoms - n);
     snew(x_tmp, state->natoms);
     snew(v_tmp, state->natoms);
 
@@ -987,7 +987,7 @@ static int search_string(const char *s, int ng, char *gn[])
 }
 
 gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_t *mtop,
-                          t_inputrec *inputrec, t_state *state, t_commrec *cr, real *cpt)
+                          t_inputrec *inputrec, GlobalState *state, t_commrec *cr, real *cpt)
 {
     char                     *ins, **gnames;
     int                       i, rm_bonded_at, fr_id, fr_i = 0, tmp_id, warn = 0;

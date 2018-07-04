@@ -547,12 +547,12 @@ int Mdrunner::mdrunner()
         writeSourceDoi(fplog);
     }
 
-    std::unique_ptr<t_state> globalState;
+    std::unique_ptr<GlobalState> globalState;
 
     if (SIMMASTER(cr))
     {
         /* Only the master rank has the global state */
-        globalState = compat::make_unique<t_state>();
+        globalState = compat::make_unique<GlobalState>();
 
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPR, filenames.size(), filenames.data()), inputrec, globalState.get(), &mtop);
@@ -754,7 +754,7 @@ int Mdrunner::mdrunner()
     {
         if (!MASTER(cr))
         {
-            globalState = compat::make_unique<t_state>();
+            globalState = compat::make_unique<GlobalState>();
         }
         broadcastStateWithoutDynamics(cr, globalState.get());
     }
@@ -825,9 +825,9 @@ int Mdrunner::mdrunner()
 #endif
 
     /* NMR restraints must be initialized before load_checkpoint,
-     * since with time averaging the history is added to t_state.
+     * since with time averaging the history is added to GlobalState.
      * For proper consistency check we therefore need to extend
-     * t_state here.
+     * GlobalState here.
      * So the PME-only nodes (if present) will also initialize
      * the distance restraints.
      */
@@ -1230,15 +1230,6 @@ int Mdrunner::mdrunner()
          * as this can not be done now with domain decomposition.
          */
         mdAtoms = makeMDAtoms(fplog, mtop, *inputrec, thisRankHasPmeGpuTask);
-        if (globalState && thisRankHasPmeGpuTask)
-        {
-            // The pinning of coordinates in the global state object works, because we only use
-            // PME on GPU without DD or on a separate PME rank, and because the local state pointer
-            // points to the global state object without DD.
-            // FIXME: MD and EM separately set up the local state - this should happen in the same function,
-            // which should also perform the pinning.
-            changePinningPolicy(&globalState->x, pme_get_pinning_policy());
-        }
 
         /* Initialize the virtual site communication */
         vsite = initVsite(mtop, cr);

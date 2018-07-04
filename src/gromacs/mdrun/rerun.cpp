@@ -151,7 +151,7 @@ using gmx::SimulationSignaller;
  * \param[in,out] graph           The molecular graph, used for constructing vsites when != nullptr
  */
 static void prepareRerunState(const t_trxframe  &rerunFrame,
-                              t_state           *globalState,
+                              GlobalState       *globalState,
                               bool               constructVsites,
                               const gmx_vsite_t *vsite,
                               const t_idef      &idef,
@@ -329,15 +329,13 @@ void gmx::Integrator::do_rerun()
     }
 
     // Local state only becomes valid now.
-    std::unique_ptr<t_state> stateInstance;
-    t_state *                state;
+    auto stateInstance = compat::make_unique<LocalState>();
+    auto state         = stateInstance.get();
 
     if (DOMAINDECOMP(cr))
     {
         dd_init_local_top(*top_global, &top);
 
-        stateInstance = compat::make_unique<t_state>();
-        state         = stateInstance.get();
         dd_init_local_state(cr->dd, state_global, state);
 
         /* Distribute the charge groups over the nodes from the master node */
@@ -350,13 +348,15 @@ void gmx::Integrator::do_rerun()
     }
     else
     {
-        state_change_natoms(state_global, state_global->natoms);
+        state_global->resize(state_global->natoms);
         /* We need to allocate one element extra, since we might use
          * (unaligned) 4-wide SIMD loads to access rvec entries.
          */
         f.resizeWithPadding(state_global->natoms);
-        /* Copy the pointer to the global state */
-        state = state_global;
+        /* Copy the state (not just the pointer) */
+        *state = LocalState(*state_global);
+        /* Pin the co-ordinates of the local state */
+        changePinningPolicy(&state->x, pme_get_pinning_policy());
 
         mdAlgorithmsSetupAtomData(cr, ir, *top_global, &top, fr,
                                   &graph, mdAtoms, constr, vsite, shellfc);
@@ -518,6 +518,7 @@ void gmx::Integrator::do_rerun()
 
         isLastStep = isLastStep || stopHandler->stoppingAfterCurrentStep(bNS);
 
+        /* for rerun, the local state is prepared in this call to dd_partition_system in every iteration */
         if (DOMAINDECOMP(cr))
         {
             /* Repartition the domain decomposition */
@@ -530,6 +531,11 @@ void gmx::Integrator::do_rerun()
                                 nrnb, wcycle,
                                 mdrunOptions.verbose);
             shouldCheckNumberOfBondedInteractions = true;
+        }
+        else
+        {
+            /* Copy the state (not just the pointer) */
+            *state = LocalState(*state_global);
         }
 
         if (MASTER(cr))

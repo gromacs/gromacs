@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,8 +55,8 @@
 #include "distribute.h"
 #include "domdec_internal.h"
 
-static void dd_collect_cg(gmx_domdec_t  *dd,
-                          const t_state *state_local)
+static void dd_collect_cg(gmx_domdec_t     *dd,
+                          const LocalState *state_local)
 {
     if (state_local->ddp_count == dd->comm->master_cg_ddp_count)
     {
@@ -245,7 +245,7 @@ static void dd_collect_vec_gatherv(gmx_domdec_t                  *dd,
 }
 
 void dd_collect_vec(gmx_domdec_t                  *dd,
-                    const t_state                 *state_local,
+                    const LocalState              *state_local,
                     gmx::ArrayRef<const gmx::RVec> lv,
                     gmx::ArrayRef<gmx::RVec>       v)
 {
@@ -263,7 +263,7 @@ void dd_collect_vec(gmx_domdec_t                  *dd,
 
 
 void dd_collect_state(gmx_domdec_t *dd,
-                      const t_state *state_local, t_state *state)
+                      const LocalState *state_local, GlobalState *state)
 {
     int nh = state_local->nhchainlength;
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,6 +62,7 @@
 struct ContinuationOptions;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
+class LocalState;
 struct pull_coord_work_t;
 struct pull_params_t;
 struct t_commrec;
@@ -69,7 +70,6 @@ struct t_filenm;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
-class t_state;
 
 namespace gmx
 {
@@ -352,7 +352,7 @@ real max_pull_distance2(const pull_coord_work_t *pcrd,
  * \param[in]   pull  The COM pull force calculation data structure
  * \param[in]   state The local (to this rank) state.
  */
-void updatePrevStepPullCom(struct pull_t *pull, t_state *state);
+void updatePrevStepPullCom(struct pull_t *pull, LocalState *state);
 
 /*! \brief Allocates, initializes and communicates the previous step pull COM (if that option is set to true).
  *
@@ -365,7 +365,7 @@ void updatePrevStepPullCom(struct pull_t *pull, t_state *state);
  * \param[in] cr                     Struct for communication info.
  * \param[in] startingFromCheckpoint Is the simulation starting from a checkpoint?
  */
-void preparePrevStepPullCom(const t_inputrec *ir, const t_mdatoms *md, t_state *state, const t_state *state_global, const t_commrec *cr, bool startingFromCheckpoint);
+void preparePrevStepPullCom(const t_inputrec *ir, const t_mdatoms *md, LocalState *state, const GlobalState *state_global, const t_commrec *cr, bool startingFromCheckpoint);
 
 /*! \brief Initializes the COM of the previous step (set to initial COM)
  *

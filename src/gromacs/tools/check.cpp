@@ -95,7 +95,7 @@ static void comp_tpx(const char *fn1, const char *fn2,
 {
     const char    *ff[2];
     t_inputrec    *ir[2];
-    t_state        state[2];
+    GlobalState    state[2];
     gmx_mtop_t     mtop[2];
     int            i;
 
@@ -303,7 +303,7 @@ static void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tp
     t_trxstatus   *status;
     gmx_mtop_t     mtop;
     gmx_localtop_t top;
-    t_state        state;
+    GlobalState    state;
     t_inputrec     ir;
 
     if (tpr)

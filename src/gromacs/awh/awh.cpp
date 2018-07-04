@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -404,7 +404,8 @@ void Awh::writeToEnergyFrame(int64_t      step,
 std::unique_ptr<Awh>
 prepareAwhModule(FILE                 *fplog,
                  const t_inputrec     &inputRecord,
-                 t_state              *stateGlobal,
+                 GlobalState          *stateGlobal,
+                 LocalState           *stateLocal,
                  const t_commrec      *commRecord,
                  const gmx_multisim_t *multiSimRecord,
                  const bool            startingFromCheckpoint,
@@ -433,6 +434,11 @@ prepareAwhModule(FILE                 *fplog,
     {
         // Initialize the AWH history here
         stateGlobal->awhHistory = awh->initHistoryFromState();
+    }
+    // Make sure that the global and the local state are on the same page
+    if (!DOMAINDECOMP(commRecord))
+    {
+        stateLocal->awhHistory = stateGlobal->awhHistory;
     }
     return awh;
 }

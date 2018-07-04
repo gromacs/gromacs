@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,13 +49,13 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
 
+class GlobalState;
 struct gmx_mtop_t;
 struct gmx_multisim_t;
 class history_t;
 struct t_commrec;
 struct t_inputrec;
 struct t_pbc;
-class t_state;
 
 /*! \brief
  * Initiates *fcd data.
@@ -70,7 +70,7 @@ class t_state;
 void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
                  t_inputrec *ir, const t_commrec *cr,
                  const gmx_multisim_t *ms,
-                 t_fcdata *fcd, t_state *state, gmx_bool bIsREMD);
+                 t_fcdata *fcd, GlobalState *state, gmx_bool bIsREMD);
 
 /*! \brief
  * Calculates r and r^-3 (inst. and time averaged) for all pairs

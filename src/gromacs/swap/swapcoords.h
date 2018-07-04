@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,6 +57,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
+class GlobalState;
 struct gmx_domdec_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
@@ -65,7 +66,6 @@ struct MdrunOptions;
 struct swaphistory_t;
 struct t_commrec;
 struct t_inputrec;
-class t_state;
 struct t_swapcoords;
 struct ObservablesHistory;
 
@@ -96,7 +96,7 @@ void init_swapcoords(
         t_inputrec               *ir,
         const char               *fn,
         gmx_mtop_t               *mtop,
-        const t_state            *globalState,
+        const GlobalState        *globalState,
         ObservablesHistory       *oh,
         t_commrec                *cr,
         gmx::LocalAtomSetManager *atomSets,

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,11 +50,11 @@ struct gmx_groups_t;
 struct gmx_multisim_t;
 struct gmx_shellfc_t;
 struct gmx_mtop_t;
+class LocalState;
 struct t_forcerec;
 struct t_fcdata;
 struct t_graph;
 struct t_inputrec;
-class t_state;
 
 namespace gmx
 {
@@ -88,7 +88,7 @@ void relax_shell_flexcon(FILE                                     *log,
                          gmx::Constraints                         *constr,
                          gmx_enerdata_t                           *enerd,
                          t_fcdata                                 *fcd,
-                         t_state                                  *state,
+                         LocalState                               *state,
                          gmx::ArrayRefWithPadding<gmx::RVec>       f,
                          tensor                                    force_vir,
                          const t_mdatoms                          *md,

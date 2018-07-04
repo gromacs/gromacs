@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -201,7 +201,7 @@ static void dd_distribute_dfhist(gmx_domdec_t *dd, df_history_t *dfhist)
 }
 
 static void dd_distribute_state(gmx_domdec_t *dd,
-                                const t_state *state, t_state *state_local,
+                                const GlobalState *state, LocalState *state_local,
                                 PaddedVector<gmx::RVec> *f)
 {
     int nh = state_local->nhchainlength;
@@ -582,9 +582,9 @@ static void distributeAtomGroups(const gmx::MDLogger &mdlog,
 void distributeState(const gmx::MDLogger     &mdlog,
                      gmx_domdec_t            *dd,
                      const gmx_mtop_t        &mtop,
-                     t_state                 *state_global,
+                     GlobalState             *state_global,
                      const gmx_ddbox_t       &ddbox,
-                     t_state                 *state_local,
+                     LocalState              *state_local,
                      PaddedVector<gmx::RVec> *f)
 {
     rvec *xGlobal = (DDMASTER(dd) ? state_global->x.rvec_array() : nullptr);

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,11 +71,12 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
+class GlobalState;
 struct gmx_multisim_t;
 struct gmx_wallcycle;
+class LocalState;
 struct pull_work_t;
 struct pull_t;
-class t_state;
 struct t_commrec;
 struct t_enxframe;
 struct t_inputrec;
@@ -256,6 +257,7 @@ class Awh
  * \param[in,out] fplog                   General output file, normally md.log, can be nullptr.
  * \param[in]     inputRecord             General input parameters (as set up by grompp).
  * \param[in]     stateGlobal             A pointer to the global state structure.
+ * \param[in]     stateLocal              A pointer to the local state structure.
  * \param[in]     commRecord              Struct for communication, can be nullptr.
  * \param[in]     multiSimRecord          Multi-sim handler
  * \param[in]     startingFromCheckpoint  Whether the simulation is starting from a checkpoint
@@ -269,7 +271,8 @@ class Awh
 std::unique_ptr<Awh>
 prepareAwhModule(FILE                 *fplog,
                  const t_inputrec     &inputRecord,
-                 t_state              *stateGlobal,
+                 GlobalState          *stateGlobal,
+                 LocalState           *stateLocal,
                  const t_commrec      *commRecord,
                  const gmx_multisim_t *multiSimRecord,
                  bool                  startingFromCheckpoint,

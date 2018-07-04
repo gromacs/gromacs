@@ -48,6 +48,7 @@
 class ekinstate_t;
 struct gmx_ekindata_t;
 struct gmx_enerdata_t;
+class LocalState;
 struct t_extmass;
 struct t_fcdata;
 struct t_graph;
@@ -55,7 +56,6 @@ struct t_grpopts;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_nrnb;
-class t_state;
 
 /* Abstract type for update */
 struct gmx_update_t;
@@ -88,7 +88,7 @@ void set_deform_reference_box(gmx_update_t *upd,
 
 void update_tcouple(int64_t           step,
                     const t_inputrec *inputrec,
-                    t_state          *state,
+                    LocalState       *state,
                     gmx_ekindata_t   *ekind,
                     const t_extmass  *MassQ,
                     const t_mdatoms  *md
@@ -98,7 +98,7 @@ void update_tcouple(int64_t           step,
 void update_pcouple_before_coordinates(FILE             *fplog,
                                        int64_t           step,
                                        const t_inputrec *inputrec,
-                                       t_state          *state,
+                                       LocalState       *state,
                                        matrix            parrinellorahmanMu,
                                        matrix            M,
                                        gmx_bool          bInitStep);
@@ -116,14 +116,14 @@ void update_pcouple_after_coordinates(FILE             *fplog,
                                       const matrix      forceVirial,
                                       const matrix      constraintVirial,
                                       const matrix      parrinellorahmanMu,
-                                      t_state          *state,
+                                      LocalState       *state,
                                       t_nrnb           *nrnb,
                                       gmx_update_t     *upd);
 
 void update_coords(int64_t                              step,
                    const t_inputrec                    *inputrec, /* input record and box stuff	*/
                    const t_mdatoms                     *md,
-                   t_state                             *state,
+                   LocalState                          *state,
                    gmx::ArrayRefWithPadding<gmx::RVec>  f, /* forces on home particles */
                    const t_fcdata                      *fcd,
                    const gmx_ekindata_t                *ekind,
@@ -143,7 +143,7 @@ extern gmx_bool update_randomize_velocities(const t_inputrec *ir, int64_t step, 
 
 void constrain_velocities(int64_t                        step,
                           real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
-                          t_state                       *state,
+                          LocalState                    *state,
                           tensor                         vir_part,
                           gmx::Constraints              *constr,
                           gmx_bool                       bCalcVir,
@@ -152,7 +152,7 @@ void constrain_velocities(int64_t                        step,
 
 void constrain_coordinates(int64_t                        step,
                            real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
-                           t_state                       *state,
+                           LocalState                    *state,
                            tensor                         vir_part,
                            gmx_update_t                  *upd,
                            gmx::Constraints              *constr,
@@ -164,7 +164,7 @@ void update_sd_second_half(int64_t                        step,
                            real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
                            const t_inputrec              *inputrec,  /* input record and box stuff */
                            const t_mdatoms               *md,
-                           t_state                       *state,
+                           LocalState                    *state,
                            const t_commrec               *cr,
                            t_nrnb                        *nrnb,
                            gmx_wallcycle_t                wcycle,
@@ -175,7 +175,7 @@ void update_sd_second_half(int64_t                        step,
 
 void finish_update(const t_inputrec              *inputrec,
                    const t_mdatoms               *md,
-                   t_state                       *state,
+                   LocalState                    *state,
                    const t_graph                 *graph,
                    t_nrnb                        *nrnb,
                    gmx_wallcycle_t                wcycle,
@@ -184,7 +184,7 @@ void finish_update(const t_inputrec              *inputrec,
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-void calc_ke_part(const t_state *state, const t_grpopts *opts, const t_mdatoms *md,
+void calc_ke_part(const LocalState *state, const t_grpopts *opts, const t_mdatoms *md,
                   gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel);
 /*
  * Compute the partial kinetic energy for home particles;
@@ -228,14 +228,14 @@ void nosehoover_tcoupl(const t_grpopts *opts, const gmx_ekindata_t *ekind, real 
                        double xi[], double vxi[], const t_extmass *MassQ);
 
 void trotter_update(const t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
-                    const gmx_enerdata_t *enerd, t_state *state, const tensor vir,
+                    const gmx_enerdata_t *enerd, LocalState *state, const tensor vir,
                     const t_mdatoms *md, const t_extmass *MassQ,
                     gmx::ArrayRef < std::vector < int>> trotter_seqlist, int trotter_seqno);
 
-std::array < std::vector < int>, ettTSEQMAX> init_npt_vars(const t_inputrec *ir, t_state *state,
+std::array < std::vector < int>, ettTSEQMAX> init_npt_vars(const t_inputrec *ir, LocalState *state,
                                                            t_extmass *Mass, gmx_bool bTrotter);
 
-real NPT_energy(const t_inputrec *ir, const t_state *state, const t_extmass *MassQ);
+real NPT_energy(const t_inputrec *ir, const LocalState *state, const t_extmass *MassQ);
 /* computes all the pressure/tempertature control energy terms to get a conserved energy */
 
 void vrescale_tcoupl(const t_inputrec *ir, int64_t step,
