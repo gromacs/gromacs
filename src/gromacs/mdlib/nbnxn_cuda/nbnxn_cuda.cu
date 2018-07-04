@@ -441,10 +441,11 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
         t->nb_k[iloc].closeTimingRegion(stream);
     }
 
-#if (defined(WIN32) || defined( _WIN32 ))
-    /* Windows: force flushing WDDM queue */
-    stat = cudaStreamQuery(stream);
-#endif
+    if (GMX_NATIVE_WINDOWS)
+    {
+        /* Windows: force flushing WDDM queue */
+        cudaStreamQuery(stream);
+    }
 }
 
 /*! Calculates the amount of shared memory required by the CUDA kernel in use. */
@@ -577,10 +578,11 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t       *nb,
         timer->closeTimingRegion(stream);
     }
 
-#if (defined(WIN32) || defined( _WIN32 ))
-    /* Windows: force flushing WDDM queue */
-    stat = cudaStreamQuery(stream);
-#endif
+    if (GMX_NATIVE_WINDOWS)
+    {
+        /* Windows: force flushing WDDM queue */
+        cudaStreamQuery(stream);
+    }
 }
 
 void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,

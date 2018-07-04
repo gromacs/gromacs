@@ -518,6 +518,12 @@ AwhParams *readAndCheckAwhParams(std::vector<t_inpfile> *inp, const t_inputrec *
     printStringNoNewline(inp, "Free energy and bias update interval in number of samples");
     sprintf(opt, "%s-nsamples-update", prefix);
     awhParams->numSamplesUpdateFreeEnergy = get_eint(inp, opt, 10, wi);
+    if (awhParams->numSamplesUpdateFreeEnergy <= 0)
+    {
+        char buf[STRLEN];
+        sprintf(buf, "%s needs to be an integer > 0", opt);
+        warning_error(wi, buf);
+    }
 
     printStringNoNewline(inp, "When true, biases with share-group>0 are shared between multiple simulations");
     sprintf(opt, "%s-share-multisim", prefix);

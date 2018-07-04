@@ -231,7 +231,7 @@ getSourceRootPath(const std::string &sourceRelativePath)
         InstallationPrefixInfo      info           = getProgramContext().installationPrefix();
         std::string                 dataPathSuffix = (info.bSourceLayout ?
                                                       sourceRelativePath :
-                                                      OCL_INSTALL_DIR);
+                                                      GMX_INSTALL_OCLDIR);
         sourceRootPath = Path::join(info.path, dataPathSuffix);
     }
     else
