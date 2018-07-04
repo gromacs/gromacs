@@ -1265,7 +1265,7 @@ int gmx_editconf(int argc, char *argv[])
         if (outftp == efPDB)
         {
             out = gmx_ffopen(outfile, "w");
-            write_pdbfile_indexed(out, *top_tmp->name, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, TRUE);
+            write_pdbfile_indexed(out, *top_tmp->name, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, TRUE, FALSE);
             gmx_ffclose(out);
         }
         else
@@ -1311,7 +1311,18 @@ int gmx_editconf(int argc, char *argv[])
                     atoms.resinfo[atoms.atom[i].resind].chainid = label[0];
                 }
             }
-            write_pdbfile(out, *top_tmp->name, &atoms, x, ePBC, box, ' ', -1, conect, TRUE);
+            /* Need to bypass the regular write_pdbfile because I don't want to change
+             * all instances to include the boolean flag for writing out PQR files.
+             */
+            int *index;
+            snew(index, atoms.nr);
+            for (int i = 0; i < atoms.nr; i++)
+            {
+                index[i] = i;
+            }
+            write_pdbfile_indexed(out, *top_tmp->name, &atoms, x, ePBC, box, ' ', -1, atoms.nr, index, conect,
+                                  TRUE, outftp == efPQR ? true : false);
+            sfree(index);
             if (bLegend)
             {
                 pdb_legend(out, atoms.nr, atoms.nres, &atoms, x);

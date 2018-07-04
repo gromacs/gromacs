@@ -660,7 +660,7 @@ int gmx_do_dssp(int argc, char *argv[])
         }
         gmx_rmpbc(gpbc, natoms, box, x);
         tapein = gmx_ffopen(pdbfile, "w");
-        write_pdbfile_indexed(tapein, nullptr, atoms, x, ePBC, box, ' ', -1, gnx, index, nullptr, TRUE);
+        write_pdbfile_indexed(tapein, nullptr, atoms, x, ePBC, box, ' ', -1, gnx, index, nullptr, TRUE, FALSE);
         gmx_ffclose(tapein);
 
         if (0 != system(dssp))

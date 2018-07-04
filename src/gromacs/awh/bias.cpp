@@ -78,7 +78,7 @@ void Bias::warnForHistogramAnomalies(double t, gmx_int64_t step, FILE *fplog)
     const int    maxNumWarningsInRun   = 10;  /* The maximum number of warnings to print in a run */
 
     if (fplog == nullptr || numWarningsIssued_ >= maxNumWarningsInRun || state_.inInitialStage() ||
-        !params_.isCheckStep(state_.points().size(), step))
+        !params_.isCheckHistogramForAnomaliesStep(step))
     {
         return;
     }
@@ -208,6 +208,60 @@ Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
     return biasForce_;
 }
 
+/*! \brief
+ * Count the total number of samples / sample weight over all grid points.
+ *
+ * \param[in] pointState  The state of the points in a bias.
+ * \returns the total sample count.
+ */
+static gmx_int64_t countSamples(const std::vector<PointState> &pointState)
+{
+    double numSamples = 0;
+    for (const PointState &point : pointState)
+    {
+        numSamples += point.weightSumTot();
+    }
+
+    return static_cast<gmx_int64_t>(numSamples + 0.5);
+}
+
+/*! \brief
+ * Check if the state (loaded from checkpoint) and the run are consistent.
+ *
+ * When the state and the run setup are inconsistent, an exception is thrown.
+ *
+ * \param[in] params  The parameters of the bias.
+ * \param[in] state   The state of the bias.
+ */
+static void ensureStateAndRunConsistency(const BiasParams &params,
+                                         const BiasState  &state)
+{
+    gmx_int64_t numSamples            = countSamples(state.points());
+    gmx_int64_t numUpdatesFromSamples = numSamples/(params.numSamplesUpdateFreeEnergy_*params.numSharedUpdate);
+    gmx_int64_t numUpdatesExpected    = state.histogramSize().numUpdates();
+    if (numUpdatesFromSamples != numUpdatesExpected)
+    {
+        std::string mesg = gmx::formatString("The number of AWH updates in the checkpoint file (%ld) does not match the total number of AWH samples divided by the number of samples per update for %ld sharing AWH bias(es) (%ld/%ld=%ld)",
+                                             numUpdatesExpected,
+                                             params.numSharedUpdate,
+                                             numSamples,
+                                             params.numSamplesUpdateFreeEnergy_*params.numSharedUpdate,
+                                             numUpdatesFromSamples);
+        mesg += " Maybe you changed AWH parameters.";
+        /* Unfortunately we currently do not store the number of simulations
+         * sharing the bias or the state to checkpoint. But we can hint at
+         * a mismatch in the number of sharing simulations.
+         */
+        if (numUpdatesFromSamples % state.histogramSize().numUpdates() == 0)
+        {
+            mesg += gmx::formatString(" Or the run you continued from used %ld sharing simulations, whereas you now specified %d sharing simulations.",
+                                      numUpdatesFromSamples/state.histogramSize().numUpdates(),
+                                      params.numSharedUpdate);
+        }
+        GMX_THROW(InvalidInputError(mesg));
+    }
+}
+
 void Bias::restoreStateFromHistory(const AwhBiasHistory *biasHistory,
                                    const t_commrec      *cr)
 {
@@ -217,6 +271,12 @@ void Bias::restoreStateFromHistory(const AwhBiasHistory *biasHistory,
     {
         GMX_RELEASE_ASSERT(biasHistory != nullptr, "On the master rank we need a valid history object to restore from");
         state_.restoreFromHistory(*biasHistory, grid_);
+
+        /* Ensure that the state is consistent with our current run setup,
+         * since the user can have changed AWH parameters or the number
+         * of simulations sharing the bias.
+         */
+        ensureStateAndRunConsistency(params_, state_);
 
         if (forceCorrelationGrid_ != nullptr)
         {
