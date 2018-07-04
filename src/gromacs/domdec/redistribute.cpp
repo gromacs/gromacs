@@ -210,7 +210,7 @@ static void cg_move_error(FILE *fplog,
               dd->comm->bCGs ? "A charge group" : "An atom");
 }
 
-static void rotate_state_atom(t_state *state, int a)
+static void rotate_state_atom(LocalState *state, int a)
 {
     if (state->flags & (1 << estX))
     {
@@ -261,7 +261,7 @@ static int *getMovedBuffer(gmx_domdec_comm_t *comm,
  */
 static void calc_cg_move(FILE *fplog, int64_t step,
                          gmx_domdec_t *dd,
-                         t_state *state,
+                         LocalState *state,
                          const ivec tric_dir, matrix tcm,
                          const rvec cell_x0, const rvec cell_x1,
                          rvec limitd, const rvec limit0, const rvec limit1,
@@ -429,7 +429,7 @@ static void calc_cg_move(FILE *fplog, int64_t step,
 
 void dd_redistribute_cg(FILE *fplog, int64_t step,
                         gmx_domdec_t *dd, ivec tric_dir,
-                        t_state *state, PaddedRVecVector *f,
+                        LocalState *state, PaddedRVecVector *f,
                         t_forcerec *fr,
                         t_nrnb *nrnb,
                         int *ncg_moved)

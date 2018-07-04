@@ -3572,7 +3572,7 @@ static int calc_mpi_bufsize(const gmx_enfrot *er)
 
 std::unique_ptr<gmx::EnforcedRotation>
 init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
-         const t_commrec *cr, gmx::LocalAtomSetManager * atomSets, const t_state *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
+         const t_commrec *cr, gmx::LocalAtomSetManager * atomSets, const GlobalState *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
          const MdrunOptions &mdrunOptions)
 {
     int             nat_max = 0;       /* Size of biggest rotation group */

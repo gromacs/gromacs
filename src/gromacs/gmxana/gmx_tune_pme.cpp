@@ -822,12 +822,12 @@ static void modify_PMEsettings(
         const char     *fn_best_tpr, /* tpr file with the best performance */
         const char     *fn_sim_tpr)  /* name of tpr file to be launched */
 {
-    t_state        state;
-    gmx_mtop_t     mtop;
-    char           buf[200];
+    GlobalState     state;
+    gmx_mtop_t      mtop;
+    char            buf[200];
 
-    t_inputrec     irInstance;
-    t_inputrec    *ir = &irInstance;
+    t_inputrec      irInstance;
+    t_inputrec     *ir = &irInstance;
     read_tpx_state(fn_best_tpr, ir, &state, &mtop);
 
     /* Reset nsteps and init_step to the value of the input .tpr file */
@@ -864,16 +864,16 @@ static void make_benchmark_tprs(
         t_inputinfo          *info,            /* Contains information about mdp file options   */
         FILE                 *fp)              /* Write the output here                         */
 {
-    int           i, j, d;
-    t_state       state;
-    gmx_mtop_t    mtop;
-    real          nlist_buffer;     /* Thickness of the buffer regions for PME-switch potentials */
-    char          buf[200];
-    rvec          box_size;
-    gmx_bool      bNote = FALSE;
-    real          add;              /* Add this to rcoul for the next test    */
-    real          fac = 1.0;        /* Scaling factor for Coulomb radius      */
-    real          fourierspacing;   /* Basic fourierspacing from tpr          */
+    int             i, j, d;
+    GlobalState     state;
+    gmx_mtop_t      mtop;
+    real            nlist_buffer;     /* Thickness of the buffer regions for PME-switch potentials */
+    char            buf[200];
+    rvec            box_size;
+    gmx_bool        bNote = FALSE;
+    real            add;              /* Add this to rcoul for the next test    */
+    real            fac = 1.0;        /* Scaling factor for Coulomb radius      */
+    real            fourierspacing;   /* Basic fourierspacing from tpr          */
 
 
     sprintf(buf, "Making benchmark tpr file%s with %s time step%s",
@@ -1975,12 +1975,12 @@ static void setopt(const char *opt, int nfile, t_filenm fnm[])
  * 3. returns rcoulomb from the tpr */
 static float inspect_tpr(int nfile, t_filenm fnm[], real *rcoulomb)
 {
-    gmx_bool     bTpi;      /* Is test particle insertion requested?          */
-    gmx_bool     bFree;     /* Is a free energy simulation requested?         */
-    gmx_bool     bNM;       /* Is a normal mode analysis requested?           */
-    gmx_bool     bSwap;     /* Is water/ion position swapping requested?      */
-    t_state      state;
-    gmx_mtop_t   mtop;
+    gmx_bool        bTpi;      /* Is test particle insertion requested?          */
+    gmx_bool        bFree;     /* Is a free energy simulation requested?         */
+    gmx_bool        bNM;       /* Is a normal mode analysis requested?           */
+    gmx_bool        bSwap;     /* Is water/ion position swapping requested?      */
+    GlobalState     state;
+    gmx_mtop_t      mtop;
 
 
     /* Check tpr file for options that trigger extra output files */

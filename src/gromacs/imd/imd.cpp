@@ -401,7 +401,7 @@ static int imd_recv_mdcomm(IMDSocket *socket, int32_t nforces, int32_t *forcendx
 #endif
 
 /* GROMACS specific functions for the IMD implementation */
-void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, t_state *state,
+void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, GlobalState *state,
                             gmx_mtop_t *sys, int nfile, const t_filenm fnm[])
 {
     t_atoms IMDatoms;

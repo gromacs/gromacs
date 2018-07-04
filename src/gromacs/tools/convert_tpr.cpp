@@ -344,7 +344,7 @@ int gmx_convert_tpr(int argc, char *argv[])
     gmx_bool          bNsteps, bExtend, bUntil;
     gmx_mtop_t        mtop;
     t_atoms           atoms;
-    t_state           state;
+    GlobalState       state;
     int               gnx;
     char             *grpname;
     int              *index = nullptr;

@@ -43,11 +43,11 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+class GlobalState;
 struct gmx_mtop_t;
 struct t_atoms;
 struct t_block;
 struct t_inputrec;
-class t_state;
 struct t_topology;
 
 struct t_tpxheader
@@ -90,12 +90,12 @@ void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK);
  */
 
 void write_tpx_state(const char *fn,
-                     const t_inputrec *ir, const t_state *state, const gmx_mtop_t *mtop);
+                     const t_inputrec *ir, const GlobalState *state, const gmx_mtop_t *mtop);
 /* Write a file, and close it again.
  */
 
 void read_tpx_state(const char *fn,
-                    t_inputrec *ir, t_state *state,
+                    t_inputrec *ir, GlobalState *state,
                     gmx_mtop_t *mtop);
 int read_tpx(const char *fn,
              t_inputrec *ir, matrix box, int *natoms,

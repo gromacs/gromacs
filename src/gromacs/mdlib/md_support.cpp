@@ -152,7 +152,7 @@ int multisim_min(const gmx_multisim_t *ms, int nmin, int n)
    e.g. bReadEkin is only true when restoring from checkpoint */
 void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_inputrec *ir,
                      t_forcerec *fr, gmx_ekindata_t *ekind,
-                     t_state *state, t_mdatoms *mdatoms,
+                     LocalState *state, t_mdatoms *mdatoms,
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx::Constraints *constr,
@@ -332,7 +332,7 @@ static void check_nst_param(const gmx::MDLogger &mdlog,
 
 void setCurrentLambdasRerun(int64_t step, const t_lambda *fepvals,
                             const t_trxframe *rerun_fr, const double *lam0,
-                            t_state *globalState)
+                            GlobalState *globalState)
 {
     GMX_RELEASE_ASSERT(globalState != nullptr, "setCurrentLambdasGlobalRerun should be called with a valid state object");
 
@@ -368,7 +368,7 @@ void setCurrentLambdasRerun(int64_t step, const t_lambda *fepvals,
 }
 
 void setCurrentLambdasLocal(int64_t step, const t_lambda *fepvals,
-                            const double *lam0, t_state *state)
+                            const double *lam0, LocalState *state)
 /* find the current lambdas.  If rerunning, we either read in a state, or a lambda value,
    requiring different logic. */
 {
@@ -550,7 +550,7 @@ void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
 }
 
 // TODO Most of this logic seems to belong in the respective modules
-void set_state_entries(t_state *state, const t_inputrec *ir)
+void set_state_entries(GlobalState *state, const t_inputrec *ir)
 {
     /* The entries in the state in the tpx file might not correspond
      * with what is needed, so we correct this here.
@@ -608,7 +608,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
         state->flags |= (1<<estTHERM_INT);
     }
 
-    init_gtc_state(state, state->ngtc, state->nnhpres, ir->opts.nhchainlength); /* allocate the space for nose-hoover chains */
+    state->init_gtc_state(state->ngtc, state->nnhpres, ir->opts.nhchainlength); /* allocate the space for nose-hoover chains */
     init_ekinstate(&state->ekinstate, ir);
 
     if (ir->bExpanded)
