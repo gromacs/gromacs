@@ -48,11 +48,11 @@ struct gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
+class LocalState;
 struct t_expanded;
 struct t_fcdata;
 struct t_grpopts;
 struct t_lambda;
-class t_state;
 
 namespace gmx
 {
@@ -142,7 +142,7 @@ void upd_mdebin(t_mdebin                 *md,
                 double                    time,
                 real                      tmass,
                 gmx_enerdata_t           *enerd,
-                t_state                  *state,
+                const LocalState         *state,
                 t_lambda                 *fep,
                 t_expanded               *expand,
                 matrix                    lastbox,

@@ -102,7 +102,7 @@ void check_screw_box(const matrix box)
     }
 }
 
-void dd_resize_state(t_state          *state,
+void dd_resize_state(LocalState       *state,
                      PaddedRVecVector *f,
                      int               natoms)
 {
@@ -111,7 +111,7 @@ void dd_resize_state(t_state          *state,
         fprintf(debug, "Resizing state: currently %d, required %d\n", state->natoms, natoms);
     }
 
-    state_change_natoms(state, natoms);
+    state->resize(natoms);
 
     if (f != nullptr)
     {
@@ -123,7 +123,7 @@ void dd_resize_state(t_state          *state,
 }
 
 void dd_check_alloc_ncg(t_forcerec       *fr,
-                        t_state          *state,
+                        LocalState       *state,
                         PaddedRVecVector *f,
                         int               numChargeGroups)
 {
