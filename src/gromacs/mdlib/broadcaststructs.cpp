@@ -268,7 +268,7 @@ static void bcastPaddedRVecVector(const t_commrec *cr, gmx::PaddedVector<gmx::RV
     nblock_bc(cr, makeArrayRef(*v));
 }
 
-void broadcastStateWithoutDynamics(const t_commrec *cr, t_state *state)
+void broadcastStateWithoutDynamics(const t_commrec *cr, GlobalState *state)
 {
     GMX_RELEASE_ASSERT(!DOMAINDECOMP(cr), "broadcastStateWithoutDynamics should only be used for special cases without domain decomposition");
 

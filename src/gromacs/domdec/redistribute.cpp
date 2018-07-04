@@ -228,7 +228,7 @@ static void cg_move_error(FILE *fplog,
               "This usually means that your system is not well equilibrated");
 }
 
-static void rotate_state_atom(t_state *state, int a)
+static void rotate_state_atom(LocalState *state, int a)
 {
     if (state->flags & (1 << estX))
     {
@@ -336,7 +336,7 @@ static int computeMoveFlag(const gmx_domdec_t &dd,
  */
 static void calc_cg_move(FILE *fplog, int64_t step,
                          gmx_domdec_t *dd,
-                         t_state *state,
+                         LocalState *state,
                          const ivec tric_dir, matrix tcm,
                          const rvec cell_x0, const rvec cell_x1,
                          const MoveLimits &moveLimits,
@@ -491,7 +491,7 @@ struct PbcAndFlag
  */
 static void calcGroupMove(FILE *fplog, int64_t step,
                           gmx_domdec_t *dd,
-                          t_state *state,
+                          LocalState *state,
                           const ivec tric_dir, matrix tcm,
                           const rvec cell_x0, const rvec cell_x1,
                           const MoveLimits &moveLimits,
@@ -596,7 +596,7 @@ applyPbcAndSetMoveFlags(const gmx::UpdateGroupsCog      &updateGroupsCog,
 
 void dd_redistribute_cg(FILE *fplog, int64_t step,
                         gmx_domdec_t *dd, ivec tric_dir,
-                        t_state *state,
+                        LocalState *state,
                         PaddedVector<gmx::RVec> *f,
                         t_forcerec *fr,
                         t_nrnb *nrnb,

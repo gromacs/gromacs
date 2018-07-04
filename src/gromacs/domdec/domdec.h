@@ -66,12 +66,14 @@
 #include "gromacs/utility/real.h"
 
 struct cginfo_mb_t;
+class GlobalState;
 struct gmx_domdec_t;
 struct gmx_ddbox_t;
 struct gmx_domdec_zones_t;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
 struct gmx_vsite_t;
+class LocalState;
 struct MdrunOptions;
 struct t_block;
 struct t_blocka;
@@ -81,7 +83,6 @@ struct t_inputrec;
 struct t_mdatoms;
 struct t_nrnb;
 struct gmx_wallcycle;
-class t_state;
 
 namespace gmx
 {
@@ -104,7 +105,7 @@ t_block *dd_charge_groups_global(struct gmx_domdec_t *dd);
  *
  * This means it can be reset, even after a new DD partitioning.
  */
-void dd_store_state(struct gmx_domdec_t *dd, t_state *state);
+void dd_store_state(struct gmx_domdec_t *dd, LocalState *state);
 
 /*! \brief Returns a pointer to the gmx_domdec_zones_t struct */
 struct gmx_domdec_zones_t *domdec_zones(struct gmx_domdec_t *dd);
@@ -230,9 +231,9 @@ gmx_bool dd_bonded_molpbc(const gmx_domdec_t *dd, int ePBC);
  * \param[in] state            State, used for computing the dimensions of the system
  * \param[in] cutoffRequested  The requested atom to atom cut-off distance, usually the pair-list cutoff distance
  */
-gmx_bool change_dd_cutoff(t_commrec     *cr,
-                          const t_state &state,
-                          real           cutoffRequested);
+gmx_bool change_dd_cutoff(t_commrec        *cr,
+                          const LocalState &state,
+                          real              cutoffRequested);
 
 /*! \brief Set up communication for averaging GPU wait times over domains
  *
@@ -311,7 +312,7 @@ void dd_print_missing_interactions(const gmx::MDLogger  &mdlog,
                                    int                   local_count,
                                    const gmx_mtop_t     *top_global,
                                    const gmx_localtop_t *top_local,
-                                   const t_state        *state_local);
+                                   const LocalState     *state_local);
 
 /*! \brief Generate and store the reverse topology */
 void dd_make_reverse_top(FILE *fplog,
@@ -340,7 +341,7 @@ gmx_localtop_t *dd_init_local_top(const gmx_mtop_t *top_global);
 
 /*! \brief Construct local state */
 void dd_init_local_state(struct gmx_domdec_t *dd,
-                         const t_state *state_global, t_state *local_state);
+                         const GlobalState *state_global, LocalState *local_state);
 
 /*! \brief Generate a list of links between charge groups that are linked by bonded interactions */
 t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,

@@ -1457,7 +1457,7 @@ void init_swapcoords(
         t_inputrec               *ir,
         const char               *fn,
         gmx_mtop_t               *mtop,
-        const t_state            *globalState,
+        const GlobalState        *globalState,
         ObservablesHistory       *oh,
         t_commrec                *cr,
         gmx::LocalAtomSetManager *atomSets,

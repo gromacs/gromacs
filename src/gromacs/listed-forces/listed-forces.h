@@ -85,7 +85,6 @@ struct t_graph;
 struct t_lambda;
 struct t_mdatoms;
 struct t_nrnb;
-class t_state;
 
 namespace gmx
 {
