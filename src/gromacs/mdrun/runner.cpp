@@ -880,8 +880,11 @@ int Mdrunner::mdrunner()
                           !thisRankHasDuty(cr, DUTY_PP),
                           inputrec->cutoff_scheme == ecutsVERLET);
 
-#ifndef NDEBUG
-    if (EI_TPI(inputrec->eI) &&
+    // Enable FP exception but not in Release mode and not for compilers
+    // with known buggy FP exception support (clang with any optimization)
+#if !defined NDEBUG && !(defined __clang__ && defined __OPTIMIZE__)
+    //FIXME - reconcile with gmx_feenableexcept() call from CommandLineModuleManager::run()
+    if (!EI_TPI(inputrec->eI) &&
         inputrec->cutoff_scheme == ecutsVERLET)
     {
         gmx_feenableexcept();
