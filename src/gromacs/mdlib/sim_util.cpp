@@ -1419,7 +1419,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     }
 
     /* Temporary solution until all routines take PaddedRVecVector */
-    rvec *f = as_rvec_array(force.data());
+    rvec *const f = as_rvec_array(force.data());
 
     /* Start the force cycle counter.
      * Note that a different counter is used for dynamic load balancing.
@@ -1437,11 +1437,12 @@ static void do_force_cutsVERLET(FILE *fplog,
         {
             forceRef = *fr->forceBufferForDirectVirialContributions;
 
-            /* We only compute forces on local atoms. Note that vsites can
+            /* TODO: update comment
+             * We only compute forces on local atoms. Note that vsites can
              * spread to non-local atoms, but that part of the buffer is
              * cleared separately in the vsite spreading code.
              */
-            clear_rvecs_omp(mdatoms->homenr, as_rvec_array(forceRef.data()));
+            clear_rvecs_omp(forceRef.size(), as_rvec_array(forceRef.data()));
         }
         /* Clear the short- and long-range forces */
         clear_rvecs_omp(fr->natoms_force_constr, f);
