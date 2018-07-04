@@ -62,6 +62,7 @@
 #include "gromacs/fileio/mtxio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/imd/imd.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/listed-forces/manage-threading.h"
@@ -103,8 +104,8 @@
 
 //! Utility structure for manipulating states during EM
 typedef struct {
-    //! Copy of the global state
-    t_state          s;
+    //! Copy of current state to local state
+    LocalState       s_local;
     //! Force array
     PaddedRVecVector f;
     //! Potential energy
@@ -349,7 +350,7 @@ static void init_em(FILE *fplog, const char *title,
                     gmx::IMDOutputProvider *outputProvider,
                     t_inputrec *ir,
                     const MdrunOptions &mdrunOptions,
-                    t_state *state_global, gmx_mtop_t *top_global,
+                    GlobalState *state_global, gmx_mtop_t *top_global,
                     em_state_t *ems, gmx_localtop_t **top,
                     t_nrnb *nrnb, rvec mu_tot,
                     t_forcerec *fr, gmx_enerdata_t **enerd,
@@ -409,28 +410,28 @@ static void init_em(FILE *fplog, const char *title,
     {
         *top = dd_init_local_top(top_global);
 
-        dd_init_local_state(cr->dd, state_global, &ems->s);
+        dd_init_local_state(cr->dd, state_global, &ems->s_local);
 
         /* Distribute the charge groups over the nodes from the master node */
         dd_partition_system(fplog, ir->init_step, cr, TRUE, 1,
                             state_global, top_global, ir,
-                            &ems->s, &ems->f, mdAtoms, *top,
+                            &ems->s_local, &ems->f, mdAtoms, *top,
                             fr, vsite, constr,
                             nrnb, nullptr, FALSE);
-        dd_store_state(cr->dd, &ems->s);
+        dd_store_state(cr->dd, &ems->s_local);
 
         *graph = nullptr;
     }
     else
     {
-        state_change_natoms(state_global, state_global->natoms);
+        state_global->state_change_natoms(state_global->natoms);
         /* Just copy the state */
-        ems->s = *state_global;
-        state_change_natoms(&ems->s, ems->s.natoms);
+        ems->s_local = LocalState(*state_global);
+        ems->s_local.state_change_natoms(ems->s_local.natoms);
         /* We need to allocate one element extra, since we might use
          * (unaligned) 4-wide SIMD loads to access rvec entries.
          */
-        ems->f.resize(gmx::paddedRVecVectorSize(ems->s.natoms));
+        ems->f.resize(gmx::paddedRVecVectorSize(ems->s_local.natoms));
 
         snew(*top, 1);
         mdAlgorithmsSetupAtomData(cr, ir, top_global, *top, fr,
@@ -443,7 +444,7 @@ static void init_em(FILE *fplog, const char *title,
         }
     }
 
-    update_mdatoms(mdAtoms->mdatoms(), ems->s.lambda[efptMASS]);
+    update_mdatoms(mdAtoms->mdatoms(), ems->s_local.lambda[efptMASS]);
 
     if (constr)
     {
@@ -461,11 +462,11 @@ static void init_em(FILE *fplog, const char *title,
             dvdl_constr = 0;
             constr->apply(TRUE, TRUE,
                           -1, 0, 1.0,
-                          as_rvec_array(ems->s.x.data()),
-                          as_rvec_array(ems->s.x.data()),
+                          as_rvec_array(ems->s_local.x.data()),
+                          as_rvec_array(ems->s_local.x.data()),
                           nullptr,
-                          ems->s.box,
-                          ems->s.lambda[efptFEP], &dvdl_constr,
+                          ems->s_local.box,
+                          ems->s_local.lambda[efptFEP], &dvdl_constr,
                           nullptr, nullptr, gmx::ConstraintVariable::Positions);
         }
     }
@@ -492,7 +493,7 @@ static void init_em(FILE *fplog, const char *title,
     }
 
     clear_rvec(mu_tot);
-    calc_shifts(ems->s.box, fr->shift_vec);
+    calc_shifts(ems->s_local.box, fr->shift_vec);
 }
 
 //! Finalize the minimization
@@ -528,7 +529,7 @@ static void write_em_traj(FILE *fplog, const t_commrec *cr,
                           gmx_mtop_t *top_global,
                           t_inputrec *ir, int64_t step,
                           em_state_t *state,
-                          t_state *state_global,
+                          GlobalState *state_global,
                           ObservablesHistory *observablesHistory)
 {
     int mdof_flags = 0;
@@ -550,7 +551,7 @@ static void write_em_traj(FILE *fplog, const t_commrec *cr,
 
     mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags,
                                      top_global, step, static_cast<double>(step),
-                                     &state->s, state_global, observablesHistory,
+                                     &state->s_local, state_global, observablesHistory,
                                      state->f);
 
     if (confout != nullptr)
@@ -561,13 +562,13 @@ static void write_em_traj(FILE *fplog, const t_commrec *cr,
             if (!bX)
             {
                 gmx::ArrayRef<gmx::RVec> globalXRef = MASTER(cr) ? gmx::makeArrayRef(state_global->x) : gmx::EmptyArrayRef();
-                dd_collect_vec(cr->dd, &state->s, state->s.x, globalXRef);
+                dd_collect_vec(cr->dd, &state->s_local, state->s_local.x, globalXRef);
             }
         }
         else
         {
-            /* Copy the local state pointer */
-            state_global = &state->s;
+            /* Copy the local state */
+            *state_global = GlobalState(state->s_local);
         }
 
         if (MASTER(cr))
@@ -575,13 +576,13 @@ static void write_em_traj(FILE *fplog, const t_commrec *cr,
             if (ir->ePBC != epbcNONE && !ir->bPeriodicMols && DOMAINDECOMP(cr))
             {
                 /* Make molecules whole only for confout writing */
-                do_pbc_mtop(fplog, ir->ePBC, state->s.box, top_global,
+                do_pbc_mtop(fplog, ir->ePBC, state->s_local.box, top_global,
                             as_rvec_array(state_global->x.data()));
             }
 
             write_sto_conf_mtop(confout,
                                 *top_global->name, top_global,
-                                as_rvec_array(state_global->x.data()), nullptr, ir->ePBC, state->s.box);
+                                as_rvec_array(state_global->x.data()), nullptr, ir->ePBC, state->s_local.box);
         }
     }
 }
@@ -597,15 +598,15 @@ static bool do_em_step(const t_commrec *cr,
                        int64_t count)
 
 {
-    t_state *s1, *s2;
-    int      start, end;
-    real     dvdl_constr;
-    int      nthreads gmx_unused;
+    LocalState *s1, *s2;
+    int         start, end;
+    real        dvdl_constr;
+    int         nthreads gmx_unused;
 
-    bool     validStep = true;
+    bool        validStep = true;
 
-    s1 = &ems1->s;
-    s2 = &ems2->s;
+    s1 = &ems1->s_local;
+    s2 = &ems2->s_local;
 
     if (DOMAINDECOMP(cr) && s1->ddp_count != cr->dd->ddp_count)
     {
@@ -616,7 +617,7 @@ static bool do_em_step(const t_commrec *cr,
 
     if (s2->natoms != s1->natoms)
     {
-        state_change_natoms(s2, s1->natoms);
+        s2->state_change_natoms(s1->natoms);
         /* We need to allocate one element extra, since we might use
          * (unaligned) 4-wide SIMD loads to access rvec entries.
          */
@@ -738,10 +739,10 @@ static void em_dd_partition_system(FILE *fplog, int step, const t_commrec *cr,
     /* Repartition the domain decomposition */
     dd_partition_system(fplog, step, cr, FALSE, 1,
                         nullptr, top_global, ir,
-                        &ems->s, &ems->f,
+                        &ems->s_local, &ems->f,
                         mdAtoms, top, fr, vsite, constr,
                         nrnb, wcycle, FALSE);
-    dd_store_state(cr->dd, &ems->s);
+    dd_store_state(cr->dd, &ems->s_local);
 }
 
 namespace
@@ -830,7 +831,7 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
     t = inputrec->init_t;
 
     if (bFirst ||
-        (DOMAINDECOMP(cr) && ems->s.ddp_count < cr->dd->ddp_count))
+        (DOMAINDECOMP(cr) && ems->s_local.ddp_count < cr->dd->ddp_count))
     {
         /* This is the first state or an old state used before the last ns */
         bNS = TRUE;
@@ -846,9 +847,9 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
 
     if (vsite)
     {
-        construct_vsites(vsite, as_rvec_array(ems->s.x.data()), 1, nullptr,
+        construct_vsites(vsite, as_rvec_array(ems->s_local.x.data()), 1, nullptr,
                          top->idef.iparams, top->idef.il,
-                         fr->ePBC, fr->bMolPBC, cr, ems->s.box);
+                         fr->ePBC, fr->bMolPBC, cr, ems->s_local.box);
     }
 
     if (DOMAINDECOMP(cr) && bNS)
@@ -865,9 +866,9 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
      */
     do_force(fplog, cr, ms, inputrec, nullptr, nullptr,
              count, nrnb, wcycle, top, &top_global->groups,
-             ems->s.box, ems->s.x, &ems->s.hist,
+             ems->s_local.box, ems->s_local.x, &ems->s_local.hist,
              ems->f, force_vir, mdAtoms->mdatoms(), enerd, fcd,
-             ems->s.lambda, graph, fr, vsite, mu_tot, t, nullptr,
+             ems->s_local.lambda, graph, fr, vsite, mu_tot, t, nullptr,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
              GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
              (bNS ? GMX_FORCE_NS : 0),
@@ -898,7 +899,7 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
     }
 
     /* Calculate long range corrections to pressure and energy */
-    calc_dispcorr(inputrec, fr, ems->s.box, ems->s.lambda[efptVDW],
+    calc_dispcorr(inputrec, fr, ems->s_local.box, ems->s_local.lambda[efptVDW],
                   pres, force_vir, &prescorr, &enercorr, &dvdlcorr);
     enerd->term[F_DISPCORR] = enercorr;
     enerd->term[F_EPOT]    += enercorr;
@@ -914,9 +915,9 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
         rvec *f_rvec = as_rvec_array(ems->f.data());
         constr->apply(FALSE, FALSE,
                       count, 0, 1.0,
-                      as_rvec_array(ems->s.x.data()), f_rvec, f_rvec,
-                      ems->s.box,
-                      ems->s.lambda[efptBONDED], &dvdl_constr,
+                      as_rvec_array(ems->s_local.x.data()), f_rvec, f_rvec,
+                      ems->s_local.box,
+                      ems->s_local.lambda[efptBONDED], &dvdl_constr,
                       nullptr, &shake_vir, gmx::ConstraintVariable::ForceDispl);
         enerd->term[F_DVDL_CONSTR] += dvdl_constr;
         m_add(force_vir, shake_vir, vir);
@@ -928,9 +929,9 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
 
     clear_mat(ekin);
     enerd->term[F_PRES] =
-        calc_pres(fr->ePBC, inputrec->nwall, ems->s.box, ekin, vir, pres);
+        calc_pres(fr->ePBC, inputrec->nwall, ems->s_local.box, ekin, vir, pres);
 
-    sum_dhdl(enerd, ems->s.lambda, inputrec->fepvals);
+    sum_dhdl(enerd, ems->s_local.lambda, inputrec->fepvals);
 
     if (EI_ENERGY_MINIMIZATION(inputrec->eI))
     {
@@ -968,8 +969,8 @@ static double reorder_partsum(const t_commrec *cr, t_grpopts *opts, t_mdatoms *m
     rvec *fmg;
     snew(fmg, top_global->natoms);
 
-    ncg   = s_min->s.cg_gl.size();
-    cg_gl = s_min->s.cg_gl.data();
+    ncg   = s_min->s_local.cg_gl.size();
+    cg_gl = s_min->s_local.cg_gl.data();
     i     = 0;
     for (c = 0; c < ncg; c++)
     {
@@ -985,8 +986,8 @@ static double reorder_partsum(const t_commrec *cr, t_grpopts *opts, t_mdatoms *m
     gmx_sum(top_global->natoms*3, fmg[0], cr);
 
     /* Now we will determine the part of the sum for the cgs in state s_b */
-    ncg         = s_b->s.cg_gl.size();
-    cg_gl       = s_b->s.cg_gl.data();
+    ncg         = s_b->s_local.cg_gl.size();
+    cg_gl       = s_b->s_local.cg_gl.data();
     partsum     = 0;
     i           = 0;
     gf          = 0;
@@ -1031,8 +1032,8 @@ static real pr_beta(const t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms,
      */
 
     if (!DOMAINDECOMP(cr) ||
-        (s_min->s.ddp_count == cr->dd->ddp_count &&
-         s_b->s.ddp_count   == cr->dd->ddp_count))
+        (s_min->s_local.ddp_count == cr->dd->ddp_count &&
+         s_b->s_local.ddp_count   == cr->dd->ddp_count))
     {
         const rvec *fm  = as_rvec_array(s_min->f.data());
         const rvec *fb  = as_rvec_array(s_b->f.data());
@@ -1104,7 +1105,7 @@ Integrator::do_cg()
         state_global->flags |= (1<<estCGP);
 
         // Ensure the extra per-atom state array gets allocated
-        state_change_natoms(state_global, state_global->natoms);
+        state_global->state_change_natoms(state_global->natoms);
 
         // Initialize the search direction to zero
         for (RVec &cg_p : state_global->cg_p)
@@ -1159,7 +1160,7 @@ Integrator::do_cg()
     {
         /* Copy stuff to the energy bin for easy printing etc. */
         upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(step),
-                   mdatoms->tmass, enerd, &s_min->s, inputrec->fepvals, inputrec->expandedvals, s_min->s.box,
+                   mdatoms->tmass, enerd, &s_min->s_local, inputrec->fepvals, inputrec->expandedvals, s_min->s_local.box,
                    nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
         print_ebin_header(fplog, step, step);
@@ -1199,7 +1200,7 @@ Integrator::do_cg()
          */
 
         /* Calculate the new direction in p, and the gradient in this direction, gpa */
-        rvec       *pm  = as_rvec_array(s_min->s.cg_p.data());
+        rvec       *pm  = as_rvec_array(s_min->s_local.cg_p.data());
         const rvec *sfm = as_rvec_array(s_min->f.data());
         double      gpa = 0;
         int         gf  = 0;
@@ -1260,7 +1261,7 @@ Integrator::do_cg()
         {
             for (m = 0; m < DIM; m++)
             {
-                tmp = fabs(s_min->s.x[i][m]);
+                tmp = fabs(s_min->s_local.x[i][m]);
                 if (tmp < 1.0)
                 {
                     tmp = 1.0;
@@ -1312,7 +1313,7 @@ Integrator::do_cg()
         a         = 0.0;
         c         = a + stepsize; /* reference position along line is zero */
 
-        if (DOMAINDECOMP(cr) && s_min->s.ddp_count < cr->dd->ddp_count)
+        if (DOMAINDECOMP(cr) && s_min->s_local.ddp_count < cr->dd->ddp_count)
         {
             em_dd_partition_system(fplog, step, cr, top_global, inputrec,
                                    s_min, top, mdAtoms, fr, vsite, constr,
@@ -1320,7 +1321,7 @@ Integrator::do_cg()
         }
 
         /* Take a trial step (new coords in s_c) */
-        do_em_step(cr, inputrec, mdatoms, s_min, c, &s_min->s.cg_p, s_c,
+        do_em_step(cr, inputrec, mdatoms, s_min, c, &s_min->s_local.cg_p, s_c,
                    constr, -1);
 
         neval++;
@@ -1328,7 +1329,7 @@ Integrator::do_cg()
         energyEvaluator.run(s_c, mu_tot, vir, pres, -1, FALSE);
 
         /* Calc derivative along line */
-        const rvec *pc  = as_rvec_array(s_c->s.cg_p.data());
+        const rvec *pc  = as_rvec_array(s_c->s_local.cg_p.data());
         const rvec *sfc = as_rvec_array(s_c->f.data());
         double      gpc = 0;
         for (int i = 0; i < mdatoms->homenr; i++)
@@ -1416,7 +1417,7 @@ Integrator::do_cg()
                     b = 0.5*(a+c);
                 }
 
-                if (DOMAINDECOMP(cr) && s_min->s.ddp_count != cr->dd->ddp_count)
+                if (DOMAINDECOMP(cr) && s_min->s_local.ddp_count != cr->dd->ddp_count)
                 {
                     /* Reload the old state */
                     em_dd_partition_system(fplog, -1, cr, top_global, inputrec,
@@ -1425,7 +1426,7 @@ Integrator::do_cg()
                 }
 
                 /* Take a trial step to this new point - new coords in s_b */
-                do_em_step(cr, inputrec, mdatoms, s_min, b, &s_min->s.cg_p, s_b,
+                do_em_step(cr, inputrec, mdatoms, s_min, b, &s_min->s_local.cg_p, s_b,
                            constr, -1);
 
                 neval++;
@@ -1435,7 +1436,7 @@ Integrator::do_cg()
                 /* p does not change within a step, but since the domain decomposition
                  * might change, we have to use cg_p of s_b here.
                  */
-                const rvec *pb  = as_rvec_array(s_b->s.cg_p.data());
+                const rvec *pb  = as_rvec_array(s_b->s_local.cg_p.data());
                 const rvec *sfb = as_rvec_array(s_b->f.data());
                 gpb             = 0;
                 for (int i = 0; i < mdatoms->homenr; i++)
@@ -1581,7 +1582,7 @@ Integrator::do_cg()
             }
             /* Store the new (lower) energies */
             upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(step),
-                       mdatoms->tmass, enerd, &s_min->s, inputrec->fepvals, inputrec->expandedvals, s_min->s.box,
+                       mdatoms->tmass, enerd, &s_min->s_local, inputrec->fepvals, inputrec->expandedvals, s_min->s_local.box,
                        nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
             do_log = do_per_step(step, inputrec->nstlog);
@@ -1911,14 +1912,14 @@ Integrator::do_lbfgs()
         }
 
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags,
-                                         top_global, step, static_cast<real>(step), &ems.s, state_global, observablesHistory, ems.f);
+                                         top_global, step, static_cast<real>(step), &ems.s_local, state_global, observablesHistory, ems.f);
 
         /* Do the linesearching in the direction dx[point][0..(n-1)] */
 
         /* make s a pointer to current search direction - point=0 first time we get here */
         s = dx[point];
 
-        real *xx = static_cast<real *>(as_rvec_array(ems.s.x.data())[0]);
+        real *xx = static_cast<real *>(as_rvec_array(ems.s_local.x.data())[0]);
         real *ff = static_cast<real *>(as_rvec_array(ems.f.data())[0]);
 
         // calculate line gradient in position A
@@ -1950,7 +1951,7 @@ Integrator::do_lbfgs()
 
         // Before taking any steps along the line, store the old position
         *last       = ems;
-        real *lastx = static_cast<real *>(as_rvec_array(last->s.x.data())[0]);
+        real *lastx = static_cast<real *>(as_rvec_array(last->s_local.x.data())[0]);
         real *lastf = static_cast<real *>(as_rvec_array(last->f.data())[0]);
         Epot0       = ems.epot;
 
@@ -2013,7 +2014,7 @@ Integrator::do_lbfgs()
         while (maxdelta > inputrec->em_stepsize);
 
         // Take a trial step and move the coordinate array xc[] to position C
-        real *xc = static_cast<real *>(as_rvec_array(sc->s.x.data())[0]);
+        real *xc = static_cast<real *>(as_rvec_array(sc->s_local.x.data())[0]);
         for (i = 0; i < n; i++)
         {
             xc[i] = lastx[i] + c*s[i];
@@ -2094,7 +2095,7 @@ Integrator::do_lbfgs()
                 }
 
                 // Take a trial step to point B
-                real *xb = static_cast<real *>(as_rvec_array(sb->s.x.data())[0]);
+                real *xb = static_cast<real *>(as_rvec_array(sb->s_local.x.data())[0]);
                 for (i = 0; i < n; i++)
                 {
                     xb[i] = lastx[i] + b*s[i];
@@ -2529,8 +2530,8 @@ Integrator::do_steep()
             {
                 /* Store the new (lower) energies  */
                 upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(count),
-                           mdatoms->tmass, enerd, &s_try->s, inputrec->fepvals, inputrec->expandedvals,
-                           s_try->s.box, nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
+                           mdatoms->tmass, enerd, &s_try->s_local, inputrec->fepvals, inputrec->expandedvals,
+                           s_try->s_local.box, nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
                 /* Prepare IMD energy record, if bIMD is TRUE. */
                 IMD_fill_energy_record(inputrec->bIMD, inputrec->imd, enerd, count, TRUE);
@@ -2577,7 +2578,7 @@ Integrator::do_steep()
             /* If energy is not smaller make the step smaller...  */
             ustep *= 0.5;
 
-            if (DOMAINDECOMP(cr) && s_min->s.ddp_count != cr->dd->ddp_count)
+            if (DOMAINDECOMP(cr) && s_min->s_local.ddp_count != cr->dd->ddp_count)
             {
                 /* Reload the old state */
                 em_dd_partition_system(fplog, count, cr, top_global, inputrec,
@@ -2802,17 +2803,17 @@ Integrator::do_nm()
             int         force_flags = GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES;
             double      t           = 0;
 
-            x_min = state_work.s.x[atom][d];
+            x_min = state_work.s_local.x[atom][d];
 
             for (unsigned int dx = 0; (dx < 2); dx++)
             {
                 if (dx == 0)
                 {
-                    state_work.s.x[atom][d] = x_min - der_range;
+                    state_work.s_local.x[atom][d] = x_min - der_range;
                 }
                 else
                 {
-                    state_work.s.x[atom][d] = x_min + der_range;
+                    state_work.s_local.x[atom][d] = x_min + der_range;
                 }
 
                 /* Make evaluate_energy do a single node force calculation */
@@ -2833,7 +2834,7 @@ Integrator::do_nm()
                                         constr,
                                         enerd,
                                         fcd,
-                                        &state_work.s,
+                                        &state_work.s_local,
                                         state_work.f,
                                         vir,
                                         mdatoms,
@@ -2868,7 +2869,7 @@ Integrator::do_nm()
             }
 
             /* x is restored to original */
-            state_work.s.x[atom][d] = x_min;
+            state_work.s_local.x[atom][d] = x_min;
 
             for (size_t j = 0; j < atom_index.size(); j++)
             {

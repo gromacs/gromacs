@@ -70,7 +70,7 @@ void init_orires(FILE                 *fplog,
                  const t_inputrec     *ir,
                  const t_commrec      *cr,
                  const gmx_multisim_t *ms,
-                 t_state              *globalState,
+                 GlobalState          *globalState,
                  t_oriresdata         *od)
 {
     od->nr = gmx_mtop_ftype_count(mtop, F_ORIRES);

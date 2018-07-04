@@ -69,10 +69,12 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
+class GlobalState;
 struct gmx_enerdata_t;
 struct gmx_grppairener_t;
 struct gmx_multisim_t;
 class history_t;
+class LocalState;
 struct t_commrec;
 struct t_fcdata;
 struct t_forcerec;
@@ -81,7 +83,6 @@ struct t_inputrec;
 struct t_lambda;
 struct t_mdatoms;
 struct t_nrnb;
-class t_state;
 
 namespace gmx
 {

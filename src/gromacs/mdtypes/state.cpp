@@ -43,6 +43,8 @@
 
 #include <algorithm>
 
+#include "gromacs/ewald/pme.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/veccompare.h"
@@ -82,44 +84,43 @@ ekinstate_t::ekinstate_t() : bUpToDate(FALSE),
     clear_mat(ekin_total);
 };
 
-void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
+void State::init_gtc_state(int ngtcExtern, int nnhpresExtern, int nhchainlengthExtern)
 {
-    state->ngtc          = ngtc;
-    state->nnhpres       = nnhpres;
-    state->nhchainlength = nhchainlength;
-    state->nosehoover_xi.resize(state->nhchainlength*state->ngtc, 0);
-    state->nosehoover_vxi.resize(state->nhchainlength*state->ngtc, 0);
-    state->therm_integral.resize(state->ngtc, 0);
-    state->baros_integral = 0.0;
-    state->nhpres_xi.resize(state->nhchainlength*nnhpres, 0);
-    state->nhpres_vxi.resize(state->nhchainlength*nnhpres, 0);
+    ngtc          = ngtcExtern;
+    nnhpres       = nnhpresExtern;
+    nhchainlength = nhchainlengthExtern;
+    nosehoover_xi.resize(nhchainlength*ngtc, 0);
+    nosehoover_vxi.resize(nhchainlength*ngtc, 0);
+    therm_integral.resize(ngtc, 0);
+    baros_integral = 0.0;
+    nhpres_xi.resize(nhchainlength*nnhpres, 0);
+    nhpres_vxi.resize(nhchainlength*nnhpres, 0);
 }
-
 
 /* Checkpoint code relies on this function having no effect if
    state->natoms is > 0 and passed as natoms. */
-void state_change_natoms(t_state *state, int natoms)
+void State::state_change_natoms(int natomsExtern)
 {
-    state->natoms = natoms;
+    natoms = natomsExtern;
 
     /* We need padding, since we might use SIMD access */
-    const size_t paddedSize = gmx::paddedRVecVectorSize(state->natoms);
+    const size_t paddedSize = gmx::paddedRVecVectorSize(natoms);
 
-    if (state->flags & (1 << estX))
+    if (flags & (1 << estX))
     {
-        state->x.resize(paddedSize);
+        x.resize(paddedSize);
     }
-    if (state->flags & (1 << estV))
+    if (flags & (1 << estV))
     {
-        state->v.resize(paddedSize);
+        v.resize(paddedSize);
     }
-    if (state->flags & (1 << estCGP))
+    if (flags & (1 << estCGP))
     {
-        state->cg_p.resize(paddedSize);
+        cg_p.resize(paddedSize);
     }
 }
 
-void init_dfhist_state(t_state *state, int dfhistNumLambda)
+void init_dfhist_state(LocalState *state, int dfhistNumLambda)
 {
     if (dfhistNumLambda > 0)
     {
@@ -132,7 +133,7 @@ void init_dfhist_state(t_state *state, int dfhistNumLambda)
     }
 }
 
-void comp_state(const t_state *st1, const t_state *st2,
+void comp_state(const GlobalState *st1, const GlobalState *st2,
                 gmx_bool bRMSD, real ftol, real abstol)
 {
     int i, j, nc;
@@ -222,30 +223,31 @@ rvec *makeRvecArray(gmx::ArrayRef<const gmx::RVec> v,
     return dest;
 }
 
-t_state::t_state() : natoms(0),
-                     ngtc(0),
-                     nnhpres(0),
-                     nhchainlength(0),
-                     flags(0),
-                     fep_state(0),
-                     lambda(),
+State::State() : natoms(0),
+                 ngtc(0),
+                 nnhpres(0),
+                 nhchainlength(0),
+                 flags(0),
+                 fep_state(0),
+                 lambda(),
 
-                     baros_integral(0),
-                     veta(0),
-                     vol0(0),
+                 baros_integral(0),
+                 veta(0),
+                 vol0(0),
 
-                     ekinstate(),
-                     hist(),
-                     dfhist(nullptr),
-                     awhHistory(nullptr),
-                     ddp_count(0),
-                     ddp_count_cg_gl(0)
+                 ekinstate(),
+                 hist(),
+                 dfhist(nullptr),
+                 awhHistory(nullptr),
+                 ddp_count(0),
+                 ddp_count_cg_gl(0)
 
 {
     // It would be nicer to initialize these with {} or {{0}} in the
     // above initialization list, but uncrustify doesn't understand
     // that.
     // TODO Fix this if we switch to clang-format some time.
+    // cppcheck-suppress useInitializationList
     lambda = {{ 0 }};
     clear_mat(box);
     clear_mat(box_rel);
@@ -253,9 +255,52 @@ t_state::t_state() : natoms(0),
     clear_mat(pres_prev);
     clear_mat(svir_prev);
     clear_mat(fvir_prev);
+};
+
+State::State(const State &state)
+{
+    natoms        = state.natoms;
+    ngtc          = state.ngtc;
+    nnhpres       = state.nnhpres;
+    nhchainlength = state.nhchainlength;
+    flags         = state.flags;
+    fep_state     = state.fep_state;
+    lambda        = state.lambda;
+    copy_mat(state.box, box);
+    copy_mat(state.box_rel, box_rel);
+    copy_mat(state.boxv, boxv);
+    copy_mat(state.pres_prev, pres_prev);
+    copy_mat(state.svir_prev, svir_prev);
+    copy_mat(state.fvir_prev, fvir_prev);
+    nosehoover_xi   = state.nosehoover_xi;
+    nosehoover_vxi  = state.nosehoover_vxi;
+    nhpres_xi       = state.nhpres_xi;
+    nhpres_vxi      = state.nhpres_vxi;
+    therm_integral  = state.therm_integral;
+    baros_integral  = state.baros_integral;
+    veta            = state.veta;
+    vol0            = state.vol0;
+    x               = state.x;
+    v               = state.v;
+    cg_p            = state.cg_p;
+    ekinstate       = state.ekinstate;
+    hist            = state.hist;
+    dfhist          = state.dfhist;
+    awhHistory      = state.awhHistory;
+    ddp_count       = state.ddp_count;
+    ddp_count_cg_gl = state.ddp_count_cg_gl;
+    cg_gl           = state.cg_gl;
 }
 
-void set_box_rel(const t_inputrec *ir, t_state *state)
+GlobalState::GlobalState(const LocalState &state_local) : State(state_local)
+{
+}
+
+LocalState::LocalState(const GlobalState &state_global) : State(state_global)
+{
+}
+
+void set_box_rel(const t_inputrec *ir, GlobalState *state)
 {
     /* Make sure the box obeys the restrictions before we fix the ratios */
     correct_box(nullptr, 0, state->box, nullptr);

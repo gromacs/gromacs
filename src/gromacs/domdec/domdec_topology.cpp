@@ -337,7 +337,7 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr,
                                    int local_count,
                                    const gmx_mtop_t *top_global,
                                    const gmx_localtop_t *top_local,
-                                   const t_state *state_local)
+                                   const LocalState *state_local)
 {
     int             ndiff_tot, cl[F_NRE], n, ndiff, rest_global, rest_local;
     int             ftype, nral;
@@ -2228,7 +2228,7 @@ gmx_localtop_t *dd_init_local_top(const gmx_mtop_t *top_global)
 }
 
 void dd_init_local_state(gmx_domdec_t *dd,
-                         t_state *state_global, t_state *state_local)
+                         GlobalState *state_global, LocalState *state_local)
 {
     int buf[NITEM_DD_INIT_LOCAL_STATE];
 
@@ -2242,7 +2242,7 @@ void dd_init_local_state(gmx_domdec_t *dd,
     }
     dd_bcast(dd, NITEM_DD_INIT_LOCAL_STATE*sizeof(int), buf);
 
-    init_gtc_state(state_local, buf[1], buf[2], buf[3]);
+    state_local->init_gtc_state(buf[1], buf[2], buf[3]);
     init_dfhist_state(state_local, buf[4]);
     state_local->flags = buf[0];
 }

@@ -46,12 +46,12 @@
 #include "gromacs/utility/basedefinitions.h"
 
 class energyhistory_t;
+class GlobalState;
 struct gmx_file_position_t;
 struct ObservablesHistory;
 struct t_commrec;
 struct t_fileio;
 struct t_inputrec;
-class t_state;
 struct t_trxframe;
 
 /* the name of the environment variable to disable fsync failure checks with */
@@ -67,7 +67,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                       int eIntegrator, int simulation_part,
                       gmx_bool bExpanded, int elamstats,
                       int64_t step, double t,
-                      t_state *state, ObservablesHistory *observablesHistory);
+                      GlobalState *state, ObservablesHistory *observablesHistory);
 
 /* Loads a checkpoint from fn for run continuation.
  * Generates a fatal error on system size mismatch.
@@ -82,7 +82,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
  */
 void load_checkpoint(const char *fn, FILE **fplog,
                      const t_commrec *cr, const ivec dd_nc,
-                     t_inputrec *ir, t_state *state,
+                     t_inputrec *ir, GlobalState *state,
                      gmx_bool *bReadEkin,
                      ObservablesHistory *observablesHistory,
                      gmx_bool bAppend, gmx_bool bForceAppend,

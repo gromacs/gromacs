@@ -93,12 +93,12 @@ typedef struct {
 static void comp_tpx(const char *fn1, const char *fn2,
                      gmx_bool bRMSD, real ftol, real abstol)
 {
-    const char    *ff[2];
-    t_inputrec    *ir[2];
-    t_state        state[2];
-    gmx_mtop_t     mtop[2];
-    t_topology     top[2];
-    int            i;
+    const char          *ff[2];
+    t_inputrec          *ir[2];
+    GlobalState          state[2];
+    gmx_mtop_t           mtop[2];
+    t_topology           top[2];
+    int                  i;
 
     ff[0] = fn1;
     ff[1] = fn2;
@@ -249,11 +249,11 @@ static void tpx2params(FILE *fp, const t_inputrec *ir)
 
 static void tpx2methods(const char *tpx, const char *tex)
 {
-    FILE          *fp;
-    t_state        state;
-    gmx_mtop_t     mtop;
+    FILE              *fp;
+    GlobalState        state;
+    gmx_mtop_t         mtop;
 
-    t_inputrec     ir;
+    t_inputrec         ir;
     read_tpx_state(tpx, &ir, &state, &mtop);
     fp = gmx_fio_fopen(tex, "w");
     fprintf(fp, "\\section{Methods}\n");
@@ -390,7 +390,7 @@ static void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tp
     t_trxstatus     *status;
     gmx_mtop_t       mtop;
     gmx_localtop_t  *top = nullptr;
-    t_state          state;
+    GlobalState      state;
     t_inputrec       ir;
 
     if (tpr)
