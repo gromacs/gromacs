@@ -498,7 +498,7 @@ static void molinfo2mtop(int nmi, t_molinfo *mi, gmx_mtop_t *mtop)
 static void
 new_status(const char *topfile, const char *topppfile, const char *confin,
            t_gromppopts *opts, t_inputrec *ir, gmx_bool bZero,
-           bool bGenVel, bool bVerbose, t_state *state,
+           bool bGenVel, bool bVerbose, GlobalState *state,
            gpp_atomtype_t atype, gmx_mtop_t *sys,
            int *nmi, t_molinfo **mi, t_molinfo **intermolecular_interactions,
            t_params plist[],
@@ -604,7 +604,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     {
         state->flags |= (1 << estV);
     }
-    state_change_natoms(state, state->natoms);
+    state_change_natoms_global(state, state->natoms);
     for (int i = 0; i < state->natoms; i++)
     {
         copy_rvec(x[i], state->x[i]);
@@ -688,7 +688,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
 }
 
 static void copy_state(const char *slog, t_trxframe *fr,
-                       bool bReadVel, t_state *state,
+                       bool bReadVel, GlobalState *state,
                        double *use_time)
 {
     int i;
@@ -728,7 +728,7 @@ static void copy_state(const char *slog, t_trxframe *fr,
 
 static void cont_status(const char *slog, const char *ener,
                         bool bNeedVel, bool bGenVel, real fr_time,
-                        t_inputrec *ir, t_state *state,
+                        t_inputrec *ir, GlobalState *state,
                         gmx_mtop_t *sys,
                         const gmx_output_env_t *oenv)
 /* If fr_time == -1 read the last frame available which is complete */
@@ -1807,7 +1807,7 @@ int gmx_grompp(int argc, char *argv[])
         gmx_fatal(FARGS, "%s does not exist", fn);
     }
 
-    t_state state;
+    GlobalState state;
     new_status(fn, opt2fn_null("-pp", NFILE, fnm), opt2fn("-c", NFILE, fnm),
                opts, ir, bZero, bGenVel, bVerbose, &state,
                atype, &sys, &nmi, &mi, &intermolecular_interactions,
@@ -2113,7 +2113,7 @@ int gmx_grompp(int argc, char *argv[])
     }
 
     /* Init the temperature coupling state */
-    init_gtc_state(&state, ir->opts.ngtc, 0, ir->opts.nhchainlength); /* need to add nnhpres here? */
+    init_gtc_state_global(&state, ir->opts.ngtc, 0, ir->opts.nhchainlength); /* need to add nnhpres here? */
 
     if (bVerbose)
     {

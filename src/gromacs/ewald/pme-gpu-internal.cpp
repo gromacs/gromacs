@@ -235,7 +235,7 @@ void pme_gpu_copy_input_coordinates(const PmeGpu *pmeGpu, const rvec *h_coordina
     const float *h_coordinatesFloat = reinterpret_cast<const float *>(h_coordinates);
     copyToDeviceBuffer(&pmeGpu->kernelParams->atoms.d_coordinates, h_coordinatesFloat,
                        0, pmeGpu->kernelParams->atoms.nAtoms * DIM,
-                       pmeGpu->archSpecific->pmeStream, pmeGpu->settings.transferKind, nullptr);
+                       pmeGpu->archSpecific->pmeStream, GpuApiCallBehavior::Sync, nullptr); // avoid pinning issues
 #endif
 }
 

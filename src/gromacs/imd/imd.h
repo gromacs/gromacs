@@ -73,6 +73,7 @@
 #define NOFLAGS 0
 #endif
 
+class GlobalState;
 struct gmx_domdec_t;
 struct gmx_enerdata_t;
 struct gmx_mtop_t;
@@ -85,7 +86,6 @@ struct t_filenm;
 struct t_gmx_IMD;
 struct t_IMD;
 struct t_inputrec;
-class t_state;
 
 static const char IMDstr[] = "IMD:";  /**< Tag output from the IMD module with this string. */
 
@@ -102,7 +102,7 @@ static const char IMDstr[] = "IMD:";  /**< Tag output from the IMD module with t
  * \param nfile   Number of files.
  * \param fnm     Filename struct.
  */
-void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, t_state *state,
+void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, GlobalState *state,
                             gmx_mtop_t *sys, int nfile, const t_filenm fnm[]);
 
 

@@ -48,16 +48,16 @@
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_domdec_t;
+class LocalState;
 struct t_forcerec;
 struct t_nrnb;
-class t_state;
 
 /*! \brief Redistribute the atoms to their, new, local domains */
 void dd_redistribute_cg(FILE             *fplog,
                         int64_t           step,
                         gmx_domdec_t     *dd,
                         ivec              tric_dir,
-                        t_state          *state,
+                        LocalState       *state,
                         PaddedRVecVector *f,
                         t_forcerec       *fr,
                         gmx_bool          bCompact,

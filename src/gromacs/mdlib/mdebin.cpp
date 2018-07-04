@@ -905,23 +905,323 @@ static void copy_energy(t_mdebin *md, const real e[], real ecpy[])
     }
 }
 
-void upd_mdebin(t_mdebin               *md,
-                gmx_bool                bDoDHDL,
-                gmx_bool                bSum,
-                double                  time,
-                real                    tmass,
-                gmx_enerdata_t         *enerd,
-                t_state                *state,
-                t_lambda               *fep,
-                t_expanded             *expand,
-                matrix                  box,
-                tensor                  svir,
-                tensor                  fvir,
-                tensor                  vir,
-                tensor                  pres,
-                gmx_ekindata_t         *ekind,
-                rvec                    mu_tot,
-                const gmx::Constraints *constr)
+void upd_mdebin_global(t_mdebin               *md,
+                       gmx_bool                bDoDHDL,
+                       gmx_bool                bSum,
+                       double                  time,
+                       real                    tmass,
+                       gmx_enerdata_t         *enerd,
+                       GlobalState            *state,
+                       t_lambda               *fep,
+                       t_expanded             *expand,
+                       matrix                  box,
+                       tensor                  svir,
+                       tensor                  fvir,
+                       tensor                  vir,
+                       tensor                  pres,
+                       gmx_ekindata_t         *ekind,
+                       rvec                    mu_tot,
+                       const gmx::Constraints *constr)
+{
+    int    i, j, k, kk, n, gid;
+    real   crmsd[2], tmp6[6];
+    real   bs[NTRICLBOXS], vol, dens, pv, enthalpy;
+    real   eee[egNR];
+    real   ecopy[F_NRE];
+    double store_dhdl[efptNR];
+    real   store_energy = 0;
+    real   tmp;
+
+    /* Do NOT use the box in the state variable, but the separate box provided
+     * as an argument. This is because we sometimes need to write the box from
+     * the last timestep to match the trajectory frames.
+     */
+    copy_energy(md, enerd->term, ecopy);
+    add_ebin(md->ebin, md->ie, md->f_nre, ecopy, bSum);
+    if (md->nCrmsd)
+    {
+        crmsd[0] = constr->rmsd();
+        add_ebin(md->ebin, md->iconrmsd, md->nCrmsd, crmsd, FALSE);
+    }
+    if (md->bDynBox)
+    {
+        int nboxs;
+        if (md->bTricl)
+        {
+            bs[0] = box[XX][XX];
+            bs[1] = box[YY][YY];
+            bs[2] = box[ZZ][ZZ];
+            bs[3] = box[YY][XX];
+            bs[4] = box[ZZ][XX];
+            bs[5] = box[ZZ][YY];
+            nboxs = NTRICLBOXS;
+        }
+        else
+        {
+            bs[0] = box[XX][XX];
+            bs[1] = box[YY][YY];
+            bs[2] = box[ZZ][ZZ];
+            nboxs = NBOXS;
+        }
+        vol  = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
+        dens = (tmass*AMU)/(vol*NANO*NANO*NANO);
+        add_ebin(md->ebin, md->ib, nboxs, bs, bSum);
+        add_ebin(md->ebin, md->ivol, 1, &vol, bSum);
+        add_ebin(md->ebin, md->idens, 1, &dens, bSum);
+
+        if (md->bDiagPres)
+        {
+            /* This is pV (in kJ/mol).  The pressure is the reference pressure,
+               not the instantaneous pressure */
+            pv = vol*md->ref_p/PRESFAC;
+
+            add_ebin(md->ebin, md->ipv, 1, &pv, bSum);
+            enthalpy = pv + enerd->term[F_ETOT];
+            add_ebin(md->ebin, md->ienthalpy, 1, &enthalpy, bSum);
+        }
+    }
+    if (md->bConstrVir)
+    {
+        add_ebin(md->ebin, md->isvir, 9, svir[0], bSum);
+        add_ebin(md->ebin, md->ifvir, 9, fvir[0], bSum);
+    }
+    add_ebin(md->ebin, md->ivir, 9, vir[0], bSum);
+    add_ebin(md->ebin, md->ipres, 9, pres[0], bSum);
+    tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*box[ZZ][ZZ];
+    add_ebin(md->ebin, md->isurft, 1, &tmp, bSum);
+    if (md->epc == epcPARRINELLORAHMAN || md->epc == epcMTTK)
+    {
+        tmp6[0] = state->boxv[XX][XX];
+        tmp6[1] = state->boxv[YY][YY];
+        tmp6[2] = state->boxv[ZZ][ZZ];
+        tmp6[3] = state->boxv[YY][XX];
+        tmp6[4] = state->boxv[ZZ][XX];
+        tmp6[5] = state->boxv[ZZ][YY];
+        add_ebin(md->ebin, md->ipc, md->bTricl ? 6 : 3, tmp6, bSum);
+    }
+    if (md->bMu)
+    {
+        add_ebin(md->ebin, md->imu, 3, mu_tot, bSum);
+    }
+    if (ekind && ekind->cosacc.cos_accel != 0)
+    {
+        vol  = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
+        dens = (tmass*AMU)/(vol*NANO*NANO*NANO);
+        add_ebin(md->ebin, md->ivcos, 1, &(ekind->cosacc.vcos), bSum);
+        /* 1/viscosity, unit 1/(kg m^-1 s^-1) */
+        tmp = 1/(ekind->cosacc.cos_accel/(ekind->cosacc.vcos*PICO)
+                 *dens*gmx::square(box[ZZ][ZZ]*NANO/(2*M_PI)));
+        add_ebin(md->ebin, md->ivisc, 1, &tmp, bSum);
+    }
+    if (md->nE > 1)
+    {
+        n = 0;
+        for (i = 0; (i < md->nEg); i++)
+        {
+            for (j = i; (j < md->nEg); j++)
+            {
+                gid = GID(i, j, md->nEg);
+                for (k = kk = 0; (k < egNR); k++)
+                {
+                    if (md->bEInd[k])
+                    {
+                        eee[kk++] = enerd->grpp.ener[k][gid];
+                    }
+                }
+                add_ebin(md->ebin, md->igrp[n], md->nEc, eee, bSum);
+                n++;
+            }
+        }
+    }
+
+    if (ekind)
+    {
+        for (i = 0; (i < md->nTC); i++)
+        {
+            md->tmp_r[i] = ekind->tcstat[i].T;
+        }
+        add_ebin(md->ebin, md->itemp, md->nTC, md->tmp_r, bSum);
+
+        if (md->etc == etcNOSEHOOVER)
+        {
+            /* whether to print Nose-Hoover chains: */
+            if (md->bPrintNHChains)
+            {
+                if (md->bNHC_trotter)
+                {
+                    for (i = 0; (i < md->nTC); i++)
+                    {
+                        for (j = 0; j < md->nNHC; j++)
+                        {
+                            k                = i*md->nNHC+j;
+                            md->tmp_r[2*k]   = state->nosehoover_xi[k];
+                            md->tmp_r[2*k+1] = state->nosehoover_vxi[k];
+                        }
+                    }
+                    add_ebin(md->ebin, md->itc, md->mde_n, md->tmp_r, bSum);
+
+                    if (md->bMTTK)
+                    {
+                        for (i = 0; (i < md->nTCP); i++)
+                        {
+                            for (j = 0; j < md->nNHC; j++)
+                            {
+                                k                = i*md->nNHC+j;
+                                md->tmp_r[2*k]   = state->nhpres_xi[k];
+                                md->tmp_r[2*k+1] = state->nhpres_vxi[k];
+                            }
+                        }
+                        add_ebin(md->ebin, md->itcb, md->mdeb_n, md->tmp_r, bSum);
+                    }
+                }
+                else
+                {
+                    for (i = 0; (i < md->nTC); i++)
+                    {
+                        md->tmp_r[2*i]   = state->nosehoover_xi[i];
+                        md->tmp_r[2*i+1] = state->nosehoover_vxi[i];
+                    }
+                    add_ebin(md->ebin, md->itc, md->mde_n, md->tmp_r, bSum);
+                }
+            }
+        }
+        else if (md->etc == etcBERENDSEN || md->etc == etcYES ||
+                 md->etc == etcVRESCALE)
+        {
+            for (i = 0; (i < md->nTC); i++)
+            {
+                md->tmp_r[i] = ekind->tcstat[i].lambda;
+            }
+            add_ebin(md->ebin, md->itc, md->nTC, md->tmp_r, bSum);
+        }
+    }
+
+    if (ekind && md->nU > 1)
+    {
+        for (i = 0; (i < md->nU); i++)
+        {
+            copy_rvec(ekind->grpstat[i].u, md->tmp_v[i]);
+        }
+        add_ebin(md->ebin, md->iu, 3*md->nU, md->tmp_v[0], bSum);
+    }
+
+    ebin_increase_count(md->ebin, bSum);
+
+    /* BAR + thermodynamic integration values */
+    if ((md->fp_dhdl || md->dhc) && bDoDHDL)
+    {
+        for (i = 0; i < enerd->n_lambda-1; i++)
+        {
+            /* zero for simulated tempering */
+            md->dE[i] = enerd->enerpart_lambda[i+1]-enerd->enerpart_lambda[0];
+            if (md->temperatures != nullptr)
+            {
+                /* MRS: is this right, given the way we have defined the exchange probabilities? */
+                /* is this even useful to have at all? */
+                md->dE[i] += (md->temperatures[i]/
+                              md->temperatures[state->fep_state]-1.0)*
+                    enerd->term[F_EKIN];
+            }
+        }
+
+        if (md->fp_dhdl)
+        {
+            fprintf(md->fp_dhdl, "%.4f", time);
+            /* the current free energy state */
+
+            /* print the current state if we are doing expanded ensemble */
+            if (expand->elmcmove > elmcmoveNO)
+            {
+                fprintf(md->fp_dhdl, " %4d", state->fep_state);
+            }
+            /* total energy (for if the temperature changes */
+
+            if (fep->edHdLPrintEnergy != edHdLPrintEnergyNO)
+            {
+                switch (fep->edHdLPrintEnergy)
+                {
+                    case edHdLPrintEnergyPOTENTIAL:
+                        store_energy = enerd->term[F_EPOT];
+                        break;
+                    case edHdLPrintEnergyTOTAL:
+                    case edHdLPrintEnergyYES:
+                    default:
+                        store_energy = enerd->term[F_ETOT];
+                }
+                fprintf(md->fp_dhdl, " %#.8g", store_energy);
+            }
+
+            if (fep->dhdl_derivatives == edhdlderivativesYES)
+            {
+                for (i = 0; i < efptNR; i++)
+                {
+                    if (fep->separate_dvdl[i])
+                    {
+                        /* assumes F_DVDL is first */
+                        fprintf(md->fp_dhdl, " %#.8g", enerd->term[F_DVDL+i]);
+                    }
+                }
+            }
+            for (i = fep->lambda_start_n; i < fep->lambda_stop_n; i++)
+            {
+                fprintf(md->fp_dhdl, " %#.8g", md->dE[i]);
+            }
+            if (md->bDynBox &&
+                md->bDiagPres &&
+                (md->epc != epcNO) &&
+                (enerd->n_lambda > 0) &&
+                (fep->init_lambda < 0))
+            {
+                fprintf(md->fp_dhdl, " %#.8g", pv);  /* PV term only needed when
+                                                        there are alternate state
+                                                        lambda and we're not in
+                                                        compatibility mode */
+            }
+            fprintf(md->fp_dhdl, "\n");
+            /* and the binary free energy output */
+        }
+        if (md->dhc && bDoDHDL)
+        {
+            int idhdl = 0;
+            for (i = 0; i < efptNR; i++)
+            {
+                if (fep->separate_dvdl[i])
+                {
+                    /* assumes F_DVDL is first */
+                    store_dhdl[idhdl] = enerd->term[F_DVDL+i];
+                    idhdl            += 1;
+                }
+            }
+            store_energy = enerd->term[F_ETOT];
+            /* store_dh is dE */
+            mde_delta_h_coll_add_dh(md->dhc,
+                                    static_cast<double>(state->fep_state),
+                                    store_energy,
+                                    pv,
+                                    store_dhdl,
+                                    md->dE + fep->lambda_start_n,
+                                    time);
+        }
+    }
+}
+
+void upd_mdebin_local(t_mdebin               *md,
+                      gmx_bool                bDoDHDL,
+                      gmx_bool                bSum,
+                      double                  time,
+                      real                    tmass,
+                      gmx_enerdata_t         *enerd,
+                      LocalState             *state,
+                      t_lambda               *fep,
+                      t_expanded             *expand,
+                      matrix                  box,
+                      tensor                  svir,
+                      tensor                  fvir,
+                      tensor                  vir,
+                      tensor                  pres,
+                      gmx_ekindata_t         *ekind,
+                      rvec                    mu_tot,
+                      const gmx::Constraints *constr)
 {
     int    i, j, k, kk, n, gid;
     real   crmsd[2], tmp6[6];

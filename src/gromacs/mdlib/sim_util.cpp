@@ -2175,7 +2175,7 @@ void do_force(FILE                                     *fplog,
 
 void do_constrain_first(FILE *fplog, gmx::Constraints *constr,
                         t_inputrec *ir, t_mdatoms *md,
-                        t_state *state)
+                        LocalState *state)
 {
     int             i, m, start, end;
     int64_t         step;
@@ -2899,7 +2899,7 @@ void init_md(FILE *fplog,
              t_inputrec *ir, const gmx_output_env_t *oenv,
              const MdrunOptions &mdrunOptions,
              double *t, double *t0,
-             t_state *globalState, double *lam0,
+             GlobalState *globalState, double *lam0,
              t_nrnb *nrnb, gmx_mtop_t *mtop,
              gmx_update_t **upd,
              gmx::BoxDeformation *deform,
@@ -2925,7 +2925,7 @@ void init_md(FILE *fplog,
     }
 
     /* Initialize lambda variables */
-    /* TODO: Clean up initialization of fep_state and lambda in t_state.
+    /* TODO: Clean up initialization of fep_state and lambda in GlobalState.
      * We currently need to call initialize_lambdas on non-master ranks
      * to initialize lam0.
      */
