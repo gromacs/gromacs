@@ -1160,7 +1160,7 @@ void PrintFreeEnergyInfoToFile(FILE *outfile, const t_lambda *fep, const t_expan
 }
 
 int ExpandedEnsembleDynamics(FILE *log, const t_inputrec *ir, const gmx_enerdata_t *enerd,
-                             t_state *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
+                             LocalState *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
                              int64_t step,
                              rvec *v, const t_mdatoms *mdatoms)
 /* Note that the state variable is only needed for simulated tempering, not

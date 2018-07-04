@@ -571,9 +571,9 @@ static void exchange_rvecs(const gmx_multisim_t gmx_unused *ms, int gmx_unused b
     }
 }
 
-static void exchange_state(const gmx_multisim_t *ms, int b, t_state *state)
+static void exchange_state(const gmx_multisim_t *ms, int b, GlobalState *state)
 {
-    /* When t_state changes, this code should be updated. */
+    /* When GlobalState changes, this code should be updated. */
     int ngtc, nnhpres;
     ngtc    = state->ngtc * state->nhchainlength;
     nnhpres = state->nnhpres* state->nhchainlength;
@@ -593,18 +593,6 @@ static void exchange_state(const gmx_multisim_t *ms, int b, t_state *state)
     exchange_doubles(ms, b, &state->baros_integral, 1);
     exchange_rvecs(ms, b, state->x.rvec_array(), state->natoms);
     exchange_rvecs(ms, b, state->v.rvec_array(), state->natoms);
-}
-
-static void copy_state_serial(const t_state *src, t_state *dest)
-{
-    if (dest != src)
-    {
-        /* Currently the local state is always a pointer to the global
-         * in serial, so we should never end up here.
-         * TODO: Implement a (trivial) t_state copy once converted to C++.
-         */
-        GMX_RELEASE_ASSERT(false, "State copying is currently not implemented in replica exchange");
-    }
 }
 
 static void scale_velocities(gmx::ArrayRef<gmx::RVec> velocities, real fac)
@@ -1244,8 +1232,8 @@ prepare_to_do_exchange(struct gmx_repl_ex *re,
 
 gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr,
                           const gmx_multisim_t *ms, struct gmx_repl_ex *re,
-                          t_state *state, const gmx_enerdata_t *enerd,
-                          t_state *state_local, int64_t step, real time)
+                          GlobalState *state, const gmx_enerdata_t *enerd,
+                          LocalState *state_local, int64_t step, real time)
 {
     int j;
     int replica_id = 0;
@@ -1285,7 +1273,7 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr,
         }
         else
         {
-            copy_state_serial(state_local, state);
+            *state = GlobalState(*state_local);
         }
 
         if (MASTER(cr))
@@ -1322,7 +1310,7 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr,
         if (!DOMAINDECOMP(cr))
         {
             /* Copy the global state to the local state data structure */
-            copy_state_serial(state, state_local);
+            *state_local = LocalState(*state);
         }
     }
 

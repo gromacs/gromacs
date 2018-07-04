@@ -2164,7 +2164,7 @@ void do_force(FILE                                     *fplog,
 
 void do_constrain_first(FILE *fplog, gmx::Constraints *constr,
                         const t_inputrec *ir, const t_mdatoms *md,
-                        t_state *state)
+                        LocalState *state)
 {
     int             i, m, start, end;
     int64_t         step;
@@ -2891,7 +2891,7 @@ void init_md(FILE *fplog,
              t_inputrec *ir, const gmx_output_env_t *oenv,
              const MdrunOptions &mdrunOptions,
              double *t, double *t0,
-             t_state *globalState, double *lam0,
+             GlobalState *globalState, double *lam0,
              t_nrnb *nrnb, gmx_mtop_t *mtop,
              gmx_update_t **upd,
              gmx::BoxDeformation *deform,
@@ -2918,7 +2918,7 @@ void init_md(FILE *fplog,
     }
 
     /* Initialize lambda variables */
-    /* TODO: Clean up initialization of fep_state and lambda in t_state.
+    /* TODO: Clean up initialization of fep_state and lambda in GlobalState.
      * We currently need to call initialize_lambdas on non-master ranks
      * to initialize lam0.
      */
@@ -2985,14 +2985,14 @@ void init_rerun(FILE *fplog,
                 const t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
                 t_inputrec *ir, const gmx_output_env_t *oenv,
                 const MdrunOptions &mdrunOptions,
-                t_state *globalState, double *lam0,
+                GlobalState *globalState, double *lam0,
                 t_nrnb *nrnb, gmx_mtop_t *mtop,
                 int nfile, const t_filenm fnm[],
                 gmx_mdoutf_t *outf, t_mdebin **mdebin,
                 gmx_wallcycle_t wcycle)
 {
     /* Initialize lambda variables */
-    /* TODO: Clean up initialization of fep_state and lambda in t_state.
+    /* TODO: Clean up initialization of fep_state and lambda in GlobalState.
      * We currently need to call initialize_lambdas on non-master ranks
      * to initialize lam0.
      */

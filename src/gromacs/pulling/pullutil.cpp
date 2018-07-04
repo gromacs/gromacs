@@ -986,7 +986,7 @@ bool pullCheckPbcWithinGroup(const pull_t                  &pull,
     return (pullGroupObeysPbcRestrictions(group, dimUsed, as_rvec_array(x.data()), pbc, pull.comm.pbcAtomBuffer[groupNr], pbcMargin));
 }
 
-void setStatePrevStepPullCom(const struct pull_t *pull, t_state *state)
+void setStatePrevStepPullCom(const struct pull_t *pull, LocalState *state)
 {
     for (size_t i = 0; i < state->com_prev_step.size()/DIM; i++)
     {
@@ -997,7 +997,7 @@ void setStatePrevStepPullCom(const struct pull_t *pull, t_state *state)
     }
 }
 
-void setPrevStepPullComFromState(struct pull_t *pull, const t_state *state)
+void setPrevStepPullComFromState(struct pull_t *pull, const LocalState *state)
 {
     for (size_t i = 0; i < state->com_prev_step.size()/DIM; i++)
     {
@@ -1022,7 +1022,7 @@ void updatePrevStepCom(struct pull_t *pull)
     }
 }
 
-void allocStatePrevStepPullCom(t_state *state, pull_t *pull)
+void allocStatePrevStepPullCom(LocalState *state, pull_t *pull)
 {
     if (!pull)
     {

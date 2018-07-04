@@ -45,11 +45,12 @@
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/utility/basedefinitions.h"
 
+class GlobalState;
 struct gmx_ddbox_t;
 struct gmx_domdec_t;
 struct gmx_mtop_t;
+class LocalState;
 struct t_block;
-class t_state;
 
 namespace gmx
 {
@@ -60,9 +61,9 @@ class MDLogger;
 void distributeState(const gmx::MDLogger     &mdlog,
                      gmx_domdec_t            *dd,
                      const gmx_mtop_t        &mtop,
-                     t_state                 *state_global,
+                     GlobalState             *state_global,
                      const gmx_ddbox_t       &ddbox,
-                     t_state                 *state_local,
+                     LocalState              *state_local,
                      PaddedVector<gmx::RVec> *f);
 
 #endif

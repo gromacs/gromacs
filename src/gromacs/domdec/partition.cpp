@@ -419,7 +419,7 @@ static void set_zones_ncg_home(gmx_domdec_t *dd)
 
 //! Restore atom groups for the charge groups.
 static void restoreAtomGroups(gmx_domdec_t *dd,
-                              const int *gcgs_index, const t_state *state)
+                              const int *gcgs_index, const LocalState *state)
 {
     gmx::ArrayRef<const int>  atomGroupsState        = state->cg_gl;
 
@@ -1881,7 +1881,7 @@ static void clearCommSetupData(dd_comm_setup_work_t *work)
 static void setup_dd_communication(gmx_domdec_t *dd,
                                    matrix box, gmx_ddbox_t *ddbox,
                                    t_forcerec *fr,
-                                   t_state *state,
+                                   LocalState *state,
                                    PaddedVector<gmx::RVec> *f)
 {
     int                    dim_ind, dim, dim0, dim1, dim2, dimd, nat_tot;
@@ -2773,7 +2773,7 @@ static void dd_sort_order_nbnxn(const t_forcerec          *fr,
 }
 
 //! Returns the sorting state for DD.
-static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state *state,
+static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, LocalState *state,
                           int ncg_home_old)
 {
     gmx_domdec_sort_t *sort = dd->comm->sort.get();
@@ -2966,10 +2966,10 @@ void dd_partition_system(FILE                    *fplog,
                          const t_commrec         *cr,
                          gmx_bool                 bMasterState,
                          int                      nstglobalcomm,
-                         t_state                 *state_global,
+                         GlobalState             *state_global,
                          const gmx_mtop_t        *top_global,
                          const t_inputrec        *ir,
-                         t_state                 *state_local,
+                         LocalState              *state_local,
                          PaddedVector<gmx::RVec> *f,
                          gmx::MDAtoms            *mdAtoms,
                          gmx_localtop_t          *top_local,
@@ -3640,7 +3640,7 @@ void checkNumberOfBondedInteractions(const gmx::MDLogger  &mdlog,
                                      int                   totalNumberOfBondedInteractions,
                                      const gmx_mtop_t     *top_global,
                                      const gmx_localtop_t *top_local,
-                                     const t_state        *state,
+                                     const LocalState     *state,
                                      bool                 *shouldCheckNumberOfBondedInteractions)
 {
     if (*shouldCheckNumberOfBondedInteractions)

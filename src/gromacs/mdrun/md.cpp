@@ -293,15 +293,15 @@ void gmx::Integrator::do_md()
              nfile, fnm, oenv, mdrunOptions);
 
     // Local state only becomes valid now.
-    std::unique_ptr<t_state> stateInstance;
-    t_state *                state;
+    std::unique_ptr<LocalState> stateInstance;
+    LocalState *                state;
+    stateInstance = compat::make_unique<LocalState>();
+    state         = stateInstance.get();
 
     if (DOMAINDECOMP(cr))
     {
         top = dd_init_local_top(top_global);
 
-        stateInstance = compat::make_unique<t_state>();
-        state         = stateInstance.get();
         dd_init_local_state(cr->dd, state_global, state);
 
         /* Distribute the charge groups over the nodes from the master node */
@@ -315,10 +315,12 @@ void gmx::Integrator::do_md()
     }
     else
     {
-        state_change_natoms(state_global, state_global->natoms);
+        state_global->resize(state_global->natoms);
         f.resizeWithPadding(state_global->natoms);
-        /* Copy the pointer to the global state */
-        state = state_global;
+        /* Copy the state (not just the pointer) */
+        *state = LocalState(*state_global);
+        /* Pin the co-ordinates of the local state */
+        changePinningPolicy(&state->x, pme_get_pinning_policy());
 
         snew(top, 1);
         mdAlgorithmsSetupAtomData(cr, ir, top_global, top, fr,
@@ -398,7 +400,7 @@ void gmx::Integrator::do_md()
     }
 
     // TODO: Remove this by converting AWH into a ForceProvider
-    auto awh = prepareAwhModule(fplog, *ir, state_global, cr, ms, startingFromCheckpoint,
+    auto awh = prepareAwhModule(fplog, *ir, state_global, state, cr, ms, startingFromCheckpoint,
                                 shellfc != nullptr,
                                 opt2fn("-awh", nfile, fnm), ir->pull_work);
 
@@ -1456,7 +1458,7 @@ void gmx::Integrator::do_md()
             (bGStatEveryStep ||
              (ir->nstpcouple > 0 && step % ir->nstpcouple == 0)))
         {
-            /* Store the pressure in t_state for pressure coupling
+            /* Store the pressure in LocalState for pressure coupling
              * at the next MD step.
              */
             copy_mat(pres, state->pres_prev);
@@ -1466,7 +1468,8 @@ void gmx::Integrator::do_md()
 
         if ( (membed != nullptr) && (!bLastStep) )
         {
-            rescale_membed(step_rel, membed, as_rvec_array(state_global->x.data()));
+            /* Membed does not support domain decomposition */
+            rescale_membed(step_rel, membed, as_rvec_array(state->x.data()));
         }
 
         cycles = wallcycle_stop(wcycle, ewcSTEP);

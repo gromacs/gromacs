@@ -56,6 +56,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 
+class GlobalState;
 struct gmx_domdec_t;
 struct gmx_enfrot;
 struct gmx_mtop_t;
@@ -65,7 +66,6 @@ struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
 struct t_rot;
-class t_state;
 
 namespace gmx
 {
@@ -110,7 +110,7 @@ class EnforcedRotation
  */
 std::unique_ptr<gmx::EnforcedRotation>
 init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
-         const t_commrec *cr, gmx::LocalAtomSetManager * atomSets, const t_state *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
+         const t_commrec *cr, gmx::LocalAtomSetManager * atomSets, const GlobalState *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
          const MdrunOptions &mdrunOptions);
 
 /*! \brief Calculates the enforced rotation potential(s).

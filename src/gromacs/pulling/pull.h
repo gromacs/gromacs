@@ -62,6 +62,7 @@
 struct ContinuationOptions;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
+class LocalState;
 struct pull_coord_work_t;
 struct pull_params_t;
 struct t_commrec;
@@ -69,7 +70,6 @@ struct t_filenm;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
-class t_state;
 
 namespace gmx
 {
@@ -352,14 +352,14 @@ real max_pull_distance2(const pull_coord_work_t *pcrd,
  * \param[in]   pull  The COM pull force calculation data structure
  * \param[in]   state The global state container
  */
-void setStatePrevStepPullCom(const struct pull_t *pull, t_state *state);
+void setStatePrevStepPullCom(const struct pull_t *pull, LocalState *state);
 
 /*! \brief Copies the pull group COM of the previous step from the checkpoint state to the pull state
  *
  * \param[in]   pull  The COM pull force calculation data structure
  * \param[in]   state The global state container
  */
-void setPrevStepPullComFromState(struct pull_t *pull, const t_state *state);
+void setPrevStepPullComFromState(struct pull_t *pull, const LocalState *state);
 
 /*! \brief Sets the previous step COM to the current COM
  *
@@ -372,7 +372,7 @@ void updatePrevStepCom(struct pull_t *pull);
  * \param[in]   state The global state container
  * \param[in]   pull  The COM pull force calculation data structure
  */
-void allocStatePrevStepPullCom(t_state *state, pull_t *pull);
+void allocStatePrevStepPullCom(LocalState *state, pull_t *pull);
 
 /*! \brief Initializes the COM of the previous step (set to initial COM)
  *

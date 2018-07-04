@@ -263,15 +263,16 @@ void gmx::Integrator::do_mimic()
     }
 
     // Local state only becomes valid now.
-    std::unique_ptr<t_state> stateInstance;
-    t_state *                state;
+    std::unique_ptr<LocalState> stateInstance;
+    LocalState *                state;
+    stateInstance = compat::make_unique<LocalState>();
+    state         = stateInstance.get();
+
 
     if (DOMAINDECOMP(cr))
     {
         top = dd_init_local_top(top_global);
 
-        stateInstance = compat::make_unique<t_state>();
-        state         = stateInstance.get();
         dd_init_local_state(cr->dd, state_global, state);
 
         /* Distribute the charge groups over the nodes from the master node */
@@ -285,13 +286,15 @@ void gmx::Integrator::do_mimic()
     }
     else
     {
-        state_change_natoms(state_global, state_global->natoms);
+        state_global->resize(state_global->natoms);
         /* We need to allocate one element extra, since we might use
          * (unaligned) 4-wide SIMD loads to access rvec entries.
          */
         f.resizeWithPadding(state_global->natoms);
-        /* Copy the pointer to the global state */
-        state = state_global;
+        /* Copy the state (not just the pointer) */
+        *state = LocalState(*state_global);
+        /* Pin the co-ordinates of the local state */
+        changePinningPolicy(&state->x, pme_get_pinning_policy());
 
         snew(top, 1);
         mdAlgorithmsSetupAtomData(cr, ir, top_global, top, fr,
@@ -391,10 +394,18 @@ void gmx::Integrator::do_mimic()
 
         if (MASTER(cr))
         {
-            mimicCommunicator.getCoords(&state_global->x, state_global->natoms);
-            for (int i = 0; i < state_global->natoms; i++)
+            /* Sebastian Wingbermuehle:
+             * propagation of co-ordinates is done in QM part and results are communicated to MD loop
+             * => a) return results to GlobalState state_global and repartition system in case of domain decomposition (see three if-statements below)
+             *    b) return results to LocalState state (if there is no dd) because state has to be kept up-to-date (state_global is only refreshed for output)
+             */
+            if (DOMAINDECOMP(cr))
             {
-                copy_rvec(state_global->x[i], state->x[i]);
+                mimicCommunicator.getCoords(&state_global->x, state_global->natoms);
+            }
+            else
+            {
+                mimicCommunicator.getCoords(&state->x, state->natoms);
             }
         }
 

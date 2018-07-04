@@ -853,7 +853,7 @@ void nosehoover_tcoupl(const t_grpopts *opts, const gmx_ekindata_t *ekind, real 
 }
 
 void trotter_update(const t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
-                    const gmx_enerdata_t *enerd, t_state *state,
+                    const gmx_enerdata_t *enerd, LocalState *state,
                     const tensor vir, const t_mdatoms *md,
                     const t_extmass *MassQ, const int * const *trotter_seqlist, int trotter_seqno)
 {
@@ -973,7 +973,7 @@ void trotter_update(const t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
 }
 
 
-extern void init_npt_masses(const t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit)
+extern void init_npt_masses(const t_inputrec *ir, LocalState *state, t_extmass *MassQ, gmx_bool bInit)
 {
     int              n, i, j, d, ngtc, nh;
     const t_grpopts *opts;
@@ -1068,7 +1068,7 @@ extern void init_npt_masses(const t_inputrec *ir, t_state *state, t_extmass *Mas
     }
 }
 
-int **init_npt_vars(const t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bTrotter)
+int **init_npt_vars(const t_inputrec *ir, LocalState *state, t_extmass *MassQ, gmx_bool bTrotter)
 {
     int              i, j, nnhpres, nh;
     const t_grpopts *opts;
@@ -1256,7 +1256,7 @@ int **init_npt_vars(const t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_
     return trotter_seq;
 }
 
-static real energyNoseHoover(const t_inputrec *ir, const t_state *state, const t_extmass *MassQ)
+static real energyNoseHoover(const t_inputrec *ir, const LocalState *state, const t_extmass *MassQ)
 {
     real energy = 0;
 
@@ -1308,7 +1308,7 @@ static real energyNoseHoover(const t_inputrec *ir, const t_state *state, const t
 }
 
 /* Returns the energy from the barostat thermostat chain */
-static real energyPressureMTTK(const t_inputrec *ir, const t_state *state, const t_extmass *MassQ)
+static real energyPressureMTTK(const t_inputrec *ir, const LocalState *state, const t_extmass *MassQ)
 {
     real energy = 0;
 
@@ -1340,7 +1340,7 @@ static real energyPressureMTTK(const t_inputrec *ir, const t_state *state, const
 }
 
 /* Returns the energy accumulated by the V-rescale or Berendsen thermostat */
-static real energyVrescale(const t_inputrec *ir, const t_state *state)
+static real energyVrescale(const t_inputrec *ir, const LocalState *state)
 {
     real energy = 0;
     for (int i = 0; i < ir->opts.ngtc; i++)
@@ -1351,7 +1351,7 @@ static real energyVrescale(const t_inputrec *ir, const t_state *state)
     return energy;
 }
 
-real NPT_energy(const t_inputrec *ir, const t_state *state, const t_extmass *MassQ)
+real NPT_energy(const t_inputrec *ir, const LocalState *state, const t_extmass *MassQ)
 {
     real energyNPT = 0;
 
