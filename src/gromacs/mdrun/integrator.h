@@ -48,6 +48,7 @@
 #include "gromacs/utility/real.h"
 
 class energyhistory_t;
+class GlobalState;
 struct gmx_enfrot;
 struct gmx_mtop_t;
 struct gmx_membed_t;
@@ -65,7 +66,6 @@ struct t_forcerec;
 struct t_filenm;
 struct t_inputrec;
 struct t_nrnb;
-class t_state;
 
 namespace gmx
 {
@@ -139,7 +139,7 @@ struct Integrator
     //! Helper struct for force calculations.
     t_fcdata                        *fcd;
     //! Full simulation state (only non-nullptr on master rank).
-    t_state                         *state_global;
+    GlobalState                     *state_global;
     //! History of simulation observables.
     ObservablesHistory              *observablesHistory;
     //! Atom parameters for this domain.

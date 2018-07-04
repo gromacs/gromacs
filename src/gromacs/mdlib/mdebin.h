@@ -43,16 +43,18 @@
 #include "gromacs/mdlib/ebin.h"
 #include "gromacs/mdtypes/enerdata.h"
 
-class energyhistory_t;
+class  energyhistory_t;
+class  GlobalState;
 struct gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
+class  LocalState;
+class  State;
 struct t_expanded;
 struct t_fcdata;
 struct t_grpopts;
 struct t_lambda;
-class t_state;
 
 namespace gmx
 {
@@ -142,7 +144,7 @@ void upd_mdebin(t_mdebin                 *md,
                 double                    time,
                 real                      tmass,
                 gmx_enerdata_t           *enerd,
-                t_state                  *state,
+                const State              *state,
                 t_lambda                 *fep,
                 t_expanded               *expand,
                 matrix                    lastbox,

@@ -56,11 +56,13 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
+class GlobalState;
 struct gmx_edsam;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
 struct gmx_multisim_t;
 struct gmx_wallcycle;
+class LocalState;
 struct t_blocka;
 struct t_commrec;
 struct t_ilist;
@@ -68,7 +70,6 @@ struct t_inputrec;
 struct t_mdatoms;
 struct t_nrnb;
 struct t_pbc;
-class t_state;
 
 namespace gmx
 {
