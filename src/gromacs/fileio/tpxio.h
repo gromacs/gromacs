@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018 by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,7 @@ struct gmx_mtop_t;
 struct t_atoms;
 struct t_block;
 struct t_inputrec;
-class t_state;
+class t_state_global;
 struct t_topology;
 
 struct t_tpxheader
@@ -90,12 +90,12 @@ void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK);
  */
 
 void write_tpx_state(const char *fn,
-                     const t_inputrec *ir, const t_state *state, const gmx_mtop_t *mtop);
+                     const t_inputrec *ir, const t_state_global *state, const gmx_mtop_t *mtop);
 /* Write a file, and close it again.
  */
 
 void read_tpx_state(const char *fn,
-                    t_inputrec *ir, t_state *state,
+                    t_inputrec *ir, t_state_global *state,
                     gmx_mtop_t *mtop);
 int read_tpx(const char *fn,
              t_inputrec *ir, matrix box, int *natoms,

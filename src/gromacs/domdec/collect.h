@@ -47,17 +47,18 @@
 #include "gromacs/utility/arrayref.h"
 
 struct gmx_domdec_t;
-class t_state;
+class t_state_global;
+class t_state_local;
 
 /*! \brief Gathers rvec arrays \p localVector to \p globalVector on the master rank */
 void dd_collect_vec(gmx_domdec_t                   *dd,
-                    const t_state                  *localState,
+                    const t_state_local            *localState,
                     gmx::ArrayRef<const gmx::RVec>  localVector,
                     gmx::ArrayRef<gmx::RVec>        globalVector);
 
 /*! \brief Gathers state \p localState to \p globalState on the master rank */
-void dd_collect_state(gmx_domdec_t  *dd,
-                      const t_state *localState,
-                      t_state       *globalState);
+void dd_collect_state(gmx_domdec_t        *dd,
+                      const t_state_local *localState,
+                      t_state_global      *globalState);
 
 #endif

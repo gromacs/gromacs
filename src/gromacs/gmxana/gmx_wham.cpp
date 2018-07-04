@@ -2053,7 +2053,7 @@ static void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_Umbrella
 {
     t_inputrec      irInstance;
     t_inputrec     *ir = &irInstance;
-    t_state         state;
+    t_state_global  state;
     static int      first = 1;
 
     /* printf("Reading %s \n",fn); */

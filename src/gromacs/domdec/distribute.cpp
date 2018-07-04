@@ -199,7 +199,7 @@ static void dd_distribute_dfhist(gmx_domdec_t *dd, df_history_t *dfhist)
 }
 
 static void dd_distribute_state(gmx_domdec_t *dd,
-                                const t_state *state, t_state *state_local,
+                                const t_state_global *state, t_state_local *state_local,
                                 PaddedRVecVector *f)
 {
     int nh = state_local->nhchainlength;
@@ -518,9 +518,9 @@ static void distributeAtomGroups(FILE *fplog, gmx_domdec_t *dd,
 
 void distributeState(FILE                *fplog,
                      gmx_domdec_t        *dd,
-                     t_state             *state_global,
+                     t_state_global      *state_global,
                      const gmx_ddbox_t   &ddbox,
-                     t_state             *state_local,
+                     t_state_local       *state_local,
                      PaddedRVecVector    *f)
 {
     rvec *xGlobal = (DDMASTER(dd) ? as_rvec_array(state_global->x.data()) : nullptr);

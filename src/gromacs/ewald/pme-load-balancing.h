@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018 by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,7 @@
 struct NbnxnListParameters;
 struct t_commrec;
 struct t_inputrec;
-class t_state;
+class t_state_local;
 
 namespace gmx
 {
@@ -99,7 +99,7 @@ void pme_loadbal_do(pme_load_balancing_t  *pme_lb,
                     const gmx::MDLogger   &mdlog,
                     const t_inputrec      *ir,
                     t_forcerec            *fr,
-                    t_state               *state,
+                    t_state_local         *state,
                     gmx_wallcycle_t        wcycle,
                     gmx_int64_t            step,
                     gmx_int64_t            step_rel,

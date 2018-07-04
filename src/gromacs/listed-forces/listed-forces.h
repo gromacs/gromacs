@@ -81,7 +81,8 @@ struct t_inputrec;
 struct t_lambda;
 struct t_mdatoms;
 struct t_nrnb;
-class t_state;
+class t_state_global;
+class t_state_local;
 
 namespace gmx
 {

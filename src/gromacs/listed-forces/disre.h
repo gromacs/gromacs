@@ -55,7 +55,7 @@ class history_t;
 struct t_commrec;
 struct t_inputrec;
 struct t_pbc;
-class t_state;
+class t_state_global;
 
 /*! \brief
  * Initiates *fcd data.
@@ -70,7 +70,7 @@ class t_state;
 void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
                  t_inputrec *ir, const t_commrec *cr,
                  const gmx_multisim_t *ms,
-                 t_fcdata *fcd, t_state *state, gmx_bool bIsREMD);
+                 t_fcdata *fcd, t_state_global *state, gmx_bool bIsREMD);
 
 /*! \brief
  * Calculates r and r^-3 (inst. and time averaged) for all pairs

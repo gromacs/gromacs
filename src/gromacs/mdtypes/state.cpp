@@ -82,7 +82,7 @@ ekinstate_t::ekinstate_t() : bUpToDate(FALSE),
     clear_mat(ekin_total);
 };
 
-void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
+void init_gtc_state_global(t_state_global *state, int ngtc, int nnhpres, int nhchainlength)
 {
     state->ngtc          = ngtc;
     state->nnhpres       = nnhpres;
@@ -95,10 +95,22 @@ void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
     state->nhpres_vxi.resize(state->nhchainlength*nnhpres, 0);
 }
 
+void init_gtc_state_local(t_state_local *state, int ngtc, int nnhpres, int nhchainlength)
+{
+    state->ngtc          = ngtc;
+    state->nnhpres       = nnhpres;
+    state->nhchainlength = nhchainlength;
+    state->nosehoover_xi.resize(state->nhchainlength*state->ngtc, 0);
+    state->nosehoover_vxi.resize(state->nhchainlength*state->ngtc, 0);
+    state->therm_integral.resize(state->ngtc, 0);
+    state->baros_integral = 0.0;
+    state->nhpres_xi.resize(state->nhchainlength*nnhpres, 0);
+    state->nhpres_vxi.resize(state->nhchainlength*nnhpres, 0);
+}
 
 /* Checkpoint code relies on this function having no effect if
    state->natoms is > 0 and passed as natoms. */
-void state_change_natoms(t_state *state, int natoms)
+void state_change_natoms_global(t_state_global *state, int natoms)
 {
     state->natoms = natoms;
 
@@ -119,7 +131,28 @@ void state_change_natoms(t_state *state, int natoms)
     }
 }
 
-void init_dfhist_state(t_state *state, int dfhistNumLambda)
+void state_change_natoms_local(t_state_local *state, int natoms)
+{
+    state->natoms = natoms;
+
+    /* We need padding, since we might use SIMD access */
+    const size_t paddedSize = gmx::paddedRVecVectorSize(state->natoms);
+
+    if (state->flags & (1 << estX))
+    {
+        state->x.resize(paddedSize);
+    }
+    if (state->flags & (1 << estV))
+    {
+        state->v.resize(paddedSize);
+    }
+    if (state->flags & (1 << estCGP))
+    {
+        state->cg_p.resize(paddedSize);
+    }
+}
+
+void init_dfhist_state(t_state_local *state, int dfhistNumLambda)
 {
     if (dfhistNumLambda > 0)
     {
@@ -132,7 +165,7 @@ void init_dfhist_state(t_state *state, int dfhistNumLambda)
     }
 }
 
-void comp_state(const t_state *st1, const t_state *st2,
+void comp_state(const t_state_global *st1, const t_state_global *st2,
                 gmx_bool bRMSD, real ftol, real abstol)
 {
     int i, j, nc;
@@ -222,24 +255,24 @@ rvec *makeRvecArray(gmx::ArrayRef<const gmx::RVec> v,
     return dest;
 }
 
-t_state::t_state() : natoms(0),
-                     ngtc(0),
-                     nnhpres(0),
-                     nhchainlength(0),
-                     flags(0),
-                     fep_state(0),
-                     lambda(),
+t_state_global::t_state_global() : natoms(0),
+                                   ngtc(0),
+                                   nnhpres(0),
+                                   nhchainlength(0),
+                                   flags(0),
+                                   fep_state(0),
+                                   lambda(),
 
-                     baros_integral(0),
-                     veta(0),
-                     vol0(0),
+                                   baros_integral(0),
+                                   veta(0),
+                                   vol0(0),
 
-                     ekinstate(),
-                     hist(),
-                     dfhist(nullptr),
-                     awhHistory(nullptr),
-                     ddp_count(0),
-                     ddp_count_cg_gl(0)
+                                   ekinstate(),
+                                   hist(),
+                                   dfhist(nullptr),
+                                   awhHistory(nullptr),
+                                   ddp_count(0),
+                                   ddp_count_cg_gl(0)
 
 {
     // It would be nicer to initialize these with {} or {{0}} in the
@@ -254,9 +287,114 @@ t_state::t_state() : natoms(0),
     clear_mat(pres_prev);
     clear_mat(svir_prev);
     clear_mat(fvir_prev);
+};
+
+t_state_local::t_state_local() : natoms(0),
+                                 ngtc(0),
+                                 nnhpres(0),
+                                 nhchainlength(0),
+                                 flags(0),
+                                 fep_state(0),
+                                 lambda(),
+
+                                 baros_integral(0),
+                                 veta(0),
+                                 vol0(0),
+
+                                 ekinstate(),
+                                 hist(),
+                                 dfhist(nullptr),
+                                 awhHistory(nullptr),
+                                 ddp_count(0),
+                                 ddp_count_cg_gl(0)
+
+{
+    // It would be nicer to initialize these with {} or {{0}} in the
+    // above initialization list, but uncrustify doesn't understand
+    // that.
+    // TODO Fix this if we switch to clang-format some time.
+    // cppcheck-suppress useInitializationList
+    lambda = {{ 0 }};
+    clear_mat(box);
+    clear_mat(box_rel);
+    clear_mat(boxv);
+    clear_mat(pres_prev);
+    clear_mat(svir_prev);
+    clear_mat(fvir_prev);
+};
+
+void copyGlobalStateToLocalState(const t_state_global *state_global, t_state_local *state_local)
+{
+        state_local->natoms        = state_global->natoms; 
+        state_local->ngtc          = state_global->ngtc;
+        state_local->nnhpres       = state_global->nnhpres;
+        state_local->nhchainlength = state_global->nhchainlength;
+        state_local->flags         = state_global->flags;
+        state_local->fep_state     = state_global->fep_state;
+        state_local->lambda        = state_global->lambda;
+        copy_mat(state_global->box, state_local->box);
+        copy_mat(state_global->box_rel, state_local->box_rel); 
+        copy_mat(state_global->boxv, state_local->boxv);
+        copy_mat(state_global->pres_prev, state_local->pres_prev);
+        copy_mat(state_global->svir_prev, state_local->svir_prev);
+        copy_mat(state_global->fvir_prev, state_local->fvir_prev);
+        state_local->nosehoover_xi   = state_global->nosehoover_xi;
+        state_local->nosehoover_vxi  = state_global->nosehoover_vxi;
+        state_local->nhpres_xi       = state_global->nhpres_xi;
+        state_local->nhpres_vxi      = state_global->nhpres_vxi;
+        state_local->therm_integral  = state_global->therm_integral;
+        state_local->baros_integral  = state_global->baros_integral;
+        state_local->veta            = state_global->veta;
+        state_local->vol0            = state_global->vol0;
+        state_local->x               = state_global->x;
+        state_local->v               = state_global->v;
+        state_local->cg_p            = state_global->cg_p;
+        state_local->ekinstate       = state_global->ekinstate;
+        state_local->hist            = state_global->hist;
+        state_local->dfhist          = state_global->dfhist;
+// awhHistory is only used with state_global so that it does not need to be copied.
+// Copying it causes the awh routines to segfault at runtime.
+//        state_local->awhHistory      = state_global->awhHistory;
+        state_local->ddp_count       = state_global->ddp_count;
+        state_local->ddp_count_cg_gl = state_global->ddp_count_cg_gl;
+        state_local->cg_gl           = state_global->cg_gl;
+}
+void copyLocalStateToGlobalState(const t_state_local *state_local, t_state_global *state_global)
+{
+        state_global->natoms        = state_local->natoms;
+        state_global->ngtc          = state_local->ngtc;
+        state_global->nnhpres       = state_local->nnhpres;
+        state_global->nhchainlength = state_local->nhchainlength;
+        state_global->flags         = state_local->flags;
+        state_global->fep_state     = state_local->fep_state;
+        state_global->lambda        = state_local->lambda;
+        copy_mat(state_local->box, state_global->box);
+        copy_mat(state_local->box_rel, state_global->box_rel);
+        copy_mat(state_local->boxv, state_global->boxv);
+        copy_mat(state_local->pres_prev, state_global->pres_prev);
+        copy_mat(state_local->svir_prev, state_global->svir_prev);
+        copy_mat(state_local->fvir_prev, state_global->fvir_prev);
+        state_global->nosehoover_xi   = state_local->nosehoover_xi;
+        state_global->nosehoover_vxi  = state_local->nosehoover_vxi;
+        state_global->nhpres_xi       = state_local->nhpres_xi;
+        state_global->nhpres_vxi      = state_local->nhpres_vxi;
+        state_global->therm_integral  = state_local->therm_integral;
+        state_global->baros_integral  = state_local->baros_integral;
+        state_global->veta            = state_local->veta;
+        state_global->vol0            = state_local->vol0;
+        state_global->x               = state_local->x;
+        state_global->v               = state_local->v;
+        state_global->cg_p            = state_local->cg_p;
+        state_global->ekinstate       = state_local->ekinstate;
+        state_global->hist            = state_local->hist;
+        state_global->dfhist          = state_local->dfhist;
+//        state_global->awhHistory      = state_local->awhHistory;
+        state_global->ddp_count       = state_local->ddp_count;
+        state_global->ddp_count_cg_gl = state_local->ddp_count_cg_gl;
+        state_global->cg_gl           = state_local->cg_gl;
 }
 
-void set_box_rel(const t_inputrec *ir, t_state *state)
+void set_box_rel(const t_inputrec *ir, t_state_global *state)
 {
     /* Make sure the box obeys the restrictions before we fix the ratios */
     correct_box(nullptr, 0, state->box, nullptr);

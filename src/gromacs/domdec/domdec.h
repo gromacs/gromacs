@@ -82,7 +82,8 @@ struct t_inputrec;
 struct t_mdatoms;
 struct t_nrnb;
 struct gmx_wallcycle;
-class t_state;
+class t_state_global;
+class t_state_local;
 
 namespace gmx
 {
@@ -105,7 +106,7 @@ t_block *dd_charge_groups_global(struct gmx_domdec_t *dd);
  *
  * This means it can be reset, even after a new DD partitioning.
  */
-void dd_store_state(struct gmx_domdec_t *dd, t_state *state);
+void dd_store_state(struct gmx_domdec_t *dd, t_state_local *state);
 
 /*! \brief Returns a pointer to the gmx_domdec_zones_t struct */
 struct gmx_domdec_zones_t *domdec_zones(struct gmx_domdec_t *dd);
@@ -230,7 +231,7 @@ gmx_bool dd_bonded_molpbc(const gmx_domdec_t *dd, int ePBC);
  * then FALSE will be returned and the cut-off is not modified.
  */
 gmx_bool change_dd_cutoff(struct t_commrec *cr,
-                          t_state *state, const t_inputrec *ir,
+                          t_state_local *state, const t_inputrec *ir,
                           real cutoff_req );
 
 /*! \brief Limit DLB to preserve the option of returning to the current cut-off.
@@ -319,10 +320,10 @@ void dd_partition_system(FILE                *fplog,
                          const t_commrec     *cr,
                          gmx_bool             bMasterState,
                          int                  nstglobalcomm,
-                         t_state             *state_global,
+                         t_state_global      *state_global,
                          const gmx_mtop_t    *top_global,
                          const t_inputrec    *ir,
-                         t_state             *state_local,
+                         t_state_local       *state_local,
                          PaddedRVecVector    *f,
                          gmx::MDAtoms        *mdatoms,
                          gmx_localtop_t      *top_local,
@@ -357,7 +358,7 @@ void checkNumberOfBondedInteractions(FILE                 *fplog,
                                      int                   totalNumberOfBondedInteractions,
                                      const gmx_mtop_t     *top_global,
                                      const gmx_localtop_t *top_local,
-                                     const t_state        *state,
+                                     const t_state_local  *state,
                                      bool                 *shouldCheckNumberOfBondedInteractions);
 
 /* In domdec_con.c */
@@ -392,7 +393,7 @@ void dd_print_missing_interactions(FILE *fplog, struct t_commrec *cr,
                                    int local_count,
                                    const gmx_mtop_t *top_global,
                                    const gmx_localtop_t *top_local,
-                                   const t_state *state_local);
+                                   const t_state_local *state_local);
 
 /*! \brief Generate and store the reverse topology */
 void dd_make_reverse_top(FILE *fplog,
@@ -421,7 +422,7 @@ gmx_localtop_t *dd_init_local_top(const gmx_mtop_t *top_global);
 
 /*! \brief Construct local state */
 void dd_init_local_state(struct gmx_domdec_t *dd,
-                         t_state *state_global, t_state *local_state);
+                         t_state_global *state_global, t_state_local *local_state);
 
 /*! \brief Generate a list of links between charge groups that are linked by bonded interactions */
 t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,

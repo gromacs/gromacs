@@ -75,7 +75,7 @@ struct gmx_multisim_t;
 struct gmx_wallcycle;
 struct pull_work_t;
 struct pull_t;
-class t_state;
+class t_state_global;
 struct t_commrec;
 struct t_enxframe;
 struct t_inputrec;
@@ -270,7 +270,7 @@ class Awh
 std::unique_ptr<Awh>
 prepareAwhModule(FILE                 *fplog,
                  const t_inputrec     &inputRecord,
-                 t_state              *stateGlobal,
+                 t_state_global       *stateGlobal,
                  const t_commrec      *commRecord,
                  const gmx_multisim_t *multiSimRecord,
                  const bool            startingFromCheckpoint,

@@ -1241,7 +1241,7 @@ static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
     inc_nrnb(nrnb, eNR_EKIN, homenr);
 }
 
-void calc_ke_part(t_state *state, t_grpopts *opts, t_mdatoms *md,
+void calc_ke_part(t_state_local *state, t_grpopts *opts, t_mdatoms *md,
                   gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel)
 {
     if (ekind->cosacc.cos_accel == 0)
@@ -1340,7 +1340,7 @@ void restore_ekinstate_from_state(const t_commrec *cr,
 
 void update_tcouple(gmx_int64_t       step,
                     t_inputrec       *inputrec,
-                    t_state          *state,
+                    t_state_local    *state,
                     gmx_ekindata_t   *ekind,
                     t_extmass        *MassQ,
                     t_mdatoms        *md)
@@ -1420,7 +1420,7 @@ static void getThreadAtomRange(int numThreads, int threadIndex, int numAtoms,
 void update_pcouple_before_coordinates(FILE             *fplog,
                                        gmx_int64_t       step,
                                        const t_inputrec *inputrec,
-                                       t_state          *state,
+                                       t_state_local    *state,
                                        matrix            parrinellorahmanMu,
                                        matrix            M,
                                        gmx_bool          bInitStep)
@@ -1441,7 +1441,7 @@ void update_pcouple_before_coordinates(FILE             *fplog,
 
 void constrain_velocities(gmx_int64_t                    step,
                           real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
-                          t_state                       *state,
+                          t_state_local                 *state,
                           tensor                         vir_part,
                           gmx_wallcycle_t                wcycle,
                           gmx::Constraints              *constr,
@@ -1487,7 +1487,7 @@ void constrain_velocities(gmx_int64_t                    step,
 
 void constrain_coordinates(gmx_int64_t                    step,
                            real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
-                           t_state                       *state,
+                           t_state_local                 *state,
                            tensor                         vir_part,
                            gmx_wallcycle_t                wcycle,
                            gmx_update_t                  *upd,
@@ -1531,7 +1531,7 @@ update_sd_second_half(gmx_int64_t                    step,
                       real                          *dvdlambda,   /* the contribution to be added to the bonded interactions */
                       const t_inputrec              *inputrec,    /* input record and box stuff	*/
                       t_mdatoms                     *md,
-                      t_state                       *state,
+                      t_state_local                 *state,
                       const t_commrec               *cr,
                       t_nrnb                        *nrnb,
                       gmx_wallcycle_t                wcycle,
@@ -1602,7 +1602,7 @@ update_sd_second_half(gmx_int64_t                    step,
 
 void finish_update(const t_inputrec              *inputrec,  /* input record and box stuff	*/
                    t_mdatoms                     *md,
-                   t_state                       *state,
+                   t_state_local                 *state,
                    t_graph                       *graph,
                    t_nrnb                        *nrnb,
                    gmx_wallcycle_t                wcycle,
@@ -1695,7 +1695,7 @@ void update_pcouple_after_coordinates(FILE             *fplog,
                                       const matrix      forceVirial,
                                       const matrix      constraintVirial,
                                       const matrix      parrinellorahmanMu,
-                                      t_state          *state,
+                                      t_state_local    *state,
                                       t_nrnb           *nrnb,
                                       gmx_update_t     *upd)
 {
@@ -1788,7 +1788,7 @@ void update_pcouple_after_coordinates(FILE             *fplog,
 void update_coords(gmx_int64_t                    step,
                    t_inputrec                    *inputrec, /* input record and box stuff	*/
                    t_mdatoms                     *md,
-                   t_state                       *state,
+                   t_state_local                 *state,
                    gmx::PaddedArrayRef<gmx::RVec> f,        /* forces on home particles */
                    t_fcdata                      *fcd,
                    gmx_ekindata_t                *ekind,
@@ -1933,7 +1933,7 @@ void update_coords(gmx_int64_t                    step,
 }
 
 extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr,
-                                            t_mdatoms *md, t_state *state, gmx_update_t *upd, gmx::Constraints *constr)
+                                            t_mdatoms *md, t_state_local *state, gmx_update_t *upd, gmx::Constraints *constr)
 {
 
     real rate = (ir->delta_t)/ir->opts.tau_t[0];

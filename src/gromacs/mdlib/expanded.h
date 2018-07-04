@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018 by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,14 +48,14 @@ struct t_inputrec;
 struct t_lambda;
 struct t_mdatoms;
 struct t_simtemp;
-class t_state;
+class t_state_local;
 
-void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit);
+void init_npt_masses(t_inputrec *ir, t_state_local *state, t_extmass *MassQ, gmx_bool bInit);
 
 void init_expanded_ensemble(gmx_bool bStateFromCP, t_inputrec *ir, df_history_t *dfhist);
 
 int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
-                             t_state *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
+                             t_state_local *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
                              gmx_int64_t step,
                              rvec *v, t_mdatoms *mdatoms);
 

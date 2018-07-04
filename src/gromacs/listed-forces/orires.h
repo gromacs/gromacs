@@ -56,7 +56,7 @@ struct t_pbc;
 struct t_commrec;
 struct t_fcdata;
 struct t_oriresdata;
-class t_state;
+class t_state_global;
 
 /*! \brief
  * Decides whether orientation restraints can work, and initializes
@@ -71,7 +71,7 @@ void init_orires(FILE                 *fplog,
                  const t_inputrec     *ir,
                  const t_commrec      *cr,
                  const gmx_multisim_t *ms,
-                 t_state              *globalState,
+                 t_state_global       *globalState,
                  t_oriresdata         *od);
 
 /*! \brief

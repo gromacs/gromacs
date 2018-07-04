@@ -405,7 +405,7 @@ void Awh::writeToEnergyFrame(gmx_int64_t  step,
 std::unique_ptr<Awh>
 prepareAwhModule(FILE                 *fplog,
                  const t_inputrec     &inputRecord,
-                 t_state              *stateGlobal,
+                 t_state_global       *stateGlobal,
                  const t_commrec      *commRecord,
                  const gmx_multisim_t *multiSimRecord,
                  const bool            startingFromCheckpoint,
