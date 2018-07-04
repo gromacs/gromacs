@@ -2652,7 +2652,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
         const t_inputrec       *ir,
         const t_commrec        *cr,
         gmx::Constraints       *constr,
-        const t_state          *globalState,
+        const GlobalState      *globalState,
         ObservablesHistory     *oh,
         const gmx_output_env_t *oenv,
         gmx_bool                bAppend)

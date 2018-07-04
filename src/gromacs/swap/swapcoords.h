@@ -57,6 +57,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
+class GlobalState;
 struct gmx_domdec_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
@@ -65,7 +66,6 @@ struct MdrunOptions;
 struct swaphistory_t;
 struct t_commrec;
 struct t_inputrec;
-class t_state;
 struct t_swapcoords;
 struct ObservablesHistory;
 
@@ -96,7 +96,7 @@ void init_swapcoords(
         t_inputrec               *ir,
         const char               *fn,
         gmx_mtop_t               *mtop,
-        const t_state            *globalState,
+        const GlobalState        *globalState,
         ObservablesHistory       *oh,
         t_commrec                *cr,
         gmx::LocalAtomSetManager *atomSets,
