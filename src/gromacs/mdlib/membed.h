@@ -41,16 +41,16 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
+class GlobalState;
 struct gmx_membed_t;
 struct gmx_mtop_t;
 struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
-class t_state;
 
 /* initialisation of membed code */
 gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_t *mtop,
-                          t_inputrec *inputrec, t_state *state, t_commrec *cr, real *cpt);
+                          t_inputrec *inputrec, GlobalState *state, t_commrec *cr, real *cpt);
 
 /* rescaling the coordinates voor de membed code */
 void rescale_membed(int step_rel, gmx_membed_t *membed, rvec *x);
