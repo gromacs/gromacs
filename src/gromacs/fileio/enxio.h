@@ -41,12 +41,12 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+class GlobalState;
 struct gmx_groups_t;
 struct t_energy;
 struct t_enxframe;
 struct t_fileio;
 struct t_inputrec;
-class t_state;
 
 /**************************************************************
  * These are the base datatypes + functions for reading and
@@ -177,7 +177,7 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr);
 
 void get_enx_state(const char *fn, real t,
                    const gmx_groups_t *groups, t_inputrec *ir,
-                   t_state *state);
+                   GlobalState *state);
 /*
  * Reads state variables from enx file fn at time t.
  * atoms and ir are required for determining which things must be read.

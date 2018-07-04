@@ -779,7 +779,7 @@ void berendsen_tcoupl(const t_inputrec *ir, const gmx_ekindata_t *ekind, real dt
 }
 
 void andersen_tcoupl(t_inputrec *ir, int64_t step,
-                     const t_commrec *cr, const t_mdatoms *md, t_state *state, real rate, const gmx_bool *randomize, const real *boltzfac)
+                     const t_commrec *cr, const t_mdatoms *md, LocalState *state, real rate, const gmx_bool *randomize, const real *boltzfac)
 {
     const int                                 *gatindex = (DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
     int                                        i;
@@ -851,7 +851,7 @@ void nosehoover_tcoupl(t_grpopts *opts, gmx_ekindata_t *ekind, real dt,
 }
 
 void trotter_update(t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
-                    gmx_enerdata_t *enerd, t_state *state,
+                    gmx_enerdata_t *enerd, LocalState *state,
                     tensor vir, t_mdatoms *md,
                     t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno)
 {
@@ -970,7 +970,7 @@ void trotter_update(t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
 }
 
 
-extern void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit)
+extern void init_npt_masses(t_inputrec *ir, LocalState *state, t_extmass *MassQ, gmx_bool bInit)
 {
     int           n, i, j, d, ngtc, nh;
     t_grpopts    *opts;
@@ -1065,7 +1065,7 @@ extern void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gm
     }
 }
 
-int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bTrotter)
+int **init_npt_vars(t_inputrec *ir, LocalState *state, t_extmass *MassQ, gmx_bool bTrotter)
 {
     int           i, j, nnhpres, nh;
     t_grpopts    *opts;
@@ -1253,7 +1253,7 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
     return trotter_seq;
 }
 
-static real energyNoseHoover(const t_inputrec *ir, const t_state *state, const t_extmass *MassQ)
+static real energyNoseHoover(const t_inputrec *ir, const LocalState *state, const t_extmass *MassQ)
 {
     real energy = 0;
 
@@ -1305,7 +1305,7 @@ static real energyNoseHoover(const t_inputrec *ir, const t_state *state, const t
 }
 
 /* Returns the energy from the barostat thermostat chain */
-static real energyPressureMTTK(const t_inputrec *ir, const t_state *state, const t_extmass *MassQ)
+static real energyPressureMTTK(const t_inputrec *ir, const LocalState *state, const t_extmass *MassQ)
 {
     real energy = 0;
 
@@ -1337,7 +1337,7 @@ static real energyPressureMTTK(const t_inputrec *ir, const t_state *state, const
 }
 
 /* Returns the energy accumulated by the V-rescale or Berendsen thermostat */
-static real energyVrescale(const t_inputrec *ir, const t_state *state)
+static real energyVrescale(const t_inputrec *ir, const LocalState *state)
 {
     real energy = 0;
     for (int i = 0; i < ir->opts.ngtc; i++)
@@ -1348,7 +1348,7 @@ static real energyVrescale(const t_inputrec *ir, const t_state *state)
     return energy;
 }
 
-real NPT_energy(const t_inputrec *ir, const t_state *state, const t_extmass *MassQ)
+real NPT_energy(const t_inputrec *ir, const LocalState *state, const t_extmass *MassQ)
 {
     real energyNPT = 0;
 

@@ -246,7 +246,7 @@ t_block *dd_charge_groups_global(gmx_domdec_t *dd)
     return &dd->comm->cgs_gl;
 }
 
-void dd_store_state(gmx_domdec_t *dd, t_state *state)
+void dd_store_state(gmx_domdec_t *dd, LocalState *state)
 {
     int i;
 
@@ -1494,7 +1494,7 @@ static void set_zones_ncg_home(gmx_domdec_t *dd)
 }
 
 static void restoreAtomGroups(gmx_domdec_t *dd,
-                              const int *gcgs_index, const t_state *state)
+                              const int *gcgs_index, const LocalState *state)
 {
     gmx::ArrayRef<const int>  atomGroupsState        = state->cg_gl;
 
@@ -4463,7 +4463,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
 }
 
 static gmx_bool test_dd_cutoff(t_commrec *cr,
-                               t_state *state, const t_inputrec *ir,
+                               LocalState *state, const t_inputrec *ir,
                                real cutoff_req)
 {
     gmx_domdec_t *dd;
@@ -4530,7 +4530,7 @@ static gmx_bool test_dd_cutoff(t_commrec *cr,
     return TRUE;
 }
 
-gmx_bool change_dd_cutoff(t_commrec *cr, t_state *state, const t_inputrec *ir,
+gmx_bool change_dd_cutoff(t_commrec *cr, LocalState *state, const t_inputrec *ir,
                           real cutoff_req)
 {
     gmx_bool bCutoffAllowed;
@@ -5159,7 +5159,7 @@ static void clearCommSetupData(dd_comm_setup_work_t *work)
 static void setup_dd_communication(gmx_domdec_t *dd,
                                    matrix box, gmx_ddbox_t *ddbox,
                                    t_forcerec *fr,
-                                   t_state *state, PaddedRVecVector *f)
+                                   LocalState *state, PaddedRVecVector *f)
 {
     int                    dim_ind, dim, dim0, dim1, dim2, dimd, nat_tot;
     int                    nzone, nzone_send, zone, zonei, cg0, cg1;
@@ -6045,7 +6045,7 @@ static void dd_sort_order_nbnxn(const t_forcerec          *fr,
     sort->resize(numSorted);
 }
 
-static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state *state,
+static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, LocalState *state,
                           int ncg_home_old)
 {
     gmx_domdec_sort_t *sort = dd->comm->sort.get();
@@ -6234,10 +6234,10 @@ void dd_partition_system(FILE                *fplog,
                          const t_commrec     *cr,
                          gmx_bool             bMasterState,
                          int                  nstglobalcomm,
-                         t_state             *state_global,
+                         GlobalState         *state_global,
                          const gmx_mtop_t    *top_global,
                          const t_inputrec    *ir,
-                         t_state             *state_local,
+                         LocalState          *state_local,
                          PaddedRVecVector    *f,
                          gmx::MDAtoms        *mdAtoms,
                          gmx_localtop_t      *top_local,
@@ -6887,7 +6887,7 @@ void checkNumberOfBondedInteractions(FILE                 *fplog,
                                      int                   totalNumberOfBondedInteractions,
                                      const gmx_mtop_t     *top_global,
                                      const gmx_localtop_t *top_local,
-                                     const t_state        *state,
+                                     const LocalState     *state,
                                      bool                 *shouldCheckNumberOfBondedInteractions)
 {
     if (*shouldCheckNumberOfBondedInteractions)

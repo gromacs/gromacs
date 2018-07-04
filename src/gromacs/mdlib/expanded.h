@@ -42,20 +42,20 @@
 
 struct df_history_t;
 struct gmx_enerdata_t;
+class LocalState;
 struct t_expanded;
 struct t_extmass;
 struct t_inputrec;
 struct t_lambda;
 struct t_mdatoms;
 struct t_simtemp;
-class t_state;
 
-void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit);
+void init_npt_masses(t_inputrec *ir, LocalState *state, t_extmass *MassQ, gmx_bool bInit);
 
 void init_expanded_ensemble(gmx_bool bStateFromCP, t_inputrec *ir, df_history_t *dfhist);
 
 int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
-                             t_state *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
+                             LocalState *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
                              int64_t step,
                              rvec *v, t_mdatoms *mdatoms);
 

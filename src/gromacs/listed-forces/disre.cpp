@@ -70,7 +70,7 @@
 void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
                  t_inputrec *ir, const t_commrec *cr,
                  const gmx_multisim_t *ms,
-                 t_fcdata *fcd, t_state *state, gmx_bool bIsREMD)
+                 t_fcdata *fcd, GlobalState *state, gmx_bool bIsREMD)
 {
     int                  fa, nmol, npair, np;
     t_disresdata        *dd;

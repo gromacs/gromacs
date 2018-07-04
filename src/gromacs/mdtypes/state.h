@@ -66,6 +66,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+class LocalState;
 struct t_inputrec;
 
 namespace gmx
@@ -74,12 +75,12 @@ struct AwhHistory;
 }
 
 /*
- * The t_state struct should contain all the (possibly) non-static
+ * The two state classes (GlobalState and LocalState) should contain all the (possibly) non-static
  * information required to define the state of the system.
  * Currently the random seeds for SD and BD are missing.
  */
 
-/* \brief Enum for all entries in \p t_state
+/* \brief Enum for all entries in \p GlobalState or \p LocalState
  *
  * These enums are used in flags as (1<<est...).
  * The order of these enums should not be changed,
@@ -182,13 +183,48 @@ typedef struct df_history_t
  * The local state with domain decomposition will have partial entries
  * for which \p stateEntryIsAtomProperty() is true. Some entries that
  * are used in the global state might not be present in the local state.
+ * To avoid confusion, two distinct classes for the global and the
+ * local state are introduced.
  * \todo Move pure observables history to ObservablesHistory.
+ *
+ * The base class State is inherited by GlobalState and LocalState and
+ * mainly serves the purpose of avoiding code duplication. It is not meant
+ * to be used directly; only instances of the two child classes should
+ * be created!
+ * As GlobalState and LocalState ARE States and just add a conversion
+ * constructor to allow copying data from GlobalState to LocalState and back
+ * if needed, inheritance has been considered better design than composition
+ * in this case.
  */
-class t_state
+
+namespace detail
 {
-    public:
+class State
+{
+    protected:
         //! Constructor
-        t_state();
+        State();
+
+        //! Copy assignment
+        State &operator= (const State &) = default;
+
+        //! Copy constructor
+        State(const State &) = default;
+
+        //! Move assignment
+        State &operator= (State &&) = default;
+
+        //! Move constructor
+        State(State &&) = default;
+
+        //! Destructor
+        ~State() {}
+
+    public:
+        //! Resizes the T- and P-coupling state variables
+        void initializeCoupling(int numTemperatureCouplingGroups, int noseHooverChainLengthBarostat, int noseHooverChainLengthThermostat);
+        //! Change the number of atoms represented by this state, allocating memory as needed.
+        void resize(int newSize);
 
         // All things public
         int                        natoms;         //!< Number of atoms, local + non-local; this is the size of \p x, \p v and \p cg_p, when used
@@ -228,6 +264,26 @@ class t_state
         std::vector<int>                  cg_gl;           //!< The global cg number of the local cgs
 };
 
+} // namespace detail
+
+class GlobalState : public detail::State
+{
+    public:
+        //! Constructor
+        GlobalState() = default;
+        //! Conversion constructor (calls copy constructor of State)
+        explicit GlobalState(const LocalState &localState);
+};
+
+class LocalState : public detail::State
+{
+    public:
+        //! Constructor
+        LocalState() = default;
+        //! Conversion constructor (calls copy constructor of State)
+        explicit LocalState(const GlobalState &globalState);
+};
+
 #ifndef DOXYGEN
 /* We don't document the structs below, as they don't belong here.
  * TODO: Move the next two structs out of state.h.
@@ -254,17 +310,11 @@ typedef struct
 
 #endif // DOXYGEN
 
-//! Resizes the T- and P-coupling state variables
-void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength);
-
-//! Change the number of atoms represented by this state, allocating memory as needed.
-void state_change_natoms(t_state *state, int natoms);
-
 //! Allocates memory for free-energy history
-void init_dfhist_state(t_state *state, int dfhistNumLambda);
+void init_dfhist_state(LocalState *state, int dfhistNumLambda);
 
 /*! \brief Compares two states, write the differences to stdout */
-void comp_state(const t_state *st1, const t_state *st2, gmx_bool bRMSD, real ftol, real abstol);
+void comp_state(const GlobalState *st1, const GlobalState *st2, gmx_bool bRMSD, real ftol, real abstol);
 
 /*! \brief Allocates an rvec pointer and copy the contents of v to it */
 rvec *makeRvecArray(gmx::ArrayRef<const gmx::RVec> v,
@@ -276,7 +326,7 @@ rvec *makeRvecArray(gmx::ArrayRef<const gmx::RVec> v,
  * \param[in]    ir      Input record
  * \param[inout] state   State
  */
-void set_box_rel(const t_inputrec *ir, t_state *state);
+void set_box_rel(const t_inputrec *ir, GlobalState *state);
 
 /*! \brief Make sure the relative box shape remains the same
  *
@@ -298,8 +348,9 @@ void preserve_box_shape(const t_inputrec *ir, matrix box_rel, matrix box);
  *
  * \param[in] state  The state, can be nullptr
  */
+template <class T>
 static inline gmx::ArrayRef<const gmx::RVec>
-positionsFromStatePointer(const t_state *state)
+positionsFromStatePointer(const T *state)
 {
     if (state)
     {
