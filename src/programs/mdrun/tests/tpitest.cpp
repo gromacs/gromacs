@@ -43,9 +43,6 @@
  */
 #include "gmxpre.h"
 
-// FIXME: we should be properly enabling (or, for TPI, disabling) FP exceptions in mdrun, not here.
-// Remove this include and the exception toggling calls.
-#include "gromacs/math/utilities.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
 
@@ -78,15 +75,11 @@ void TpiTest::runTest()
     runner_.ndxFileName_ = "";
     ASSERT_EQ(0, runner_.callGrompp());
 
-    gmx_fedisableexcept();
-
     auto        rerunFileName = fileManager_.getInputFilePath("spc216.gro");
     CommandLine commandLine;
     commandLine.append("-rerun");
     commandLine.append(rerunFileName);
     ASSERT_EQ(0, runner_.callMdrun(commandLine));
-
-    gmx_feenableexcept();
 
     const std::string    logFileContexts = TextReader::readFileToString(runner_.logFileName_);
     const std::string    tpiOutputs      = logFileContexts.substr(logFileContexts.find("Started Test Particle Insertion"));

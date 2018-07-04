@@ -146,28 +146,6 @@ int gmx_feenableexcept()
 #endif
 }
 
-int gmx_fedisableexcept()
-{
-#if HAVE_FEDISABLEEXCEPT
-    return fedisableexcept(c_FPexceptions);
-#elif (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
-    static fenv_t fenv;
-    unsigned int  new_excepts = c_FPexceptions & FE_ALL_EXCEPT;
-    if (fegetenv (&fenv) )
-    {
-        return -1;
-    }
-
-    // mask
-    fenv.__control |= new_excepts;
-    fenv.__mxcsr   |= new_excepts << 7;
-
-    return fesetenv(&fenv);
-#else
-    return -1;
-#endif
-}
-
 real max_cutoff(real cutoff1, real cutoff2)
 {
     if (cutoff1 == 0 || cutoff2 == 0)
