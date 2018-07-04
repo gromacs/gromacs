@@ -60,6 +60,7 @@
 #include "gromacs/mdlib/nbnxn_gpu_types.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/gpu_timing.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "nbnxn_gpu_common_utils.h"
@@ -102,9 +103,7 @@ static inline int gpuAtomToInteractionLocality(int atomLocality)
     }
     else
     {
-        // can't be reached
-        assert(false);
-        return -1;
+        gmx_incons("Wrong locality");
     }
 }
 
