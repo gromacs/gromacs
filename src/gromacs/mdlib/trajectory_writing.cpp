@@ -62,8 +62,8 @@ do_md_trajectory_writing(FILE                    *fplog,
                          int64_t                  step_rel,
                          double                   t,
                          t_inputrec              *ir,
-                         t_state                 *state,
-                         t_state                 *state_global,
+                         LocalState              *state,
+                         GlobalState             *state_global,
                          ObservablesHistory      *observablesHistory,
                          gmx_mtop_t              *top_global,
                          t_forcerec              *fr,
@@ -167,7 +167,7 @@ do_md_trajectory_writing(FILE                    *fplog,
             bDoConfOut && MASTER(cr) &&
             !bRerunMD)
         {
-            if (fr->bMolPBC && state == state_global)
+            if (fr->bMolPBC && !DOMAINDECOMP(cr))
             {
                 /* This (single-rank) run needs to allocate a
                    temporary array of size natoms so that any
@@ -200,7 +200,7 @@ do_md_trajectory_writing(FILE                    *fplog,
                                 *top_global->name, top_global,
                                 x_for_confout, state_global->v.rvec_array(),
                                 ir->ePBC, state->box);
-            if (fr->bMolPBC && state == state_global)
+            if (fr->bMolPBC && !DOMAINDECOMP(cr))
             {
                 sfree(x_for_confout);
             }

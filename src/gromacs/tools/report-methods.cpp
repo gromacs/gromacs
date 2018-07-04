@@ -213,9 +213,9 @@ void ReportMethods::optionsFinished()
 
 int ReportMethods::run()
 {
-    t_state    state;
-    t_inputrec ir;
-    gmx_mtop_t top;
+    GlobalState state;
+    t_inputrec  ir;
+    gmx_mtop_t  top;
     read_tpx_state(inputTopology_.c_str(), &ir, &state, &top);
     if (writeLatex_)
     {

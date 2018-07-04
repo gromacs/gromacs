@@ -106,7 +106,7 @@ void generateAndReadTprInput(const std::string &filename, gmx_mtop_t *mtop, t_in
     std::string       tprName = generateTprInput(&fileManager, filename);
 // read tpr into variables needed for output
     {
-        t_state     state;
+        GlobalState state;
         read_tpx_state(tprName.c_str(), ir, &state, mtop);
     }
 }

@@ -51,11 +51,12 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+class GlobalState;
 struct gmx_enerdata_t;
 struct gmx_multisim_t;
+class LocalState;
 struct t_commrec;
 struct t_inputrec;
-class t_state;
 
 /*! \libinternal
  * \brief The parameters for the replica exchange algorithm. */
@@ -96,8 +97,8 @@ gmx_bool replica_exchange(FILE *fplog,
                           const t_commrec *cr,
                           const gmx_multisim_t *ms,
                           gmx_repl_ex_t re,
-                          t_state *state, const gmx_enerdata_t *enerd,
-                          t_state *state_local,
+                          GlobalState *state, const gmx_enerdata_t *enerd,
+                          LocalState *state_local,
                           int64_t step, real time);
 
 /*! \brief Prints replica exchange statistics to the log file.
