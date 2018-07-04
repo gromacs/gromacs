@@ -66,6 +66,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+class LocalState;
 struct t_inputrec;
 
 namespace gmx
@@ -74,12 +75,12 @@ struct AwhHistory;
 }
 
 /*
- * The t_state struct should contain all the (possibly) non-static
+ * The two state classes (GlobalState and LocalState) should contain all the (possibly) non-static
  * information required to define the state of the system.
  * Currently the random seeds for SD and BD are missing.
  */
 
-/* \brief Enum for all entries in \p t_state
+/* \brief Enum for all entries in \p GlobalState or \p LocalState
  *
  * These enums are used in flags as (1<<est...).
  * The order of these enums should not be changed,
@@ -182,13 +183,16 @@ typedef struct df_history_t
  * The local state with domain decomposition will have partial entries
  * for which \p stateEntryIsAtomProperty() is true. Some entries that
  * are used in the global state might not be present in the local state.
+ * To avoid confusion, two distinct classes for the global and the
+ * local state are introduced.
  * \todo Move pure observables history to ObservablesHistory.
  */
-class t_state
+class GlobalState
 {
     public:
-        //! Constructor
-        t_state();
+        //! Constructors
+        GlobalState();
+        explicit GlobalState(const LocalState &state_local);
 
         // All things public
         int                        natoms;         //!< Number of atoms, local + non-local; this is the size of \p x, \p v and \p cg_p, when used
@@ -228,6 +232,52 @@ class t_state
         std::vector<int>                  cg_gl;           //!< The global cg number of the local cgs
 };
 
+class LocalState
+{
+    public:
+        //! Constructors
+        LocalState();
+        explicit LocalState(const GlobalState &state_global);
+
+        // All things public
+        int                        natoms;         //!< Number of atoms, local + non-local; this is the size of \p x, \p v and \p cg_p, when used
+        int                        ngtc;           //!< The number of temperature coupling groups
+        int                        nnhpres;        //!< The NH-chain length for the MTTK barostat
+        int                        nhchainlength;  //!< The NH-chain length for temperature coupling
+        int                        flags;          //!< Set of bit-flags telling which entries are present, see enum at the top of the file
+        int                        fep_state;      //!< indicates which of the alchemical states we are in
+        std::array<real, efptNR>   lambda;         //!< Free-energy lambda vector
+        matrix                     box;            //!< Matrix of box vectors
+        matrix                     box_rel;        //!< Relative box vectors to preserve box shape
+        matrix                     boxv;           //!< Box velocities for Parrinello-Rahman P-coupling
+        matrix                     pres_prev;      //!< Pressure of the previous step for pcoupl
+        matrix                     svir_prev;      //!< Shake virial for previous step for pcoupl
+        matrix                     fvir_prev;      //!< Force virial of the previous step for pcoupl
+        std::vector<double>        nosehoover_xi;  //!< Nose-Hoover coordinates (ngtc)
+        std::vector<double>        nosehoover_vxi; //!< Nose-Hoover velocities (ngtc)
+        std::vector<double>        nhpres_xi;      //!< Pressure Nose-Hoover coordinates
+        std::vector<double>        nhpres_vxi;     //!< Pressure Nose-Hoover velocities
+        std::vector<double>        therm_integral; //!< Work exterted N-H/V-rescale T-coupling (ngtc)
+        double                     baros_integral; //!< For Berendsen P-coupling conserved quantity
+        real                       veta;           //!< Trotter based isotropic P-coupling
+        real                       vol0;           //!< Initial volume,required for computing MTTK conserved quantity
+        gmx::HostVector<gmx::RVec> x;              //!< The coordinates (natoms)
+        PaddedRVecVector           v;              //!< The velocities (natoms)
+        PaddedRVecVector           cg_p;           //!< p vector for conjugate gradient minimization
+
+        ekinstate_t                ekinstate;      //!< The state of the kinetic energy
+
+        /* History for special algorithms, should be moved to a history struct */
+        // awhHistory is only used with GlobalState BUT we need to copy it back from LocalState to GlobalState in some routines
+        history_t                         hist;            //!< Time history for restraints
+        df_history_t                     *dfhist;          //!< Free-energy history for free energy analysis
+        std::shared_ptr<gmx::AwhHistory>  awhHistory;      //!< Accelerated weight histogram history
+
+        int                               ddp_count;       //!< The DD partitioning count for this state
+        int                               ddp_count_cg_gl; //!< The DD partitioning count for index_gl
+        std::vector<int>                  cg_gl;           //!< The global cg number of the local cgs
+};
+
 #ifndef DOXYGEN
 /* We don't document the structs below, as they don't belong here.
  * TODO: Move the next two structs out of state.h.
@@ -254,17 +304,21 @@ typedef struct
 
 #endif // DOXYGEN
 
-//! Resizes the T- and P-coupling state variables
-void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength);
+//! Resizes the T- and P-coupling state variables (version for state_global)
+void init_gtc_state_global(GlobalState *state, int ngtc, int nnhpres, int nhchainlength);
+//! Resizes the T- and P-coupling state variables (version for state_local)
+void init_gtc_state_local(LocalState *state, int ngtc, int nnhpres, int nhchainlength);
 
-//! Change the number of atoms represented by this state, allocating memory as needed.
-void state_change_natoms(t_state *state, int natoms);
+//! Change the number of atoms represented by this state, allocating memory as needed (version for state_global).
+void state_change_natoms_global(GlobalState *state, int natoms);
+//! Change the number of atoms represented by this state, allocating memory as needed (version for state_local).
+void state_change_natoms_local(LocalState *state, int natoms);
 
 //! Allocates memory for free-energy history
-void init_dfhist_state(t_state *state, int dfhistNumLambda);
+void init_dfhist_state(LocalState *state, int dfhistNumLambda);
 
 /*! \brief Compares two states, write the differences to stdout */
-void comp_state(const t_state *st1, const t_state *st2, gmx_bool bRMSD, real ftol, real abstol);
+void comp_state(const GlobalState *st1, const GlobalState *st2, gmx_bool bRMSD, real ftol, real abstol);
 
 /*! \brief Allocates an rvec pointer and copy the contents of v to it */
 rvec *makeRvecArray(gmx::ArrayRef<const gmx::RVec> v,
@@ -276,7 +330,7 @@ rvec *makeRvecArray(gmx::ArrayRef<const gmx::RVec> v,
  * \param[in]    ir      Input record
  * \param[inout] state   State
  */
-void set_box_rel(const t_inputrec *ir, t_state *state);
+void set_box_rel(const t_inputrec *ir, GlobalState *state);
 
 /*! \brief Make sure the relative box shape remains the same
  *
@@ -292,14 +346,28 @@ void preserve_box_shape(const t_inputrec *ir, matrix box_rel, matrix box);
 
 /*! \brief Returns an arrayRef to the positions in \p state when \p state!=null
  *
- * When \p state=nullptr, returns an empty arrayRef.
+ * When \p state=nullptr, returns an empty arrayRef. Version for global state.
  *
  * \note The size returned is the number of atoms, without padding.
  *
  * \param[in] state  The state, can be nullptr
  */
 static inline gmx::ArrayRef<const gmx::RVec>
-positionsFromStatePointer(const t_state *state)
+positionsFromGlobalStatePointer(const GlobalState *state)
+{
+    if (state)
+    {
+        return gmx::constArrayRefFromArray(state->x.data(), state->natoms);
+    }
+    else
+    {
+        return gmx::EmptyArrayRef();
+    }
+};
+
+//! \brief Same as positionsFromGlobalStatePointer, but for local state
+static inline gmx::ArrayRef<const gmx::RVec>
+positionsFromLocalStatePointer(const LocalState *state)
 {
     if (state)
     {

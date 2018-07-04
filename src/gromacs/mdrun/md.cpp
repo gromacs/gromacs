@@ -199,7 +199,7 @@ static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commre
  * \param[in,out] warnWhenNoV     When true, issue a warning when no velocities are present in \p rerunFrame; is set to false when a warning was issued
  */
 static void prepareRerunState(const t_trxframe  &rerunFrame,
-                              t_state           *globalState,
+                              GlobalState       *globalState,
                               bool               constructVsites,
                               const gmx_vsite_t *vsite,
                               const t_idef      &idef,
@@ -446,15 +446,15 @@ void gmx::Integrator::do_md()
              nfile, fnm, oenv, mdrunOptions);
 
     // Local state only becomes valid now.
-    std::unique_ptr<t_state> stateInstance;
-    t_state *                state;
+    std::unique_ptr<LocalState> stateInstance;
+    LocalState *                state;
+    stateInstance = compat::make_unique<LocalState>();
+    state         = stateInstance.get();
 
     if (DOMAINDECOMP(cr))
     {
         top = dd_init_local_top(top_global);
 
-        stateInstance = compat::make_unique<t_state>();
-        state         = stateInstance.get();
         dd_init_local_state(cr->dd, state_global, state);
 
         /* Distribute the charge groups over the nodes from the master node */
@@ -468,13 +468,21 @@ void gmx::Integrator::do_md()
     }
     else
     {
-        state_change_natoms(state_global, state_global->natoms);
+        state_change_natoms_global(state_global, state_global->natoms);
         /* We need to allocate one element extra, since we might use
          * (unaligned) 4-wide SIMD loads to access rvec entries.
          */
         f.resize(gmx::paddedRVecVectorSize(state_global->natoms));
-        /* Copy the pointer to the global state */
-        state = state_global;
+        /* Copy the state (not just the pointer) */
+        /* pinning:
+         * - the copy constructor LocalState copies state_global.x to this.x
+         *   => state_global.x is unpinned, this.x is pinned
+         * - this is assigned/copied to state
+         *   => this.x is unpinned, state.x is pinned
+         * - the old state is destroyed/freed and the old state.x is unpinned (happens at the end of the first iteration)
+         *   => side effect: new state.x is unpinned, too (impl_->pinnedPointer_ = nullptr) and impl_->pointer_ is set to nullptr by free() and you cannot re-pin
+         */
+        *state = LocalState(*state_global);
 
         snew(top, 1);
         mdAlgorithmsSetupAtomData(cr, ir, top_global, top, fr,
@@ -527,7 +535,7 @@ void gmx::Integrator::do_md()
     }
 
     // TODO: Remove this by converting AWH into a ForceProvider
-    auto awh = prepareAwhModule(fplog, *ir, state_global, cr, ms, startingFromCheckpoint,
+    auto awh = prepareAwhModule(fplog, *ir, state_global, state, cr, ms, startingFromCheckpoint,
                                 shellfc != nullptr,
                                 opt2fn("-awh", nfile, fnm), ir->pull_work);
 
@@ -1689,11 +1697,11 @@ void gmx::Integrator::do_md()
             }
             if (bCalcEner)
             {
-                upd_mdebin(mdebin, bDoDHDL, bCalcEnerStep,
-                           t, mdatoms->tmass, enerd, state,
-                           ir->fepvals, ir->expandedvals, lastbox,
-                           shake_vir, force_vir, total_vir, pres,
-                           ekind, mu_tot, constr);
+                upd_mdebin_local(mdebin, bDoDHDL, bCalcEnerStep,
+                                 t, mdatoms->tmass, enerd, state,
+                                 ir->fepvals, ir->expandedvals, lastbox,
+                                 shake_vir, force_vir, total_vir, pres,
+                                 ekind, mu_tot, constr);
             }
             else
             {
@@ -1789,7 +1797,7 @@ void gmx::Integrator::do_md()
             (bGStatEveryStep ||
              (ir->nstpcouple > 0 && step % ir->nstpcouple == 0)))
         {
-            /* Store the pressure in t_state for pressure coupling
+            /* Store the pressure in LocalState for pressure coupling
              * at the next MD step.
              */
             copy_mat(pres, state->pres_prev);

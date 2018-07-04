@@ -44,15 +44,16 @@
 #include "gromacs/mdtypes/enerdata.h"
 
 class energyhistory_t;
+class GlobalState;
 struct gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
+class LocalState;
 struct t_expanded;
 struct t_fcdata;
 struct t_grpopts;
 struct t_lambda;
-class t_state;
 
 namespace gmx
 {
@@ -136,23 +137,40 @@ FILE *open_dhdl(const char *filename, const t_inputrec *ir,
 
 /* update the averaging structures. Called every time
    the energies are evaluated. */
-void upd_mdebin(t_mdebin                 *md,
-                gmx_bool                  bDoDHDL,
-                gmx_bool                  bSum,
-                double                    time,
-                real                      tmass,
-                gmx_enerdata_t           *enerd,
-                t_state                  *state,
-                t_lambda                 *fep,
-                t_expanded               *expand,
-                matrix                    lastbox,
-                tensor                    svir,
-                tensor                    fvir,
-                tensor                    vir,
-                tensor                    pres,
-                gmx_ekindata_t           *ekind,
-                rvec                      mu_tot,
-                const gmx::Constraints   *constr);
+void upd_mdebin_global(t_mdebin                 *md,
+                       gmx_bool                  bDoDHDL,
+                       gmx_bool                  bSum,
+                       double                    time,
+                       real                      tmass,
+                       gmx_enerdata_t           *enerd,
+                       GlobalState              *state,
+                       t_lambda                 *fep,
+                       t_expanded               *expand,
+                       matrix                    lastbox,
+                       tensor                    svir,
+                       tensor                    fvir,
+                       tensor                    vir,
+                       tensor                    pres,
+                       gmx_ekindata_t           *ekind,
+                       rvec                      mu_tot,
+                       const gmx::Constraints   *constr);
+void upd_mdebin_local(t_mdebin                 *md,
+                      gmx_bool                  bDoDHDL,
+                      gmx_bool                  bSum,
+                      double                    time,
+                      real                      tmass,
+                      gmx_enerdata_t           *enerd,
+                      LocalState               *state,
+                      t_lambda                 *fep,
+                      t_expanded               *expand,
+                      matrix                    lastbox,
+                      tensor                    svir,
+                      tensor                    fvir,
+                      tensor                    vir,
+                      tensor                    pres,
+                      gmx_ekindata_t           *ekind,
+                      rvec                      mu_tot,
+                      const gmx::Constraints   *constr);
 
 void upd_mdebin_step(t_mdebin *md);
 /* Updates only the step count in md */

@@ -1150,7 +1150,7 @@ static real find_energy(const char *name, int nre, gmx_enxnm_t *enm,
 
 
 void get_enx_state(const char *fn, real t, const gmx_groups_t *groups, t_inputrec *ir,
-                   t_state *state)
+                   GlobalState *state)
 {
     /* Should match the names in mdebin.c */
     static const char *boxvel_nm[] = {

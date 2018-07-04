@@ -250,7 +250,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
                                       int mdof_flags,
                                       gmx_mtop_t *top_global,
                                       int64_t step, double t,
-                                      t_state *state_local, t_state *state_global,
+                                      LocalState *state_local, GlobalState *state_global,
                                       ObservablesHistory *observablesHistory,
                                       gmx::ArrayRef<gmx::RVec> f_local)
 {
@@ -283,8 +283,17 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
     }
     else
     {
-        /* We have the whole state locally: copy the local state pointer */
-        state_global = state_local;
+        /* We have the whole state locally: copy the local state (not just the pointer) */
+        /* pinning:
+         * - the copy constructor GlobalState copies state_local.x to this.x
+         *   => state_local.x is unpinned, this.x is pinned
+         * - this is assigned/copied to state_global
+         *   => this.x is unpinned, state_global.x is pinned
+         * - the old state_global is destroyed/freed and the old state_global.x is unpinned
+         *   => side effect: the new state_global.x is unpinned, too (or at least the routine believes it: impl_->pinnedPointer_ = nullptr) and impl_->pointer_ is set to nullptr (cannot re-pin)
+         * => pinning is lost completely in the line below
+         */
+        *state_global = GlobalState(*state_local);
 
         f_global     = as_rvec_array(f_local.data());
     }
