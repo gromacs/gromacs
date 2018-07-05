@@ -57,11 +57,12 @@
 
 /*! \brief Struct that defines a pull group */
 typedef struct {
-    int   nat;     /**< Number of atoms in the pull group */
-    int  *ind;     /**< The global atoms numbers */
-    int   nweight; /**< The number of weights (0 or nat) */
-    real *weight;  /**< Weights (use all 1 when weight==NULL) */
-    int   pbcatom; /**< The reference atom for pbc (global number) */
+    int   nat;                           /**< Number of atoms in the pull group */
+    int  *ind;                           /**< The global atoms numbers */
+    int   nweight;                       /**< The number of weights (0 or nat) */
+    real *weight;                        /**< Weights (use all 1 when weight==NULL) */
+    int   pbcatom;                       /**< The reference atom for pbc (global number) */
+    bool  setPbcReferenceToLastFrameCOM; /**< Use the COM of the group from the previous frame as reference */
 } t_pull_group;
 
 /*! Maximum number of pull groups that can be used in a pull coordinate */

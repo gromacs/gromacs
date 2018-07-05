@@ -2155,6 +2155,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             GMX_RELEASE_ASSERT(pgrp->params.nat == 0, "pull group 0 is an absolute reference group and should not contain atoms");
             clear_dvec(pgrp->x);
             clear_dvec(pgrp->xp);
+            clear_dvec(pgrp->x_last_step);
             pgrp->bCalcCOM = FALSE;
         }
 

@@ -615,6 +615,12 @@ void pull_calc_coms(const t_commrec *cr,
                     /* Set the pbc atom */
                     copy_rvec(comm->rbuf[g], x_pbc);
                 }
+                else if (pgrp->epgrppbc == epgrppbcLASTSTEPCOM)
+                {
+                    /* Set the pbc reference to the COM of the group of the last step */
+                    copy_rvec(pgrp->x_last_step, x_pbc);
+                    copy_rvec(pgrp->x_last_step, comm->rbuf[g]);
+                }
 
                 /* The final sums should end up in sum_com[0] */
                 pull_sum_com_t *sum_com = &pull->sum_com[0];
@@ -759,7 +765,7 @@ void pull_calc_coms(const t_commrec *cr,
                     {
                         pgrp->xp[m] = comm->dbuf[g*3+1][m]*pgrp->mwscale;
                     }
-                    if (pgrp->epgrppbc == epgrppbcREFAT)
+                    if (pgrp->epgrppbc == epgrppbcREFAT || epgrppbcLASTSTEPCOM)
                     {
                         pgrp->x[m]      += comm->rbuf[g][m];
                         if (xp)
@@ -768,6 +774,7 @@ void pull_calc_coms(const t_commrec *cr,
                         }
                     }
                 }
+                copy_rvec(pgrp->xp, pgrp->x_last_step);
             }
             else
             {
