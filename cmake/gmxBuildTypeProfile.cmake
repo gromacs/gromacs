@@ -33,8 +33,8 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 # Custom build type "Profile", based on "RelWithAssert".
-set( CMAKE_C_FLAGS_PROFILE "${CMAKE_C_FLAGS_RELEASE_INIT} -pg" CACHE STRING "C flags for profile builds.")
-set( CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE_INIT} -pg" CACHE STRING "C++ flags for profile builds.")
-set( CMAKE_LD_FLAGS_PROFILE "${CMAKE_LD_FLAGS_RELEASE_INIT} -pg" CACHE STRING "Linking flags for profile builds.")
+set( CMAKE_C_FLAGS_PROFILE "${CMAKE_C_FLAGS_RELEASE_INIT} -pg" CACHE STRING "C flags for profile builds." FORCE)
+set( CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE_INIT} -pg" CACHE STRING "C++ flags for profile builds." FORCE)
+set( CMAKE_LD_FLAGS_PROFILE "${CMAKE_LD_FLAGS_RELEASE_INIT} -pg" CACHE STRING "Linking flags for profile builds." FORCE)
 mark_as_advanced( CMAKE_CXX_FLAGS_PROFILE CMAKE_C_FLAGS_PROFILE CMAKE_LD_FLAGS_PROFILE)
 
