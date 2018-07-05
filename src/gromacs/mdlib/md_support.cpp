@@ -63,6 +63,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pulling/pull.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
@@ -615,5 +616,10 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
     {
         snew(state->dfhist, 1);
         init_df_history(state->dfhist, ir->fepvals->n_lambda);
+    }
+
+    if (ir->pull && ir->pull->bSetPbcRefToPrevStepCOM)
+    {
+        state->flags |= (1<<estPREVSTEPCOM);
     }
 }
