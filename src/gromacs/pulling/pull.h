@@ -67,6 +67,7 @@ struct t_filenm;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
+class t_state;
 
 namespace gmx
 {
@@ -315,5 +316,37 @@ gmx_bool pull_have_constraint(const struct pull_t *pull);
  */
 real max_pull_distance2(const pull_coord_work_t *pcrd,
                         const t_pbc             *pbc);
+
+
+/*! \brief Initializes the coordinate of the previous step to NAN.
+ *
+ * Sets the coordinate in the first dimension to NAN to mark it as unset.
+ *
+ * \param pullWork The pull data structure.
+ * \param nGroups  The number of pull groups.
+ */
+void pullInitXPrevStep(pull_t *pullWork, int nGroups);
+
+/*! \brief Copies the coordinates of the pull groups to the pull parameters COM for the first step.
+ *
+ * \param pullParams The pull input parameters containing all pull settings.
+ * \param pullWork    The pull data structure.
+ * \param nGroups     The number of pull groups.
+ */
+void pullSetInitCom(pull_params_t *pullParams, pull_t *pullWork, int nGroups);
+
+/*! \brief Copies the COM from the previous step of all pull groups to the checkpoint state container
+ *
+ * \param[in]   pullWork      The COM pull force calculation data structure
+ * \param[in]   state          The global state container
+ */
+void setStatePrevStepPullCom(const struct pull_t *pullWork, t_state *state);
+
+/*! \brief Copies the pull group COM of the previous step from the checkpoint state to the pull state
+ *
+ * \param[in]   pullWork      The COM pull force calculation data structure
+ * \param[in]   state          The global state container
+ */
+void setPrevStepPullComFromState(struct pull_t *pullWork, const t_state *state);
 
 #endif
