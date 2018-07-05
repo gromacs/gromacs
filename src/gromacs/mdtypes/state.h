@@ -94,7 +94,7 @@ enum {
     estORIRE_INITF, estORIRE_DTAV,
     estSVIR_PREV, estNH_VXI, estVETA, estVOL0, estNHPRES_XI, estNHPRES_VXI, estFVIR_PREV,
     estFEPSTATE, estMC_RNG_NOTSUPPORTED, estMC_RNGI_NOTSUPPORTED,
-    estBAROS_INT,
+    estBAROS_INT, estPREVSTEPCOM,
     estNR
 };
 
@@ -226,6 +226,8 @@ class t_state
         int                               ddp_count;       //!< The DD partitioning count for this state
         int                               ddp_count_cg_gl; //!< The DD partitioning count for index_gl
         std::vector<int>                  cg_gl;           //!< The global cg number of the local cgs
+
+        std::vector<double>               com_prev_step;   //!< The COM of the previous step of each pull group
 };
 
 #ifndef DOXYGEN

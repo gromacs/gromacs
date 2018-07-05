@@ -103,7 +103,7 @@
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
  */
-static const int cpt_version = 17;
+static const int cpt_version = 18;
 
 
 const char *est_names[estNR] =
@@ -189,6 +189,17 @@ static const char *eawhh_names[eawhhNR] =
     "awh_forceCorrelationGrid"
 };
 
+enum {
+    epullsPREVSTEPCOM,
+    epullsNR
+};
+
+static const char *epull_prev_step_com_names[epullsNR] =
+{
+    "Pull groups prev step COM"
+};
+
+
 //! Higher level vector element type, only used for formatting checkpoint dumps
 enum class CptElementType
 {
@@ -205,7 +216,8 @@ enum class StatePart
     kineticEnergy,      //!< Kinetic energy, needed for T/P-coupling state
     energyHistory,      //!< Energy observable statistics
     freeEnergyHistory,  //!< Free-energy state and observable statistics
-    accWeightHistogram  //!< Accelerated weight histogram method state
+    accWeightHistogram, //!< Accelerated weight histogram method state
+    pullState           //!< COM of previous step.
 };
 
 //! \brief Return the name of a checkpoint entry based on part and part entry
@@ -218,6 +230,7 @@ static const char *entryName(StatePart part, int ecpt)
         case StatePart::energyHistory:      return eenh_names[ecpt];
         case StatePart::freeEnergyHistory:  return edfh_names[ecpt];
         case StatePart::accWeightHistogram: return eawhh_names[ecpt];
+        case StatePart::pullState:          return epull_prev_step_com_names[ecpt];
     }
 
     return nullptr;
@@ -1142,13 +1155,13 @@ static int do_cpt_state(XDR *xd,
                 case estDISRE_RM3TAV: ret         = do_cpte_n_reals(xd, part, i, sflags, &state->hist.ndisrepairs, &state->hist.disre_rm3tav, list); break;
                 case estORIRE_INITF:  ret         = do_cpte_real (xd, part, i, sflags, &state->hist.orire_initf, list); break;
                 case estORIRE_DTAV:   ret         = do_cpte_n_reals(xd, part, i, sflags, &state->hist.norire_Dtav, &state->hist.orire_Dtav, list); break;
+                case estPREVSTEPCOM:  ret         = doVector<double>(xd, part, i, sflags, &state->com_prev_step, list); break;
                 default:
                     gmx_fatal(FARGS, "Unknown state entry %d\n"
                               "You are reading a checkpoint file written by different code, which is not supported", i);
             }
         }
     }
-
     return ret;
 }
 

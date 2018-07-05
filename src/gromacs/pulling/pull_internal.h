@@ -70,7 +70,7 @@ static const int c_pullMaxNumLocalAtomsSingleThreaded = 1;
 #endif
 
 enum {
-    epgrppbcNONE, epgrppbcREFAT, epgrppbcCOS
+    epgrppbcNONE, epgrppbcREFAT, epgrppbcCOS, epgrppbcPREVSTEPCOM
 };
 
 /*! \internal
@@ -80,11 +80,13 @@ struct pull_group_work_t
 {
     /*! \brief Constructor
      *
-     * \param[in] params   The group parameters set by the user
-     * \param[in] atomSet  The global to local atom set manager
+     * \param[in] params                  The group parameters set by the user
+     * \param[in] atomSet                 The global to local atom set manager
+     * \param[in] setPbcRefToPrevStepCOM Does this pull group use the COM from the previous step as reference position?
      */
     pull_group_work_t(const t_pull_group &params,
-                      gmx::LocalAtomSet   atomSet);
+                      gmx::LocalAtomSet   atomSet,
+                      bool                setPbcRefToPrevStepCOM);
 
     /* Data only modified at initialization */
     const t_pull_group params;        /**< The pull group parameters */
@@ -100,13 +102,14 @@ struct pull_group_work_t
                                                            When no pbc refence atom is used, this pointer shall be null. */
 
     /* Data, potentially, changed at every pull call */
-    real                                  mwscale; /**< mass*weight scaling factor 1/sum w m */
-    real                                  wscale;  /**< scaling factor for the weights: sum w m/sum w w m */
-    real                                  invtm;   /**< inverse total mass of the group: 1/wscale sum w m */
-    std::vector < gmx::BasicVector < double>> mdw; /**< mass*gradient(weight) for atoms */
-    std::vector<double>                   dv;      /**< distance to the other group(s) along vec */
-    dvec                                  x;       /**< COM before update */
-    dvec                                  xp;      /**< COM after update before constraining */
+    real                                  mwscale;     /**< mass*weight scaling factor 1/sum w m */
+    real                                  wscale;      /**< scaling factor for the weights: sum w m/sum w w m */
+    real                                  invtm;       /**< inverse total mass of the group: 1/wscale sum w m */
+    std::vector < gmx::BasicVector < double>> mdw;     /**< mass*gradient(weight) for atoms */
+    std::vector<double>                   dv;          /**< distance to the other group(s) along vec */
+    dvec                                  x;           /**< COM before update */
+    dvec                                  xp;          /**< COM after update before constraining */
+    dvec                                  x_prev_step; /**< center of mass of the previous step */
 };
 
 /* Struct describing the instantaneous spatial layout of a pull coordinate */
