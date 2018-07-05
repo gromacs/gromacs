@@ -494,6 +494,10 @@ void gmx::Integrator::do_md()
 
     if (MASTER(cr))
     {
+        if (ir->pull->bSetPbcRefToPrevStepCOM)
+        {
+            initPullComFromPrevStep(state, ir);
+        }
         if (startingFromCheckpoint)
         {
             /* Update mdebin with energy history if appending to output files */
@@ -508,6 +512,11 @@ void gmx::Integrator::do_md()
                  * Free the allocated memory and reset the counts.
                  */
                 observablesHistory->energyHistory = {};
+            }
+            if (ir->pull->bSetPbcRefToPrevStepCOM)
+            {
+                /* Copy the pull group COM of the previous step from the checkpoint state to the pull state */
+                setPrevStepPullComFromState(ir->pull_work, state);
             }
         }
         if (observablesHistory->energyHistory == nullptr)
@@ -661,6 +670,11 @@ void gmx::Integrator::do_md()
     /* need to make an initiation call to get the Trotter variables set, as well as other constants for non-trotter
        temperature control */
     trotter_seq = init_npt_vars(ir, state, &MassQ, bTrotter);
+
+    if (ir->pull->bSetPbcRefToPrevStepCOM && !startingFromCheckpoint)
+    {
+        updatePrevStepCom(ir->pull_work);
+    }
 
     if (MASTER(cr))
     {
@@ -1496,6 +1510,12 @@ void gmx::Integrator::do_md()
             finish_update(ir, mdatoms,
                           state, graph,
                           nrnb, wcycle, upd, constr);
+
+            if (MASTER(cr) && ir->bPull && ir->pull->bSetPbcRefToPrevStepCOM)
+            {
+                updatePrevStepCom(ir->pull_work);
+                setStatePrevStepPullCom(ir->pull_work, state);
+            }
 
             if (ir->eI == eiVVAK)
             {
