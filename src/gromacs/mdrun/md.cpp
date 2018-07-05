@@ -496,6 +496,23 @@ void gmx::Integrator::do_md()
 
     if (MASTER(cr))
     {
+        /* Set the number of pull groups to enable recording the COM of the previous frame. */
+        if (ir->pull_work)
+        {
+            if (state->npullgroups != ir->pull->ngroup)
+            {
+                state->npullgroups = ir->pull->ngroup;
+                snew(state->com_prev_step, state->npullgroups);
+                for (int i = 0; i < state->npullgroups; i++)
+                {
+                    state->com_prev_step[i][XX] = NAN;
+                }
+            }
+        }
+        else
+        {
+            state->npullgroups = 0;
+        }
         if (startingFromCheckpoint)
         {
             /* Update mdebin with energy history if appending to output files */
@@ -511,6 +528,8 @@ void gmx::Integrator::do_md()
                  */
                 observablesHistory->energyHistory = {};
             }
+            /* Copy the pull group COM of the previous step from the checkpoint state to the pull state */
+            setPrevStepPullComFromState(ir->pull_work, state);
         }
         if (observablesHistory->energyHistory == nullptr)
         {
@@ -1498,6 +1517,11 @@ void gmx::Integrator::do_md()
             finish_update(ir, mdatoms,
                           state, graph,
                           nrnb, wcycle, upd, constr);
+
+            if (MASTER(cr) && ir->bPull)
+            {
+                setStatePrevStepPullCom(ir->pull_work, state);
+            }
 
             if (ir->eI == eiVVAK)
             {
