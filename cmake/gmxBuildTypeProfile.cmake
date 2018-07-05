@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014, by the GROMACS development team, led by
+# Copyright (c) 2014,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,8 +33,8 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 # Custom build type "Profile", based on "RelWithAssert".
-set( CMAKE_C_FLAGS_PROFILE "${CMAKE_C_FLAGS_RELEASE_INIT} -pg" CACHE STRING "C flags for profile builds.")
-set( CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE_INIT} -pg" CACHE STRING "C++ flags for profile builds.")
-set( CMAKE_LD_FLAGS_PROFILE "${CMAKE_LD_FLAGS_RELEASE_INIT} -pg" CACHE STRING "Linking flags for profile builds.")
+set( CMAKE_C_FLAGS_PROFILE "${CMAKE_C_FLAGS_RELEASE_INIT} -pg" CACHE STRING "C flags for profile builds." FORCE)
+set( CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE_INIT} -pg" CACHE STRING "C++ flags for profile builds." FORCE)
+set( CMAKE_LD_FLAGS_PROFILE "${CMAKE_LD_FLAGS_RELEASE_INIT} -pg" CACHE STRING "Linking flags for profile builds." FORCE)
 mark_as_advanced( CMAKE_CXX_FLAGS_PROFILE CMAKE_C_FLAGS_PROFILE CMAKE_LD_FLAGS_PROFILE)
 
