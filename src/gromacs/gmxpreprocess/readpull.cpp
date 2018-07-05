@@ -279,13 +279,14 @@ char **read_pullparams(std::vector<t_inpfile> *inp,
 
     /* read pull parameters */
     printStringNoNewline(inp, "Cylinder radius for dynamic reaction force groups (nm)");
-    pull->cylinder_r     = get_ereal(inp, "pull-cylinder-r", 1.5, wi);
-    pull->constr_tol     = get_ereal(inp, "pull-constr-tol", 1E-6, wi);
-    pull->bPrintCOM      = (get_eeenum(inp, "pull-print-com", yesno_names, wi) != 0);
-    pull->bPrintRefValue = (get_eeenum(inp, "pull-print-ref-value", yesno_names, wi) != 0);
-    pull->bPrintComp     = (get_eeenum(inp, "pull-print-components", yesno_names, wi) != 0);
-    pull->nstxout        = get_eint(inp, "pull-nstxout", 50, wi);
-    pull->nstfout        = get_eint(inp, "pull-nstfout", 50, wi);
+    pull->cylinder_r              = get_ereal(inp, "pull-cylinder-r", 1.5, wi);
+    pull->constr_tol              = get_ereal(inp, "pull-constr-tol", 1E-6, wi);
+    pull->bPrintCOM               = (get_eeenum(inp, "pull-print-com", yesno_names, wi) != 0);
+    pull->bPrintRefValue          = (get_eeenum(inp, "pull-print-ref-value", yesno_names, wi) != 0);
+    pull->bPrintComp              = (get_eeenum(inp, "pull-print-components", yesno_names, wi) != 0);
+    pull->nstxout                 = get_eint(inp, "pull-nstxout", 50, wi);
+    pull->nstfout                 = get_eint(inp, "pull-nstfout", 50, wi);
+    pull->bSetPbcRefToPrevStepCOM = (get_eeenum(inp, "pull-pbc-ref-prev-step-com", yesno_names, wi) != 0);
     printStringNoNewline(inp, "Number of pull groups");
     pull->ngroup = get_eint(inp, "pull-ngroups", 1, wi);
     printStringNoNewline(inp, "Number of pull coordinates");
@@ -405,13 +406,15 @@ void make_pull_groups(pull_params_t *pull,
     t_pull_group *pgrp;
 
     /* Absolute reference group (might not be used) is special */
-    pgrp          = &pull->group[0];
-    pgrp->nat     = 0;
-    pgrp->pbcatom = -1;
+    pgrp                = &pull->group[0];
+    pgrp->nat           = 0;
+    pgrp->pbcatom       = -1;
+    pgrp->pbcatom_input = -1;
 
     for (g = 1; g < pull->ngroup; g++)
     {
-        pgrp = &pull->group[g];
+        pgrp                = &pull->group[g];
+        pgrp->pbcatom_input = pgrp->pbcatom;
 
         if (strcmp(pgnames[g], "") == 0)
         {
@@ -520,19 +523,57 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
 
     t_start = ir->init_t + ir->init_step*ir->delta_t;
 
+    if (pull->bSetPbcRefToPrevStepCOM)
+    {
+        initPullComFromPrevStep(nullptr, pull_work, md, &pbc, x);
+    }
     pull_calc_coms(nullptr, pull_work, md, &pbc, t_start, x, nullptr);
 
-    int groupThatFailsPbc = pullCheckPbcWithinGroups(*pull_work, x, pbc, c_pullGroupPbcMargin);
-    if (groupThatFailsPbc >= 0)
+    for (int g = 0; g < pull->ngroup; g++)
     {
-        char buf[STRLEN];
-        sprintf(buf,
-                "Pull group %d has atoms at a distance larger than %g times half the box size from the PBC atom (%d). If atoms are or will more beyond half the box size from the PBC atom, the COM will be ill defined.",
-                groupThatFailsPbc,
-                c_pullGroupPbcMargin,
-                pull->group[groupThatFailsPbc].pbcatom);
-        set_warning_line(wi, nullptr, -1);
-        warning(wi, buf);
+        bool groupObeysPbc =
+            pullCheckPbcWithinGroup(*pull_work,
+                                    gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec *>(x),
+                                                           mtop->natoms),
+                                    pbc, g, c_pullGroupSmallGroupThreshold);
+        if (!groupObeysPbc)
+        {
+            char buf[STRLEN];
+            if (pull->group[g].pbcatom_input == 0)
+            {
+                sprintf(buf, "When the maximum distance from a pull group reference atom to other atoms in the "
+                        "group is larger than %g times half the box size a centrally placed "
+                        "atom should be chosen as pbcatom. Pull group %d is larger than that and does not have "
+                        "a specific atom selected as reference atom.", c_pullGroupSmallGroupThreshold, g);
+                warning_error(wi, buf);
+            }
+            else if (!pull->bSetPbcRefToPrevStepCOM)
+            {
+                sprintf(buf, "The maximum distance from the chosen PBC atom (%d) of pull group %d to other "
+                        "atoms in the group is larger than %g times half the box size. "
+                        "Set the pull-pbc-ref-prev-step-com option to yes.", pull->group[g].pbcatom + 1,
+                        g, c_pullGroupSmallGroupThreshold);
+                warning_error(wi, buf);
+            }
+        }
+        if (groupObeysPbc)
+        {
+            groupObeysPbc =
+                pullCheckPbcWithinGroup(*pull_work,
+                                        gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec *>(x),
+                                                               mtop->natoms),
+                                        pbc, g, c_pullGroupPbcMargin);
+            if (!groupObeysPbc)
+            {
+                char buf[STRLEN];
+                sprintf(buf,
+                        "Pull group %d has atoms at a distance larger than %g times half the box size from the PBC atom (%d). "
+                        "If atoms are or will more beyond half the box size from the PBC atom, the COM will be ill defined.",
+                        g, c_pullGroupPbcMargin, pull->group[g].pbcatom + 1);
+                set_warning_line(wi, nullptr, -1);
+                warning(wi, buf);
+            }
+        }
     }
 
     fprintf(stderr, "Pull group  natoms  pbc atom  distance at start  reference at t=0\n");

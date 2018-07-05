@@ -84,7 +84,7 @@
 
 #include "pull_internal.h"
 
-static int groupPbcFromParams(const t_pull_group &params)
+static int groupPbcFromParams(const t_pull_group &params, bool setPbcRefToPrevStepCOM)
 {
     if (params.nat <= 1)
     {
@@ -93,7 +93,14 @@ static int groupPbcFromParams(const t_pull_group &params)
     }
     else if (params.pbcatom >= 0)
     {
-        return epgrppbcREFAT;
+        if (setPbcRefToPrevStepCOM)
+        {
+            return epgrppbcPREVSTEPCOM;
+        }
+        else
+        {
+            return epgrppbcREFAT;
+        }
     }
     else
     {
@@ -107,9 +114,10 @@ static int groupPbcFromParams(const t_pull_group &params)
  *       This will be fixed when the pointers are replacted by std::vector.
  */
 pull_group_work_t::pull_group_work_t(const t_pull_group &params,
-                                     gmx::LocalAtomSet   atomSet) :
+                                     gmx::LocalAtomSet   atomSet,
+                                     bool                bSetPbcRefToPrevStepCOM) :
     params(params),
-    epgrppbc(groupPbcFromParams(params)),
+    epgrppbc(groupPbcFromParams(params, bSetPbcRefToPrevStepCOM)),
     needToCalcCom(false),
     atomSet(atomSet),
     mwscale(0),
@@ -1861,9 +1869,8 @@ void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull)
 
         /* We should participate if we have pull or pbc atoms */
         if (!bMustParticipate &&
-            (group.atomSet.numAtomsLocal() > 0 ||
-             (group.epgrppbc == epgrppbcREFAT &&
-              group.pbcAtomSet->numAtomsLocal() > 0)))
+            (group.atomSet.numAtomsLocal() > 0 || (group.epgrppbc == epgrppbcREFAT &&
+                                                   group.pbcAtomSet->numAtomsLocal() > 0)))
         {
             bMustParticipate = TRUE;
         }
@@ -2120,7 +2127,8 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
 
     for (int i = 0; i < pull_params->ngroup; ++i)
     {
-        pull->group.emplace_back(pull_params->group[i], atomSets->add({pull_params->group[i].ind, pull_params->group[i].ind+pull_params->group[i].nat}));
+        pull->group.emplace_back(pull_params->group[i], atomSets->add({pull_params->group[i].ind, pull_params->group[i].ind+pull_params->group[i].nat}),
+                                 pull_params->bSetPbcRefToPrevStepCOM);
     }
 
     if (cr != nullptr && DOMAINDECOMP(cr))
@@ -2142,6 +2150,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     pull->bAngle      = FALSE;
 
     GMX_RELEASE_ASSERT(pull->group[0].params.nat == 0, "pull group 0 is an absolute reference group and should not contain atoms");
+    pull->group[0].x_prev_step[XX] = NAN;
 
     pull->numCoordinatesWithExternalPotential = 0;
 
@@ -2408,6 +2417,8 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             init_pull_group_index(fplog, cr, g, pgrp,
                                   bConstraint, pulldim_con,
                                   mtop, ir, lambda);
+
+            pgrp->x_prev_step[XX] = NAN;
         }
         else
         {
@@ -2432,7 +2443,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
                 }
             }
             const auto &referenceGroup = pull->group[coord.params.group[0]];
-            pull->dyna.emplace_back(referenceGroup.params, referenceGroup.atomSet);
+            pull->dyna.emplace_back(referenceGroup.params, referenceGroup.atomSet, pull->params.bSetPbcRefToPrevStepCOM);
         }
     }
 
