@@ -53,6 +53,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/utility/fatalerror.h"
@@ -596,6 +597,17 @@ void pull_calc_coms(const t_commrec *cr,
                     /* Set the pbc atom */
                     copy_rvec(comm->rbuf[g], x_pbc);
                 }
+                else if (pgrp->epgrppbc == epgrppbcPREVSTEPCOM)
+                {
+                    /* If the prev_step COM reference value is NaN set it to the comm->rbuf value */
+                    if (pgrp->x_prev_step[XX] != pgrp->x_prev_step[XX])
+                    {
+                        copy_rvec_to_dvec(comm->rbuf[g], pgrp->x_prev_step);
+                    }
+                    /* Set the pbc reference to the COM of the group of the last step */
+                    copy_dvec_to_rvec(pgrp->x_prev_step, x_pbc);
+                    copy_dvec_to_rvec(pgrp->x_prev_step, comm->rbuf[g]);
+                }
 
                 /* The final sums should end up in sum_com[0] */
                 pull_sum_com_t *sum_com = &pull->sum_com[0];
@@ -740,7 +752,7 @@ void pull_calc_coms(const t_commrec *cr,
                     {
                         pgrp->xp[m] = comm->dbuf[g*3+1][m]*pgrp->mwscale;
                     }
-                    if (pgrp->epgrppbc == epgrppbcREFAT)
+                    if (pgrp->epgrppbc == epgrppbcREFAT || pgrp->epgrppbc == epgrppbcPREVSTEPCOM)
                     {
                         pgrp->x[m]      += comm->rbuf[g][m];
                         if (xp)
@@ -749,6 +761,7 @@ void pull_calc_coms(const t_commrec *cr,
                         }
                     }
                 }
+                copy_dvec(pgrp->x, pgrp->x_prev_step);
             }
             else
             {
@@ -796,5 +809,37 @@ void pull_calc_coms(const t_commrec *cr,
     {
         /* Calculate the COMs for the cyclinder reference groups */
         make_cyl_refgrps(cr, pull, md, pbc, t, x);
+    }
+}
+
+void pullInitXPrevStep(pull_t *pullWork, int nGroups)
+{
+    for (int g = 0; g < nGroups; g++)
+    {
+        pullWork->group[g].x_prev_step[XX] = NAN;
+    }
+}
+
+void pullSetInitCom(pull_params_t *pullParams, pull_t *pullWork, int nGroups)
+{
+    for (int g = 0; g < nGroups; g++)
+    {
+        copy_dvec_to_rvec(pullWork->group[g].x, pullParams->group[g].initCOM);
+    }
+}
+
+void setStatePrevStepPullCom(const struct pull_t *pullWork, t_state *state)
+{
+    for (int i = 0; i < state->npullgroups; i++)
+    {
+        copy_dvec(pullWork->group[i].x_prev_step, state->com_prev_step[i]);
+    }
+}
+
+void setPrevStepPullComFromState(struct pull_t *pullWork, const t_state *state)
+{
+    for (int i = 0; i < state->npullgroups; i++)
+    {
+        copy_dvec(state->com_prev_step[i], pullWork->group[i].x_prev_step);
     }
 }
