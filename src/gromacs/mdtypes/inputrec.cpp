@@ -492,6 +492,7 @@ static void pr_pull_group(FILE *fp, int indent, int g, const t_pull_group *pgrp)
     pr_ivec_block(fp, indent, "atom", pgrp->ind, pgrp->nat, TRUE);
     pr_rvec(fp, indent, "weight", pgrp->weight, pgrp->nweight, TRUE);
     PI("pbcatom", pgrp->pbcatom);
+    PS("pbc-ref-from-prev-step-com", EBOOL(pgrp->setPbcRefToPrevStepCOM));
 }
 
 static void pr_pull_coord(FILE *fp, int indent, int c, const t_pull_coord *pcrd)
