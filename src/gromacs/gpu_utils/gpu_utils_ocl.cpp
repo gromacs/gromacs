@@ -102,7 +102,7 @@ runningOnCompatibleOSForAmd()
  */
 static int is_gmx_supported_gpu_id(struct gmx_device_info_t *ocl_gpu_device)
 {
-    if ((getenv("GMX_OCL_DISABLE_COMPATIBILITY_CHECK")) != NULL)
+    if ((getenv("GMX_OCL_DISABLE_COMPATIBILITY_CHECK")) != nullptr)
     {
         return egpuCompatible;
     }
@@ -184,16 +184,16 @@ void findGpus(gmx_gpu_info_t *gpu_info)
     cl_platform_id *ocl_platform_ids;
     cl_device_type  req_dev_type = CL_DEVICE_TYPE_GPU;
 
-    ocl_platform_ids = NULL;
+    ocl_platform_ids = nullptr;
 
-    if (getenv("GMX_OCL_FORCE_CPU") != NULL)
+    if (getenv("GMX_OCL_FORCE_CPU") != nullptr)
     {
         req_dev_type = CL_DEVICE_TYPE_CPU;
     }
 
     while (1)
     {
-        cl_int status = clGetPlatformIDs(0, NULL, &ocl_platform_count);
+        cl_int status = clGetPlatformIDs(0, nullptr, &ocl_platform_count);
         if (CL_SUCCESS != status)
         {
             GMX_THROW(gmx::InternalError(gmx::formatString("An unexpected value %u was returned from clGetPlatformIDs: ",
@@ -208,7 +208,7 @@ void findGpus(gmx_gpu_info_t *gpu_info)
 
         snew(ocl_platform_ids, ocl_platform_count);
 
-        status = clGetPlatformIDs(ocl_platform_count, ocl_platform_ids, NULL);
+        status = clGetPlatformIDs(ocl_platform_count, ocl_platform_ids, nullptr);
         if (CL_SUCCESS != status)
         {
             GMX_THROW(gmx::InternalError(gmx::formatString("An unexpected value %u was returned from clGetPlatformIDs: ",
@@ -220,7 +220,7 @@ void findGpus(gmx_gpu_info_t *gpu_info)
             cl_uint ocl_device_count;
 
             /* If requesting req_dev_type devices fails, just go to the next platform */
-            if (CL_SUCCESS != clGetDeviceIDs(ocl_platform_ids[i], req_dev_type, 0, NULL, &ocl_device_count))
+            if (CL_SUCCESS != clGetDeviceIDs(ocl_platform_ids[i], req_dev_type, 0, nullptr, &ocl_device_count))
             {
                 continue;
             }
@@ -266,19 +266,19 @@ void findGpus(gmx_gpu_info_t *gpu_info)
                     gpu_info->gpu_dev[device_index].ocl_gpu_id.ocl_device_id   = ocl_device_ids[j];
 
                     gpu_info->gpu_dev[device_index].device_name[0] = 0;
-                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_NAME, sizeof(gpu_info->gpu_dev[device_index].device_name), gpu_info->gpu_dev[device_index].device_name, NULL);
+                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_NAME, sizeof(gpu_info->gpu_dev[device_index].device_name), gpu_info->gpu_dev[device_index].device_name, nullptr);
 
                     gpu_info->gpu_dev[device_index].device_version[0] = 0;
-                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_VERSION, sizeof(gpu_info->gpu_dev[device_index].device_version), gpu_info->gpu_dev[device_index].device_version, NULL);
+                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_VERSION, sizeof(gpu_info->gpu_dev[device_index].device_version), gpu_info->gpu_dev[device_index].device_version, nullptr);
 
                     gpu_info->gpu_dev[device_index].device_vendor[0] = 0;
-                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_VENDOR, sizeof(gpu_info->gpu_dev[device_index].device_vendor), gpu_info->gpu_dev[device_index].device_vendor, NULL);
+                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_VENDOR, sizeof(gpu_info->gpu_dev[device_index].device_vendor), gpu_info->gpu_dev[device_index].device_vendor, nullptr);
 
                     gpu_info->gpu_dev[device_index].compute_units = 0;
-                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(gpu_info->gpu_dev[device_index].compute_units), &(gpu_info->gpu_dev[device_index].compute_units), NULL);
+                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(gpu_info->gpu_dev[device_index].compute_units), &(gpu_info->gpu_dev[device_index].compute_units), nullptr);
 
                     gpu_info->gpu_dev[device_index].adress_bits = 0;
-                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_ADDRESS_BITS, sizeof(gpu_info->gpu_dev[device_index].adress_bits), &(gpu_info->gpu_dev[device_index].adress_bits), NULL);
+                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_ADDRESS_BITS, sizeof(gpu_info->gpu_dev[device_index].adress_bits), &(gpu_info->gpu_dev[device_index].adress_bits), nullptr);
 
                     gpu_info->gpu_dev[device_index].vendor_e = get_vendor_id(gpu_info->gpu_dev[device_index].device_vendor);
 
@@ -349,7 +349,7 @@ void findGpus(gmx_gpu_info_t *gpu_info)
 //! This function is documented in the header file
 void free_gpu_info(const gmx_gpu_info_t gmx_unused *gpu_info)
 {
-    if (gpu_info == NULL)
+    if (gpu_info == nullptr)
     {
         return;
     }
@@ -466,7 +466,7 @@ void gpu_set_host_malloc_and_free(bool               bUseGpuKernels,
     }
     else
     {
-        *nb_alloc = NULL;
-        *nb_free  = NULL;
+        *nb_alloc = nullptr;
+        *nb_free  = nullptr;
     }
 }

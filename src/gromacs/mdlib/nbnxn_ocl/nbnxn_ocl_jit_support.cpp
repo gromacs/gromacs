@@ -179,7 +179,7 @@ nbnxn_gpu_compile_kernels(gmx_nbnxn_ocl_t *nb)
     gmx_bool                  bFastGen = TRUE;
     cl_program                program  = nullptr;
 
-    if (getenv("GMX_OCL_NOFASTGEN") != NULL)
+    if (getenv("GMX_OCL_NOFASTGEN") != nullptr)
     {
         bFastGen = FALSE;
     }

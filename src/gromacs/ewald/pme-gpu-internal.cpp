@@ -99,7 +99,7 @@ static PmeGpuKernelParamsBase *pme_gpu_get_kernel_params_base_ptr(const PmeGpu *
     return kernelParamsPtr;
 }
 
-int pme_gpu_get_atom_data_alignment(const PmeGpu *)
+int pme_gpu_get_atom_data_alignment(const PmeGpu * /*unused*/)
 {
     //TODO: this can be simplified, as PME_ATOM_DATA_ALIGNMENT is now constant
     return PME_ATOM_DATA_ALIGNMENT;

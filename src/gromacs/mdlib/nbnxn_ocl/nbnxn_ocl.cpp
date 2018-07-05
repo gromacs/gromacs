@@ -265,7 +265,7 @@ static inline cl_kernel select_nbnxn_kernel(gmx_nbnxn_ocl_t   *nb,
         }
     }
 
-    if (NULL == kernel_ptr[0])
+    if (nullptr == kernel_ptr[0])
     {
         *kernel_ptr = clCreateKernel(nb->dev_rundata->program, kernel_name_to_run, &cl_error);
         assert(cl_error == CL_SUCCESS);
@@ -351,13 +351,13 @@ static void sync_ocl_event(cl_command_queue stream, cl_event *ocl_event)
     cl_int gmx_unused cl_error;
 
     /* Enqueue wait */
-    cl_error = clEnqueueBarrierWithWaitList(stream, 1, ocl_event, NULL);
+    cl_error = clEnqueueBarrierWithWaitList(stream, 1, ocl_event, nullptr);
     GMX_RELEASE_ASSERT(CL_SUCCESS == cl_error, ocl_get_error_string(cl_error).c_str());
 
     /* Release event and reset it to 0. It is ok to release it as enqueuewaitforevents performs implicit retain for events. */
     cl_error = clReleaseEvent(*ocl_event);
     assert(CL_SUCCESS == cl_error);
-    *ocl_event = 0;
+    *ocl_event = nullptr;
 }
 
 /*! \brief Launch GPU kernel
@@ -385,7 +385,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
 {
     int                  adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
     /* OpenCL kernel launch-related stuff */
-    cl_kernel            nb_kernel = NULL;     /* fn pointer to the nonbonded kernel */
+    cl_kernel            nb_kernel = nullptr;  /* fn pointer to the nonbonded kernel */
 
     cl_atomdata_t       *adat    = nb->atdat;
     cl_nbparam_t        *nbp     = nb->nbparam;
@@ -449,7 +449,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
     {
         if (iloc == eintLocal)
         {
-            cl_int gmx_used_in_debug cl_error = clEnqueueMarkerWithWaitList(stream, 0, NULL, &(nb->misc_ops_and_local_H2D_done));
+            cl_int gmx_used_in_debug cl_error = clEnqueueMarkerWithWaitList(stream, 0, nullptr, &(nb->misc_ops_and_local_H2D_done));
             assert(CL_SUCCESS == cl_error);
 
             /* Based on the v1.2 section 5.13 of the OpenCL spec, a flush is needed
@@ -762,7 +762,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
        data back first. */
     if (iloc == eintNonlocal)
     {
-        cl_error = clEnqueueMarkerWithWaitList(stream, 0, NULL, &(nb->nonlocal_done));
+        cl_error = clEnqueueMarkerWithWaitList(stream, 0, nullptr, &(nb->nonlocal_done));
         assert(CL_SUCCESS == cl_error);
         nb->bNonLocalStreamActive = true;
     }
@@ -803,8 +803,8 @@ int nbnxn_gpu_pick_ewald_kernel_type(bool bTwinCut)
 
     /* Benchmarking/development environment variables to force the use of
        analytical or tabulated Ewald kernel. */
-    bForceAnalyticalEwald = (getenv("GMX_OCL_NB_ANA_EWALD") != NULL);
-    bForceTabulatedEwald  = (getenv("GMX_OCL_NB_TAB_EWALD") != NULL);
+    bForceAnalyticalEwald = (getenv("GMX_OCL_NB_ANA_EWALD") != nullptr);
+    bForceTabulatedEwald  = (getenv("GMX_OCL_NB_TAB_EWALD") != nullptr);
 
     if (bForceAnalyticalEwald && bForceTabulatedEwald)
     {
@@ -840,7 +840,7 @@ int nbnxn_gpu_pick_ewald_kernel_type(bool bTwinCut)
 
     /* Use twin cut-off kernels if requested by bTwinCut or the env. var.
        forces it (use it for debugging/benchmarking only). */
-    if (!bTwinCut && (getenv("GMX_OCL_NB_EWALD_TWINCUT") == NULL))
+    if (!bTwinCut && (getenv("GMX_OCL_NB_EWALD_TWINCUT") == nullptr))
     {
         kernel_type = bUseAnalyticalEwald ? eelOclEWALD_ANA : eelOclEWALD_TAB;
     }

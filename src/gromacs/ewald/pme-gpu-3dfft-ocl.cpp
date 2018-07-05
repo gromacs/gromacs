@@ -137,7 +137,7 @@ GpuParallel3dFft::~GpuParallel3dFft()
 void GpuParallel3dFft::perform3dFft(gmx_fft_direction  dir,
                                     CommandEvent      *timingEvent)
 {
-    constexpr cl_mem                  tempBuffer = nullptr;
+    cl_mem                            tempBuffer = nullptr;
     constexpr std::array<cl_event, 0> waitEvents {{}};
 
     clfftPlanHandle                   plan;

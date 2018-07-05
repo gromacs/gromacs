@@ -113,7 +113,7 @@ writeOclBuildLog(FILE              *fplog,
                                             deviceId,
                                             CL_PROGRAM_BUILD_LOG,
                                             0,
-                                            NULL,
+                                            nullptr,
                                             &buildLogSize);
     if (cl_error != CL_SUCCESS)
     {
@@ -135,7 +135,7 @@ writeOclBuildLog(FILE              *fplog,
                                          CL_PROGRAM_BUILD_LOG,
                                          buildLogSize,
                                          buildLog,
-                                         NULL);
+                                         nullptr);
         if (cl_error != CL_SUCCESS)
         {
             GMX_THROW(InternalError("Could not get OpenCL program build log, error was " + ocl_get_error_string(cl_error)));
@@ -176,7 +176,7 @@ selectCompilerOptions(ocl_vendor_id_t deviceVendorId)
     }
 
     /* Fastmath imprves performance on all supported arch */
-    if (getenv("GMX_OCL_DISABLE_FASTMATH") == NULL)
+    if (getenv("GMX_OCL_DISABLE_FASTMATH") == nullptr)
     {
         compilerOptions += " -cl-fast-relaxed-math";
     }
@@ -264,13 +264,13 @@ getWarpSize(cl_context context, cl_device_id deviceId)
 {
     cl_int      cl_error;
     const char *warpSizeKernel = "__kernel void test(__global int* test){test[get_local_id(0)] = 0;}";
-    cl_program  program        = clCreateProgramWithSource(context, 1, (const char**)&warpSizeKernel, NULL, &cl_error);
+    cl_program  program        = clCreateProgramWithSource(context, 1, (const char**)&warpSizeKernel, nullptr, &cl_error);
     if (cl_error != CL_SUCCESS)
     {
         GMX_THROW(InternalError("Could not create OpenCL program to determine warp size, error was " + ocl_get_error_string(cl_error)));
     }
 
-    cl_error = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+    cl_error = clBuildProgram(program, 0, nullptr, nullptr, nullptr, nullptr);
     if (cl_error != CL_SUCCESS)
     {
         GMX_THROW(InternalError("Could not build OpenCL program to determine warp size, error was " + ocl_get_error_string(cl_error)));
@@ -284,7 +284,7 @@ getWarpSize(cl_context context, cl_device_id deviceId)
 
     size_t warpSize = 0;
     cl_error = clGetKernelWorkGroupInfo(kernel, deviceId, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE,
-                                        sizeof(warpSize), &warpSize, NULL);
+                                        sizeof(warpSize), &warpSize, nullptr);
     if (cl_error != CL_SUCCESS)
     {
         GMX_THROW(InternalError("Could not measure OpenCL warp size, error was " + ocl_get_error_string(cl_error)));
@@ -497,7 +497,7 @@ compileProgram(FILE              *fplog,
 
     /* Build the OpenCL program, keeping the status to potentially
        write to the simulation log file. */
-    cl_int buildStatus = clBuildProgram(program, 0, NULL, preprocessorOptions.c_str(), NULL, NULL);
+    cl_int buildStatus = clBuildProgram(program, 0, nullptr, preprocessorOptions.c_str(), nullptr, nullptr);
 
     /* Write log first, and then throw exception that the user know what is
        the issue even if the build fails. */
@@ -536,7 +536,7 @@ compileProgram(FILE              *fplog,
            => write PTX to file */
         char buffer[STRLEN];
 
-        cl_error = clGetDeviceInfo(deviceId, CL_DEVICE_NAME, sizeof(buffer), buffer, NULL);
+        cl_error = clGetDeviceInfo(deviceId, CL_DEVICE_NAME, sizeof(buffer), buffer, nullptr);
         if (cl_error != CL_SUCCESS)
         {
             GMX_THROW(InternalError("Could not get OpenCL device info, error was " + ocl_get_error_string(cl_error)));

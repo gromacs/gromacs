@@ -108,7 +108,7 @@ static void init_ewald_coulomb_force_table(const interaction_const_t       *ic,
 
     cl_int       cl_error;
 
-    if (nbp->coulomb_tab_climg2d != NULL)
+    if (nbp->coulomb_tab_climg2d != nullptr)
     {
         freeDeviceBuffer(&(nbp->coulomb_tab_climg2d));
     }
@@ -145,33 +145,33 @@ static void init_atomdata_first(cl_atomdata_t *ad, int ntypes, gmx_device_runtim
 
     /* An element of the shift_vec device buffer has the same size as one element
        of the host side shift_vec buffer. */
-    ad->shift_vec_elem_size = sizeof(*(((nbnxn_atomdata_t*)0)->shift_vec));
+    ad->shift_vec_elem_size = sizeof(*nbnxn_atomdata_t::shift_vec);
 
     // TODO: handle errors, check clCreateBuffer flags
-    ad->shift_vec = clCreateBuffer(runData->context, CL_MEM_READ_WRITE, SHIFTS * ad->shift_vec_elem_size, NULL, &cl_error);
+    ad->shift_vec = clCreateBuffer(runData->context, CL_MEM_READ_WRITE, SHIFTS * ad->shift_vec_elem_size, nullptr, &cl_error);
     assert(cl_error == CL_SUCCESS);
     ad->bShiftVecUploaded = false;
 
     /* An element of the fshift device buffer has the same size as one element
        of the host side fshift buffer. */
-    ad->fshift_elem_size = sizeof(*(((cl_nb_staging_t*)0)->fshift));
+    ad->fshift_elem_size = sizeof(*cl_nb_staging_t::fshift);
 
-    ad->fshift = clCreateBuffer(runData->context, CL_MEM_READ_WRITE, SHIFTS * ad->fshift_elem_size, NULL, &cl_error);
+    ad->fshift = clCreateBuffer(runData->context, CL_MEM_READ_WRITE, SHIFTS * ad->fshift_elem_size, nullptr, &cl_error);
     assert(cl_error == CL_SUCCESS);
     // TODO: handle errors, check clCreateBuffer flags
 
-    ad->e_lj = clCreateBuffer(runData->context, CL_MEM_READ_WRITE, sizeof(float), NULL, &cl_error);
+    ad->e_lj = clCreateBuffer(runData->context, CL_MEM_READ_WRITE, sizeof(float), nullptr, &cl_error);
     assert(cl_error == CL_SUCCESS);
     // TODO: handle errors, check clCreateBuffer flags
 
-    ad->e_el = clCreateBuffer(runData->context, CL_MEM_READ_WRITE, sizeof(float), NULL, &cl_error);
+    ad->e_el = clCreateBuffer(runData->context, CL_MEM_READ_WRITE, sizeof(float), nullptr, &cl_error);
     assert(cl_error == CL_SUCCESS);
     // TODO: handle errors, check clCreateBuffer flags
 
-    /* initialize to NULL pointers to data that is not allocated here and will
+    /* initialize to nullptr pointers to data that is not allocated here and will
        need reallocation in nbnxn_gpu_init_atomdata */
-    ad->xq = NULL;
-    ad->f  = NULL;
+    ad->xq = nullptr;
+    ad->f  = nullptr;
 
     /* size -1 indicates that the respective array hasn't been initialized yet */
     ad->natoms = -1;
@@ -317,7 +317,7 @@ static void init_nbparam(cl_nbparam_t                    *nbp,
         }
     }
     /* generate table for PME */
-    nbp->coulomb_tab_climg2d = NULL;
+    nbp->coulomb_tab_climg2d = nullptr;
     if (nbp->eeltype == eelOclEWALD_TAB || nbp->eeltype == eelOclEWALD_TAB_TWIN)
     {
         init_ewald_coulomb_force_table(ic, nbp, runData);
@@ -325,7 +325,7 @@ static void init_nbparam(cl_nbparam_t                    *nbp,
     else
     // TODO: improvement needed.
     // The image2d is created here even if eeltype is not eelCuEWALD_TAB or eelCuEWALD_TAB_TWIN because the OpenCL kernels
-    // don't accept NULL values for image2D parameters.
+    // don't accept nullptr values for image2D parameters.
     {
         /* Switched from using textures to using buffers */
         // TODO: decide which alternative is most efficient - textures or buffers.
@@ -336,10 +336,10 @@ static void init_nbparam(cl_nbparam_t                    *nbp,
            array_format.image_channel_order     = CL_R;
 
            nbp->coulomb_tab_climg2d = clCreateImage2D(runData->context, CL_MEM_READ_WRITE,
-            &array_format, 1, 1, 0, NULL, &cl_error);
+            &array_format, 1, 1, 0, nullptr, &cl_error);
          */
 
-        nbp->coulomb_tab_climg2d = clCreateBuffer(runData->context, CL_MEM_READ_ONLY, sizeof(cl_float), NULL, &cl_error);
+        nbp->coulomb_tab_climg2d = clCreateBuffer(runData->context, CL_MEM_READ_ONLY, sizeof(cl_float), nullptr, &cl_error);
         // TODO: handle errors
     }
 
@@ -379,12 +379,12 @@ static void init_nbparam(cl_nbparam_t                    *nbp,
         {
             // TODO: improvement needed.
             // The image2d is created here even if vdwtype is not evdwPME because the OpenCL kernels
-            // don't accept NULL values for image2D parameters.
+            // don't accept nullptr values for image2D parameters.
             /* Switched from using textures to using buffers */
             // TODO: decide which alternative is most efficient - textures or buffers.
             /* nbp->nbfp_comb_climg2d = clCreateImage2D(runData->context, CL_MEM_READ_WRITE,
-                &array_format, 1, 1, 0, NULL, &cl_error);*/
-            nbp->nbfp_comb_climg2d = clCreateBuffer(runData->context, CL_MEM_READ_ONLY, sizeof(cl_float), NULL, &cl_error);
+                &array_format, 1, 1, 0, nullptr, &cl_error);*/
+            nbp->nbfp_comb_climg2d = clCreateBuffer(runData->context, CL_MEM_READ_ONLY, sizeof(cl_float), nullptr, &cl_error);
 
 
             assert(cl_error == CL_SUCCESS);
@@ -416,12 +416,12 @@ void nbnxn_gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
  */
 static void init_plist(cl_plist_t *pl)
 {
-    /* initialize to NULL pointers to data that is not allocated here and will
+    /* initialize to nullptr pointers to data that is not allocated here and will
        need reallocation in nbnxn_gpu_init_pairlist */
-    pl->sci     = NULL;
-    pl->cj4     = NULL;
-    pl->imask   = NULL;
-    pl->excl    = NULL;
+    pl->sci     = nullptr;
+    pl->cj4     = nullptr;
+    pl->imask   = nullptr;
+    pl->excl    = nullptr;
 
     /* size -1 indicates that the respective array hasn't been initialized yet */
     pl->na_c           = -1;
@@ -494,8 +494,8 @@ nbnxn_gpu_create_context(gmx_device_runtime_data_t *runtimeData,
     cl_context                context;
     cl_int                    cl_error;
 
-    assert(runtimeData != NULL);
-    assert(devInfo != NULL);
+    assert(runtimeData != nullptr);
+    assert(devInfo != nullptr);
 
     platform_id      = devInfo->ocl_gpu_id.ocl_platform_id;
     device_id        = devInfo->ocl_gpu_id.ocl_device_id;
@@ -504,7 +504,7 @@ nbnxn_gpu_create_context(gmx_device_runtime_data_t *runtimeData,
     context_properties[1] = (cl_context_properties) platform_id;
     context_properties[2] = 0; /* Terminates the list of properties */
 
-    context = clCreateContext(context_properties, 1, &device_id, NULL, NULL, &cl_error);
+    context = clCreateContext(context_properties, 1, &device_id, nullptr, nullptr, &cl_error);
     if (CL_SUCCESS != cl_error)
     {
         gmx_fatal(FARGS, "On rank %d failed to create context for GPU #%s:\n OpenCL error %d: %s",
@@ -566,7 +566,7 @@ nbnxn_ocl_clear_e_fshift(gmx_nbnxn_ocl_t *nb)
     cl_error |= clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_uint), &shifts);
     GMX_ASSERT(cl_error == CL_SUCCESS, ocl_get_error_string(cl_error).c_str());
 
-    cl_error = clEnqueueNDRangeKernel(ls, zero_e_fshift, 3, NULL, global_work_size, local_work_size, 0, NULL, NULL);
+    cl_error = clEnqueueNDRangeKernel(ls, zero_e_fshift, 3, nullptr, global_work_size, local_work_size, 0, nullptr, nullptr);
     GMX_ASSERT(cl_error == CL_SUCCESS, ocl_get_error_string(cl_error).c_str());
 }
 
@@ -627,7 +627,7 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
 
     assert(ic);
 
-    if (p_nb == NULL)
+    if (p_nb == nullptr)
     {
         return;
     }
@@ -658,7 +658,7 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
     init_plist(nb->plist[eintLocal]);
 
     /* OpenCL timing disabled if GMX_DISABLE_GPU_TIMING is defined. */
-    nb->bDoTime = (getenv("GMX_DISABLE_GPU_TIMING") == NULL);
+    nb->bDoTime = (getenv("GMX_DISABLE_GPU_TIMING") == nullptr);
 
     /* Create queues only after bDoTime has been initialized */
     if (nb->bDoTime)
@@ -710,8 +710,8 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
      * TODO: decide about NVIDIA
      */
     nb->bPrefetchLjParam =
-        (getenv("GMX_OCL_DISABLE_I_PREFETCH") == NULL) &&
-        ((nb->dev_info->vendor_e == OCL_VENDOR_AMD) || (getenv("GMX_OCL_ENABLE_I_PREFETCH") != NULL));
+        (getenv("GMX_OCL_DISABLE_I_PREFETCH") == nullptr) &&
+        ((nb->dev_info->vendor_e == OCL_VENDOR_AMD) || (getenv("GMX_OCL_ENABLE_I_PREFETCH") != nullptr));
 
     /* NOTE: in CUDA we pick L1 cache configuration for the nbnxn kernels here,
      * but sadly this is not supported in OpenCL (yet?). Consider adding it if
@@ -765,7 +765,7 @@ static void nbnxn_ocl_clear_f(gmx_nbnxn_ocl_t *nb, int natoms_clear)
     cl_error |= clSetKernelArg(memset_f, arg_no++, sizeof(cl_uint), &natoms_flat);
     assert(cl_error == CL_SUCCESS);
 
-    cl_error = clEnqueueNDRangeKernel(ls, memset_f, 3, NULL, global_work_size, local_work_size, 0, NULL, NULL);
+    cl_error = clEnqueueNDRangeKernel(ls, memset_f, 3, nullptr, global_work_size, local_work_size, 0, nullptr, nullptr);
     assert(cl_error == CL_SUCCESS);
 }
 
@@ -867,7 +867,7 @@ void nbnxn_gpu_upload_shiftvec(gmx_nbnxn_ocl_t        *nb,
     if (nbatom->bDynamicBox || !adat->bShiftVecUploaded)
     {
         ocl_copy_H2D_async(adat->shift_vec, nbatom->shift_vec, 0,
-                           SHIFTS * adat->shift_vec_elem_size, ls, NULL);
+                           SHIFTS * adat->shift_vec_elem_size, ls, nullptr);
         adat->bShiftVecUploaded = true;
     }
 }
@@ -911,25 +911,25 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_ocl_t               *nb,
         d_atdat->f_elem_size = sizeof(rvec);
 
         // TODO: handle errors, check clCreateBuffer flags
-        d_atdat->f = clCreateBuffer(nb->dev_rundata->context, CL_MEM_READ_WRITE, nalloc * d_atdat->f_elem_size, NULL, &cl_error);
+        d_atdat->f = clCreateBuffer(nb->dev_rundata->context, CL_MEM_READ_WRITE, nalloc * d_atdat->f_elem_size, nullptr, &cl_error);
         assert(CL_SUCCESS == cl_error);
 
         // TODO: change the flag to read-only
-        d_atdat->xq = clCreateBuffer(nb->dev_rundata->context, CL_MEM_READ_WRITE, nalloc * sizeof(cl_float4), NULL, &cl_error);
+        d_atdat->xq = clCreateBuffer(nb->dev_rundata->context, CL_MEM_READ_WRITE, nalloc * sizeof(cl_float4), nullptr, &cl_error);
         assert(CL_SUCCESS == cl_error);
         // TODO: handle errors, check clCreateBuffer flags
 
         if (useLjCombRule(nb->nbparam->vdwtype))
         {
             // TODO: change the flag to read-only
-            d_atdat->lj_comb = clCreateBuffer(nb->dev_rundata->context, CL_MEM_READ_WRITE, nalloc * sizeof(cl_float2), NULL, &cl_error);
+            d_atdat->lj_comb = clCreateBuffer(nb->dev_rundata->context, CL_MEM_READ_WRITE, nalloc * sizeof(cl_float2), nullptr, &cl_error);
             assert(CL_SUCCESS == cl_error);
             // TODO: handle errors, check clCreateBuffer flags
         }
         else
         {
             // TODO: change the flag to read-only
-            d_atdat->atom_types = clCreateBuffer(nb->dev_rundata->context, CL_MEM_READ_WRITE, nalloc * sizeof(int), NULL, &cl_error);
+            d_atdat->atom_types = clCreateBuffer(nb->dev_rundata->context, CL_MEM_READ_WRITE, nalloc * sizeof(int), nullptr, &cl_error);
             assert(CL_SUCCESS == cl_error);
             // TODO: handle errors, check clCreateBuffer flags
         }
@@ -974,14 +974,14 @@ static void free_kernel(cl_kernel *kernel_ptr)
 {
     cl_int gmx_unused cl_error;
 
-    assert(NULL != kernel_ptr);
+    assert(nullptr != kernel_ptr);
 
     if (*kernel_ptr)
     {
         cl_error = clReleaseKernel(*kernel_ptr);
         assert(cl_error == CL_SUCCESS);
 
-        *kernel_ptr = NULL;
+        *kernel_ptr = nullptr;
     }
 }
 
@@ -1005,7 +1005,7 @@ static void free_kernels(cl_kernel *kernels, int count)
  */
 static void free_gpu_device_runtime_data(gmx_device_runtime_data_t *runData)
 {
-    if (runData == NULL)
+    if (runData == nullptr)
     {
         return;
     }
@@ -1015,14 +1015,14 @@ static void free_gpu_device_runtime_data(gmx_device_runtime_data_t *runData)
     if (runData->context)
     {
         cl_error         = clReleaseContext(runData->context);
-        runData->context = NULL;
+        runData->context = nullptr;
         assert(CL_SUCCESS == cl_error);
     }
 
     if (runData->program)
     {
         cl_error         = clReleaseProgram(runData->program);
-        runData->program = NULL;
+        runData->program = nullptr;
         assert(CL_SUCCESS == cl_error);
     }
 
@@ -1031,7 +1031,7 @@ static void free_gpu_device_runtime_data(gmx_device_runtime_data_t *runData)
 //! This function is documented in the header file
 void nbnxn_gpu_free(gmx_nbnxn_ocl_t *nb)
 {
-    if (nb == NULL)
+    if (nb == nullptr)
     {
         return;
     }
@@ -1090,32 +1090,32 @@ void nbnxn_gpu_free(gmx_nbnxn_ocl_t *nb)
 
     /* Free nbst */
     pfree(nb->nbst.e_lj);
-    nb->nbst.e_lj = NULL;
+    nb->nbst.e_lj = nullptr;
 
     pfree(nb->nbst.e_el);
-    nb->nbst.e_el = NULL;
+    nb->nbst.e_el = nullptr;
 
     pfree(nb->nbst.fshift);
-    nb->nbst.fshift = NULL;
+    nb->nbst.fshift = nullptr;
 
     /* Free command queues */
     clReleaseCommandQueue(nb->stream[eintLocal]);
-    nb->stream[eintLocal] = NULL;
+    nb->stream[eintLocal] = nullptr;
     if (nb->bUseTwoStreams)
     {
         clReleaseCommandQueue(nb->stream[eintNonlocal]);
-        nb->stream[eintNonlocal] = NULL;
+        nb->stream[eintNonlocal] = nullptr;
     }
     /* Free other events */
     if (nb->nonlocal_done)
     {
         clReleaseEvent(nb->nonlocal_done);
-        nb->nonlocal_done = NULL;
+        nb->nonlocal_done = nullptr;
     }
     if (nb->misc_ops_and_local_H2D_done)
     {
         clReleaseEvent(nb->misc_ops_and_local_H2D_done);
-        nb->misc_ops_and_local_H2D_done = NULL;
+        nb->misc_ops_and_local_H2D_done = nullptr;
     }
 
     free_gpu_device_runtime_data(nb->dev_rundata);
@@ -1150,7 +1150,7 @@ void nbnxn_gpu_reset_timings(nonbonded_verlet_t* nbv)
 //! This function is documented in the header file
 int nbnxn_gpu_min_ci_balanced(gmx_nbnxn_ocl_t *nb)
 {
-    return nb != NULL ?
+    return nb != nullptr ?
            gpu_min_ci_balanced_factor * nb->dev_info->compute_units : 0;
 }
 
