@@ -258,6 +258,14 @@ static void prepareRerunState(const t_trxframe  &rerunFrame,
     }
 }
 
+static void set_state_prev_step_pull_com(const t_inputrec *ir, t_state *state)
+{
+    for (int i = 0; i < ir->pull_work->ngroup; i++)
+    {
+        copy_dvec(ir->pull_work->group[i].x_prev_step, state->com_prev_step[i]);
+    }
+}
+
 void gmx::Integrator::do_md()
 {
     // TODO Historically, the EM and MD "integrators" used different
@@ -526,13 +534,25 @@ void gmx::Integrator::do_md()
                  */
                 observablesHistory->energyHistory = {};
             }
+            /* Copy the pull group COM of the previous frame from the checkpoint state to the pull state */
+            ir->pull_work->ngroup = state->npullgroups;
+            for (int i = 0; i < state->npullgroups; i++)
+            {
+                copy_dvec(state->com_prev_step[i], ir->pull_work->group[i].x_prev_step);
+            }
+        }
+        else
+        {
+            /* Set the number of pull groups to enable recording the COM of the previous frame. */
+            state->npullgroups = ir->pull_work->ngroup;
+            snew(state->com_prev_step, ir->pull_work->ngroup);
         }
         if (observablesHistory->energyHistory == nullptr)
         {
             observablesHistory->energyHistory = std::unique_ptr<energyhistory_t>(new energyhistory_t {});
         }
         /* Set the initial energy history in state by updating once */
-        update_energyhistory(observablesHistory->energyHistory.get(), mdebin);
+        update_energyhistory(observablesHistory->energyHistory.get(), mdebin);        
     }
 
     // TODO: Remove this by converting AWH into a ForceProvider
@@ -1513,7 +1533,12 @@ void gmx::Integrator::do_md()
             finish_update(ir, mdatoms,
                           state, graph,
                           nrnb, wcycle, upd, constr);
-
+            
+            if (ir->bPull)
+            {
+                set_state_prev_step_pull_com(ir, state);
+            }
+            
             if (ir->eI == eiVVAK)
             {
                 /* erase F_EKIN and F_TEMP here? */
