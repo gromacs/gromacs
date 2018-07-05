@@ -119,6 +119,7 @@ enum tpxv {
     tpxv_GenericParamsForElectricField,                      /**< Introduced KeyValueTree and moved electric field parameters */
     tpxv_AcceleratedWeightHistogram,                         /**< sampling with accelerated weight histogram method (AWH) */
     tpxv_RemoveImplicitSolvation,                            /**< removed support for implicit solvation */
+    tpxv_PullPrevStepCOMAsReference,                         /**< Enabled using the COM of the pull group of the last frame as reference for PBC */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -745,6 +746,10 @@ static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
     }
     gmx_fio_do_int(fio, pull->nstxout);
     gmx_fio_do_int(fio, pull->nstfout);
+    if (file_version >= tpxv_PullPrevStepCOMAsReference)
+    {
+        gmx_fio_do_gmx_bool(fio, pull->bSetPbcRefToPrevStepCOM);
+    }
     if (bRead)
     {
         snew(pull->group, pull->ngroup);
