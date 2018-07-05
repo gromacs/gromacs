@@ -101,7 +101,7 @@
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
  */
-static const int cpt_version = 17;
+static const int cpt_version = 18;
 
 
 const char *est_names[estNR] =
@@ -903,6 +903,7 @@ struct CheckpointHeaderContents
     int         flags_awhh;
     int         nED;
     int         eSwapCoords;
+    int         nPullGroups;
 };
 
 static void do_cpt_header(XDR *xd, gmx_bool bRead, FILE *list,
@@ -1058,6 +1059,15 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, FILE *list,
     else
     {
         contents->flags_awhh = 0;
+    }
+
+    if (contents->file_version >= 18)
+    {
+        do_cpt_int_err(xd, "Pull COMs of prev step", &contents->nPullGroups, list);
+    }
+    else
+    {
+        contents->nPullGroups = 0;
     }
 }
 
@@ -1684,6 +1694,38 @@ static int do_cpt_awh(XDR *xd, gmx_bool bRead,
     return ret;
 }
 
+static int do_cpt_pullstate(XDR *xd, gmx_bool bRead, const int npullgroups, t_state *state, FILE *list)
+{
+    rvec *tmp;
+    if (npullgroups <= 0)
+    {
+        return 0;
+    }
+
+    snew(tmp, npullgroups);
+
+    if (bRead)
+    {
+        snew(state->com_prev_step, npullgroups);
+
+        do_cpt_n_rvecs_err(xd, "Pull groups prev step COM", npullgroups, tmp, list);
+        for (int i = 0; i < npullgroups; i++)
+        {
+            copy_rvec_to_dvec(tmp[i], state->com_prev_step[i]);
+        }
+    }
+    else
+    {
+        for (int i = 0; i < npullgroups; i++)
+        {
+            copy_dvec_to_rvec(state->com_prev_step[i], tmp[i]);
+        }
+        do_cpt_n_rvecs_err(xd, "Pull groups prev step COM", npullgroups, tmp, list);
+    }
+
+    return 0;
+}
+
 static int do_cpt_files(XDR *xd, gmx_bool bRead,
                         std::vector<gmx_file_position_t> *outputfiles,
                         FILE *list, int file_version)
@@ -1912,7 +1954,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         {0}, npmenodes,
         state->natoms, state->ngtc, state->nnhpres,
         state->nhchainlength, nlambda, state->flags, flags_eks, flags_enh, flags_dfh, flags_awhh,
-        nED, eSwapCoords
+        nED, eSwapCoords, state->npullgroups
     };
     std::strcpy(headerContents.version, gmx_version());
     std::strcpy(headerContents.btime, BUILD_TIME);
@@ -1933,6 +1975,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         (do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, nlambda, &state->dfhist, nullptr) < 0)  ||
         (do_cpt_EDstate(gmx_fio_getxdr(fp), FALSE, nED, edsamhist, nullptr) < 0)      ||
         (do_cpt_awh(gmx_fio_getxdr(fp), FALSE, flags_awhh, state->awhHistory.get(), nullptr) < 0) ||
+        (do_cpt_pullstate(gmx_fio_getxdr(fp), FALSE, state->npullgroups, state, nullptr) < 0) ||
         (do_cpt_swapstate(gmx_fio_getxdr(fp), FALSE, eSwapCoords, swaphist, nullptr) < 0) ||
         (do_cpt_files(gmx_fio_getxdr(fp), FALSE, &outputfiles, nullptr,
                       headerContents.file_version) < 0))
@@ -2309,6 +2352,12 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         cp_error();
     }
 
+    ret = do_cpt_pullstate(gmx_fio_getxdr(fp), TRUE, headerContents->nPullGroups, state, nullptr);
+    if (ret)
+    {
+        cp_error();
+    }
+
     if (headerContents->eSwapCoords != eswapNO && observablesHistory->swapHistory == nullptr)
     {
         observablesHistory->swapHistory = std::unique_ptr<swaphistory_t>(new swaphistory_t {});
@@ -2558,6 +2607,7 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
     state->nnhpres       = headerContents.nnhpres;
     state->nhchainlength = headerContents.nhchainlength;
     state->flags         = headerContents.flags_state;
+    state->npullgroups   = headerContents.nPullGroups;
     ret                  =
         do_cpt_state(gmx_fio_getxdr(fp), state->flags, state, nullptr);
     if (ret)
@@ -2592,6 +2642,12 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
 
     ret = do_cpt_awh(gmx_fio_getxdr(fp), TRUE,
                      headerContents.flags_awhh, state->awhHistory.get(), nullptr);
+    if (ret)
+    {
+        cp_error();
+    }
+
+    ret = do_cpt_pullstate(gmx_fio_getxdr(fp), TRUE, headerContents.nPullGroups, state, nullptr);
     if (ret)
     {
         cp_error();

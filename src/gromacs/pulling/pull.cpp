@@ -2151,7 +2151,8 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             GMX_RELEASE_ASSERT(pgrp->params.nat == 0, "pull group 0 is an absolute reference group and should not contain atoms");
             clear_dvec(pgrp->x);
             clear_dvec(pgrp->xp);
-            pgrp->bCalcCOM = FALSE;
+            pgrp->x_prev_step[XX] = NAN;
+            pgrp->bCalcCOM        = FALSE;
         }
 
         /* Avoid pointer copies by allocating and copying arrays */
@@ -2414,7 +2415,14 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
                 {
                     if (pgrp->params.pbcatom >= 0)
                     {
-                        pgrp->epgrppbc = epgrppbcREFAT;
+                        if (pgrp->params.setPbcRefToPrevStepCOM)
+                        {
+                            pgrp->epgrppbc = epgrppbcPREVSTEPCOM;
+                        }
+                        else
+                        {
+                            pgrp->epgrppbc = epgrppbcREFAT;
+                        }
                         pull->bRefAt   = TRUE;
                     }
                     else
@@ -2436,6 +2444,8 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             init_pull_group_index(fplog, cr, g, pgrp,
                                   bConstraint, pulldim_con,
                                   mtop, ir, lambda);
+
+            copy_rvec_to_dvec(pull_params->group[g].initCOM, pgrp->x_prev_step);
         }
         else
         {
