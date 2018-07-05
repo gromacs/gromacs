@@ -49,6 +49,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/utility/fatalerror.h"
@@ -588,12 +589,23 @@ void pull_calc_coms(const t_commrec *cr,
         {
             if (pgrp->epgrppbc != epgrppbcCOS)
             {
-                rvec   x_pbc = { 0, 0, 0 };
+                rvec x_pbc = { 0, 0, 0 };
 
                 if (pgrp->epgrppbc == epgrppbcREFAT)
                 {
                     /* Set the pbc atom */
                     copy_rvec(comm->rbuf[g], x_pbc);
+                }
+                if (pull->params.bSetPbcRefToPrevStepCOM)
+                {
+                    /* If the prev_step COM reference value is NaN set it to the comm->rbuf value */
+                    if (pgrp->x_prev_step[XX] != pgrp->x_prev_step[XX])
+                    {
+                        copy_rvec_to_dvec(comm->rbuf[g], pgrp->x_prev_step);
+                    }
+                    /* Set the pbc reference to the COM of the group of the last step */
+                    copy_dvec_to_rvec(pgrp->x_prev_step, comm->rbuf[g]);
+                    copy_dvec_to_rvec(pgrp->x_prev_step, x_pbc);
                 }
 
                 /* The final sums should end up in sum_com[0] */
@@ -928,4 +940,46 @@ int pullCheckPbcWithinGroups(const pull_t &pull,
     }
 
     return -1;
+}
+
+void pullInitXPrevStep(pull_t *pullWork)
+{
+    for (size_t g = 0; g < pullWork->group.size(); g++)
+    {
+        pullWork->group[g].x_prev_step[XX] = NAN;
+    }
+}
+
+void setStatePrevStepPullCom(const struct pull_t *pullWork, t_state *state)
+{
+    for (size_t i = 0; i < state->com_prev_step.size()/DIM; i++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            state->com_prev_step[i*DIM+j] = pullWork->group[i].x_prev_step[j];
+        }
+    }
+}
+
+void setPrevStepPullComFromState(struct pull_t *pullWork, const t_state *state)
+{
+    for (size_t i = 0; i < state->com_prev_step.size()/DIM; i++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            pullWork->group[i].x_prev_step[j] = state->com_prev_step[i*DIM+j];
+        }
+    }
+}
+
+void updatePrevStepCom(struct pull_t *pullWork)
+{
+    /* Group 0 is the whole system reference group. The COM of that is not used */
+    for (size_t g = 1; g < pullWork->group.size(); g++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            pullWork->group[g].x_prev_step[j] = pullWork->group[g].xp[j];
+        }
+    }
 }

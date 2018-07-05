@@ -279,13 +279,14 @@ char **read_pullparams(std::vector<t_inpfile> *inp,
 
     /* read pull parameters */
     printStringNoNewline(inp, "Cylinder radius for dynamic reaction force groups (nm)");
-    pull->cylinder_r     = get_ereal(inp, "pull-cylinder-r", 1.5, wi);
-    pull->constr_tol     = get_ereal(inp, "pull-constr-tol", 1E-6, wi);
-    pull->bPrintCOM      = (get_eeenum(inp, "pull-print-com", yesno_names, wi) != 0);
-    pull->bPrintRefValue = (get_eeenum(inp, "pull-print-ref-value", yesno_names, wi) != 0);
-    pull->bPrintComp     = (get_eeenum(inp, "pull-print-components", yesno_names, wi) != 0);
-    pull->nstxout        = get_eint(inp, "pull-nstxout", 50, wi);
-    pull->nstfout        = get_eint(inp, "pull-nstfout", 50, wi);
+    pull->cylinder_r              = get_ereal(inp, "pull-cylinder-r", 1.5, wi);
+    pull->constr_tol              = get_ereal(inp, "pull-constr-tol", 1E-6, wi);
+    pull->bPrintCOM               = (get_eeenum(inp, "pull-print-com", yesno_names, wi) != 0);
+    pull->bPrintRefValue          = (get_eeenum(inp, "pull-print-ref-value", yesno_names, wi) != 0);
+    pull->bPrintComp              = (get_eeenum(inp, "pull-print-components", yesno_names, wi) != 0);
+    pull->nstxout                 = get_eint(inp, "pull-nstxout", 50, wi);
+    pull->nstfout                 = get_eint(inp, "pull-nstfout", 50, wi);
+    pull->bSetPbcRefToPrevStepCOM = (get_eeenum(inp, "pull-pbc-ref-prev-step-com", yesno_names, wi) != 0);
     printStringNoNewline(inp, "Number of pull groups");
     pull->ngroup = get_eint(inp, "pull-ngroups", 1, wi);
     printStringNoNewline(inp, "Number of pull coordinates");
@@ -323,6 +324,19 @@ char **read_pullparams(std::vector<t_inpfile> *inp,
         setStringEntry(inp, buf, wbuf, "");
         sprintf(buf, "pull-group%d-pbcatom", groupNum);
         pgrp->pbcatom = get_eint(inp, buf, 0, wi);
+
+        if (pull->bSetPbcRefToPrevStepCOM && pgrp->pbcatom <= 0)
+        {
+            char buf[STRLEN];
+            sprintf(buf,
+                    "When using the option pull-pbc-ref-prev-step-com a centrally "
+                    "placed atom should be chosen as pbcatom. Pull group %d does not have "
+                    "a specific atom selected as reference atom. If the pull group is "
+                    "small this warning can be ignored.",
+                    groupNum);
+            set_warning_line(wi, nullptr, -1);
+            warning(wi, buf);
+        }
 
         /* Initialize the pull group */
         init_pull_group(pgrp, wbuf);
@@ -520,6 +534,7 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
 
     t_start = ir->init_t + ir->init_step*ir->delta_t;
 
+    pullInitXPrevStep(pull_work);
     pull_calc_coms(nullptr, pull_work, md, &pbc, t_start, x, nullptr);
 
     int groupThatFailsPbc = pullCheckPbcWithinGroups(*pull_work, x, pbc);

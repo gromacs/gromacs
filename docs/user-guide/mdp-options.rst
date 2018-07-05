@@ -1612,6 +1612,25 @@ pull-coord2-vec, pull-coord2-k, and so on.
    frequency for writing out the force of all the pulled group
    (0 is never)
 
+.. mdp:: pull-pbc-ref-prev-step-com
+
+   .. mdp-value:: no
+
+      Use the reference atom (:mdp:`pull-group1-pbcatom`) for the
+      treatment of periodic boundary conditions.
+
+   .. mdp-value:: yes
+
+      Use the COM of the previous step as reference for the treatment
+      of periodic boundary conditions. The reference is initialized
+      using the reference atom (:mdp:`pull-group1-pbcatom`), which should
+      be located centrally in the group. Using the COM from the
+      previous step can be useful if the pull group is large and
+      there is a risk that the reference atom moves far during the
+      simulation. Unless a pull group is small this option should
+      only be used with a specified reference atom
+      (:mdp:`pull-group1-pbcatom` > 0).
+
 
 .. mdp:: pull-ngroups
 
