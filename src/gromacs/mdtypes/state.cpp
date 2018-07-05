@@ -239,7 +239,9 @@ t_state::t_state() : natoms(0),
                      dfhist(nullptr),
                      awhHistory(nullptr),
                      ddp_count(0),
-                     ddp_count_cg_gl(0)
+                     ddp_count_cg_gl(0),
+                     npullgroups(0),
+                     com_prev_step(nullptr)
 
 {
     // It would be nicer to initialize these with {} or {{0}} in the
