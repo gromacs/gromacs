@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -175,8 +175,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Make binary files human readable");
     registerModule(manager, &gmx_grompp, "grompp",
                    "Make a run input file");
-    registerModule(manager, &gmx_pdb2gmx, "pdb2gmx",
-                   "Convert coordinate files to topology and FF-compliant coordinate files");
     registerModule(manager, &gmx_convert_tpr, "convert-tpr",
                    "Make a modifed run-input file");
     registerObsoleteTool(manager, "tpbconv");
@@ -190,6 +188,11 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
             manager, gmx::InsertMoleculesInfo::name,
             gmx::InsertMoleculesInfo::shortDescription,
             &gmx::InsertMoleculesInfo::create);
+
+    gmx::ICommandLineOptionsModule::registerModuleFactory(
+            manager, gmx::pdb2gmxInfo::name,
+            gmx::pdb2gmxInfo::shortDescription,
+            &gmx::pdb2gmxInfo::create);
 
     // Modules from gmx_ana.h.
     registerModule(manager, &gmx_do_dssp, "do_dssp",
