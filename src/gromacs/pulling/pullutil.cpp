@@ -47,8 +47,10 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/utility/fatalerror.h"
@@ -163,7 +165,7 @@ static void pull_set_pbcatoms(const t_commrec *cr, struct pull_t *pull,
     for (size_t g = 0; g < pull->group.size(); g++)
     {
         const pull_group_work_t &group = pull->group[g];
-        if (group.needToCalcCom && group.epgrppbc == epgrppbcREFAT)
+        if (group.needToCalcCom && (group.epgrppbc == epgrppbcREFAT || group.epgrppbc == epgrppbcPREVSTEPCOM))
         {
             setPbcAtomCoords(pull->group[g], x, x_pbc[g]);
             numPbcAtoms++;
@@ -588,12 +590,18 @@ void pull_calc_coms(const t_commrec *cr,
         {
             if (pgrp->epgrppbc != epgrppbcCOS)
             {
-                rvec   x_pbc = { 0, 0, 0 };
+                rvec x_pbc = { 0, 0, 0 };
 
-                if (pgrp->epgrppbc == epgrppbcREFAT)
+                switch (pgrp->epgrppbc)
                 {
-                    /* Set the pbc atom */
-                    copy_rvec(comm->rbuf[g], x_pbc);
+                    case epgrppbcREFAT:
+                        /* Set the pbc atom */
+                        copy_rvec(comm->rbuf[g], x_pbc);
+                        break;
+                    case epgrppbcPREVSTEPCOM:
+                        /* Set the pbc reference to the COM of the group of the last step */
+                        copy_dvec_to_rvec(pgrp->x_prev_step, comm->rbuf[g]);
+                        copy_dvec_to_rvec(pgrp->x_prev_step, x_pbc);
                 }
 
                 /* The final sums should end up in sum_com[0] */
@@ -739,7 +747,7 @@ void pull_calc_coms(const t_commrec *cr,
                     {
                         pgrp->xp[m] = comm->dbuf[g*3+1][m]*pgrp->mwscale;
                     }
-                    if (pgrp->epgrppbc == epgrppbcREFAT)
+                    if (pgrp->epgrppbc == epgrppbcREFAT || pgrp->epgrppbc == epgrppbcPREVSTEPCOM)
                     {
                         pgrp->x[m]      += comm->rbuf[g][m];
                         if (xp)
@@ -920,7 +928,7 @@ int pullCheckPbcWithinGroups(const pull_t &pull,
     for (size_t g = 0; g < pull.group.size(); g++)
     {
         const pull_group_work_t &group = pull.group[g];
-        if (group.epgrppbc == epgrppbcREFAT &&
+        if ((group.epgrppbc == epgrppbcREFAT || group.epgrppbc == epgrppbcPREVSTEPCOM) &&
             !pullGroupObeysPbcRestrictions(group, dimUsed[g], x, pbc, pull.comm.rbuf[g]))
         {
             return g;
@@ -928,4 +936,195 @@ int pullCheckPbcWithinGroups(const pull_t &pull,
     }
 
     return -1;
+}
+
+void setStatePrevStepPullCom(const struct pull_t *pull, t_state *state)
+{
+    for (size_t i = 0; i < state->com_prev_step.size()/DIM; i++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            state->com_prev_step[i*DIM+j] = pull->group[i].x_prev_step[j];
+        }
+    }
+}
+
+void setPrevStepPullComFromState(struct pull_t *pull, const t_state *state)
+{
+    for (size_t i = 0; i < state->com_prev_step.size()/DIM; i++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            pull->group[i].x_prev_step[j] = state->com_prev_step[i*DIM+j];
+        }
+    }
+}
+
+void updatePrevStepCom(struct pull_t *pull)
+{
+    for (size_t g = 0; g < pull->group.size(); g++)
+    {
+        if (pull->group[g].needToCalcCom)
+        {
+            for (int j = 0; j < DIM; j++)
+            {
+                pull->group[g].x_prev_step[j] = pull->group[g].x[j];
+            }
+        }
+    }
+}
+
+void allocStatePrevStepPullCom(t_state *state, pull_t *pull)
+{
+    if (!pull)
+    {
+        state->com_prev_step.clear();
+        return;
+    }
+    size_t ngroup = pull->group.size();
+    if (state->com_prev_step.size()/DIM != ngroup)
+    {
+        state->com_prev_step.resize(ngroup * DIM, NAN);
+    }
+}
+
+void initPullComFromPrevStep(const t_commrec *cr,
+                             pull_t          *pull,
+                             const t_mdatoms *md,
+                             t_pbc           *pbc,
+                             const rvec       x[])
+{
+    pull_comm_t *comm   = &pull->comm;
+    size_t       ngroup = pull->group.size();
+
+    if (comm->rbuf == nullptr)
+    {
+        snew(comm->rbuf, ngroup);
+    }
+    if (comm->dbuf == nullptr)
+    {
+        snew(comm->dbuf, ngroup*DIM);
+    }
+
+    for (size_t g = 0; g < ngroup; g++)
+    {
+        pull_group_work_t *pgrp;
+
+        pgrp = &pull->group[g];
+
+        if (pgrp->needToCalcCom && pgrp->epgrppbc == epgrppbcPREVSTEPCOM)
+        {
+            GMX_ASSERT(pgrp->params.nat > 1, "Groups with no atoms, or only one atom, should not "
+                       "use the COM from the previous step as reference.");
+
+            rvec x_pbc = { 0, 0, 0 };
+            pull_set_pbcatoms(cr, pull, x, comm->rbuf);
+            copy_rvec(comm->rbuf[g], x_pbc);
+
+            if (debug)
+            {
+                fprintf(debug, "Initialising prev step COM of pull group %zu. x_pbc =", g);
+                for (int m = 0; m < DIM; m++)
+                {
+                    fprintf(debug, " %f", x_pbc[m]);
+                }
+                fprintf(debug, "\n");
+            }
+
+            /* The following is to a large extent similar to pull_calc_coms() */
+
+            /* The final sums should end up in sum_com[0] */
+            pull_sum_com_t *sum_com = &pull->sum_com[0];
+
+            if (pgrp->atomSet.numAtomsLocal() <= c_pullMaxNumLocalAtomsSingleThreaded)
+            {
+                sum_com_part(pgrp, 0, pgrp->atomSet.numAtomsLocal(),
+                             x, nullptr, md->massT,
+                             pbc, x_pbc,
+                             sum_com);
+            }
+            else
+            {
+#pragma omp parallel for num_threads(pull->nthreads) schedule(static)
+                for (int t = 0; t < pull->nthreads; t++)
+                {
+                    int ind_start = (pgrp->atomSet.numAtomsLocal()*(t + 0))/pull->nthreads;
+                    int ind_end   = (pgrp->atomSet.numAtomsLocal()*(t + 1))/pull->nthreads;
+                    sum_com_part(pgrp, ind_start, ind_end,
+                                 x, nullptr, md->massT,
+                                 pbc, x_pbc,
+                                 &pull->sum_com[t]);
+                }
+
+                /* Reduce the thread contributions to sum_com[0] */
+                for (int t = 1; t < pull->nthreads; t++)
+                {
+                    sum_com->sum_wm  += pull->sum_com[t].sum_wm;
+                    sum_com->sum_wwm += pull->sum_com[t].sum_wwm;
+                    dvec_inc(sum_com->sum_wmx, pull->sum_com[t].sum_wmx);
+                    dvec_inc(sum_com->sum_wmxp, pull->sum_com[t].sum_wmxp);
+                }
+            }
+
+            if (pgrp->localWeights.empty())
+            {
+                sum_com->sum_wwm = sum_com->sum_wm;
+            }
+
+            /* Copy local sums to a buffer for global summing */
+            copy_dvec(sum_com->sum_wmx,  comm->dbuf[g*3]);
+            copy_dvec(sum_com->sum_wmxp, comm->dbuf[g*3 + 1]);
+            comm->dbuf[g*3 + 2][0] = sum_com->sum_wm;
+            comm->dbuf[g*3 + 2][1] = sum_com->sum_wwm;
+            comm->dbuf[g*3 + 2][2] = 0;
+        }
+    }
+
+    pullAllReduce(cr, comm, ngroup*3*DIM, comm->dbuf[0]);
+
+    for (size_t g = 0; g < ngroup; g++)
+    {
+        pull_group_work_t *pgrp;
+
+        pgrp = &pull->group[g];
+        if (pgrp->needToCalcCom)
+        {
+            if (pgrp->epgrppbc == epgrppbcPREVSTEPCOM)
+            {
+                double wmass, wwmass;
+
+                /* Determine the inverse mass */
+                wmass             = comm->dbuf[g*3+2][0];
+                wwmass            = comm->dbuf[g*3+2][1];
+                pgrp->mwscale     = 1.0/wmass;
+                /* invtm==0 signals a frozen group, so then we should keep it zero */
+                if (pgrp->invtm != 0)
+                {
+                    pgrp->wscale  = wmass/wwmass;
+                    pgrp->invtm   = wwmass/(wmass*wmass);
+                }
+                /* Divide by the total mass */
+                for (int m = 0; m < DIM; m++)
+                {
+                    pgrp->x[m]      = comm->dbuf[g*3  ][m]*pgrp->mwscale;
+                    if (pgrp->epgrppbc == epgrppbcREFAT || pgrp->epgrppbc == epgrppbcPREVSTEPCOM)
+                    {
+                        pgrp->x[m]      += comm->rbuf[g][m];
+                    }
+                }
+                if (debug)
+                {
+                    fprintf(debug, "Pull group %zu wmass %f invtm %f\n",
+                            g, 1.0/pgrp->mwscale, pgrp->invtm);
+                    fprintf(debug, "Initialising prev step COM of pull group %zu to", g);
+                    for (int m = 0; m < DIM; m++)
+                    {
+                        fprintf(debug, " %f", pgrp->x[m]);
+                    }
+                    fprintf(debug, "\n");
+                }
+                copy_dvec(pgrp->x, pgrp->x_prev_step);
+            }
+        }
+    }
 }

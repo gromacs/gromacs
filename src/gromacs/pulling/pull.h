@@ -67,6 +67,7 @@ struct t_filenm;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
+class t_state;
 
 namespace gmx
 {
@@ -337,5 +338,47 @@ gmx_bool pull_have_constraint(const struct pull_t *pull);
  */
 real max_pull_distance2(const pull_coord_work_t *pcrd,
                         const t_pbc             *pbc);
+
+/*! \brief Copies the COM from the previous step of all pull groups to the checkpoint state container
+ *
+ * \param[in]   pull  The COM pull force calculation data structure
+ * \param[in]   state The global state container
+ */
+void setStatePrevStepPullCom(const struct pull_t *pull, t_state *state);
+
+/*! \brief Copies the pull group COM of the previous step from the checkpoint state to the pull state
+ *
+ * \param[in]   pull  The COM pull force calculation data structure
+ * \param[in]   state The global state container
+ */
+void setPrevStepPullComFromState(struct pull_t *pull, const t_state *state);
+
+/*! \brief Sets the previous step COM to the current COM
+ *
+ * \param[in]   pull The COM pull force calculation data structure
+ */
+void updatePrevStepCom(struct pull_t *pull);
+
+/*! \brief Resizes the vector, in the state container, containing the COMs from the previous step
+ *
+ * \param[in]   state The global state container
+ * \param[in]   pull  The COM pull force calculation data structure
+ */
+void allocStatePrevStepPullCom(t_state *state, pull_t *pull);
+
+/*! \brief Initializes the COM of the previous step (set to initial COM)
+ *
+ * \param[in] cr       Struct for communication info.
+ * \param[in] pull     The pull data structure.
+ * \param[in] md       All atoms.
+ * \param[in] pbc      Information struct about periodicity.
+ * \param[in] x        The local positions.
+ *
+ */
+void initPullComFromPrevStep(const t_commrec *cr,
+                             pull_t          *pull,
+                             const t_mdatoms *md,
+                             t_pbc           *pbc,
+                             const rvec       x[]);
 
 #endif

@@ -509,6 +509,20 @@ void gmx::Integrator::do_md()
                  */
                 observablesHistory->energyHistory = {};
             }
+            if (ir->pull->bSetPbcRefToPrevStepCOM)
+            {
+                /* Copy the pull group COM of the previous step from the checkpoint state to the pull state */
+                setPrevStepPullComFromState(ir->pull_work, state);
+            }
+        }
+        else if (ir->pull->bSetPbcRefToPrevStepCOM)
+        {
+            allocStatePrevStepPullCom(state, ir->pull_work);
+            t_pbc pbc;
+            set_pbc(&pbc, ir->ePBC, state->box);
+            initPullComFromPrevStep(cr, ir->pull_work, mdatoms, &pbc, as_rvec_array(state->x.data()));
+            updatePrevStepCom(ir->pull_work);
+            setStatePrevStepPullCom(ir->pull_work, state);
         }
         if (observablesHistory->energyHistory == nullptr)
         {
@@ -1496,6 +1510,12 @@ void gmx::Integrator::do_md()
             finish_update(ir, mdatoms,
                           state, graph,
                           nrnb, wcycle, upd, constr);
+
+            if (MASTER(cr) && ir->bPull && ir->pull->bSetPbcRefToPrevStepCOM)
+            {
+                updatePrevStepCom(ir->pull_work);
+                setStatePrevStepPullCom(ir->pull_work, state);
+            }
 
             if (ir->eI == eiVVAK)
             {
