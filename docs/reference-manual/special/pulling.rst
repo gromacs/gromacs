@@ -86,6 +86,16 @@ default, the middle (determined by the order in the topology) atom is
 used as a reference atom, but the user can also select any other atom if
 it would be closer to center of the group.
 
+When there are large pull groups, such as a
+lipid bilayer, ``pull-pbc-ref-prev-step-com`` can be used to avoid potential
+large movements of the center of mass in case that atoms in the pull group
+move so much that the reference atom is too far from the intended center of mass.
+With this option enabled the center of mass from the previous step is used,
+instead of the position of the reference atom, to determine the reference position.
+The position of the reference atom is still used for the first step. For large pull
+groups it is important to select a reference atom that is close to the intended
+center of mass, i.e. do not use ``pull-group?-pbcatom = 0``.
+
 For a layered system, for instance a lipid bilayer, it may be of
 interest to calculate the PMF of a lipid as function of its distance
 from the whole bilayer. The whole bilayer can be taken as reference
