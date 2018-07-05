@@ -98,14 +98,15 @@ void print_top_mols(FILE *out,
                     int nincl, char **incls,
                     int nmol, t_mols *mols);
 
-void write_top(FILE *out, char *pr, const char *molname,
-               t_atoms *at, bool bRTPresname,
+
+void write_top(FILE *out, const char *pr, const char *molname,
+               t_atoms *at, gmx_bool bRTPresname,
                int bts[], t_params plist[], t_excls excls[],
                gpp_atomtype_t atype, int *cgnr, int nrexcl);
 /* NOTE: nrexcl is not the size of *excl! */
 
 
-void pdb2top(FILE *top_file, char *posre_fn, char *molname,
+void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
              t_atoms *atoms, rvec **x,
              gpp_atomtype_t atype, struct t_symtab *tab,
              int nrtp, t_restp rtp[],
