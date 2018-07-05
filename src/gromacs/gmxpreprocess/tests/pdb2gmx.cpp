@@ -97,9 +97,23 @@ class Pdb2gmxTest : public gmx::test::CommandLineTestBase,
             CommandLine &cmdline = commandLine();
             cmdline.merge(args);
 
+            gmx::test::TestReferenceChecker rootChecker(this->rootChecker());
+
+            ASSERT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::pdb2gmxInfo::create, &cmdline));
+
+            checkOutputFiles();
+        }
+
+#if 0
+        void runTest(const CommandLine &args)
+        {
+            CommandLine &cmdline = commandLine();
+            cmdline.merge(args);
+
             ASSERT_EQ(0, gmx_pdb2gmx(cmdline.argc(), cmdline.argv()));
             checkOutputFiles();
         }
+#endif
         FilteringExactTextMatch textMatcher_;
 };
 
