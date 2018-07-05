@@ -50,6 +50,7 @@
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/mdtypes/swaphistory.h"
 #include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -129,6 +130,21 @@ void init_dfhist_state(t_state *state, int dfhistNumLambda)
     else
     {
         state->dfhist = nullptr;
+    }
+}
+
+void initPullComFromPrevStep(t_state *state, const t_inputrec *ir)
+{
+    if (ir->pull_work)
+    {
+        if (static_cast<int>(state->com_prev_step.size())/DIM != ir->pull->ngroup)
+        {
+            state->com_prev_step.resize(ir->pull->ngroup * DIM, NAN);
+        }
+    }
+    else
+    {
+        state->com_prev_step.clear();
     }
 }
 

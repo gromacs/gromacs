@@ -226,6 +226,8 @@ class t_state
         int                               ddp_count;       //!< The DD partitioning count for this state
         int                               ddp_count_cg_gl; //!< The DD partitioning count for index_gl
         std::vector<int>                  cg_gl;           //!< The global cg number of the local cgs
+
+        std::vector<double>               com_prev_step;   //!< The COM of the previous step of each pull group
 };
 
 #ifndef DOXYGEN
@@ -262,6 +264,9 @@ void state_change_natoms(t_state *state, int natoms);
 
 //! Allocates memory for free-energy history
 void init_dfhist_state(t_state *state, int dfhistNumLambda);
+
+//! Allocates memory for pull COM of previous step
+void initPullComFromPrevStep(t_state *state, const t_inputrec *ir);
 
 /*! \brief Compares two states, write the differences to stdout */
 void comp_state(const t_state *st1, const t_state *st2, gmx_bool bRMSD, real ftol, real abstol);
