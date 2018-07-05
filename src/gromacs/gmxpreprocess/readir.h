@@ -139,6 +139,7 @@ char **read_pullparams(std::vector<t_inpfile> *inp,
 /* Reads the pull parameters, returns a list of the pull group names */
 
 void make_pull_groups(pull_params_t *pull,
+                      warninp_t wi,
                       char **pgnames,
                       const t_blocka *grps, char **gnames);
 /* Process the pull group parameters after reading the index groups */

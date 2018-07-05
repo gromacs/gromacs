@@ -3471,7 +3471,7 @@ void do_index(const char* mdparin, const char *ndx,
 
     if (ir->bPull)
     {
-        make_pull_groups(ir->pull, is->pull_grp, grps, gnames);
+        make_pull_groups(ir->pull, wi, is->pull_grp, grps, gnames);
 
         make_pull_coords(ir->pull);
     }
