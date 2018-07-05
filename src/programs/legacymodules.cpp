@@ -176,8 +176,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Make binary files human readable");
     registerModule(manager, &gmx_grompp, "grompp",
                    "Make a run input file");
-    registerModule(manager, &gmx_pdb2gmx, "pdb2gmx",
-                   "Convert coordinate files to topology and FF-compliant coordinate files");
     registerModule(manager, &gmx_convert_tpr, "convert-tpr",
                    "Make a modifed run-input file");
     registerObsoleteTool(manager, "tpbconv");
@@ -197,6 +195,10 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
             gmx::ReportMethodsInfo::shortDescription,
             &gmx::ReportMethodsInfo::create);
 
+    gmx::ICommandLineOptionsModule::registerModuleFactory(
+            manager, gmx::pdb2gmxInfo::name,
+            gmx::pdb2gmxInfo::shortDescription,
+            &gmx::pdb2gmxInfo::create);
 
     // Modules from gmx_ana.h.
     registerModule(manager, &gmx_do_dssp, "do_dssp",
