@@ -47,8 +47,11 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
@@ -64,6 +67,9 @@
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/gmxpreprocess/xlate.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/filenameoption.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/index.h"
@@ -73,8 +79,10 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/dir_separator.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 #include "gromacs/utility/stringutil.h"
@@ -87,7 +95,6 @@ typedef struct {
     char cter[RTP_MAXCHAR+2];
     char bter[RTP_MAXCHAR+2];
 } rtprename_t;
-
 
 static const char *res2bb_notermini(const char *name,
                                     int nrr, const rtprename_t *rr)
@@ -321,10 +328,9 @@ static char *search_resrename(int nrr, rtprename_t *rr,
     return nn;
 }
 
-
 static void rename_resrtp(t_atoms *pdba, int nterpairs, const int *r_start, const int *r_end,
                           int nrr, rtprename_t *rr, t_symtab *symtab,
-                          gmx_bool bVerbose)
+                          bool bVerbose)
 {
     int      r, j;
     bool     bStart, bEnd;
@@ -439,7 +445,7 @@ static void rename_bbint(t_atoms *pdba, const char *oldnm,
 
     for (i = 0; i < pdba->nres; i++)
     {
-        /* We have not set the rtp name yes, use the residue name */
+        /* We have not set the rtp name yet, use the residue name */
         bbnm = *pdba->resinfo[i].name;
         if ((bFullCompare && (strcmp(bbnm, oldnm) == 0)) ||
             (!bFullCompare && strstr(bbnm, oldnm) != nullptr))
@@ -450,7 +456,7 @@ static void rename_bbint(t_atoms *pdba, const char *oldnm,
     }
 }
 
-static void check_occupancy(t_atoms *atoms, const char *filename, gmx_bool bVerbose)
+static void check_occupancy(t_atoms *atoms, const char *filename, bool bVerbose)
 {
     int i, ftp;
     int nzero   = 0;
@@ -505,7 +511,7 @@ static void check_occupancy(t_atoms *atoms, const char *filename, gmx_bool bVerb
     }
 }
 
-static void write_posres(char *fn, t_atoms *pdba, real fc)
+static void write_posres(const char *fn, t_atoms *pdba, real fc)
 {
     FILE *fp;
     int   i;
@@ -530,11 +536,11 @@ static void write_posres(char *fn, t_atoms *pdba, real fc)
     gmx_fio_fclose(fp);
 }
 
-static int read_pdball(const char *inf, const char *outf, char **title,
+static int read_pdball(const char *inf, bool bOutput, const char *outf, char **title,
                        t_atoms *atoms, rvec **x,
-                       int *ePBC, matrix box, gmx_bool bRemoveH,
+                       int *ePBC, matrix box, bool bRemoveH,
                        t_symtab *symtab, gmx_residuetype_t *rt, const char *watres,
-                       gmx_atomprop_t aps, gmx_bool bVerbose)
+                       gmx_atomprop_t aps, bool bVerbose)
 /* Read a pdb file. (containing proteins) */
 {
     int natom, new_natom, i;
@@ -588,8 +594,7 @@ static int read_pdball(const char *inf, const char *outf, char **title,
     {
         return 0;
     }
-
-    if (outf)
+    if (bOutput)
     {
         write_sto_conf(outf, *title, atoms, *x, nullptr, *ePBC, box);
     }
@@ -598,9 +603,9 @@ static int read_pdball(const char *inf, const char *outf, char **title,
 }
 
 static void process_chain(t_atoms *pdba, rvec *x,
-                          gmx_bool bTrpU, gmx_bool bPheU, gmx_bool bTyrU,
-                          gmx_bool bLysMan, gmx_bool bAspMan, gmx_bool bGluMan,
-                          gmx_bool bHisMan, gmx_bool bArgMan, gmx_bool bGlnMan,
+                          bool bTrpU, bool bPheU, bool bTyrU,
+                          bool bLysMan, bool bAspMan, bool bGluMan,
+                          bool bHisMan, bool bArgMan, bool bGlnMan,
                           real angle, real distance, t_symtab *symtab,
                           int nrr, const rtprename_t *rr)
 {
@@ -785,7 +790,7 @@ static void sort_pdbatoms(t_restp restp[],
     sfree(pdbi);
 }
 
-static int remove_duplicate_atoms(t_atoms *pdba, rvec x[], gmx_bool bVerbose)
+static int remove_duplicate_atoms(t_atoms *pdba, rvec x[], bool bVerbose)
 {
     int        i, j, oldnatoms, ndel;
     t_resinfo *ri;
@@ -1055,58 +1060,24 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
     }
 }
 
-
-enum SplittingType
-{
-    SPLIT_ID_OR_TER,
-    SPLIT_ID_AND_TER,
-    SPLIT_ID_ONLY,
-    SPLIT_TER_ONLY,
-    SPLIT_INTERACTIVE
+/* enum for chain separation */
+enum ChainSepType {
+    enChainSep_id_or_ter, enChainSep_id_and_ter, enChainSep_ter,
+    enChainSep_id, enChainSep_interactive
 };
-
-static SplittingType getSplittingType(const char *chainsep)
+static const char *ChainSepEnum[] = {"id_or_ter", "id_and_ter", "ter", "id", "interactive"};
+static const char *ChainSepInfoString[] =
 {
-    SplittingType splitting = SPLIT_TER_ONLY; /* keep compiler happy */
-
-    /* Be a bit flexible to catch typos */
-    if (!strncmp(chainsep, "id_o", 4))
-    {
-        /* For later interactive splitting we tentatively assign new chain numbers at either changing id or ter records */
-        splitting = SPLIT_ID_OR_TER;
-        printf("Splitting chemical chains based on TER records or chain id changing.\n");
-    }
-    else if (!strncmp(chainsep, "int", 3))
-    {
-        /* For later interactive splitting we tentatively assign new chain numbers at either changing id or ter records */
-        splitting = SPLIT_INTERACTIVE;
-        printf("Splitting chemical chains interactively.\n");
-    }
-    else if (!strncmp(chainsep, "id_a", 4))
-    {
-        splitting = SPLIT_ID_AND_TER;
-        printf("Splitting chemical chains based on TER records and chain id changing.\n");
-    }
-    else if (strlen(chainsep) == 2 && !strncmp(chainsep, "id", 4))
-    {
-        splitting = SPLIT_ID_ONLY;
-        printf("Splitting chemical chains based on changing chain id only (ignoring TER records).\n");
-    }
-    else if (chainsep[0] == 't')
-    {
-        splitting = SPLIT_TER_ONLY;
-        printf("Splitting chemical chains based on TER records only (ignoring chain id).\n");
-    }
-    else
-    {
-        gmx_fatal(FARGS, "Unidentified setting for chain separation: %s\n", chainsep);
-    }
-    return splitting;
-}
+    "Splitting chemical chains based on TER records or chain id changing.\n",
+    "Splitting chemical chains based on TER records and chain id changing.\n",
+    "Splitting chemical chains based on TER records only (ignoring chain id).\n",
+    "Splitting chemical chains based on changing chain id only (ignoring TER records).\n",
+    "Splitting chemical chains interactively.\n"
+};
 
 static void
 modify_chain_numbers(t_atoms *       pdba,
-                     const char *    chainsep)
+                     ChainSepType    enumChainSep)
 {
     int           i;
     char          old_prev_chainid;
@@ -1127,9 +1098,8 @@ modify_chain_numbers(t_atoms *       pdba,
     char          prev_chainid;
     char          this_chainid;
 
-    SplittingType splitting = getSplittingType(chainsep);
-
-    /* The default chain enumeration is id_or_ter */
+    /* The default chain enumeration is based on TER records only */
+    printf("%s", ChainSepInfoString[enumChainSep]);
 
     old_prev_chainid  = '?';
     old_prev_chainnum = -1;
@@ -1159,41 +1129,42 @@ modify_chain_numbers(t_atoms *       pdba,
         this_resnum        = ri->nr;
         this_chainid       = ri->chainid;
 
-        switch (splitting)
+        switch (enumChainSep)
         {
-            case SPLIT_ID_OR_TER:
+            case enChainSep_id_or_ter:
                 if (old_this_chainid != old_prev_chainid || old_this_chainnum != old_prev_chainnum)
                 {
                     new_chainnum++;
                 }
                 break;
 
-            case SPLIT_ID_AND_TER:
+            case enChainSep_id_and_ter:
                 if (old_this_chainid != old_prev_chainid && old_this_chainnum != old_prev_chainnum)
                 {
                     new_chainnum++;
                 }
                 break;
 
-            case SPLIT_ID_ONLY:
+            case enChainSep_id:
                 if (old_this_chainid != old_prev_chainid)
                 {
                     new_chainnum++;
                 }
                 break;
 
-            case SPLIT_TER_ONLY:
+            case enChainSep_ter:
                 if (old_this_chainnum != old_prev_chainnum)
                 {
                     new_chainnum++;
                 }
                 break;
-            case SPLIT_INTERACTIVE:
+            case enChainSep_interactive:
                 if (old_this_chainid != old_prev_chainid || old_this_chainnum != old_prev_chainnum)
                 {
                     if (i > 0)
                     {
-                        printf("Split the chain (and introduce termini) between residue %s%d (chain id '%c', atom %d %s)\n"
+                        printf("Split the chain (and introduce termini) between residue %s%d (chain id '%c', atom %d %s)\
+\n"
                                "and residue %s%d (chain id '%c', atom %d %s) ? [n/y]\n",
                                prev_resname, prev_resnum, prev_chainid, prev_atomnum, prev_atomname,
                                this_resname, this_resnum, this_chainid, this_atomnum, this_atomname);
@@ -1219,7 +1190,6 @@ modify_chain_numbers(t_atoms *       pdba,
     }
 }
 
-
 typedef struct {
     char  chainid;
     char  chainnum;
@@ -1244,7 +1214,127 @@ typedef struct {
     rvec         *x;
 } t_chain;
 
-int gmx_pdb2gmx(int argc, char *argv[])
+/* enum for vsites */
+enum VSitesType {
+    enVSites_none, enVSites_hydrogens, enVSites_aromatics
+};
+static const char *VSitesEnum[] = {"none", "hydrogens", "aromatics"};
+
+/* enum for water model */
+enum WaterType {
+    enWater_select, enWater_none, enWater_spc, enWater_spce,
+    enWater_tip3p, enWater_tip4p, enWater_tip5p, enWater_tips3p
+};
+static const char *WaterEnum[] = {
+    "select", "none", "spc", "spce",
+    "tip3p", "tip4p", "tip5p", "tips3p"
+};
+
+/* enum for merge */
+enum MergeType {
+    enMerge_no, enMerge_all, enMerge_interactive
+};
+static const char *MergeEnum[] = {"no", "all", "interactive"};
+
+namespace gmx
+{
+
+namespace
+{
+
+class pdb2gmx : public ICommandLineOptionsModule
+{
+    public:
+        pdb2gmx() :
+            bVsites_(FALSE), bPrevWat_(FALSE), bVsiteAromatics_(FALSE),
+            enumChainSep_(enChainSep_id_or_ter),
+            enumVSites_(enVSites_none),
+            enumWater_(enWater_select),
+            enumMerge_(enMerge_no),
+            itp_file_(nullptr),
+            nincl_(0),
+            nmol_(0),
+            incls_(nullptr),
+            mols_(nullptr),
+            mHmult_(0)
+        {
+        }
+
+        // From ICommandLineOptionsModule
+        void init(CommandLineModuleSettings * /*settings*/) override
+        {
+        }
+
+        void initOptions(IOptionsContainer                 *options,
+                         ICommandLineOptionsModuleSettings *settings) override;
+
+        void optionsFinished() override;
+
+        int run() override;
+
+    private:
+        bool               bNewRTP_;
+        bool               bInter_;
+        bool               bCysMan_;
+        bool               bLysMan_;
+        bool               bAspMan_;
+        bool               bGluMan_;
+        bool               bHisMan_;
+        bool               bGlnMan_;
+        bool               bArgMan_;
+        bool               bTerMan_;
+        bool               bUnA_;
+        bool               bHeavyH_;
+        bool               bSort_;
+        bool               bAllowMissing_;
+        bool               bRemoveH_;
+        bool               bDeuterate_;
+        bool               bVerbose_;
+        bool               bChargeGroups_;
+        bool               bCmap_;
+        bool               bRenumRes_;
+        bool               bRTPresname_;
+        bool               bIndexSet_;
+        bool               bOutputSet_;
+        bool               bVsites_;
+        bool               bWat_;
+        bool               bPrevWat_;
+        bool               bITP_;
+        bool               bVsiteAromatics_;
+        real               angle_;
+        real               distance_;
+        real               posre_fc_;
+        real               long_bond_dist_;
+        real               short_bond_dist_;
+
+        std::string        indexOutputFile_;
+        std::string        outputFile_;
+        std::string        topologyFile_;
+        std::string        includeTopologyFile_;
+        std::string        outputConfFile_;
+        std::string        inputConfFile_;
+        std::string        outFile_;
+        std::string        ff_;
+
+        ChainSepType       enumChainSep_;
+        VSitesType         enumVSites_;
+        WaterType          enumWater_;
+        MergeType          enumMerge_;
+
+        FILE              *itp_file_;
+        char               forcefield_[STRLEN];
+        char               ffdir_[STRLEN];
+        char              *ffname_;
+        char              *watermodel_;
+        int                nincl_;
+        int                nmol_;
+        char             **incls_;
+        t_mols            *mols_;
+        real               mHmult_;
+};
+
+void pdb2gmx::initOptions(IOptionsContainer                 *options,
+                          ICommandLineOptionsModuleSettings *settings)
 {
     const char *desc[] = {
         "[THISMODULE] reads a [REF].pdb[ref] (or [REF].gro[ref]) file, reads",
@@ -1357,260 +1447,254 @@ int gmx_pdb2gmx(int argc, char *argv[])
         "(heavy) atom so that the total mass of the system remains the same."
     };
 
+    settings->setHelpText(desc);
 
-    FILE             *fp, *top_file, *top_file2, *itp_file = nullptr;
-    int               natom, nres;
-    t_atoms           pdba_all, *pdba;
-    t_atoms          *atoms;
-    t_resinfo        *ri;
-    t_blocka         *block;
-    int               chain, nch, maxch, nwaterchain;
-    t_pdbchain       *pdb_ch;
-    t_chain          *chains, *cc;
-    char              select[STRLEN];
-    int               nincl, nmol;
-    char            **incls;
-    t_mols           *mols;
-    char            **gnames;
-    int               ePBC;
-    matrix            box;
-    rvec              box_space;
-    int               i, j, k, l, nrtp;
-    int              *swap_index, si;
-    t_restp          *restp;
-    t_hackblock      *ah;
-    t_symtab          symtab;
-    gpp_atomtype_t    atype;
-    gmx_residuetype_t*rt;
-    const char       *top_fn;
-    char              itp_fn[STRLEN], posre_fn[STRLEN], buf_fn[STRLEN];
-    char              molname[STRLEN];
-    char             *c, forcefield[STRLEN], ffdir[STRLEN];
-    char              ffname[STRLEN], suffix[STRLEN], buf[STRLEN];
-    char             *watermodel;
-    const char       *watres;
-    int               nrtprename;
-    rtprename_t      *rtprename = nullptr;
-    int               nah, nNtdb, nCtdb, ntdblist;
-    t_hackblock      *ntdb, *ctdb, **tdblist;
-    int               nssbonds;
-    t_ssbond         *ssbonds;
-    rvec             *pdbx, *x;
-    bool              bVsites = FALSE, bWat, bPrevWat = FALSE, bITP, bVsiteAromatics = FALSE;
-    real              mHmult  = 0;
-    t_hackblock      *hb_chain;
-    t_restp          *restp_chain;
-    gmx_output_env_t *oenv;
-    const char       *p_restype;
-    int               rc;
-    int               this_atomnum;
-    int               prev_atomnum;
-    const char     *  prev_atomname;
-    const char     *  this_atomname;
-    const char     *  prev_resname;
-    const char     *  this_resname;
-    int               prev_resnum;
-    int               this_resnum;
-    char              prev_chainid;
-    char              this_chainid;
-    int               prev_chainnumber;
-    int               this_chainnumber;
-    int               nid_used;
-    int               this_chainstart;
-    int               prev_chainstart;
-    bool              bMerged;
-    int               nchainmerges;
+    options->addOption(BooleanOption("newrtp")
+                           .store(&bNewRTP_).defaultValue(false).hidden()
+                           .description("Write the residue database in new format to [TT]new.rtp[tt]"));
+    options->addOption(RealOption("lb")
+                           .store(&long_bond_dist_).defaultValue(0.25).hidden()
+                           .description("Long bond warning distance"));
+    options->addOption(RealOption("sb")
+                           .store(&short_bond_dist_).defaultValue(0.05).hidden()
+                           .description("Short bond warning distance"));
+    options->addOption(EnumOption<ChainSepType>("chainsep").enumValue(ChainSepEnum)
+                           .store(&enumChainSep_)
+                           .description("Condition in PDB files when a new chain should be started (adding termini)"));
+    options->addOption(EnumOption<MergeType>("merge").enumValue(MergeEnum)
+                           .store(&enumMerge_)
+                           .description("Merge multiple chains into a single [moleculetype]"));
+    options->addOption(StringOption("ff")
+                           .store(&ff_).defaultValue("select")
+                           .description("Force field, interactive by default. Use [TT]-h[tt] for information."));
+    options->addOption(EnumOption<WaterType>("water")
+                           .store(&enumWater_).enumValue(WaterEnum)
+                           .description("Water model to use"));
+    options->addOption(BooleanOption("inter")
+                           .store(&bInter_).defaultValue(false)
+                           .description("Set the next 8 options to interactive"));
+    options->addOption(BooleanOption("ss")
+                           .store(&bCysMan_).defaultValue(false)
+                           .description("Interactive SS bridge selection"));
+    options->addOption(BooleanOption("ter")
+                           .store(&bTerMan_).defaultValue(false)
+                           .description("Interactive termini selection, instead of charged (default)"));
+    options->addOption(BooleanOption("lys")
+                           .store(&bLysMan_).defaultValue(false)
+                           .description("Interactive lysine selection, instead of charged"));
+    options->addOption(BooleanOption("arg")
+                           .store(&bArgMan_).defaultValue(false)
+                           .description("Interactive arginine selection, instead of charged"));
+    options->addOption(BooleanOption("asp")
+                           .store(&bAspMan_).defaultValue(false)
+                           .description("Interactive aspartic acid selection, instead of charged"));
+    options->addOption(BooleanOption("glu")
+                           .store(&bGluMan_).defaultValue(false)
+                           .description("Interactive glutamic acid selection, instead of charged"));
+    options->addOption(BooleanOption("gln")
+                           .store(&bGlnMan_).defaultValue(false)
+                           .description("Interactive glutamine selection, instead of charged"));
+    options->addOption(BooleanOption("his")
+                           .store(&bHisMan_).defaultValue(false)
+                           .description("Interactive histidine selection, instead of checking H-bonds"));
+    options->addOption(RealOption("angle")
+                           .store(&angle_).defaultValue(135.0)
+                           .description("Minimum hydrogen-donor-acceptor angle for a H-bond (degrees)"));
+    options->addOption(RealOption("dist")
+                           .store(&distance_).defaultValue(0.3)
+                           .description("Maximum donor-acceptor distance for a H-bond (nm)"));
+    options->addOption(BooleanOption("una")
+                           .store(&bUnA_).defaultValue(false)
+                           .description("Select aromatic rings with united CH atoms on phenylalanine, tryptophane and tyrosine"));
+    options->addOption(BooleanOption("sort")
+                           .store(&bSort_).defaultValue(true).hidden()
+                           .description("Sort the residues according to database, turning this off is dangerous as charge groups might be broken in parts"));
+    options->addOption(BooleanOption("ignh")
+                           .store(&bRemoveH_).defaultValue(false)
+                           .description("Ignore hydrogen atoms that are in the coordinate file"));
+    options->addOption(BooleanOption("missing")
+                           .store(&bAllowMissing_).defaultValue(false)
+                           .description("Continue when atoms are missing and bonds cannot be made, dangerous"));
+    options->addOption(BooleanOption("v")
+                           .store(&bVerbose_).defaultValue(false)
+                           .description("Be slightly more verbose in messages"));
+    options->addOption(RealOption("posrefc")
+                           .store(&posre_fc_).defaultValue(1000)
+                           .description("Force constant for position restraints"));
+    options->addOption(EnumOption<VSitesType>("vsite")
+                           .store(&enumVSites_).enumValue(VSitesEnum)
+                           .description("Convert atoms to virtual sites"));
+    options->addOption(BooleanOption("heavyh")
+                           .store(&bHeavyH_).defaultValue(false)
+                           .description("Make hydrogen atoms heavy"));
+    options->addOption(BooleanOption("deuterate")
+                           .store(&bDeuterate_).defaultValue(false)
+                           .description("Change the mass of hydrogens to 2 amu"));
+    options->addOption(BooleanOption("chargegrp")
+                           .store(&bChargeGroups_).defaultValue(true)
+                           .description("Use charge groups in the [REF].rtp[ref] file"));
+    options->addOption(BooleanOption("cmap")
+                           .store(&bCmap_).defaultValue(true)
+                           .description("Use cmap torsions (if enabled in the [REF].rtp[ref] file)"));
+    options->addOption(BooleanOption("renum")
+                           .store(&bRenumRes_).defaultValue(false)
+                           .description("Renumber the residues consecutively in the output"));
+    options->addOption(BooleanOption("rtpres")
+                           .store(&bRTPresname_).defaultValue(false)
+                           .description("Use [REF].rtp[ref] entry names as residue names"));
+    options->addOption(FileNameOption("f")
+                           .legacyType(efSTX).inputFile()
+                           .store(&inputConfFile_).required()
+                           .defaultBasename("protein").defaultType(efPDB)
+                           .description("Structure file"));
+    options->addOption(FileNameOption("o")
+                           .legacyType(efSTO).outputFile()
+                           .store(&outputConfFile_).required()
+                           .defaultBasename("conf")
+                           .description("Structure file"));
+    options->addOption(FileNameOption("p")
+                           .legacyType(efTOP).outputFile()
+                           .store(&topologyFile_).required()
+                           .defaultBasename("topol")
+                           .description("Topology file"));
+    options->addOption(FileNameOption("i")
+                           .legacyType(efITP).outputFile()
+                           .store(&includeTopologyFile_).required()
+                           .defaultBasename("posre")
+                           .description("Include file for topology"));
+    options->addOption(FileNameOption("n")
+                           .legacyType(efNDX).outputFile()
+                           .store(&indexOutputFile_).storeIsSet(&bIndexSet_)
+                           .defaultBasename("index")
+                           .description("Index file"));
+    options->addOption(FileNameOption("q")
+                           .legacyType(efSTO).outputFile()
+                           .store(&outFile_).storeIsSet(&bOutputSet_)
+                           .defaultBasename("clean").defaultType(efPDB)
+                           .description("Structure file"));
+}
 
-    gmx_atomprop_t    aps;
-
-    t_filenm          fnm[] = {
-        { efSTX, "-f", "eiwit.pdb", ffREAD  },
-        { efSTO, "-o", "conf",      ffWRITE },
-        { efTOP, nullptr, nullptr,        ffWRITE },
-        { efITP, "-i", "posre",     ffWRITE },
-        { efNDX, "-n", "clean",     ffOPTWR },
-        { efSTO, "-q", "clean.pdb", ffOPTWR }
-    };
-#define NFILE asize(fnm)
-
-    gmx_bool           bNewRTP        = FALSE;
-    gmx_bool           bInter         = FALSE, bCysMan = FALSE;
-    gmx_bool           bLysMan        = FALSE, bAspMan = FALSE, bGluMan = FALSE, bHisMan = FALSE;
-    gmx_bool           bGlnMan        = FALSE, bArgMan = FALSE;
-    gmx_bool           bTerMan        = FALSE, bUnA = FALSE, bHeavyH = FALSE;
-    gmx_bool           bSort          = TRUE, bAllowMissing = FALSE, bRemoveH = FALSE;
-    gmx_bool           bDeuterate     = FALSE, bVerbose = FALSE, bChargeGroups = TRUE, bCmap = TRUE;
-    gmx_bool           bRenumRes      = FALSE, bRTPresname = FALSE;
-    real               angle          = 135.0, distance = 0.3, posre_fc = 1000;
-    real               long_bond_dist = 0.25, short_bond_dist = 0.05;
-    const char        *vsitestr[]     = { nullptr, "none", "hydrogens", "aromatics", nullptr };
-    const char        *watstr[]       = { nullptr, "select", "none", "spc", "spce", "tip3p", "tip4p", "tip5p", "tips3p", nullptr };
-    const char        *chainsep[]     = { nullptr, "id_or_ter", "id_and_ter", "ter", "id", "interactive", nullptr };
-    const char        *merge[]        = {nullptr, "no", "all", "interactive", nullptr };
-    const char        *ff             = "select";
-
-    t_pargs            pa[] = {
-        { "-newrtp", FALSE, etBOOL, {&bNewRTP},
-          "HIDDENWrite the residue database in new format to [TT]new.rtp[tt]"},
-        { "-lb",     FALSE, etREAL, {&long_bond_dist},
-          "HIDDENLong bond warning distance" },
-        { "-sb",     FALSE, etREAL, {&short_bond_dist},
-          "HIDDENShort bond warning distance" },
-        { "-chainsep", FALSE, etENUM, {chainsep},
-          "Condition in PDB files when a new chain should be started (adding termini)" },
-        { "-merge",  FALSE, etENUM, {&merge},
-          "Merge multiple chains into a single [moleculetype]" },
-        { "-ff",     FALSE, etSTR,  {&ff},
-          "Force field, interactive by default. Use [TT]-h[tt] for information." },
-        { "-water",  FALSE, etENUM, {watstr},
-          "Water model to use" },
-        { "-inter",  FALSE, etBOOL, {&bInter},
-          "Set the next 8 options to interactive"},
-        { "-ss",     FALSE, etBOOL, {&bCysMan},
-          "Interactive SS bridge selection" },
-        { "-ter",    FALSE, etBOOL, {&bTerMan},
-          "Interactive termini selection, instead of charged (default)" },
-        { "-lys",    FALSE, etBOOL, {&bLysMan},
-          "Interactive lysine selection, instead of charged" },
-        { "-arg",    FALSE, etBOOL, {&bArgMan},
-          "Interactive arginine selection, instead of charged" },
-        { "-asp",    FALSE, etBOOL, {&bAspMan},
-          "Interactive aspartic acid selection, instead of charged" },
-        { "-glu",    FALSE, etBOOL, {&bGluMan},
-          "Interactive glutamic acid selection, instead of charged" },
-        { "-gln",    FALSE, etBOOL, {&bGlnMan},
-          "Interactive glutamine selection, instead of neutral" },
-        { "-his",    FALSE, etBOOL, {&bHisMan},
-          "Interactive histidine selection, instead of checking H-bonds" },
-        { "-angle",  FALSE, etREAL, {&angle},
-          "Minimum hydrogen-donor-acceptor angle for a H-bond (degrees)" },
-        { "-dist",   FALSE, etREAL, {&distance},
-          "Maximum donor-acceptor distance for a H-bond (nm)" },
-        { "-una",    FALSE, etBOOL, {&bUnA},
-          "Select aromatic rings with united CH atoms on phenylalanine, "
-          "tryptophane and tyrosine" },
-        { "-sort",   FALSE, etBOOL, {&bSort},
-          "HIDDENSort the residues according to database, turning this off is dangerous as charge groups might be broken in parts" },
-        { "-ignh",   FALSE, etBOOL, {&bRemoveH},
-          "Ignore hydrogen atoms that are in the coordinate file" },
-        { "-missing", FALSE, etBOOL, {&bAllowMissing},
-          "Continue when atoms are missing and bonds cannot be made, dangerous" },
-        { "-v",      FALSE, etBOOL, {&bVerbose},
-          "Be slightly more verbose in messages" },
-        { "-posrefc", FALSE, etREAL, {&posre_fc},
-          "Force constant for position restraints" },
-        { "-vsite",  FALSE, etENUM, {vsitestr},
-          "Convert atoms to virtual sites" },
-        { "-heavyh", FALSE, etBOOL, {&bHeavyH},
-          "Make hydrogen atoms heavy" },
-        { "-deuterate", FALSE, etBOOL, {&bDeuterate},
-          "Change the mass of hydrogens to 2 amu" },
-        { "-chargegrp", TRUE, etBOOL, {&bChargeGroups},
-          "Use charge groups in the [REF].rtp[ref] file"  },
-        { "-cmap", TRUE, etBOOL, {&bCmap},
-          "Use cmap torsions (if enabled in the [REF].rtp[ref] file)"  },
-        { "-renum", TRUE, etBOOL, {&bRenumRes},
-          "Renumber the residues consecutively in the output"  },
-        { "-rtpres", TRUE, etBOOL, {&bRTPresname},
-          "Use [REF].rtp[ref] entry names as residue names"  }
-    };
-#define NPARGS asize(pa)
-
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc,
-                           0, nullptr, &oenv))
+void pdb2gmx::optionsFinished()
+{
+    if (inputConfFile_.empty())
     {
-        return 0;
+        GMX_THROW(InconsistentInputError("You must supply an input file"));
+    }
+    if (bInter_)
+    {
+        /* if anything changes here, also change description of -inter */
+        bCysMan_ = true;
+        bTerMan_ = true;
+        bLysMan_ = true;
+        bArgMan_ = true;
+        bAspMan_ = true;
+        bGluMan_ = true;
+        bGlnMan_ = true;
+        bHisMan_ = true;
+    }
+
+    if (bHeavyH_)
+    {
+        mHmult_ = 4.0;
+    }
+    else if (bDeuterate_)
+    {
+        mHmult_ = 2.0;
+    }
+    else
+    {
+        mHmult_ = 1.0;
     }
 
     /* Force field selection, interactive or direct */
-    choose_ff(strcmp(ff, "select") == 0 ? nullptr : ff,
-              forcefield, sizeof(forcefield),
-              ffdir, sizeof(ffdir));
+    choose_ff(strcmp(ff_.c_str(), "select") == 0 ? nullptr : ff_.c_str(),
+              forcefield_, sizeof(forcefield_),
+              ffdir_, sizeof(ffdir_));
 
-    if (strlen(forcefield) > 0)
+    if (strlen(forcefield_) > 0)
     {
-        strcpy(ffname, forcefield);
-        ffname[0] = toupper(ffname[0]);
+        ffname_    = forcefield_;
+        ffname_[0] = std::toupper(ffname_[0]);
     }
     else
     {
         gmx_fatal(FARGS, "Empty forcefield string");
     }
+}
+
+int pdb2gmx::run()
+{
+    char               select[STRLEN];
+    int                nssbonds;
+    t_ssbond          *ssbonds;
+    t_hackblock       *hb_chain_;
+    t_restp           *restp_chain;
+
+    int                this_atomnum;
+    int                prev_atomnum;
+    const char      *  prev_atomname;
+    const char      *  this_atomname;
+    const char      *  prev_resname;
+    const char      *  this_resname;
+    int                prev_resnum;
+    int                this_resnum;
+    char               prev_chainid;
+    char               this_chainid;
+    int                prev_chainnumber;
+    int                this_chainnumber;
+    int                this_chainstart;
+    int                prev_chainstart;
 
     printf("\nUsing the %s force field in directory %s\n\n",
-           ffname, ffdir);
+           ffname_, ffdir_);
 
-    choose_watermodel(watstr[0], ffdir, &watermodel);
+    choose_watermodel(WaterEnum[enumWater_], ffdir_, &watermodel_);
 
-    if (bInter)
+    switch (enumVSites_)
     {
-        /* if anything changes here, also change description of -inter */
-        bCysMan = TRUE;
-        bTerMan = TRUE;
-        bLysMan = TRUE;
-        bArgMan = TRUE;
-        bAspMan = TRUE;
-        bGluMan = TRUE;
-        bGlnMan = TRUE;
-        bHisMan = TRUE;
-    }
-
-    if (bHeavyH)
-    {
-        mHmult = 4.0;
-    }
-    else if (bDeuterate)
-    {
-        mHmult = 2.0;
-    }
-    else
-    {
-        mHmult = 1.0;
-    }
-
-    /* parse_common_args ensures vsitestr has been selected, but
-       clang-static-analyzer needs clues to know that */
-    GMX_ASSERT(vsitestr[0], "-vsite default wasn't processed correctly");
-    switch (vsitestr[0][0])
-    {
-        case 'n': /* none */
-            bVsites         = FALSE;
-            bVsiteAromatics = FALSE;
+        case enVSites_none:
+            bVsites_         = false;
+            bVsiteAromatics_ = false;
             break;
-        case 'h': /* hydrogens */
-            bVsites         = TRUE;
-            bVsiteAromatics = FALSE;
+        case enVSites_hydrogens:
+            bVsites_         = true;
+            bVsiteAromatics_ = false;
             break;
-        case 'a': /* aromatics */
-            bVsites         = TRUE;
-            bVsiteAromatics = TRUE;
+        case enVSites_aromatics:
+            bVsites_         = true;
+            bVsiteAromatics_ = true;
             break;
         default:
-            gmx_fatal(FARGS, "Internal inconsistency: vsitestr[0]='%s'", vsitestr[0]);
-    } /* end switch */
+            gmx_fatal(FARGS, "Internal inconsistency: VSitesEnum='%s'", VSitesEnum[enumVSites_]);
+    }       /* end switch */
 
     /* Open the symbol table */
+    t_symtab symtab;
     open_symtab(&symtab);
 
     /* Residue type database */
+    gmx_residuetype_t *rt;
     gmx_residuetype_init(&rt);
 
     /* Read residue renaming database(s), if present */
-    std::vector<std::string> rrn = fflib_search_file_end(ffdir, ".r2b", FALSE);
+    std::vector<std::string> rrn = fflib_search_file_end(ffdir_, ".r2b", FALSE);
 
-    nrtprename = 0;
-    rtprename  = nullptr;
+    int                      nrtprename = 0;
+    rtprename_t             *rtprename  = nullptr;
     for (const auto &filename : rrn)
     {
-        fp = fflib_open(filename);
+        printf("going to rename %s\n", filename.c_str());
+        FILE *fp = fflib_open(filename);
         read_rtprename(filename.c_str(), fp, &nrtprename, &rtprename);
         gmx_ffclose(fp);
     }
 
-    /* Add all alternative names from the residue renaming database to the list of recognized amino/nucleic acids. */
-    for (i = 0; i < nrtprename; i++)
+    /* Add all alternative names from the residue renaming database to the list
+       of recognized amino/nucleic acids. */
+    const char *p_restype;
+    for (int i = 0; i < nrtprename; i++)
     {
-        rc = gmx_residuetype_get_type(rt, rtprename[i].gmx, &p_restype);
+        int rc = gmx_residuetype_get_type(rt, rtprename[i].gmx, &p_restype);
 
         /* Only add names if the 'standard' gromacs/iupac base name was found */
         if (rc == 0)
@@ -1622,14 +1706,16 @@ int gmx_pdb2gmx(int argc, char *argv[])
         }
     }
 
+    matrix      box;
+    const char *watres;
     clear_mat(box);
-    if (watermodel != nullptr && (strstr(watermodel, "4p") ||
-                                  strstr(watermodel, "4P")))
+    if (watermodel_ != nullptr && (strstr(watermodel_, "4p") ||
+                                   strstr(watermodel_, "4P")))
     {
         watres = "HO4";
     }
-    else if (watermodel != nullptr && (strstr(watermodel, "5p") ||
-                                       strstr(watermodel, "5P")))
+    else if (watermodel_ != nullptr && (strstr(watermodel_, "5p") ||
+                                        strstr(watermodel_, "5P")))
     {
         watres = "HO5";
     }
@@ -1638,23 +1724,27 @@ int gmx_pdb2gmx(int argc, char *argv[])
         watres = "HOH";
     }
 
-    aps   = gmx_atomprop_init();
-    char *title;
-    natom = read_pdball(opt2fn("-f", NFILE, fnm), opt2fn_null("-q", NFILE, fnm), &title,
-                        &pdba_all, &pdbx, &ePBC, box, bRemoveH, &symtab, rt, watres,
-                        aps, bVerbose);
+    gmx_atomprop_t aps   = gmx_atomprop_init();
+    char          *title;
+    int            ePBC;
+    t_atoms        pdba_all;
+    rvec          *pdbx;
+    int            natom = read_pdball(inputConfFile_.c_str(), bOutputSet_, outFile_.c_str(),
+                                       &title, &pdba_all, &pdbx, &ePBC, box, bRemoveH_,
+                                       &symtab, rt, watres, aps, bVerbose_);
 
     if (natom == 0)
     {
-        gmx_fatal(FARGS, "No atoms found in pdb file %s\n", opt2fn("-f", NFILE, fnm));
+        std::string message = formatString("No atoms found in pdb file %s\n", inputConfFile_.c_str());
+        GMX_THROW(InconsistentInputError(message));
     }
 
     printf("Analyzing pdb file\n");
-    nwaterchain = 0;
+    int nwaterchain = 0;
 
-    modify_chain_numbers(&pdba_all, chainsep[0]);
+    modify_chain_numbers(&pdba_all, enumChainSep_);
 
-    nchainmerges        = 0;
+    int nchainmerges        = 0;
 
     this_atomname       = nullptr;
     this_atomnum        = -1;
@@ -1666,12 +1756,15 @@ int gmx_pdb2gmx(int argc, char *argv[])
     /* Keep the compiler happy */
     prev_chainstart     = 0;
 
-    nch   = 0;
-    maxch = 16;
+    int         numChains = 0;
+    int         maxch     = 16;
+    t_pdbchain *pdb_ch;
     snew(pdb_ch, maxch);
 
-    bMerged = false;
-    for (i = 0; (i < natom); i++)
+
+    t_resinfo *ri;
+    bool       bMerged = false;
+    for (int i = 0; (i < natom); i++)
     {
         ri = &pdba_all.resinfo[pdba_all.atom[i].resind];
 
@@ -1695,15 +1788,15 @@ int gmx_pdb2gmx(int argc, char *argv[])
         this_chainid       = ri->chainid;
         this_chainnumber   = ri->chainnum;
 
-        bWat = gmx_strcasecmp(*ri->name, watres) == 0;
+        bWat_ = gmx_strcasecmp(*ri->name, watres) == 0;
 
-        if ((i == 0) || (this_chainnumber != prev_chainnumber) || (bWat != bPrevWat))
+        if ((i == 0) || (this_chainnumber != prev_chainnumber) || (bWat_ != bPrevWat_))
         {
             this_chainstart = pdba_all.atom[i].resind;
             bMerged         = false;
-            if (i > 0 && !bWat)
+            if (i > 0 && !bWat_)
             {
-                if (!strncmp(merge[0], "int", 3))
+                if (!strncmp(MergeEnum[enumMerge_], "int", 3))
                 {
                     printf("Merge chain ending with residue %s%d (chain id '%c', atom %d %s) and chain starting with\n"
                            "residue %s%d (chain id '%c', atom %d %s) into a single moleculetype (keeping termini)? [n/y]\n",
@@ -1716,7 +1809,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
                     }
                     bMerged = (select[0] == 'y');
                 }
-                else if (!strncmp(merge[0], "all", 3))
+                else if (!strncmp(MergeEnum[enumMerge_], "all", 3))
                 {
                     bMerged = true;
                 }
@@ -1724,26 +1817,26 @@ int gmx_pdb2gmx(int argc, char *argv[])
 
             if (bMerged)
             {
-                pdb_ch[nch-1].chainstart[pdb_ch[nch-1].nterpairs] =
+                pdb_ch[numChains-1].chainstart[pdb_ch[numChains-1].nterpairs] =
                     pdba_all.atom[i].resind - prev_chainstart;
-                pdb_ch[nch-1].nterpairs++;
-                srenew(pdb_ch[nch-1].chainstart, pdb_ch[nch-1].nterpairs+1);
+                pdb_ch[numChains-1].nterpairs++;
+                srenew(pdb_ch[numChains-1].chainstart, pdb_ch[numChains-1].nterpairs+1);
                 nchainmerges++;
             }
             else
             {
                 /* set natom for previous chain */
-                if (nch > 0)
+                if (numChains > 0)
                 {
-                    pdb_ch[nch-1].natom = i-pdb_ch[nch-1].start;
+                    pdb_ch[numChains-1].natom = i-pdb_ch[numChains-1].start;
                 }
-                if (bWat)
+                if (bWat_)
                 {
                     nwaterchain++;
                     ri->chainid = ' ';
                 }
                 /* check if chain identifier was used before */
-                for (j = 0; (j < nch); j++)
+                for (int j = 0; (j < numChains); j++)
                 {
                     if (pdb_ch[j].chainid != ' ' && pdb_ch[j].chainid == ri->chainid)
                     {
@@ -1753,37 +1846,38 @@ int gmx_pdb2gmx(int argc, char *argv[])
                     }
                 }
                 // TODO This is too convoluted. Use a std::vector
-                if (nch == maxch)
+                if (numChains == maxch)
                 {
                     maxch += 16;
                     srenew(pdb_ch, maxch);
                 }
-                pdb_ch[nch].chainid  = ri->chainid;
-                pdb_ch[nch].chainnum = ri->chainnum;
-                pdb_ch[nch].start    = i;
-                pdb_ch[nch].bAllWat  = bWat;
-                if (bWat)
+                pdb_ch[numChains].chainid  = ri->chainid;
+                pdb_ch[numChains].chainnum = ri->chainnum;
+                pdb_ch[numChains].start    = i;
+                pdb_ch[numChains].bAllWat  = bWat_;
+                if (bWat_)
                 {
-                    pdb_ch[nch].nterpairs = 0;
+                    pdb_ch[numChains].nterpairs = 0;
                 }
                 else
                 {
-                    pdb_ch[nch].nterpairs = 1;
+                    pdb_ch[numChains].nterpairs = 1;
                 }
-                snew(pdb_ch[nch].chainstart, pdb_ch[nch].nterpairs+1);
-                /* modified [nch] to [0] below */
-                pdb_ch[nch].chainstart[0] = 0;
-                nch++;
+                snew(pdb_ch[numChains].chainstart, pdb_ch[numChains].nterpairs+1);
+                /* modified [numChains] to [0] below */
+                pdb_ch[numChains].chainstart[0] = 0;
+                numChains++;
             }
         }
-        bPrevWat = bWat;
+        bPrevWat_ = bWat_;
     }
-    pdb_ch[nch-1].natom = natom-pdb_ch[nch-1].start;
+    pdb_ch[numChains-1].natom = natom-pdb_ch[numChains-1].start;
 
     /* set all the water blocks at the end of the chain */
-    snew(swap_index, nch);
-    j = 0;
-    for (i = 0; i < nch; i++)
+    int *swap_index;
+    snew(swap_index, numChains);
+    int  j = 0;
+    for (int i = 0; i < numChains; i++)
     {
         if (!pdb_ch[i].bAllWat)
         {
@@ -1791,7 +1885,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
             j++;
         }
     }
-    for (i = 0; i < nch; i++)
+    for (int i = 0; i < numChains; i++)
     {
         if (pdb_ch[i].bAllWat)
         {
@@ -1804,11 +1898,13 @@ int gmx_pdb2gmx(int argc, char *argv[])
         printf("Moved all the water blocks to the end\n");
     }
 
-    snew(chains, nch);
+    t_atoms *pdba;
+    t_chain *chains;
+    snew(chains, numChains);
     /* copy pdb data and x for all chains */
-    for (i = 0; (i < nch); i++)
+    for (int i = 0; (i < numChains); i++)
     {
-        si                   = swap_index[i];
+        int si                   = swap_index[i];
         chains[i].chainid    = pdb_ch[si].chainid;
         chains[i].chainnum   = pdb_ch[si].chainnum;
         chains[i].bAllWat    = pdb_ch[si].bAllWat;
@@ -1832,15 +1928,15 @@ int gmx_pdb2gmx(int argc, char *argv[])
             copy_rvec(pdbx[pdb_ch[si].start+j], chains[i].x[j]);
         }
         /* Re-index the residues assuming that the indices are continuous */
-        k                    = chains[i].pdba->atom[0].resind;
-        nres                 = chains[i].pdba->atom[chains[i].pdba->nr-1].resind - k + 1;
+        int k                    = chains[i].pdba->atom[0].resind;
+        int nres                 = chains[i].pdba->atom[chains[i].pdba->nr-1].resind - k + 1;
         chains[i].pdba->nres = nres;
-        for (j = 0; j < chains[i].pdba->nr; j++)
+        for (int j = 0; j < chains[i].pdba->nr; j++)
         {
             chains[i].pdba->atom[j].resind -= k;
         }
         srenew(chains[i].pdba->resinfo, nres);
-        for (j = 0; j < nres; j++)
+        for (int j = 0; j < nres; j++)
         {
             chains[i].pdba->resinfo[j] = pdba_all.resinfo[k+j];
             snew(chains[i].pdba->resinfo[j].name, 1);
@@ -1858,11 +1954,11 @@ int gmx_pdb2gmx(int argc, char *argv[])
 
     printf("There are %d chains and %d blocks of water and "
            "%d residues with %d atoms\n",
-           nch-nwaterchain, nwaterchain,
+           numChains-nwaterchain, nwaterchain,
            pdba_all.nres, natom);
 
     printf("\n  %5s  %4s %6s\n", "chain", "#res", "#atoms");
-    for (i = 0; (i < nch); i++)
+    for (int i = 0; (i < numChains); i++)
     {
         printf("  %d '%c' %5d %6d  %s\n",
                i+1, chains[i].chainid ? chains[i].chainid : '-',
@@ -1871,53 +1967,55 @@ int gmx_pdb2gmx(int argc, char *argv[])
     }
     printf("\n");
 
-    check_occupancy(&pdba_all, opt2fn("-f", NFILE, fnm), bVerbose);
+    check_occupancy(&pdba_all, inputConfFile_.c_str(), bVerbose_);
 
     /* Read atomtypes... */
-    atype = read_atype(ffdir, &symtab);
+    gpp_atomtype_t atype = read_atype(ffdir_, &symtab);
 
     /* read residue database */
-    printf("Reading residue database... (%s)\n", forcefield);
-    std::vector<std::string> rtpf = fflib_search_file_end(ffdir, ".rtp", TRUE);
-    nrtp  = 0;
-    restp = nullptr;
+    printf("Reading residue database... (%s)\n", forcefield_);
+    std::vector<std::string> rtpf  = fflib_search_file_end(ffdir_, ".rtp", TRUE);
+    int                      nrtp  = 0;
+    t_restp                 *restp = nullptr;
     for (const auto &filename : rtpf)
     {
         read_resall(filename.c_str(), &nrtp, &restp, atype, &symtab, FALSE);
     }
-    if (bNewRTP)
+    if (bNewRTP_)
     {
         /* Not correct with multiple rtp input files with different bonded types */
-        fp = gmx_fio_fopen("new.rtp", "w");
+        FILE *fp = gmx_fio_fopen("new.rtp", "w");
         print_resall(fp, nrtp, restp, atype);
         gmx_fio_fclose(fp);
     }
 
     /* read hydrogen database */
-    nah = read_h_db(ffdir, &ah);
+    t_hackblock       *ah;
+    int                nah = read_h_db(ffdir_, &ah);
 
     /* Read Termini database... */
-    nNtdb = read_ter_db(ffdir, 'n', &ntdb, atype);
-    nCtdb = read_ter_db(ffdir, 'c', &ctdb, atype);
+    int                ntdblist;
+    t_hackblock       *ntdb;
+    t_hackblock       *ctdb;
+    t_hackblock      **tdblist;
+    int                nntdb = read_ter_db(ffdir_, 'n', &ntdb, atype);
+    int                nctdb = read_ter_db(ffdir_, 'c', &ctdb, atype);
 
-    top_fn   = ftp2fn(efTOP, NFILE, fnm);
-    top_file = gmx_fio_fopen(top_fn, "w");
+    FILE              *top_file = gmx_fio_fopen(topologyFile_.c_str(), "w");
 
-    print_top_header(top_file, top_fn, FALSE, ffdir, mHmult);
+    print_top_header(top_file, topologyFile_.c_str(), FALSE, ffdir_, mHmult_);
 
-    nincl = 0;
-    nmol  = 0;
-    incls = nullptr;
-    mols  = nullptr;
-    for (chain = 0; (chain < nch); chain++)
+    t_chain *cc;
+    rvec    *x;
+    for (int chain = 0; (chain < numChains); chain++)
     {
         cc = &(chains[chain]);
 
         /* set pdba, natom and nres to the current chain */
-        pdba  = cc->pdba;
-        x     = cc->x;
-        natom = cc->pdba->nr;
-        nres  = cc->pdba->nres;
+        pdba     = cc->pdba;
+        x        = cc->x;
+        natom    = cc->pdba->nr;
+        int nres = cc->pdba->nres;
 
         if (cc->chainid && ( cc->chainid != ' ' ) )
         {
@@ -1930,13 +2028,13 @@ int gmx_pdb2gmx(int argc, char *argv[])
                    chain+1, natom, nres);
         }
 
-        process_chain(pdba, x, bUnA, bUnA, bUnA, bLysMan, bAspMan, bGluMan,
-                      bHisMan, bArgMan, bGlnMan, angle, distance, &symtab,
+        process_chain(pdba, x, bUnA_, bUnA_, bUnA_, bLysMan_, bAspMan_, bGluMan_,
+                      bHisMan_, bArgMan_, bGlnMan_, angle_, distance_, &symtab,
                       nrtprename, rtprename);
 
         cc->chainstart[cc->nterpairs] = pdba->nres;
         j = 0;
-        for (i = 0; i < cc->nterpairs; i++)
+        for (int i = 0; i < cc->nterpairs; i++)
         {
             find_nc_ter(pdba, cc->chainstart[i], cc->chainstart[i+1],
                         &(cc->r_start[j]), &(cc->r_end[j]), rt);
@@ -1955,15 +2053,15 @@ int gmx_pdb2gmx(int argc, char *argv[])
         }
 
         /* Check for disulfides and other special bonds */
-        nssbonds = mk_specbonds(pdba, x, bCysMan, &ssbonds, bVerbose);
+        nssbonds = mk_specbonds(pdba, x, bCysMan_, &ssbonds, bVerbose_);
 
         if (nrtprename > 0)
         {
             rename_resrtp(pdba, cc->nterpairs, cc->r_start, cc->r_end, nrtprename, rtprename,
-                          &symtab, bVerbose);
+                          &symtab, bVerbose_);
         }
 
-        for (i = 0; i < cc->nterpairs; i++)
+        for (int i = 0; i < cc->nterpairs; i++)
         {
 
             /* Set termini.
@@ -1972,9 +2070,9 @@ int gmx_pdb2gmx(int argc, char *argv[])
              * (or a generic terminus if no-residue specific is available).
              */
             /* First the N terminus */
-            if (nNtdb > 0)
+            if (nntdb > 0)
             {
-                tdblist = filter_ter(nNtdb, ntdb,
+                tdblist = filter_ter(nntdb, ntdb,
                                      *pdba->resinfo[cc->r_start[i]].name,
                                      &ntdblist);
                 if (ntdblist == 0)
@@ -1985,7 +2083,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
                 }
                 else
                 {
-                    if (bTerMan && ntdblist > 1)
+                    if (bTerMan_ && ntdblist > 1)
                     {
                         sprintf(select, "Select start terminus type for %s-%d",
                                 *pdba->resinfo[cc->r_start[i]].name,
@@ -2010,9 +2108,9 @@ int gmx_pdb2gmx(int argc, char *argv[])
             }
 
             /* And the C terminus */
-            if (nCtdb > 0)
+            if (nctdb > 0)
             {
-                tdblist = filter_ter(nCtdb, ctdb,
+                tdblist = filter_ter(nctdb, ctdb,
                                      *pdba->resinfo[cc->r_end[i]].name,
                                      &ntdblist);
                 if (ntdblist == 0)
@@ -2023,7 +2121,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
                 }
                 else
                 {
-                    if (bTerMan && ntdblist > 1)
+                    if (bTerMan_ && ntdblist > 1)
                     {
                         sprintf(select, "Select end terminus type for %s-%d",
                                 *pdba->resinfo[cc->r_end[i]].name,
@@ -2046,39 +2144,42 @@ int gmx_pdb2gmx(int argc, char *argv[])
                 cc->ctdb[i] = nullptr;
             }
         }
+
         /* lookup hackblocks and rtp for all residues */
-        get_hackblocks_rtp(&hb_chain, &restp_chain,
+        get_hackblocks_rtp(&hb_chain_, &restp_chain,
                            nrtp, restp, pdba->nres, pdba->resinfo,
                            cc->nterpairs, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end,
-                           bAllowMissing);
+                           bAllowMissing_);
         /* ideally, now we would not need the rtp itself anymore, but do
            everything using the hb and restp arrays. Unfortunately, that
            requires some re-thinking of code in gen_vsite.c, which I won't
            do now :( AF 26-7-99 */
 
-        rename_atoms(nullptr, ffdir,
-                     pdba, &symtab, restp_chain, FALSE, rt, FALSE, bVerbose);
+        rename_atoms(nullptr, ffdir_,
+                     pdba, &symtab, restp_chain, FALSE, rt, FALSE, bVerbose_);
 
-        match_atomnames_with_rtp(restp_chain, hb_chain, pdba, x, bVerbose);
+        match_atomnames_with_rtp(restp_chain, hb_chain_, pdba, x, bVerbose_);
 
-        if (bSort)
+        if (bSort_)
         {
+            t_blocka  *block;
+            char     **gnames;
             block = new_blocka();
             snew(gnames, 1);
             sort_pdbatoms(restp_chain, natom, &pdba, &x, block, &gnames);
-            remove_duplicate_atoms(pdba, x, bVerbose);
-            if (ftp2bSet(efNDX, NFILE, fnm))
+            remove_duplicate_atoms(pdba, x, bVerbose_);
+            if (bIndexSet_)
             {
-                if (bRemoveH)
+                if (bRemoveH_)
                 {
                     fprintf(stderr, "WARNING: with the -remh option the generated "
                             "index file (%s) might be useless\n"
                             "(the index file is generated before hydrogens are added)",
-                            ftp2fn(efNDX, NFILE, fnm));
+                            indexOutputFile_.c_str());
                 }
-                write_index(ftp2fn(efNDX, NFILE, fnm), block, gnames, FALSE, 0);
+                write_index(indexOutputFile_.c_str(), block, gnames, FALSE, 0);
             }
-            for (i = 0; i < block->nr; i++)
+            for (int i = 0; i < block->nr; i++)
             {
                 sfree(gnames[i]);
             }
@@ -2094,24 +2195,22 @@ int gmx_pdb2gmx(int argc, char *argv[])
         /* Generate Hydrogen atoms (and termini) in the sequence */
         printf("Generating any missing hydrogen atoms and/or adding termini.\n");
         add_h(&pdba, &x, nah, ah,
-              cc->nterpairs, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end, bAllowMissing,
+              cc->nterpairs, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end, bAllowMissing_,
               nullptr, nullptr, TRUE, FALSE);
         printf("Now there are %d residues with %d atoms\n",
                pdba->nres, pdba->nr);
 
-        strcpy(posre_fn, ftp2fn(efITP, NFILE, fnm));
-
         /* make up molecule name(s) */
 
-        k = (cc->nterpairs > 0 && cc->r_start[0] >= 0) ? cc->r_start[0] : 0;
+        int k = (cc->nterpairs > 0 && cc->r_start[0] >= 0) ? cc->r_start[0] : 0;
 
         gmx_residuetype_get_type(rt, *pdba->resinfo[k].name, &p_restype);
 
-        suffix[0] = '\0';
-
+        std::string molname;
+        std::string suffix;
         if (cc->bAllWat)
         {
-            sprintf(molname, "Water");
+            molname = "Water";
         }
         else
         {
@@ -2120,13 +2219,12 @@ int gmx_pdb2gmx(int argc, char *argv[])
             /* Add the chain id if we have one */
             if (this_chainid != ' ')
             {
-                sprintf(buf, "_chain_%c", this_chainid);
-                strcat(suffix, buf);
+                suffix.append(formatString("_chain_%c", this_chainid));
             }
 
             /* Check if there have been previous chains with the same id */
-            nid_used = 0;
-            for (k = 0; k < chain; k++)
+            int nid_used = 0;
+            for (int k = 0; k < chain; k++)
             {
                 if (cc->chainid == chains[k].chainid)
                 {
@@ -2136,96 +2234,98 @@ int gmx_pdb2gmx(int argc, char *argv[])
             /* Add the number for this chain identifier if there are multiple copies */
             if (nid_used > 0)
             {
-
-                sprintf(buf, "%d", nid_used+1);
-                strcat(suffix, buf);
+                suffix.append(formatString("%d", nid_used+1));
             }
 
-            if (strlen(suffix) > 0)
+            if (suffix.length() > 0)
             {
-                sprintf(molname, "%s%s", p_restype, suffix);
+                molname.append(p_restype);
+                molname.append(suffix);
             }
             else
             {
-                strcpy(molname, p_restype);
+                molname = p_restype;
             }
         }
-
-        if ((nch-nwaterchain > 1) && !cc->bAllWat)
+        std::string itp_fn   = topologyFile_;;
+        std::string posre_fn = includeTopologyFile_;
+        if ((numChains-nwaterchain > 1) && !cc->bAllWat)
         {
-            bITP = TRUE;
-            strcpy(itp_fn, top_fn);
+            bITP_   = true;
             printf("Chain time...\n");
-            c = strrchr(itp_fn, '.');
-            sprintf(c, "_%s.itp", molname);
-            c = strrchr(posre_fn, '.');
-            sprintf(c, "_%s.itp", molname);
-            if (strcmp(itp_fn, posre_fn) == 0)
+            //construct the itp file name
+            itp_fn = stripSuffixIfPresent(itp_fn, ".top");
+            itp_fn.append("_");
+            itp_fn.append(molname);
+            itp_fn.append(".itp");
+            //now do the same for posre
+            posre_fn = stripSuffixIfPresent(posre_fn, ".itp");
+            posre_fn.append("_");
+            posre_fn.append(molname);
+            posre_fn.append(".itp");
+            if (posre_fn == itp_fn)
             {
-                strcpy(buf_fn, posre_fn);
-                c  = strrchr(buf_fn, '.');
-                *c = '\0';
-                sprintf(posre_fn, "%s_pr.itp", buf_fn);
+                posre_fn = Path::concatenateBeforeExtension(posre_fn, "_pr");
             }
-
-            nincl++;
-            srenew(incls, nincl);
-            incls[nincl-1] = gmx_strdup(itp_fn);
-            itp_file       = gmx_fio_fopen(itp_fn, "w");
+            nincl_++;
+            srenew(incls_, nincl_);
+            incls_[nincl_-1] = gmx_strdup(itp_fn.c_str());
+            itp_file_        = gmx_fio_fopen(itp_fn.c_str(), "w");
         }
         else
         {
-            bITP = FALSE;
+            bITP_ = false;
         }
 
-        srenew(mols, nmol+1);
+        srenew(mols_, nmol_+1);
         if (cc->bAllWat)
         {
-            mols[nmol].name = gmx_strdup("SOL");
-            mols[nmol].nr   = pdba->nres;
+            mols_[nmol_].name = gmx_strdup("SOL");
+            mols_[nmol_].nr   = pdba->nres;
         }
         else
         {
-            mols[nmol].name = gmx_strdup(molname);
-            mols[nmol].nr   = 1;
+            mols_[nmol_].name = gmx_strdup(molname.c_str());
+            mols_[nmol_].nr   = 1;
         }
-        nmol++;
+        nmol_++;
 
-        if (bITP)
+        if (bITP_)
         {
-            print_top_comment(itp_file, itp_fn, ffdir, TRUE);
+            print_top_comment(itp_file_, itp_fn.c_str(), ffdir_, TRUE);
         }
 
+        FILE *top_file2;
         if (cc->bAllWat)
         {
             top_file2 = nullptr;
         }
-        else if (bITP)
+        else if (bITP_)
         {
-            top_file2 = itp_file;
+            top_file2 = itp_file_;
         }
         else
         {
             top_file2 = top_file;
         }
 
-        pdb2top(top_file2, posre_fn, molname, pdba, &x, atype, &symtab,
+        pdb2top(top_file2, posre_fn.c_str(), molname.c_str(), pdba, &x, atype, &symtab,
                 nrtp, restp,
-                restp_chain, hb_chain,
-                bAllowMissing,
-                bVsites, bVsiteAromatics, ffdir,
-                mHmult, nssbonds, ssbonds,
-                long_bond_dist, short_bond_dist, bDeuterate, bChargeGroups, bCmap,
-                bRenumRes, bRTPresname);
+                restp_chain, hb_chain_,
+                bAllowMissing_,
+                bVsites_, bVsiteAromatics_, ffdir_,
+                mHmult_, nssbonds, ssbonds,
+                long_bond_dist_, short_bond_dist_, bDeuterate_, bChargeGroups_, bCmap_,
+                bRenumRes_, bRTPresname_);
 
         if (!cc->bAllWat)
         {
-            write_posres(posre_fn, pdba, posre_fc);
+            write_posres(posre_fn.c_str(), pdba, posre_fc_);
         }
 
-        if (bITP)
+        if (bITP_)
         {
-            gmx_fio_fclose(itp_file);
+            gmx_fio_fclose(itp_file_);
         }
 
         /* pdba and natom have been reassigned somewhere so: */
@@ -2234,42 +2334,49 @@ int gmx_pdb2gmx(int argc, char *argv[])
 
     }
 
-    if (watermodel == nullptr)
+    if (watermodel_ == nullptr)
     {
-        for (chain = 0; chain < nch; chain++)
+        for (int chain = 0; chain < numChains; chain++)
         {
             if (chains[chain].bAllWat)
             {
-                gmx_fatal(FARGS, "You have chosen not to include a water model, but there is water in the input file. Select a water model or remove the water from your input file.");
+                auto message = formatString("You have chosen not to include a water model, "
+                                            "but there is water in the input file. Select a "
+                                            "water model or remove the water from your input file.");
+                GMX_THROW(InconsistentInputError(message));
             }
         }
     }
     else
     {
-        sprintf(buf_fn, "%s%c%s.itp", ffdir, DIR_SEPARATOR, watermodel);
-        if (!fflib_fexist(buf_fn))
+        std::string waterFile = formatString("%s%c%s.itp", ffdir_, DIR_SEPARATOR, watermodel_);
+        if (!fflib_fexist(waterFile))
         {
-            gmx_fatal(FARGS, "The topology file '%s' for the selected water model '%s' can not be found in the force field directory. Select a different water model.",
-                      buf_fn, watermodel);
+            auto message = formatString("The topology file '%s' for the selected water "
+                                        "model '%s' can not be found in the force field "
+                                        "directory. Select a different water model.",
+                                        waterFile.c_str(), watermodel_);
+            GMX_THROW(InconsistentInputError(message));
         }
     }
 
-    print_top_mols(top_file, title, ffdir, watermodel, nincl, incls, nmol, mols);
+    print_top_mols(top_file, title, ffdir_, watermodel_, nincl_, incls_, nmol_, mols_);
     gmx_fio_fclose(top_file);
 
     gmx_residuetype_destroy(rt);
 
     /* now merge all chains back together */
-    natom = 0;
-    nres  = 0;
-    for (i = 0; (i < nch); i++)
+    natom     = 0;
+    int nres  = 0;
+    for (int i = 0; (i < numChains); i++)
     {
         natom += chains[i].pdba->nr;
         nres  += chains[i].pdba->nres;
     }
+    t_atoms *atoms;
     snew(atoms, 1);
     init_t_atoms(atoms, natom, FALSE);
-    for (i = 0; i < atoms->nres; i++)
+    for (int i = 0; i < atoms->nres; i++)
     {
         sfree(atoms->resinfo[i].name);
     }
@@ -2277,16 +2384,16 @@ int gmx_pdb2gmx(int argc, char *argv[])
     atoms->nres = nres;
     snew(atoms->resinfo, nres);
     snew(x, natom);
-    k = 0;
-    l = 0;
-    for (i = 0; (i < nch); i++)
+    int k = 0;
+    int l = 0;
+    for (int i = 0; (i < numChains); i++)
     {
-        if (nch > 1)
+        if (numChains > 1)
         {
             printf("Including chain %d in system: %d atoms %d residues\n",
                    i+1, chains[i].pdba->nr, chains[i].pdba->nres);
         }
-        for (j = 0; (j < chains[i].pdba->nr); j++)
+        for (int j = 0; (j < chains[i].pdba->nr); j++)
         {
             atoms->atom[k]         = chains[i].pdba->atom[j];
             atoms->atom[k].resind += l; /* l is processed nr of residues */
@@ -2295,10 +2402,10 @@ int gmx_pdb2gmx(int argc, char *argv[])
             copy_rvec(chains[i].x[j], x[k]);
             k++;
         }
-        for (j = 0; (j < chains[i].pdba->nres); j++)
+        for (int j = 0; (j < chains[i].pdba->nres); j++)
         {
             atoms->resinfo[l] = chains[i].pdba->resinfo[j];
-            if (bRTPresname)
+            if (bRTPresname_)
             {
                 atoms->resinfo[l].name = atoms->resinfo[l].rtp;
             }
@@ -2306,34 +2413,47 @@ int gmx_pdb2gmx(int argc, char *argv[])
         }
     }
 
-    if (nch > 1)
+    if (numChains > 1)
     {
         fprintf(stderr, "Now there are %d atoms and %d residues\n", k, l);
         print_sums(atoms, TRUE);
     }
 
+    rvec box_space;
     fprintf(stderr, "\nWriting coordinate file...\n");
     clear_rvec(box_space);
     if (box[0][0] == 0)
     {
         make_new_box(atoms->nr, x, box, box_space, FALSE);
     }
-    write_sto_conf(ftp2fn(efSTO, NFILE, fnm), title, atoms, x, nullptr, ePBC, box);
+    write_sto_conf(outputConfFile_.c_str(), title, atoms, x, nullptr, ePBC, box);
 
     printf("\t\t--------- PLEASE NOTE ------------\n");
     printf("You have successfully generated a topology from: %s.\n",
-           opt2fn("-f", NFILE, fnm));
-    if (watermodel != nullptr)
+           inputConfFile_.c_str());
+    if (watermodel_ != nullptr)
     {
         printf("The %s force field and the %s water model are used.\n",
-               ffname, watermodel);
+               ffname_, watermodel_);
     }
     else
     {
         printf("The %s force field is used.\n",
-               ffname);
+               ffname_);
     }
     printf("\t\t--------- ETON ESAELP ------------\n");
 
     return 0;
 }
+
+}   // namespace
+
+const char pdb2gmxInfo::name[]             = "pdb2gmx";
+const char pdb2gmxInfo::shortDescription[] =
+    "Convert coordinate files to topology and FF-compliant coordinate files";
+ICommandLineOptionsModulePointer pdb2gmxInfo::create()
+{
+    return compat::make_unique<pdb2gmx>();
+}
+
+} // namespace gmx
