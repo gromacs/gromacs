@@ -323,6 +323,8 @@ char **read_pullparams(std::vector<t_inpfile> *inp,
         setStringEntry(inp, buf, wbuf, "");
         sprintf(buf, "pull-group%d-pbcatom", groupNum);
         pgrp->pbcatom = get_eint(inp, buf, 0, wi);
+        sprintf(buf, "pull-group%d-pbc-ref-from-prev-step-com", groupNum);
+        pgrp->setPbcRefToPrevStepCOM = (get_eeenum(inp, buf, yesno_names, wi) != 0);
 
         /* Initialize the pull group */
         init_pull_group(pgrp, wbuf);
@@ -520,7 +522,9 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
 
     t_start = ir->init_t + ir->init_step*ir->delta_t;
 
+    pullInitXPrevStep(pull_work, pull->ngroup);
     pull_calc_coms(nullptr, pull_work, md, &pbc, t_start, x, nullptr);
+    pullSetInitCom(pull, pull_work, pull->ngroup);
 
     int groupThatFailsPbc = pullCheckPbcWithinGroups(*pull_work, x, pbc);
     if (groupThatFailsPbc >= 0)
