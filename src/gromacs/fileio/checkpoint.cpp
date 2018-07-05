@@ -103,7 +103,7 @@
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
  */
-static const int cpt_version = 17;
+static const int cpt_version = 18;
 
 
 const char *est_names[estNR] =
@@ -189,6 +189,17 @@ static const char *eawhh_names[eawhhNR] =
     "awh_forceCorrelationGrid"
 };
 
+enum {
+    epullsPREVSTEPCOM,
+    epullsNR
+};
+
+static const char *epull_prev_step_com_names[epullsNR] =
+{
+    "Pull groups prev step COM"
+};
+
+
 //! Higher level vector element type, only used for formatting checkpoint dumps
 enum class CptElementType
 {
@@ -205,7 +216,8 @@ enum class StatePart
     kineticEnergy,      //!< Kinetic energy, needed for T/P-coupling state
     energyHistory,      //!< Energy observable statistics
     freeEnergyHistory,  //!< Free-energy state and observable statistics
-    accWeightHistogram  //!< Accelerated weight histogram method state
+    accWeightHistogram, //!< Accelerated weight histogram method state
+    pullState           //!< COM of previous step.
 };
 
 //! \brief Return the name of a checkpoint entry based on part and part entry
@@ -218,6 +230,7 @@ static const char *entryName(StatePart part, int ecpt)
         case StatePart::energyHistory:      return eenh_names[ecpt];
         case StatePart::freeEnergyHistory:  return edfh_names[ecpt];
         case StatePart::accWeightHistogram: return eawhh_names[ecpt];
+        case StatePart::pullState:          return epull_prev_step_com_names[ecpt];
     }
 
     return nullptr;
@@ -914,6 +927,7 @@ struct CheckpointHeaderContents
     int         flags_enh;
     int         flags_dfh;
     int         flags_awhh;
+    int         flags_pull_prev_step_com;
     int         nED;
     int         eSwapCoords;
 };
@@ -1071,6 +1085,15 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, FILE *list,
     else
     {
         contents->flags_awhh = 0;
+    }
+
+    if (contents->file_version >= 18)
+    {
+        do_cpt_int_err(xd, "Pull prev step COM flags", &contents->flags_pull_prev_step_com, list);
+    }
+    else
+    {
+        contents->flags_pull_prev_step_com = 0;
     }
 }
 
@@ -1697,6 +1720,28 @@ static int do_cpt_awh(XDR *xd, gmx_bool bRead,
     return ret;
 }
 
+static int do_cpt_pullstate(XDR *xd, int fflags, t_state *state, FILE *list)
+{
+    int             ret  = 0;
+
+    const StatePart part = StatePart::pullState;
+    for (int i = 0; (i < epullsNR && ret == 0); i++)
+    {
+        if (fflags & (1<<i))
+        {
+            switch (i)
+            {
+                case epullsPREVSTEPCOM: ret = doVector<double>(xd, part, i, fflags, &state->com_prev_step, list); break;
+                default:
+                    gmx_fatal(FARGS, "Unknown ekin data state entry %d\n"
+                              "You are probably reading a new checkpoint file with old code", i);
+            }
+        }
+    }
+
+    return ret;
+}
+
 static int do_cpt_files(XDR *xd, gmx_bool bRead,
                         std::vector<gmx_file_position_t> *outputfiles,
                         FILE *list, int file_version)
@@ -1905,6 +1950,12 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                         (1 << eawhhFORCECORRELATIONGRID));
     }
 
+    int flags_pull_prev_step_com = 0;
+    if (!state->com_prev_step.empty())
+    {
+        flags_pull_prev_step_com |= ( (1 << epullsPREVSTEPCOM));
+    }
+
     /* We can check many more things now (CPU, acceleration, etc), but
      * it is highly unlikely to have two separate builds with exactly
      * the same version, user, time, and build host!
@@ -1925,7 +1976,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         {0}, npmenodes,
         state->natoms, state->ngtc, state->nnhpres,
         state->nhchainlength, nlambda, state->flags, flags_eks, flags_enh, flags_dfh, flags_awhh,
-        nED, eSwapCoords
+        flags_pull_prev_step_com, nED, eSwapCoords
     };
     std::strcpy(headerContents.version, gmx_version());
     std::strcpy(headerContents.btime, BUILD_TIME);
@@ -1946,6 +1997,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         (do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, nlambda, &state->dfhist, nullptr) < 0)  ||
         (do_cpt_EDstate(gmx_fio_getxdr(fp), FALSE, nED, edsamhist, nullptr) < 0)      ||
         (do_cpt_awh(gmx_fio_getxdr(fp), FALSE, flags_awhh, state->awhHistory.get(), nullptr) < 0) ||
+        (do_cpt_pullstate(gmx_fio_getxdr(fp), flags_pull_prev_step_com, state, nullptr) < 0) ||
         (do_cpt_swapstate(gmx_fio_getxdr(fp), FALSE, eSwapCoords, swaphist, nullptr) < 0) ||
         (do_cpt_files(gmx_fio_getxdr(fp), FALSE, &outputfiles, nullptr,
                       headerContents.file_version) < 0))
@@ -2322,6 +2374,12 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         cp_error();
     }
 
+    ret = do_cpt_pullstate(gmx_fio_getxdr(fp), headerContents->flags_pull_prev_step_com, state, nullptr);
+    if (ret)
+    {
+        cp_error();
+    }
+
     if (headerContents->eSwapCoords != eswapNO && observablesHistory->swapHistory == nullptr)
     {
         observablesHistory->swapHistory = gmx::compat::make_unique<swaphistory_t>(swaphistory_t {});
@@ -2605,6 +2663,12 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
 
     ret = do_cpt_awh(gmx_fio_getxdr(fp), TRUE,
                      headerContents.flags_awhh, state->awhHistory.get(), nullptr);
+    if (ret)
+    {
+        cp_error();
+    }
+
+    ret = do_cpt_pullstate(gmx_fio_getxdr(fp), headerContents.flags_pull_prev_step_com, state, nullptr);
     if (ret)
     {
         cp_error();
