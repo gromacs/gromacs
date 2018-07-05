@@ -92,7 +92,14 @@ static int groupPbcFromParams(const t_pull_group &params)
     }
     else if (params.pbcatom >= 0)
     {
-        return epgrppbcREFAT;
+        if (params.setPbcRefToPrevStepCOM)
+        {
+            return epgrppbcPREVSTEPCOM;
+        }
+        else
+        {
+            return epgrppbcREFAT;
+        }
     }
     else
     {
@@ -2141,6 +2148,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     pull->bAngle      = FALSE;
 
     GMX_RELEASE_ASSERT(pull->group[0].params.nat == 0, "pull group 0 is an absolute reference group and should not contain atoms");
+    pull->group[0].x_prev_step[XX] = NAN;
 
     pull->numCoordinatesWithExternalPotential = 0;
 
@@ -2380,6 +2388,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             switch (pgrp->epgrppbc)
             {
                 case epgrppbcREFAT:
+                case epgrppbcPREVSTEPCOM:
                     pull->bRefAt = TRUE;
                     break;
                 case epgrppbcCOS:
@@ -2407,6 +2416,8 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             init_pull_group_index(fplog, cr, g, pgrp,
                                   bConstraint, pulldim_con,
                                   mtop, ir, lambda);
+
+            pgrp->x_prev_step[XX] = NAN;
         }
         else
         {
