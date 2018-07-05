@@ -60,14 +60,14 @@ namespace test
 namespace
 {
 
-using gmx::test::CommandLine;
-using gmx::test::ConfMatch;
+using test::CommandLine;
+using test::ConfMatch;
 
 //! Test parameter struct.
 using CommandLineOptionParams = std::tuple<std::string, std::string, std::string, std::string,
                                            std::string, std::string>;
 
-class Pdb2gmxTest : public gmx::test::CommandLineTestBase,
+class Pdb2gmxTest : public test::CommandLineTestBase,
                     public ::testing::WithParamInterface<CommandLineOptionParams>
 {
     public:
@@ -97,7 +97,10 @@ class Pdb2gmxTest : public gmx::test::CommandLineTestBase,
             CommandLine &cmdline = commandLine();
             cmdline.merge(args);
 
-            ASSERT_EQ(0, gmx_pdb2gmx(cmdline.argc(), cmdline.argv()));
+            TestReferenceChecker rootChecker(this->rootChecker());
+
+            ASSERT_EQ(0, CommandLineTestHelper::runModuleFactory(&pdb2gmxInfo::create, &cmdline));
+
             checkOutputFiles();
         }
         FilteringExactTextMatch textMatcher_;
@@ -174,7 +177,6 @@ INSTANTIATE_TEST_CASE_P(ChainSep, Pdb2gmxTest,
                                 ::testing::Values("all", "no"),
                                 ::testing::Values("chainTer.pdb"))
                         );
-
 
 } // namespace
 } // namespace test
