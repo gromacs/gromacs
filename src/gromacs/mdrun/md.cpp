@@ -258,6 +258,19 @@ static void prepareRerunState(const t_trxframe  &rerunFrame,
     }
 }
 
+/*! \brief Copies the COM from the previous step of all pull groups to the state container
+ *
+ * \param[in]   pull_work      The COM pull force calculation data structure
+ * \param[in]   state          The global state container
+ */
+static void set_state_prev_step_pull_com(struct pull_t *pull_work, t_state *state)
+{
+    for (int i = 0; i < pull_work->ngroup; i++)
+    {
+        copy_dvec(pull_work->group[i].x_prev_step, state->com_prev_step[i]);
+    }
+}
+
 void gmx::Integrator::do_md()
 {
     // TODO Historically, the EM and MD "integrators" used different
@@ -511,6 +524,15 @@ void gmx::Integrator::do_md()
 
     if (MASTER(cr))
     {
+        /* Set the number of pull groups to enable recording the COM of the previous frame. */
+        if (ir->pull_work)
+        {
+            state->npullgroups = ir->pull_work->ngroup;
+        }
+        else
+        {
+            state->npullgroups = 0;
+        }
         if (startingFromCheckpoint)
         {
             /* Update mdebin with energy history if appending to output files */
@@ -526,6 +548,15 @@ void gmx::Integrator::do_md()
                  */
                 observablesHistory->energyHistory = {};
             }
+            /* Copy the pull group COM of the previous frame from the checkpoint state to the pull state */
+            for (int i = 0; i < state->npullgroups; i++)
+            {
+                copy_dvec(state->com_prev_step[i], ir->pull_work->group[i].x_prev_step);
+            }
+        }
+        else
+        {
+            snew(state->com_prev_step, state->npullgroups);
         }
         if (observablesHistory->energyHistory == nullptr)
         {
@@ -1513,6 +1544,11 @@ void gmx::Integrator::do_md()
             finish_update(ir, mdatoms,
                           state, graph,
                           nrnb, wcycle, upd, constr);
+
+            if (ir->bPull)
+            {
+                set_state_prev_step_pull_com(ir->pull_work, state);
+            }
 
             if (ir->eI == eiVVAK)
             {
