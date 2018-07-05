@@ -26,3 +26,13 @@ On Intel CPUs with integrated GPUs, it is now possible to offload nonbonded task
 to the GPU the same way as offload is done to other GPU architectures.
 This can have performance benefits, in particular on modern desktop and mobile
 Intel CPUs this offload can give up to 20% higher simulation performance.
+
+Allow using COM of previous step as PBC reference
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Added an option (``pull-pbc-ref-from-prev-step-com``), when pulling, to use
+the COM of the group of the previous step, to calculate PBC jumps instead of a
+reference atom, which can sometimes move a lot during the simulation.
+With this option the PBC reference atom is only used at initialization.
+This can be of use when using large pull groups or groups with potentially
+large relative movement of atoms.

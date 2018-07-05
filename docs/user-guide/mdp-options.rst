@@ -1612,6 +1612,20 @@ pull-coord2-vec, pull-coord2-k, and so on.
    frequency for writing out the force of all the pulled group
    (0 is never)
 
+.. mdp:: pull-pbc-ref-prev-step-com
+
+   .. mdp-value:: no
+
+      Use the reference atom (:mdp:`pull-group1-pbcatom`) for the
+      treatment of periodic boundary conditions.
+
+   .. mdp-value:: yes
+
+      Use the COM of the previous step as reference for the treatment
+      of periodic boundary conditions. The reference is initialized
+      using the reference atom (:mdp:`pull-group1-pbcatom`), which should
+      be located centrally in the group. Using the COM from the
+      previous step can be useful if one or more pull groups are large.
 
 .. mdp:: pull-ngroups
 
@@ -1649,7 +1663,10 @@ pull-coord2-vec, pull-coord2-k, and so on.
    vector. For determining the COM, all atoms in the group are put at
    their periodic image which is closest to
    :mdp:`pull-group1-pbcatom`. A value of 0 means that the middle
-   atom (number wise) is used. This parameter is not used with
+   atom (number wise) is used, which is only safe for small groups.
+   :ref:`gmx grompp` checks that the maximum distance from the reference
+   atom (specifically chosen, or not) to the other atoms in the group
+   is not too large. This parameter is not used with
    :mdp:`pull-coord1-geometry` cylinder. A value of -1 turns on cosine
    weighting, which is useful for a group of molecules in a periodic
    system, *e.g.* a water slab (see Engin et al. J. Chem. Phys. B
