@@ -2117,6 +2117,7 @@ static void init_pull_group_index(FILE *fplog, const t_commrec *cr,
         pg->invtm  = 0.0;
         pg->wscale = 1.0;
     }
+    clear_dvec(pg->x_last_step);
 }
 
 struct pull_t *
@@ -2155,6 +2156,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             GMX_RELEASE_ASSERT(pgrp->params.nat == 0, "pull group 0 is an absolute reference group and should not contain atoms");
             clear_dvec(pgrp->x);
             clear_dvec(pgrp->xp);
+            clear_dvec(pgrp->x_last_step);
             pgrp->bCalcCOM = FALSE;
         }
 
@@ -2418,7 +2420,14 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
                 {
                     if (pgrp->params.pbcatom >= 0)
                     {
-                        pgrp->epgrppbc = epgrppbcREFAT;
+                        if (pgrp->params.setPbcReferenceToLastStepCOM)
+                        {
+                            pgrp->epgrppbc = epgrppbcLASTSTEPCOM;
+                        }
+                        else
+                        {
+                            pgrp->epgrppbc = epgrppbcREFAT;
+                        }
                         pull->bRefAt   = TRUE;
                     }
                     else

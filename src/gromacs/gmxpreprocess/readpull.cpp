@@ -322,6 +322,8 @@ char **read_pullparams(std::vector<t_inpfile> *inp,
         setStringEntry(inp, buf, wbuf, "");
         sprintf(buf, "pull-group%d-pbcatom", groupNum);
         pgrp->pbcatom = get_eint(inp, buf, 0, wi);
+        sprintf(buf, "pull-group%d-reference-from-last-step-com", groupNum);
+        pgrp->setPbcReferenceToLastStepCOM = get_eeenum(inp, buf, yesno_names, wi);
 
         /* Initialize the pull group */
         init_pull_group(pgrp, wbuf);

@@ -1655,6 +1655,21 @@ pull-coord2-vec, pull-coord2-k, and so on.
    system, *e.g.* a water slab (see Engin et al. J. Chem. Phys. B
    2010).
 
+.. mdp:: pull-group1-pbc-reference-from-last-step-com
+
+   .. mdp-value:: no
+
+      Use the reference atom (:mdp:`pull-group1-pbcatom`) for the
+      treatment of periodic boundary conditions.
+
+   .. mdp-value:: yes
+
+      Use the COM of the previous step as reference for the treatment
+      of periodic boundary conditions. The reference is initialized
+      using the reference atom (:mdp:`pull-group1-pbcatom`). This can
+      be useful if there is a risk that the reference atom moves during
+      the simulation.
+
 .. mdp:: pull-coord1-type
 
    .. mdp-value:: umbrella
