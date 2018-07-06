@@ -236,6 +236,7 @@ typedef bool_t (*xdrproc_t) (XDR *, void *, ...);
     } while (0)
 
 
+bool_t xdr_void (void);
 bool_t xdr_int (XDR *__xdrs, int *__ip);
 bool_t xdr_u_int (XDR *__xdrs, unsigned int *__ip);
 bool_t xdr_short (XDR *__xdrs, short *__ip);

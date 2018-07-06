@@ -186,6 +186,7 @@ xdr_int (XDR *xdrs, int *ip)
                 return FALSE;
             }
             *ip = static_cast<int>(l);
+            return TRUE;
 
         case XDR_FREE:
             return TRUE;
@@ -214,6 +215,7 @@ xdr_u_int (XDR *xdrs, unsigned int *up)
                 return FALSE;
             }
             *up = static_cast<unsigned int>(l);
+            return TRUE;
 
         case XDR_FREE:
             return TRUE;
@@ -430,13 +432,14 @@ bool_t xdr_string (XDR *xdrs, char ** cpp, unsigned int maxsize)
     switch (xdrs->x_op)
     {
         case XDR_FREE:
-            if (sp == NULL)
+            if (sp == nullptr)
             {
                 return TRUE; /* already free */
             }
-        /* fall through... */
+            [[fallthrough]];
+
         case XDR_ENCODE:
-            if (sp == NULL)
+            if (sp == nullptr)
             {
                 return FALSE;
             }
@@ -466,24 +469,24 @@ bool_t xdr_string (XDR *xdrs, char ** cpp, unsigned int maxsize)
             {
                 return TRUE;
             }
-            if (sp == NULL)
+            if (sp == nullptr)
             {
                 *cpp = sp = static_cast<char *>(std::malloc (nodesize));
             }
-            if (sp == NULL)
+            if (sp == nullptr)
             {
                 (void) fputs ("xdr_string: out of memory\n", stderr);
                 return FALSE;
             }
             sp[size] = 0;
-        /* fall into ... */
+            [[fallthrough]];
 
         case XDR_ENCODE:
             return xdr_opaque (xdrs, sp, size);
 
         case XDR_FREE:
             free (sp);
-            *cpp = NULL;
+            *cpp = nullptr;
             return TRUE;
     }
     return FALSE;
@@ -638,16 +641,16 @@ bool_t xdr_vector (XDR * xdrs, char * basep, unsigned int nelem,
 
 
 
-static bool_t xdrstdio_getbytes (XDR *, char *, unsigned int);
-static bool_t xdrstdio_putbytes (XDR *, char *, unsigned int);
-static unsigned int xdrstdio_getpos (XDR *);
-static bool_t xdrstdio_setpos (XDR *, unsigned int);
-static xdr_int32_t *xdrstdio_inline (XDR *, int);
-static void xdrstdio_destroy (XDR *);
-static bool_t xdrstdio_getint32 (XDR *, xdr_int32_t *);
-static bool_t xdrstdio_putint32 (XDR *, xdr_int32_t *);
-static bool_t xdrstdio_getuint32 (XDR *, xdr_uint32_t *);
-static bool_t xdrstdio_putuint32 (XDR *, xdr_uint32_t *);
+static bool_t xdrstdio_getbytes (XDR * /*xdrs*/, char * /*addr*/, unsigned int /*len*/);
+static bool_t xdrstdio_putbytes (XDR * /*xdrs*/, char * /*addr*/, unsigned int /*len*/);
+static unsigned int xdrstdio_getpos (XDR * /*xdrs*/);
+static bool_t xdrstdio_setpos (XDR * /*xdrs*/, unsigned int /*pos*/);
+static xdr_int32_t *xdrstdio_inline (XDR * /*xdrs*/, int /*len*/);
+static void xdrstdio_destroy (XDR * /*xdrs*/);
+static bool_t xdrstdio_getint32 (XDR * /*xdrs*/, xdr_int32_t * /*ip*/);
+static bool_t xdrstdio_putint32 (XDR * /*xdrs*/, xdr_int32_t * /*ip*/);
+static bool_t xdrstdio_getuint32 (XDR * /*xdrs*/, xdr_uint32_t * /*ip*/);
+static bool_t xdrstdio_putuint32 (XDR * /*xdrs*/, xdr_uint32_t * /*ip*/);
 
 /*
  * Destroy a stdio xdr stream.
@@ -709,7 +712,7 @@ xdrstdio_inline (XDR *xdrs, int len)
      * most of the gains to be had here and require storage
      * management on this buffer, so we don't do this.
      */
-    return NULL;
+    return nullptr;
 }
 
 static bool_t
@@ -793,7 +796,7 @@ xdrstdio_create (XDR *xdrs, FILE *file, enum xdr_op op)
     xdrs->x_ops          = &xdrstdio_ops;
     xdrs->x_private      = reinterpret_cast<char *>(file);
     xdrs->x_handy        = 0;
-    xdrs->x_base         = 0;
+    xdrs->x_base         = nullptr;
 }
 
 #else
