@@ -119,7 +119,7 @@ static void gmx_fio_make_dummy(void)
 {
     if (!open_files)
     {
-        snew(open_files, 1);
+        open_files = new t_fileio {};
         open_files->fp   = nullptr;
         open_files->fn   = nullptr;
         open_files->next = open_files;
@@ -301,7 +301,7 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
         strcat(newmode, "b");
     }
 
-    snew(fio, 1);
+    fio = new t_fileio {};
     tMPI_Lock_init(&(fio->mtx));
     bRead      = (newmode[0] == 'r' && newmode[1] != '+');
     bReadWrite = (newmode[1] == '+');
@@ -386,7 +386,7 @@ int gmx_fio_close(t_fileio *fio)
     gmx_fio_unlock(fio);
 
     sfree(fio->fn);
-    sfree(fio);
+    delete fio;
 
     return rc;
 }
@@ -434,7 +434,7 @@ int gmx_fio_fclose(FILE *fp)
             gmx_fio_remove(cur);
             gmx_fio_stop_getting_next(cur);
             sfree(cur->fn);
-            sfree(cur);
+            delete cur;
             break;
         }
         cur = gmx_fio_get_next(cur);
