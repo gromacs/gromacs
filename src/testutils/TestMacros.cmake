@@ -86,16 +86,18 @@ function (gmx_add_gtest_executable EXENAME)
     endif()
 endfunction()
 
-# Use this function with MPI_RANKS <N> INTEGRATION_TEST to register a test
-# binary as an integration test that requires MPI. The intended number of MPI
-# ranks is also passed
+# This function can be called with extra options and arguments:
+#   MPI_RANKS <N>     declares the requirement to run the test binary with N ranks
+#   INTEGRATION_TEST  requires the use of the IntegrationTest label in CTest
+#   SLOW_TEST         requires the use of the SlowTest label in CTest, and
+#                     increase the length of the ctest timeout.
 #
 # TODO When a test case needs it, generalize the MPI_RANKS mechanism so
 # that ctest can run the test binary over a range of numbers of MPI
 # ranks.
 function (gmx_register_gtest_test NAME EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
-        set(_options INTEGRATION_TEST)
+        set(_options INTEGRATION_TEST SLOW_TEST)
         set(_one_value_args MPI_RANKS)
         cmake_parse_arguments(ARG "${_options}" "${_one_value_args}" "" ${ARGN})
         set(_xml_path ${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
@@ -104,6 +106,10 @@ function (gmx_register_gtest_test NAME EXENAME)
         if (ARG_INTEGRATION_TEST)
             list(APPEND _labels IntegrationTest)
             set(_timeout 120)
+            gmx_get_test_prefix_cmd(_prefix_cmd IGNORE_LEAKS)
+        elseif (ARG_SLOW_TEST)
+            list(APPEND _labels SlowTest)
+            set(_timeout 480)
             gmx_get_test_prefix_cmd(_prefix_cmd IGNORE_LEAKS)
         else()
             list(APPEND _labels UnitTest)
