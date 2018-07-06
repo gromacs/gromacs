@@ -356,7 +356,7 @@ t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
     snew(bb, rnr);
     for (i = 0; (i < rnr); i++)
     {
-        bb[i].N = bb[i].H = bb[i].CA = bb[i].C = bb[i].O = -1, bb[i].resno = res0+i;
+        bb[i].N = bb[i].H = bb[i].CA = bb[i].C = bb[i].O = -1; bb[i].resno = res0+i;
     }
 
     for (i = j = 0; (i < gnx); i++)

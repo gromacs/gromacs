@@ -93,9 +93,9 @@ class RangePartitioning
                 }
 
                 /*! \brief Begin iterator/value */
-                const iterator begin() const { return begin_; };
+                const iterator begin() const { return begin_; }
                 /*! \brief End iterator/value */
-                const iterator end() const { return end_; };
+                const iterator end() const { return end_; }
 
                 /*! \brief The number of items in the block */
                 int size() const

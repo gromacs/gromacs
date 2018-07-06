@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -146,7 +146,7 @@ class HistogramSize
         int numUpdates() const
         {
             return numUpdates_;
-        };
+        }
 
         /*! \brief Increments the number of updates by 1.
          */
@@ -160,7 +160,7 @@ class HistogramSize
         double histogramSize() const
         {
             return histogramSize_;
-        };
+        }
 
         /*! \brief Sets the histogram size.
          *
@@ -175,14 +175,14 @@ class HistogramSize
         bool inInitialStage() const
         {
             return inInitialStage_;
-        };
+        }
 
         /*! \brief Returns The log of the current sample weight, scaled because of the histogram rescaling.
          */
         double logScaledSampleWeight() const
         {
             return logScaledSampleWeight_;
-        };
+        }
 
     private:
         gmx_int64_t numUpdates_; /**< The number of updates performed since the start of the simulation. */

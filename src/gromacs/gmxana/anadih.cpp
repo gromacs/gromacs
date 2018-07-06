@@ -648,7 +648,7 @@ void calc_distribution_props(int nh, const int histo[], real start,
         kkk[i].Jc    = 0;
         kkk[i].Jcsig = 0;
     }
-    tdc = 0, tds = 0;
+    tdc = 0; tds = 0;
     for (j = 0; (j < nh); j++)
     {
         d    = invth*histo[j];

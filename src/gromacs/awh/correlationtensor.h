@@ -74,7 +74,7 @@ class CorrelationBlockData
                 blockSumWeightX(0),
                 sumOverBlocksBlockWeightBlockWeightX(0)
             {
-            };
+            }
 
             double blockSumWeightX;                      /**< Weighted sum of x for current block. */
             double sumOverBlocksBlockWeightBlockWeightX; /**< Sum over all blocks in the simulation of block weight times sum_wx. */
@@ -96,7 +96,7 @@ class CorrelationBlockData
             coordData_(numDim),
             correlationIntegral_(numDim*(numDim + 1)/2)
         {
-        };
+        }
 
         /*! \brief Restore the state from history.
          *
@@ -125,7 +125,7 @@ class CorrelationBlockData
             {
                 coordData_[d].blockSumWeightX += weight*data[d];
             }
-        };
+        }
 
         /*! \brief Adds a filled data block to correlation time integral.
          */
@@ -135,37 +135,37 @@ class CorrelationBlockData
         double blockSumWeight() const
         {
             return blockSumWeight_;
-        };
+        }
 
         /*! \brief Returns the sum weights^2 for current block. */
         double blockSumSquareWeight() const
         {
             return blockSumSquareWeight_;
-        };
+        }
 
         /*! \brief Returns the sum over blocks of block weight^2. */
         double sumOverBlocksSquareBlockWeight() const
         {
             return sumOverBlocksSquareBlockWeight_;
-        };
+        }
 
         /*! \brief Returns the sum over blocks of weight^2. */
         double sumOverBlocksBlockSquareWeight() const
         {
             return sumOverBlocksBlockSquareWeight_;
-        };
+        }
 
         /*! \brief Returns the length of each block used for block averaging. */
         double blockLength() const
         {
             return blockLength_;
-        };
+        }
 
         /*! \brief Double the length of each block used for block averaging. */
         void doubleBlockLength()
         {
             blockLength_ *= 2;
-        };
+        }
 
         /*! \brief Return the last block index data was added to (needed only for block length in terms of time). */
         int previousBlockIndex() const
@@ -186,13 +186,13 @@ class CorrelationBlockData
         const std::vector<CoordData> &coordData() const
         {
             return coordData_;
-        };
+        }
 
         /*! \brief Return the correlation integral tensor. */
         const std::vector<double> &correlationIntegral() const
         {
             return correlationIntegral_;
-        };
+        }
 
     private:
         /* Weight sum data, indentical for all dimensions */
@@ -256,7 +256,7 @@ class CorrelationTensor
         {
             /* The last blockdata has only 1 block containing all data */
             return blockDataList().back().blockSumWeight();
-        };
+        }
 
         /*! \brief Restore a correlation element from history.
          *

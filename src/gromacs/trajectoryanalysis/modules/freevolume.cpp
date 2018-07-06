@@ -90,7 +90,7 @@ class FreeVolume : public TrajectoryAnalysisModule
 {
     public:
         FreeVolume();
-        virtual ~FreeVolume() {};
+        virtual ~FreeVolume() {}
 
         virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings);

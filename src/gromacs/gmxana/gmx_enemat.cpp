@@ -339,9 +339,9 @@ int gmx_enemat(int argc, char *argv[])
     {
         groupnr[i] = i+1;
     }
-    rlo.r  = 1.0, rlo.g  = 0.0, rlo.b  = 0.0;
-    rmid.r = 1.0, rmid.g = 1.0, rmid.b = 1.0;
-    rhi.r  = 0.0, rhi.g  = 0.0, rhi.b  = 1.0;
+    rlo.r  = 1.0; rlo.g  = 0.0; rlo.b  = 0.0;
+    rmid.r = 1.0; rmid.g = 1.0; rmid.b = 1.0;
+    rhi.r  = 0.0; rhi.g  = 0.0; rhi.b  = 1.0;
     if (bMeanEmtx)
     {
         snew(e, ngroups);
