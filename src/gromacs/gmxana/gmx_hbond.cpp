@@ -3216,7 +3216,7 @@ int gmx_hbond(int argc, char *argv[])
     snew(leg[1], STRLEN);
     sprintf(leg[0], "%s", bContact ? "Contacts" : "Hydrogen bonds");
     sprintf(leg[1], "Pairs within %g nm", (r2cut > 0) ? r2cut : rcut);
-    xvgr_legend(fp, 2, (const char**)leg, oenv);
+    xvgr_legend(fp, 2, leg, oenv);
     sfree(leg[1]);
     sfree(leg[0]);
     sfree(leg);
@@ -3420,7 +3420,7 @@ int gmx_hbond(int argc, char *argv[])
         {
             gmx_incons("number of legend entries");
         }
-        xvgr_legend(fp, nleg, (const char**)legnames, oenv);
+        xvgr_legend(fp, nleg, legnames, oenv);
         for (i = 0; i < nframes; i++)
         {
             fprintf(fp, "%10g", hb->time[i]);

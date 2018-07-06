@@ -57,7 +57,7 @@
 #include "gromacs/utility/smalloc.h"
 
 static const char mapper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+{}|;:',<.>/?";
-#define NMAP (long int)strlen(mapper)
+#define NMAP static_cast<long int>(strlen(mapper))
 
 #define MAX_XPM_LINELENGTH 4096
 

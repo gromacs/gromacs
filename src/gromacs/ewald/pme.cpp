@@ -1226,7 +1226,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
         {
             fprintf(debug, "PME: number of ranks = %d, rank = %d\n",
                     cr->nnodes, cr->nodeid);
-            fprintf(debug, "Grid = %p\n", (void*)grid);
+            fprintf(debug, "Grid = %p\n", static_cast<void*>(grid));
             if (grid == nullptr)
             {
                 gmx_fatal(FARGS, "No grid!");

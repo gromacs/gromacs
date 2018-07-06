@@ -1041,7 +1041,7 @@ static void sim_data_histogram(sim_data_t *sd, const char *filename,
 
         bl = bl->next;
     }
-    xvgr_legend(fp, nsets, (const char**)setnames, oenv);
+    xvgr_legend(fp, nsets, setnames, oenv);
 
 
     /* now make the histograms */

@@ -1481,12 +1481,6 @@ static bool more_than_two_sequential_constraints(const t_ilist  *ilist,
     return bMoreThanTwoSequentialConstraints;
 }
 
-//! Sorting helper function to compare two integers.
-static int int_comp(const void *a, const void *b)
-{
-    return (*(int *)a) - (*(int *)b);
-}
-
 Lincs *init_lincs(FILE *fplog, const gmx_mtop_t &mtop,
                   int nflexcon_global, ArrayRef<const t_blocka> at2con,
                   bool bPLINCS, int nIter, int nProjOrder)
@@ -1967,8 +1961,7 @@ static void set_matrix_indices(Lincs                *li,
         if (bSortMatrix)
         {
             /* Order the blbnb matrix to optimize memory access */
-            qsort(&(li->blbnb[li->blnr[b]]), li->blnr[b + 1] - li->blnr[b],
-                  sizeof(li->blbnb[0]), int_comp);
+            std::sort(&(li->blbnb[li->blnr[b]]), &(li->blbnb[li->blnr[b+1]]));
         }
     }
 }

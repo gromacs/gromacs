@@ -1831,11 +1831,11 @@ int gmx_energy(int argc, char *argv[])
         if (bSum)
         {
             leg[nset] = gmx_strdup("Sum");
-            xvgr_legend(out, nset+1, (const char**)leg, oenv);
+            xvgr_legend(out, nset+1, leg, oenv);
         }
         else
         {
-            xvgr_legend(out, nset, (const char**)leg, oenv);
+            xvgr_legend(out, nset, leg, oenv);
         }
 
         snew(bIsEner, nset);

@@ -681,7 +681,7 @@ static void add_selection_groups(gmx_tng_trajectory_t  gmx_tng,
                 }
                 else
                 {
-                    res_name = (char *)"";
+                    res_name = const_cast<char*>("");
                     res_id   = 0;
                 }
                 if (tng_chain_residue_find(tng, chain, res_name, res_id, &res)

@@ -104,7 +104,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
-#include "gromacs/utility/qsort_threadsafe.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
@@ -5803,21 +5802,14 @@ static void set_zones_size(gmx_domdec_t *dd,
     }
 }
 
-static int comp_cgsort(const void *a, const void *b)
+static bool comp_cgsort(const gmx_cgsort_t &a, const gmx_cgsort_t &b)
 {
-    int           comp;
 
-    gmx_cgsort_t *cga, *cgb;
-    cga = (gmx_cgsort_t *)a;
-    cgb = (gmx_cgsort_t *)b;
-
-    comp = cga->nsc - cgb->nsc;
-    if (comp == 0)
+    if (a.nsc == b.nsc)
     {
-        comp = cga->ind_gl - cgb->ind_gl;
+        return a.ind_gl < b.ind_gl;
     }
-
-    return comp;
+    return a.nsc < b.nsc;
 }
 
 /* Order data in \p dataToSort according to \p sort
@@ -5908,7 +5900,7 @@ static void orderedSort(gmx::ArrayRef<const gmx_cgsort_t>  stationary,
                         std::vector<gmx_cgsort_t>         *sort1)
 {
     /* The new indices are not very ordered, so we qsort them */
-    gmx_qsort_threadsafe(moved.data(), moved.size(), sizeof(moved[0]), comp_cgsort);
+    std::sort(moved.begin(), moved.end(), comp_cgsort);
 
     /* stationary is already ordered, so now we can merge the two arrays */
     sort1->resize(stationary.size() + moved.size());
@@ -6000,7 +5992,7 @@ static void dd_sort_order(const gmx_domdec_t *dd,
             fprintf(debug, "qsort cgs: %d new home %d\n", dd->ncg_home, numCGNew);
         }
         /* Determine the order of the charge groups using qsort */
-        gmx_qsort_threadsafe(cgsort.data(), dd->ncg_home, sizeof(cgsort[0]), comp_cgsort);
+        std::sort(cgsort.begin(), cgsort.end(), comp_cgsort);
 
         /* Remove the charge groups which are no longer at home here */
         cgsort.resize(numCGNew);

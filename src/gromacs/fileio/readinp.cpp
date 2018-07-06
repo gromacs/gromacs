@@ -51,7 +51,6 @@
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/niceheader.h"
 #include "gromacs/utility/programcontext.h"
-#include "gromacs/utility/qsort_threadsafe.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"

@@ -178,7 +178,7 @@ class Constraints
         //! Getter for use by domain decomposition.
         const ArrayRef<const t_blocka> atom2constraints_moltype() const;
         //! Getter for use by domain decomposition.
-        const int **atom2settle_moltype() const;
+        int *const* atom2settle_moltype() const;
 
         /*! \brief Return the data for reduction for determining
          * constraint RMS relative deviations, or an empty ArrayRef

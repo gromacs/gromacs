@@ -75,7 +75,6 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/pleasecite.h"
-#include "gromacs/utility/qsort_threadsafe.h"
 #include "gromacs/utility/smalloc.h"
 
 static char const *RotStr = {"Enforced rotation:"};
@@ -1704,7 +1703,7 @@ static inline void shift_single_coord(const matrix box, rvec x, const ivec is)
 
 /* Determine the 'home' slab of this atom which is the
  * slab with the highest Gaussian weight of all */
-#define round(a) (int)((a)+0.5)
+#define round(a) int((a)+0.5)
 static inline int get_homeslab(
         rvec       curr_x,   /* The position for which the home slab shall be determined */
         const rvec rotvec,   /* The rotation vector */
@@ -2360,26 +2359,6 @@ static real do_flex_lowlevel(
     return V;
 }
 
-static int projection_compare(const void *a, const void *b)
-{
-    auto xca = reinterpret_cast<const sort_along_vec_t *>(a);
-    auto xcb = reinterpret_cast<const sort_along_vec_t *>(b);
-
-    if (xca->xcproj < xcb->xcproj)
-    {
-        return -1;
-    }
-    else if (xca->xcproj > xcb->xcproj)
-    {
-        return 1;
-    }
-    else
-    {
-        return 0;
-    }
-}
-
-
 static void sort_collective_coordinates(
         gmx_enfrotgrp    *erg,
         sort_along_vec_t *data) /* Buffer for sorting the positions */
@@ -2395,7 +2374,11 @@ static void sort_collective_coordinates(
         copy_rvec(erg->rotg->x_ref[i], data[i].x_ref);
     }
     /* Sort the 'data' structure */
-    gmx_qsort(data, erg->rotg->nat, sizeof(sort_along_vec_t), projection_compare);
+    std::sort(data, data+erg->rotg->nat,
+              [](const sort_along_vec_t &a, const sort_along_vec_t &b)
+              {
+                  return a.xcproj < b.xcproj;
+              });
 
     /* Copy back the sorted values */
     for (int i = 0; i < erg->rotg->nat; i++)
