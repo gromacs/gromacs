@@ -232,7 +232,7 @@ static void walk_out(int con, int con_offset, int a, int offset, int nrec,
 static void atoms_to_settles(gmx_domdec_t *dd,
                              const gmx_mtop_t *mtop,
                              const int *cginfo,
-                             const int **at2settle_mt,
+                             const int *const*at2settle_mt,
                              int cg_start, int cg_end,
                              t_ilist *ils_local,
                              std::vector<int> *ireq)
@@ -431,7 +431,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
     t_ilist                      *ilc_local, *ils_local;
     std::vector<int>             *ireq;
     gmx::ArrayRef<const t_blocka> at2con_mt;
-    const int                   **at2settle_mt;
+    const int              *const*at2settle_mt;
     gmx_hash_t                   *ga2la_specat;
     int at_end, i, j;
     t_iatom                      *iap;
