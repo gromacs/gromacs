@@ -73,9 +73,8 @@ static void lmcurve_evaluate(
         const double* par, const int m_dat, const void* data, double* fvec,
         int* info)
 {
-    lmcurve_data_struct* D = (lmcurve_data_struct*)data;
-    int                  i;
-    for (i = 0; i < m_dat; i++)
+    const lmcurve_data_struct* D = reinterpret_cast<const lmcurve_data_struct*>(data);
+    for (int i = 0; i < m_dat; i++)
     {
         double dy = D->dy[i];
         if (dy == 0)
@@ -96,7 +95,7 @@ static void gmx_lmcurve(
 {
     lmcurve_data_struct data = { t, y, dy, f };
 
-    lmmin(n_par, par, m_dat, nullptr, (const void*)&data, lmcurve_evaluate,
+    lmmin(n_par, par, m_dat, nullptr, &data, lmcurve_evaluate,
           control, status);
 }
 

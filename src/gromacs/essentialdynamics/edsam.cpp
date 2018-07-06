@@ -477,9 +477,9 @@ static void dump_edi(t_edpar *edpars, const t_commrec *cr, int nr_edi)
     dump_edi_eigenvecs(out, &edpars->flood.vecs, "FLOODING", edpars->sav.nr);
 
     /* Dump ed local buffer */
-    fprintf(out, "buf->do_edfit         =%p\n", (void*)edpars->buf->do_edfit  );
-    fprintf(out, "buf->do_edsam         =%p\n", (void*)edpars->buf->do_edsam  );
-    fprintf(out, "buf->do_radcon        =%p\n", (void*)edpars->buf->do_radcon );
+    fprintf(out, "buf->do_edfit         =%p\n", static_cast<void*>(edpars->buf->do_edfit)  );
+    fprintf(out, "buf->do_edsam         =%p\n", static_cast<void*>(edpars->buf->do_edsam)  );
+    fprintf(out, "buf->do_radcon        =%p\n", static_cast<void*>(edpars->buf->do_radcon) );
 
     gmx_ffclose(out);
 }

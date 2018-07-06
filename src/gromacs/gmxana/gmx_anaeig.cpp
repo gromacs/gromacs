@@ -465,7 +465,8 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
     matrix       box;
     rvec        *xread, *x;
     real         t, inp, **inprod = nullptr;
-    char         str[STRLEN], str2[STRLEN], **ylabel, *c;
+    char         str[STRLEN], str2[STRLEN], *c;
+    const char **ylabel;
     real         fact;
     gmx_rmpbc_t  gpbc = nullptr;
 
@@ -607,7 +608,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
         }
         sprintf(str, "projection on eigenvectors (%s)", proj_unit);
         write_xvgr_graphs(projfile, noutvec, 1, str, nullptr, output_env_get_xvgr_tlabel(oenv),
-                          (const char **)ylabel,
+                          ylabel,
                           nframes, inprod[noutvec], inprod, nullptr,
                           output_env_get_time_factor(oenv), FALSE, bSplit, oenv);
     }
@@ -821,9 +822,10 @@ static void components(const char *outfile, int natoms,
                        int noutvec, const int *outvec,
                        const gmx_output_env_t *oenv)
 {
-    int   g, s, v, i;
-    real *x, ***y;
-    char  str[STRLEN], **ylabel;
+    int         g, s, v, i;
+    real       *x, ***y;
+    char        str[STRLEN];
+    const char**ylabel;
 
     fprintf(stderr, "Writing eigenvector components to %s\n", outfile);
 
@@ -855,7 +857,7 @@ static void components(const char *outfile, int natoms,
     }
     write_xvgr_graphs(outfile, noutvec, 4, "Eigenvector components",
                       "black: total, red: x, green: y, blue: z",
-                      "Atom number", (const char **)ylabel,
+                      "Atom number", ylabel,
                       natoms, x, nullptr, y, 1, FALSE, FALSE, oenv);
     fprintf(stderr, "\n");
 }
@@ -866,9 +868,10 @@ static void rmsf(const char *outfile, int natoms, const real *sqrtm,
                  real *eigval, int neig,
                  const gmx_output_env_t *oenv)
 {
-    int    g, v, i;
-    real  *x, **y;
-    char   str[STRLEN], **ylabel;
+    int          g, v, i;
+    real        *x, **y;
+    char         str[STRLEN];
+    const char **ylabel;
 
     for (i = 0; i < neig; i++)
     {
@@ -903,7 +906,7 @@ static void rmsf(const char *outfile, int natoms, const real *sqrtm,
         }
     }
     write_xvgr_graphs(outfile, noutvec, 1, "RMS fluctuation (nm) ", nullptr,
-                      "Atom number", (const char **)ylabel,
+                      "Atom number", ylabel,
                       natoms, x, y, nullptr, 1, TRUE, FALSE, oenv);
     fprintf(stderr, "\n");
 }

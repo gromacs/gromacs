@@ -71,7 +71,6 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/pleasecite.h"
-#include "gromacs/utility/qsort_threadsafe.h"
 #include "gromacs/utility/smalloc.h"
 
 static char const *RotStr = {"Enforced rotation:"};
@@ -1639,7 +1638,7 @@ static inline void shift_single_coord(const matrix box, rvec x, const ivec is)
 
 /* Determine the 'home' slab of this atom which is the
  * slab with the highest Gaussian weight of all */
-#define round(a) (int)((a)+0.5)
+#define round(a) int((a)+0.5)
 static inline int get_homeslab(
         rvec curr_x,   /* The position for which the home slab shall be determined */
         rvec rotvec,   /* The rotation vector */
@@ -2343,30 +2342,6 @@ static void print_coordinates(t_rotgrp *rotg, rvec x[], matrix box, int step)
 }
 #endif
 
-
-static int projection_compare(const void *a, const void *b)
-{
-    sort_along_vec_t *xca, *xcb;
-
-
-    xca = (sort_along_vec_t *)a;
-    xcb = (sort_along_vec_t *)b;
-
-    if (xca->xcproj < xcb->xcproj)
-    {
-        return -1;
-    }
-    else if (xca->xcproj > xcb->xcproj)
-    {
-        return 1;
-    }
-    else
-    {
-        return 0;
-    }
-}
-
-
 static void sort_collective_coordinates(
         t_rotgrp         *rotg, /* Rotation group */
         sort_along_vec_t *data) /* Buffer for sorting the positions */
@@ -2388,7 +2363,11 @@ static void sort_collective_coordinates(
         copy_rvec(rotg->x_ref[i], data[i].x_ref);
     }
     /* Sort the 'data' structure */
-    gmx_qsort(data, rotg->nat, sizeof(sort_along_vec_t), projection_compare);
+    std::sort(data, data+rotg->nat,
+              [](const sort_along_vec_t &a, const sort_along_vec_t &b)
+              {
+                  return a.xcproj < b.xcproj;
+              });
 
     /* Copy back the sorted values */
     for (i = 0; i < rotg->nat; i++)
