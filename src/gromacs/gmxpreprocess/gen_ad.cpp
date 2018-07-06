@@ -133,14 +133,20 @@ static int dcomp(const void *d1, const void *d2)
     {
         return 1;
     }
-    /* Finally, sort by I and J (two outer) atoms */
+    /* Then sort by I and J (two outer) atoms */
     else if ((dc = (p1->ai()-p2->ai())) != 0)
+    {
+        return dc;
+    }
+    else if ((dc = (p1->al()-p2->al())) != 0)
     {
         return dc;
     }
     else
     {
-        return (p1->al()-p2->al());
+        // AMBER force fields with type 9 dihedrals can reach here, where we sort on
+        // the contents of the string that names the macro for the parameters.
+        return strcmp(p1->s, p2->s);
     }
 }
 

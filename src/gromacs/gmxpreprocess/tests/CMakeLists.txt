@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,8 +33,17 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_unit_test(GmxPreprocessTests gmxpreprocess-test
-                  genconf.cpp
-                  insert-molecules.cpp
-                  readir.cpp
-                  solvate.cpp
-                  )
+    genconf.cpp
+    insert-molecules.cpp
+    readir.cpp
+    solvate.cpp
+    )
+
+# Currently these are too slow to run in Jenkins, so they are in their
+# own test binary with a different ctest label so that they do not run
+# by default.
+set(exename pdb2gmx-test)
+gmx_add_gtest_executable(${exename}
+    pdb2gmx.cpp
+    )
+gmx_register_gtest_test(Pdb2gmxTest ${exename} SLOW_TEST)
