@@ -44,7 +44,7 @@ gmx_add_unit_test(
     qgen_eemTest.cpp
     qgen_respTest.cpp
     regression.cpp
-    #rotationTest.cpp
+    rotationTest.cpp
     # pseudo-library for code for alexandria
     $<TARGET_OBJECTS:alexandria_objlib>
     )

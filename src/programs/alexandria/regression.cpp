@@ -53,6 +53,7 @@ void dgels_(const char* trans, int* m, int* n, int* nrhs, double* a, int* lda,
 void dgesvd_(const char* jobu, const char* jobvt, int* m, int* n, double* a,
              int* lda, double* s, double* u, int* ldu, double* vt, int* ldvt,
              double* work, int* lwork, int* info );
+             
 }
 
 static void multi_regression2(int nrow, double y[], int ncol,
@@ -128,19 +129,31 @@ static void tensor2matrix(tensor c, double **a)
 
 }
 
-static void array2tensor(double **a, tensor c)
-{
-    tensor tmp;    
-    tmp[XX][XX] = a[XX][ZZ];
-    tmp[XX][YY] = a[XX][YY];
-    tmp[XX][ZZ] = a[XX][XX];   
-    tmp[YY][XX] = a[ZZ][ZZ];
-    tmp[YY][YY] = a[ZZ][YY];
-    tmp[YY][ZZ] = a[ZZ][XX];    
-    tmp[ZZ][XX] = a[YY][ZZ];
-    tmp[ZZ][YY] = a[YY][YY];
-    tmp[ZZ][ZZ] = a[YY][XX];   
-    transpose(tmp, c);
+
+static void rowwise2tensor(double **a, tensor c)
+{    
+    c[XX][XX] = a[XX][XX];
+    c[XX][YY] = a[XX][YY];
+    c[XX][ZZ] = a[XX][ZZ];   
+    c[YY][XX] = a[YY][XX];
+    c[YY][YY] = a[YY][YY];
+    c[YY][ZZ] = a[YY][ZZ];    
+    c[ZZ][XX] = a[ZZ][XX];
+    c[ZZ][YY] = a[ZZ][YY];
+    c[ZZ][ZZ] = a[ZZ][ZZ];   
+}
+
+static void columnwise2tensor(double **a, tensor c)
+{   
+    c[XX][XX] = a[XX][ZZ];
+    c[XX][YY] = a[XX][YY];
+    c[XX][ZZ] = a[XX][XX];   
+    c[YY][XX] = a[ZZ][ZZ];
+    c[YY][YY] = a[ZZ][YY];
+    c[YY][ZZ] = a[ZZ][XX];    
+    c[ZZ][XX] = a[YY][ZZ];
+    c[ZZ][YY] = a[YY][YY];
+    c[ZZ][ZZ] = a[YY][XX];   
 }
 
 static void unitTensor(tensor I, int ncol, int nrow)
@@ -176,26 +189,21 @@ static void SVD(int*    m,    int*     n,     double** a,
     }   
 }
 
-/*
- * Kabsch algorithm to find the optimal rotation matrix to 
- * rotate matrix P (N, 3) onto matrix Q (N, 3). 
- * https://en.wikipedia.org/wiki/Kabsch_algorithm
- *
- * tensor here is 3 by 3 matrix! 
- */
 void kabsch_rotation(tensor P, tensor Q, tensor rotated_P)
 {
     int       m      = DIM;
     int       n      = DIM;
     int       lda    = m;
     int       ldu    = m;
-    int       ldvt   = n;        
-    double  **A      = alloc_matrix(m, n);;        
-    double  **s      = alloc_matrix(m, n);;
-    double  **u      = alloc_matrix(m, n);;
-    double  **vt     = alloc_matrix(m, n);;   
-    tensor    C, U, Vt, UVt;
-    tensor    Pt, I, UI, R;
+    int       ldvt   = n;
+            
+    double  **A      = alloc_matrix(m, n);       
+    double  **s      = alloc_matrix(m, n);
+    double  **u      = alloc_matrix(m, n);
+    double  **vt     = alloc_matrix(m, n);   
+    
+    tensor    C, U, UT, V, VT;
+    tensor    Pt, R;
     
         
     /*transpose of p (Pt)*/
@@ -205,38 +213,30 @@ void kabsch_rotation(tensor P, tensor Q, tensor rotated_P)
     mmul(Pt, Q, C);    
     tensor2matrix(C, A);
     
-    /* SVD of the covariance matrix (A)
-     * u : left singular vectors
-     * vt: right singular vectors, trasnposed
-     * s : singular values
-     * A = u*s*vt
-     */
+    /* SVD returns:
+       u  -> Left singular vectors (stored columnwise)
+       s  -> Singular values
+       vt -> Transpose of the Right singular vectors (stored rowwise)
+    */
     SVD(&m, &n, A, &lda, s, u, &ldu, vt, &ldvt);       
-    array2tensor(u, U);
-    array2tensor(vt, Vt);
+        
+    columnwise2tensor(u, U);
+    rowwise2tensor(vt, VT);
     
+    transpose(U, UT);
+    transpose(VT, V);
+        
     /*Check for correction*/
-    mmul(U, Vt, UVt);
-    int d;
-    if (det(UVt) > 0)
+    if ((det(UT) * det(V)) < 0)
     {
-        d = 1;
+        UT[ZZ][ZZ] = -UT[ZZ][ZZ];
     }
-    else
-    {
-        d = -1;
-    }
-    
-    /*Unit tensor (I)*/
-    unitTensor(I, m, n);
-    I[ZZ][ZZ] = d;
     
     /*Rotation matrix (R)*/
-    mmul(U, I, UI);
-    mmul(UI, Vt, R);
+    mmul(UT, V, R);
     
     /*Rotate*/
-    mmul(R, P, rotated_P);
+    mmul(P, R, rotated_P);
   
     free_matrix(A);
     free_matrix(s);

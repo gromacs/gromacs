@@ -899,7 +899,7 @@ class Optimization : public MolGen
                 { "-pairs",  FALSE, etBOOL, {&bOpt_[eitLJ14]},
                   "Optimize 1-4 interaction parameters" },
                 { "-factor", FALSE, etREAL, {&factor_},
-                  "Factor for something I forgot. Sorry." }
+                  "Parameters will be taken within the limit factor*x - x/factor." }
             };
             for (size_t i = 0; i < sizeof(pa)/sizeof(pa[0]); i++)
             {
@@ -1226,7 +1226,7 @@ void Optimization::polData2TuneFc()
                 {
                     if (n == 0)
                     {
-                        De_.push_back(std::move(p));
+                        param_.push_back(std::move(p));
                     }
                     else
                     {
@@ -1262,7 +1262,7 @@ void Optimization::polData2TuneFc()
 void Optimization::tuneFc2PolData()
 {
     int n = 0;
-    int m = 0;
+    //int m = 0;
     std::vector<std::string> atoms;
 
     for (auto &fc : ForceConstants_)
@@ -1281,7 +1281,7 @@ void Optimization::tuneFc2PolData()
                     strncat(buf, " ", sizeof(buf)-1);
                     if (j == 0)
                     {
-                        strncat(buf, gmx_ftoa(De_[m++]).c_str(), sizeof(buf)-1);
+                        strncat(buf, gmx_ftoa(param_[n++]).c_str(), sizeof(buf)-1);
                     }
                     else
                     {
@@ -1610,7 +1610,6 @@ void Optimization::calcDeviation()
                      ei < mymol.molProp()->EndExperiment(); ++ei)
                 {
                     auto jtype = ei->getJobtype();
-
                     if (jtype == JOB_OPT || jtype == JOB_SP)
                     {
                         ei->getHF(&spHF);
@@ -1622,25 +1621,16 @@ void Optimization::calcDeviation()
                         mymol.f_.resize(2*natoms);
 
                         dbcopy = debug;
-                        debug  = nullptr;
-                       
+                        debug  = nullptr;                       
                         mymol.changeCoordinate(ei, bpolar);
                         mymol.computeForces(debug, commrec());
-
-                        debug          = dbcopy;
-                        mymol.Force2_  = 0.0;
-
+                        debug  = dbcopy;
+                        
                         mymol.Ecalc_  = mymol.enerd_->term[F_EPOT];
                         ener          = gmx::square(mymol.Ecalc_ - Emol);
-
-                        for (j = 0; j < natoms; j++)
-                        {
-                            mymol.Force2_ += iprod(mymol.f_[j], mymol.f_[j]);
-                        }
-
-                        mymol.Force2_ /= natoms;
-
-                        if (jtype == JOB_OPT)
+                        increaseEnergy(ermsEPOT, ener); // energy is added for opt and sp geometries
+                        
+                        if (jtype == JOB_OPT) // force is added only for the opt geometry
                         {
                             mymol.OptForce2_ = 0.0;
                             for (j = 0; j < natoms; j++)
@@ -1653,20 +1643,33 @@ void Optimization::calcDeviation()
                             mymol.OptEcalc_     = mymol.enerd_->term[F_EPOT];
                         }
 
-                        increaseEnergy(ermsEPOT, ener);
-
                         if (nullptr != debug)
                         {
+                            mymol.Force2_  = 0.0;
+                            for (j = 0; j < natoms; j++)
+                            {
+                                mymol.Force2_ += iprod(mymol.f_[j], mymol.f_[j]);
+                            }
+                            mymol.Force2_ /= natoms;
+                            
                             fprintf(debug, "spHF: %g  optHF: %g  DeltaEn: %g\n", spHF, optHF, deltaEn);
-
                             fprintf(debug, "%s Chi2 %g Hform %g Emol %g  Ecalc %g Morse %g  "
                                     "Hangle %g Langle %g PDIHS %g IDIHS %g Coul %g LJ %g BHAM %g POL %g  Force %g\n",
-                                    mymol.molProp()->getMolname().c_str(), ener, mymol.Hform_, Emol, mymol.Ecalc_,
-                                    mymol.enerd_->term[F_MORSE], mymol.enerd_->term[F_UREY_BRADLEY],
-                                    mymol.enerd_->term[F_LINEAR_ANGLES], mymol.enerd_->term[F_PDIHS],
-                                    mymol.enerd_->term[F_IDIHS], mymol.enerd_->term[F_COUL_SR],
-                                    mymol.enerd_->term[F_LJ], mymol.enerd_->term[F_BHAM],
-                                    mymol.enerd_->term[F_POLARIZATION], sqrt(mymol.Force2_));
+                                    mymol.molProp()->getMolname().c_str(), 
+                                    ener, 
+                                    mymol.Hform_, 
+                                    Emol, 
+                                    mymol.Ecalc_,
+                                    mymol.enerd_->term[F_MORSE], 
+                                    mymol.enerd_->term[F_UREY_BRADLEY],
+                                    mymol.enerd_->term[F_LINEAR_ANGLES], 
+                                    mymol.enerd_->term[F_PDIHS],
+                                    mymol.enerd_->term[F_IDIHS], 
+                                    mymol.enerd_->term[F_COUL_SR],
+                                    mymol.enerd_->term[F_LJ], 
+                                    mymol.enerd_->term[F_BHAM],
+                                    mymol.enerd_->term[F_POLARIZATION], 
+                                    sqrt(mymol.Force2_));
                         }
                     }
                 }

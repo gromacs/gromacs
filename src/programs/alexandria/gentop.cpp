@@ -490,33 +490,46 @@ int alex_gentop(int argc, char *argv[])
                                        qtol,
                                        oenv);
     }
-    if (immOK == imm)
+    if (bCUBE && immOK == imm)
     {
         fprintf(stderr, "Fix me: GenerateCube is broken\n");
-        if (bCUBE)
-        {
-            mymol.GenerateCube(iChargeDistributionModel,
-                               pd,
-                               spacing,
-                               opt2fn_null("-ref",      NFILE, fnm),
-                               opt2fn_null("-pc",       NFILE, fnm),
-                               opt2fn_null("-pdbdiff",  NFILE, fnm),
-                               opt2fn_null("-pot",      NFILE, fnm),
-                               opt2fn_null("-rho",      NFILE, fnm),
-                               opt2fn_null("-his",      NFILE, fnm),
-                               opt2fn_null("-diff",     NFILE, fnm),
-                               opt2fn_null("-diffhist", NFILE, fnm),
-                               oenv);
-        }
+        mymol.GenerateCube(iChargeDistributionModel,
+                           pd,
+                           spacing,
+                           opt2fn_null("-ref",      NFILE, fnm),
+                           opt2fn_null("-pc",       NFILE, fnm),
+                           opt2fn_null("-pdbdiff",  NFILE, fnm),
+                           opt2fn_null("-pot",      NFILE, fnm),
+                           opt2fn_null("-rho",      NFILE, fnm),
+                           opt2fn_null("-his",      NFILE, fnm),
+                           opt2fn_null("-diff",     NFILE, fnm),
+                           opt2fn_null("-diffhist", NFILE, fnm),
+                           oenv);
     }
+    
     if (immOK == imm)
     {
         imm = mymol.GenerateChargeGroups(ecg, bUsePDBcharge);
     }
+    
+    if (debug)
+    {
+        mymol.computeForces(debug, cr);   
+        fprintf(debug, "Morse %g Hangle %g Langle %g PDIHS %g IDIHS %g Coul %g LJ %g BHAM %g POL %g\n",
+                mymol.enerd_->term[F_MORSE], 
+                mymol.enerd_->term[F_UREY_BRADLEY],
+                mymol.enerd_->term[F_LINEAR_ANGLES], 
+                mymol.enerd_->term[F_PDIHS],
+                mymol.enerd_->term[F_IDIHS], 
+                mymol.enerd_->term[F_COUL_SR],
+                mymol.enerd_->term[F_LJ], 
+                mymol.enerd_->term[F_BHAM],
+                mymol.enerd_->term[F_POLARIZATION]);    
+    }
+    
     if (immOK == imm)
     {
-        mymol.PrintConformation(opt2fn("-c", NFILE, fnm));
-        
+        mymol.PrintConformation(opt2fn("-c", NFILE, fnm));        
         mymol.PrintTopology(bITP ? ftp2fn(efITP, NFILE, fnm) : ftp2fn(efTOP, NFILE, fnm),
                             iChargeDistributionModel,
                             bVerbose,
