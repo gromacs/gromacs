@@ -88,9 +88,9 @@ static gmx_bool NOTEXCL_(t_excl e[], int i, int j)
     return !(ISEXCL(e, i, j));
 }
 #else
-#define SETEXCL(e, i, j) (e)[((int) (j))] |= (1<<((int) (i)))
-#define RMEXCL(e, i, j)  (e)[((int) (j))] &= (~(1<<((int) (i))))
-#define ISEXCL(e, i, j)  (gmx_bool) ((e)[((int) (j))] & (1<<((int) (i))))
+#define SETEXCL(e, i, j) (e)[int(j)] |= (1<<(int(i)))
+#define RMEXCL(e, i, j)  (e)[int(j)] &= (~(1<<(int(i))))
+#define ISEXCL(e, i, j)  static_cast<gmx_bool>((e)[(int(j))] & (1<<(int(i))))
 #define NOTEXCL(e, i, j) !(ISEXCL(e, i, j))
 #endif
 

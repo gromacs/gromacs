@@ -43,6 +43,8 @@
 #include <string.h>
 #include <time.h>
 
+#include <algorithm>
+
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -678,29 +680,22 @@ typedef struct {
     char altloc; /* alternate location indicator */
 } t_pdbindex;
 
-static int pdbicomp(const void *a, const void *b)
+static bool pdbicomp(const t_pdbindex &a, const t_pdbindex &b)
 {
-    t_pdbindex *pa, *pb;
-    int         d;
-
-    pa = (t_pdbindex *)a;
-    pb = (t_pdbindex *)b;
-
-    d = (pa->resnr - pb->resnr);
+    int d = (a.resnr - b.resnr);
     if (d == 0)
     {
-        d = (pa->j - pb->j);
+        d = (a.j - b.j);
         if (d == 0)
         {
-            d = (pa->anm1 - pb->anm1);
+            d = (a.anm1 - b.anm1);
             if (d == 0)
             {
-                d = (pa->altloc - pb->altloc);
+                d = (a.altloc - b.altloc);
             }
         }
     }
-
-    return d;
+    return d < 0;
 }
 
 static void sort_pdbatoms(t_restp restp[],
@@ -759,7 +754,7 @@ static void sort_pdbatoms(t_restp restp[],
         pdbi[i].anm1   = atomnm[1];
         pdbi[i].altloc = pdba->pdbinfo[i].altloc;
     }
-    qsort(pdbi, natoms, static_cast<size_t>(sizeof(pdbi[0])), pdbicomp);
+    std::sort(pdbi, pdbi+natoms, pdbicomp);
 
     /* pdba is sorted in pdbnew using the pdbi index */
     snew(a, natoms);

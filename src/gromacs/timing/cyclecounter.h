@@ -55,14 +55,6 @@
 #include <intrin.h>
 #endif
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-#if 0
-} /* fixes auto-indentation problems */
-#endif
-
 #if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) && \
     (defined(__i386__) || defined(__x86_64__)))
 /* x86 or x86-64 with GCC inline assembly */
@@ -210,7 +202,6 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
 static __inline__ gmx_cycles_t gmx_cycles_read(void)
 {
     /* x86 with GCC inline assembly - pentium TSC register */
-    gmx_cycles_t   cycle;
     unsigned       low, high;
 
 #if HAVE_RDTSCP
@@ -218,10 +209,9 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
 #else
     __asm__ __volatile__("rdtsc" : "=a" (low), "=d" (high));
 #endif
-
-    cycle = ((unsigned long long)low) | (((unsigned long long)high)<<32);
-
-    return cycle;
+    const gmx_cycles_t c_low  = low;
+    const gmx_cycles_t c_high = high;
+    return c_low | c_high <<32;
 }
 #elif ((defined __aarch64__) && (defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)))
 static __inline__ gmx_cycles_t gmx_cycles_read(void)
@@ -591,9 +581,5 @@ static int gmx_cycles_have_counter(void)
  */
 double
 gmx_cycles_calibrate(double sampletime);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
