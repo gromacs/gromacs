@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace gmx
 {
@@ -141,6 +142,29 @@ class NoTextMatch : public ITextBlockMatcherSettings
 {
     public:
         virtual TextBlockMatcherPointer createMatcher() const;
+};
+
+/*! \libinternal \brief
+ * Use an exact text match after scrubbing lines of the text
+ * that match the supplied regular expressions.
+ *
+ * This suits comparing files that are intended to be localized
+ * by reporting usage, time, date, user, or file-system stamps.
+ *
+ * \inlibraryapi
+ * \ingroup module_testutils
+ */
+class FilteringExactTextMatch : public ITextBlockMatcherSettings
+{
+    public:
+        //! Factory method.
+        virtual TextBlockMatcherPointer createMatcher() const;
+        //! Add a line that expresses a regular expression for a line that should be skipped.
+        void addLineToSkip(const std::string &lineToSkip);
+    private:
+        //! The lines that express the regular expressions for a line that should be skipped.
+        std::vector<std::string> linesToSkip_;
+
 };
 
 } // namespace test
