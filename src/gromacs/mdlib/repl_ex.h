@@ -57,7 +57,7 @@ struct ReplicaExchangeParameters
         numExchanges(0),
         randomSeed(-1)
     {
-    };
+    }
 
     int exchangeInterval; /* Interval in steps at which to attempt exchanges, 0 means no replica exchange */
     int numExchanges;     /* The number of exchanges to attempt at an exchange step */

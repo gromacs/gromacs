@@ -379,7 +379,7 @@ class BiasState
                            const awh_dvec  coordValue)
         {
             coordState_.setCoordValue(grid, coordValue);
-        };
+        }
 
         /*! \brief
          * Performs an update of the bias.
@@ -497,28 +497,28 @@ class BiasState
         const CoordState &coordState() const
         {
             return coordState_;
-        };
+        }
 
         /*! \brief Returns a const reference to the point state.
          */
         const std::vector<PointState> &points() const
         {
             return points_;
-        };
+        }
 
         /*! \brief Returns true if we are in the initial stage.
          */
         bool inInitialStage() const
         {
             return histogramSize_.inInitialStage();
-        };
+        }
 
         /*! \brief Returns the current histogram size.
          */
         inline HistogramSize histogramSize() const
         {
             return histogramSize_;
-        };
+        }
 
         /* Data members */
     private:

@@ -180,19 +180,19 @@ class DDAtomRanges
             {
                 return end_[static_cast<int>(rangeType) - 1];
             }
-        };
+        }
 
         /*! \brief Returns the end atom index for range \p rangeType */
         int end(Type rangeType) const
         {
             return end_[static_cast<int>(rangeType)];
-        };
+        }
 
         /*! \brief Returns the number of home atoms */
         int numHomeAtoms() const
         {
             return end_[static_cast<int>(Type::Home)];
-        };
+        }
 
         /*! \brief Returns the total number of atoms */
         int numAtomsTotal() const
@@ -217,7 +217,7 @@ class DDAtomRanges
             }
 
             lastTypeSet_ = rangeType;
-        };
+        }
 
     private:
         /*! \brief The list of end atom indices */

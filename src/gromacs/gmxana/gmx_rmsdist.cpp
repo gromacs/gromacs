@@ -843,8 +843,8 @@ int gmx_rmsdist(int argc, char *argv[])
         calc_noe(isize, noe_index, dtot1_3, dtot1_6, gnr, noe);
     }
 
-    rlo.r = 1.0, rlo.g = 1.0, rlo.b = 1.0;
-    rhi.r = 0.0, rhi.g = 0.0, rhi.b = 0.0;
+    rlo.r = 1.0; rlo.g = 1.0; rlo.b = 1.0;
+    rhi.r = 0.0; rhi.g = 0.0; rhi.b = 0.0;
 
     if (bRMS)
     {

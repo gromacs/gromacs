@@ -604,7 +604,7 @@ detectX86LogicalProcessors()
     }
     else
     {
-        haveX2Apic = false,
+        haveX2Apic = false;
         haveApic   = false;
     }
 

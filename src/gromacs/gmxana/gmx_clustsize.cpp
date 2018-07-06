@@ -532,8 +532,8 @@ int gmx_clustsize(int argc, char *argv[])
     }
 
     fnNDX   = ftp2fn_null(efNDX, NFILE, fnm);
-    rgblo.r = rlo[XX], rgblo.g = rlo[YY], rgblo.b = rlo[ZZ];
-    rgbhi.r = rhi[XX], rgbhi.g = rhi[YY], rgbhi.b = rhi[ZZ];
+    rgblo.r = rlo[XX]; rgblo.g = rlo[YY]; rgblo.b = rlo[ZZ];
+    rgbhi.r = rhi[XX]; rgbhi.g = rhi[YY]; rgbhi.b = rhi[ZZ];
 
     fnTPR = ftp2fn_null(efTPR, NFILE, fnm);
     if (bMol && !fnTPR)

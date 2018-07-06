@@ -305,8 +305,8 @@ int gmx_mdmat(int argc, char *argv[])
 
     nframes = 0;
 
-    rlo.r = 1.0, rlo.g = 1.0, rlo.b = 1.0;
-    rhi.r = 0.0, rhi.g = 0.0, rhi.b = 0.0;
+    rlo.r = 1.0; rlo.g = 1.0; rlo.b = 1.0;
+    rhi.r = 0.0; rhi.g = 0.0; rhi.b = 0.0;
 
     gpbc = gmx_rmpbc_init(&top.idef, ePBC, trxnat);
 

@@ -88,7 +88,7 @@ class SimulationSignal
 {
     public:
         //! Constructor
-        SimulationSignal(bool isSignalLocal = true) : sig(0), set(0), isLocal(isSignalLocal) {};
+        SimulationSignal(bool isSignalLocal = true) : sig(0), set(0), isLocal(isSignalLocal) {}
         //! The signal set by this rank in do_md().
         signed char sig;
         //! The communicated signal that triggers action, which will be equal for all ranks, once communication has occured.

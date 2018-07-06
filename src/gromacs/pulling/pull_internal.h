@@ -124,7 +124,7 @@ struct pull_coord_work_t
         scalarForce(0),
         bExternalPotentialProviderHasBeenRegistered(false)
     {
-    };
+    }
 
     const t_pull_coord    params;      /* Pull coordinate parameters */
 

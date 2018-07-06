@@ -108,6 +108,17 @@ struct SimdDInt32Tag {};
  *  \{
  */
 
+#ifdef __clang__
+#pragma clang diagnostic push
+/* reinterpret_cast is used for SIMD->scalar conversion
+ *
+ * In general using reinterpret_cast for bit_cast is UB but
+ * for intrinsics types it works for all known compilers
+ * and not all compilers produce as good code for memcpy.
+ */
+#pragma clang diagnostic ignored "-Wundefined-reinterpret-cast"
+#endif
+
 #if GMX_SIMD_X86_SSE2
 #    include "impl_x86_sse2/impl_x86_sse2.h"
 #elif GMX_SIMD_X86_SSE4_1
@@ -138,6 +149,10 @@ struct SimdDInt32Tag {};
 #    include "impl_reference/impl_reference.h" // Includes doxygen documentation
 #else
 #    include "impl_none/impl_none.h"
+#endif
+
+#ifdef __clang__
+#pragma clang diagnostic pop
 #endif
 
 // The scalar SIMD-mimicking functions are always included so we can use

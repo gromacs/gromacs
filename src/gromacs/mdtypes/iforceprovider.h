@@ -95,7 +95,7 @@ class ForceProviderInput
             : x_(x), mdatoms_(mdatoms), t_(time), cr_(cr)
         {
             copy_mat(box, box_);
-        };
+        }
 
         ArrayRef<const RVec> x_;                                        //!< The atomic positions
         const t_mdatoms     &mdatoms_;                                  //!< Atomic data
@@ -129,7 +129,7 @@ class ForceProviderOutput
                             gmx_enerdata_t  *enerd)
             : forceWithVirial_(makeRefFromPointer(forceWithVirial)), enerd_(makeRefFromPointer(enerd))
         {
-        };
+        }
 
         ForceWithVirial &forceWithVirial_; //!< Container for force and virial
         gmx_enerdata_t  &enerd_;           //!< Structure containing energy data
