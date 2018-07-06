@@ -696,6 +696,17 @@ static bool do_em_step(const t_commrec *cr,
                           s2->lambda[efptBONDED], &dvdl_constr,
                           nullptr, nullptr, gmx::ConstraintVariable::Positions);
 
+        if (cr->nnodes > 1)
+        {
+            /* This global reduction will affect performance at high
+             * parallelization, but we can not really avoid it.
+             * But usually EM is not run at high parallelization.
+             */
+            int reductionBuffer = !validStep;
+            gmx_sumi(1, &reductionBuffer, cr);
+            validStep           = (reductionBuffer == 0);
+        }
+
         // We should move this check to the different minimizers
         if (!validStep && ir->eI != eiSteep)
         {

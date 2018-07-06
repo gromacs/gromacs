@@ -427,7 +427,7 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
             else
             {
                 write_pdbfile_indexed(gmx_fio_getfp(status->fio), title, fr->atoms,
-                                      fr->x, -1, fr->box, ' ', fr->step, nind, ind, gc, TRUE);
+                                      fr->x, -1, fr->box, ' ', fr->step, nind, ind, gc, TRUE, FALSE);
             }
             break;
         case efG96:

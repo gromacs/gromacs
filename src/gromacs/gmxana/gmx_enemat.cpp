@@ -159,7 +159,7 @@ int gmx_enemat(int argc, char *argv[])
     gmx_bool          bCont, bRef;
     gmx_bool          bCutmax, bCutmin;
     real            **eneset, *time = nullptr;
-    int              *set, i, j, k, prevk, m = 0, n, nre, nset, nenergy;
+    int              *set, i, j, prevk, k, m = 0, n, nre, nset, nenergy;
     char            **groups = nullptr;
     char              groupname[255], fn[255];
     int               ngroups;
@@ -224,8 +224,6 @@ int gmx_enemat(int argc, char *argv[])
     prevk = 0;
     for (i = 0; (i < ngroups); i++)
     {
-        fprintf(stderr, "\rgroup %d", i);
-        fflush(stderr);
         for (j = i; (j < ngroups); j++)
         {
             for (m = 0; (m < egNR); m++)
@@ -233,21 +231,19 @@ int gmx_enemat(int argc, char *argv[])
                 if (egrp_use[m])
                 {
                     sprintf(groupname, "%s:%s-%s", egrp_nm[m], groups[i], groups[j]);
-#ifdef DEBUG
-                    fprintf(stderr, "\r%-15s %5d", groupname, n);
-                    fflush(stderr);
-#endif
+                    bool foundMatch = false;
                     for (k = prevk; (k < prevk+nre); k++)
                     {
-                        if (std::strcmp(enm[k%nre].name, groupname) == 0)
+                        if (std::strcmp(enm[k % nre].name, groupname) == 0)
                         {
-                            set[n++] = k;
+                            set[n++]   = k;
+                            foundMatch = true;
                             break;
                         }
                     }
-                    if (k == prevk+nre)
+                    if (!foundMatch)
                     {
-                        fprintf(stderr, "WARNING! could not find group %s (%d,%d)"
+                        fprintf(stderr, "WARNING! could not find group %s (%d,%d) "
                                 "in energy file\n", groupname, i, j);
                     }
                     else
@@ -259,6 +255,15 @@ int gmx_enemat(int argc, char *argv[])
         }
     }
     fprintf(stderr, "\n");
+    if (n == 0)
+    {
+        // Return an error, can't do what the user asked for
+        fprintf(stderr,
+                "None of the specified energy groups were found in this .edr file.\n"
+                "Perhaps you used the wrong groups, the wrong files, or didn't use a .tpr\n"
+                "that was made from an .mdp file that specified these energy groups.\n");
+        return 1;
+    }
     nset = n;
     snew(eneset, nset+1);
     fprintf(stderr, "Will select half-matrix of energies with %d elements\n", n);

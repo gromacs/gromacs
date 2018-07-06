@@ -75,7 +75,7 @@ function (gmx_install_headers)
     if (NOT GMX_BUILD_MDRUN_ONLY)
         file(RELATIVE_PATH _dest ${PROJECT_SOURCE_DIR}/src ${CMAKE_CURRENT_LIST_DIR})
         install(FILES       ${ARGN}
-                DESTINATION "${INCL_INSTALL_DIR}/${_dest}"
+                DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${_dest}"
                 COMPONENT   development)
     endif()
     _gmx_add_files_to_property(GMX_INSTALLED_HEADERS ${ARGN})
@@ -239,8 +239,10 @@ if (HAS_NO_UNUSED)
 endif()
 set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_scanner_cpp_compiler_flags}")
 
-if(SIMD_AVX_512_CXX_SUPPORTED)
-    # Since we might be overriding -march=core-avx2, add a flag so we don't warn for this specific file
+if(SIMD_AVX_512_CXX_SUPPORTED AND NOT ("${GMX_SIMD_ACTIVE}" STREQUAL "AVX_512_KNL"))
+    # Since we might be overriding -march=core-avx2, add a flag so we don't warn for this specific file.
+    # On KNL this can cause illegal instruction because the compiler might use non KNL AVX instructions
+    # with the SIMD_AVX_512_CXX_FLAGS flags.
     set_source_files_properties(hardware/identifyavx512fmaunits.cpp PROPERTIES COMPILE_FLAGS "${SIMD_AVX_512_CXX_FLAGS} ${CXX_NO_UNUSED_OPTION_WARNING_FLAGS}")
 endif()
 
@@ -340,9 +342,9 @@ gmx_write_installed_header_list()
 if (NOT GMX_BUILD_MDRUN_ONLY OR BUILD_SHARED_LIBS)
     install(TARGETS libgromacs
             EXPORT libgromacs
-            LIBRARY DESTINATION ${LIB_INSTALL_DIR}
-            RUNTIME DESTINATION ${BIN_INSTALL_DIR}
-            ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
             COMPONENT libraries)
 endif()
 
@@ -361,7 +363,7 @@ if (INSTALL_CUDART_LIB) #can be set manual by user
                 #install also name-links (linker uses those)
                 file(GLOB CUDA_LIBS ${CUDA_LIB}*)
                 install(FILES ${CUDA_LIBS} DESTINATION
-                    ${LIB_INSTALL_DIR} COMPONENT libraries)
+                    ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
             endif()
         endforeach()
     else()
@@ -373,7 +375,7 @@ if(GMX_USE_OPENCL)
     set(OPENCL_KERNELS ${MDLIB_OPENCL_KERNELS})
 
     install(FILES ${OPENCL_KERNELS} DESTINATION
-        ${OCL_INSTALL_DIR} COMPONENT libraries)
+        ${GMX_INSTALL_OCLDIR} COMPONENT libraries)
 endif()
 
 if (BUILD_TESTING)

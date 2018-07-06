@@ -682,6 +682,28 @@ Constraints::Impl::apply(bool                  bLog,
     }
     wallcycle_stop(wcycle, ewcCONSTR);
 
+    if (v != nullptr && md.cFREEZE)
+    {
+        /* Set the velocities of frozen dimensions to zero */
+
+        // cppcheck-suppress unreadVariable
+        int gmx_unused numThreads = gmx_omp_nthreads_get(emntUpdate);
+
+#pragma omp parallel for num_threads(numThreads) schedule(static)
+        for (int i = 0; i < md.homenr; i++)
+        {
+            int freezeGroup = md.cFREEZE[i];
+
+            for (int d = 0; d < DIM; d++)
+            {
+                if (ir.opts.nFreeze[freezeGroup][d])
+                {
+                    v[i][d] = 0;
+                }
+            }
+        }
+    }
+
     return bOK;
 }
 

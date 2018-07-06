@@ -319,6 +319,7 @@ if (SPHINX_FOUND)
         release-notes/removed-features.rst
         release-notes/portability.rst
         release-notes/miscellaneous.rst
+        release-notes/2018/2018.3.rst
         release-notes/2018/2018.2.rst
         release-notes/2018/2018.1.rst
         release-notes/2018/major/highlights.rst
@@ -533,7 +534,7 @@ if (MAN_PAGE_DIR)
     # Trailing slash on directory is significant for
     # install(DIRECTORY). See CMake docs.
     install(DIRECTORY ${MAN_PAGE_DIR}/
-        DESTINATION ${MAN_INSTALL_DIR}/man1
+        DESTINATION ${CMAKE_INSTALL_MANDIR}/man1
         COMPONENT man OPTIONAL
         FILES_MATCHING PATTERN "*.1")
 endif()

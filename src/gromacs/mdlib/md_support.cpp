@@ -249,7 +249,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
         {
             xPtr = as_rvec_array(state->x.data());
         }
-        do_stopcm_grp(mdatoms->homenr, mdatoms->cVCM,
+        do_stopcm_grp(*mdatoms,
                       xPtr, as_rvec_array(state->v.data()), *vcm);
         inc_nrnb(nrnb, eNR_STOPCM, mdatoms->homenr);
     }

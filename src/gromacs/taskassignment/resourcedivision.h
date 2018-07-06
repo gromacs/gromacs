@@ -98,9 +98,10 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
                                         const gmx::MDLogger &mdlog);
 
 /*! \brief Checks we can do when we don't (yet) know the cut-off scheme */
-void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
-                               const t_commrec *cr,
-                               int              nPmeRanks);
+void check_and_update_hw_opt_1(const gmx::MDLogger &mdlog,
+                               gmx_hw_opt_t        *hw_opt,
+                               const t_commrec     *cr,
+                               int                  nPmeRanks);
 
 /*! \brief Checks we can do when we know the cut-off scheme */
 void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,

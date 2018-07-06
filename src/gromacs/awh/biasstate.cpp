@@ -1066,7 +1066,7 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
     bool detectedCovering = false;
     if (inInitialStage())
     {
-        detectedCovering = (params.isCheckStep(points_.size(), step) &&
+        detectedCovering = (params.isCheckCoveringStep(step) &&
                             isSamplingRegionCovered(params, dimParams, grid,
                                                     commRecord, multiSimComm));
     }
@@ -1584,7 +1584,7 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
     if (targetDistributionIsZero)
     {
         std::string mesg = gmx::formatString("The target weights given in column %d in %s are all 0",
-                                             filename.c_str(), columnIndexTarget);
+                                             columnIndexTarget, filename.c_str());
         GMX_THROW(InvalidInputError(mesg));
     }
 
