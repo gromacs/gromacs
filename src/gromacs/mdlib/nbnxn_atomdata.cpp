@@ -1369,7 +1369,7 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nb
                     if (sync_th < nth) /* otherwise nothing to sync index[1] will be >=nout */
                     {
                         /* wait on the thread which computed input data in previous step */
-                        while (tMPI_Atomic_get((volatile tMPI_Atomic_t*)&(nbat->syncStep[sync_th])) < group_size/2)
+                        while (tMPI_Atomic_get(static_cast<volatile tMPI_Atomic_t*>(&(nbat->syncStep[sync_th]))) < group_size/2)
                         {
                             gmx_pause();
                         }

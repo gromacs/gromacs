@@ -276,7 +276,6 @@ set(IGNORED_CLANG_ALL_WARNINGS
     "-Wno-missing-field-initializers"
     "-Wno-sign-conversion"
     "-Wno-disabled-macro-expansion"
-    "-Wno-cast-align"
     "-Wno-undefined-reinterpret-cast"
     "-Wno-covered-switch-default"
     "-Wno-reserved-id-macro"
@@ -302,7 +301,6 @@ set(IGNORED_CLANG_ALL_WARNINGS
     "-Wno-used-but-marked-unused"
     "-Wno-padded"
     "-Wno-float-equal"
-    "-Wno-old-style-cast"
     "-Wno-conversion"
     "-Wno-double-promotion")
 string(REPLACE " " ";" IGNORED_CLANG_ALL_WARNINGS "${IGNORED_CLANG_ALL_WARNINGS}")
@@ -327,7 +325,7 @@ if (GMX_CLANG_TIDY)
        "-readability-inconsistent-declaration-parameter-name"
        "-readability-implicit-bool-conversion" #TODO: Remove gmx_bool
        "modernize-use-nullptr" "modernize-use-emplace"
-#       "google-readability-casting"
+       "google-readability-casting"
        )
    string(REPLACE ";" "," CLANG_TIDY_CHECKS "${CLANG_TIDY_CHECKS}")
    set_target_properties(libgromacs PROPERTIES CXX_CLANG_TIDY
