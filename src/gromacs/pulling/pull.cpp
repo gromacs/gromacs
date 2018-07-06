@@ -410,7 +410,7 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
         }
         if (nsets > 1)
         {
-            xvgr_legend(fp, nsets, (const char**)setname, oenv);
+            xvgr_legend(fp, nsets, setname, oenv);
         }
         for (int c = 0; c < nsets; c++)
         {

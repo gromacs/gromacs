@@ -478,28 +478,13 @@ gmx_ana_index_check_range(gmx_ana_index_t *g, int natoms)
  * Set operations
  ********************************************************************/
 
-/** Helper function for gmx_ana_index_sort(). */
-static int
-cmp_atomid(const void *a, const void *b)
-{
-    if (*(int *)a < *(int *)b)
-    {
-        return -1;
-    }
-    if (*(int *)a > *(int *)b)
-    {
-        return 1;
-    }
-    return 0;
-}
-
 /*!
  * \param[in,out] g  Index group to be sorted.
  */
 void
 gmx_ana_index_sort(gmx_ana_index_t *g)
 {
-    std::qsort(g->index, g->isize, sizeof(*g->index), cmp_atomid);
+    std::sort(g->index, g->index+g->isize);
 }
 
 void

@@ -276,7 +276,7 @@ static int get_bt(char* header)
 
 static void clear_t_restp(t_restp *rrtp)
 {
-    memset((void *)rrtp, 0, sizeof(t_restp));
+    memset(rrtp, 0, sizeof(t_restp));
 }
 
 /* print all the ebtsNR type numbers */
