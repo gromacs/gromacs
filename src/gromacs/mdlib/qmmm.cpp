@@ -123,12 +123,10 @@ typedef struct {
     int      shift;
 } t_j_particle;
 
-static int struct_comp(const void *a, const void *b)
+static bool struct_comp(const t_j_particle &a, const t_j_particle &b)
 {
-
-    return (((t_j_particle *)a)->j)-(((t_j_particle *)b)->j);
-
-} /* struct_comp */
+    return a.j < b.j;
+}
 
 static real call_QMroutine(const t_commrec gmx_unused *cr, const t_forcerec gmx_unused *fr, t_QMrec gmx_unused *qm,
                            t_MMrec gmx_unused *mm, rvec gmx_unused f[], rvec gmx_unused fshift[])
@@ -700,15 +698,11 @@ void update_QMMMrec(const t_commrec  *cr,
 
 
 
-            qsort(qm_i_particles, QMMMlist->nri,
-                  static_cast<size_t>(sizeof(qm_i_particles[0])),
-                  struct_comp);
+            std::sort(qm_i_particles, qm_i_particles+QMMMlist->nri, struct_comp);
             /* The mm_j_particles argument to qsort is not allowed to be NULL */
             if (mm_nr > 0)
             {
-                qsort(mm_j_particles, mm_nr,
-                      static_cast<size_t>(sizeof(mm_j_particles[0])),
-                      struct_comp);
+                std::sort(mm_j_particles, mm_j_particles+mm_nr, struct_comp);
             }
             /* remove multiples in the QM shift array, since in init_QMMM() we
              * went through the atom numbers from 0 to md.nr, the order sorted
