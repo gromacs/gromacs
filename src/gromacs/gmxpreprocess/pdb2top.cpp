@@ -860,7 +860,11 @@ static int pcompar(const void *a, const void *b)
     }
     if (d == 0)
     {
-        return strlen(pb->s) - strlen(pa->s);
+        d = strlen(pb->s) - strlen(pa->s);
+    }
+    if (d == 0)
+    {
+        return strcmp(pa->s, pb->s);
     }
     else
     {
