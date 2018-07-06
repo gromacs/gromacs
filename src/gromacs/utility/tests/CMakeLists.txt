@@ -38,6 +38,7 @@ gmx_add_unit_test(UtilityUnitTests utility-test
                   bitmask32.cpp bitmask64.cpp bitmask128.cpp
                   keyvaluetreeserializer.cpp
                   keyvaluetreetransform.cpp
+                  gmxregex.cpp
                   logger.cpp
                   mutex.cpp
                   path.cpp

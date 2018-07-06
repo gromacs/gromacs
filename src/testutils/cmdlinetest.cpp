@@ -78,7 +78,8 @@ namespace test
 class CommandLine::Impl
 {
     public:
-        Impl(const char *const cmdline[], size_t count);
+        Impl(const ArrayRef<const char *const> &cmdline);
+        Impl(const ArrayRef<const std::string> &cmdline);
         ~Impl();
 
         std::vector<char *>     args_;
@@ -86,20 +87,38 @@ class CommandLine::Impl
         int                     argc_;
 };
 
-CommandLine::Impl::Impl(const char *const cmdline[], size_t count)
+CommandLine::Impl::Impl(const ArrayRef<const char *const> &cmdline)
 {
-    args_.reserve(count);
-    argv_.reserve(count + 1);
-    argc_ = static_cast<int>(count);
-    for (size_t i = 0; i < count; ++i)
+    args_.reserve(cmdline.size());
+    argv_.reserve(cmdline.size() + 1);
+    argc_ = static_cast<int>(cmdline.size());
+    for (const auto &arg : cmdline)
     {
-        char *arg = strdup(cmdline[i]);
-        if (arg == nullptr)
+        char *argCopy = strdup(arg);
+        if (argCopy == nullptr)
         {
             throw std::bad_alloc();
         }
-        args_.push_back(arg);
-        argv_.push_back(arg);
+        args_.push_back(argCopy);
+        argv_.push_back(argCopy);
+    }
+    argv_.push_back(nullptr);
+}
+
+CommandLine::Impl::Impl(const ArrayRef<const std::string> &cmdline)
+{
+    args_.reserve(cmdline.size());
+    argv_.reserve(cmdline.size() + 1);
+    argc_ = static_cast<int>(cmdline.size());
+    for (const auto &arg : cmdline)
+    {
+        char *argCopy = strdup(arg.c_str());
+        if (argCopy == nullptr)
+        {
+            throw std::bad_alloc();
+        }
+        args_.push_back(argCopy);
+        argv_.push_back(argCopy);
     }
     argv_.push_back(nullptr);
 }
@@ -117,17 +136,22 @@ CommandLine::Impl::~Impl()
  */
 
 CommandLine::CommandLine()
-    : impl_(new Impl(nullptr, 0))
+    : impl_(new Impl(ArrayRef<const char *>{}))
 {
 }
 
 CommandLine::CommandLine(const ArrayRef<const char *const> &cmdline)
-    : impl_(new Impl(cmdline.data(), cmdline.size()))
+    : impl_(new Impl(cmdline))
+{
+}
+
+CommandLine::CommandLine(const ArrayRef<const std::string> &cmdline)
+    : impl_(new Impl(cmdline))
 {
 }
 
 CommandLine::CommandLine(const CommandLine &other)
-    : impl_(new Impl(other.argv(), other.argc()))
+    : impl_(new Impl(arrayRefFromArray(other.argv(), other.argc())))
 {
 }
 
@@ -137,7 +161,7 @@ CommandLine::~CommandLine()
 
 void CommandLine::initFromArray(const ArrayRef<const char *const> &cmdline)
 {
-    impl_.reset(new Impl(cmdline.data(), cmdline.size()));
+    impl_.reset(new Impl(cmdline));
 }
 
 void CommandLine::append(const char *arg)
@@ -408,6 +432,12 @@ void CommandLineTestBase::setInputFile(
         const char *option, const char *filename)
 {
     impl_->cmdline_.addOption(option, TestFileManager::getInputFilePath(filename));
+}
+
+void CommandLineTestBase::setInputFile(
+        const char *option, const std::string &filename)
+{
+    setInputFile(option, filename.c_str());
 }
 
 void CommandLineTestBase::setInputFileContents(
