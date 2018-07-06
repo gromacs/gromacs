@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,6 +35,9 @@
 /*! \libinternal \file
  * \brief
  * Declares simple wrapper for regular expression functionality.
+ *
+ * This is needed while we still support gcc 4.8, which did not include
+ * std::regex_match in its C++11 support.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
