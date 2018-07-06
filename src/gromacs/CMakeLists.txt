@@ -280,7 +280,7 @@ set(IGNORED_CLANG_ALL_WARNINGS
     "-Wno-shadow-field-in-constructor -Wno-unreachable-code-break -Wno-conditional-uninitialized"
     "-Wno-missing-variable-declarations -Wno-float-conversion -Wno-format-nonliteral -Wno-shadow"
     "-Wno-cast-qual -Wno-shorten-64-to-32 -Wno-documentation -Wno-used-but-marked-unused -Wno-padded"
-    "-Wno-float-equal -Wno-old-style-cast -Wno-conversion -Wno-double-promotion")
+    "-Wno-float-equal -Wno-conversion -Wno-double-promotion")
 string(REPLACE " " ";" IGNORED_CLANG_ALL_WARNINGS "${IGNORED_CLANG_ALL_WARNINGS}")
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^6\.0")
    target_compile_options(libgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Weverything ${IGNORED_CLANG_ALL_WARNINGS}>)
@@ -303,7 +303,7 @@ if (GMX_CLANG_TIDY)
        "-readability-inconsistent-declaration-parameter-name"
        "-readability-implicit-bool-conversion" #TODO: Remove gmx_bool
        "modernize-use-nullptr" "modernize-use-emplace"
-#       "google-readability-casting"
+       "google-readability-casting"
        )
    string(REPLACE ";" "," CLANG_TIDY_CHECKS "${CLANG_TIDY_CHECKS}")
    set_target_properties(libgromacs PROPERTIES CXX_CLANG_TIDY

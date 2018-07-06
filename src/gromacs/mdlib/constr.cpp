@@ -1091,9 +1091,9 @@ Constraints::atom2constraints_moltype() const
     return impl_->at2con_mt;
 }
 
-const int **Constraints::atom2settle_moltype() const
+int *const* Constraints::atom2settle_moltype() const
 {
-    return (const int **)impl_->at2settle_mt;
+    return impl_->at2settle_mt;
 }
 
 

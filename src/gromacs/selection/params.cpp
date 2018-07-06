@@ -238,59 +238,19 @@ place_child(const SelectionTreeElementPointer &root,
 }
 
 /*! \brief
- * Comparison function for sorting integer ranges.
+ * Comparison function for sorting ranges.
  *
- * \param[in] a Pointer to the first range.
- * \param[in] b Pointer to the second range.
- * \returns   -1, 0, or 1 depending on the relative order of \p a and \p b.
- *
- * The ranges are primarily sorted based on their starting point, and
- * secondarily based on length (longer ranges come first).
- */
-static int
-cmp_int_range(const void *a, const void *b)
-{
-    if (((int *)a)[0] < ((int *)b)[0])
-    {
-        return -1;
-    }
-    if (((int *)a)[0] > ((int *)b)[0])
-    {
-        return 1;
-    }
-    if (((int *)a)[1] > ((int *)b)[1])
-    {
-        return -1;
-    }
-    return 0;
-}
-
-/*! \brief
- * Comparison function for sorting real ranges.
- *
- * \param[in] a Pointer to the first range.
- * \param[in] b Pointer to the second range.
- * \returns   -1, 0, or 1 depending on the relative order of \p a and \p b.
+ * \param[in] a First range.
+ * \param[in] b Second range.
+ * \returns   return true if a < b
  *
  * The ranges are primarily sorted based on their starting point, and
  * secondarily based on length (longer ranges come first).
  */
-static int
-cmp_real_range(const void *a, const void *b)
+template<typename T>
+static bool cmp_range(const std::array<T, 2> &a, const std::array<T, 2> &b)
 {
-    if (((real *)a)[0] < ((real *)b)[0])
-    {
-        return -1;
-    }
-    if (((real *)a)[0] > ((real *)b)[0])
-    {
-        return 1;
-    }
-    if (((real *)a)[1] > ((real *)b)[1])
-    {
-        return -1;
-    }
-    return 0;
+    return a[0] < b[0] || (a[0] == b[0] && a[1] > b[1]);
 }
 
 /*! \brief
@@ -374,7 +334,8 @@ parse_values_range(const SelectionParserValueList &values,
     /* Sort the ranges and merge consequent ones */
     if (param->val.type == INT_VALUE)
     {
-        qsort(idata, n, 2*sizeof(int), &cmp_int_range);
+        auto range_data = reinterpret_cast<std::array<int, 2>*const>(idata);
+        sort(range_data, range_data+n, cmp_range<int>);
         for (i = j = 2; i < 2*n; i += 2)
         {
             if (idata[j-1]+1 >= idata[i])
@@ -394,7 +355,8 @@ parse_values_range(const SelectionParserValueList &values,
     }
     else
     {
-        qsort(rdata, n, 2*sizeof(real), &cmp_real_range);
+        auto range_data = reinterpret_cast<std::array<real, 2>*const>(rdata);
+        sort(range_data, range_data+n, cmp_range<real>);
         for (i = j = 2; i < 2*n; i += 2)
         {
             if (rdata[j-1] >= rdata[i])

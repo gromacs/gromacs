@@ -944,7 +944,7 @@ static void print_localdata(const t_complex* lin, const char* txt, int s, fft5d_
             {
                 for (l = 0; l < ll; l++)
                 {
-                    fprintf(debug, "%f ", ((real*)lin)[(z*xs[2]+y*xs[1])*2+(x*xs[0])*ll+l]);
+                    fprintf(debug, "%f ", reinterpret_cast<const real*>(lin)[(z*xs[2]+y*xs[1])*2+(x*xs[0])*ll+l]);
                 }
                 fprintf(debug, ",");
             }
@@ -1399,18 +1399,18 @@ void fft5d_compare_data(const t_complex* lin, const t_complex* in, fft5d_plan pl
                 for (l = 0; l < ll; l++)   /*loop over real/complex parts*/
                 {
                     real a, b;
-                    a = ((real*)lin)[(z*xs[2]+y*xs[1])*2+x*xs[0]*ll+l];
+                    a = reinterpret_cast<const real*>(lin)[(z*xs[2]+y*xs[1])*2+x*xs[0]*ll+l];
                     if (normalize)
                     {
                         a /= plan->rC[0]*plan->rC[1]*plan->rC[2];
                     }
                     if (!bothLocal)
                     {
-                        b = ((real*)in)[((z+xc[2])*NG[0]*NG[1]+(y+xc[1])*NG[0])*2+(x+xc[0])*ll+l];
+                        b = reinterpret_cast<const real*>(in)[((z+xc[2])*NG[0]*NG[1]+(y+xc[1])*NG[0])*2+(x+xc[0])*ll+l];
                     }
                     else
                     {
-                        b = ((real*)in)[(z*xs[2]+y*xs[1])*2+x*xs[0]*ll+l];
+                        b = reinterpret_cast<const real*>(in)[(z*xs[2]+y*xs[1])*2+x*xs[0]*ll+l];
                     }
                     if (plan->flags&FFT5D_DEBUG)
                     {
