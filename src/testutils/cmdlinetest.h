@@ -113,6 +113,8 @@ class CommandLine
          * CommandLine object directly from a C array.
          */
         CommandLine(const ArrayRef<const char *const> &cmdline);
+        //! \copydoc CommandLine(const ArrayRef<const char *const> &)
+        CommandLine(const ArrayRef<const std::string> &cmdline);
         //! Creates a deep copy of a command-line object.
         CommandLine(const CommandLine &other);
         ~CommandLine();
