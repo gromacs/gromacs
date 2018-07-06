@@ -1548,26 +1548,6 @@ static void print_histograms(const char *fnhist, t_UmbrellaWindow * window, int 
     sfree(fn);
 }
 
-//! Used for qsort to sort random numbers
-static int func_wham_is_larger(const void *a, const void *b)
-{
-    double *aa, *bb;
-    aa = (double*)a;
-    bb = (double*)b;
-    if (*aa < *bb)
-    {
-        return -1;
-    }
-    else if (*aa > *bb)
-    {
-        return 1;
-    }
-    else
-    {
-        return 0;
-    }
-}
-
 //! Make random weights for histograms for the Bayesian bootstrap of complete histograms)
 static void setRandomBsWeights(t_UmbrellaWindow *synthwin, int nAllPull, t_UmbrellaOptions *opt)
 {
@@ -1582,7 +1562,7 @@ static void setRandomBsWeights(t_UmbrellaWindow *synthwin, int nAllPull, t_Umbre
     {
         r[i] = dist(opt->rng);
     }
-    qsort((void *)r, nAllPull-1, sizeof(double), &func_wham_is_larger);
+    std::sort(r, r+nAllPull-1);
     r[nAllPull-1] = 1.0*nAllPull;
 
     synthwin[0].bsWeight[0] = r[0];

@@ -215,7 +215,7 @@ class Allocator : public AllocationPolicy
          */
         template<class ... Args>
         void
-        construct(pointer p, Args && ... args) { ::new((void *)p)T(std::forward<Args>(args) ...); }
+        construct(pointer p, Args && ... args) { ::new(p)T(std::forward<Args>(args) ...); }
 
         /*! \brief Call the destructor of object without releasing memory
          *

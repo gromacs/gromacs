@@ -377,15 +377,15 @@ print_group_info(FILE *fp, const char *name,
     }
     else if (sel.cdata->flags & SEL_CDATA_MINMAXALLOC)
     {
-        fprintf(fp, "(%d atoms, %p)", g->isize, (void*)g);
+        fprintf(fp, "(%d atoms, %p)", g->isize, static_cast<void*>(g));
     }
     else if (sel.v.type == GROUP_VALUE && g == sel.v.u.g)
     {
-        fprintf(fp, "(static, %p)", (void*)g);
+        fprintf(fp, "(static, %p)", static_cast<void*>(g));
     }
     else
     {
-        fprintf(fp, "%p", (void*)g);
+        fprintf(fp, "%p", static_cast<void*>(g));
     }
 }
 

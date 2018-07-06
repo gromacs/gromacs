@@ -210,7 +210,7 @@ static void check_viol(FILE *log,
 
         snew(fshift, SHIFTS);
         interaction_function[F_DISRES].ifunc(n, &forceatoms[i], forceparams,
-                                             (const rvec*)x, f, fshift,
+                                             x, f, fshift,
                                              pbc, g, lam, &dvdl, nullptr, fcd, nullptr);
         sfree(fshift);
         viol = fcd->disres.sumviol;
@@ -261,27 +261,6 @@ typedef struct {
     gmx_bool bCore;
     real     up1, r, rT3, rT6, viol, violT3, violT6;
 } t_dr_stats;
-
-static int drs_comp(const void *a, const void *b)
-{
-    t_dr_stats *da, *db;
-
-    da = (t_dr_stats *)a;
-    db = (t_dr_stats *)b;
-
-    if (da->viol > db->viol)
-    {
-        return -1;
-    }
-    else if (da->viol < db->viol)
-    {
-        return 1;
-    }
-    else
-    {
-        return 0;
-    }
-}
 
 static void dump_dump(FILE *log, int ndr, t_dr_stats drs[])
 {
@@ -418,7 +397,8 @@ static void dump_stats(FILE *log, int nsteps, int ndr, t_ilist *disres,
     dump_viol(log, ndr, drs, FALSE);
 
     fprintf(log, "+++ Sorted by linear averaged violations: +++\n");
-    qsort(drs, ndr, sizeof(drs[0]), drs_comp);
+    std::sort(drs, drs+ndr, [](const t_dr_stats &a, const t_dr_stats &b)
+              {return a.viol > b.viol; });            //Reverse sort
     dump_viol(log, ndr, drs, TRUE);
 
     dump_dump(log, ndr, drs);
@@ -794,7 +774,7 @@ int gmx_disre(int argc, char *argv[])
             snew(leg[i], 12);
             sprintf(leg[i], "index %d", index[i]);
         }
-        xvgr_legend(xvg, isize, (const char**)leg, oenv);
+        xvgr_legend(xvg, isize, leg, oenv);
     }
     else
     {

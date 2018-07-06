@@ -2492,11 +2492,6 @@ void b2_to_b(t_block2 *b2, t_blocka *b)
     b->index[i] = nra;
 }
 
-static int icomp(const void *v1, const void *v2)
-{
-    return (*((int *) v1))-(*((int *) v2));
-}
-
 void merge_excl(t_blocka *excl, t_block2 *b2, warninp_t wi)
 {
     int     i, k;
@@ -2525,7 +2520,7 @@ void merge_excl(t_blocka *excl, t_block2 *b2, warninp_t wi)
         if (b2->nra[i] > 0)
         {
             /* remove double entries */
-            qsort(b2->a[i], static_cast<size_t>(b2->nra[i]), static_cast<size_t>(sizeof(b2->a[i][0])), icomp);
+            std::sort(b2->a[i], b2->a[i]+b2->nra[i]);
             k = 1;
             for (j = 1; (j < b2->nra[i]); j++)
             {
