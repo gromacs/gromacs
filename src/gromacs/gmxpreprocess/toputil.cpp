@@ -504,12 +504,25 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
                 fprintf(out, " %6s %10g %10g",
                         tpnmB, at->atom[i].qB, at->atom[i].mB);
             }
+            // Accumulate the total charge to help troubleshoot issues.
             qtot += (double)at->atom[i].q;
-            if (fabs(qtot) < 4*GMX_REAL_EPS)
+            // Round it to zero if it is close to zero, because
+            // printing -9.34e-5 confuses users.
+            if (fabs(qtot) < 0.001)
             {
                 qtot = 0;
             }
-            fprintf(out, "   ; qtot %.4g\n", qtot);
+            // Write the total charge for the last atom of the system
+            // and/or residue, because generally that's where it is
+            // expected to be an integer.
+            if (i == at->nr-1 || ri != at->atom[i+1].resind)
+            {
+                fprintf(out, "   ; qtot %.4g\n", qtot);
+            }
+            else
+            {
+                fputs("\n", out);
+            }
         }
     }
     fprintf(out, "\n");
