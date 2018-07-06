@@ -154,14 +154,14 @@ void printCopyright(gmx::TextWriter *writer)
         "of the License, or (at your option) any later version."
     };
 
-#define NCONTRIBUTORS (int)asize(Contributors)
-#define NCR (int)asize(CopyrightText)
+#define NCONTRIBUTORS static_cast<int>(asize(Contributors))
+#define NCR static_cast<int>(asize(CopyrightText))
 
 // FAH has an exception permission from LGPL to allow digital signatures in Gromacs.
 #ifdef GMX_FAHCORE
 #define NLICENSE 0
 #else
-#define NLICENSE (int)asize(LicenseText)
+#define NLICENSE static_cast<int>(asize(LicenseText))
 #endif
 
     // TODO a centering behaviour of TextWriter could be useful here

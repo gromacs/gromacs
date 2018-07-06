@@ -75,25 +75,25 @@ inline static void bitmask_clear(gmx_bitmask_t* m)
 /*! \brief Set bit at position b to 1. */
 inline static void bitmask_set_bit(gmx_bitmask_t* m, int b)
 {
-    *m |= ((gmx_bitmask_t)1 << b);
+    *m |= gmx_bitmask_t(1) << b;
 }
 
 /*! \brief Initialize all bits: bit b to 1, others to 0 */
 inline static void bitmask_init_bit(gmx_bitmask_t* m, int b)
 {
-    *m = ((gmx_bitmask_t)1 << b);
+    *m = gmx_bitmask_t(1) << b;
 }
 
 /*! \brief Initialize all bits: all bits below b to 1, others to 0 */
 inline static void bitmask_init_low_bits(gmx_bitmask_t* m, int b)
 {
-    *m = ((gmx_bitmask_t)1 << b) - 1;
+    *m = (gmx_bitmask_t(1) << b) - 1;
 }
 
 /*! \brief Test if bit b is set */
 inline static bool bitmask_is_set(gmx_bitmask_t m, int b)
 {
-    return (m & ((gmx_bitmask_t)1 << b)) != 0;
+    return (m & (gmx_bitmask_t(1) << b)) != 0;
 }
 
 /*! \brief Test if both bitmasks have no common bits enabled */
