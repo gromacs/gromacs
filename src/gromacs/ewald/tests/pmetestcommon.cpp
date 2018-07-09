@@ -584,7 +584,8 @@ SplineParamsDimVector pmeGetSplineData(const gmx_pme_t *pme, CodePath mode,
     {
         case CodePath::CUDA:
             pme_gpu_transform_spline_atom_data(pme->gpu, atc, type, dimIndex, PmeLayoutTransform::GpuToHost);
-        // fallthrough
+            result = arrayRefFromArray(sourceBuffer, dimSize);
+            break;
 
         case CodePath::CPU:
             result = arrayRefFromArray(sourceBuffer, dimSize);

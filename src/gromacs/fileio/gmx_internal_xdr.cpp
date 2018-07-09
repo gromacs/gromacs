@@ -436,7 +436,8 @@ bool_t xdr_string (XDR *xdrs, char ** cpp, unsigned int maxsize)
             {
                 return TRUE; /* already free */
             }
-            [[fallthrough]];
+            size = std::strlen (sp);
+            break;
 
         case XDR_ENCODE:
             if (sp == nullptr)
@@ -479,7 +480,7 @@ bool_t xdr_string (XDR *xdrs, char ** cpp, unsigned int maxsize)
                 return FALSE;
             }
             sp[size] = 0;
-            [[fallthrough]];
+            return xdr_opaque (xdrs, sp, size);
 
         case XDR_ENCODE:
             return xdr_opaque (xdrs, sp, size);
