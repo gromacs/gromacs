@@ -32,7 +32,7 @@ gcc-4.9 gpu cuda-7.0 openmp release-with-assert
 
 # Test non-default GMX_PREFER_STATIC_LIBS behavior
 # TODO enable this
-# msvc-2015 double no-threadmpi no-prefer-static-libs release-with-assert
+# msvc-2017 double no-threadmpi no-prefer-static-libs release-with-assert
 
 # Test behaviour when dlopen is not present
 # TODO enable this
@@ -61,7 +61,7 @@ gcc-5 gpu nranks=4 gpu_id=1 cuda-8.0 no-hwloc release-with-assert
 # Test oldest supported icc
 # Test icc on Windows
 # Test icc with SIMD in mixed precision in release mode
-icc-16 msvc-2015 fftpack simd=avx2_256 release
+icc-16 msvc-2017 fftpack simd=avx2_256 release
 
 # Test ARM HPC compier toolchain with gcc-7
 gcc-7 armhpc-18.2 openmp simd=ARM_NEON_ASIMD release
