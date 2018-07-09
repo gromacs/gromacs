@@ -117,7 +117,7 @@ compiler versions are
 * GNU (gcc) 4.8.1
 * Intel (icc) 15.0
 * LLVM (clang) 3.3
-* Microsoft (MSVC) 2015
+* Microsoft (MSVC) 2017
 
 Other compilers may work (Cray, Pathscale, older clang) but do
 not offer competitive performance. We recommend against PGI because
@@ -151,7 +151,7 @@ particular libstdc++ library, use:
   folder should contain ``include/c++``.
 
 On Windows with the Intel compiler, the MSVC standard library is used,
-and at least MSVC 2015 is required. Load the enviroment variables with
+and at least MSVC 2017 is required. Load the enviroment variables with
 vcvarsall.bat.
 
 To build with any compiler and clang's libcxx standard library, use
@@ -186,7 +186,7 @@ GPU support
 |Gromacs| has excellent support for NVIDIA GPUs supported via CUDA.
 On Linux, NVIDIA CUDA_ toolkit with minimum version |REQUIRED_CUDA_VERSION|
 is required, and the latest version is strongly encouraged. Using
-Microsoft MSVC compiler requires version 8.0. NVIDIA GPUs with at
+Microsoft MSVC compiler requires version 9.0. NVIDIA GPUs with at
 least NVIDIA compute capability |REQUIRED_CUDA_COMPUTE_CAPABILITY| are
 required. You are strongly recommended to
 get the latest CUDA version and driver that supports your hardware, but
@@ -1221,7 +1221,7 @@ is currently tested on x86 with a number of gcc versions ranging from 4.8.1
 through 7, versions 16 and 18 of the Intel compiler, and Clang
 versions 3.4 through 5. For this, we use a variety of GNU/Linux
 flavors and versions as well as recent versions of Windows. Under
-Windows, we test both MSVC 2015 and version 16 of the Intel compiler.
+Windows, we test both MSVC 2017 and version 16 of the Intel compiler.
 For details, you can
 have a look at the `continuous integration server used by GROMACS`_,
 which runs Jenkins_.

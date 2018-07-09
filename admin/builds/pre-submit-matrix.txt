@@ -62,7 +62,7 @@ clang-6 no-openmp asan cmake-3.11.4 tidy
 
 # Test oldest supported MSVC on Windows
 # Test newest supported MSVC on Windows
-msvc-2015 openmp release-with-assert
+msvc-2017 openmp release-with-assert
 
 # Test newest icc at the time of release
 # Test icc without SIMD in double precision in release mode
