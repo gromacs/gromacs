@@ -80,8 +80,8 @@ typedef struct {
     real v;
 } t_toppop;
 
-t_toppop *top  = nullptr;
-int       ntop = 0;
+static t_toppop *top  = nullptr;
+static int       ntop = 0;
 
 typedef struct {
     int   nv, nframes;

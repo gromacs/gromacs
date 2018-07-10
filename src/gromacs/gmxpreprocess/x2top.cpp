@@ -66,18 +66,6 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-char atp[7] = "HCNOSX";
-#define NATP (asize(atp)-1)
-
-double blen[NATP][NATP] = {
-    {  0.00,  0.108, 0.105, 0.10, 0.10, 0.10 },
-    {  0.108, 0.15,  0.14,  0.14, 0.16, 0.14 },
-    {  0.105, 0.14,  0.14,  0.14, 0.16, 0.14 },
-    {  0.10,  0.14,  0.14,  0.14, 0.17, 0.14 },
-    {  0.10,  0.16,  0.16,  0.17, 0.20, 0.17 },
-    {  0.10,  0.14,  0.14,  0.14, 0.17, 0.17 }
-};
-
 #define MARGIN_FAC 1.1
 
 static gmx_bool is_bond(int nnm, t_nm2type nmt[], char *ai, char *aj, real blen)

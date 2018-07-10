@@ -128,7 +128,7 @@ enum epmelb {
 };
 
 /*! \brief Descriptive strings matching ::epmelb */
-const char *pmelblim_str[epmelblimNR] =
+static const char *pmelblim_str[epmelblimNR] =
 { "no", "box size", "domain decompostion", "PME grid restriction", "maximum allowed grid scaling" };
 
 struct pme_load_balancing_t {

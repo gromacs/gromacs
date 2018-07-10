@@ -61,8 +61,6 @@
 
 #if HAVE_LMFIT
 
-extern t_lmcurve lmcurves[effnNR+1];
-
 typedef struct {
     const double* t;
     const double* y;

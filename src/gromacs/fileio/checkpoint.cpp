@@ -120,7 +120,7 @@ enum {
     eeksEKIN_N, eeksEKINH, eeksDEKINDL, eeksMVCOS, eeksEKINF, eeksEKINO, eeksEKINSCALEF, eeksEKINSCALEH, eeksVSCALE, eeksEKINTOTAL, eeksNR
 };
 
-const char *eeks_names[eeksNR] =
+static const char *eeks_names[eeksNR] =
 {
     "Ekin_n", "Ekinh", "dEkindlambda", "mv_cos",
     "Ekinf", "Ekinh_old", "EkinScaleF_NHC", "EkinScaleH_NHC", "Vscale_NHC", "Ekin_Total"
@@ -137,7 +137,7 @@ enum {
     eenhNR
 };
 
-const char *eenh_names[eenhNR] =
+static const char *eenh_names[eenhNR] =
 {
     "energy_n", "energy_aver", "energy_sum", "energy_nsum",
     "energy_sum_sim", "energy_nsum_sim",
@@ -154,7 +154,7 @@ enum {
     edfhACCUMP, edfhACCUMM, edfhACCUMP2, edfhACCUMM2, edfhTIJ, edfhTIJEMP, edfhNR
 };
 /* free energy history variable names  */
-const char *edfh_names[edfhNR] =
+static const char *edfh_names[edfhNR] =
 {
     "bEquilibrated", "N_at_state", "Wang-Landau Histogram", "Wang-Landau Delta", "Weights", "Free Energies", "minvar", "variance",
     "accumulated_plus", "accumulated_minus", "accumulated_plus_2",  "accumulated_minus_2", "Tij", "Tij_empirical"
@@ -174,7 +174,7 @@ enum {
     eawhhNR
 };
 
-const char *eawhh_names[eawhhNR] =
+static const char *eawhh_names[eawhhNR] =
 {
     "awh_in_initial",
     "awh_equilibrateHistogram",
@@ -380,13 +380,10 @@ static inline unsigned int sizeOfXdrType(int xdrType)
     {
         case xdr_datatype_int:
             return sizeof(int);
-            break;
         case xdr_datatype_float:
             return sizeof(float);
-            break;
         case xdr_datatype_double:
             return sizeof(double);
-            break;
         default: GMX_RELEASE_ASSERT(false, "XDR data type not implemented");
     }
 
@@ -400,13 +397,10 @@ static inline xdrproc_t xdrProc(int xdrType)
     {
         case xdr_datatype_int:
             return reinterpret_cast<xdrproc_t>(xdr_int);
-            break;
         case xdr_datatype_float:
             return reinterpret_cast<xdrproc_t>(xdr_float);
-            break;
         case xdr_datatype_double:
             return reinterpret_cast<xdrproc_t>(xdr_double);
-            break;
         default: GMX_RELEASE_ASSERT(false, "XDR data type not implemented");
     }
 

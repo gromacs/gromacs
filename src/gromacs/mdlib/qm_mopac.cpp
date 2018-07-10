@@ -222,8 +222,4 @@ real call_mopac_SH(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
     free(qmcrd);
     return (QMener);
 } /* call_mopac_SH */
-
-#else
-int
-    gmx_qmmm_mopac_empty;
 #endif

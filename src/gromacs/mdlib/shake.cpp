@@ -853,7 +853,6 @@ constrain_shake(FILE              *log,
             break;
         default:
             gmx_fatal(FARGS, "Internal error, SHAKE called for constraining something else than coordinates");
-            break;
     }
     return bOK;
 }

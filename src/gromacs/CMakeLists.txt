@@ -275,6 +275,8 @@ set(IGNORED_CLANG_ALL_WARNINGS
     "-Wno-c++17-extensions"   #Allowed in attributes (compilers are required to ignore unknown attributes)
     "-Wno-documentation-unknown-command" #Custom commands are used
     "-Wno-covered-switch-default" #GCC gives maybe-uninitialized without default label and checks for illegal enum values.
+    "-Wno-switch-enum" # default statement for enum is OK
+
     #Following ones are undecided/TODO
     "-Wno-disabled-macro-expansion"
     "-Wno-cast-align"
@@ -286,16 +288,10 @@ set(IGNORED_CLANG_ALL_WARNINGS
     "-Wno-unused-macros"
     "-Wno-weak-vtables"
     "-Wno-extra-semi"
-    "-Wno-switch-enum"
-    "-Wno-shadow-field-in-constructor"
-    "-Wno-unreachable-code-break"
     "-Wno-conditional-uninitialized"
-    "-Wno-missing-variable-declarations"
-    "-Wno-float-conversion"
     "-Wno-format-nonliteral"
     "-Wno-shadow"
     "-Wno-cast-qual"
-    "-Wno-shorten-64-to-32"
     "-Wno-documentation"
     "-Wno-used-but-marked-unused"
     "-Wno-padded"

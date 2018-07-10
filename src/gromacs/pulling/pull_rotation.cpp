@@ -4050,7 +4050,6 @@ extern void do_rotation(
                 break;
             default:
                 gmx_fatal(FARGS, "No such rotation potential.");
-                break;
         }
     }
 

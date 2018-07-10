@@ -347,10 +347,7 @@ void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog)
  * \param[in]    top_global                             Global topology for the error message
  * \param[in]    top_local                              Local topology for the error message
  * \param[in]    state                                  Global state for the error message
- * \param[inout] shouldCheckNumberOfBondedInteractions  Whether we should do the check.
- *
- * \return Nothing, except that shouldCheckNumberOfBondedInteractions
- * is always set to false after exit.
+ * \param[in,out] shouldCheckNumberOfBondedInteractions Whether we should do the check. Always set to false.
  */
 void checkNumberOfBondedInteractions(FILE                 *fplog,
                                      t_commrec            *cr,

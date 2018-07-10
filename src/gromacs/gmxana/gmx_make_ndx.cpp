@@ -61,7 +61,7 @@
 #define NAME_LEN 1024
 static const int NOTSET = -92637;
 
-gmx_bool         bCase = FALSE;
+static gmx_bool  bCase = FALSE;
 
 static int or_groups(int nr1, const int *at1, int nr2, const int *at2,
                      int *nr, int *at)
