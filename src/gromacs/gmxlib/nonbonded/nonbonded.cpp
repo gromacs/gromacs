@@ -344,7 +344,6 @@ void do_nonbonded(const t_forcerec  *fr,
     if (fr->bAllvsAll)
     {
         gmx_incons("All-vs-all kernels have not been implemented in version 4.6");
-        return;
     }
 
     if (eNL >= 0)

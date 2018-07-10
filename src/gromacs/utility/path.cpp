@@ -331,10 +331,9 @@ std::string Path::concatenateBeforeExtension(const std::string &input, const std
 std::string Path::normalize(const std::string &path)
 {
     std::string result(path);
-    if (DIR_SEPARATOR != '/')
-    {
-        std::replace(result.begin(), result.end(), '/', DIR_SEPARATOR);
-    }
+#if DIR_SEPARATOR != '/'
+    std::replace(result.begin(), result.end(), '/', DIR_SEPARATOR);
+#endif
     return result;
 }
 

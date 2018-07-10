@@ -111,9 +111,7 @@ call_gaussian(const t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fsh
 #include "gromacs/mdlib/qm_orca.h"
 #endif
 
-
-
-
+#if GMX_QMMM
 /* this struct and these comparison functions are needed for creating
  * a QMMM input for the QM routines from the QMMM neighbor list.
  */
@@ -136,9 +134,6 @@ static real call_QMroutine(const t_commrec gmx_unused *cr, const t_forcerec gmx_
     /* makes a call to the requested QM routine (qm->QMmethod)
      * Note that f is actually the gradient, i.e. -f
      */
-    real
-        QMener = 0.0;
-
     /* do a semi-empiprical calculation */
 
     if (qm->QMmethod < eQMmethodRHF && !(mm->nrMMatoms))
@@ -146,11 +141,11 @@ static real call_QMroutine(const t_commrec gmx_unused *cr, const t_forcerec gmx_
 #if GMX_QMMM_MOPAC
         if (qm->bSH)
         {
-            QMener = call_mopac_SH(qm, mm, f, fshift);
+            return call_mopac_SH(qm, mm, f, fshift);
         }
         else
         {
-            QMener = call_mopac(qm, mm, f, fshift);
+            return call_mopac(qm, mm, f, fshift);
         }
 #else
         gmx_fatal(FARGS, "Semi-empirical QM only supported with Mopac.");
@@ -162,7 +157,7 @@ static real call_QMroutine(const t_commrec gmx_unused *cr, const t_forcerec gmx_
         if (qm->bSH && qm->QMmethod == eQMmethodCASSCF)
         {
 #if GMX_QMMM_GAUSSIAN
-            QMener = call_gaussian_SH(fr, qm, mm, f, fshift);
+            return call_gaussian_SH(fr, qm, mm, f, fshift);
 #else
             gmx_fatal(FARGS, "Ab-initio Surface-hopping only supported with Gaussian.");
 #endif
@@ -170,22 +165,18 @@ static real call_QMroutine(const t_commrec gmx_unused *cr, const t_forcerec gmx_
         else
         {
 #if GMX_QMMM_GAMESS
-            QMener = call_gamess(fr, qm, mm, f, fshift);
+            return call_gamess(fr, qm, mm, f, fshift);
 #elif GMX_QMMM_GAUSSIAN
-            QMener = call_gaussian(fr, qm, mm, f, fshift);
+            return call_gaussian(fr, qm, mm, f, fshift);
 #elif GMX_QMMM_ORCA
-            QMener = call_orca(fr, qm, mm, f, fshift);
+            return call_orca(fr, qm, mm, f, fshift);
 #else
             gmx_fatal(FARGS, "Ab-initio calculation only supported with Gamess, Gaussian or ORCA.");
 #endif
         }
     }
-    return (QMener);
 }
 
-#if !(GMX_QMMM_MOPAC || GMX_QMMM_GAMESS || GMX_QMMM_GAUSSIAN || GMX_QMMM_ORCA)
-[[ noreturn ]]
-#endif
 static void init_QMroutine(const t_commrec gmx_unused *cr, t_QMrec gmx_unused *qm, t_MMrec gmx_unused *mm)
 {
     /* makes a call to the requested QM routine (qm->QMmethod)
@@ -856,7 +847,6 @@ void update_QMMMrec(const t_commrec  *cr,
     }
 } /* update_QMMM_rec */
 
-
 real calculate_QMMM(const t_commrec  *cr,
                     rvec              f[],
                     const t_forcerec *fr)
@@ -980,5 +970,32 @@ real calculate_QMMM(const t_commrec  *cr,
     }
     return(QMener);
 } /* calculate_QMMM */
+#else
+real calculate_QMMM(const t_commrec  * /*unused*/,
+                    rvec             * /*unused*/,
+                    const t_forcerec * /*unused*/)
+{
+    gmx_incons("Compiled without QMMM");
+}
+t_QMMMrec *mk_QMMMrec(void)
+{
+    return nullptr;
+}
+void init_QMMMrec(const t_commrec  * /*unused*/,
+                  gmx_mtop_t       * /*unused*/,
+                  t_inputrec       * /*unused*/,
+                  const t_forcerec * /*unused*/)
+{
+    gmx_incons("Compiled without QMMM");
+}
+void update_QMMMrec(const t_commrec  * /*unused*/,
+                    const t_forcerec * /*unused*/,
+                    const rvec       * /*unused*/,
+                    const t_mdatoms  * /*unused*/,
+                    const matrix       /*unused*/)
+{
+    gmx_incons("Compiled without QMMM");
+}
+#endif
 
 /* end of QMMM core routines */

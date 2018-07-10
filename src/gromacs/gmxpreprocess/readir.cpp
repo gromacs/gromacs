@@ -2569,9 +2569,6 @@ static int search_QMstring(const char *s, int ng, const char *gn[])
     }
 
     gmx_fatal(FARGS, "this QM method or basisset (%s) is not implemented\n!", s);
-
-    return -1;
-
 } /* search_QMstring */
 
 /* We would like gn to be const as well, but C doesn't allow this */
@@ -2596,8 +2593,6 @@ int search_string(const char *s, int ng, char *gn[])
               "names, in which case you must supply an index file to the '-n' option\n"
               "of grompp.",
               s);
-
-    return -1;
 }
 
 static gmx_bool do_numbering(int natoms, gmx_groups_t *groups, int ng, char *ptrs[],

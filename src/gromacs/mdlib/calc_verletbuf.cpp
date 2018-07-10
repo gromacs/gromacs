@@ -778,7 +778,6 @@ static real surface_frac(int cluster_size, real particle_distance, real rlist)
             break;
         default:
             gmx_incons("surface_frac called with unsupported cluster_size");
-            area_rel = 1.0;
     }
 
     return area_rel/cluster_size;

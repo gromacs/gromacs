@@ -86,7 +86,6 @@ static void periodic_dist(int ePBC,
     {
         gmx_fatal(FARGS, "pbc = %s is not supported by g_mindist",
                   epbc_names[ePBC]);
-        nsz = 0; /* Keep compilers quiet */
     }
 
     nshift = 0;

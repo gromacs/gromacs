@@ -1698,8 +1698,6 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
         case nbnxnkNR:
         default:
             gmx_fatal(FARGS, "Illegal kernel type selected");
-            returnvalue = nullptr;
-            break;
     }
     return returnvalue;
 };

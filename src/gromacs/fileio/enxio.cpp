@@ -1147,8 +1147,6 @@ static real find_energy(const char *name, int nre, gmx_enxnm_t *enm,
     }
 
     gmx_fatal(FARGS, "Could not find energy term named '%s'. Either the energy file is from a different run or this state variable is not stored in the energy file. In the latter case (and if you did not modify the T/P-coupling setup), you can read the state in mdrun instead, by passing in a checkpoint file.", name);
-
-    return 0;
 }
 
 

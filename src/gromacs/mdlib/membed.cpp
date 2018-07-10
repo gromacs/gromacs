@@ -136,8 +136,6 @@ static int get_molblock(int mol_id, const std::vector<gmx_molblock_t> &mblock)
     }
 
     gmx_fatal(FARGS, "mol_id %d larger than total number of molecules %d.\n", mol_id, nmol);
-
-    return -1;
 }
 
 /* Get a list of all the molecule types that are present in a group of atoms. *
@@ -1000,8 +998,6 @@ static int search_string(const char *s, int ng, char *gn[])
               "names, in which case you must supply an index file to the '-n' option\n"
               "of grompp.",
               s);
-
-    return -1;
 }
 
 gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_t *mtop,

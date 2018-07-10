@@ -37,8 +37,12 @@
 #ifndef GMX_MDLIB_QMMM_H
 #define GMX_MDLIB_QMMM_H
 
+#include "config.h"
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/tgroup.h"
+
+#define GMX_QMMM (GMX_QMMM_MOPAC || GMX_QMMM_GAMESS || GMX_QMMM_GAUSSIAN || GMX_QMMM_ORCA)
 
 struct gmx_localtop_t;
 struct gmx_mtop_t;
@@ -109,6 +113,9 @@ void atomic_number(int nr, char ***atomtype, int *nucnum);
 t_QMMMrec *mk_QMMMrec(void);
 /* allocates memory for QMMMrec */
 
+#if !GMX_QMMM
+[[noreturn]]
+#endif
 void init_QMMMrec(const t_commrec  *cr,
                   gmx_mtop_t       *mtop,
                   t_inputrec       *ir,
@@ -120,7 +127,9 @@ void init_QMMMrec(const t_commrec  *cr,
  * resp. inputrec->QMmult the nelecs and multiplicity are determined
  * and md->cQMMM gives numbers of the MM and QM atoms
  */
-
+#if !GMX_QMMM
+[[noreturn]]
+#endif
 void update_QMMMrec(const t_commrec  *cr,
                     const t_forcerec *fr,
                     const rvec       *x,
@@ -132,7 +141,6 @@ void update_QMMMrec(const t_commrec  *cr,
  * routine should be called at every step, since it updates the MM
  * elements of the t_QMMMrec struct.
  */
-
 real calculate_QMMM(const t_commrec  *cr,
                     rvec              f[],
                     const t_forcerec *fr);

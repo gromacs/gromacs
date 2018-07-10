@@ -108,8 +108,6 @@ static const char *modeToVerb(char mode)
             break;
         default:
             gmx_fatal(FARGS, "Invalid file opening mode %c", mode);
-            p = "";
-            break;
     }
     return p;
 }
@@ -1266,7 +1264,6 @@ convert_array_to_real_array(void       *from,
             break;
         default:
             gmx_incons("Illegal datatype when converting values to a real array!");
-            return;
     }
 }
 

@@ -139,13 +139,12 @@ choose_ff_impl(const char *ffsel,
     const int nff = static_cast<int>(ffdirs.size());
 
     /* Replace with unix path separators */
-    if (DIR_SEPARATOR != '/')
+#if DIR_SEPARATOR != '/'
+    for (int i = 0; i < nff; ++i)
     {
-        for (int i = 0; i < nff; ++i)
-        {
-            std::replace(ffdirs[i].dir.begin(), ffdirs[i].dir.end(), DIR_SEPARATOR, '/');
-        }
+        std::replace(ffdirs[i].dir.begin(), ffdirs[i].dir.end(), DIR_SEPARATOR, '/');
     }
+#endif
 
     /* Store the force field names in ffs */
     std::vector<std::string> ffs;

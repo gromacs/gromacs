@@ -95,8 +95,6 @@ int opt2parg_int(const char *option, int nparg, t_pargs pa[])
     }
 
     gmx_fatal(FARGS, "No integer option %s in pargs", option);
-
-    return 0;
 }
 
 gmx_bool opt2parg_bool(const char *option, int nparg, t_pargs pa[])
@@ -129,8 +127,6 @@ real opt2parg_real(const char *option, int nparg, t_pargs pa[])
     }
 
     gmx_fatal(FARGS, "No real option %s in pargs", option);
-
-    return 0.0;
 }
 
 const char *opt2parg_str(const char *option, int nparg, t_pargs pa[])
@@ -146,8 +142,6 @@ const char *opt2parg_str(const char *option, int nparg, t_pargs pa[])
     }
 
     gmx_fatal(FARGS, "No string option %s in pargs", option);
-
-    return nullptr;
 }
 
 gmx_bool opt2parg_bSet(const char *option, int nparg, const t_pargs *pa)
@@ -180,8 +174,6 @@ const char *opt2parg_enum(const char *option, int nparg, t_pargs pa[])
     }
 
     gmx_fatal(FARGS, "No such option %s in pargs", option);
-
-    return nullptr;
 }
 
 /********************************************************************

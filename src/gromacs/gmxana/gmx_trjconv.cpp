@@ -1054,7 +1054,7 @@ int gmx_trjconv(int argc, char *argv[])
             /* Check for number of files disabled, as FOPEN_MAX is not the correct
              * number to check for. In my linux box it is only 16.
              */
-            if (0 && (clust->clust->nr > FOPEN_MAX-4))
+            if (/* DISABLES CODE */ (0) && (clust->clust->nr > FOPEN_MAX-4))
             {
                 gmx_fatal(FARGS, "Can not open enough (%d) files to write all the"
                           " trajectories.\ntry splitting the index file in %d parts.\n"
