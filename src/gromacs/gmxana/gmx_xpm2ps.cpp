@@ -187,13 +187,11 @@ static void get_params(const char *mpin, const char *mpout, t_psrec *psr)
     done_warning(wi, FARGS);
 }
 
-t_rgb black = { 0, 0, 0 };
-t_rgb white = { 1, 1, 1 };
-t_rgb red   = { 1, 0, 0 };
-t_rgb blue  = { 0, 0, 1 };
+static t_rgb black = { 0, 0, 0 };
+static t_rgb white = { 1, 1, 1 };
 #define BLACK (&black)
 /* this must correspond to *colors[] in get_params */
-t_rgb *linecolors[] = { nullptr, &black, &white, nullptr };
+static t_rgb *linecolors[] = { nullptr, &black, &white, nullptr };
 
 static gmx_bool diff_maps(int nmap1, t_mapping *map1, int nmap2, t_mapping *map2)
 {

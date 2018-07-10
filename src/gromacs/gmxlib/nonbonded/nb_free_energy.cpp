@@ -595,7 +595,6 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 
                                 default:
                                     gmx_incons("Invalid icoul in free energy kernel");
-                                    break;
                             }
 
                             if (ic->coulomb_modifier == eintmodPOTSWITCH)
@@ -647,8 +646,6 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 
                                 case GMX_NBKERNEL_VDW_BUCKINGHAM:
                                     gmx_fatal(FARGS, "Buckingham free energy not supported.");
-                                    break;
-
                                 case GMX_NBKERNEL_VDW_CUBICSPLINETABLE:
                                     /* Table LJ */
                                     nnn = n1V+4;
@@ -717,7 +714,6 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 
                                 default:
                                     gmx_incons("Invalid ivdw in free energy kernel");
-                                    break;
                             }
 
                             if (ic->vdw_modifier == eintmodPOTSWITCH)

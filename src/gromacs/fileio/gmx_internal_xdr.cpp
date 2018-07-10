@@ -798,7 +798,4 @@ xdrstdio_create (XDR *xdrs, FILE *file, enum xdr_op op)
     xdrs->x_handy        = 0;
     xdrs->x_base         = nullptr;
 }
-
-#else
-int gmx_internal_xdr_empty;
 #endif /* GMX_INTERNAL_XDR */

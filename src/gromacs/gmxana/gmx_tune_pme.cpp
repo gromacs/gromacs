@@ -1280,7 +1280,6 @@ static void make_npme_list(
                 break;
             default:
                 gmx_fatal(FARGS, "Unknown option for eNPME in make_npme_list");
-                break;
         }
         if (gmx_greatest_common_divisor(npp, npme) >= min_factor)
         {

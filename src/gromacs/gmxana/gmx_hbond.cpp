@@ -78,7 +78,7 @@
 #define max_hx 7
 typedef int t_hx[max_hx];
 #define NRHXTYPES max_hx
-const char *hxtypenames[NRHXTYPES] =
+static const char *hxtypenames[NRHXTYPES] =
 {"n-n", "n-n+1", "n-n+2", "n-n+3", "n-n+4", "n-n+5", "n-n>6"};
 #define MAXHH 4
 

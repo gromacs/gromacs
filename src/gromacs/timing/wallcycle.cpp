@@ -96,7 +96,7 @@ struct gmx_wallcycle
     MPI_Comm          mpi_comm_mygroup;
 #endif
     wallcc_t         *wcsc;
-} gmx_wallcycle_t_t;
+};
 
 /* Each name should not exceed 19 printing characters
    (ie. terminating null can be twentieth) */

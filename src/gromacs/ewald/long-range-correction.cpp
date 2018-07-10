@@ -186,7 +186,6 @@ void ewald_LRcorrection(int numAtomsLocal,
             break;
         default:
             gmx_incons("Unsupported Ewald geometry");
-            break;
     }
     if (debug)
     {

@@ -160,7 +160,7 @@ class IForceProvider
          * Computes forces.
          *
          * \param[in]    forceProviderInput    struct that collects input data for the force providers
-         * \param[inout] forceProviderOutput   struct that collects output data of the force providers
+         * \param[in,out] forceProviderOutput   struct that collects output data of the force providers
          */
         virtual void calculateForces(const ForceProviderInput &forceProviderInput,
                                      ForceProviderOutput      *forceProviderOutput) = 0;

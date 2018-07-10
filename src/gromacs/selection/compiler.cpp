@@ -2081,7 +2081,6 @@ evaluate_boolean_minmax_grps(const SelectionTreeElementPointer &sel,
 
         case BOOL_XOR: /* Should not be reached */
             GMX_THROW(gmx::NotImplementedError("xor expressions not implemented"));
-            break;
     }
 }
 

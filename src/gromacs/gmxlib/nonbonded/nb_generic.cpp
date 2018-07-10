@@ -314,7 +314,6 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
 
                     default:
                         gmx_fatal(FARGS, "Death & horror! No generic coulomb interaction for ielec=%d.\n", ielec);
-                        break;
                 }
                 if (ic->coulomb_modifier == eintmodPOTSWITCH)
                 {
@@ -440,7 +439,6 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
 
                     default:
                         gmx_fatal(FARGS, "Death & horror! No generic VdW interaction for ivdw=%d.\n", ivdw);
-                        break;
                 }
                 if (ic->vdw_modifier == eintmodPOTSWITCH)
                 {

@@ -72,7 +72,7 @@
 enum {
     ereTEMP, ereLAMBDA, ereENDSINGLE, ereTL, ereNR
 };
-const char *erename[ereNR] = { "temperature", "lambda", "end_single_marker", "temperature and lambda"};
+static const char *erename[ereNR] = { "temperature", "lambda", "end_single_marker", "temperature and lambda"};
 /* end_single_marker merely notes the end of single variable replica exchange. All types higher than
    it are multiple replica exchange methods */
 /* Eventually, should add 'pressure', 'temperature and pressure', 'lambda_and_pressure', 'temperature_lambda_pressure'?;

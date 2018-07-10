@@ -226,7 +226,6 @@ static void read_vsite_database(const char *ddbname,
                 {
                     case -1:
                         gmx_fatal(FARGS, "First entry in vsite database must be a directive.\n");
-                        break;
                     case DDB_CH3:
                     case DDB_NH3:
                     case DDB_NH2:
