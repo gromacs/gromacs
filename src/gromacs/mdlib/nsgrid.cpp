@@ -61,7 +61,7 @@
  *         Grid Routines
  ***********************************/
 
-const char *range_warn =
+static const char *range_warn =
     "Explanation: During neighborsearching, we assign each particle to a grid\n"
     "based on its coordinates. If your system contains collisions or parameter\n"
     "errors that give particles very high velocities you might end up with some\n"

@@ -394,7 +394,6 @@ static void set_lj_parameter_data(nbnxn_atomdata_t *nbat, gmx_bool bSIMD)
             break;
         default:
             gmx_incons("Unknown combination rule");
-            break;
     }
 }
 

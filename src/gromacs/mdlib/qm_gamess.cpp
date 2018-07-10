@@ -278,8 +278,4 @@ real call_gamess(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
     QMener = energy*HARTREE2KJ*AVOGADRO;
     return(QMener);
 }
-
-#else
-int
-    gmx_qmmm_gamess_empty;
 #endif

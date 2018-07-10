@@ -111,7 +111,6 @@ void write_sto_conf_indexed(const char *outfile, const char *title,
             break;
         case efTPR:
             gmx_fatal(FARGS, "Sorry, can not write a topology to %s", outfile);
-            break;
         default:
             gmx_incons("Not supported in write_sto_conf_indexed");
     }
@@ -162,7 +161,6 @@ void write_sto_conf(const char *outfile, const char *title, const t_atoms *atoms
             break;
         case efTPR:
             gmx_fatal(FARGS, "Sorry, can not write a topology to %s", outfile);
-            break;
         default:
             gmx_incons("Not supported in write_sto_conf");
     }

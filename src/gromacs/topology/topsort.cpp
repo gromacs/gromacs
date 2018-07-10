@@ -134,11 +134,9 @@ static gmx_bool ip_pert(int ftype, const t_iparams *ip)
         case F_CBTDIHS:
             gmx_fatal(FARGS, "Function type %s does not support currentely free energy calculations",
                       interaction_function[ftype].longname);
-            break;
         default:
             gmx_fatal(FARGS, "Function type %s not implemented in ip_pert",
                       interaction_function[ftype].longname);
-            break;
     }
 
     return bPert;

@@ -69,7 +69,7 @@
 
 #include "thermochemistry.h"
 
-const char *proj_unit;
+static const char *proj_unit;
 
 static real tick_spacing(real range, int minticks)
 {

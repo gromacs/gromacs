@@ -43,6 +43,8 @@
 #ifndef GMX_CORRELATION_FUNCTIONS_GMX_LMCURVE_H
 #define GMX_CORRELATION_FUNCTIONS_GMX_LMCURVE_H
 
+#include "gromacs/correlationfunctions/expfit.h"
+
 /*! \brief function type for passing to fitting routine */
 typedef double (*t_lmcurve)(double x, const double *a);
 
@@ -60,5 +62,7 @@ bool lmfit_exp(int          nfit,
                bool         bVerbose,
                int          eFitFn,
                int          nfix);
+
+extern t_lmcurve lmcurves[effnNR+1];
 
 #endif

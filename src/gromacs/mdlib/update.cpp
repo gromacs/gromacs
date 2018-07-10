@@ -1924,7 +1924,6 @@ void update_coords(gmx_int64_t                    step,
                 }
                 default:
                     gmx_fatal(FARGS, "Don't know how to update coordinates");
-                    break;
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;

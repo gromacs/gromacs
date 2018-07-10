@@ -269,7 +269,6 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
                             break;
                         case F_VSITEN:
                             gmx_incons("Invalid vsite type");
-                            break;
                         default:
                             /* Use the mass of the lightest constructing atom.
                              * This is an approximation.

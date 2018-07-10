@@ -224,7 +224,7 @@ typedef enum IMDType_t
 /*! \internal
  * \brief Names of the IMDType for error messages.
  */
-const char *eIMDType_names[IMD_NR + 1] = {
+static const char *eIMDType_names[IMD_NR + 1] = {
     "IMD_DISCONNECT",
     "IMD_ENERGIES",
     "IMD_FCOORDS",

@@ -651,7 +651,6 @@ static void detect_flux_per_channel(
             default:
                 gmx_fatal(FARGS, "%s Unknown channel history entry for ion type '%s'\n",
                           SwS, g->molname);
-                break;
         }
 
         /* This ion has moved to the _other_ compartment ... */

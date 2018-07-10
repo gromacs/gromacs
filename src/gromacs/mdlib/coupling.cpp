@@ -487,7 +487,6 @@ void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
             default:
                 gmx_fatal(FARGS, "Parrinello-Rahman pressure coupling type %s "
                           "not supported yet\n", EPCOUPLTYPETYPE(ir->epct));
-                break;
         }
 
         real maxchange = 0;
@@ -628,7 +627,6 @@ void berendsen_pcoupl(FILE *fplog, gmx_int64_t step,
         default:
             gmx_fatal(FARGS, "Berendsen pressure coupling type %s not supported yet\n",
                       EPCOUPLTYPETYPE(ir->epct));
-            break;
     }
     /* To fullfill the orientation restrictions on triclinic boxes
      * we will set mu_yx, mu_zx and mu_zy to 0 and correct

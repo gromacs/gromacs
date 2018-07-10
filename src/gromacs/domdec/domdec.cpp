@@ -121,7 +121,7 @@
 
 #define DD_NLOAD_MAX 9
 
-const char *edlbs_names[edlbsNR] = { "off", "auto", "locked", "on", "on" };
+static const char *edlbs_names[edlbsNR] = { "off", "auto", "locked", "on", "on" };
 
 /* The size per charge group of the cggl_flag buffer in gmx_domdec_comm_t */
 #define DD_CGIBS 2
@@ -3425,16 +3425,13 @@ static int determineInitialDlbState(FILE *fplog, t_commrec *cr,
                 break;
             case edlbsOffCanTurnOn:
                 return forceDlbOffOrBail(dlbState, reasonStr, cr, fplog);
-                break;
             case edlbsOnCanTurnOff:
                 GMX_RELEASE_ASSERT(false, "edlbsOffCanTurnOff is not a valid initial state");
                 break;
             case edlbsOnUser:
                 return forceDlbOffOrBail(dlbState, reasonStr + " In load balanced runs binary reproducibility cannot be ensured.", cr, fplog);
-                break;
             default:
                 gmx_fatal(FARGS, "Death horror: undefined case (%d) for load balancing choice", dlbState);
-                break;
         }
     }
 

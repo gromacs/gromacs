@@ -1510,7 +1510,6 @@ static void read_edvec(FILE *in, int nr, t_eigvec *tvec, gmx_bool bReadRefproj, 
                         break;
                     default:
                         gmx_fatal(FARGS, "Expected 2 - 4 (not %d) values for flooding vec: <nr> <spring const> <refproj> <refproj-slope>\n", nscan);
-                        break;
                 }
                 tvec->refproj[i]      = refproj_dum;
                 tvec->refproj0[i]     = refproj_dum;

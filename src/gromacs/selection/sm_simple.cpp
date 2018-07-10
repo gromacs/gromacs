@@ -51,6 +51,7 @@
 #include "gromacs/utility/gmxassert.h"
 
 #include "selmethod.h"
+#include "selmethod-impl.h"
 
 /** Evaluates the \p all selection keyword. */
 static void
