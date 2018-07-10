@@ -126,7 +126,6 @@ int tcouple_min_integration_steps(int etc)
             break;
         default:
             gmx_incons("Unknown etc value");
-            n = 0;
     }
 
     return n;
@@ -193,7 +192,6 @@ int pcouple_min_integration_steps(int epc)
             break;
         default:
             gmx_incons("Unknown epc value");
-            n = 0;
     }
 
     return n;

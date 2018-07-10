@@ -253,9 +253,6 @@ static void normalizeBlock(AwhEnergyBlock *block, const Bias &bias)
                 point *= recipNorm;
             }
             break;
-        default:
-            GMX_RELEASE_ASSERT(false, "Unknown AWH normalization type");
-            break;
     }
 }
 
@@ -348,9 +345,6 @@ BiasWriter::transferPointDataToWriter(AwhOutputEntryType          outputType,
                 block_[b].data()[pointIndex] = forceCorrelation.tensors()[pointIndex].getTimeIntegral(n, forceCorrelation.dtSample);
                 b++;
             }
-            break;
-        default:
-            GMX_RELEASE_ASSERT(false, "Unknown AWH output variable");
             break;
     }
 }

@@ -495,7 +495,7 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
              * infrequently we don't want to issue lots of warnings before we
              * have written anything to the log.
              */
-            if (0)
+            if (/* DISABLES CODE */ (false))
             {
                 fprintf(stderr, "\nTrying to get md5sum: EOF: %s\n", fio->fn);
             }
@@ -746,7 +746,6 @@ int gmx_fio_seek(t_fileio* fio, gmx_off_t fpos)
     else
     {
         gmx_file(fio->fn);
-        rc = -1;
     }
     gmx_fio_unlock(fio);
     return rc;

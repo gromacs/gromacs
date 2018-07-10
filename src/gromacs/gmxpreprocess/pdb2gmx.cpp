@@ -1218,9 +1218,6 @@ modify_chain_numbers(t_atoms *       pdba,
                     }
                 }
                 break;
-            default:
-                gmx_fatal(FARGS, "Internal inconsistency - this shouldn't happen...");
-                break;
         }
         old_prev_chainid  = old_this_chainid;
         old_prev_chainnum = old_this_chainnum;

@@ -239,8 +239,6 @@ static int guess_npme(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir,
         gmx_fatal(FARGS, "Could not find an appropriate number of separate PME ranks. i.e. >= %5f*#ranks (%d) and <= #ranks/2 (%d) and reasonable performance wise (grid_x=%d, grid_y=%d).\n"
                   "Use the -npme option of mdrun or change the number of ranks or the PME grid dimensions, see the manual for details.",
                   ratio, (int)(0.95*ratio*nrank_tot + 0.5), nrank_tot/2, ir->nkx, ir->nky);
-        /* Keep the compiler happy */
-        npme = 0;
     }
     else
     {

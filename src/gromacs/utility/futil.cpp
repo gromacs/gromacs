@@ -547,7 +547,6 @@ FILE *low_libopen(const char *file, gmx_bool bFatal)
         return fp;
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    return nullptr;
 }
 
 char *gmxlibfn(const char *file)

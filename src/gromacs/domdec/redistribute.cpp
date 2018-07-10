@@ -686,7 +686,6 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
             break;
         default:
             gmx_incons("unimplemented");
-            home_pos_cg = 0;
     }
 
     int vec         = 0;

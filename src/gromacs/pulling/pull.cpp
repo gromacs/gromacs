@@ -1168,9 +1168,6 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
                     break;
                 default:
                     gmx_incons("Invalid enumeration value for eGeom");
-                    /* Keep static analyzer happy */
-                    clear_dvec(dr0);
-                    clear_dvec(dr1);
             }
 
             /* DEBUG */

@@ -417,8 +417,6 @@ extern int return_atom_type (const char *name, gmx_structurefactors_t *gsf)
 
         return fndx;
     }
-
-    return 0;
 }
 
 extern int gmx_structurefactors_get_sf(gmx_structurefactors_t *gsf, int elem, real a[4], real b[4], real *c)

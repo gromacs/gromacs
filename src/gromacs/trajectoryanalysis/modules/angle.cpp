@@ -441,8 +441,6 @@ Angle::optionsFinished(TrajectoryAnalysisSettings * /* settings */)
         case Group1Type_Dihedral: natoms1_ = 4; break;
         case Group1Type_Vector:   natoms1_ = 2; break;
         case Group1Type_Plane:    natoms1_ = 3; break;
-        default:
-            GMX_THROW(InternalError("invalid -g1 value"));
     }
     switch (g2type_)
     {
@@ -452,8 +450,6 @@ Angle::optionsFinished(TrajectoryAnalysisSettings * /* settings */)
         case Group2Type_TimeZero:     natoms2_ = 0; break;
         case Group2Type_Z:            natoms2_ = 0; break;
         case Group2Type_SphereNormal: natoms2_ = 1; break;
-        default:
-            GMX_THROW(InternalError("invalid -g2 value"));
     }
     if (natoms2_ == 0 && sel2info_->isSet())
     {
@@ -828,8 +824,6 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     }
                     angle = gmx_angle(v1, v2);
                     break;
-                default:
-                    GMX_THROW(InternalError("invalid -g1 value"));
             }
             dh.setPoint(n, angle * RAD2DEG, bPresent);
         }

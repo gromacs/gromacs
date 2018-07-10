@@ -221,8 +221,6 @@ static void enxsubblock_alloc(t_enxsubblock *sb)
                 sb->sval_alloc = sb->nr;
             }
             break;
-        default:
-            gmx_incons("Unknown block type: this file is corrupted or from the future");
     }
 }
 
@@ -1099,8 +1097,6 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr)
                 case xdr_datatype_string:
                     bOK1 = gmx_fio_ndo_string(ef->fio, sub->sval, sub->nr);
                     break;
-                default:
-                    gmx_incons("Reading unknown block data type: this file is corrupted or from the future");
             }
             bOK = bOK && bOK1;
         }
@@ -1147,8 +1143,6 @@ static real find_energy(const char *name, int nre, gmx_enxnm_t *enm,
     }
 
     gmx_fatal(FARGS, "Could not find energy term named '%s'. Either the energy file is from a different run or this state variable is not stored in the energy file. In the latter case (and if you did not modify the T/P-coupling setup), you can read the state in mdrun instead, by passing in a checkpoint file.", name);
-
-    return 0;
 }
 
 
@@ -1484,8 +1478,6 @@ static void cmp_eblocks(t_enxframe *fr1, t_enxframe *fr2, real ftol, real abstol
                                             s1->sval[k], s2->sval[k]);
                                 }
                                 break;
-                            default:
-                                gmx_incons("Unknown data type!!");
                         }
                     }
                 }

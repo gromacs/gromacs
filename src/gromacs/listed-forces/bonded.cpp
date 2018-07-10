@@ -2418,8 +2418,6 @@ real unimplemented(int gmx_unused nbonds,
                    int gmx_unused *global_atom_index)
 {
     gmx_impl("*** you are using a not implemented function");
-
-    return 0.0; /* To make the compiler happy */
 }
 
 real restrangles(int nbonds,

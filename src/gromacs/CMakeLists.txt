@@ -275,17 +275,12 @@ set(IGNORED_CLANG_ALL_WARNINGS
     "-Wno-c++17-extensions"   #Allowed in attributes (compilers are required to ignore unknown attributes)
     "-Wno-documentation-unknown-command" #Custom commands are used
     #Following ones are undecided/TODO
-    "-Wno-missing-field-initializers"
-    "-Wno-sign-conversion"
     "-Wno-disabled-macro-expansion"
     "-Wno-cast-align"
     "-Wno-undefined-reinterpret-cast"
-    "-Wno-covered-switch-default"
     "-Wno-reserved-id-macro"
     "-Wno-global-constructors"
-    "-Wno-unreachable-code"
     "-Wno-comma"
-    "-Wno-unreachable-code-return"
     "-Wno-exit-time-destructors"
     "-Wno-unused-macros"
     "-Wno-weak-vtables"

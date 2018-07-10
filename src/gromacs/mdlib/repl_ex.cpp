@@ -158,7 +158,7 @@ init_replica_exchange(FILE                            *fplog,
                       const ReplicaExchangeParameters &replExParams)
 {
     real                pres;
-    int                 i, j, k;
+    int                 i, j;
     struct gmx_repl_ex *re;
     gmx_bool            bTemp;
     gmx_bool            bLambda = FALSE;
@@ -307,10 +307,6 @@ init_replica_exchange(FILE                            *fplog,
                               erename[re->type],
                               re->q[re->type][i], re->q[re->type][j],
                               erename[re->type]);
-
-                    k          = re->ind[i];
-                    re->ind[i] = re->ind[j];
-                    re->ind[j] = k;
                 }
                 else if (re->q[re->type][re->ind[j]] == re->q[re->type][re->ind[i]])
                 {

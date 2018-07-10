@@ -571,8 +571,6 @@ Constraints::Impl::apply(bool                  bLog,
             case ConstraintVariable::Deriv_FlexCon:
                 /* Nothing to do, since the are no flexible constraints in settles */
                 break;
-            default:
-                gmx_incons("Unknown constraint quantity for settle");
         }
 
         if (vir != nullptr)

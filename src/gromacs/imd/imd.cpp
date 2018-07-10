@@ -1278,7 +1278,6 @@ static void imd_check_integrator_parallel(t_inputrec *ir, const t_commrec *cr)
         if (((ir->eI) == eiSteep) || ((ir->eI) == eiCG) || ((ir->eI) == eiLBFGS) || ((ir->eI) == eiNM))
         {
             gmx_fatal(FARGS, "%s Energy minimization via steep, CG, lbfgs and nm in parallel is currently not supported by IMD.\n", IMDstr);
-            return;
         }
     }
 }

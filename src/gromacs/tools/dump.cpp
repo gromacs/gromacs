@@ -541,8 +541,6 @@ static void list_ene(const char *fn)
                                 printf("%14d %80s\n", j, sb->sval[j]);
                             }
                             break;
-                        default:
-                            gmx_incons("Unknown subblock type");
                     }
                 }
             }

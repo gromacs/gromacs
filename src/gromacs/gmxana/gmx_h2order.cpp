@@ -109,8 +109,6 @@ static void calc_h2order(const char *fn, const int index[], int ngx, rvec **slDi
             break;
         default:
             gmx_fatal(FARGS, "No valid value for -axis-. Exiting.\n");
-            /* make compiler happy */
-            normal[0] = 1; normal[1] = 0; normal[2] = 0;
     }
 
     clear_rvec(dipole);

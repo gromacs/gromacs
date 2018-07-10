@@ -134,15 +134,11 @@ static int mpi_hostname_hash()
 
 int gmx_physicalnode_id_hash(void)
 {
-    int hash;
+    int hash = 0;
 
     if (GMX_MPI)
     {
         hash = mpi_hostname_hash();
-    }
-    else
-    {
-        hash = 0;
     }
 
     if (debug)

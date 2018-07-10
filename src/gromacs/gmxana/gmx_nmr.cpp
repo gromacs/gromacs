@@ -99,7 +99,6 @@ static real blk_value(t_enxblock *blk, int sub, int index)
     {
         gmx_incons("Unknown datatype in t_enxblock");
     }
-    return 0.0;
 }
 
 static int *select_it(int nre, char *nm[], int *nset)

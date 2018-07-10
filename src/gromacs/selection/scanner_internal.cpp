@@ -178,7 +178,6 @@ init_method_token(YYSTYPE *yylval, YYLTYPE *yylloc,
                 GMX_THROW(gmx::InternalError("Unsupported method type"));
         }
     }
-    return INVALID; /* Should not be reached */
 }
 
 int
@@ -329,7 +328,6 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, YYLTYPE *yylloc,
             default:
                 delete yylval->sel;
                 GMX_THROW(gmx::InternalError("Unsupported variable type"));
-                return INVALID;
         }
         /* This position should not be reached. */
     }

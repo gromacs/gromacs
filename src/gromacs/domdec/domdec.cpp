@@ -5184,7 +5184,6 @@ static void setup_dd_communication(gmx_domdec_t *dd,
             break;
         default:
             gmx_incons("unimplemented");
-            cg_cm = nullptr;
     }
 
     bBondComm = comm->bBondComm;

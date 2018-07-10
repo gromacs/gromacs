@@ -763,9 +763,6 @@ Select::writeOutput()
                 close_trx(status);
                 break;
             }
-            default:
-                GMX_RELEASE_ASSERT(false,
-                                   "Mismatch between -pdbatoms enum values and implementation");
         }
     }
 }

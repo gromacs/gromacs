@@ -1822,7 +1822,6 @@ static int whaminFileType(char *fn)
     {
         gmx_fatal(FARGS, "Unknown file type of %s. Should be tpr, xvg, or pdo.\n", fn);
     }
-    return whamin_unknown;
 }
 
 //! Read the files names in pdo-files.dat, pullf/x-files.dat, tpr-files.dat
