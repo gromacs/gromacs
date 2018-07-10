@@ -1406,7 +1406,6 @@ static void calc_pull_coord_scalar_force_and_potential(pull_coord_work_t *pcrd,
             break;
         case epullEXTERNAL:
             gmx_incons("the scalar pull force should not be calculated internally for pull type external");
-            break;
         default:
             gmx_incons("Unsupported pull type in do_pull_pot");
     }

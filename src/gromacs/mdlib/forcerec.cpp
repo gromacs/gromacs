@@ -2620,7 +2620,6 @@ void init_forcerec(FILE                             *fp,
 
         default:
             gmx_fatal(FARGS, "Unsupported electrostatic interaction: %s", eel_names[ic->eeltype]);
-            break;
     }
     fr->nbkernel_elec_modifier = ic->coulomb_modifier;
 
@@ -2650,7 +2649,6 @@ void init_forcerec(FILE                             *fp,
 
         default:
             gmx_fatal(FARGS, "Unsupported vdw interaction: %s", evdw_names[ic->vdwtype]);
-            break;
     }
     fr->nbkernel_vdw_modifier = ic->vdw_modifier;
 

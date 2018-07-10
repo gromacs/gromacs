@@ -58,7 +58,7 @@
 #define ekwAdd  (ebtsNR+2)
 #define ekwDel  (ebtsNR+3)
 #define ekwNR   3
-const char *kw_names[ekwNR] = {
+static const char *kw_names[ekwNR] = {
     "replace", "add", "delete"
 };
 

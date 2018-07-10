@@ -146,7 +146,7 @@ const char *check_box(int ePBC, const matrix box);
 
 /*! \brief Creates box matrix from edge lengths and angles.
  *
- * \param[inout] box         The box matrix
+ * \param[in,out] box         The box matrix
  * \param[in] vec            The edge lengths
  * \param[in] angleInDegrees The angles
  */
@@ -188,7 +188,7 @@ gmx_bool correct_box(FILE *fplog, int step, tensor box, struct t_graph *graph);
  * pbc_dx will not use pbc and return the normal difference vector
  * when one or more of the diagonal elements of box are zero.
  * When ePBC=-1, the type of pbc is guessed from the box matrix.
- * \param[inout] pbc The pbc information structure
+ * \param[in,out] pbc The pbc information structure
  * \param[in] ePBC The PBC identifier
  * \param[in] box  The box tensor
  */
@@ -204,7 +204,7 @@ void set_pbc(t_pbc *pbc, int ePBC, const matrix box);
  * with dd->nc[i]<=2 with bSingleDir==FALSE.
  * Note that when no PBC is required only pbc->ePBC is set,
  * the rest of the struct will be invalid.
- * \param[inout] pbc The pbc information structure
+ * \param[in,out] pbc The pbc information structure
  * \param[in] ePBC        The PBC identifier
  * \param[in] domdecCells 3D integer vector describing the number of DD cells
  *                        or nullptr if not using DD.
@@ -223,7 +223,7 @@ t_pbc *set_pbc_dd(t_pbc *pbc, int ePBC,
  *
  * Note that for triclinic boxes that do not obey the GROMACS unit-cell
  * restrictions, pbc_dx and pbc_dx_aiuc will not correct for PBC.
- * \param[inout] pbc The pbc information structure
+ * \param[in,out] pbc The pbc information structure
  * \param[in]    x1  Coordinates for particle 1
  * \param[in]    x2  Coordinates for particle 2
  * \param[out]   dx  Distance vector
@@ -236,7 +236,7 @@ void pbc_dx(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx);
  * This function can only be used when all atoms are in the rectangular
  * or triclinic unit-cell.
  * set_pbc_dd or set_pbc must be called before ever calling this routine.
- * \param[inout] pbc The pbc information structure
+ * \param[in,out] pbc The pbc information structure
  * \param[in]    x1  Coordinates for particle 1
  * \param[in]    x2  Coordinates for particle 2
  * \param[out]   dx  Distance vector
@@ -250,7 +250,7 @@ int pbc_dx_aiuc(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx);
  *
  * As pbc_dx, but for double precision vectors.
  * set_pbc must be called before ever calling this routine.
- * \param[inout] pbc The pbc information structure
+ * \param[in,out] pbc The pbc information structure
  * \param[in]    x1  Coordinates for particle 1
  * \param[in]    x2  Coordinates for particle 2
  * \param[out]   dx  Distance vector
@@ -307,7 +307,7 @@ int *compact_unitcell_edges(void);
  * Also works for triclinic cells.
  * \param[in]    ePBC   The pbc type
  * \param[in]    box    The simulation box
- * \param[inout] x      The coordinates of the atoms
+ * \param[in,out] x      The coordinates of the atoms
  */
 void put_atoms_in_box(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x);
 
@@ -317,7 +317,7 @@ void put_atoms_in_box(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x);
  * box center as calculated by calc_box_center.
  * \param[in]    ecenter The pbc center type
  * \param[in]    box     The simulation box
- * \param[inout] x       The coordinates of the atoms
+ * \param[in,out] x       The coordinates of the atoms
  */
 void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box,
                                      gmx::ArrayRef<gmx::RVec> x);
@@ -330,7 +330,7 @@ void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box,
  * \param[in]    ePBC    The pbc type
  * \param[in]    ecenter The pbc center type
  * \param[in]    box     The simulation box
- * \param[inout] x       The coordinates of the atoms
+ * \param[in,out] x       The coordinates of the atoms
  */
 void put_atoms_in_compact_unitcell(int ePBC, int ecenter,
                                    const matrix box,

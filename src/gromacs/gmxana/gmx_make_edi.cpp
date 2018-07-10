@@ -292,14 +292,11 @@ static int sscan_list(int *list[], const char *str, const char *listname)
             /* format error occured */
             case sError:
                 gmx_fatal(FARGS, "Error in the list of eigenvectors for %s at pos %d with char %c", listname, pos-startpos, *(pos-1));
-                break;
             /* logical error occured */
             case sZero:
                 gmx_fatal(FARGS, "Error in the list of eigenvectors for %s at pos %d: eigenvector 0 is not valid", listname, pos-startpos);
-                break;
             case sSmaller:
                 gmx_fatal(FARGS, "Error in the list of eigenvectors for %s at pos %d: second index %d is not bigger than %d", listname, pos-startpos, end_number, number);
-                break;
         }
         ++pos; /* read next character */
     }          /*scanner has finished */

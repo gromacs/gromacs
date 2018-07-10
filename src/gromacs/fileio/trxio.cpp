@@ -437,7 +437,6 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
         default:
             gmx_fatal(FARGS, "Sorry, write_trxframe_indexed can not write %s",
                       ftp2ext(ftp));
-            break;
     }
 
     switch (ftp)
@@ -600,7 +599,6 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
         default:
             gmx_fatal(FARGS, "Sorry, write_trxframe can not write %s",
                       ftp2ext(gmx_fio_getftp(status->fio)));
-            break;
     }
 
     return 0;

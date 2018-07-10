@@ -797,7 +797,6 @@ void pbc_dx(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
             break;
         default:
             gmx_fatal(FARGS, "Internal error in pbc_dx, set_pbc has not been called");
-            break;
     }
 }
 
@@ -1062,7 +1061,6 @@ int pbc_dx_aiuc(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
             break;
         default:
             gmx_fatal(FARGS, "Internal error in pbc_dx_aiuc, set_pbc_dd or set_pbc has not been called");
-            break;
     }
 
     is = IVEC2IS(ishift);
@@ -1194,7 +1192,6 @@ void pbc_dx_d(const t_pbc *pbc, const dvec x1, const dvec x2, dvec dx)
             break;
         default:
             gmx_fatal(FARGS, "Internal error in pbc_dx, set_pbc has not been called");
-            break;
     }
 }
 
