@@ -131,8 +131,8 @@ static void print_resatoms(FILE *out, gpp_atomtype_t atype, t_restp *rtp)
     }
 }
 
-static gmx_bool read_atoms(FILE *in, char *line,
-                           t_restp *r0, t_symtab *tab, gpp_atomtype_t atype)
+static bool read_atoms(FILE *in, char *line,
+                       t_restp *r0, t_symtab *tab, gpp_atomtype_t atype)
 {
     int    i, j, cg, maxentries;
     char   buf[256], buf1[256];
@@ -178,7 +178,7 @@ static gmx_bool read_atoms(FILE *in, char *line,
     return TRUE;
 }
 
-static gmx_bool read_bondeds(int bt, FILE *in, char *line, t_restp *rtp)
+static bool read_bondeds(int bt, FILE *in, char *line, t_restp *rtp)
 {
     char str[STRLEN];
     int  j, n, ni, maxrb;
@@ -322,14 +322,14 @@ void print_resall(FILE *out, int nrtp, t_restp rtp[],
 
 void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
                  gpp_atomtype_t atype, t_symtab *tab,
-                 gmx_bool bAllowOverrideRTP)
+                 bool bAllowOverrideRTP)
 {
     FILE         *in;
     char          filebase[STRLEN], line[STRLEN], header[STRLEN];
     int           i, nrtp, maxrtp, bt, nparam;
     int           dum1, dum2, dum3;
     t_restp      *rrtp, *header_settings;
-    gmx_bool      bNextResidue, bError;
+    bool          bNextResidue, bError;
     int           firstrtp;
 
     fflib_filename_base(rrdb, filebase, STRLEN);
@@ -554,7 +554,7 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
  *                  SEARCH   ROUTINES
  *
  ***********************************************************/
-static gmx_bool is_sign(char c)
+static bool is_sign(char c)
 {
     return (c == '+' || c == '-');
 }

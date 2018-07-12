@@ -52,7 +52,7 @@ struct t_atoms;
  */
 int search_atom(const char *type, int start,
                 t_atoms *atoms,
-                const char *bondtype, gmx_bool bAllowMissing);
+                const char *bondtype, bool bAllowMissing);
 
 /* Similar to search_atom, but this routine searches for the specified
  * atom in residue resind.
@@ -60,7 +60,7 @@ int search_atom(const char *type, int start,
 int
 search_res_atom(const char *type, int resind,
                 t_atoms *atoms,
-                const char *bondtype, gmx_bool bAllowMissing);
+                const char *bondtype, bool bAllowMissing);
 
 
 void set_at(t_atom *at, real m, real q, int type, int resind);

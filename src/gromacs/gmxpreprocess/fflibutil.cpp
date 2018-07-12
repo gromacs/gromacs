@@ -98,7 +98,7 @@ void fflib_filename_base(const char *filename, char *filebase, int maxlen)
 
 int fflib_search_file_end(const char *ffdir,
                           const char *file_end,
-                          gmx_bool    bFatalError,
+                          bool        bFatalError,
                           char     ***filenames)
 {
     try
@@ -167,7 +167,7 @@ std::vector<gmx::DataFileInfo> fflib_enumerate_forcefields()
     return result;
 }
 
-gmx_bool fflib_fexist(const char *file)
+bool fflib_fexist(const char *file)
 {
     char *file_fullpath;
 

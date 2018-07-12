@@ -68,7 +68,7 @@
 
 #define MARGIN_FAC 1.1
 
-static gmx_bool is_bond(int nnm, t_nm2type nmt[], char *ai, char *aj, real blen)
+static bool is_bond(int nnm, t_nm2type nmt[], char *ai, char *aj, real blen)
 {
     int i, j;
 
@@ -91,7 +91,7 @@ static gmx_bool is_bond(int nnm, t_nm2type nmt[], char *ai, char *aj, real blen)
 
 static void mk_bonds(int nnm, t_nm2type nmt[],
                      t_atoms *atoms, const rvec x[], t_params *bond, int nbond[],
-                     gmx_bool bPBC, matrix box)
+                     bool bPBC, matrix box)
 {
     t_param b;
     int     i, j;
@@ -152,7 +152,7 @@ static void mk_bonds(int nnm, t_nm2type nmt[],
     fflush(stderr);
 }
 
-static int *set_cgnr(t_atoms *atoms, gmx_bool bUsePDBcharge, real *qtot, real *mtot)
+static int *set_cgnr(t_atoms *atoms, bool bUsePDBcharge, real *qtot, real *mtot)
 {
     int     i, n = 1;
     int    *cgnr;
@@ -200,8 +200,8 @@ static gpp_atomtype_t set_atom_type(t_symtab *tab, t_atoms *atoms, t_params *bon
     return atype;
 }
 
-static void lo_set_force_const(t_params *plist, real c[], int nrfp, gmx_bool bRound,
-                               gmx_bool bDih, gmx_bool bParam)
+static void lo_set_force_const(t_params *plist, real c[], int nrfp, bool bRound,
+                               bool bDih, bool bParam)
 {
     int    i, j;
     double cc;
@@ -250,8 +250,8 @@ static void lo_set_force_const(t_params *plist, real c[], int nrfp, gmx_bool bRo
     }
 }
 
-static void set_force_const(t_params plist[], real kb, real kt, real kp, gmx_bool bRound,
-                            gmx_bool bParam)
+static void set_force_const(t_params plist[], real kb, real kt, real kp, bool bRound,
+                            bool bParam)
 {
     real c[MAXFORCEPARAM];
 
@@ -265,7 +265,7 @@ static void set_force_const(t_params plist[], real kb, real kt, real kp, gmx_boo
     lo_set_force_const(&plist[F_PDIHS], c, 3, bRound, TRUE, bParam);
 }
 
-static void calc_angles_dihs(t_params *ang, t_params *dih, const rvec x[], gmx_bool bPBC,
+static void calc_angles_dihs(t_params *ang, t_params *dih, const rvec x[], bool bPBC,
                              matrix box)
 {
     int    i, ai, aj, ak, al, t1, t2, t3;
@@ -427,7 +427,7 @@ int gmx_x2top(int argc, char *argv[])
     matrix             box;    /* box length matrix */
     int                natoms; /* number of atoms in one molecule  */
     int                epbc;
-    gmx_bool           bRTP, bTOP, bOPLS;
+    bool               bRTP, bTOP, bOPLS;
     t_symtab           symtab;
     real               qtot, mtot;
     char               n2t[STRLEN];
@@ -441,13 +441,13 @@ int gmx_x2top(int argc, char *argv[])
 #define NFILE asize(fnm)
     real               kb                            = 4e5, kt = 400, kp = 5;
     t_restp            rtp_header_settings           = { nullptr };
-    gmx_bool           bRemoveDihedralIfWithImproper = FALSE;
-    gmx_bool           bGenerateHH14Interactions     = TRUE;
-    gmx_bool           bKeepAllGeneratedDihedrals    = FALSE;
+    bool               bRemoveDihedralIfWithImproper = FALSE;
+    bool               bGenerateHH14Interactions     = TRUE;
+    bool               bKeepAllGeneratedDihedrals    = FALSE;
     int                nrexcl                        = 3;
-    gmx_bool           bParam                        = TRUE, bRound = TRUE;
-    gmx_bool           bPairs                        = TRUE, bPBC = TRUE;
-    gmx_bool           bUsePDBcharge                 = FALSE, bVerbose = FALSE;
+    bool               bParam                        = TRUE, bRound = TRUE;
+    bool               bPairs                        = TRUE, bPBC = TRUE;
+    bool               bUsePDBcharge                 = FALSE, bVerbose = FALSE;
     const char        *molnm                         = "ICE";
     const char        *ff                            = "oplsaa";
     t_pargs            pa[]                          = {

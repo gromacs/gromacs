@@ -65,14 +65,14 @@ void fflib_filename_base(const char *filename, char *filebase, int maxlen);
 
 int fflib_search_file_end(const char *ffdir,
                           const char *file_end,
-                          gmx_bool    bFatalError,
+                          bool        bFatalError,
                           char     ***filenames);
 /* Search for files ending on file_end in the force field directory fflib.
  * fflib should be in the GROMACS lib.path.
  * Return the number of files and the file names in filenames.
  */
 
-gmx_bool fflib_fexist(const char *file);
+bool fflib_fexist(const char *file);
 /* Check if a file exists in the force field library */
 
 FILE *fflib_open(const char *file);
