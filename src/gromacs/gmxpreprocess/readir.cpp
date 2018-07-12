@@ -182,7 +182,7 @@ static void GetSimTemps(int ntemps, t_simtemp *simtemp, double *temperature_lamb
 
 
 
-static void _low_check(gmx_bool b, const char *s, warninp_t wi)
+static void _low_check(bool b, const char *s, warninp_t wi)
 {
     if (b)
     {
@@ -206,7 +206,7 @@ static void check_nst(const char *desc_nst, int nst,
     }
 }
 
-static gmx_bool ir_NVE(const t_inputrec *ir)
+static bool ir_NVE(const t_inputrec *ir)
 {
     return (EI_MD(ir->eI) && ir->etc == etcNO);
 }
@@ -584,7 +584,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
     if (ir->bSimTemp)
     {
-        gmx_bool bAllTempZero = TRUE;
+        bool bAllTempZero = TRUE;
         for (i = 0; i < fep->n_lambda; i++)
         {
             sprintf(err_buf, "Entry %d for %s must be between 0 and 1, instead is %g", i, efpt_names[efptTEMPERATURE], fep->all_lambda[efptTEMPERATURE][i]);
@@ -1423,7 +1423,7 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN], char weight
     t_lambda   *fep    = ir->fepvals;
     t_expanded *expand = ir->expandedvals;
     real      **count_fep_lambdas;
-    gmx_bool    bOneLambda = TRUE;
+    bool        bOneLambda = TRUE;
 
     snew(count_fep_lambdas, efptNR);
 
@@ -1697,7 +1697,7 @@ static void read_expandedparams(std::vector<t_inpfile> *inp,
  * \param[in]  couple_lambda_value  Enumeration ecouplam value describing the end state
  * \return                          Whether VDW is on (i.e. the user chose vdw or vdw-q in the .mdp file)
  */
-static gmx_bool couple_lambda_has_vdw_on(int couple_lambda_value)
+static bool couple_lambda_has_vdw_on(int couple_lambda_value)
 {
     return (couple_lambda_value == ecouplamVDW ||
             couple_lambda_value == ecouplamVDWQ);
@@ -2595,17 +2595,17 @@ int search_string(const char *s, int ng, char *gn[])
               s);
 }
 
-static gmx_bool do_numbering(int natoms, gmx_groups_t *groups, int ng, char *ptrs[],
-                             t_blocka *block, char *gnames[],
-                             int gtype, int restnm,
-                             int grptp, gmx_bool bVerbose,
-                             warninp_t wi)
+static bool do_numbering(int natoms, gmx_groups_t *groups, int ng, char *ptrs[],
+                         t_blocka *block, char *gnames[],
+                         int gtype, int restnm,
+                         int grptp, bool bVerbose,
+                         warninp_t wi)
 {
     unsigned short *cbuf;
     t_grps         *grps = &(groups->grps[gtype]);
     int             i, j, gid, aj, ognr, ntot = 0;
     const char     *title;
-    gmx_bool        bRest;
+    bool            bRest;
     char            warn_buf[STRLEN];
 
     if (debug)
@@ -3022,8 +3022,8 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     sfree(nrdf_vcm_sub);
 }
 
-static gmx_bool do_egp_flag(t_inputrec *ir, gmx_groups_t *groups,
-                            const char *option, const char *val, int flag)
+static bool do_egp_flag(t_inputrec *ir, gmx_groups_t *groups,
+                        const char *option, const char *val, int flag)
 {
     /* The maximum number of energy group pairs would be MAXPTR*(MAXPTR+1)/2.
      * But since this is much larger than STRLEN, such a line can not be parsed.
@@ -3033,7 +3033,7 @@ static gmx_bool do_egp_flag(t_inputrec *ir, gmx_groups_t *groups,
     int      nelem, i, j, k, nr;
     char    *names[EGP_MAX];
     char  ***gnames;
-    gmx_bool bSet;
+    bool     bSet;
 
     gnames = groups->grpname;
 
@@ -3144,7 +3144,7 @@ static void make_IMD_group(t_IMD *IMDgroup, char *IMDgname, t_blocka *grps, char
 
 void do_index(const char* mdparin, const char *ndx,
               gmx_mtop_t *mtop,
-              gmx_bool bVerbose,
+              bool bVerbose,
               t_inputrec *ir,
               warninp_t wi)
 {
@@ -3160,7 +3160,7 @@ void do_index(const char* mdparin, const char *ndx,
     int           nacg, nfreeze, nfrdim, nenergy, nvcm, nuser;
     char         *ptr1[MAXPTR], *ptr2[MAXPTR], *ptr3[MAXPTR];
     int           i, j, k, restnm;
-    gmx_bool      bExcl, bTable, bAnneal, bRest;
+    bool          bExcl, bTable, bAnneal, bRest;
     int           nQMmethod, nQMbasis, nQMg;
     char          warn_buf[STRLEN];
     char*         endptr;
@@ -3780,9 +3780,9 @@ static void check_disre(gmx_mtop_t *mtop)
     }
 }
 
-static gmx_bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
-                                   gmx_bool posres_only,
-                                   ivec AbsRef)
+static bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
+                               bool posres_only,
+                               ivec AbsRef)
 {
     int                  d, g, i;
     gmx_mtop_ilistloop_t iloop;
@@ -3873,9 +3873,9 @@ static gmx_bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
 
 static void
 check_combination_rule_differences(const gmx_mtop_t *mtop, int state,
-                                   gmx_bool *bC6ParametersWorkWithGeometricRules,
-                                   gmx_bool *bC6ParametersWorkWithLBRules,
-                                   gmx_bool *bLBRulesPossible)
+                                   bool *bC6ParametersWorkWithGeometricRules,
+                                   bool *bC6ParametersWorkWithLBRules,
+                                   bool *bLBRulesPossible)
 {
     int           ntypes, tpi, tpj;
     int          *typecount;
@@ -3883,7 +3883,7 @@ check_combination_rule_differences(const gmx_mtop_t *mtop, int state,
     double        c6i, c6j, c12i, c12j;
     double        c6, c6_geometric, c6_LB;
     double        sigmai, sigmaj, epsi, epsj;
-    gmx_bool      bCanDoLBRules, bCanDoGeometricRules;
+    bool          bCanDoLBRules, bCanDoGeometricRules;
     const char   *ptr;
 
     /* A tolerance of 1e-5 seems reasonable for (possibly hand-typed)
@@ -3958,7 +3958,7 @@ static void
 check_combination_rules(const t_inputrec *ir, const gmx_mtop_t *mtop,
                         warninp_t wi)
 {
-    gmx_bool bLBRulesPossible, bC6ParametersWorkWithGeometricRules, bC6ParametersWorkWithLBRules;
+    bool bLBRulesPossible, bC6ParametersWorkWithGeometricRules, bC6ParametersWorkWithLBRules;
 
     check_combination_rule_differences(mtop, 0,
                                        &bC6ParametersWorkWithGeometricRules,
@@ -4004,7 +4004,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
 {
     char                      err_buf[STRLEN];
     int                       i, m, c, nmol;
-    gmx_bool                  bCharge, bAcc;
+    bool                      bCharge, bAcc;
     real                     *mgrp, mt;
     rvec                      acc;
     gmx_mtop_atomloop_block_t aloopb;
@@ -4220,7 +4220,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
 
     if (ir->bPull)
     {
-        gmx_bool bWarned;
+        bool bWarned;
 
         bWarned = FALSE;
         for (i = 0; i < ir->pull->ncoord && !bWarned; i++)
@@ -4265,8 +4265,8 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
 }
 
 void double_check(t_inputrec *ir, matrix box,
-                  gmx_bool bHasNormalConstraints,
-                  gmx_bool bHasAnyConstraints,
+                  bool bHasNormalConstraints,
+                  bool bHasAnyConstraints,
                   warninp_t wi)
 {
     real        min_size;

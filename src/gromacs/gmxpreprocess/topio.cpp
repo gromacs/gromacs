@@ -430,9 +430,9 @@ static char **read_topol(const char *infile, const char *outfile,
                          t_gromppopts *opts,
                          real        *fudgeQQ,
                          std::vector<gmx_molblock_t> *molblock,
-                         gmx_bool        bFEP,
-                         gmx_bool        bZero,
-                         gmx_bool        usingFullRangeElectrostatics,
+                         bool        bFEP,
+                         bool        bZero,
+                         bool        usingFullRangeElectrostatics,
                          warninp_t       wi)
 {
     FILE           *out;
@@ -449,7 +449,7 @@ static char **read_topol(const char *infile, const char *outfile,
     t_nbparam     **nbparam, **pair;
     t_block2       *block2;
     real            fudgeLJ = -1;    /* Multiplication factor to generate 1-4 from LJ */
-    gmx_bool        bReadDefaults, bReadMolType, bGenPairs, bWarn_copy_A_B;
+    bool            bReadDefaults, bReadMolType, bGenPairs, bWarn_copy_A_B;
     double          qt = 0, qBt = 0; /* total charge */
     t_bond_atomtype batype;
     int             lastcg = -1;
@@ -846,7 +846,7 @@ static char **read_topol(const char *infile, const char *outfile,
                         case d_molecules:
                         {
                             int      whichmol;
-                            gmx_bool bCouple;
+                            bool     bCouple;
 
                             push_mol(nmol, *molinfo, pline, &whichmol, &nrcopies, wi);
                             mi0 = &((*molinfo)[whichmol]);
@@ -973,11 +973,11 @@ static char **read_topol(const char *infile, const char *outfile,
     return title;
 }
 
-char **do_top(gmx_bool                      bVerbose,
+char **do_top(bool                          bVerbose,
               const char                   *topfile,
               const char                   *topppfile,
               t_gromppopts                 *opts,
-              gmx_bool                      bZero,
+              bool                          bZero,
               t_symtab                     *symtab,
               t_params                      plist[],
               int                          *combination_rule,
@@ -1039,7 +1039,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, const unsigned char *gr
      */
     int       qm_max = 0, qm_nr = 0, link_nr = 0, link_max = 0;
     int      *qm_arr = nullptr, *link_arr = nullptr;
-    gmx_bool *bQMMM, *blink;
+    bool     *bQMMM, *blink;
 
     /* First we search and select the QM atoms in an qm_arr array that
      * we use to create the exclusions.
@@ -1320,7 +1320,7 @@ void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi)
     unsigned char  *grpnr;
     int             mol, nat_mol, nr_mol_with_qm_atoms = 0;
     gmx_molblock_t *molb;
-    gmx_bool        bQMMM;
+    bool            bQMMM;
 
     grpnr = sys->groups.grpnr[egcQMMM];
 

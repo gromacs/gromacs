@@ -205,7 +205,7 @@ extern char **read_rotparams(std::vector<t_inpfile> *inp, t_rot *rot,
 static void check_box_unchanged(matrix f_box, matrix box, char fn[], warninp_t wi)
 {
     int      i, ii;
-    gmx_bool bSame = TRUE;
+    bool     bSame = TRUE;
     char     warn_buf[STRLEN];
 
 
@@ -233,7 +233,7 @@ static void check_box_unchanged(matrix f_box, matrix box, char fn[], warninp_t w
 /* Extract the reference positions for the rotation group(s) */
 extern void set_reference_positions(
         t_rot *rot, rvec *x, matrix box,
-        const char *fn, gmx_bool bSet, warninp_t wi)
+        const char *fn, bool bSet, warninp_t wi)
 {
     int              g, i, ii;
     t_rotgrp        *rotg;

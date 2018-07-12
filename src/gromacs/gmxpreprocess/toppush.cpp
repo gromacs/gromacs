@@ -243,8 +243,8 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
     t_atom    *atom;
     t_param   *param;
     int        atomnr;
-    gmx_bool   have_atomic_number;
-    gmx_bool   have_bonded_type;
+    bool       have_atomic_number;
+    bool       have_bonded_type;
 
     snew(atom, 1);
     snew(param, 1);
@@ -536,7 +536,7 @@ static void push_bondtype(t_params     *       bt,
                           const t_param *      b,
                           int                  nral,
                           int                  ftype,
-                          gmx_bool             bAllowRepeat,
+                          bool                 bAllowRepeat,
                           const char *         line,
                           warninp_t            wi)
 {
@@ -805,7 +805,7 @@ void push_dihedraltype(directive d, t_params bt[],
     char         alc[MAXATOMLIST+1][20];
     double       c[MAXFORCEPARAM];
     t_param      p;
-    gmx_bool     bAllowRepeat;
+    bool         bAllowRepeat;
     char         errbuf[STRLEN];
 
     /* This routine accepts dihedraltypes defined from either 2 or 4 atoms.
@@ -948,7 +948,7 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
     real        cr[4];
     int         ai, aj;
     t_nbparam  *nbp;
-    gmx_bool    bId;
+    bool        bId;
     char        errbuf[STRLEN];
 
     if (sscanf (pline, "%s%s%d", a0, a1, &f) != 3)
@@ -1434,11 +1434,11 @@ void push_molt(t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,
     newmol->excl_set = FALSE;
 }
 
-static gmx_bool default_nb_params(int ftype, t_params bt[], t_atoms *at,
-                                  t_param *p, int c_start, gmx_bool bB, gmx_bool bGenPairs)
+static bool default_nb_params(int ftype, t_params bt[], t_atoms *at,
+                              t_param *p, int c_start, bool bB, bool bGenPairs)
 {
     int          i, j, ti, tj, ntype;
-    gmx_bool     bFound;
+    bool         bFound;
     t_param     *pi    = nullptr;
     int          nr    = bt[ftype].nr;
     int          nral  = NRAL(ftype);
@@ -1529,15 +1529,15 @@ static gmx_bool default_nb_params(int ftype, t_params bt[], t_atoms *at,
     return bFound;
 }
 
-static gmx_bool default_cmap_params(t_params bondtype[],
-                                    t_atoms *at, gpp_atomtype_t atype,
-                                    t_param *p, gmx_bool bB,
-                                    int *cmap_type, int *nparam_def,
-                                    warninp_t wi)
+static bool default_cmap_params(t_params bondtype[],
+                                t_atoms *at, gpp_atomtype_t atype,
+                                t_param *p, bool bB,
+                                int *cmap_type, int *nparam_def,
+                                warninp_t wi)
 {
     int        i, nparam_found;
     int        ct;
-    gmx_bool   bFound = FALSE;
+    bool       bFound = FALSE;
     char       errbuf[STRLEN];
 
     nparam_found = 0;
@@ -1605,14 +1605,14 @@ static int natom_match(t_param *pi,
     }
 }
 
-static gmx_bool default_params(int ftype, t_params bt[],
-                               t_atoms *at, gpp_atomtype_t atype,
-                               t_param *p, gmx_bool bB,
-                               t_param **param_def,
-                               int *nparam_def)
+static bool default_params(int ftype, t_params bt[],
+                           t_atoms *at, gpp_atomtype_t atype,
+                           t_param *p, bool bB,
+                           t_param **param_def,
+                           int *nparam_def)
 {
     int          nparam_found;
-    gmx_bool     bFound, bSame;
+    bool         bFound, bSame;
     t_param     *pi    = nullptr;
     t_param     *pj    = nullptr;
     int          nr    = bt[ftype].nr;
@@ -1726,8 +1726,8 @@ static gmx_bool default_params(int ftype, t_params bt[],
 
 void push_bond(directive d, t_params bondtype[], t_params bond[],
                t_atoms *at, gpp_atomtype_t atype, char *line,
-               gmx_bool bBonded, gmx_bool bGenPairs, real fudgeQQ,
-               gmx_bool bZero, gmx_bool *bWarn_copy_A_B,
+               bool bBonded, bool bGenPairs, real fudgeQQ,
+               bool bZero, bool *bWarn_copy_A_B,
                warninp_t wi)
 {
     const char  *aaformat[MAXATOMLIST] = {
@@ -1753,7 +1753,7 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
     double       cc[MAXFORCEPARAM+1];
     int          aa[MAXATOMLIST+1];
     t_param      param, *param_defA, *param_defB;
-    gmx_bool     bFoundA = FALSE, bFoundB = FALSE, bDef, bPert, bSwapParity = FALSE;
+    bool         bFoundA = FALSE, bFoundB = FALSE, bDef, bPert, bSwapParity = FALSE;
     int          nparam_defA, nparam_defB;
     char         errbuf[STRLEN];
 
@@ -2148,7 +2148,7 @@ void push_cmap(directive d, t_params bondtype[], t_params bond[],
     int      cmap_type;
     int      aa[MAXATOMLIST+1];
     char     errbuf[STRLEN];
-    gmx_bool bFound;
+    bool     bFound;
     t_param  param;
 
     ftype        = ifunc_index(d, 1);
@@ -2663,7 +2663,7 @@ static void generate_LJCpairsNB(t_molinfo *mol, int nb_funct, t_params *nbp, war
     int       n, ntype, i, j, k;
     t_atom   *atom;
     t_blocka *excl;
-    gmx_bool  bExcl;
+    bool      bExcl;
     t_param   param;
     char      errbuf[STRLEN];
 
@@ -2776,7 +2776,7 @@ static void decouple_atoms(t_atoms *atoms, int atomtype_decouple,
 
 void convert_moltype_couple(t_molinfo *mol, int atomtype_decouple, real fudgeQQ,
                             int couple_lam0, int couple_lam1,
-                            gmx_bool bCoupleIntra, int nb_funct, t_params *nbp,
+                            bool bCoupleIntra, int nb_funct, t_params *nbp,
                             warninp_t wi)
 {
     convert_pairs_to_pairsQ(mol->plist, fudgeQQ, &mol->atoms);

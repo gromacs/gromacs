@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,9 +45,9 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
           int nah, t_hackblock ah[],
           int nterpairs,
           t_hackblock **ntdb, t_hackblock **ctdb,
-          int *rN, int *rC, gmx_bool bMissing,
+          int *rN, int *rC, bool bMissing,
           int **nabptr, t_hack ***abptr,
-          gmx_bool bUpdate_pdba, gmx_bool bKeep_old_pdba);
+          bool bUpdate_pdba, bool bKeep_old_pdba);
 /* Generate hydrogen atoms and N and C terminal patches.
  * int nterpairs is the number of termini pairs in the molecule
  * ntdb[i] and ctdb[i] may be NULL, no replacement will be done then.

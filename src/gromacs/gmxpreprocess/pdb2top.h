@@ -75,22 +75,22 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                         int nterpairs,
                         t_hackblock **ntdb, t_hackblock **ctdb,
                         const int *rn, const int *rc,
-                        gmx_bool bAllowMissing);
+                        bool bAllowMissing);
 /* Get the database entries for the nres residues in resinfo
  * and store them in restp and hb.
  */
 
 void match_atomnames_with_rtp(t_restp restp[], t_hackblock hb[],
                               t_atoms *pdba, rvec *x,
-                              gmx_bool bVerbose);
+                              bool bVerbose);
 /* Check if atom in pdba need to be deleted of renamed due to tdb or hdb.
  * If renaming involves atoms added wrt to the rtp database,
  * add these atoms to restp.
  */
 
-void print_top_comment(FILE *out, const char *filename, const char *ffdir, gmx_bool bITP);
+void print_top_comment(FILE *out, const char *filename, const char *ffdir, bool bITP);
 
-void print_top_header(FILE *out, const char *filename, gmx_bool bITP,
+void print_top_header(FILE *out, const char *filename, bool bITP,
                       const char *ffdir, real mHmult);
 
 void print_top_mols(FILE *out,
@@ -99,7 +99,7 @@ void print_top_mols(FILE *out,
                     int nmol, t_mols *mols);
 
 void write_top(FILE *out, char *pr, const char *molname,
-               t_atoms *at, gmx_bool bRTPresname,
+               t_atoms *at, bool bRTPresname,
                int bts[], t_params plist[], t_excls excls[],
                gpp_atomtype_t atype, int *cgnr, int nrexcl);
 /* NOTE: nrexcl is not the size of *excl! */
@@ -110,16 +110,16 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
              gpp_atomtype_t atype, struct t_symtab *tab,
              int nrtp, t_restp rtp[],
              t_restp *restp, t_hackblock *hb,
-             gmx_bool bAllowMissing,
-             gmx_bool bVsites, gmx_bool bVsiteAromatics,
+             bool bAllowMissing,
+             bool bVsites, bool bVsiteAromatics,
              const char *ffdir,
              real mHmult,
              int nssbonds, t_ssbond ssbonds[],
              real long_bond_dist, real short_bond_dist,
-             gmx_bool bDeuterate, gmx_bool bChargeGroups, gmx_bool bCmap,
-             gmx_bool bRenumRes, gmx_bool bRTPresname);
+             bool bDeuterate, bool bChargeGroups, bool bCmap,
+             bool bRenumRes, bool bRTPresname);
 /* Create a topology ! */
 
-void print_sums(t_atoms *atoms, gmx_bool bSystem);
+void print_sums(t_atoms *atoms, bool bSystem);
 
 #endif

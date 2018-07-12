@@ -72,17 +72,17 @@ struct t_gromppopts
     int      nshake;
     char    *include;
     char    *define;
-    gmx_bool bGenVel;
-    gmx_bool bGenPairs;
+    bool     bGenVel;
+    bool     bGenPairs;
     real     tempi;
     int      seed;
-    gmx_bool bOrire;
-    gmx_bool bMorse;
+    bool     bOrire;
+    bool     bMorse;
     char    *wall_atomtype[2];
     char    *couple_moltype;
     int      couple_lam0;
     int      couple_lam1;
-    gmx_bool bCoupleIntra;
+    bool     bCoupleIntra;
 };
 
 /*! \brief Initialise object to hold strings parsed from an .mdp file */
@@ -100,8 +100,8 @@ int search_string(const char *s, int ng, char *gn[]);
 /* Returns the index of string s in the index groups */
 
 void double_check(t_inputrec *ir, matrix box,
-                  gmx_bool bHasNormalConstraints,
-                  gmx_bool bHasAnyConstraints,
+                  bool bHasNormalConstraints,
+                  bool bHasAnyConstraints,
                   warninp_t wi);
 /* Do more checks */
 
@@ -125,7 +125,7 @@ void get_ir(const char *mdparin, const char *mdparout,
 void do_index(const char* mdparin,
               const char *ndx,
               gmx_mtop_t *mtop,
-              gmx_bool    bVerbose,
+              bool        bVerbose,
               t_inputrec *ir,
               warninp_t   wi);
 /* Read the index file and assign grp numbers to atoms.
@@ -165,6 +165,6 @@ void make_rotation_groups(t_rot *rot, char **rotgnames,
 /* Process the rotation parameters after reading the index groups */
 
 void set_reference_positions(t_rot *rot, rvec *x, matrix box,
-                             const char *fn, gmx_bool bSet, warninp_t wi);
+                             const char *fn, bool bSet, warninp_t wi);
 
 #endif

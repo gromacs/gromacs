@@ -71,7 +71,7 @@ static int in_strings(char *key, int nstr, const char **str)
     return -1;
 }
 
-static gmx_bool hbond(rvec x[], int i, int j, real distance)
+static bool hbond(rvec x[], int i, int j, real distance)
 {
     real   tol = distance*distance;
     rvec   tmp;
@@ -82,7 +82,7 @@ static gmx_bool hbond(rvec x[], int i, int j, real distance)
 }
 
 static void chk_allhb(t_atoms *pdba, rvec x[], t_blocka *hb,
-                      const gmx_bool donor[], const gmx_bool accept[], real dist)
+                      const bool donor[], const bool accept[], real dist)
 {
     int i, j, k, ii, natom;
 
@@ -142,11 +142,11 @@ static void pr_hbonds(FILE *fp, t_blocka *hb, t_atoms *pdba)
     }
 }
 
-static gmx_bool chk_hbonds(int i, t_atoms *pdba, rvec x[],
-                           const gmx_bool ad[], gmx_bool hbond[], rvec xh,
-                           real angle, real dist)
+static bool chk_hbonds(int i, t_atoms *pdba, rvec x[],
+                       const bool ad[], bool hbond[], rvec xh,
+                       real angle, real dist)
 {
-    gmx_bool bHB;
+    bool     bHB;
     int      j, aj, ri, natom;
     real     d2, dist2, a;
     rvec     nh, oh;
@@ -216,9 +216,9 @@ void set_histp(t_atoms *pdba, rvec *x, real angle, real dist)
     };
 #define NPD asize(prot_don)
 
-    gmx_bool *donor, *acceptor;
-    gmx_bool *hbond;
-    gmx_bool  bHDd, bHEd;
+    bool     *donor, *acceptor;
+    bool     *hbond;
+    bool      bHDd, bHEd;
     rvec      xh1, xh2;
     int       natom;
     int       i, j, nd, na, hisind, type = -1;

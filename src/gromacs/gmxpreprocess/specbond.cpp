@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
-gmx_bool yesno(void)
+bool yesno(void)
 {
     char c;
 
@@ -133,7 +133,7 @@ void done_specbonds(int nsb, t_specbond sb[])
     }
 }
 
-static gmx_bool is_special(int nsb, t_specbond sb[], char *res, char *atom)
+static bool is_special(int nsb, t_specbond sb[], char *res, char *atom)
 {
     int i;
 
@@ -150,8 +150,8 @@ static gmx_bool is_special(int nsb, t_specbond sb[], char *res, char *atom)
     return FALSE;
 }
 
-static gmx_bool is_bond(int nsb, t_specbond sb[], t_atoms *pdba, int a1, int a2,
-                        real d, int *index_sb, gmx_bool *bSwap)
+static bool is_bond(int nsb, t_specbond sb[], t_atoms *pdba, int a1, int a2,
+                    real d, int *index_sb, bool *bSwap)
 {
     int   i;
     char *at1, *at2, *res1, *res2;
@@ -209,7 +209,7 @@ static gmx_bool is_bond(int nsb, t_specbond sb[], t_atoms *pdba, int a1, int a2,
     return FALSE;
 }
 
-static void rename_1res(t_atoms *pdba, int resind, char *newres, gmx_bool bVerbose)
+static void rename_1res(t_atoms *pdba, int resind, char *newres, bool bVerbose)
 {
     if (bVerbose)
     {
@@ -223,15 +223,15 @@ static void rename_1res(t_atoms *pdba, int resind, char *newres, gmx_bool bVerbo
     *pdba->resinfo[resind].rtp = gmx_strdup(newres);
 }
 
-int mk_specbonds(t_atoms *pdba, rvec x[], gmx_bool bInteractive,
-                 t_ssbond **specbonds, gmx_bool bVerbose)
+int mk_specbonds(t_atoms *pdba, rvec x[], bool bInteractive,
+                 t_ssbond **specbonds, bool bVerbose)
 {
     t_specbond *sb    = nullptr;
     t_ssbond   *bonds = nullptr;
     int         nsb;
     int         nspec, nbonds;
     int        *specp, *sgp;
-    gmx_bool    bDoit, bSwap;
+    bool        bDoit, bSwap;
     int         i, j, b, e, e2;
     int         ai, aj, index_sb;
     real      **d;
