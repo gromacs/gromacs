@@ -157,7 +157,7 @@ static bool mk_igraph(t_graph *g, int ftype, const t_ilist *il,
     return addedEdge;
 }
 
-gmx_noreturn static void g_error(int line, const char *file)
+[[noreturn]] static void g_error(int line, const char *file)
 {
     gmx_fatal(FARGS, "Trying to print nonexistent graph (file %s, line %d)",
               file, line);
