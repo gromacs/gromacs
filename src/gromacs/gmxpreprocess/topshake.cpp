@@ -111,7 +111,7 @@ void make_shake (t_params plist[], t_atoms *atoms, int nshake)
     t_param          p, *bond, *ang;
     real             b_ij, b_jk;
     int              i, j, ftype, ftype_a;
-    gmx_bool         bFound;
+    bool             bFound;
 
     if (nshake != eshNONE)
     {

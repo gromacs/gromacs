@@ -86,7 +86,7 @@ static int find_kw(char *keyw)
 
 #define FATAL() gmx_fatal(FARGS, "Reading Termini Database: not enough items on line\n%s", line)
 
-static void read_atom(char *line, gmx_bool bAdd,
+static void read_atom(char *line, bool bAdd,
                       char **nname, t_atom *a, gpp_atomtype_t atype, int *cgnr)
 {
     int    nr, i;
@@ -461,7 +461,7 @@ t_hackblock **filter_ter(int nb, t_hackblock tb[],
      */
 
     int             i, j, n, none_idx;
-    gmx_bool        found;
+    bool            found;
     char           *s;
     t_hackblock   **list;
 

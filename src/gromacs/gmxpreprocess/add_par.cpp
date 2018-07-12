@@ -186,7 +186,7 @@ void add_vsite3_param(t_params *ps, int ai, int aj, int ak, int al,
     ps->nr++;
 }
 
-void add_vsite3_atoms(t_params *ps, int ai, int aj, int ak, int al, gmx_bool bSwapParity)
+void add_vsite3_atoms(t_params *ps, int ai, int aj, int ak, int al, bool bSwapParity)
 {
     pr_alloc(1, ps);
     ps->param[ps->nr].ai() = ai;
@@ -217,7 +217,7 @@ void add_vsite4_atoms(t_params *ps, int ai, int aj, int ak, int al, int am)
     ps->nr++;
 }
 
-int search_jtype(t_restp *rtp, char *name, gmx_bool bNterm)
+int search_jtype(t_restp *rtp, char *name, bool bNterm)
 {
     int    niter, iter, j, jmax;
     size_t k, kmax, minstrlen;

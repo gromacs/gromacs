@@ -86,7 +86,7 @@ static int missing_atoms(t_restp *rp, int resind, t_atoms *at, int i0, int i)
 {
     int      j, k, nmiss;
     char    *name;
-    gmx_bool bFound;
+    bool     bFound;
 
     nmiss = 0;
     for (j = 0; j < rp->natom; j++)
@@ -116,7 +116,7 @@ static int missing_atoms(t_restp *rp, int resind, t_atoms *at, int i0, int i)
     return nmiss;
 }
 
-gmx_bool is_int(double x)
+bool is_int(double x)
 {
     const double tol = 1e-4;
     int          ix;
@@ -445,7 +445,7 @@ static int name2type(t_atoms *at, int **cgnr,
 {
     int         i, j, prevresind, resind, i0, prevcg, cg, curcg;
     char       *name;
-    gmx_bool    bNterm;
+    bool        bNterm;
     double      qt;
     int         nmissat;
 
@@ -466,7 +466,7 @@ static int name2type(t_atoms *at, int **cgnr,
         prevresind = resind;
         if (at->atom[i].resind != resind)
         {
-            gmx_bool bProt;
+            bool bProt;
             resind = at->atom[i].resind;
             bProt  = gmx_residuetype_is_protein(rt, *(at->resinfo[resind].name));
             bNterm = bProt && (resind == 0);
@@ -545,7 +545,7 @@ static void print_top_heavy_H(FILE *out, real mHmult)
 void print_top_comment(FILE       *out,
                        const char *filename,
                        const char *ffdir,
-                       gmx_bool    bITP)
+                       bool        bITP)
 {
     char  ffdir_parent[STRLEN];
     char *p;
@@ -593,7 +593,7 @@ void print_top_comment(FILE       *out,
 }
 
 void print_top_header(FILE *out, const char *filename,
-                      gmx_bool bITP, const char *ffdir, real mHmult)
+                      bool bITP, const char *ffdir, real mHmult)
 {
     const char *p;
 
@@ -698,7 +698,7 @@ void print_top_mols(FILE *out,
 }
 
 void write_top(FILE *out, char *pr, const char *molname,
-               t_atoms *at, gmx_bool bRTPresname,
+               t_atoms *at, bool bRTPresname,
                int bts[], t_params plist[], t_excls excls[],
                gpp_atomtype_t atype, int *cgnr, int nrexcl)
 /* NOTE: nrexcl is not the size of *excl! */
@@ -739,7 +739,7 @@ void write_top(FILE *out, char *pr, const char *molname,
 
 
 static void do_ssbonds(t_params *ps, t_atoms *atoms,
-                       int nssbonds, t_ssbond *ssbonds, gmx_bool bAllowMissing)
+                       int nssbonds, t_ssbond *ssbonds, bool bAllowMissing)
 {
     int     i, ri, rj;
     int     ai, aj;
@@ -911,7 +911,7 @@ static void clean_bonds(t_params *ps)
     }
 }
 
-void print_sums(t_atoms *atoms, gmx_bool bSystem)
+void print_sums(t_atoms *atoms, bool bSystem)
 {
     double      m, qtot;
     int         i;
@@ -1022,13 +1022,13 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                         int nterpairs,
                         t_hackblock **ntdb, t_hackblock **ctdb,
                         const int *rn, const int *rc,
-                        gmx_bool bAllowMissing)
+                        bool bAllowMissing)
 {
     int         i, j, k, l;
     char       *key;
     t_restp    *res;
     int         tern, terc;
-    gmx_bool    bRM;
+    bool        bRM;
 
     snew(*hb, nres);
     snew(*restp, nres);
@@ -1208,7 +1208,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
     }
 }
 
-static gmx_bool atomname_cmp_nr(const char *anm, t_hack *hack, int *nr)
+static bool atomname_cmp_nr(const char *anm, t_hack *hack, int *nr)
 {
 
     if (hack->nr == 1)
@@ -1239,9 +1239,9 @@ static gmx_bool atomname_cmp_nr(const char *anm, t_hack *hack, int *nr)
     }
 }
 
-static gmx_bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
-                                              t_restp *rptr, t_hackblock *hbr,
-                                              gmx_bool bVerbose)
+static bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
+                                          t_restp *rptr, t_hackblock *hbr,
+                                          bool bVerbose)
 {
     int      resnr;
     int      j, k;
@@ -1249,8 +1249,8 @@ static gmx_bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
     int      anmnr;
     char    *start_at, buf[STRLEN];
     int      start_nr;
-    gmx_bool bReplaceReplace, bFoundInAdd;
-    gmx_bool bDeleted;
+    bool     bReplaceReplace, bFoundInAdd;
+    bool     bDeleted;
 
     oldnm = *pdba->atomname[atind];
     resnr = pdba->resinfo[pdba->atom[atind].resind].nr;
@@ -1398,7 +1398,7 @@ static gmx_bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
 
 void match_atomnames_with_rtp(t_restp restp[], t_hackblock hb[],
                               t_atoms *pdba, rvec *x,
-                              gmx_bool bVerbose)
+                              bool bVerbose)
 {
     int          i, j;
     char        *oldnm;
@@ -1437,7 +1437,7 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms)
     const char *pname;
     t_resinfo  *resinfo = atoms->resinfo;
     int         nres    = atoms->nres;
-    gmx_bool    bAddCMAP;
+    bool        bAddCMAP;
     int         cmap_atomid[NUM_CMAP_ATOMS];
     int         cmap_chainnum = -1, this_residue_index;
 
@@ -1551,14 +1551,14 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
              t_atoms *atoms, rvec **x, gpp_atomtype_t atype, t_symtab *tab,
              int nrtp, t_restp rtp[],
              t_restp *restp, t_hackblock *hb,
-             gmx_bool bAllowMissing,
-             gmx_bool bVsites, gmx_bool bVsiteAromatics,
+             bool bAllowMissing,
+             bool bVsites, bool bVsiteAromatics,
              const char *ffdir,
              real mHmult,
              int nssbonds, t_ssbond *ssbonds,
              real long_bond_dist, real short_bond_dist,
-             gmx_bool bDeuterate, gmx_bool bChargeGroups, gmx_bool bCmap,
-             gmx_bool bRenumRes, gmx_bool bRTPresname)
+             bool bDeuterate, bool bChargeGroups, bool bCmap,
+             bool bRenumRes, bool bRTPresname)
 {
     /*
        t_hackblock *hb;

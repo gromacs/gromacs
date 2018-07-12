@@ -149,7 +149,7 @@ static void get_bondeds(int nrat, const t_iatom atoms[],
 
 static at2vsitebond_t *make_at2vsitebond(int natoms, t_params plist[])
 {
-    gmx_bool       *bVSI;
+    bool           *bVSI;
     int             ftype, i, j, nrcheck, nr;
     t_iatom        *aa;
     at2vsitebond_t *at2vb;
@@ -217,7 +217,7 @@ static void done_at2vsitebond(int natoms, at2vsitebond_t *at2vb)
 
 static at2vsitecon_t *make_at2vsitecon(int natoms, t_params plist[])
 {
-    gmx_bool      *bVSI;
+    bool          *bVSI;
     int            ftype, i, j, ai, aj, nr;
     at2vsitecon_t *at2vc;
 
@@ -414,17 +414,17 @@ static char *get_atomtype_name_AB(t_atom *atom, gpp_atomtype_t atype)
     return name;
 }
 
-static gmx_bool calc_vsite3_param(gpp_atomtype_t atype,
-                                  t_param *param, t_atoms *at,
-                                  int nrbond, t_mybonded *bonds,
-                                  int nrang,  t_mybonded *angles )
+static bool calc_vsite3_param(gpp_atomtype_t atype,
+                              t_param *param, t_atoms *at,
+                              int nrbond, t_mybonded *bonds,
+                              int nrang,  t_mybonded *angles )
 {
     /* i = virtual site          |    ,k
      * j = 1st bonded heavy atom | i-j
      * k,l = 2nd bonded atoms    |    `l
      */
 
-    gmx_bool bXH3, bError;
+    bool     bXH3, bError;
     real     bjk, bjl, a = -1, b = -1;
     /* check if this is part of a NH3 , NH2-umbrella or CH3 group,
      * i.e. if atom k and l are dummy masses (MNH* or MCH3*) */
@@ -511,16 +511,16 @@ static gmx_bool calc_vsite3_param(gpp_atomtype_t atype,
     return bError;
 }
 
-static gmx_bool calc_vsite3fd_param(t_param *param,
-                                    int nrbond, t_mybonded *bonds,
-                                    int nrang,  t_mybonded *angles)
+static bool calc_vsite3fd_param(t_param *param,
+                                int nrbond, t_mybonded *bonds,
+                                int nrang,  t_mybonded *angles)
 {
     /* i = virtual site          |    ,k
      * j = 1st bonded heavy atom | i-j
      * k,l = 2nd bonded atoms    |    `l
      */
 
-    gmx_bool bError;
+    bool     bError;
     real     bij, bjk, bjl, aijk, aijl, rk, rl;
 
     bij    = get_bond_length(nrbond, bonds, param->ai(), param->aj());
@@ -544,9 +544,9 @@ static gmx_bool calc_vsite3fd_param(t_param *param,
     return bError;
 }
 
-static gmx_bool calc_vsite3fad_param(t_param *param,
-                                     int nrbond, t_mybonded *bonds,
-                                     int nrang,  t_mybonded *angles)
+static bool calc_vsite3fad_param(t_param *param,
+                                 int nrbond, t_mybonded *bonds,
+                                 int nrang,  t_mybonded *angles)
 {
     /* i = virtual site          |
      * j = 1st bonded heavy atom | i-j
@@ -554,7 +554,7 @@ static gmx_bool calc_vsite3fad_param(t_param *param,
      * l = 3d bonded heavy atom  |
      */
 
-    gmx_bool bSwapParity, bError;
+    bool     bSwapParity, bError;
     real     bij, aijk;
 
     bSwapParity = ( param->c1() == -1 );
@@ -579,10 +579,10 @@ static gmx_bool calc_vsite3fad_param(t_param *param,
     return bError;
 }
 
-static gmx_bool calc_vsite3out_param(gpp_atomtype_t atype,
-                                     t_param *param, t_atoms *at,
-                                     int nrbond, t_mybonded *bonds,
-                                     int nrang,  t_mybonded *angles)
+static bool calc_vsite3out_param(gpp_atomtype_t atype,
+                                 t_param *param, t_atoms *at,
+                                 int nrbond, t_mybonded *bonds,
+                                 int nrang,  t_mybonded *angles)
 {
     /* i = virtual site          |    ,k
      * j = 1st bonded heavy atom | i-j
@@ -590,7 +590,7 @@ static gmx_bool calc_vsite3out_param(gpp_atomtype_t atype,
      * NOTE: i is out of the j-k-l plane!
      */
 
-    gmx_bool bXH3, bError, bSwapParity;
+    bool     bXH3, bError, bSwapParity;
     real     bij, bjk, bjl, aijk, aijl, akjl, pijk, pijl, a, b, c;
 
     /* check if this is part of a NH2-umbrella, NH3 or CH3 group,
@@ -691,16 +691,16 @@ static gmx_bool calc_vsite3out_param(gpp_atomtype_t atype,
     return bError;
 }
 
-static gmx_bool calc_vsite4fd_param(t_param *param,
-                                    int nrbond, t_mybonded *bonds,
-                                    int nrang,  t_mybonded *angles)
+static bool calc_vsite4fd_param(t_param *param,
+                                int nrbond, t_mybonded *bonds,
+                                int nrang,  t_mybonded *angles)
 {
     /* i = virtual site          |    ,k
      * j = 1st bonded heavy atom | i-j-m
      * k,l,m = 2nd bonded atoms  |    `l
      */
 
-    gmx_bool bError;
+    bool     bError;
     real     bij, bjk, bjl, bjm, aijk, aijl, aijm, akjm, akjl;
     real     pk, pl, pm, cosakl, cosakm, sinakl, sinakm, cl, cm;
 
@@ -752,7 +752,7 @@ static gmx_bool calc_vsite4fd_param(t_param *param,
 }
 
 
-static gmx_bool
+static bool
 calc_vsite4fdn_param(t_param *param,
                      int nrbond, t_mybonded *bonds,
                      int nrang,  t_mybonded *angles)
@@ -762,7 +762,7 @@ calc_vsite4fdn_param(t_param *param,
      * k,l,m = 2nd bonded atoms  |    `l
      */
 
-    gmx_bool bError;
+    bool     bError;
     real     bij, bjk, bjl, bjm, aijk, aijl, aijm;
     real     pk, pl, pm, a, b;
 
@@ -816,12 +816,12 @@ calc_vsite4fdn_param(t_param *param,
 
 
 
-int set_vsites(gmx_bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
+int set_vsites(bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
                t_params plist[])
 {
     int             i, j, ftype;
     int             nvsite, nrbond, nrang, nridih, nrset;
-    gmx_bool        bFirst, bSet, bERROR;
+    bool            bFirst, bSet, bERROR;
     at2vsitebond_t *at2vb;
     t_mybonded     *bonds;
     t_mybonded     *angles;
@@ -952,7 +952,7 @@ int set_vsites(gmx_bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
     return nvsite;
 }
 
-void set_vsites_ptype(gmx_bool bVerbose, gmx_moltype_t *molt)
+void set_vsites_ptype(bool bVerbose, gmx_moltype_t *molt)
 {
     int      ftype, i;
     int      nra, nrd;
@@ -1034,7 +1034,7 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
     int          ftype, i, j, k, m, n, nvsite, nOut, kept_i;
     int          nconverted, nremoved;
     int          atom, oatom, at1, at2;
-    gmx_bool     bKeep, bRemove, bUsed, bPresent, bThisFD, bThisOUT, bAllFD, bFirstTwo;
+    bool         bKeep, bRemove, bUsed, bPresent, bThisFD, bThisOUT, bAllFD, bFirstTwo;
     t_params    *ps;
 
     if (cftype == F_CONNBONDS)
@@ -1298,7 +1298,7 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
 {
     int          i, j, k, m, n, nvsite, kept_i;
     int          atom, at1, at2;
-    gmx_bool     bKeep, bUsed, bPresent, bAll3FAD, bFirstTwo;
+    bool         bKeep, bUsed, bPresent, bAll3FAD, bFirstTwo;
     t_params    *ps;
 
     ps     = &(plist[cftype]);
@@ -1444,7 +1444,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
         int            vsnral      = 0;
         const int     *first_atoms = nullptr;
         int            atom;
-        gmx_bool       bKeep, bUsed, bPresent;
+        bool           bKeep, bUsed, bPresent;
 
 
         bKeep = FALSE;
@@ -1553,7 +1553,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
     ps->nr = kept_i;
 }
 
-void clean_vsite_bondeds(t_params *plist, int natoms, gmx_bool bRmVSiteBds)
+void clean_vsite_bondeds(t_params *plist, int natoms, bool bRmVSiteBds)
 {
     int            i, k, nvsite, ftype, vsite, parnr;
     int           *vsite_type;

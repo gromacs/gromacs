@@ -183,10 +183,10 @@ static void copy_t_rbonded(t_rbonded *s, t_rbonded *d)
     d->match = s->match;
 }
 
-static gmx_bool contains_char(t_rbonded *s, char c)
+static bool contains_char(t_rbonded *s, char c)
 {
     int      i;
-    gmx_bool bRet;
+    bool     bRet;
 
     bRet = FALSE;
     for (i = 0; i < MAXATOMLIST; i++)
@@ -205,7 +205,7 @@ rbonded_find_atoms_in_list(t_rbonded *b, t_rbonded blist[], int nlist, int natom
 {
     int      i, k;
     int      foundPos = -1;
-    gmx_bool atomsMatch;
+    bool     atomsMatch;
 
     for (i = 0; i < nlist && foundPos < 0; i++)
     {
@@ -241,10 +241,10 @@ rbonded_find_atoms_in_list(t_rbonded *b, t_rbonded blist[], int nlist, int natom
     return foundPos;
 }
 
-gmx_bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], gmx_bool bMin, gmx_bool bPlus)
+bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], bool bMin, bool bPlus)
 {
     int      i, j;
-    gmx_bool bBondsRemoved;
+    bool     bBondsRemoved;
     int      nbHackblockStart;
     int      index;
 
