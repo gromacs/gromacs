@@ -71,7 +71,7 @@
 
 typedef struct {
     char       atomtype[MAXNAME];  /* Type for the XH3/XH2 atom */
-    gmx_bool   isplanar;           /* If true, the atomtype above and the three connected
+    bool       isplanar;           /* If true, the atomtype above and the three connected
                                     * ones are in a planar geometry. The two next entries
                                     * are undefined in that case
                                     */
@@ -329,7 +329,7 @@ static int nitrogen_is_planar(t_vsiteconf vsiteconflist[], int nvsiteconf, char 
      * and -1 if not found.
      */
     int      i, res;
-    gmx_bool found = FALSE;
+    bool     found = FALSE;
     for (i = 0; i < nvsiteconf && !found; i++)
     {
         found = (!gmx_strcasecmp(vsiteconflist[i].atomtype, atomtype) && (vsiteconflist[i].nhydrogens == 2));
@@ -350,7 +350,7 @@ static char *get_dummymass_name(t_vsiteconf vsiteconflist[], int nvsiteconf, cha
 {
     /* Return the dummy mass name if found, or NULL if not set in ddb database */
     int      i;
-    gmx_bool found = FALSE;
+    bool     found = FALSE;
     for (i = 0; i < nvsiteconf && !found; i++)
     {
         found = (!gmx_strcasecmp(vsiteconflist[i].atomtype, atom) &&
@@ -517,7 +517,7 @@ static int get_atype(int atom, t_atoms *at, int nrtp, t_restp rtp[],
                      gmx_residuetype_t *rt)
 {
     int      type;
-    gmx_bool bNterm;
+    bool     bNterm;
     int      j;
     t_restp *rtpp;
 
@@ -555,7 +555,7 @@ static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[],
                       gmx_residuetype_t *rt)
 {
     real     mass;
-    gmx_bool bNterm;
+    bool     bNterm;
     int      j;
     t_restp *rtpp;
 
@@ -589,7 +589,7 @@ static void add_vsites(t_params plist[], int vsite_type[],
                        int nrheavies, int heavies[])
 {
     int      i, j, ftype, other, moreheavy;
-    gmx_bool bSwapParity;
+    bool     bSwapParity;
 
     for (i = 0; i < nrHatoms; i++)
     {
@@ -693,7 +693,7 @@ static void add_vsites(t_params plist[], int vsite_type[],
 
 static int gen_vsites_6ring(t_atoms *at, int *vsite_type[], t_params plist[],
                             int nrfound, int *ats, real bond_cc, real bond_ch,
-                            real xcom, gmx_bool bDoZ)
+                            real xcom, bool bDoZ)
 {
     /* these MUST correspond to the atnms array in do_vsite_aromatics! */
     enum {
@@ -1491,7 +1491,7 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
     return nvsite;
 }
 
-static gmx_bool is_vsite(int vsite_type)
+static bool is_vsite(int vsite_type)
 {
     if (vsite_type == NOTSET)
     {
@@ -1516,7 +1516,7 @@ static char atomnamesuffix[] = "1234";
 void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                t_atoms *at, t_symtab *symtab, rvec *x[],
                t_params plist[], int *vsite_type[], int *cgnr[],
-               real mHmult, gmx_bool bVsiteAromatics,
+               real mHmult, bool bVsiteAromatics,
                const char *ffdir)
 {
 #define MAXATOMSPERRESIDUE 16
@@ -1524,9 +1524,9 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
     int               ai, aj, ak, al;
     int               nrfound = 0, needed, nrbonds, nrHatoms, Heavy, nrheavies, tpM, tpHeavy;
     int               Hatoms[4], heavies[4];
-    gmx_bool          bWARNING, bAddVsiteParam, bFirstWater;
+    bool              bWARNING, bAddVsiteParam, bFirstWater;
     matrix            tmpmat;
-    gmx_bool         *bResProcessed;
+    bool             *bResProcessed;
     real              mHtot, mtot, fact, fact2;
     rvec              rpar, rperp, temp;
     char              name[10], tpname[32], nexttpname[32], *ch;
@@ -1539,7 +1539,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
     int               ndb, f;
     char            **db;
     int               nvsiteconf, nvsitetop, cmplength;
-    gmx_bool          isN, planarN, bFound;
+    bool              isN, planarN, bFound;
     gmx_residuetype_t*rt;
 
     t_vsiteconf      *vsiteconflist;
@@ -1567,7 +1567,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
     const char *resnmsN[resNR]  = {  "NPHE", "NTRP", "NTYR", "NHIS" };
     const char *resnmsC[resNR]  = {  "CPHE", "CTRP", "CTYR", "CHIS" };
     /* HIS can be known as HISH, HIS1, HISA, HID, HIE, HIP, etc. too */
-    gmx_bool    bPartial[resNR]  = {  FALSE,  FALSE,  FALSE,   TRUE  };
+    bool        bPartial[resNR]  = {  FALSE,  FALSE,  FALSE,   TRUE  };
     /* the atnms for every residue MUST correspond to the enums in the
        gen_vsites_* (one for each residue) routines! */
     /* also the atom names in atnms MUST be in the same order as in the .rtp! */
@@ -1853,7 +1853,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                 {
                     /* CH3, NH3 or non-planar NH2 group */
                     int      Hat_vsite_type[3] = { F_VSITE3, F_VSITE3OUT, F_VSITE3OUT };
-                    gmx_bool Hat_SwapParity[3] = { FALSE,    TRUE,        FALSE };
+                    bool     Hat_SwapParity[3] = { FALSE,    TRUE,        FALSE };
 
                     if (debug)
                     {
@@ -2166,7 +2166,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 }
 
 void do_h_mass(t_params *psb, int vsite_type[], t_atoms *at, real mHmult,
-               gmx_bool bDeuterate)
+               bool bDeuterate)
 {
     int i, j, a;
 

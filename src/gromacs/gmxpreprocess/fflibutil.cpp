@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -98,7 +98,7 @@ void fflib_filename_base(const char *filename, char *filebase, int maxlen)
 
 int fflib_search_file_end(const char *ffdir,
                           const char *file_end,
-                          gmx_bool    bFatalError,
+                          bool        bFatalError,
                           char     ***filenames)
 {
     try
@@ -167,7 +167,7 @@ std::vector<gmx::DataFileInfo> fflib_enumerate_forcefields()
     return result;
 }
 
-gmx_bool fflib_fexist(const char *file)
+bool fflib_fexist(const char *file)
 {
     char *file_fullpath;
 

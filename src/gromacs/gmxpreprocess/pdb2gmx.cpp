@@ -271,8 +271,8 @@ static void read_rtprename(const char *fname, FILE *fp,
 
 static char *search_resrename(int nrr, rtprename_t *rr,
                               const char *name,
-                              gmx_bool bStart, gmx_bool bEnd,
-                              gmx_bool bCompareFFRTPname)
+                              bool bStart, bool bEnd,
+                              bool bCompareFFRTPname)
 {
     char *nn;
     int   i;
@@ -323,16 +323,16 @@ static void rename_resrtp(t_atoms *pdba, int nterpairs, const int *r_start, cons
                           gmx_bool bVerbose)
 {
     int      r, j;
-    gmx_bool bStart, bEnd;
+    bool     bStart, bEnd;
     char    *nn;
-    gmx_bool bFFRTPTERRNM;
+    bool     bFFRTPTERRNM;
 
     bFFRTPTERRNM = (getenv("GMX_NO_FFRTP_TER_RENAME") == nullptr);
 
     for (r = 0; r < pdba->nres; r++)
     {
-        bStart = FALSE;
-        bEnd   = FALSE;
+        bStart = false;
+        bEnd   = false;
         for (j = 0; j < nterpairs; j++)
         {
             if (r == r_start[j])
@@ -344,7 +344,7 @@ static void rename_resrtp(t_atoms *pdba, int nterpairs, const int *r_start, cons
         {
             if (r == r_end[j])
             {
-                bEnd = TRUE;
+                bEnd = true;
             }
         }
 
@@ -387,7 +387,7 @@ static void pdbres_to_gmxrtp(t_atoms *pdba)
 }
 
 static void rename_pdbres(t_atoms *pdba, const char *oldnm, const char *newnm,
-                          gmx_bool bFullCompare, t_symtab *symtab)
+                          bool bFullCompare, t_symtab *symtab)
 {
     char *resnm;
     int   i;
@@ -405,7 +405,7 @@ static void rename_pdbres(t_atoms *pdba, const char *oldnm, const char *newnm,
 }
 
 static void rename_bb(t_atoms *pdba, const char *oldnm, const char *newnm,
-                      gmx_bool bFullCompare, t_symtab *symtab)
+                      bool bFullCompare, t_symtab *symtab)
 {
     char *bbnm;
     int   i;
@@ -425,7 +425,7 @@ static void rename_bb(t_atoms *pdba, const char *oldnm, const char *newnm,
 
 static void rename_bbint(t_atoms *pdba, const char *oldnm,
                          const char *gettp(int, int, const rtprename_t *),
-                         gmx_bool bFullCompare,
+                         bool bFullCompare,
                          t_symtab *symtab,
                          int nrr, const rtprename_t *rr)
 {
@@ -1230,19 +1230,19 @@ modify_chain_numbers(t_atoms *       pdba,
 
 
 typedef struct {
-    char     chainid;
-    char     chainnum;
-    int      start;
-    int      natom;
-    gmx_bool bAllWat;
-    int      nterpairs;
-    int     *chainstart;
+    char  chainid;
+    char  chainnum;
+    int   start;
+    int   natom;
+    bool  bAllWat;
+    int   nterpairs;
+    int  *chainstart;
 } t_pdbchain;
 
 typedef struct {
     char          chainid;
     int           chainnum;
-    gmx_bool      bAllWat;
+    bool          bAllWat;
     int           nterpairs;
     int          *chainstart;
     t_hackblock **ntdb;
@@ -1409,7 +1409,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     int               nssbonds;
     t_ssbond         *ssbonds;
     rvec             *pdbx, *x;
-    gmx_bool          bVsites = FALSE, bWat, bPrevWat = FALSE, bITP, bVsiteAromatics = FALSE;
+    bool              bVsites = FALSE, bWat, bPrevWat = FALSE, bITP, bVsiteAromatics = FALSE;
     real              mHmult  = 0;
     t_hackblock      *hb_chain;
     t_restp          *restp_chain;
@@ -1431,7 +1431,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     int               nid_used;
     int               this_chainstart;
     int               prev_chainstart;
-    gmx_bool          bMerged;
+    bool              bMerged;
     int               nchainmerges;
 
     gmx_atomprop_t    aps;
@@ -1446,23 +1446,23 @@ int gmx_pdb2gmx(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    gmx_bool           bNewRTP        = FALSE;
-    gmx_bool           bInter         = FALSE, bCysMan = FALSE;
-    gmx_bool           bLysMan        = FALSE, bAspMan = FALSE, bGluMan = FALSE, bHisMan = FALSE;
-    gmx_bool           bGlnMan        = FALSE, bArgMan = FALSE;
-    gmx_bool           bTerMan        = FALSE, bUnA = FALSE, bHeavyH = FALSE;
-    gmx_bool           bSort          = TRUE, bAllowMissing = FALSE, bRemoveH = FALSE;
-    gmx_bool           bDeuterate     = FALSE, bVerbose = FALSE, bChargeGroups = TRUE, bCmap = TRUE;
-    gmx_bool           bRenumRes      = FALSE, bRTPresname = FALSE;
-    real               angle          = 135.0, distance = 0.3, posre_fc = 1000;
-    real               long_bond_dist = 0.25, short_bond_dist = 0.05;
-    const char        *vsitestr[]     = { nullptr, "none", "hydrogens", "aromatics", nullptr };
-    const char        *watstr[]       = { nullptr, "select", "none", "spc", "spce", "tip3p", "tip4p", "tip5p", "tips3p", nullptr };
-    const char        *chainsep[]     = { nullptr, "id_or_ter", "id_and_ter", "ter", "id", "interactive", nullptr };
-    const char        *merge[]        = {nullptr, "no", "all", "interactive", nullptr };
+    gmx_bool    bNewRTP        = FALSE;
+    gmx_bool    bInter         = FALSE, bCysMan = FALSE;
+    gmx_bool    bLysMan        = FALSE, bAspMan = FALSE, bGluMan = FALSE, bHisMan = FALSE;
+    gmx_bool    bGlnMan        = FALSE, bArgMan = FALSE;
+    gmx_bool    bTerMan        = FALSE, bUnA = FALSE, bHeavyH = FALSE;
+    gmx_bool    bSort          = TRUE, bAllowMissing = FALSE, bRemoveH = FALSE;
+    gmx_bool    bDeuterate     = FALSE, bVerbose = FALSE, bChargeGroups = TRUE, bCmap = TRUE;
+    gmx_bool    bRenumRes      = FALSE, bRTPresname = FALSE;
+    real        angle          = 135.0, distance = 0.3, posre_fc = 1000;
+    real        long_bond_dist = 0.25, short_bond_dist = 0.05;
+    const char *vsitestr[]     = { nullptr, "none", "hydrogens", "aromatics", nullptr };
+    const char *watstr[]       = { nullptr, "select", "none", "spc", "spce", "tip3p", "tip4p", "tip5p", "tips3p", nullptr };
+    const char *chainsep[]     = { nullptr, "id_or_ter", "id_and_ter", "ter", "id", "interactive", nullptr };
+    const char *merge[]        = {nullptr, "no", "all", "interactive", nullptr };
     const char        *ff             = "select";
 
-    t_pargs            pa[] = {
+    t_pargs     pa[] = {
         { "-newrtp", FALSE, etBOOL, {&bNewRTP},
           "HIDDENWrite the residue database in new format to [TT]new.rtp[tt]"},
         { "-lb",     FALSE, etREAL, {&long_bond_dist},
@@ -1685,7 +1685,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     maxch = 16;
     snew(pdb_ch, maxch);
 
-    bMerged = FALSE;
+    bMerged = false;
     for (i = 0; (i < natom); i++)
     {
         ri = &pdba_all.resinfo[pdba_all.atom[i].resind];
@@ -1715,7 +1715,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
         if ((i == 0) || (this_chainnumber != prev_chainnumber) || (bWat != bPrevWat))
         {
             this_chainstart = pdba_all.atom[i].resind;
-            bMerged         = FALSE;
+            bMerged         = false;
             if (i > 0 && !bWat)
             {
                 if (!strncmp(merge[0], "int", 3))
@@ -1733,7 +1733,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
                 }
                 else if (!strncmp(merge[0], "all", 3))
                 {
-                    bMerged = TRUE;
+                    bMerged = true;
                 }
             }
 

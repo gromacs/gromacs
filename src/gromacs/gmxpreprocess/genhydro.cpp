@@ -64,7 +64,7 @@ static void copy_atom(t_atoms *atoms1, int a1, t_atoms *atoms2, int a2)
 }
 
 static int pdbasearch_atom(const char *name, int resind, t_atoms *pdba,
-                           const char *searchtype, gmx_bool bAllowMissing)
+                           const char *searchtype, bool bAllowMissing)
 {
     int  i;
 
@@ -107,7 +107,7 @@ static void hacksearch_atom(int *ii, int *jj, char *name,
 
 }
 
-static void dump_ab(FILE *out, int natom, const int nab[], t_hack *ab[], gmx_bool bHeader)
+static void dump_ab(FILE *out, int natom, const int nab[], t_hack *ab[], bool bHeader)
 {
     int i, j;
 
@@ -174,10 +174,10 @@ static t_hackblock *get_hackblocks(t_atoms *pdba, int nah, t_hackblock ah[],
 }
 
 static void expand_hackblocks_one(t_hackblock *hbr, char *atomname,
-                                  int *nabi, t_hack **abi, gmx_bool bN, gmx_bool bC)
+                                  int *nabi, t_hack **abi, bool bN, bool bC)
 {
     int      j, k, l;
-    gmx_bool bIgnore;
+    bool     bIgnore;
 
     /* we'll recursively add atoms to atoms */
     for (j = 0; j < hbr->nhack; j++)
@@ -292,7 +292,7 @@ static void expand_hackblocks(t_atoms *pdba, t_hackblock hb[],
                               int nterpairs, const int *rN, const int *rC)
 {
     int      i, j;
-    gmx_bool bN, bC;
+    bool     bN, bC;
 
     for (i = 0; i < pdba->nr; i++)
     {
@@ -366,13 +366,13 @@ static int check_atoms_present(t_atoms *pdba, const int nab[], t_hack *ab[])
 }
 
 static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[],
-                         gmx_bool bCheckMissing)
+                         bool bCheckMissing)
 {
     int      i, j, ii, jj, m, ia, d, rnr, l = 0;
 #define MAXH 4
     rvec     xa[4];    /* control atoms for calc_h_pos */
     rvec     xh[MAXH]; /* hydrogen positions from calc_h_pos */
-    gmx_bool bFoundAll;
+    bool     bFoundAll;
 
     jj = 0;
 
@@ -461,9 +461,9 @@ static void free_ab(int natoms, int *nab, t_hack **ab)
 static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
                      int nah, t_hackblock ah[],
                      int nterpairs, t_hackblock **ntdb, t_hackblock **ctdb,
-                     int *rN, int *rC, gmx_bool bCheckMissing,
+                     int *rN, int *rC, bool bCheckMissing,
                      int **nabptr, t_hack ***abptr,
-                     gmx_bool bUpdate_pdba, gmx_bool bKeep_old_pdba)
+                     bool bUpdate_pdba, bool bKeep_old_pdba)
 {
     t_atoms        *newpdba = nullptr, *pdba = nullptr;
     int             nadd;
@@ -472,7 +472,7 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
     t_hack        **ab  = nullptr;
     t_hackblock    *hb;
     rvec           *xn;
-    gmx_bool        bKeep_ab;
+    bool            bKeep_ab;
 
     /* set flags for adding hydrogens (according to hdb) */
     pdba   = *pdbaptr;
@@ -733,9 +733,9 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
 int add_h(t_atoms **pdbaptr, rvec *xptr[],
           int nah, t_hackblock ah[],
           int nterpairs, t_hackblock **ntdb, t_hackblock **ctdb,
-          int *rN, int *rC, gmx_bool bAllowMissing,
+          int *rN, int *rC, bool bAllowMissing,
           int **nabptr, t_hack ***abptr,
-          gmx_bool bUpdate_pdba, gmx_bool bKeep_old_pdba)
+          bool bUpdate_pdba, bool bKeep_old_pdba)
 {
     int nold, nnew, niter;
 
