@@ -40,9 +40,9 @@
 
 #include "gromacs/gmxpreprocess/pdb2top.h"
 
-int mk_specbonds(t_atoms *pdba, rvec x[], gmx_bool bInteractive,
-                 t_ssbond **specbonds, gmx_bool bVerbose);
+int mk_specbonds(t_atoms *pdba, rvec x[], bool bInteractive,
+                 t_ssbond **specbonds, bool bVerbose);
 
-gmx_bool yesno(void);
+bool yesno(void);
 
 #endif

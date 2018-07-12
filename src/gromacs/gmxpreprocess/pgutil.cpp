@@ -51,7 +51,7 @@
 static void atom_not_found(int fatal_errno, const char *file, int line,
                            const char *atomname, int resind,
                            const char *resname,
-                           const char *bondtype, gmx_bool bAllowMissing)
+                           const char *bondtype, bool bAllowMissing)
 {
     char message_buffer[BUFSIZE];
     if (strcmp(bondtype, "check") != 0)
@@ -88,10 +88,10 @@ static void atom_not_found(int fatal_errno, const char *file, int line,
 
 int search_atom(const char *type, int start,
                 t_atoms *atoms,
-                const char *bondtype, gmx_bool bAllowMissing)
+                const char *bondtype, bool bAllowMissing)
 {
     int             i, resind = -1;
-    gmx_bool        bPrevious, bNext;
+    bool            bPrevious, bNext;
     int             natoms = atoms->nr;
     t_atom         *at     = atoms->atom;
     char ** const * anm    = atoms->atomname;
@@ -154,7 +154,7 @@ int search_atom(const char *type, int start,
 int
 search_res_atom(const char *type, int resind,
                 t_atoms *atoms,
-                const char *bondtype, gmx_bool bAllowMissing)
+                const char *bondtype, bool bAllowMissing)
 {
     int i;
 

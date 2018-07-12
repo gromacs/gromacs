@@ -117,7 +117,7 @@ assign_param(t_functype ftype, t_iparams *newparam,
              real old[MAXFORCEPARAM], int comb, double reppow)
 {
     int      i, j;
-    gmx_bool all_param_zero = TRUE;
+    bool     all_param_zero = TRUE;
 
     /* Set to zero */
     for (j = 0; (j < MAXFORCEPARAM); j++)
@@ -455,7 +455,7 @@ assign_param(t_functype ftype, t_iparams *newparam,
 
 static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
                         real forceparams[MAXFORCEPARAM], int comb, real reppow,
-                        int start, gmx_bool bAppend)
+                        int start, bool bAppend)
 {
     t_iparams newparam;
     int       type;
@@ -515,7 +515,7 @@ static void append_interaction(t_ilist *ilist,
 static void enter_function(t_params *p, t_functype ftype, int comb, real reppow,
                            gmx_ffparams_t *ffparams, t_ilist *il,
                            int *maxtypes,
-                           gmx_bool bNB, gmx_bool bAppend)
+                           bool bNB, bool bAppend)
 {
     int     k, type, nr, nral, delta, start;
 

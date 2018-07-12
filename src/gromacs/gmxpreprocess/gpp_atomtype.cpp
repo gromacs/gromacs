@@ -279,7 +279,7 @@ static int search_atomtypes(gpp_atomtype_t ga, int *n, int typelist[],
                             t_param param[], int ftype)
 {
     int      i, nn, nrfp, j, k, ntype, tli;
-    gmx_bool bFound = FALSE;
+    bool     bFound = FALSE;
 
     nn    = *n;
     nrfp  = NRFP(ftype);
@@ -335,7 +335,7 @@ static int search_atomtypes(gpp_atomtype_t ga, int *n, int typelist[],
 
 void renum_atype(t_params plist[], gmx_mtop_t *mtop,
                  int *wall_atomtype,
-                 gpp_atomtype_t ga, gmx_bool bVerbose)
+                 gpp_atomtype_t ga, bool bVerbose)
 {
     int         i, j, k, l, mi, mj, nat, nrfp, ftype, ntype;
     t_atoms    *atoms;

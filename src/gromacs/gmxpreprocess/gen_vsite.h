@@ -48,10 +48,10 @@
 void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                t_atoms *at, struct t_symtab *symtab, rvec *x[],
                t_params plist[], int *dummy_type[], int *cgnr[],
-               real mHmult, gmx_bool bVSiteAromatics,
+               real mHmult, bool bVSiteAromatics,
                const char *ffdir);
 
 void do_h_mass(t_params *psb, int vsite_type[], t_atoms *at, real mHmult,
-               gmx_bool bDeuterate);
+               bool bDeuterate);
 
 #endif

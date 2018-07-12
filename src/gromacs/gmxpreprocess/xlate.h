@@ -50,7 +50,7 @@ struct t_symtab;
  */
 void rename_atoms(const char *xlfile, const char *ffdir,
                   struct t_atoms *atoms, struct t_symtab *symtab, const t_restp *restp,
-                  gmx_bool bResname, struct gmx_residuetype_t *rt, gmx_bool bReorderNum,
-                  gmx_bool bVerbose);
+                  bool bResname, struct gmx_residuetype_t *rt, bool bReorderNum,
+                  bool bVerbose);
 
 #endif

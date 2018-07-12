@@ -131,7 +131,7 @@ int gmx_genconf(int argc, char *argv[])
     int               nres;      /* number of molecules? */
     int               i, j, k, l, m, ndx, nrdx, nx, ny, nz;
     t_trxstatus      *status;
-    gmx_bool          bTRX;
+    bool              bTRX;
     gmx_output_env_t *oenv;
 
     t_filenm          fnm[] = {

@@ -736,7 +736,7 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
     char        buf[STRLEN], buf2[STRLEN], *temp;
     const char *topinout;
     int         line;
-    gmx_bool    bSystem, bMolecules, bSkip;
+    bool        bSystem, bMolecules, bSkip;
     int         i, nsol = 0;
     double      mtot;
     real        vol, mm;
@@ -918,7 +918,7 @@ int gmx_solvate(int argc, char *argv[])
     };
 
     /* parameter data */
-    gmx_bool       bProt, bBox;
+    bool           bProt, bBox;
     const char    *conf_prot, *confout;
     gmx_atomprop_t aps;
 
@@ -937,7 +937,7 @@ int gmx_solvate(int argc, char *argv[])
 
     real              defaultDistance = 0.105, r_shell = 0, scaleFactor = 0.57;
     rvec              new_box         = {0.0, 0.0, 0.0};
-    gmx_bool          bReadV          = FALSE;
+    bool              bReadV          = FALSE;
     int               max_sol         = 0;
     gmx_output_env_t *oenv;
     t_pargs           pa[]              = {
