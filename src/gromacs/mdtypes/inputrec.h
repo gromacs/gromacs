@@ -234,13 +234,8 @@ typedef struct t_swapcoords {
                                             * swapcoords.cpp                               */
 } t_swapcoords;
 
-struct t_inputrec
+struct t_inputrec_old
 {
-    t_inputrec();
-    explicit t_inputrec(const t_inputrec &) = delete;
-    t_inputrec &operator=(const t_inputrec &) = delete;
-    ~t_inputrec();
-
     int             eI;                      /* Integration method                 */
     gmx_int64_t     nsteps;                  /* number of steps to be taken			*/
     int             simulation_part;         /* Used in checkpointing to separate chunks */
@@ -387,6 +382,34 @@ struct t_inputrec
     gmx::KeyValueTreeObject *params;
 };
 
+/*! \brief Wrapper around trivial structs to zero initialize them
+ *
+ * This is intented as a temporary migration path for
+ * old C style structs without constructor to be ported to modern C++.
+ * Most of the old GROMACS C struct assume that all values are zero-
+ * initialized with snew. To use them with new or on the stack
+ * they have to be explcitly zero initialzed before they get a proper
+ * constructor. To use this wrapper the old struct needs to be renamed
+ * from e.g. my_struct to e.g. my_struct_old. Then my_stract gets defined
+ * as either:
+ *    A) using my_struct = zeroInit<my_struct>;
+ * or B) struct my_struct : zeroInit<my_struct>;
+ * Synatx A (template alias) is better if nothing other than zeroInit
+ * is required. Syntax B should be used if a the struct is partially
+ * modernized and has a constructor which inializes some members.
+ */
+template<typename T, typename =
+             //Verify that wrapped struct is trival
+             typename std::enable_if<std::is_trivial<T>::value>::type>
+struct zeroInit : T {
+    zeroInit() : T() {} //Call trivial default constructor to zero initialize
+};
+
+struct t_inputrec : zeroInit<t_inputrec_old>
+{
+    t_inputrec();
+    ~t_inputrec();
+};
 int ir_optimal_nstcalcenergy(const t_inputrec *ir);
 
 int tcouple_min_integration_steps(int etc);
