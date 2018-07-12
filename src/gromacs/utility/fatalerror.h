@@ -136,7 +136,7 @@ enum ExitType
  * \param[in] returnValue  Exit code for the program, for cases where it can be
  *    used.
  */
-gmx_noreturn void gmx_exit_on_fatal_error(enum ExitType exitType, int returnValue);
+[[noreturn]] void gmx_exit_on_fatal_error(enum ExitType exitType, int returnValue);
 
 /*! \brief
  * Low-level fatal error reporting routine for collective MPI errors.
@@ -150,7 +150,7 @@ gmx_noreturn void gmx_exit_on_fatal_error(enum ExitType exitType, int returnValu
  * This is used to implement gmx_fatal_collective() (which cannot be declared
  * here, since it would bring with it mdrun-specific dependencies).
  */
-gmx_noreturn void
+[[noreturn]] void
 gmx_fatal_mpi_va(int fatal_errno, const char *file, int line,
                  gmx_bool bMaster, gmx_bool bFinalize,
                  const char *fmt, va_list ap);
@@ -176,13 +176,13 @@ gmx_fatal_mpi_va(int fatal_errno, const char *file, int line,
    gmx_fatal(FARGS, fmt, ...);
    \endcode
  */
-gmx_noreturn void
+[[noreturn]] void
 gmx_fatal(int fatal_errno, const char *file, int line, const char *fmt, ...);
 /** Helper macro to pass first three parameters to gmx_fatal(). */
 #define FARGS 0, __FILE__, __LINE__
 
 /** Implementation for gmx_error(). */
-gmx_noreturn void _gmx_error(const char *key, const char *msg, const char *file, int line);
+[[noreturn]] void _gmx_error(const char *key, const char *msg, const char *file, int line);
 /*! \brief
  * Alternative fatal error routine with canned messages.
  *

@@ -695,7 +695,7 @@ int processExceptionAtExit(const std::exception &ex);
  *
  * Does not throw, and does not return.
  */
-gmx_noreturn void processExceptionAsFatalError(const std::exception &ex);
+[[noreturn]] void processExceptionAsFatalError(const std::exception &ex);
 
 /*! \brief
  * Macro for catching exceptions at C++ -> C boundary.

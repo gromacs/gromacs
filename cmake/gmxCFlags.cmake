@@ -129,9 +129,6 @@ macro (gmx_c_flags)
         if(NOT GMX_OPENMP)
             GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
         endif()
-        if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "7.0.0")
-            GMX_TEST_CXXFLAG(CXXFLAGS_ATTRIBUTE "-Wno-attributes" GMXC_CXXFLAGS)
-        endif()
         if (GMX_COMPILER_WARNINGS)
             GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall" GMXC_CXXFLAGS)
             # Problematic with CUDA
@@ -199,7 +196,6 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd1419 /wd1
             if(NOT GMX_OPENMP)
                 GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-wd3180" GMXC_CXXFLAGS)
             endif()
-            GMX_TEST_CXXFLAG(CXXFLAGS_ATTRIBUTE "-Wno-attributes" GMXC_CXXFLAGS)
             if (GMX_COMPILER_WARNINGS)
                 if (GMX_GPU)
 # Suppress warnings from CUDA headers
@@ -296,13 +292,11 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd1419 /wd1
         #      unreferenced local variable (only C)
         #      conversion from 'size_t' to 'int', possible loss of data
         #      conversion from 'const char*' to 'void*', different 'const' qualifiers (only C)
-        #      attributes are ignored in this context
-        #      attribute '' is not recognized
         if(NOT CMAKE_CONFIGURATION_TYPES)
             GMX_TEST_CFLAG(CFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4101 /wd4267 /wd4090" GMXC_CFLAGS)
-            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4267 /wd5030 /wd4649" GMXC_CXXFLAGS)
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4267" GMXC_CXXFLAGS)
         else() #Projects only use the C++ flags
-            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4101 /wd4267 /wd4090 /wd5030 /wd4649" GMXC_CXXFLAGS)
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4101 /wd4267 /wd4090" GMXC_CXXFLAGS)
         endif()
     endif()
 
@@ -317,9 +311,6 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd1419 /wd1
     endif()
 
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.9.0")
-            GMX_TEST_CXXFLAG(CXXFLAGS_ATTRIBUTE "-Wno-attributes" GMXC_CXXFLAGS)
-        endif()
         if(NOT GMX_OPENMP)
             GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
         endif()

@@ -103,7 +103,7 @@ namespace internal
  *
  * \ingroup module_utility
  */
-gmx_noreturn
+[[noreturn]]
 void assertHandler(const char *condition, const char *msg,
                    const char *func, const char *file, int line);
 
