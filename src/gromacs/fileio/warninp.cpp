@@ -184,7 +184,7 @@ static void print_warn_count(const char *type, int n)
 }
 
 // Note it is the caller's responsibility to ensure that exiting is correct behaviour
-static gmx_noreturn void check_warning_error_impl(warninp_t wi, int f_errno, const char *file, int line)
+static [[noreturn]] void check_warning_error_impl(warninp_t wi, int f_errno, const char *file, int line)
 {
     print_warn_count("note", wi->nwarn_note);
     print_warn_count("warning", wi->nwarn_warn);
