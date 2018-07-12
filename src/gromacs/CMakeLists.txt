@@ -305,10 +305,10 @@ if (GMX_CLANG_TIDY)
    find_program(CLANG_TIDY_EXE NAMES "${CLANG_TIDY}"
        DOC "Path to clang-tidy executable")
    if(NOT CLANG_TIDY_EXE)
-       message(ERROR "clang-tidy not found.")
+       message(FATAL_ERROR "clang-tidy not found.")
    endif()
    if(CMAKE_VERSION VERSION_LESS "3.6")
-       message(ERROR "clang-tidy support requires cmake 3.6.")
+       message(FATAL_ERROR "clang-tidy support requires cmake 3.6.")
    endif()
    set(CLANG_TIDY_CHECKS
        "-clang-analyzer-security.insecureAPI.strcpy"
