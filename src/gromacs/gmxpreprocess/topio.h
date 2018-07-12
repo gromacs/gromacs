@@ -53,11 +53,11 @@ typedef warninp *warninp_t;
 double check_mol(const gmx_mtop_t *mtop, warninp_t wi);
 /* Check mass and charge */
 
-char **do_top(gmx_bool                      bVerbose,
+char **do_top(bool                          bVerbose,
               const char                   *topfile,
               const char                   *topppfile,
               t_gromppopts                 *opts,
-              gmx_bool                      bZero,
+              bool                          bZero,
               struct t_symtab              *symtab,
               t_params                      plist[],
               int                          *combination_rule,

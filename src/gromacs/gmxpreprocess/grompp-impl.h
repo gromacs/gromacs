@@ -50,8 +50,8 @@ struct t_blocka;
 #define MAXSLEN 32
 
 typedef struct {
-    gmx_bool bSet;              /* Has this combination been set        */
-    real     c[4];              /* The non-bonded parameters            */
+    bool     bSet;          /* Has this combination been set        */
+    real     c[4];          /* The non-bonded parameters            */
 } t_nbparam;
 /* The t_nbparam struct is used to temporary store the explicit
  * non-bonded parameter combinations, which will be copied to t_params.
@@ -104,8 +104,8 @@ typedef struct {
 typedef struct {
     char            **name;
     int               nrexcl;       /* Number of exclusions per atom	*/
-    gmx_bool          excl_set;     /* Have exclusions been generated?	*/
-    gmx_bool          bProcessed;   /* Has the mol been processed           */
+    bool              excl_set;     /* Have exclusions been generated?	*/
+    bool              bProcessed;   /* Has the mol been processed           */
     t_atoms           atoms;        /* Atoms                                */
     t_block           cgs;          /* Charge groups                        */
     t_block           mols;         /* Molecules                            */
@@ -118,7 +118,7 @@ typedef struct {
     int   nr;
 } t_mols;
 
-gmx_bool is_int(double x);
+bool is_int(double x);
 /* Returns TRUE when x is integer */
 
 /* Must correspond to strings in topdirs.c */

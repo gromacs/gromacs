@@ -61,12 +61,12 @@
 #include "gromacs/utility/smalloc.h"
 
 #define DIHEDRAL_WAS_SET_IN_RTP 0
-static gmx_bool was_dihedral_set_in_rtp(const t_param *dih)
+static bool was_dihedral_set_in_rtp(const t_param *dih)
 {
     return dih->c[MAXFORCEPARAM-1] == DIHEDRAL_WAS_SET_IN_RTP;
 }
 
-typedef gmx_bool (*peq)(t_param *p1, t_param *p2);
+typedef bool (*peq)(t_param *p1, t_param *p2);
 
 static int acomp(const void *a1, const void *a2)
 {
@@ -145,7 +145,7 @@ static int dcomp(const void *d1, const void *d2)
 }
 
 
-static gmx_bool is_dihedral_on_same_bond(t_param *p1, t_param *p2)
+static bool is_dihedral_on_same_bond(t_param *p1, t_param *p2)
 {
     if (((p1->aj() == p2->aj()) && (p1->ak() == p2->ak())) ||
         ((p1->aj() == p2->ak()) && (p1->ak() == p2->aj())))
@@ -159,7 +159,7 @@ static gmx_bool is_dihedral_on_same_bond(t_param *p1, t_param *p2)
 }
 
 
-static gmx_bool preq(t_param *p1, t_param *p2)
+static bool preq(t_param *p1, t_param *p2)
 {
     if ((p1->ai() == p2->ai()) && (p1->aj() == p2->aj()))
     {
@@ -377,8 +377,8 @@ static int n_hydro(const int a[], char ***atomname)
 /* Clean up the dihedrals (both generated and read from the .rtp
  * file). */
 static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper,
-                      t_atoms *atoms, gmx_bool bKeepAllGeneratedDihedrals,
-                      gmx_bool bRemoveDihedralIfWithImproper)
+                      t_atoms *atoms, bool bKeepAllGeneratedDihedrals,
+                      bool bRemoveDihedralIfWithImproper)
 {
     int   i, j, k, l;
     int  *index, nind;
@@ -422,8 +422,8 @@ static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper
     k = 0;
     for (i = 0; i < nind; i++)
     {
-        gmx_bool bWasSetInRTP = was_dihedral_set_in_rtp(&dih[index[i]]);
-        gmx_bool bKeep        = TRUE;
+        bool bWasSetInRTP = was_dihedral_set_in_rtp(&dih[index[i]]);
+        bool bKeep        = TRUE;
         if (!bWasSetInRTP && bRemoveDihedralIfWithImproper)
         {
             /* Remove the dihedral if there is an improper on the same
@@ -483,12 +483,12 @@ static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper
 }
 
 static int get_impropers(t_atoms *atoms, t_hackblock hb[], t_param **improper,
-                         gmx_bool bAllowMissing)
+                         bool bAllowMissing)
 {
     t_rbondeds   *impropers;
     int           nimproper, i, j, k, start, ninc, nalloc;
     int           ai[MAXATOMLIST];
-    gmx_bool      bStop;
+    bool          bStop;
 
     ninc   = 500;
     nalloc = ninc;
@@ -564,7 +564,7 @@ static int nb_dist(t_nextnb *nnb, int ai, int aj)
     return NRE;
 }
 
-static gmx_bool is_hydro(t_atoms *atoms, int ai)
+static bool is_hydro(t_atoms *atoms, int ai)
 {
     return ((*(atoms->atomname[ai]))[0] == 'H');
 }
@@ -594,7 +594,7 @@ static void get_atomnames_min(int n, char **anm,
 }
 
 static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
-                      gmx_bool bAllowMissing)
+                      bool bAllowMissing)
 {
     int         r;
     int         a, astart, i1, i2, itmp;
@@ -751,7 +751,7 @@ void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
 /* Generate pairs, angles and dihedrals from .rtp settings */
 void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
              t_params plist[], t_excls excls[], t_hackblock hb[],
-             gmx_bool bAllowMissing)
+             bool bAllowMissing)
 {
     t_param    *ang, *dih, *pai, *improper;
     t_rbondeds *hbang, *hbdih;
@@ -762,7 +762,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     int         ninc, maxang, maxdih, maxpai;
     int         nang, ndih, npai, nimproper, nbd;
     int         nFound;
-    gmx_bool    bFound, bExcl;
+    bool        bFound, bExcl;
 
     /* These are the angles, dihedrals and pairs that we generate
      * from the bonds. The ones that are already there from the rtp file

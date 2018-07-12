@@ -61,7 +61,7 @@
 static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
 {
     FILE         *fp;
-    gmx_bool      bCont;
+    bool          bCont;
     char          libfilename[128];
     char          format[128], f1[128];
     char          buf[1024], elem[16], type[16], nbbuf[16], **newbuf;

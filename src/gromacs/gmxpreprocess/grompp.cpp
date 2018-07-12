@@ -250,7 +250,7 @@ static void check_bonds_timestep(const gmx_mtop_t *mtop, double dt, warninp_t wi
     int            ftype;
     int            i, a1, a2, w_a1, w_a2, j;
     real           twopi2, limit2, fc, re, m1, m2, period2, w_period2;
-    gmx_bool       bFound, bWater, bWarn;
+    bool           bFound, bWater, bWarn;
     char           warn_buf[STRLEN];
 
     ip = mtop->ffparams.iparams;
@@ -305,13 +305,13 @@ static void check_bonds_timestep(const gmx_mtop_t *mtop, double dt, warninp_t wi
                 }
                 if (period2 < limit2)
                 {
-                    bFound = FALSE;
+                    bFound = false;
                     for (j = 0; j < ilc->nr; j += 3)
                     {
                         if ((ilc->iatoms[j+1] == a1 && ilc->iatoms[j+2] == a2) ||
                             (ilc->iatoms[j+1] == a2 && ilc->iatoms[j+2] == a1))
                         {
-                            bFound = TRUE;
+                            bFound = true;
                         }
                     }
                     for (j = 0; j < ils->nr; j += 4)
@@ -319,7 +319,7 @@ static void check_bonds_timestep(const gmx_mtop_t *mtop, double dt, warninp_t wi
                         if ((a1 == ils->iatoms[j+1] || a1 == ils->iatoms[j+2] || a1 == ils->iatoms[j+3]) &&
                             (a2 == ils->iatoms[j+1] || a2 == ils->iatoms[j+2] || a2 == ils->iatoms[j+3]))
                         {
-                            bFound = TRUE;
+                            bFound = true;
                         }
                     }
                     if (!bFound &&
@@ -410,7 +410,7 @@ static void check_shells_inputrec(gmx_mtop_t *mtop,
 
 /* TODO Decide whether this function can be consolidated with
  * gmx_mtop_ftype_count */
-static gmx_bool nint_ftype(gmx_mtop_t *mtop, t_molinfo *mi, int ftype)
+static int nint_ftype(gmx_mtop_t *mtop, t_molinfo *mi, int ftype)
 {
     int nint = 0;
     for (const gmx_molblock_t &molb : mtop->molblock)
@@ -498,7 +498,7 @@ static void molinfo2mtop(int nmi, t_molinfo *mi, gmx_mtop_t *mtop)
 static void
 new_status(const char *topfile, const char *topppfile, const char *confin,
            t_gromppopts *opts, t_inputrec *ir, gmx_bool bZero,
-           gmx_bool bGenVel, gmx_bool bVerbose, t_state *state,
+           bool bGenVel, bool bVerbose, t_state *state,
            gpp_atomtype_t atype, gmx_mtop_t *sys,
            int *nmi, t_molinfo **mi, t_molinfo **intermolecular_interactions,
            t_params plist[],
@@ -688,7 +688,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
 }
 
 static void copy_state(const char *slog, t_trxframe *fr,
-                       gmx_bool bReadVel, t_state *state,
+                       bool bReadVel, t_state *state,
                        double *use_time)
 {
     int i;
@@ -727,13 +727,13 @@ static void copy_state(const char *slog, t_trxframe *fr,
 }
 
 static void cont_status(const char *slog, const char *ener,
-                        gmx_bool bNeedVel, gmx_bool bGenVel, real fr_time,
+                        bool bNeedVel, bool bGenVel, real fr_time,
                         t_inputrec *ir, t_state *state,
                         gmx_mtop_t *sys,
                         const gmx_output_env_t *oenv)
 /* If fr_time == -1 read the last frame available which is complete */
 {
-    gmx_bool     bReadVel;
+    bool         bReadVel;
     t_trxframe   fr;
     t_trxstatus *fp;
     int          i;
@@ -777,7 +777,7 @@ static void cont_status(const char *slog, const char *ener,
             }
             close_trx(fp);
             /* Search for a frame without velocities */
-            bReadVel = FALSE;
+            bReadVel = false;
             read_first_frame(oenv, &fp, slog, &fr, TRX_NEED_X);
         }
     }
@@ -822,17 +822,17 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
                         rvec com,
                         warninp_t wi)
 {
-    gmx_bool       *hadAtom;
-    rvec           *x, *v;
-    dvec            sum;
-    double          totmass;
-    t_topology     *top;
-    matrix          box, invbox;
-    int             natoms, npbcdim = 0;
-    char            warn_buf[STRLEN];
-    int             a, i, ai, j, k, nat_molb;
-    t_params       *pr, *prfb;
-    t_atom         *atom;
+    gmx_bool           *hadAtom;
+    rvec               *x, *v;
+    dvec                sum;
+    double              totmass;
+    t_topology         *top;
+    matrix              box, invbox;
+    int                 natoms, npbcdim = 0;
+    char                warn_buf[STRLEN];
+    int                 a, i, ai, j, k, nat_molb;
+    t_params           *pr, *prfb;
+    t_atom             *atom;
 
     snew(top, 1);
     read_tps_conf(fn, top, nullptr, &x, &v, box, FALSE);
@@ -1266,17 +1266,17 @@ static real calc_temp(const gmx_mtop_t *mtop,
 static real get_max_reference_temp(const t_inputrec *ir,
                                    warninp_t         wi)
 {
-    real     ref_t;
-    int      i;
-    gmx_bool bNoCoupl;
+    real         ref_t;
+    int          i;
+    bool         bNoCoupl;
 
     ref_t    = 0;
-    bNoCoupl = FALSE;
+    bNoCoupl = false;
     for (i = 0; i < ir->opts.ngtc; i++)
     {
         if (ir->opts.tau_t[i] < 0)
         {
-            bNoCoupl = TRUE;
+            bNoCoupl = true;
         }
         else
         {
@@ -1299,9 +1299,9 @@ static real get_max_reference_temp(const t_inputrec *ir,
 /* Checks if there are unbound atoms in moleculetype molt.
  * Prints a note for each unbound atoms and a warning if any is present.
  */
-static void checkForUnboundAtoms(const gmx_moltype_t *molt,
-                                 gmx_bool             bVerbose,
-                                 warninp_t            wi)
+static void checkForUnboundAtoms(const gmx_moltype_t     *molt,
+                                 gmx_bool                 bVerbose,
+                                 warninp_t                wi)
 {
     const t_atoms *atoms = &molt->atoms;
 
@@ -1357,9 +1357,9 @@ static void checkForUnboundAtoms(const gmx_moltype_t *molt,
 }
 
 /* Checks all moleculetypes for unbound atoms */
-static void checkForUnboundAtoms(const gmx_mtop_t *mtop,
-                                 gmx_bool          bVerbose,
-                                 warninp_t         wi)
+static void checkForUnboundAtoms(const gmx_mtop_t     *mtop,
+                                 gmx_bool              bVerbose,
+                                 warninp_t             wi)
 {
     for (const gmx_moltype_t &molt : mtop->moltype)
     {
@@ -1422,11 +1422,11 @@ static bool haveDecoupledModeInMol(const gmx_moltype_t *molt,
                     atomToConstraints.index[a2 + 1] - atomToConstraints.index[a2] == 1 &&
                     atomToConstraints.index[a1 + 1] - atomToConstraints.index[a1] >= 3)
                 {
-                    int  constraint0 = atomToConstraints.a[atomToConstraints.index[a0]];
-                    int  constraint2 = atomToConstraints.a[atomToConstraints.index[a2]];
+                    int      constraint0 = atomToConstraints.a[atomToConstraints.index[a0]];
+                    int      constraint2 = atomToConstraints.a[atomToConstraints.index[a2]];
 
-                    bool foundAtom0  = false;
-                    bool foundAtom2  = false;
+                    bool     foundAtom0  = false;
+                    bool     foundAtom2  = false;
                     for (int conIndex = atomToConstraints.index[a1]; conIndex < atomToConstraints.index[a1 + 1]; conIndex++)
                     {
                         if (atomToConstraints.a[conIndex] == constraint0)
@@ -1484,14 +1484,14 @@ static void checkDecoupledModeAccuracy(const gmx_mtop_t *mtop,
      * energy/time, respectively, so they will "only" work correctly
      * for atomistic force fields using MD units.
      */
-    const real massFactorThreshold      = 13.0;
-    const real bufferToleranceThreshold = 1e-4;
-    const int  lincsIterationThreshold  = 2;
-    const int  lincsOrderThreshold      = 4;
-    const real shakeToleranceThreshold  = 0.005*ir->delta_t;
+    const real     massFactorThreshold      = 13.0;
+    const real     bufferToleranceThreshold = 1e-4;
+    const int      lincsIterationThreshold  = 2;
+    const int      lincsOrderThreshold      = 4;
+    const real     shakeToleranceThreshold  = 0.005*ir->delta_t;
 
-    bool       lincsWithSufficientTolerance = (ir->eConstrAlg == econtLINCS && ir->nLincsIter >= lincsIterationThreshold && ir->nProjOrder >= lincsOrderThreshold);
-    bool       shakeWithSufficientTolerance = (ir->eConstrAlg == econtSHAKE && ir->shake_tol <= 1.1*shakeToleranceThreshold);
+    bool           lincsWithSufficientTolerance = (ir->eConstrAlg == econtLINCS && ir->nLincsIter >= lincsIterationThreshold && ir->nProjOrder >= lincsOrderThreshold);
+    bool           shakeWithSufficientTolerance = (ir->eConstrAlg == econtSHAKE && ir->shake_tol <= 1.1*shakeToleranceThreshold);
     if (ir->cutoff_scheme == ecutsVERLET &&
         ir->verletbuf_tol <= 1.1*bufferToleranceThreshold &&
         (lincsWithSufficientTolerance || shakeWithSufficientTolerance))
@@ -1584,7 +1584,7 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
 
 int gmx_grompp(int argc, char *argv[])
 {
-    const char        *desc[] = {
+    const char            *desc[] = {
         "[THISMODULE] (the gromacs preprocessor)",
         "reads a molecular topology file, checks the validity of the",
         "file, expands the topology from a molecular description to an atomic",
@@ -1682,24 +1682,24 @@ int gmx_grompp(int argc, char *argv[])
         "interpret the output messages before attempting to bypass them with",
         "this option."
     };
-    t_gromppopts      *opts;
-    int                nmi;
-    t_molinfo         *mi, *intermolecular_interactions;
-    gpp_atomtype_t     atype;
-    int                nvsite, comb;
-    t_params          *plist;
-    real               fudgeQQ;
-    double             reppow;
-    const char        *mdparin;
-    int                ntype;
-    gmx_bool           bNeedVel, bGenVel;
-    gmx_bool           have_atomnumber;
-    gmx_output_env_t  *oenv;
-    gmx_bool           bVerbose = FALSE;
-    warninp_t          wi;
-    char               warn_buf[STRLEN];
+    t_gromppopts          *opts;
+    int                    nmi;
+    t_molinfo             *mi, *intermolecular_interactions;
+    gpp_atomtype_t         atype;
+    int                    nvsite, comb;
+    t_params              *plist;
+    real                   fudgeQQ;
+    double                 reppow;
+    const char            *mdparin;
+    int                    ntype;
+    bool                   bNeedVel, bGenVel;
+    gmx_bool               have_atomnumber;
+    gmx_output_env_t      *oenv;
+    gmx_bool               bVerbose = FALSE;
+    warninp_t              wi;
+    char                   warn_buf[STRLEN];
 
-    t_filenm           fnm[] = {
+    t_filenm               fnm[] = {
         { efMDP, nullptr,  nullptr,        ffREAD  },
         { efMDP, "-po", "mdout",     ffWRITE },
         { efSTX, "-c",  nullptr,        ffREAD  },
@@ -1718,11 +1718,11 @@ int gmx_grompp(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     /* Command line options */
-    gmx_bool        bRenum   = TRUE;
-    gmx_bool        bRmVSBds = TRUE, bZero = FALSE;
-    int             i, maxwarn = 0;
-    real            fr_time = -1;
-    t_pargs         pa[]    = {
+    gmx_bool            bRenum   = TRUE;
+    gmx_bool            bRmVSBds = TRUE, bZero = FALSE;
+    int                 i, maxwarn = 0;
+    real                fr_time = -1;
+    t_pargs             pa[]    = {
         { "-v",       FALSE, etBOOL, {&bVerbose},
           "Be loud and noisy" },
         { "-time",    FALSE, etREAL, {&fr_time},

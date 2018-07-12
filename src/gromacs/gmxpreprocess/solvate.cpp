@@ -736,7 +736,7 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
     char        buf[STRLEN], buf2[STRLEN], *temp;
     const char *topinout;
     int         line;
-    gmx_bool    bSystem, bMolecules, bSkip;
+    bool        bSystem, bMolecules, bSkip;
     int         i, nsol = 0;
     double      mtot;
     real        vol, mm;
@@ -778,10 +778,10 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
         fpin    = gmx_ffopen(topinout, "r");
         fpout   = gmx_fopen_temporary(temporary_filename);
         line    = 0;
-        bSystem = bMolecules = FALSE;
+        bSystem = bMolecules = false;
         while (fgets(buf, STRLEN, fpin))
         {
-            bSkip = FALSE;
+            bSkip = false;
             line++;
             strcpy(buf2, buf);
             if ((temp = strchr(buf2, '\n')) != nullptr)
@@ -813,7 +813,7 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
                 if (buf2[0] && (!strstr(buf2, " water")) )
                 {
                     sprintf(buf, "%s in water\n", buf2);
-                    bSystem = FALSE;
+                    bSystem = false;
                 }
             }
             else if (bMolecules)
@@ -826,7 +826,7 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
                     nsol -= i;
                     if (nsol < 0)
                     {
-                        bSkip = TRUE;
+                        bSkip = true;
                         nsol += i;
                     }
                 }

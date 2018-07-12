@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -207,7 +207,7 @@ void convert_harmonics(int nrmols, t_molinfo mols[], gpp_atomtype_t atype)
     int       i, j, k, last, ni, nj;
     int       nrharm, nrmorse, bb;
     real      edis, kb, b0, beta;
-    gmx_bool *bRemoveHarm;
+    bool     *bRemoveHarm;
 
     /* First get the data */
     t2m = read_dissociation_energies(&n2m);
