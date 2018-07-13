@@ -786,7 +786,7 @@ int gmx_nmr(int argc, char *argv[])
 
                         if (blk->sub[0].nr != nor)
                         {
-                            gmx_fatal(FARGS, "Number of orientation restraints in energy file (%d) does not match with the topology (%d)", blk->sub[0].nr);
+                            gmx_fatal(FARGS, "Number of orientation restraints in energy file (?) does not match with the topology (%d)", blk->sub[0].nr);
                         }
                         if (bORA || bODA)
                         {

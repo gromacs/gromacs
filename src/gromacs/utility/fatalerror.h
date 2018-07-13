@@ -48,6 +48,7 @@
 #include <stdio.h>
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/stringutil.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -177,7 +178,7 @@ gmx_fatal_mpi_va(int fatal_errno, const char *file, int line,
    \endcode
  */
 [[noreturn]] void
-gmx_fatal(int fatal_errno, const char *file, int line, const char *fmt, ...);
+gmx_fatal(int fatal_errno, const char *file, int line, const char *fmt, ...) gmx_format(printf, 4, 5);
 /** Helper macro to pass first three parameters to gmx_fatal(). */
 #define FARGS 0, __FILE__, __LINE__
 
@@ -239,7 +240,7 @@ void _range_check(int n, int n_min, int n_max, const char *warn_str,
  * The message string should NOT start with "WARNING"
  * and should NOT end with a newline.
  */
-void gmx_warning(const char *fmt, ...);
+void gmx_warning(const char *fmt, ...) gmx_format(printf, 1, 2);
 
 #ifdef __cplusplus
 }
