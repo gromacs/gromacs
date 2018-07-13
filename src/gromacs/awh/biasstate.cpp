@@ -1523,9 +1523,9 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
     if (numColumns < numColumnsMin)
     {
         std::string mesg =
-            gmx::formatString("The number of columns in %s (%s) should be at least %d."
+            gmx::formatString("The number of columns in %s should be at least %d."
                               "\n\n%s",
-                              filename.c_str(), correctFormatMessage.c_str());
+                              filename.c_str(), numColumnsMin, correctFormatMessage.c_str());
         GMX_THROW(InvalidInputError(mesg));
     }
 

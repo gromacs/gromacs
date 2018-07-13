@@ -679,16 +679,14 @@ int Mdrunner::mdrunner()
         gmx_fatal(FARGS,
                   "The -dd or -npme option request a parallel simulation, "
 #if !GMX_MPI
-                  "but %s was compiled without threads or MPI enabled"
+                  "but %s was compiled without threads or MPI enabled", output_env_get_program_display_name(oenv));
 #else
 #if GMX_THREAD_MPI
-                  "but the number of MPI-threads (option -ntmpi) is not set or is 1"
+                  "but the number of MPI-threads (option -ntmpi) is not set or is 1");
 #else
-                  "but %s was not started through mpirun/mpiexec or only one rank was requested through mpirun/mpiexec"
+                  "but %s was not started through mpirun/mpiexec or only one rank was requested through mpirun/mpiexec", output_env_get_program_display_name(oenv));
 #endif
 #endif
-                  , output_env_get_program_display_name(oenv)
-                  );
     }
 
     if (doRerun &&

@@ -144,7 +144,7 @@ static void gmx_detect_gpus(const gmx::MDLogger            &mdlog,
         {
             GMX_LOG(mdlog.info).asParagraph().appendTextFormatted(
                     "NOTE: Detection of GPUs failed. The API reported:\n"
-                    "      %s\n",
+                    "      %s\n"
                     "      GROMACS cannot run tasks on a GPU.",
                     errorMessage.c_str());
         }

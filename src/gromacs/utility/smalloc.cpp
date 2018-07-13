@@ -165,9 +165,9 @@ void *save_realloc(const char *name, const char *file, int line, void *ptr,
         if (p == nullptr)
         {
             gmx_fatal(errno, __FILE__, __LINE__,
-                      "Not enough memory. Failed to realloc %" PRId64 " bytes for %s, %s=%x\n"
+                      "Not enough memory. Failed to realloc %zu bytes for %s, %s=%p\n"
                       "(called from file %s, line %d)",
-                      static_cast<int64_t>(size), name, name, ptr, file, line);
+                      size, name, name, ptr, file, line);
         }
     }
     return p;

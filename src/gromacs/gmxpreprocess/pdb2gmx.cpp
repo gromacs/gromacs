@@ -249,7 +249,7 @@ static void read_rtprename(const char *fname, FILE *fp,
         {
             if (nc != 2 && nc != 5)
             {
-                gmx_fatal(FARGS, "Residue renaming database '%s' has %d columns instead of %d, %d or %d", fname, ncol, 2, 5);
+                gmx_fatal(FARGS, "Residue renaming database '%s' has %d columns instead of %d or %d", fname, ncol, 2, 5);
             }
             ncol = nc;
         }
@@ -1586,8 +1586,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
             bVsiteAromatics = TRUE;
             break;
         default:
-            gmx_fatal(FARGS, "DEATH HORROR in $s (%s): vsitestr[0]='%d'",
-                      __FILE__, __LINE__, vsitestr[0]);
+            gmx_fatal(FARGS, "Internal inconsistency: vsitestr[0]='%s'", vsitestr[0]);
     } /* end switch */
 
     /* Open the symbol table */

@@ -333,7 +333,7 @@ static void print_large_forces(FILE            *fp,
                                const rvec      *f)
 {
     real           force2Tolerance = gmx::square(forceTolerance);
-    std::uintmax_t numNonFinite    = 0;
+    gmx::index     numNonFinite    = 0;
     for (int i = 0; i < md->homenr; i++)
     {
         real force2    = norm2(f[i]);
@@ -355,7 +355,7 @@ static void print_large_forces(FILE            *fp,
          * the printing on other ranks. But we can only avoid that with
          * an expensive MPI barrier that we would need at each step.
          */
-        gmx_fatal(FARGS, "At step %" PRId64 " detected non-finite forces on %ju atoms", step, numNonFinite);
+        gmx_fatal(FARGS, "At step %" PRId64 " detected non-finite forces on %td atoms", step, numNonFinite);
     }
 }
 

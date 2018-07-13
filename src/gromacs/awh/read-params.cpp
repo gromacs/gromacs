@@ -271,7 +271,7 @@ static void read_bias_params(std::vector<t_inpfile> *inp, AwhBiasParams *awhBias
     awhBiasParams->errorInitial = get_ereal(inp, opt, 10, wi);
     if (awhBiasParams->errorInitial <= 0)
     {
-        gmx_fatal(FARGS, "%s (%d) needs to be > 0.", opt);
+        gmx_fatal(FARGS, "%s needs to be > 0.", opt);
     }
 
     if (bComment)
@@ -703,7 +703,7 @@ static void checkInputConsistencyInterval(const AwhParams *awhParams, warninp_t 
 
             if ((period == 0) && (origin > end))
             {
-                gmx_fatal(FARGS, "For the non-periodic pull coordinates awh%d-dim%d-start cannot be larger than awh%f-dim%d-end",
+                gmx_fatal(FARGS, "For the non-periodic pull coordinates awh%d-dim%d-start (%f) cannot be larger than awh%d-dim%d-end (%f)",
                           k + 1, d + 1, origin, k + 1, d + 1, end);
             }
 

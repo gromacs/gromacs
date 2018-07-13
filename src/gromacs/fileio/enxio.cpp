@@ -505,7 +505,7 @@ static gmx_bool do_eheader(ener_file_t ef, int *file_version, t_enxframe *fr,
         }
         if (*bOK && *file_version > enx_version)
         {
-            gmx_fatal(FARGS, "reading tpx file (%s) version %d with version %d program", gmx_fio_getname(ef->fio), file_version, enx_version);
+            gmx_fatal(FARGS, "reading tpx file (%s) version %d with version %d program", gmx_fio_getname(ef->fio), *file_version, enx_version);
         }
         if (!gmx_fio_do_double(ef->fio, fr->t))
         {
