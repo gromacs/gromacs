@@ -1961,7 +1961,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         }
         else
         {
-            gmx_warning(buf);
+            gmx_warning("%s", buf);
         }
     }
 

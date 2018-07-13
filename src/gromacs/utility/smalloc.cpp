@@ -201,7 +201,7 @@ void *save_malloc_aligned(const char *name, const char *file, int line,
     if (alignment > alignmentSize)
     {
         gmx_fatal(errno, __FILE__, __LINE__,
-                  "Cannot allocate aligned memory with alignment > %u bytes\n(called from file %s, line %d)", alignmentSize, file, line);
+                  "Cannot allocate aligned memory with alignment > %zu bytes\n(called from file %s, line %d)", alignmentSize, file, line);
     }
 
 
@@ -225,7 +225,7 @@ void *save_malloc_aligned(const char *name, const char *file, int line,
         if (p == nullptr)
         {
             gmx_fatal(errno, __FILE__, __LINE__,
-                      "Not enough memory. Failed to allocate %u aligned elements of size %u for %s\n(called from file %s, line %d)", nelem, elsize, name, file, line);
+                      "Not enough memory. Failed to allocate %zu aligned elements of size %zu for %s\n(called from file %s, line %d)", nelem, elsize, name, file, line);
         }
     }
     return p;

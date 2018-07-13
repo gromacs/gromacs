@@ -275,7 +275,7 @@ int ifunc_index(directive d, int type)
         case d_dihedral_restraints:
             return F_DIHRES;
         default:
-            gmx_fatal(FARGS, "invalid directive %s in ifunc_index (%s:%s)",
+            gmx_fatal(FARGS, "invalid directive %s in ifunc_index (%s:%d)",
                       dir2str(d), __FILE__, __LINE__);
     }
 }

@@ -231,7 +231,7 @@ static void do_ac_core(int nframes, int nout,
             }
             else
             {
-                gmx_fatal(FARGS, "\nInvalid mode (%d) in do_ac_core", mode);
+                gmx_fatal(FARGS, "\nInvalid mode (%lu) in do_ac_core", mode);
             }
         }
     }
@@ -519,7 +519,7 @@ static void do_four_core(unsigned long mode, int nframes,
     }
     else
     {
-        gmx_fatal(FARGS, "\nUnknown mode in do_autocorr (%d)", mode);
+        gmx_fatal(FARGS, "\nUnknown mode in do_autocorr (%lu)", mode);
     }
 
     sfree(cfour);

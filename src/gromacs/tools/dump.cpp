@@ -187,7 +187,7 @@ static void list_top(const char *fn)
     status = cpp_open_file(fn, &handle, cppopts);
     if (status != 0)
     {
-        gmx_fatal(FARGS, cpp_error(&handle, status));
+        gmx_fatal(FARGS, "%s", cpp_error(&handle, status));
     }
     do
     {
@@ -197,7 +197,7 @@ static void list_top(const char *fn)
         {
             if (status != eCPP_OK)
             {
-                gmx_fatal(FARGS, cpp_error(&handle, status));
+                gmx_fatal(FARGS, "%s", cpp_error(&handle, status));
             }
             else
             {
@@ -209,7 +209,7 @@ static void list_top(const char *fn)
     status = cpp_close_file(&handle);
     if (status != eCPP_OK)
     {
-        gmx_fatal(FARGS, cpp_error(&handle, status));
+        gmx_fatal(FARGS, "%s", cpp_error(&handle, status));
     }
 }
 

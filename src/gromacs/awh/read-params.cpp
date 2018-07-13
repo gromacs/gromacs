@@ -449,7 +449,7 @@ static void checkInputConsistencyAwh(const AwhParams &awhParams,
                         sprintf(errormsg, "One pull coordinate (%d) cannot be mapped to two separate AWH dimensions (awh%d-dim%d and awh%d-dim%d). "
                                 "If this is really what you want to do you will have to duplicate this pull coordinate.",
                                 awhBiasParams1.dimParams[d1].coordIndex + 1, k1 + 1, d1 + 1, k2 + 1, d2 + 1);
-                        gmx_fatal(FARGS, errormsg);
+                        gmx_fatal(FARGS, "%s", errormsg);
                     }
                 }
             }
@@ -703,7 +703,7 @@ static void checkInputConsistencyInterval(const AwhParams *awhParams, warninp_t 
 
             if ((period == 0) && (origin > end))
             {
-                gmx_fatal(FARGS, "For the non-periodic pull coordinates awh%d-dim%d-start cannot be larger than awh%d-dim%d-end",
+                gmx_fatal(FARGS, "For the non-periodic pull coordinates awh%d-dim%d-start cannot be larger than awh%f-dim%d-end",
                           k + 1, d + 1, origin, k + 1, d + 1, end);
             }
 
