@@ -175,7 +175,7 @@ static void GetSimTemps(int ntemps, t_simtemp *simtemp, double *temperature_lamb
         {
             char errorstr[128];
             sprintf(errorstr, "eSimTempScale=%d not defined", simtemp->eSimTempScale);
-            gmx_fatal(FARGS, errorstr);
+            gmx_fatal(FARGS, "%s", errorstr);
         }
     }
 }

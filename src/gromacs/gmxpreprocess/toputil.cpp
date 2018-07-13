@@ -67,7 +67,7 @@ void set_p_string(t_param *p, const char *s)
         }
         else
         {
-            gmx_fatal(FARGS, "Increase MAXSLEN in the grompp code to at least %d,"
+            gmx_fatal(FARGS, "Increase MAXSLEN in the grompp code to at least %lu,"
                       " or shorten your definition of bonds like %s to at most %d",
                       strlen(s)+1, s, MAXSLEN-1);
         }

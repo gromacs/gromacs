@@ -417,7 +417,7 @@ static void setup_tab(const char *fn, t_UmbrellaOptions *opt)
     {
         if  (std::abs(y[0][i+1]-y[0][i]-opt->tabDz) > opt->tabDz/1e6)
         {
-            gmx_fatal(FARGS, "z-values in %s are not equally spaced.\n", ny, fn);
+            gmx_fatal(FARGS, "z-values in %d are not equally spaced.\n", ny, fn);
         }
     }
     snew(opt->tabY, nl);
@@ -1392,7 +1392,7 @@ static void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWind
                     "3) If all ACTs are identical and know, you can define them with -bs-tau.\n"
                     "   Use option (3) only if you are sure what you're doing, you may severely\n"
                     "   underestimate the error if a too small ACT is given.\n");
-        gmx_fatal(FARGS, errstr);
+        gmx_fatal(FARGS, "%s", errstr);
     }
 
     synthWindow->N       [0] = N;

@@ -66,7 +66,7 @@ static char *trim_string(const char *s, char *out, int maxlen)
 
     if (strlen(s) > (size_t)(maxlen-1))
     {
-        gmx_fatal(FARGS, "String '%s' (%d) is longer than buffer (%d).\n",
+        gmx_fatal(FARGS, "String '%s' (%zu) is longer than buffer (%d).\n",
                   s, strlen(s), maxlen-1);
     }
 

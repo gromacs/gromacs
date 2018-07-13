@@ -1063,7 +1063,7 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
 
         if (dnorm2(r_ij[c]) == 0)
         {
-            gmx_fatal(FARGS, "Distance for pull coordinate %d is zero with constraint pulling, which is not allowed.", c + 1);
+            gmx_fatal(FARGS, "Distance for pull coordinate %lu is zero with constraint pulling, which is not allowed.", c + 1);
         }
     }
 
@@ -1109,7 +1109,7 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
                 case epullgDIST:
                     if (pcrd->value_ref <= 0)
                     {
-                        gmx_fatal(FARGS, "The pull constraint reference distance for group %d is <= 0 (%f)", c, pcrd->value_ref);
+                        gmx_fatal(FARGS, "The pull constraint reference distance for group %zu is <= 0 (%f)", c, pcrd->value_ref);
                     }
 
                     {

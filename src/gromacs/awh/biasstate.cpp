@@ -1524,7 +1524,7 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
     if (numColumns < numColumnsMin)
     {
         std::string mesg =
-            gmx::formatString("The number of columns in %s (%d) should be at least %d."
+            gmx::formatString("The number of columns in %s (%s) should be at least %d."
                               "\n\n%s",
                               filename.c_str(), correctFormatMessage.c_str());
         GMX_THROW(InvalidInputError(mesg));
@@ -1570,7 +1570,7 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
         /* Check if the values are allowed. */
         if (target < 0)
         {
-            std::string mesg = gmx::formatString("Target distribution weight at point %d (%g) in %s is negative.",
+            std::string mesg = gmx::formatString("Target distribution weight at point %zu (%g) in %s is negative.",
                                                  m, target, filename.c_str());
             GMX_THROW(InvalidInputError(mesg));
         }

@@ -103,7 +103,7 @@ throwUnlessDerivativeIsConsistentWithFunction(const std::function<double(double)
 
     if (!isConsistent)
     {
-        GMX_THROW(InconsistentInputError(formatString("Derivative inconsistent with analytical function in range [%d,%d]", minFail, maxFail)));
+        GMX_THROW(InconsistentInputError(formatString("Derivative inconsistent with analytical function in range [%f,%f]", minFail, maxFail)));
     }
 }
 
@@ -143,7 +143,7 @@ throwUnlessDerivativeIsConsistentWithFunction(ArrayRef<const double>        func
     }
     if (!isConsistent)
     {
-        GMX_THROW(InconsistentInputError(formatString("Derivative inconsistent with numerical vector for elements %d-%d", minFail+1, maxFail+1)));
+        GMX_THROW(InconsistentInputError(formatString("Derivative inconsistent with numerical vector for elements %lu-%lu", minFail+1, maxFail+1)));
     }
 }
 
