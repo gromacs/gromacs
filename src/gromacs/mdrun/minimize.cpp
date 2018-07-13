@@ -2697,7 +2697,7 @@ Integrator::do_nm()
     }
     else if (atom_index.size() < 1000)
     {
-        GMX_LOG(mdlog.warning).appendTextFormatted("Small system size (N=%d), using full Hessian format.",
+        GMX_LOG(mdlog.warning).appendTextFormatted("Small system size (N=%zu), using full Hessian format.",
                                                    atom_index.size());
         bSparse = FALSE;
     }

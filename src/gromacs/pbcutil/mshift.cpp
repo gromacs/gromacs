@@ -903,7 +903,7 @@ void mk_mshift(FILE *log, t_graph *g, int ePBC,
                 default:
                     mesg += " Either you have excessively large distances between atoms in bonded interactions or your system is exploding.";
             }
-            gmx_fatal(FARGS, mesg.c_str());
+            gmx_fatal(FARGS, "%s", mesg.c_str());
         }
 
         /* The most likely reason for arriving here is a periodic molecule. */

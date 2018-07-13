@@ -333,7 +333,7 @@ static void enx_warning(const char *msg)
 {
     if (getenv("GMX_ENX_NO_FATAL") != nullptr)
     {
-        gmx_warning(msg);
+        gmx_warning("%s", msg);
     }
     else
     {

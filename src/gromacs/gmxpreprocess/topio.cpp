@@ -479,7 +479,7 @@ static char **read_topol(const char *infile, const char *outfile,
     status = cpp_open_file(infile, &handle, cpp_opts(define, include, wi));
     if (status != 0)
     {
-        gmx_fatal(FARGS, cpp_error(&handle, status));
+        gmx_fatal(FARGS, "%s", cpp_error(&handle, status));
     }
 
     /* some local variables */
@@ -516,7 +516,7 @@ static char **read_topol(const char *infile, const char *outfile,
         {
             if (status != eCPP_OK)
             {
-                gmx_fatal(FARGS, cpp_error(&handle, status));
+                gmx_fatal(FARGS, "%s", cpp_error(&handle, status));
             }
             else if (out)
             {
@@ -556,7 +556,7 @@ static char **read_topol(const char *infile, const char *outfile,
                 {
                     if (status != eCPP_OK)
                     {
-                        gmx_fatal(FARGS, cpp_error(&handle, status));
+                        gmx_fatal(FARGS, "%s", cpp_error(&handle, status));
                     }
                     else if (out)
                     {
@@ -913,7 +913,7 @@ static char **read_topol(const char *infile, const char *outfile,
     status = cpp_close_file(&handle);
     if (status != eCPP_OK)
     {
-        gmx_fatal(FARGS, cpp_error(&handle, status));
+        gmx_fatal(FARGS, "%s", cpp_error(&handle, status));
     }
     cpp_done();
     if (out)
