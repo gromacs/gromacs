@@ -417,7 +417,7 @@ static void setup_tab(const char *fn, t_UmbrellaOptions *opt)
     {
         if  (std::abs(y[0][i+1]-y[0][i]-opt->tabDz) > opt->tabDz/1e6)
         {
-            gmx_fatal(FARGS, "z-values in %d are not equally spaced.\n", ny, fn);
+            gmx_fatal(FARGS, "z-values in %s are not equally spaced.\n", fn);
         }
     }
     snew(opt->tabY, nl);
@@ -1891,7 +1891,7 @@ static FILE *open_pdo_pipe(const char *fn, t_UmbrellaOptions *opt, gmx_bool *bPi
             {
                 gmx_fatal(FARGS, "Cannot find executable gunzip in /bin or /usr/bin.\n"
                           "You may want to define the path to gunzip "
-                          "with the environment variable GMX_PATH_GZIP.", gunzip);
+                          "with the environment variable GMX_PATH_GZIP.");
             }
         }
         else
@@ -2146,7 +2146,7 @@ static void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_Umbrella
             }
             if (header->pcrd[i].k <= 0.0)
             {
-                gmx_fatal(FARGS, "%s: Pull coordinate %d has force constant of of %g in %s.\n"
+                gmx_fatal(FARGS, "%s: Pull coordinate %d has force constant of of %g.\n"
                           "That doesn't seem to be an Umbrella tpr.\n",
                           fn, i+1, header->pcrd[i].k);
             }
