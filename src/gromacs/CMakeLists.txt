@@ -300,6 +300,10 @@ string(REPLACE " " ";" IGNORED_CLANG_ALL_WARNINGS "${IGNORED_CLANG_ALL_WARNINGS}
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^6\.0")
    target_compile_options(libgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Weverything ${IGNORED_CLANG_ALL_WARNINGS}>)
 endif()
+if (MSVC)
+   target_compile_options(libgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/analyze /wd6001 /wd6011 /wd6031 /wd6053 /wd6054
+      /wd6239 /wd6244 /wd6246 /wd6262 /wd6294 /wd6326 /wd6330 /wd6340 /wd6385 /wd6386 /wd6387 /wd6993 /wd28020 /wd28199>)
+endif()
 if (GMX_CLANG_TIDY)
    set(CLANG_TIDY "clang-tidy" CACHE STRING "Name of clang-tidy executable")
    find_program(CLANG_TIDY_EXE NAMES "${CLANG_TIDY}"

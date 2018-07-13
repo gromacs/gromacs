@@ -63,6 +63,12 @@
 #ifdef GMX_DISABLE_ASSERTS
 #define GMX_RELEASE_ASSERT(condition, msg)
 #else
+#if _MSC_VER
+#define GMX_RELEASE_ASSERT(condition, msg) \
+    ((void) ((condition) ? (void)0 :                               \
+             ::gmx::internal::assertHandler(#condition, msg, \
+                                            GMX_CURRENT_FUNCTION, __FILE__, __LINE__)))
+#else
 // Use an "immediately invoked function expression" to allow being
 // used in constexpr context with older GCC versions
 // https://akrzemi1.wordpress.com/2017/05/18/asserts-in-constexpr-functions/
@@ -70,6 +76,7 @@
     ((void) ((condition) ? (void)0 :                               \
              [&](){::gmx::internal::assertHandler(#condition, msg, \
                                                   GMX_CURRENT_FUNCTION, __FILE__, __LINE__); } ()))
+#endif
 #endif
 /*! \def GMX_ASSERT
  * \brief
