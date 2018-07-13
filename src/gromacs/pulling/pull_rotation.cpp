@@ -645,7 +645,7 @@ static double calc_beta_max(real min_gaussian, real slab_dist)
     }
     if (min_gaussian <= 0)
     {
-        gmx_fatal(FARGS, "Cutoff value for Gaussian must be > 0. (You requested %f)");
+        gmx_fatal(FARGS, "Cutoff value for Gaussian must be > 0. (You requested %f)", min_gaussian);
     }
 
     /* Define the sigma value */

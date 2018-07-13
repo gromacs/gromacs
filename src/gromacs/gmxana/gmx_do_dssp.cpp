@@ -665,7 +665,7 @@ int gmx_do_dssp(int argc, char *argv[])
 
         if (0 != system(dssp))
         {
-            gmx_fatal(FARGS, "Failed to execute command: %s\n",
+            gmx_fatal(FARGS, "Failed to execute command: %s\n"
                       "Try specifying your dssp version with the -ver option.", dssp);
         }
 
