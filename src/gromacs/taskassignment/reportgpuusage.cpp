@@ -125,7 +125,7 @@ reportGpuUsage(const MDLogger                &mdlog,
             output += gmx::formatString("On host %s ", host);
         }
         output += gmx::formatString("%zu GPU%s %sselected for this run.\n"
-                                    "Mapping of GPU IDs to the %d GPU task%s in the %d rank%s on this node:\n  %s\n",
+                                    "Mapping of GPU IDs to the %zu GPU task%s in the %zu rank%s on this node:\n  %s\n",
                                     numGpusInUse, bPluralGpus ? "s" : "",
                                     userSetGpuIds ? "user-" : "auto-",
                                     numGpuTasksOnThisNode,

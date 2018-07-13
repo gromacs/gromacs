@@ -299,7 +299,7 @@ static void override_nsteps_cmdline(const gmx::MDLogger &mdlog,
     }
     else if (nsteps_cmdline < -2)
     {
-        gmx_fatal(FARGS, "Invalid nsteps value passed on the command line: %d",
+        gmx_fatal(FARGS, "Invalid nsteps value passed on the command line: %ld",
                   nsteps_cmdline);
     }
     /* Do nothing if nsteps_cmdline == -2 */

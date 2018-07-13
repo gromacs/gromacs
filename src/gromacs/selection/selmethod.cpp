@@ -601,7 +601,7 @@ gmx_ana_selmethod_register(gmx::SelectionParserSymbolTable *symtab,
         }
         catch (const gmx::APIError &ex)
         {
-            report_error(stderr, name, ex.what());
+            report_error(stderr, name, "%s", ex.what());
             bOk = false;
         }
     }

@@ -750,7 +750,7 @@ static void sort_pdbatoms(t_restp restp[],
                     "Note that hydrogens might have been added to the entry for the N-terminus.\n"
                     "Remove this hydrogen or choose a different protonation state to solve it.\n"
                     "Option -ignh will ignore all hydrogens in the input." : ".");
-            gmx_fatal(FARGS, buf);
+            gmx_fatal(FARGS, "%s", buf);
         }
         /* make shadow array to be sorted into indexgroup */
         pdbi[i].resnr  = pdba->atom[i].resind;
@@ -1599,7 +1599,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
             bVsiteAromatics = TRUE;
             break;
         default:
-            gmx_fatal(FARGS, "DEATH HORROR in $s (%d): vsitestr[0]='%s'",
+            gmx_fatal(FARGS, "DEATH HORROR in $s (%s): vsitestr[0]='%d'",
                       __FILE__, __LINE__, vsitestr[0]);
     } /* end switch */
 

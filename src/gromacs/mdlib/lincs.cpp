@@ -1319,7 +1319,7 @@ static void set_lincs_matrix_task(Lincs                *li,
                             li_task->ntriangle++;
                             if (li->blnr[i+1] - li->blnr[i] > static_cast<int>(sizeof(li_task->tri_bits[0])*8 - 1))
                             {
-                                gmx_fatal(FARGS, "A constraint is connected to %d constraints, this is more than the %d allowed for constraints participating in triangles",
+                                gmx_fatal(FARGS, "A constraint is connected to %d constraints, this is more than the %lu allowed for constraints participating in triangles",
                                           li->blnr[i+1] - li->blnr[i],
                                           sizeof(li_task->tri_bits[0])*8-1);
                             }
