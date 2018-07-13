@@ -189,7 +189,7 @@ int gmx_trjorder(int argc, char *argv[])
         {
             if (index[i][j] > natoms)
             {
-                gmx_fatal(FARGS, "An atom number in group %s is larger than the number of atoms in the trajectory");
+                gmx_fatal(FARGS, "An atom number in group %s is larger than the number of atoms in the trajectory", "(?)");
             }
         }
     }

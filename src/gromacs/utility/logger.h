@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,8 @@
 #define GMX_UTILITY_LOGGER_H
 
 #include <string>
+
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
@@ -92,7 +94,7 @@ class LogEntryWriter
             return *this;
         }
         //! Appends given text to the log entry, with printf-style formatting.
-        LogEntryWriter &appendTextFormatted(const char *fmt, ...);
+        LogEntryWriter &appendTextFormatted(const char *fmt, ...) gmx_format(printf, 2, 3);
         //! Writes the log entry with empty lines before and after.
         LogEntryWriter &asParagraph()
         {
