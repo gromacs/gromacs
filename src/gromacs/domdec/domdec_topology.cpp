@@ -432,7 +432,7 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr,
     {
         errorMessage = gmx::formatString("%d of the %d bonded interactions could not be calculated because some atoms involved moved further apart than the multi-body cut-off distance (%g nm) or the two-body cut-off distance (%g nm), see option -rdd, for pairs and tabulated bonds also see option -ddcheck", -ndiff_tot, cr->dd->nbonded_global, dd_cutoff_multibody(dd), dd_cutoff_twobody(dd));
     }
-    gmx_fatal_collective(FARGS, cr->mpi_comm_mygroup, MASTER(cr), errorMessage.c_str());
+    gmx_fatal_collective(FARGS, cr->mpi_comm_mygroup, MASTER(cr), "%s", errorMessage.c_str());
 }
 
 /*! \brief Return global topology molecule information for global atom index \p i_gl */

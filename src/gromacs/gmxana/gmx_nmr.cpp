@@ -833,7 +833,7 @@ int gmx_nmr(int argc, char *argv[])
 
                         if (blk->sub[0].nr != nex*12)
                         {
-                            gmx_fatal(FARGS, "Number of orientation experiments in energy file (%g) does not match with the topology (%d)",
+                            gmx_fatal(FARGS, "Number of orientation experiments in energy file (%d) does not match with the topology (%d)",
                                       blk->sub[0].nr/12, nex);
                         }
                         fprintf(foten, "  %10f", fr.t);

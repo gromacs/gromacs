@@ -2334,7 +2334,7 @@ void init_forcerec(FILE                             *fp,
 
     if (check_box(ir->ePBC, box))
     {
-        gmx_fatal(FARGS, check_box(ir->ePBC, box));
+        gmx_fatal(FARGS, "%s", check_box(ir->ePBC, box));
     }
 
     /* Test particle insertion ? */
@@ -2730,7 +2730,7 @@ void init_forcerec(FILE                             *fp,
     {
         if (!gmx_within_tol(ic->reppow, 12.0, 10*GMX_DOUBLE_EPS))
         {
-            gmx_fatal(FARGS, "Cut-off scheme %S only supports LJ repulsion power 12", ecutscheme_names[ir->cutoff_scheme]);
+            gmx_fatal(FARGS, "Cut-off scheme %s only supports LJ repulsion power 12", ecutscheme_names[ir->cutoff_scheme]);
         }
         /* Older tpr files can contain Coulomb user tables with the Verlet cutoff-scheme,
          * while mdrun does not (and never did) support this.

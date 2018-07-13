@@ -211,7 +211,7 @@ void gmx_omp_nthreads_read_env(const gmx::MDLogger &mdlog,
         /* This prints once per simulation for multi-simulations,
          * which might help diagnose issues with inhomogenous
          * cluster setups. */
-        GMX_LOG(mdlog.info).appendTextFormatted(buffer);
+        GMX_LOG(mdlog.info).appendTextFormatted("%s", buffer);
         if (debug)
         {
             /* This prints once per process for real MPI (i.e. once

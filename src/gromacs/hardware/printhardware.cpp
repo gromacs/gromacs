@@ -312,12 +312,12 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
             s += gmx::formatString("      Latency:\n          ");
             for (std::size_t j = 0; j < hwTop.machine().numa.nodes.size(); j++)
             {
-                s += gmx::formatString(" %5d", j);
+                s += gmx::formatString(" %5lu", j);
             }
             s += gmx::formatString("\n");
             for (std::size_t i = 0; i < hwTop.machine().numa.nodes.size(); i++)
             {
-                s += gmx::formatString("     %5d", i);
+                s += gmx::formatString("     %5lu", i);
                 for (std::size_t j = 0; j < hwTop.machine().numa.nodes.size(); j++)
                 {
                     s += gmx::formatString(" %5.2f", hwTop.machine().numa.relativeLatency[i][j]);

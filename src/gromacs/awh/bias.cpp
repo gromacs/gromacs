@@ -241,7 +241,7 @@ static void ensureStateAndRunConsistency(const BiasParams &params,
     gmx_int64_t numUpdatesExpected    = state.histogramSize().numUpdates();
     if (numUpdatesFromSamples != numUpdatesExpected)
     {
-        std::string mesg = gmx::formatString("The number of AWH updates in the checkpoint file (%ld) does not match the total number of AWH samples divided by the number of samples per update for %ld sharing AWH bias(es) (%ld/%ld=%ld)",
+        std::string mesg = gmx::formatString("The number of AWH updates in the checkpoint file (%ld) does not match the total number of AWH samples divided by the number of samples per update for %d sharing AWH bias(es) (%ld/%d=%ld)",
                                              numUpdatesExpected,
                                              params.numSharedUpdate,
                                              numSamples,
