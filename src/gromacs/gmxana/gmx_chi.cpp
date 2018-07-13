@@ -927,7 +927,7 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
                 fprintf(fp, "%10g  %10g\n", phi, psi);
                 if (bViol)
                 {
-                    fprintf(gp, "%d\n", (bAllowed(dih[Phi][j], RAD2DEG*dih[Psi][j]) == FALSE) );
+                    fprintf(gp, "%d\n", int{(bAllowed(dih[Phi][j], RAD2DEG*dih[Psi][j]) == FALSE)} );
                 }
                 if (bOm)
                 {

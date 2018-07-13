@@ -220,7 +220,7 @@ static void mk_hbmap(t_hbdata *hb)
         {
             gmx_fatal(FARGS, "Could not allocate enough memory for hbmap");
         }
-        for (j = 0; (j > hb->a.nra); j++)
+        for (j = 0; j < hb->a.nra; j++)
         {
             hb->hbmap[i][j] = nullptr;
         }

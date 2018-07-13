@@ -97,7 +97,7 @@ zero_thread_output(bonded_threading_t *bt, int thread)
     }
 
     f_thread_t *f_t      = &bt->f_t[thread];
-    const int   nelem_fa = sizeof(*f_t->f)/sizeof(real);
+    const int   nelem_fa = sizeof(f_t->f[0])/sizeof(real);
 
     for (int i = 0; i < f_t->nblock_used; i++)
     {

@@ -300,6 +300,33 @@ string(REPLACE " " ";" IGNORED_CLANG_ALL_WARNINGS "${IGNORED_CLANG_ALL_WARNINGS}
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^6\.0")
    target_compile_options(libgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Weverything ${IGNORED_CLANG_ALL_WARNINGS}>)
 endif()
+if (MSVC)
+   target_compile_options(libgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/analyze /analyze:stacksize 70000
+     #Control flow warnings are disabled because the commond line output is insufficient. There is no tool
+     #to convert the xml report to e.g. HTML and even in Visual Studio the viewer doesn't work with cmake support.
+     /wd6001  #unitialized memory
+     /wd6011  #derefencing NULL
+     /wd6053  #prior call not zero-terminate
+     /wd6054  #might not be zero-terminated
+     /wd6385  #reading invalid data
+     /wd6386  #buffer overrun
+     /wd6387  #could be '0'
+     /wd28199 #uninitialized memory
+     # For compile time constant (e.g. templates) the following warnings have flase postives
+     /wd6239  #(<non-zero> && <expr>)
+     /wd6294  #Ill-defined for-loop
+     /wd6326  #comparison of constant with other constant
+     /wd28020 #expression involving paramter is not true
+     # Misc
+     /wd6330  #incorrect type to function (warns for char (instead of unsigned) for isspace/isalpha/isdigit/..))
+     /wd6993  #OpenMP ignored
+     #TODO
+     /wd6031  #return value ignored (important - mostly warnigns about sscanf)
+     /wd6244  #hides declaration (known issue - we ingore similar warnings for other compilers)
+     /wd6246  #hides declaration
+     >
+   )
+endif()
 if (GMX_CLANG_TIDY)
    set(CLANG_TIDY "clang-tidy" CACHE STRING "Name of clang-tidy executable")
    find_program(CLANG_TIDY_EXE NAMES "${CLANG_TIDY}"
