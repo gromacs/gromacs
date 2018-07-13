@@ -552,7 +552,7 @@ int gmx_trjcat(int argc, char *argv[])
 
     if (bDeMux && static_cast<int>(inFiles.size()) != nset)
     {
-        gmx_fatal(FARGS, "You have specified %zu files and %d entries in the demux table", inFiles.size(), nset);
+        gmx_fatal(FARGS, "You have specified %td files and %d entries in the demux table", inFiles.size(), nset);
     }
 
     ftpin = fn2ftp(inFiles[0].c_str());
@@ -581,7 +581,7 @@ int gmx_trjcat(int argc, char *argv[])
     }
     else if (bDeMux && static_cast<int>(outFiles.size()) != nset && outFiles.size() != 1)
     {
-        gmx_fatal(FARGS, "Number of output files should be 1 or %d (#input files), not %zu", nset, outFiles.size());
+        gmx_fatal(FARGS, "Number of output files should be 1 or %d (#input files), not %td", nset, outFiles.size());
     }
     if (bDeMux)
     {

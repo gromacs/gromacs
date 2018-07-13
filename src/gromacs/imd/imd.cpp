@@ -534,7 +534,7 @@ static void imd_prepare_master_socket(t_gmx_IMD_setup *IMDsetup)
 
     if (imdsock_getport(IMDsetup->socket, &IMDsetup->port))
     {
-        gmx_fatal(FARGS, "%s Could not determine port number.\n", IMDstr, ret);
+        gmx_fatal(FARGS, "%s Could not determine port number.\n", IMDstr);
     }
 
     fprintf(stderr, "%s Listening for IMD connection on port %d.\n", IMDstr, IMDsetup->port);
