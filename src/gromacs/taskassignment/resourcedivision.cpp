@@ -942,7 +942,7 @@ void checkHardwareOversubscription(int                             numThreadsOnT
          * TODO: When we have a proper parallel logging framework,
          *       the framework should add the rank and node numbers.
          */
-        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(mesg.c_str());
+        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted("%s", mesg.c_str());
     }
 }
 

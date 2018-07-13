@@ -789,7 +789,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
                  * But we implement a complete failsafe solution anyhow.
                  */
                 GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                        "The fastest PP/PME load balancing setting (cutoff %.3f nm) is no longer available due to DD DLB or box size limitations", pme_lb->fastest);
+                        "The fastest PP/PME load balancing setting (cutoff %.3d nm) is no longer available due to DD DLB or box size limitations", pme_lb->fastest);
                 pme_lb->fastest = pme_lb->lower_limit;
                 pme_lb->start   = pme_lb->lower_limit;
             }

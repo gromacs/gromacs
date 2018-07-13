@@ -906,7 +906,7 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
                     {
                         loc += sprintf(&errorstr[loc], "%3d %17.10e%17.10e%17.10e\n", ifep, weighted_lamee[ifep], p_k[ifep], dfhist->sum_weights[ifep]);
                     }
-                    gmx_fatal(FARGS, errorstr);
+                    gmx_fatal(FARGS, "%s", errorstr);
                 }
             }
         }

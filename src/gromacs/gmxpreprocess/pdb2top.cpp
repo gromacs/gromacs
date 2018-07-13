@@ -1092,7 +1092,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
             }
             else
             {
-                gmx_fatal(FARGS, errString);
+                gmx_fatal(FARGS, "%s", errString);
             }
         }
         else if (bRM && ((tern >= 0 && ntdb[tern]->nhack == 0) ||
@@ -1105,7 +1105,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
             }
             else
             {
-                gmx_fatal(FARGS, errString);
+                gmx_fatal(FARGS, "%s", errString);
             }
         }
     }

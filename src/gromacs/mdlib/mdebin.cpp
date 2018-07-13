@@ -1566,7 +1566,7 @@ void restore_energyhistory_from_state(t_mdebin              * mdebin,
     if ((enerhist->nsum     > 0 && nener != enerhist->ener_sum.size()) ||
         (enerhist->nsum_sim > 0 && nener != enerhist->ener_sum_sim.size()))
     {
-        gmx_fatal(FARGS, "Mismatch between number of energies in run input (%d) and checkpoint file (%u or %u).",
+        gmx_fatal(FARGS, "Mismatch between number of energies in run input (%d) and checkpoint file (%zu or %zu).",
                   nener, enerhist->ener_sum.size(), enerhist->ener_sum_sim.size());
     }
 

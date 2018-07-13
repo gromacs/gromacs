@@ -308,11 +308,11 @@ set_dd_cell_sizes_slb(gmx_domdec_t *dd, const gmx_ddbox_t *ddbox,
             if (setmode == setcellsizeslbLOCAL)
             {
                 gmx_fatal_collective(FARGS, dd->mpi_comm_all, DDMASTER(dd),
-                                     error_string);
+                                     "%s", error_string);
             }
             else
             {
-                gmx_fatal(FARGS, error_string);
+                gmx_fatal(FARGS, "%s", error_string);
             }
         }
     }
