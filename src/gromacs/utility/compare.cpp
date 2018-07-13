@@ -94,11 +94,11 @@ void cmp_uc(FILE *fp, const char *s, int index, unsigned char i1, unsigned char 
     {
         if (index != -1)
         {
-            fprintf(fp, "%s[%d] (%d - %d)\n", s, index, i1, i2);
+            fprintf(fp, "%s[%d] (%d - %d)\n", s, index, int{i1}, int{i2});
         }
         else
         {
-            fprintf(fp, "%s (%d - %d)\n", s, i1, i2);
+            fprintf(fp, "%s (%d - %d)\n", s, int{i1}, int{i2});
         }
     }
 }

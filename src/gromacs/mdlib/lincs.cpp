@@ -1550,7 +1550,7 @@ Lincs *init_lincs(FILE *fplog, const gmx_mtop_t &mtop,
     if (debug && bPLINCS)
     {
         fprintf(debug, "PLINCS communication before each iteration: %d\n",
-                li->bCommIter);
+                int{li->bCommIter});
     }
 
     /* LINCS can run on any number of threads.

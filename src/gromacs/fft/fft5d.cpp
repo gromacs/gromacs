@@ -197,7 +197,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         if (debug)
         {
             fprintf(debug, "FFT5D: N: %d, M: %d, K: %d, P: %dx%d, real2complex: %d, backward: %d, order yz: %d, debug %d\n",
-                    NG, MG, KG, P[0], P[1], (flags&FFT5D_REALCOMPLEX) > 0, (flags&FFT5D_BACKWARD) > 0, (flags&FFT5D_ORDER_YZ) > 0, (flags&FFT5D_DEBUG) > 0);
+                    NG, MG, KG, P[0], P[1], int((flags&FFT5D_REALCOMPLEX) > 0), int((flags&FFT5D_BACKWARD) > 0), int((flags&FFT5D_ORDER_YZ) > 0), int((flags&FFT5D_DEBUG) > 0));
         }
         /* The check below is not correct, one prime factor 11 or 13 is ok.
            if (fft5d_fmax(fft5d_fmax(lpfactor(NG),lpfactor(MG)),lpfactor(KG))>7) {
