@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -168,6 +168,31 @@ std::string stripSuffixIfPresent(const std::string &str, const char *suffix);
  * \throws    std::bad_alloc if out of memory.
  */
 std::string stripString(const std::string &str);
+#ifdef __GNUC__
+#define gmx_format(archetype, string_index, first_to_check) \
+    __attribute__ ((format (archetype, string_index, first_to_check)))
+#else
+/*! \brief GCC like function format attribute
+ *
+ * The format attribute specifies that a function takes printf, scanf, ...
+ * style arguments that should be type-checked against a format string.
+ * The attribute has to be placed after the function.
+ * This attribute is only valid for function declarations and not function
+ * definitions (GCC limitation). For member functions the implicit `this`
+ * pointer is included in the argument count.
+ */
+#define gmx_format(archetype, string_index, first_to_check)
+#endif
+#ifdef _MSC_VER
+#define gmx_fmtstr _In_ _Printf_format_string_
+#else
+/*! \brief MSVC like function format attribute
+ *
+ * Does type checking for printf like format strings in MSVC style.
+ * Attribute has to be placed before format string.
+ */
+#define gmx_fmtstr
+#endif
 /*! \brief
  * Formats a string (snprintf() wrapper).
  *
@@ -177,7 +202,8 @@ std::string stripString(const std::string &str);
  * instead of requiring a preallocated buffer.  Arbitrary length output is
  * supported.
  */
-std::string formatString(const char *fmt, ...);
+std::string formatString(gmx_fmtstr const char *fmt, ...) gmx_format(printf, 1, 2);
+
 /*! \brief
  * Formats a string (vsnprintf() wrapper).
  *

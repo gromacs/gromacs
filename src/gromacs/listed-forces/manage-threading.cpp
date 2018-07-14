@@ -48,6 +48,7 @@
 #include "config.h"
 
 #include <cassert>
+#include <cinttypes>
 #include <climits>
 #include <cstdlib>
 
@@ -450,7 +451,7 @@ void setup_bonded_threading(bonded_threading_t *bt,
             if (gmx_debug_at)
             {
 #if BITMASK_SIZE <= 64 //move into bitmask when it is C++
-                std::string flags = gmx::formatString("%lx", *mask);
+                std::string flags = gmx::formatString("%" PRIx64, *mask);
 #else
                 std::string flags = gmx::formatAndJoin(*mask,
                                                        "", gmx::StringFormatter("%x"));

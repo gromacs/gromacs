@@ -756,7 +756,7 @@ const char *opt2fn_master(const char *opt, int nfile, const t_filenm fnm[],
 
 void gmx_fatal_collective(int f_errno, const char *file, int line,
                           MPI_Comm comm, gmx_bool bMaster,
-                          const char *fmt, ...)
+                          gmx_fmtstr const char *fmt, ...)
 {
     va_list  ap;
     gmx_bool bFinalize;

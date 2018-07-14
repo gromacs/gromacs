@@ -3493,7 +3493,7 @@ void do_index(const char* mdparin, const char *ndx,
     auto accelerationGroupNames = gmx::splitString(is->accgrps);
     if (accelerationGroupNames.size() * DIM != accelerations.size())
     {
-        gmx_fatal(FARGS, "Invalid Acceleration input: %d groups and %d acc. values",
+        gmx_fatal(FARGS, "Invalid Acceleration input: %zu groups and %zu acc. values",
                   accelerationGroupNames.size(), accelerations.size());
     }
     do_numbering(natoms, groups, accelerationGroupNames, grps, gnames, egcACC,
@@ -3508,7 +3508,7 @@ void do_index(const char* mdparin, const char *ndx,
     auto freezeGroupNames = gmx::splitString(is->freeze);
     if (freezeDims.size() != DIM * freezeGroupNames.size())
     {
-        gmx_fatal(FARGS, "Invalid Freezing input: %d groups and %d freeze values",
+        gmx_fatal(FARGS, "Invalid Freezing input: %zu groups and %zu freeze values",
                   freezeGroupNames.size(), freezeDims.size());
     }
     do_numbering(natoms, groups, freezeGroupNames, grps, gnames, egcFREEZE,

@@ -501,7 +501,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                             case F_ANHARM_POL:
                                 if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS*10))
                                 {
-                                    gmx_fatal(FARGS, "polarize can not be used with qA(%e) != qB(%e) for atom %d of molecule block %lu", qS, atom[aS].qB, aS+1, mb+1);
+                                    gmx_fatal(FARGS, "polarize can not be used with qA(%e) != qB(%e) for atom %d of molecule block %zu", qS, atom[aS].qB, aS+1, mb+1);
                                 }
                                 shell[nsi].k    += gmx::square(qS)*ONE_4PI_EPS0/
                                     ffparams->iparams[type].polarize.alpha;
@@ -509,7 +509,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                             case F_WATER_POL:
                                 if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS*10))
                                 {
-                                    gmx_fatal(FARGS, "water_pol can not be used with qA(%e) != qB(%e) for atom %d of molecule block %lu", qS, atom[aS].qB, aS+1, mb+1);
+                                    gmx_fatal(FARGS, "water_pol can not be used with qA(%e) != qB(%e) for atom %d of molecule block %zu", qS, atom[aS].qB, aS+1, mb+1);
                                 }
                                 alpha          = (ffparams->iparams[type].wpol.al_x+
                                                   ffparams->iparams[type].wpol.al_y+

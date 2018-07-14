@@ -471,7 +471,7 @@ static std::string formatListSetup(const std::string &listName,
     }
     listSetup += "updated every ";
     // Make the shortest int format string that fits nstListForSpacing
-    std::string nstListFormat = "%" + gmx::formatString("%lu", gmx::formatString("%d", nstListForSpacing).size()) + "d";
+    std::string nstListFormat = "%" + gmx::formatString("%zu", gmx::formatString("%d", nstListForSpacing).size()) + "d";
     listSetup += gmx::formatString(nstListFormat.c_str(), nstList);
     listSetup += gmx::formatString(" steps, buffer %.3f nm, rlist %.3f nm\n",
                                    rList - interactionCutoff, rList);

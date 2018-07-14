@@ -40,6 +40,7 @@
 #include "config.h"
 
 #include <cassert>
+#include <cinttypes>
 #include <climits>
 #include <cmath>
 #include <cstdio>
@@ -3399,7 +3400,7 @@ static DlbState determineInitialDlbState(const gmx::MDLogger &mdlog,
             case DlbState::onUser:
                 return forceDlbOffOrBail(dlbState, reasonStr + " In load balanced runs binary reproducibility cannot be ensured.", mdlog);
             default:
-                gmx_fatal(FARGS, "Death horror: undefined case (%d) for load balancing choice", dlbState);
+                gmx_fatal(FARGS, "Death horror: undefined case (%d) for load balancing choice", static_cast<int>(dlbState));
         }
     }
 
@@ -6451,7 +6452,7 @@ void dd_partition_system(FILE                *fplog,
     {
         if (state_local->ddp_count > dd->ddp_count)
         {
-            gmx_fatal(FARGS, "Internal inconsistency state_local->ddp_count (%d) > dd->ddp_count (%ld)", state_local->ddp_count, dd->ddp_count);
+            gmx_fatal(FARGS, "Internal inconsistency state_local->ddp_count (%d) > dd->ddp_count (%" PRId64 ")", state_local->ddp_count, dd->ddp_count);
         }
 
         if (state_local->ddp_count_cg_gl != state_local->ddp_count)
