@@ -180,7 +180,7 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
                         const char *dimString[] = { "X", "Y", "Z" };
 
                         /* Spline values */
-                        SCOPED_TRACE(formatString("Testing spline values with tolerance of %ld", ulpToleranceSplineValues));
+                        SCOPED_TRACE(formatString("Testing spline values with tolerance of %d", ulpToleranceSplineValues));
                         TestReferenceChecker splineValuesChecker(rootChecker.checkCompound("Splines", "Values"));
                         splineValuesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceSplineValues));
                         for (int i = 0; i < DIM; i++)
@@ -192,7 +192,7 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
                         /* Spline derivatives */
                         const auto ulpToleranceSplineDerivatives = 4 * ulpToleranceSplineValues;
                         /* 4 is just a wild guess since the derivatives are deltas of neighbor spline values which could differ greatly */
-                        SCOPED_TRACE(formatString("Testing spline derivatives with tolerance of %ld", ulpToleranceSplineDerivatives));
+                        SCOPED_TRACE(formatString("Testing spline derivatives with tolerance of %d", ulpToleranceSplineDerivatives));
                         TestReferenceChecker splineDerivativesChecker(rootChecker.checkCompound("Splines", "Derivatives"));
                         splineDerivativesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceSplineDerivatives));
                         for (int i = 0; i < DIM; i++)
@@ -213,7 +213,7 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
                         TestReferenceChecker       gridValuesChecker(rootChecker.checkCompound("NonZeroGridValues", "RealSpaceGrid"));
                         const auto                 ulpToleranceGrid = 2 * ulpToleranceSplineValues * static_cast<int>(ceil(sqrt(atomCount)));
                         /* 2 is empiric; sqrt(atomCount) assumes all the input charges may spread onto the same cell */
-                        SCOPED_TRACE(formatString("Testing grid values with tolerance of %ld", ulpToleranceGrid));
+                        SCOPED_TRACE(formatString("Testing grid values with tolerance of %d", ulpToleranceGrid));
                         if (!gridValuesSizeAssigned)
                         {
                             previousGridValuesSize = nonZeroGridValues.size();

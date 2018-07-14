@@ -45,6 +45,7 @@
 
 #include "config.h"
 
+#include <cinttypes>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -772,11 +773,11 @@ void gmx::Integrator::do_md()
             {
                 if (!rerun_fr.bBox)
                 {
-                    gmx_fatal(FARGS, "Rerun trajectory frame step %ld time %f does not contain a box, while pbc is used", rerun_fr.step, rerun_fr.time);
+                    gmx_fatal(FARGS, "Rerun trajectory frame step %" PRId64 " time %f does not contain a box, while pbc is used", rerun_fr.step, rerun_fr.time);
                 }
                 if (max_cutoff2(ir->ePBC, rerun_fr.box) < gmx::square(fr->rlist))
                 {
-                    gmx_fatal(FARGS, "Rerun trajectory frame step %ld time %f has too small box dimensions", rerun_fr.step, rerun_fr.time);
+                    gmx_fatal(FARGS, "Rerun trajectory frame step %" PRId64 " time %f has too small box dimensions", rerun_fr.step, rerun_fr.time);
                 }
             }
         }

@@ -45,6 +45,7 @@
 #include "gmxpre.h"
 
 #include <cassert>
+#include <cinttypes>
 #include <cmath>
 #include <cstdio>
 
@@ -760,7 +761,7 @@ real dd_choose_grid(const gmx::MDLogger &mdlog,
             /* Check if the largest divisor is more than nnodes^2/3 */
             if (ldiv*ldiv*ldiv > nnodes_div*nnodes_div)
             {
-                gmx_fatal(FARGS, "The number of ranks you selected (%ld) contains a large prime factor %ld. In most cases this will lead to bad performance. Choose a number with smaller prime factors or set the decomposition (option -dd) manually.",
+                gmx_fatal(FARGS, "The number of ranks you selected (%" PRId64 ") contains a large prime factor %" PRId64 ". In most cases this will lead to bad performance. Choose a number with smaller prime factors or set the decomposition (option -dd) manually.",
                           nnodes_div, ldiv);
             }
         }

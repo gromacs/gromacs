@@ -139,7 +139,7 @@ static inline void validate_global_work_size(const KernelLaunchConfig &config, i
             {
                 gmx_fatal(FARGS, "Watch out, the input system is too large to simulate!\n"
                           "The number of nonbonded work units (=number of super-clusters) exceeds the"
-                          "device capabilities. Global work size limit exceeded (%d > %d)!",
+                          "device capabilities. Global work size limit exceeded (%zu > %zu)!",
                           global_work_size[i], device_limit);
             }
         }

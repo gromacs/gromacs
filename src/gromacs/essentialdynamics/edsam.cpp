@@ -2363,7 +2363,7 @@ static void crosscheck_edi_file_vs_checkpoint(const gmx_edsam &ed, edsamhistory_
     if (static_cast<int>(ed.edpar.size()) != EDstate->nED)
     {
         gmx_fatal(FARGS, "The number of essential dynamics / flooding groups is not consistent.\n"
-                  "There are %d ED groups in the .cpt file, but %d in the .edi file!\n"
+                  "There are %d ED groups in the .cpt file, but %zu in the .edi file!\n"
                   "Are you sure this is the correct .edi file?\n", EDstate->nED, ed.edpar.size());
     }
 }

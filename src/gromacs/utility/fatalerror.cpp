@@ -226,7 +226,7 @@ void gmx_fatal_mpi_va(int /*f_errno*/, const char *file, int line,
     gmx_exit_on_fatal_error(exitType, 1);
 }
 
-void gmx_fatal(int f_errno, const char *file, int line, const char *fmt, ...)
+void gmx_fatal(int f_errno, const char *file, int line, gmx_fmtstr const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -264,7 +264,7 @@ void _range_check(int n, int n_min, int n_max, const char *warn_str,
     }
 }
 
-void gmx_warning(const char *fmt, ...)
+void gmx_warning(gmx_fmtstr const char *fmt, ...)
 {
     va_list ap;
     char    msg[STRLEN];
