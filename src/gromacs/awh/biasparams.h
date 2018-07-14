@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -143,17 +143,39 @@ class BiasParams
         }
 
         /*! \brief
-         * Returns if to do checks, only returns true at free-energy update steps.
+         * Returns if to do checks for covering in the initial stage.
          *
-         * To avoid overhead due to expensive checks, we only do checks when we
-         * have taken at least as many samples as we have points.
+         * To avoid overhead due to expensive checks, we do not check
+         * at every free energy update. However, if checks are
+         * performed too rarely the detection of coverings will be
+         * delayed, ultimately affecting free energy convergence.
          *
-         * \param[in] numPointsInHistogram  The total number of points in the bias histogram.
          * \param[in] step                  Time step.
          * \returns true at steps where checks should be performed.
+         * \note  Only returns true at free energy update steps.
          */
-        bool isCheckStep(std::size_t numPointsInHistogram,
-                         gmx_int64_t step) const;
+        bool isCheckCoveringStep(gmx_int64_t step) const
+        {
+            return step % numStepsCheckCovering_ == 0;
+        }
+
+        /*! \brief
+         * Returns if to perform checks for anomalies in the histogram.
+         *
+         * To avoid overhead due to expensive checks, we do not check
+         * at every free energy update. These checks are only used for
+         * warning the user and can be made as infrequently as
+         * neccessary without affecting the algorithm itself.
+         *
+         * \param[in] step                  Time step.
+         * \returns true at steps where checks should be performed.
+         * \note Only returns true at free energy update steps.
+         * \todo Currently this function just calls isCheckCoveringStep but the checks could be done less frequently.
+         */
+        bool isCheckHistogramForAnomaliesStep(gmx_int64_t step) const
+        {
+            return isCheckCoveringStep(step);
+        }
 
         /*! \brief Constructor.
          *
@@ -192,8 +214,11 @@ class BiasParams
         const double      invBeta;                     /**< 1/beta = kT in kJ/mol */
     private:
         const gmx_int64_t numStepsSampleCoord_;        /**< Number of steps per coordinate value sample. */
+    public:
         const int         numSamplesUpdateFreeEnergy_; /**< Number of samples per free energy update. */
+    private:
         const gmx_int64_t numStepsUpdateTarget_;       /**< Number of steps per updating the target distribution. */
+        const gmx_int64_t numStepsCheckCovering_;      /**< Number of steps per checking for covering. */
     public:
         const int         eTarget;                     /**< Type of target distribution. */
         const double      freeEnergyCutoffInKT;        /**< Free energy cut-off in kT for cut-off target distribution. */

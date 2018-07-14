@@ -49,13 +49,13 @@ To help us fund development, we humbly ask that you cite the GROMACS papers:
 * GROMACS: A message-passing parallel molecular dynamics implementation
   H.J.C. Berendsen, D. van der Spoel and R. van Drunen
   Comp. Phys. Comm. 91, 43-56 (1995)
-  DOI: 10.1016/0010-4655(95)00042-E
+  DOI: https://doi.org/10.1016/0010-4655(95)00042-E
  
 * GROMACS 4: Algorithms for highly efficient, load-balanced, and scalable
   molecular simulation
   B. Hess and C. Kutzner and D. van der Spoel and E. Lindahl
   J. Chem. Theory Comput. 4 (2008) pp. 435-447
-  DOI: 10.1021/ct700301q
+  DOI: https://doi.org/10.1021/ct700301q
 
 * GROMACS 4.5: a high-throughput and highly parallel open source
   molecular simulation toolkit
@@ -63,14 +63,19 @@ To help us fund development, we humbly ask that you cite the GROMACS papers:
   Rossen Apostolov, Michael R. Shirts, Jeremy C. Smith, Peter M. Kasson,
   David van der Spoel, Berk Hess, Erik Lindahl.
   Bioinformatics 29 (2013) pp. 845-54
-  DOI: 10.1093/bioinformatics/btt055
+  DOI: https://doi.org/10.1093/bioinformatics/btt055
 
 * Tackling Exascale Software Challenges in Molecular Dynamics Simulations
   with GROMACS
   Szilárd Páll, Mark J. Abraham, Carsten Kutzner, Berk Hess, Erik Lindahl
   In S. Markidis & E. Laure (Eds.), Solving Software Challenges for Exascale,
-  8759 (2015) pp. 3–27
-  DOI: 10.1007/978-3-319-15976-8_1
+  Lecture Notes for Computer Science, 8759 (2015) pp. 3–27
+  DOI: https://doi.org/10.1007/978-3-319-15976-8_1
+
+* GROMACS: High performance molecular simulations through multi-level parallelism from laptops to supercomputers
+  M. J. Abraham, T. Murtola, R. Schulz, S. Páll, J. C. Smith, B. Hess, E. Lindahl,
+  SoftwareX, 1, (2015), 19-25
+  DOI: https://doi.org/10.1016/j.softx.2015.06.001
 
 There are a lot of cool features we'd like to include in future versions,
 but our resources are limited. All kinds of donations are welcome, both in 

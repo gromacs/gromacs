@@ -80,7 +80,12 @@ enum class GpuTaskCompletion
  * Returns true when this is a build of \Gromacs configured to support
  * GPU usage, and a valid device driver, ICD, and/or runtime was detected.
  *
- * \param[out] errorMessage  When returning false and non-nullptr was passed,
+ * This function is not intended to be called from build
+ * configurations that do not support GPUs, and there will be no
+ * descriptive message in that case.
+ *
+ * \param[out] errorMessage  When returning false on a build configured with
+ *                           GPU support and non-nullptr was passed,
  *                           the string contains a descriptive message about
  *                           why GPUs cannot be detected.
  *

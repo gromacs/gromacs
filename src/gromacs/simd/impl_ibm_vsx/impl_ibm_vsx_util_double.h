@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -278,8 +278,12 @@ gatherLoadUBySimdIntTranspose(const double *  base,
 {
     alignas(GMX_SIMD_ALIGNMENT) std::int32_t ioffset[GMX_SIMD_DINT32_WIDTH];
 
-    store(ioffset, offset );
-    gatherLoadTranspose<align>(base, ioffset, v0, v1);
+    store(ioffset, offset);
+
+    SimdDouble t1     = simdLoadU(base + align * ioffset[0]);
+    SimdDouble t2     = simdLoadU(base + align * ioffset[1]);
+    v0->simdInternal_ = vec_mergeh(t1.simdInternal_, t2.simdInternal_);
+    v1->simdInternal_ = vec_mergel(t1.simdInternal_, t2.simdInternal_);
 }
 
 static inline double gmx_simdcall

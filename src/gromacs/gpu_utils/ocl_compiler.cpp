@@ -229,7 +229,7 @@ getKernelRootPath()
         InstallationPrefixInfo      info           = getProgramContext().installationPrefix();
         std::string                 dataPathSuffix = (info.bSourceLayout ?
                                                       "src/gromacs/mdlib/nbnxn_ocl" :
-                                                      OCL_INSTALL_DIR);
+                                                      GMX_INSTALL_OCLDIR);
         kernelRootPath = Path::join(info.path, dataPathSuffix);
     }
     else

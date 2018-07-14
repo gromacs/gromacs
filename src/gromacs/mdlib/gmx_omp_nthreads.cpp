@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -175,8 +175,8 @@ static void pick_module_nthreads(const gmx::MDLogger &mdlog, int m,
     gmx_omp_nthreads_set(m, nth);
 }
 
-void gmx_omp_nthreads_read_env(int     *nthreads_omp,
-                               gmx_bool bIsSimMaster)
+void gmx_omp_nthreads_read_env(const gmx::MDLogger &mdlog,
+                               int                 *nthreads_omp)
 {
     char    *env;
     gmx_bool bCommandLineSetNthreadsOMP = *nthreads_omp > 0;
@@ -204,16 +204,14 @@ void gmx_omp_nthreads_read_env(int     *nthreads_omp,
 
         /* Output the results */
         sprintf(buffer,
-                "The number of OpenMP threads was set by environment variable OMP_NUM_THREADS to %d%s\n",
+                "\nThe number of OpenMP threads was set by environment variable OMP_NUM_THREADS to %d%s\n\n",
                 nt_omp,
                 bCommandLineSetNthreadsOMP ? " (and the command-line setting agreed with that)" : "");
-        if (bIsSimMaster)
-        {
-            /* This prints once per simulation for multi-simulations,
-             * which might help diagnose issues with inhomogenous
-             * cluster setups. */
-            fputs(buffer, stderr);
-        }
+
+        /* This prints once per simulation for multi-simulations,
+         * which might help diagnose issues with inhomogenous
+         * cluster setups. */
+        GMX_LOG(mdlog.info).appendTextFormatted(buffer);
         if (debug)
         {
             /* This prints once per process for real MPI (i.e. once
