@@ -41,6 +41,7 @@
 #include "config.h"
 
 #include <cassert>
+#include <cinttypes>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -1112,7 +1113,7 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
 
         if (dnorm2(r_ij[c]) == 0)
         {
-            gmx_fatal(FARGS, "Distance for pull coordinate %lu is zero with constraint pulling, which is not allowed.", c + 1);
+            gmx_fatal(FARGS, "Distance for pull coordinate %zu is zero with constraint pulling, which is not allowed.", c + 1);
         }
     }
 

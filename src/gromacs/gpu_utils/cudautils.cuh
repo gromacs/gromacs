@@ -85,7 +85,7 @@ static inline void ensureNoPendingCudaError(const char *errorMessage)
     GMX_ASSERT(stat == cudaSuccess, fullMessage.c_str());
     // TODO When we evolve a better logging framework, use that
     // for release-build error reporting.
-    gmx_warning(fullMessage.c_str());
+    gmx_warning("%s", fullMessage.c_str());
 }
 
 }   // namespace

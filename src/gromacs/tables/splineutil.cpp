@@ -143,7 +143,7 @@ throwUnlessDerivativeIsConsistentWithFunction(ArrayRef<const double>        func
     }
     if (!isConsistent)
     {
-        GMX_THROW(InconsistentInputError(formatString("Derivative inconsistent with numerical vector for elements %lu-%lu", minFail+1, maxFail+1)));
+        GMX_THROW(InconsistentInputError(formatString("Derivative inconsistent with numerical vector for elements %zu-%zu", minFail+1, maxFail+1)));
     }
 }
 

@@ -2600,7 +2600,7 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
         if ((precision != sizeof(float)) && !bDouble)
         {
             gmx_fatal(FARGS, "Unknown precision in file %s: real is %d bytes "
-                      "instead of %lu or %lu",
+                      "instead of %zu or %zu",
                       gmx_fio_getname(fio), precision, sizeof(float), sizeof(double));
         }
         gmx_fio_setprecision(fio, bDouble);
