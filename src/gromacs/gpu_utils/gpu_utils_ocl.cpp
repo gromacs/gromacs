@@ -167,7 +167,7 @@ bool canDetectGpus(std::string *errorMessage)
     }
 #endif
     GMX_RELEASE_ASSERT(status == CL_SUCCESS,
-                       gmx::formatString("An unexpected value was returned from clGetPlatformIDs %u: %s",
+                       gmx::formatString("An unexpected value was returned from clGetPlatformIDs %d: %s",
                                          status, ocl_get_error_string(status).c_str()).c_str());
     bool foundPlatform = (numPlatforms > 0);
     if (!foundPlatform && errorMessage != nullptr)
@@ -196,7 +196,7 @@ void findGpus(gmx_gpu_info_t *gpu_info)
         cl_int status = clGetPlatformIDs(0, nullptr, &ocl_platform_count);
         if (CL_SUCCESS != status)
         {
-            GMX_THROW(gmx::InternalError(gmx::formatString("An unexpected value %u was returned from clGetPlatformIDs: ",
+            GMX_THROW(gmx::InternalError(gmx::formatString("An unexpected value %d was returned from clGetPlatformIDs: ",
                                                            status) + ocl_get_error_string(status)));
         }
 
@@ -211,7 +211,7 @@ void findGpus(gmx_gpu_info_t *gpu_info)
         status = clGetPlatformIDs(ocl_platform_count, ocl_platform_ids, nullptr);
         if (CL_SUCCESS != status)
         {
-            GMX_THROW(gmx::InternalError(gmx::formatString("An unexpected value %u was returned from clGetPlatformIDs: ",
+            GMX_THROW(gmx::InternalError(gmx::formatString("An unexpected value %d was returned from clGetPlatformIDs: ",
                                                            status) + ocl_get_error_string(status)));
         }
 

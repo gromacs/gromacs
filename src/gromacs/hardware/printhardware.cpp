@@ -302,7 +302,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
             s += gmx::formatString("    Numa nodes:\n");
             for (auto &n : hwTop.machine().numa.nodes)
             {
-                s += gmx::formatString("      Node %2d (%" GMX_PRIu64 " bytes mem):", n.id, n.memory);
+                s += gmx::formatString("      Node %2d (%zu bytes mem):", n.id, n.memory);
                 for (auto &l : n.logicalProcessorId)
                 {
                     s += gmx::formatString(" %3d", l);
@@ -312,12 +312,12 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
             s += gmx::formatString("      Latency:\n          ");
             for (std::size_t j = 0; j < hwTop.machine().numa.nodes.size(); j++)
             {
-                s += gmx::formatString(" %5lu", j);
+                s += gmx::formatString(" %5zu", j);
             }
             s += gmx::formatString("\n");
             for (std::size_t i = 0; i < hwTop.machine().numa.nodes.size(); i++)
             {
-                s += gmx::formatString("     %5lu", i);
+                s += gmx::formatString("     %5zu", i);
                 for (std::size_t j = 0; j < hwTop.machine().numa.nodes.size(); j++)
                 {
                     s += gmx::formatString(" %5.2f", hwTop.machine().numa.relativeLatency[i][j]);
@@ -329,7 +329,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
             s += gmx::formatString("    Caches:\n");
             for (auto &c : hwTop.machine().caches)
             {
-                s += gmx::formatString("      L%d: %" GMX_PRIu64 " bytes, linesize %d bytes, assoc. %d, shared %d ways\n",
+                s += gmx::formatString("      L%d: %zu bytes, linesize %d bytes, assoc. %d, shared %d ways\n",
                                        c.level, c.size, c.linesize, c.associativity, c.shared);
             }
         }
