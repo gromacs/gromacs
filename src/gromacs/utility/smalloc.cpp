@@ -63,29 +63,6 @@
 static gmx_bool            g_bOverAllocDD     = FALSE;
 static tMPI_Thread_mutex_t g_over_alloc_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
-void *save_malloc(const char *name, const char *file, int line, size_t size)
-{
-    void *p;
-
-    p = nullptr;
-    if (size == 0)
-    {
-        p = nullptr;
-    }
-    else
-    {
-        if ((p = malloc(size)) == nullptr)
-        {
-            gmx_fatal(errno, __FILE__, __LINE__,
-                      "Not enough memory. Failed to malloc %" GMX_PRId64 " bytes for %s\n"
-                      "(called from file %s, line %d)",
-                      (gmx_int64_t)size, name, file, line);
-        }
-        (void) memset(p, 0, size);
-    }
-    return p;
-}
-
 void *save_calloc(const char *name, const char *file, int line,
                   size_t nelem, size_t elsize)
 {
