@@ -117,8 +117,8 @@ static void checkCompiledTargetCompatibility(const gmx_device_info_t *devInfo)
                   "The %s binary does not include support for the CUDA architecture "
                   "of the selected GPU (device ID #%d, compute capability %d.%d). "
                   "By default, GROMACS supports all common architectures, so your GPU "
-                  "might be rare, or some architectures were disabled in the build. ",
-                  "Consult the install guide for how to use the GMX_CUDA_TARGET_SM and ",
+                  "might be rare, or some architectures were disabled in the build. "
+                  "Consult the install guide for how to use the GMX_CUDA_TARGET_SM and "
                   "GMX_CUDA_TARGET_COMPUTE CMake variables to add this architecture.",
                   gmx::getProgramContext().displayName(), devInfo->id,
                   devInfo->prop.major, devInfo->prop.minor);

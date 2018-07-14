@@ -133,7 +133,7 @@ std::string stripString(const std::string &str)
     return std::string(start, end);
 }
 
-std::string formatString(const char *fmt, ...)
+std::string formatString(gmx_fmtstr const char *fmt, ...)
 {
     va_list     ap;
     va_start(ap, fmt);

@@ -48,6 +48,7 @@
 #include "config.h"
 
 #include <cassert>
+#include <cinttypes>
 #include <csignal>
 #include <cstdlib>
 #include <cstring>
@@ -299,7 +300,7 @@ static void override_nsteps_cmdline(const gmx::MDLogger &mdlog,
     }
     else if (nsteps_cmdline < -2)
     {
-        gmx_fatal(FARGS, "Invalid nsteps value passed on the command line: %ld",
+        gmx_fatal(FARGS, "Invalid nsteps value passed on the command line: %" PRId64,
                   nsteps_cmdline);
     }
     /* Do nothing if nsteps_cmdline == -2 */

@@ -133,7 +133,7 @@ class Regex::Impl
         {
             // TODO: Better error messages.
             GMX_THROW(InvalidInputError(formatString(
-                                                "Error in regular expression \"%s\"", value)));
+                                                "Error in regular expression \"%s\"", value.c_str())));
         }
 
         bool match(const char *value) const
