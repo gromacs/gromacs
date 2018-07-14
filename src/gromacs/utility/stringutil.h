@@ -174,6 +174,11 @@ std::string stripString(const std::string &str);
 #else
 #define gmx_format(archetype, string_index, first_to_check)
 #endif
+#ifdef _MSC_VER
+#define gmx_fmtstr _In_ _Printf_format_string_
+#else
+#define gmx_fmtstr
+#endif
 /*! \brief
  * Formats a string (snprintf() wrapper).
  *
@@ -183,7 +188,7 @@ std::string stripString(const std::string &str);
  * instead of requiring a preallocated buffer.  Arbitrary length output is
  * supported.
  */
-std::string formatString(const char *fmt, ...) gmx_format(printf, 1, 2);
+std::string formatString(gmx_fmtstr const char *fmt, ...) gmx_format(printf, 1, 2);
 
 /*! \brief
  * Formats a string (vsnprintf() wrapper).

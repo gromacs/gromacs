@@ -60,7 +60,7 @@ ILogTarget::~ILogTarget()
 }
 
 
-LogEntryWriter &LogEntryWriter::appendTextFormatted(const char *fmt, ...)
+LogEntryWriter &LogEntryWriter::appendTextFormatted(gmx_fmtstr const char *fmt, ...)
 {
     va_list ap;
 

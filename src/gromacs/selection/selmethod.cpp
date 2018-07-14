@@ -120,10 +120,10 @@ static const t_register_method smtable_def[] = {
  * Convenience function for reporting errors found in selection methods.
  */
 static void
-report_error(FILE *fp, const char *name, const char *fmt, ...) gmx_format(printf, 3, 4);
+report_error(FILE *fp, const char *name, gmx_fmtstr const char *fmt, ...) gmx_format(printf, 3, 4);
 
 static void
-report_error(FILE *fp, const char *name, const char *fmt, ...)
+report_error(FILE *fp, const char *name, gmx_fmtstr const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -141,10 +141,10 @@ report_error(FILE *fp, const char *name, const char *fmt, ...)
  */
 static void
 report_param_error(FILE *fp, const char *mname, const char *pname,
-                   const char *fmt, ...) gmx_format(printf, 4, 5);
+	gmx_fmtstr const char *fmt, ...) gmx_format(printf, 4, 5);
 static void
 report_param_error(FILE *fp, const char *mname, const char *pname,
-                   const char *fmt, ...)
+	gmx_fmtstr const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);

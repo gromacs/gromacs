@@ -665,7 +665,7 @@ int gmx_hydorder(int argc, char *argv[])
     gmx::ArrayRef<const std::string> intfn = opt2fns("-o", NFILE, fnm);
     if (intfn.size() != 2)
     {
-        gmx_fatal(FARGS, "No or not correct number (2) of output-files: %ld", intfn.size());
+        gmx_fatal(FARGS, "No or not correct number (2) of output-files: %td", intfn.size());
     }
     calc_tetra_order_interface(ndxfnm, tpsfnm, trxfnm, binwidth, nsttblock, &frames, &xslices, &yslices, sg1, sg2, &intfpos, oenv);
     writesurftoxpms(intfpos, frames, xslices, yslices, binwidth, intfn, nlevels);
@@ -675,7 +675,7 @@ int gmx_hydorder(int argc, char *argv[])
         gmx::ArrayRef<const std::string> spectra = opt2fns("-Spect", NFILE, fnm);
         if (spectra.size() != 2)
         {
-            gmx_fatal(FARGS, "No or not correct number (2) of output-files: %ld", spectra.size());
+            gmx_fatal(FARGS, "No or not correct number (2) of output-files: %td", spectra.size());
         }
         powerspectavg(intfpos, frames, xslices, yslices, spectra);
     }
@@ -685,7 +685,7 @@ int gmx_hydorder(int argc, char *argv[])
         gmx::ArrayRef<const std::string> raw = opt2fns("-or", NFILE, fnm);
         if (raw.size() != 2)
         {
-            gmx_fatal(FARGS, "No or not correct number (2) of output-files: %ld", raw.size());
+            gmx_fatal(FARGS, "No or not correct number (2) of output-files: %td", raw.size());
         }
         writeraw(intfpos, frames, xslices, yslices, raw);
     }

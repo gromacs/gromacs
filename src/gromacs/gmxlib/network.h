@@ -120,7 +120,7 @@ const char *opt2fn_master(const char *opt, int nfile,
 [[ noreturn ]] void
 gmx_fatal_collective(int f_errno, const char *file, int line,
                      MPI_Comm comm, gmx_bool bMaster,
-                     const char *fmt, ...) gmx_format(printf, 6, 7);
+	gmx_fmtstr const char *fmt, ...) gmx_format(printf, 6, 7);
 /* As gmx_fatal declared in utility/fatalerror.h,
  * but only the master process prints the error message.
  * This should only be called one of the following two situations:
