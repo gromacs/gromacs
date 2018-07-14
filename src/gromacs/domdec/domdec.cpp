@@ -45,6 +45,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <cinttypes>
 #include <cmath>
 
 #include <algorithm>
@@ -6482,7 +6483,7 @@ void dd_partition_system(FILE                *fplog,
     {
         if (state_local->ddp_count > dd->ddp_count)
         {
-            gmx_fatal(FARGS, "Internal inconsistency state_local->ddp_count (%d) > dd->ddp_count (%ld)", state_local->ddp_count, dd->ddp_count);
+            gmx_fatal(FARGS, "Internal inconsistency state_local->ddp_count (%d) > dd->ddp_count (%" PRId64 ")", state_local->ddp_count, dd->ddp_count);
         }
 
         if (state_local->ddp_count_cg_gl != state_local->ddp_count)

@@ -94,7 +94,7 @@ class LogEntryWriter
             return *this;
         }
         //! Appends given text to the log entry, with printf-style formatting.
-        LogEntryWriter &appendTextFormatted(const char *fmt, ...) gmx_format(printf, 2, 3);
+        LogEntryWriter &appendTextFormatted(gmx_fmtstr const char *fmt, ...) gmx_format(printf, 2, 3);
         //! Writes the log entry with empty lines before and after.
         LogEntryWriter &asParagraph()
         {
