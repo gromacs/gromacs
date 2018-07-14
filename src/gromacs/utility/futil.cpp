@@ -370,7 +370,7 @@ static char *backup_fn(const char *file)
     char        *directory, *fn;
     char        *buf;
 
-    smalloc(buf, GMX_PATH_MAX);
+    snew(buf, GMX_PATH_MAX);
 
     for (i = strlen(file)-1; ((i > 0) && (file[i] != DIR_SEPARATOR)); i--)
     {

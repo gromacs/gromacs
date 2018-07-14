@@ -38,7 +38,7 @@
  * \brief
  * C-style memory allocation routines for \Gromacs.
  *
- * This header provides macros snew(), srenew(), smalloc(), and sfree() for
+ * This header provides macros snew(), srenew(), and sfree() for
  * C-style memory management.  Additionally, snew_aligned() and sfree_aligned() are
  * provided for managing memory with a specified byte alignment.
  *
@@ -65,20 +65,10 @@
 
 #include <stddef.h>
 
+#include <memory>
+
 #include "gromacs/utility/basedefinitions.h"
 
-/*! \brief
- * \Gromacs wrapper for malloc().
- *
- * \param[in] name   Variable name identifying the allocation.
- * \param[in] file   Source code file where the allocation originates from.
- * \param[in] line   Source code line where the allocation originates from.
- * \param[in] size   Number of bytes to allocate.
- * \returns   Pointer to the allocated space.
- *
- * This should generally be called through smalloc(), not directly.
- */
-void *save_malloc(const char *name, const char *file, int line, size_t size);
 /*! \brief
  * \Gromacs wrapper for calloc().
  *
@@ -212,7 +202,7 @@ void gmx_snew_impl(const char *name, const char *file, int line,
 #if GMX_CXX11_COMPILATION
     static_assert(std::is_pod<T>::value, "snew() called on C++ type");
 #endif
-    ptr = (T *)save_calloc(name, file, line, nelem, sizeof(T));
+    ptr = new(save_calloc(name, file, line, nelem, sizeof(T)))T[nelem];
 }
 /** C++ helper for srenew(). */
 template <typename T> static inline
@@ -222,18 +212,9 @@ void gmx_srenew_impl(const char *name, const char *file, int line,
 #if GMX_CXX11_COMPILATION
     static_assert(std::is_pod<T>::value, "srenew() called on C++ type");
 #endif
-    ptr = (T *)save_realloc(name, file, line, ptr, nelem, sizeof(T));
+    ptr = new(save_realloc(name, file, line, ptr, nelem, sizeof(T)))T[nelem];
 }
-/** C++ helper for smalloc(). */
-template <typename T> static inline
-void gmx_smalloc_impl(const char *name, const char *file, int line,
-                      T * &ptr, size_t size)
-{
-#if GMX_CXX11_COMPILATION
-    static_assert(std::is_pod<T>::value, "smalloc() called on C++ type");
-#endif
-    ptr = (T *)save_malloc(name, file, line, size);
-}
+
 /** C++ helper for snew_aligned(). */
 template <typename T> static inline
 void gmx_snew_aligned_impl(const char *name, const char *file, int line,
@@ -242,7 +223,7 @@ void gmx_snew_aligned_impl(const char *name, const char *file, int line,
 #if GMX_CXX11_COMPILATION
     static_assert(std::is_pod<T>::value, "snew_aligned() called on C++ type");
 #endif
-    ptr = (T *)save_calloc_aligned(name, file, line, nelem, sizeof(T), alignment);
+    ptr = new(save_calloc_aligned(name, file, line, nelem, sizeof(T), alignment))T[nelem];
 }
 /** C++ helper for sfree(). */
 template <typename T> static inline
@@ -294,18 +275,6 @@ void gmx_sfree_aligned_impl(const char *name, const char *file, int line, T *ptr
  *
  * \hideinitializer
  */
-/*! \def smalloc
- * \brief
- * Allocates memory for a given number of bytes.
- *
- * \param[out] ptr  Pointer to allocate.
- * \param[in]  size Number of bytes to allocate.
- *
- * Allocates memory for \p size bytes and sets this to \p ptr.
- * The allocated memory is initialized to zero.
- *
- * \hideinitializer
- */
 /*! \def snew_aligned
  * \brief
  * Allocates aligned memory for a given number of elements.
@@ -345,8 +314,6 @@ void gmx_sfree_aligned_impl(const char *name, const char *file, int line, T *ptr
     gmx_snew_impl(#ptr, __FILE__, __LINE__, (ptr), (nelem))
 #define srenew(ptr, nelem) \
     gmx_srenew_impl(#ptr, __FILE__, __LINE__, (ptr), (nelem))
-#define smalloc(ptr, size) \
-    gmx_smalloc_impl(#ptr, __FILE__, __LINE__, (ptr), (size))
 #define snew_aligned(ptr, nelem, alignment) \
     gmx_snew_aligned_impl(#ptr, __FILE__, __LINE__, (ptr), (nelem), alignment)
 #define sfree(ptr) \
