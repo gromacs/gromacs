@@ -249,7 +249,7 @@ class FloatingPointDifference
          * constructor used to initialize the difference.
          * The ULP difference between 0.0 and -0.0 is zero.
          */
-        gmx_uint64_t asUlps() const { return ulpDifference_; }
+        uint64_t asUlps() const { return ulpDifference_; }
         /*! \brief
          * Whether the compared values were of different sign.
          *
@@ -273,7 +273,7 @@ class FloatingPointDifference
         double       termMagnitude_;
         //! Stores the absolute difference, or NaN if one or both values were NaN.
         double       absoluteDifference_;
-        gmx_uint64_t ulpDifference_;
+        uint64_t     ulpDifference_;
         bool         bSignDifference_;
         /*! \brief
          * Whether the difference was computed for single or double precision.
@@ -302,7 +302,7 @@ class FloatingPointDifference
  *  - _ULP tolerance_: ULP (units of least precision) difference between the
  *    values must be smaller than the given tolerance for the check to pass.
  *    Setting the ULP tolerance to zero requires exact match.
- *    Setting the ULP tolerance to GMX_UINT64_MAX disables the ULP check.
+ *    Setting the ULP tolerance to UINT64_MAX disables the ULP check.
  *    `0.0` and `-0.0` are treated as equal for the ULP check.
  *  - _sign check_: if set, any values that are of different signs fail the
  *    check (note that this also applies to `0.0` and `-0.0`: a value with a
@@ -356,8 +356,8 @@ class FloatingPointTolerance
                                double       doubleAbsoluteTolerance,
                                float        singleRelativeTolerance,
                                double       doubleRelativeTolerance,
-                               gmx_uint64_t singleUlpTolerance,
-                               gmx_uint64_t doubleUlpTolerance,
+                               uint64_t     singleUlpTolerance,
+                               uint64_t     doubleUlpTolerance,
                                bool         bSignMustMatch)
             : singleAbsoluteTolerance_(singleAbsoluteTolerance),
               doubleAbsoluteTolerance_(doubleAbsoluteTolerance),
@@ -384,8 +384,8 @@ class FloatingPointTolerance
         double       doubleAbsoluteTolerance_;
         float        singleRelativeTolerance_;
         double       doubleRelativeTolerance_;
-        gmx_uint64_t singleUlpTolerance_;
-        gmx_uint64_t doubleUlpTolerance_;
+        uint64_t     singleUlpTolerance_;
+        uint64_t     doubleUlpTolerance_;
         bool         bSignMustMatch_;
 };
 
@@ -398,7 +398,7 @@ class FloatingPointTolerance
  * \related FloatingPointTolerance
  */
 static inline FloatingPointTolerance
-ulpTolerance(gmx_uint64_t ulpDiff)
+ulpTolerance(uint64_t ulpDiff)
 {
     return FloatingPointTolerance(0.0, 0.0, 0.0, 0.0, ulpDiff, ulpDiff, false);
 }
@@ -443,8 +443,8 @@ FloatingPointTolerance
  */
 static inline FloatingPointTolerance
 relativeToleranceAsPrecisionDependentUlp(double       magnitude,
-                                         gmx_uint64_t singleUlpDiff,
-                                         gmx_uint64_t doubleUlpDiff)
+                                         uint64_t     singleUlpDiff,
+                                         uint64_t     doubleUlpDiff)
 {
     return FloatingPointTolerance(magnitude*singleUlpDiff*GMX_FLOAT_EPS,
                                   magnitude*doubleUlpDiff*GMX_DOUBLE_EPS,
@@ -461,7 +461,7 @@ static inline FloatingPointTolerance
 absoluteTolerance(double tolerance)
 {
     return FloatingPointTolerance(tolerance, tolerance, 0.0, 0.0,
-                                  GMX_UINT64_MAX, GMX_UINT64_MAX, false);
+                                  UINT64_MAX, UINT64_MAX, false);
 }
 
 /*! \brief
@@ -481,7 +481,7 @@ absoluteTolerance(double tolerance)
  * \related FloatingPointTolerance
  */
 static inline FloatingPointTolerance
-relativeToleranceAsUlp(double magnitude, gmx_uint64_t ulpDiff)
+relativeToleranceAsUlp(double magnitude, uint64_t ulpDiff)
 {
     return relativeToleranceAsPrecisionDependentUlp(magnitude, ulpDiff, ulpDiff);
 }
@@ -489,7 +489,7 @@ relativeToleranceAsUlp(double magnitude, gmx_uint64_t ulpDiff)
 namespace
 {
 //! Default tolerance in ULPs for two floating-point values to compare equal.
-static gmx_uint64_t g_defaultUlpTolerance = 4;
+static uint64_t g_defaultUlpTolerance = 4;
 }
 
 /*! \brief

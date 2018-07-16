@@ -164,13 +164,13 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                             gridValuesMagnitude = std::max(std::fabs(point.second.im), gridValuesMagnitude);
                         }
                         // Spline moduli participate 3 times in the computation; 2 is an additional factor for SIMD exp() precision
-                        gmx_uint64_t gridUlpToleranceFactor = DIM * 2;
+                        uint64_t gridUlpToleranceFactor = DIM * 2;
                         if (method == PmeSolveAlgorithm::LennardJones)
                         {
                             // Lennard Jones is more complex and also uses erfc(), relax more
                             gridUlpToleranceFactor *= 2;
                         }
-                        const gmx_uint64_t splineModuliDoublePrecisionUlps
+                        const uint64_t     splineModuliDoublePrecisionUlps
                             = getSplineModuliDoublePrecisionUlps(inputRec.pme_order + 1);
                         auto               gridTolerance
                             = relativeToleranceAsPrecisionDependentUlp(gridValuesMagnitude,
@@ -206,7 +206,7 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                             /* Energy */
                             double       energyMagnitude = 10.0;
                             // TODO This factor is arbitrary, do a proper error-propagation analysis
-                            gmx_uint64_t energyUlpToleranceFactor = gridUlpToleranceFactor * 2;
+                            uint64_t     energyUlpToleranceFactor = gridUlpToleranceFactor * 2;
                             auto         energyTolerance
                                 = relativeToleranceAsPrecisionDependentUlp(energyMagnitude,
                                                                            energyUlpToleranceFactor * c_splineModuliSinglePrecisionUlps,
@@ -218,7 +218,7 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                             /* Virial */
                             double       virialMagnitude = 1000.0;
                             // TODO This factor is arbitrary, do a proper error-propagation analysis
-                            gmx_uint64_t virialUlpToleranceFactor = energyUlpToleranceFactor * 2;
+                            uint64_t     virialUlpToleranceFactor = energyUlpToleranceFactor * 2;
                             auto         virialTolerance
                                 = relativeToleranceAsPrecisionDependentUlp(virialMagnitude,
                                                                            virialUlpToleranceFactor * c_splineModuliSinglePrecisionUlps,

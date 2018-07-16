@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -112,7 +112,7 @@ class IntegerOptionStorage : public OptionStorageTemplateSimple<int>
 /*! \internal \brief
  * Converts, validates, and stores integer values.
  */
-class Int64OptionStorage : public OptionStorageTemplateSimple<gmx_int64_t>
+class Int64OptionStorage : public OptionStorageTemplateSimple<int64_t>
 {
     public:
         //! \copydoc BooleanOptionStorage::BooleanOptionStorage()
@@ -123,7 +123,7 @@ class Int64OptionStorage : public OptionStorageTemplateSimple<gmx_int64_t>
 
         virtual OptionInfo &optionInfo() { return info_; }
         virtual std::string typeString() const { return "int"; }
-        virtual std::string formatSingleValue(const gmx_int64_t &value) const;
+        virtual std::string formatSingleValue(const int64_t &value) const;
 
     private:
         virtual void initConverter(ConverterType *converter);

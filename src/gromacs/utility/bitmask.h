@@ -61,9 +61,9 @@
 
 #if BITMASK_SIZE <= 64 || defined DOXYGEN
 #if BITMASK_SIZE == 32
-typedef gmx_uint32_t gmx_bitmask_t;
+typedef uint32_t gmx_bitmask_t;
 #else
-typedef gmx_uint64_t gmx_bitmask_t; /**< bitmask type */
+typedef uint64_t gmx_bitmask_t; /**< bitmask type */
 #endif
 
 /*! \brief Initialize all bits to 0 */
@@ -121,7 +121,7 @@ inline static void bitmask_union(gmx_bitmask_t* a, gmx_bitmask_t b)
 }
 #else
 #define BITMASK_ALEN (BITMASK_SIZE/64)
-typedef gmx_uint64_t gmx_bitmask_t[BITMASK_ALEN];
+typedef uint64_t gmx_bitmask_t[BITMASK_ALEN];
 
 inline static void bitmask_clear(gmx_bitmask_t* m)
 {
@@ -130,25 +130,25 @@ inline static void bitmask_clear(gmx_bitmask_t* m)
 
 inline static void bitmask_set_bit(gmx_bitmask_t* m, int b)
 {
-    (*m)[b/64] |= ((gmx_uint64_t)1 << (b%64));
+    (*m)[b/64] |= ((uint64_t)1 << (b%64));
 }
 
 inline static void bitmask_init_bit(gmx_bitmask_t* m, int b)
 {
     bitmask_clear(m);
-    (*m)[b/64] = ((gmx_uint64_t)1 << (b%64));
+    (*m)[b/64] = ((uint64_t)1 << (b%64));
 }
 
 inline static void bitmask_init_low_bits(gmx_bitmask_t* m, int b)
 {
     memset(*m, 255, b/64*8);
-    (*m)[b/64] = ((gmx_uint64_t)1 << (b%64)) - 1;
+    (*m)[b/64] = ((uint64_t)1 << (b%64)) - 1;
     memset(&(*m)[b/64+1], 0, (BITMASK_ALEN-b/64-1)*8);
 }
 
 inline static bool bitmask_is_set(gmx_bitmask_t m, int b)
 {
-    return (m[b/64] & ((gmx_uint64_t)1 << (b%64))) != 0;
+    return (m[b/64] & ((uint64_t)1 << (b%64))) != 0;
 }
 
 inline static bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)

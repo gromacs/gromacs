@@ -53,7 +53,7 @@ typedef struct {
     int             *ibuf; /* for ints */
     int              ibuf_alloc;
 
-    gmx_int64_t     *libuf;
+    int64_t         *libuf;
     int              libuf_alloc;
 
     float           *fbuf; /* for floats */

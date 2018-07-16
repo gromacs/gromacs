@@ -91,7 +91,7 @@ struct gmx_wallcycle
 #endif
     int               ewc_prev;
     gmx_cycles_t      cycle_prev;
-    gmx_int64_t       reset_counters;
+    int64_t           reset_counters;
 #if GMX_MPI
     MPI_Comm          mpi_comm_mygroup;
 #endif
@@ -1076,7 +1076,7 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
     }
 }
 
-extern gmx_int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc)
+extern int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc)
 {
     if (wc == nullptr)
     {
@@ -1086,7 +1086,7 @@ extern gmx_int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc)
     return wc->reset_counters;
 }
 
-extern void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_int64_t reset_counters)
+extern void wcycle_set_reset_counters(gmx_wallcycle_t wc, int64_t reset_counters)
 {
     if (wc == nullptr)
     {

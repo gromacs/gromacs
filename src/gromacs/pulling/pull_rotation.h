@@ -121,7 +121,7 @@ extern void do_rotation(const t_commrec  *cr,
                         matrix            box,
                         rvec              x[],
                         real              t,
-                        gmx_int64_t       step,
+                        int64_t           step,
                         gmx_bool          bNS);
 
 
@@ -142,7 +142,7 @@ extern void do_rotation(const t_commrec  *cr,
  * \param t       Time, used for output.
  * \returns       The potential energy of the rotation potentials.
  */
-extern real add_rot_forces(t_rot *rot, rvec f[], const t_commrec *cr, gmx_int64_t step, real t);
+extern real add_rot_forces(t_rot *rot, rvec f[], const t_commrec *cr, int64_t step, real t);
 
 
 /*! \brief Close the enforced rotation output files.

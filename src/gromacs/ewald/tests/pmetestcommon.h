@@ -109,11 +109,11 @@ typedef std::tuple<real, Matrix3x3> PmeSolveOutput;
 bool pmeSupportsInputForMode(const t_inputrec *inputRec, CodePath mode);
 
 //! Spline moduli are computed in double precision, so they're very good in single precision
-constexpr gmx_int64_t c_splineModuliSinglePrecisionUlps = 1;
+constexpr int64_t c_splineModuliSinglePrecisionUlps = 1;
 /*! \brief For double precision checks, the recursive interpolation
  * and use of trig functions in make_dft_mod require a lot more flops,
  * and thus opportunity for deviation between implementations. */
-gmx_uint64_t getSplineModuliDoublePrecisionUlps(int splineOrder);
+uint64_t getSplineModuliDoublePrecisionUlps(int splineOrder);
 
 // PME stages
 

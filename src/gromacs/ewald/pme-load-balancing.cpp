@@ -134,7 +134,7 @@ static const char *pmelblim_str[epmelblimNR] =
 struct pme_load_balancing_t {
     gmx_bool     bSepPMERanks;       /**< do we have separate PME ranks? */
     gmx_bool     bActive;            /**< is PME tuning active? */
-    gmx_int64_t  step_rel_stop;      /**< stop the tuning after this value of step_rel */
+    int64_t      step_rel_stop;      /**< stop the tuning after this value of step_rel */
     gmx_bool     bTriggerOnDLB;      /**< trigger balancing only on DD DLB */
     gmx_bool     bBalance;           /**< are we in the balancing phase, i.e. trying different setups? */
     int          nstage;             /**< the current maximum number of stages */
@@ -471,7 +471,7 @@ static int pme_loadbal_end(pme_load_balancing_t *pme_lb)
 
 /*! \brief Print descriptive string about what limits PME load balancing */
 static void print_loadbal_limited(FILE *fp_err, FILE *fp_log,
-                                  gmx_int64_t step,
+                                  int64_t step,
                                   pme_load_balancing_t *pme_lb)
 {
     char buf[STRLEN], sbuf[22];
@@ -559,7 +559,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
                  interaction_const_t       *ic,
                  struct nonbonded_verlet_t *nbv,
                  struct gmx_pme_t **        pmedata,
-                 gmx_int64_t                step)
+                 int64_t                    step)
 {
     gmx_bool     OK;
     pme_setup_t *set;
@@ -910,8 +910,8 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
                     t_forcerec           *fr,
                     t_state              *state,
                     gmx_wallcycle_t       wcycle,
-                    gmx_int64_t           step,
-                    gmx_int64_t           step_rel,
+                    int64_t               step,
+                    int64_t               step_rel,
                     gmx_bool             *bPrinting)
 {
     int    n_prev;

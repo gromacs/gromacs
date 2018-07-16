@@ -732,7 +732,7 @@ static void write_edo_flood(t_edpar *edi, FILE *fp, real rmsd)
 
 
 /* From flood.xproj compute the Vfl(x) at this point */
-static real flood_energy(t_edpar *edi, gmx_int64_t step)
+static real flood_energy(t_edpar *edi, int64_t step)
 {
     /* compute flooding energy Vfl
        Vfl = Efl * exp( - \frac {kT} {2Efl alpha^2} * sum_i { \lambda_i c_i^2 } )
@@ -880,7 +880,7 @@ static void do_single_flood(
         const rvec       x[],
         rvec             force[],
         t_edpar         *edi,
-        gmx_int64_t      step,
+        int64_t          step,
         matrix           box,
         const t_commrec *cr,
         gmx_bool         bNS) /* Are we in a neighbor searching step? */
@@ -986,7 +986,7 @@ extern void do_flood(const t_commrec  *cr,
                      rvec              force[],
                      const gmx_edsam  *ed,
                      matrix            box,
-                     gmx_int64_t       step,
+                     int64_t           step,
                      gmx_bool          bNS)
 {
     t_edpar *edi;
@@ -1887,7 +1887,7 @@ static inline void ed_unshift_single_coord(matrix box, const rvec x, const ivec 
 }
 
 
-static void do_linfix(rvec *xcoll, t_edpar *edi, gmx_int64_t step)
+static void do_linfix(rvec *xcoll, t_edpar *edi, int64_t step)
 {
     int  i, j;
     real proj, add;
@@ -2125,7 +2125,7 @@ static void do_radcon(rvec *xcoll, t_edpar *edi)
 }
 
 
-static void ed_apply_constraints(rvec *xcoll, t_edpar *edi, gmx_int64_t step)
+static void ed_apply_constraints(rvec *xcoll, t_edpar *edi, int64_t step)
 {
     int i;
 
@@ -2939,7 +2939,7 @@ gmx_edsam_t init_edsam(
 
 
 void do_edsam(const t_inputrec *ir,
-              gmx_int64_t       step,
+              int64_t           step,
               const t_commrec  *cr,
               rvec              xs[],
               rvec              v[],

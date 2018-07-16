@@ -292,7 +292,7 @@ static void do_cpt_int_err(XDR *xd, const char *desc, int *i, FILE *list)
     }
 }
 
-static void do_cpt_step_err(XDR *xd, const char *desc, gmx_int64_t *i, FILE *list)
+static void do_cpt_step_err(XDR *xd, const char *desc, int64_t *i, FILE *list)
 {
     char   buf[STEPSTRSIZE];
 
@@ -886,7 +886,7 @@ struct CheckpointHeaderContents
     char        ftime[CPTSTRLEN];
     int         eIntegrator;
     int         simulation_part;
-    gmx_int64_t step;
+    int64_t     step;
     double      t;
     int         nnodes;
     ivec        dd_nc;
@@ -1002,7 +1002,7 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, FILE *list,
     {
         int idum = 0;
         do_cpt_int_err(xd, "step", &idum, list);
-        contents->step = static_cast<gmx_int64_t>(idum);
+        contents->step = static_cast<int64_t>(idum);
     }
     do_cpt_double_err(xd, "t", &contents->t, list);
     do_cpt_int_err(xd, "#PP-ranks", &contents->nnodes, list);
@@ -1774,7 +1774,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                       ivec domdecCells, int nppnodes,
                       int eIntegrator, int simulation_part,
                       gmx_bool bExpanded, int elamstats,
-                      gmx_int64_t step, double t,
+                      int64_t step, double t,
                       t_state *state, ObservablesHistory *observablesHistory)
 {
     t_fileio            *fp;
@@ -2522,7 +2522,7 @@ void load_checkpoint(const char *fn, FILE **fplog,
 
 void read_checkpoint_part_and_step(const char  *filename,
                                    int         *simulation_part,
-                                   gmx_int64_t *step)
+                                   int64_t     *step)
 {
     t_fileio *fp;
 
@@ -2543,7 +2543,7 @@ void read_checkpoint_part_and_step(const char  *filename,
 }
 
 static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
-                                 gmx_int64_t *step, double *t, t_state *state,
+                                 int64_t *step, double *t, t_state *state,
                                  std::vector<gmx_file_position_t> *outputfiles)
 {
     int                      ret;
@@ -2624,7 +2624,7 @@ void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr)
 {
     t_state                          state;
     int                              simulation_part;
-    gmx_int64_t                      step;
+    int64_t                          step;
     double                           t;
 
     std::vector<gmx_file_position_t> outputfiles;
@@ -2632,8 +2632,8 @@ void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr)
 
     fr->natoms  = state.natoms;
     fr->bStep   = TRUE;
-    fr->step    = gmx_int64_to_int(step,
-                                   "conversion of checkpoint to trajectory");
+    fr->step    = int64_to_int(step,
+                               "conversion of checkpoint to trajectory");
     fr->bTime      = TRUE;
     fr->time       = t;
     fr->bLambda    = TRUE;
@@ -2739,7 +2739,7 @@ read_checkpoint_simulation_part_and_filenames(t_fileio                         *
                                               int                              *simulation_part,
                                               std::vector<gmx_file_position_t> *outputfiles)
 {
-    gmx_int64_t step = 0;
+    int64_t     step = 0;
     double      t;
     t_state     state;
 

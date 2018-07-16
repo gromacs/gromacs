@@ -211,7 +211,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
     int                                     nthreads;
     gmx::DefaultRandomEngine               *trng = nullptr;
 #endif
-    gmx_int64_t                             mc  = 0, mc_max;
+    int64_t                                 mc  = 0, mc_max;
     gmx::DefaultRandomEngine                rng(seed);
 
     /* allocate memory for pr */
@@ -237,11 +237,11 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
         /* Special case for setting automaticaly number of mc iterations to 1% of total number of direct iterations */
         if (mcover == -1)
         {
-            mc_max = static_cast<gmx_int64_t>(std::floor(0.5*0.01*isize*(isize-1)));
+            mc_max = static_cast<int64_t>(std::floor(0.5*0.01*isize*(isize-1)));
         }
         else
         {
-            mc_max = static_cast<gmx_int64_t>(std::floor(0.5*mcover*isize*(isize-1)));
+            mc_max = static_cast<int64_t>(std::floor(0.5*mcover*isize*(isize-1)));
         }
 #if GMX_OPENMP
         nthreads = gmx_omp_get_max_threads();

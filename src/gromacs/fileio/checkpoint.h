@@ -66,7 +66,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                       ivec domdecCells, int nppnodes,
                       int eIntegrator, int simulation_part,
                       gmx_bool bExpanded, int elamstats,
-                      gmx_int64_t step, double t,
+                      int64_t step, double t,
                       t_state *state, ObservablesHistory *observablesHistory);
 
 /* Loads a checkpoint from fn for run continuation.
@@ -106,7 +106,7 @@ void list_checkpoint(const char *fn, FILE *out);
  * does not exist, or is not readable. */
 void read_checkpoint_part_and_step(const char  *filename,
                                    int         *simulation_part,
-                                   gmx_int64_t *step);
+                                   int64_t     *step);
 
 /* ! \brief Read simulation part and output filenames from a checkpoint file
  *

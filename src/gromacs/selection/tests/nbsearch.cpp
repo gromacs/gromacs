@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -120,7 +120,7 @@ class NeighborhoodSearchTestData
 
         typedef std::vector<TestPosition> TestPositionList;
 
-        NeighborhoodSearchTestData(gmx_uint64_t seed, real cutoff);
+        NeighborhoodSearchTestData(uint64_t seed, real cutoff);
 
         gmx::AnalysisNeighborhoodPositions refPositions() const
         {
@@ -150,7 +150,7 @@ class NeighborhoodSearchTestData
             testPositions_.emplace_back(x);
         }
         gmx::RVec generateRandomPosition();
-        std::vector<int> generateIndex(int count, gmx_uint64_t seed) const;
+        std::vector<int> generateIndex(int count, uint64_t seed) const;
         void generateRandomRefPositions(int count);
         void generateRandomTestPositions(int count);
         void useRefPositionsAsTestPositions();
@@ -203,7 +203,7 @@ class NeighborhoodSearchTestData
 //! Shorthand for a collection of reference pairs.
 typedef std::vector<NeighborhoodSearchTestData::RefPair> RefPairList;
 
-NeighborhoodSearchTestData::NeighborhoodSearchTestData(gmx_uint64_t seed, real cutoff)
+NeighborhoodSearchTestData::NeighborhoodSearchTestData(uint64_t seed, real cutoff)
     : rng_(seed), cutoff_(cutoff), refPosCount_(0)
 {
     clear_mat(box_);
@@ -225,7 +225,7 @@ gmx::RVec NeighborhoodSearchTestData::generateRandomPosition()
     return x;
 }
 
-std::vector<int> NeighborhoodSearchTestData::generateIndex(int count, gmx_uint64_t seed) const
+std::vector<int> NeighborhoodSearchTestData::generateIndex(int count, uint64_t seed) const
 {
     gmx::DefaultRandomEngine             rngIndex(seed);
     gmx::UniformRealDistribution<real>   dist;
@@ -427,7 +427,7 @@ class NeighborhoodSearchTest : public ::testing::Test
                             const NeighborhoodSearchTestData &data);
         void testPairSearchIndexed(gmx::AnalysisNeighborhood        *nb,
                                    const NeighborhoodSearchTestData &data,
-                                   gmx_uint64_t                      seed);
+                                   uint64_t                          seed);
         void testPairSearchFull(gmx::AnalysisNeighborhoodSearch          *search,
                                 const NeighborhoodSearchTestData         &data,
                                 const gmx::AnalysisNeighborhoodPositions &pos,
@@ -534,7 +534,7 @@ void NeighborhoodSearchTest::testPairSearch(
 void NeighborhoodSearchTest::testPairSearchIndexed(
         gmx::AnalysisNeighborhood        *nb,
         const NeighborhoodSearchTestData &data,
-        gmx_uint64_t                      seed)
+        uint64_t                          seed)
 {
     std::vector<int>                refIndices(data.generateIndex(data.refPos_.size(), seed++));
     std::vector<int>                testIndices(data.generateIndex(data.testPositions_.size(), seed++));

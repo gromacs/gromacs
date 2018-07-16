@@ -1008,7 +1008,7 @@ static void dd_move_cellx(gmx_domdec_t      *dd,
     }
 }
 
-static void write_dd_grid_pdb(const char *fn, gmx_int64_t step,
+static void write_dd_grid_pdb(const char *fn, int64_t step,
                               gmx_domdec_t *dd, matrix box, gmx_ddbox_t *ddbox)
 {
     rvec   grid_s[2], *grid_r = nullptr, cx, r;
@@ -1096,7 +1096,7 @@ static void write_dd_grid_pdb(const char *fn, gmx_int64_t step,
     }
 }
 
-void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
+void write_dd_pdb(const char *fn, int64_t step, const char *title,
                   const gmx_mtop_t *mtop, const t_commrec *cr,
                   int natoms, const rvec x[], const matrix box)
 {
@@ -1756,7 +1756,7 @@ static void clearDDStateIndices(gmx_domdec_t *dd,
     }
 }
 
-static bool check_grid_jump(gmx_int64_t         step,
+static bool check_grid_jump(int64_t             step,
                             const gmx_domdec_t *dd,
                             real                cutoff,
                             const gmx_ddbox_t  *ddbox,
@@ -1966,7 +1966,7 @@ int dd_pme_maxshift_y(const gmx_domdec_t *dd)
 static void comm_dd_ns_cell_sizes(gmx_domdec_t *dd,
                                   gmx_ddbox_t *ddbox,
                                   rvec cell_ns_x0, rvec cell_ns_x1,
-                                  gmx_int64_t step)
+                                  int64_t step)
 {
     gmx_domdec_comm_t *comm;
     int                dim_ind, dim;
@@ -2486,7 +2486,7 @@ float dd_pme_f_ratio(gmx_domdec_t *dd)
     }
 }
 
-static void dd_print_load(FILE *fplog, gmx_domdec_t *dd, gmx_int64_t step)
+static void dd_print_load(FILE *fplog, gmx_domdec_t *dd, int64_t step)
 {
     int  flags, d;
     char buf[22];
@@ -3901,7 +3901,7 @@ static void set_dlb_limits(gmx_domdec_t *dd)
 }
 
 
-static void turn_on_dlb(FILE *fplog, const t_commrec *cr, gmx_int64_t step)
+static void turn_on_dlb(FILE *fplog, const t_commrec *cr, int64_t step)
 {
     gmx_domdec_t      *dd           = cr->dd;
     gmx_domdec_comm_t *comm         = dd->comm;
@@ -3915,7 +3915,7 @@ static void turn_on_dlb(FILE *fplog, const t_commrec *cr, gmx_int64_t step)
     /* Turn off DLB if we're too close to the cell size limit. */
     if (cellsize_min < comm->cellsize_limit*1.05)
     {
-        auto str = gmx::formatString("step %" GMX_PRId64 " Measured %.1f %% performance loss due to load imbalance, "
+        auto str = gmx::formatString("step %" PRId64 " Measured %.1f %% performance loss due to load imbalance, "
                                      "but the minimum cell size is smaller than 1.05 times the cell size limit."
                                      "Will no longer try dynamic load balancing.\n", step, dd_force_imb_perf_loss(dd)*100);
         dd_warning(cr, fplog, str.c_str());
@@ -3925,7 +3925,7 @@ static void turn_on_dlb(FILE *fplog, const t_commrec *cr, gmx_int64_t step)
     }
 
     char buf[STRLEN];
-    sprintf(buf, "step %" GMX_PRId64 " Turning on dynamic load balancing, because the performance loss due to load imbalance is %.1f %%.\n", step, dd_force_imb_perf_loss(dd)*100);
+    sprintf(buf, "step %" PRId64 " Turning on dynamic load balancing, because the performance loss due to load imbalance is %.1f %%.\n", step, dd_force_imb_perf_loss(dd)*100);
     dd_warning(cr, fplog, buf);
     comm->dlbState = edlbsOnCanTurnOff;
 
@@ -3964,23 +3964,23 @@ static void turn_on_dlb(FILE *fplog, const t_commrec *cr, gmx_int64_t step)
     }
 }
 
-static void turn_off_dlb(FILE *fplog, const t_commrec *cr, gmx_int64_t step)
+static void turn_off_dlb(FILE *fplog, const t_commrec *cr, int64_t step)
 {
     gmx_domdec_t *dd = cr->dd;
 
     char          buf[STRLEN];
-    sprintf(buf, "step %" GMX_PRId64 " Turning off dynamic load balancing, because it is degrading performance.\n", step);
+    sprintf(buf, "step %" PRId64 " Turning off dynamic load balancing, because it is degrading performance.\n", step);
     dd_warning(cr, fplog, buf);
     dd->comm->dlbState                     = edlbsOffCanTurnOn;
     dd->comm->haveTurnedOffDlb             = true;
     dd->comm->ddPartioningCountFirstDlbOff = dd->ddp_count;
 }
 
-static void turn_off_dlb_forever(FILE *fplog, const t_commrec *cr, gmx_int64_t step)
+static void turn_off_dlb_forever(FILE *fplog, const t_commrec *cr, int64_t step)
 {
     GMX_RELEASE_ASSERT(cr->dd->comm->dlbState == edlbsOffCanTurnOn, "Can only turn off DLB forever when it was in the can-turn-on state");
     char buf[STRLEN];
-    sprintf(buf, "step %" GMX_PRId64 " Will no longer try dynamic load balancing, as it degraded performance.\n", step);
+    sprintf(buf, "step %" PRId64 " Will no longer try dynamic load balancing, as it degraded performance.\n", step);
     dd_warning(cr, fplog, buf);
     cr->dd->comm->dlbState = edlbsOffForever;
 }
@@ -6215,7 +6215,7 @@ void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog)
 }
 
 void dd_partition_system(FILE                *fplog,
-                         gmx_int64_t          step,
+                         int64_t              step,
                          const t_commrec     *cr,
                          gmx_bool             bMasterState,
                          int                  nstglobalcomm,
@@ -6237,7 +6237,7 @@ void dd_partition_system(FILE                *fplog,
     gmx_domdec_comm_t *comm;
     gmx_ddbox_t        ddbox = {0};
     t_block           *cgs_gl;
-    gmx_int64_t        step_pcoupl;
+    int64_t            step_pcoupl;
     rvec               cell_ns_x0, cell_ns_x1;
     int                ncgindex_set, ncg_home_old = -1, ncg_moved, nat_f_novirsum;
     gmx_bool           bBoxChanged, bNStGlobalComm, bDoDLB, bCheckWhetherToTurnDlbOn, bLogLoad;

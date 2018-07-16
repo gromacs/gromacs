@@ -1850,7 +1850,7 @@ int gmx_trjconv(int argc, char *argv[])
                                 }
                                 if (frout.bStep)
                                 {
-                                    sprintf(stepstr, " step= %" GMX_PRId64, frout.step);
+                                    sprintf(stepstr, " step= %" PRId64, frout.step);
                                 }
                                 else
                                 {

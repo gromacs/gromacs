@@ -126,7 +126,7 @@ static const bool c_disableAlternatingWait = (getenv("GMX_DISABLE_ALTERNATING_GP
 
 void print_time(FILE                     *out,
                 gmx_walltime_accounting_t walltime_accounting,
-                gmx_int64_t               step,
+                int64_t                   step,
                 t_inputrec               *ir,
                 const t_commrec          *cr)
 {
@@ -337,7 +337,7 @@ static void pme_receive_force_ener(const t_commrec      *cr,
 static void print_large_forces(FILE            *fp,
                                const t_mdatoms *md,
                                const t_commrec *cr,
-                               gmx_int64_t      step,
+                               int64_t          step,
                                real             forceTolerance,
                                const rvec      *x,
                                const rvec      *f)
@@ -350,7 +350,7 @@ static void print_large_forces(FILE            *fp,
         bool nonFinite = !std::isfinite(force2);
         if (force2 >= force2Tolerance || nonFinite)
         {
-            fprintf(fp, "step %" GMX_PRId64 " atom %6d  x %8.3f %8.3f %8.3f  force %12.5e\n",
+            fprintf(fp, "step %" PRId64 " atom %6d  x %8.3f %8.3f %8.3f  force %12.5e\n",
                     step,
                     ddglatnr(cr->dd, i), x[i][XX], x[i][YY], x[i][ZZ], std::sqrt(force2));
         }
@@ -365,12 +365,12 @@ static void print_large_forces(FILE            *fp,
          * the printing on other ranks. But we can only avoid that with
          * an expensive MPI barrier that we would need at each step.
          */
-        gmx_fatal(FARGS, "At step %" GMX_PRId64 " detected non-finite forces on %ju atoms", step, numNonFinite);
+        gmx_fatal(FARGS, "At step %" PRId64 " detected non-finite forces on %ju atoms", step, numNonFinite);
     }
 }
 
 static void post_process_forces(const t_commrec           *cr,
-                                gmx_int64_t                step,
+                                int64_t                    step,
                                 t_nrnb                    *nrnb,
                                 gmx_wallcycle_t            wcycle,
                                 const gmx_localtop_t      *top,
@@ -430,7 +430,7 @@ static void do_nb_verlet(t_forcerec *fr,
                          gmx_enerdata_t *enerd,
                          int flags, int ilocality,
                          int clearF,
-                         gmx_int64_t step,
+                         int64_t step,
                          t_nrnb *nrnb,
                          gmx_wallcycle_t wcycle)
 {
@@ -754,7 +754,7 @@ static real averageKineticEnergyEstimate(const t_grpopts &groupOptions)
  * \param[in] enerd     The energy data; the non-bonded group energies need to be added to enerd.term[F_EPOT] before calling this routine
  * \param[in] inputrec  The input record
  */
-static void checkPotentialEnergyValidity(gmx_int64_t           step,
+static void checkPotentialEnergyValidity(int64_t               step,
                                          const gmx_enerdata_t &enerd,
                                          const t_inputrec     &inputrec)
 {
@@ -781,7 +781,7 @@ static void checkPotentialEnergyValidity(gmx_int64_t           step,
     if (energyIsNotFinite || (averageKineticEnergy > 0 &&
                               enerd.term[F_EPOT] > c_thresholdFactor*averageKineticEnergy))
     {
-        gmx_fatal(FARGS, "Step %" GMX_PRId64 ": The total potential energy is %g, which is %s. The LJ and electrostatic contributions to the energy are %g and %g, respectively. A %s potential energy can be caused by overlapping interactions in bonded interactions or very large%s coordinate values. Usually this is caused by a badly- or non-equilibrated initial configuration, incorrect interactions or parameters in the topology.",
+        gmx_fatal(FARGS, "Step %" PRId64 ": The total potential energy is %g, which is %s. The LJ and electrostatic contributions to the energy are %g and %g, respectively. A %s potential energy can be caused by overlapping interactions in bonded interactions or very large%s coordinate values. Usually this is caused by a badly- or non-equilibrated initial configuration, incorrect interactions or parameters in the topology.",
                   step,
                   enerd.term[F_EPOT],
                   energyIsNotFinite ? "not finite" : "extremely high",
@@ -828,7 +828,7 @@ computeSpecialForces(FILE                          *fplog,
                      const t_commrec               *cr,
                      const t_inputrec              *inputrec,
                      gmx::Awh                      *awh,
-                     gmx_int64_t                    step,
+                     int64_t                        step,
                      double                         t,
                      gmx_wallcycle_t                wcycle,
                      ForceProviders                *forceProviders,
@@ -1025,7 +1025,7 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t                  *nbv
 static inline void launchGpuRollingPruning(const t_commrec          *cr,
                                            const nonbonded_verlet_t *nbv,
                                            const t_inputrec         *inputrec,
-                                           const gmx_int64_t         step)
+                                           const int64_t             step)
 {
     /* We should not launch the rolling pruning kernel at a search
      * step or just before search steps, since that's useless.
@@ -1052,7 +1052,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                                 const gmx_multisim_t *ms,
                                 const t_inputrec *inputrec,
                                 gmx::Awh *awh,
-                                gmx_int64_t step,
+                                int64_t step,
                                 t_nrnb *nrnb,
                                 gmx_wallcycle_t wcycle,
                                 const gmx_localtop_t *top,
@@ -1749,7 +1749,7 @@ static void do_force_cutsGROUP(FILE *fplog,
                                const gmx_multisim_t *ms,
                                const t_inputrec *inputrec,
                                gmx::Awh *awh,
-                               gmx_int64_t step,
+                               int64_t step,
                                t_nrnb *nrnb,
                                gmx_wallcycle_t wcycle,
                                gmx_localtop_t *top,
@@ -2082,7 +2082,7 @@ void do_force(FILE                                     *fplog,
               const gmx_multisim_t                     *ms,
               const t_inputrec                         *inputrec,
               gmx::Awh                                 *awh,
-              gmx_int64_t                               step,
+              int64_t                                   step,
               t_nrnb                                   *nrnb,
               gmx_wallcycle_t                           wcycle,
               gmx_localtop_t                           *top,
@@ -2172,7 +2172,7 @@ void do_constrain_first(FILE *fplog, gmx::Constraints *constr,
                         t_state *state)
 {
     int             i, m, start, end;
-    gmx_int64_t     step;
+    int64_t         step;
     real            dt = ir->delta_t;
     real            dvdl_dum;
     rvec           *savex;

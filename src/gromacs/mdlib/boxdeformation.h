@@ -61,20 +61,20 @@ class BoxDeformation
     public:
         //! Trivial constructor.
         BoxDeformation(double        timeStep,
-                       gmx_int64_t   initialStep,
+                       int64_t       initialStep,
                        const tensor &deformationTensor,
                        const matrix &referenceBox);
 
         //! Deform \c x and \c box at this \c step;
         void apply(ArrayRef<RVec> x,
                    matrix         box,
-                   gmx_int64_t    step);
+                   int64_t        step);
 
     private:
         //! The integrator time step.
         double      timeStep_;
         //! The initial step number (from the .tpr, which permits checkpointing to work correctly).
-        gmx_int64_t initialStep_;
+        int64_t     initialStep_;
         //! Non-zero elements provide a scaling factor for deformation in that box dimension.
         tensor      deformationTensor_;
         //! The initial box, ie from the .tpr file.

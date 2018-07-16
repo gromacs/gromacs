@@ -194,7 +194,7 @@ Awh::Awh(FILE                 *fplog,
 
 Awh::~Awh() = default;
 
-bool Awh::isOutputStep(gmx_int64_t step) const
+bool Awh::isOutputStep(int64_t step) const
 {
     return (nstout_ > 0 && step % nstout_ == 0);
 }
@@ -204,7 +204,7 @@ real Awh::applyBiasForcesAndUpdateBias(int                     ePBC,
                                        const matrix            box,
                                        gmx::ForceWithVirial   *forceWithVirial,
                                        double                  t,
-                                       gmx_int64_t             step,
+                                       int64_t                 step,
                                        gmx_wallcycle          *wallcycle,
                                        FILE                   *fplog)
 {
@@ -364,7 +364,7 @@ void Awh::registerAwhWithPull(const AwhParams &awhParams,
 }
 
 /* Fill the AWH data block of an energy frame with data (if there is any). */
-void Awh::writeToEnergyFrame(gmx_int64_t  step,
+void Awh::writeToEnergyFrame(int64_t      step,
                              t_enxframe  *frame) const
 {
     GMX_ASSERT(MASTER(commRecord_), "writeToEnergyFrame should only be called on the master rank");

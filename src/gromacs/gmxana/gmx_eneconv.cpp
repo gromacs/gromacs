@@ -338,13 +338,13 @@ static void edit_files(gmx::ArrayRef<std::string> files, real *readtime,
 
 
 static void update_ee_sum(int nre,
-                          gmx_int64_t *ee_sum_step,
-                          gmx_int64_t *ee_sum_nsteps,
-                          gmx_int64_t *ee_sum_nsum,
+                          int64_t *ee_sum_step,
+                          int64_t *ee_sum_nsteps,
+                          int64_t *ee_sum_nsum,
                           t_energy *ee_sum,
                           t_enxframe *fr, int out_step)
 {
-    gmx_int64_t     nsteps, nsum, fr_nsum;
+    int64_t         nsteps, nsum, fr_nsum;
     int             i;
 
     nsteps = *ee_sum_nsteps;
@@ -448,9 +448,9 @@ int gmx_eneconv(int argc, char *argv[])
     gmx_enxnm_t      *enm = NULL;
 #endif
     t_enxframe       *fr, *fro;
-    gmx_int64_t       ee_sum_step = 0, ee_sum_nsteps, ee_sum_nsum;
+    int64_t           ee_sum_step = 0, ee_sum_nsteps, ee_sum_nsum;
     t_energy         *ee_sum;
-    gmx_int64_t       lastfilestep, laststep, startstep_file = 0;
+    int64_t           lastfilestep, laststep, startstep_file = 0;
     int               noutfr;
     int               nre, nremax, this_nre, i, kkk, nset, *set = nullptr;
     double            last_t;
@@ -651,8 +651,8 @@ int gmx_eneconv(int argc, char *argv[])
                 }
                 else
                 {
-                    fro->nsum = gmx_int64_to_int(ee_sum_nsum,
-                                                 "energy average summation");
+                    fro->nsum = int64_to_int(ee_sum_nsum,
+                                             "energy average summation");
                     /* Copy the energy sums */
                     for (i = 0; i < nre; i++)
                     {

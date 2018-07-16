@@ -81,7 +81,7 @@ enum {
 
 typedef struct
 {
-    gmx_int64_t     orig_sim_steps;  /* Number of steps to be done in the real simulation  */
+    int64_t         orig_sim_steps;  /* Number of steps to be done in the real simulation  */
     int             n_entries;       /* Number of entries in arrays                        */
     real            volume;          /* The volume of the box                              */
     matrix          recipbox;        /* The reciprocal box                                 */

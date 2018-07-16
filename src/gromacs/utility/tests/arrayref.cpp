@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,8 +83,8 @@ typedef ::testing::Types<
         ArrayRef<unsigned int>,
         ArrayRef<long>,
         ArrayRef<unsigned long>,
-        ArrayRef<gmx_int64_t>,
-        ArrayRef<gmx_uint64_t>,
+        ArrayRef<int64_t>,
+        ArrayRef<uint64_t>,
         ArrayRef<float>,
         ArrayRef<double>,
         ArrayRef<const char>,
@@ -93,8 +93,8 @@ typedef ::testing::Types<
         ArrayRef<const unsigned int>,
         ArrayRef<const long>,
         ArrayRef<const unsigned long>,
-        ArrayRef<const gmx_int64_t>,
-        ArrayRef<const gmx_uint64_t>,
+        ArrayRef<const int64_t>,
+        ArrayRef<const uint64_t>,
         ArrayRef<const float>,
         ArrayRef<const double>
         > ArrayRefTypes;

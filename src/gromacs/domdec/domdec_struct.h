@@ -204,7 +204,7 @@ struct gmx_domdec_t {
     gmx_domdec_comm_t *comm;
 
     /* The partioning count, to keep track of the state */
-    gmx_int64_t ddp_count;
+    int64_t ddp_count;
 
 
     /* gmx_pme_recv_f buffer */

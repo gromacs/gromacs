@@ -241,7 +241,7 @@ static void list_trr(const char *fn)
             indent = 0;
             indent = pr_title(stdout, indent, buf);
             pr_indent(stdout, indent);
-            fprintf(stdout, "natoms=%10d  step=%10" GMX_PRId64 "  time=%12.7e  lambda=%10g\n",
+            fprintf(stdout, "natoms=%10d  step=%10" PRId64 "  time=%12.7e  lambda=%10g\n",
                     trrheader.natoms, trrheader.step, trrheader.t, trrheader.lambda);
             if (trrheader.box_size)
             {
@@ -287,7 +287,7 @@ static void list_xtc(const char *fn)
     rvec       *x;
     matrix      box;
     int         nframe, natoms;
-    gmx_int64_t step;
+    int64_t     step;
     real        prec, time;
     gmx_bool    bOK;
 
@@ -301,7 +301,7 @@ static void list_xtc(const char *fn)
         indent = 0;
         indent = pr_title(stdout, indent, buf);
         pr_indent(stdout, indent);
-        fprintf(stdout, "natoms=%10d  step=%10" GMX_PRId64 "  time=%12.7e  prec=%10g\n",
+        fprintf(stdout, "natoms=%10d  step=%10" PRId64 "  time=%12.7e  prec=%10g\n",
                 natoms, step, time, prec);
         pr_rvecs(stdout, indent, "box", box, DIM);
         pr_rvecs(stdout, indent, "x", x, natoms);
@@ -320,12 +320,12 @@ static void list_xtc(const char *fn)
 static void list_tng_inner(const char *fn,
                            gmx_bool    bFirstFrame,
                            real       *values,
-                           gmx_int64_t step,
+                           int64_t     step,
                            double      frame_time,
-                           gmx_int64_t n_values_per_frame,
-                           gmx_int64_t n_atoms,
+                           int64_t     n_values_per_frame,
+                           int64_t     n_atoms,
                            real        prec,
-                           gmx_int64_t nframe,
+                           int64_t     nframe,
                            char       *block_name)
 {
     char                 buf[256];
@@ -333,11 +333,11 @@ static void list_tng_inner(const char *fn,
 
     if (bFirstFrame)
     {
-        sprintf(buf, "%s frame %" GMX_PRId64, fn, nframe);
+        sprintf(buf, "%s frame %" PRId64, fn, nframe);
         indent = 0;
         indent = pr_title(stdout, indent, buf);
         pr_indent(stdout, indent);
-        fprintf(stdout, "natoms=%10" GMX_PRId64 "  step=%10" GMX_PRId64 "  time=%12.7e",
+        fprintf(stdout, "natoms=%10" PRId64 "  step=%10" PRId64 "  time=%12.7e",
                 n_atoms, step, frame_time);
         if (prec > 0)
         {
@@ -352,8 +352,8 @@ static void list_tng(const char gmx_unused *fn)
 {
 #ifdef GMX_USE_TNG
     gmx_tng_trajectory_t tng;
-    gmx_int64_t          nframe = 0;
-    gmx_int64_t          i, *block_ids = nullptr, step, ndatablocks;
+    int64_t              nframe = 0;
+    int64_t              i, *block_ids = nullptr, step, ndatablocks;
     gmx_bool             bOK;
     real                *values = nullptr;
 
@@ -371,7 +371,7 @@ static void list_tng(const char gmx_unused *fn)
         {
             double               frame_time;
             real                 prec;
-            gmx_int64_t          n_values_per_frame, n_atoms;
+            int64_t              n_values_per_frame, n_atoms;
             char                 block_name[STRLEN];
 
             gmx_get_tng_data_next_frame_of_block_type(tng, block_ids[i], &values,

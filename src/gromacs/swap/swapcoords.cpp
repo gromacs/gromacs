@@ -540,7 +540,7 @@ static void detect_flux_per_channel(
         t_swapcoords   *sc,
         real            cyl0_r2,
         real            cyl1_r2,
-        gmx_int64_t     step,
+        int64_t         step,
         gmx_bool        bRerun,
         FILE           *fpout)
 {
@@ -667,7 +667,7 @@ static void sortMoleculesIntoCompartments(
         t_commrec      *cr,
         t_swapcoords   *sc,
         const matrix    box,
-        gmx_int64_t     step,
+        int64_t         step,
         FILE           *fpout,
         gmx_bool        bRerun,
         gmx_bool        bIsSolvent)
@@ -731,7 +731,7 @@ static void sortMoleculesIntoCompartments(
         {
             fprintf(stderr, "\n"
                     "%s Warning: %d atoms were detected as being in both channels! Probably your split\n"
-                    "%s          cylinder is way too large, or one compartment has collapsed (step %" GMX_PRId64 ")\n",
+                    "%s          cylinder is way too large, or one compartment has collapsed (step %" PRId64 ")\n",
                     SwS, g->nCylBoth, SwS, step);
 
             fprintf(s->fpout, "Warning: %d atoms were assigned to both channels!\n", g->nCylBoth);
@@ -1973,7 +1973,7 @@ static void apply_modified_positions(
 
 gmx_bool do_swapcoords(
         t_commrec        *cr,
-        gmx_int64_t       step,
+        int64_t           step,
         double            t,
         t_inputrec       *ir,
         gmx_wallcycle    *wcycle,
@@ -2127,7 +2127,7 @@ gmx_bool do_swapcoords(
 
             if (nswaps && bVerbose)
             {
-                fprintf(stderr, "%s Performed %d swap%s in step %" GMX_PRId64 " for iontype %s.\n",
+                fprintf(stderr, "%s Performed %d swap%s in step %" PRId64 " for iontype %s.\n",
                         SwS, nswaps, nswaps > 1 ? "s" : "", step, g->molname);
             }
         }

@@ -770,7 +770,7 @@ static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
 
     fr->step  = 0;
     step      = std::strstr(title, " step= ");
-    fr->bStep = (step && sscanf(step+7, "%" GMX_SCNd64, &fr->step) == 1);
+    fr->bStep = (step && sscanf(step+7, "%" SCNd64, &fr->step) == 1);
 
     dbl       = 0.0;
     time      = std::strstr(title, " t= ");

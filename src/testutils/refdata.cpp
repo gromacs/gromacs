@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -900,16 +900,16 @@ void TestReferenceChecker::checkInteger(int value, const char *id)
                                     ExactStringChecker(formatString("%d", value))));
 }
 
-void TestReferenceChecker::checkInt64(gmx_int64_t value, const char *id)
+void TestReferenceChecker::checkInt64(int64_t value, const char *id)
 {
     EXPECT_PLAIN(impl_->processItem(Impl::cInt64NodeName, id,
-                                    ExactStringChecker(formatString("%" GMX_PRId64, value))));
+                                    ExactStringChecker(formatString("%" PRId64, value))));
 }
 
-void TestReferenceChecker::checkUInt64(gmx_uint64_t value, const char *id)
+void TestReferenceChecker::checkUInt64(uint64_t value, const char *id)
 {
     EXPECT_PLAIN(impl_->processItem(Impl::cUInt64NodeName, id,
-                                    ExactStringChecker(formatString("%" GMX_PRIu64, value))));
+                                    ExactStringChecker(formatString("%" PRIu64, value))));
 }
 
 void TestReferenceChecker::checkDouble(double value, const char *id)
@@ -982,9 +982,9 @@ void TestReferenceChecker::checkVariant(const Variant &variant, const char *id)
     {
         checkInteger(variant.cast<int>(), id);
     }
-    else if (variant.isType<gmx_int64_t>())
+    else if (variant.isType<int64_t>())
     {
-        checkInt64(variant.cast<gmx_int64_t>(), id);
+        checkInt64(variant.cast<int64_t>(), id);
     }
     else if (variant.isType<float>())
     {
@@ -1069,15 +1069,15 @@ int TestReferenceChecker::readInteger(const char *id)
 }
 
 
-gmx_int64_t TestReferenceChecker::readInt64(const char *id)
+int64_t TestReferenceChecker::readInt64(const char *id)
 {
     if (impl_->shouldIgnore())
     {
         GMX_THROW(TestException("Trying to read from non-existent reference data value"));
     }
-    gmx_int64_t value = 0;
+    int64_t value = 0;
     EXPECT_PLAIN(impl_->processItem(Impl::cInt64NodeName, id,
-                                    ValueExtractor<gmx_int64_t>(&value)));
+                                    ValueExtractor<int64_t>(&value)));
     return value;
 }
 

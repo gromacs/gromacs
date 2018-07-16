@@ -205,7 +205,7 @@ static void warn_step(FILE     *fp,
 
 //! Print message about convergence of the EM
 static void print_converged(FILE *fp, const char *alg, real ftol,
-                            gmx_int64_t count, gmx_bool bDone, gmx_int64_t nsteps,
+                            int64_t count, gmx_bool bDone, int64_t nsteps,
                             const em_state_t *ems, double sqrtNumAtoms)
 {
     char buf[STEPSTRSIZE];
@@ -525,7 +525,7 @@ static void write_em_traj(FILE *fplog, const t_commrec *cr,
                           gmx_mdoutf_t outf,
                           gmx_bool bX, gmx_bool bF, const char *confout,
                           gmx_mtop_t *top_global,
-                          t_inputrec *ir, gmx_int64_t step,
+                          t_inputrec *ir, int64_t step,
                           em_state_t *state,
                           t_state *state_global,
                           ObservablesHistory *observablesHistory)
@@ -584,7 +584,7 @@ static bool do_em_step(const t_commrec *cr,
                        em_state_t *ems1, real a, const PaddedRVecVector *force,
                        em_state_t *ems2,
                        gmx::Constraints *constr,
-                       gmx_int64_t count)
+                       int64_t count)
 
 {
     t_state *s1, *s2;
@@ -771,7 +771,7 @@ class EnergyEvaluator
          */
         void run(em_state_t *ems, rvec mu_tot,
                  tensor vir, tensor pres,
-                 gmx_int64_t count, gmx_bool bFirst);
+                 int64_t count, gmx_bool bFirst);
         //! Handles logging.
         FILE                 *fplog;
         //! Handles communication.
@@ -809,7 +809,7 @@ class EnergyEvaluator
 void
 EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
                      tensor vir, tensor pres,
-                     gmx_int64_t count, gmx_bool bFirst)
+                     int64_t count, gmx_bool bFirst)
 {
     real     t;
     gmx_bool bNS;
@@ -2780,7 +2780,7 @@ Integrator::do_nm()
         size_t atom = atom_index[aid];
         for (size_t d = 0; d < DIM; d++)
         {
-            gmx_int64_t step        = 0;
+            int64_t     step        = 0;
             int         force_flags = GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES;
             double      t           = 0;
 

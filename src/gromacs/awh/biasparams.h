@@ -116,7 +116,7 @@ class BiasParams
          *
          * \param[in] step  The MD step number.
          */
-        inline bool isSampleCoordStep(gmx_int64_t step) const
+        inline bool isSampleCoordStep(int64_t step) const
         {
             return (step > 0 && step % numStepsSampleCoord_ == 0);
         }
@@ -126,7 +126,7 @@ class BiasParams
          *
          * \param[in] step  The MD step number.
          */
-        inline bool isUpdateFreeEnergyStep(gmx_int64_t step) const
+        inline bool isUpdateFreeEnergyStep(int64_t step) const
         {
             int stepIntervalUpdateFreeEnergy = numSamplesUpdateFreeEnergy_*numStepsSampleCoord_;
             return (step > 0 && step % stepIntervalUpdateFreeEnergy == 0);
@@ -137,7 +137,7 @@ class BiasParams
          *
          * \param[in] step  The MD step number.
          */
-        inline bool isUpdateTargetStep(gmx_int64_t step) const
+        inline bool isUpdateTargetStep(int64_t step) const
         {
             return step % numStepsUpdateTarget_ == 0;
         }
@@ -154,7 +154,7 @@ class BiasParams
          * \returns true at steps where checks should be performed.
          * \note  Only returns true at free energy update steps.
          */
-        bool isCheckCoveringStep(gmx_int64_t step) const
+        bool isCheckCoveringStep(int64_t step) const
         {
             return step % numStepsCheckCovering_ == 0;
         }
@@ -172,7 +172,7 @@ class BiasParams
          * \note Only returns true at free energy update steps.
          * \todo Currently this function just calls isCheckCoveringStep but the checks could be done less frequently.
          */
-        bool isCheckHistogramForAnomaliesStep(gmx_int64_t step) const
+        bool isCheckHistogramForAnomaliesStep(int64_t step) const
         {
             return isCheckCoveringStep(step);
         }
@@ -213,12 +213,12 @@ class BiasParams
         /* Data members */
         const double      invBeta;                     /**< 1/beta = kT in kJ/mol */
     private:
-        const gmx_int64_t numStepsSampleCoord_;        /**< Number of steps per coordinate value sample. */
+        const int64_t     numStepsSampleCoord_;        /**< Number of steps per coordinate value sample. */
     public:
         const int         numSamplesUpdateFreeEnergy_; /**< Number of samples per free energy update. */
     private:
-        const gmx_int64_t numStepsUpdateTarget_;       /**< Number of steps per updating the target distribution. */
-        const gmx_int64_t numStepsCheckCovering_;      /**< Number of steps per checking for covering. */
+        const int64_t     numStepsUpdateTarget_;       /**< Number of steps per updating the target distribution. */
+        const int64_t     numStepsCheckCovering_;      /**< Number of steps per checking for covering. */
     public:
         const int         eTarget;                     /**< Type of target distribution. */
         const double      freeEnergyCutoffInKT;        /**< Free energy cut-off in kT for cut-off target distribution. */

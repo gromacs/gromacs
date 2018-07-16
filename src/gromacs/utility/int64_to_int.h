@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,7 @@
 
 #include "gromacs/utility/futil.h"
 
-/*! \brief Convert a gmx_int64_t value to int.
+/*! \brief Convert a int64_t value to int.
  *
  * \param[in] step The step number (or other int64)
  * \param[in] warn If warn!=NULL a warning message will be written
@@ -55,6 +55,6 @@
  *                 "WARNING during %s:", where warn is printed in %s.
  * \return the truncated step number.
  */
-int gmx_int64_to_int(gmx_int64_t step, const char *warn);
+int int64_to_int(int64_t step, const char *warn);
 
 #endif
