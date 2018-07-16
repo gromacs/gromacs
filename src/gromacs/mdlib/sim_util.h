@@ -37,14 +37,19 @@
 #ifndef GMX_MDLIB_SIM_UTIL_H
 #define GMX_MDLIB_SIM_UTIL_H
 
+#include <gromacs/mdtypes/iforceprovider.h>
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/mdlib/mdebin.h"
 #include "gromacs/mdlib/mdoutf.h"
+#include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
+#include "gmx_omp_nthreads.h"
 
+struct ForceProviders;
 struct gmx_output_env_t;
 struct gmx_pme_t;
 struct gmx_update_t;
@@ -53,6 +58,11 @@ struct nonbonded_verlet_t;
 struct t_forcerec;
 struct t_mdatoms;
 struct t_nrnb;
+struct gmx_vsite_t;
+struct interaction_const_t;
+
+struct gmx_enfrot;
+struct gmx_edsam;
 
 namespace gmx
 {
@@ -60,6 +70,7 @@ class BoxDeformation;
 class Constraints;
 class IMDOutputProvider;
 class MDLogger;
+class ForceWithVirial;
 }
 
 typedef struct gmx_global_stat *gmx_global_stat_t;
@@ -172,5 +183,95 @@ void init_rerun(FILE *fplog,
 /* Routine in sim_util.c */
 
 gmx_bool use_GPU(const nonbonded_verlet_t *nbv);
+
+void post_process_forces(const t_commrec           *cr,
+                         int64_t                    step,
+                         t_nrnb                    *nrnb,
+                         gmx_wallcycle_t            wcycle,
+                         const gmx_localtop_t      *top,
+                         const matrix               box,
+                         const rvec                 x[],
+                         rvec                       f[],
+                         gmx::ForceWithVirial      *forceWithVirial,
+                         tensor                     vir_force,
+                         const t_mdatoms           *mdatoms,
+                         const t_graph             *graph,
+                         const t_forcerec          *fr,
+                         const gmx_vsite_t         *vsite,
+                         int                        flags);
+
+inline void clear_rvecs_omp(int n, rvec v[])
+{
+    int nth = gmx_omp_nthreads_get_simple_rvec_task(emntDefault, n);
+
+    /* Note that we would like to avoid this conditional by putting it
+     * into the omp pragma instead, but then we still take the full
+     * omp parallel for overhead (at least with gcc5).
+     */
+    if (nth == 1)
+    {
+        for (int i = 0; i < n; i++)
+        {
+            clear_rvec(v[i]);
+        }
+    }
+    else
+    {
+#pragma omp parallel for num_threads(nth) schedule(static)
+        for (int i = 0; i < n; i++)
+        {
+            clear_rvec(v[i]);
+        }
+    }
+}
+
+void do_nb_verlet(const t_forcerec *fr,
+                  const interaction_const_t *ic,
+                  gmx_enerdata_t *enerd,
+                  int flags, int ilocality,
+                  int clearF,
+                  int64_t step,
+                  t_nrnb *nrnb,
+                  gmx_wallcycle_t wcycle);
+
+void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
+                      t_forcerec           *fr,
+                      rvec                  x[],
+                      rvec                  f[],
+                      const t_mdatoms      *mdatoms,
+                      t_lambda             *fepvals,
+                      real                 *lambda,
+                      gmx_enerdata_t       *enerd,
+                      int                   flags,
+                      t_nrnb               *nrnb,
+                      gmx_wallcycle_t       wcycle);
+
+void calc_virial(int start, int homenr, const rvec x[], const rvec f[],
+                 tensor vir_part, const t_graph *graph, const matrix box,
+                 t_nrnb *nrnb, const t_forcerec *fr, int ePBC);
+
+void checkPotentialEnergyValidity(int64_t               step,
+                                  const gmx_enerdata_t &enerd,
+                                  const t_inputrec     &inputrec);
+
+void
+computeSpecialForces(FILE                          *fplog,
+                     const t_commrec               *cr,
+                     const t_inputrec              *inputrec,
+                     gmx::Awh                      *awh,
+                     gmx_enfrot                    *enforcedRotation,
+                     int64_t                        step,
+                     double                         t,
+                     gmx_wallcycle_t                wcycle,
+                     ForceProviders                *forceProviders,
+                     matrix                         box,
+                     gmx::ArrayRef<const gmx::RVec> x,
+                     const t_mdatoms               *mdatoms,
+                     real                          *lambda,
+                     int                            forceFlags,
+                     gmx::ForceWithVirial          *forceWithVirial,
+                     gmx_enerdata_t                *enerd,
+                     gmx_edsam                     *ed,
+                     gmx_bool                       bNS);
 
 #endif
