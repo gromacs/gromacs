@@ -1065,7 +1065,7 @@ static t_block gmx_mtop_molecules_t_block(const gmx_mtop_t &mtop)
     t_block mols;
 
     mols.nr           = gmx_mtop_num_molecules(mtop);
-    mols.nalloc_index = mols.nr + 1;
+    mols.nalloc_index = mols.nr;
     snew(mols.index, mols.nalloc_index);
 
     fillMoleculeIndices(mtop, gmx::arrayRefFromArray(mols.index, mols.nr + 1));
