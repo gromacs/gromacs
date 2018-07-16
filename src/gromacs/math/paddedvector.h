@@ -69,7 +69,7 @@ using PaddedRVecVector = std::vector < RVec, Allocator < RVec, AlignedAllocation
  *
  * \param[in] numAtoms  The number of atoms for which data will be stored in a PaddedRVecVector
  */
-static inline index paddedRVecVectorSize(index numAtoms)
+static inline unsigned long paddedRVecVectorSize(index numAtoms)
 {
     /* We need one real extra for 4-wide SIMD load/store of RVec.
      * But because the vector contains RVecs, we need to add 1 RVec.
