@@ -109,6 +109,7 @@
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/group.h"
+#include "gromacs/mdtypes/iforceschedule.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -682,6 +683,17 @@ void gmx::Integrator::do_md()
         }
     }
 
+    /* Initializing Schedule here based on execution context */
+    MDLoopSharedPrimitives sp(&step, &t, &ddOpenBalanceRegion, &ddCloseBalanceRegion);
+
+    ScheduleBuilder        scheduleBuilder;
+    scheduleBuilder.selectSchedule(inputrec, cr, fr);
+    scheduleBuilder.initSchedule(fplog, cr, ms, inputrec, nrnb, wcycle, top, groups,
+                                 state, f.paddedArrayRef(), &force_vir, mdatoms, enerd, fcd, graph, fr,
+                                 vsite, &mu_tot, ed ? ed->getLegacyED() : nullptr, &sp, awh.get(), enforcedRotation);
+
+    std::shared_ptr<IForceSchedule> schedule = scheduleBuilder.getSchedule();
+
     /* and stop now if we should */
     bLastStep = (bLastStep || (ir->nsteps >= 0 && step_rel > ir->nsteps));
     while (!bLastStep)
@@ -882,14 +894,9 @@ void gmx::Integrator::do_md()
              * This is parallellized as well, and does communication too.
              * Check comments in sim_util.c
              */
-            do_force(fplog, cr, ms, ir, awh.get(), enforcedRotation,
-                     step, nrnb, wcycle, top, groups,
-                     state->box, state->x.paddedArrayRef(), &state->hist,
-                     f.paddedArrayRef(), force_vir, mdatoms, enerd, fcd,
-                     state->lambda, graph,
-                     fr, vsite, mu_tot, t, ed ? ed->getLegacyED() : nullptr,
-                     (bNS ? GMX_FORCE_NS : 0) | force_flags,
-                     ddOpenBalanceRegion, ddCloseBalanceRegion);
+
+            schedule->computeStep((bNS ? GMX_FORCE_NS : 0) | force_flags);
+
         }
 
         if (EI_VV(ir->eI) && !startingFromCheckpoint)
