@@ -72,7 +72,7 @@
 namespace gmx
 {
 
-void Bias::warnForHistogramAnomalies(double t, gmx_int64_t step, FILE *fplog)
+void Bias::warnForHistogramAnomalies(double t, int64_t step, FILE *fplog)
 {
     const int    maxNumWarningsInCheck = 1;   /* The maximum number of warnings to print per check */
     const int    maxNumWarningsInRun   = 10;  /* The maximum number of warnings to print in a run */
@@ -108,8 +108,8 @@ Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
                              const t_commrec      *commRecord,
                              const gmx_multisim_t *ms,
                              double                t,
-                             gmx_int64_t           step,
-                             gmx_int64_t           seed,
+                             int64_t               step,
+                             int64_t               seed,
                              FILE                 *fplog)
 {
     if (step < 0)
@@ -214,7 +214,7 @@ Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
  * \param[in] pointState  The state of the points in a bias.
  * \returns the total sample count.
  */
-static gmx_int64_t countSamples(const std::vector<PointState> &pointState)
+static int64_t countSamples(const std::vector<PointState> &pointState)
 {
     double numSamples = 0;
     for (const PointState &point : pointState)
@@ -222,7 +222,7 @@ static gmx_int64_t countSamples(const std::vector<PointState> &pointState)
         numSamples += point.weightSumTot();
     }
 
-    return static_cast<gmx_int64_t>(numSamples + 0.5);
+    return static_cast<int64_t>(numSamples + 0.5);
 }
 
 /*! \brief
@@ -236,9 +236,9 @@ static gmx_int64_t countSamples(const std::vector<PointState> &pointState)
 static void ensureStateAndRunConsistency(const BiasParams &params,
                                          const BiasState  &state)
 {
-    gmx_int64_t numSamples            = countSamples(state.points());
-    gmx_int64_t numUpdatesFromSamples = numSamples/(params.numSamplesUpdateFreeEnergy_*params.numSharedUpdate);
-    gmx_int64_t numUpdatesExpected    = state.histogramSize().numUpdates();
+    int64_t numSamples            = countSamples(state.points());
+    int64_t numUpdatesFromSamples = numSamples/(params.numSamplesUpdateFreeEnergy_*params.numSharedUpdate);
+    int64_t numUpdatesExpected    = state.histogramSize().numUpdates();
     if (numUpdatesFromSamples != numUpdatesExpected)
     {
         std::string mesg = gmx::formatString("The number of AWH updates in the checkpoint file (%ld) does not match the total number of AWH samples divided by the number of samples per update for %d sharing AWH bias(es) (%ld/%d=%ld)",

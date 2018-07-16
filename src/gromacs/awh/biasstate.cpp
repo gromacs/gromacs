@@ -476,8 +476,8 @@ double BiasState::moveUmbrella(const std::vector<DimParams> &dimParams,
                                const Grid                   &grid,
                                gmx::ArrayRef<const double>   probWeightNeighbor,
                                gmx::ArrayRef<double>         biasForce,
-                               gmx_int64_t                   step,
-                               gmx_int64_t                   seed,
+                               int64_t                       step,
+                               int64_t                       seed,
                                int                           indexSeed)
 {
     /* Generate and set a new coordinate reference value */
@@ -1011,7 +1011,7 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
                                                          const t_commrec              *commRecord,
                                                          const gmx_multisim_t         *multiSimComm,
                                                          double                        t,
-                                                         gmx_int64_t                   step,
+                                                         int64_t                       step,
                                                          FILE                         *fplog,
                                                          std::vector<int>             *updateList)
 {

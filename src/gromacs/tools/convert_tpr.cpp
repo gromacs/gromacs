@@ -338,7 +338,7 @@ int gmx_convert_tpr(int argc, char *argv[])
 
     const char       *top_fn;
     int               i;
-    gmx_int64_t       nsteps_req, run_step;
+    int64_t           nsteps_req, run_step;
     double            run_t, state_t;
     gmx_bool          bSel;
     gmx_bool          bNsteps, bExtend, bUntil;
@@ -379,7 +379,7 @@ int gmx_convert_tpr(int argc, char *argv[])
         return 0;
     }
 
-    /* Convert int to gmx_int64_t */
+    /* Convert int to int64_t */
     nsteps_req = nsteps_req_int;
     bNsteps    = opt2parg_bSet("-nsteps", asize(pa), pa);
     bExtend    = opt2parg_bSet("-extend", asize(pa), pa);
@@ -404,7 +404,7 @@ int gmx_convert_tpr(int argc, char *argv[])
         /* Determine total number of steps remaining */
         if (bExtend)
         {
-            ir->nsteps = ir->nsteps - (run_step - ir->init_step) + (gmx_int64_t)(extend_t/ir->delta_t + 0.5);
+            ir->nsteps = ir->nsteps - (run_step - ir->init_step) + (int64_t)(extend_t/ir->delta_t + 0.5);
             printf("Extending remaining runtime of by %g ps (now %s steps)\n",
                    extend_t, gmx_step_str(ir->nsteps, buf));
         }
@@ -414,7 +414,7 @@ int gmx_convert_tpr(int argc, char *argv[])
                    gmx_step_str(ir->nsteps, buf),
                    gmx_step_str(run_step, buf2),
                    run_t, until_t);
-            ir->nsteps = (gmx_int64_t)((until_t - run_t)/ir->delta_t + 0.5);
+            ir->nsteps = (int64_t)((until_t - run_t)/ir->delta_t + 0.5);
             printf("Extending remaining runtime until %g ps (now %s steps)\n",
                    until_t, gmx_step_str(ir->nsteps, buf));
         }
@@ -468,7 +468,7 @@ int gmx_convert_tpr(int argc, char *argv[])
         }
 
         state_t = ir->init_t + ir->init_step*ir->delta_t;
-        sprintf(buf,   "Writing statusfile with starting step %s%s and length %s%s steps...\n", "%10", GMX_PRId64, "%10", GMX_PRId64);
+        sprintf(buf,   "Writing statusfile with starting step %s%s and length %s%s steps...\n", "%10", PRId64, "%10", PRId64);
         fprintf(stderr, buf, ir->init_step, ir->nsteps);
         fprintf(stderr, "                                 time %10.3f and length %10.3f ps\n",
                 state_t, ir->nsteps*ir->delta_t);

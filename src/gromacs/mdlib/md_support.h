@@ -101,18 +101,18 @@ int check_nstglobalcomm(const gmx::MDLogger &mdlog,
  *
  * \todo This duplicates some of check_multi_int. Consolidate. */
 bool multisim_int_all_are_equal(const gmx_multisim_t *ms,
-                                gmx_int64_t           value);
+                                int64_t               value);
 
 void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
                          gmx_bool *bLastStep);
 
 /* Set the lambda values in the global state from a frame read with rerun */
-void setCurrentLambdasRerun(gmx_int64_t step, const t_lambda *fepvals,
+void setCurrentLambdasRerun(int64_t step, const t_lambda *fepvals,
                             const t_trxframe *rerun_fr, const double *lam0,
                             t_state *globalState);
 
 /* Set the lambda values at each step of mdrun when they change */
-void setCurrentLambdasLocal(gmx_int64_t step, const t_lambda *fepvals,
+void setCurrentLambdasLocal(int64_t step, const t_lambda *fepvals,
                             const double *lam0, t_state *state);
 
 int multisim_min(const gmx_multisim_t *ms, int nmin, int n);

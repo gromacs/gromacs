@@ -116,7 +116,7 @@ class Constraints::Impl
                             const t_mdatoms      &md);
         bool apply(bool                  bLog,
                    bool                  bEner,
-                   gmx_int64_t           step,
+                   int64_t               step,
                    int                   delta_step,
                    real                  step_scaling,
                    rvec                 *x,
@@ -276,7 +276,7 @@ static void write_constr_pdb(const char *fn, const char *title,
 }
 
 //! Writes out domain contents to help diagnose crashes.
-static void dump_confs(FILE *log, gmx_int64_t step, const gmx_mtop_t &mtop,
+static void dump_confs(FILE *log, int64_t step, const gmx_mtop_t &mtop,
                        int start, int homenr, const t_commrec *cr,
                        const rvec x[], rvec xprime[], matrix box)
 {
@@ -304,7 +304,7 @@ static void dump_confs(FILE *log, gmx_int64_t step, const gmx_mtop_t &mtop,
 bool
 Constraints::apply(bool                  bLog,
                    bool                  bEner,
-                   gmx_int64_t           step,
+                   int64_t               step,
                    int                   delta_step,
                    real                  step_scaling,
                    rvec                 *x,
@@ -336,7 +336,7 @@ Constraints::apply(bool                  bLog,
 bool
 Constraints::Impl::apply(bool                  bLog,
                          bool                  bEner,
-                         gmx_int64_t           step,
+                         int64_t               step,
                          int                   delta_step,
                          real                  step_scaling,
                          rvec                 *x,
@@ -595,7 +595,7 @@ Constraints::Impl::apply(bool                  bLog,
             {
                 char buf[STRLEN];
                 sprintf(buf,
-                        "\nstep " "%" GMX_PRId64 ": One or more water molecules can not be settled.\n"
+                        "\nstep " "%" PRId64 ": One or more water molecules can not be settled.\n"
                         "Check for bad contacts and/or reduce the timestep if appropriate.\n",
                         step);
                 if (log)

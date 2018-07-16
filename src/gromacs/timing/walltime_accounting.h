@@ -92,7 +92,7 @@ double
 walltime_accounting_get_start_time_stamp(gmx_walltime_accounting_t walltime_accounting);
 
 //! Get the number of integration steps done
-gmx_int64_t
+int64_t
 walltime_accounting_get_nsteps_done(gmx_walltime_accounting_t walltime_accounting);
 
 /*! \brief Set the number of integration steps done
@@ -100,7 +100,7 @@ walltime_accounting_get_nsteps_done(gmx_walltime_accounting_t walltime_accountin
  * TODO consider whether this should get done in walltime_accounting_end */
 void
 walltime_accounting_set_nsteps_done(gmx_walltime_accounting_t   walltime_accounting,
-                                    gmx_int64_t                 nsteps_done);
+                                    int64_t                     nsteps_done);
 
 //! Record that the simulation finished in a way valid for reporting walltime.
 void

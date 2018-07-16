@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -141,8 +141,8 @@ floatingPointToBiasedInteger(const FloatingPoint<FloatType> &value)
  * treating also values of different sign.
  */
 template <typename FloatType>
-gmx_uint64_t calculateUlpDifference(const FloatingPoint<FloatType> &value1,
-                                    const FloatingPoint<FloatType> &value2)
+uint64_t calculateUlpDifference(const FloatingPoint<FloatType> &value1,
+                                const FloatingPoint<FloatType> &value2)
 {
     typename FloatingPoint<FloatType>::Bits biased1
         = floatingPointToBiasedInteger(value1);
@@ -156,7 +156,7 @@ gmx_uint64_t calculateUlpDifference(const FloatingPoint<FloatType> &value1,
  */
 template <typename FloatType>
 void initDifference(FloatType raw1, FloatType raw2, double *absoluteDifference,
-                    gmx_uint64_t *ulpDifference, bool *bSignDifference)
+                    uint64_t *ulpDifference, bool *bSignDifference)
 {
     FloatingPoint<FloatType> value1(raw1);
     FloatingPoint<FloatType> value2(raw2);
@@ -177,7 +177,7 @@ void initDifference(FloatType raw1, FloatType raw2, double *absoluteDifference,
  * Converts a relative tolerance into an ULP difference.
  */
 template <typename FloatType>
-gmx_uint64_t relativeToleranceToUlp(FloatType tolerance)
+uint64_t relativeToleranceToUlp(FloatType tolerance)
 {
     FloatingPoint<FloatType> m(1.0);
     FloatingPoint<FloatType> t(1.0 + tolerance);
@@ -235,7 +235,7 @@ std::string FloatingPointDifference::toString() const
         relDiffStr = formatString("Inf");
     }
 
-    return formatString("%g (%" GMX_PRIu64 " %s-prec. ULPs, rel. %s)%s",
+    return formatString("%g (%" PRIu64 " %s-prec. ULPs, rel. %s)%s",
                         absoluteDifference_, ulpDifference_,
                         isDouble() ? "double" : "single",
                         relDiffStr.c_str(),
@@ -277,9 +277,9 @@ bool FloatingPointTolerance::isWithin(
         return true;
     }
 
-    const gmx_uint64_t ulpTolerance
+    const uint64_t ulpTolerance
         = difference.isDouble() ? doubleUlpTolerance_ : singleUlpTolerance_;
-    if (ulpTolerance < GMX_UINT64_MAX && difference.asUlps() <= ulpTolerance)
+    if (ulpTolerance < UINT64_MAX && difference.asUlps() <= ulpTolerance)
     {
         return true;
     }
@@ -294,7 +294,7 @@ std::string FloatingPointTolerance::toString(const FloatingPointDifference &diff
         = difference.isDouble() ? doubleAbsoluteTolerance_ : singleAbsoluteTolerance_;
     const double       relativeTolerance
         = difference.isDouble() ? doubleRelativeTolerance_ : singleRelativeTolerance_;
-    const gmx_uint64_t ulpTolerance
+    const uint64_t     ulpTolerance
         = difference.isDouble() ? doubleUlpTolerance_ : singleUlpTolerance_;
 
     if (absoluteTolerance > 0.0)
@@ -309,13 +309,13 @@ std::string FloatingPointTolerance::toString(const FloatingPointDifference &diff
         }
         result.append(formatString("rel. %.3g", relativeTolerance));
     }
-    if (ulpTolerance < GMX_UINT64_MAX)
+    if (ulpTolerance < UINT64_MAX)
     {
         if (!result.empty())
         {
             result.append(", ");
         }
-        result.append(formatString("%" GMX_PRIu64 " ULPs", ulpTolerance));
+        result.append(formatString("%" PRIu64 " ULPs", ulpTolerance));
     }
     if (bSignMustMatch_)
     {
@@ -336,7 +336,7 @@ relativeToleranceAsFloatingPoint(double magnitude, double tolerance)
     const double absoluteTolerance = std::abs(magnitude) * tolerance;
     return FloatingPointTolerance(absoluteTolerance, absoluteTolerance,
                                   tolerance, tolerance,
-                                  GMX_UINT64_MAX, GMX_UINT64_MAX,
+                                  UINT64_MAX, UINT64_MAX,
                                   false);
 }
 //! \endcond

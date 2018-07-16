@@ -231,7 +231,7 @@ typedef struct {
     int                natpair_lj;            /* Total number of atom pairs for LJ kernel   */
     int                natpair_q;             /* Total number of atom pairs for Q kernel    */
     t_nblist         **nbl_fep;               /* List of free-energy atom pair interactions */
-    gmx_int64_t        outerListCreationStep; /* Step at which the outer list was created */
+    int64_t            outerListCreationStep; /* Step at which the outer list was created */
 } nbnxn_pairlist_set_t;
 
 enum {
@@ -311,8 +311,8 @@ typedef struct nbnxn_atomdata_t {
     real                    *simd_4xn_diagonal_j_minus_i;
     real                    *simd_2xnn_diagonal_j_minus_i;
     /* Filters for topology exclusion masks for the SIMD kernels. */
-    gmx_uint32_t            *simd_exclusion_filter;
-    gmx_uint64_t            *simd_exclusion_filter64; //!< Used for double w/o SIMD int32 logical support
+    uint32_t                *simd_exclusion_filter;
+    uint64_t                *simd_exclusion_filter64; //!< Used for double w/o SIMD int32 logical support
     real                    *simd_interaction_array;  /* Array of masks needed for exclusions */
     int                      nout;                    /* The number of force arrays                         */
     nbnxn_atomdata_output_t *out;                     /* Output data structures               */

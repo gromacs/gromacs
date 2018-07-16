@@ -210,8 +210,8 @@ class Bias
                                const t_commrec      *commRecord,
                                const gmx_multisim_t *ms,
                                double                t,
-                               gmx_int64_t           step,
-                               gmx_int64_t           seed,
+                               int64_t               step,
+                               int64_t               seed,
                                FILE                 *fplog);
 
         /*! \brief
@@ -313,7 +313,7 @@ class Bias
          * \param[in,out] fplog    Output file for warnings.
          */
         void warnForHistogramAnomalies(double       t,
-                                       gmx_int64_t  step,
+                                       int64_t      step,
                                        FILE        *fplog);
 
         /*! \brief

@@ -489,7 +489,7 @@ AwhParams *readAndCheckAwhParams(std::vector<t_inpfile> *inp, const t_inputrec *
     if (awhParams->seed == -1)
     {
         awhParams->seed = static_cast<int>(gmx::makeRandomSeed());
-        fprintf(stderr, "Setting the AWH bias MC random seed to %" GMX_PRId64 "\n", awhParams->seed);
+        fprintf(stderr, "Setting the AWH bias MC random seed to %" PRId64 "\n", awhParams->seed);
     }
 
     printStringNoNewline(inp, "Data output interval in number of steps");

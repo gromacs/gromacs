@@ -998,7 +998,7 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
     const t_atoms  *atoms, *atoms_tpi;
     const t_blocka *excl;
     int             nmolc, i, j, tpi, tpj, j1, j2, k, nexcl, q;
-    gmx_int64_t     npair, npair_ij, tmpi, tmpj;
+    int64_t         npair, npair_ij, tmpi, tmpj;
     double          csix, ctwelve;
     int             ntp, *typecount;
     gmx_bool        bBHAM;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,7 +77,7 @@ int intFromString(const char *str);
  *
  * Also checks for overflow.
  */
-gmx_int64_t int64FromString(const char *str);
+int64_t int64FromString(const char *str);
 /*! \brief
  * Parses a float value from a string.
  *
@@ -128,7 +128,7 @@ template <> inline
 int fromString<int>(const char *str) { return intFromString(str); }
 //! Implementation for 64-bit integer values.
 template <> inline
-gmx_int64_t fromString<gmx_int64_t>(const char *str) { return int64FromString(str); }
+int64_t fromString<int64_t>(const char *str) { return int64FromString(str); }
 //! Implementation for float values.
 template <> inline
 float fromString<float>(const char *str) { return floatFromString(str); }
@@ -155,9 +155,9 @@ static inline std::string intToString(int t)
     return formatString("%d", t);
 }
 //! \copydoc intToString(int)
-static inline std::string int64ToString(gmx_int64_t t)
+static inline std::string int64ToString(int64_t t)
 {
-    return formatString("%" GMX_PRId64, t);
+    return formatString("%" PRId64, t);
 }
 //! \copydoc intToString(int)
 static inline std::string doubleToString(double t)
@@ -173,7 +173,7 @@ static inline std::string doubleToString(double t)
  */
 static inline std::string toString(bool t) { return boolToString(t); }
 static inline std::string toString(int t) { return intToString(t); }
-static inline std::string toString(gmx_int64_t t) { return int64ToString(t); }
+static inline std::string toString(int64_t t) { return int64ToString(t); }
 static inline std::string toString(float t) { return doubleToString(t); }
 static inline std::string toString(double t) { return doubleToString(t); }
 static inline std::string toString(std::string t) { return t; }

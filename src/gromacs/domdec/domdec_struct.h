@@ -209,7 +209,7 @@ struct gmx_domdec_t {
     gmx_domdec_comm_t *comm;
 
     /* The partioning count, to keep track of the state */
-    gmx_int64_t ddp_count;
+    int64_t ddp_count;
 
     /* The managed atom sets that are updated in domain decomposition */
     gmx::LocalAtomSetManager * atomSets;

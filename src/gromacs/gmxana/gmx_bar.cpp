@@ -107,12 +107,12 @@ typedef struct hist_t
     unsigned int   *bin[2];                 /* the (forward + reverse) histogram values */
     double          dx[2];                  /* the histogram spacing. The reverse
                                                dx is the negative of the forward dx.*/
-    gmx_int64_t     x0[2];                  /* the (forward + reverse) histogram start
-                                                   point(s) as int */
+    int64_t         x0[2];                  /* the (forward + reverse) histogram start
+                                                       point(s) as int */
 
     int             nbin[2];                /* the (forward+reverse) number of bins */
-    gmx_int64_t     sum;                    /* the total number of counts. Must be
-                                                   the same for forward + reverse.  */
+    int64_t         sum;                    /* the total number of counts. Must be
+                                                       the same for forward + reverse.  */
     int             nhist;                  /* number of hist datas (forward or reverse) */
 
     double          start_time, delta_time; /* start time, end time of histogram */
@@ -141,7 +141,7 @@ typedef struct samples_t
     size_t          ndu_alloc, nt_alloc; /* pre-allocated sizes */
     hist_t         *hist_alloc;          /* allocated hist */
 
-    gmx_int64_t     ntot;                /* total number of samples */
+    int64_t         ntot;                /* total number of samples */
     const char     *filename;            /* the file name this sample comes from */
 } samples_t;
 
@@ -171,8 +171,8 @@ typedef struct sample_coll_t
     sample_range_t *r;                 /* the sample ranges */
     int             nsamples_alloc;    /* number of allocated samples */
 
-    gmx_int64_t     ntot;              /* total number of samples in the ranges of
-                                              this collection */
+    int64_t         ntot;              /* total number of samples in the ranges of
+                                                  this collection */
 
     struct sample_coll_t *next, *prev; /* next and previous in the list */
 } sample_coll_t;
@@ -1409,9 +1409,9 @@ static gmx_bool sample_coll_create_subsample(sample_coll_t  *sc,
 {
     int             j;
 
-    gmx_int64_t     ntot_start;
-    gmx_int64_t     ntot_end;
-    gmx_int64_t     ntot_so_far;
+    int64_t         ntot_start;
+    int64_t         ntot_end;
+    int64_t         ntot_so_far;
 
     *sc = *sc_orig; /* just copy all fields */
 
@@ -1428,13 +1428,13 @@ static gmx_bool sample_coll_create_subsample(sample_coll_t  *sc,
 
     /* now fix start and end fields */
     /* the casts avoid possible overflows */
-    ntot_start  = static_cast<gmx_int64_t>(sc_orig->ntot*static_cast<double>(i)/static_cast<double>(ni));
-    ntot_end    = static_cast<gmx_int64_t>(sc_orig->ntot*static_cast<double>(i+1)/static_cast<double>(ni));
+    ntot_start  = static_cast<int64_t>(sc_orig->ntot*static_cast<double>(i)/static_cast<double>(ni));
+    ntot_end    = static_cast<int64_t>(sc_orig->ntot*static_cast<double>(i+1)/static_cast<double>(ni));
     ntot_so_far = 0;
     for (j = 0; j < sc->nsamples; j++)
     {
-        gmx_int64_t ntot_add;
-        gmx_int64_t new_start, new_end;
+        int64_t ntot_add;
+        int64_t new_start, new_end;
 
         if (sc->r[j].use)
         {
@@ -3113,7 +3113,7 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
 
     for (i = 0; i < nhist; i++)
     {
-        gmx_int64_t     sum = 0;
+        int64_t     sum = 0;
 
         for (j = 0; j < s->hist->nbin[i]; j++)
         {

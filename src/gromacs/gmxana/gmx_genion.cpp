@@ -71,7 +71,7 @@ static void insert_ion(int nsa, const int *nwater,
     int                                i, ei, nw;
     real                               rmin2;
     rvec                               dx;
-    gmx_int64_t                        maxrand;
+    int64_t                            maxrand;
     gmx::UniformIntDistribution<int>   dist(0, *nwater-1);
 
     nw       = *nwater;

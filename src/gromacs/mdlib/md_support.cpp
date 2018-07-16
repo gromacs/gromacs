@@ -76,10 +76,10 @@
 
 // TODO move this to multi-sim module
 bool multisim_int_all_are_equal(const gmx_multisim_t *ms,
-                                gmx_int64_t           value)
+                                int64_t               value)
 {
     bool         allValuesAreEqual = true;
-    gmx_int64_t *buf;
+    int64_t     *buf;
 
     GMX_RELEASE_ASSERT(ms, "Invalid use of multi-simulation pointer");
 
@@ -330,7 +330,7 @@ static void check_nst_param(const gmx::MDLogger &mdlog,
     }
 }
 
-void setCurrentLambdasRerun(gmx_int64_t step, const t_lambda *fepvals,
+void setCurrentLambdasRerun(int64_t step, const t_lambda *fepvals,
                             const t_trxframe *rerun_fr, const double *lam0,
                             t_state *globalState)
 {
@@ -367,7 +367,7 @@ void setCurrentLambdasRerun(gmx_int64_t step, const t_lambda *fepvals,
     }
 }
 
-void setCurrentLambdasLocal(gmx_int64_t step, const t_lambda *fepvals,
+void setCurrentLambdasLocal(int64_t step, const t_lambda *fepvals,
                             const double *lam0, t_state *state)
 /* find the current lambdas.  If rerunning, we either read in a state, or a lambda value,
    requiring different logic. */

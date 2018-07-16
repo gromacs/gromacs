@@ -233,7 +233,7 @@ static void clear_and_mark_ind(int                           numAtomGroups,
 
 static void print_cg_move(FILE *fplog,
                           gmx_domdec_t *dd,
-                          gmx_int64_t step, int cg, int dim, int dir,
+                          int64_t step, int cg, int dim, int dir,
                           gmx_bool bHaveCgcmOld, real limitd,
                           rvec cm_old, rvec cm_new, real pos_d)
 {
@@ -276,7 +276,7 @@ static void print_cg_move(FILE *fplog,
 [[ noreturn ]]
 static void cg_move_error(FILE *fplog,
                           gmx_domdec_t *dd,
-                          gmx_int64_t step, int cg, int dim, int dir,
+                          int64_t step, int cg, int dim, int dir,
                           gmx_bool bHaveCgcmOld, real limitd,
                           rvec cm_old, rvec cm_new, real pos_d)
 {
@@ -342,7 +342,7 @@ static int *getMovedBuffer(gmx_domdec_comm_t *comm,
  *
  * \TODO Rename cg to atomGroup.
  */
-static void calc_cg_move(FILE *fplog, gmx_int64_t step,
+static void calc_cg_move(FILE *fplog, int64_t step,
                          gmx_domdec_t *dd,
                          t_state *state,
                          const ivec tric_dir, matrix tcm,
@@ -510,7 +510,7 @@ static void calc_cg_move(FILE *fplog, gmx_int64_t step,
     }
 }
 
-void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
+void dd_redistribute_cg(FILE *fplog, int64_t step,
                         gmx_domdec_t *dd, ivec tric_dir,
                         t_state *state, PaddedRVecVector *f,
                         t_forcerec *fr,

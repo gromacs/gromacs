@@ -336,7 +336,7 @@ set_dd_cell_sizes_slb(gmx_domdec_t *dd, const gmx_ddbox_t *ddbox,
 static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
                                                   int d, int dim, RowMaster *rowMaster,
                                                   const gmx_ddbox_t *ddbox,
-                                                  gmx_bool bUniform, gmx_int64_t step, real cellsize_limit_f, int range[])
+                                                  gmx_bool bUniform, int64_t step, real cellsize_limit_f, int range[])
 {
     gmx_domdec_comm_t *comm;
     real               halfway, cellsize_limit_f_i, region_size;
@@ -549,7 +549,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
                                        int d, int dim, RowMaster *rowMaster,
                                        const gmx_ddbox_t *ddbox,
                                        gmx_bool bDynamicBox,
-                                       gmx_bool bUniform, gmx_int64_t step)
+                                       gmx_bool bUniform, int64_t step)
 {
     gmx_domdec_comm_t *comm    = dd->comm;
     constexpr real     c_relax = 0.5;
@@ -769,7 +769,7 @@ static void distribute_dd_cell_sizes_dlb(gmx_domdec_t *dd,
 static void set_dd_cell_sizes_dlb_change(gmx_domdec_t *dd,
                                          const gmx_ddbox_t *ddbox,
                                          gmx_bool bDynamicBox,
-                                         gmx_bool bUniform, gmx_int64_t step)
+                                         gmx_bool bUniform, int64_t step)
 {
     for (int d = 0; d < dd->ndim; d++)
     {
@@ -827,7 +827,7 @@ static void set_dd_cell_sizes_dlb_nochange(gmx_domdec_t      *dd,
 
 static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,
                                   const gmx_ddbox_t *ddbox, gmx_bool bDynamicBox,
-                                  gmx_bool bUniform, gmx_bool bDoDLB, gmx_int64_t step,
+                                  gmx_bool bUniform, gmx_bool bDoDLB, int64_t step,
                                   gmx_wallcycle_t wcycle)
 {
     gmx_domdec_comm_t *comm;
@@ -864,7 +864,7 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,
 
 void set_dd_cell_sizes(gmx_domdec_t *dd,
                        const gmx_ddbox_t *ddbox, gmx_bool bDynamicBox,
-                       gmx_bool bUniform, gmx_bool bDoDLB, gmx_int64_t step,
+                       gmx_bool bUniform, gmx_bool bDoDLB, int64_t step,
                        gmx_wallcycle_t wcycle)
 {
     gmx_domdec_comm_t *comm = dd->comm;

@@ -458,7 +458,7 @@ void gmx_sumi(int gmx_unused nr, int gmx_unused r[], const t_commrec gmx_unused 
 #endif
 }
 
-void gmx_sumli(int gmx_unused nr, gmx_int64_t gmx_unused r[], const t_commrec gmx_unused *cr)
+void gmx_sumli(int gmx_unused nr, int64_t gmx_unused r[], const t_commrec gmx_unused *cr)
 {
 #if !GMX_MPI
     gmx_call("gmx_sumli");
@@ -612,7 +612,7 @@ void gmx_sumi_sim(int gmx_unused nr, int gmx_unused r[], const gmx_multisim_t gm
 #endif
 }
 
-void gmx_sumli_sim(int gmx_unused nr, gmx_int64_t gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
+void gmx_sumli_sim(int gmx_unused nr, int64_t gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
 {
 #if !GMX_MPI
     gmx_call("gmx_sumli_sim");
