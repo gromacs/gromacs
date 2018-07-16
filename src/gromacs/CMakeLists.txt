@@ -300,7 +300,7 @@ string(REPLACE " " ";" IGNORED_CLANG_ALL_WARNINGS "${IGNORED_CLANG_ALL_WARNINGS}
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^6\.0")
    target_compile_options(libgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Weverything ${IGNORED_CLANG_ALL_WARNINGS}>)
 endif()
-if (MSVC)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
    target_compile_options(libgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/analyze /analyze:stacksize 70000
      #Control flow warnings are disabled because the commond line output is insufficient. There is no tool
      #to convert the xml report to e.g. HTML and even in Visual Studio the viewer doesn't work with cmake support.
