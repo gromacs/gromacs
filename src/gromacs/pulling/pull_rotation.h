@@ -145,7 +145,7 @@ void do_rotation(const t_commrec  *cr,
                  matrix            box,
                  rvec              x[],
                  real              t,
-                 gmx_int64_t       step,
+                 int64_t           step,
                  gmx_bool          bNS);
 
 
@@ -167,7 +167,7 @@ void do_rotation(const t_commrec  *cr,
  * \returns       The potential energy of the rotation potentials.
  */
 real add_rot_forces(gmx_enfrot *er,
-                    rvec f[], const t_commrec *cr, gmx_int64_t step, real t);
+                    rvec f[], const t_commrec *cr, int64_t step, real t);
 
 
 #endif

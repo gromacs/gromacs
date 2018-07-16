@@ -63,7 +63,7 @@
 #endif
 
 /** \Gromacs definition to use instead of `off_t`. */
-typedef gmx_int64_t    gmx_off_t;
+typedef int64_t    gmx_off_t;
 
 /*! \brief
  * Turn off buffering for output files (which is default) for debugging

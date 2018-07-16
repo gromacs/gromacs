@@ -302,7 +302,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
             s += gmx::formatString("    Numa nodes:\n");
             for (auto &n : hwTop.machine().numa.nodes)
             {
-                s += gmx::formatString("      Node %2d (%" GMX_PRIu64 " bytes mem):", n.id, n.memory);
+                s += gmx::formatString("      Node %2d (%" PRIu64 " bytes mem):", n.id, n.memory);
                 for (auto &l : n.logicalProcessorId)
                 {
                     s += gmx::formatString(" %3d", l);
@@ -329,7 +329,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
             s += gmx::formatString("    Caches:\n");
             for (auto &c : hwTop.machine().caches)
             {
-                s += gmx::formatString("      L%d: %" GMX_PRIu64 " bytes, linesize %d bytes, assoc. %d, shared %d ways\n",
+                s += gmx::formatString("      L%d: %" PRIu64 " bytes, linesize %d bytes, assoc. %d, shared %d ways\n",
                                        c.level, c.size, c.linesize, c.associativity, c.shared);
             }
         }

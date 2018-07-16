@@ -45,11 +45,9 @@
 #define GMX_UTILITY_BASEDEFINITIONS_H
 
 #include <stdint.h>
-#ifndef _MSC_VER
-#include <inttypes.h>
-#endif
 
 #if defined __cplusplus
+#include <cinttypes>
 #include <cstddef>
 #else
 #include <stdbool.h>
@@ -79,60 +77,6 @@ namespace gmx
 using index = std::ptrdiff_t;
 }
 #endif
-
-/*! \name Fixed-width integer types
- *
- * These types and macros provide the equivalent of 32- and 64-bit integer
- * types from C99 headers `stdint.h` and `inttypes.h`.  These headers are also
- * there in C++11.  The types and macros from here should be used instead of
- * `int32_t` etc.
- *
- * (MSVC 2015 still doesn't support the format strings.)
- */
-/*! \{ */
-typedef int32_t gmx_int32_t;
-typedef int64_t gmx_int64_t;
-typedef uint32_t gmx_uint32_t;
-typedef uint64_t gmx_uint64_t;
-
-#ifdef _MSC_VER
-#define GMX_PRId32 "I32d"
-#define GMX_SCNd32 "I32d"
-
-#define GMX_PRId64 "I64d"
-#define GMX_SCNd64 "I64d"
-
-#define GMX_PRIu32 "I32u"
-#define GMX_SCNu32 "I32u"
-
-#define GMX_PRIu64 "I64u"
-#define GMX_SCNu64 "I64u"
-#else
-#define GMX_PRId32 PRId32
-#define GMX_SCNd32 SCNd32
-
-#define GMX_PRId64 PRId64
-#define GMX_SCNd64 SCNd64
-
-#define GMX_PRIu32 PRIu32
-#define GMX_SCNu32 SCNu32
-
-#define GMX_PRIu64 PRIu64
-#define GMX_SCNu64 SCNu64
-#endif
-
-#define GMX_INT32_MAX INT32_MAX
-#define GMX_INT32_MIN INT32_MIN
-
-#define GMX_INT64_MAX INT64_MAX
-#define GMX_INT64_MIN INT64_MIN
-
-#define GMX_UINT32_MAX UINT32_MAX
-#define GMX_UINT32_MIN UINT32_MIN
-
-#define GMX_UINT64_MAX UINT64_MAX
-#define GMX_UINT64_MIN UINT64_MIN
-/*! \} */
 
 /* ICC, GCC, MSVC, Pathscale, PGI, XLC support __restrict.
  * Any other compiler can be added here. */

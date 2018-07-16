@@ -128,7 +128,7 @@ void finish_swapcoords(t_swapcoords *sc);
  */
 gmx_bool do_swapcoords(
         t_commrec        *cr,
-        gmx_int64_t       step,
+        int64_t           step,
         double            t,
         t_inputrec       *ir,
         gmx_wallcycle    *wcycle,

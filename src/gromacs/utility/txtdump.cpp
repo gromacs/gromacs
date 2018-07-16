@@ -164,7 +164,7 @@ void pr_int(FILE *fp, int indent, const char *title, int i)
     fprintf(fp, "%-30s = %d\n", title, i);
 }
 
-void pr_int64(FILE *fp, int indent, const char *title, gmx_int64_t i)
+void pr_int64(FILE *fp, int indent, const char *title, int64_t i)
 {
     char buf[STEPSTRSIZE];
 

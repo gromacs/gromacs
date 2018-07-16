@@ -470,7 +470,7 @@ struct gmx_domdec_comm_t
     /** Which cg distribution is stored on the master node,
      *  stored as DD partitioning call count.
      */
-    gmx_int64_t master_cg_ddp_count;
+    int64_t master_cg_ddp_count;
 
     /** The number of cg's received from the direct neighbors */
     int  zone_ncg1[DD_MAXZONE];
@@ -531,7 +531,7 @@ struct gmx_domdec_comm_t
     float       cyclesPerStepBeforeDLB;     /**< The averaged cycles per step over the last nstlist step before turning on DLB */
     float       cyclesPerStepDlbExpAverage; /**< The running average of the cycles per step during DLB */
     bool        haveTurnedOffDlb;           /**< Have we turned off DLB (after turning DLB on)? */
-    gmx_int64_t dlbSlowerPartitioningCount; /**< The DD step at which we last measured that DLB off was faster than DLB on, 0 if there was no such step */
+    int64_t     dlbSlowerPartitioningCount; /**< The DD step at which we last measured that DLB off was faster than DLB on, 0 if there was no such step */
 
     /* Statistics for atoms */
     double sum_nat[static_cast<int>(DDAtomRanges::Type::Number)]; /**< The atoms per range, summed over the steps */
@@ -547,7 +547,7 @@ struct gmx_domdec_comm_t
     double load_pme;                   /**< Total time on our PME-only rank */
 
     /** The last partition step */
-    gmx_int64_t partition_step;
+    int64_t partition_step;
 
     /* Debugging */
     int  nstDDDump;                    /**< Step interval for dumping the local+non-local atoms to pdb */

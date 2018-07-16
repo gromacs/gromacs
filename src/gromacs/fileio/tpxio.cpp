@@ -102,7 +102,7 @@ static const char *tpx_tag = TPX_TAG_RELEASE;
  */
 enum tpxv {
     tpxv_ComputationalElectrophysiology = 96,                /**< support for ion/water position swaps (computational electrophysiology) */
-    tpxv_Use64BitRandomSeed,                                 /**< change ld_seed from int to gmx_int64_t */
+    tpxv_Use64BitRandomSeed,                                 /**< change ld_seed from int to int64_t */
     tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, /**< potentials for supporting coarse-grained force fields */
     tpxv_InteractiveMolecularDynamics,                       /**< interactive molecular dynamics (IMD) */
     tpxv_RemoveObsoleteParameters1,                          /**< remove optimize_fft, dihre_fc, nstcheckpoint */

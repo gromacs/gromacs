@@ -79,7 +79,7 @@ void relax_shell_flexcon(FILE                                     *log,
                          const gmx_multisim_t                     *ms,
                          gmx_bool                                  bVerbose,
                          gmx_enfrot                               *enforcedRotation,
-                         gmx_int64_t                               mdstep,
+                         int64_t                                   mdstep,
                          const t_inputrec                         *inputrec,
                          gmx_bool                                  bDoNS,
                          int                                       force_flags,
@@ -104,6 +104,6 @@ void relax_shell_flexcon(FILE                                     *log,
                          DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion);
 
 /* Print some final output */
-void done_shellfc(FILE *fplog, gmx_shellfc_t *shellfc, gmx_int64_t numSteps);
+void done_shellfc(FILE *fplog, gmx_shellfc_t *shellfc, int64_t numSteps);
 
 #endif

@@ -340,11 +340,11 @@ struct t_inputrec
     //! Integration method
     int                         eI;
     //! Number of steps to be taken
-    gmx_int64_t                 nsteps;
+    int64_t                     nsteps;
     //! Used in checkpointing to separate chunks
     int                         simulation_part;
     //! Start at a stepcount >0 (used w. convert-tpr)
-    gmx_int64_t                 init_step;
+    int64_t                     init_step;
     //! Frequency of energy calc. and T/P coupl. upd.
     int                         nstcalcenergy;
     //! Group or verlet cutoffs
@@ -518,7 +518,7 @@ struct t_inputrec
     //! Friction coefficient for BD (amu/ps)
     real                        bd_fric;
     //! Random seed for SD and BD
-    gmx_int64_t                 ld_seed;
+    int64_t                     ld_seed;
     //! The number of walls
     int                         nwall;
     //! The type of walls

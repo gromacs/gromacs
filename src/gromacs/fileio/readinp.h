@@ -135,9 +135,9 @@ void mark_einp_set(gmx::ArrayRef<t_inpfile> inp, const char *name);
 int get_eint(std::vector<t_inpfile> *inp, const char *name, int def,
              warninp_t wi);
 
-gmx_int64_t get_eint64(std::vector<t_inpfile> *inp,
-                       const char *name, gmx_int64_t def,
-                       warninp_t);
+int64_t get_eint64(std::vector<t_inpfile> *inp,
+                   const char *name, int64_t def,
+                   warninp_t);
 
 double get_ereal(std::vector<t_inpfile> *inp, const char *name, double def,
                  warninp_t wi);

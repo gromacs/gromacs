@@ -89,8 +89,8 @@ typedef struct {
 } enerdat_t;
 
 typedef struct {
-    gmx_int64_t      nsteps;
-    gmx_int64_t      npoints;
+    int64_t          nsteps;
+    int64_t          npoints;
     int              nframes;
     int             *step;
     int             *steps;
@@ -373,7 +373,7 @@ static void einstein_visco(const char *fn, const char *fni, int nsets,
 }
 
 typedef struct {
-    gmx_int64_t     np;
+    int64_t         np;
     double          sum;
     double          sav;
     double          sav2;
@@ -382,8 +382,8 @@ typedef struct {
 typedef struct {
     int             b;
     ee_sum_t        sum;
-    gmx_int64_t     nst;
-    gmx_int64_t     nst_min;
+    int64_t         nst;
+    int64_t         nst_min;
 } ener_ee_t;
 
 static void clear_ee_sum(ee_sum_t *ees)
@@ -437,7 +437,7 @@ static void calc_averages(int nset, enerdata_t *edat, int nbmin, int nbmax)
 {
     int             nb, i, f, nee;
     double          sum, sum2, sump, see2;
-    gmx_int64_t     np, p, bound_nb;
+    int64_t         np, p, bound_nb;
     enerdat_t      *ed;
     exactsum_t     *es;
     gmx_bool        bAllZero;
@@ -865,8 +865,8 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
                          const char *eviscofn, const char *eviscoifn,
                          gmx_bool bFee, gmx_bool bSum, gmx_bool bFluct,
                          gmx_bool bVisco, const char *visfn, int nmol,
-                         gmx_int64_t start_step, double start_t,
-                         gmx_int64_t step, double t,
+                         int64_t start_step, double start_t,
+                         int64_t step, double t,
                          real reftemp,
                          enerdata_t *edat,
                          int nset, const int set[], const gmx_bool *bIsEner,
@@ -882,7 +882,7 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
     real            integral, intBulk, Temp = 0, Pres = 0;
     real            pr_aver, pr_stddev, pr_errest;
     double          beta = 0, expE, expEtot, *fee = nullptr;
-    gmx_int64_t     nsteps;
+    int64_t         nsteps;
     int             nexact, nnotexact;
     int             i, j, nout;
     char            buf[256], eebuf[100];
@@ -1442,7 +1442,7 @@ static void do_dhdl(t_enxframe *fr, const t_inputrec *ir, FILE **fp_dhdl,
     /* write the data */
     if (nblock_hist > 0)
     {
-        gmx_int64_t sum = 0;
+        int64_t sum = 0;
         /* histograms */
         for (i = 0; i < fr->nblock; i++)
         {
@@ -1450,7 +1450,7 @@ static void do_dhdl(t_enxframe *fr, const t_inputrec *ir, FILE **fp_dhdl,
             if (blk->id == enxDHHIST)
             {
                 double          foreign_lambda, dx;
-                gmx_int64_t     x0;
+                int64_t         x0;
                 int             nhist, derivative;
 
                 /* check the block types etc. */
@@ -1705,7 +1705,7 @@ int gmx_energy(int argc, char *argv[])
     int                cur = 0;
 #define NEXT (1-cur)
     int                nre, nfr;
-    gmx_int64_t        start_step;
+    int64_t            start_step;
     real               start_t;
     gmx_bool           bDHDL;
     gmx_bool           bFoundStart, bCont, bVisco;

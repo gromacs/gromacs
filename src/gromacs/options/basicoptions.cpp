@@ -222,14 +222,14 @@ IntegerOption::createStorage(const OptionManagerContainer & /*managers*/) const
  * Int64OptionStorage
  */
 
-std::string Int64OptionStorage::formatSingleValue(const gmx_int64_t &value) const
+std::string Int64OptionStorage::formatSingleValue(const int64_t &value) const
 {
     return toString(value);
 }
 
 void Int64OptionStorage::initConverter(ConverterType *converter)
 {
-    converter->addConverter<std::string>(&fromStdString<gmx_int64_t>);
+    converter->addConverter<std::string>(&fromStdString<int64_t>);
 }
 
 /********************************************************************

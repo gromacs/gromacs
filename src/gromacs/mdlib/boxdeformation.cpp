@@ -95,7 +95,7 @@ prepareBoxDeformation(const matrix     &initialBox,
 }
 
 BoxDeformation::BoxDeformation(double        timeStep,
-                               gmx_int64_t   initialStep,
+                               int64_t       initialStep,
                                const tensor &deformationTensor,
                                const matrix &referenceBox)
     : timeStep_(timeStep),
@@ -108,7 +108,7 @@ BoxDeformation::BoxDeformation(double        timeStep,
 void
 BoxDeformation::apply(ArrayRef<RVec> x,
                       matrix         box,
-                      gmx_int64_t    step)
+                      int64_t        step)
 {
     matrix updatedBox, invbox, mu;
 

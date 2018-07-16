@@ -95,9 +95,9 @@ namespace
  * \returns a sample index in [0, distr.size() - 1]
  */
 int getSampleFromDistribution(ArrayRef<const double> distr,
-                              gmx_int64_t            seed,
-                              gmx_int64_t            indexSeed0,
-                              gmx_int64_t            indexSeed1)
+                              int64_t                seed,
+                              int64_t                indexSeed0,
+                              int64_t                indexSeed1)
 {
     gmx::ThreeFry2x64<0>               rng(seed, gmx::RandomDomain::AwhBiasing);
     gmx::UniformRealDistribution<real> uniformRealDistr;
@@ -131,8 +131,8 @@ void
 CoordState::sampleUmbrellaGridpoint(const Grid                  &grid,
                                     int                          gridpointIndex,
                                     gmx::ArrayRef<const double>  probWeightNeighbor,
-                                    gmx_int64_t                  step,
-                                    gmx_int64_t                  seed,
+                                    int64_t                      step,
+                                    int64_t                      seed,
                                     int                          indexSeed)
 {
     /* Sample new umbrella reference value from the probability distribution

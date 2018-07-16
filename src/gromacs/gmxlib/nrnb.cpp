@@ -434,7 +434,7 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
 }
 
 void print_perf(FILE *out, double time_per_thread, double time_per_node,
-                gmx_int64_t nsteps, double delta_t,
+                int64_t nsteps, double delta_t,
                 double nbfs, double mflop)
 {
     double wallclocktime;

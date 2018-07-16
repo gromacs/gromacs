@@ -94,7 +94,7 @@ void do_force(FILE                                     *log,
               const t_inputrec                         *inputrec,
               gmx::Awh                                 *awh,
               gmx_enfrot                               *enforcedRotation,
-              gmx_int64_t                               step,
+              int64_t                                   step,
               t_nrnb                                   *nrnb,
               gmx_wallcycle                            *wcycle,
               // TODO top can be const when the group scheme no longer

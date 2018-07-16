@@ -77,9 +77,9 @@ void *save_malloc(const char *name, const char *file, int line, size_t size)
         if ((p = malloc(size)) == nullptr)
         {
             gmx_fatal(errno, __FILE__, __LINE__,
-                      "Not enough memory. Failed to malloc %" GMX_PRId64 " bytes for %s\n"
+                      "Not enough memory. Failed to malloc %" PRId64 " bytes for %s\n"
                       "(called from file %s, line %d)",
-                      (gmx_int64_t)size, name, file, line);
+                      (int64_t)size, name, file, line);
         }
         (void) memset(p, 0, size);
     }
@@ -112,10 +112,10 @@ void *save_calloc(const char *name, const char *file, int line,
         if ((p = malloc((size_t)nelem*(size_t)elsize)) == NULL)
         {
             gmx_fatal(errno, __FILE__, __LINE__,
-                      "Not enough memory. Failed to calloc %" GMX_PRId64
-                      " elements of size %" GMX_PRId64
+                      "Not enough memory. Failed to calloc %" PRId64
+                      " elements of size %" PRId64
                       " for %s\n(called from file %s, line %d)",
-                      (gmx_int64_t)nelem, (gmx_int64_t)elsize,
+                      (int64_t)nelem, (int64_t)elsize,
                       name, file, line);
         }
         memset(p, 0, (size_t) (nelem * elsize));
@@ -123,10 +123,10 @@ void *save_calloc(const char *name, const char *file, int line,
         if ((p = calloc((size_t)nelem, (size_t)elsize)) == nullptr)
         {
             gmx_fatal(errno, __FILE__, __LINE__,
-                      "Not enough memory. Failed to calloc %" GMX_PRId64
-                      " elements of size %" GMX_PRId64
+                      "Not enough memory. Failed to calloc %" PRId64
+                      " elements of size %" PRId64
                       " for %s\n(called from file %s, line %d)",
-                      (gmx_int64_t)nelem, (gmx_int64_t)elsize, name, file, line);
+                      (int64_t)nelem, (int64_t)elsize, name, file, line);
         }
 #endif
     }
@@ -165,9 +165,9 @@ void *save_realloc(const char *name, const char *file, int line, void *ptr,
         if (p == nullptr)
         {
             gmx_fatal(errno, __FILE__, __LINE__,
-                      "Not enough memory. Failed to realloc %" GMX_PRId64 " bytes for %s, %s=%x\n"
+                      "Not enough memory. Failed to realloc %" PRId64 " bytes for %s, %s=%x\n"
                       "(called from file %s, line %d)",
-                      (gmx_int64_t)size, name, name, ptr, file, line);
+                      (int64_t)size, name, name, ptr, file, line);
         }
     }
     return p;

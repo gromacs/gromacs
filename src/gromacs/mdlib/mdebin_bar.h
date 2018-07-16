@@ -64,8 +64,8 @@ typedef struct
     double          dx;                 /* the histogram spacing in kJ/mol. This is the
                                            same for the two histograms? */
     unsigned int    nbins;              /* the number of bins in the histograms*/
-    gmx_int64_t     x0[2];              /* the starting point in units of spacing
-                                               of the histogram */
+    int64_t         x0[2];              /* the starting point in units of spacing
+                                                   of the histogram */
     unsigned int    maxbin[2];          /* highest bin number with data */
 
     int             type;               /* the block type according to dhbtDH, etc. */
@@ -75,8 +75,8 @@ typedef struct
     int             nlambda;            /* length of the lambda vector */
     gmx_bool        written;            /* whether this data has already been written out */
 
-    gmx_int64_t     subblock_meta_l[5]; /* metadata for an mdebin subblock for
-                                               I/O: for histogram counts, etc.*/
+    int64_t         subblock_meta_l[5]; /* metadata for an mdebin subblock for
+                                                   I/O: for histogram counts, etc.*/
     double         *subblock_meta_d;    /* metadata subblock for I/O, used for
                                            communicating doubles (i.e. the lambda
                                            vector) */

@@ -168,7 +168,7 @@ class Awh
                                           const matrix            box,
                                           gmx::ForceWithVirial   *forceWithVirial,
                                           double                  t,
-                                          gmx_int64_t             step,
+                                          int64_t                 step,
                                           gmx_wallcycle          *wallcycle,
                                           FILE                   *fplog);
 
@@ -211,7 +211,7 @@ class Awh
          * \param[in]     step  The current MD step.
          * \param[in,out] fr    Energy data frame.
          */
-        void writeToEnergyFrame(gmx_int64_t  step,
+        void writeToEnergyFrame(int64_t      step,
                                 t_enxframe  *fr) const;
 
         /*! \brief Returns string "AWH" for registering AWH as an external potential provider with the pull module.
@@ -237,11 +237,11 @@ class Awh
          *
          * \param[in]     step             The current MD step.
          */
-        bool isOutputStep(gmx_int64_t step) const;
+        bool isOutputStep(int64_t step) const;
 
     private:
         std::vector<BiasCoupledToSystem> biasCoupledToSystem_; /**< AWH biases and definitions of their coupling to the system. */
-        const gmx_int64_t                seed_;                /**< Random seed for MC jumping with umbrella type bias potential. */
+        const int64_t                    seed_;                /**< Random seed for MC jumping with umbrella type bias potential. */
         const int                        nstout_;              /**< Interval in steps for writing to energy file. */
         const t_commrec                 *commRecord_;          /**< Pointer to the communication record. */
         const gmx_multisim_t            *multiSimRecord_;      /**< Handler for multi-simulations. */

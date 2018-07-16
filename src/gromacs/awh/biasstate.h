@@ -268,8 +268,8 @@ class BiasState
                             const Grid                   &grid,
                             gmx::ArrayRef<const double>   probWeightNeighbor,
                             gmx::ArrayRef<double>         biasForce,
-                            gmx_int64_t                   step,
-                            gmx_int64_t                   seed,
+                            int64_t                       step,
+                            int64_t                       seed,
                             int                           indexSeed);
 
     private:
@@ -411,7 +411,7 @@ class BiasState
                                                       const t_commrec              *commRecord,
                                                       const gmx_multisim_t         *ms,
                                                       double                        t,
-                                                      gmx_int64_t                   step,
+                                                      int64_t                       step,
                                                       FILE                         *fplog,
                                                       std::vector<int>             *updateList);
 

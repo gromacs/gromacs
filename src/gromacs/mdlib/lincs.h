@@ -94,7 +94,7 @@ void set_lincs(const t_idef &idef, const t_mdatoms &md,
 bool
 constrain_lincs(bool computeRmsd,
                 const t_inputrec &ir,
-                gmx_int64_t step,
+                int64_t step,
                 Lincs *lincsd, const t_mdatoms &md,
                 const t_commrec *cr,
                 const gmx_multisim_t &ms,

@@ -244,7 +244,7 @@ static void histogram(const char *distfile, real binwidth, int n, int nset, real
     int            i, s;
     double         minval, maxval;
     int            nbin;
-    gmx_int64_t   *histo;
+    int64_t       *histo;
 
     minval = val[0][0];
     maxval = val[0][0];

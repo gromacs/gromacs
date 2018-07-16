@@ -147,9 +147,9 @@ gmx_numzero(double a);
  * \return False iff overflow occurred
  */
 gmx_bool
-check_int_multiply_for_overflow(gmx_int64_t  a,
-                                gmx_int64_t  b,
-                                gmx_int64_t *result);
+check_int_multiply_for_overflow(int64_t  a,
+                                int64_t  b,
+                                int64_t *result);
 
 /*! \brief Find greatest common divisor of two numbers
  *

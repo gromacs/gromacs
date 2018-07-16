@@ -371,9 +371,9 @@ int get_eint(std::vector<t_inpfile> *inp, const char *name, int def,
 }
 
 /* Note that sanitizing the trailing part of inp[ii].value was the responsibility of read_inpfile() */
-gmx_int64_t get_eint64(std::vector<t_inpfile> *inp,
-                       const char *name, gmx_int64_t def,
-                       warninp_t wi)
+int64_t get_eint64(std::vector<t_inpfile> *inp,
+                   const char *name, int64_t def,
+                   warninp_t wi)
 {
     std::vector<t_inpfile> &inpRef = *inp;
     char                    buf[32], *ptr, warn_buf[STRLEN];
@@ -382,14 +382,14 @@ gmx_int64_t get_eint64(std::vector<t_inpfile> *inp,
 
     if (ii == -1)
     {
-        sprintf(buf, "%" GMX_PRId64, def);
+        sprintf(buf, "%" PRId64, def);
         inpRef.back().value_.assign(buf);
 
         return def;
     }
     else
     {
-        gmx_int64_t ret = str_to_int64_t(inpRef[ii].value_.c_str(), &ptr);
+        int64_t ret = str_to_int64_t(inpRef[ii].value_.c_str(), &ptr);
         if (*ptr != '\0')
         {
             sprintf(warn_buf, "Right hand side '%s' for parameter '%s' in parameter file is not an integer value\n", inpRef[ii].value_.c_str(), inpRef[ii].name_.c_str());
