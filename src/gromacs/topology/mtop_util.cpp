@@ -1034,8 +1034,9 @@ static void fillMoleculeIndices(const gmx_mtop_t  &mtop,
         for (int mol = 0; mol < molb.nmol; mol++)
         {
             globalAtomIndex       += numAtomsPerMolecule;
-            globalMolIndex        += 1;
             index[globalMolIndex]  = globalAtomIndex;
+            globalMolIndex        += 1;
+
         }
     }
 }
@@ -1064,6 +1065,7 @@ static t_block gmx_mtop_molecules_t_block(const gmx_mtop_t &mtop)
 {
     t_block mols;
 
+    //this index shift is needed for chains to be made properly
     mols.nr           = gmx_mtop_num_molecules(mtop);
     mols.nalloc_index = mols.nr + 1;
     snew(mols.index, mols.nalloc_index);
