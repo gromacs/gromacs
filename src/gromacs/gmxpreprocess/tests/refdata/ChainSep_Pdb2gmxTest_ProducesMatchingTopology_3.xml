@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <GroFile Name="Header">
+        <String Name="Title">Protein (first fragment of regressiontests/complex/aminoacids.gro)</String>
+        <Int Name="Number of atoms">258</Int>
+      </GroFile>
+    </File>
+    <File Name="-p">
+      <String Name="Contents"><![CDATA[
+;
+;
+;	This is a standalone topology file
+;
+;	Created by:
+;	
+;	Command line:
+;	Force field was read from the standard GROMACS share directory.
+;
+
+; Include forcefield parameters
+#include "charmm27.ff/forcefield.itp"
+
+; Include chain topologies
+#include "ChainSep_Pdb2gmxTest_ProducesMatchingTopology_3_topol_Protein_chain_A.itp"
+#include "ChainSep_Pdb2gmxTest_ProducesMatchingTopology_3_topol_Protein_chain_B.itp"
+#include "ChainSep_Pdb2gmxTest_ProducesMatchingTopology_3_topol_Protein_chain_C.itp"
+
+; Include water topology
+#include "charmm27.ff/tip3p.itp"
+
+#ifdef POSRES_WATER
+; Position restraint for each water oxygen
+[ position_restraints ]
+;  i funct       fcx        fcy        fcz
+   1    1       1000       1000       1000
+#endif
+
+; Include topology for ions
+#include "charmm27.ff/ions.itp"
+
+[ system ]
+; Name
+Protein (first fragment of regressiontests/complex/aminoacids.gro)
+
+[ molecules ]
+; Compound        #mols
+Protein_chain_A     1
+Protein_chain_B     1
+Protein_chain_C     1
+]]></String>
+    </File>
+  </OutputFiles>
+</ReferenceData>

@@ -1133,7 +1133,7 @@ modify_chain_numbers(t_atoms *       pdba,
 
     SplittingType splitting = getSplittingType(chainsep);
 
-    /* The default chain enumeration is based on TER records only, which is reflected in chainnum below */
+    /* The default chain enumeration is id_or_ter */
 
     old_prev_chainid  = '?';
     old_prev_chainnum = -1;
