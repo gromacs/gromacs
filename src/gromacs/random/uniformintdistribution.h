@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -164,7 +164,7 @@ class UniformIntDistribution
         result_type
         operator()(Rng &g, const param_type &param)
         {
-            static_assert(sizeof(typename Rng::result_type) >= sizeof(gmx_uint32_t),
+            static_assert(sizeof(typename Rng::result_type) >= sizeof(uint32_t),
                           "The random engine result_type should be 32 or 64 bits");
 
             result_type  range = param.b() - param.a();
@@ -181,9 +181,9 @@ class UniformIntDistribution
             }
             else
             {
-                if (sizeof(result_type) == sizeof(gmx_uint32_t))
+                if (sizeof(result_type) == sizeof(uint32_t))
                 {
-                    rangeBits = log2I(static_cast<gmx_uint32_t>(range));
+                    rangeBits = log2I(static_cast<uint32_t>(range));
                 }
                 else
                 {
@@ -196,14 +196,14 @@ class UniformIntDistribution
             {
                 if (savedRandomBitsLeft_ < rangeBits)
                 {
-                    savedRandomBits_     = static_cast<gmx_uint64_t>(g());
+                    savedRandomBits_     = static_cast<uint64_t>(g());
                     savedRandomBitsLeft_ = std::numeric_limits<typename Rng::result_type>::digits;
 
-                    if (sizeof(typename Rng::result_type) == sizeof(gmx_uint32_t))
+                    if (sizeof(typename Rng::result_type) == sizeof(uint32_t))
                     {
-                        savedRandomBits_    <<= std::numeric_limits<gmx_uint32_t>::digits;
+                        savedRandomBits_    <<= std::numeric_limits<uint32_t>::digits;
                         savedRandomBits_     |= g();
-                        savedRandomBitsLeft_ += std::numeric_limits<gmx_uint32_t>::digits;
+                        savedRandomBitsLeft_ += std::numeric_limits<uint32_t>::digits;
                     }
                 }
                 result                   = savedRandomBits_;
@@ -255,7 +255,7 @@ class UniformIntDistribution
         /*! \brief Internal value for parameters, can be overridden at generation time. */
         param_type      param_;
         /*! \brief Saved output from random engine, shifted tableBits right each time */
-        gmx_uint64_t    savedRandomBits_;
+        uint64_t        savedRandomBits_;
         /*! \brief Number of valid bits remaining i savedRandomBits_ */
         unsigned int    savedRandomBitsLeft_;
 

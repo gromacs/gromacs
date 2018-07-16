@@ -136,7 +136,7 @@ TrajectoryFrame::TrajectoryFrame(const t_trxframe &frame)
 
 std::string TrajectoryFrame::frameName() const
 {
-    return formatString("Time %f Step %" GMX_PRId64, frame_.time, frame_.step);
+    return formatString("Time %f Step %" PRId64, frame_.time, frame_.step);
 }
 
 std::int64_t TrajectoryFrame::step() const

@@ -227,7 +227,7 @@ static gmx_bool CheckHistogramRatios(int nhisto, const real *histo, real ratio)
     return bIfFlat;
 }
 
-static gmx_bool CheckIfDoneEquilibrating(int nlim, t_expanded *expand, df_history_t *dfhist, gmx_int64_t step)
+static gmx_bool CheckIfDoneEquilibrating(int nlim, t_expanded *expand, df_history_t *dfhist, int64_t step)
 {
 
     int      i, totalsamples;
@@ -336,7 +336,7 @@ static gmx_bool CheckIfDoneEquilibrating(int nlim, t_expanded *expand, df_histor
 }
 
 static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist,
-                              int fep_state, real *scaled_lamee, real *weighted_lamee, gmx_int64_t step)
+                              int fep_state, real *scaled_lamee, real *weighted_lamee, int64_t step)
 {
     gmx_bool  bSufficientSamples;
     int       i;
@@ -702,7 +702,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
 }
 
 static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, int fep_state, real *weighted_lamee, double *p_k,
-                           gmx_int64_t seed, gmx_int64_t step)
+                           int64_t seed, int64_t step)
 {
     /* Choose new lambda value, and update transition matrix */
 
@@ -992,7 +992,7 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
 
 /* print out the weights to the log, along with current state */
 void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, t_simtemp *simtemp, df_history_t *dfhist,
-                               int fep_state, int frequency, gmx_int64_t step)
+                               int fep_state, int frequency, int64_t step)
 {
     int         nlim, i, ifep, jfep;
     real        dw, dg, dv, Tprint;
@@ -1160,7 +1160,7 @@ void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand,
 
 int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
                              t_state *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
-                             gmx_int64_t step,
+                             int64_t step,
                              rvec *v, t_mdatoms *mdatoms)
 /* Note that the state variable is only needed for simulated tempering, not
    Hamiltonian expanded ensemble.  May be able to remove it after integrator refactoring. */

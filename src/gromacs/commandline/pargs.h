@@ -99,7 +99,7 @@ typedef struct
         /** Integer value for etINT. */
         int             *i;
         /** Integer value for etINT64. */
-        gmx_int64_t     *is;
+        int64_t         *is;
         /** Real value for etREAL and etTIME. */
         real            *r;
         /*! \brief

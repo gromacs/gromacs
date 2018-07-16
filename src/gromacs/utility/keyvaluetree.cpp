@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -243,9 +243,9 @@ class CompareHelper
             {
                 return value1.cast<int>() == value2.cast<int>();
             }
-            else if (value1.isType<gmx_int64_t>())
+            else if (value1.isType<int64_t>())
             {
-                return value1.cast<gmx_int64_t>() == value2.cast<gmx_int64_t>();
+                return value1.cast<int64_t>() == value2.cast<int64_t>();
             }
             else if (value1.isType<double>())
             {

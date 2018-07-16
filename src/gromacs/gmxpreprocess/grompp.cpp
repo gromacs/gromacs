@@ -1772,7 +1772,7 @@ int gmx_grompp(int argc, char *argv[])
     if (ir->ld_seed == -1)
     {
         ir->ld_seed = static_cast<int>(gmx::makeRandomSeed());
-        fprintf(stderr, "Setting the LD random seed to %" GMX_PRId64 "\n", ir->ld_seed);
+        fprintf(stderr, "Setting the LD random seed to %" PRId64 "\n", ir->ld_seed);
     }
 
     if (ir->expandedvals->lmc_seed == -1)

@@ -163,7 +163,7 @@ void init_IMD(t_inputrec *ir, const t_commrec *cr,
  *
  * \returns            Whether or not we have to do IMD communication at this step.
  */
-gmx_bool do_IMD(gmx_bool bIMD, gmx_int64_t step, const t_commrec *cr,
+gmx_bool do_IMD(gmx_bool bIMD, int64_t step, const t_commrec *cr,
                 gmx_bool bNS,
                 matrix box, rvec x[], t_inputrec *ir, double t,
                 gmx_wallcycle *wcycle);
@@ -203,7 +203,7 @@ void IMD_apply_forces(gmx_bool bIMD, t_IMD *imd,
  *
  */
 void IMD_fill_energy_record(gmx_bool bIMD, t_IMD *imd, gmx_enerdata_t *enerd,
-                            gmx_int64_t step, gmx_bool bHaveNewEnergies);
+                            int64_t step, gmx_bool bHaveNewEnergies);
 
 
 /*! \brief Send positions and energies to the client.
@@ -226,7 +226,7 @@ void IMD_send_positions(t_IMD *imd);
  */
 void IMD_prep_energies_send_positions(gmx_bool bIMD, gmx_bool bIMDstep,
                                       t_IMD *imd, gmx_enerdata_t *enerd,
-                                      gmx_int64_t step, gmx_bool bHaveNewEnergies,
+                                      int64_t step, gmx_bool bHaveNewEnergies,
                                       gmx_wallcycle *wcycle);
 
 /*! \brief Finalize IMD and do some cleaning up.

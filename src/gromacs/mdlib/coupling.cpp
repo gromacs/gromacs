@@ -363,7 +363,7 @@ static void calcParrinelloRahmanInvMass(const t_inputrec *ir, const matrix box,
     }
 }
 
-void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
+void parrinellorahman_pcoupl(FILE *fplog, int64_t step,
                              const t_inputrec *ir, real dt, const tensor pres,
                              tensor box, tensor box_rel, tensor boxv,
                              tensor M, matrix mu, gmx_bool bFirstStep)
@@ -548,7 +548,7 @@ void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
     mmul_ur0(invbox, t1, mu);
 }
 
-void berendsen_pcoupl(FILE *fplog, gmx_int64_t step,
+void berendsen_pcoupl(FILE *fplog, int64_t step,
                       const t_inputrec *ir, real dt,
                       const tensor pres, const matrix box,
                       const matrix force_vir, const matrix constraint_vir,
@@ -780,7 +780,7 @@ void berendsen_tcoupl(const t_inputrec *ir, const gmx_ekindata_t *ekind, real dt
     }
 }
 
-void andersen_tcoupl(t_inputrec *ir, gmx_int64_t step,
+void andersen_tcoupl(t_inputrec *ir, int64_t step,
                      const t_commrec *cr, const t_mdatoms *md, t_state *state, real rate, const gmx_bool *randomize, const real *boltzfac)
 {
     const int                                 *gatindex = (DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
@@ -852,7 +852,7 @@ void nosehoover_tcoupl(t_grpopts *opts, gmx_ekindata_t *ekind, real dt,
     }
 }
 
-void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
+void trotter_update(t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
                     gmx_enerdata_t *enerd, t_state *state,
                     tensor vir, t_mdatoms *md,
                     t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno)
@@ -861,7 +861,7 @@ void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
     int             n, i, d, ngtc, gc = 0, t;
     t_grp_tcstat   *tcstat;
     t_grpopts      *opts;
-    gmx_int64_t     step_eff;
+    int64_t         step_eff;
     real            dt;
     double         *scalefac, dtc;
     int            *trotter_seq;
@@ -1474,7 +1474,7 @@ static real vrescale_sumnoises(real                            nn,
 }
 
 static real vrescale_resamplekin(real kk, real sigma, real ndeg, real taut,
-                                 gmx_int64_t step, gmx_int64_t seed)
+                                 int64_t step, int64_t seed)
 {
 /*
  * Generates a new value for the kinetic energy,
@@ -1509,7 +1509,7 @@ static real vrescale_resamplekin(real kk, real sigma, real ndeg, real taut,
     return ekin_new;
 }
 
-void vrescale_tcoupl(t_inputrec *ir, gmx_int64_t step,
+void vrescale_tcoupl(t_inputrec *ir, int64_t step,
                      gmx_ekindata_t *ekind, real dt,
                      double therm_integral[])
 {

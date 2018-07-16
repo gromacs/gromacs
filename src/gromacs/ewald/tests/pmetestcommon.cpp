@@ -89,12 +89,12 @@ bool pmeSupportsInputForMode(const t_inputrec *inputRec, CodePath mode)
     return implemented;
 }
 
-gmx_uint64_t getSplineModuliDoublePrecisionUlps(int splineOrder)
+uint64_t getSplineModuliDoublePrecisionUlps(int splineOrder)
 {
     /* Arbitrary ulp tolerance for sine/cosine implementation. It's
      * hard to know what to pick without testing lots of
      * implementations. */
-    const gmx_uint64_t sineUlps = 10;
+    const uint64_t sineUlps = 10;
     return 4 * (splineOrder - 2) + 2 * sineUlps * splineOrder;
 }
 

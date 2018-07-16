@@ -59,8 +59,8 @@ struct t_energy
 struct t_enxframe
 {
     double          t;            /* Timestamp of this frame	                     */
-    gmx_int64_t     step;         /* MD step	                             */
-    gmx_int64_t     nsteps;       /* The number of steps between frames            */
+    int64_t         step;         /* MD step	                             */
+    int64_t         nsteps;       /* The number of steps between frames            */
     double          dt;           /* The MD time step                              */
     int             nsum;         /* The number of terms for the sums in ener      */
     int             nre;          /* Number of energies			     */

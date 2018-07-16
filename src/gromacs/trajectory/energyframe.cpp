@@ -70,7 +70,7 @@ EnergyFrame::EnergyFrame(const t_enxframe &enxframe,
 
 std::string EnergyFrame::frameName() const
 {
-    return formatString("Time %f Step %" GMX_PRId64, time_, step_);
+    return formatString("Time %f Step %" PRId64, time_, step_);
 }
 
 const real &EnergyFrame::at(const std::string &name) const

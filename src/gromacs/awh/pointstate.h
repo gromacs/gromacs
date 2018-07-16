@@ -295,7 +295,7 @@ class PointState
          * \returns true if at least one update was applied.
          */
         bool performPreviouslySkippedUpdates(const BiasParams &params,
-                                             gmx_int64_t       numUpdates,
+                                             int64_t           numUpdates,
                                              double            weighthistScaling,
                                              double            logPmfSumScaling)
         {
@@ -307,8 +307,8 @@ class PointState
             }
 
             /* The most current past update */
-            gmx_int64_t lastUpdateIndex   = numUpdates;
-            gmx_int64_t numUpdatesSkipped = lastUpdateIndex - lastUpdateIndex_;
+            int64_t lastUpdateIndex   = numUpdates;
+            int64_t numUpdatesSkipped = lastUpdateIndex - lastUpdateIndex_;
 
             if (numUpdatesSkipped == 0)
             {
@@ -339,7 +339,7 @@ class PointState
          * \param[in] logPmfSumScaling    Log of the scaling factor for the PMF histogram.
          */
         void updateWithNewSampling(const BiasParams &params,
-                                   gmx_int64_t       numUpdates,
+                                   int64_t           numUpdates,
                                    double            weighthistScaling,
                                    double            logPmfSumScaling)
         {
@@ -503,17 +503,17 @@ class PointState
         }
 
     private:
-        double      bias_;                  /**< Current biasing function estimate */
-        double      freeEnergy_;            /**< Current estimate of the convolved free energy/PMF. */
-        double      target_;                /**< Current target distribution, normalized to 1 */
-        double      targetConstantWeight_;  /**< Constant target weight, from user data. */
-        double      weightSumIteration_;    /**< Accumulated weight this iteration; note: only contains data for this Bias, even when sharing biases. */
-        double      weightSumTot_;          /**< Accumulated weights, never reset */
-        double      weightSumRef_;          /**< The reference weight histogram determining the free energy updates */
-        gmx_int64_t lastUpdateIndex_;       /**< The last update that was performed at this point, in units of number of updates. */
-        double      logPmfSum_;             /**< Logarithm of the PMF histogram */
-        double      numVisitsIteration_;    /**< Visits to this bin this iteration; note: only contains data for this Bias, even when sharing biases. */
-        double      numVisitsTot_;          /**< Accumulated visits to this bin */
+        double      bias_;                 /**< Current biasing function estimate */
+        double      freeEnergy_;           /**< Current estimate of the convolved free energy/PMF. */
+        double      target_;               /**< Current target distribution, normalized to 1 */
+        double      targetConstantWeight_; /**< Constant target weight, from user data. */
+        double      weightSumIteration_;   /**< Accumulated weight this iteration; note: only contains data for this Bias, even when sharing biases. */
+        double      weightSumTot_;         /**< Accumulated weights, never reset */
+        double      weightSumRef_;         /**< The reference weight histogram determining the free energy updates */
+        int64_t     lastUpdateIndex_;      /**< The last update that was performed at this point, in units of number of updates. */
+        double      logPmfSum_;            /**< Logarithm of the PMF histogram */
+        double      numVisitsIteration_;   /**< Visits to this bin this iteration; note: only contains data for this Bias, even when sharing biases. */
+        double      numVisitsTot_;         /**< Accumulated visits to this bin */
 };
 
 }      // namespace gmx

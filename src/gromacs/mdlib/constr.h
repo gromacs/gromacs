@@ -161,7 +161,7 @@ class Constraints
          */
         bool apply(bool                  bLog,
                    bool                  bEner,
-                   gmx_int64_t           step,
+                   int64_t               step,
                    int                   delta_step,
                    real                  step_scaling,
                    rvec                 *x,

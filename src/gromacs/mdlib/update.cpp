@@ -111,14 +111,14 @@ struct gmx_update_t
     PaddedRVecVector  xp;
 
     /* Variables for the deform algorithm */
-    gmx_int64_t       deformref_step;
+    int64_t           deformref_step;
     matrix            deformref_box;
 
     //! Box deformation handler (or nullptr if inactive).
     gmx::BoxDeformation *deform;
 };
 
-static bool isTemperatureCouplingStep(gmx_int64_t step, const t_inputrec *ir)
+static bool isTemperatureCouplingStep(int64_t step, const t_inputrec *ir)
 {
     /* We should only couple after a step where energies were determined (for leapfrog versions)
        or the step energies are determined, for velocity verlet versions */
@@ -136,7 +136,7 @@ static bool isTemperatureCouplingStep(gmx_int64_t step, const t_inputrec *ir)
             do_per_step(step + ir->nsttcouple - offset, ir->nsttcouple));
 }
 
-static bool isPressureCouplingStep(gmx_int64_t step, const t_inputrec *ir)
+static bool isPressureCouplingStep(int64_t step, const t_inputrec *ir)
 {
     GMX_ASSERT(ir->epc != epcMTTK, "MTTK pressure coupling is not handled here");
 
@@ -522,7 +522,7 @@ updateMDLeapfrogGeneral(int                         start,
 /*! \brief Handles the Leap-frog MD x and v integration */
 static void do_update_md(int                         start,
                          int                         nrend,
-                         gmx_int64_t                 step,
+                         int64_t                     step,
                          real                        dt,
                          const t_inputrec          * ir,
                          const t_mdatoms           * md,
@@ -907,7 +907,7 @@ doSDUpdateGeneral(gmx_stochd_t *sd,
                   const unsigned short cFREEZE[], const unsigned short cACC[],
                   const unsigned short cTC[],
                   const rvec x[], rvec xprime[], rvec v[], const rvec f[],
-                  gmx_int64_t step, int seed, const int *gatindex)
+                  int64_t step, int seed, const int *gatindex)
 {
     if (updateType != SDUpdate::FrictionAndNoiseOnly)
     {
@@ -992,7 +992,7 @@ static void do_update_bd(int start, int nrend, real dt,
                          const unsigned short cFREEZE[], const unsigned short cTC[],
                          const rvec x[], rvec xprime[], rvec v[],
                          const rvec f[], real friction_coefficient,
-                         const real *rf, gmx_int64_t step, int seed,
+                         const real *rf, int64_t step, int seed,
                          const int* gatindex)
 {
     /* note -- these appear to be full step velocities . . .  */
@@ -1338,7 +1338,7 @@ void restore_ekinstate_from_state(const t_commrec *cr,
     }
 }
 
-void update_tcouple(gmx_int64_t       step,
+void update_tcouple(int64_t           step,
                     t_inputrec       *inputrec,
                     t_state          *state,
                     gmx_ekindata_t   *ekind,
@@ -1418,7 +1418,7 @@ static void getThreadAtomRange(int numThreads, int threadIndex, int numAtoms,
 }
 
 void update_pcouple_before_coordinates(FILE             *fplog,
-                                       gmx_int64_t       step,
+                                       int64_t           step,
                                        const t_inputrec *inputrec,
                                        t_state          *state,
                                        matrix            parrinellorahmanMu,
@@ -1439,7 +1439,7 @@ void update_pcouple_before_coordinates(FILE             *fplog,
     }
 }
 
-void constrain_velocities(gmx_int64_t                    step,
+void constrain_velocities(int64_t                        step,
                           real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
                           t_state                       *state,
                           tensor                         vir_part,
@@ -1485,7 +1485,7 @@ void constrain_velocities(gmx_int64_t                    step,
     }
 }
 
-void constrain_coordinates(gmx_int64_t                    step,
+void constrain_coordinates(int64_t                        step,
                            real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
                            t_state                       *state,
                            tensor                         vir_part,
@@ -1527,7 +1527,7 @@ void constrain_coordinates(gmx_int64_t                    step,
 }
 
 void
-update_sd_second_half(gmx_int64_t                    step,
+update_sd_second_half(int64_t                        step,
                       real                          *dvdlambda,   /* the contribution to be added to the bonded interactions */
                       const t_inputrec              *inputrec,    /* input record and box stuff	*/
                       t_mdatoms                     *md,
@@ -1688,7 +1688,7 @@ void finish_update(const t_inputrec              *inputrec,  /* input record and
 }
 
 void update_pcouple_after_coordinates(FILE             *fplog,
-                                      gmx_int64_t       step,
+                                      int64_t           step,
                                       const t_inputrec *inputrec,
                                       const t_mdatoms  *md,
                                       const matrix      pressure,
@@ -1785,7 +1785,7 @@ void update_pcouple_after_coordinates(FILE             *fplog,
     }
 }
 
-void update_coords(gmx_int64_t                    step,
+void update_coords(int64_t                        step,
                    t_inputrec                    *inputrec, /* input record and box stuff	*/
                    t_mdatoms                     *md,
                    t_state                       *state,
@@ -1931,7 +1931,7 @@ void update_coords(gmx_int64_t                    step,
 
 }
 
-extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr,
+extern gmx_bool update_randomize_velocities(t_inputrec *ir, int64_t step, const t_commrec *cr,
                                             t_mdatoms *md, t_state *state, gmx_update_t *upd, gmx::Constraints *constr)
 {
 

@@ -99,13 +99,13 @@ void global_stat(gmx_global_stat_t gs,
                  gmx_bool bSumEkinhOld, int flags);
 /* All-reduce energy-like quantities over cr->mpi_comm_mysim */
 
-int do_per_step(gmx_int64_t step, gmx_int64_t nstep);
+int do_per_step(int64_t step, int64_t nstep);
 /* Return TRUE if io should be done */
 
 /* ROUTINES from sim_util.c */
 
 void print_time(FILE *out, gmx_walltime_accounting_t walltime_accounting,
-                gmx_int64_t step, t_inputrec *ir, const t_commrec *cr);
+                int64_t step, t_inputrec *ir, const t_commrec *cr);
 
 /*! \brief Print date, time, MPI rank and a description of this point
  * in time.

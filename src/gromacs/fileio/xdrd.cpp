@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -92,15 +92,15 @@ int xdr3drcoord(XDR *xdrs, real *fp, int *size, real *precision)
 #endif
 }
 
-int xdr_int64(XDR *xdrs, gmx_int64_t *i)
+int xdr_int64(XDR *xdrs, int64_t *i)
 {
     /* This routine stores values compatible with xdr_int64_t */
 
-    int imaj, imin;
-    int ret;
+    int                  imaj, imin;
+    int                  ret;
 
-    static const gmx_int64_t two_p32_m1 = 0xFFFFFFFF;
-    gmx_int64_t              imaj64, imin64;
+    static const int64_t two_p32_m1 = 0xFFFFFFFF;
+    int64_t              imaj64, imin64;
 
     imaj64 = ((*i)>>32) & two_p32_m1;
     imin64 = (*i) & two_p32_m1;
@@ -109,7 +109,7 @@ int xdr_int64(XDR *xdrs, gmx_int64_t *i)
     ret    = xdr_int(xdrs, &imaj);
     ret   |= xdr_int(xdrs, &imin);
 
-    *i = ((static_cast<gmx_int64_t>(imaj) << 32) | (static_cast<gmx_int64_t>(imin) & two_p32_m1));
+    *i = ((static_cast<int64_t>(imaj) << 32) | (static_cast<int64_t>(imin) & two_p32_m1));
 
     return ret;
 }

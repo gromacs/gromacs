@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,7 @@ namespace gmx
 namespace
 {
 
-class ThreeFry2x64Test : public ::testing::TestWithParam<std::vector<gmx_uint64_t> >
+class ThreeFry2x64Test : public ::testing::TestWithParam<std::vector<uint64_t> >
 {
 };
 
@@ -63,8 +63,8 @@ TEST_P(ThreeFry2x64Test, Default)
 {
     gmx::test::TestReferenceData       data;
     gmx::test::TestReferenceChecker    checker(data.rootChecker());
-    const std::vector<gmx_uint64_t>    input = GetParam();
-    std::vector<gmx_uint64_t>          result;
+    const std::vector<uint64_t>        input = GetParam();
+    std::vector<uint64_t>              result;
 
     gmx::ThreeFry2x64<0>               rng(input[2], input[3]);
     rng.restart(input[0], input[1]);
@@ -79,8 +79,8 @@ TEST_P(ThreeFry2x64Test, Fast)
 {
     gmx::test::TestReferenceData       data;
     gmx::test::TestReferenceChecker    checker(data.rootChecker());
-    const std::vector<gmx_uint64_t>    input = GetParam();
-    std::vector<gmx_uint64_t>          result;
+    const std::vector<uint64_t>        input = GetParam();
+    std::vector<uint64_t>              result;
 
     gmx::ThreeFry2x64Fast<0>           rng(input[2], input[3]);
     rng.restart(input[0], input[1]);
@@ -95,8 +95,8 @@ TEST_P(ThreeFry2x64Test, Using40Rounds)
 {
     gmx::test::TestReferenceData       data;
     gmx::test::TestReferenceChecker    checker(data.rootChecker());
-    const std::vector<gmx_uint64_t>    input = GetParam();
-    std::vector<gmx_uint64_t>          result;
+    const std::vector<uint64_t>        input = GetParam();
+    std::vector<uint64_t>              result;
 
     gmx::ThreeFry2x64General<40, 0>    rng(input[2], input[3]);
     rng.restart(input[0], input[1]);
@@ -114,9 +114,9 @@ TEST_P(ThreeFry2x64Test, Using40Rounds)
  *  The 2x64 flavors of ThreeFry64 will use the first four values, while
  *  the 4x64 version uses all eight.
  */
-const std::vector<gmx_uint64_t> bitsZero {{
-                                              0, 0, 0, 0
-                                          }};
+const std::vector<uint64_t> bitsZero {{
+                                          0, 0, 0, 0
+                                      }};
 
 
 /*! \brief Constant array of integers with all bits set to one.
@@ -125,10 +125,10 @@ const std::vector<gmx_uint64_t> bitsZero {{
  *  The 2x64 flavors of ThreeFry64 will use the first four values, while
  *  the 4x64 version uses all eight.
  */
-const std::vector<gmx_uint64_t> bitsOne {{
-                                             0xFFFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL,
-                                             0xFFFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL
-                                         }};
+const std::vector<uint64_t> bitsOne {{
+                                         0xFFFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL,
+                                         0xFFFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL
+                                     }};
 
 /*! \brief Constant array of integers with bitpattern from Pi.
  *
@@ -136,10 +136,10 @@ const std::vector<gmx_uint64_t> bitsOne {{
  *  The 2x64 flavors of ThreeFry64 will use the first four values, while
  *  the 4x64 version uses all eight.
  */
-const std::vector<gmx_uint64_t> bitsPi {{
-                                            0x243f6a8885a308d3ULL, 0x13198a2e03707344ULL,
-                                            0xa4093822299f31d0ULL, 0x082efa98ec4e6c89ULL
-                                        }};
+const std::vector<uint64_t> bitsPi {{
+                                        0x243f6a8885a308d3ULL, 0x13198a2e03707344ULL,
+                                        0xa4093822299f31d0ULL, 0x082efa98ec4e6c89ULL
+                                    }};
 
 // Test the known ansers for the ThreeFry random function when the argument
 // is (1) all zero, (2) all ones, (3) the bits of pi, for a bunch of different flavors of ThreeFry.
@@ -172,7 +172,7 @@ TEST_F(ThreeFry2x64Test, InternalCounterSequence)
     // 66 bits of internal counter means the first four increments (giving 2*4=8 results)
     // correspond to incrementing word 0, and then we should carry over to word 1.
     gmx::ThreeFry2x64<66>        rngA(123456, gmx::RandomDomain::Other);
-    std::vector<gmx_uint64_t>    result;
+    std::vector<uint64_t>        result;
 
     for (int i = 0; i < 16; i++)
     {

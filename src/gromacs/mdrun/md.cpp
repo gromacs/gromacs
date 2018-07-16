@@ -142,8 +142,8 @@ using gmx::SimulationSignaller;
 
 //! Resets all the counters.
 static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
-                               gmx_int64_t step,
-                               gmx_int64_t *step_rel, t_inputrec *ir,
+                               int64_t step,
+                               int64_t *step_rel, t_inputrec *ir,
                                gmx_wallcycle_t wcycle, t_nrnb *nrnb,
                                gmx_walltime_accounting_t walltime_accounting,
                                struct nonbonded_verlet_t *nbv,
@@ -268,7 +268,7 @@ void gmx::Integrator::do_md()
     // will go away eventually.
     t_inputrec       *ir   = inputrec;
     gmx_mdoutf       *outf = nullptr;
-    gmx_int64_t       step, step_rel;
+    int64_t           step, step_rel;
     double            elapsed_time;
     double            t, t0, lam0[efptNR];
     gmx_bool          bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
@@ -1855,7 +1855,7 @@ void gmx::Integrator::do_md()
                  * until after load balancing completes,
                  * e.g. https://gerrit.gromacs.org/#/c/4964/2 */
                 gmx_fatal(FARGS, "PME tuning was still active when attempting to "
-                          "reset mdrun counters at step %" GMX_PRId64 ". Try "
+                          "reset mdrun counters at step %" PRId64 ". Try "
                           "resetting counters later in the run, e.g. with gmx "
                           "mdrun -resetstep.", step);
             }

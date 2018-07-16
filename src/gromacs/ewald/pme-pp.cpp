@@ -96,7 +96,7 @@ static void gmx_pme_send_coeffs_coords(const t_commrec *cr, unsigned int flags,
                                        matrix box, rvec gmx_unused *x,
                                        real lambda_q, real lambda_lj,
                                        int maxshift_x, int maxshift_y,
-                                       gmx_int64_t step)
+                                       int64_t step)
 {
     gmx_domdec_t         *dd;
     gmx_pme_comm_n_box_t *cnb;
@@ -248,7 +248,7 @@ void gmx_pme_send_parameters(const t_commrec *cr,
 void gmx_pme_send_coordinates(const t_commrec *cr, matrix box, rvec *x,
                               real lambda_q, real lambda_lj,
                               gmx_bool bEnerVir,
-                              gmx_int64_t step, gmx_wallcycle *wcycle)
+                              int64_t step, gmx_wallcycle *wcycle)
 {
     wallcycle_start(wcycle, ewcPP_PMESENDX);
 
@@ -298,7 +298,7 @@ void gmx_pme_send_switchgrid(const t_commrec *cr,
 #endif
 }
 
-void gmx_pme_send_resetcounters(const t_commrec gmx_unused *cr, gmx_int64_t gmx_unused step)
+void gmx_pme_send_resetcounters(const t_commrec gmx_unused *cr, int64_t gmx_unused step)
 {
 #if GMX_MPI
     gmx_pme_comm_n_box_t cnb;

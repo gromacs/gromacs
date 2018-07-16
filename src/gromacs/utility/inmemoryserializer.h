@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,7 +64,7 @@ class InMemorySerializer : public ISerializer
         virtual void doBool(bool *value);
         virtual void doUChar(unsigned char *value);
         virtual void doInt(int *value);
-        virtual void doInt64(gmx_int64_t *value);
+        virtual void doInt64(int64_t *value);
         virtual void doFloat(float *value);
         virtual void doDouble(double *value);
         virtual void doString(std::string *value);
@@ -86,7 +86,7 @@ class InMemoryDeserializer : public ISerializer
         virtual void doBool(bool *value);
         virtual void doUChar(unsigned char *value);
         virtual void doInt(int *value);
-        virtual void doInt64(gmx_int64_t *value);
+        virtual void doInt64(int64_t *value);
         virtual void doFloat(float *value);
         virtual void doDouble(double *value);
         virtual void doString(std::string *value);

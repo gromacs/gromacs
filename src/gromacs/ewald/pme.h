@@ -216,13 +216,13 @@ void gmx_pme_send_parameters(const t_commrec *cr,
 void gmx_pme_send_coordinates(const t_commrec *cr, matrix box, rvec *x,
                               real lambda_q, real lambda_lj,
                               gmx_bool bEnerVir,
-                              gmx_int64_t step, gmx_wallcycle *wcycle);
+                              int64_t step, gmx_wallcycle *wcycle);
 
 /*! \brief Tell our PME-only node to finish */
 void gmx_pme_send_finish(const t_commrec *cr);
 
 /*! \brief Tell our PME-only node to reset all cycle and flop counters */
-void gmx_pme_send_resetcounters(const t_commrec *cr, gmx_int64_t step);
+void gmx_pme_send_resetcounters(const t_commrec *cr, int64_t step);
 
 /*! \brief PP nodes receive the long range forces from the PME nodes */
 void gmx_pme_receive_f(const t_commrec *cr,

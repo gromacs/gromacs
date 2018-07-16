@@ -61,14 +61,14 @@ void cmp_int(FILE *fp, const char *s, int index, int i1, int i2)
     }
 }
 
-void cmp_int64(FILE *fp, const char *s, gmx_int64_t i1, gmx_int64_t i2)
+void cmp_int64(FILE *fp, const char *s, int64_t i1, int64_t i2)
 {
     if (i1 != i2)
     {
         fprintf(fp, "%s (", s);
-        fprintf(fp, "%" GMX_PRId64, i1);
+        fprintf(fp, "%" PRId64, i1);
         fprintf(fp, " - ");
-        fprintf(fp, "%" GMX_PRId64, i2);
+        fprintf(fp, "%" PRId64, i2);
         fprintf(fp, ")\n");
     }
 }

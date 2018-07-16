@@ -158,7 +158,7 @@ static std::unique_ptr<gmx_pme_pp> gmx_pme_pp_init(const t_commrec *cr)
 static void reset_pmeonly_counters(gmx_wallcycle_t wcycle,
                                    gmx_walltime_accounting_t walltime_accounting,
                                    t_nrnb *nrnb, t_inputrec *ir,
-                                   gmx_int64_t step,
+                                   int64_t step,
                                    bool useGpuForPme)
 {
     /* Reset all the counters related to performance over the run */
@@ -242,7 +242,7 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
                                       real              *lambda_q,
                                       real              *lambda_lj,
                                       gmx_bool          *bEnerVir,
-                                      gmx_int64_t       *step,
+                                      int64_t           *step,
                                       ivec              *grid_size,
                                       real              *ewaldcoeff_q,
                                       real              *ewaldcoeff_lj,
@@ -549,7 +549,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
     float              cycles;
     int                count;
     gmx_bool           bEnerVir = FALSE;
-    gmx_int64_t        step;
+    int64_t            step;
 
     /* This data will only use with PME tuning, i.e. switching PME grids */
     std::vector<gmx_pme_t *> pmedata;

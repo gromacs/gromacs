@@ -97,8 +97,8 @@ class CoordState
         void sampleUmbrellaGridpoint(const Grid                  &grid,
                                      int                          gridpointIndex,
                                      gmx::ArrayRef<const double>  probWeightNeighbor,
-                                     gmx_int64_t                  step,
-                                     gmx_int64_t                  seed,
+                                     int64_t                      step,
+                                     int64_t                      seed,
                                      int                          indexSeed);
 
         /*! \brief Update the coordinate value with coordValue.
