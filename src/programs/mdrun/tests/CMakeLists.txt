@@ -117,6 +117,7 @@ gmx_add_gtest_executable(
     multisimtest.cpp
     pmetest.cpp
     replicaexchange.cpp
+    scheduletest.cpp
     # pseudo-library for code for testing mdrun
     $<TARGET_OBJECTS:mdrun_test_objlib>
     # pseudo-library for code for mdrun
