@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -135,7 +135,7 @@ void biasesAreCompatibleForSharingBetweenSimulations(const AwhParams           &
     {
         if (awhParams.awhBiasParams[b].shareGroup > 0)
         {
-            std::vector<gmx_int64_t> pointSizes(numSim);
+            std::vector<int64_t> pointSizes(numSim);
             pointSizes[multiSimComm->sim] = pointSize[b];
             gmx_sumli_sim(pointSizes.size(), pointSizes.data(), multiSimComm);
             for (int sim = 1; sim < numSim; sim++)

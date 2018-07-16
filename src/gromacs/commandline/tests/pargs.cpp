@@ -160,7 +160,7 @@ TEST_F(ParseCommonArgsTest, ParsesIntegerArgs)
 
 TEST_F(ParseCommonArgsTest, ParsesInt64Args)
 {
-    gmx_int64_t       value1 = 0, value2 = 0, value3 = 3;
+    int64_t           value1 = 0, value2 = 0, value3 = 3;
     t_pargs           pa[]   = {
         { "-i1", FALSE, etINT64, {&value1}, "Description" },
         { "-i2", FALSE, etINT64, {&value2}, "Description" },

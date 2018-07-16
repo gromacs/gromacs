@@ -237,7 +237,7 @@ static void pull_print_f(FILE *out, const pull_t *pull, double t)
     fprintf(out, "\n");
 }
 
-void pull_print_output(struct pull_t *pull, gmx_int64_t step, double time)
+void pull_print_output(struct pull_t *pull, int64_t step, double time)
 {
     GMX_ASSERT(pull->numExternalPotentialsStillToBeAppliedThisStep == 0, "pull_print_output called before all external pull potentials have been applied");
 
@@ -1867,7 +1867,7 @@ void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull, t_mdato
          * if they needed to participate up to 20 decompositions ago.
          * This avoids frequent rebuilds due to atoms jumping back and forth.
          */
-        const gmx_int64_t history_count = 20;
+        const int64_t     history_count = 20;
         gmx_bool          bWillParticipate;
         int               count[2];
 

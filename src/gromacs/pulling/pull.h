@@ -265,7 +265,7 @@ void finish_pull(struct pull_t *pull);
  * \param step     Time step number.
  * \param time     Time.
  */
-void pull_print_output(struct pull_t *pull, gmx_int64_t step, double time);
+void pull_print_output(struct pull_t *pull, int64_t step, double time);
 
 
 /*! \brief Calculates centers of mass all pull groups.

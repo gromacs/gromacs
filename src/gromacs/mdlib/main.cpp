@@ -121,10 +121,10 @@ void check_multi_int(FILE *log, const gmx_multisim_t *ms, int val,
 
 // TODO move this to multi-sim module
 void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
-                       gmx_int64_t val, const char *name,
+                       int64_t val, const char *name,
                        gmx_bool bQuiet)
 {
-    gmx_int64_t      *ibuf;
+    int64_t          *ibuf;
     int               p;
     gmx_bool          bCompatible;
 
@@ -168,7 +168,7 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
                 char strbuf[255];
                 /* first make the format string */
                 snprintf(strbuf, 255, "  subsystem %%d: %s\n",
-                         "%" GMX_PRId64);
+                         "%" PRId64);
                 fprintf(log, strbuf, p, ibuf[p]);
             }
         }

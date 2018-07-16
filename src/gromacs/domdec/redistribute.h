@@ -54,7 +54,7 @@ class t_state;
 
 /*! \brief Redistribute the atoms to their, new, local domains */
 void dd_redistribute_cg(FILE             *fplog,
-                        gmx_int64_t       step,
+                        int64_t           step,
                         gmx_domdec_t     *dd,
                         ivec              tric_dir,
                         t_state          *state,

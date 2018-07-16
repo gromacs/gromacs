@@ -47,11 +47,11 @@
 typedef struct {
     int             nener;
     gmx_enxnm_t    *enm;
-    gmx_int64_t     nsteps;
-    gmx_int64_t     nsum;
+    int64_t         nsteps;
+    int64_t         nsum;
     t_energy       *e;
-    gmx_int64_t     nsteps_sim;
-    gmx_int64_t     nsum_sim;
+    int64_t         nsteps_sim;
+    int64_t         nsum_sim;
     t_energy       *e_sim;
 } t_ebin;
 

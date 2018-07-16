@@ -271,7 +271,7 @@ static void prepare_verlet_scheme(FILE                           *fplog,
  * with value passed on the command line (if any)
  */
 static void override_nsteps_cmdline(const gmx::MDLogger &mdlog,
-                                    gmx_int64_t          nsteps_cmdline,
+                                    int64_t              nsteps_cmdline,
                                     t_inputrec          *ir)
 {
     assert(ir);
@@ -388,7 +388,7 @@ int Mdrunner::mdrunner()
     gmx_wallcycle_t           wcycle;
     gmx_walltime_accounting_t walltime_accounting = nullptr;
     int                       rc;
-    gmx_int64_t               reset_counters;
+    int64_t                   reset_counters;
     int                       nthreads_pme = 1;
     gmx_membed_t *            membed       = nullptr;
     gmx_hw_info_t            *hwinfo       = nullptr;

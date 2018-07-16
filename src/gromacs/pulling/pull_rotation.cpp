@@ -320,19 +320,19 @@ static real get_fitangle(t_rotgrp *rotg, gmx_enfrotgrp_t erg)
 
 
 /* Reduce potential angle fit data for this group at this time step? */
-static inline gmx_bool bPotAngle(t_rot *rot, t_rotgrp *rotg, gmx_int64_t step)
+static inline gmx_bool bPotAngle(t_rot *rot, t_rotgrp *rotg, int64_t step)
 {
     return ( (erotgFitPOT == rotg->eFittype) && (do_per_step(step, rot->nstsout) || do_per_step(step, rot->nstrout)) );
 }
 
 /* Reduce slab torqe data for this group at this time step? */
-static inline gmx_bool bSlabTau(t_rot *rot, t_rotgrp *rotg, gmx_int64_t step)
+static inline gmx_bool bSlabTau(t_rot *rot, t_rotgrp *rotg, int64_t step)
 {
     return ( (ISFLEX(rotg)) && do_per_step(step, rot->nstsout) );
 }
 
 /* Output rotation energy, torques, etc. for each rotation group */
-static void reduce_output(const t_commrec *cr, t_rot *rot, real t, gmx_int64_t step)
+static void reduce_output(const t_commrec *cr, t_rot *rot, real t, int64_t step)
 {
     int             g, i, islab, nslabs = 0;
     int             count; /* MPI element counter                               */
@@ -491,7 +491,7 @@ static void reduce_output(const t_commrec *cr, t_rot *rot, real t, gmx_int64_t s
 
 /* Add the forces from enforced rotation potential to the local forces.
  * Should be called after the SR forces have been evaluated */
-extern real add_rot_forces(t_rot *rot, rvec f[], const t_commrec *cr, gmx_int64_t step, real t)
+extern real add_rot_forces(t_rot *rot, rvec f[], const t_commrec *cr, int64_t step, real t)
 {
     int             g, l, ii;
     t_rotgrp       *rotg;
@@ -3890,7 +3890,7 @@ extern void do_rotation(
         matrix                 box,
         rvec                   x[],
         real                   t,
-        gmx_int64_t            step,
+        int64_t                step,
         gmx_bool               bNS)
 {
     int             g, i, ii;

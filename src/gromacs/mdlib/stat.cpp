@@ -380,7 +380,7 @@ void global_stat(gmx_global_stat_t gs,
     }
 }
 
-int do_per_step(gmx_int64_t step, gmx_int64_t nstep)
+int do_per_step(int64_t step, int64_t nstep)
 {
     if (nstep != 0)
     {

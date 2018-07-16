@@ -601,7 +601,7 @@ class AnalysisDataSimpleHistogramModule::Impl : public internal::BasicHistogramI
 {
     public:
         //! Shorthand for the per-frame accumulation data structure type.
-        typedef AnalysisDataFrameLocalData<gmx_int64_t> FrameLocalData;
+        typedef AnalysisDataFrameLocalData<int64_t> FrameLocalData;
 
         Impl() {}
         //! Creates an histogram impl with defined bin parameters.

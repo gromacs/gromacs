@@ -107,10 +107,10 @@ void wallcycle_reset_all(gmx_wallcycle_t wc);
 void wallcycle_scale_by_num_threads(gmx_wallcycle_t wc, bool isPmeRank, int nthreads_pp, int nthreads_pme);
 /* Scale the cycle counts to reflect how many threads run for that number of cycles */
 
-gmx_int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc);
+int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc);
 /* Return reset_counters from wc struct */
 
-void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_int64_t reset_counters);
+void wcycle_set_reset_counters(gmx_wallcycle_t wc, int64_t reset_counters);
 /* Set reset_counters */
 
 void wallcycle_sub_start(gmx_wallcycle_t wc, int ewcs);

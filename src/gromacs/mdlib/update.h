@@ -83,9 +83,9 @@ void update_realloc(gmx_update_t *upd, int natoms);
  * as a reference state for simulations with box deformation.
  */
 void set_deform_reference_box(gmx_update_t *upd,
-                              gmx_int64_t step, matrix box);
+                              int64_t step, matrix box);
 
-void update_tcouple(gmx_int64_t       step,
+void update_tcouple(int64_t           step,
                     t_inputrec       *inputrec,
                     t_state          *state,
                     gmx_ekindata_t   *ekind,
@@ -95,7 +95,7 @@ void update_tcouple(gmx_int64_t       step,
 
 /* Update Parrinello-Rahman, to be called before the coordinate update */
 void update_pcouple_before_coordinates(FILE             *fplog,
-                                       gmx_int64_t       step,
+                                       int64_t           step,
                                        const t_inputrec *inputrec,
                                        t_state          *state,
                                        matrix            parrinellorahmanMu,
@@ -108,7 +108,7 @@ void update_pcouple_before_coordinates(FILE             *fplog,
  * When the deform option is used, scales coordinates and box here.
  */
 void update_pcouple_after_coordinates(FILE             *fplog,
-                                      gmx_int64_t       step,
+                                      int64_t           step,
                                       const t_inputrec *inputrec,
                                       const t_mdatoms  *md,
                                       const matrix      pressure,
@@ -119,7 +119,7 @@ void update_pcouple_after_coordinates(FILE             *fplog,
                                       t_nrnb           *nrnb,
                                       gmx_update_t     *upd);
 
-void update_coords(gmx_int64_t                    step,
+void update_coords(int64_t                        step,
                    t_inputrec                    *inputrec, /* input record and box stuff	*/
                    t_mdatoms                     *md,
                    t_state                       *state,
@@ -134,9 +134,9 @@ void update_coords(gmx_int64_t                    step,
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr, t_mdatoms *md, t_state *state, gmx_update_t *upd, gmx::Constraints *constr);
+extern gmx_bool update_randomize_velocities(t_inputrec *ir, int64_t step, const t_commrec *cr, t_mdatoms *md, t_state *state, gmx_update_t *upd, gmx::Constraints *constr);
 
-void constrain_velocities(gmx_int64_t                    step,
+void constrain_velocities(int64_t                        step,
                           real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
                           t_state                       *state,
                           tensor                         vir_part,
@@ -146,7 +146,7 @@ void constrain_velocities(gmx_int64_t                    step,
                           bool                           do_log,
                           bool                           do_ene);
 
-void constrain_coordinates(gmx_int64_t                    step,
+void constrain_coordinates(int64_t                        step,
                            real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
                            t_state                       *state,
                            tensor                         vir_part,
@@ -157,7 +157,7 @@ void constrain_coordinates(gmx_int64_t                    step,
                            bool                           do_log,
                            bool                           do_ene);
 
-void update_sd_second_half(gmx_int64_t                    step,
+void update_sd_second_half(int64_t                        step,
                            real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
                            const t_inputrec              *inputrec,  /* input record and box stuff */
                            t_mdatoms                     *md,
@@ -215,13 +215,13 @@ restore_ekinstate_from_state(const t_commrec *cr,
 void berendsen_tcoupl(const t_inputrec *ir, const gmx_ekindata_t *ekind, real dt,
                       std::vector<double> &therm_integral);
 
-void andersen_tcoupl(t_inputrec *ir, gmx_int64_t step,
+void andersen_tcoupl(t_inputrec *ir, int64_t step,
                      const t_commrec *cr, const t_mdatoms *md, t_state *state, real rate, const gmx_bool *randomize, const real *boltzfac);
 
 void nosehoover_tcoupl(t_grpopts *opts, gmx_ekindata_t *ekind, real dt,
                        double xi[], double vxi[], t_extmass *MassQ);
 
-void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
+void trotter_update(t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
                     gmx_enerdata_t *enerd, t_state *state, tensor vir, t_mdatoms *md,
                     t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno);
 
@@ -233,7 +233,7 @@ real NPT_energy(const t_inputrec *ir, const t_state *state, const t_extmass *Mas
 void NBaroT_trotter(t_grpopts *opts, real dt,
                     double xi[], double vxi[], real *veta, t_extmass *MassQ);
 
-void vrescale_tcoupl(t_inputrec *ir, gmx_int64_t step,
+void vrescale_tcoupl(t_inputrec *ir, int64_t step,
                      gmx_ekindata_t *ekind, real dt,
                      double therm_integral[]);
 /* Compute temperature scaling. For V-rescale it is done in update. */
@@ -254,13 +254,13 @@ real calc_pres(int ePBC, int nwall, matrix box, tensor ekin, tensor vir,
  * The unit of pressure is bar.
  */
 
-void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
+void parrinellorahman_pcoupl(FILE *fplog, int64_t step,
                              const t_inputrec *ir, real dt, const tensor pres,
                              tensor box, tensor box_rel, tensor boxv,
                              tensor M, matrix mu,
                              gmx_bool bFirstStep);
 
-void berendsen_pcoupl(FILE *fplog, gmx_int64_t step,
+void berendsen_pcoupl(FILE *fplog, int64_t step,
                       const t_inputrec *ir, real dt,
                       const tensor pres, const matrix box,
                       const matrix force_vir, const matrix constraint_vir,

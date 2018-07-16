@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -106,7 +106,7 @@
  * <H3>Implementation helpers</H3>
  *
  * The header basedefinitions.h contains common definitions and macros used
- * throughout \Gromacs.  It includes fixed-width integer types (`gmx_int64_t`
+ * throughout \Gromacs.  It includes fixed-width integer types (`int64_t`
  * and friends), `gmx_bool` for C code, some macros for compiler-specific
  * attributes, and ::GMX_UNUSED_VALUE and ::GMX_IGNORE_RETURN_VALUE for
  * handling warnings about unused values.

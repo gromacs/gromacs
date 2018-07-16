@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -353,9 +353,9 @@ class TestReferenceChecker
         //! Check a single integer value.
         void checkInteger(int value, const char *id);
         //! Check a single int64 value.
-        void checkInt64(gmx_int64_t value, const char *id);
+        void checkInt64(int64_t value, const char *id);
         //! Check a single uint64 value.
-        void checkUInt64(gmx_uint64_t value, const char *id);
+        void checkUInt64(uint64_t value, const char *id);
         //! Check a single single-precision floating point value.
         void checkFloat(float value, const char *id);
         //! Check a single double-precision floating point value.
@@ -395,7 +395,7 @@ class TestReferenceChecker
         //! Reads an integer value.
         int readInteger(const char *id);
         //! Reads a 64-bit integer value.
-        gmx_int64_t readInt64(const char *id);
+        int64_t readInt64(const char *id);
         //! Reads a float value.
         float readFloat(const char *id);
         //! Reads a double value.
@@ -434,12 +434,12 @@ class TestReferenceChecker
             checkInteger(value, id);
         }
         //! Check a single integer value.
-        void checkValue(gmx_int64_t value, const char *id)
+        void checkValue(int64_t value, const char *id)
         {
             checkInt64(value, id);
         }
         //! Check a single integer value.
-        void checkValue(gmx_uint64_t value, const char *id)
+        void checkValue(uint64_t value, const char *id)
         {
             checkUInt64(value, id);
         }

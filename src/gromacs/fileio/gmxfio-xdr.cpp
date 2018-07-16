@@ -112,7 +112,7 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
     float           fvec[DIM];
     double          dvec[DIM];
     int             j, m, *iptr, idum;
-    gmx_int64_t     sdum;
+    int64_t         sdum;
     real           *ptr;
     unsigned short  us;
     double          d = 0;
@@ -184,12 +184,12 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
         case eioINT64:
             if (item && !fio->bRead)
             {
-                sdum = *(gmx_int64_t *) item;
+                sdum = *(int64_t *) item;
             }
             res = xdr_int64(fio->xdr, &sdum);
             if (item)
             {
-                *(gmx_int64_t *) item = sdum;
+                *(int64_t *) item = sdum;
             }
             break;
         case eioUCHAR:
@@ -427,7 +427,7 @@ gmx_bool gmx_fio_doe_int(t_fileio *fio, int *item,
     return ret;
 }
 
-gmx_bool gmx_fio_doe_int64(t_fileio *fio, gmx_int64_t *item,
+gmx_bool gmx_fio_doe_int64(t_fileio *fio, int64_t *item,
                            const char *desc, const char *srcfile, int line)
 {
     gmx_bool ret;
@@ -583,7 +583,7 @@ gmx_bool gmx_fio_ndoe_int(t_fileio *fio, int *item, int n,
 
 
 
-gmx_bool gmx_fio_ndoe_int64(t_fileio *fio, gmx_int64_t *item, int n,
+gmx_bool gmx_fio_ndoe_int64(t_fileio *fio, int64_t *item, int n,
                             const char *desc, const char *srcfile, int line)
 {
     gmx_bool ret = TRUE;
@@ -699,7 +699,7 @@ void FileIOXdrSerializer::doInt(int *value)
     gmx_fio_do_int(fio_, *value);
 }
 
-void FileIOXdrSerializer::doInt64(gmx_int64_t *value)
+void FileIOXdrSerializer::doInt64(int64_t *value)
 {
     gmx_fio_do_int64(fio_, *value);
 }

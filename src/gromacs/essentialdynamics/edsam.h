@@ -82,7 +82,7 @@ class Constraints;
  * \param box               The simulation box.
  * \param ed                The essential dynamics data.
  */
-void do_edsam(const t_inputrec *ir, gmx_int64_t step,
+void do_edsam(const t_inputrec *ir, int64_t step,
               const t_commrec *cr, rvec xs[], rvec v[], matrix box, gmx_edsam *ed);
 
 
@@ -140,7 +140,7 @@ void do_flood(const t_commrec  *cr,
               rvec              force[],
               const gmx_edsam  *ed,
               matrix            box,
-              gmx_int64_t       step,
+              int64_t           step,
               gmx_bool          bNS);
 
 /*! \brief Clean up

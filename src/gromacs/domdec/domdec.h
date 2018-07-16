@@ -315,7 +315,7 @@ void dd_atom_sum_real(struct gmx_domdec_t *dd, real v[]);
  * When f!=NULL, *f will be reallocated to the size of state_local.
  */
 void dd_partition_system(FILE                *fplog,
-                         gmx_int64_t          step,
+                         int64_t              step,
                          const t_commrec     *cr,
                          gmx_bool             bMasterState,
                          int                  nstglobalcomm,
@@ -436,7 +436,7 @@ void dd_bonded_cg_distance(FILE *fplog, const gmx_mtop_t *mtop,
  *
  * When natoms=-1, dump all known atoms.
  */
-void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
+void write_dd_pdb(const char *fn, int64_t step, const char *title,
                   const gmx_mtop_t *mtop,
                   const t_commrec *cr,
                   int natoms, const rvec x[], const matrix box);

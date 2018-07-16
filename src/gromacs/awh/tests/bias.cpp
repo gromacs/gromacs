@@ -105,7 +105,7 @@ static AwhTestParameters getAwhTestParameters(int eawhgrowth,
 
     double                 convFactor  = 1;
     double                 k           = 1000;
-    gmx_int64_t            seed        = 93471803;
+    int64_t                seed        = 93471803;
 
     params.dimParams.push_back(DimParams(convFactor, k, params.beta));
 
@@ -157,7 +157,7 @@ class BiasTest : public ::testing::TestWithParam<BiasTestParameters>
 {
     public:
         //! Random seed for AWH MC sampling
-        gmx_int64_t           seed_;
+        int64_t           seed_;
 
         //! Coordinates representing a trajectory in time
         std::vector<double>   coordinates_;
@@ -227,7 +227,7 @@ TEST_P(BiasTest, ForcesBiasPmf)
 
     double              coordMaxValue = 0;
     double              potentialJump = 0;
-    gmx_int64_t         step          = 0;
+    int64_t             step          = 0;
     for (auto &coord : coordinates_)
     {
         coordMaxValue = std::max(coordMaxValue, std::abs(coord));
@@ -305,13 +305,13 @@ TEST(BiasTest, DetectsCovering)
      * coordinate range in a semi-realistic way. The period is 4*pi=12.57.
      * We get out of the initial stage after 4 coverings at step 300.
      */
-    const gmx_int64_t exitStepRef = 300;
+    const int64_t     exitStepRef = 300;
     const double      midPoint    = 0.5*(awhDimParams.end + awhDimParams.origin);
     const double      halfWidth   = 0.5*(awhDimParams.end - awhDimParams.origin);
 
     bool              inInitialStage = bias.state().inInitialStage();
     /* Normally this loop exits at exitStepRef, but we extend with failure */
-    gmx_int64_t       step;
+    int64_t           step;
     for (step = 0; step <= 2*exitStepRef; step++)
     {
         double   t     = step*mdTimeStep;

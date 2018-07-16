@@ -185,7 +185,7 @@ class HistogramSize
         }
 
     private:
-        gmx_int64_t numUpdates_; /**< The number of updates performed since the start of the simulation. */
+        int64_t numUpdates_; /**< The number of updates performed since the start of the simulation. */
 
         /* The histogram size sets the update size and so controls the convergence rate of the free energy and bias. */
         double      histogramSize_; /**< Size of reference weight histogram. */

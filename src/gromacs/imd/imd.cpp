@@ -108,16 +108,16 @@
  */
 typedef struct
 {
-    gmx_int32_t tstep;     /**< time step                                     */
-    float       T_abs;     /**< absolute temperature                          */
-    float       E_tot;     /**< total energy                                  */
-    float       E_pot;     /**< potential energy                              */
-    float       E_vdw;     /**< van der Waals energy                          */
-    float       E_coul;    /**< Coulomb interaction energy                    */
-    float       E_bond;    /**< bonds energy                                  */
-    float       E_angle;   /**< angles energy                                 */
-    float       E_dihe;    /**< dihedrals energy                              */
-    float       E_impr;    /**< improper dihedrals energy                     */
+    int32_t     tstep;   /**< time step                                     */
+    float       T_abs;   /**< absolute temperature                          */
+    float       E_tot;   /**< total energy                                  */
+    float       E_pot;   /**< potential energy                              */
+    float       E_vdw;   /**< van der Waals energy                          */
+    float       E_coul;  /**< Coulomb interaction energy                    */
+    float       E_bond;  /**< bonds energy                                  */
+    float       E_angle; /**< angles energy                                 */
+    float       E_dihe;  /**< dihedrals energy                              */
+    float       E_impr;  /**< improper dihedrals energy                     */
 } IMDEnergyBlock;
 
 
@@ -128,8 +128,8 @@ typedef struct
  */
 typedef struct
 {
-    gmx_int32_t type;      /**< Type of IMD message, see IMDType_t above      */
-    gmx_int32_t length;    /**< Length                                        */
+    int32_t type;      /**< Type of IMD message, see IMDType_t above      */
+    int32_t length;    /**< Length                                        */
 } IMDHeader;
 
 
@@ -174,8 +174,8 @@ typedef struct t_gmx_IMD
 
     IMDEnergyBlock *energies;        /**< Pointer to energies we send back.           */
 
-    gmx_int32_t     vmd_nforces;     /**< Number of VMD forces.                       */
-    gmx_int32_t    *vmd_f_ind;       /**< VMD forces indices.                         */
+    int32_t         vmd_nforces;     /**< Number of VMD forces.                       */
+    int32_t        *vmd_f_ind;       /**< VMD forces indices.                         */
     float          *vmd_forces;      /**< The VMD forces flat in memory.              */
     int             nforces;         /**< Number of actual MD forces;
                                           this gets communicated to the clients.      */
@@ -243,10 +243,10 @@ static const char *eIMDType_names[IMD_NR + 1] = {
 
 
 /*! \brief Fills the header with message and the length argument. */
-static void fill_header(IMDHeader *header, IMDMessageType type, gmx_int32_t length)
+static void fill_header(IMDHeader *header, IMDMessageType type, int32_t length)
 {
     /* We (ab-)use htonl network function for the correct endianness */
-    header->type   = htonl((gmx_int32_t) type);
+    header->type   = htonl((int32_t) type);
     header->length = htonl(length);
 }
 
@@ -261,9 +261,9 @@ static void swap_header(IMDHeader *header)
 
 
 /*! \brief Reads multiple bytes from socket. */
-static gmx_int32_t imd_read_multiple(IMDSocket *socket, char *datptr, gmx_int32_t toread)
+static int32_t imd_read_multiple(IMDSocket *socket, char *datptr, int32_t toread)
 {
-    gmx_int32_t leftcount, countread;
+    int32_t leftcount, countread;
 
 
     leftcount = toread;
@@ -299,9 +299,9 @@ static gmx_int32_t imd_read_multiple(IMDSocket *socket, char *datptr, gmx_int32_
 
 
 /*! \brief Writes multiple bytes to socket in analogy to imd_read_multiple. */
-static gmx_int32_t imd_write_multiple(IMDSocket *socket, const char *datptr, gmx_int32_t towrite)
+static int32_t imd_write_multiple(IMDSocket *socket, const char *datptr, int32_t towrite)
 {
-    gmx_int32_t leftcount, countwritten;
+    int32_t leftcount, countwritten;
 
 
     leftcount = towrite;
@@ -342,7 +342,7 @@ static int imd_handshake(IMDSocket *socket)
 /*! \brief Send energies using the energy block and the send buffer. */
 static int imd_send_energies(IMDSocket *socket, const IMDEnergyBlock *energies, char *buffer)
 {
-    gmx_int32_t recsize;
+    int32_t recsize;
 
 
     recsize = HEADERSIZE + sizeof(IMDEnergyBlock);
@@ -354,7 +354,7 @@ static int imd_send_energies(IMDSocket *socket, const IMDEnergyBlock *energies, 
 
 
 /*! \brief Receive IMD header from socket, sets the length and returns the IMD message. */
-static IMDMessageType imd_recv_header(IMDSocket *socket, gmx_int32_t *length)
+static IMDMessageType imd_recv_header(IMDSocket *socket, int32_t *length)
 {
     IMDHeader header;
 
@@ -374,13 +374,13 @@ static IMDMessageType imd_recv_header(IMDSocket *socket, gmx_int32_t *length)
  *
  * The number of forces was previously communicated via the header.
  */
-static int imd_recv_mdcomm(IMDSocket *socket, gmx_int32_t nforces, gmx_int32_t *forcendx, float *forces)
+static int imd_recv_mdcomm(IMDSocket *socket, int32_t nforces, int32_t *forcendx, float *forces)
 {
     int retsize, retbytes;
 
 
     /* reading indices */
-    retsize  = sizeof(gmx_int32_t) * nforces;
+    retsize  = sizeof(int32_t) * nforces;
     retbytes = imd_read_multiple(socket, (char *) forcendx, retsize);
     if (retbytes != retsize)
     {
@@ -440,7 +440,7 @@ void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd)
  */
 static int imd_send_rvecs(IMDSocket *socket, int nat, rvec *x, char *buffer)
 {
-    gmx_int32_t size;
+    int32_t     size;
     int         i;
     float       sendx[3];
     int         tuplesize = 3 * sizeof(float);
@@ -450,7 +450,7 @@ static int imd_send_rvecs(IMDSocket *socket, int nat, rvec *x, char *buffer)
     size = HEADERSIZE + 3 * sizeof(float) * nat;
 
     /* Prepare header */
-    fill_header((IMDHeader *) buffer, IMD_FCOORDS, (gmx_int32_t) nat);
+    fill_header((IMDHeader *) buffer, IMD_FCOORDS, (int32_t) nat);
     for (i = 0; i < nat; i++)
     {
         sendx[0] = (float) x[i][0] * NM2A;
@@ -1297,7 +1297,7 @@ void init_IMD(t_inputrec             *ir,
     int              i;
     int              nat_total;
     t_gmx_IMD_setup *IMDsetup;
-    gmx_int32_t      bufxsize;
+    int32_t          bufxsize;
     gmx_bool         bIMD = FALSE;
 
 
@@ -1404,7 +1404,7 @@ void init_IMD(t_inputrec             *ir,
     if (MASTER(cr))
     {
         /* we allocate memory for our IMD energy structure */
-        gmx_int32_t recsize = HEADERSIZE + sizeof(IMDEnergyBlock);
+        int32_t recsize = HEADERSIZE + sizeof(IMDEnergyBlock);
         snew(IMDsetup->energysendbuf, recsize);
 
         /* Shall we wait for a connection? */
@@ -1475,7 +1475,7 @@ void init_IMD(t_inputrec             *ir,
 
 
 gmx_bool do_IMD(gmx_bool         bIMD,
-                gmx_int64_t      step,
+                int64_t          step,
                 const t_commrec *cr,
                 gmx_bool         bNS,
                 matrix           box,
@@ -1560,7 +1560,7 @@ gmx_bool do_IMD(gmx_bool         bIMD,
 
 
 void IMD_fill_energy_record(gmx_bool bIMD, t_IMD *imd, gmx_enerdata_t *enerd,
-                            gmx_int64_t step, gmx_bool bHaveNewEnergies)
+                            int64_t step, gmx_bool bHaveNewEnergies)
 {
     IMDEnergyBlock *ene;
     t_gmx_IMD      *IMDsetup;
@@ -1629,7 +1629,7 @@ void IMD_send_positions(t_IMD *imd)
 
 void IMD_prep_energies_send_positions(gmx_bool bIMD, gmx_bool bIMDstep,
                                       t_IMD *imd, gmx_enerdata_t *enerd,
-                                      gmx_int64_t step, gmx_bool bHaveNewEnergies,
+                                      int64_t step, gmx_bool bHaveNewEnergies,
                                       gmx_wallcycle *wcycle)
 {
     if (bIMD)

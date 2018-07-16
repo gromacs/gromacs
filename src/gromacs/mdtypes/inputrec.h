@@ -242,9 +242,9 @@ struct t_inputrec
     ~t_inputrec();
 
     int             eI;                      /* Integration method                 */
-    gmx_int64_t     nsteps;                  /* number of steps to be taken			*/
+    int64_t         nsteps;                  /* number of steps to be taken			*/
     int             simulation_part;         /* Used in checkpointing to separate chunks */
-    gmx_int64_t     init_step;               /* start at a stepcount >0 (used w. convert-tpr)    */
+    int64_t         init_step;               /* start at a stepcount >0 (used w. convert-tpr)    */
     int             nstcalcenergy;           /* frequency of energy calc. and T/P coupl. upd.	*/
     int             cutoff_scheme;           /* group or verlet cutoffs     */
     int             ns_type;                 /* which ns method should we use?               */
@@ -336,7 +336,7 @@ struct t_inputrec
     int             nLincsIter;              /* Number of iterations in the final Lincs step */
     gmx_bool        bShakeSOR;               /* Use successive overrelaxation for shake      */
     real            bd_fric;                 /* Friction coefficient for BD (amu/ps)         */
-    gmx_int64_t     ld_seed;                 /* Random seed for SD and BD                    */
+    int64_t         ld_seed;                 /* Random seed for SD and BD                    */
     int             nwall;                   /* The number of walls                          */
     int             wall_type;               /* The type of walls                            */
     real            wall_r_linpot;           /* The potentail is linear for r<=wall_r_linpot */

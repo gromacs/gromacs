@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,8 +60,8 @@ TEST(SeedTest, makeRandomSeed)
     // if you execute the unit tests once per second you might have to run them
     // an extra time rougly once per 300 billion years - apologies in advance!
 
-    gmx_uint64_t i0 = makeRandomSeed();
-    gmx_uint64_t i1 = makeRandomSeed();
+    uint64_t i0 = makeRandomSeed();
+    uint64_t i1 = makeRandomSeed();
 
     EXPECT_NE(i0, i1);
 }

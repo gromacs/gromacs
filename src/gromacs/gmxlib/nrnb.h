@@ -153,7 +153,7 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop);
  */
 
 void print_perf(FILE *out, double nodetime, double realtime,
-                gmx_int64_t nsteps, double delta_t,
+                int64_t nsteps, double delta_t,
                 double nbfs, double mflop);
 /* Prints the performance, nbfs and mflop come from print_flop */
 

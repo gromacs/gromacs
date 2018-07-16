@@ -1005,7 +1005,7 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr)
     {
         fprintf(stderr, "\nWARNING: there may be something wrong with energy file %s\n",
                 gmx_fio_getname(ef->fio));
-        fprintf(stderr, "Found: step=%" GMX_PRId64 ", nre=%d, nblock=%d, time=%g.\n",
+        fprintf(stderr, "Found: step=%" PRId64 ", nre=%d, nblock=%d, time=%g.\n",
                 fr->step, fr->nre, fr->nblock, fr->t);
     }
     if (bRead && fr->nre > fr->e_alloc)
