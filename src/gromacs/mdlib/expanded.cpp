@@ -88,7 +88,7 @@ void init_expanded_ensemble(gmx_bool bStateFromCP, t_inputrec *ir, df_history_t 
 {
     if (!bStateFromCP)
     {
-        init_df_history_weights(dfhist, ir->expandedvals, ir->fepvals->n_lambda);
+        init_df_history_weights(dfhist, ir->expandedvals.get(), ir->fepvals->n_lambda);
     }
 }
 
@@ -1173,8 +1173,8 @@ int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
     t_simtemp  *simtemp;
     gmx_bool    bIfReset, bSwitchtoOneOverT, bDoneEquilibrating = FALSE;
 
-    expand  = ir->expandedvals;
-    simtemp = ir->simtempvals;
+    expand  = ir->expandedvals.get();
+    simtemp = ir->simtempvals.get();
     nlim    = ir->fepvals->n_lambda;
 
     snew(scaled_lamee, nlim);

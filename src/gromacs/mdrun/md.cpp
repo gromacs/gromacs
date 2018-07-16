@@ -928,12 +928,12 @@ void gmx::Integrator::do_md()
             {
                 if (MASTER(cr))
                 {
-                    setCurrentLambdasRerun(step, ir->fepvals, &rerun_fr, lam0, state_global);
+                    setCurrentLambdasRerun(step, ir->fepvals.get(), &rerun_fr, lam0, state_global);
                 }
             }
             else
             {
-                setCurrentLambdasLocal(step, ir->fepvals, lam0, state);
+                setCurrentLambdasLocal(step, ir->fepvals.get(), lam0, state);
             }
             bDoDHDL      = do_per_step(step, ir->fepvals->nstdhdl);
             bDoFEP       = ((ir->efep != efepNO) && do_per_step(step, nstfep));
@@ -1304,7 +1304,7 @@ void gmx::Integrator::do_md()
             /* sum up the foreign energy and dhdl terms for vv.  currently done every step so that dhdl is correct in the .edr */
             if (ir->efep != efepNO && !bRerunMD)
             {
-                sum_dhdl(enerd, state->lambda, ir->fepvals);
+                sum_dhdl(enerd, state->lambda, ir->fepvals.get());
             }
         }
 
@@ -1641,7 +1641,7 @@ void gmx::Integrator::do_md()
         {
             /* Sum up the foreign energy and dhdl terms for md and sd.
                Currently done every step so that dhdl is correct in the .edr */
-            sum_dhdl(enerd, state->lambda, ir->fepvals);
+            sum_dhdl(enerd, state->lambda, ir->fepvals.get());
         }
 
         update_pcouple_after_coordinates(fplog, step, ir, mdatoms,
@@ -1692,14 +1692,14 @@ void gmx::Integrator::do_md()
             if (fplog && do_log && bDoExpanded)
             {
                 /* only needed if doing expanded ensemble */
-                PrintFreeEnergyInfoToFile(fplog, ir->fepvals, ir->expandedvals, ir->bSimTemp ? ir->simtempvals : nullptr,
+                PrintFreeEnergyInfoToFile(fplog, ir->fepvals.get(), ir->expandedvals.get(), ir->simtempvals.get(),
                                           state_global->dfhist, state->fep_state, ir->nstlog, step);
             }
             if (bCalcEner)
             {
                 upd_mdebin(mdebin, bDoDHDL, bCalcEnerStep,
                            t, mdatoms->tmass, enerd, state,
-                           ir->fepvals, ir->expandedvals, lastbox,
+                           ir->fepvals.get(), ir->expandedvals.get(), lastbox,
                            shake_vir, force_vir, total_vir, pres,
                            ekind, mu_tot, constr);
             }
@@ -1876,7 +1876,7 @@ void gmx::Integrator::do_md()
         }
 
         /* If bIMD is TRUE, the master updates the IMD energy record and sends positions to VMD client */
-        IMD_prep_energies_send_positions(ir->bIMD && MASTER(cr), bIMDstep, ir->imd, enerd, step, bCalcEner, wcycle);
+        IMD_prep_energies_send_positions(ir->bIMD && MASTER(cr), bIMDstep, ir->imd.get(), enerd, step, bCalcEner, wcycle);
 
     }
     /* End of main MD loop */
@@ -1925,14 +1925,14 @@ void gmx::Integrator::do_md()
     // Clean up swapcoords
     if (ir->eSwapCoords != eswapNO)
     {
-        finish_swapcoords(ir->swap);
+        finish_swapcoords(ir->swap.get());
     }
 
     /* Do essential dynamics cleanup if needed. Close .edo file */
     done_ed(&ed);
 
     /* IMD cleanup, if bIMD is TRUE. */
-    IMD_finalize(ir->bIMD, ir->imd);
+    IMD_finalize(ir->bIMD, ir->imd.get());
 
     walltime_accounting_set_nsteps_done(walltime_accounting, step_rel);
     if (step_rel >= wcycle_get_reset_counters(wcycle) &&

@@ -41,6 +41,9 @@
 
 #include <string.h>
 
+#include <vector>
+
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
@@ -517,11 +520,23 @@ static void bc_pull(const t_commrec *cr, pull_params_t *pull)
 
 static void bc_rotgrp(const t_commrec *cr, t_rotgrp *rotg)
 {
-    block_bc(cr, *rotg);
+    block_bc(cr, rotg->eType);
+    block_bc(cr, rotg->bMassW);
+    block_bc(cr, rotg->nat);
+    nblock_bc(cr, DIM, &rotg->vec[0]);
+    block_bc(cr, rotg->rate);
+    block_bc(cr, rotg->k);
+    nblock_bc(cr, DIM, &rotg->pivot[0]);
+    block_bc(cr, rotg->eFittype);
+    block_bc(cr, rotg->PotAngle_nstep);
+    block_bc(cr, rotg->PotAngle_step);
+    block_bc(cr, rotg->slab_dist);
+    block_bc(cr, rotg->min_gaussian);
+    block_bc(cr, rotg->eps);
     if (rotg->nat > 0)
     {
-        snew_bc(cr, rotg->ind, rotg->nat);
-        nblock_bc(cr, rotg->nat, rotg->ind);
+        rotg->ind.resize(rotg->nat);
+        nblock_bc(cr, rotg->nat, rotg->ind.data());
         snew_bc(cr, rotg->x_ref, rotg->nat);
         nblock_bc(cr, rotg->nat, rotg->x_ref);
     }
@@ -531,8 +546,10 @@ static void bc_rot(const t_commrec *cr, t_rot *rot)
 {
     int g;
 
-    block_bc(cr, *rot);
-    snew_bc(cr, rot->grp, rot->ngrp);
+    block_bc(cr, rot->ngrp);
+    block_bc(cr, rot->nstrout);
+    block_bc(cr, rot->nstsout);
+    rot->grp.resize(rot->ngrp);
     for (g = 0; g < rot->ngrp; g++)
     {
         bc_rotgrp(cr, &rot->grp[g]);
@@ -541,9 +558,9 @@ static void bc_rot(const t_commrec *cr, t_rot *rot)
 
 static void bc_imd(const t_commrec *cr, t_IMD *imd)
 {
-    block_bc(cr, *imd);
-    snew_bc(cr, imd->ind, imd->nat);
-    nblock_bc(cr, imd->nat, imd->ind);
+    block_bc(cr, imd->nat);
+    imd->ind.resize(imd->nat);
+    nblock_bc(cr, imd->nat, imd->ind.data());
 }
 
 static void bc_fepvals(const t_commrec *cr, t_lambda *fep)
@@ -631,17 +648,29 @@ static void bc_simtempvals(const t_commrec *cr, t_simtemp *simtemp, int n_lambda
 
 static void bc_swapions(const t_commrec *cr, t_swapcoords *swap)
 {
-    block_bc(cr, *swap);
+    block_bc(cr, swap->nstswap);
+    nblock_bc(cr, 2, swap->massw_split);
+    block_bc(cr, swap->cyl0r);
+    block_bc(cr, swap->cyl1r);
+    block_bc(cr, swap->cyl0u);
+    block_bc(cr, swap->cyl1u);
+    block_bc(cr, swap->cyl0l);
+    block_bc(cr, swap->cyl1l);
+    block_bc(cr, swap->nAverage);
+    block_bc(cr, swap->threshold);
+    nblock_bc(cr, eCompNR, swap->bulkOffset);
+    block_bc(cr, swap->ngrp);
 
     /* Broadcast atom indices for split groups, solvent group, and for all user-defined swap groups */
-    snew_bc(cr, swap->grp, swap->ngrp);
+    swap->grp.resize(swap->ngrp);
     for (int i = 0; i < swap->ngrp; i++)
     {
         t_swapGroup *g = &swap->grp[i];
 
-        block_bc(cr, *g);
-        snew_bc(cr, g->ind, g->nat);
-        nblock_bc(cr, g->nat, g->ind);
+        block_bc(cr, g->nat);
+        g->ind.resize(g->nat);
+        nblock_bc(cr, g->nat, g->ind.data());
+        nblock_bc(cr, eCompNR, g->nmolReq);
 
         int len = 0;
         if (MASTER(cr))
@@ -654,12 +683,63 @@ static void bc_swapions(const t_commrec *cr, t_swapcoords *swap)
     }
 }
 
-
-static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
+// Broadcast the bulk of trivial parameters still stored in
+// t_inputrec, making sure not to break the pointers and objects also
+// inside it.
+static std::unique_ptr<t_inputrec>
+bc_mainPartOfInputrec(const t_commrec            *cr,
+                      std::unique_ptr<t_inputrec> inputrec)
 {
-    // Note that this overwrites pointers in inputrec, so all pointer fields
-    // Must be initialized separately below.
+    std::unique_ptr<t_lambda>     fepvals;
+    std::unique_ptr<t_simtemp>    simtempvals;
+    std::unique_ptr<t_expanded>   expandedvals;
+    std::unique_ptr<t_rot>        rot;
+    std::unique_ptr<t_swapcoords> swap;
+    std::unique_ptr<t_IMD>        imd;
+
+    if (!MASTER(cr))
+    {
+        inputrec      = gmx::compat::make_unique<t_inputrec>();
+        fepvals       = std::move(inputrec->fepvals);
+        simtempvals   = std::move(inputrec->simtempvals);
+        expandedvals  = std::move(inputrec->expandedvals);
+        rot           = std::move(inputrec->rot);
+        swap          = std::move(inputrec->swap);
+        imd           = std::move(inputrec->imd);
+        // Now inputrec on non-master ranks is just a shell.
+    }
+
+    // This broadcast overwrites the pointers in inputrec, so all
+    // pointer fields must be handled carefully, e.g. restored from
+    // the above copies.
     block_bc(cr, *inputrec);
+
+    if (!MASTER(cr))
+    {
+        // We must take care not to delete the pointers transmitted
+        // from the master rank.
+        inputrec->fepvals.release();
+        inputrec->fepvals = std::move(fepvals);
+        inputrec->simtempvals.release();
+        inputrec->simtempvals = std::move(simtempvals);
+        inputrec->expandedvals.release();
+        inputrec->expandedvals = std::move(expandedvals);
+        inputrec->rot.release();
+        inputrec->rot = std::move(rot);
+        inputrec->swap.release();
+        inputrec->swap = std::move(swap);
+        inputrec->imd.release();
+        inputrec->imd = std::move(imd);
+    }
+    return inputrec;
+}
+
+static std::unique_ptr<t_inputrec>
+bc_inputrec(const t_commrec            *cr,
+            std::unique_ptr<t_inputrec> inputrec)
+{
+    inputrec = bc_mainPartOfInputrec(cr, std::move(inputrec));
+
     if (SIMMASTER(cr))
     {
         gmx::InMemorySerializer serializer;
@@ -690,21 +770,18 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
     /* even if efep is efepNO, we need to initialize to make sure that
      * n_lambda is set to zero */
 
-    snew_bc(cr, inputrec->fepvals, 1);
     if (inputrec->efep != efepNO || inputrec->bSimTemp)
     {
-        bc_fepvals(cr, inputrec->fepvals);
+        bc_fepvals(cr, inputrec->fepvals.get());
     }
     /* need to initialize this as well because of data checked for in the logic */
-    snew_bc(cr, inputrec->expandedvals, 1);
     if (inputrec->bExpanded)
     {
-        bc_expandedvals(cr, inputrec->expandedvals, inputrec->fepvals->n_lambda);
+        bc_expandedvals(cr, inputrec->expandedvals.get(), inputrec->fepvals->n_lambda);
     }
-    snew_bc(cr, inputrec->simtempvals, 1);
     if (inputrec->bSimTemp)
     {
-        bc_simtempvals(cr, inputrec->simtempvals, inputrec->fepvals->n_lambda);
+        bc_simtempvals(cr, inputrec->simtempvals.get(), inputrec->fepvals->n_lambda);
     }
     if (inputrec->bPull)
     {
@@ -719,19 +796,17 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
 
     if (inputrec->bRot)
     {
-        snew_bc(cr, inputrec->rot, 1);
-        bc_rot(cr, inputrec->rot);
+        bc_rot(cr, inputrec->rot.get());
     }
     if (inputrec->bIMD)
     {
-        snew_bc(cr, inputrec->imd, 1);
-        bc_imd(cr, inputrec->imd);
+        bc_imd(cr, inputrec->imd.get());
     }
     if (inputrec->eSwapCoords != eswapNO)
     {
-        snew_bc(cr, inputrec->swap, 1);
-        bc_swapions(cr, inputrec->swap);
+        bc_swapions(cr, inputrec->swap.get());
     }
+    return inputrec;
 }
 
 static void bc_moltype(const t_commrec *cr, t_symtab *symtab,
@@ -782,14 +857,16 @@ static void bc_atomtypes(const t_commrec *cr, t_atomtypes *atomtypes)
 
 /*! \brief Broadcasts ir and mtop from the master to all nodes in
  * cr->mpi_comm_mygroup. */
-static
-void bcast_ir_mtop(const t_commrec *cr, t_inputrec *inputrec, gmx_mtop_t *mtop)
+static std::unique_ptr<t_inputrec>
+bcast_ir_mtop(const t_commrec            *cr,
+              std::unique_ptr<t_inputrec> inputrec,
+              gmx_mtop_t                 *mtop)
 {
     if (debug)
     {
         fprintf(debug, "in bc_data\n");
     }
-    bc_inputrec(cr, inputrec);
+    inputrec = bc_inputrec(cr, std::move(inputrec));
     if (debug)
     {
         fprintf(debug, "after bc_inputrec\n");
@@ -843,10 +920,13 @@ void bcast_ir_mtop(const t_commrec *cr, t_inputrec *inputrec, gmx_mtop_t *mtop)
 
         gmx_mtop_finalize(mtop);
     }
+    return inputrec;
 }
 
-void init_parallel(t_commrec *cr, t_inputrec *inputrec,
-                   gmx_mtop_t *mtop)
+std::unique_ptr<t_inputrec>
+init_parallel(t_commrec                  *cr,
+              std::unique_ptr<t_inputrec> inputrec,
+              gmx_mtop_t                 *mtop)
 {
-    bcast_ir_mtop(cr, inputrec, mtop);
+    return bcast_ir_mtop(cr, std::move(inputrec), mtop);
 }

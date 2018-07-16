@@ -921,7 +921,7 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
     enerd->term[F_PRES] =
         calc_pres(fr->ePBC, inputrec->nwall, ems->s.box, ekin, vir, pres);
 
-    sum_dhdl(enerd, ems->s.lambda, inputrec->fepvals);
+    sum_dhdl(enerd, ems->s.lambda, inputrec->fepvals.get());
 
     if (EI_ENERGY_MINIMIZATION(inputrec->eI))
     {
@@ -1138,7 +1138,7 @@ Integrator::do_cg()
     {
         /* Copy stuff to the energy bin for easy printing etc. */
         upd_mdebin(mdebin, FALSE, FALSE, (double)step,
-                   mdatoms->tmass, enerd, &s_min->s, inputrec->fepvals, inputrec->expandedvals, s_min->s.box,
+                   mdatoms->tmass, enerd, &s_min->s, inputrec->fepvals.get(), inputrec->expandedvals.get(), s_min->s.box,
                    nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
         print_ebin_header(fplog, step, step);
@@ -1560,14 +1560,14 @@ Integrator::do_cg()
             }
             /* Store the new (lower) energies */
             upd_mdebin(mdebin, FALSE, FALSE, (double)step,
-                       mdatoms->tmass, enerd, &s_min->s, inputrec->fepvals, inputrec->expandedvals, s_min->s.box,
+                       mdatoms->tmass, enerd, &s_min->s, inputrec->fepvals.get(), inputrec->expandedvals.get(), s_min->s.box,
                        nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
             do_log = do_per_step(step, inputrec->nstlog);
             do_ene = do_per_step(step, inputrec->nstenergy);
 
             /* Prepare IMD energy record, if bIMD is TRUE. */
-            IMD_fill_energy_record(inputrec->bIMD, inputrec->imd, enerd, step, TRUE);
+            IMD_fill_energy_record(inputrec->bIMD, inputrec->imd.get(), enerd, step, TRUE);
 
             if (do_log)
             {
@@ -1581,7 +1581,7 @@ Integrator::do_cg()
         /* Send energies and positions to the IMD client if bIMD is TRUE. */
         if (do_IMD(inputrec->bIMD, step, cr, TRUE, state_global->box, as_rvec_array(state_global->x.data()), inputrec, 0, wcycle) && MASTER(cr))
         {
-            IMD_send_positions(inputrec->imd);
+            IMD_send_positions(inputrec->imd.get());
         }
 
         /* Stop when the maximum force lies below tolerance.
@@ -1592,7 +1592,7 @@ Integrator::do_cg()
     }   /* End of the loop */
 
     /* IMD cleanup, if bIMD is TRUE. */
-    IMD_finalize(inputrec->bIMD, inputrec->imd);
+    IMD_finalize(inputrec->bIMD, inputrec->imd.get());
 
     if (converged)
     {
@@ -1803,7 +1803,7 @@ Integrator::do_lbfgs()
     {
         /* Copy stuff to the energy bin for easy printing etc. */
         upd_mdebin(mdebin, FALSE, FALSE, (double)step,
-                   mdatoms->tmass, enerd, state_global, inputrec->fepvals, inputrec->expandedvals, state_global->box,
+                   mdatoms->tmass, enerd, state_global, inputrec->fepvals.get(), inputrec->expandedvals.get(), state_global->box,
                    nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
         print_ebin_header(fplog, step, step);
@@ -2295,7 +2295,7 @@ Integrator::do_lbfgs()
             }
             /* Store the new (lower) energies */
             upd_mdebin(mdebin, FALSE, FALSE, (double)step,
-                       mdatoms->tmass, enerd, state_global, inputrec->fepvals, inputrec->expandedvals, state_global->box,
+                       mdatoms->tmass, enerd, state_global, inputrec->fepvals.get(), inputrec->expandedvals.get(), state_global->box,
                        nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
             do_log = do_per_step(step, inputrec->nstlog);
             do_ene = do_per_step(step, inputrec->nstenergy);
@@ -2311,7 +2311,7 @@ Integrator::do_lbfgs()
         /* Send x and E to IMD client, if bIMD is TRUE. */
         if (do_IMD(inputrec->bIMD, step, cr, TRUE, state_global->box, as_rvec_array(state_global->x.data()), inputrec, 0, wcycle) && MASTER(cr))
         {
-            IMD_send_positions(inputrec->imd);
+            IMD_send_positions(inputrec->imd.get());
         }
 
         // Reset stepsize in we are doing more iterations
@@ -2325,7 +2325,7 @@ Integrator::do_lbfgs()
     }   /* End of the loop */
 
     /* IMD cleanup, if bIMD is TRUE. */
-    IMD_finalize(inputrec->bIMD, inputrec->imd);
+    IMD_finalize(inputrec->bIMD, inputrec->imd.get());
 
     if (converged)
     {
@@ -2511,11 +2511,11 @@ Integrator::do_steep()
             {
                 /* Store the new (lower) energies  */
                 upd_mdebin(mdebin, FALSE, FALSE, (double)count,
-                           mdatoms->tmass, enerd, &s_try->s, inputrec->fepvals, inputrec->expandedvals,
+                           mdatoms->tmass, enerd, &s_try->s, inputrec->fepvals.get(), inputrec->expandedvals.get(),
                            s_try->s.box, nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
                 /* Prepare IMD energy record, if bIMD is TRUE. */
-                IMD_fill_energy_record(inputrec->bIMD, inputrec->imd, enerd, count, TRUE);
+                IMD_fill_energy_record(inputrec->bIMD, inputrec->imd.get(), enerd, count, TRUE);
 
                 print_ebin(mdoutf_get_fp_ene(outf), TRUE,
                            do_per_step(steps_accepted, inputrec->nstdisreout),
@@ -2592,14 +2592,14 @@ Integrator::do_steep()
                    inputrec, 0, wcycle) &&
             MASTER(cr))
         {
-            IMD_send_positions(inputrec->imd);
+            IMD_send_positions(inputrec->imd.get());
         }
 
         count++;
     }   /* End of the loop  */
 
     /* IMD cleanup, if bIMD is TRUE. */
-    IMD_finalize(inputrec->bIMD, inputrec->imd);
+    IMD_finalize(inputrec->bIMD, inputrec->imd.get());
 
     /* Print some data...  */
     if (MASTER(cr))

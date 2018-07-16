@@ -778,7 +778,7 @@ static void get_initial_ioncounts(
     int           req, tot;
 
 
-    sc = ir->swap;
+    sc = ir->swap.get();
     s  = sc->si_priv;
 
 
@@ -853,7 +853,7 @@ static void get_initial_ioncounts_from_cpt(
     t_swapgrp       *g;
     swapstateIons_t *gs;
 
-    sc = ir->swap;
+    sc = ir->swap.get();
     s  = sc->si_priv;
 
     if (MASTER(cr))
@@ -1359,7 +1359,7 @@ static void copyIndicesToGroup(
         }
     }
 
-    srenew(g->ind, g->nat);
+    g->ind.resize(g->nat);
     for (int i = 0; i < g->nat; i++)
     {
         g->ind[i] = indIons[i];
@@ -1472,7 +1472,7 @@ void init_swapcoords(
     bAppend       = mdrunOptions.continuationOptions.appendFiles;
     bStartFromCpt = mdrunOptions.continuationOptions.startedFromCheckpoint;
 
-    sc = ir->swap;
+    sc = ir->swap.get();
     snew(sc->si_priv, 1);
     s = sc->si_priv;
 
@@ -1525,7 +1525,7 @@ void init_swapcoords(
     for (int i = 0; i < s->ngrp; i++)
     {
         s->group[i].nat     = sc->grp[i].nat;
-        s->group[i].ind     = sc->grp[i].ind;
+        s->group[i].ind     = sc->grp[i].ind.data();
         s->group[i].molname = sc->grp[i].molname;
     }
 
@@ -1791,7 +1791,7 @@ void init_swapcoords(
 
     if (PAR(cr))
     {
-        bc_initial_concentrations(cr, ir->swap);
+        bc_initial_concentrations(cr, ir->swap.get());
     }
 
     /* Update the time-averaged number of molecules for all groups and compartments */
@@ -1994,7 +1994,7 @@ gmx_bool do_swapcoords(
 
     wallcycle_start(wcycle, ewcSWAP);
 
-    sc  = ir->swap;
+    sc  = ir->swap.get();
     s   = sc->si_priv;
 
     set_pbc(s->pbc, ir->ePBC, box);

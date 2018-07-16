@@ -411,7 +411,7 @@ void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, t_state *state,
     {
         IMDatoms = gmx_mtop_global_atoms(sys);
         write_sto_conf_indexed(opt2fn("-imd", nfile, fnm), "IMDgroup", &IMDatoms,
-                               as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), ir->ePBC, state->box, ir->imd->nat, ir->imd->ind);
+                               as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), ir->ePBC, state->box, ir->imd->nat, ir->imd->ind.data());
     }
 }
 
@@ -1388,7 +1388,7 @@ void init_IMD(t_inputrec             *ir,
     if (ir->imd->nat > 0)
     {
         /* Point to the user-supplied array of atom numbers */
-        IMDsetup->ind = ir->imd->ind;
+        IMDsetup->ind = ir->imd->ind.data();
     }
     else
     {

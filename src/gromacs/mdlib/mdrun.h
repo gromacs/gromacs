@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,8 @@
 
 #ifndef GMX_MDLIB_MDRUN_H
 #define GMX_MDLIB_MDRUN_H
+
+#include <memory>
 
 #include "gromacs/timing/wallcycle.h"
 
@@ -187,9 +189,15 @@ struct MdrunOptions
 //! \brief Allocate and initialize node-local state entries
 void set_state_entries(t_state *state, const t_inputrec *ir);
 
-//! \brief Broadcast inputrec and mtop and allocate node-specific settings
-void init_parallel(t_commrec *cr, t_inputrec *inputrec,
-                   gmx_mtop_t *mtop);
+/*! \brief Broadcast inputrec and mtop and allocate node-specific settings
+ *
+ * Non-master ranks will allocate and return new t_inputrec, filled
+ * with the contets broadcast from the master rank, which will return
+ * its original t_inputrec. */
+std::unique_ptr<t_inputrec>
+init_parallel(t_commrec                  *cr,
+              std::unique_ptr<t_inputrec> inputrec,
+              gmx_mtop_t                 *mtop);
 
 //! \brief Broadcasts the, non-dynamic, state from the master to all ranks in cr->mpi_comm_mygroup
 //

@@ -678,8 +678,8 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
     char        title[STRLEN], label_x[STRLEN], label_y[STRLEN];
     int         i, nps, nsets, nsets_de, nsetsbegin;
     int         n_lambda_terms = 0;
-    t_lambda   *fep            = ir->fepvals; /* for simplicity */
-    t_expanded *expand         = ir->expandedvals;
+    t_lambda   *fep            = ir->fepvals.get(); /* for simplicity */
+    t_expanded *expand         = ir->expandedvals.get();
     char      **setname;
     char        buf[STRLEN], lambda_vec_str[STRLEN], lambda_name_str[STRLEN];
     int         bufplace = 0;

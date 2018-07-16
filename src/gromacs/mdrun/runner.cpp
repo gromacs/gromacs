@@ -396,8 +396,8 @@ int Mdrunner::mdrunner()
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
     std::unique_ptr<gmx::MDModules> mdModules(new gmx::MDModules);
-    t_inputrec                      inputrecInstance;
-    t_inputrec                     *inputrec = &inputrecInstance;
+    std::unique_ptr<t_inputrec>     inputrecInstance;
+    t_inputrec                     *inputrec = nullptr;
     gmx_mtop_t                      mtop;
 
     if (mdrunOptions.continuationOptions.appendFiles)
@@ -507,6 +507,8 @@ int Mdrunner::mdrunner()
         globalState = std::unique_ptr<t_state>(new t_state);
 
         /* Read (nearly) all data required for the simulation */
+        inputrecInstance = compat::make_unique<t_inputrec>();
+        inputrec         = inputrecInstance.get();
         read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, globalState.get(), &mtop);
 
         if (inputrec->cutoff_scheme != ecutsVERLET)
@@ -594,8 +596,9 @@ int Mdrunner::mdrunner()
     if (PAR(cr))
     {
         /* now broadcast everything to the non-master nodes/threads: */
-        init_parallel(cr, inputrec, &mtop);
+        inputrecInstance = init_parallel(cr, std::move(inputrecInstance), &mtop);
     }
+    inputrec = inputrecInstance.get();
 
     // Now each rank knows the inputrec that SIMMASTER read and used,
     // and (if applicable) cr->nnodes has been assigned the number of
@@ -1305,7 +1308,7 @@ int Mdrunner::mdrunner()
         integrator.run(inputrec->eI);
         if (inputrec->bRot)
         {
-            finish_rot(inputrec->rot);
+            finish_rot(inputrec->rot.get());
         }
 
         if (inputrec->bPull)

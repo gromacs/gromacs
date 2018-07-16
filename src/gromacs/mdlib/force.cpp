@@ -334,7 +334,7 @@ void do_force_lowlevel(t_forcerec           *fr,
                    TRUE, box);
     }
 
-    do_force_listed(wcycle, box, ir->fepvals, cr, ms,
+    do_force_listed(wcycle, box, ir->fepvals.get(), cr, ms,
                     idef, (const rvec *) x, hist,
                     forceForUseWithShiftForces, forceWithVirial,
                     fr, &pbc, graph, enerd, nrnb, lambda, md, fcd,

@@ -372,7 +372,7 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
     int       i, j, n;
     double   *lambda_vec;
     int       ndhmax = ir->nstenergy/ir->nstcalcenergy;
-    t_lambda *fep    = ir->fepvals;
+    t_lambda *fep    = ir->fepvals.get();
 
     dhc->temperature    = ir->opts.ref_t[0]; /* only store system temperature */
     dhc->start_time     = 0.;

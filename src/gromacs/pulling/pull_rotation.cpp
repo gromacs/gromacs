@@ -47,6 +47,7 @@
 #include <algorithm>
 
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
@@ -3614,7 +3615,7 @@ extern void dd_make_local_rotation_groups(gmx_domdec_t *dd, t_rot *rot)
         erg  = rotg->enfrotgrp;
 
 
-        dd_make_local_group_indices(ga2la, rotg->nat, rotg->ind,
+        dd_make_local_group_indices(ga2la, rotg->nat, rotg->ind.data(),
                                     &erg->nat_loc, &erg->ind_loc, &erg->nalloc_loc, erg->xc_ref_ind);
     }
 }
@@ -3676,8 +3677,7 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
         fprintf(stdout, "%s Initializing ...\n", RotStr);
     }
 
-    rot = ir->rot;
-    snew(rot->enfrot, 1);
+    rot             = ir->rot.get();
     er              = rot->enfrot;
     er->appendFiles = mdrunOptions.continuationOptions.appendFiles;
 
@@ -3752,7 +3752,7 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
             else
             {
                 erg->nat_loc = rotg->nat;
-                erg->ind_loc = rotg->ind;
+                erg->ind_loc = rotg->ind.data();
             }
             init_rot_group(fplog, cr, g, rotg, x_pbc, mtop, mdrunOptions.verbose, er->out_slabs, MASTER(cr) ? globalState->box : nullptr, ir,
                            !er->appendFiles); /* Do not output the reference centers
@@ -3908,7 +3908,7 @@ extern void do_rotation(
     double t0;
 #endif
 
-    rot = ir->rot;
+    rot = ir->rot.get();
     er  = rot->enfrot;
 
     /* When to output in main rotation output file */

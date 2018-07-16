@@ -878,7 +878,7 @@ computeSpecialForces(FILE                          *fplog,
     if (inputrec->bRot)
     {
         wallcycle_start(wcycle, ewcROTadd);
-        enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot, f, cr, step, t);
+        enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot.get(), f, cr, step, t);
         wallcycle_stop(wcycle, ewcROTadd);
     }
 
@@ -895,7 +895,7 @@ computeSpecialForces(FILE                          *fplog,
     /* Add forces from interactive molecular dynamics (IMD), if bIMD == TRUE. */
     if (inputrec->bIMD && computeForces)
     {
-        IMD_apply_forces(inputrec->bIMD, inputrec->imd, cr, f, wcycle);
+        IMD_apply_forces(inputrec->bIMD, inputrec->imd.get(), cr, f, wcycle);
     }
 }
 
@@ -1479,7 +1479,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         {
             do_nb_verlet_fep(&fr->nbv->grp[eintLocal].nbl_lists,
                              fr, as_rvec_array(x.data()), f, mdatoms,
-                             inputrec->fepvals, lambda,
+                             inputrec->fepvals.get(), lambda,
                              enerd, flags, nrnb, wcycle);
         }
 
@@ -1488,7 +1488,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         {
             do_nb_verlet_fep(&fr->nbv->grp[eintNonlocal].nbl_lists,
                              fr, as_rvec_array(x.data()), f, mdatoms,
-                             inputrec->fepvals, lambda,
+                             inputrec->fepvals.get(), lambda,
                              enerd, flags, nrnb, wcycle);
         }
     }
@@ -1543,7 +1543,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, ms, nrnb, wcycle, mdatoms,
                       as_rvec_array(x.data()), hist, f, &forceWithVirial, enerd, fcd,
-                      box, inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
+                      box, inputrec->fepvals.get(), lambda, graph, &(top->excls), fr->mu_tot,
                       flags, &cycles_pme);
 
     wallcycle_stop(wcycle, ewcFORCE);
@@ -1989,7 +1989,7 @@ static void do_force_cutsGROUP(FILE *fplog,
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, ms, nrnb, wcycle, mdatoms,
                       as_rvec_array(x.data()), hist, f, &forceWithVirial, enerd, fcd,
-                      box, inputrec->fepvals, lambda,
+                      box, inputrec->fepvals.get(), lambda,
                       graph, &(top->excls), fr->mu_tot,
                       flags,
                       &cycles_pme);
@@ -2838,7 +2838,7 @@ extern void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, gmx:
         return;
     }
 
-    t_lambda *fep = ir->fepvals;
+    t_lambda *fep = ir->fepvals.get();
     *fep_state    = fep->init_fep_state; /* this might overwrite the checkpoint
                                             if checkpoint is set -- a kludge is in for now
                                             to prevent this.*/

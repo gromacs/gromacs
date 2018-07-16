@@ -2247,7 +2247,7 @@ int gmx_grompp(int argc, char *argv[])
 
     if (ir->bRot)
     {
-        set_reference_positions(ir->rot, as_rvec_array(state.x.data()), state.box,
+        set_reference_positions(ir->rot.get(), as_rvec_array(state.x.data()), state.box,
                                 opt2fn("-ref", NFILE, fnm), opt2bSet("-ref", NFILE, fnm),
                                 wi);
     }

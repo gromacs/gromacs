@@ -257,8 +257,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     char        err_buf[256], warn_buf[STRLEN];
     int         i, j;
     real        dt_pcoupl;
-    t_lambda   *fep    = ir->fepvals;
-    t_expanded *expand = ir->expandedvals;
+    t_lambda   *fep    = ir->fepvals.get();
+    t_expanded *expand = ir->expandedvals.get();
 
     set_warning_line(wi, mdparin, -1);
 
@@ -624,7 +624,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
     if (ir->efep != efepNO)
     {
-        fep = ir->fepvals;
+        fep = ir->fepvals.get();
         sprintf(err_buf, "The soft-core power is %d and can only be 1 or 2",
                 fep->sc_power);
         CHECK(fep->sc_alpha != 0 && fep->sc_power != 1 && fep->sc_power != 2);
@@ -743,7 +743,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
     if ((ir->bSimTemp) || (ir->efep == efepEXPANDED))
     {
-        fep    = ir->fepvals;
+        fep    = ir->fepvals.get();
 
         /* checking equilibration of weights inputs for validity */
 
@@ -1420,8 +1420,8 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN], char weight
 {
 
     int         i, j, max_n_lambda, nweights, nfep[efptNR];
-    t_lambda   *fep    = ir->fepvals;
-    t_expanded *expand = ir->expandedvals;
+    t_lambda   *fep    = ir->fepvals.get();
+    t_expanded *expand = ir->expandedvals.get();
     real      **count_fep_lambdas;
     gmx_bool    bOneLambda = TRUE;
 
@@ -1586,7 +1586,7 @@ static void do_simtemp_params(t_inputrec *ir)
 {
 
     snew(ir->simtempvals->temperatures, ir->fepvals->n_lambda);
-    GetSimTemps(ir->fepvals->n_lambda, ir->simtempvals, ir->fepvals->all_lambda[efptTEMPERATURE]);
+    GetSimTemps(ir->fepvals->n_lambda, ir->simtempvals.get(), ir->fepvals->all_lambda[efptTEMPERATURE]);
 }
 
 static void do_wall_params(t_inputrec *ir,
@@ -1755,8 +1755,8 @@ void get_ir(const char *mdparin, const char *mdparout,
     double                 dumdub[2][6];
     int                    i, j, m;
     char                   warn_buf[STRLEN];
-    t_lambda              *fep    = ir->fepvals;
-    t_expanded            *expand = ir->expandedvals;
+    t_lambda              *fep    = ir->fepvals.get();
+    t_expanded            *expand = ir->expandedvals.get();
 
     const char            *no_names[] = { "no", nullptr };
 
@@ -2085,8 +2085,8 @@ void get_ir(const char *mdparin, const char *mdparout,
     ir->bRot = get_eeenum(&inp, "rotation", yesno_names, wi);
     if (ir->bRot)
     {
-        snew(ir->rot, 1);
-        is->rot_grp = read_rotparams(&inp, ir->rot, wi);
+        t_rot tempRot;
+        is->rot_grp = read_rotparams(&inp, &tempRot, wi);
     }
 
     /* Interactive MD */
@@ -2095,7 +2095,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     setStringEntry(&inp, "IMD-group", is->imd_grp, nullptr);
     if (is->imd_grp[0] != '\0')
     {
-        snew(ir->imd, 1);
         ir->bIMD = TRUE;
     }
 
@@ -2209,7 +2208,6 @@ void get_ir(const char *mdparin, const char *mdparout,
         int  nIonTypes;
 
 
-        snew(ir->swap, 1);
         printStringNoNewline(&inp, "Swap attempt frequency");
         ir->swap->nstswap = get_eint(&inp, "swap-frequency", 1, wi);
         printStringNoNewline(&inp, "Number of ion types to be controlled");
@@ -2219,7 +2217,7 @@ void get_ir(const char *mdparin, const char *mdparout,
             warning_error(wi, "You need to provide at least one ion type for position exchanges.");
         }
         ir->swap->ngrp = nIonTypes + eSwapFixedGrpNR;
-        snew(ir->swap->grp, ir->swap->ngrp);
+        ir->swap->grp.resize(ir->swap->ngrp);
         for (i = 0; i < ir->swap->ngrp; i++)
         {
             snew(ir->swap->grp[i].molname, STRLEN);
@@ -3107,7 +3105,7 @@ static void make_swap_groups(
             fprintf(stderr, "%s group '%s' contains %d atoms.\n",
                     ig < 3 ? eSwapFixedGrp_names[ig] : "Swap",
                     swap->grp[ig].molname, swapg->nat);
-            snew(swapg->ind, swapg->nat);
+            swapg->ind.resize(swapg->nat);
             for (i = 0; i < swapg->nat; i++)
             {
                 swapg->ind[i] = grps->a[grps->index[gind]+i];
@@ -3133,7 +3131,7 @@ static void make_IMD_group(t_IMD *IMDgroup, char *IMDgname, t_blocka *grps, char
     {
         fprintf(stderr, "Group '%s' with %d atoms can be activated for interactive molecular dynamics (IMD).\n",
                 IMDgname, IMDgroup->nat);
-        snew(IMDgroup->ind, IMDgroup->nat);
+        IMDgroup->ind.resize(IMDgroup->nat);
         for (i = 0; i < IMDgroup->nat; i++)
         {
             IMDgroup->ind[i] = grps->a[grps->index[ig]+i];
@@ -3488,18 +3486,18 @@ void do_index(const char* mdparin, const char *ndx,
 
     if (ir->bRot)
     {
-        make_rotation_groups(ir->rot, is->rot_grp, grps, gnames);
+        make_rotation_groups(ir->rot.get(), is->rot_grp, grps, gnames);
     }
 
     if (ir->eSwapCoords != eswapNO)
     {
-        make_swap_groups(ir->swap, grps, gnames);
+        make_swap_groups(ir->swap.get(), grps, gnames);
     }
 
     /* Make indices for IMD session */
     if (ir->bIMD)
     {
-        make_IMD_group(ir->imd, is->imd_grp, grps, gnames);
+        make_IMD_group(ir->imd.get(), is->imd_grp, grps, gnames);
     }
 
     nacc = str_nelem(is->acc, MAXPTR, ptr1);

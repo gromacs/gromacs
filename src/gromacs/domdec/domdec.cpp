@@ -6812,17 +6812,17 @@ void dd_partition_system(FILE                *fplog,
     if (ir->bRot)
     {
         /* Update the local rotation groups */
-        dd_make_local_rotation_groups(dd, ir->rot);
+        dd_make_local_rotation_groups(dd, ir->rot.get());
     }
 
     if (ir->eSwapCoords != eswapNO)
     {
         /* Update the local groups needed for ion swapping */
-        dd_make_local_swap_groups(dd, ir->swap);
+        dd_make_local_swap_groups(dd, ir->swap.get());
     }
 
     /* Update the local atoms to be communicated via the IMD protocol if bIMD is TRUE. */
-    dd_make_local_IMD_atoms(ir->bIMD, dd, ir->imd);
+    dd_make_local_IMD_atoms(ir->bIMD, dd, ir->imd.get());
 
     add_dd_statistics(dd);
 

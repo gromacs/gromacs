@@ -422,14 +422,11 @@ static void do_simtempvals(t_fileio *fio, t_simtemp *simtemp, int n_lambda, gmx_
     }
 }
 
-static void do_imd(t_fileio *fio, t_IMD *imd, gmx_bool bRead)
+static void do_imd(t_fileio *fio, t_IMD *imd)
 {
     gmx_fio_do_int(fio, imd->nat);
-    if (bRead)
-    {
-        snew(imd->ind, imd->nat);
-    }
-    gmx_fio_ndo_int(fio, imd->ind, imd->nat);
+    imd->ind.resize(imd->nat);
+    gmx_fio_ndo_int(fio, imd->ind.data(), imd->nat);
 }
 
 static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int file_version)
@@ -796,11 +793,8 @@ static void do_rotgrp(t_fileio *fio, t_rotgrp *rotg, gmx_bool bRead)
     gmx_fio_do_int(fio, rotg->eType);
     gmx_fio_do_int(fio, rotg->bMassW);
     gmx_fio_do_int(fio, rotg->nat);
-    if (bRead)
-    {
-        snew(rotg->ind, rotg->nat);
-    }
-    gmx_fio_ndo_int(fio, rotg->ind, rotg->nat);
+    rotg->ind.resize(rotg->nat);
+    gmx_fio_ndo_int(fio, rotg->ind.data(), rotg->nat);
     if (bRead)
     {
         snew(rotg->x_ref, rotg->nat);
@@ -825,10 +819,7 @@ static void do_rot(t_fileio *fio, t_rot *rot, gmx_bool bRead)
     gmx_fio_do_int(fio, rot->ngrp);
     gmx_fio_do_int(fio, rot->nstrout);
     gmx_fio_do_int(fio, rot->nstsout);
-    if (bRead)
-    {
-        snew(rot->grp, rot->ngrp);
-    }
+    rot->grp.resize(rot->ngrp);
     for (g = 0; g < rot->ngrp; g++)
     {
         do_rotgrp(fio, &rot->grp[g], bRead);
@@ -856,11 +847,8 @@ static void do_swapgroup(t_fileio *fio, t_swapGroup *g, gmx_bool bRead)
     gmx_fio_do_int(fio, g->nat);
 
     /* The group's atom indices */
-    if (bRead)
-    {
-        snew(g->ind, g->nat);
-    }
-    gmx_fio_ndo_int(fio, g->ind, g->nat);
+    g->ind.resize(g->nat);
+    gmx_fio_ndo_int(fio, g->ind.data(), g->nat);
 
     /* Requested counts for compartments A and B */
     gmx_fio_ndo_int(fio, g->nmolReq, eCompNR);
@@ -883,10 +871,7 @@ static void do_swapcoords_tpx(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead,
          * (split0, split1, solvent), and the user-defined groups (2+ types of ions)
          */
         gmx_fio_do_int(fio, swap->ngrp);
-        if (bRead)
-        {
-            snew(swap->grp, swap->ngrp);
-        }
+        swap->grp.resize(swap->ngrp);
         for (int ig = 0; ig < swap->ngrp; ig++)
         {
             do_swapgroup(fio, &swap->grp[ig], bRead);
@@ -909,7 +894,7 @@ static void do_swapcoords_tpx(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead,
 
         /* In the original CompEl .tpr files, we always have 5 groups: */
         swap->ngrp = 5;
-        snew(swap->grp, swap->ngrp);
+        swap->grp.resize(swap->ngrp);
 
         swap->grp[eGrpSplit0 ].molname = gmx_strdup("split0" );  // group 0: split0
         swap->grp[eGrpSplit1 ].molname = gmx_strdup("split1" );  // group 1: split1
@@ -941,8 +926,8 @@ static void do_swapcoords_tpx(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead,
             for (int ig = 0; ig < 4; ig++)
             {
                 int g = order[ig];
-                snew(swap->grp[g].ind, swap->grp[g].nat);
-                gmx_fio_ndo_int(fio, swap->grp[g].ind, swap->grp[g].nat);
+                swap->grp[g].ind.resize(swap->grp[g].nat);
+                gmx_fio_ndo_int(fio, swap->grp[g].ind.data(), swap->grp[g].nat);
             }
         }
 
@@ -1292,7 +1277,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     gmx_fio_do_real(fio, ir->shake_tol);
 
     gmx_fio_do_int(fio, ir->efep);
-    do_fepvals(fio, ir->fepvals, bRead, file_version);
+    do_fepvals(fio, ir->fepvals.get(), bRead, file_version);
 
     if (file_version >= 79)
     {
@@ -1308,7 +1293,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     }
     if (ir->bSimTemp)
     {
-        do_simtempvals(fio, ir->simtempvals, ir->fepvals->n_lambda, bRead, file_version);
+        do_simtempvals(fio, ir->simtempvals.get(), ir->fepvals->n_lambda, bRead, file_version);
     }
 
     if (file_version >= 79)
@@ -1325,7 +1310,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     }
     if (ir->bExpanded)
     {
-        do_expandedvals(fio, ir->expandedvals, ir->fepvals, bRead, file_version);
+        do_expandedvals(fio, ir->expandedvals.get(), ir->fepvals.get(), bRead, file_version);
     }
 
     gmx_fio_do_int(fio, ir->eDisre);
@@ -1467,11 +1452,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         gmx_fio_do_int(fio, ir->bRot);
         if (ir->bRot == TRUE)
         {
-            if (bRead)
-            {
-                snew(ir->rot, 1);
-            }
-            do_rot(fio, ir->rot, bRead);
+            do_rot(fio, ir->rot.get(), bRead);
         }
     }
     else
@@ -1485,11 +1466,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         gmx_fio_do_int(fio, ir->bIMD);
         if (TRUE == ir->bIMD)
         {
-            if (bRead)
-            {
-                snew(ir->imd, 1);
-            }
-            do_imd(fio, ir->imd, bRead);
+            do_imd(fio, ir->imd.get());
         }
     }
     else
@@ -1580,11 +1557,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         gmx_fio_do_int(fio, ir->eSwapCoords);
         if (ir->eSwapCoords != eswapNO)
         {
-            if (bRead)
-            {
-                snew(ir->swap, 1);
-            }
-            do_swapcoords_tpx(fio, ir->swap, bRead, file_version);
+            do_swapcoords_tpx(fio, ir->swap.get(), bRead, file_version);
         }
     }
 

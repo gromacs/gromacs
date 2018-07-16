@@ -88,7 +88,7 @@ extern char **read_rotparams(std::vector<t_inpfile> *inp, t_rot *rot,
         gmx_fatal(FARGS, "rot-ngroups should be >= 1");
     }
 
-    snew(rot->grp, rot->ngrp);
+    rot->grp.resize(rot->ngrp);
 
     /* Read the rotation groups */
     snew(grpbuf, rot->ngrp);
@@ -312,7 +312,7 @@ extern void make_rotation_groups(t_rot *rot, char **rotgnames, t_blocka *grps, c
         if (rotg->nat > 0)
         {
             fprintf(stderr, "Rotation group %d '%s' has %d atoms\n", g, rotgnames[g], rotg->nat);
-            snew(rotg->ind, rotg->nat);
+            rotg->ind.resize(rotg->nat);
             for (i = 0; i < rotg->nat; i++)
             {
                 rotg->ind[i] = grps->a[grps->index[ig]+i];

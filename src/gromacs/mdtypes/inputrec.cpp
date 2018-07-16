@@ -44,6 +44,7 @@
 
 #include <algorithm>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/math/veccompare.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/mdtypes/awh-params.h"
@@ -72,10 +73,12 @@ const int nstmin_harmonic          = 20;
 
 t_inputrec::t_inputrec()
 {
-    std::memset(this, 0, sizeof(*this)); // NOLINT(bugprone-undefined-memory-manipulation)
-    snew(fepvals, 1);
-    snew(expandedvals, 1);
-    snew(simtempvals, 1);
+    fepvals      = gmx::compat::make_unique<t_lambda>();
+    simtempvals  = gmx::compat::make_unique<t_simtemp>();
+    expandedvals = gmx::compat::make_unique<t_expanded>();
+    rot          = gmx::compat::make_unique<t_rot>();
+    swap         = gmx::compat::make_unique<t_swapcoords>();
+    imd          = gmx::compat::make_unique<t_IMD>();
 }
 
 t_inputrec::~t_inputrec()
@@ -324,10 +327,7 @@ void done_inputrec(t_inputrec *ir)
     sfree(ir->opts.SAoff);
     sfree(ir->opts.SAsteps);
     sfree(ir->opts.egp_flags);
-    done_lambdas(ir->fepvals);
-    sfree(ir->fepvals);
-    sfree(ir->expandedvals);
-    sfree(ir->simtempvals);
+    done_lambdas(ir->fepvals.get());
 
     if (ir->pull)
     {
@@ -737,7 +737,7 @@ static void pr_rotgrp(FILE *fp, int indent, int g, const t_rotgrp *rotg)
     indent += 2;
     PS("rot-type", EROTGEOM(rotg->eType));
     PS("rot-massw", EBOOL(rotg->bMassW));
-    pr_ivec_block(fp, indent, "atom", rotg->ind, rotg->nat, TRUE);
+    pr_ivec_block(fp, indent, "atom", rotg->ind.data(), rotg->nat, TRUE);
     pr_rvecs(fp, indent, "x-ref", rotg->x_ref, rotg->nat);
     pr_rvec(fp, indent, "rot-vec", rotg->vec, DIM, TRUE);
     pr_rvec(fp, indent, "rot-pivot", rotg->pivot, DIM, TRUE);
@@ -778,23 +778,26 @@ static void pr_swap(FILE *fp, int indent, const t_swapcoords *swap)
     PI("swap-frequency", swap->nstswap);
 
     /* The split groups that define the compartments */
-    for (int j = 0; j < 2; j++)
+    for (int j = 0; j < 2 && j < swap->ngrp; j++)
     {
         snprintf(str, STRLEN, "massw_split%d", j);
         PS(str, EBOOL(swap->massw_split[j]));
         snprintf(str, STRLEN, "split atoms group %d", j);
-        pr_ivec_block(fp, indent, str, swap->grp[j].ind, swap->grp[j].nat, TRUE);
+        pr_ivec_block(fp, indent, str, swap->grp[j].ind.data(), swap->grp[j].nat, TRUE);
     }
 
     /* The solvent group */
-    snprintf(str, STRLEN, "solvent group %s", swap->grp[eGrpSolvent].molname);
-    pr_ivec_block(fp, indent, str, swap->grp[eGrpSolvent].ind, swap->grp[eGrpSolvent].nat, TRUE);
+    if (eGrpSolvent < swap->ngrp)
+    {
+        snprintf(str, STRLEN, "solvent group %s", swap->grp[eGrpSolvent].molname);
+        pr_ivec_block(fp, indent, str, swap->grp[eGrpSolvent].ind.data(), swap->grp[eGrpSolvent].nat, TRUE);
+    }
 
     /* Now print the indices for all the ion groups: */
     for (int ig = eSwapFixedGrpNR; ig < swap->ngrp; ig++)
     {
         snprintf(str, STRLEN, "ion group %s", swap->grp[ig].molname);
-        pr_ivec_block(fp, indent, str, swap->grp[ig].ind, swap->grp[ig].nat, TRUE);
+        pr_ivec_block(fp, indent, str, swap->grp[ig].ind.data(), swap->grp[ig].nat, TRUE);
     }
 
     PR("cyl0-r", swap->cyl0r);
@@ -824,7 +827,7 @@ static void pr_swap(FILE *fp, int indent, const t_swapcoords *swap)
 static void pr_imd(FILE *fp, int indent, const t_IMD *imd)
 {
     PI("IMD-atoms", imd->nat);
-    pr_ivec_block(fp, indent, "atom", imd->ind, imd->nat, TRUE);
+    pr_ivec_block(fp, indent, "atom", imd->ind.data(), imd->nat, TRUE);
 }
 
 
@@ -999,14 +1002,14 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
         PS("rotation", EBOOL(ir->bRot));
         if (ir->bRot)
         {
-            pr_rot(fp, indent, ir->rot);
+            pr_rot(fp, indent, ir->rot.get());
         }
 
         /* INTERACTIVE MD */
         PS("interactiveMD", EBOOL(ir->bIMD));
         if (ir->bIMD)
         {
-            pr_imd(fp, indent, ir->imd);
+            pr_imd(fp, indent, ir->imd.get());
         }
 
         /* NMR refinement stuff */
@@ -1025,11 +1028,11 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
         PS("free-energy", EFEPTYPE(ir->efep));
         if (ir->efep != efepNO || ir->bSimTemp)
         {
-            pr_fepvals(fp, indent, ir->fepvals, bMDPformat);
+            pr_fepvals(fp, indent, ir->fepvals.get(), bMDPformat);
         }
         if (ir->bExpanded)
         {
-            pr_expandedvals(fp, indent, ir->expandedvals, ir->fepvals->n_lambda);
+            pr_expandedvals(fp, indent, ir->expandedvals.get(), ir->fepvals->n_lambda);
         }
 
         /* NON-equilibrium MD stuff */
@@ -1040,14 +1043,14 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
         PS("simulated-tempering", EBOOL(ir->bSimTemp));
         if (ir->bSimTemp)
         {
-            pr_simtempvals(fp, indent, ir->simtempvals, ir->fepvals->n_lambda);
+            pr_simtempvals(fp, indent, ir->simtempvals.get(), ir->fepvals->n_lambda);
         }
 
         /* ION/WATER SWAPPING FOR COMPUTATIONAL ELECTROPHYSIOLOGY */
         PS("swapcoords", ESWAPTYPE(ir->eSwapCoords));
         if (ir->eSwapCoords != eswapNO)
         {
-            pr_swap(fp, indent, ir->swap);
+            pr_swap(fp, indent, ir->swap.get());
         }
 
         /* USER-DEFINED THINGIES */
@@ -1329,16 +1332,16 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     cmp_int(fp, "inputrec->eDispCorr", -1, ir1->eDispCorr, ir2->eDispCorr);
     cmp_real(fp, "inputrec->shake_tol", -1, ir1->shake_tol, ir2->shake_tol, ftol, abstol);
     cmp_int(fp, "inputrec->efep", -1, ir1->efep, ir2->efep);
-    cmp_fepvals(fp, ir1->fepvals, ir2->fepvals, ftol, abstol);
+    cmp_fepvals(fp, ir1->fepvals.get(), ir2->fepvals.get(), ftol, abstol);
     cmp_int(fp, "inputrec->bSimTemp", -1, ir1->bSimTemp, ir2->bSimTemp);
     if ((ir1->bSimTemp == ir2->bSimTemp) && (ir1->bSimTemp))
     {
-        cmp_simtempvals(fp, ir1->simtempvals, ir2->simtempvals, std::min(ir1->fepvals->n_lambda, ir2->fepvals->n_lambda), ftol, abstol);
+        cmp_simtempvals(fp, ir1->simtempvals.get(), ir2->simtempvals.get(), std::min(ir1->fepvals->n_lambda, ir2->fepvals->n_lambda), ftol, abstol);
     }
     cmp_int(fp, "inputrec->bExpanded", -1, ir1->bExpanded, ir2->bExpanded);
     if ((ir1->bExpanded == ir2->bExpanded) && (ir1->bExpanded))
     {
-        cmp_expandedvals(fp, ir1->expandedvals, ir2->expandedvals, std::min(ir1->fepvals->n_lambda, ir2->fepvals->n_lambda), ftol, abstol);
+        cmp_expandedvals(fp, ir1->expandedvals.get(), ir2->expandedvals.get(), std::min(ir1->fepvals->n_lambda, ir2->fepvals->n_lambda), ftol, abstol);
     }
     cmp_int(fp, "inputrec->nwall", -1, ir1->nwall, ir2->nwall);
     cmp_int(fp, "inputrec->wall_type", -1, ir1->wall_type, ir2->wall_type);
