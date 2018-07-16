@@ -64,7 +64,8 @@ using gmx::test::CommandLine;
 using gmx::test::ConfMatch;
 
 //! Test parameter struct.
-using CommandLineOptionParams = std::tuple<std::string, std::string, std::string, std::string>;
+using CommandLineOptionParams = std::tuple<std::string, std::string, std::string, std::string,
+                                           std::string, std::string>;
 
 class Pdb2gmxTest : public gmx::test::CommandLineTestBase,
                     public ::testing::WithParamInterface<CommandLineOptionParams>
@@ -106,9 +107,10 @@ TEST_P(Pdb2gmxTest, ProducesMatchingTopology)
 {
     const auto &params    = GetParam();
     std::string cmdline[] = {
-        "pdb2gmx", "-ignh", "-ff", std::get<0>(params), "-water", std::get<1>(params), "-vsite", std::get<2>(params)
+        "pdb2gmx", "-ignh", "-ff", std::get<0>(params), "-water", std::get<1>(params), "-vsite", std::get<2>(params),
+        "-chainsep", std::get<3>(params), "-merge", std::get<4>(params)
     };
-    setInputFile("-f", std::get<3>(params));
+    setInputFile("-f", std::get<5>(params));
     runTest(CommandLine(cmdline));
 }
 
@@ -117,6 +119,8 @@ INSTANTIATE_TEST_CASE_P(ForOplsaa, Pdb2gmxTest,
                             (::testing::Values("oplsaa"),
                                 ::testing::Values("tip3p", "tip4p", "tip5p"),
                                 ::testing::Values("none", "h"),
+                                ::testing::Values("id_or_ter"),
+                                ::testing::Values("no"),
                                 ::testing::Values("fragment1.pdb", "fragment2.pdb", "fragment3.pdb", "fragment4.pdb"))
                         );
 
@@ -125,6 +129,8 @@ INSTANTIATE_TEST_CASE_P(ForGromos43a1, Pdb2gmxTest,
                             (::testing::Values("gromos43a1"),
                                 ::testing::Values("spc", "spce"),
                                 ::testing::Values("none", "h"),
+                                ::testing::Values("id_or_ter"),
+                                ::testing::Values("no"),
                                 ::testing::Values("fragment1.pdb", "fragment2.pdb", "fragment3.pdb", "fragment4.pdb"))
                         );
 
@@ -133,6 +139,8 @@ INSTANTIATE_TEST_CASE_P(ForGromos53a6, Pdb2gmxTest,
                             (::testing::Values("gromos53a6"),
                                 ::testing::Values("spc", "spce"),
                                 ::testing::Values("none", "h"),
+                                ::testing::Values("id_or_ter"),
+                                ::testing::Values("no"),
                                 ::testing::Values("fragment1.pdb", "fragment2.pdb", "fragment3.pdb", "fragment4.pdb"))
                         );
 
@@ -141,6 +149,8 @@ INSTANTIATE_TEST_CASE_P(ForAmber99sb_ildn, Pdb2gmxTest,
                             (::testing::Values("amber99sb-ildn"),
                                 ::testing::Values("tip3p"),
                                 ::testing::Values("none", "h"),
+                                ::testing::Values("id_or_ter"),
+                                ::testing::Values("no"),
                                 ::testing::Values("fragment1.pdb", "fragment2.pdb", "fragment3.pdb", "fragment4.pdb"))
                         );
 
@@ -149,9 +159,22 @@ INSTANTIATE_TEST_CASE_P(ForCharmm27, Pdb2gmxTest,
                             (::testing::Values("charmm27"),
                                 ::testing::Values("tip3p"),
                                 ::testing::Values("none", "h"),
+                                ::testing::Values("id_or_ter"),
+                                ::testing::Values("no"),
                                 ::testing::Values("fragment1.pdb", "fragment2.pdb", "fragment3.pdb", "fragment4.pdb"))
-
                         );
+
+
+INSTANTIATE_TEST_CASE_P(ChainSep, Pdb2gmxTest,
+                            ::testing::Combine
+                            (::testing::Values("charmm27"),
+                                ::testing::Values("tip3p"),
+                                ::testing::Values("none"),
+                                ::testing::Values("id", "ter", "id_or_ter", "id_and_ter"),
+                                ::testing::Values("all", "no"),
+                                ::testing::Values("chainTer.pdb"))
+                        );
+
 
 } // namespace
 } // namespace
