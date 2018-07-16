@@ -1034,8 +1034,9 @@ static void fillMoleculeIndices(const gmx_mtop_t  &mtop,
         for (int mol = 0; mol < molb.nmol; mol++)
         {
             globalAtomIndex       += numAtomsPerMolecule;
-            globalMolIndex        += 1;
             index[globalMolIndex]  = globalAtomIndex;
+            globalMolIndex        += 1;
+
         }
     }
 }
