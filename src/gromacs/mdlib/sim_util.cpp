@@ -87,6 +87,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
+#include "gromacs/mdtypes/iforceschedule.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
@@ -2112,8 +2113,8 @@ void do_force(FILE                                     *fplog,
         flags &= ~GMX_FORCE_NONBONDED;
     }
 
-    GMX_ASSERT(x.size()     >= gmx::paddedRVecVectorSize(fr->natoms_force), "coordinates should be padded");
-    GMX_ASSERT(force.size() >= gmx::paddedRVecVectorSize(fr->natoms_force), "force should be padded");
+    GMX_ASSERT((unsigned long)x.size() >= gmx::paddedRVecVectorSize(fr->natoms_force), "coordinates should be padded");
+    GMX_ASSERT((unsigned long)force.size() >= gmx::paddedRVecVectorSize(fr->natoms_force), "force should be padded");
 
     switch (inputrec->cutoff_scheme)
     {
@@ -2166,6 +2167,80 @@ void do_force(FILE                                     *fplog,
     }
 }
 
+void gmx::DefaultVerletSchedule::computeStep(int flags)
+{
+    /* modify force flag if not doing nonbonded */
+    if (!fr_->bNonbonded)
+    {
+        flags &= ~GMX_FORCE_NONBONDED;
+    }
+
+    GMX_ASSERT((unsigned long)(state_->x).size() >= gmx::paddedRVecVectorSize(fr_->natoms_force), "coordinates should be padded");
+    GMX_ASSERT((unsigned long)force_->size()     >= gmx::paddedRVecVectorSize(fr_->natoms_force), "force should be padded");
+
+    do_force_cutsVERLET(log_, cr_, ms_, inputrec_,
+                        awh_, *(sp_->step_), nrnb_, wcycle_,
+                        top_, groups_,
+                        state_->box, state_->x, &(state_->hist),
+                        *force_, *vir_force_,
+                        mdatoms_,
+                        enerd_, fcd_,
+                        state_->lambda.data(), graph_,
+                        fr_, fr_->ic,
+                        vsite_, *mu_tot_,
+                        *(sp_->t_), ed_,
+                        flags,
+                        *(sp_->ddOpenBalanceRegion_),
+                        *(sp_->ddCloseBalanceRegion_));
+
+    /* In case we don't have constraints and are using GPUs, the next balancing
+     * region starts here.
+     * Some "special" work at the end of do_force_cuts?, such as vsite spread,
+     * virial calculation and COM pulling, is not thus not included in
+     * the balance timing, which is ok as most tasks do communication.
+     */
+    if (*(sp_->ddOpenBalanceRegion_) == DdOpenBalanceRegionBeforeForceComputation::yes)
+    {
+        ddOpenBalanceRegionCpu(cr_->dd, DdAllowBalanceRegionReopen::no);
+    }
+}
+
+void gmx::DefaultGroupSchedule::computeStep(int flags)
+{
+    /* modify force flag if not doing nonbonded */
+    if (!fr_->bNonbonded)
+    {
+        flags &= ~GMX_FORCE_NONBONDED;
+    }
+
+    GMX_ASSERT((unsigned long)(state_->x).size() >= gmx::paddedRVecVectorSize(fr_->natoms_force), "coordinates should be padded");
+    GMX_ASSERT((unsigned long)force_->size()     >= gmx::paddedRVecVectorSize(fr_->natoms_force), "force should be padded");
+
+    do_force_cutsGROUP(log_, cr_, ms_, inputrec_,
+                       awh_, *(sp_->step_), nrnb_, wcycle_,
+                       top_, groups_,
+                       state_->box, state_->x, &(state_->hist),
+                       *force_, *vir_force_,
+                       mdatoms_,
+                       enerd_, fcd_,
+                       state_->lambda.data(), graph_,
+                       fr_, vsite_, *mu_tot_,
+                       *(sp_->t_), ed_,
+                       flags,
+                       *(sp_->ddOpenBalanceRegion_),
+                       *(sp_->ddCloseBalanceRegion_));
+
+    /* In case we don't have constraints and are using GPUs, the next balancing
+     * region starts here.
+     * Some "special" work at the end of do_force_cuts?, such as vsite spread,
+     * virial calculation and COM pulling, is not thus not included in
+     * the balance timing, which is ok as most tasks do communication.
+     */
+    if (*(sp_->ddOpenBalanceRegion_) == DdOpenBalanceRegionBeforeForceComputation::yes)
+    {
+        ddOpenBalanceRegionCpu(cr_->dd, DdAllowBalanceRegionReopen::no);
+    }
+}
 
 void do_constrain_first(FILE *fplog, gmx::Constraints *constr,
                         t_inputrec *ir, t_mdatoms *md,
