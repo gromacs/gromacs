@@ -99,6 +99,8 @@ gmx_add_gtest_executable(
     minimize.cpp
     mimic.cpp
     multisim.cpp
+    schedule.cpp
+    scheduletest.cpp
     multisimtest.cpp
     pmetest.cpp
     replicaexchange.cpp
