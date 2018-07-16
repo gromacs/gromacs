@@ -90,6 +90,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
+#include "gromacs/mdtypes/iforceschedule.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
@@ -224,9 +225,9 @@ static void sum_forces(rvec f[], gmx::ArrayRef<const gmx::RVec> forceToAdd)
     }
 }
 
-static void calc_virial(int start, int homenr, const rvec x[], const rvec f[],
-                        tensor vir_part, const t_graph *graph, const matrix box,
-                        t_nrnb *nrnb, const t_forcerec *fr, int ePBC)
+void calc_virial(int start, int homenr, const rvec x[], const rvec f[],
+                 tensor vir_part, const t_graph *graph, const matrix box,
+                 t_nrnb *nrnb, const t_forcerec *fr, int ePBC)
 {
     /* The short-range virial from surrounding boxes */
     calc_vir(SHIFTS, fr->shift_vec, fr->fshift, vir_part, ePBC == epbcSCREW, box);
@@ -336,21 +337,21 @@ static void print_large_forces(FILE            *fp,
     }
 }
 
-static void post_process_forces(const t_commrec           *cr,
-                                int64_t                    step,
-                                t_nrnb                    *nrnb,
-                                gmx_wallcycle_t            wcycle,
-                                const gmx_localtop_t      *top,
-                                const matrix               box,
-                                const rvec                 x[],
-                                rvec                       f[],
-                                gmx::ForceWithVirial      *forceWithVirial,
-                                tensor                     vir_force,
-                                const t_mdatoms           *mdatoms,
-                                const t_graph             *graph,
-                                const t_forcerec          *fr,
-                                const gmx_vsite_t         *vsite,
-                                int                        flags)
+void post_process_forces(const t_commrec           *cr,
+                         int64_t                    step,
+                         t_nrnb                    *nrnb,
+                         gmx_wallcycle_t            wcycle,
+                         const gmx_localtop_t      *top,
+                         const matrix               box,
+                         const rvec                 x[],
+                         rvec                       f[],
+                         gmx::ForceWithVirial      *forceWithVirial,
+                         tensor                     vir_force,
+                         const t_mdatoms           *mdatoms,
+                         const t_graph             *graph,
+                         const t_forcerec          *fr,
+                         const gmx_vsite_t         *vsite,
+                         int                        flags)
 {
     if (fr->haveDirectVirialContributions)
     {
@@ -392,14 +393,14 @@ static void post_process_forces(const t_commrec           *cr,
     }
 }
 
-static void do_nb_verlet(const t_forcerec *fr,
-                         const interaction_const_t *ic,
-                         gmx_enerdata_t *enerd,
-                         int flags, int ilocality,
-                         int clearF,
-                         int64_t step,
-                         t_nrnb *nrnb,
-                         gmx_wallcycle_t wcycle)
+void do_nb_verlet(const t_forcerec *fr,
+                  const interaction_const_t *ic,
+                  gmx_enerdata_t *enerd,
+                  int flags, int ilocality,
+                  int clearF,
+                  int64_t step,
+                  t_nrnb *nrnb,
+                  gmx_wallcycle_t wcycle)
 {
     if (!(flags & GMX_FORCE_NONBONDED))
     {
@@ -532,17 +533,17 @@ static void do_nb_verlet(const t_forcerec *fr,
     }
 }
 
-static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
-                             t_forcerec           *fr,
-                             rvec                  x[],
-                             rvec                  f[],
-                             const t_mdatoms      *mdatoms,
-                             t_lambda             *fepvals,
-                             real                 *lambda,
-                             gmx_enerdata_t       *enerd,
-                             int                   flags,
-                             t_nrnb               *nrnb,
-                             gmx_wallcycle_t       wcycle)
+void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
+                      t_forcerec           *fr,
+                      rvec                  x[],
+                      rvec                  f[],
+                      const t_mdatoms      *mdatoms,
+                      t_lambda             *fepvals,
+                      real                 *lambda,
+                      gmx_enerdata_t       *enerd,
+                      int                   flags,
+                      t_nrnb               *nrnb,
+                      gmx_wallcycle_t       wcycle)
 {
     int              donb_flags;
     nb_kernel_data_t kernel_data;
@@ -649,31 +650,6 @@ gmx_bool use_GPU(const nonbonded_verlet_t *nbv)
     return nbv != nullptr && nbv->bUseGPU;
 }
 
-static inline void clear_rvecs_omp(int n, rvec v[])
-{
-    int nth = gmx_omp_nthreads_get_simple_rvec_task(emntDefault, n);
-
-    /* Note that we would like to avoid this conditional by putting it
-     * into the omp pragma instead, but then we still take the full
-     * omp parallel for overhead (at least with gcc5).
-     */
-    if (nth == 1)
-    {
-        for (int i = 0; i < n; i++)
-        {
-            clear_rvec(v[i]);
-        }
-    }
-    else
-    {
-#pragma omp parallel for num_threads(nth) schedule(static)
-        for (int i = 0; i < n; i++)
-        {
-            clear_rvec(v[i]);
-        }
-    }
-}
-
 /*! \brief Return an estimate of the average kinetic energy or 0 when unreliable
  *
  * \param groupOptions  Group options, containing T-coupling options
@@ -721,9 +697,9 @@ static real averageKineticEnergyEstimate(const t_grpopts &groupOptions)
  * \param[in] enerd     The energy data; the non-bonded group energies need to be added to enerd.term[F_EPOT] before calling this routine
  * \param[in] inputrec  The input record
  */
-static void checkPotentialEnergyValidity(int64_t               step,
-                                         const gmx_enerdata_t &enerd,
-                                         const t_inputrec     &inputrec)
+void checkPotentialEnergyValidity(int64_t               step,
+                                  const gmx_enerdata_t &enerd,
+                                  const t_inputrec     &inputrec)
 {
     /* Threshold valid for comparing absolute potential energy against
      * the kinetic energy. Normally one should not consider absolute
@@ -791,7 +767,7 @@ static void checkPotentialEnergyValidity(int64_t               step,
  * \todo Remove bNS, which is used incorrectly.
  * \todo Convert all other algorithms called here to ForceProviders.
  */
-static void
+void
 computeSpecialForces(FILE                          *fplog,
                      const t_commrec               *cr,
                      const t_inputrec              *inputrec,
@@ -2205,6 +2181,75 @@ void do_force(FILE                                     *fplog,
     }
 }
 
+void gmx::DefaultVerletSchedule::computeStep(int flags)
+{
+    /* modify force flag if not doing nonbonded */
+    if (!fr_->bNonbonded)
+    {
+        flags &= ~GMX_FORCE_NONBONDED;
+    }
+
+    do_force_cutsVERLET(log_, cr_, ms_, inputrec_,
+                        awh_, enforcedRotation_, *(sp_->step_),
+                        nrnb_, wcycle_, top_, groups_,
+                        state_->box, state_->x.arrayRefWithPadding(), &(state_->hist),
+                        force_->arrayRefWithPadding(), *vir_force_,
+                        mdatoms_,
+                        enerd_, fcd_,
+                        state_->lambda.data(), graph_,
+                        fr_, ppForceWorkload_, fr_->ic,
+                        vsite_, *mu_tot_,
+                        *(sp_->t_), ed_,
+                        flags,
+                        *(sp_->ddOpenBalanceRegion_),
+                        *(sp_->ddCloseBalanceRegion_));
+
+    /* In case we don't have constraints and are using GPUs, the next balancing
+     * region starts here.
+     * Some "special" work at the end of do_force_cuts?, such as vsite spread,
+     * virial calculation and COM pulling, is not thus not included in
+     * the balance timing, which is ok as most tasks do communication.
+     */
+    if (*(sp_->ddOpenBalanceRegion_) == DdOpenBalanceRegionBeforeForceComputation::yes)
+    {
+        ddOpenBalanceRegionCpu(cr_->dd, DdAllowBalanceRegionReopen::no);
+    }
+}
+
+void gmx::DefaultGroupSchedule::computeStep(int flags)
+{
+    /* modify force flag if not doing nonbonded */
+    if (!fr_->bNonbonded)
+    {
+        flags &= ~GMX_FORCE_NONBONDED;
+    }
+
+
+    do_force_cutsGROUP(log_, cr_, ms_, inputrec_,
+                       awh_, enforcedRotation_, *(sp_->step_),
+                       nrnb_, wcycle_, top_, groups_,
+                       state_->box, state_->x.arrayRefWithPadding(), &(state_->hist),
+                       force_->arrayRefWithPadding(), *vir_force_,
+                       mdatoms_,
+                       enerd_, fcd_,
+                       state_->lambda.data(), graph_,
+                       fr_, vsite_, *mu_tot_,
+                       *(sp_->t_), ed_,
+                       flags,
+                       *(sp_->ddOpenBalanceRegion_),
+                       *(sp_->ddCloseBalanceRegion_));
+
+    /* In case we don't have constraints and are using GPUs, the next balancing
+     * region starts here.
+     * Some "special" work at the end of do_force_cuts?, such as vsite spread,
+     * virial calculation and COM pulling, is not thus not included in
+     * the balance timing, which is ok as most tasks do communication.
+     */
+    if (*(sp_->ddOpenBalanceRegion_) == DdOpenBalanceRegionBeforeForceComputation::yes)
+    {
+        ddOpenBalanceRegionCpu(cr_->dd, DdAllowBalanceRegionReopen::no);
+    }
+}
 
 void do_constrain_first(FILE *fplog, gmx::Constraints *constr,
                         const t_inputrec *ir, const t_mdatoms *md,
