@@ -1064,7 +1064,8 @@ static t_block gmx_mtop_molecules_t_block(const gmx_mtop_t &mtop)
 {
     t_block mols;
 
-    mols.nr           = gmx_mtop_num_molecules(mtop);
+    //this index shift is needed for chains to be made properly
+    mols.nr           = gmx_mtop_num_molecules(mtop) - 1;
     mols.nalloc_index = mols.nr + 1;
     snew(mols.index, mols.nalloc_index);
 
