@@ -50,6 +50,7 @@
 #define EGP_TABLE (1<<1)
 
 struct pull_params_t;
+struct pull_t;
 
 namespace gmx
 {
@@ -58,181 +59,284 @@ struct AwhParams;
 class KeyValueTreeObject;
 }
 
-typedef struct t_grpopts {
-    int       ngtc;           /* # T-Coupl groups                        */
-    int       nhchainlength;  /* # of nose-hoover chains per group       */
-    int       ngacc;          /* # Accelerate groups                     */
-    int       ngfrz;          /* # Freeze groups                         */
-    int       ngener;         /* # Ener groups			    */
-    real     *nrdf;           /* Nr of degrees of freedom in a group	    */
-    real     *ref_t;          /* Coupling temperature	per group   */
-    int      *annealing;      /* No/simple/periodic SA for each group    */
-    int      *anneal_npoints; /* Number of annealing time points per grp */
-    real    **anneal_time;    /* For ea. group: Time points              */
-    real    **anneal_temp;    /* For ea. grp: Temperature at these times */
-                              /* Final temp after all intervals is ref_t */
-    real     *tau_t;          /* Tau coupling time              */
-    rvec     *acc;            /* Acceleration per group		    */
-    ivec     *nFreeze;        /* Freeze the group in each direction ?    */
-    int      *egp_flags;      /* Exclusions/tables of energy group pairs */
+struct t_grpopts
+{
+    //! Number of T-Coupl groups
+    int    ngtc;
+    //! Number of of Nose-Hoover chains per group
+    int    nhchainlength;
+    //! Number of Accelerate groups
+    int    ngacc;
+    //! Number of Freeze groups
+    int    ngfrz;
+    //! Number of Energy groups
+    int    ngener;
+    //! Number of degrees of freedom in a group
+    real  *nrdf;
+    //! Coupling temperature	per group
+    real  *ref_t;
+    //! No/simple/periodic simulated annealing for each group
+    int   *annealing;
+    //! Number of annealing time points per group
+    int   *anneal_npoints;
+    //! For each group: Time points
+    real **anneal_time;
+    //! For each group: Temperature at these times. Final temp after all intervals is ref_t
+    real **anneal_temp;
+    //! Tau coupling time
+    real  *tau_t;
+    //! Acceleration per group
+    rvec  *acc;
+    //! Whether the group will be frozen in each direction
+    ivec  *nFreeze;
+    //! Exclusions/tables of energy group pairs
+    int   *egp_flags;
 
     /* QMMM stuff */
-    int          ngQM;         /* nr of QM groups                              */
-    int         *QMmethod;     /* Level of theory in the QM calculation        */
-    int         *QMbasis;      /* Basisset in the QM calculation               */
-    int         *QMcharge;     /* Total charge in the QM region                */
-    int         *QMmult;       /* Spin multiplicicty in the QM region          */
-    gmx_bool    *bSH;          /* surface hopping (diabatic hop only)          */
-    int         *CASorbitals;  /* number of orbiatls in the active space       */
-    int         *CASelectrons; /* number of electrons in the active space      */
-    real        *SAon;         /* at which gap (A.U.) the SA is switched on    */
-    real        *SAoff;
-    int         *SAsteps;      /* in how many steps SA goes from 1-1 to 0.5-0.5*/
-} t_grpopts;
+    //! Number of QM groups
+    int       ngQM;
+    //! Level of theory in the QM calculation
+    int      *QMmethod;
+    //! Basisset in the QM calculation
+    int      *QMbasis;
+    //! Total charge in the QM region
+    int      *QMcharge;
+    //! Spin multiplicicty in the QM region
+    int      *QMmult;
+    //! Surface hopping (diabatic hop only)
+    gmx_bool *bSH;
+    //! Number of orbiatls in the active space
+    int      *CASorbitals;
+    //! Number of electrons in the active space
+    int      *CASelectrons;
+    //! At which gap (A.U.) the SA is switched on
+    real     *SAon;
+    //! At which gap (A.U.) the SA is switched off
+    real     *SAoff;
+    //! In how many steps SA goes from 1-1 to 0.5-0.5
+    int      *SAsteps;
+};
 
-typedef struct t_simtemp {
-    int   eSimTempScale; /* simulated temperature scaling; linear or exponential */
-    real  simtemp_low;   /* the low temperature for simulated tempering  */
-    real  simtemp_high;  /* the high temperature for simulated tempering */
-    real *temperatures;  /* the range of temperatures used for simulated tempering */
-} t_simtemp;
+struct t_simtemp
+{
+    //! Simulated temperature scaling; linear or exponential
+    int   eSimTempScale;
+    //! The low temperature for simulated tempering
+    real  simtemp_low;
+    //! The high temperature for simulated tempering
+    real  simtemp_high;
+    //! The range of temperatures used for simulated tempering
+    real *temperatures;
+};
 
-typedef struct t_lambda {
-    int    nstdhdl;                 /* The frequency for calculating dhdl           */
-    double init_lambda;             /* fractional value of lambda (usually will use
-                                       init_fep_state, this will only be for slow growth,
-                                       and for legacy free energy code. Only has a
-                                       valid value if positive)   */
-    int      init_fep_state;        /* the initial number of the state                   */
-    double   delta_lambda;          /* change of lambda per time step (fraction of (0.1) */
-    int      edHdLPrintEnergy;      /* print no, total or potential energies in dhdl    */
-    int      n_lambda;              /* The number of foreign lambda points               */
-    double **all_lambda;            /* The array of all lambda values                    */
-    int      lambda_neighbors;      /* The number of neighboring lambda states to
-                                       calculate the energy for in up and down directions
-                                       (-1 for all) */
-    int      lambda_start_n;        /* The first lambda to calculate energies for */
-    int      lambda_stop_n;         /* The last lambda +1 to calculate energies for */
-    real     sc_alpha;              /* free energy soft-core parameter                   */
-    int      sc_power;              /* lambda power for soft-core interactions           */
-    real     sc_r_power;            /* r power for soft-core interactions                */
-    real     sc_sigma;              /* free energy soft-core sigma when c6 or c12=0      */
-    real     sc_sigma_min;          /* free energy soft-core sigma for ?????             */
-    gmx_bool bScCoul;               /* use softcore for the coulomb portion as well (default FALSE) */
-    gmx_bool separate_dvdl[efptNR]; /* whether to print the dvdl term associated with
-                                       this term; if it is not specified as separate,
-                                       it is lumped with the FEP term */
-    int    separate_dhdl_file;      /* whether to write a separate dhdl.xvg file
-                                       note: NOT a gmx_bool, but an enum */
-    int    dhdl_derivatives;        /* whether to calculate+write dhdl derivatives
-                                       note: NOT a gmx_bool, but an enum */
-    int    dh_hist_size;            /* The maximum table size for the dH histogram */
-    double dh_hist_spacing;         /* The spacing for the dH histogram */
-} t_lambda;
+struct t_lambda
+{
+    //! The frequency for calculating dhdl
+    int      nstdhdl;
+    //! Fractional value of lambda (usually will use init_fep_state, this will only be for slow growth, and for legacy free energy code. Only has a valid value if positive)
+    double   init_lambda;
+    //! The initial number of the state
+    int      init_fep_state;
+    //! Change of lambda per time step (fraction of (0.1)
+    double   delta_lambda;
+    //! Print no, total or potential energies in dhdl
+    int      edHdLPrintEnergy;
+    //! The number of foreign lambda points
+    int      n_lambda;
+    //! The array of all lambda values
+    double **all_lambda;
+    //! The number of neighboring lambda states to calculate the energy for in up and down directions (-1 for all)
+    int      lambda_neighbors;
+    //! The first lambda to calculate energies for
+    int      lambda_start_n;
+    //! The last lambda +1 to calculate energies for
+    int      lambda_stop_n;
+    //! Free energy soft-core parameter
+    real     sc_alpha;
+    //! Lambda power for soft-core interactions
+    int      sc_power;
+    //! R power for soft-core interactions
+    real     sc_r_power;
+    //! Free energy soft-core sigma when c6 or c12=0
+    real     sc_sigma;
+    //! Free energy soft-core sigma for ?????
+    real     sc_sigma_min;
+    //! Use softcore for the coulomb portion as well (default FALSE)
+    gmx_bool bScCoul;
+    //! Whether to print the dvdl term associated with this term; if it is not specified as separate, it is lumped with the FEP term
+    gmx_bool separate_dvdl[efptNR];
+    //! Whether to write a separate dhdl.xvg file note: NOT a gmx_bool, but an enum
+    int      separate_dhdl_file;
+    //! Whether to calculate+write dhdl derivatives note: NOT a gmx_bool, but an enum
+    int      dhdl_derivatives;
+    //! The maximum table size for the dH histogram
+    int      dh_hist_size;
+    //! The spacing for the dH histogram
+    double   dh_hist_spacing;
+};
 
-typedef struct t_expanded {
-    int      nstexpanded;         /* The frequency of expanded ensemble state changes */
-    int      elamstats;           /* which type of move updating do we use for lambda monte carlo (or no for none) */
-    int      elmcmove;            /* what move set will be we using for state space moves */
-    int      elmceq;              /* the method we use to decide of we have equilibrated the weights */
-    int      equil_n_at_lam;      /* the minumum number of samples at each lambda for deciding whether we have reached a minimum */
-    real     equil_wl_delta;      /* WL delta at which we stop equilibrating weights */
-    real     equil_ratio;         /* use the ratio of weights (ratio of minimum to maximum) to decide when to stop equilibrating */
-    int      equil_steps;         /* after equil_steps steps we stop equilibrating the weights */
-    int      equil_samples;       /* after equil_samples total samples (steps/nstfep), we stop equilibrating the weights */
-    int      lmc_seed;            /* random number seed for lambda mc switches */
-    gmx_bool minvar;              /* whether to use minumum variance weighting */
-    int      minvarmin;           /* the number of samples needed before kicking into minvar routine */
-    real     minvar_const;        /* the offset for the variance in MinVar */
-    int      c_range;             /* range of cvalues used for BAR */
-    gmx_bool bSymmetrizedTMatrix; /* whether to print symmetrized matrices */
-    int      nstTij;              /* How frequently to print the transition matrices */
-    int      lmc_repeats;         /* number of repetitions in the MC lambda jumps */  /*MRS -- VERIFY THIS */
-    int      lmc_forced_nstart;   /* minimum number of samples for each state before free sampling */ /* MRS -- VERIFY THIS! */
-    int      gibbsdeltalam;       /* distance in lambda space for the gibbs interval */
-    real     wl_scale;            /* scaling factor for wang-landau */
-    real     wl_ratio;            /* ratio between largest and smallest number for freezing the weights */
-    real     init_wl_delta;       /* starting delta for wang-landau */
-    gmx_bool bWLoneovert;         /* use one over t convergece for wang-landau when the delta get sufficiently small */
-    gmx_bool bInit_weights;       /* did we initialize the weights? TODO: REMOVE FOR 5.0, no longer needed with new logic */
-    real     mc_temp;             /* To override the main temperature, or define it if it's not defined */
-    real    *init_lambda_weights; /* user-specified initial weights to start with  */
-} t_expanded;
+struct t_expanded {
+    //! The frequency of expanded ensemble state changes
+    int      nstexpanded;
+    //! Which type of move updating do we use for lambda monte carlo (or no for none)
+    int      elamstats;
+    //! What move set will be we using for state space moves
+    int      elmcmove;
+    //! The method we use to decide of we have equilibrated the weights
+    int      elmceq;
+    //! The minumum number of samples at each lambda for deciding whether we have reached a minimum
+    int      equil_n_at_lam;
+    //! Wang-Landau delta at which we stop equilibrating weights
+    real     equil_wl_delta;
+    //! Use the ratio of weights (ratio of minimum to maximum) to decide when to stop equilibrating
+    real     equil_ratio;
+    //! After equil_steps steps we stop equilibrating the weights
+    int      equil_steps;
+    //! After equil_samples total samples (steps/nstfep), we stop equilibrating the weights
+    int      equil_samples;
+    //! Random number seed for lambda mc switches
+    int      lmc_seed;
+    //! Whether to use minumum variance weighting
+    gmx_bool minvar;
+    //! The number of samples needed before kicking into minvar routine
+    int      minvarmin;
+    //! The offset for the variance in MinVar
+    real     minvar_const;
+    //! Range of cvalues used for BAR
+    int      c_range;
+    //! Whether to print symmetrized matrices
+    gmx_bool bSymmetrizedTMatrix;
+    //! How frequently to print the transition matrices
+    int      nstTij;
+    //! Number of repetitions in the MC lambda jumps MRS -- VERIFY THIS
+    int      lmc_repeats;
+    //! Minimum number of samples for each state before free sampling MRS -- VERIFY THIS!
+    int      lmc_forced_nstart;
+    //! Distance in lambda space for the gibbs interval
+    int      gibbsdeltalam;
+    //! Scaling factor for Wang-Landau
+    real     wl_scale;
+    //! Ratio between largest and smallest number for freezing the weights
+    real     wl_ratio;
+    //! Starting delta for Wang-Landau
+    real     init_wl_delta;
+    //! Use one over t convergence for Wang-Landau when the delta get sufficiently small
+    gmx_bool bWLoneovert;
+    //! Did we initialize the weights? TODO: REMOVE FOR 5.0, no longer needed with new logic
+    gmx_bool bInit_weights;
+    //! To override the main temperature, or define it if it's not defined
+    real     mc_temp;
+    //! User-specified initial weights to start with
+    real    *init_lambda_weights;
+};
 
+struct gmx_enfrot;
+struct gmx_enfrotgrp;
 
-/* Abstract types for enforced rotation only defined in pull_rotation.c       */
-typedef struct gmx_enfrot *gmx_enfrot_t;
-typedef struct gmx_enfrotgrp *gmx_enfrotgrp_t;
+struct t_rotgrp
+{
+    //! Rotation type for this group
+    int              eType;
+    //! Use mass-weighed positions?
+    int              bMassW;
+    //! Number of atoms in the group
+    int              nat;
+    //! The global atoms numbers
+    int             *ind;
+    //! The reference positions
+    rvec            *x_ref;
+    //! The normalized rotation vector
+    rvec             vec;
+    //! Rate of rotation (degree/ps)
+    real             rate;
+    //! Force constant (kJ/(mol nm^2)
+    real             k;
+    //! Pivot point of rotation axis (nm)
+    rvec             pivot;
+    //! Type of fit to determine actual group angle
+    int              eFittype;
+    //! Number of angles around the reference angle for which the rotation potential is also evaluated (for fit type 'potential' only)
+    int              PotAngle_nstep;
+    //! Distance between two angles in degrees (for fit type 'potential' only)
+    real             PotAngle_step;
+    //! Slab distance (nm)
+    real             slab_dist;
+    //! Minimum value the gaussian must have so that the force is actually evaluated
+    real             min_gaussian;
+    //! Additive constant for radial motion2 and flexible2 potentials (nm^2)
+    real             eps;
+    //! Stores non-inputrec rotation data per group TODO remove
+    gmx_enfrotgrp   *enfrotgrp;
+};
 
-typedef struct {
-    int         eType;             /* Rotation type for this group                  */
-    int         bMassW;            /* Use mass-weighed positions?                   */
-    int         nat;               /* Number of atoms in the group                  */
-    int        *ind;               /* The global atoms numbers                      */
-    rvec       *x_ref;             /* The reference positions                       */
-    rvec        vec;               /* The normalized rotation vector                */
-    real        rate;              /* Rate of rotation (degree/ps)                  */
-    real        k;                 /* Force constant (kJ/(mol nm^2)                 */
-    rvec        pivot;             /* Pivot point of rotation axis (nm)             */
-    int         eFittype;          /* Type of fit to determine actual group angle   */
-    int         PotAngle_nstep;    /* Number of angles around the reference angle
-                                      for which the rotation potential is also
-                                      evaluated (for fit type 'potential' only)     */
-    real            PotAngle_step; /* Distance between two angles in degrees (for
-                                      fit type 'potential' only)                    */
-    real            slab_dist;     /* Slab distance (nm)                            */
-    real            min_gaussian;  /* Minimum value the gaussian must have so that
-                                      the force is actually evaluated               */
-    real            eps;           /* Additive constant for radial motion2 and
-                                      flexible2 potentials (nm^2)                   */
-    gmx_enfrotgrp_t enfrotgrp;     /* Stores non-inputrec rotation data per group   */
-} t_rotgrp;
+struct t_rot
+{
+    //! Number of rotation groups
+    int                   ngrp;
+    //! Output frequency for main rotation outfile
+    int                   nstrout;
+    //! Output frequency for per-slab data
+    int                   nstsout;
+    //! Groups to rotate
+    t_rotgrp             *grp;
+    //! Stores non-inputrec enforced rotation data
+    gmx_enfrot           *enfrot;
+};
 
-typedef struct t_rot {
-    int          ngrp;       /* Number of rotation groups                     */
-    int          nstrout;    /* Output frequency for main rotation outfile    */
-    int          nstsout;    /* Output frequency for per-slab data            */
-    t_rotgrp    *grp;        /* Groups to rotate                              */
-    gmx_enfrot_t enfrot;     /* Stores non-inputrec enforced rotation data    */
-} t_rot;
-
-/* Abstract type for IMD only defined in IMD.c */
 struct t_gmx_IMD;
 
-typedef struct t_IMD {
-    int               nat;   /* Number of interactive atoms                   */
-    int              *ind;   /* The global indices of the interactive atoms   */
-    struct t_gmx_IMD *setup; /* Stores non-inputrec IMD data                  */
-} t_IMD;
+struct t_IMD
+{
+    //! Number of interactive atoms
+    int              nat;
+    //! The global indices of the interactive atoms
+    int             *ind;
+    //! Stores non-inputrec IMD data
+    t_gmx_IMD       *setup;
+};
 
 /* Abstract types for position swapping only defined in swapcoords.cpp */
 typedef struct t_swap *gmx_swapcoords_t;
 
-typedef struct t_swapGroup {
-    char            *molname;             /* Name of the swap group, e.g. NA, CL, SOL       */
-    int              nat;                 /* Number of atoms in this group                  */
-    int             *ind;                 /* The global ion group atoms numbers             */
-    int              nmolReq[eCompNR];    /* Requested number of molecules of this type
-                                             per compartment                                */
-} t_swapGroup;
+struct t_swapGroup
+{
+    //! Name of the swap group, e.g. NA, CL, SOL
+    char            *molname;
+    //! Number of atoms in this group
+    int              nat;
+    //! The global ion group atoms numbers
+    int             *ind;
+    //! Requested number of molecules of this type per compartment
+    int              nmolReq[eCompNR];
+};
 
-typedef struct t_swapcoords {
-    int               nstswap;             /* Every how many steps a swap is attempted?    */
-    gmx_bool          massw_split[2];      /* Use mass-weighted positions in split group?  */
-    real              cyl0r, cyl1r;        /* Split cylinders defined by radius, upper and */
-    real              cyl0u, cyl1u;        /* ... lower extension. The split cylinders de- */
-    real              cyl0l, cyl1l;        /* ... fine the channels and are each anchored  */
-                                           /* ... in the center of the split group         */
-    int               nAverage;            /* Coupling constant (nr of swap attempt steps) */
-    real              threshold;           /* Ion counts may deviate from the requested
-                                              values by +-threshold before a swap is done  */
-    real              bulkOffset[eCompNR]; /* Offset of the swap layer (='bulk') w.r.t.
-                                              the compartment-defining layers              */
-    int               ngrp;                /* Number of groups to be controlled            */
-    t_swapGroup      *grp;                 /* All swap groups, including split and solvent */
-    gmx_swapcoords_t  si_priv;             /* swap private data accessible in
-                                            * swapcoords.cpp                               */
-} t_swapcoords;
+struct t_swapcoords
+{
+    //! Period between when a swap is attempted
+    int      nstswap;
+    //! Use mass-weighted positions in split group
+    gmx_bool massw_split[2];
+    /*! \brief Split cylinders defined by radius, upper and lower
+     * extension. The split cylinders define the channels and are
+     * each anchored in the center of the split group */
+    /**@{*/
+    real cyl0r, cyl1r;
+    real cyl0u, cyl1u;
+    real cyl0l, cyl1l;
+    /**@}*/
+    //! Coupling constant (number of swap attempt steps)
+    int                      nAverage;
+    //! Ion counts may deviate from the requested values by +-threshold before a swap is done
+    real                     threshold;
+    //! Offset of the swap layer (='bulk') with respect to the compartment-defining layers
+    real                     bulkOffset[eCompNR];
+    //! Number of groups to be controlled
+    int                      ngrp;
+    //! All swap groups, including split and solvent
+    t_swapGroup             *grp;
+    //! Swap private data accessible in swapcoords.cpp
+    gmx_swapcoords_t         si_priv;
+};
 
 struct t_inputrec
 {
@@ -241,149 +345,265 @@ struct t_inputrec
     t_inputrec &operator=(const t_inputrec &) = delete;
     ~t_inputrec();
 
-    int             eI;                      /* Integration method                 */
-    gmx_int64_t     nsteps;                  /* number of steps to be taken			*/
-    int             simulation_part;         /* Used in checkpointing to separate chunks */
-    gmx_int64_t     init_step;               /* start at a stepcount >0 (used w. convert-tpr)    */
-    int             nstcalcenergy;           /* frequency of energy calc. and T/P coupl. upd.	*/
-    int             cutoff_scheme;           /* group or verlet cutoffs     */
-    int             ns_type;                 /* which ns method should we use?               */
-    int             nstlist;                 /* number of steps before pairlist is generated	*/
-    int             ndelta;                  /* number of cells per rlong			*/
-    int             nstcomm;                 /* number of steps after which center of mass	*/
-                                             /* motion is removed				*/
-    int             comm_mode;               /* Center of mass motion removal algorithm      */
-    int             nstlog;                  /* number of steps after which print to logfile	*/
-    int             nstxout;                 /* number of steps after which X is output	*/
-    int             nstvout;                 /* id. for V					*/
-    int             nstfout;                 /* id. for F					*/
-    int             nstenergy;               /* number of steps after which energies printed */
-    int             nstxout_compressed;      /* id. for compressed trj (.xtc,.tng)           */
-    double          init_t;                  /* initial time (ps)              */
-    double          delta_t;                 /* time step (ps)				*/
-    real            x_compression_precision; /* precision of x in compressed trajectory file */
-    real            fourier_spacing;         /* requested fourier_spacing, when nk? not set  */
-    int             nkx, nky, nkz;           /* number of k vectors in each spatial dimension*/
-                                             /* for fourier methods for long range electrost.*/
-    int             pme_order;               /* interpolation order for PME                  */
-    real            ewald_rtol;              /* Real space tolerance for Ewald, determines   */
-                                             /* the real/reciprocal space relative weight    */
-    real            ewald_rtol_lj;           /* Real space tolerance for LJ-Ewald            */
-    int             ewald_geometry;          /* normal/3d ewald, or pseudo-2d LR corrections */
-    real            epsilon_surface;         /* Epsilon for PME dipole correction            */
-    int             ljpme_combination_rule;  /* Type of combination rule in LJ-PME          */
-    int             ePBC;                    /* Type of periodic boundary conditions		*/
-    int             bPeriodicMols;           /* Periodic molecules                           */
-    gmx_bool        bContinuation;           /* Continuation run: starting state is correct	*/
-    int             etc;                     /* temperature coupling               */
-    int             nsttcouple;              /* interval in steps for temperature coupling   */
-    gmx_bool        bPrintNHChains;          /* whether to print nose-hoover chains        */
-    int             epc;                     /* pressure coupling                            */
-    int             epct;                    /* pressure coupling type			*/
-    int             nstpcouple;              /* interval in steps for pressure coupling      */
-    real            tau_p;                   /* pressure coupling time (ps)			*/
-    tensor          ref_p;                   /* reference pressure (kJ/(mol nm^3))		*/
-    tensor          compress;                /* compressability ((mol nm^3)/kJ)        */
-    int             refcoord_scaling;        /* How to scale absolute reference coordinates  */
-    rvec            posres_com;              /* The COM of the posres atoms                  */
-    rvec            posres_comB;             /* The B-state COM of the posres atoms          */
-    int             andersen_seed;           /* Random seed for Andersen thermostat (obsolete) */
-    real            verletbuf_tol;           /* Per atom pair energy drift tolerance (kJ/mol/ps/atom) for list buffer  */
-    real            rlist;                   /* short range pairlist cut-off (nm)		*/
-    real            rtpi;                    /* Radius for test particle insertion           */
-    int             coulombtype;             /* Type of electrostatics treatment             */
-    int             coulomb_modifier;        /* Modify the Coulomb interaction              */
-    real            rcoulomb_switch;         /* Coulomb switch range start (nm)		*/
-    real            rcoulomb;                /* Coulomb cutoff (nm)		                */
-    real            epsilon_r;               /* relative dielectric constant                 */
-    real            epsilon_rf;              /* relative dielectric constant of the RF       */
-    bool            implicit_solvent;        /* Always false (no longer supported            */
-    int             vdwtype;                 /* Type of Van der Waals treatment              */
-    int             vdw_modifier;            /* Modify the VdW interaction                   */
-    real            rvdw_switch;             /* Van der Waals switch range start (nm)        */
-    real            rvdw;                    /* Van der Waals cutoff (nm)	        */
-    int             eDispCorr;               /* Perform Long range dispersion corrections    */
-    real            tabext;                  /* Extension of the table beyond the cut-off,   *
-                                              * as well as the table length for 1-4 interac. */
-    real            shake_tol;               /* tolerance for shake				*/
-    int             efep;                    /* free energy calculations                     */
-    t_lambda       *fepvals;                 /* Data for the FEP state                       */
-    gmx_bool        bSimTemp;                /* Whether to do simulated tempering            */
-    t_simtemp      *simtempvals;             /* Variables for simulated tempering            */
-    gmx_bool        bExpanded;               /* Whether expanded ensembles are used          */
-    t_expanded     *expandedvals;            /* Expanded ensemble parameters              */
-    int             eDisre;                  /* Type of distance restraining                 */
-    real            dr_fc;                   /* force constant for ta_disre			*/
-    int             eDisreWeighting;         /* type of weighting of pairs in one restraints	*/
-    gmx_bool        bDisreMixed;             /* Use comb of time averaged and instan. viol's	*/
-    int             nstdisreout;             /* frequency of writing pair distances to enx   */
-    real            dr_tau;                  /* time constant for memory function in disres    */
-    real            orires_fc;               /* force constant for orientational restraints  */
-    real            orires_tau;              /* time constant for memory function in orires    */
-    int             nstorireout;             /* frequency of writing tr(SD) to enx           */
-    real            em_stepsize;             /* The stepsize for updating			*/
-    real            em_tol;                  /* The tolerance				*/
-    int             niter;                   /* Number of iterations for convergence of      */
-                                             /* steepest descent in relax_shells             */
-    real            fc_stepsize;             /* Stepsize for directional minimization        */
-                                             /* in relax_shells                              */
-    int             nstcgsteep;              /* number of steps after which a steepest       */
-                                             /* descents step is done while doing cg         */
-    int             nbfgscorr;               /* Number of corrections to the hessian to keep */
-    int             eConstrAlg;              /* Type of constraint algorithm                 */
-    int             nProjOrder;              /* Order of the LINCS Projection Algorithm      */
-    real            LincsWarnAngle;          /* If bond rotates more than %g degrees, warn   */
-    int             nLincsIter;              /* Number of iterations in the final Lincs step */
-    gmx_bool        bShakeSOR;               /* Use successive overrelaxation for shake      */
-    real            bd_fric;                 /* Friction coefficient for BD (amu/ps)         */
-    gmx_int64_t     ld_seed;                 /* Random seed for SD and BD                    */
-    int             nwall;                   /* The number of walls                          */
-    int             wall_type;               /* The type of walls                            */
-    real            wall_r_linpot;           /* The potentail is linear for r<=wall_r_linpot */
-    int             wall_atomtype[2];        /* The atom type for walls                      */
-    real            wall_density[2];         /* Number density for walls                     */
-    real            wall_ewald_zfac;         /* Scaling factor for the box for Ewald         */
+    //! Integration method
+    int                         eI;
+    //! Number of steps to be taken
+    gmx_int64_t                 nsteps;
+    //! Used in checkpointing to separate chunks
+    int                         simulation_part;
+    //! Start at a stepcount >0 (used w. convert-tpr)
+    gmx_int64_t                 init_step;
+    //! Frequency of energy calc. and T/P coupl. upd.
+    int                         nstcalcenergy;
+    //! Group or verlet cutoffs
+    int                         cutoff_scheme;
+    //! Which neighbor search method should we use?
+    int                         ns_type;
+    //! Number of steps before pairlist is generated
+    int                         nstlist;
+    //! Number of cells per rlong
+    int                         ndelta;
+    //! Number of steps after which center of mass motion is removed
+    int                         nstcomm;
+    //! Center of mass motion removal algorithm
+    int                         comm_mode;
+    //! Number of steps after which print to logfile
+    int                         nstlog;
+    //! Number of steps after which X is output
+    int                         nstxout;
+    //! Number of steps after which V is output
+    int                         nstvout;
+    //! Number of steps after which F is output
+    int                         nstfout;
+    //! Number of steps after which energies printed
+    int                         nstenergy;
+    //! Number of steps after which compressed trj (.xtc,.tng) is output
+    int                         nstxout_compressed;
+    //! Initial time (ps)
+    double                      init_t;
+    //! Time step (ps)
+    double                      delta_t;
+    //! Precision of x in compressed trajectory file
+    real                        x_compression_precision;
+    //! Requested fourier_spacing, when nk? not set
+    real                        fourier_spacing;
+    //! Number of k vectors in x dimension for fourier methods for long range electrost.
+    int                         nkx;
+    //! Number of k vectors in y dimension for fourier methods for long range electrost.
+    int                         nky;
+    //! Number of k vectors in z dimension for fourier methods for long range electrost.
+    int                         nkz;
+    //! Interpolation order for PME
+    int                         pme_order;
+    //! Real space tolerance for Ewald, determines the real/reciprocal space relative weight
+    real                        ewald_rtol;
+    //! Real space tolerance for LJ-Ewald
+    real                        ewald_rtol_lj;
+    //! Normal/3D ewald, or pseudo-2D LR corrections
+    int                         ewald_geometry;
+    //! Epsilon for PME dipole correction
+    real                        epsilon_surface;
+    //! Type of combination rule in LJ-PME
+    int                         ljpme_combination_rule;
+    //! Type of periodic boundary conditions
+    int                         ePBC;
+    //! Periodic molecules
+    int                         bPeriodicMols;
+    //! Continuation run: starting state is correct (ie. constrained)
+    gmx_bool                    bContinuation;
+    //! Temperature coupling
+    int                         etc;
+    //! Interval in steps for temperature coupling
+    int                         nsttcouple;
+    //! Whether to print nose-hoover chains
+    gmx_bool                    bPrintNHChains;
+    //! Pressure coupling
+    int                         epc;
+    //! Pressure coupling type
+    int                         epct;
+    //! Interval in steps for pressure coupling
+    int                         nstpcouple;
+    //! Pressure coupling time (ps)
+    real                        tau_p;
+    //! Reference pressure (kJ/(mol nm^3))
+    tensor                      ref_p;
+    //! Compressibility ((mol nm^3)/kJ)
+    tensor                      compress;
+    //! How to scale absolute reference coordinates
+    int                         refcoord_scaling;
+    //! The COM of the posres atoms
+    rvec                        posres_com;
+    //! The B-state COM of the posres atoms
+    rvec                        posres_comB;
+    //! Random seed for Andersen thermostat (obsolete)
+    int                         andersen_seed;
+    //! Per atom pair energy drift tolerance (kJ/mol/ps/atom) for list buffer
+    real                        verletbuf_tol;
+    //! Short range pairlist cut-off (nm)
+    real                        rlist;
+    //! Radius for test particle insertion
+    real                        rtpi;
+    //! Type of electrostatics treatment
+    int                         coulombtype;
+    //! Modify the Coulomb interaction
+    int                         coulomb_modifier;
+    //! Coulomb switch range start (nm)
+    real                        rcoulomb_switch;
+    //! Coulomb cutoff (nm)
+    real                        rcoulomb;
+    //! Relative dielectric constant
+    real                        epsilon_r;
+    //! Relative dielectric constant of the RF
+    real                        epsilon_rf;
+    //! Always false (no longer supported)
+    bool                        implicit_solvent;
+    //! Type of Van der Waals treatment
+    int                         vdwtype;
+    //! Modify the Van der Waals interaction
+    int                         vdw_modifier;
+    //! Van der Waals switch range start (nm)
+    real                        rvdw_switch;
+    //! Van der Waals cutoff (nm)
+    real                        rvdw;
+    //! Perform Long range dispersion corrections
+    int                         eDispCorr;
+    //! Extension of the table beyond the cut-off, as well as the table length for 1-4 interac.
+    real                        tabext;
+    //! Tolerance for shake
+    real                        shake_tol;
+    //! Free energy calculations
+    int                         efep;
+    //! Data for the FEP state
+    t_lambda                   *fepvals;
+    //! Whether to do simulated tempering
+    gmx_bool                    bSimTemp;
+    //! Variables for simulated tempering
+    t_simtemp                  *simtempvals;
+    //! Whether expanded ensembles are used
+    gmx_bool                    bExpanded;
+    //! Expanded ensemble parameters
+    t_expanded                 *expandedvals;
+    //! Type of distance restraining
+    int                         eDisre;
+    //! Force constant for time averaged distance restraints
+    real                        dr_fc;
+    //! Type of weighting of pairs in one restraints
+    int                         eDisreWeighting;
+    //! Use combination of time averaged and instantaneous violations
+    gmx_bool                    bDisreMixed;
+    //! Frequency of writing pair distances to enx
+    int                         nstdisreout;
+    //! Time constant for memory function in disres
+    real                        dr_tau;
+    //! Force constant for orientational restraints
+    real                        orires_fc;
+    //! Time constant for memory function in orires
+    real                        orires_tau;
+    //! Frequency of writing tr(SD) to energy output
+    int                         nstorireout;
+    //! The stepsize for updating
+    real                        em_stepsize;
+    //! The tolerance
+    real                        em_tol;
+    //! Number of iterations for convergence of steepest descent in relax_shells
+    int                         niter;
+    //! Stepsize for directional minimization in relax_shells
+    real                        fc_stepsize;
+    //! Number of steps after which a steepest descents step is done while doing cg
+    int                         nstcgsteep;
+    //! Number of corrections to the Hessian to keep
+    int                         nbfgscorr;
+    //! Type of constraint algorithm
+    int                         eConstrAlg;
+    //! Order of the LINCS Projection Algorithm
+    int                         nProjOrder;
+    //! Warn if any bond rotates more than this many degrees
+    real                        LincsWarnAngle;
+    //! Number of iterations in the final LINCS step
+    int                         nLincsIter;
+    //! Use successive overrelaxation for shake
+    gmx_bool                    bShakeSOR;
+    //! Friction coefficient for BD (amu/ps)
+    real                        bd_fric;
+    //! Random seed for SD and BD
+    gmx_int64_t                 ld_seed;
+    //! The number of walls
+    int                         nwall;
+    //! The type of walls
+    int                         wall_type;
+    //! The potentail is linear for r<=wall_r_linpot
+    real                        wall_r_linpot;
+    //! The atom type for walls
+    int                         wall_atomtype[2];
+    //! Number density for walls
+    real                        wall_density[2];
+    //! Scaling factor for the box for Ewald
+    real                        wall_ewald_zfac;
 
     /* COM pulling data */
-    gmx_bool              bPull;             /* Do we do COM pulling?                        */
-    struct pull_params_t *pull;              /* The data for center of mass pulling          */
+    //! Do we do COM pulling?
+    gmx_bool       bPull;
+    //! The data for center of mass pulling
+    pull_params_t *pull;
     // TODO: Remove this by converting pull into a ForceProvider
-    struct pull_t        *pull_work;         /* The COM pull force calculation data structure */
+    //! The COM pull force calculation data structure
+    pull_t *pull_work;
 
     /* AWH bias data */
-    gmx_bool                 bDoAwh;    /* Use awh biasing for PMF calculations?        */
-    gmx::AwhParams          *awhParams; /* AWH biasing parameters                       */
+    //! Whether to use AWH biasing for PMF calculations
+    gmx_bool        bDoAwh;
+    //! AWH biasing parameters
+    gmx::AwhParams *awhParams;
 
     /* Enforced rotation data */
-    gmx_bool                 bRot;           /* Calculate enforced rotation potential(s)?    */
-    t_rot                   *rot;            /* The data for enforced rotation potentials    */
+    //! Whether to calculate enforced rotation potential(s)
+    gmx_bool               bRot;
+    //! The data for enforced rotation potentials
+    t_rot                 *rot;
 
-    int                      eSwapCoords;    /* Do ion/water position exchanges (CompEL)?    */
-    t_swapcoords            *swap;
+    //! Whether to do ion/water position exchanges (CompEL)
+    int                           eSwapCoords;
+    //! Swap data structure.
+    t_swapcoords                 *swap;
 
-    gmx_bool                 bIMD;           /* Allow interactive MD sessions for this .tpr? */
-    t_IMD                   *imd;            /* Interactive molecular dynamics               */
+    //! Whether to do an interactive MD session
+    gmx_bool               bIMD;
+    //! Interactive molecular dynamics
+    t_IMD                 *imd;
 
-    real                     cos_accel;      /* Acceleration for viscosity calculation       */
-    tensor                   deform;         /* Triclinic deformation velocities (nm/ps)     */
-    int                      userint1;       /* User determined parameters                   */
-    int                      userint2;
-    int                      userint3;
-    int                      userint4;
-    real                     userreal1;
-    real                     userreal2;
-    real                     userreal3;
-    real                     userreal4;
-    t_grpopts                opts;          /* Group options				*/
-    gmx_bool                 bQMMM;         /* QM/MM calculation                            */
-    int                      QMconstraints; /* constraints on QM bonds                      */
-    int                      QMMMscheme;    /* Scheme: ONIOM or normal                      */
-    real                     scalefactor;   /* factor for scaling the MM charges in QM calc.*/
+    //! Acceleration for viscosity calculation
+    real   cos_accel;
+    //! Triclinic deformation velocities (nm/ps)
+    tensor deform;
+    /*! \brief User determined parameters */
+    /**@{*/
+    int  userint1;
+    int  userint2;
+    int  userint3;
+    int  userint4;
+    real userreal1;
+    real userreal2;
+    real userreal3;
+    real userreal4;
+    /**@}*/
+    //! Group options
+    t_grpopts opts;
+    //! QM/MM calculation
+    gmx_bool  bQMMM;
+    //! Constraints on QM bonds
+    int       QMconstraints;
+    //! Scheme: ONIOM or normal
+    int       QMMMscheme;
+    //! Factor for scaling the MM charges in QM calc.
+    real      scalefactor;
 
     /* Fields for removed features go here (better caching) */
-    gmx_bool                 bAdress;      // Whether AdResS is enabled - always false if a valid .tpr was read
-    gmx_bool                 useTwinRange; // Whether twin-range scheme is active - always false if a valid .tpr was read
+    //! Whether AdResS is enabled - always false if a valid .tpr was read
+    gmx_bool                 bAdress;
+    //! Whether twin-range scheme is active - always false if a valid .tpr was read
+    gmx_bool                 useTwinRange;
 
+    //! KVT object that contains input parameters converted to the new style.
     gmx::KeyValueTreeObject *params;
 };
 
