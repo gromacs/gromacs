@@ -49,6 +49,7 @@
 
 #include <string>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -1555,7 +1556,7 @@ void init_swapcoords(
     {
         if (oh->swapHistory == nullptr)
         {
-            oh->swapHistory = std::unique_ptr<swaphistory_t>(new swaphistory_t {});
+            oh->swapHistory = gmx::compat::make_unique<swaphistory_t>(swaphistory_t {});
         }
         swapstate = oh->swapHistory.get();
 
