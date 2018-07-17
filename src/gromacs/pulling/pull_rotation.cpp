@@ -296,7 +296,7 @@ static void free_square_matrix(double** mat, int dim)
 
 
 /* Return the angle for which the potential is minimal */
-static real get_fitangle(t_rotgrp *rotg, gmx_enfrotgrp_t erg)
+static real get_fitangle(t_rotgrp *rotg, gmx_enfrotgrp *erg)
 {
     int           i;
     real          fitangle = -999.9;
@@ -337,8 +337,8 @@ static void reduce_output(const t_commrec *cr, t_rot *rot, real t, gmx_int64_t s
     int             g, i, islab, nslabs = 0;
     int             count; /* MPI element counter                               */
     t_rotgrp       *rotg;
-    gmx_enfrot_t    er;    /* Pointer to the enforced rotation buffer variables */
-    gmx_enfrotgrp_t erg;   /* Pointer to enforced rotation group data           */
+    gmx_enfrot     *er;    /* Pointer to the enforced rotation buffer variables */
+    gmx_enfrotgrp  *erg;   /* Pointer to enforced rotation group data           */
     real            fitangle;
     gmx_bool        bFlex;
 
@@ -495,8 +495,8 @@ extern real add_rot_forces(t_rot *rot, rvec f[], const t_commrec *cr, gmx_int64_
 {
     int             g, l, ii;
     t_rotgrp       *rotg;
-    gmx_enfrot_t    er;         /* Pointer to the enforced rotation buffer variables */
-    gmx_enfrotgrp_t erg;        /* Pointer to enforced rotation group data           */
+    gmx_enfrot     *er;         /* Pointer to the enforced rotation buffer variables */
+    gmx_enfrotgrp  *erg;        /* Pointer to enforced rotation group data           */
     real            Vrot = 0.0; /* If more than one rotation group is present, Vrot
                                    assembles the local parts from all groups         */
 
@@ -637,7 +637,7 @@ static void get_slab_centers(
 {
     /* Slab index */
     int             j, islab;
-    gmx_enfrotgrp_t erg;      /* Pointer to enforced rotation group data */
+    gmx_enfrotgrp  *erg;     /* Pointer to enforced rotation group data */
 
 
     erg = rotg->enfrotgrp;
@@ -862,7 +862,7 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const gmx_output_env_t *oe
     t_rotgrp       *rotg;
     const char    **setname;
     char            buf[50], buf2[75];
-    gmx_enfrotgrp_t erg;       /* Pointer to enforced rotation group data */
+    gmx_enfrotgrp  *erg;      /* Pointer to enforced rotation group data */
     gmx_bool        bFlex;
     char           *LegendStr = nullptr;
 
@@ -1004,7 +1004,7 @@ static FILE *open_angles_out(const char *fn, t_rot *rot)
     int             g, i;
     FILE           *fp;
     t_rotgrp       *rotg;
-    gmx_enfrotgrp_t erg;        /* Pointer to enforced rotation group data */
+    gmx_enfrotgrp  *erg;       /* Pointer to enforced rotation group data */
     char            buf[100];
 
 
@@ -1462,7 +1462,7 @@ static real flex_fit_angle(t_rotgrp *rotg)
     real            fitangle;   /* Angle of the rotation group derived by fitting */
     rvec            coord;
     real            scal;
-    gmx_enfrotgrp_t erg;        /* Pointer to enforced rotation group data */
+    gmx_enfrotgrp  *erg;       /* Pointer to enforced rotation group data */
 
 
     erg = rotg->enfrotgrp;
@@ -1516,7 +1516,7 @@ static void flex_fit_angle_perslab(
     real            fitangle;   /* Angle of a slab derived from an RMSD fit to
                                  * the reference structure at t=0  */
     t_gmx_slabdata *sd;
-    gmx_enfrotgrp_t erg;        /* Pointer to enforced rotation group data */
+    gmx_enfrotgrp  *erg;        /* Pointer to enforced rotation group data */
     real            OOm_av;     /* 1/average_mass of a rotation group atom */
     real            m_rel;      /* Relative mass of a rotation group atom  */
 
@@ -1666,7 +1666,7 @@ static int get_single_atom_gaussians(
     int             slab, homeslab;
     real            g;
     int             count = 0;
-    gmx_enfrotgrp_t erg;      /* Pointer to enforced rotation group data */
+    gmx_enfrotgrp  *erg;     /* Pointer to enforced rotation group data */
 
 
     erg = rotg->enfrotgrp;
@@ -1726,7 +1726,7 @@ static void flex2_precalc_inner_sum(t_rotgrp *rotg)
     rvec            s_in, tmpvec, tmpvec2;
     real            mi, wi;  /* Mass-weighting of the positions                 */
     real            N_M;     /* N/M                                             */
-    gmx_enfrotgrp_t erg;     /* Pointer to enforced rotation group data */
+    gmx_enfrotgrp  *erg;     /* Pointer to enforced rotation group data */
 
 
     erg = rotg->enfrotgrp;
@@ -1806,7 +1806,7 @@ static void flex_precalc_inner_sum(t_rotgrp *rotg)
     real            mi, wi;      /* Mass-weighting of the positions               */
     real            N_M;         /* N/M                                           */
 
-    gmx_enfrotgrp_t erg;         /* Pointer to enforced rotation group data */
+    gmx_enfrotgrp  *erg;         /* Pointer to enforced rotation group data */
 
 
     erg = rotg->enfrotgrp;
@@ -1888,10 +1888,10 @@ static real do_flex2_lowlevel(
     rvec            sjn, tmpvec, tmpvec2, yj0_ycn;
     rvec            sum1vec_part, sum1vec, sum2vec_part, sum2vec, sum3vec, sum4vec, innersumvec;
     real            sum3, sum4;
-    gmx_enfrotgrp_t erg;     /* Pointer to enforced rotation group data       */
-    real            mj, wj;  /* Mass-weighting of the positions               */
-    real            N_M;     /* N/M                                           */
-    real            Wjn;     /* g_n(x_j) m_j / Mjn                            */
+    gmx_enfrotgrp  *erg;    /* Pointer to enforced rotation group data       */
+    real            mj, wj; /* Mass-weighting of the positions               */
+    real            N_M;    /* N/M                                           */
+    real            Wjn;    /* g_n(x_j) m_j / Mjn                            */
     gmx_bool        bCalcPotFit;
 
     /* To calculate the torque per slab */
@@ -2137,7 +2137,7 @@ static real do_flex_lowlevel(
     real            betan_xj_sigma2;
     real            mj, wj;                 /* Mass-weighting of the positions               */
     real            N_M;                    /* N/M                                           */
-    gmx_enfrotgrp_t erg;                    /* Pointer to enforced rotation group data       */
+    gmx_enfrotgrp  *erg;                    /* Pointer to enforced rotation group data       */
     gmx_bool        bCalcPotFit;
 
 
@@ -2372,7 +2372,7 @@ static void sort_collective_coordinates(
         sort_along_vec_t *data) /* Buffer for sorting the positions */
 {
     int             i;
-    gmx_enfrotgrp_t erg;       /* Pointer to enforced rotation group data */
+    gmx_enfrotgrp  *erg;      /* Pointer to enforced rotation group data */
 
 
     erg = rotg->enfrotgrp;
@@ -2407,7 +2407,7 @@ static void get_firstlast_atom_per_slab(t_rotgrp *rotg)
 {
     int             i, islab, n;
     real            beta;
-    gmx_enfrotgrp_t erg;     /* Pointer to enforced rotation group data */
+    gmx_enfrotgrp  *erg;    /* Pointer to enforced rotation group data */
 
 
     erg = rotg->enfrotgrp;
@@ -2516,7 +2516,7 @@ static void get_firstlast_slab_check(
 /* Enforced rotation with a flexible axis */
 static void do_flexible(
         gmx_bool        bMaster,
-        gmx_enfrot_t    enfrot,       /* Other rotation data                        */
+        gmx_enfrot     *enfrot,       /* Other rotation data                        */
         t_rotgrp       *rotg,         /* The rotation group                         */
         int             g,            /* Group number                               */
         rvec            x[],          /* The local positions                        */
@@ -2526,8 +2526,8 @@ static void do_flexible(
         gmx_bool        bOutstepSlab) /* Output per-slab data                       */
 {
     int             l, nslabs;
-    real            sigma;    /* The Gaussian width sigma */
-    gmx_enfrotgrp_t erg;      /* Pointer to enforced rotation group data */
+    real            sigma;   /* The Gaussian width sigma */
+    gmx_enfrotgrp  *erg;     /* Pointer to enforced rotation group data */
 
 
     erg = rotg->enfrotgrp;
@@ -2658,11 +2658,11 @@ static void do_fixed(
 {
     int             ifit, j, jj, m;
     rvec            dr;
-    rvec            tmp_f;     /* Force */
-    real            alpha;     /* a single angle between an actual and a reference position */
-    real            weight;    /* single weight for a single angle */
-    gmx_enfrotgrp_t erg;       /* Pointer to enforced rotation group data */
-    rvec            xi_xc;     /* xi - xc */
+    rvec            tmp_f;    /* Force */
+    real            alpha;    /* a single angle between an actual and a reference position */
+    real            weight;   /* single weight for a single angle */
+    gmx_enfrotgrp  *erg;      /* Pointer to enforced rotation group data */
+    rvec            xi_xc;    /* xi - xc */
     gmx_bool        bCalcPotFit;
     rvec            fit_xr_loc;
 
@@ -2767,11 +2767,11 @@ static void do_radial_motion(
         gmx_bool        bOutstepSlab) /* Output per-slab data                       */
 {
     int             j, jj, ifit;
-    rvec            tmp_f;     /* Force */
-    real            alpha;     /* a single angle between an actual and a reference position */
-    real            weight;    /* single weight for a single angle */
-    gmx_enfrotgrp_t erg;       /* Pointer to enforced rotation group data */
-    rvec            xj_u;      /* xj - u */
+    rvec            tmp_f;    /* Force */
+    real            alpha;    /* a single angle between an actual and a reference position */
+    real            weight;   /* single weight for a single angle */
+    gmx_enfrotgrp  *erg;      /* Pointer to enforced rotation group data */
+    rvec            xj_u;     /* xj - u */
     rvec            tmpvec, fit_tmpvec;
     real            fac, fac2, sum = 0.0;
     rvec            pj;
@@ -2872,7 +2872,7 @@ static void do_radial_motion_pf(
     rvec            tmp_f;       /* Force */
     real            alpha;       /* a single angle between an actual and a reference position */
     real            weight;      /* single weight for a single angle */
-    gmx_enfrotgrp_t erg;         /* Pointer to enforced rotation group data */
+    gmx_enfrotgrp  *erg;         /* Pointer to enforced rotation group data */
     rvec            tmpvec, tmpvec2;
     rvec            innersumvec; /* Precalculation of the inner sum */
     rvec            innersumveckM;
@@ -3008,8 +3008,8 @@ static void do_radial_motion_pf(
 static void radial_motion2_precalc_inner_sum(t_rotgrp  *rotg, rvec innersumvec)
 {
     int             i;
-    gmx_enfrotgrp_t erg;       /* Pointer to enforced rotation group data */
-    rvec            xi_xc;     /* xj - xc */
+    gmx_enfrotgrp  *erg;      /* Pointer to enforced rotation group data */
+    rvec            xi_xc;    /* xj - xc */
     rvec            tmpvec, tmpvec2;
     real            fac;
     rvec            ri, si;
@@ -3073,12 +3073,12 @@ static void do_radial_motion2(
         gmx_bool        bOutstepSlab) /* Output per-slab data                       */
 {
     int             ii, iigrp, ifit, j;
-    rvec            xj;        /* Position */
-    real            alpha;     /* a single angle between an actual and a reference position */
-    real            weight;    /* single weight for a single angle */
-    gmx_enfrotgrp_t erg;       /* Pointer to enforced rotation group data */
-    rvec            xj_u;      /* xj - u */
-    rvec            yj0_yc0;   /* yj0 -yc0 */
+    rvec            xj;       /* Position */
+    real            alpha;    /* a single angle between an actual and a reference position */
+    real            weight;   /* single weight for a single angle */
+    gmx_enfrotgrp  *erg;      /* Pointer to enforced rotation group data */
+    rvec            xj_u;     /* xj - u */
+    rvec            yj0_yc0;  /* yj0 -yc0 */
     rvec            tmpvec, tmpvec2;
     real            fac, fit_fac, fac2, Vpart = 0.0;
     rvec            rj, fit_rj, sj;
@@ -3274,7 +3274,7 @@ static void allocate_slabs(
         int        g,
         gmx_bool   bVerbose)
 {
-    gmx_enfrotgrp_t erg;      /* Pointer to enforced rotation group data */
+    gmx_enfrotgrp  *erg;     /* Pointer to enforced rotation group data */
     int             i, nslabs;
 
 
@@ -3318,7 +3318,7 @@ static void allocate_slabs(
  */
 static void get_firstlast_slab_ref(t_rotgrp *rotg, real mc[], int ref_firstindex, int ref_lastindex)
 {
-    gmx_enfrotgrp_t erg;      /* Pointer to enforced rotation group data */
+    gmx_enfrotgrp  *erg;     /* Pointer to enforced rotation group data */
     int             first, last;
     rvec            dummy;
 
@@ -3393,7 +3393,7 @@ static void init_rot_group(FILE *fplog, const t_commrec *cr, int g, t_rotgrp *ro
     int                   i, ii;
     rvec                  coord, xref, *xdum;
     gmx_bool              bFlex, bColl;
-    gmx_enfrotgrp_t       erg; /* Pointer to enforced rotation group data */
+    gmx_enfrotgrp        *erg; /* Pointer to enforced rotation group data */
     int                   ref_firstindex, ref_lastindex;
     real                  mass, totalmass;
     real                  start = 0.0;
@@ -3604,7 +3604,7 @@ extern void dd_make_local_rotation_groups(gmx_domdec_t *dd, t_rot *rot)
     gmx_ga2la_t      *ga2la;
     int               g;
     t_rotgrp         *rotg;
-    gmx_enfrotgrp_t   erg;    /* Pointer to enforced rotation group data */
+    gmx_enfrotgrp    *erg;   /* Pointer to enforced rotation group data */
 
     ga2la = dd->ga2la;
 
@@ -3626,7 +3626,7 @@ static int calc_mpi_bufsize(t_rot *rot)
     int             g;
     int             count_group, count_total;
     t_rotgrp       *rotg;
-    gmx_enfrotgrp_t erg;      /* Pointer to enforced rotation group data */
+    gmx_enfrotgrp  *erg;     /* Pointer to enforced rotation group data */
 
 
     count_total = 0;
@@ -3666,8 +3666,8 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
     t_rotgrp       *rotg;
     int             g;
     int             nat_max = 0;     /* Size of biggest rotation group */
-    gmx_enfrot_t    er;              /* Pointer to the enforced rotation buffer variables */
-    gmx_enfrotgrp_t erg;             /* Pointer to enforced rotation group data */
+    gmx_enfrot     *er;              /* Pointer to the enforced rotation buffer variables */
+    gmx_enfrotgrp  *erg;             /* Pointer to enforced rotation group data */
     rvec           *x_pbc = nullptr; /* Space for the pbc-correct atom positions */
 
 
@@ -3807,7 +3807,7 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
 
 extern void finish_rot(t_rot *rot)
 {
-    gmx_enfrot_t er;        /* Pointer to the enforced rotation buffer variables */
+    gmx_enfrot *er;        /* Pointer to the enforced rotation buffer variables */
 
 
     er = rot->enfrot;
@@ -3838,7 +3838,7 @@ extern void finish_rot(t_rot *rot)
  */
 static void rotate_local_reference(t_rotgrp *rotg)
 {
-    gmx_enfrotgrp_t erg;
+    gmx_enfrotgrp  *erg;
     int             i, ii;
 
 
@@ -3860,7 +3860,7 @@ static void rotate_local_reference(t_rotgrp *rotg)
 static void choose_pbc_image(rvec x[], t_rotgrp *rotg, matrix box, int npbcdim)
 {
     int             i, ii;
-    gmx_enfrotgrp_t erg;       /* Pointer to enforced rotation group data */
+    gmx_enfrotgrp  *erg;      /* Pointer to enforced rotation group data */
     rvec            xref;
 
 
@@ -3898,8 +3898,8 @@ extern void do_rotation(
     t_rotgrp       *rotg;
     gmx_bool        outstep_slab, outstep_rot;
     gmx_bool        bColl;
-    gmx_enfrot_t    er;            /* Pointer to the enforced rotation buffer variables */
-    gmx_enfrotgrp_t erg;           /* Pointer to enforced rotation group data           */
+    gmx_enfrot     *er;            /* Pointer to the enforced rotation buffer variables */
+    gmx_enfrotgrp  *erg;           /* Pointer to enforced rotation group data           */
     rvec            transvec;
     t_gmx_potfit   *fit = nullptr; /* For fit type 'potential' determine the fit
                                       angle via the potential minimum            */
