@@ -739,7 +739,7 @@ static void pr_rotgrp(FILE *fp, int indent, int g, const t_rotgrp *rotg)
     PS("rot-massw", EBOOL(rotg->bMassW));
     pr_ivec_block(fp, indent, "atom", rotg->ind, rotg->nat, TRUE);
     pr_rvecs(fp, indent, "x-ref", rotg->x_ref, rotg->nat);
-    pr_rvec(fp, indent, "rot-vec", rotg->vec, DIM, TRUE);
+    pr_rvec(fp, indent, "rot-vec", rotg->inputVec, DIM, TRUE);
     pr_rvec(fp, indent, "rot-pivot", rotg->pivot, DIM, TRUE);
     PR("rot-rate", rotg->rate);
     PR("rot-k", rotg->k);

@@ -469,6 +469,7 @@ void gmx::Integrator::do_md()
         /* Distribute the charge groups over the nodes from the master node */
         dd_partition_system(fplog, ir->init_step, cr, TRUE, 1,
                             state_global, top_global, ir,
+                            enforcedRotation,
                             state, &f, mdAtoms, top, fr,
                             vsite, constr,
                             nrnb, nullptr, FALSE);
@@ -1019,6 +1020,7 @@ void gmx::Integrator::do_md()
                 dd_partition_system(fplog, step, cr,
                                     bMasterState, nstglobalcomm,
                                     state_global, top_global, ir,
+                                    enforcedRotation,
                                     state, &f, mdAtoms, top, fr,
                                     vsite, constr,
                                     nrnb, wcycle,
@@ -1115,7 +1117,8 @@ void gmx::Integrator::do_md()
         if (shellfc)
         {
             /* Now is the time to relax the shells */
-            relax_shell_flexcon(fplog, cr, ms, mdrunOptions.verbose, step,
+            relax_shell_flexcon(fplog, cr, ms, mdrunOptions.verbose,
+                                enforcedRotation, step,
                                 ir, bNS, force_flags, top,
                                 constr, enerd, fcd,
                                 state, f, force_vir, mdatoms,
@@ -1144,7 +1147,7 @@ void gmx::Integrator::do_md()
              * This is parallellized as well, and does communication too.
              * Check comments in sim_util.c
              */
-            do_force(fplog, cr, ms, ir, awh.get(),
+            do_force(fplog, cr, ms, ir, awh.get(), enforcedRotation,
                      step, nrnb, wcycle, top, groups,
                      state->box, state->x, &state->hist,
                      f, force_vir, mdatoms, enerd, fcd,
@@ -1778,6 +1781,7 @@ void gmx::Integrator::do_md()
         {
             dd_partition_system(fplog, step, cr, TRUE, 1,
                                 state_global, top_global, ir,
+                                enforcedRotation,
                                 state, &f, mdAtoms, top, fr,
                                 vsite, constr,
                                 nrnb, wcycle, FALSE);

@@ -806,6 +806,7 @@ static void checkPotentialEnergyValidity(gmx_int64_t           step,
  * \param[in]     cr               The communication record
  * \param[in]     inputrec         The input record
  * \param[in]     awh              The Awh module (nullptr if none in use).
+ * \param[in]     enforcedRotation Enforced rotation module.
  * \param[in]     step             The current MD step
  * \param[in]     t                The current time
  * \param[in,out] wcycle           Wallcycle accounting struct
@@ -828,6 +829,7 @@ computeSpecialForces(FILE                          *fplog,
                      const t_commrec               *cr,
                      const t_inputrec              *inputrec,
                      gmx::Awh                      *awh,
+                     gmx_enfrot                    *enforcedRotation,
                      gmx_int64_t                    step,
                      double                         t,
                      gmx_wallcycle_t                wcycle,
@@ -878,7 +880,7 @@ computeSpecialForces(FILE                          *fplog,
     if (inputrec->bRot)
     {
         wallcycle_start(wcycle, ewcROTadd);
-        enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot, f, cr, step, t);
+        enerd->term[F_COM_PULL] += add_rot_forces(enforcedRotation, f, cr, step, t);
         wallcycle_stop(wcycle, ewcROTadd);
     }
 
@@ -1052,6 +1054,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                                 const gmx_multisim_t *ms,
                                 const t_inputrec *inputrec,
                                 gmx::Awh *awh,
+                                gmx_enfrot *enforcedRotation,
                                 gmx_int64_t step,
                                 t_nrnb *nrnb,
                                 gmx_wallcycle_t wcycle,
@@ -1414,7 +1417,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     if (inputrec->bRot)
     {
         wallcycle_start(wcycle, ewcROT);
-        do_rotation(cr, inputrec, box, as_rvec_array(x.data()), t, step, bNS);
+        do_rotation(cr, enforcedRotation, box, as_rvec_array(x.data()), t, step, bNS);
         wallcycle_stop(wcycle, ewcROT);
     }
 
@@ -1548,7 +1551,8 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     wallcycle_stop(wcycle, ewcFORCE);
 
-    computeSpecialForces(fplog, cr, inputrec, awh, step, t, wcycle,
+    computeSpecialForces(fplog, cr, inputrec, awh, enforcedRotation,
+                         step, t, wcycle,
                          fr->forceProviders, box, x, mdatoms, lambda,
                          flags, &forceWithVirial, enerd,
                          ed, bNS);
@@ -1749,6 +1753,7 @@ static void do_force_cutsGROUP(FILE *fplog,
                                const gmx_multisim_t *ms,
                                const t_inputrec *inputrec,
                                gmx::Awh *awh,
+                               gmx_enfrot *enforcedRotation,
                                gmx_int64_t step,
                                t_nrnb *nrnb,
                                gmx_wallcycle_t wcycle,
@@ -1941,7 +1946,7 @@ static void do_force_cutsGROUP(FILE *fplog,
     if (inputrec->bRot)
     {
         wallcycle_start(wcycle, ewcROT);
-        do_rotation(cr, inputrec, box, as_rvec_array(x.data()), t, step, bNS);
+        do_rotation(cr, enforcedRotation, box, as_rvec_array(x.data()), t, step, bNS);
         wallcycle_stop(wcycle, ewcROT);
     }
 
@@ -2006,7 +2011,8 @@ static void do_force_cutsGROUP(FILE *fplog,
         }
     }
 
-    computeSpecialForces(fplog, cr, inputrec, awh, step, t, wcycle,
+    computeSpecialForces(fplog, cr, inputrec, awh, enforcedRotation,
+                         step, t, wcycle,
                          fr->forceProviders, box, x, mdatoms, lambda,
                          flags, &forceWithVirial, enerd,
                          ed, bNS);
@@ -2082,6 +2088,7 @@ void do_force(FILE                                     *fplog,
               const gmx_multisim_t                     *ms,
               const t_inputrec                         *inputrec,
               gmx::Awh                                 *awh,
+              gmx_enfrot                               *enforcedRotation,
               gmx_int64_t                               step,
               t_nrnb                                   *nrnb,
               gmx_wallcycle_t                           wcycle,
@@ -2119,7 +2126,7 @@ void do_force(FILE                                     *fplog,
     {
         case ecutsVERLET:
             do_force_cutsVERLET(fplog, cr, ms, inputrec,
-                                awh, step, nrnb, wcycle,
+                                awh, enforcedRotation, step, nrnb, wcycle,
                                 top,
                                 groups,
                                 box, x, hist,
@@ -2136,7 +2143,7 @@ void do_force(FILE                                     *fplog,
             break;
         case ecutsGROUP:
             do_force_cutsGROUP(fplog, cr, ms, inputrec,
-                               awh, step, nrnb, wcycle,
+                               awh, enforcedRotation, step, nrnb, wcycle,
                                top,
                                groups,
                                box, x, hist,
