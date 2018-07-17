@@ -44,6 +44,7 @@
 #include <cassert>
 #include <cmath>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/mdlib/mdebin.h"
 #include "gromacs/mdtypes/energyhistory.h"
@@ -716,7 +717,7 @@ void mde_delta_h_coll_update_energyhistory(const t_mde_delta_h_coll *dhc,
 {
     if (enerhist->deltaHForeignLambdas == nullptr)
     {
-        enerhist->deltaHForeignLambdas.reset(new delta_h_history_t);
+        enerhist->deltaHForeignLambdas = gmx::compat::make_unique<delta_h_history_t>();
         enerhist->deltaHForeignLambdas->dh.resize(dhc->ndh);
     }
 

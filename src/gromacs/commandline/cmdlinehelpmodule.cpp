@@ -50,6 +50,7 @@
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlineparser.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helptopic.h"
@@ -567,15 +568,13 @@ HelpExportReStructuredText::HelpExportReStructuredText(
 
 void HelpExportReStructuredText::startModuleExport()
 {
-    indexFile_.reset(
-            new TextWriter(
-                    outputRedirector_->openTextOutputFile("fragments/byname.rst")));
+    indexFile_ = compat::make_unique<TextWriter>(
+                outputRedirector_->openTextOutputFile("fragments/byname.rst"));
     indexFile_->writeLine(formatString("* :doc:`%s </onlinehelp/%s>` - %s",
                                        binaryName_.c_str(), binaryName_.c_str(),
                                        RootHelpText::title));
-    manPagesFile_.reset(
-            new TextWriter(
-                    outputRedirector_->openTextOutputFile("conf-man.py")));
+    manPagesFile_ = compat::make_unique<TextWriter>(
+                outputRedirector_->openTextOutputFile("conf-man.py"));
     manPagesFile_->writeLine("man_pages = [");
 }
 
@@ -636,12 +635,10 @@ void HelpExportReStructuredText::finishModuleExport()
 
 void HelpExportReStructuredText::startModuleGroupExport()
 {
-    indexFile_.reset(
-            new TextWriter(
-                    outputRedirector_->openTextOutputFile("fragments/bytopic.rst")));
-    manPagesFile_.reset(
-            new TextWriter(
-                    outputRedirector_->openTextOutputFile("fragments/bytopic-man.rst")));
+    indexFile_ = compat::make_unique<TextWriter>(
+                outputRedirector_->openTextOutputFile("fragments/bytopic.rst"));
+    manPagesFile_ = compat::make_unique<TextWriter>(
+                outputRedirector_->openTextOutputFile("fragments/bytopic-man.rst"));
 }
 
 void HelpExportReStructuredText::exportModuleGroup(

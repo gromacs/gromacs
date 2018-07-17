@@ -45,6 +45,7 @@
 #include <cmath>
 
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -1128,7 +1129,7 @@ static gmx_edsam_t ed_open(
         // If we start from a checkpoint file, we already have an edsamHistory struct
         if (oh->edsamHistory == nullptr)
         {
-            oh->edsamHistory = std::unique_ptr<edsamhistory_t>(new edsamhistory_t {});
+            oh->edsamHistory = gmx::compat::make_unique<edsamhistory_t>(edsamhistory_t {});
         }
         edsamhistory_t *EDstate = oh->edsamHistory.get();
 

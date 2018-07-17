@@ -641,11 +641,11 @@ int gmx_awh(int argc, char *argv[])
                 AwhGraphSelection awhGraphSelection = (moreGraphs ? AwhGraphSelection::All : AwhGraphSelection::Pmf);
                 EnergyUnit        energyUnit        = (kTUnit ? EnergyUnit::KT : EnergyUnit::KJPerMol);
                 awhReader =
-                    std::unique_ptr<AwhReader>(new AwhReader(ir.awhParams,
-                                                             nfile, fnm,
-                                                             awhGraphSelection,
-                                                             energyUnit, BOLTZ*ir.opts.ref_t[0],
-                                                             block));
+                    gmx::compat::make_unique<AwhReader>(ir.awhParams,
+                                                        nfile, fnm,
+                                                        awhGraphSelection,
+                                                        energyUnit, BOLTZ*ir.opts.ref_t[0],
+                                                        block);
             }
 
             awhReader->processAwhFrame(*block, frame->t, oenv);

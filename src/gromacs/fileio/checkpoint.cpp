@@ -52,8 +52,10 @@
 #endif
 
 #include <array>
+#include <memory>
 
 #include "buildinfo.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio-xdr.h"
@@ -1367,7 +1369,7 @@ static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
                     {
                         if (deltaH == nullptr)
                         {
-                            enerhist->deltaHForeignLambdas.reset(new delta_h_history_t);
+                            enerhist->deltaHForeignLambdas = gmx::compat::make_unique<delta_h_history_t>();
                             deltaH = enerhist->deltaHForeignLambdas.get();
                         }
                         deltaH->dh.resize(numDeltaH);
@@ -1646,7 +1648,7 @@ static int do_cpt_awh(XDR *xd, gmx_bool bRead,
         {
             GMX_RELEASE_ASSERT(bRead, "do_cpt_awh should not be called for writing without an AwhHistory");
 
-            awhHistoryLocal = std::shared_ptr<gmx::AwhHistory>(new gmx::AwhHistory());
+            awhHistoryLocal = std::make_shared<gmx::AwhHistory>();
             awhHistory      = awhHistoryLocal.get();
         }
 
@@ -2268,7 +2270,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 
     if (headerContents->flags_enh && observablesHistory->energyHistory == nullptr)
     {
-        observablesHistory->energyHistory = std::unique_ptr<energyhistory_t>(new energyhistory_t {});
+        observablesHistory->energyHistory = gmx::compat::make_unique<energyhistory_t>();
     }
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE,
                           headerContents->flags_enh, observablesHistory->energyHistory.get(), nullptr);
@@ -2290,7 +2292,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 
     if (headerContents->nED > 0 && observablesHistory->edsamHistory == nullptr)
     {
-        observablesHistory->edsamHistory = std::unique_ptr<edsamhistory_t>(new edsamhistory_t {});
+        observablesHistory->edsamHistory = gmx::compat::make_unique<edsamhistory_t>(edsamhistory_t {});
     }
     ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, headerContents->nED, observablesHistory->edsamHistory.get(), nullptr);
     if (ret)
@@ -2300,7 +2302,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 
     if (headerContents->flags_awhh != 0 && state->awhHistory == nullptr)
     {
-        state->awhHistory = std::shared_ptr<gmx::AwhHistory>(new gmx::AwhHistory());
+        state->awhHistory = std::make_shared<gmx::AwhHistory>();
     }
     ret = do_cpt_awh(gmx_fio_getxdr(fp), TRUE,
                      headerContents->flags_awhh, state->awhHistory.get(), nullptr);
@@ -2311,7 +2313,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 
     if (headerContents->eSwapCoords != eswapNO && observablesHistory->swapHistory == nullptr)
     {
-        observablesHistory->swapHistory = std::unique_ptr<swaphistory_t>(new swaphistory_t {});
+        observablesHistory->swapHistory = gmx::compat::make_unique<swaphistory_t>(swaphistory_t {});
     }
     ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, headerContents->eSwapCoords, observablesHistory->swapHistory.get(), nullptr);
     if (ret)

@@ -53,6 +53,7 @@
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodulemanager.h"
 #include "gromacs/analysisdata/paralleloptions.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -450,7 +451,7 @@ AnalysisDataStorageImpl::extendBuffer(size_t newSize)
     frames_.reserve(newSize);
     while (frames_.size() < newSize)
     {
-        frames_.push_back(FramePointer(new AnalysisDataStorageFrameData(this, nextIndex_)));
+        frames_.push_back(compat::make_unique<AnalysisDataStorageFrameData>(this, nextIndex_));
         ++nextIndex_;
     }
     // The unused frame should not be included in the count.

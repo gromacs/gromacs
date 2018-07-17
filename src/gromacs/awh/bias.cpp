@@ -55,6 +55,7 @@
 
 #include <algorithm>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/utilities.h"
@@ -349,11 +350,11 @@ Bias::Bias(int                             biasIndexInCollection,
         double blockLength = 0;
         /* Construct the force correlation object. */
         forceCorrelationGrid_ =
-            gmx::compat::make_unique<CorrelationGrid>(state_.points().size(), ndim(),
-                                                      blockLength, CorrelationGrid::BlockLengthMeasure::Time,
-                                                      awhParams.nstSampleCoord*mdTimeStep);
+            compat::make_unique<CorrelationGrid>(state_.points().size(), ndim(),
+                                                 blockLength, CorrelationGrid::BlockLengthMeasure::Time,
+                                                 awhParams.nstSampleCoord*mdTimeStep);
 
-        writer_ = std::unique_ptr<BiasWriter>(new BiasWriter(*this));
+        writer_ = compat::make_unique<BiasWriter>(*this);
     }
 }
 
