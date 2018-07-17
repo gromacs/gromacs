@@ -44,6 +44,7 @@
 
 struct gmx_edsam;
 struct gmx_enerdata_t;
+struct gmx_enfrot;
 struct gmx_groups_t;
 struct gmx_grppairener_t;
 struct gmx_localtop_t;
@@ -92,6 +93,7 @@ void do_force(FILE                                     *log,
               const gmx_multisim_t                     *ms,
               const t_inputrec                         *inputrec,
               gmx::Awh                                 *awh,
+              gmx_enfrot                               *enforcedRotation,
               gmx_int64_t                               step,
               t_nrnb                                   *nrnb,
               gmx_wallcycle                            *wcycle,

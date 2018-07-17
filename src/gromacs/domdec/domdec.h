@@ -70,6 +70,7 @@ struct cginfo_mb_t;
 struct gmx_domdec_t;
 struct gmx_ddbox_t;
 struct gmx_domdec_zones_t;
+struct gmx_enfrot;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
 struct gmx_vsite_t;
@@ -324,6 +325,7 @@ void dd_partition_system(FILE                *fplog,
                          t_state             *state_global,
                          const gmx_mtop_t    *top_global,
                          const t_inputrec    *ir,
+                         gmx_enfrot          *enforcedRotation,
                          t_state             *state_local,
                          PaddedRVecVector    *f,
                          gmx::MDAtoms        *mdatoms,

@@ -630,7 +630,7 @@ Integrator::do_tpi()
              * out of the box. */
             /* Make do_force do a single node force calculation */
             cr->nnodes = 1;
-            do_force(fplog, cr, ms, inputrec, nullptr,
+            do_force(fplog, cr, ms, inputrec, nullptr, nullptr,
                      step, nrnb, wcycle, top, &top_global->groups,
                      state_global->box, state_global->x, &state_global->hist,
                      f, force_vir, mdatoms, enerd, fcd,
