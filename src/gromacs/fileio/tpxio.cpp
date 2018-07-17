@@ -806,7 +806,7 @@ static void do_rotgrp(t_fileio *fio, t_rotgrp *rotg, gmx_bool bRead)
         snew(rotg->x_ref, rotg->nat);
     }
     gmx_fio_ndo_rvec(fio, rotg->x_ref, rotg->nat);
-    gmx_fio_do_rvec(fio, rotg->vec);
+    gmx_fio_do_rvec(fio, rotg->inputVec);
     gmx_fio_do_rvec(fio, rotg->pivot);
     gmx_fio_do_real(fio, rotg->rate);
     gmx_fio_do_real(fio, rotg->k);

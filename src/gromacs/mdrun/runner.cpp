@@ -1264,10 +1264,11 @@ int Mdrunner::mdrunner()
             }
         }
 
+        std::unique_ptr<EnforcedRotation> enforcedRotation;
         if (inputrec->bRot)
         {
             /* Initialize enforced rotation code */
-            init_rot(fplog, inputrec, nfile, fnm, cr, globalState.get(), &mtop, oenv, mdrunOptions);
+            enforcedRotation = init_rot(fplog, inputrec, nfile, fnm, cr, globalState.get(), &mtop, oenv, mdrunOptions);
         }
 
         /* Let makeConstraints know whether we have essential dynamics constraints.
@@ -1295,6 +1296,7 @@ int Mdrunner::mdrunner()
             oenv,
             mdrunOptions,
             vsite, constr.get(),
+            enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
             deform.get(),
             mdModules->outputProvider(),
             inputrec, &mtop,
@@ -1307,10 +1309,6 @@ int Mdrunner::mdrunner()
             walltime_accounting
         };
         integrator.run(inputrec->eI);
-        if (inputrec->bRot)
-        {
-            finish_rot(inputrec->rot);
-        }
 
         if (inputrec->bPull)
         {

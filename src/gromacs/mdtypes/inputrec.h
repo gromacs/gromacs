@@ -247,7 +247,7 @@ struct t_rotgrp
     //! The reference positions
     rvec            *x_ref;
     //! The normalized rotation vector
-    rvec             vec;
+    rvec             inputVec;
     //! Rate of rotation (degree/ps)
     real             rate;
     //! Force constant (kJ/(mol nm^2)
@@ -266,8 +266,6 @@ struct t_rotgrp
     real             min_gaussian;
     //! Additive constant for radial motion2 and flexible2 potentials (nm^2)
     real             eps;
-    //! Stores non-inputrec rotation data per group TODO remove
-    gmx_enfrotgrp   *enfrotgrp;
 };
 
 struct t_rot
@@ -280,8 +278,6 @@ struct t_rot
     int                   nstsout;
     //! Groups to rotate
     t_rotgrp             *grp;
-    //! Stores non-inputrec enforced rotation data
-    gmx_enfrot           *enfrot;
 };
 
 struct t_IMD

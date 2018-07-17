@@ -48,6 +48,7 @@
 #include "gromacs/utility/real.h"
 
 class energyhistory_t;
+struct gmx_enfrot;
 struct gmx_mtop_t;
 struct gmx_membed_t;
 struct gmx_multisim_t;
@@ -125,6 +126,8 @@ struct Integrator
     gmx_vsite_t                     *vsite;
     //! Handles constraints.
     Constraints                     *constr;
+    //! Handles enforced rotation.
+    gmx_enfrot                      *enforcedRotation;
     //! Handles box deformation.
     BoxDeformation                  *deform;
     //! Handles writing output files.
