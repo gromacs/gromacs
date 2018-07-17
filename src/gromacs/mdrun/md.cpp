@@ -462,7 +462,7 @@ void gmx::Integrator::do_md()
     {
         top = dd_init_local_top(top_global);
 
-        stateInstance = gmx::compat::make_unique<t_state>();
+        stateInstance = compat::make_unique<t_state>();
         state         = stateInstance.get();
         dd_init_local_state(cr->dd, state_global, state);
 
@@ -529,7 +529,7 @@ void gmx::Integrator::do_md()
         }
         if (observablesHistory->energyHistory == nullptr)
         {
-            observablesHistory->energyHistory = std::unique_ptr<energyhistory_t>(new energyhistory_t {});
+            observablesHistory->energyHistory = compat::make_unique<energyhistory_t>();
         }
         /* Set the initial energy history in state by updating once */
         update_energyhistory(observablesHistory->energyHistory.get(), mdebin);

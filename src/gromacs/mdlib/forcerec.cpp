@@ -2187,7 +2187,7 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
         }
     }
 
-    nbv->listParams = std::unique_ptr<NbnxnListParameters>(new NbnxnListParameters(ir->rlist));
+    nbv->listParams = gmx::compat::make_unique<NbnxnListParameters>(ir->rlist);
     setupDynamicPairlistPruning(mdlog, ir, mtop, box, nbv->grp[0].kernel_type, fr->ic,
                                 nbv->listParams.get());
 
