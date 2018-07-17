@@ -413,6 +413,7 @@ static void init_em(FILE *fplog, const char *title,
         /* Distribute the charge groups over the nodes from the master node */
         dd_partition_system(fplog, ir->init_step, cr, TRUE, 1,
                             state_global, top_global, ir,
+                            nullptr,
                             &ems->s, &ems->f, mdAtoms, *top,
                             fr, vsite, constr,
                             nrnb, nullptr, FALSE);
@@ -729,6 +730,7 @@ static void em_dd_partition_system(FILE *fplog, int step, const t_commrec *cr,
     /* Repartition the domain decomposition */
     dd_partition_system(fplog, step, cr, FALSE, 1,
                         nullptr, top_global, ir,
+                        nullptr,
                         &ems->s, &ems->f,
                         mdAtoms, top, fr, vsite, constr,
                         nrnb, wcycle, FALSE);
@@ -854,7 +856,7 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
     /* do_force always puts the charge groups in the box and shifts again
      * We do not unshift, so molecules are always whole in congrad.c
      */
-    do_force(fplog, cr, ms, inputrec, nullptr,
+    do_force(fplog, cr, ms, inputrec, nullptr, nullptr,
              count, nrnb, wcycle, top, &top_global->groups,
              ems->s.box, ems->s.x, &ems->s.hist,
              ems->f, force_vir, mdAtoms->mdatoms(), enerd, fcd,
@@ -2806,6 +2808,7 @@ Integrator::do_nm()
                                         cr,
                                         ms,
                                         mdrunOptions.verbose,
+                                        nullptr,
                                         step,
                                         inputrec,
                                         bNS,

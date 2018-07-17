@@ -6226,6 +6226,7 @@ void dd_partition_system(FILE                *fplog,
                          t_state             *state_global,
                          const gmx_mtop_t    *top_global,
                          const t_inputrec    *ir,
+                         gmx_enfrot          *enforcedRotation,
                          t_state             *state_local,
                          PaddedRVecVector    *f,
                          gmx::MDAtoms        *mdAtoms,
@@ -6816,7 +6817,7 @@ void dd_partition_system(FILE                *fplog,
     if (ir->bRot)
     {
         /* Update the local rotation groups */
-        dd_make_local_rotation_groups(dd, ir->rot);
+        dd_make_local_rotation_groups(dd, enforcedRotation);
     }
 
     if (ir->eSwapCoords != eswapNO)

@@ -126,7 +126,7 @@ extern char **read_rotparams(std::vector<t_inpfile> *inp, t_rot *rot,
                 RotStr, g, erotg_names[rotg->eType], vec[0], vec[1], vec[2]);
         for (m = 0; m < DIM; m++)
         {
-            rotg->vec[m] = vec[m];
+            rotg->inputVec[m] = vec[m];
         }
 
         printStringNoNewline(inp, "Pivot point for the potentials iso, pm, rm, and rm2 (nm)");
