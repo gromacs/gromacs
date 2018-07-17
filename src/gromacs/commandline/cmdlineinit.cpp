@@ -51,6 +51,7 @@
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/datafilefinder.h"
 #include "gromacs/utility/exceptions.h"
@@ -125,9 +126,9 @@ CommandLineProgramContext &initForCommandLine(int *argc, char ***argv)
     broadcastArguments(argc, argv);
     try
     {
-        g_commandLineContext.reset(new CommandLineProgramContext(*argc, *argv));
+        g_commandLineContext = compat::make_unique<CommandLineProgramContext>(*argc, *argv);
         setProgramContext(g_commandLineContext.get());
-        g_libFileFinder.reset(new DataFileFinder());
+        g_libFileFinder = compat::make_unique<DataFileFinder>();
         g_libFileFinder->setSearchPathFromEnv("GMXLIB");
         setLibraryFileFinder(g_libFileFinder.get());
     }

@@ -55,6 +55,7 @@
 #include <algorithm>
 
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/localatomsetmanager.h"
@@ -505,7 +506,7 @@ int Mdrunner::mdrunner()
     if (SIMMASTER(cr))
     {
         /* Only the master rank has the global state */
-        globalState = std::unique_ptr<t_state>(new t_state);
+        globalState = compat::make_unique<t_state>();
 
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, globalState.get(), &mtop);
@@ -663,7 +664,7 @@ int Mdrunner::mdrunner()
     {
         if (!MASTER(cr))
         {
-            globalState = std::unique_ptr<t_state>(new t_state);
+            globalState = compat::make_unique<t_state>();
         }
         broadcastStateWithoutDynamics(cr, globalState.get());
     }
