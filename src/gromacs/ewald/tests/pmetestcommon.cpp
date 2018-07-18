@@ -245,7 +245,7 @@ static void pmeGetComplexGridSizesInternal(const gmx_pme_t      *pme,
 }
 
 //! Getting the PME grid memory buffer and its sizes - template definition
-template<typename ValueType> static void pmeGetGridAndSizesInternal(const gmx_pme_t *, CodePath, ValueType * &, IVec &, IVec &)
+template<typename ValueType> static void pmeGetGridAndSizesInternal(const gmx_pme_t * /*unused*/, CodePath /*unused*/, ValueType * & /*unused*/, IVec & /*unused*/, IVec & /*unused*/)
 {
     GMX_THROW(InternalError("Deleted function call"));
     // explicitly deleting general template does not compile in clang/icc, see https://llvm.org/bugs/show_bug.cgi?id=17537
@@ -259,7 +259,7 @@ template<> void pmeGetGridAndSizesInternal<real>(const gmx_pme_t *pme, CodePath 
 }
 
 //! Getting the PME complex grid memory buffer and its sizes
-template<> void pmeGetGridAndSizesInternal<t_complex>(const gmx_pme_t *pme, CodePath, t_complex * &grid, IVec &gridSize, IVec &paddedGridSize)
+template<> void pmeGetGridAndSizesInternal<t_complex>(const gmx_pme_t *pme, CodePath /*unused*/, t_complex * &grid, IVec &gridSize, IVec &paddedGridSize)
 {
     grid = pmeGetComplexGridInternal(pme);
     pmeGetComplexGridSizesInternal(pme, gridSize, paddedGridSize);

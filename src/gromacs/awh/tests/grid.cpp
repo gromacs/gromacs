@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -84,8 +84,8 @@ TEST(gridTest, neighborhood)
 
     /* Set up dimParams to get about 15 points along each dimension */
     std::vector<DimParams> dimParams;
-    dimParams.push_back(DimParams(conversionFactor, 1/(beta*0.7*0.7), beta));
-    dimParams.push_back(DimParams(conversionFactor, 1/(beta*0.1*0.1), beta));
+    dimParams.emplace_back(conversionFactor, 1/(beta*0.7*0.7), beta);
+    dimParams.emplace_back(conversionFactor, 1/(beta*0.1*0.1), beta);
 
     Grid       grid(dimParams, awhDimParams.data());
 

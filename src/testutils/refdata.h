@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -252,13 +252,13 @@ class TestReferenceChecker
         //! Creates a deep copy of the other checker.
         explicit TestReferenceChecker(const TestReferenceChecker &other);
         //! Moves the checker.
-        TestReferenceChecker(TestReferenceChecker &&other);
+        TestReferenceChecker(TestReferenceChecker &&other) noexcept;
         ~TestReferenceChecker();
 
         //! Prevents implicit copying during assignment.
         TestReferenceChecker &operator=(const TestReferenceChecker &) = delete;
         //! Assigns a test reference checker.
-        TestReferenceChecker &operator=(TestReferenceChecker &&other);
+        TestReferenceChecker &operator=(TestReferenceChecker &&other) noexcept;
 
         //! Returns whether the checker is initialized.
         bool isValid() const;

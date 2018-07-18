@@ -64,6 +64,7 @@ TEST(TabulatedNormalDistributionTest, Output14)
     gmx::TabulatedNormalDistribution<>   dist(2.0, 5.0); // Use default 14-bit resolution
     std::vector<float>                   result;
 
+    result.reserve(10);
     for (int i = 0; i < 10; i++)
     {
         result.push_back(dist(rng));
@@ -80,6 +81,7 @@ TEST(TabulatedNormalDistributionTest, Output16)
     gmx::TabulatedNormalDistribution<float, 16>   dist(2.0, 5.0); // Use larger 16-bit table
     std::vector<float>                            result;
 
+    result.reserve(10);
     for (int i = 0; i < 10; i++)
     {
         result.push_back(dist(rng));
@@ -96,6 +98,7 @@ TEST(TabulatedNormalDistributionTest, OutputDouble14)
     gmx::TabulatedNormalDistribution<double>      dist(2.0, 5.0);
     std::vector<double>                           result;
 
+    result.reserve(10);
     for (int i = 0; i < 10; i++)
     {
         result.push_back(dist(rng));
