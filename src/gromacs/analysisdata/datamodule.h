@@ -240,21 +240,21 @@ class IAnalysisDataModule
 class AnalysisDataModuleSerial : public IAnalysisDataModule
 {
     public:
-        virtual ~AnalysisDataModuleSerial() {}
+        ~AnalysisDataModuleSerial() override {}
 
-        virtual int flags() const = 0;
+        int flags() const override = 0;
 
-        virtual void dataStarted(AbstractAnalysisData *data)              = 0;
-        virtual void frameStarted(const AnalysisDataFrameHeader &frame)   = 0;
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points)   = 0;
-        virtual void frameFinished(const AnalysisDataFrameHeader &header) = 0;
-        virtual void dataFinished() = 0;
+        void dataStarted(AbstractAnalysisData *data)              override = 0;
+        void frameStarted(const AnalysisDataFrameHeader &frame)   override = 0;
+        void pointsAdded(const AnalysisDataPointSetRef &points)   override = 0;
+        void frameFinished(const AnalysisDataFrameHeader &header) override = 0;
+        void dataFinished() override = 0;
 
     private:
-        virtual bool parallelDataStarted(
+        bool parallelDataStarted(
             AbstractAnalysisData              *data,
-            const AnalysisDataParallelOptions &options);
-        virtual void frameFinishedSerial(int /*frameIndex*/) {}
+            const AnalysisDataParallelOptions &options) override;
+        void frameFinishedSerial(int /*frameIndex*/) override {}
 };
 
 /*! \brief
@@ -270,21 +270,21 @@ class AnalysisDataModuleSerial : public IAnalysisDataModule
 class AnalysisDataModuleParallel : public IAnalysisDataModule
 {
     public:
-        virtual ~AnalysisDataModuleParallel() {}
+        ~AnalysisDataModuleParallel() override {}
 
-        virtual int flags() const = 0;
+        int flags() const override = 0;
 
-        virtual bool parallelDataStarted(
+        bool parallelDataStarted(
             AbstractAnalysisData              *data,
-            const AnalysisDataParallelOptions &options)                   = 0;
-        virtual void frameStarted(const AnalysisDataFrameHeader &frame)   = 0;
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points)   = 0;
-        virtual void frameFinished(const AnalysisDataFrameHeader &header) = 0;
-        virtual void frameFinishedSerial(int index) = 0;
-        virtual void dataFinished()                 = 0;
+            const AnalysisDataParallelOptions &options)                   override = 0;
+        void frameStarted(const AnalysisDataFrameHeader &frame)   override         = 0;
+        void pointsAdded(const AnalysisDataPointSetRef &points)   override         = 0;
+        void frameFinished(const AnalysisDataFrameHeader &header) override         = 0;
+        void frameFinishedSerial(int index) override = 0;
+        void dataFinished()                 override = 0;
 
     private:
-        virtual void dataStarted(AbstractAnalysisData *data);
+        void dataStarted(AbstractAnalysisData *data) override;
 };
 
 } // namespace gmx

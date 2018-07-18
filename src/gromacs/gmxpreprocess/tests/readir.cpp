@@ -78,7 +78,7 @@ class GetIrTest : public ::testing::Test
             snew(opts_.include, STRLEN);
             snew(opts_.define, STRLEN);
         }
-        ~GetIrTest()
+        ~GetIrTest() override
         {
             done_inputrec_strings();
             sfree(opts_.include);

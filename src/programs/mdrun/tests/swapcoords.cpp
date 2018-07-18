@@ -53,7 +53,7 @@ class SwapTestFixture : public MdrunTestFixture
 {
     protected:
         SwapTestFixture();
-        ~SwapTestFixture();
+        ~SwapTestFixture() override;
 };
 
 

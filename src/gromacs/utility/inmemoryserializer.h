@@ -55,19 +55,19 @@ class InMemorySerializer : public ISerializer
 {
     public:
         InMemorySerializer();
-        virtual ~InMemorySerializer();
+        ~InMemorySerializer() override;
 
         std::vector<char> finishAndGetBuffer();
 
         // From ISerializer
-        virtual bool reading() const { return false; }
-        virtual void doBool(bool *value);
-        virtual void doUChar(unsigned char *value);
-        virtual void doInt(int *value);
-        virtual void doInt64(int64_t *value);
-        virtual void doFloat(float *value);
-        virtual void doDouble(double *value);
-        virtual void doString(std::string *value);
+        bool reading() const override { return false; }
+        void doBool(bool *value) override;
+        void doUChar(unsigned char *value) override;
+        void doInt(int *value) override;
+        void doInt64(int64_t *value) override;
+        void doFloat(float *value) override;
+        void doDouble(double *value) override;
+        void doString(std::string *value) override;
 
     private:
         class Impl;
@@ -79,17 +79,17 @@ class InMemoryDeserializer : public ISerializer
 {
     public:
         explicit InMemoryDeserializer(const std::vector<char> &buffer);
-        virtual ~InMemoryDeserializer();
+        ~InMemoryDeserializer() override;
 
         // From ISerializer
-        virtual bool reading() const { return true; }
-        virtual void doBool(bool *value);
-        virtual void doUChar(unsigned char *value);
-        virtual void doInt(int *value);
-        virtual void doInt64(int64_t *value);
-        virtual void doFloat(float *value);
-        virtual void doDouble(double *value);
-        virtual void doString(std::string *value);
+        bool reading() const override { return true; }
+        void doBool(bool *value) override;
+        void doUChar(unsigned char *value) override;
+        void doInt(int *value) override;
+        void doInt64(int64_t *value) override;
+        void doFloat(float *value) override;
+        void doDouble(double *value) override;
+        void doString(std::string *value) override;
 
     private:
         class Impl;

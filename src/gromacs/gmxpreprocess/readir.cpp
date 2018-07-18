@@ -1719,7 +1719,7 @@ class MdpErrorHandler : public gmx::IKeyValueTreeErrorHandler
             mapping_ = &mapping;
         }
 
-        virtual bool onError(gmx::UserInputError *ex, const gmx::KeyValueTreePath &context)
+        bool onError(gmx::UserInputError *ex, const gmx::KeyValueTreePath &context) override
         {
             ex->prependContext(gmx::formatString("Error in mdp option \"%s\":",
                                                  getOptionName(context).c_str()));
