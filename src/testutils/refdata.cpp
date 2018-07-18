@@ -199,7 +199,7 @@ class ReferenceDataTestEventListener : public ::testing::EmptyTestEventListener
             }
         }
 
-        virtual void OnTestProgramEnd(const ::testing::UnitTest &)
+        virtual void OnTestProgramEnd(const ::testing::UnitTest & /*unused*/)
         {
             // Could be used e.g. to free internal buffers allocated by an XML parsing library
         }
@@ -726,13 +726,13 @@ TestReferenceChecker::TestReferenceChecker(const TestReferenceChecker &other)
 {
 }
 
-TestReferenceChecker::TestReferenceChecker(TestReferenceChecker &&other)
+TestReferenceChecker::TestReferenceChecker(TestReferenceChecker &&other) noexcept
     : impl_(std::move(other.impl_))
 {
 }
 
 TestReferenceChecker &
-TestReferenceChecker::operator=(TestReferenceChecker &&other)
+TestReferenceChecker::operator=(TestReferenceChecker &&other) noexcept
 {
     impl_ = std::move(other.impl_);
     return *this;

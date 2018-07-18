@@ -454,7 +454,7 @@ class AnalysisDataTestFixture : public ::testing::Test
         void addReferenceCheckerModule(const char           *id,
                                        AbstractAnalysisData *source);
 
-    protected:
+    private:
         /*! \brief
          * Reference data object used for the reference checker modules.
          *

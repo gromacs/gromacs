@@ -279,12 +279,7 @@ bool FloatingPointTolerance::isWithin(
 
     const gmx_uint64_t ulpTolerance
         = difference.isDouble() ? doubleUlpTolerance_ : singleUlpTolerance_;
-    if (ulpTolerance < GMX_UINT64_MAX && difference.asUlps() <= ulpTolerance)
-    {
-        return true;
-    }
-
-    return false;
+    return ulpTolerance < GMX_UINT64_MAX && difference.asUlps() <= ulpTolerance;
 }
 
 std::string FloatingPointTolerance::toString(const FloatingPointDifference &difference) const

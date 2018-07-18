@@ -68,7 +68,7 @@ extern const real c2;    //!< Random fp value using entire mantissa
 extern const real c3;    //!< Random fp value using entire mantissa
 extern const real c4;    //!< Random fp value using entire mantissa
 extern const real c5;    //!< Random fp value using entire mantissa
-extern const real c5;    //!< Random fp value using entire mantissa
+   //!< Random fp value using entire mantissa
 extern const real c6;    //!< Random fp value using entire mantissa
 extern const real c7;    //!< Random fp value using entire mantissa
 extern const real c8;    //!< Random fp value using entire mantissa

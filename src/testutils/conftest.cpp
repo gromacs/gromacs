@@ -83,7 +83,7 @@ class ConfMatcher : public ITextBlockMatcher
 
 void checkConfFile(TextInputStream         *input,
                    TestReferenceChecker    *checker,
-                   const ConfMatchSettings  &)
+                   const ConfMatchSettings  & /*unused*/)
 {
 
     TestReferenceChecker groChecker(checker->checkCompound("GroFile", "Header"));

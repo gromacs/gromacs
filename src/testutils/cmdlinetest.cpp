@@ -319,7 +319,7 @@ int CommandLineTestHelper::runModuleDirect(
 
 // static
 int CommandLineTestHelper::runModuleFactory(
-        std::function<std::unique_ptr<ICommandLineOptionsModule>()>  factory,
+        const std::function<std::unique_ptr<ICommandLineOptionsModule>()>&  factory,
         CommandLine                                                 *commandLine)
 {
     return runModuleDirect(factory(), commandLine);

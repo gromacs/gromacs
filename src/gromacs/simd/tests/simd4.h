@@ -122,7 +122,7 @@ class Simd4Test : public SimdBaseTest
          */
         ::testing::AssertionResult
         compareSimd4RealUlp(const char * refExpr, const char * tstExpr,
-                            const Simd4Real ref, const Simd4Real tst);
+                            Simd4Real ref, Simd4Real tst);
 
         /*! \brief Compare two real SIMD4 variables for exact equality.
          *
@@ -138,14 +138,14 @@ class Simd4Test : public SimdBaseTest
          */
         ::testing::AssertionResult
         compareSimd4RealEq(const char * refExpr, const char * tstExpr,
-                           const Simd4Real ref, const Simd4Real tst);
+                           Simd4Real ref, Simd4Real tst);
 };
 
 /*! \brief Convert SIMD4 real to std::vector<real>.
  *
  * The returned vector will have the same length as the SIMD4 width.
  */
-std::vector<real> simd4Real2Vector(const Simd4Real simd4);
+std::vector<real> simd4Real2Vector(Simd4Real simd4);
 
 /*! \brief Return floating-point SIMD4 value from std::vector<real>.
  *

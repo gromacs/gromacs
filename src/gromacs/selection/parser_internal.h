@@ -82,7 +82,7 @@ yyerror(YYLTYPE *location, yyscan_t scanner, char const *s)
 //! Logic for computing the location of the output of Bison reduction.
 #define YYLLOC_DEFAULT(Current, Rhs, N)                          \
     do {                                                         \
-        if (N != 0)                                              \
+        if ((N) != 0)                                              \
         {                                                        \
             (Current).startIndex = YYRHSLOC(Rhs, 1).startIndex;  \
             (Current).endIndex   = YYRHSLOC(Rhs, N).endIndex;    \
@@ -218,7 +218,7 @@ void set_empty(ValueType * &dest)
  */
 #define CHECK_SEL(sel) \
     if (!*(sel)) { \
-        delete sel; \
+        delete (sel); \
         YYERROR; \
     }
 

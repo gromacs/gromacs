@@ -58,7 +58,7 @@ class BITMASK_CLASSNAME(BITMASK_SIZE) : public ::testing::TestWithParam<int>
 {
 };
 
-BITMASK_TEST_P(SetAndClear)
+BITMASK_TEST_P(SetAndClear) //NOLINT(misc-definitions-in-headers)
 {
     gmx_bitmask_t m;
     int           i = GetParam();
@@ -74,7 +74,7 @@ BITMASK_TEST_P(SetAndClear)
     EXPECT_TRUE(bitmask_is_zero(m));
 }
 
-BITMASK_TEST_P(InitBit)
+BITMASK_TEST_P(InitBit) //NOLINT(misc-definitions-in-headers)
 {
     gmx_bitmask_t m1, m2;
     int           i = GetParam();
@@ -85,7 +85,7 @@ BITMASK_TEST_P(InitBit)
     EXPECT_TRUE(bitmask_is_equal(m1, m2));
 }
 
-BITMASK_TEST_P(InitLowBits)
+BITMASK_TEST_P(InitLowBits) //NOLINT(misc-definitions-in-headers)
 {
     gmx_bitmask_t m;
     int           i = GetParam();
@@ -96,7 +96,7 @@ BITMASK_TEST_P(InitLowBits)
     }
 }
 
-BITMASK_TEST_P(Disjoint)
+BITMASK_TEST_P(Disjoint) //NOLINT(misc-definitions-in-headers)
 {
     gmx_bitmask_t m1, m2;
     int           i = GetParam();
@@ -107,7 +107,7 @@ BITMASK_TEST_P(Disjoint)
     EXPECT_TRUE(bitmask_is_disjoint(m1, m2));
 }
 
-BITMASK_TEST_P(Union)
+BITMASK_TEST_P(Union) //NOLINT(misc-definitions-in-headers)
 {
     gmx_bitmask_t m1, m2;
     int           i = GetParam();

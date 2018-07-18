@@ -258,7 +258,7 @@ class CommandLineTestHelper
          *     module.
          */
         static int
-        runModuleFactory(std::function<std::unique_ptr<ICommandLineOptionsModule>()>  factory,
+        runModuleFactory(const std::function<std::unique_ptr<ICommandLineOptionsModule>()>&  factory,
                          CommandLine                                                 *commandLine);
 
         /*! \brief

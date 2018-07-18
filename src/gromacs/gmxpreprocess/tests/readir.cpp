@@ -71,8 +71,8 @@ namespace test
 class GetIrTest : public ::testing::Test
 {
     public:
-        GetIrTest() : fileManager_(), ir_(), mdModules_(), opts_(),
-                      wi_(init_warning(FALSE, 0)), wiGuard_(wi_)
+        GetIrTest() :  opts_(),
+                       wi_(init_warning(FALSE, 0)), wiGuard_(wi_)
 
         {
             snew(opts_.include, STRLEN);

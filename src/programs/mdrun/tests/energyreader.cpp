@@ -94,7 +94,7 @@ openEnergyFileToReadFields(const std::string              &filename,
             auto        requiredEnergy = std::find_if(std::begin(namesOfRequiredEnergyFields),
                                                       std::end(namesOfRequiredEnergyFields),
                                                       [name](const std::string &n){
-                                                          return 0 == n.compare(name);
+                                                          return name == n;
                                                       });
             if (requiredEnergy != namesOfRequiredEnergyFields.end())
             {

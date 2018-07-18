@@ -252,13 +252,13 @@ class TestReferenceChecker
         //! Creates a deep copy of the other checker.
         explicit TestReferenceChecker(const TestReferenceChecker &other);
         //! Moves the checker.
-        TestReferenceChecker(TestReferenceChecker &&other);
+        TestReferenceChecker(TestReferenceChecker &&other) noexcept;
         ~TestReferenceChecker();
 
         //! Prevents implicit copying during assignment.
         TestReferenceChecker &operator=(const TestReferenceChecker &) = delete;
         //! Assigns a test reference checker.
-        TestReferenceChecker &operator=(TestReferenceChecker &&other);
+        TestReferenceChecker &operator=(TestReferenceChecker &&other) noexcept;
 
         //! Returns whether the checker is initialized.
         bool isValid() const;

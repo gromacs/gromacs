@@ -80,7 +80,7 @@ class AllocatorTest : public ::testing::Test
 
 // NB need to use this->mask() because of GoogleTest quirks
 
-TYPED_TEST(AllocatorTest, AllocatorAlignAllocatesWithAlignment)
+TYPED_TEST(AllocatorTest, AllocatorAlignAllocatesWithAlignment) //NOLINT(misc-definitions-in-headers)
 {
     using pointer = typename TypeParam::pointer;
     TypeParam a;
@@ -91,7 +91,7 @@ TYPED_TEST(AllocatorTest, AllocatorAlignAllocatesWithAlignment)
 }
 
 
-TYPED_TEST(AllocatorTest, VectorAllocatesAndResizesWithAlignment)
+TYPED_TEST(AllocatorTest, VectorAllocatesAndResizesWithAlignment) //NOLINT(misc-definitions-in-headers)
 {
     using value_type = typename TypeParam::value_type;
     std::vector<value_type, TypeParam> v(10);
@@ -107,7 +107,7 @@ TYPED_TEST(AllocatorTest, VectorAllocatesAndResizesWithAlignment)
     }
 }
 
-TYPED_TEST(AllocatorTest, VectorAllocatesAndReservesWithAlignment)
+TYPED_TEST(AllocatorTest, VectorAllocatesAndReservesWithAlignment) //NOLINT(misc-definitions-in-headers)
 {
     using value_type = typename TypeParam::value_type;
     std::vector<value_type, TypeParam> v(10);
