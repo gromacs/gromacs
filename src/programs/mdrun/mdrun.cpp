@@ -215,8 +215,8 @@ int Mdrunner::mainFunction(int argc, char *argv[])
         "exceeds [TT]-maxh[tt]\\*0.99 hours. This option is particularly useful in",
         "combination with setting [TT]nsteps[tt] to -1 either in the mdp or using the",
         "similarly named command line option. This results in an infinite run,",
-        "terminated only when the time limit set by [TT]-maxh[tt] is reached (if any)"
-        "or upon receiving a signal."
+        "terminated only when the time limit set by [TT]-maxh[tt] is reached (if any)",
+        "or upon receiving a signal.",
         "[PAR]",
         "When [TT]mdrun[tt] receives a TERM or INT signal (e.g. when ctrl+C is",
         "pressed), it will stop at the next neighbor search step or at the",
@@ -239,7 +239,7 @@ int Mdrunner::mainFunction(int argc, char *argv[])
         "IMD remote can be turned on by [TT]-imdpull[tt].",
         "The port [TT]mdrun[tt] listens to can be altered by [TT]-imdport[tt].The",
         "file pointed to by [TT]-if[tt] contains atom indices and forces if IMD",
-        "pulling is used."
+        "pulling is used.",
         "[PAR]",
         "When [TT]mdrun[tt] is started with MPI, it does not run niced by default."
     };
