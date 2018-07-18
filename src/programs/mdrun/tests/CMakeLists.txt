@@ -53,6 +53,7 @@ gmx_add_gtest_executable(
     grompp.cpp
     initialconstraints.cpp
     interactiveMD.cpp
+    regressiontest.cpp
     rerun.cpp
     swapcoords.cpp
     tabulated_bonded_interactions.cpp
