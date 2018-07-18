@@ -45,8 +45,7 @@
 
 #include "pme-load-balancing.h"
 
-#include <assert.h>
-
+#include <cassert>
 #include <cmath>
 
 #include <algorithm>

@@ -39,7 +39,7 @@
 
 #include "wall.h"
 
-#include <string.h>
+#include <cstring>
 
 #include <algorithm>
 

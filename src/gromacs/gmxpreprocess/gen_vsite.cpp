@@ -38,11 +38,10 @@
 
 #include "gen_vsite.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/add_par.h"

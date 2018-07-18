@@ -46,8 +46,7 @@
 
 #include "biasstate.h"
 
-#include <assert.h>
-
+#include <cassert>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

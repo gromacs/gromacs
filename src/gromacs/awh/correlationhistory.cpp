@@ -47,7 +47,7 @@
 
 #include "correlationhistory.h"
 
-#include <assert.h>
+#include <cassert>
 
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/awh-correlation-history.h"

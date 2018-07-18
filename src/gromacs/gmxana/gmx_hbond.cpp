@@ -262,7 +262,7 @@ static void _set_hb(unsigned int hbexist[], unsigned int frame, gmx_bool bValue)
 
 static gmx_bool is_hb(const unsigned int hbexist[], int frame)
 {
-    return ((hbexist[OFFSET(frame)] & MASK(frame)) != 0) ? 1 : 0;
+    return (hbexist[OFFSET(frame)] & MASK(frame)) != 0;
 }
 
 static void set_hb(t_hbdata *hb, int id, int ih, int ia, int frame, int ihb)

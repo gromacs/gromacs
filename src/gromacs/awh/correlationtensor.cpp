@@ -46,7 +46,7 @@
 
 #include "correlationtensor.h"
 
-#include <assert.h>
+#include <cassert>
 
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"

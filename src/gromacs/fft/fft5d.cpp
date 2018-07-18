@@ -38,13 +38,12 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <float.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include <cassert>
+#include <cfloat>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include <algorithm>
 

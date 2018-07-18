@@ -46,7 +46,7 @@
 
 #include "domdec_constraints.h"
 
-#include <assert.h>
+#include <cassert>
 
 #include <algorithm>
 

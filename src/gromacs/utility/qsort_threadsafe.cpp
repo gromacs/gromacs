@@ -36,7 +36,7 @@
 
 #include "qsort_threadsafe.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 static void
 qsort_swapfunc(void *        a,

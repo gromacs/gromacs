@@ -37,9 +37,9 @@
 
 #include "parallel_3dfft.h"
 
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cerrno>
+#include <cstdlib>
+#include <cstring>
 
 #include "gromacs/fft/fft.h"
 #include "gromacs/fft/fft5d.h"

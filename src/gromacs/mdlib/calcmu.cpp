@@ -39,8 +39,8 @@
 
 #include "calcmu.h"
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
