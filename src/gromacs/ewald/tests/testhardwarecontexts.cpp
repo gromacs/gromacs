@@ -71,7 +71,6 @@ const char *codePathToString(CodePath codePath)
         default:
             GMX_THROW(NotImplementedError("This CodePath should support codePathToString"));
     }
-    return "";
 }
 
 /* Implements the "construct on first use" idiom to avoid any static
