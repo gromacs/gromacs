@@ -5,6 +5,7 @@ Checks:  clang-diagnostic-*,clang-analyzer-*,-clang-analyzer-security.insecureAP
          modernize-use-nullptr,modernize-use-emplace,
          modernize-make-unique,modernize-make-shared,
          modernize-avoid-bind,
+         modernize-use-override,
          modernize-redundant-void-arg,modernize-use-bool-literals,
          cppcoreguidelines-*,-cppcoreguidelines-pro-*,-cppcoreguidelines-owning-memory,
          -cppcoreguidelines-no-malloc,-cppcoreguidelines-special-member-functions,

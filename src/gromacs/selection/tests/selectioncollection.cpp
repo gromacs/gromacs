@@ -78,7 +78,7 @@ class SelectionCollectionTest : public ::testing::Test
         static int               s_debugLevel;
 
         SelectionCollectionTest();
-        ~SelectionCollectionTest();
+        ~SelectionCollectionTest() override;
 
         void setAtomCount(int natoms)
         {

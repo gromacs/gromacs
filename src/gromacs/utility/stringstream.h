@@ -68,8 +68,8 @@ class StringOutputStream : public TextOutputStream
         const std::string &toString() const { return str_; }
 
         // From TextOutputStream
-        virtual void write(const char *text);
-        virtual void close();
+        void write(const char *text) override;
+        void close() override;
 
     private:
         std::string str_;
@@ -111,8 +111,8 @@ class StringInputStream : public TextInputStream
         explicit StringInputStream(ArrayRef<const char *const> const &input);
 
         // From TextInputStream
-        virtual bool readLine(std::string *line);
-        virtual void close() {}
+        bool readLine(std::string *line) override;
+        void close() override {}
     private:
         std::string input_;
         size_t      pos_;

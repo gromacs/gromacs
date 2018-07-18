@@ -70,8 +70,8 @@ class ConfMatcher : public ITextBlockMatcher
         {
         }
 
-        virtual void checkStream(TextInputStream      *stream,
-                                 TestReferenceChecker *checker)
+        void checkStream(TextInputStream      *stream,
+                         TestReferenceChecker *checker) override
         {
             checkConfFile(stream, checker, settings_);
         }

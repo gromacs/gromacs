@@ -136,7 +136,7 @@ class ShakeTest : public ::testing::Test
     public:
         /*! \brief Set up data for test cases to use when constructing
             their input */
-        void SetUp()
+        void SetUp() override
         {
             inverseMassesDatabase_.push_back(2.0);
             inverseMassesDatabase_.push_back(3.0);

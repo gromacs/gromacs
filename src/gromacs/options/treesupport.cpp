@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -179,7 +179,7 @@ class TreeCheckHelper : private OptionsVisitor
         }
 
     private:
-        virtual void visitSection(const OptionSectionInfo &section)
+        void visitSection(const OptionSectionInfo &section) override
         {
             const std::string &name = section.name();
             if (currentObject_->keyExists(name))
@@ -196,7 +196,7 @@ class TreeCheckHelper : private OptionsVisitor
                 currentKnownNames_ = parentKnownNames;
             }
         }
-        virtual void visitOption(const OptionInfo &option)
+        void visitOption(const OptionInfo &option) override
         {
             const std::string &name = option.name();
             if (currentObject_->keyExists(name))
@@ -231,7 +231,7 @@ class TreeAdjustHelper : private OptionsVisitor
         }
 
     private:
-        virtual void visitSection(const OptionSectionInfo &section)
+        void visitSection(const OptionSectionInfo &section) override
         {
             const std::string &name          = section.name();
             auto               parentBuilder = currentObjectBuilder_;
@@ -245,7 +245,7 @@ class TreeAdjustHelper : private OptionsVisitor
             currentSourceObject_  = parentObject;
             currentObjectBuilder_ = parentBuilder;
         }
-        virtual void visitOption(const OptionInfo &option)
+        void visitOption(const OptionInfo &option) override
         {
             const std::string &name = option.name();
             if (currentSourceObject_ == nullptr || !currentSourceObject_->keyExists(name))

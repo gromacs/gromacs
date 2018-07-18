@@ -225,8 +225,8 @@ class Variant
                 explicit Content(const T &value) : value_(value) {}
                 explicit Content(T &&value) : value_(std::move(value)) {}
 
-                virtual const std::type_info &typeInfo() const { return typeid(T); }
-                virtual std::unique_ptr<IContent> clone() const { return compat::make_unique<Content>(value_); }
+                const std::type_info &typeInfo() const override { return typeid(T); }
+                std::unique_ptr<IContent> clone() const override { return compat::make_unique<Content>(value_); }
 
                 T value_;
         };

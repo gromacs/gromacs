@@ -102,8 +102,8 @@ class BooleanOption : public OptionTemplate<bool, BooleanOption>
 
     private:
         //! Creates a BooleanOptionStorage object.
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer &managers) const;
+        AbstractOptionStorage *createStorage(
+            const OptionManagerContainer &managers) const override;
 };
 
 /*! \brief
@@ -145,8 +145,8 @@ class IntegerOption : public OptionTemplate<int, IntegerOption>
 
     private:
         //! Creates an IntegerOptionStorage object.
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer &managers) const;
+        AbstractOptionStorage *createStorage(
+            const OptionManagerContainer &managers) const override;
 
         /*! \brief
          * Needed to initialize IntegerOptionStorage from this class without
@@ -175,8 +175,8 @@ class Int64Option : public OptionTemplate<int64_t, Int64Option>
 
     private:
         //! Creates an Int64OptionStorage object.
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer &managers) const;
+        AbstractOptionStorage *createStorage(
+            const OptionManagerContainer &managers) const override;
 
         /*! \brief
          * Needed to initialize Int64OptionStorage from this class without
@@ -221,8 +221,8 @@ class DoubleOption : public OptionTemplate<double, DoubleOption>
 
     private:
         //! Creates a DoubleOptionStorage object.
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer &managers) const;
+        AbstractOptionStorage *createStorage(
+            const OptionManagerContainer &managers) const override;
 
         bool bTime_;
 
@@ -260,8 +260,8 @@ class FloatOption : public OptionTemplate<float, FloatOption>
 
     private:
         //! Creates a FloatOptionStorage object.
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer &managers) const;
+        AbstractOptionStorage *createStorage(
+            const OptionManagerContainer &managers) const override;
 
         bool bTime_;
 
@@ -358,8 +358,8 @@ class StringOption : public OptionTemplate<std::string, StringOption>
 
     private:
         //! Creates a StringOptionStorage object.
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer &managers) const;
+        AbstractOptionStorage *createStorage(
+            const OptionManagerContainer &managers) const override;
 
         const char *const      *enumValues_;
         int                     enumValuesCount_;
@@ -410,9 +410,9 @@ class EnumIndexStore : public IOptionValueStore<int>
             }
         }
 
-        virtual int valueCount() { return static_cast<int>(intStore_.size()); }
-        virtual ArrayRef<int> values() { return intStore_; }
-        virtual void clear()
+        int valueCount() override { return static_cast<int>(intStore_.size()); }
+        ArrayRef<int> values() override { return intStore_; }
+        void clear() override
         {
             intStore_.clear();
             if (storeVector_ != nullptr)
@@ -420,7 +420,7 @@ class EnumIndexStore : public IOptionValueStore<int>
                 storeVector_->clear();
             }
         }
-        virtual void reserve(size_t count)
+        void reserve(size_t count) override
         {
             intStore_.reserve(intStore_.size() + count);
             if (storeVector_ != nullptr)
@@ -428,7 +428,7 @@ class EnumIndexStore : public IOptionValueStore<int>
                 storeVector_->reserve(storeVector_->size() + count);
             }
         }
-        virtual void append(const int &value)
+        void append(const int &value) override
         {
             const size_t count = intStore_.size();
             intStore_.push_back(value);
@@ -569,8 +569,8 @@ class EnumOption : public OptionTemplate<EnumType, EnumOption<EnumType> >
         }
 
         //! Creates a EnumOptionStorage object.
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer & /*managers*/) const
+        AbstractOptionStorage *createStorage(
+            const OptionManagerContainer & /*managers*/) const override
         {
             // TODO: Implement storeCount() if necessary.
             return internal::createEnumOptionStorage(

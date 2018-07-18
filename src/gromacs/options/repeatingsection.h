@@ -91,7 +91,7 @@ class RepeatingOptionSection : public AbstractOptionSection
         }
 
     private:
-        virtual std::unique_ptr<IOptionSectionStorage> createStorage() const;
+        std::unique_ptr<IOptionSectionStorage> createStorage() const override;
 
         std::vector<T> *values_;
 
@@ -115,15 +115,15 @@ class RepeatingOptionSectionStorage : public IOptionSectionStorage
         {
         }
 
-        virtual void initStorage()
+        void initStorage() override
         {
             defaultValues_ = currentData_;
         }
-        virtual void startSection()
+        void startSection() override
         {
             resetSection();
         }
-        virtual void finishSection()
+        void finishSection() override
         {
             store_->append(currentData_);
             resetSection();

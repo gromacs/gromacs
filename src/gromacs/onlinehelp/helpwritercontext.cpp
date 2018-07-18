@@ -244,11 +244,11 @@ class WrapperToString : public IWrapper
         {
         }
 
-        virtual TextLineWrapperSettings &settings()
+        TextLineWrapperSettings &settings() override
         {
             return wrapper_.settings();
         }
-        virtual void wrap(const std::string &text)
+        void wrap(const std::string &text) override
         {
             result_.append(wrapper_.wrapToString(text));
         }
@@ -272,11 +272,11 @@ class WrapperToVector : public IWrapper
         {
         }
 
-        virtual TextLineWrapperSettings &settings()
+        TextLineWrapperSettings &settings() override
         {
             return wrapper_.settings();
         }
-        virtual void wrap(const std::string &text)
+        void wrap(const std::string &text) override
         {
             const std::vector<std::string> &lines = wrapper_.wrapToVector(text);
             result_.insert(result_.end(), lines.begin(), lines.end());

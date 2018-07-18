@@ -70,8 +70,8 @@ class FloatTypeMatcher : public testing::MatcherInterface < std::tuple < FloatTy
         FloatTypeMatcher(const FloatingPointTolerance &tolerance)
             : tolerance_(tolerance) {}
         //! Compare the two elements of \c arg, return whether they are equal, and comment on \c listener when they are not.
-        virtual bool MatchAndExplain(std::tuple<FloatType, FloatType> arg,
-                                     testing::MatchResultListener* listener) const
+        bool MatchAndExplain(std::tuple<FloatType, FloatType> arg,
+                             testing::MatchResultListener* listener) const override
         {
             const FloatType        &value1 = std::get<0>(arg);
             const FloatType        &value2 = std::get<1>(arg);
@@ -88,12 +88,12 @@ class FloatTypeMatcher : public testing::MatcherInterface < std::tuple < FloatTy
             return false;
         }
         //! Describe to a human what matching means.
-        virtual void DescribeTo(::std::ostream* os) const
+        void DescribeTo(::std::ostream* os) const override
         {
             *os << "matches within tolerance";
         }
         //! Describe to a human what failing to match means.
-        virtual void DescribeNegationTo(::std::ostream* os) const
+        void DescribeNegationTo(::std::ostream* os) const override
         {
             *os << "does not match within tolerance";
         }
@@ -135,8 +135,8 @@ class RVecMatcher :
         RVecMatcher(const FloatingPointTolerance &tolerance)
             : tolerance_(tolerance) {}
         //! Compare the two elements of \c arg, return whether they are equal, and comment on \c listener when they are not.
-        virtual bool MatchAndExplain(std::tuple<VectorType, VectorType> arg,
-                                     testing::MatchResultListener* listener) const
+        bool MatchAndExplain(std::tuple<VectorType, VectorType> arg,
+                             testing::MatchResultListener* listener) const override
         {
             const VectorType           &lhs = std::get<0>(arg);
             const VectorType           &rhs = std::get<1>(arg);
@@ -150,12 +150,12 @@ class RVecMatcher :
             return matches;
         }
         //! Describe to a human what matching means.
-        virtual void DescribeTo(::std::ostream* os) const
+        void DescribeTo(::std::ostream* os) const override
         {
             *os << "matches all elements within tolerance";
         }
         //! Describe to a human what failing to match means.
-        virtual void DescribeNegationTo(::std::ostream* os) const
+        void DescribeNegationTo(::std::ostream* os) const override
         {
             *os << "does not match all elements within tolerance";
         }
