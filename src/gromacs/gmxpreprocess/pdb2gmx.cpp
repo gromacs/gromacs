@@ -38,10 +38,10 @@
 
 #include "pdb2gmx.h"
 
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+#include <cctype>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
 
 #include <algorithm>
 

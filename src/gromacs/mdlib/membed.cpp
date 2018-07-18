@@ -36,8 +36,8 @@
 
 #include "membed.h"
 
-#include <signal.h>
-#include <stdlib.h>
+#include <csignal>
+#include <cstdlib>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/readinp.h"

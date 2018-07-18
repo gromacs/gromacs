@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,20 +61,20 @@ extern const char *gmx_stop_cond_name[];
 /* the externally visible functions: */
 
 /* install the signal handlers that can set the stop condition. */
-void signal_handler_install(void);
+void signal_handler_install();
 
 /* get the current stop condition */
-gmx_stop_cond_t gmx_get_stop_condition(void);
+gmx_stop_cond_t gmx_get_stop_condition();
 
 /* set the stop condition upon receiving a remote one */
 void gmx_set_stop_condition(gmx_stop_cond_t recvd_stop_cond);
 
 /* get the signal name that lead to the current stop condition. */
-const char *gmx_get_signal_name(void);
+const char *gmx_get_signal_name();
 
 /* check whether we received a USR1 signal.
    The condition is reset once a TRUE value is returned, so this function
    only returns TRUE once for a single signal. */
-gmx_bool gmx_got_usr_signal(void);
+gmx_bool gmx_got_usr_signal();
 
 #endif

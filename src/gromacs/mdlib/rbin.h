@@ -48,7 +48,7 @@ typedef struct {
     double *rbuf;
 } t_bin;
 
-t_bin *mk_bin(void);
+t_bin *mk_bin();
 /* Create a real bin */
 
 void destroy_bin(t_bin *b);

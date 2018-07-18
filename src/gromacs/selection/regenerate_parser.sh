@@ -35,7 +35,7 @@ fi
     echo Generating parser.cpp and parser.h... && \
     $BISON -t -o parser.cpp --defines=parser.h parser.y && \
     patch -p0 < parser.patch && \
-    rm -f parser.cpp.orig
+    rm -f parser.cpp.orig parser.h.orig
 [[ $FORCE || scanner.l -nt scanner.cpp ]] && \
     echo Generating scanner.cpp and scanner_flex.h... && \
     $FLEX -o scanner.cpp scanner.l && \

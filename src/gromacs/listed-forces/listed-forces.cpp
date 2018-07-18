@@ -45,7 +45,7 @@
 
 #include "listed-forces.h"
 
-#include <assert.h>
+#include <cassert>
 
 #include <algorithm>
 

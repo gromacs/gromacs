@@ -52,8 +52,8 @@
 
 #include "config.h"
 
-#include <errno.h>
-#include <string.h>
+#include <cerrno>
+#include <cstring>
 
 #include "gromacs/imd/imd.h"
 #include "gromacs/utility/fatalerror.h"
@@ -81,7 +81,7 @@ extern int imdsock_winsockinit()
 /* On UNIX, we can use nice errors from errno.h */
 #include <unistd.h>
 #ifdef GMX_IMD
-#include <time.h>
+#include <ctime>
 
 #include <sys/select.h>
 #include <sys/time.h>

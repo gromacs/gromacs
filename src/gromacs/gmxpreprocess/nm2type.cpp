@@ -39,7 +39,7 @@
 
 #include "nm2type.h"
 
-#include <string.h>
+#include <cstring>
 
 #include <algorithm>
 

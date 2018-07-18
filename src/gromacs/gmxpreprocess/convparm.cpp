@@ -39,10 +39,9 @@
 
 #include "convparm.h"
 
-#include <string.h>
-
 #include <cassert>
 #include <cmath>
+#include <cstring>
 
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/topio.h"

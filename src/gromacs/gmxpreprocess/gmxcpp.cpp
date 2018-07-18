@@ -38,14 +38,13 @@
 
 #include "gmxcpp.h"
 
-#include <ctype.h>
-#include <errno.h>
-#include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include <cctype>
+#include <cerrno>
+#include <climits>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include <algorithm>
 
@@ -712,22 +711,6 @@ int cpp_close_file(gmx_cpp_t *handlep)
         gmx_chdir(handle->cwd);
     }
 
-    if (0)
-    {
-        switch (errno)
-        {
-            case 0:
-                break;
-            case ENOENT:
-                return eCPP_FILE_NOT_FOUND;
-            case EBADF:
-                return eCPP_FILE_NOT_OPEN;
-            case EINTR:
-                return eCPP_INTERRUPT;
-            default:
-                return eCPP_UNKNOWN;
-        }
-    }
     handle->fp      = nullptr;
     handle->line_nr = 0;
     if (nullptr != handle->fn)

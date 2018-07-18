@@ -38,8 +38,8 @@
 
 #include "genhydro.h"
 
-#include <string.h>
-#include <time.h>
+#include <cstring>
+#include <ctime>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxlib/network.h"
