@@ -68,8 +68,8 @@ namespace test
 
 MultiSimTest::MultiSimTest() : size_(gmx_node_num()),
                                rank_(gmx_node_rank()),
-                               mdrunCaller_(new CommandLine),
-                               fileManager_()
+                               mdrunCaller_(new CommandLine)
+                               
 {
     const char *directoryNameFormat = "sim_%d";
 

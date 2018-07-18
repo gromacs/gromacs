@@ -83,6 +83,13 @@ function (gmx_add_gtest_executable EXENAME)
             APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
         set_property(TARGET ${EXENAME}
             APPEND PROPERTY COMPILE_DEFINITIONS "${EXTRA_COMPILE_DEFINITIONS}")
+        if(GMX_CLANG_TIDY)
+            set_target_properties(${EXENAME} PROPERTIES CXX_CLANG_TIDY
+                "${CLANG_TIDY_EXE};--checks=${CLANG_TIDY_CHECKS};-warnings-as-errors=*;-fix")
+        endif()
+        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^6\.0")
+            target_compile_options(${EXENAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Weverything ${IGNORED_CLANG_ALL_WARNINGS} -Wno-gnu-zero-variadic-macro-arguments -Wno-zero-as-null-pointer-constant -Wno-missing-variable-declarations>)
+        endif()
     endif()
 endfunction()
 

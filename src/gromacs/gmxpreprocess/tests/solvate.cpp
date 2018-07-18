@@ -105,7 +105,7 @@ TEST_F(SolvateTest, cs_cp_p_Works)
     setInputFile("-cp", "spc-and-methanol.gro");
 
     // TODO: Consider adding a convenience method for this.
-    std::string topFileName           = fileManager().getInputFilePath("spc-and-methanol.top");
+    std::string topFileName           = gmx::test::TestFileManager::getInputFilePath("spc-and-methanol.top");
     std::string modifiableTopFileName = fileManager().getTemporaryFilePath(".top");
     gmx_file_copy(topFileName.c_str(), modifiableTopFileName.c_str(), true);
     commandLine().addOption("-p", modifiableTopFileName);

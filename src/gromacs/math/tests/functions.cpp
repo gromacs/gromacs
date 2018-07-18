@@ -144,7 +144,7 @@ TEST(FunctionTest, InvsqrtDouble)
     gmx::test::TestReferenceChecker  checker(data.rootChecker());
     std::vector<double>              result;
 
-    for (double f = 1.0; f < 10.0; f += 1.0)
+    for (double f = 1.0; f < 10.0; f += 1.0) // NOLINT(clang-analyzer-security.FloatLoopCounter)
     {
         result.push_back(gmx::invsqrt(f));
     }
@@ -223,7 +223,7 @@ TEST(FunctionTest, SixthrootDouble)
     gmx::test::TestReferenceChecker  checker(data.rootChecker());
     std::vector<double>              result;
 
-    for (double d = 0; d < 10.0; d += 1.0)
+    for (double d = 0; d < 10.0; d += 1.0) // NOLINT(clang-analyzer-security.FloatLoopCounter)
     {
         result.push_back(gmx::sixthroot(d));
     }
@@ -236,7 +236,8 @@ TEST(FunctionTest, SixthrootInteger)
     gmx::test::TestReferenceChecker  checker(data.rootChecker());
     std::vector<double>              result;
 
-    for (int i = 0; i < 10; i++)
+    result.reserve(10);
+for (int i = 0; i < 10; i++)
     {
         result.push_back(gmx::sixthroot(i));
     }
@@ -262,7 +263,7 @@ TEST(FunctionTest, InvsixthrootDouble)
     gmx::test::TestReferenceChecker  checker(data.rootChecker());
     std::vector<double>              result;
 
-    for (double d = 1.0; d < 10.0; d += 1.0)
+    for (double d = 1.0; d < 10.0; d += 1.0) // NOLINT(clang-analyzer-security.FloatLoopCounter)
     {
         result.push_back(gmx::invsixthroot(d));
     }

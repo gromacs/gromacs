@@ -63,7 +63,8 @@ TEST(UniformRealDistributionTest, GenerateCanonical)
     gmx::ThreeFry2x64<8>                rng(123456, gmx::RandomDomain::Other);
     std::vector<real>                   result;
 
-    for (int i = 0; i < 10; i++)
+    result.reserve(10);
+for (int i = 0; i < 10; i++)
     {
         result.push_back(gmx::generateCanonical<real, std::numeric_limits<real>::digits>(rng));
     }
@@ -79,7 +80,8 @@ TEST(UniformRealDistributionTest, Output)
     gmx::UniformRealDistribution<real>      dist(1.0, 10.0);
     std::vector<real>                       result;
 
-    for (int i = 0; i < 10; i++)
+    result.reserve(10);
+for (int i = 0; i < 10; i++)
     {
         result.push_back(dist(rng));
     }

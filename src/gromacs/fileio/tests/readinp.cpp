@@ -57,8 +57,8 @@ class ReadTest : public ::testing::Test
 {
     public:
         ReadTest() : inputField_ {{(t_inpfile(0, 0, false, false, false, "test", ""))}},
-        wi_(),
-        wiGuard_()
+        wi_()
+        
         {
             wi_ = init_warning(FALSE, 0);
             wiGuard_.reset(wi_);

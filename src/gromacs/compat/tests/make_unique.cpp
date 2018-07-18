@@ -57,11 +57,11 @@ struct dummy
     dummy() :
         foo {0},
     bar {0}
-    {};
+    {}
     dummy(const char a, const char b) :
         foo {a},
     bar {b}
-    {};
+    {}
 };
 
 TEST(CompatibilityHelper, MakeUniqueCompiles)

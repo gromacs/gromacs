@@ -250,7 +250,7 @@ TEST_P(PmeSolveTest, ReproducesOutputs)
 /* Valid input instances */
 
 //! A couple of valid inputs for boxes.
-static std::vector<Matrix3x3> const c_sampleBoxes
+std::vector<Matrix3x3> const c_sampleBoxes
 {
     // normal box
     Matrix3x3 {{
@@ -267,7 +267,7 @@ static std::vector<Matrix3x3> const c_sampleBoxes
 };
 
 //! A couple of valid inputs for grid sizes
-static std::vector<IVec> const c_sampleGridSizes
+std::vector<IVec> const c_sampleGridSizes
 {
     IVec {
         16, 12, 28
@@ -283,7 +283,7 @@ const auto c_inputBoxes     = ::testing::ValuesIn(c_sampleBoxes);
 const auto c_inputGridSizes = ::testing::ValuesIn(c_sampleGridSizes);
 
 //! 2 sample complex grids - only non-zero values have to be listed
-static std::vector<SparseComplexGridValuesInput> const c_sampleGrids
+std::vector<SparseComplexGridValuesInput> const c_sampleGrids
 {
     SparseComplexGridValuesInput {{
                                       IVec {

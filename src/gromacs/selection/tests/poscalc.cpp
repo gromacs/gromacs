@@ -109,20 +109,6 @@ class PositionCalculationTest : public ::testing::Test
             {
             }
 
-            // Default move constructor and assignment. Only needed for old compilers.
-            PositionTest(PositionTest &&o)
-                : pos(std::move(o.pos)), pc(o.pc), name(o.name)
-            {
-            }
-
-            PositionTest &operator= (PositionTest &&o)
-            {
-                pos  = std::move(o.pos);
-                pc   = o.pc;
-                name = o.name;
-                return *this;
-            }
-
             PositionPointer                 pos;
             gmx_ana_poscalc_t              *pc;
             const char                     *name;

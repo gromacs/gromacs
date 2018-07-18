@@ -61,7 +61,6 @@ namespace
 
 using gmx::test::CommandLine;
 using gmx::test::MockHelpTopic;
-using gmx::test::MockModule;
 using gmx::test::MockOptionsModule;
 
 //! Test fixture for the tests.

@@ -104,17 +104,6 @@ class SurfaceAreaTest : public ::testing::Test
             *radius = 1.5*dist(rng_) + 0.5;
         }
 
-        void addDummySpheres(int count)
-        {
-            for (int i = 0; i < count; ++i)
-            {
-                rvec x;
-                real radius;
-                generateRandomPosition(x, &radius);
-                addSphere(x[XX], x[YY], x[ZZ], radius, false);
-            }
-        }
-
         void generateRandomPositions(int count)
         {
             x_.reserve(count);

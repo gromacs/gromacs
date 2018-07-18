@@ -147,7 +147,7 @@ TYPED_TEST_CASE(ArrayRefTest, ArrayRefTypes);
         static_cast<typename TestFixture::ValueType>(2.4),      \
         static_cast<typename TestFixture::ValueType>(3.1)       \
     };                                                          \
-    size_t (aSize) = sizeof((a)) / sizeof(typename TestFixture::ValueType);
+    size_t aSize = sizeof((a)) / sizeof(typename TestFixture::ValueType);
 
 #define DEFINE_NON_CONST_ARRAY(a, aSize)                        \
     typename TestFixture::NonConstValueType (a)[] = {           \
@@ -155,7 +155,7 @@ TYPED_TEST_CASE(ArrayRefTest, ArrayRefTypes);
         static_cast<typename TestFixture::ValueType>(2.4),      \
         static_cast<typename TestFixture::ValueType>(3.1)       \
     };                                                          \
-    size_t (aSize) = sizeof((a)) / sizeof(typename TestFixture::ValueType);
+    size_t aSize = sizeof((a)) / sizeof(typename TestFixture::ValueType);
 
 
 TYPED_TEST(ArrayRefTest, MakeWithAssignmentWorks)

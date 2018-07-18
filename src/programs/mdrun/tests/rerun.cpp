@@ -68,7 +68,7 @@ TEST_P(MdrunRerun, WithDifferentInputFormats)
     runner_.useTopGroAndNdxFromDatabase("spc2");
     EXPECT_EQ(0, runner_.callGrompp());
 
-    std::string rerunFileName = fileManager_.getInputFilePath(GetParam());
+    std::string rerunFileName = gmx::test::TestFileManager::getInputFilePath(GetParam());
 
     ::gmx::test::CommandLine rerunCaller;
     rerunCaller.append("mdrun");
