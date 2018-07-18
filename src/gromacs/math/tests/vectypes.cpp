@@ -153,7 +153,7 @@ TEST(RVecTest, CopyAssignmentWorks)
 TEST(RVecTest, MoveConstructorWorks)
 {
     RVec v(1, 2, 3);
-    RVec copy(std::move(v));
+    RVec copy(v);
     EXPECT_EQ(1, copy[XX]);
     EXPECT_EQ(2, copy[YY]);
     EXPECT_EQ(3, copy[ZZ]);
@@ -163,7 +163,7 @@ TEST(RVecTest, MoveAssignmentWorks)
 {
     RVec v(1, 2, 3);
     RVec copy;
-    copy = std::move(v);
+    copy = v;
     EXPECT_EQ(1, copy[XX]);
     EXPECT_EQ(2, copy[YY]);
     EXPECT_EQ(3, copy[ZZ]);

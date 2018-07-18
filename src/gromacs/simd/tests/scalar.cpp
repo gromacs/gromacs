@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,8 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+
+#include "testutils/testasserts.h"
 
 #include "data.h"
 
@@ -109,40 +111,40 @@ TEST(SimdScalarTest, andNot)
 
 TEST(SimdScalarTest, fma)
 {
-    EXPECT_EQ(c1*c2+c3, fma(real(c1), real(c2), real(c3)));
+    EXPECT_REAL_EQ_TOL(c1*c2+c3, fma(real(c1), real(c2), real(c3)), defaultRealTolerance());
 }
 
 TEST(SimdScalarTest, fms)
 {
-    EXPECT_EQ(c1*c2-c3, fms(c1, c2, c3));
+    EXPECT_REAL_EQ_TOL(c1*c2-c3, fms(c1, c2, c3), defaultRealTolerance());
 }
 
 TEST(SimdScalarTest, fnma)
 {
-    EXPECT_EQ(-c1*c2+c3, fnma(c1, c2, c3));
+    EXPECT_REAL_EQ_TOL(-c1*c2+c3, fnma(c1, c2, c3), defaultRealTolerance());
 }
 
 TEST(SimdScalarTest, fnms)
 {
-    EXPECT_EQ(-c1*c2-c3, fnms(c1, c2, c3));
+    EXPECT_REAL_EQ_TOL(-c1*c2-c3, fnms(c1, c2, c3), defaultRealTolerance());
 }
 
 TEST(SimdScalarTest, maskAdd)
 {
-    EXPECT_EQ(c1, maskAdd(c1, c2, false));
-    EXPECT_EQ(c1+c2, maskAdd(c1, c2, true));
+    EXPECT_REAL_EQ_TOL(c1, maskAdd(c1, c2, false), defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(c1+c2, maskAdd(c1, c2, true), defaultRealTolerance());
 }
 
 TEST(SimdScalarTest, maskzMul)
 {
-    EXPECT_EQ(czero, maskzMul(c1, c2, false));
-    EXPECT_EQ(c1*c2, maskzMul(c1, c2, true));
+    EXPECT_REAL_EQ_TOL(czero, maskzMul(c1, c2, false), defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(c1*c2, maskzMul(c1, c2, true), defaultRealTolerance());
 }
 
 TEST(SimdScalarTest, maskzFma)
 {
-    EXPECT_EQ(czero, maskzFma(c1, c2, c3, false));
-    EXPECT_EQ(c1*c2+c3, maskzFma(c1, c2, c3, true));
+    EXPECT_REAL_EQ_TOL(czero, maskzFma(c1, c2, c3, false), defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(c1*c2+c3, maskzFma(c1, c2, c3, true), defaultRealTolerance());
 }
 
 TEST(SimdScalarTest, abs)

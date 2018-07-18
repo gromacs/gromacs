@@ -36,6 +36,7 @@
 
 #include "config.h"
 
+#include <cmath>
 #include <cstdint>
 
 #include <vector>
@@ -124,17 +125,17 @@ Simd4MathTest::compareSimd4MathFunction(const char * refFuncExpr, const char *si
         vtst  = simd4Real2Vector(simd4Func(vector2Simd4Real(vx)));
 
         bool eq = true, signOk = true;
-        for (int i = 0; i < GMX_SIMD4_WIDTH && eq == true; i++)
+        for (int i = 0; i < GMX_SIMD4_WIDTH && eq; i++)
         {
-            eq     = eq && ( fabs(vref[i]-vtst[i]) < absTol_ );
+            eq     = eq && ( std::abs(vref[i]-vtst[i]) < absTol_ );
             signOk = signOk && ( vref[i]*vtst[i] >= 0 );
         }
-        if (eq == true)
+        if (eq)
         {
             // Go to next point if everything within absolute tolerance
             continue;
         }
-        else if (signOk == false)
+        else if (!signOk)
         {
             return ::testing::AssertionFailure()
                    << "Failing SIMD4 math function comparison due to sign differences." << std::endl
@@ -195,7 +196,7 @@ namespace
 /*! \{ */
 
 /*! \brief Function wrapper to evaluate reference 1/sqrt(x) */
-static real
+real
 refInvsqrt(real x)
 {
     return 1.0/std::sqrt(x);
@@ -211,7 +212,7 @@ TEST_F(Simd4MathTest, invsqrtSingleaccuracy)
 {
     setRange(1e-10, 1e10);
     /* Increase the allowed error by the difference between the actual precision and single */
-    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTolSingleAccuracy(ulpTol_);
     GMX_EXPECT_SIMD4_FUNC_NEAR(refInvsqrt, invsqrtSingleAccuracy);
 }
 

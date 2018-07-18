@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -144,7 +144,7 @@ TEST(FunctionTest, InvsqrtDouble)
     gmx::test::TestReferenceChecker  checker(data.rootChecker());
     std::vector<double>              result;
 
-    for (double f = 1.0; f < 10.0; f += 1.0)
+    for (double f = 1.0; f < 10.0; f += 1.0) // NOLINT(clang-analyzer-security.FloatLoopCounter)
     {
         result.push_back(gmx::invsqrt(f));
     }
@@ -223,7 +223,7 @@ TEST(FunctionTest, SixthrootDouble)
     gmx::test::TestReferenceChecker  checker(data.rootChecker());
     std::vector<double>              result;
 
-    for (double d = 0; d < 10.0; d += 1.0)
+    for (double d = 0; d < 10.0; d += 1.0) // NOLINT(clang-analyzer-security.FloatLoopCounter)
     {
         result.push_back(gmx::sixthroot(d));
     }
@@ -236,6 +236,7 @@ TEST(FunctionTest, SixthrootInteger)
     gmx::test::TestReferenceChecker  checker(data.rootChecker());
     std::vector<double>              result;
 
+    result.reserve(10);
     for (int i = 0; i < 10; i++)
     {
         result.push_back(gmx::sixthroot(i));
@@ -262,7 +263,7 @@ TEST(FunctionTest, InvsixthrootDouble)
     gmx::test::TestReferenceChecker  checker(data.rootChecker());
     std::vector<double>              result;
 
-    for (double d = 1.0; d < 10.0; d += 1.0)
+    for (double d = 1.0; d < 10.0; d += 1.0) // NOLINT(clang-analyzer-security.FloatLoopCounter)
     {
         result.push_back(gmx::invsixthroot(d));
     }
