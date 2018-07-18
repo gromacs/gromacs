@@ -66,7 +66,7 @@ class TngTest : public ::testing::Test
 TEST_F(TngTest, CanOpenTngFile)
 {
     gmx_tng_trajectory_t tng;
-    gmx_tng_open(fileManager_.getInputFilePath("spc2-traj.tng").c_str(),
+    gmx_tng_open(gmx::test::TestFileManager::getInputFilePath("spc2-traj.tng").c_str(),
                  'r',
                  &tng);
     gmx_tng_close(&tng);

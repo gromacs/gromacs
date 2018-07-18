@@ -486,10 +486,10 @@ relativeToleranceAsUlp(double magnitude, gmx_uint64_t ulpDiff)
     return relativeToleranceAsPrecisionDependentUlp(magnitude, ulpDiff, ulpDiff);
 }
 
-namespace
+namespace detail
 {
 //! Default tolerance in ULPs for two floating-point values to compare equal.
-static gmx_uint64_t g_defaultUlpTolerance = 4;
+constexpr gmx_uint64_t g_defaultUlpTolerance = 4;
 }
 
 /*! \brief
@@ -499,7 +499,7 @@ static gmx_uint64_t g_defaultUlpTolerance = 4;
  */
 static inline FloatingPointTolerance defaultRealTolerance()
 {
-    return relativeToleranceAsUlp(1.0, g_defaultUlpTolerance);
+    return relativeToleranceAsUlp(1.0, detail::g_defaultUlpTolerance);
 }
 
 
@@ -515,7 +515,7 @@ static inline FloatingPointTolerance defaultRealTolerance()
 static inline FloatingPointTolerance defaultFloatTolerance()
 {
     return relativeToleranceAsPrecisionDependentUlp
-               (1.0, g_defaultUlpTolerance, g_defaultUlpTolerance * (GMX_FLOAT_EPS / GMX_DOUBLE_EPS));
+               (1.0, detail::g_defaultUlpTolerance, detail::g_defaultUlpTolerance * (GMX_FLOAT_EPS / GMX_DOUBLE_EPS));
 }
 
 /*! \name Assertions for floating-point comparison

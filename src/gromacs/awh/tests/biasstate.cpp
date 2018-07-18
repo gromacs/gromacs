@@ -136,8 +136,8 @@ class BiasStateTest : public ::testing::TestWithParam<const char *>
             const AwhParams        &awhParams     = params.awhParams;
             const AwhBiasParams    &awhBiasParams = awhParams.awhBiasParams[0];
             std::vector<DimParams>  dimParams;
-            dimParams.push_back(DimParams(1.0, 15.0, params.beta));
-            dimParams.push_back(DimParams(1.0, 15.0, params.beta));
+            dimParams.emplace_back(1.0, 15.0, params.beta);
+            dimParams.emplace_back(1.0, 15.0, params.beta);
             Grid                    grid(dimParams, awhBiasParams.dimParams);
             BiasParams              biasParams(awhParams, awhBiasParams, dimParams, 1.0, 1.0, BiasParams::DisableUpdateSkips::no, 1, grid.axis(), 0);
             biasState_ = std::unique_ptr<BiasState>(new BiasState(awhBiasParams, 1.0, dimParams, grid));

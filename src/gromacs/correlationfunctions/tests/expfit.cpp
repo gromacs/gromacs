@@ -63,7 +63,7 @@ namespace gmx
 
 namespace
 {
-
+#if HAVE_LMFIT
 class ExpfitData
 {
     public:
@@ -156,7 +156,6 @@ std::vector<ExpfitData> ExpfitTest::data_;
 
 // TODO calling test() leads to a fatal error, which we could in
 // principle test for.
-#if HAVE_LMFIT
 
 TEST_F (ExpfitTest, EffnEXP1) {
     double  param[] = {25};
