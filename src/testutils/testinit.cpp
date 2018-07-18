@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,6 +56,7 @@
 #include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
@@ -185,7 +186,7 @@ void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
         {
             callAddGlobalTestEnvironment();
         }
-        g_testContext.reset(new TestProgramContext(context));
+        g_testContext = gmx::compat::make_unique<TestProgramContext>(context);
         setProgramContext(g_testContext.get());
         // Use the default finder that does not respect GMXLIB, since the tests
         // generally can only get confused by a different set of data files.

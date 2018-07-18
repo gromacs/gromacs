@@ -135,7 +135,7 @@ SplineTableTest<T>::testSplineTableAgainstFunctions(const std::string           
 
     FloatingPointTolerance funcTolerance(relativeToleranceAsFloatingPoint(0.0, tolerance_));
 
-    for (real x = testRange.first; x < testRange.second; x += dx)
+    for (real x = testRange.first; x < testRange.second; x += dx) // NOLINT(clang-analyzer-security.FloatLoopCounter)
     {
         real h                = std::sqrt(GMX_REAL_EPS);
         real secondDerivative = (refDer(x+h)-refDer(x))/h;
