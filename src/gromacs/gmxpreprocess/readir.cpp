@@ -38,11 +38,10 @@
 
 #include "readir.h"
 
-#include <ctype.h>
-#include <limits.h>
-#include <stdlib.h>
-
+#include <cctype>
+#include <climits>
 #include <cmath>
+#include <cstdlib>
 
 #include <algorithm>
 #include <string>

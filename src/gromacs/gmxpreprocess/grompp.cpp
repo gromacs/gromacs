@@ -38,11 +38,10 @@
 
 #include "grompp.h"
 
-#include <errno.h>
-#include <limits.h>
-#include <string.h>
-
+#include <cerrno>
+#include <climits>
 #include <cmath>
+#include <cstring>
 
 #include <algorithm>
 

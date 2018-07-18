@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -152,7 +152,7 @@ std::string formatStringV(const char *fmt, va_list ap)
 
     // TODO: There may be a better way of doing this on Windows, Microsoft
     // provides their own way of doing things...
-    while (1)
+    while (true)
     {
         va_copy(ap_copy, ap);
         int n = vsnprintf(buf, length, fmt, ap_copy);

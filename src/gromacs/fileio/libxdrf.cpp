@@ -1111,7 +1111,7 @@ xtc_get_next_frame_number(FILE *fp, XDR *xdrs, int natoms)
 
     /* read one int just to make sure we dont read this frame but the next */
     xdr_int(xdrs, &step);
-    while (1)
+    while (true)
     {
         ret = xtc_at_header_start(fp, xdrs, natoms, &step, &time);
         if (ret == 1)
@@ -1140,7 +1140,7 @@ static float xtc_get_next_frame_time(FILE *fp, XDR *xdrs, int natoms,
     float     time;
     int       step;
     int       ret;
-    *bOK = 0;
+    *bOK = false;
 
     if ((off = gmx_ftell(fp)) < 0)
     {
@@ -1148,15 +1148,15 @@ static float xtc_get_next_frame_time(FILE *fp, XDR *xdrs, int natoms,
     }
     /* read one int just to make sure we dont read this frame but the next */
     xdr_int(xdrs, &step);
-    while (1)
+    while (true)
     {
         ret = xtc_at_header_start(fp, xdrs, natoms, &step, &time);
         if (ret == 1)
         {
-            *bOK = 1;
+            *bOK = true;
             if (gmx_fseek(fp, off, SEEK_SET))
             {
-                *bOK = 0;
+                *bOK = false;
                 return -1;
             }
             return time;
@@ -1180,22 +1180,22 @@ xtc_get_current_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
     int       step;
     float     time;
     int       ret;
-    *bOK = 0;
+    *bOK = false;
 
     if ((off = gmx_ftell(fp)) < 0)
     {
         return -1;
     }
 
-    while (1)
+    while (true)
     {
         ret = xtc_at_header_start(fp, xdrs, natoms, &step, &time);
         if (ret == 1)
         {
-            *bOK = 1;
+            *bOK = true;
             if (gmx_fseek(fp, off, SEEK_SET))
             {
-                *bOK = 0;
+                *bOK = false;
                 return -1;
             }
             return time;
@@ -1227,7 +1227,7 @@ xtc_get_current_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
     int       ret;
     int       step;
     float     time;
-    *bOK = 0;
+    *bOK = false;
 
     if ((off = gmx_ftell(fp)) < 0)
     {
@@ -1235,15 +1235,15 @@ xtc_get_current_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
     }
 
 
-    while (1)
+    while (true)
     {
         ret = xtc_at_header_start(fp, xdrs, natoms, &step, &time);
         if (ret == 1)
         {
-            *bOK = 1;
+            *bOK = true;
             if (gmx_fseek(fp, off, SEEK_SET))
             {
-                *bOK = 0;
+                *bOK = false;
                 return -1;
             }
             return step;
@@ -1278,7 +1278,7 @@ static gmx_off_t xtc_get_next_frame_start(FILE *fp, XDR *xdrs, int natoms)
     float     time;
     /* read one int just to make sure we dont read this frame but the next */
     xdr_int(xdrs, &step);
-    while (1)
+    while (true)
     {
         ret = xtc_at_header_start(fp, xdrs, natoms, &step, &time);
         if (ret == 1)
@@ -1308,7 +1308,7 @@ xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
     float     tinit;
     gmx_off_t off;
 
-    *bOK = 0;
+    *bOK = false;
     if ((off   = gmx_ftell(fp)) < 0)
     {
         return -1;
@@ -1331,7 +1331,7 @@ xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
     res -= tinit;
     if (0 != gmx_fseek(fp, off, SEEK_SET))
     {
-        *bOK = 0;
+        *bOK = false;
         return -1;
     }
     return res;
@@ -1367,7 +1367,7 @@ xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms)
         return -1;
     }
 
-    while (1)
+    while (true)
     {
         fr = xtc_get_next_frame_number(fp, xdrs, natoms);
         if (fr < 0)
@@ -1466,7 +1466,7 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms, gmx_bool bSeek
        }
      */
 
-    while (1)
+    while (true)
     {
         dt = xdr_xtc_estimate_dt(fp, xdrs, natoms, &bOK);
         if (!bOK)
@@ -1590,17 +1590,17 @@ xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
     float      time;
     gmx_off_t  off;
-    *bOK = 1;
+    *bOK = true;
     off  = gmx_ftell(fp);
     if (off < 0)
     {
-        *bOK = 0;
+        *bOK = false;
         return -1;
     }
 
     if (gmx_fseek(fp, -3*XDR_INT_SIZE, SEEK_END) != 0)
     {
-        *bOK = 0;
+        *bOK = false;
         return -1;
     }
 
@@ -1612,7 +1612,7 @@ xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 
     if (gmx_fseek(fp, off, SEEK_SET) != 0)
     {
-        *bOK = 0;
+        *bOK = false;
         return -1;
     }
     return time;
@@ -1624,18 +1624,18 @@ xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
     int        frame;
     gmx_off_t  off;
-    *bOK = 1;
+    *bOK = true;
 
     if ((off = gmx_ftell(fp)) < 0)
     {
-        *bOK = 0;
+        *bOK = false;
         return -1;
     }
 
 
     if (gmx_fseek(fp, -3*XDR_INT_SIZE, SEEK_END))
     {
-        *bOK = 0;
+        *bOK = false;
         return -1;
     }
 
@@ -1648,7 +1648,7 @@ xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 
     if (gmx_fseek(fp, off, SEEK_SET))
     {
-        *bOK = 0;
+        *bOK = false;
         return -1;
     }
 

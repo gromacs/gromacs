@@ -83,7 +83,7 @@ void init_blocka(t_blocka *block)
     block->a            = nullptr;
 }
 
-t_blocka *new_blocka(void)
+t_blocka *new_blocka()
 {
     t_blocka *block;
 

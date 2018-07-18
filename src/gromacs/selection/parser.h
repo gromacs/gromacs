@@ -177,7 +177,7 @@ typedef struct _gmx_sel_yypstate _gmx_sel_yypstate;
 
 int _gmx_sel_yypush_parse (_gmx_sel_yypstate *ps, int pushed_char, YYSTYPE const *pushed_val, YYLTYPE *pushed_loc, void *scanner);
 
-_gmx_sel_yypstate * _gmx_sel_yypstate_new (void);
+_gmx_sel_yypstate * _gmx_sel_yypstate_new ();
 void _gmx_sel_yypstate_delete (_gmx_sel_yypstate *ps);
 
 #endif /* !YY__GMX_SEL_YY_PARSER_H_INCLUDED  */

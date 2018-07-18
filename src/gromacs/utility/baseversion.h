@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,7 @@
  *
  * \ingroup module_utility
  */
-const char *gmx_version(void);
+const char *gmx_version();
 /*! \brief
  * Full git hash of the latest commit.
  *
@@ -61,7 +61,7 @@ const char *gmx_version(void);
  *
  * \ingroup module_utility
  */
-const char *gmx_version_git_full_hash(void);
+const char *gmx_version_git_full_hash();
 /*! \brief
  * Full git hash of the latest commit in a central \Gromacs repository.
  *
@@ -71,7 +71,7 @@ const char *gmx_version_git_full_hash(void);
  *
  * \ingroup module_utility
  */
-const char *gmx_version_git_central_base_hash(void);
+const char *gmx_version_git_central_base_hash();
 
 /*! \brief
  * Defined if ``libgromacs`` has been compiled in double precision.

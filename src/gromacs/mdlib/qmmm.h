@@ -110,7 +110,7 @@ typedef struct t_QMMMrec {
 
 void atomic_number(int nr, char ***atomtype, int *nucnum);
 
-t_QMMMrec *mk_QMMMrec(void);
+t_QMMMrec *mk_QMMMrec();
 /* allocates memory for QMMMrec */
 
 #if !GMX_QMMM

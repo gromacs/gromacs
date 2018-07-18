@@ -917,7 +917,7 @@ static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_
                     beginfit, endfit);
 
     nat_trx =
-        corr_loop(msd, trx_file, top, ePBC, mol_file ? gnx[0] : 0, gnx, index,
+        corr_loop(msd, trx_file, top, ePBC, mol_file ? gnx[0] : false, gnx, index,
                   (mol_file != nullptr) ? calc1_mol : (bMW ? calc1_mw : calc1_norm),
                   bTen, gnx_com, index_com, dt, t_pdb,
                   pdb_file ? &x : nullptr, box, oenv);

@@ -132,7 +132,7 @@ static int mpi_hostname_hash()
     return hash_int;
 }
 
-int gmx_physicalnode_id_hash(void)
+int gmx_physicalnode_id_hash()
 {
     int hash = 0;
 

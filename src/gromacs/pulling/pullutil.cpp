@@ -38,8 +38,8 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cstdlib>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxlib/network.h"

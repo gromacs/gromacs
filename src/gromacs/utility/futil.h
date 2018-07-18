@@ -71,7 +71,7 @@ typedef int64_t    gmx_off_t;
  *
  * This only has effect on files opened with gmx_ffopen().
  */
-void gmx_disable_file_buffering(void);
+void gmx_disable_file_buffering();
 
 /*! \brief
  * Enables backups with the specified number of maximum backups.
