@@ -38,7 +38,7 @@
 
 #include "topsort.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"

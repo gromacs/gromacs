@@ -38,8 +38,8 @@
 
 #include "symtab.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include <algorithm>
 
@@ -136,7 +136,7 @@ char **get_symtab_handle(t_symtab *symtab, int name)
     gmx_fatal(FARGS, "symtab get_symtab_handle %d not found", name);
 }
 
-static t_symbuf *new_symbuf(void)
+static t_symbuf *new_symbuf()
 {
     t_symbuf *symbuf;
 

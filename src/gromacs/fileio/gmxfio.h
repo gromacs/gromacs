@@ -153,7 +153,7 @@ struct gmx_file_position_t
  * we can truncate output files upon restart-with-appending. */
 std::vector<gmx_file_position_t> gmx_fio_get_output_file_positions();
 
-t_fileio *gmx_fio_all_output_fsync(void);
+t_fileio *gmx_fio_all_output_fsync();
 /* fsync all open output files. This is used for checkpointing, where
    we need to ensure that all output is actually written out to
    disk.

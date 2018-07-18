@@ -39,7 +39,7 @@
 
 #include "broadcaststructs.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"

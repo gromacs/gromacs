@@ -50,7 +50,7 @@ struct gmx_multisim_t;
 struct t_commrec;
 struct t_filenm;
 
-struct t_commrec *init_commrec(void);
+struct t_commrec *init_commrec();
 /* Allocate, initialize and return the commrec. */
 
 void done_commrec(t_commrec *cr);

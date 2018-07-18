@@ -37,9 +37,8 @@
 
 #include "nbnxn_grid.h"
 
-#include <string.h>
-
 #include <cmath>
+#include <cstring>
 
 #include <algorithm>
 

@@ -266,7 +266,7 @@ static void density_in_time (const char *fn, int **index, const int gnx[], real 
     gmx_rmpbc_done(gpbc);
     close_trx(status);
 
-    if (/* DISABLES CODE */ (0))
+    if (/* DISABLES CODE */ (false))
     {
         FILE *fp;
         fp = fopen("koko.xvg", "w");

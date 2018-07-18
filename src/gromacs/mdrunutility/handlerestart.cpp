@@ -51,7 +51,7 @@
 
 #include "handlerestart.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/checkpoint.h"

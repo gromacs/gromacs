@@ -37,8 +37,8 @@
 
 #include "config.h"
 
-#include <errno.h>
-#include <stdlib.h>
+#include <cerrno>
+#include <cstdlib>
 
 #include <fftw3.h>
 

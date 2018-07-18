@@ -43,7 +43,7 @@
 
 #include "mempool.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include <new>
 

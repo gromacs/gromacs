@@ -69,7 +69,7 @@ int get_atomtype_atomnumber(int nt, gpp_atomtype_t at);
 real get_atomtype_nbparam(int nt, int param, gpp_atomtype_t at);
 /* Similar to the previous but returns the paramth parameter or NOTSET */
 
-gpp_atomtype_t init_atomtype(void);
+gpp_atomtype_t init_atomtype();
 /* Return a new atomtype structure */
 
 void done_atomtype(gpp_atomtype_t at);

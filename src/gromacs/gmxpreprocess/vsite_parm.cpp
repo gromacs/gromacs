@@ -38,10 +38,9 @@
 
 #include "vsite_parm.h"
 
-#include <stdio.h>
-#include <string.h>
-
 #include <cmath>
+#include <cstdio>
+#include <cstring>
 
 #include <algorithm>
 

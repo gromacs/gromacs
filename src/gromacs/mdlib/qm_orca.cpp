@@ -38,11 +38,10 @@
 
 #include "qm_orca.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxlib/network.h"

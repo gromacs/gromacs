@@ -40,7 +40,7 @@
 
 #include "pgutil.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/cstringutil.h"

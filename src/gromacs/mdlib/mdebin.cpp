@@ -38,9 +38,9 @@
 
 #include "mdebin.h"
 
-#include <float.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cfloat>
+#include <cstdlib>
+#include <cstring>
 
 #include "gromacs/awh/awh.h"
 #include "gromacs/fileio/enxio.h"

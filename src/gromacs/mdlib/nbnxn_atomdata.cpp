@@ -37,11 +37,10 @@
 
 #include "nbnxn_atomdata.h"
 
-#include <assert.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include <cassert>
 #include <cmath>
+#include <cstdlib>
+#include <cstring>
 
 #include <algorithm>
 
@@ -761,7 +760,7 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
 #endif
     else
     {
-        nbat->bUseTreeReduce = 0;
+        nbat->bUseTreeReduce = false;
     }
     if (nbat->bUseTreeReduce)
     {

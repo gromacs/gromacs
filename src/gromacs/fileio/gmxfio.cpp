@@ -115,7 +115,7 @@ void gmx_fio_unlock(t_fileio *fio)
 }
 
 /* make a dummy head element, assuming we locked everything. */
-static void gmx_fio_make_dummy(void)
+static void gmx_fio_make_dummy()
 {
     if (!open_files)
     {
@@ -197,7 +197,7 @@ static void gmx_fio_remove(t_fileio *fio)
 
 /* get the first open file, or NULL if there is none.
    Returns a locked fio. Assumes open_files_mutex is locked. */
-static t_fileio *gmx_fio_get_first(void)
+static t_fileio *gmx_fio_get_first()
 {
     t_fileio *ret;
 
@@ -685,7 +685,7 @@ int gmx_fio_fsync(t_fileio *fio)
 
 
 
-t_fileio *gmx_fio_all_output_fsync(void)
+t_fileio *gmx_fio_all_output_fsync()
 {
     t_fileio *ret = nullptr;
     t_fileio *cur;

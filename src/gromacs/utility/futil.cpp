@@ -40,10 +40,10 @@
 
 #include "config.h"
 
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -114,7 +114,7 @@ void setLibraryFileFinder(const DataFileFinder *finder)
 
 } // namespace gmx
 
-void gmx_disable_file_buffering(void)
+void gmx_disable_file_buffering()
 {
     bUnbuffered = true;
 }

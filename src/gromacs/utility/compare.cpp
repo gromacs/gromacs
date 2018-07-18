@@ -105,22 +105,6 @@ void cmp_uc(FILE *fp, const char *s, int index, unsigned char i1, unsigned char 
 
 gmx_bool cmp_bool(FILE *fp, const char *s, int index, gmx_bool b1, gmx_bool b2)
 {
-    if (b1)
-    {
-        b1 = 1;
-    }
-    else
-    {
-        b1 = 0;
-    }
-    if (b2)
-    {
-        b2 = 1;
-    }
-    else
-    {
-        b2 = 0;
-    }
     if (b1 != b2)
     {
         if (index != -1)
