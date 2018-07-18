@@ -45,10 +45,9 @@
 
 #include "nbnxn_tuning.h"
 
-#include <assert.h>
-#include <stdlib.h>
-
+#include <cassert>
 #include <cmath>
+#include <cstdlib>
 
 #include <algorithm>
 #include <string>

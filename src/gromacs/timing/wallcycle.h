@@ -81,7 +81,7 @@ enum {
     ewcsNR
 };
 
-gmx_bool wallcycle_have_counter(void);
+gmx_bool wallcycle_have_counter();
 /* Returns if cycle counting is supported */
 
 gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, struct t_commrec *cr);

@@ -43,8 +43,8 @@
 
 #include "selmethod.h"
 
-#include <ctype.h>
-#include <stdarg.h>
+#include <cctype>
+#include <cstdarg>
 
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"

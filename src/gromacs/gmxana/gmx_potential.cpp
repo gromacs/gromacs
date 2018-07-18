@@ -422,7 +422,7 @@ int gmx_potential(int argc, char *argv[])
     static int         ngrps      = 1;
     static gmx_bool    bSpherical = FALSE;   /* default is bilayer types   */
     static real        fudge_z    = 0;       /* translate coordinates      */
-    static gmx_bool    bCorrect   = 0;
+    static gmx_bool    bCorrect   = false;
     t_pargs            pa []      = {
         { "-d",   FALSE, etSTR, {&axtitle},
           "Take the normal on the membrane in direction X, Y or Z." },

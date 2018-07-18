@@ -2272,7 +2272,7 @@ static gmx_bool read_lambda_compvec(const char                *str,
         lc_in = lc_out;
     }
 
-    while (1)
+    while (true)
     {
         if (!start_reached)
         {

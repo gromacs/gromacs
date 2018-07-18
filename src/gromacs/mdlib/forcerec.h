@@ -58,7 +58,7 @@ class PhysicalNodeCommunicator;
 }
 
 /*! \brief Create a new forcerec structure */
-t_forcerec *mk_forcerec(void);
+t_forcerec *mk_forcerec();
 
 //! Destroy a forcerec.
 void done_forcerec(t_forcerec *fr, int numMolBlocks, int numEnergyGroups);

@@ -43,7 +43,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/smalloc.h"
 
-t_bin *mk_bin(void)
+t_bin *mk_bin()
 {
     t_bin *b;
 

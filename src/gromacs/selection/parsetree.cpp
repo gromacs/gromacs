@@ -224,8 +224,8 @@
 
 #include "parsetree.h"
 
-#include <stdarg.h>
-#include <stdio.h>
+#include <cstdarg>
+#include <cstdio>
 
 #include <exception>
 

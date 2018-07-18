@@ -199,7 +199,7 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
 }
 #elif ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) && \
     (defined(__i386__) || defined(__x86_64__)) && !defined(_CRAYC))
-static __inline__ gmx_cycles_t gmx_cycles_read(void)
+static __inline__ gmx_cycles_t gmx_cycles_read()
 {
     /* x86 with GCC inline assembly - pentium TSC register */
     unsigned       low, high;
@@ -435,10 +435,10 @@ static __inline__ bool gmx_cycles_have_counter(void)
 }
 #elif ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__) || defined(_CRAYC)) && \
     (defined(__i386__) || defined(__x86_64__)))
-static __inline__ bool gmx_cycles_have_counter(void)
+static __inline__ bool gmx_cycles_have_counter()
 {
     /* x86 or x86-64 with GCC inline assembly - pentium TSC register */
-    return 1;
+    return true;
 }
 #elif ((defined __aarch64__) && (defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)))
 static __inline bool gmx_cycles_have_counter(void)

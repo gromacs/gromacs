@@ -54,7 +54,7 @@
 
 #include "evaluate.h"
 
-#include <string.h>
+#include <cstring>
 
 #include <algorithm>
 

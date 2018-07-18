@@ -38,11 +38,10 @@
 
 #include "edsam.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
-
 #include <cmath>
+#include <cstdio>
+#include <cstring>
+#include <ctime>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/compat/make_unique.h"

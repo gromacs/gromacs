@@ -59,7 +59,7 @@ enum {
     eprNORMAL, eprAVER, eprRMS, eprNR
 };
 
-t_ebin *mk_ebin(void);
+t_ebin *mk_ebin();
 /* Create an energy bin */
 
 //! Empty the contents of \c eb.
