@@ -245,7 +245,7 @@ TEST_P(PmeSplineAndSpreadTest, ReproducesOutputs)
 /* Valid input instances */
 
 //! A couple of valid inputs for boxes.
-static std::vector<Matrix3x3> const c_sampleBoxes
+std::vector<Matrix3x3> const c_sampleBoxes
 {
     // normal box
     Matrix3x3 {{
@@ -262,7 +262,7 @@ static std::vector<Matrix3x3> const c_sampleBoxes
 };
 
 //! A couple of valid inputs for grid sizes.
-static std::vector<IVec> const c_sampleGridSizes
+std::vector<IVec> const c_sampleGridSizes
 {
     IVec {
         16, 12, 14
@@ -273,19 +273,19 @@ static std::vector<IVec> const c_sampleGridSizes
 };
 
 //! Random charges
-static std::vector<real> const c_sampleChargesFull
+std::vector<real> const c_sampleChargesFull
 {
     4.95f, 3.11f, 3.97f, 1.08f, 2.09f, 1.1f, 4.13f, 3.31f, 2.8f, 5.83f, 5.09f, 6.1f, 2.86f, 0.24f, 5.76f, 5.19f, 0.72f
 };
 //! 1 charge
-static auto const c_sampleCharges1 = ChargesVector(c_sampleChargesFull).subArray(0, 1);
+auto const c_sampleCharges1 = ChargesVector(c_sampleChargesFull).subArray(0, 1);
 //! 2 charges
-static auto const c_sampleCharges2 = ChargesVector(c_sampleChargesFull).subArray(1, 2);
+auto const c_sampleCharges2 = ChargesVector(c_sampleChargesFull).subArray(1, 2);
 //! 13 charges
-static auto const c_sampleCharges13 = ChargesVector(c_sampleChargesFull).subArray(3, 13);
+auto const c_sampleCharges13 = ChargesVector(c_sampleChargesFull).subArray(3, 13);
 
 //! Random coordinate vectors
-static CoordinatesVector const c_sampleCoordinatesFull
+CoordinatesVector const c_sampleCoordinatesFull
 {
     {
         5.59f, 1.37f, 0.95f
@@ -324,11 +324,11 @@ static CoordinatesVector const c_sampleCoordinatesFull
     }
 };
 //! 1 coordinate vector
-static CoordinatesVector const c_sampleCoordinates1(c_sampleCoordinatesFull.begin(), c_sampleCoordinatesFull.begin() + 1);
+CoordinatesVector const c_sampleCoordinates1(c_sampleCoordinatesFull.begin(), c_sampleCoordinatesFull.begin() + 1);
 //! 2 coordinate vectors
-static CoordinatesVector const c_sampleCoordinates2(c_sampleCoordinatesFull.begin() + 1, c_sampleCoordinatesFull.begin() + 3);
+CoordinatesVector const c_sampleCoordinates2(c_sampleCoordinatesFull.begin() + 1, c_sampleCoordinatesFull.begin() + 3);
 //! 13 coordinate vectors
-static CoordinatesVector const c_sampleCoordinates13(c_sampleCoordinatesFull.begin() + 3, c_sampleCoordinatesFull.begin() + 16);
+CoordinatesVector const c_sampleCoordinates13(c_sampleCoordinatesFull.begin() + 3, c_sampleCoordinatesFull.begin() + 16);
 
 //! moved out from instantiantions for readability
 auto c_inputBoxes     = ::testing::ValuesIn(c_sampleBoxes);

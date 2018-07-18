@@ -48,6 +48,8 @@
 
 #include <string.h>
 
+#include <array>
+
 #include "gromacs/utility/basedefinitions.h"
 
 /*! \brief Size of bitmask. Has to be 32 or multiple of 64. */
@@ -121,11 +123,11 @@ inline static void bitmask_union(gmx_bitmask_t* a, gmx_bitmask_t b)
 }
 #else
 #define BITMASK_ALEN (BITMASK_SIZE/64)
-typedef uint64_t gmx_bitmask_t[BITMASK_ALEN];
+using gmx_bitmask_t = std::array<uint64_t, BITMASK_ALEN>;
 
 inline static void bitmask_clear(gmx_bitmask_t* m)
 {
-    memset(*m, 0, BITMASK_SIZE/8);
+    m->fill(0);
 }
 
 inline static void bitmask_set_bit(gmx_bitmask_t* m, int b)
@@ -141,9 +143,9 @@ inline static void bitmask_init_bit(gmx_bitmask_t* m, int b)
 
 inline static void bitmask_init_low_bits(gmx_bitmask_t* m, int b)
 {
-    memset(*m, 255, b/64*8);
+    memset(m->data(), 255, b/64*8);
     (*m)[b/64] = ((uint64_t)1 << (b%64)) - 1;
-    memset(&(*m)[b/64+1], 0, (BITMASK_ALEN-b/64-1)*8);
+    memset(&(m->data())[b/64+1], 0, (BITMASK_ALEN-b/64-1)*8);
 }
 
 inline static bool bitmask_is_set(gmx_bitmask_t m, int b)

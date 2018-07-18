@@ -42,6 +42,7 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/correlationfunctions/autocorr.h"
 
 #include <cmath>
@@ -97,7 +98,7 @@ class AutocorrTest : public ::testing::Test
         {
             int         n        = 0;
             std::string fileName = "testCOS3.xvg";
-            data_                = CorrelationDataSetPointer(new CorrelationDataSet(fileName));
+            data_                = gmx::compat::make_unique<CorrelationDataSet>(fileName);
             nrFrames_            = data_->getNrLines();
             tempArgs_            = add_acf_pargs(&n, nullptr);
         }

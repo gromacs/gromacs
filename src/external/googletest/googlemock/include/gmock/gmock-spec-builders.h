@@ -1269,7 +1269,7 @@ class MockSpec {
       const char* file, int line, const char* obj, const char* call) {
     const string source_text(string("EXPECT_CALL(") + obj + ", " + call + ")");
     LogWithLocation(internal::kInfo, file, line, source_text + " invoked");
-    return function_mocker_->AddNewExpectation(
+    return function_mocker_->AddNewExpectation( // NOLINT
         file, line, source_text, matchers_);
   }
 
@@ -1469,7 +1469,7 @@ class FunctionMockerBase : public UntypedFunctionMockerBase {
     MutexLock l(&g_gmock_mutex);
     VerifyAndClearExpectationsLocked();
     Mock::UnregisterLocked(this);
-    ClearDefaultActionsLocked();
+    ClearDefaultActionsLocked(); // NOLINT
   }
 
   // Returns the ON_CALL spec that matches this mock function with the

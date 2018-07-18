@@ -85,15 +85,21 @@ clang-tidy
   `clang-tidy <http://releases.llvm.org/6.0.0/tools/clang/tools/extra/docs/clang-tidy/index.html>`
   is used for static code analysis. clang-tidy is easy to install. It is contained in
   the llvm binary `package <http://releases.llvm.org/download.html#6.0.0>`. Only
-  version 6.0 is supported. Others might miss tests or give false positives.
-  It is run automatically on Jenkins for each commit. To run it manually, configure
-  with ``cmake -DGMX_CLANG_TIDY=ON -DGMX_OPENMP=no -DCMAKE_BUILD_TYPE=Debug`` and then run make
-  normally (for ``CMAKE_BUILD_TYPE`` any type which enables asserts (e.g. ASAN) works).
-  The name of the clang-tidy executable that CMake should search for be set with
-  ``-DCLANG_TIDY=...`, and the full path to it can be set with ``-DCLANG_TIDY_EXE=...``.
-  Many checks have fixes which automatically get applied when building with clang-tidy
-  enabled, so you may want to run this tool locally to apply the fixes before
-  you upload to Gerrit.
+  version 6.0.* is supported. Others might miss tests or give false positives.
+  It is run automatically on Jenkins for each commit. Many checks have fixes which can automatically be
+  applied. To run it, the build has to be configured with
+  ``cmake -DGMX_CLANG_TIDY=ON -DGMX_OPENMP=no -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=on``.
+  Any ``CMAKE_BUILD_TYPE`` which enables asserts (e.g. ASAN) works. Such a configured build will
+  run both the compiler as well as clang-tidy when building. The name of the clang-tidy executable, is set with
+``-DCLANG_TIDY=...``, and the full path to it can be set with ``-DCLANG_TIDY_EXE=...``.
+  To apply the automatic fixes to the issue identified clang-tidy should be run sepereately (running clang-tidy
+  with ``-fix`` as part of the build can corrupt header files). To fix a specific file run
+  ``clang-tidy -fix -header-filter '.*' {file}``, to fix all files in parallel
+  ``run-clang-tidy.py -fix -header-filter '.*' '(?<!/selection/parser\.cpp|selection/scanner\.cpp)$'``,
+  and to fix all modified files ``run-clang-tidy.py -fix -header-filter '.*' $(git diff HEAD --name-only)``.
+  The run-clang-tidy.py script is in the
+  ``share/clang/`` subfolder of the llvm distribution. ``clang-tidy`` has to be able to find the
+  ``compile_commands.json`` file. Eithe run from the build folder or add a symlink to the source folder.
 
 cppcheck
   `cppcheck <http://cppcheck.sourceforge.net>`_ is used for static code
