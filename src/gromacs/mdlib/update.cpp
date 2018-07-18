@@ -38,7 +38,7 @@
 
 #include "update.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <cmath>
 

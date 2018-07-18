@@ -1111,7 +1111,7 @@ xtc_get_next_frame_number(FILE *fp, XDR *xdrs, int natoms)
 
     /* read one int just to make sure we dont read this frame but the next */
     xdr_int(xdrs, &step);
-    while (1)
+    while (true)
     {
         ret = xtc_at_header_start(fp, xdrs, natoms, &step, &time);
         if (ret == 1)
@@ -1148,7 +1148,7 @@ static float xtc_get_next_frame_time(FILE *fp, XDR *xdrs, int natoms,
     }
     /* read one int just to make sure we dont read this frame but the next */
     xdr_int(xdrs, &step);
-    while (1)
+    while (true)
     {
         ret = xtc_at_header_start(fp, xdrs, natoms, &step, &time);
         if (ret == 1)
@@ -1187,7 +1187,7 @@ xtc_get_current_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
         return -1;
     }
 
-    while (1)
+    while (true)
     {
         ret = xtc_at_header_start(fp, xdrs, natoms, &step, &time);
         if (ret == 1)
@@ -1235,7 +1235,7 @@ xtc_get_current_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
     }
 
 
-    while (1)
+    while (true)
     {
         ret = xtc_at_header_start(fp, xdrs, natoms, &step, &time);
         if (ret == 1)
@@ -1278,7 +1278,7 @@ static gmx_off_t xtc_get_next_frame_start(FILE *fp, XDR *xdrs, int natoms)
     float     time;
     /* read one int just to make sure we dont read this frame but the next */
     xdr_int(xdrs, &step);
-    while (1)
+    while (true)
     {
         ret = xtc_at_header_start(fp, xdrs, natoms, &step, &time);
         if (ret == 1)
@@ -1367,7 +1367,7 @@ xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms)
         return -1;
     }
 
-    while (1)
+    while (true)
     {
         fr = xtc_get_next_frame_number(fp, xdrs, natoms);
         if (fr < 0)
@@ -1466,7 +1466,7 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms, gmx_bool bSeek
        }
      */
 
-    while (1)
+    while (true)
     {
         dt = xdr_xtc_estimate_dt(fp, xdrs, natoms, &bOK);
         if (!bOK)

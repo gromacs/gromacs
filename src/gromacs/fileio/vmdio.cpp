@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,10 +86,10 @@
 /*                                                                           */
 /*****************************************************************************/
 
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 /*
  * Plugin header files; get plugin source from www.ks.uiuc.edu/Research/vmd"
@@ -116,9 +116,9 @@
 #include "gromacs/utility/smalloc.h"
 
 
-typedef int (*initfunc)(void);
+typedef int (*initfunc)();
 typedef int (*regfunc)(void *, vmdplugin_register_cb);
-typedef int (*finifunc)(void);
+typedef int (*finifunc)();
 
 
 

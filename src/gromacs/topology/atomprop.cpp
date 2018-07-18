@@ -38,9 +38,9 @@
 
 #include "atomprop.h"
 
-#include <ctype.h>
-#include <stdio.h>
-#include <string.h>
+#include <cctype>
+#include <cstdio>
+#include <cstring>
 
 #include <cmath>
 

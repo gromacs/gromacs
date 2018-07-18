@@ -38,9 +38,9 @@
 
 #include "readir.h"
 
-#include <ctype.h>
-#include <limits.h>
-#include <stdlib.h>
+#include <cctype>
+#include <climits>
+#include <cstdlib>
 
 #include <cmath>
 

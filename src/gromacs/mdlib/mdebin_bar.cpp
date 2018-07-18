@@ -38,8 +38,8 @@
 
 #include "mdebin_bar.h"
 
-#include <float.h>
-#include <string.h>
+#include <cfloat>
+#include <cstring>
 
 #include <cassert>
 #include <cmath>

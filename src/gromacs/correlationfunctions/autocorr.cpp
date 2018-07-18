@@ -45,8 +45,8 @@
 
 #include "autocorr.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include <cmath>
 

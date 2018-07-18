@@ -95,7 +95,7 @@ static void init5(int n)
     snew(top, ntop);
 }
 
-static void reset5(void)
+static void reset5()
 {
     int i;
 

@@ -38,7 +38,7 @@
 
 #include "gpp_atomtype.h"
 
-#include <string.h>
+#include <cstring>
 
 #include <climits>
 #include <cmath>
@@ -176,7 +176,7 @@ real get_atomtype_nbparam(int nt, int param, gpp_atomtype_t ga)
     return ga->nb[nt].c[param];
 }
 
-gpp_atomtype_t init_atomtype(void)
+gpp_atomtype_t init_atomtype()
 {
     gpp_atomtype_t ga;
 

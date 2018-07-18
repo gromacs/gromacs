@@ -46,7 +46,7 @@
 
 #include "grid.h"
 
-#include <assert.h>
+#include <cassert>
 
 #include <cmath>
 #include <cstring>

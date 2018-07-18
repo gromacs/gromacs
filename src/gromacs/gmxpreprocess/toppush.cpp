@@ -38,8 +38,8 @@
 
 #include "toppush.h"
 
-#include <ctype.h>
-#include <stdlib.h>
+#include <cctype>
+#include <cstdlib>
 
 #include <cmath>
 #include <cstring>

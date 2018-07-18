@@ -273,7 +273,7 @@
 
 #include "compiler.h"
 
-#include <stdarg.h>
+#include <cstdarg>
 
 #include <cmath>
 

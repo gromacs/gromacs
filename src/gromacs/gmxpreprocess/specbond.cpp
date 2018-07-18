@@ -38,8 +38,8 @@
 
 #include "specbond.h"
 
-#include <ctype.h>
-#include <string.h>
+#include <cctype>
+#include <cstring>
 
 #include <cmath>
 
@@ -53,7 +53,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
-bool yesno(void)
+bool yesno()
 {
     char c;
 

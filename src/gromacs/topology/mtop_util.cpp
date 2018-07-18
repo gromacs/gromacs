@@ -36,11 +36,11 @@
 
 #include "mtop_util.h"
 
-#include <limits.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <climits>
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"

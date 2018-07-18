@@ -123,7 +123,7 @@ static void gmx_signal(int signum)
 #endif
 }
 
-void signal_handler_install(void)
+void signal_handler_install()
 {
     if (getenv("GMX_NO_TERM") == nullptr)
     {
@@ -153,7 +153,7 @@ void signal_handler_install(void)
 #endif
 }
 
-gmx_stop_cond_t gmx_get_stop_condition(void)
+gmx_stop_cond_t gmx_get_stop_condition()
 {
     return (gmx_stop_cond_t)stop_condition;
 }
@@ -174,12 +174,12 @@ void gmx_set_stop_condition(gmx_stop_cond_t recvd_stop_cond)
     }
 }
 
-const char *gmx_get_signal_name(void)
+const char *gmx_get_signal_name()
 {
     return gmx_signal_name[last_signal_name];
 }
 
-gmx_bool gmx_got_usr_signal(void)
+gmx_bool gmx_got_usr_signal()
 {
 #if HAVE_SIGUSR1
     gmx_bool ret = static_cast<gmx_bool>(usr_condition);

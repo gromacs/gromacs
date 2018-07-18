@@ -40,9 +40,9 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cassert>
+#include <cstdlib>
+#include <cstring>
 
 #include <cmath>
 
@@ -106,7 +106,7 @@
 
 #include "nbnxn_gpu_jit_support.h"
 
-t_forcerec *mk_forcerec(void)
+t_forcerec *mk_forcerec()
 {
     t_forcerec *fr;
 

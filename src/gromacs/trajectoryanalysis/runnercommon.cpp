@@ -43,7 +43,7 @@
 
 #include "runnercommon.h"
 
-#include <string.h>
+#include <cstring>
 
 #include <algorithm>
 #include <string>

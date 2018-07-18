@@ -38,7 +38,7 @@
 
 #include "do_fit.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <cmath>
 

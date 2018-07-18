@@ -41,8 +41,8 @@
  */
 #include "gmxpre.h"
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"

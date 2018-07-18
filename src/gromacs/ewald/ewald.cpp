@@ -49,7 +49,7 @@
 
 #include "ewald.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <cmath>
 #include <cstdlib>

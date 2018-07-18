@@ -39,7 +39,7 @@
 
 #include "add_par.h"
 
-#include <string.h>
+#include <cstring>
 
 #include <algorithm>
 

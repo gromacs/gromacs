@@ -39,7 +39,7 @@
 
 #include "ebin.h"
 
-#include <string.h>
+#include <cstring>
 
 #include <cmath>
 
@@ -52,7 +52,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-t_ebin *mk_ebin(void)
+t_ebin *mk_ebin()
 {
     t_ebin *eb;
 

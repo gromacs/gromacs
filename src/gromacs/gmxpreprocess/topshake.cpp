@@ -39,7 +39,7 @@
 
 #include "topshake.h"
 
-#include <ctype.h>
+#include <cctype>
 
 #include <cmath>
 

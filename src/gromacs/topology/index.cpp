@@ -38,10 +38,10 @@
 
 #include "index.h"
 
-#include <assert.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cassert>
+#include <cctype>
+#include <cstdlib>
+#include <cstring>
 
 #include <algorithm>
 

@@ -46,7 +46,7 @@
 
 #include "position-restraints.h"
 
-#include <assert.h>
+#include <cassert>
 
 #include <cmath>
 

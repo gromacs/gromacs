@@ -40,8 +40,8 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <limits.h>
+#include <cassert>
+#include <climits>
 
 #include <cmath>
 
