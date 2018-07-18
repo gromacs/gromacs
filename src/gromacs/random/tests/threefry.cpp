@@ -174,6 +174,7 @@ TEST_F(ThreeFry2x64Test, InternalCounterSequence)
     gmx::ThreeFry2x64<66>        rngA(123456, gmx::RandomDomain::Other);
     std::vector<uint64_t>        result;
 
+    result.reserve(16);
     for (int i = 0; i < 16; i++)
     {
         result.push_back(rngA());
