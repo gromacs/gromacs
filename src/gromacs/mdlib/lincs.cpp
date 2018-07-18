@@ -47,10 +47,9 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <stdlib.h>
-
+#include <cassert>
 #include <cmath>
+#include <cstdlib>
 
 #include <algorithm>
 #include <vector>

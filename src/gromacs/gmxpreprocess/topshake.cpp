@@ -39,8 +39,7 @@
 
 #include "topshake.h"
 
-#include <ctype.h>
-
+#include <cctype>
 #include <cmath>
 
 #include "gromacs/gmxpreprocess/notset.h"

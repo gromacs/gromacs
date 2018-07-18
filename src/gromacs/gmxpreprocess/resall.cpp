@@ -38,9 +38,9 @@
 
 #include "resall.h"
 
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cctype>
+#include <cstdlib>
+#include <cstring>
 
 #include <algorithm>
 

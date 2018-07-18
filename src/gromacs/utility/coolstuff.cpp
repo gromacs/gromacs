@@ -58,7 +58,7 @@ namespace
 {
 
 //! Whether printing of cool quotes is enabled
-bool beCool(void)
+bool beCool()
 {
     /* Yes, it is bad to check the environment variable every call,
      * but we dont call this routine often, and it avoids using

@@ -38,10 +38,9 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <stdlib.h>
-
+#include <cassert>
 #include <cmath>
+#include <cstdlib>
 
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"

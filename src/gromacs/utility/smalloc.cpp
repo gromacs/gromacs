@@ -40,9 +40,9 @@
 
 #include "config.h"
 
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
 
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>

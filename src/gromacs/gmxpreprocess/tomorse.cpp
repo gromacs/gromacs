@@ -39,11 +39,10 @@
 
 #include "tomorse.h"
 
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include <cctype>
 #include <cmath>
+#include <cstdlib>
+#include <cstring>
 
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"

@@ -38,11 +38,10 @@
 
 #include "pdb2top.h"
 
-#include <ctype.h>
-#include <stdio.h>
-#include <string.h>
-
+#include <cctype>
 #include <cmath>
+#include <cstdio>
+#include <cstring>
 
 #include <algorithm>
 #include <string>

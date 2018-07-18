@@ -39,7 +39,7 @@
 
 #include "gpp_nextnb.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/topology/ifunc.h"

@@ -36,9 +36,8 @@
 
 #include "expanded.h"
 
-#include <stdio.h>
-
 #include <cmath>
+#include <cstdio>
 
 #include <algorithm>
 

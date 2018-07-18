@@ -38,10 +38,9 @@
 
 #include "toppush.h"
 
-#include <ctype.h>
-#include <stdlib.h>
-
+#include <cctype>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 
 #include <algorithm>

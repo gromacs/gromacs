@@ -38,10 +38,9 @@
 
 #include "toputil.h"
 
-#include <string.h>
-
 #include <climits>
 #include <cmath>
+#include <cstring>
 
 #include <algorithm>
 

@@ -345,6 +345,8 @@ if (GMX_CLANG_TIDY)
        "-readability-inconsistent-declaration-parameter-name"
        "-readability-implicit-bool-conversion" #TODO: Remove gmx_bool
        "modernize-use-nullptr" "modernize-use-emplace"
+       "modernize-avoid-bind" "modernize-deprecated-headers"
+       "modernize-redundant-void-arg" "modernize-use-bool-literals"
        )
    string(REPLACE ";" "," CLANG_TIDY_CHECKS "${CLANG_TIDY_CHECKS}")
    set_target_properties(libgromacs PROPERTIES CXX_CLANG_TIDY

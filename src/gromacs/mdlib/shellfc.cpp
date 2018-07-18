@@ -38,11 +38,10 @@
 
 #include "shellfc.h"
 
-#include <stdlib.h>
-#include <string.h>
-
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
 
 #include <algorithm>
 #include <array>

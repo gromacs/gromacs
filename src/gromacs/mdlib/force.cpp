@@ -40,10 +40,9 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <string.h>
-
+#include <cassert>
 #include <cmath>
+#include <cstring>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"

@@ -37,8 +37,7 @@
 
 #include "biaswriter.h"
 
-#include <assert.h>
-
+#include <cassert>
 #include <cmath>
 
 #include "gromacs/awh/awh.h"

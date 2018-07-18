@@ -38,11 +38,10 @@
 
 #include "atomprop.h"
 
-#include <ctype.h>
-#include <stdio.h>
-#include <string.h>
-
+#include <cctype>
 #include <cmath>
+#include <cstdio>
+#include <cstring>
 
 #include "gromacs/math/utilities.h"
 #include "gromacs/topology/residuetypes.h"

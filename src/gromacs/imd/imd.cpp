@@ -51,8 +51,8 @@
 
 #include "config.h"
 
-#include <errno.h>
-#include <string.h>
+#include <cerrno>
+#include <cstring>
 
 #if GMX_NATIVE_WINDOWS
 #include <windows.h>
