@@ -97,7 +97,7 @@ static const int tpss[] =
 };
 #define NTPSS asize(tpss)
 
-typedef struct // NOLINT(clang-analyzer-optin.performance.Padding)
+struct t_deffile // NOLINT(clang-analyzer-optin.performance.Padding)
 {
     int         ftype;
     const char *ext;
@@ -106,7 +106,7 @@ typedef struct // NOLINT(clang-analyzer-optin.performance.Padding)
     const char *descr;
     int         ntps;
     const int  *tps;
-} t_deffile;
+};
 
 /* this array should correspond to the enum in filetypes.h */
 static const t_deffile deffile[efNR] =

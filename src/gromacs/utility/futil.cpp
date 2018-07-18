@@ -73,10 +73,10 @@
    compressed or .gzipped files. This way we can distinguish between them
    without having to change the semantics of reading from/writing to files)
  */
-typedef struct t_pstack {
+struct t_pstack {
     FILE            *fp;
     struct t_pstack *prev;
-} t_pstack;
+};
 
 static t_pstack    *pstack           = nullptr;
 static bool         bUnbuffered      = false;

@@ -54,7 +54,7 @@
 /*! \internal \brief
  * Data structure for the merging selection modifiers.
  */
-typedef struct
+struct t_methoddata_merge
 {
     /** Input positions. */
     gmx_ana_pos_t    p1;
@@ -62,7 +62,7 @@ typedef struct
     gmx_ana_pos_t    p2;
     /** Stride for merging (\c stride values from \c p1 for each in \c p2). */
     int              stride;
-} t_methoddata_merge;
+};
 
 /** Allocates data for the merging selection modifiers. */
 static void *

@@ -69,7 +69,7 @@
 #define OPENDIR     '[' /* starting sign for directive		*/
 #define CLOSEDIR    ']' /* ending sign for directive		*/
 
-typedef struct {
+struct t_vsiteconf {
     char       atomtype[MAXNAME];  /* Type for the XH3/XH2 atom */
     bool       isplanar;           /* If true, the atomtype above and the three connected
                                     * ones are in a planar geometry. The two next entries
@@ -78,7 +78,7 @@ typedef struct {
     int    nhydrogens;             /* number of connected hydrogens */
     char   nextheavytype[MAXNAME]; /* Type for the heavy atom bonded to XH2/XH3 */
     char   dummymass[MAXNAME];     /* The type of MNH* or MCH3* dummy mass to use */
-} t_vsiteconf;
+};
 
 
 /* Structure to represent average bond and angles values in vsite aromatic
@@ -86,7 +86,7 @@ typedef struct {
  * forcefield; many forcefields (like Amber, OPLS) have some inherent strain in
  * 5-rings (i.e. the sum of angles is !=540, but impropers keep it planar)
  */
-typedef struct {
+struct t_vsitetop {
     char resname[MAXNAME];
     int  nbonds;
     int  nangles;
@@ -101,7 +101,7 @@ typedef struct {
         char   atom3[MAXNAME];
         float  value;
     } *angle; /* list of angles */
-} t_vsitetop;
+};
 
 
 enum {
@@ -109,7 +109,7 @@ enum {
     DDB_TRP, DDB_HISA, DDB_HISB, DDB_HISH, DDB_DIR_NR
 };
 
-typedef char t_dirname[STRLEN];
+using t_dirname = char[STRLEN];
 
 static const t_dirname ddb_dirnames[DDB_DIR_NR] = {
     "CH3",

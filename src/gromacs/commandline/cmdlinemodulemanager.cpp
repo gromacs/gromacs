@@ -89,9 +89,9 @@ class CMainCommandLineModule : public ICommandLineModule
 {
     public:
         //! \copydoc gmx::CommandLineModuleManager::CMainFunction
-        typedef CommandLineModuleManager::CMainFunction CMainFunction;
+        using CMainFunction = CommandLineModuleManager::CMainFunction;
         //! \copydoc gmx::CommandLineModuleManager::InitSettingsFunction
-        typedef CommandLineModuleManager::InitSettingsFunction InitSettingsFunction;
+        using InitSettingsFunction = CommandLineModuleManager::InitSettingsFunction;
 
         /*! \brief
          * Creates a wrapper module for the given main function.
@@ -112,27 +112,27 @@ class CMainCommandLineModule : public ICommandLineModule
         {
         }
 
-        virtual const char *name() const
+        const char *name() const override
         {
             return name_;
         }
-        virtual const char *shortDescription() const
+        const char *shortDescription() const override
         {
             return shortDescription_;
         }
 
-        virtual void init(CommandLineModuleSettings *settings)
+        void init(CommandLineModuleSettings *settings) override
         {
             if (settingsFunction_ != nullptr)
             {
                 settingsFunction_(settings);
             }
         }
-        virtual int run(int argc, char *argv[])
+        int run(int argc, char *argv[]) override
         {
             return mainFunction_(argc, argv);
         }
-        virtual void writeHelp(const CommandLineHelpContext &context) const
+        void writeHelp(const CommandLineHelpContext &context) const override
         {
             writeCommandLineHelpCMain(context, name_, mainFunction_);
         }

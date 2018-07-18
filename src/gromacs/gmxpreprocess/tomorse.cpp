@@ -54,10 +54,10 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+struct t_2morse {
     char *ai, *aj;
     real  e_diss;
-} t_2morse;
+};
 
 static t_2morse *read_dissociation_energies(int *n2morse)
 {

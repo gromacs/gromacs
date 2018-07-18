@@ -343,6 +343,7 @@ if (GMX_CLANG_TIDY)
        "-readability-inconsistent-declaration-parameter-name"
        "-readability-implicit-bool-conversion" #TODO: Remove gmx_bool
        "modernize-use-nullptr" "modernize-use-emplace"
+       "modernize-use-using" "modernize-use-override"
        "google-readability-casting"
        )
    string(REPLACE ";" "," CLANG_TIDY_CHECKS "${CLANG_TIDY_CHECKS}")

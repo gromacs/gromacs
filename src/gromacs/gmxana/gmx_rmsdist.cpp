@@ -146,29 +146,29 @@ static void calc_nmr(int nind, int nframes, real **dtot1_3, real **dtot1_6,
 
 static char Hnum[] = "123";
 
-typedef struct {
+struct t_noe {
     int  nr;
     real r_3;
     real r_6;
     real i_3;
     real i_6;
-} t_noe;
+};
 
-typedef struct {
+struct t_noe_gr {
     int   anr;
     int   ianr;
     int   rnr;
     char *aname;
     char *rname;
-} t_noe_gr;
+};
 
-typedef struct {
+struct t_equiv {
     bool  set;
     int   rnr;
     char *nname;
     char *rname;
     char *aname;
-} t_equiv;
+};
 
 static int read_equiv(const char *eq_fn, t_equiv ***equivptr)
 {

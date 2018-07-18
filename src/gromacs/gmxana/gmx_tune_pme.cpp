@@ -95,7 +95,7 @@ enum {
 };
 
 
-typedef struct
+struct t_perf
 {
     int     nPMEnodes;    /* number of PME-only nodes used in this test */
     int     nx, ny, nz;   /* DD grid */
@@ -107,10 +107,10 @@ typedef struct
     float  *PME_f_load;     /* PME mesh/force load average*/
     float   PME_f_load_Av;  /* Average average ;) ... */
     char   *mdrun_cmd_line; /* Mdrun command line used for this test */
-} t_perf;
+};
 
 
-typedef struct
+struct t_inputinfo
 {
     int             nr_inputfiles;   /* The number of tpr and mdp input files */
     gmx_int64_t     orig_sim_steps;  /* Number of steps to be done in the real simulation */
@@ -120,7 +120,7 @@ typedef struct
     real           *rlist;           /* Neighbourlist cutoff radius */
     int            *nkx, *nky, *nkz;
     real           *fsx, *fsy, *fsz; /* Fourierspacing in x,y,z dimension */
-} t_inputinfo;
+};
 
 
 static void sep_line(FILE *fp)

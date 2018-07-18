@@ -58,14 +58,14 @@
 
 #define MAX_ENDS 3
 
-typedef struct {
+struct t_bundle {
     int   n;
     int   nend;
     rvec *end[MAX_ENDS];
     rvec *mid;
     rvec *dir;
     real *len;
-} t_bundle;
+};
 
 static void rotate_ends(t_bundle *bun, rvec axis, int c0, int c1)
 {

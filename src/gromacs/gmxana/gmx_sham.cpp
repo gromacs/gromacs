@@ -88,7 +88,7 @@ static gmx_int64_t indexn(int ndim, const int *ibox, const int *nxyz)
     return d;
 }
 
-typedef struct {
+struct XplorMap {
     int    Nx;      /* x grid points in unit cell */
     int    Ny;      /* y grid points in unit cell */
     int    Nz;      /* z grid points in unit cell */
@@ -96,7 +96,7 @@ typedef struct {
     int    dmax[3]; /* ending point x,y,z */
     real   cell[6]; /* usual cell parameters */
     real * ed;      /* data */
-} XplorMap;
+};
 
 static void lo_write_xplor(XplorMap * map, const char * file)
 {
@@ -203,10 +203,10 @@ static void normalize_p_e(int len, double *P, const int *nbin, real *E, real pmi
     }
 }
 
-typedef struct {
+struct t_minimum {
     gmx_int64_t     index;
     real            ener;
-} t_minimum;
+};
 
 static int comp_minima(const void *a, const void *b)
 {

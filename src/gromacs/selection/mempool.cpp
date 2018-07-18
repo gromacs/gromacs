@@ -58,13 +58,13 @@
 /*! \internal \brief
  * Describes a single block allocated from the memory pool.
  */
-typedef struct gmx_sel_mempool_block_t
+struct gmx_sel_mempool_block_t
 {
     //! Pointer to the start of the block (as returned to the user).
     void                       *ptr;
     //! Size of the block, including padding required to align next block.
     size_t                      size;
-} gmx_sel_mempool_block_t;
+};
 
 /*! \internal \brief
  * Describes a memory pool.

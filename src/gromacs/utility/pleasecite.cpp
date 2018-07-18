@@ -44,14 +44,14 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+struct t_citerec {
     const char *key;
     const char *author;
     const char *title;
     const char *journal;
     int         volume, year;
     const char *pages;
-} t_citerec;
+};
 
 void please_cite(FILE *fp, const char *key)
 {

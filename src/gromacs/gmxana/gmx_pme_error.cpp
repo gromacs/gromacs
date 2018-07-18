@@ -79,7 +79,7 @@ enum {
 };
 
 
-typedef struct
+struct t_inputinfo
 {
     gmx_int64_t     orig_sim_steps;  /* Number of steps to be done in the real simulation  */
     int             n_entries;       /* Number of entries in arrays                        */
@@ -102,7 +102,7 @@ typedef struct
     real           *e_dir;           /* Direct space part of PME error with these settings */
     real           *e_rec;           /* Reciprocal space part of PME error                 */
     gmx_bool        bTUNE;           /* flag for tuning */
-} t_inputinfo;
+};
 
 
 /* Returns TRUE when atom is charged */

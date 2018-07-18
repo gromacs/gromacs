@@ -1159,10 +1159,10 @@ double BiasState::updateProbabilityWeightsAndConvolvedBias(const std::vector<Dim
     const std::vector<int> &neighbors = grid.point(coordState_.gridpointIndex()).neighbor;
 
 #if GMX_SIMD_HAVE_DOUBLE
-    typedef SimdDouble PackType;
+    using PackType = SimdDouble;
     constexpr int packSize = GMX_SIMD_DOUBLE_WIDTH;
 #else
-    typedef double PackType;
+    using PackType = double;
     constexpr int packSize = 1;
 #endif
     /* Round the size of the weight array up to packSize */

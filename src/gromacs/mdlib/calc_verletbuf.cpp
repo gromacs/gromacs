@@ -93,19 +93,19 @@
  * The atom displacement depends on mass and constraints.
  * The energy jump for given distance depend on LJ type and q.
  */
-typedef struct
+struct verletbuf_atomtype_t
 {
     atom_nonbonded_kinetic_prop_t prop; /* non-bonded and kinetic atom prop. */
     int                           n;    /* #atoms of this type in the system */
-} verletbuf_atomtype_t;
+};
 
 // Struct for derivatives of a non-bonded interaction potential
-typedef struct
+struct pot_derivatives_t
 {
     real  md1; // -V' at the cutoff
     real  d2;  //  V'' at the cutoff
     real  md3; // -V''' at the cutoff
-} pot_derivatives_t;
+};
 
 VerletbufListSetup verletbufGetListSetup(int nbnxnKernelType)
 {

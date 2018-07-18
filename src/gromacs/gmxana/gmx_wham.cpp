@@ -121,7 +121,7 @@ enum {
 };
 
 //! Parameters of one pull coodinate
-typedef struct
+struct t_pullcoord
 {
     int      pull_type;       //!< such as constraint, umbrella, ...
     int      geometry;        //!< such as distance, direction, cylinder
@@ -131,10 +131,10 @@ typedef struct
     real     k;               //!< force constants in tpr file
     real     init_dist;       //!< reference displacement
     char     coord_unit[256]; //!< unit of the displacement
-} t_pullcoord;
+};
 
 //! Parameters of the umbrella potentials
-typedef struct
+struct t_UmbrellaHeader
 {
     /*!
      * \name Using umbrella pull code since gromacs 4.x
@@ -160,10 +160,10 @@ typedef struct
     double UmbPos[4][3];
     double UmbCons[4][3];
     /*!\}*/
-} t_UmbrellaHeader;
+};
 
 //! Data in the umbrella histograms
-typedef struct
+struct t_UmbrellaWindow
 {
     int      nPull;       //!< nr of pull groups in this pdo or pullf/x file
     double **Histo;       //!< nPull histograms
@@ -198,18 +198,18 @@ typedef struct
     real   *aver;         //!< average of histograms
     real   *sigma;        //!< stddev of histograms
     double *bsWeight;     //!< for bootstrapping complete histograms with continuous weights
-} t_UmbrellaWindow;
+};
 
 //! Selection of pull coordinates to be used in WHAM (one structure for each tpr file)
-typedef struct
+struct t_coordselection
 {
     int       n;         //!< total nr of pull coords in this tpr file
     int       nUse;      //!< nr of pull coords used
     gmx_bool *bUse;      //!< boolean array of size n. =1 if used, =0 if not
-} t_coordselection;
+};
 
 //! Parameters of WHAM
-typedef struct
+struct t_UmbrellaOptions
 {
     /*!
      * \name Input stuff
@@ -320,7 +320,7 @@ typedef struct
     /*!\}*/
     gmx::DefaultRandomEngine           rng;                 //!< gromacs random number generator
     gmx::TabulatedNormalDistribution<> normalDistribution;  //!< Uses default: real output, 14-bit table
-} t_UmbrellaOptions;
+};
 
 //! Make an umbrella window (may contain several histograms)
 static t_UmbrellaWindow * initUmbrellaWindows(int nwin)

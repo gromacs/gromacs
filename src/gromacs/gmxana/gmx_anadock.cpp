@@ -56,14 +56,14 @@
 
 static const char *etitles[] = { "E-docked", "Free Energy" };
 
-typedef struct {
+struct t_pdbfile {
     real     edocked, efree;
     int      index, cluster_id;
     t_atoms  atoms;
     rvec    *x;
     int      ePBC;
     matrix   box;
-} t_pdbfile;
+};
 
 static t_pdbfile *read_pdbf(const char *fn)
 {

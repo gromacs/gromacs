@@ -525,21 +525,7 @@ static inline void add_j_to_nblist_cg(t_nblist *nlist,
     nlist->nrj++;
 }
 
-typedef void
-    put_in_list_t (const gmx_bool        bHaveVdW[],
-                   int                   ngid,
-                   const t_mdatoms      *md,
-                   int                   icg,
-                   int                   jgid,
-                   int                   nj,
-                   const int             jjcg[],
-                   const int             index[],
-                   const t_excl          bExcl[],
-                   int                   shift,
-                   t_forcerec     *      fr,
-                   gmx_bool              bDoVdW,
-                   gmx_bool              bDoCoul,
-                   int                   solvent_opt);
+using put_in_list_t = void (const gmx_bool *, int, const t_mdatoms *, int, int, int, const int *, const int *, const t_excl *, int, t_forcerec *, gmx_bool, gmx_bool, int);
 
 static void
 put_in_list_at(const gmx_bool              bHaveVdW[],

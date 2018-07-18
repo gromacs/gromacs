@@ -61,16 +61,16 @@
 
 
 /* Structure for the names of lambda vector components */
-typedef struct lambda_components_t
+struct lambda_components_t
 {
     char **names;  /* Array of strings with names for the lambda vector
                       components */
     int    N;      /* The number of components */
     int    Nalloc; /* The number of allocated components */
-} lambda_components_t;
+};
 
 /* Structure for a lambda vector or a dhdl derivative direction */
-typedef struct lambda_vec_t
+struct lambda_vec_t
 {
     double                    *val;   /* The lambda vector component values. Only valid if
                                          dhdl == -1 */
@@ -80,10 +80,10 @@ typedef struct lambda_vec_t
                                          structure */
     int                        index; /* The state number (init-lambda-state) of this lambda
                                          vector, if known. If not, it is set to -1 */
-} lambda_vec_t;
+};
 
 /* the dhdl.xvg data from a simulation */
-typedef struct xvg_t
+struct xvg_t
 {
     const char   *filename;
     int           ftp;           /* file type */
@@ -99,10 +99,9 @@ typedef struct xvg_t
     lambda_vec_t  native_lambda; /* the native lambda */
 
     struct xvg_t *next, *prev;   /*location in the global linked list of xvg_ts*/
-} xvg_t;
+};
 
-
-typedef struct hist_t
+struct hist_t
 {
     unsigned int   *bin[2];                 /* the (forward + reverse) histogram values */
     double          dx[2];                  /* the histogram spacing. The reverse
@@ -116,11 +115,10 @@ typedef struct hist_t
     int             nhist;                  /* number of hist datas (forward or reverse) */
 
     double          start_time, delta_time; /* start time, end time of histogram */
-} hist_t;
-
+};
 
 /* an aggregate of samples for partial free energy calculation */
-typedef struct samples_t
+struct samples_t
 {
     lambda_vec_t *native_lambda;  /* pointer to native lambda vector */
     lambda_vec_t *foreign_lambda; /* pointer to foreign lambda vector */
@@ -143,23 +141,22 @@ typedef struct samples_t
 
     gmx_int64_t     ntot;                /* total number of samples */
     const char     *filename;            /* the file name this sample comes from */
-} samples_t;
+};
 
 /* a sample range (start to end for du-style data, or boolean
     for both du-style data and histograms */
-typedef struct sample_range_t
+struct sample_range_t
 {
     int        start, end; /* start and end index for du style data */
     gmx_bool   use;        /* whether to use this sample */
 
     samples_t *s;          /* the samples this range belongs to */
-} sample_range_t;
-
+};
 
 /* a collection of samples for a partial free energy calculation
     (i.e. the collection of samples from one native lambda to one
     foreign lambda) */
-typedef struct sample_coll_t
+struct sample_coll_t
 {
     lambda_vec_t   *native_lambda;     /* these should be the same for all samples
                                           in the histogram */
@@ -175,10 +172,10 @@ typedef struct sample_coll_t
                                               this collection */
 
     struct sample_coll_t *next, *prev; /* next and previous in the list */
-} sample_coll_t;
+};
 
 /* all the samples associated with a lambda point */
-typedef struct lambda_data_t
+struct lambda_data_t
 {
     lambda_vec_t         *lambda;      /* the native lambda (at start time if dynamic) */
     double                temp;        /* temperature */
@@ -188,20 +185,20 @@ typedef struct lambda_data_t
     sample_coll_t         sc_head;     /*the pre-allocated list head for the linked list.*/
 
     struct lambda_data_t *next, *prev; /* the next and prev in the list */
-} lambda_data_t;
+};
 
 /* Top-level data structure of simulation data */
-typedef struct sim_data_t
+struct sim_data_t
 {
     lambda_data_t      *lb;      /* a lambda data linked list */
     lambda_data_t       lb_head; /* The head element of the linked list */
 
     lambda_components_t lc;      /* the allowed components of the lambda
                                     vectors */
-} sim_data_t;
+};
 
 /* Top-level data structure with calculated values. */
-typedef struct {
+struct barres_t {
     sample_coll_t *a, *b;            /* the simulation data */
 
     double         dg;               /* the free energy difference */
@@ -217,8 +214,7 @@ typedef struct {
 
     double         dg_stddev;        /* expected dg stddev per sample */
     double         dg_stddev_err;    /* error in dg_stddev */
-} barres_t;
-
+};
 
 /* Initialize a lambda_components structure */
 static void lambda_components_init(lambda_components_t *lc)

@@ -69,12 +69,12 @@
 /*! \brief Shortcut macro to select modes. */
 #define MODE(x) ((mode & (x)) == (x))
 
-typedef struct {
+struct t_acf {
     unsigned long mode;
     int           nrestart, nout, P, fitfn;
     gmx_bool      bFour, bNormalize;
     real          tbeginfit, tendfit;
-} t_acf;
+};
 
 /*! \brief Global variable set true if initialization routines are called. */
 static gmx_bool  bACFinit = FALSE;

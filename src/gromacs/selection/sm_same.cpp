@@ -63,7 +63,7 @@
  *
  * \ingroup module_selection
  */
-typedef struct
+struct t_methoddata_same
 {
     /** Value for each atom to match. */
     union
@@ -97,7 +97,7 @@ typedef struct
     char                   **as_s_sorted;
     /** Whether simple matching can be used. */
     bool                     bSorted;
-} t_methoddata_same;
+};
 
 /*! \brief
  * Allocates data for the \p same selection method.

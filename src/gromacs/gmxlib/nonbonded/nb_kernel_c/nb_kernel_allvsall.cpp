@@ -48,13 +48,13 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct
+struct gmx_allvsall_data_t
 {
     real **    pvdwparam;
     int *      jindex;
     int **     exclusion_mask;
-}
-gmx_allvsall_data_t;
+};
+
 
 static int
 calc_maxoffset(int i, int natoms)

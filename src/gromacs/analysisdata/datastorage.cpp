@@ -85,8 +85,7 @@ namespace internal
 {
 
 //! Smart pointer type for managing a storage frame builder.
-typedef std::unique_ptr<AnalysisDataStorageFrame>
-    AnalysisDataFrameBuilderPointer;
+using AnalysisDataFrameBuilderPointer = std::unique_ptr<AnalysisDataStorageFrame>;
 
 /*! \internal \brief
  * Private implementation class for AnalysisDataStorage.
@@ -97,12 +96,12 @@ class AnalysisDataStorageImpl
 {
     public:
         //! Smart pointer type for managing a stored frame.
-        typedef std::unique_ptr<AnalysisDataStorageFrameData> FramePointer;
+        using FramePointer = std::unique_ptr<AnalysisDataStorageFrameData>;
 
         //! Shorthand for a list of data frames that are currently stored.
-        typedef std::vector<FramePointer> FrameList;
+        using FrameList = std::vector<FramePointer>;
         //! Shorthand for a list of currently unused storage frame builders.
-        typedef std::vector<AnalysisDataFrameBuilderPointer> FrameBuilderList;
+        using FrameBuilderList = std::vector<AnalysisDataFrameBuilderPointer>;
 
         AnalysisDataStorageImpl();
 

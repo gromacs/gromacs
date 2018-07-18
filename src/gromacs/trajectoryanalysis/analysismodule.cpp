@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,9 +67,9 @@ class TrajectoryAnalysisModule::Impl
 {
     public:
         //! Container that associates a data set with its name.
-        typedef std::map<std::string, AbstractAnalysisData *> DatasetContainer;
+        using DatasetContainer = std::map<std::string, AbstractAnalysisData *>;
         //! Container that associates a AnalysisData object with its name.
-        typedef std::map<std::string, AnalysisData *> AnalysisDatasetContainer;
+        using AnalysisDatasetContainer = std::map<std::string, AnalysisData *>;
 
         //! List of registered data set names.
         std::vector<std::string>        datasetNames_;
@@ -96,8 +96,7 @@ class TrajectoryAnalysisModuleData::Impl
 {
     public:
         //! Container that associates a data handle to its AnalysisData object.
-        typedef std::map<const AnalysisData *, AnalysisDataHandle>
-            HandleContainer;
+        using HandleContainer = std::map<const AnalysisData *, AnalysisDataHandle>;
 
         //! \copydoc TrajectoryAnalysisModuleData::TrajectoryAnalysisModuleData()
         Impl(TrajectoryAnalysisModule          *module,
@@ -242,7 +241,7 @@ class TrajectoryAnalysisModuleDataBasic : public TrajectoryAnalysisModuleData
                                           const AnalysisDataParallelOptions &opt,
                                           const SelectionCollection         &selections);
 
-        virtual void finish();
+        void finish() override;
 };
 
 TrajectoryAnalysisModuleDataBasic::TrajectoryAnalysisModuleDataBasic(

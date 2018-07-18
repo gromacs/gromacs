@@ -51,13 +51,13 @@ static int gmx_dnint(double x)
     return static_cast<int>(x+0.5);
 }
 
-typedef struct gmx_stats {
+struct gmx_stats {
     double  aa, a, b, sigma_aa, sigma_a, sigma_b, aver, sigma_aver, error;
     double  rmsd, Rdata, Rfit, Rfitaa, chi2, chi2aa;
     double *x, *y, *dx, *dy;
     int     computed;
     int     np, np_c, nalloc;
-} gmx_stats;
+};
 
 gmx_stats_t gmx_stats_init()
 {

@@ -145,7 +145,7 @@ evaluate_keyword_str(const gmx::SelMethodEvalContext &context,
 /*! \internal \brief
  * Data structure for integer keyword expression evaluation.
  */
-typedef struct t_methoddata_kwint
+struct t_methoddata_kwint
 {
     /** Array of values for the keyword. */
     int               *v;
@@ -159,12 +159,12 @@ typedef struct t_methoddata_kwint
      * parameter parser; see \ref SPAR_RANGES for more information.
      */
     int               *r;
-} t_methoddata_kwint;
+};
 
 /*! \internal \brief
  * Data structure for real keyword expression evaluation.
  */
-typedef struct t_methoddata_kwreal
+struct t_methoddata_kwreal
 {
     /** Array of values for the keyword. */
     real              *v;
@@ -178,7 +178,7 @@ typedef struct t_methoddata_kwreal
      * parameter parser; see \ref SPAR_RANGES for more information.
      */
     real              *r;
-} t_methoddata_kwreal;
+};
 
 namespace
 {

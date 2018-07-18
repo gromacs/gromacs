@@ -76,7 +76,7 @@
 #define EANG2CM  (E_CHARGE*1.0e-10)       /* e Angstrom to Coulomb meter */
 #define CM2D  (SPEED_OF_LIGHT*1.0e+24)    /* Coulomb meter to Debye */
 
-typedef struct {
+struct t_gkrbin {
     int      nelem;
     real     spacing, radius;
     real    *elem;
@@ -84,7 +84,7 @@ typedef struct {
     gmx_bool bPhi;
     int      nx, ny;
     real   **cmap;
-} t_gkrbin;
+};
 
 static t_gkrbin *mk_gkrbin(real radius, real rcmax, gmx_bool bPhi, int ndegrees)
 {

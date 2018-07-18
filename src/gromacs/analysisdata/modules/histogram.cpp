@@ -438,13 +438,13 @@ class BasicAverageHistogramModule : public AbstractAverageHistogram,
 
         using AbstractAverageHistogram::init;
 
-        virtual int flags() const;
+        int flags() const override;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
-        virtual void frameStarted(const AnalysisDataFrameHeader &header);
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
-        virtual void frameFinished(const AnalysisDataFrameHeader &header);
-        virtual void dataFinished();
+        void dataStarted(AbstractAnalysisData *data) override;
+        void frameStarted(const AnalysisDataFrameHeader &header) override;
+        void pointsAdded(const AnalysisDataPointSetRef &points) override;
+        void frameFinished(const AnalysisDataFrameHeader &header) override;
+        void dataFinished() override;
 
     private:
         //! Averaging helper objects for each input data set.
@@ -540,8 +540,7 @@ class BasicHistogramImpl
 {
     public:
         //! Smart pointer to manage an BasicAverageHistogramModule object.
-        typedef std::shared_ptr<BasicAverageHistogramModule>
-            BasicAverageHistogramModulePointer;
+        using BasicAverageHistogramModulePointer = std::shared_ptr<BasicAverageHistogramModule>;
 
         BasicHistogramImpl();
         //! Creates an histogram impl with defined bin parameters.
@@ -601,7 +600,7 @@ class AnalysisDataSimpleHistogramModule::Impl : public internal::BasicHistogramI
 {
     public:
         //! Shorthand for the per-frame accumulation data structure type.
-        typedef AnalysisDataFrameLocalData<gmx_int64_t> FrameLocalData;
+        using FrameLocalData = AnalysisDataFrameLocalData<gmx_int64_t>;
 
         Impl() {}
         //! Creates an histogram impl with defined bin parameters.
@@ -775,7 +774,7 @@ class AnalysisDataWeightedHistogramModule::Impl : public internal::BasicHistogra
 {
     public:
         //! Shorthand for the per-frame accumulation data structure type.
-        typedef AnalysisDataFrameLocalData<double> FrameLocalData;
+        using FrameLocalData = AnalysisDataFrameLocalData<double>;
 
         Impl() {}
         //! Creates an histogram impl with defined bin parameters.

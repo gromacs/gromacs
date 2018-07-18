@@ -78,7 +78,7 @@ static const char *erename[ereNR] = { "temperature", "lambda", "end_single_marke
 /* Eventually, should add 'pressure', 'temperature and pressure', 'lambda_and_pressure', 'temperature_lambda_pressure'?;
    Let's wait until we feel better about the pressure control methods giving exact ensembles.  Right now, we assume constant pressure  */
 
-typedef struct gmx_repl_ex
+struct gmx_repl_ex
 {
     int       repl;        /* replica ID */
     int       nrepl;       /* total number of replica */
@@ -113,7 +113,7 @@ typedef struct gmx_repl_ex
     real  *Vol;
     real **de;
 
-} t_gmx_repl_ex;
+};
 
 static gmx_bool repl_quantity(const gmx_multisim_t *ms,
                               struct gmx_repl_ex *re, int ere, real q)

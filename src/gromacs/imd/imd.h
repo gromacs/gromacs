@@ -82,7 +82,7 @@ struct gmx_wallcycle;
 struct MdrunOptions;
 struct t_commrec;
 struct t_filenm;
-struct t_gmx_IMD;
+struct t_gmx_IMD_setup;
 struct t_IMD;
 struct t_inputrec;
 class t_state;
@@ -175,7 +175,7 @@ gmx_bool do_IMD(gmx_bool bIMD, gmx_int64_t step, const t_commrec *cr,
  *
  * \returns            The current IMD update/communication frequency
  */
-int IMD_get_step(t_gmx_IMD *IMDsetup);
+int IMD_get_step(t_gmx_IMD_setup *IMDsetup);
 
 
 /*! \brief Add external forces from a running interactive molecular dynamics session.

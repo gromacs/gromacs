@@ -78,13 +78,13 @@
 #include "gromacs/utility/stringutil.h"
 
 #define RTP_MAXCHAR 5
-typedef struct {
+struct rtprename_t {
     char gmx[RTP_MAXCHAR+2];
     char main[RTP_MAXCHAR+2];
     char nter[RTP_MAXCHAR+2];
     char cter[RTP_MAXCHAR+2];
     char bter[RTP_MAXCHAR+2];
-} rtprename_t;
+};
 
 
 static const char *res2bb_notermini(const char *name,
@@ -672,13 +672,13 @@ static void process_chain(t_atoms *pdba, rvec *x,
 }
 
 /* struct for sorting the atoms from the pdb file */
-typedef struct {
+struct t_pdbindex {
     int  resnr;  /* residue number               */
     int  j;      /* database order index         */
     int  index;  /* original atom number         */
     char anm1;   /* second letter of atom name   */
     char altloc; /* alternate location indicator */
-} t_pdbindex;
+};
 
 static bool pdbicomp(const t_pdbindex &a, const t_pdbindex &b)
 {
@@ -1224,7 +1224,7 @@ modify_chain_numbers(t_atoms *       pdba,
 }
 
 
-typedef struct {
+struct t_pdbchain {
     char  chainid;
     char  chainnum;
     int   start;
@@ -1232,9 +1232,9 @@ typedef struct {
     bool  bAllWat;
     int   nterpairs;
     int  *chainstart;
-} t_pdbchain;
+};
 
-typedef struct {
+struct t_chain {
     char          chainid;
     int           chainnum;
     bool          bAllWat;
@@ -1246,7 +1246,7 @@ typedef struct {
     int          *r_end;
     t_atoms      *pdba;
     rvec         *x;
-} t_chain;
+};
 
 int gmx_pdb2gmx(int argc, char *argv[])
 {

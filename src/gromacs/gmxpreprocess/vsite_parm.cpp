@@ -61,30 +61,30 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
-typedef struct {
+struct t_mybonded {
     t_iatom  a[4];
     real     c;
     t_iatom &ai() { return a[0]; }
     t_iatom &aj() { return a[1]; }
     t_iatom &ak() { return a[2]; }
     t_iatom &al() { return a[3]; }
-} t_mybonded;
+};
 
-typedef struct {
+struct vsitebondparam_t {
     int      ftype;
     t_param *param;
-} vsitebondparam_t;
+};
 
-typedef struct {
+struct at2vsitebond_t {
     int               nr;
     int               ftype;
     vsitebondparam_t *vsbp;
-} at2vsitebond_t;
+};
 
-typedef struct {
+struct at2vsitecon_t {
     int  nr;
     int *aj;
-} at2vsitecon_t;
+};
 
 static int vsite_bond_nrcheck(int ftype)
 {
@@ -996,9 +996,9 @@ void set_vsites_ptype(bool bVerbose, gmx_moltype_t *molt)
 
 }
 
-typedef struct {
+struct t_pindex {
     int ftype, parnr;
-} t_pindex;
+};
 
 static void check_vsite_constraints(t_params *plist,
                                     int cftype, const int vsite_type[])

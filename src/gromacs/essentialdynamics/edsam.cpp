@@ -87,7 +87,7 @@ enum {
 };
 
 
-typedef struct
+struct t_eigvec
 {
     int     neig;    /* nr of eigenvectors             */
     int    *ieig;    /* index nrs of eigenvectors      */
@@ -100,10 +100,10 @@ typedef struct
     /* When using flooding as harmonic restraint: The current reference projection
      * is at each step calculated from the initial refproj0 and the slope. */
     real  *refproj0, *refprojslope;
-} t_eigvec;
+};
 
 
-typedef struct
+struct t_edvecs
 {
     t_eigvec      mon;            /* only monitored, no constraints       */
     t_eigvec      linfix;         /* fixed linear constraints             */
@@ -111,10 +111,10 @@ typedef struct
     t_eigvec      radfix;         /* fixed radial constraints (exp)       */
     t_eigvec      radacc;         /* acceptance radial constraints (exp)  */
     t_eigvec      radcon;         /* acceptance rad. contraction constr.  */
-} t_edvecs;
+};
 
 
-typedef struct
+struct t_edflood
 {
     real     deltaF0;
     gmx_bool bHarmonic;           /* Use flooding for harmonic restraint on
@@ -131,11 +131,11 @@ typedef struct
     real     alpha2;
     rvec    *forces_cartesian;
     t_eigvec vecs;         /* use flooding for these */
-} t_edflood;
+};
 
 
 /* This type is for the average, reference, target, and origin structure    */
-typedef struct gmx_edx
+struct gmx_edx
 {
     int            nr;            /* number of atoms this structure contains  */
     int            nr_loc;        /* number of atoms on local node            */
@@ -157,10 +157,10 @@ typedef struct gmx_edx
     real           mtot;          /* total mass (only used in sref)           */
     real          *sqrtm;         /* sqrt of the masses used for mass-
                                    * weighting of analysis (only used in sav) */
-} t_gmx_edx;
+};
 
 
-typedef struct edpar
+struct t_edpar
 {
     int            nini;           /* total Nr of atoms                    */
     gmx_bool       fitmas;         /* true if trans fit with cm            */
@@ -184,17 +184,17 @@ typedef struct edpar
 
     t_edflood           flood;        /* parameters especially for flooding   */
     struct t_ed_buffer *buf;          /* handle to local buffers              */
-    struct edpar       *next_edi;     /* Pointer to another ED group          */
-} t_edpar;
+    t_edpar            *next_edi;     /* Pointer to another ED group          */
+};
 
 
-typedef struct gmx_edsam
+struct gmx_edsam
 {
     int            eEDtype;       /* Type of ED: see enums above          */
     FILE          *edo;           /* output file pointer                  */
     t_edpar       *edpar;
     gmx_bool       bFirst;
-} t_gmx_edsam;
+};
 
 
 struct t_do_edsam

@@ -59,7 +59,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct
+struct t_edflood
 {
     real        deltaF0;
     gmx_bool    bHarmonic;
@@ -70,21 +70,21 @@ typedef struct
     real        kT;
     real        constEfl;
     real        alpha2;
-} t_edflood;
+};
 
 
 /* This type is for the average, reference, target, and origin structure   */
-typedef struct edix
+struct edix
 {
     int          nr;            /* number of atoms this structure contains */
     int         *anrs;          /* atom index numbers                      */
     rvec        *x;             /* positions                               */
     real        *sqrtm;         /* sqrt of the masses used for mass-
                                  * weighting of analysis                   */
-} t_edix;
+};
 
 
-typedef struct edipar
+struct t_edipar
 {
     int         nini;           /* total Nr of atoms                    */
     gmx_bool    fitmas;         /* true if trans fit with cm            */
@@ -101,7 +101,7 @@ typedef struct edipar
     real        slope;          /* minimal slope in acceptance radexp   */
     int         ned;            /* Nr of atoms in essdyn buffer         */
     t_edflood   flood;          /* parameters especially for flooding   */
-} t_edipar;
+};
 
 
 

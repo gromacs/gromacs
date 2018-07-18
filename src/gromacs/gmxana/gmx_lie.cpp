@@ -56,11 +56,11 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+struct t_liedata{
     int  nlj, nqq;
     int *lj;
     int *qq;
-} t_liedata;
+};
 
 static t_liedata *analyze_names(int nre, gmx_enxnm_t *names, const char *ligand)
 {

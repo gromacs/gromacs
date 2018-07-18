@@ -58,10 +58,10 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+struct t_define {
     char *name;
     char *def;
-} t_define;
+};
 
 static int        ndef   = 0;
 static t_define  *defs   = nullptr;
@@ -73,7 +73,7 @@ enum {
     eifTRUE, eifFALSE, eifIGNORE, eifNR
 };
 
-typedef struct gmx_cpp {
+struct gmx_cpp {
     FILE             *fp;
     char             *path, *cwd;
     char             *fn;
@@ -83,7 +83,7 @@ typedef struct gmx_cpp {
     int               nifdef;
     int              *ifdefs;
     struct   gmx_cpp *child, *parent;
-} gmx_cpp;
+};
 
 static bool is_word_end(char c)
 {

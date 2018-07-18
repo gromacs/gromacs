@@ -53,7 +53,7 @@
 #include "selmethod.h"
 
 /** Defines the comparison operator for comparison expressions. */
-typedef enum
+enum e_comparison_t
 {
     CMP_INVALID,        /**< Indicates an error */
     CMP_LESS,           /**< '<' */
@@ -62,7 +62,7 @@ typedef enum
     CMP_GEQ,            /**< '>=' */
     CMP_EQUAL,          /**< '==' */
     CMP_NEQ             /**< '!=' */
-} e_comparison_t;
+};
 
 /** The operand has a single value. */
 #define CMP_SINGLEVAL  1
@@ -78,7 +78,7 @@ typedef enum
 /*! \internal \brief
  * Data structure for comparison expression operand values.
  */
-typedef struct
+struct t_compare_value
 {
     /** Flags that describe the type of the operand. */
     int             flags;
@@ -86,12 +86,12 @@ typedef struct
     int            *i;
     /** (Array of) real value(s). */
     real           *r;
-} t_compare_value;
+};
 
 /*! \internal \brief
  * Data structure for comparison expression evaluation.
  */
-typedef struct
+struct t_methoddata_compare
 {
     /** Comparison operator as a string. */
     char            *cmpop;
@@ -101,7 +101,7 @@ typedef struct
     t_compare_value  left;
     /** Right value. */
     t_compare_value  right;
-} t_methoddata_compare;
+};
 
 /*! \brief
  * Allocates data for comparison expression evaluation.

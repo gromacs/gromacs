@@ -159,10 +159,10 @@ static const int tpx_incompatible_version = 57; // GMX4.0 has version 58
 
 
 /* Struct used to maintain tpx compatibility when function types are added */
-typedef struct {
+struct t_ftupd {
     int fvnr;  /* file version number in which the function type first appeared */
     int ftype; /* function type */
-} t_ftupd;
+};
 
 /*
  * TODO The following three lines make little sense, please clarify if

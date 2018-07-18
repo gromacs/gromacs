@@ -66,7 +66,7 @@
 #define FUDGE 1.2
 #define DDD   2
 
-typedef struct {
+struct t_axisdef {
     real     major;
     real     minor;
     real     offset;
@@ -79,9 +79,9 @@ typedef struct {
     char     font[STRLEN];
     real     tickfontsize;
     char     tickfont[STRLEN];
-} t_axisdef;
+};
 
-typedef struct {
+struct t_psrec {
     int       bw;
     real      linewidth;
     real      xoffs, yoffs;
@@ -102,7 +102,7 @@ typedef struct {
     real      ticklinewidth;
     real      zerolinewidth;
     t_axisdef X, Y;
-} t_psrec;
+};
 
 /* MUST correspond to char *legend[] in main() */
 enum {

@@ -53,14 +53,14 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct gpp_atomtype {
+struct gpp_atomtype {
     int              nr;           /* The number of atomtypes		*/
     t_atom          *atom;         /* Array of atoms			*/
     char          ***atomname;     /* Names of the atomtypes		*/
     t_param         *nb;           /* Nonbonded force default params	*/
     int             *bondatomtype; /* The bond_atomtype for each atomtype  */
     int             *atomnumber;   /* Atomic number, used for QM/MM        */
-} t_gpp_atomtype;
+};
 
 int get_atomtype_type(const char *str, gpp_atomtype_t ga)
 {

@@ -221,10 +221,10 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
               t_nbparam ***nbparam, t_nbparam ***pair,
               warninp_t wi)
 {
-    typedef struct {
+    struct t_xlate {
         const char *entry;
         int         ptype;
-    } t_xlate;
+    };
     t_xlate    xl[eptNR] = {
         { "A",   eptAtom },
         { "N",   eptNucleus },

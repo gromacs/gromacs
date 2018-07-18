@@ -54,14 +54,14 @@
 
 /** Structure with the number of threads for each OpenMP multi-threaded
  *  algorithmic module in mdrun. */
-typedef struct
+struct omp_module_nthreads_t
 {
     int      gnth;          /**< Global num. of threads per PP or PP+PME process/tMPI thread. */
     int      gnth_pme;      /**< Global num. of threads per PME only process/tMPI thread. */
 
     int      nth[emntNR];   /**< Number of threads for each module, indexed with module_nth_t */
     gmx_bool initialized;   /**< TRUE if the module as been initialized. */
-} omp_module_nthreads_t;
+};
 
 /** Names of environment variables to set the per module number of threads.
  *

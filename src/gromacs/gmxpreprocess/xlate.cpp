@@ -51,12 +51,12 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
-typedef struct {
+struct t_xlate_atom {
     char *filebase;
     char *res;
     char *atom;
     char *replace;
-} t_xlate_atom;
+};
 
 static void get_xlatoms(const char *fn, FILE *fp,
                         int *nptr, t_xlate_atom **xlptr)

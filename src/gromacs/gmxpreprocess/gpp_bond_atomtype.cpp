@@ -45,10 +45,10 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+struct gpp_bond_atomtype {
     int              nr;       /* The number of atomtypes		*/
     char          ***atomname; /* Names of the atomtypes		*/
-} gpp_bond_atomtype;
+};
 
 int get_bond_atomtype_type(char *str, t_bond_atomtype at)
 {

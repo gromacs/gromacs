@@ -130,15 +130,15 @@ void ffprintf_ss(FILE *fp1, FILE *fp2, char *buf, const char *fmt, const char *a
     lo_ffprintf(fp1, fp2, buf);
 }
 
-typedef struct {
+struct t_clusters {
     int  ncl;
     int *cl;
-} t_clusters;
+};
 
-typedef struct {
+struct t_nnb {
     int  nr;
     int *nb;
-} t_nnb;
+};
 
 static void mc_optimize(FILE *log, t_mat *m, real *time,
                         int maxiter, int nrandom,

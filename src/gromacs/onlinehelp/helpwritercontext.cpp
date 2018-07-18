@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -243,11 +243,11 @@ class WrapperToString : public IWrapper
         {
         }
 
-        virtual TextLineWrapperSettings &settings()
+        TextLineWrapperSettings &settings() override
         {
             return wrapper_.settings();
         }
-        virtual void wrap(const std::string &text)
+        void wrap(const std::string &text) override
         {
             result_.append(wrapper_.wrapToString(text));
         }
@@ -271,11 +271,11 @@ class WrapperToVector : public IWrapper
         {
         }
 
-        virtual TextLineWrapperSettings &settings()
+        TextLineWrapperSettings &settings() override
         {
             return wrapper_.settings();
         }
-        virtual void wrap(const std::string &text)
+        void wrap(const std::string &text) override
         {
             const std::vector<std::string> &lines = wrapper_.wrapToVector(text);
             result_.insert(result_.end(), lines.begin(), lines.end());
@@ -368,7 +368,7 @@ class HelpLinks::Impl
         };
 
         //! Shorthand for a list of links.
-        typedef std::vector<LinkItem> LinkList;
+        using LinkList = std::vector<LinkItem>;
 
         //! Initializes empty links with the given format.
         explicit Impl(HelpOutputFormat format) : format_(format)
@@ -492,9 +492,9 @@ class HelpWriterContext::Impl
         };
 
         //! Smart pointer type for managing the shared state.
-        typedef std::shared_ptr<const SharedState> StatePointer;
+        using StatePointer = std::shared_ptr<const SharedState>;
         //! Shorthand for a list of markup/other replacements.
-        typedef std::vector<ReplaceItem> ReplaceList;
+        using ReplaceList = std::vector<ReplaceItem>;
 
         //! Initializes the context with the given state and section depth.
         Impl(const StatePointer &state, int sectionDepth)

@@ -53,11 +53,11 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+struct t_charge {
     char *label;
     int   cg;
     real  q;
-} t_charge;
+};
 
 static t_charge *mk_charge(const t_atoms *atoms, const t_block *cgs, int *nncg)
 {

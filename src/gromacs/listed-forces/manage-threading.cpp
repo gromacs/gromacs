@@ -65,11 +65,11 @@
 #include "listed-internal.h"
 
 /*! \brief struct for passing all data required for a function type */
-typedef struct {
+struct ilist_data_t {
     const t_ilist *il;    /**< pointer to t_ilist entry corresponding to ftype */
     int            ftype; /**< the function type index */
     int            nat;   /**< nr of atoms involved in a single ftype interaction */
-} ilist_data_t;
+};
 
 /*! \brief Divides listed interactions over threads
  *

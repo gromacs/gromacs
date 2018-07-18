@@ -79,14 +79,14 @@ const char      *enx_block_id_name[] = {
 
 
 /* Stuff for reading pre 4.1 energy files */
-typedef struct {
+struct ener_old_t {
     gmx_bool     bOldFileOpen;   /* Is this an open old file? */
     gmx_bool     bReadFirstStep; /* Did we read the first step? */
     int          first_step;     /* First step in the energy file */
     int          step_prev;      /* Previous step */
     int          nsum_prev;      /* Previous step sum length */
     t_energy    *ener_prev;      /* Previous energy sums */
-} ener_old_t;
+};
 
 struct ener_file
 {

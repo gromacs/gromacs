@@ -108,10 +108,10 @@ shakedata *shake_init()
     return d;
 }
 
-typedef struct {
+struct t_sortblock {
     int iatom[3];
     int blocknr;
-} t_sortblock;
+};
 
 //! Compares sort blocks.
 static int pcomp(const void *p1, const void *p2)

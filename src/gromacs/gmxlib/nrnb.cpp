@@ -48,10 +48,10 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+struct t_nrnb_data {
     const char *name;
     int         flop;
-} t_nrnb_data;
+};
 
 
 static const t_nrnb_data nbdata[eNRNB] = {

@@ -116,9 +116,9 @@
 #include "gromacs/utility/smalloc.h"
 
 
-typedef int (*initfunc)(void);
-typedef int (*regfunc)(void *, vmdplugin_register_cb);
-typedef int (*finifunc)(void);
+using initfunc = int (*)();
+using regfunc  = int (*)(void *, vmdplugin_register_cb);
+using finifunc = int (*)();
 
 
 

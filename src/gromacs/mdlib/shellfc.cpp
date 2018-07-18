@@ -78,7 +78,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+struct t_shell {
     int     nnucl;
     int     shell;               /* The shell id				*/
     int     nucl1, nucl2, nucl3; /* The nuclei connected to the shell	*/
@@ -88,7 +88,7 @@ typedef struct {
     rvec    xold;
     rvec    fold;
     rvec    step;
-} t_shell;
+};
 
 struct gmx_shellfc_t {
     /* Shell counts, indices, parameters and working data */

@@ -84,7 +84,7 @@ class AnalysisDataModuleManager::Impl
         };
 
         //! Shorthand for list of modules added to the data.
-        typedef std::vector<ModuleInfo> ModuleList;
+        using ModuleList = std::vector<ModuleInfo>;
 
         //! Describes the current state of the notification methods.
         enum State

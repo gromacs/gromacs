@@ -101,7 +101,7 @@ static const char* DomainString[eDomainNr] = { "not_assigned", "Domain_A", "Doma
 /*! \internal \brief
  * Structure containing compartment-specific data.
  */
-typedef struct swap_compartment
+struct t_compartment
 {
     int                nMol;                  /**< Number of ion or water molecules detected
                                                    in this compartment.                          */
@@ -115,14 +115,14 @@ typedef struct swap_compartment
                                                    normally the center layer of the compartment  */
     int                nalloc;                /**< Allocation size for ind array.                */
     int                inflow_net;            /**< Net inflow of ions into this compartment.     */
-} t_compartment;
+};
 
 
 /*! \internal \brief
  * This structure contains data needed for the groups involved in swapping:
  * split group 0, split group 1, solvent group, ion groups.
  */
-typedef struct swap_group
+struct t_swapgrp
 {
     char             *molname;                /**< Name of the group or ion type                         */
     int               nat;                    /**< Number of atoms in the group                          */
@@ -153,13 +153,13 @@ typedef struct swap_group
     int               fluxfromAtoB[eChanNR];  /**< Net flux of ions per channel                          */
     int               nCyl[eChanNR];          /**< Number of ions residing in a channel                  */
     int               nCylBoth;               /**< Ions assigned to cyl0 and cyl1. Not good.             */
-} t_swapgrp;
+};
 
 
 /*! \internal \brief
  * Main (private) data structure for the position swapping protocol.
  */
-typedef struct t_swap
+struct t_swap
 {
     int               swapdim;                       /**< One of XX, YY, ZZ                               */
     t_pbc            *pbc;                           /**< Needed to make molecules whole.                 */
@@ -168,8 +168,7 @@ typedef struct t_swap
     t_swapgrp        *group;                         /**< Separate groups for channels, solvent, ions     */
     int               fluxleak;                      /**< Flux not going through any of the channels.     */
     real              deltaQ;                        /**< The charge imbalance between the compartments.  */
-} t_swap;
-
+};
 
 
 /*! \brief Check whether point is in channel.
