@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,9 +78,9 @@ class IReferenceDataEntryChecker
 class NullChecker : public IReferenceDataEntryChecker
 {
     public:
-        virtual void fillEntry(ReferenceDataEntry *) const {}
+        virtual void fillEntry(ReferenceDataEntry * /*entry*/) const {}
         virtual ::testing::AssertionResult
-        checkEntry(const ReferenceDataEntry &, const std::string &) const
+        checkEntry(const ReferenceDataEntry & /*entry*/, const std::string & /*fullId*/) const
         {
             return ::testing::AssertionSuccess();
         }
@@ -240,12 +240,12 @@ class ValueExtractor : public IReferenceDataEntryChecker
         {
         }
 
-        virtual void fillEntry(ReferenceDataEntry *) const
+        virtual void fillEntry(ReferenceDataEntry * /*entry*/) const
         {
             GMX_THROW(TestException("Extracting value from non-existent reference data entry"));
         }
         virtual ::testing::AssertionResult
-        checkEntry(const ReferenceDataEntry &entry, const std::string &) const
+        checkEntry(const ReferenceDataEntry &entry, const std::string & /*fullId*/) const
         {
             extractValue(entry.value());
             return ::testing::AssertionSuccess();

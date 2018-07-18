@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -82,7 +82,7 @@ yyerror(YYLTYPE *location, yyscan_t scanner, char const *s)
 //! Logic for computing the location of the output of Bison reduction.
 #define YYLLOC_DEFAULT(Current, Rhs, N)                          \
     do {                                                         \
-        if (N != 0)                                              \
+        if ((N) != 0)                                              \
         {                                                        \
             (Current).startIndex = YYRHSLOC(Rhs, 1).startIndex;  \
             (Current).endIndex   = YYRHSLOC(Rhs, N).endIndex;    \
@@ -218,7 +218,7 @@ void set_empty(ValueType * &dest)
  */
 #define CHECK_SEL(sel) \
     if (!*(sel)) { \
-        delete sel; \
+        delete (sel); \
         YYERROR; \
     }
 

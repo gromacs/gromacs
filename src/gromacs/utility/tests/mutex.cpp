@@ -94,9 +94,9 @@ TEST(MutexBasicTest, CanBeUsedInLockGuard)
 }
 
 //! A shared value for a mutex to protect
-static int   g_sharedValue;
+int   g_sharedValue;
 //! A mutex to protect a shared value
-static Mutex g_sharedValueMutex;
+Mutex g_sharedValueMutex;
 
 //! Function type for asynchronous tasks.
 using TaskType = std::function<int(void)>;
