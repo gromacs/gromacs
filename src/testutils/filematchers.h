@@ -132,7 +132,7 @@ class TextFileMatch : public IFileMatcherSettings
         {
         }
 
-        virtual FileMatcherPointer createFileMatcher() const;
+        FileMatcherPointer createFileMatcher() const override;
 
     private:
         const ITextBlockMatcherSettings &streamSettings_;
@@ -147,7 +147,7 @@ class TextFileMatch : public IFileMatcherSettings
 class NoContentsMatch : public IFileMatcherSettings
 {
     public:
-        virtual FileMatcherPointer createFileMatcher() const;
+        FileMatcherPointer createFileMatcher() const override;
 };
 
 } // namespace test

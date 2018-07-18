@@ -61,7 +61,7 @@ class GpuTest : public ::testing::Test
         //! Constructor
         GpuTest();
         //! Destructor
-        ~GpuTest();
+        ~GpuTest() override;
         //! Getter for convenience in testing
         bool haveValidGpus() const;
 };

@@ -71,7 +71,7 @@ class OptionSection : public AbstractOptionSection
         explicit OptionSection(const char *name) : AbstractOptionSection(name) {}
 
     private:
-        virtual std::unique_ptr<IOptionSectionStorage> createStorage() const;
+        std::unique_ptr<IOptionSectionStorage> createStorage() const override;
 };
 
 /*! \brief

@@ -74,7 +74,7 @@ class SurfaceAreaTest : public ::testing::Test
               atomArea_(nullptr), dotCount_(0), dots_(nullptr)
         {
         }
-        ~SurfaceAreaTest()
+        ~SurfaceAreaTest() override
         {
             sfree(atomArea_);
             sfree(dots_);

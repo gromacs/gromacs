@@ -129,7 +129,7 @@ class ITextBlockMatcherSettings
 class ExactTextMatch : public ITextBlockMatcherSettings
 {
     public:
-        virtual TextBlockMatcherPointer createMatcher() const;
+        TextBlockMatcherPointer createMatcher() const override;
 };
 
 /*! \libinternal \brief
@@ -141,7 +141,7 @@ class ExactTextMatch : public ITextBlockMatcherSettings
 class NoTextMatch : public ITextBlockMatcherSettings
 {
     public:
-        virtual TextBlockMatcherPointer createMatcher() const;
+        TextBlockMatcherPointer createMatcher() const override;
 };
 
 /*! \libinternal \brief
@@ -160,7 +160,7 @@ class FilteringExactTextMatch : public ITextBlockMatcherSettings
 {
     public:
         //! Factory method.
-        virtual TextBlockMatcherPointer createMatcher() const;
+        TextBlockMatcherPointer createMatcher() const override;
         //! Add a regular expression for which a matching line should be skipped.
         void addRegexToSkip(const std::string &lineToSkip);
     private:

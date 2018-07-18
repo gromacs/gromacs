@@ -53,7 +53,7 @@ class ImdTestFixture : public MdrunTestFixture
 {
     protected:
         ImdTestFixture();
-        ~ImdTestFixture();
+        ~ImdTestFixture() override;
 };
 
 

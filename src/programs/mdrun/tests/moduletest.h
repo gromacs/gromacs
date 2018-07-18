@@ -178,7 +178,7 @@ class MdrunTestFixtureBase : public ::testing::Test
 {
     public:
         MdrunTestFixtureBase();
-        virtual ~MdrunTestFixtureBase();
+        ~MdrunTestFixtureBase() override;
 };
 
 /*! \internal
@@ -193,7 +193,7 @@ class MdrunTestFixture : public ::testing::Test
 {
     public:
         MdrunTestFixture();
-        virtual ~MdrunTestFixture();
+        ~MdrunTestFixture() override;
 
         //! Manages temporary files during the test.
         TestFileManager  fileManager_;

@@ -95,7 +95,7 @@ class IOptionsContainerWithSections : public IOptionsContainer
     protected:
         // Disallow deletion through the interface.
         // (no need for the virtual, but some compilers warn otherwise)
-        virtual ~IOptionsContainerWithSections();
+        ~IOptionsContainerWithSections() override;
 
         /*! \brief
          * Adds a section to this container.

@@ -103,11 +103,11 @@ class DefaultExecutableEnvironment : public IExecutableEnvironment
         {
         }
 
-        virtual std::string getWorkingDirectory() const
+        std::string getWorkingDirectory() const override
         {
             return initialWorkingDirectory_;
         }
-        virtual std::vector<std::string> getExecutablePaths() const
+        std::vector<std::string> getExecutablePaths() const override
         {
             return Path::getExecutablePaths();
         }

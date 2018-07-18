@@ -71,7 +71,7 @@ class AnalysisDataDisplacementModule : public AbstractAnalysisData,
 {
     public:
         AnalysisDataDisplacementModule();
-        virtual ~AnalysisDataDisplacementModule();
+        ~AnalysisDataDisplacementModule() override;
 
         /*! \brief
          * Sets the largest displacement time to be calculated.
@@ -84,17 +84,17 @@ class AnalysisDataDisplacementModule : public AbstractAnalysisData,
          */
         void setMSDHistogram(const std::shared_ptr<AnalysisDataBinAverageModule> &histm);
 
-        virtual int flags() const;
+        int flags() const override;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
-        virtual void frameStarted(const AnalysisDataFrameHeader &header);
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
-        virtual void frameFinished(const AnalysisDataFrameHeader &header);
-        virtual void dataFinished();
+        void dataStarted(AbstractAnalysisData *data) override;
+        void frameStarted(const AnalysisDataFrameHeader &header) override;
+        void pointsAdded(const AnalysisDataPointSetRef &points) override;
+        void frameFinished(const AnalysisDataFrameHeader &header) override;
+        void dataFinished() override;
 
     private:
-        virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
-        virtual bool requestStorageInternal(int nframes);
+        AnalysisDataFrameRef tryGetDataFrameInternal(int index) const override;
+        bool requestStorageInternal(int nframes) override;
 
         class Impl;
 
