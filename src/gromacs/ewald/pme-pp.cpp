@@ -48,8 +48,7 @@
 
 #include "config.h"
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <cstring>
 
 #include "gromacs/domdec/domdec.h"

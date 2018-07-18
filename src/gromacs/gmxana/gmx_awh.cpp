@@ -318,7 +318,7 @@ OutputFile::OutputFile(const std::string &filename,
     numDim_(0),
     firstGraphSubBlock_(0),
     numGraph_(0),
-    useKTForEnergy_(0)
+    useKTForEnergy_(false)
 
 {
     // cppcheck-suppress useInitializationList

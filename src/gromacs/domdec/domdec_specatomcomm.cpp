@@ -46,7 +46,7 @@
 
 #include "domdec_specatomcomm.h"
 
-#include <assert.h>
+#include <cassert>
 
 #include <algorithm>
 

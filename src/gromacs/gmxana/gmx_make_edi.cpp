@@ -863,7 +863,7 @@ int gmx_make_edi(int argc, char *argv[])
                       &xref1, &edi_params.fitmas, &xav1, &edi_params.pcamas, &nvec1, &eignr1, &eigvec1, &eigval1);
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm),
-                  &top, &ePBC, &xtop, nullptr, topbox, 0);
+                  &top, &ePBC, &xtop, nullptr, topbox, false);
     atoms = &top.atoms;
 
 

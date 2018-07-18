@@ -298,7 +298,7 @@ void calc_compact_unitcell_vertices(int ecenter, const matrix box,
  * The index consists of NCUCEDGE pairs of vertex indices.
  * The index does not change, so it needs to be retrieved only once.
  */
-int *compact_unitcell_edges(void);
+int *compact_unitcell_edges();
 
 /*! \brief Put atoms inside the simulations box
  *

@@ -1,3 +1,14 @@
+--- parser.h    2018-08-12 14:27:05.680844826 -0700
++++ parser.h    2018-08-12 14:23:36.936847674 -0700
+@@ -177,7 +177,7 @@
+
+ int _gmx_sel_yypush_parse (_gmx_sel_yypstate *ps, int pushed_char, YYSTYPE const *pushed_val, YYLTYPE *pushed_loc, void *scanner);
+
+-_gmx_sel_yypstate * _gmx_sel_yypstate_new (void);
++_gmx_sel_yypstate * _gmx_sel_yypstate_new ();
+ void _gmx_sel_yypstate_delete (_gmx_sel_yypstate *ps);
+
+ #endif /* !YY__GMX_SEL_YY_PARSER_H_INCLUDED  */
 --- parser.cpp	2014-11-03 06:56:28.000000000 +0200
 +++ parser.cpp	2014-11-03 06:57:35.000000000 +0200
 @@ -437,7 +437,7 @@

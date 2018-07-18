@@ -219,7 +219,7 @@ struct t_blocka
 
 void init_block(t_block *block);
 void init_blocka(t_blocka *block);
-t_blocka *new_blocka(void);
+t_blocka *new_blocka();
 /* allocate new block */
 
 void done_block(t_block *block);

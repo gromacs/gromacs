@@ -38,11 +38,10 @@
 
 #include "mdebin_bar.h"
 
-#include <float.h>
-#include <string.h>
-
 #include <cassert>
+#include <cfloat>
 #include <cmath>
+#include <cstring>
 
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/enxio.h"

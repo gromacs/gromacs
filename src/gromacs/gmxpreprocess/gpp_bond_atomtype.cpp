@@ -38,7 +38,7 @@
 
 #include "gpp_bond_atomtype.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/topology/symtab.h"
@@ -80,7 +80,7 @@ char *get_bond_atomtype_name(int nt, t_bond_atomtype at)
     return *(ga->atomname[nt]);
 }
 
-t_bond_atomtype init_bond_atomtype(void)
+t_bond_atomtype init_bond_atomtype()
 {
     gpp_bond_atomtype *ga;
 

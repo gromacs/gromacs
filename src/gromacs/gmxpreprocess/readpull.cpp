@@ -36,9 +36,9 @@
  */
 #include "gmxpre.h"
 
-#include <assert.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cassert>
+#include <cstdlib>
+#include <cstring>
 
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/readinp.h"

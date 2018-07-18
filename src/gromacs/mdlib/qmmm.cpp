@@ -40,11 +40,10 @@
 
 #include "config.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include <algorithm>
 
@@ -971,7 +970,7 @@ real calculate_QMMM(const t_commrec  * /*unused*/,
 {
     gmx_incons("Compiled without QMMM");
 }
-t_QMMMrec *mk_QMMMrec(void)
+t_QMMMrec *mk_QMMMrec()
 {
     return nullptr;
 }

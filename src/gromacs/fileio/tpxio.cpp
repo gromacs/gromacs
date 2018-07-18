@@ -1001,7 +1001,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
 {
     int      i, j, k, idum = 0;
     real     rdum;
-    gmx_bool bdum = 0;
+    gmx_bool bdum = false;
 
     if (file_version != tpx_version)
     {

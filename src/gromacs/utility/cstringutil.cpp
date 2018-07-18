@@ -39,11 +39,10 @@
 
 #include "cstringutil.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <cassert>
 #include <cctype>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 #include <string>

@@ -38,7 +38,7 @@
 
 #include "vsite.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <algorithm>
 #include <vector>
