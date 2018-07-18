@@ -143,7 +143,14 @@ MdpFileValues mdpFileValueDatabase_g
                                   couple-lambda1    = none
                                   couple-intramol   = yes)"
                            } }
+    },
+    // Hexane-and-water system for testing nbnxn kernels
+    {
+        "hexane-and-water", { {
+                                  "nsteps", "4"
+                              }}
     }
+
 };
 
 /*! \brief Prepare default .mdp values
