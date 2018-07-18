@@ -35,7 +35,6 @@
 gmx_add_unit_test(SimdUnitTests simd-test
                   bootstrap_loadstore.cpp
 		  base.cpp
-                  data.cpp
                   simd.cpp
 		  simd_floatingpoint.cpp
                   simd_floatingpoint_util.cpp

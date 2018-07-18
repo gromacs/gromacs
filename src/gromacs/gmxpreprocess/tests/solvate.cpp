@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -105,7 +105,7 @@ TEST_F(SolvateTest, cs_cp_p_Works)
     setInputFile("-cp", "spc-and-methanol.gro");
 
     // TODO: Consider adding a convenience method for this.
-    std::string topFileName           = fileManager().getInputFilePath("spc-and-methanol.top");
+    std::string topFileName           = gmx::test::TestFileManager::getInputFilePath("spc-and-methanol.top");
     std::string modifiableTopFileName = fileManager().getTemporaryFilePath(".top");
     gmx_file_copy(topFileName.c_str(), modifiableTopFileName.c_str(), true);
     commandLine().addOption("-p", modifiableTopFileName);

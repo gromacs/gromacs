@@ -68,7 +68,7 @@ namespace test
 {
 
 TopologyManager::TopologyManager()
-    : mtop_(), frame_(nullptr)
+    :  frame_(nullptr)
 {
 }
 

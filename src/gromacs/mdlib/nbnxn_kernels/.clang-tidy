@@ -1,3 +1,0 @@
-CheckOptions:
-  - key:             readability-function-size.StatementThreshold
-    value:           2000
