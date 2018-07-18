@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Frame Name="0">
+    <String Name="Name">Time 0.000000 Step 0</String>
+    <Real Name="Pressure">1351.6959</Real>
+    <Real Name="Potential">-19936.615</Real>
+    <Real Name="Coulomb (SR)">-21954.52</Real>
+  </Frame>
+  <Frame Name="1">
+    <String Name="Name">Time 0.004000 Step 4</String>
+    <Real Name="Pressure">1598.8121</Real>
+    <Real Name="Potential">-19981.48</Real>
+    <Real Name="Coulomb (SR)">-22032.078</Real>
+  </Frame>
+</ReferenceData>

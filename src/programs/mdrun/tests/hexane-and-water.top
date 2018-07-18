@@ -1,0 +1,51 @@
+#include "gromos53a6.ff/forcefield.itp"
+
+#include "gromos53a6.ff/spce.itp"
+
+[ moleculetype ]
+; Name            nrexcl
+Hexane              3
+
+[ atoms ]
+;   nr       type  resnr residue  atom   cgnr     charge       mass
+     1        CH3      1    HEX     C1      1      0          15.035
+     2        CH2      1    HEX     C2      2      0          14.027
+     3        CH2      1    HEX     C3      3      0          14.027
+     4        CH2      1    HEX     C4      4      0          14.027
+     5        CH2      1    HEX     C5      5      0          14.027
+     6        CH3      1    HEX     C6      6      0          15.035
+
+[ bonds ]
+;  ai    aj funct            c0            c1            c2            c3
+    1     2     2    gb_27
+    2     3     2    gb_27
+    3     4     2    gb_27
+    4     5     2    gb_27
+    5     6     2    gb_27
+
+[ pairs ]
+;  ai    aj funct            c0            c1            c2            c3
+    1     4     1 
+    2     5     1 
+    3     6     1 
+
+[ angles ]
+;  ai    aj    ak funct            c0            c1            c2            c3
+    1     2     3     2    ga_15
+    2     3     4     2    ga_15
+    3     4     5     2    ga_15
+    4     5     6     2    ga_15
+
+[ dihedrals ]
+;  ai    aj    ak    al funct            c0            c1            c2            c3            c4            c5
+    1     2     3     4     1   gd_34   gd_34
+    2     3     4     5     1   gd_34   gd_34
+    3     4     5     6     1   gd_34   gd_34
+
+
+[ system ]
+water+hexane
+
+[ molecules ]
+SOL      400
+Hexane   200
