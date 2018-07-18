@@ -46,6 +46,7 @@
 
 #include "gromacs/awh/grid.h"
 #include "gromacs/awh/pointstate.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/utility/smalloc.h"
@@ -136,11 +137,11 @@ class BiasStateTest : public ::testing::TestWithParam<const char *>
             const AwhParams        &awhParams     = params.awhParams;
             const AwhBiasParams    &awhBiasParams = awhParams.awhBiasParams[0];
             std::vector<DimParams>  dimParams;
-            dimParams.push_back(DimParams(1.0, 15.0, params.beta));
-            dimParams.push_back(DimParams(1.0, 15.0, params.beta));
+            dimParams.emplace_back(1.0, 15.0, params.beta);
+            dimParams.emplace_back(1.0, 15.0, params.beta);
             Grid                    grid(dimParams, awhBiasParams.dimParams);
             BiasParams              biasParams(awhParams, awhBiasParams, dimParams, 1.0, 1.0, BiasParams::DisableUpdateSkips::no, 1, grid.axis(), 0);
-            biasState_ = std::unique_ptr<BiasState>(new BiasState(awhBiasParams, 1.0, dimParams, grid));
+            biasState_ = gmx::compat::make_unique<BiasState>(awhBiasParams, 1.0, dimParams, grid);
 
             // Here we initialize the grid point state using the input file
             std::string             filename = gmx::test::TestFileManager::getInputFilePath(GetParam());

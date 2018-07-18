@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -359,7 +359,7 @@ class TreeValueSupportTest : public ::testing::Test
 
         std::string formatBuffer(const std::vector<char> &buffer)
         {
-            return gmx::formatAndJoin(buffer, " ", [](char c) { return gmx::formatString("%02x", (unsigned char)c); });
+            return gmx::formatAndJoin(buffer, " ", [](char c) { return gmx::formatString("%02x", static_cast<unsigned char>(c)); });
         }
 };
 

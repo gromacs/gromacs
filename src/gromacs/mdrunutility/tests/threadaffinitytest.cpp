@@ -40,6 +40,7 @@
 
 #include <gmock/gmock.h>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basenetwork.h"
@@ -86,7 +87,7 @@ ThreadAffinityTestHelper::~ThreadAffinityTestHelper()
 
 void ThreadAffinityTestHelper::setLogicalProcessorCount(int logicalProcessorCount)
 {
-    hwTop_.reset(new HardwareTopology(logicalProcessorCount));
+    hwTop_ = gmx::compat::make_unique<HardwareTopology>(logicalProcessorCount);
 }
 
 } // namespace test

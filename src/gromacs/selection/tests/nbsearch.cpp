@@ -168,11 +168,7 @@ class NeighborhoodSearchTestData
             const std::vector<RefPair>          &refPairs = testPositions_[testIndex].refPairs;
             std::vector<RefPair>::const_iterator foundRefPair
                 = std::lower_bound(refPairs.begin(), refPairs.end(), pair);
-            if (foundRefPair == refPairs.end() || foundRefPair->refIndex != pair.refIndex)
-            {
-                return false;
-            }
-            return true;
+            return !(foundRefPair == refPairs.end() || foundRefPair->refIndex != pair.refIndex);
         }
 
         // Return a tolerance that accounts for the magnitudes of the coordinates

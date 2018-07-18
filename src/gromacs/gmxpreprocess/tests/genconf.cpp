@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,7 +59,7 @@ class GenconfTest : public gmx::test::CommandLineTestBase
     public:
         GenconfTest()
         {
-            std::string confFileName = fileManager().getInputFilePath("spc-and-methanol.gro");
+            std::string confFileName = gmx::test::TestFileManager::getInputFilePath("spc-and-methanol.gro");
             commandLine().addOption("-f", confFileName);
             commandLine().addOption("-seed", "1993"); // make random operations reproducible
             setOutputFile("-o", "out.gro", ExactTextMatch());
