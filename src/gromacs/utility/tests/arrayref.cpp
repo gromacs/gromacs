@@ -60,7 +60,7 @@ TEST(EmptyArrayRefTest, IsEmpty)
     EmptyArrayRef  emptyArray = {};
     ArrayRef<real> empty(emptyArray);
 
-    EXPECT_EQ(0U, empty.size());
+    EXPECT_EQ(nullptr, empty.size());
     EXPECT_TRUE(empty.empty());
 }
 
@@ -69,7 +69,7 @@ TEST(EmptyConstArrayRefTest, IsEmpty)
     EmptyArrayRef        emptyArray = {};
     ArrayRef<const real> empty(emptyArray);
 
-    EXPECT_EQ(0U, empty.size());
+    EXPECT_EQ(nullptr, empty.size());
     EXPECT_TRUE(empty.empty());
 }
 

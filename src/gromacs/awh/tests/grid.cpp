@@ -84,8 +84,8 @@ TEST(gridTest, neighborhood)
 
     /* Set up dimParams to get about 15 points along each dimension */
     std::vector<DimParams> dimParams;
-    dimParams.push_back(DimParams(conversionFactor, 1/(beta*0.7*0.7), beta));
-    dimParams.push_back(DimParams(conversionFactor, 1/(beta*0.1*0.1), beta));
+    dimParams.emplace_back(conversionFactor, 1/(beta*0.7*0.7), beta);
+    dimParams.emplace_back(conversionFactor, 1/(beta*0.1*0.1), beta);
 
     Grid       grid(dimParams, awhDimParams.data());
 

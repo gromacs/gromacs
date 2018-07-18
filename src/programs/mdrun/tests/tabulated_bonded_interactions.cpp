@@ -90,7 +90,7 @@ Butane                   1\n\
 ";
 
 //! Test fixture for bonded interactions
-class BondedInteractionsTest : public gmx::test::MdrunTestFixture
+class BondedInteractionsTest : public MdrunTestFixture
 {
     public:
         //! Execute the trajectory writing test
@@ -98,8 +98,8 @@ class BondedInteractionsTest : public gmx::test::MdrunTestFixture
         {
             runner_.topFileName_ = fileManager_.getTemporaryFilePath("butane1.top");
             TextWriter::writeFileFromString(runner_.topFileName_, formatString(g_butaneTopFileFormatString, interaction));
-            runner_.groFileName_ = fileManager_.getInputFilePath("butane1.gro");
-            runner_.ndxFileName_ = fileManager_.getInputFilePath("butane1.ndx");
+            runner_.groFileName_ = TestFileManager::getInputFilePath("butane1.gro");
+            runner_.ndxFileName_ = TestFileManager::getInputFilePath("butane1.ndx");
             /* TODO Now that Verlet is the default, change the implementation
                of useEmptyMdpFile() to do that. */
             runner_.useStringAsMdpFile("");
@@ -126,10 +126,10 @@ TEST_F(BondedInteractionsTest, NormalBondWorks)
     setupGrompp("[ bonds ]\n\
 ;  ai    aj funct           c0           c1\n\
     1     2     1 1.530000e-01 3.347000e+05");
-    EXPECT_EQ(0, runner_.callGrompp());
+    EXPECT_EQ(nullptr, runner_.callGrompp());
 
     test::CommandLine rerunCaller = setupMdrun();
-    ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
+    ASSERT_EQ(nullptr, runner_.callMdrun(rerunCaller));
     checkMdrun();
 }
 
@@ -139,12 +139,12 @@ TEST_F(BondedInteractionsTest, TabulatedBondWorks)
     setupGrompp("[ bonds ]\n\
 ;  ai    aj funct  n     k\n\
     1     2     8  0  1000");
-    EXPECT_EQ(0, runner_.callGrompp());
+    EXPECT_EQ(nullptr, runner_.callGrompp());
 
     test::CommandLine rerunCaller   = setupMdrun();
-    std::string       tableFileName = fileManager_.getInputFilePath("butane_b0.xvg");
+    std::string       tableFileName = TestFileManager::getInputFilePath("butane_b0.xvg");
     rerunCaller.addOption("-tableb", tableFileName);
-    ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
+    ASSERT_EQ(nullptr, runner_.callMdrun(rerunCaller));
     checkMdrun();
 }
 
@@ -154,10 +154,10 @@ TEST_F(BondedInteractionsTest, NormalAngleWorks)
     setupGrompp("[ angles ]\n\
 ;  ai    aj    ak funct           c0           c1\n\
     1     2     3     1 1.110000e+02 4.602000e+02");
-    EXPECT_EQ(0, runner_.callGrompp());
+    EXPECT_EQ(nullptr, runner_.callGrompp());
 
     test::CommandLine rerunCaller = setupMdrun();
-    ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
+    ASSERT_EQ(nullptr, runner_.callMdrun(rerunCaller));
     checkMdrun();
 }
 
@@ -167,12 +167,12 @@ TEST_F(BondedInteractionsTest, TabulatedAngleWorks)
     setupGrompp("[ angles ]\n\
 ;  ai    aj    ak funct  n     k\n\
     1     2     3     8  0  1000");
-    EXPECT_EQ(0, runner_.callGrompp());
+    EXPECT_EQ(nullptr, runner_.callGrompp());
 
     test::CommandLine rerunCaller   = setupMdrun();
-    std::string       tableFileName = fileManager_.getInputFilePath("butane_a0.xvg");
+    std::string       tableFileName = TestFileManager::getInputFilePath("butane_a0.xvg");
     rerunCaller.addOption("-tableb", tableFileName);
-    ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
+    ASSERT_EQ(nullptr, runner_.callMdrun(rerunCaller));
     checkMdrun();
 }
 
@@ -182,10 +182,10 @@ TEST_F(BondedInteractionsTest, NormalDihedralWorks)
     setupGrompp("[ dihedrals ]\n \
 ;  ai    aj    ak    al funct     c0     c1     c2      c3     c4      c5\n\
     1     2     3     4     3 9.2789 12.156 -13.12 -3.0597  26.24 -31.495");
-    EXPECT_EQ(0, runner_.callGrompp());
+    EXPECT_EQ(nullptr, runner_.callGrompp());
 
     test::CommandLine rerunCaller = setupMdrun();
-    ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
+    ASSERT_EQ(nullptr, runner_.callMdrun(rerunCaller));
     checkMdrun();
 }
 
@@ -195,12 +195,12 @@ TEST_F(BondedInteractionsTest, TabulatedDihedralWorks)
     setupGrompp("[ dihedrals ]\n\
 ;  ai    aj    ak    al funct   n     k\n\
     1     2     3     4     8   0  1000");
-    EXPECT_EQ(0, runner_.callGrompp());
+    EXPECT_EQ(nullptr, runner_.callGrompp());
 
     test::CommandLine rerunCaller   = setupMdrun();
-    std::string       tableFileName = fileManager_.getInputFilePath("butane_d0.xvg");
+    std::string       tableFileName = TestFileManager::getInputFilePath("butane_d0.xvg");
     rerunCaller.addOption("-tableb", tableFileName);
-    ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
+    ASSERT_EQ(nullptr, runner_.callMdrun(rerunCaller));
     checkMdrun();
 }
 

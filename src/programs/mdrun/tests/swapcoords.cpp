@@ -113,7 +113,7 @@ TEST_F(CompelTest, SwapCanRun)
 
     runner_.useStringAsMdpFile(mdpContents);
 
-    EXPECT_EQ(0, runner_.callGrompp());
+    EXPECT_EQ(nullptr, runner_.callGrompp());
 
     runner_.cptFileName_       = fileManager_.getTemporaryFilePath(".cpt");
     runner_.groOutputFileName_ = fileManager_.getTemporaryFilePath(".gro");
@@ -126,12 +126,12 @@ TEST_F(CompelTest, SwapCanRun)
     // Do an initial mdrun that writes a checkpoint file
     ::gmx::test::CommandLine firstCaller(swapCaller);
     firstCaller.addOption("-cpo", runner_.cptFileName_);
-    ASSERT_EQ(0, runner_.callMdrun(firstCaller));
+    ASSERT_EQ(nullptr, runner_.callMdrun(firstCaller));
     // Continue mdrun from that checkpoint file
     ::gmx::test::CommandLine secondCaller(swapCaller);
     secondCaller.addOption("-cpi", runner_.cptFileName_);
     runner_.nsteps_ = 2;
-    ASSERT_EQ(0, runner_.callMdrun(secondCaller));
+    ASSERT_EQ(nullptr, runner_.callMdrun(secondCaller));
 }
 
 

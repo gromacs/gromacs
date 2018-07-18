@@ -96,10 +96,10 @@ TEST_P(InitialConstraintsTest, Works)
 
     const std::string inputFile = "spc-and-methanol";
     runner_.useTopGroAndNdxFromDatabase(inputFile.c_str());
-    EXPECT_EQ(0, runner_.callGrompp());
+    EXPECT_EQ(nullptr, runner_.callGrompp());
 
     runner_.edrFileName_ = fileManager_.getTemporaryFilePath(inputFile + ".edr");
-    ASSERT_EQ(0, runner_.callMdrun());
+    ASSERT_EQ(nullptr, runner_.callMdrun());
 
     auto energyReader = openEnergyFileToReadFields(runner_.edrFileName_, {"Total Energy", "Kinetic En."});
     real totalEnergy  = 0.0, prevTotalEnergy = 0.0;
@@ -124,7 +124,7 @@ TEST_P(InitialConstraintsTest, Works)
 }
 
 //! Integrators with energy conservation to test
-static const EnergyIntegratorType c_integratorsToTest [] = {"md", "md-vv", "md-vv-avek"};
+const EnergyIntegratorType c_integratorsToTest [] = {"md", "md-vv", "md-vv-avek"};
 
 INSTANTIATE_TEST_CASE_P(Checking, InitialConstraintsTest, ::testing::ValuesIn(c_integratorsToTest));
 

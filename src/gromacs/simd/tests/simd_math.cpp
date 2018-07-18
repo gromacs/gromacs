@@ -162,7 +162,7 @@ SimdMathTest::compareSimdMathFunction(const char              * refFuncExpr,
                 }
             }
 
-            absDiff = fabs(vref[i]-vtst[i]);
+            absDiff = std::fabs(vref[i]-vtst[i]);
             absOk   = absOk  && ( absDiff < absTol_ );
             signOk  = signOk && ( (vref[i] >= 0 && vtst[i] >= 0) ||
                                   (vref[i] <= 0 && vtst[i] <= 0));
@@ -186,7 +186,7 @@ SimdMathTest::compareSimdMathFunction(const char              * refFuncExpr,
                 }
             }
         }
-        if ( (absOk == false) && (signOk == false) )
+        if ( (!absOk) && (!signOk) )
         {
             return ::testing::AssertionFailure()
                    << "Failing SIMD math function comparison due to sign differences." << std::endl
@@ -241,7 +241,7 @@ TEST_F(SimdMathTest, copysign)
 }
 
 /*! \brief Function wrapper to evaluate reference 1/sqrt(x) */
-static real
+real
 refInvsqrt(real x)
 {
     return 1.0/std::sqrt(x);
@@ -291,7 +291,7 @@ TEST_F(SimdMathTest, invsqrtPair)
 }
 
 /*! \brief Function wrapper to evaluate reference sqrt(x) */
-static real
+real
 refSqrt(real x)
 {
     return std::sqrt(x);

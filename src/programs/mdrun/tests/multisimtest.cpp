@@ -68,8 +68,7 @@ namespace test
 
 MultiSimTest::MultiSimTest() : size_(gmx_node_num()),
                                rank_(gmx_node_rank()),
-                               mdrunCaller_(new CommandLine),
-                               fileManager_()
+                               mdrunCaller_(new CommandLine)
 {
     const char *directoryNameFormat = "sim_%d";
 
@@ -141,9 +140,9 @@ void MultiSimTest::runExitsNormallyTest()
     organizeMdpFile(&runner, pcoupl);
     /* Call grompp on every rank - the standard callGrompp() only runs
        grompp on rank 0. */
-    EXPECT_EQ(0, runner.callGromppOnThisRank());
+    EXPECT_EQ(nullptr, runner.callGromppOnThisRank());
 
-    ASSERT_EQ(0, runner.callMdrun(*mdrunCaller_));
+    ASSERT_EQ(nullptr, runner.callMdrun(*mdrunCaller_));
 }
 
 void MultiSimTest::runMaxhTest()
@@ -163,7 +162,7 @@ void MultiSimTest::runMaxhTest()
     organizeMdpFile(&runner, "pcoupl = no", numSteps);
     /* Call grompp on every rank - the standard callGrompp() only runs
        grompp on rank 0. */
-    EXPECT_EQ(0, runner.callGromppOnThisRank());
+    EXPECT_EQ(nullptr, runner.callGromppOnThisRank());
 
     helper.runFirstMdrun(runner.cptFileName_);
     helper.runSecondMdrun();

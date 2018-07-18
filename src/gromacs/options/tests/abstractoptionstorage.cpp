@@ -350,7 +350,7 @@ TEST(AbstractOptionStorageTest, AllowsEmptyValues)
     EXPECT_NO_THROW_GMX(assigner.finish());
     EXPECT_NO_THROW_GMX(options.finish());
 
-    ASSERT_EQ(0U, values.size());
+    ASSERT_EQ(nullptr, values.size());
 }
 
 } // namespace

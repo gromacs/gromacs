@@ -57,7 +57,7 @@ namespace test
 TEST(NullSignalTest, NullSignallerWorks)
 {
     SimulationSignaller signaller(nullptr, nullptr, nullptr, false, false);
-    EXPECT_EQ(0, signaller.getCommunicationBuffer().size());
+    EXPECT_EQ(nullptr, signaller.getCommunicationBuffer().size());
     signaller.finalizeSignals();
 }
 
@@ -78,14 +78,14 @@ class SignalTest : public ::testing::Test
 TEST_F(SignalTest, NoSignalPropagatesIfNoSignallingTakesPlace)
 {
     SimulationSignaller signaller(&signals_, nullptr, nullptr, false, false);
-    EXPECT_EQ(0, signaller.getCommunicationBuffer().size());
+    EXPECT_EQ(nullptr, signaller.getCommunicationBuffer().size());
     signaller.finalizeSignals();
     EXPECT_EQ(1, signals_[0].sig);
     EXPECT_EQ(-1, signals_[1].sig);
-    EXPECT_EQ(0, signals_[2].sig);
-    EXPECT_EQ(0, signals_[0].set);
-    EXPECT_EQ(0, signals_[1].set);
-    EXPECT_EQ(0, signals_[2].set);
+    EXPECT_EQ(nullptr, signals_[2].sig);
+    EXPECT_EQ(nullptr, signals_[0].set);
+    EXPECT_EQ(nullptr, signals_[1].set);
+    EXPECT_EQ(nullptr, signals_[2].set);
 }
 
 TEST_F(SignalTest, LocalIntraSimSignalPropagatesWhenIntraSimSignalTakesPlace)
@@ -93,12 +93,12 @@ TEST_F(SignalTest, LocalIntraSimSignalPropagatesWhenIntraSimSignalTakesPlace)
     SimulationSignaller signaller(&signals_, nullptr, nullptr, false, true);
     EXPECT_NE(0, signaller.getCommunicationBuffer().size());
     signaller.finalizeSignals();
-    EXPECT_EQ(0, signals_[0].sig);
-    EXPECT_EQ(0, signals_[1].sig);
-    EXPECT_EQ(0, signals_[2].sig);
+    EXPECT_EQ(nullptr, signals_[0].sig);
+    EXPECT_EQ(nullptr, signals_[1].sig);
+    EXPECT_EQ(nullptr, signals_[2].sig);
     EXPECT_EQ(1, signals_[0].set);
     EXPECT_EQ(-1, signals_[1].set);
-    EXPECT_EQ(0, signals_[2].set);
+    EXPECT_EQ(nullptr, signals_[2].set);
 }
 
 TEST_F(SignalTest, LocalIntraSimSignalPropagatesWhenInterSimTakesPlace)
@@ -107,12 +107,12 @@ TEST_F(SignalTest, LocalIntraSimSignalPropagatesWhenInterSimTakesPlace)
     EXPECT_NE(0, signaller.getCommunicationBuffer().size());
     // Can't call finalizeSignals without a full commrec
     signaller.setSignals();
-    EXPECT_EQ(0, signals_[0].sig);
-    EXPECT_EQ(0, signals_[1].sig);
-    EXPECT_EQ(0, signals_[2].sig);
+    EXPECT_EQ(nullptr, signals_[0].sig);
+    EXPECT_EQ(nullptr, signals_[1].sig);
+    EXPECT_EQ(nullptr, signals_[2].sig);
     EXPECT_EQ(1, signals_[0].set);
     EXPECT_EQ(-1, signals_[1].set);
-    EXPECT_EQ(0, signals_[2].set);
+    EXPECT_EQ(nullptr, signals_[2].set);
 }
 
 TEST_F(SignalTest, LocalIntraSimSignalPropagatesWhenBothTakePlace)
@@ -121,12 +121,12 @@ TEST_F(SignalTest, LocalIntraSimSignalPropagatesWhenBothTakePlace)
     EXPECT_NE(0, signaller.getCommunicationBuffer().size());
     // Can't call finalizeSignals without a full commrec
     signaller.setSignals();
-    EXPECT_EQ(0, signals_[0].sig);
-    EXPECT_EQ(0, signals_[1].sig);
-    EXPECT_EQ(0, signals_[2].sig);
+    EXPECT_EQ(nullptr, signals_[0].sig);
+    EXPECT_EQ(nullptr, signals_[1].sig);
+    EXPECT_EQ(nullptr, signals_[2].sig);
     EXPECT_EQ(1, signals_[0].set);
     EXPECT_EQ(-1, signals_[1].set);
-    EXPECT_EQ(0, signals_[2].set);
+    EXPECT_EQ(nullptr, signals_[2].set);
 }
 
 TEST_F(SignalTest, NonLocalSignalDoesntPropagateWhenIntraSimSignalTakesPlace)
@@ -136,11 +136,11 @@ TEST_F(SignalTest, NonLocalSignalDoesntPropagateWhenIntraSimSignalTakesPlace)
     EXPECT_NE(0, signaller.getCommunicationBuffer().size());
     signaller.finalizeSignals();
     EXPECT_EQ(1, signals_[0].sig);
-    EXPECT_EQ(0, signals_[1].sig);
-    EXPECT_EQ(0, signals_[2].sig);
-    EXPECT_EQ(0, signals_[0].set);
+    EXPECT_EQ(nullptr, signals_[1].sig);
+    EXPECT_EQ(nullptr, signals_[2].sig);
+    EXPECT_EQ(nullptr, signals_[0].set);
     EXPECT_EQ(-1, signals_[1].set);
-    EXPECT_EQ(0, signals_[2].set);
+    EXPECT_EQ(nullptr, signals_[2].set);
 }
 
 TEST_F(SignalTest, NonLocalSignalPropagatesWhenInterSimSignalTakesPlace)
@@ -150,12 +150,12 @@ TEST_F(SignalTest, NonLocalSignalPropagatesWhenInterSimSignalTakesPlace)
     EXPECT_NE(0, signaller.getCommunicationBuffer().size());
     // Can't call finalizeSignals without a full commrec
     signaller.setSignals();
-    EXPECT_EQ(0, signals_[0].sig);
-    EXPECT_EQ(0, signals_[1].sig);
-    EXPECT_EQ(0, signals_[2].sig);
+    EXPECT_EQ(nullptr, signals_[0].sig);
+    EXPECT_EQ(nullptr, signals_[1].sig);
+    EXPECT_EQ(nullptr, signals_[2].sig);
     EXPECT_EQ(1, signals_[0].set);
     EXPECT_EQ(-1, signals_[1].set);
-    EXPECT_EQ(0, signals_[2].set);
+    EXPECT_EQ(nullptr, signals_[2].set);
 }
 
 TEST_F(SignalTest, NonLocalSignalPropagatesWhenBothTakePlace)
@@ -165,12 +165,12 @@ TEST_F(SignalTest, NonLocalSignalPropagatesWhenBothTakePlace)
     EXPECT_NE(0, signaller.getCommunicationBuffer().size());
     // Can't call finalizeSignals without a full commrec
     signaller.setSignals();
-    EXPECT_EQ(0, signals_[0].sig);
-    EXPECT_EQ(0, signals_[1].sig);
-    EXPECT_EQ(0, signals_[2].sig);
+    EXPECT_EQ(nullptr, signals_[0].sig);
+    EXPECT_EQ(nullptr, signals_[1].sig);
+    EXPECT_EQ(nullptr, signals_[2].sig);
     EXPECT_EQ(1, signals_[0].set);
     EXPECT_EQ(-1, signals_[1].set);
-    EXPECT_EQ(0, signals_[2].set);
+    EXPECT_EQ(nullptr, signals_[2].set);
 }
 
 } // namespace

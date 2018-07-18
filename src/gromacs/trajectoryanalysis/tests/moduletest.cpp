@@ -233,7 +233,7 @@ AbstractTrajectoryAnalysisModuleTestFixture::runTest(const CommandLine &args)
             TrajectoryAnalysisCommandLineRunner::createModule(std::move(impl_->module_)));
     int rc = 0;
     EXPECT_NO_THROW_GMX(rc = CommandLineTestHelper::runModuleDirect(std::move(runner), &cmdline));
-    EXPECT_EQ(0, rc);
+    EXPECT_EQ(nullptr, rc);
 
     checkOutputFiles();
 }

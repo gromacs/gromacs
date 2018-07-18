@@ -476,7 +476,7 @@ void NeighborhoodSearchTest::testNearestPoint(
         if (pair.isValid())
         {
             EXPECT_EQ(i->refNearestPoint, pair.refIndex());
-            EXPECT_EQ(0, pair.testIndex());
+            EXPECT_EQ(nullptr, pair.testIndex());
             EXPECT_REAL_EQ_TOL(i->refMinDist, std::sqrt(pair.distance2()), data.relativeTolerance());
         }
         else
@@ -1093,7 +1093,7 @@ TEST_F(NeighborhoodSearchTest, HandlesConcurrentSearches)
     gmx::AnalysisNeighborhoodPair pair;
     ASSERT_TRUE(pairSearch1.findNextPair(&pair))
     << "Test data did not contain any pairs for position 0 (problem in the test).";
-    EXPECT_EQ(0, pair.testIndex());
+    EXPECT_EQ(nullptr, pair.testIndex());
     {
         NeighborhoodSearchTestData::RefPair searchPair(pair.refIndex(), std::sqrt(pair.distance2()));
         EXPECT_TRUE(data.containsPair(0, searchPair));

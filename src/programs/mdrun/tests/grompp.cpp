@@ -62,7 +62,7 @@ class GromppTest :
         void runTest()
         {
             runner_.useTopGroAndNdxFromDatabase("spc-and-methanol");
-            EXPECT_EQ(0, runner_.callGrompp());
+            EXPECT_EQ(nullptr, runner_.callGrompp());
         }
 };
 

@@ -142,7 +142,7 @@ const int       sanePmeOrder = 4;
 //! Sane grid size
 const IVec      saneGridSize = {32, 25, 47};
 /*! \brief Hand-picked invalid input for the exception tests */
-static std::vector<BSplineModuliInputParameters> const invalidInputs
+std::vector<BSplineModuliInputParameters> const invalidInputs
 {
     /* Invalid grid sizes */
     BSplineModuliInputParameters {
@@ -175,7 +175,7 @@ INSTANTIATE_TEST_CASE_P(InsaneInput, PmeBSplineModuliFailureTest, ::testing::Val
 /* Valid input instances */
 
 //! A couple of valid inputs for grid sizes. It is good to test both even and odd dimensions.
-static std::vector<IVec> const sampleGridSizes
+std::vector<IVec> const sampleGridSizes
 {
     IVec {
         64, 32, 64

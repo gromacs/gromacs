@@ -66,14 +66,14 @@ TEST_P(MdrunRerun, WithDifferentInputFormats)
 {
     runner_.useEmptyMdpFile();
     runner_.useTopGroAndNdxFromDatabase("spc2");
-    EXPECT_EQ(0, runner_.callGrompp());
+    EXPECT_EQ(nullptr, runner_.callGrompp());
 
-    std::string rerunFileName = fileManager_.getInputFilePath(GetParam());
+    std::string rerunFileName = gmx::test::TestFileManager::getInputFilePath(GetParam());
 
     ::gmx::test::CommandLine rerunCaller;
     rerunCaller.append("mdrun");
     rerunCaller.addOption("-rerun", rerunFileName);
-    ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
+    ASSERT_EQ(nullptr, runner_.callMdrun(rerunCaller));
 }
 
 /*! \brief Helper array of input files present in the source repo

@@ -64,7 +64,8 @@ TEST(UniformIntDistributionTest, Output)
     gmx::UniformIntDistribution<int>        dist(1, 1000);
     std::vector<int>                        result;
 
-    for (int i = 0; i < 10; i++)
+    result.reserve(10);
+for (int i = 0; i < 10; i++)
     {
         result.push_back(dist(rng));
     }

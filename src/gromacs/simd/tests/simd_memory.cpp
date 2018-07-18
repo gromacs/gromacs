@@ -81,7 +81,7 @@ TEST(EmptyArrayRefTest, IsEmpty)
     EmptyArrayRef      emptyArray = {};
     ArrayRef<SimdReal> empty(emptyArray);
 
-    EXPECT_EQ(0U, empty.size());
+    EXPECT_EQ(nullptr, empty.size());
     EXPECT_TRUE(empty.empty());
 }
 

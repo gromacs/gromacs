@@ -73,7 +73,7 @@ class GenconfTest : public gmx::test::CommandLineTestBase
             gmx::test::TestReferenceChecker rootChecker(this->rootChecker());
             rootChecker.checkString(args.toString(), "CommandLine");
 
-            ASSERT_EQ(0, gmx_genconf(cmdline.argc(), cmdline.argv()));
+            ASSERT_EQ(nullptr, gmx_genconf(cmdline.argc(), cmdline.argv()));
 
             checkOutputFiles();
         }

@@ -191,7 +191,7 @@ TEST(MutexTaskTest, MutualExclusionWorksWithLock)
         // other thread's lock can get the mutex.
         Lock guard(g_sharedValueMutex);
         result = std::async(std::launch::async, updateSharedValueWithLock);
-        EXPECT_EQ(0, g_sharedValue) << "Task should not have run yet";
+        EXPECT_EQ(nullptr, g_sharedValue) << "Task should not have run yet";
     }
     EXPECT_EQ(1, result.get()) << "Task should have run";
     EXPECT_EQ(1, g_sharedValue) << "Shared value should be updated";
@@ -208,11 +208,11 @@ TEST(MutexTaskTest, MutualExclusionWorksWithTryLockOnOtherThread)
         // by leaving the scope.
         Lock guard(g_sharedValueMutex);
         auto result = std::async(std::launch::async, updateSharedValueWithTryLock);
-        EXPECT_EQ(0, g_sharedValue) << "Data race detected";
+        EXPECT_EQ(nullptr, g_sharedValue) << "Data race detected";
         EXPECT_EQ(-1, result.get()) << "The try_lock should fail";
-        EXPECT_EQ(0, g_sharedValue) << "Task should not have run";
+        EXPECT_EQ(nullptr, g_sharedValue) << "Task should not have run";
     }
-    EXPECT_EQ(0, g_sharedValue) << "Mutex release can't affect the protected value";
+    EXPECT_EQ(nullptr, g_sharedValue) << "Mutex release can't affect the protected value";
 }
 
 TEST(MutexTaskTest, MutualExclusionWorksWithTryLockOnSameThread)

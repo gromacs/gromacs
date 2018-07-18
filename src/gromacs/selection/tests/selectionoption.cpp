@@ -452,7 +452,7 @@ TEST_F(SelectionFileOptionTest, HandlesSingleSelectionOptionFromFile)
     ASSERT_EQ(2U, sel.size());
     EXPECT_STREQ("resname RA RB", sel[0].selectionText());
     EXPECT_STREQ("resname RB RC", sel[1].selectionText());
-    ASSERT_EQ(0U, reqsel.size());
+    ASSERT_EQ(nullptr, reqsel.size());
 }
 
 

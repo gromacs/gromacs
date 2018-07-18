@@ -79,7 +79,7 @@ TEST_F(CommandLineHelpModuleTest, PrintsGeneralHelp)
     addHelpTopic("topic", "Test topic");
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
-    ASSERT_EQ(0, rc);
+    ASSERT_EQ(nullptr, rc);
     checkRedirectedOutput();
 }
 
@@ -98,7 +98,7 @@ TEST_F(CommandLineHelpModuleTest, PrintsHelpOnTopic)
     EXPECT_CALL(topic, writeHelp(_));
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
-    ASSERT_EQ(0, rc);
+    ASSERT_EQ(nullptr, rc);
     checkRedirectedOutput();
 }
 
@@ -153,7 +153,7 @@ TEST_F(CommandLineHelpModuleTest, ExportsHelp)
     EXPECT_CALL(topic2, writeHelp(_));
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
-    ASSERT_EQ(0, rc);
+    ASSERT_EQ(nullptr, rc);
     checkRedirectedOutput();
     std::remove("links.dat");
 }

@@ -73,13 +73,13 @@ void TpiTest::runTest()
 {
     runner_.useTopGroAndNdxFromDatabase("spc216_with_methane");
     runner_.ndxFileName_ = "";
-    ASSERT_EQ(0, runner_.callGrompp());
+    ASSERT_EQ(nullptr, runner_.callGrompp());
 
-    auto        rerunFileName = fileManager_.getInputFilePath("spc216.gro");
+    auto        rerunFileName = gmx::test::TestFileManager::getInputFilePath("spc216.gro");
     CommandLine commandLine;
     commandLine.append("-rerun");
     commandLine.append(rerunFileName);
-    ASSERT_EQ(0, runner_.callMdrun(commandLine));
+    ASSERT_EQ(nullptr, runner_.callMdrun(commandLine));
 
     const std::string    logFileContexts = TextReader::readFileToString(runner_.logFileName_);
     const std::string    tpiOutputs      = logFileContexts.substr(logFileContexts.find("Started Test Particle Insertion"));

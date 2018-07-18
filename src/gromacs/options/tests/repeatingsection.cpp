@@ -78,7 +78,7 @@ TEST(RepeatingOptionSectionTest, HandlesNoInstance)
     EXPECT_NO_THROW_GMX(assigner.finish());
     EXPECT_NO_THROW_GMX(options.finish());
 
-    EXPECT_EQ(0U, values.size());
+    EXPECT_EQ(nullptr, values.size());
 }
 
 TEST(RepeatingOptionSectionTest, HandlesNoInstanceWithRequiredOption)
@@ -97,7 +97,7 @@ TEST(RepeatingOptionSectionTest, HandlesNoInstanceWithRequiredOption)
     EXPECT_NO_THROW_GMX(assigner.finish());
     EXPECT_NO_THROW_GMX(options.finish());
 
-    EXPECT_EQ(0U, values.size());
+    EXPECT_EQ(nullptr, values.size());
 }
 
 TEST(RepeatingOptionSectionTest, HandlesSingleInstance)
@@ -200,7 +200,7 @@ TEST(RepeatingOptionSectionTest, HandlesUnsetOptionWithImplicitDefault)
 
     ASSERT_EQ(2U, values.size());
     EXPECT_EQ(4, values[0].value);
-    EXPECT_EQ(0, values[1].value);
+    EXPECT_EQ(nullptr, values[1].value);
 }
 
 TEST(RepeatingOptionSectionTest, HandlesUnsetOptionWithExplicitDefault)

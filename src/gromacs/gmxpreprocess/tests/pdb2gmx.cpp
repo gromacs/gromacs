@@ -96,7 +96,7 @@ class Pdb2gmxTest : public gmx::test::CommandLineTestBase,
             CommandLine &cmdline = commandLine();
             cmdline.merge(args);
 
-            ASSERT_EQ(0, gmx_pdb2gmx(cmdline.argc(), cmdline.argv()));
+            ASSERT_EQ(nullptr, gmx_pdb2gmx(cmdline.argc(), cmdline.argv()));
             checkOutputFiles();
         }
         FilteringExactTextMatch textMatcher_;

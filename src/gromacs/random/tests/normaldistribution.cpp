@@ -64,7 +64,8 @@ TEST(NormalDistributionTest, Output)
     gmx::NormalDistribution<real>       dist(2.0, 5.0);
     std::vector<real>                   result;
 
-    for (int i = 0; i < 10; i++)
+    result.reserve(10);
+for (int i = 0; i < 10; i++)
     {
         result.push_back(dist(rng));
     }

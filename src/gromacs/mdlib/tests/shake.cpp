@@ -220,7 +220,7 @@ class ShakeTest : public ::testing::Test
             std::vector<real> finalDistancesSquared = computeDistancesSquared(finalDisplacements);
             assert(numConstraints == finalDistancesSquared.size());
 
-            EXPECT_EQ(0, numErrors);
+            EXPECT_EQ(nullptr, numErrors);
             EXPECT_GT(numIterations, 1);
             EXPECT_LT(numIterations, ShakeTest::maxNumIterations_);
             // TODO wrap this in a Google Mock matcher if there's

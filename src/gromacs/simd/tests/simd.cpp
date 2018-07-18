@@ -135,9 +135,9 @@ TEST(SimdTest, GmxAligned)
     std::uint64_t addr2 = reinterpret_cast<std::uint64_t>(&r2);
     std::uint64_t addr3 = reinterpret_cast<std::uint64_t>(&r3);
 
-    EXPECT_EQ(0, addr1 % GMX_SIMD_ALIGNMENT);
+    EXPECT_EQ(nullptr, addr1 % GMX_SIMD_ALIGNMENT);
     EXPECT_NE(0, addr2); // Just so r2 is not optimized away
-    EXPECT_EQ(0, addr3 % GMX_SIMD_ALIGNMENT);
+    EXPECT_EQ(nullptr, addr3 % GMX_SIMD_ALIGNMENT);
 
     alignas(GMX_SIMD_ALIGNMENT) std::int32_t         i1;
     std::int32_t                                     i2;
@@ -147,9 +147,9 @@ TEST(SimdTest, GmxAligned)
     addr2 = reinterpret_cast<std::uint64_t>(&i2);
     addr3 = reinterpret_cast<std::uint64_t>(&i3);
 
-    EXPECT_EQ(0, addr1 % GMX_SIMD_ALIGNMENT);
+    EXPECT_EQ(nullptr, addr1 % GMX_SIMD_ALIGNMENT);
     EXPECT_NE(0, addr2); // Just so i2 is not optimized away
-    EXPECT_EQ(0, addr3 % GMX_SIMD_ALIGNMENT);
+    EXPECT_EQ(nullptr, addr3 % GMX_SIMD_ALIGNMENT);
 }
 
 

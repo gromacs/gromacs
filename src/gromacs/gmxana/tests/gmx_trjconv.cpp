@@ -71,7 +71,7 @@ class TrjconvWithIndexGroupSubset : public gmx::test::CommandLineTestBase,
                has only 3 of the 6 atoms (which it does), but the
                infrastructure for doing that automatically is still
                being built. This would also fix the TODO below. */
-            ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
+            ASSERT_EQ(nullptr, gmx_trjconv(cmdline.argc(), cmdline.argv()));
         }
 };
 /* TODO These tests are actually not very effective, because trjconv

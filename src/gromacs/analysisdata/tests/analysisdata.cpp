@@ -77,10 +77,10 @@ TEST(AnalysisDataInitializationTest, BasicInitialization)
 {
     gmx::AnalysisData data;
     EXPECT_EQ(1, data.dataSetCount());
-    EXPECT_EQ(0, data.columnCount(0));
-    EXPECT_EQ(0, data.columnCount());
+    EXPECT_EQ(nullptr, data.columnCount(0));
+    EXPECT_EQ(nullptr, data.columnCount());
     EXPECT_FALSE(data.isMultipoint());
-    EXPECT_EQ(0, data.frameCount());
+    EXPECT_EQ(nullptr, data.frameCount());
 
     data.setColumnCount(0, 1);
     EXPECT_EQ(1, data.columnCount(0));
@@ -91,7 +91,7 @@ TEST(AnalysisDataInitializationTest, BasicInitialization)
     EXPECT_EQ(2, data.dataSetCount());
     data.setColumnCount(0, 3);
     EXPECT_EQ(3, data.columnCount(0));
-    EXPECT_EQ(0, data.columnCount(1));
+    EXPECT_EQ(nullptr, data.columnCount(1));
     data.setColumnCount(1, 2);
     EXPECT_EQ(3, data.columnCount(0));
     EXPECT_EQ(2, data.columnCount(1));

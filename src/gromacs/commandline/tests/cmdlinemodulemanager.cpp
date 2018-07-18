@@ -76,7 +76,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModule)
         .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
-    ASSERT_EQ(0, rc);
+    ASSERT_EQ(nullptr, rc);
 }
 
 TEST_F(CommandLineModuleManagerTest, RunsModuleHelp)
@@ -93,7 +93,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelp)
     mod1.setExpectedDisplayName("test module");
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
-    ASSERT_EQ(0, rc);
+    ASSERT_EQ(nullptr, rc);
 }
 
 TEST_F(CommandLineModuleManagerTest, RunsModuleHelpAfterQuiet)
@@ -110,7 +110,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelpAfterQuiet)
     mod1.setExpectedDisplayName("test module");
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
-    ASSERT_EQ(0, rc);
+    ASSERT_EQ(nullptr, rc);
 }
 
 TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashH)
@@ -127,7 +127,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashH)
     mod1.setExpectedDisplayName("test module");
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
-    ASSERT_EQ(0, rc);
+    ASSERT_EQ(nullptr, rc);
 }
 
 TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashHWithSingleModule)
@@ -144,7 +144,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashHWithSingleModule)
     mod.setExpectedDisplayName("g_module");
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
-    ASSERT_EQ(0, rc);
+    ASSERT_EQ(nullptr, rc);
 }
 
 TEST_F(CommandLineModuleManagerTest, HandlesConflictingBinaryAndModuleNames)
@@ -164,7 +164,7 @@ TEST_F(CommandLineModuleManagerTest, HandlesConflictingBinaryAndModuleNames)
         .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
-    ASSERT_EQ(0, rc);
+    ASSERT_EQ(nullptr, rc);
 }
 
 } // namespace

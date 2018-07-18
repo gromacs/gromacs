@@ -57,7 +57,6 @@
 
 #include "testutils/cmdlinetest.h"
 
-using gmx::test::CommandLine;
 using gmx::Path;
 
 #if GMX_NATIVE_WINDOWS || GMX_CYGWIN

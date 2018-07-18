@@ -72,7 +72,7 @@ class SolvateTest : public gmx::test::CommandLineTestBase
             CommandLine &cmdline = commandLine();
             cmdline.merge(args);
 
-            ASSERT_EQ(0, gmx_solvate(cmdline.argc(), cmdline.argv()));
+            ASSERT_EQ(nullptr, gmx_solvate(cmdline.argc(), cmdline.argv()));
             checkOutputFiles();
         }
 };

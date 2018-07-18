@@ -69,9 +69,9 @@ TEST_F(DomainDecompositionSpecialCasesTest, AnEmptyDomainWorks)
      * TODO Maybe refactor to avoid over-writing the .gro filename set
      * above. */
     runner_.useGroFromDatabase("spc2_and_vacuum");
-    ASSERT_EQ(0, runner_.callGrompp());
+    ASSERT_EQ(nullptr, runner_.callGrompp());
 
-    ASSERT_EQ(0, runner_.callMdrun());
+    ASSERT_EQ(nullptr, runner_.callMdrun());
 }
 
 } // namespace

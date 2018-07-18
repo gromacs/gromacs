@@ -65,7 +65,7 @@ class GmxTraj : public gmx::test::CommandLineTestBase,
             gmx::test::StdioTestHelper stdioHelper(&fileManager());
             stdioHelper.redirectStringToStdin("0\n");
 
-            ASSERT_EQ(0, gmx_traj(cmdline.argc(), cmdline.argv()));
+            ASSERT_EQ(nullptr, gmx_traj(cmdline.argc(), cmdline.argv()));
         }
 };
 

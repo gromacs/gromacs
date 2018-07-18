@@ -96,7 +96,7 @@ TEST(SimdScalarTest, setZero)
 {
     real val = setZero();
 
-    EXPECT_EQ(0, val);
+    EXPECT_EQ(nullptr, val);
 }
 
 TEST(SimdScalarTest, andNot)
@@ -301,12 +301,12 @@ TEST(SimdScalarTest, testBitsI)
 TEST(SimdScalarTest, selectByMaskI)
 {
     EXPECT_EQ(5, selectByMask(5, true));
-    EXPECT_EQ(0, selectByMask(5, false));
+    EXPECT_EQ(nullptr, selectByMask(5, false));
 }
 
 TEST(SimdScalarTest, selectByNotMaskI)
 {
-    EXPECT_EQ(0, selectByNotMask(5, true));
+    EXPECT_EQ(nullptr, selectByNotMask(5, true));
     EXPECT_EQ(5, selectByNotMask(5, false));
 }
 

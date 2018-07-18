@@ -72,7 +72,7 @@ TEST(FloatingPointDifferenceTest, HandlesEqualValues)
     EXPECT_TRUE(diff.isDouble());
     EXPECT_FALSE(diff.isNaN());
     EXPECT_EQ(0.0, diff.asAbsolute());
-    EXPECT_EQ(0U,  diff.asUlps());
+    EXPECT_EQ(nullptr,  diff.asUlps());
     EXPECT_FALSE(diff.signsDiffer());
 }
 
@@ -83,7 +83,7 @@ TEST(FloatingPointDifferenceTest, HandlesFloatValues)
     EXPECT_FALSE(diff.isDouble());
     EXPECT_FALSE(diff.isNaN());
     EXPECT_EQ(0.0, diff.asAbsolute());
-    EXPECT_EQ(0U,  diff.asUlps());
+    EXPECT_EQ(nullptr,  diff.asUlps());
     EXPECT_FALSE(diff.signsDiffer());
 }
 
@@ -92,7 +92,7 @@ TEST(FloatingPointDifferenceTest, HandlesZerosOfDifferentSign)
     FloatingPointDifference diff(0.0, GMX_DOUBLE_NEGZERO);
     EXPECT_FALSE(diff.isNaN());
     EXPECT_EQ(0.0, diff.asAbsolute());
-    EXPECT_EQ(0U,  diff.asUlps());
+    EXPECT_EQ(nullptr,  diff.asUlps());
     EXPECT_TRUE(diff.signsDiffer());
 }
 

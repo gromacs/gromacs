@@ -90,7 +90,7 @@ TEST_F(ImdTest, ImdCanRun)
     )";
     runner_.useStringAsMdpFile(mdpContents);
 
-    EXPECT_EQ(0, runner_.callGrompp());
+    EXPECT_EQ(nullptr, runner_.callGrompp());
 
     ::gmx::test::CommandLine imdCaller;
     imdCaller.addOption("-imdport", 0); // automatically assign a free port
@@ -99,7 +99,7 @@ TEST_F(ImdTest, ImdCanRun)
     imdCaller.append("-noimdterm");
 
     // Do an mdrun with IMD enabled
-    ASSERT_EQ(0, runner_.callMdrun(imdCaller));
+    ASSERT_EQ(nullptr, runner_.callMdrun(imdCaller));
 }
 
 

@@ -91,9 +91,9 @@ TEST_P(MultiSimTest, ExitsNormallyWithDifferentNumbersOfStepsPerSimulation)
     organizeMdpFile(&runner, pcoupl, numSteps);
     /* Call grompp on every rank - the standard callGrompp() only runs
        grompp on rank 0. */
-    EXPECT_EQ(0, runner.callGromppOnThisRank());
+    EXPECT_EQ(nullptr, runner.callGromppOnThisRank());
 
-    ASSERT_EQ(0, runner.callMdrun(*mdrunCaller_));
+    ASSERT_EQ(nullptr, runner.callMdrun(*mdrunCaller_));
 }
 
 /* Note, not all preprocessor implementations nest macro expansions

@@ -184,7 +184,7 @@ TEST(OptionsAssignerTest, HandlesExtraValue)
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options.finish());
 
-    EXPECT_EQ(0, value1);
+    EXPECT_EQ(nullptr, value1);
 }
 
 TEST(OptionsAssignerTest, HandlesGroups)

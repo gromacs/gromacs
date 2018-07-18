@@ -75,15 +75,15 @@ TEST_P(MdrunCompressedXOutput, ExitsNormally)
     mdpFile += compressedXGrpsLine;
     runner_.useStringAsMdpFile(mdpFile.c_str());
     runner_.useTopGroAndNdxFromDatabase("spc2");
-    ASSERT_EQ(0, runner_.callGrompp());
+    ASSERT_EQ(nullptr, runner_.callGrompp());
 
     runner_.reducedPrecisionTrajectoryFileName_ = fileManager_.getTemporaryFilePath(".xtc");
-    ASSERT_EQ(0, runner_.callMdrun());
+    ASSERT_EQ(nullptr, runner_.callMdrun());
 
     ::gmx::test::CommandLine checkCaller;
     checkCaller.append("check");
     checkCaller.addOption("-f", runner_.reducedPrecisionTrajectoryFileName_);
-    ASSERT_EQ(0, gmx_check(checkCaller.argc(), checkCaller.argv()));
+    ASSERT_EQ(nullptr, gmx_check(checkCaller.argc(), checkCaller.argv()));
 }
 
 INSTANTIATE_TEST_CASE_P(WithDifferentOutputGroupSettings, MdrunCompressedXOutput,

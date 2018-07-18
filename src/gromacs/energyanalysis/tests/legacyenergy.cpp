@@ -74,7 +74,7 @@ class DhdlTest : public CommandLineTestBase
             setInputFile("-f", "dhdl.edr");
             setOutputFile("-odh", "dhdl.xvg", XvgMatch());
 
-            ASSERT_EQ(0, gmx_energy(cmdline.argc(), cmdline.argv()));
+            ASSERT_EQ(nullptr, gmx_energy(cmdline.argc(), cmdline.argv()));
 
             checkOutputFiles();
         }
@@ -105,7 +105,7 @@ class OriresTest : public CommandLineTestBase
 
             StdioTestHelper stdioHelper(&fileManager());
             stdioHelper.redirectStringToStdin(stringForStdin);
-            ASSERT_EQ(0, gmx_nmr(cmdline.argc(), cmdline.argv()));
+            ASSERT_EQ(nullptr, gmx_nmr(cmdline.argc(), cmdline.argv()));
 
             checkOutputFiles();
         }
@@ -128,7 +128,7 @@ class EnergyTest : public CommandLineTestBase
 
             StdioTestHelper stdioHelper(&fileManager());
             stdioHelper.redirectStringToStdin(stringForStdin);
-            ASSERT_EQ(0, gmx_energy(cmdline.argc(), cmdline.argv()));
+            ASSERT_EQ(nullptr, gmx_energy(cmdline.argc(), cmdline.argv()));
 
             // All the .edr files used in the tests contain only
             // single-precision values, so even from a
@@ -180,7 +180,7 @@ class ViscosityTest : public CommandLineTestBase
                 setOutputFile("-corr", "corr.xvg", NoTextMatch());
             }
 
-            ASSERT_EQ(0, gmx_energy(cmdline.argc(), cmdline.argv()));
+            ASSERT_EQ(nullptr, gmx_energy(cmdline.argc(), cmdline.argv()));
 
             checkOutputFiles();
         }

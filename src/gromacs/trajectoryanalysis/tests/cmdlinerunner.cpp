@@ -96,7 +96,7 @@ class TrajectoryAnalysisCommandLineRunnerTest : public gmx::test::CommandLineTes
         {
             CommandLine &cmdline = commandLine();
             cmdline.merge(args);
-            ASSERT_EQ(0, gmx::test::CommandLineTestHelper::runModuleDirect(createRunner(), &cmdline));
+            ASSERT_EQ(nullptr, gmx::test::CommandLineTestHelper::runModuleDirect(createRunner(), &cmdline));
         }
 
         std::unique_ptr<MockModule> mockModule_;

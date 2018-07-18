@@ -75,7 +75,7 @@ TEST_F(MdrunTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts
     TerminationHelper helper(&fileManager_, &mdrunCaller, &runner_);
 
     organizeMdpFile(&runner_);
-    EXPECT_EQ(0, runner_.callGrompp());
+    EXPECT_EQ(nullptr, runner_.callGrompp());
 
     helper.runFirstMdrun(runner_.cptFileName_);
     helper.runSecondMdrun();
@@ -88,7 +88,7 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWorksWithNoAppend)
     TerminationHelper helper(&fileManager_, &mdrunCaller, &runner_);
 
     organizeMdpFile(&runner_);
-    EXPECT_EQ(0, runner_.callGrompp());
+    EXPECT_EQ(nullptr, runner_.callGrompp());
 
     helper.runFirstMdrun(runner_.cptFileName_);
     helper.runSecondMdrunWithNoAppend();
