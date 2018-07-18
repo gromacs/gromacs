@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,18 +61,16 @@ namespace test
 /*! \cond internal */
 /*! \addtogroup module_simd */
 /*! \{ */
-extern const real czero; //!< Value 0.0 in real precision
-extern const real c0;    //!< Random fp value using entire mantissa
-extern const real c1;    //!< Random fp value using entire mantissa
-extern const real c2;    //!< Random fp value using entire mantissa
-extern const real c3;    //!< Random fp value using entire mantissa
-extern const real c4;    //!< Random fp value using entire mantissa
-extern const real c5;    //!< Random fp value using entire mantissa
-extern const real c5;    //!< Random fp value using entire mantissa
-extern const real c6;    //!< Random fp value using entire mantissa
-extern const real c7;    //!< Random fp value using entire mantissa
-extern const real c8;    //!< Random fp value using entire mantissa
-extern const real c9;    //!< Random fp value using entire mantissa
+constexpr real czero = 0.0;             //!< zero
+constexpr real c0    = 0.0 + 1.0/3.0;   //!< test constant
+constexpr real c1    = 1.0 + 5.0/7.0;   //!< test constant
+constexpr real c2    = 2.0 + 9.0/13.0;  //!< test constant
+constexpr real c3    = 3.0 + 17.0/19.0; //!< test constant
+constexpr real c4    = 4.0 + 23.0/29.0; //!< test constant
+constexpr real c5    = 5.0 + 31.0/37.0; //!< test constant
+constexpr real c6    = 6.0 + 41.0/43.0; //!< test constant
+constexpr real c7    = 7.0 + 47.0/53.0; //!< test constant
+constexpr real c8    = 8.0 + 59.0/61.0; //!< test constant
 
 /*! \} */
 /*! \endcond */

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 #include <memory>
 #include <string>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx
@@ -62,7 +63,7 @@ class ReferenceDataEntry
 
         static EntryPointer createRoot()
         {
-            return EntryPointer(new ReferenceDataEntry("", ""));
+            return gmx::compat::make_unique<ReferenceDataEntry>("", "");
         }
 
         ReferenceDataEntry(const char *type, const char *id)
