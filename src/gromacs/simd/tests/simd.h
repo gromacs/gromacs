@@ -189,7 +189,7 @@ class SimdTest : public SimdBaseTest
 
             ::testing::AssertionResult
         compareSimdRealUlp(const char * refExpr, const char * tstExpr,
-                           const SimdReal ref, const SimdReal tst);
+                           SimdReal ref, SimdReal tst);
 
         /*! \brief Compare two real SIMD variables for exact equality.
          *
@@ -205,7 +205,7 @@ class SimdTest : public SimdBaseTest
          */
         ::testing::AssertionResult
         compareSimdEq(const char * refExpr, const char * tstExpr,
-                      const SimdReal ref, const SimdReal tst);
+                      SimdReal ref, SimdReal tst);
 
         /*! \brief Compare two 32-bit integer SIMD variables.
          *
@@ -221,7 +221,7 @@ class SimdTest : public SimdBaseTest
          */
         ::testing::AssertionResult
         compareSimdEq(const char * refExpr, const char *  tstExpr,
-                      const SimdInt32 ref, const SimdInt32 tst);
+                      SimdInt32 ref, SimdInt32 tst);
 #endif
 };
 
@@ -230,7 +230,7 @@ class SimdTest : public SimdBaseTest
  *
  * The returned vector will have the same length as the SIMD width.
  */
-std::vector<real> simdReal2Vector(const SimdReal simd);
+std::vector<real> simdReal2Vector(SimdReal simd);
 
 /*! \brief Return floating-point SIMD value from std::vector<real>.
  *
@@ -268,7 +268,7 @@ SimdReal   setSimdRealFrom1R(real value);
  *
  * The returned vector will have the same length as the SIMD width.
  */
-std::vector<std::int32_t>   simdInt2Vector(const SimdInt32 simd);
+std::vector<std::int32_t>   simdInt2Vector(SimdInt32 simd);
 
 /*! \brief Return 32-bit integer SIMD value from std::vector<int>.
  *

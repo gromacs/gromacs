@@ -162,7 +162,7 @@ SimdMathTest::compareSimdMathFunction(const char              * refFuncExpr,
                 }
             }
 
-            absDiff = fabs(vref[i]-vtst[i]);
+            absDiff = std::fabs(vref[i]-vtst[i]);
             absOk   = absOk  && ( absDiff < absTol_ );
             signOk  = signOk && ( (vref[i] >= 0 && vtst[i] >= 0) ||
                                   (vref[i] <= 0 && vtst[i] <= 0));
@@ -186,7 +186,7 @@ SimdMathTest::compareSimdMathFunction(const char              * refFuncExpr,
                 }
             }
         }
-        if ( (absOk == false) && (signOk == false) )
+        if ( (!absOk) && (!signOk) )
         {
             return ::testing::AssertionFailure()
                    << "Failing SIMD math function comparison due to sign differences." << std::endl
@@ -241,7 +241,7 @@ TEST_F(SimdMathTest, copysign)
 }
 
 /*! \brief Function wrapper to evaluate reference 1/sqrt(x) */
-static real
+real
 refInvsqrt(real x)
 {
     return 1.0/std::sqrt(x);
@@ -291,15 +291,14 @@ TEST_F(SimdMathTest, invsqrtPair)
 }
 
 /*! \brief Function wrapper to evaluate reference sqrt(x) */
-static real
+real
 refSqrt(real x)
 {
     return std::sqrt(x);
 }
 
 /*! \brief Dummy function returning 0.0 to test function ranges that should be zero */
-gmx_unused static real
-refZero(real gmx_unused x)
+gmx_unused real refZero(real gmx_unused x)
 {
     return 0.0;
 }
@@ -664,7 +663,7 @@ TEST_F(SimdMathTest, pmePotentialCorrection)
 TEST_F(SimdMathTest, invsqrtSingleAccuracy)
 {
     /* Increase the allowed error by the difference between the actual precision and single */
-    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTolSingleAccuracy(ulpTol_);
 
     setRange(1.01*GMX_FLOAT_MIN, GMX_FLOAT_MAX);
     GMX_EXPECT_SIMD_FUNC_NEAR(refInvsqrt, invsqrtSingleAccuracy);
@@ -691,7 +690,7 @@ tst_invsqrt_SingleAccuracy_pair1(SimdReal x)
 TEST_F(SimdMathTest, invsqrtPairSingleAccuracy)
 {
     /* Increase the allowed error by the difference between the actual precision and single */
-    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTolSingleAccuracy(ulpTol_);
 
     setRange(1.01*GMX_FLOAT_MIN, GMX_FLOAT_MAX);
     GMX_EXPECT_SIMD_FUNC_NEAR(refInvsqrt, tst_invsqrt_SingleAccuracy_pair0);
@@ -701,7 +700,7 @@ TEST_F(SimdMathTest, invsqrtPairSingleAccuracy)
 TEST_F(SimdMathTest, sqrtSingleAccuracy)
 {
     /* Increase the allowed error by the difference between the actual precision and single */
-    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTolSingleAccuracy(ulpTol_);
 
     // First test that 0.0 and a few other values works
     GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(0, std::sqrt(c0), std::sqrt(c1)), sqrtSingleAccuracy(setSimdRealFrom3R(0, c0, c1)));
@@ -721,7 +720,7 @@ TEST_F(SimdMathTest, sqrtSingleAccuracy)
 TEST_F(SimdMathTest, sqrtSingleAccuracyUnsafe)
 {
     /* Increase the allowed error by the difference between the actual precision and single */
-    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTolSingleAccuracy(ulpTol_);
 
     // Test the full range
     setRange(GMX_FLOAT_MIN, GMX_FLOAT_MAX);
@@ -731,7 +730,7 @@ TEST_F(SimdMathTest, sqrtSingleAccuracyUnsafe)
 TEST_F(SimdMathTest, invSingleAccuracy)
 {
     /* Increase the allowed error by the difference between the actual precision and single */
-    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTolSingleAccuracy(ulpTol_);
 
     // test <0
     setRange(-1e10, -1e-10);
@@ -743,7 +742,7 @@ TEST_F(SimdMathTest, invSingleAccuracy)
 TEST_F(SimdMathTest, logSingleAccuracy)
 {
     /* Increase the allowed error by the difference between the actual precision and single */
-    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTolSingleAccuracy(ulpTol_);
 
     setRange(1e-30, 1e30);
     GMX_EXPECT_SIMD_FUNC_NEAR(std::log, logSingleAccuracy);
@@ -752,7 +751,7 @@ TEST_F(SimdMathTest, logSingleAccuracy)
 TEST_F(SimdMathTest, exp2SingleAccuracy)
 {
     /* Increase the allowed error by the difference between the actual precision and single */
-    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTolSingleAccuracy(ulpTol_);
 
 #if GMX_DOUBLE
     setRange(-1022.49, 1023.49);
@@ -780,7 +779,7 @@ TEST_F(SimdMathTest, exp2SingleAccuracy)
 TEST_F(SimdMathTest, exp2SingleAccuracyUnsafe)
 {
     /* Increase the allowed error by the difference between the actual precision and single */
-    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTolSingleAccuracy(ulpTol_);
 
 #if GMX_DOUBLE
     setRange(-1022.49, 1023.49);
@@ -793,7 +792,7 @@ TEST_F(SimdMathTest, exp2SingleAccuracyUnsafe)
 TEST_F(SimdMathTest, expSingleAccuracy)
 {
     /* Increase the allowed error by the difference between the actual precision and single */
-    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTolSingleAccuracy(ulpTol_);
 
 #if GMX_DOUBLE
     setRange(-708.7, 709.4);
@@ -823,7 +822,7 @@ TEST_F(SimdMathTest, expSingleAccuracy)
 TEST_F(SimdMathTest, expSingleAccuracyUnsafe)
 {
     /* Increase the allowed error by the difference between the actual precision and single */
-    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTolSingleAccuracy(ulpTol_);
 
 #if GMX_DOUBLE
     setRange(-708.7, 709.4);
@@ -836,7 +835,7 @@ TEST_F(SimdMathTest, expSingleAccuracyUnsafe)
 TEST_F(SimdMathTest, erfSingleAccuracy)
 {
     /* Increase the allowed error by the difference between the actual precision and single */
-    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTolSingleAccuracy(ulpTol_);
 
     setRange(-9, 9);
     setAbsTol(GMX_REAL_MIN);
@@ -846,7 +845,7 @@ TEST_F(SimdMathTest, erfSingleAccuracy)
 TEST_F(SimdMathTest, erfcSingleAccuracy)
 {
     /* Increase the allowed error by the difference between the actual precision and single */
-    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTolSingleAccuracy(ulpTol_);
 
     setRange(-9, 9);
     setAbsTol(GMX_REAL_MIN);
@@ -859,7 +858,7 @@ TEST_F(SimdMathTest, erfcSingleAccuracy)
 TEST_F(SimdMathTest, sinSingleAccuracy)
 {
     /* Increase the allowed error by the difference between the actual precision and single */
-    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTolSingleAccuracy(ulpTol_);
 
     setRange(-8*M_PI, 8*M_PI);
     GMX_EXPECT_SIMD_FUNC_NEAR(std::sin, sinSingleAccuracy);
@@ -872,7 +871,7 @@ TEST_F(SimdMathTest, sinSingleAccuracy)
 TEST_F(SimdMathTest, cosSingleAccuracy)
 {
     /* Increase the allowed error by the difference between the actual precision and single */
-    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTolSingleAccuracy(ulpTol_);
 
     setRange(-8*M_PI, 8*M_PI);
     GMX_EXPECT_SIMD_FUNC_NEAR(std::cos, cosSingleAccuracy);
@@ -884,7 +883,7 @@ TEST_F(SimdMathTest, cosSingleAccuracy)
 TEST_F(SimdMathTest, tanSingleAccuracy)
 {
     /* Increase the allowed error by the difference between the actual precision and single */
-    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTolSingleAccuracy(ulpTol_);
 
     // Tan(x) is a little sensitive due to the division in the algorithm.
     // Rather than using lots of extra FP operations, we accept the algorithm
@@ -899,7 +898,7 @@ TEST_F(SimdMathTest, tanSingleAccuracy)
 TEST_F(SimdMathTest, asinSingleAccuracy)
 {
     /* Increase the allowed error by the difference between the actual precision and single */
-    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTolSingleAccuracy(ulpTol_);
 
     // Our present asin(x) algorithm achieves 2-3 ulp accuracy
     setRange(-1, 1);
@@ -909,7 +908,7 @@ TEST_F(SimdMathTest, asinSingleAccuracy)
 TEST_F(SimdMathTest, acosSingleAccuracy)
 {
     /* Increase the allowed error by the difference between the actual precision and single */
-    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTolSingleAccuracy(ulpTol_);
 
     // Our present acos(x) algorithm achieves 2-3 ulp accuracy
     setRange(-1, 1);
@@ -919,7 +918,7 @@ TEST_F(SimdMathTest, acosSingleAccuracy)
 TEST_F(SimdMathTest, atanSingleAccuracy)
 {
     /* Increase the allowed error by the difference between the actual precision and single */
-    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTolSingleAccuracy(ulpTol_);
 
     // Our present atan(x) algorithm achieves 1 ulp accuracy
     setRange(-10000, 10000);
@@ -929,7 +928,7 @@ TEST_F(SimdMathTest, atanSingleAccuracy)
 TEST_F(SimdMathTest, atan2SingleAccuracy)
 {
     /* Increase the allowed error by the difference between the actual precision and single */
-    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTolSingleAccuracy(ulpTol_);
 
     // test each quadrant
     GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::atan2(c0, c3), std::atan2(c1, c4), std::atan2(c2, c5)),
@@ -961,7 +960,7 @@ TEST_F(SimdMathTest, pmeForceCorrectionSingleAccuracy)
     // The PME corrections will be added to ~1/r2, so absolute tolerance of EPS is fine.
     // Pme correction only needs to be ~1e-6 accuracy single.
     // Then increase the allowed error by the difference between the actual precision and single.
-    setUlpTol( (std::int64_t(5e-6/GMX_FLOAT_EPS)) * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTolSingleAccuracy(std::int64_t(5e-6/GMX_FLOAT_EPS));
 
     setRange(0.15, 4);
     setAbsTol(GMX_FLOAT_EPS);
@@ -973,7 +972,7 @@ TEST_F(SimdMathTest, pmePotentialCorrectionSingleAccuracy)
     // The PME corrections will be added to ~1/r, so absolute tolerance of EPS is fine.
     // Pme correction only needs to be ~1e-6 accuracy single.
     // Then increase the allowed error by the difference between the actual precision and single.
-    setUlpTol( (std::int64_t(5e-6/GMX_FLOAT_EPS)) * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTolSingleAccuracy(std::int64_t(5e-6/GMX_FLOAT_EPS));
 
     setRange(0.15, 4);
     setAbsTol(GMX_FLOAT_EPS);

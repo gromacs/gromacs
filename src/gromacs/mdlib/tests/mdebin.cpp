@@ -80,9 +80,9 @@ class PrintEbin : public ::testing::Test
         TestReferenceChecker             checker_;
 
         PrintEbin() : ebin_ {0}, ebinGuard_(&ebin_), mdebin_ {0},
-        fileManager_(), logFilename_(fileManager_.getTemporaryFilePath(".log")),
+        logFilename_(fileManager_.getTemporaryFilePath(".log")),
         log_(std::fopen(logFilename_.c_str(), "w")), logFileGuard_(log_),
-        refData_ {}, checker_(refData_.rootChecker())
+        checker_(refData_.rootChecker())
         {
             mdebin_.ebin = &ebin_;
         }

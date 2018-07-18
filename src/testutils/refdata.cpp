@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -199,7 +199,7 @@ class ReferenceDataTestEventListener : public ::testing::EmptyTestEventListener
             }
         }
 
-        virtual void OnTestProgramEnd(const ::testing::UnitTest &)
+        virtual void OnTestProgramEnd(const ::testing::UnitTest & /*unused*/)
         {
             // Could be used e.g. to free internal buffers allocated by an XML parsing library
         }
@@ -726,13 +726,13 @@ TestReferenceChecker::TestReferenceChecker(const TestReferenceChecker &other)
 {
 }
 
-TestReferenceChecker::TestReferenceChecker(TestReferenceChecker &&other)
+TestReferenceChecker::TestReferenceChecker(TestReferenceChecker &&other) noexcept
     : impl_(std::move(other.impl_))
 {
 }
 
 TestReferenceChecker &
-TestReferenceChecker::operator=(TestReferenceChecker &&other)
+TestReferenceChecker::operator=(TestReferenceChecker &&other) noexcept
 {
     impl_ = std::move(other.impl_);
     return *this;
