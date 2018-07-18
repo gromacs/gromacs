@@ -75,7 +75,7 @@ void TpiTest::runTest()
     runner_.ndxFileName_ = "";
     ASSERT_EQ(0, runner_.callGrompp());
 
-    auto        rerunFileName = fileManager_.getInputFilePath("spc216.gro");
+    auto        rerunFileName = gmx::test::TestFileManager::getInputFilePath("spc216.gro");
     CommandLine commandLine;
     commandLine.append("-rerun");
     commandLine.append(rerunFileName);

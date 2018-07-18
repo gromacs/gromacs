@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -168,11 +168,7 @@ class NeighborhoodSearchTestData
             const std::vector<RefPair>          &refPairs = testPositions_[testIndex].refPairs;
             std::vector<RefPair>::const_iterator foundRefPair
                 = std::lower_bound(refPairs.begin(), refPairs.end(), pair);
-            if (foundRefPair == refPairs.end() || foundRefPair->refIndex != pair.refIndex)
-            {
-                return false;
-            }
-            return true;
+            return !(foundRefPair == refPairs.end() || foundRefPair->refIndex != pair.refIndex);
         }
 
         // Return a tolerance that accounts for the magnitudes of the coordinates
