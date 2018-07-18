@@ -301,6 +301,8 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 endif()
 
 if (GMX_CLANG_TIDY)
+       "modernize-avoid-bind" "modernize-deprecated-headers"
+       "modernize-redundant-void-arg" "modernize-use-bool-literals"
    set_target_properties(libgromacs PROPERTIES CXX_CLANG_TIDY
        "${CLANG_TIDY_EXE};-warnings-as-errors=*;-header-filter=.*")
 endif()

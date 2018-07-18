@@ -579,7 +579,7 @@ static void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
     double             temp, time, time0 = 0, dt;
     char              *ptr    = nullptr;
     t_UmbrellaWindow * window = nullptr;
-    gmx_bool           timeok, dt_ok = 1;
+    gmx_bool           timeok, dt_ok = true;
     char              *tmpbuf   = nullptr, fmt[256], fmtign[256], fmtlf[5] = "%lf";
     int                len      = STRLEN, dstep = 1;
     const int          blocklen = 4096;
@@ -1851,7 +1851,7 @@ static FILE *open_pdo_pipe(const char *fn, t_UmbrellaOptions *opt, gmx_bool *bPi
 {
     char            Buffer[1024], gunzip[1024], *Path = nullptr;
     FILE           *pipe   = nullptr;
-    static gmx_bool bFirst = 1;
+    static gmx_bool bFirst = true;
 
     /* gzipped pdo file? */
     if ((std::strcmp(fn+std::strlen(fn)-3, ".gz") == 0))
@@ -1886,7 +1886,7 @@ static FILE *open_pdo_pipe(const char *fn, t_UmbrellaOptions *opt, gmx_bool *bPi
         if (bFirst)
         {
             printf("Using gunzip executable %s\n", gunzip);
-            bFirst = 0;
+            bFirst = false;
         }
         if (!gmx_fexist(fn))
         {

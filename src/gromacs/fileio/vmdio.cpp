@@ -86,10 +86,10 @@
 /*                                                                           */
 /*****************************************************************************/
 
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 /*
  * Plugin header files; get plugin source from www.ks.uiuc.edu/Research/vmd"
@@ -116,9 +116,9 @@
 #include "gromacs/utility/smalloc.h"
 
 
-typedef int (*initfunc)(void);
+typedef int (*initfunc)();
 typedef int (*regfunc)(void *, vmdplugin_register_cb);
-typedef int (*finifunc)(void);
+typedef int (*finifunc)();
 
 
 
@@ -211,7 +211,7 @@ gmx_bool read_next_vmd_frame(gmx_vmdplugin_t *vmdplugin, t_trxframe *fr)
     if (rc < 0)
     {
         vmdplugin->api->close_file_read(vmdplugin->handle);
-        return 0;
+        return false;
     }
 
 #if GMX_DOUBLE
@@ -243,8 +243,8 @@ gmx_bool read_next_vmd_frame(gmx_vmdplugin_t *vmdplugin, t_trxframe *fr)
     }
 #endif
 
-    fr->bX   = 1;
-    fr->bBox = 1;
+    fr->bX   = true;
+    fr->bBox = true;
     vec[0]   = .1*ts.A; vec[1] = .1*ts.B; vec[2] = .1*ts.C;
     angle[0] = ts.alpha; angle[1] = ts.beta; angle[2] = ts.gamma;
     matrix_convert(fr->box, vec, angle);
@@ -259,7 +259,7 @@ gmx_bool read_next_vmd_frame(gmx_vmdplugin_t *vmdplugin, t_trxframe *fr)
     }
 
 
-    return 1;
+    return true;
 }
 
 static int load_vmd_library(const char *fn, gmx_vmdplugin_t *vmdplugin)
@@ -430,7 +430,7 @@ int read_first_vmd_frame(const char *fn, gmx_vmdplugin_t **vmdpluginp, t_trxfram
 
     snew(fr->x, fr->natoms);
 
-    vmdplugin->bV = 0;
+    vmdplugin->bV = false;
     if (vmdplugin->api->abiversion > 10 && vmdplugin->api->read_timestep_metadata)
     {
         vmdplugin->api->read_timestep_metadata(vmdplugin->handle, metadata);

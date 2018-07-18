@@ -39,7 +39,7 @@
 
 #include "hackblock.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/math/vec.h"

@@ -38,8 +38,8 @@
 
 #include "ter_db.h"
 
-#include <ctype.h>
-#include <string.h>
+#include <cctype>
+#include <cstring>
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"

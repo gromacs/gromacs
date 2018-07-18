@@ -4,6 +4,8 @@ Checks:  clang-diagnostic-*,clang-analyzer-*,-clang-analyzer-security.insecureAP
          -readability-function-size,-readability-else-after-return,
          modernize-use-nullptr,modernize-use-emplace,
          modernize-make-unique,modernize-make-shared,
+         modernize-avoid-bind,modernize-deprecated-headers,
+         modernize-redundant-void-arg,modernize-use-bool-literals,
          google-readability-casting,
          cppcoreguidelines-*,-cppcoreguidelines-pro-*,-cppcoreguidelines-owning-memory,
          -cppcoreguidelines-no-malloc,-cppcoreguidelines-special-member-functions

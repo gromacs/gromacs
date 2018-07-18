@@ -145,7 +145,7 @@ static const char *PMEStageNames[] =
     "PME gather",
 };
 
-gmx_bool wallcycle_have_counter(void)
+gmx_bool wallcycle_have_counter()
 {
     return gmx_cycles_have_counter();
 }
