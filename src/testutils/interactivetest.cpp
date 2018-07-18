@@ -44,6 +44,7 @@
 #include "interactivetest.h"
 
 #include <string>
+#include <utility>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -83,7 +84,7 @@ class InteractiveTestHelper::Impl
 {
     public:
         explicit Impl(TestReferenceChecker checker)
-            : checker_(checker), bLastNewline_(true),
+            : checker_(std::move(checker)), bLastNewline_(true),
               currentLine_(0), bHasOutput_(false)
         {
             using ::testing::_;

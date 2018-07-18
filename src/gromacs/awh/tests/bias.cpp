@@ -107,7 +107,7 @@ static AwhTestParameters getAwhTestParameters(int eawhgrowth,
     double                 k           = 1000;
     gmx_int64_t            seed        = 93471803;
 
-    params.dimParams.push_back(DimParams(convFactor, k, params.beta));
+    params.dimParams.emplace_back(convFactor, k, params.beta);
 
     AwhParams             &awhParams = params.awhParams;
 
@@ -211,7 +211,7 @@ TEST_P(BiasTest, ForcesBiasPmf)
     gmx::test::TestReferenceData     data;
     gmx::test::TestReferenceChecker  checker(data.rootChecker());
 
-    Bias                            &bias = *bias_.get();
+    Bias                            &bias = *bias_;
 
     /* Make strings with the properties we expect to be different in the tests.
      * These also helps to interpret the reference data.
