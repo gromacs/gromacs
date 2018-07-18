@@ -49,9 +49,9 @@
 
 /* #define DEBUG_NNB */
 
-typedef struct {
+struct sortable {
     int ai, aj;
-} sortable;
+};
 
 static int
 bond_sort (const void *a, const void *b)

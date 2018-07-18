@@ -118,10 +118,9 @@ namespace internal
 class AnalysisNeighborhoodSearchImpl
 {
     public:
-        typedef AnalysisNeighborhoodPairSearch::ImplPointer
-            PairSearchImplPointer;
-        typedef std::vector<PairSearchImplPointer> PairSearchList;
-        typedef std::vector<std::vector<int> > CellList;
+        using PairSearchImplPointer = AnalysisNeighborhoodPairSearch::ImplPointer;
+        using PairSearchList        = std::vector<PairSearchImplPointer>;
+        using CellList              = std::vector<std::vector<int> >;
 
         explicit AnalysisNeighborhoodSearchImpl(real cutoff);
         ~AnalysisNeighborhoodSearchImpl();
@@ -1265,8 +1264,8 @@ class MindistAction
 class AnalysisNeighborhood::Impl
 {
     public:
-        typedef AnalysisNeighborhoodSearch::ImplPointer SearchImplPointer;
-        typedef std::vector<SearchImplPointer> SearchList;
+        using SearchImplPointer = AnalysisNeighborhoodSearch::ImplPointer;
+        using SearchList        = std::vector<SearchImplPointer>;
 
         Impl()
             : cutoff_(0), excls_(nullptr), mode_(eSearchMode_Automatic), bXY_(false)

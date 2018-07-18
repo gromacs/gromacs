@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,7 +68,7 @@ class AnalysisDataLifetimeModule::Impl
 {
     public:
         //! Container type for storing a histogram during the calculation.
-        typedef std::deque<int> LifetimeHistogram;
+        using LifetimeHistogram = std::deque<int>;
 
         //! Initializes the implementation class with empty/default values.
         Impl() : firstx_(0.0), lastx_(0.0), frameCount_(0), bCumulative_(false)

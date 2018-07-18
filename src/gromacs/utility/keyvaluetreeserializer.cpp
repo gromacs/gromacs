@@ -58,8 +58,8 @@ class ValueSerializer
     private:
         ValueSerializer() = delete;
 
-        typedef void (*SerializerFunction)(const KeyValueTreeValue &value, ISerializer *serializer);
-        typedef void (*DeserializerFunction)(KeyValueTreeValueBuilder *builder, ISerializer *serializer);
+        using SerializerFunction   = void (*)(const KeyValueTreeValue &, ISerializer *);
+        using DeserializerFunction = void (*)(KeyValueTreeValueBuilder *, ISerializer *);
 
         struct Serializer
         {

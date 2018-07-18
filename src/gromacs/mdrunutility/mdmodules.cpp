@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,12 +73,12 @@ class MDModules::Impl : public IMDOutputProvider
         }
 
         // From IMDOutputProvider
-        virtual void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
-                                bool bAppendFiles, const gmx_output_env_t *oenv)
+        void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
+                        bool bAppendFiles, const gmx_output_env_t *oenv) override
         {
             field_->outputProvider()->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
         }
-        virtual void finishOutput()
+        void finishOutput() override
         {
             field_->outputProvider()->finishOutput();
         }

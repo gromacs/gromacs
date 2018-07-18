@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -148,10 +148,9 @@ class SelectionParserSymbolTable::Impl
 {
     public:
         //! Smart pointer type for managing a SelectionParserSymbol.
-        typedef std::unique_ptr<SelectionParserSymbol>
-            SymbolPointer;
+        using SymbolPointer = std::unique_ptr<SelectionParserSymbol>;
         //! Container type for the list of symbols.
-        typedef std::map<std::string, SymbolPointer> SymbolMap;
+        using SymbolMap = std::map<std::string, SymbolPointer>;
 
         /*! \brief
          * Adds a symbol to the symbol list.
@@ -226,8 +225,7 @@ class SelectionParserSymbolIterator::Impl
 {
     public:
         //! Shorthand for the underlying iterator type.
-        typedef SelectionParserSymbolTable::Impl::SymbolMap::const_iterator
-            IteratorType;
+        using IteratorType = SelectionParserSymbolTable::Impl::SymbolMap::const_iterator;
 
         /*! \brief
          * Constructs an end iterator.

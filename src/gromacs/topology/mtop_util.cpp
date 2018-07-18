@@ -215,7 +215,7 @@ void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop)
     }
 }
 
-typedef struct gmx_mtop_atomloop_all
+struct gmx_mtop_atomloop_all
 {
     const gmx_mtop_t *mtop;
     size_t            mblock;
@@ -224,7 +224,7 @@ typedef struct gmx_mtop_atomloop_all
     int               maxresnr;
     int               at_local;
     int               at_global;
-} t_gmx_mtop_atomloop_all;
+};
 
 gmx_mtop_atomloop_all_t
 gmx_mtop_atomloop_all_init(const gmx_mtop_t *mtop)
@@ -312,13 +312,13 @@ void gmx_mtop_atomloop_all_moltype(gmx_mtop_atomloop_all_t   aloop,
     *at_mol  = aloop->at_local;
 }
 
-typedef struct gmx_mtop_atomloop_block
+struct gmx_mtop_atomloop_block
 {
     const gmx_mtop_t *mtop;
     size_t            mblock;
     const t_atoms    *atoms;
     int               at_local;
-} t_gmx_mtop_atomloop_block;
+};
 
 gmx_mtop_atomloop_block_t
 gmx_mtop_atomloop_block_init(const gmx_mtop_t *mtop)
@@ -368,11 +368,11 @@ gmx_bool gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop,
     return TRUE;
 }
 
-typedef struct gmx_mtop_ilistloop
+struct gmx_mtop_ilistloop
 {
     const gmx_mtop_t *mtop;
     int               mblock;
-} t_gmx_mtop_ilist;
+};
 
 gmx_mtop_ilistloop_t
 gmx_mtop_ilistloop_init(const gmx_mtop_t *mtop)
@@ -428,13 +428,13 @@ gmx_bool gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t iloop,
 
     return TRUE;
 }
-typedef struct gmx_mtop_ilistloop_all
+struct gmx_mtop_ilistloop_all
 {
     const gmx_mtop_t *mtop;
     size_t            mblock;
     int               mol;
     int               a_offset;
-} t_gmx_mtop_ilist_all;
+};
 
 gmx_mtop_ilistloop_all_t
 gmx_mtop_ilistloop_all_init(const gmx_mtop_t *mtop)

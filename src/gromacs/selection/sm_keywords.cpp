@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -145,7 +145,7 @@ evaluate_keyword_str(const gmx::SelMethodEvalContext &context,
 /*! \internal \brief
  * Data structure for integer keyword expression evaluation.
  */
-typedef struct t_methoddata_kwint
+struct t_methoddata_kwint
 {
     /** Array of values for the keyword. */
     int               *v;
@@ -159,12 +159,12 @@ typedef struct t_methoddata_kwint
      * parameter parser; see \ref SPAR_RANGES for more information.
      */
     int               *r;
-} t_methoddata_kwint;
+};
 
 /*! \internal \brief
  * Data structure for real keyword expression evaluation.
  */
-typedef struct t_methoddata_kwreal
+struct t_methoddata_kwreal
 {
     /** Array of values for the keyword. */
     real              *v;
@@ -178,7 +178,7 @@ typedef struct t_methoddata_kwreal
      * parameter parser; see \ref SPAR_RANGES for more information.
      */
     real              *r;
-} t_methoddata_kwreal;
+};
 
 namespace
 {

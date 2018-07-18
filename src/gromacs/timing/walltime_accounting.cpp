@@ -65,7 +65,7 @@
 
 /*! \brief Manages caching wall-clock time measurements for
  * simulations */
-typedef struct gmx_walltime_accounting {
+struct gmx_walltime_accounting {
     //! Seconds since the epoch recorded at the start of the simulation
     double          start_time_stamp;
     //! Seconds since the epoch recorded at the start of the simulation for this thread
@@ -88,7 +88,7 @@ typedef struct gmx_walltime_accounting {
     gmx_int64_t     nsteps_done;
     //! Whether the simulation has finished in a way valid for walltime reporting.
     bool            isValidFinish;
-} t_gmx_walltime_accounting;
+};
 
 /*! \brief Calls system timing routines (e.g. clock_gettime) to get
  * the (fractional) number of seconds elapsed since the epoch when

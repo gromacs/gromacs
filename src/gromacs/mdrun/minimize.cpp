@@ -101,7 +101,7 @@
 #include "integrator.h"
 
 //! Utility structure for manipulating states during EM
-typedef struct {
+struct em_state_t {
     //! Copy of the global state
     t_state          s;
     //! Force array
@@ -114,7 +114,7 @@ typedef struct {
     real             fmax;
     //! Direction
     int              a_fmax;
-} em_state_t;
+};
 
 //! Print the EM starting conditions
 static void print_em_start(FILE                     *fplog,

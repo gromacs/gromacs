@@ -4765,13 +4765,13 @@ static gmx_bool missing_link(t_blocka *link, int cg_gl, const char *bLocalCG)
 }
 
 /* Domain corners for communication, a maximum of 4 i-zones see a j domain */
-typedef struct {
+struct dd_corners_t {
     real c[DIM][4]; /* the corners for the non-bonded communication */
     real cr0;       /* corner for rounding */
     real cr1[4];    /* corners for rounding */
     real bc[DIM];   /* corners for bounded communication */
     real bcr1;      /* corner for rounding for bonded communication */
-} dd_corners_t;
+};
 
 /* Determine the corners of the domain(s) we are communicating with */
 static void

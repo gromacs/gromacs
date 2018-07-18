@@ -67,13 +67,13 @@
 
 using gmx::RVec;
 
-typedef struct {
+struct t_moltypes {
     char *name;
     int   natoms;
     int   nmol;
     int   i, i0;
     int   res0;
-} t_moltypes;
+};
 
 static void sort_molecule(t_atoms **atoms_solvt, std::vector<RVec> *x,
                           std::vector<RVec> *v)

@@ -109,7 +109,7 @@ int gmx_helix(int argc, char *argv[])
           "Last residue in helix" }
     };
 
-    typedef struct { //NOLINT(clang-analyzer-optin.performance.Padding)
+    struct t_xvgrfile { //NOLINT(clang-analyzer-optin.performance.Padding)
         FILE       *fp, *fp2;
         gmx_bool    bfp2;
         const char *filenm;
@@ -117,7 +117,7 @@ int gmx_helix(int argc, char *argv[])
         const char *xaxis;
         const char *yaxis;
         real        val;
-    } t_xvgrfile;
+    };
 
     t_xvgrfile        xf[efhNR] = {
         { nullptr, nullptr, TRUE,  "radius",  "Helix radius",               nullptr, "r (nm)", 0.0 },

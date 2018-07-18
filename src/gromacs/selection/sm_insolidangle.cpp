@@ -145,13 +145,13 @@ using std::max;
  *
  * \ingroup module_selection
  */
-typedef struct
+struct t_partition_item
 {
     /** Left edge of the partition. */
     real                left;
     /** Bin index corresponding to this partition. */
     int                 bin;
-} t_partition_item;
+};
 
 /*! \internal
  * \brief
@@ -163,13 +163,13 @@ typedef struct
  *
  * \ingroup module_selection
  */
-typedef struct
+struct t_partition
 {
     /** Number of partition items (\p p contains \p n+1 items). */
     int                 n;
     /** Array of partition edges and corresponding bins. */
     t_partition_item   *p;
-} t_partition;
+};
 
 /*! \internal
  * \brief
@@ -181,7 +181,7 @@ typedef struct
  *
  * \ingroup module_selection
  */
-typedef struct
+struct t_spheresurfacebin
 {
     /** Number of points in the array \p x, -1 if whole bin covered. */
     int   n;
@@ -189,7 +189,7 @@ typedef struct
     int   n_alloc;
     /** Array of points that partially cover the bin. */
     rvec *x;
-} t_spheresurfacebin;
+};
 
 /*! \internal
  * \brief
@@ -199,7 +199,7 @@ typedef struct
  *
  * \ingroup module_selection
  */
-typedef struct
+struct t_methoddata_insolidangle
 {
     /** Center of the solid angle. */
     gmx_ana_pos_t       center;
@@ -227,7 +227,7 @@ typedef struct
     int                 nbins;
     /** Array of individual bins. */
     t_spheresurfacebin *bin;
-} t_methoddata_insolidangle;
+};
 
 /*! \brief
  * Allocates data for the \p insolidangle selection method.

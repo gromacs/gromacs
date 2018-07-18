@@ -80,17 +80,17 @@ static char const *RotStr = {"Enforced rotation:"};
 #define WEIGHT_MIN (10*GMX_FLOAT_MIN)
 
 /* Helper structure for sorting positions along rotation vector             */
-typedef struct {
+struct sort_along_vec_t {
     real xcproj;            /* Projection of xc on the rotation vector        */
     int  ind;               /* Index of xc                                    */
     real m;                 /* Mass                                           */
     rvec x;                 /* Position                                       */
     rvec x_ref;             /* Reference position                             */
-} sort_along_vec_t;
+};
 
 
 /* Enforced rotation / flexible: determine the angle of each slab             */
-typedef struct gmx_slabdata
+struct gmx_slabdata
 {
     int   nat;              /* Number of atoms belonging to this slab         */
     rvec *x;                /* The positions belonging to this slab. In
@@ -99,22 +99,22 @@ typedef struct gmx_slabdata
                                that have a small enough weight                */
     rvec *ref;              /* Same for reference                             */
     real *weight;           /* The weight for each atom                       */
-} t_gmx_slabdata;
+};
 
 
 /* Helper structure for potential fitting */
-typedef struct gmx_potfit
+struct gmx_potfit
 {
     real   *degangle;       /* Set of angles for which the potential is
                                calculated. The optimum fit is determined as
                                the angle for with the potential is minimal    */
     real   *V;              /* Potential for the different angles             */
     matrix *rotmat;         /* Rotation matrix corresponding to the angles    */
-} t_gmx_potfit;
+};
 
 
 /* Enforced rotation data for all groups                                      */
-typedef struct gmx_enfrot
+struct gmx_enfrot
 {
     FILE             *out_rot;     /* Output file for rotation data                  */
     FILE             *out_torque;  /* Output file for torque data                    */
@@ -130,11 +130,11 @@ typedef struct gmx_enfrot
     gmx_bool          appendFiles; /* If true, append output files                   */
     gmx_bool          bOut;        /* Used to skip first output when appending to
                                     * avoid duplicate entries in rotation outfiles   */
-} t_gmx_enfrot;
+};
 
 
 /* Global enforced rotation data for a single rotation group                  */
-typedef struct gmx_enfrotgrp
+struct gmx_enfrotgrp
 {
     real     degangle;   /* Rotation angle in degrees                      */
     matrix   rotmat;     /* Rotation matrix                                */
@@ -200,12 +200,12 @@ typedef struct gmx_enfrotgrp
                                          belongs                                        */
     rvec           *slab_innersumvec; /* Inner sum of the flexible2 potential per slab;
                                          this is precalculated for optimization reasons */
-    t_gmx_slabdata *slab_data;        /* Holds atom positions and gaussian weights
-                                         of atoms belonging to a slab                   */
+    gmx_slabdata   *slab_data;        /* Holds atom positions and gaussian weights
+                                           of atoms belonging to a slab                   */
 
     /* For potential fits with varying angle: */
-    t_gmx_potfit *PotAngleFit;  /* Used for fit type 'potential'              */
-} t_gmx_enfrotgrp;
+    gmx_potfit *PotAngleFit;  /* Used for fit type 'potential'              */
+};
 
 
 /* Activate output of forces for correctness checks */
@@ -301,7 +301,7 @@ static real get_fitangle(t_rotgrp *rotg, gmx_enfrotgrp_t erg)
     int           i;
     real          fitangle = -999.9;
     real          pot_min  = GMX_FLOAT_MAX;
-    t_gmx_potfit *fit;
+    gmx_potfit   *fit;
 
 
     fit = erg->PotAngleFit;
@@ -1515,7 +1515,7 @@ static void flex_fit_angle_perslab(
     rvec            ref_center; /* Same for the reference positions */
     real            fitangle;   /* Angle of a slab derived from an RMSD fit to
                                  * the reference structure at t=0  */
-    t_gmx_slabdata *sd;
+    gmx_slabdata   *sd;
     gmx_enfrotgrp_t erg;        /* Pointer to enforced rotation group data */
     real            OOm_av;     /* 1/average_mass of a rotation group atom */
     real            m_rel;      /* Relative mass of a rotation group atom  */
@@ -2487,7 +2487,7 @@ static inline int get_last_slab(
 
 static void get_firstlast_slab_check(
         t_rotgrp        *rotg,      /* The rotation group (inputrec data) */
-        t_gmx_enfrotgrp *erg,       /* The rotation group (data only accessible in this file) */
+        gmx_enfrotgrp   *erg,       /* The rotation group (data only accessible in this file) */
         rvec             firstatom, /* First atom after sorting along the rotation vector v */
         rvec             lastatom)  /* Last atom along v */
 {
@@ -3901,8 +3901,8 @@ extern void do_rotation(
     gmx_enfrot_t    er;            /* Pointer to the enforced rotation buffer variables */
     gmx_enfrotgrp_t erg;           /* Pointer to enforced rotation group data           */
     rvec            transvec;
-    t_gmx_potfit   *fit = nullptr; /* For fit type 'potential' determine the fit
-                                      angle via the potential minimum            */
+    gmx_potfit     *fit = nullptr; /* For fit type 'potential' determine the fit
+                                        angle via the potential minimum            */
 
 #ifdef TAKETIME
     double t0;

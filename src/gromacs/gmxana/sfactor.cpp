@@ -61,7 +61,7 @@
 #include "gromacs/utility/strdb.h"
 
 
-typedef struct gmx_structurefactors {
+struct gmx_structurefactors {
     int    nratoms;
     int   *p;      /* proton number */
     int   *n;      /* neutron number */
@@ -71,15 +71,15 @@ typedef struct gmx_structurefactors {
     real  *c;      /* parameter c */
     char **atomnm; /* atomname */
 
-} gmx_structurefactors;
+};
 
-typedef struct reduced_atom{
+struct reduced_atom{
     rvec x;
     int  t;
-} reduced_atom;
+};
 
 
-typedef struct structure_factor
+struct structure_factor
 {
     int       n_angles;
     int       n_groups;
@@ -90,7 +90,7 @@ typedef struct structure_factor
     double  **F;
     int       nSteps;
     int       total_n_atoms;
-} structure_factor;
+};
 
 
 extern int * create_indexed_atom_type (reduced_atom_t * atm, int size)
@@ -360,10 +360,10 @@ extern void rearrange_atoms (reduced_atom_t * positions, t_trxframe *fr, const i
 
 extern int return_atom_type (const char *name, gmx_structurefactors_t *gsf)
 {
-    typedef struct {
+    struct t_united_h {
         const char *name;
         int         nh;
-    } t_united_h;
+    };
     t_united_h            uh[] = {
         { "CH1", 1 }, { "CH2", 2 }, { "CH3", 3 },
         { "CS1", 1 }, { "CS2", 2 }, { "CS3", 3 },

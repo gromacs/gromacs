@@ -106,7 +106,7 @@
  * so they also show up as SI in VMD.
  *
  */
-typedef struct
+struct IMDEnergyBlock
 {
     gmx_int32_t tstep;     /**< time step                                     */
     float       T_abs;     /**< absolute temperature                          */
@@ -118,7 +118,7 @@ typedef struct
     float       E_angle;   /**< angles energy                                 */
     float       E_dihe;    /**< dihedrals energy                              */
     float       E_impr;    /**< improper dihedrals energy                     */
-} IMDEnergyBlock;
+};
 
 
 /*! \internal
@@ -126,11 +126,11 @@ typedef struct
  *
  * This structure defines the IMD communication message header & protocol version.
  */
-typedef struct
+struct IMDHeader
 {
-    gmx_int32_t type;      /**< Type of IMD message, see IMDType_t above      */
+    gmx_int32_t type;      /**< Type of IMD message, see IMDMessageType above      */
     gmx_int32_t length;    /**< Length                                        */
-} IMDHeader;
+};
 
 
 /*! \internal
@@ -138,7 +138,7 @@ typedef struct
  *
  * Contains private IMD data
  */
-typedef struct t_gmx_IMD
+struct t_gmx_IMD_setup
 {
     FILE      *outf;                 /**< Output file for IMD data, mainly forces.    */
 
@@ -197,7 +197,7 @@ typedef struct t_gmx_IMD
     int      *old_f_ind;         /**< Old values for force indices.               */
     rvec     *old_forces;        /**< Old values for IMD pulling forces.          */
 
-} t_gmx_IMD_setup;
+};
 
 
 /*! \internal
@@ -205,7 +205,7 @@ typedef struct t_gmx_IMD
  *
  * We use the same records as the NAMD/VMD IMD implementation.
  */
-typedef enum IMDType_t
+enum IMDMessageType
 {
     IMD_DISCONNECT,      /**< client disconnect                               */
     IMD_ENERGIES,        /**< energy data                                     */
@@ -218,7 +218,7 @@ typedef enum IMDType_t
     IMD_TRATE,           /**< sets the IMD transmission and processing rate   */
     IMD_IOERROR,         /**< I/O error                                       */
     IMD_NR               /**< number of entries                               */
-} IMDMessageType;
+};
 
 
 /*! \internal
@@ -1562,8 +1562,8 @@ gmx_bool do_IMD(gmx_bool         bIMD,
 void IMD_fill_energy_record(gmx_bool bIMD, t_IMD *imd, gmx_enerdata_t *enerd,
                             gmx_int64_t step, gmx_bool bHaveNewEnergies)
 {
-    IMDEnergyBlock *ene;
-    t_gmx_IMD      *IMDsetup;
+    IMDEnergyBlock  *ene;
+    t_gmx_IMD_setup *IMDsetup;
 
 
     if (bIMD)
@@ -1603,7 +1603,7 @@ void IMD_fill_energy_record(gmx_bool bIMD, t_IMD *imd, gmx_enerdata_t *enerd,
 void IMD_send_positions(t_IMD *imd)
 {
 #ifdef GMX_IMD
-    t_gmx_IMD *IMDsetup;
+    t_gmx_IMD_setup *IMDsetup;
 
 
     IMDsetup = imd->setup;
@@ -1653,7 +1653,7 @@ void IMD_prep_energies_send_positions(gmx_bool bIMD, gmx_bool bIMDstep,
     }
 }
 
-int IMD_get_step(t_gmx_IMD *IMDsetup)
+int IMD_get_step(t_gmx_IMD_setup *IMDsetup)
 {
     return IMDsetup->nstimd;
 }

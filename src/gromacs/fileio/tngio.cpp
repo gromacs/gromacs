@@ -447,13 +447,7 @@ static void set_writing_intervals(gmx_tng_trajectory_t  gmx_tng,
 
     /* Define pointers to specific writing functions depending on if we
      * write float or double data */
-    typedef tng_function_status (*set_writing_interval_func_pointer)(tng_trajectory_t,
-                                                                     const gmx_int64_t,
-                                                                     const gmx_int64_t,
-                                                                     const gmx_int64_t,
-                                                                     const char*,
-                                                                     const char,
-                                                                     const char);
+    using set_writing_interval_func_pointer = tng_function_status (*)(tng_trajectory_t, const gmx_int64_t, const gmx_int64_t, const gmx_int64_t, const char *, const char, const char);
 #if GMX_DOUBLE
     set_writing_interval_func_pointer set_writing_interval = tng_util_generic_write_interval_double_set;
 #else
@@ -810,15 +804,7 @@ void gmx_fwrite_tng(gmx_tng_trajectory_t gmx_tng,
                     const rvec          *f)
 {
 #if GMX_USE_TNG
-    typedef tng_function_status (*write_data_func_pointer)(tng_trajectory_t,
-                                                           const gmx_int64_t,
-                                                           const double,
-                                                           const real*,
-                                                           const gmx_int64_t,
-                                                           const gmx_int64_t,
-                                                           const char*,
-                                                           const char,
-                                                           const char);
+    using write_data_func_pointer = tng_function_status (*)(tng_trajectory_t, const gmx_int64_t, const double, const real *, const gmx_int64_t, const gmx_int64_t, const char *, const char, const char);
 #if GMX_DOUBLE
     static write_data_func_pointer           write_data           = tng_util_generic_with_time_double_write;
 #else
@@ -1035,13 +1021,7 @@ void gmx_prepare_tng_writing(const char              *filename,
         "FORCES", "LAMBDAS"
     };
 
-    typedef tng_function_status (*set_writing_interval_func_pointer)(tng_trajectory_t,
-                                                                     const gmx_int64_t,
-                                                                     const gmx_int64_t,
-                                                                     const gmx_int64_t,
-                                                                     const char*,
-                                                                     const char,
-                                                                     const char);
+    using set_writing_interval_func_pointer = tng_function_status (*)(tng_trajectory_t, const gmx_int64_t, const gmx_int64_t, const gmx_int64_t, const char *, const char, const char);
 #if GMX_DOUBLE
     set_writing_interval_func_pointer set_writing_interval = tng_util_generic_write_interval_double_set;
 #else

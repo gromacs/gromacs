@@ -220,11 +220,11 @@ mk_aid(const t_atoms *atoms, const char ** restype, const char * typestring, int
     return a;
 }
 
-typedef struct {
+struct restp_t {
     char    *rname;
     gmx_bool bNeg;
     char    *gname;
-} restp_t;
+};
 
 static void analyse_other(const char ** restype, const t_atoms *atoms,
                           t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
@@ -346,7 +346,7 @@ static void analyse_other(const char ** restype, const t_atoms *atoms,
  * Data necessary to construct a single (protein) index group in
  * analyse_prot().
  */
-typedef struct gmx_help_make_index_group // NOLINT(clang-analyzer-optin.performance.Padding)
+struct gmx_help_make_index_group // NOLINT(clang-analyzer-optin.performance.Padding)
 {
     /** The set of atom names that will be used to form this index group */
     const char **defining_atomnames;
@@ -367,27 +367,27 @@ typedef struct gmx_help_make_index_group // NOLINT(clang-analyzer-optin.performa
     /** Only create this index group if it differs from the one specified in compareto,
        where -1 means to always create this group. */
     int compareto;
-} t_gmx_help_make_index_group;
+};
 
 static void analyse_prot(const char ** restype, const t_atoms *atoms,
                          t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
 {
     /* lists of atomnames to be used in constructing index groups: */
-    static const char *pnoh[]    = { "H", "HN" };
-    static const char *pnodum[]  = {
+    static const char                     *pnoh[]    = { "H", "HN" };
+    static const char                     *pnodum[]  = {
         "MN1",  "MN2",  "MCB1", "MCB2", "MCG1", "MCG2",
         "MCD1", "MCD2", "MCE1", "MCE2", "MNZ1", "MNZ2"
     };
-    static const char *calpha[]  = { "CA" };
-    static const char *bb[]      = { "N", "CA", "C" };
-    static const char *mc[]      = { "N", "CA", "C", "O", "O1", "O2", "OC1", "OC2", "OT", "OXT" };
-    static const char *mcb[]     = { "N", "CA", "CB", "C", "O", "O1", "O2", "OC1", "OC2", "OT", "OXT" };
-    static const char *mch[]     = {
+    static const char                     *calpha[]  = { "CA" };
+    static const char                     *bb[]      = { "N", "CA", "C" };
+    static const char                     *mc[]      = { "N", "CA", "C", "O", "O1", "O2", "OC1", "OC2", "OT", "OXT" };
+    static const char                     *mcb[]     = { "N", "CA", "CB", "C", "O", "O1", "O2", "OC1", "OC2", "OT", "OXT" };
+    static const char                     *mch[]     = {
         "N", "CA", "C", "O", "O1", "O2", "OC1", "OC2", "OT", "OXT",
         "H1", "H2", "H3", "H", "HN"
     };
 
-    static const t_gmx_help_make_index_group constructing_data[] =
+    static const gmx_help_make_index_group constructing_data[] =
     {{ nullptr,   0, "Protein",      TRUE,  -1, -1},
      { pnoh,   asize(pnoh),   "Protein-H",    TRUE,  0,  -1},
      { calpha, asize(calpha), "C-alpha",      FALSE, -1, -1},

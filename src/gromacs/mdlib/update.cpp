@@ -85,15 +85,15 @@
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
-typedef struct {
+struct gmx_sd_const_t {
     double em;
-} gmx_sd_const_t;
+};
 
-typedef struct {
+struct gmx_sd_sigma_t {
     real V;
-} gmx_sd_sigma_t;
+};
 
-typedef struct {
+struct gmx_stochd_t {
     /* BD stuff */
     real           *bd_rf;
     /* SD stuff */
@@ -102,7 +102,7 @@ typedef struct {
     /* andersen temperature control stuff */
     gmx_bool       *randomize_group;
     real           *boltzfac;
-} gmx_stochd_t;
+};
 
 struct gmx_update_t
 {

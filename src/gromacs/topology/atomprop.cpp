@@ -54,7 +54,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
-typedef struct {
+struct aprop_t {
     gmx_bool    bSet;
     int         nprop, maxprop;
     char       *db;
@@ -63,13 +63,13 @@ typedef struct {
     char      **resnm;
     gmx_bool   *bAvail;
     real       *value;
-} aprop_t;
+};
 
-typedef struct gmx_atomprop {
+struct gmx_atomprop {
     gmx_bool           bWarned, bWarnVDW;
     aprop_t            prop[epropNR];
     gmx_residuetype_t *restype;
-} gmx_atomprop;
+};
 
 
 

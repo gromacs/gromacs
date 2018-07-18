@@ -56,7 +56,7 @@
 /*! \internal \brief
  * Data structure for position keyword evaluation.
  */
-typedef struct
+struct t_methoddata_pos
 {
     /** Position calculation collection to use. */
     gmx::PositionCalculationCollection *pcc;
@@ -70,7 +70,7 @@ typedef struct
     char                               *type;
     /** Flags for the position calculation. */
     int                                 flags;
-} t_methoddata_pos;
+};
 
 /** Allocates data for position evaluation selection methods. */
 static void *

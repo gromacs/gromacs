@@ -94,22 +94,22 @@ struct reverse_ilist_t
     int   numAtomsInMolecule; /* The number of atoms in this molecule */
 };
 
-typedef struct {
+struct molblock_ind_t {
     int  a_start;
     int  a_end;
     int  natoms_mol;
     int  type;
-} molblock_ind_t;
+};
 
 /*! \brief Struct for thread local work data for local topology generation */
-typedef struct {
+struct thread_work_t {
     t_idef     idef;             /**< Partial local topology */
     int      **vsite_pbc;        /**< vsite PBC structure */
     int       *vsite_pbc_nalloc; /**< Allocation sizes for vsite_pbc */
     int        nbonded;          /**< The number of bondeds in this struct */
     t_blocka   excl;             /**< List of exclusions */
     int        excl_count;       /**< The total exclusion count for \p excl */
-} thread_work_t;
+};
 
 /*! \brief Struct for the reverse topology: links bonded interactions to atomsx */
 struct gmx_reverse_top_t
@@ -2471,12 +2471,12 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
     return link;
 }
 
-typedef struct {
+struct bonded_distance_t {
     real r2;
     int  ftype;
     int  a1;
     int  a2;
-} bonded_distance_t;
+};
 
 /*! \brief Compare distance^2 \p r2 against the distance in \p bd and if larger store it along with \p ftype and atom indices \p a1 and \p a2 */
 static void update_max_bonded_distance(real r2, int ftype, int a1, int a2,

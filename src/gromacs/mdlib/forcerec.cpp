@@ -243,13 +243,13 @@ static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
  * group in the Qm
  */
 
-typedef struct
+struct solvent_parameters_t
 {
     int    model;
     int    count;
     int    vdwtype[4];
     real   charge[4];
-} solvent_parameters_t;
+};
 
 static void
 check_solvent_cg(const gmx_moltype_t    *molt,

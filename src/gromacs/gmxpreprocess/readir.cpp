@@ -95,7 +95,7 @@
  * message.
  */
 
-typedef struct t_inputrec_strings
+struct gmx_inputrec_strings
 {
     char tcgrps[STRLEN], tau_t[STRLEN], ref_t[STRLEN],
          acc[STRLEN], accgrps[STRLEN], freeze[STRLEN], frdim[STRLEN],
@@ -113,7 +113,7 @@ typedef struct t_inputrec_strings
            bSH[STRLEN], CASorbitals[STRLEN], CASelectrons[STRLEN], SAon[STRLEN],
            SAoff[STRLEN], SAsteps[STRLEN];
 
-} gmx_inputrec_strings;
+};
 
 static gmx_inputrec_strings *is = nullptr;
 
@@ -1719,7 +1719,7 @@ class MdpErrorHandler : public gmx::IKeyValueTreeErrorHandler
             mapping_ = &mapping;
         }
 
-        virtual bool onError(gmx::UserInputError *ex, const gmx::KeyValueTreePath &context)
+        bool onError(gmx::UserInputError *ex, const gmx::KeyValueTreePath &context) override
         {
             ex->prependContext(gmx::formatString("Error in mdp option \"%s\":",
                                                  getOptionName(context).c_str()));

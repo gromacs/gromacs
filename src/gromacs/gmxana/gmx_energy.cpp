@@ -73,12 +73,12 @@
 
 static const int  NOTSET   = -23451;
 
-typedef struct {
+struct exactsum_t {
     real sum;
     real sum2;
-} exactsum_t;
+};
 
-typedef struct {
+struct enerdat_t {
     real       *ener;
     exactsum_t *es;
     gmx_bool    bExactStat;
@@ -86,9 +86,9 @@ typedef struct {
     double      rmsd;
     double      ee;
     double      slope;
-} enerdat_t;
+};
 
-typedef struct {
+struct enerdata_t {
     gmx_int64_t      nsteps;
     gmx_int64_t      npoints;
     int              nframes;
@@ -97,7 +97,7 @@ typedef struct {
     int             *points;
     enerdat_t       *s;
     gmx_bool         bHaveSums;
-} enerdata_t;
+};
 
 static void done_enerdata_t(int nset, enerdata_t *edat)
 {
@@ -372,19 +372,19 @@ static void einstein_visco(const char *fn, const char *fni, int nsets,
     xvgrclose(fp1);
 }
 
-typedef struct {
+struct ee_sum_t {
     gmx_int64_t     np;
     double          sum;
     double          sav;
     double          sav2;
-} ee_sum_t;
+};
 
-typedef struct {
+struct ener_ee_t {
     int             b;
     ee_sum_t        sum;
     gmx_int64_t     nst;
     gmx_int64_t     nst_min;
-} ener_ee_t;
+};
 
 static void clear_ee_sum(ee_sum_t *ees)
 {

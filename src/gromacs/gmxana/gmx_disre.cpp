@@ -75,19 +75,19 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+struct t_toppop {
     int  n;
     real v;
-} t_toppop;
+};
 
 static t_toppop *top  = nullptr;
 static int       ntop = 0;
 
-typedef struct {
+struct t_dr_result {
     int   nv, nframes;
     real  sumv, averv, maxv;
     real *aver1, *aver2, *aver_3, *aver_6;
-} t_dr_result;
+};
 
 static void init5(int n)
 {
@@ -267,11 +267,11 @@ static void check_viol(FILE *log,
     }
 }
 
-typedef struct {
+struct t_dr_stats {
     int      index;
     gmx_bool bCore;
     real     up1, r, rT3, rT6, viol, violT3, violT6;
-} t_dr_stats;
+};
 
 static int drs_comp(const void *a, const void *b)
 {

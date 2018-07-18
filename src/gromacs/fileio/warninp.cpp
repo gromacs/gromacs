@@ -46,7 +46,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct warninp {
+struct warninp {
     gmx_bool    bAllowWarnings;
     int         nwarn_note;
     int         nwarn_warn;
@@ -54,7 +54,7 @@ typedef struct warninp {
     int         maxwarn;
     int         lineno;
     std::string filenm;
-} t_warninp;
+};
 
 warninp_t init_warning(gmx_bool bAllowWarnings, int maxwarning)
 {

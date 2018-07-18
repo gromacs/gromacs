@@ -60,10 +60,10 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+struct t_electron {
     char *atomname;
     int   nr_el;
-} t_electron;
+};
 
 /****************************************************************************/
 /* This program calculates the partial density across the box.              */

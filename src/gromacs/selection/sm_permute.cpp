@@ -54,7 +54,7 @@
 /*! \internal \brief
  * Data structure for the \p permute selection modifier.
  */
-typedef struct
+struct t_methoddata_permute
 {
     /** Positions to permute. */
     gmx_ana_pos_t    p;
@@ -64,7 +64,7 @@ typedef struct
     int             *perm;
     /** Array that has the permutation reversed. */
     int             *rperm;
-} t_methoddata_permute;
+};
 
 /*! \brief
  * Allocates data for the \p permute selection modifier.

@@ -56,10 +56,10 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+struct t_order{
     int     i;
     real    d2;
-} t_order;
+};
 
 static t_order *order;
 

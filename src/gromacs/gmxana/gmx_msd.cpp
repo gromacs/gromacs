@@ -64,11 +64,11 @@
    coefficient in X,Y,Z direction. LATERAL is diffusion coefficient in
    plane perpendicular to axis
  */
-typedef enum {
+enum msd_type {
     NOT_USED, NORMAL, X, Y, Z, LATERAL
-} msd_type;
+};
 
-typedef struct {
+struct t_corr {
     real          t0;         /* start time and time increment between  */
     real          delta_t;    /* time between restart points */
     real          beginfit,   /* the begin/end time for fits as reals between */
@@ -94,10 +94,9 @@ typedef struct {
     int          *n_offs;
     int         **ndata;      /* the number of msds (particles/mols) per data
                                  point. */
-} t_corr;
+};
 
-typedef real t_calc_func (t_corr *curr, int nx, const int index[], int nx0, rvec xc[],
-                          const rvec dcom, gmx_bool bTen, matrix mat);
+using t_calc_func = real (t_corr *, int, const int *, int, rvec *, const real *, gmx_bool, real (*)[3]);
 
 static real thistime(t_corr *curr)
 {

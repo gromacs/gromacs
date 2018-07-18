@@ -167,8 +167,8 @@ class KeyValueTreeBackMapping : public IKeyValueTreeBackMapping
                 std::map<std::string, Entry> childEntries_;
         };
 
-        virtual KeyValueTreePath
-        originalPath(const KeyValueTreePath &path) const
+        KeyValueTreePath
+        originalPath(const KeyValueTreePath &path) const override
         {
             const Entry *entry = &rootEntry_;
             for (const auto &element : path.elements())
@@ -207,9 +207,8 @@ class KeyValueTreeTransformerImpl
         class Rule
         {
             public:
-                typedef std::function<void(KeyValueTreeValueBuilder *, const KeyValueTreeValue &)>
-                    TransformFunction;
-                typedef std::map<std::string, Rule, StringCompare> ChildRuleMap;
+                using TransformFunction = std::function<void (KeyValueTreeValueBuilder *, const KeyValueTreeValue &)>;
+                using ChildRuleMap      = std::map<std::string, Rule, StringCompare>;
 
                 explicit Rule(StringCompareType keyMatchType)
                     : expectedType_(typeid(void)), childRules_(keyMatchType)
@@ -466,7 +465,7 @@ KeyValueTreeTransformer::transform(const KeyValueTreeObject  &tree,
 class KeyValueTreeTransformRuleBuilder::Data
 {
     public:
-        typedef internal::KeyValueTreeTransformerImpl::Rule Rule;
+        using Rule = internal::KeyValueTreeTransformerImpl::Rule;
 
         explicit Data(const KeyValueTreePath &prefix)
             : prefixPath_(prefix), expectedType_(typeid(void)),

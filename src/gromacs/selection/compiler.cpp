@@ -343,7 +343,7 @@ enum
 /*! \internal \brief
  * Internal data structure used by the compiler.
  */
-typedef struct t_compiler_data
+struct t_compiler_data
 {
     /** The real evaluation method. */
     gmx::sel_evalfunc evaluate;
@@ -355,7 +355,7 @@ typedef struct t_compiler_data
     gmx_ana_index_t  *gmin;
     /** Largest selection that can be selected by the subexpression. */
     gmx_ana_index_t  *gmax;
-} t_compiler_data;
+};
 
 
 /********************************************************************

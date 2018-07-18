@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,13 +58,13 @@
 /*! \internal \brief
  * Describes a single block allocated from the memory pool.
  */
-typedef struct gmx_sel_mempool_block_t
+struct gmx_sel_mempool_block_t
 {
     //! Pointer to the start of the block (as returned to the user).
     void                       *ptr;
     //! Size of the block, including padding required to align next block.
     size_t                      size;
-} gmx_sel_mempool_block_t;
+};
 
 /*! \internal \brief
  * Describes a memory pool.

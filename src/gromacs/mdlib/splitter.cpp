@@ -50,9 +50,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+struct t_sid {
     int atom, sid;
-} t_sid;
+};
 
 static int sid_comp(const void *a, const void *b)
 {
@@ -225,9 +225,9 @@ static int mk_sblocks(FILE *fp, t_graph *g, int maxsid, t_sid sid[])
 }
 
 
-typedef struct {
+struct t_merge_sid {
     int first, last, sid;
-} t_merge_sid;
+};
 
 static int ms_comp(const void *a, const void *b)
 {

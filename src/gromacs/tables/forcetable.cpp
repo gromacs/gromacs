@@ -85,10 +85,10 @@ enum {
 #define ETAB_USER(e)  ((e) == etabUSER || \
                        (e) == etabEwaldUser || (e) == etabEwaldUserSwitch)
 
-typedef struct {
+struct t_tab_props {
     const char *name;
     gmx_bool    bCoulomb;
-} t_tab_props;
+};
 
 /* This structure holds name and a flag that tells whether
    this is a Coulomb type funtion */
@@ -116,11 +116,11 @@ static const t_tab_props tprops[etabNR] = {
     { "USER", FALSE },
 };
 
-typedef struct {
+struct t_tabledata {
     int     nx, nx0;
     double  tabscale;
     double *x, *v, *f;
-} t_tabledata;
+};
 
 double v_q_ewald_lr(double beta, double r)
 {

@@ -61,7 +61,7 @@
 #include "gromacs/utility/smalloc.h"
 
 /* information about scaling center */
-typedef struct {
+struct pos_ins_t {
     rvec      xmin;      /* smallest coordinates of all embedded molecules */
     rvec      xmax;      /* largest coordinates of all embedded molecules */
     rvec     *geom_cent; /* scaling center of each independent molecule to embed */
@@ -69,7 +69,7 @@ typedef struct {
     int      *nidx;      /* n atoms for every independent embedded molecule (index in subindex) */
     int     **subindex;  /* atomids for independent molecule *
                           * atoms of piece i run from subindex[i][0] to subindex[i][nidx[i]] */
-} pos_ins_t;
+};
 
 /* variables needed in do_md */
 struct gmx_membed_t {
@@ -83,7 +83,7 @@ struct gmx_membed_t {
 };
 
 /* membrane related variables */
-typedef struct {
+struct mem_t {
     char      *name;     /* name of index group to embed molecule into (usually membrane) */
     t_block    mem_at;   /* list all atoms in membrane */
     int        nmol;     /* number of membrane molecules overlapping with the molecule to embed */
@@ -92,15 +92,15 @@ typedef struct {
     real       zmin;     /* minimum z coordinate of membrane */
     real       zmax;     /* maximum z coordinate of membrane */
     real       zmed;     /* median z coordinate of membrane */
-} mem_t;
+};
 
 /* Lists all molecules in the membrane that overlap with the molecule to be embedded. *
  * These will then be removed from the system */
-typedef struct {
+struct rm_t {
     int   nr;     /* number of molecules to remove */
     int  *mol;    /* list of molecule ids to remove */
     int  *block;  /* id of the molblock that the molecule to remove is part of */
-} rm_t;
+};
 
 /* Get the global molecule id, and the corresponding molecule type and id of the *
  * molblock from the global atom nr. */

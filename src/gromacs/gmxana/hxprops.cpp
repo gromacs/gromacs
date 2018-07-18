@@ -55,9 +55,9 @@
 
 real ellipticity(int nres, t_bb bb[])
 {
-    typedef struct {
+    struct t_ppwstr {
         real phi, psi, w;
-    } t_ppwstr;
+    };
     // Avoid warnings about narrowing conversions from double to real
 #ifdef _MSC_VER
 #pragma warning(disable: 4838)

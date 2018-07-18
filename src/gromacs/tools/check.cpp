@@ -70,7 +70,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+struct t_count {
     int bStep;
     int bTime;
     int bLambda;
@@ -78,9 +78,9 @@ typedef struct {
     int bV;
     int bF;
     int bBox;
-} t_count;
+};
 
-typedef struct {
+struct t_fr_time {
     float bStep;
     float bTime;
     float bLambda;
@@ -88,7 +88,7 @@ typedef struct {
     float bV;
     float bF;
     float bBox;
-} t_fr_time;
+};
 
 static void comp_tpx(const char *fn1, const char *fn2,
                      gmx_bool bRMSD, real ftol, real abstol)

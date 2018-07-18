@@ -66,7 +66,7 @@ static bool was_dihedral_set_in_rtp(const t_param *dih)
     return dih->c[MAXFORCEPARAM-1] == DIHEDRAL_WAS_SET_IN_RTP;
 }
 
-typedef bool (*peq)(t_param *p1, t_param *p2);
+using peq = bool (*)(t_param *, t_param *);
 
 static int acomp(const void *a1, const void *a2)
 {

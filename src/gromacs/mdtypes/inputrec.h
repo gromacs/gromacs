@@ -197,12 +197,12 @@ typedef struct t_rot {
 } t_rot;
 
 /* Abstract type for IMD only defined in IMD.c */
-struct t_gmx_IMD;
+struct t_gmx_IMD_setup;
 
 typedef struct t_IMD {
     int               nat;   /* Number of interactive atoms                   */
     int              *ind;   /* The global indices of the interactive atoms   */
-    struct t_gmx_IMD *setup; /* Stores non-inputrec IMD data                  */
+    t_gmx_IMD_setup  *setup; /* Stores non-inputrec IMD data                  */
 } t_IMD;
 
 /* Abstract types for position swapping only defined in swapcoords.cpp */

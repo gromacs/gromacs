@@ -76,7 +76,7 @@
 #include "gromacs/utility/snprintf.h"
 
 #define max_hx 7
-typedef int t_hx[max_hx];
+using t_hx = int[max_hx];
 #define NRHXTYPES max_hx
 static const char *hxtypenames[NRHXTYPES] =
 {"n-n", "n-n+1", "n-n+2", "n-n+3", "n-n+4", "n-n+5", "n-n>6"};
@@ -115,21 +115,21 @@ static gmx_bool    bDebug = FALSE;
 #define ISDON(h)   ((h) & c_donorMask)
 #define ISINGRP(h) ((h) & c_inGroupMask)
 
-typedef struct {
+struct t_ncell {
     int      nr;
     int      maxnr;
     int     *atoms;
-} t_ncell;
+};
 
-typedef struct {
+struct t_gridcell {
     t_ncell d[grNR];
     t_ncell a[grNR];
-} t_gridcell;
+};
 
-typedef int     t_icell[grNR];
-typedef int h_id[MAXHYDRO];
+using t_icell = int[grNR];
+using h_id    = int[MAXHYDRO];
 
-typedef struct {
+struct t_hbond {
     int      history[MAXHYDRO];
     /* Has this hbond existed ever? If so as hbDist or hbHB or both.
      * Result is stored as a bitmap (1 = hbDist) || (2 = hbHB)
@@ -146,16 +146,16 @@ typedef struct {
      * acceptor distance is less than the user-specified distance (typically
      * 0.35 nm).
      */
-} t_hbond;
+};
 
-typedef struct {
+struct t_acceptors {
     int      nra, max_nra;
     int     *acc;         /* Atom numbers of the acceptors     */
     int     *grp;         /* Group index                       */
     int     *aptr;        /* Map atom number to acceptor index */
-} t_acceptors;
+};
 
-typedef struct {
+struct t_donors {
     int       nrd, max_nrd;
     int      *don;               /* Atom numbers of the donors         */
     int      *grp;               /* Group index                        */
@@ -163,9 +163,9 @@ typedef struct {
     int      *nhydro;            /* Number of hydrogens for each donor */
     h_id     *hydro;             /* The atom numbers of the hydrogens  */
     h_id     *nhbonds;           /* The number of HBs per H at current */
-} t_donors;
+};
 
-typedef struct {
+struct t_hbdata {
     gmx_bool        bHBmap, bDAnr;
     int             wordlen;
     /* The following arrays are nframes long */
@@ -181,7 +181,7 @@ typedef struct {
     /* This holds a matrix with all possible hydrogen bonds */
     int             nrhb, nrdist;
     t_hbond      ***hbmap;
-} t_hbdata;
+};
 
 /* Changed argument 'bMerge' into 'oneHB' below,
  * since -contact should cause maxhydro to be 1,
@@ -1700,11 +1700,11 @@ static real calc_dg(real tau, real temp)
     }
 }
 
-typedef struct {
+struct t_luzar {
     int   n0, n1, nparams, ndelta;
     real  kkk[2];
     real *t, *ct, *nt, *kt, *sigma_ct, *sigma_nt, *sigma_kt;
-} t_luzar;
+};
 
 static real compute_weighted_rates(int n, real t[], real ct[], real nt[],
                                    real kt[], real sigma_ct[], real sigma_nt[],

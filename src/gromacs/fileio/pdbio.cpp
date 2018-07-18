@@ -61,15 +61,15 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 
-typedef struct {
+struct gmx_conection_t {
     int ai, aj;
-} gmx_conection_t;
+};
 
-typedef struct gmx_conect_t {
+struct gmx_conect_t {
     int              nconect;
     gmx_bool         bSorted;
     gmx_conection_t *conect;
-} gmx_conect_t;
+};
 
 static const char *pdbtp[epdbNR] = {
     "ATOM  ", "HETATM", "ANISOU", "CRYST1",
