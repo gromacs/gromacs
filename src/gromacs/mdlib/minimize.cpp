@@ -1043,8 +1043,11 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
 
     step = 0;
 
-    // Ensure the extra per-atom state array gets allocated
-    state_global->flags |= (1<<estCGP);
+    if (MASTER(cr))
+    {
+        // Ensure the extra per-atom state array gets allocated
+        state_global->flags |= (1<<estCGP);
+    }
 
     /* Create 4 states on the stack and extract pointers that we will swap */
     em_state_t  s0 {}, s1 {}, s2 {}, s3 {};
