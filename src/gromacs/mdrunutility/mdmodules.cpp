@@ -74,12 +74,12 @@ class MDModules::Impl : public IMDOutputProvider
         }
 
         // From IMDOutputProvider
-        virtual void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
-                                bool bAppendFiles, const gmx_output_env_t *oenv)
+        void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
+                        bool bAppendFiles, const gmx_output_env_t *oenv) override
         {
             field_->outputProvider()->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
         }
-        virtual void finishOutput()
+        void finishOutput() override
         {
             field_->outputProvider()->finishOutput();
         }

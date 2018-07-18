@@ -168,8 +168,8 @@ class KeyValueTreeBackMapping : public IKeyValueTreeBackMapping
                 std::map<std::string, Entry> childEntries_;
         };
 
-        virtual KeyValueTreePath
-        originalPath(const KeyValueTreePath &path) const
+        KeyValueTreePath
+        originalPath(const KeyValueTreePath &path) const override
         {
             const Entry *entry = &rootEntry_;
             for (const auto &element : path.elements())

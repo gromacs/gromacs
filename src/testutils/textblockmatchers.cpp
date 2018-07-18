@@ -62,8 +62,8 @@ namespace
 class ExactTextMatcher : public ITextBlockMatcher
 {
     public:
-        virtual void checkStream(TextInputStream      *stream,
-                                 TestReferenceChecker *checker)
+        void checkStream(TextInputStream      *stream,
+                         TestReferenceChecker *checker) override
         {
             TextReader reader(stream);
             checker->checkTextBlock(reader.readAll(), "Contents");
@@ -73,8 +73,8 @@ class ExactTextMatcher : public ITextBlockMatcher
 class NoTextMatcher : public ITextBlockMatcher
 {
     public:
-        virtual void checkStream(TextInputStream      * /*stream*/,
-                                 TestReferenceChecker * /*checker*/)
+        void checkStream(TextInputStream      * /*stream*/,
+                         TestReferenceChecker * /*checker*/) override
         {
         }
 };
@@ -84,8 +84,8 @@ class FilteringExactTextMatcher : public ITextBlockMatcher
     public:
         FilteringExactTextMatcher(const std::vector<std::string> &linesToSkip)
             : linesToSkip_(linesToSkip) {}
-        virtual void checkStream(TextInputStream      *stream,
-                                 TestReferenceChecker *checker)
+        void checkStream(TextInputStream      *stream,
+                         TestReferenceChecker *checker) override
         {
             StringOutputStream filteredStream;
             {

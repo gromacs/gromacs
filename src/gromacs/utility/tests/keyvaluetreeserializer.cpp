@@ -56,33 +56,33 @@ class RefDataSerializer : public gmx::ISerializer
         {
         }
 
-        virtual bool reading() const { return false; }
+        bool reading() const override { return false; }
 
-        virtual void doBool(bool *value)
+        void doBool(bool *value) override
         {
             checker_.checkBoolean(*value, nullptr);
         }
-        virtual void doUChar(unsigned char *value)
+        void doUChar(unsigned char *value) override
         {
             checker_.checkUChar(*value, nullptr);
         }
-        virtual void doInt(int *value)
+        void doInt(int *value) override
         {
             checker_.checkInteger(*value, nullptr);
         }
-        virtual void doInt64(int64_t *value)
+        void doInt64(int64_t *value) override
         {
             checker_.checkInt64(*value, nullptr);
         }
-        virtual void doFloat(float *value)
+        void doFloat(float *value) override
         {
             checker_.checkFloat(*value, nullptr);
         }
-        virtual void doDouble(double *value)
+        void doDouble(double *value) override
         {
             checker_.checkDouble(*value, nullptr);
         }
-        virtual void doString(std::string *value)
+        void doString(std::string *value) override
         {
             checker_.checkString(*value, nullptr);
         }

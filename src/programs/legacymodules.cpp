@@ -78,24 +78,24 @@ class ObsoleteToolModule : public gmx::ICommandLineModule
         {
         }
 
-        virtual const char *name() const
+        const char *name() const override
         {
             return name_;
         }
-        virtual const char *shortDescription() const
+        const char *shortDescription() const override
         {
             return nullptr;
         }
 
-        virtual void init(gmx::CommandLineModuleSettings * /*settings*/)
+        void init(gmx::CommandLineModuleSettings * /*settings*/) override
         {
         }
-        virtual int run(int /*argc*/, char * /*argv*/[])
+        int run(int /*argc*/, char * /*argv*/[]) override
         {
             printMessage();
             return 0;
         }
-        virtual void writeHelp(const gmx::CommandLineHelpContext & /*context*/) const
+        void writeHelp(const gmx::CommandLineHelpContext & /*context*/) const override
         {
             printMessage();
         }

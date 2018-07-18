@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -93,16 +93,16 @@ template <class InfoType>
 class OptionsTypeVisitor : public OptionsVisitor
 {
     public:
-        virtual ~OptionsTypeVisitor() {}
+        ~OptionsTypeVisitor() override {}
 
-        virtual void visitSection(const OptionSectionInfo &section) = 0;
+        void visitSection(const OptionSectionInfo &section) override = 0;
         /*! \brief
          * Called for each option of type \p InfoType.
          */
         virtual void visitOptionType(const InfoType &option) = 0;
 
     private:
-        virtual void visitOption(const OptionInfo &option)
+        void visitOption(const OptionInfo &option) override
         {
             const InfoType *subtype = option.toType<InfoType>();
             if (subtype != NULL)
@@ -202,16 +202,16 @@ template <class InfoType>
 class OptionsModifyingTypeVisitor : public OptionsModifyingVisitor
 {
     public:
-        virtual ~OptionsModifyingTypeVisitor() {}
+        ~OptionsModifyingTypeVisitor() override {}
 
-        virtual void visitSection(OptionSectionInfo *section) = 0;
+        void visitSection(OptionSectionInfo *section) override = 0;
         /*! \brief
          * Called for each option of type \p InfoType.
          */
         virtual void visitOptionType(InfoType *option) = 0;
 
     private:
-        virtual void visitOption(OptionInfo *option)
+        void visitOption(OptionInfo *option) override
         {
             InfoType *subtype = option->toType<InfoType>();
             if (subtype != nullptr)
