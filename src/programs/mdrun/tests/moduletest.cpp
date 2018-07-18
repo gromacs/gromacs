@@ -92,10 +92,6 @@ GMX_TEST_OPTIONS(MdrunTestOptions, options)
 }
 
 SimulationRunner::SimulationRunner(TestFileManager *fileManager) :
-    topFileName_(),
-    groFileName_(),
-    fullPrecisionTrajectoryFileName_(),
-    ndxFileName_(),
     mdpOutputFileName_(fileManager->getTemporaryFilePath("output.mdp")),
     tprFileName_(fileManager->getTemporaryFilePath(".tpr")),
     logFileName_(fileManager->getTemporaryFilePath(".log")),
@@ -143,15 +139,15 @@ SimulationRunner::useStringAsNdxFile(const char *ndxString)
 void
 SimulationRunner::useTopGroAndNdxFromDatabase(const char *name)
 {
-    topFileName_ = fileManager_.getInputFilePath((std::string(name) + ".top").c_str());
-    groFileName_ = fileManager_.getInputFilePath((std::string(name) + ".gro").c_str());
-    ndxFileName_ = fileManager_.getInputFilePath((std::string(name) + ".ndx").c_str());
+    topFileName_ = TestFileManager::getInputFilePath((std::string(name) + ".top").c_str());
+    groFileName_ = TestFileManager::getInputFilePath((std::string(name) + ".gro").c_str());
+    ndxFileName_ = TestFileManager::getInputFilePath((std::string(name) + ".ndx").c_str());
 }
 
 void
 SimulationRunner::useGroFromDatabase(const char *name)
 {
-    groFileName_ = fileManager_.getInputFilePath((std::string(name) + ".gro").c_str());
+    groFileName_ = TestFileManager::getInputFilePath((std::string(name) + ".gro").c_str());
 }
 
 int
