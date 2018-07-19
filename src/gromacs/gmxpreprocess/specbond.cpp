@@ -161,13 +161,6 @@ static bool is_bond(int nsb, t_specbond sb[], t_atoms *pdba, int a1, int a2,
     res1 = *pdba->resinfo[pdba->atom[a1].resind].name;
     res2 = *pdba->resinfo[pdba->atom[a2].resind].name;
 
-    if (debug)
-    {
-        fprintf(stderr, "Checking %s-%d %s-%d and %s-%d %s-%d: %g ",
-                res1, pdba->resinfo[pdba->atom[a1].resind].nr, at1, a1+1,
-                res2, pdba->resinfo[pdba->atom[a2].resind].nr, at2, a2+1, d);
-    }
-
     for (i = 0; (i < nsb); i++)
     {
         *index_sb = i;
@@ -179,10 +172,6 @@ static bool is_bond(int nsb, t_specbond sb[], t_atoms *pdba, int a1, int a2,
             *bSwap = FALSE;
             if ((0.9*sb[i].length < d) && (1.1*sb[i].length > d))
             {
-                if (debug)
-                {
-                    fprintf(stderr, "%g\n", sb[i].length);
-                }
                 return TRUE;
             }
         }
@@ -194,17 +183,9 @@ static bool is_bond(int nsb, t_specbond sb[], t_atoms *pdba, int a1, int a2,
             *bSwap = TRUE;
             if ((0.9*sb[i].length < d) && (1.1*sb[i].length > d))
             {
-                if (debug)
-                {
-                    fprintf(stderr, "%g\n", sb[i].length);
-                }
                 return TRUE;
             }
         }
-    }
-    if (debug)
-    {
-        fprintf(stderr, "\n");
     }
     return FALSE;
 }

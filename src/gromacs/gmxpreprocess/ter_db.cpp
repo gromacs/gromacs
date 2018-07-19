@@ -261,10 +261,6 @@ static void read_ter_db_file(char *fn,
     }
 
     in = fflib_open(fn);
-    if (debug)
-    {
-        fprintf(debug, "Opened %s\n", fn);
-    }
 
     tb    = *tbptr;
     nb    = *ntbptr - 1;
@@ -425,11 +421,6 @@ int read_ter_db(const char *ffdir, char ter,
         sfree(tdbf[f]);
     }
     sfree(tdbf);
-
-    if (debug)
-    {
-        print_ter_db("new", ter, ntb, *tbptr, atype);
-    }
 
     return ntb;
 }

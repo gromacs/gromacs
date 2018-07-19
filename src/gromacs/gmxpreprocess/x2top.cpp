@@ -140,11 +140,6 @@ static void mk_bonds(int nnm, t_nm2type nmt[],
                 add_param_to_list (bond, &b);
                 nbond[i]++;
                 nbond[j]++;
-                if (debug)
-                {
-                    fprintf(debug, "Bonding atoms %s-%d and %s-%d\n",
-                            *atoms->atomname[i], i+1, *atoms->atomname[j], j+1);
-                }
             }
         }
     }
@@ -277,10 +272,6 @@ static void calc_angles_dihs(t_params *ang, t_params *dih, const rvec x[], bool 
     {
         set_pbc(&pbc, epbcXYZ, box);
     }
-    if (debug)
-    {
-        pr_rvecs(debug, 0, "X2TOP", box, DIM);
-    }
     for (i = 0; (i < ang->nr); i++)
     {
         ai = ang->param[i].ai();
@@ -288,11 +279,6 @@ static void calc_angles_dihs(t_params *ang, t_params *dih, const rvec x[], bool 
         ak = ang->param[i].ak();
         th = RAD2DEG*bond_angle(x[ai], x[aj], x[ak], bPBC ? &pbc : nullptr,
                                 r_ij, r_kj, &costh, &t1, &t2);
-        if (debug)
-        {
-            fprintf(debug, "X2TOP: ai=%3d aj=%3d ak=%3d r_ij=%8.3f r_kj=%8.3f th=%8.3f\n",
-                    ai, aj, ak, norm(r_ij), norm(r_kj), th);
-        }
         ang->param[i].c0() = th;
     }
     for (i = 0; (i < dih->nr); i++)
@@ -303,11 +289,6 @@ static void calc_angles_dihs(t_params *ang, t_params *dih, const rvec x[], bool 
         al = dih->param[i].al();
         ph = RAD2DEG*dih_angle(x[ai], x[aj], x[ak], x[al], bPBC ? &pbc : nullptr,
                                r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
-        if (debug)
-        {
-            fprintf(debug, "X2TOP: ai=%3d aj=%3d ak=%3d al=%3d r_ij=%8.3f r_kj=%8.3f r_kl=%8.3f ph=%8.3f\n",
-                    ai, aj, ak, al, norm(r_ij), norm(r_kj), norm(r_kl), ph);
-        }
         dih->param[i].c0() = ph;
     }
 }
@@ -538,10 +519,6 @@ int gmx_x2top(int argc, char *argv[])
     {
         printf("There are %d name to type translations in file %s\n", nnm, n2t);
     }
-    if (debug)
-    {
-        dump_nm2type(debug, nnm, nm2t);
-    }
     printf("Generating bonds from distances...\n");
     snew(nbonds, atoms->nr);
     mk_bonds(nnm, nm2t, atoms, x, &(plist[F_BONDS]), nbonds, bPBC, box);
@@ -599,10 +576,6 @@ int gmx_x2top(int argc, char *argv[])
                   atoms, plist, atype, cgnr);
     }
 
-    if (debug)
-    {
-        dump_hybridization(debug, atoms, nbonds);
-    }
     close_symtab(&symtab);
     sfree(mymol.name);
 

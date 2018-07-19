@@ -479,12 +479,6 @@ static int name2type(t_atoms *at, int **cgnr,
         }
         if (at->atom[i].m == 0)
         {
-            if (debug)
-            {
-                fprintf(debug, "atom %d%s: curcg=%d, prevcg=%d, cg=%d\n",
-                        i+1, *(at->atomname[i]), curcg, prevcg,
-                        j == NOTSET ? NOTSET : restp[resind].cgnr[j]);
-            }
             qt               = 0;
             prevcg           = cg;
             name             = *(at->atomname[i]);
@@ -503,11 +497,6 @@ static int name2type(t_atoms *at, int **cgnr,
         }
         else
         {
-            if (debug)
-            {
-                fprintf(debug, "atom %d%s: curcg=%d, qt=%g, is_int=%s\n",
-                        i+1, *(at->atomname[i]), curcg, qt, gmx::boolToString(is_int(qt)));
-            }
             cg = -1;
             if (is_int(qt))
             {
@@ -968,12 +957,6 @@ static void add_atom_to_restp(t_restp *restp, int at_start, const t_hack *hack)
     int         k;
     const char *Hnum = "123456";
 
-    /*if (debug)
-       {
-        fprintf(debug,"adding atom(s) %s to atom %s in res %d%s in rtp\n",
-                hack->nname,
-     * restp->atomname[at_start], resnr, restp->resname);
-                }*/
     strcpy(buf, hack->nname);
     buf[strlen(buf)+1] = '\0';
     if (hack->nr > 1)
@@ -1165,14 +1148,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                     {
                         /* oname != NULL */
                         if ( (*hb)[i].hack[j].nname == nullptr)
-                        {
-                            /* we're deleting */
-                            if (debug)
-                            {
-                                fprintf(debug, "deleting atom %s from res %d%s in rtp\n",
-                                        *(*restp)[i].atomname[l],
-                                        i+1, (*restp)[i].resname);
-                            }
+                        {   /* we're deleting */
                             /* shift the rest */
                             (*restp)[i].natom--;
                             for (k = l; k < (*restp)[i].natom; k++)
@@ -1188,12 +1164,6 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                         }
                         else /* nname != NULL */
                         {    /* we're replacing */
-                            if (debug)
-                            {
-                                fprintf(debug, "replacing atom %s by %s in res %d%s in rtp\n",
-                                        *(*restp)[i].atomname[l], (*hb)[i].hack[j].nname,
-                                        i+1, (*restp)[i].resname);
-                            }
                             snew( (*restp)[i].atomname[l], 1);
                             (*restp)[i].atom[l]      =       *(*hb)[i].hack[j].atom;
                             *(*restp)[i].atomname[l] = gmx_strdup((*hb)[i].hack[j].nname);
@@ -1576,12 +1546,6 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 
     init_plist(plist);
     gmx_residuetype_init(&rt);
-
-    if (debug)
-    {
-        print_resall(debug, atoms->nres, restp, atype);
-        dump_hb(debug, atoms->nres, hb);
-    }
 
     /* Make bonds */
     at2bonds(&(plist[F_BONDS]), hb,
