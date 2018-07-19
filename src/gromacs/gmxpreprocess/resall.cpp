@@ -336,15 +336,6 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
 
     in = fflib_open(rrdb);
 
-    if (debug)
-    {
-        fprintf(debug, "%9s %5s", "Residue", "atoms");
-        for (i = 0; i < ebtsNR; i++)
-        {
-            fprintf(debug, " %10s", btsNames[i]);
-        }
-        fprintf(debug, "\n");
-    }
     snew(header_settings, 1);
 
     /* these bonded parameters will overwritten be when  *
@@ -486,16 +477,6 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
         {
             gmx_fatal(FARGS, "No atoms found in .rtp file in residue %s\n",
                       rrtp[nrtp].resname);
-        }
-        if (debug)
-        {
-            fprintf(debug, "%3d %5s %5d",
-                    nrtp+1, rrtp[nrtp].resname, rrtp[nrtp].natom);
-            for (i = 0; i < ebtsNR; i++)
-            {
-                fprintf(debug, " %10d", rrtp[nrtp].rb[i].nb);
-            }
-            fprintf(debug, "\n");
         }
 
         firstrtp = -1;

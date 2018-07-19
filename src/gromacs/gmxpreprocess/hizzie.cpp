@@ -121,27 +121,6 @@ static void chk_allhb(t_atoms *pdba, rvec x[], t_blocka *hb,
     hb->nra = k;
 }
 
-static void pr_hbonds(FILE *fp, t_blocka *hb, t_atoms *pdba)
-{
-    int i, j, k, j0, j1;
-
-    fprintf(fp, "Dumping all hydrogen bonds!\n");
-    for (i = 0; (i < hb->nr); i++)
-    {
-        j0 = hb->index[i];
-        j1 = hb->index[i+1];
-        for (j = j0; (j < j1); j++)
-        {
-            k = hb->a[j];
-            fprintf(fp, "%5s%4d%5s - %5s%4d%5s\n",
-                    *pdba->resinfo[pdba->atom[i].resind].name,
-                    pdba->resinfo[pdba->atom[i].resind].nr, *pdba->atomname[i],
-                    *pdba->resinfo[pdba->atom[k].resind].name,
-                    pdba->resinfo[pdba->atom[k].resind].nr, *pdba->atomname[k]);
-        }
-    }
-}
-
 static bool chk_hbonds(int i, t_atoms *pdba, rvec x[],
                        const bool ad[], bool hbond[], rvec xh,
                        real angle, real dist)
@@ -172,16 +151,6 @@ static bool chk_hbonds(int i, t_atoms *pdba, rvec x[],
                 a  = RAD2DEG * acos(cos_angle(nh, oh));
                 if ((d2 < dist2) && (a > angle))
                 {
-                    if (debug)
-                    {
-                        fprintf(debug,
-                                "HBOND between %s%d-%s and %s%d-%s is %g nm, %g deg\n",
-                                *pdba->resinfo[pdba->atom[i].resind].name,
-                                pdba->resinfo[pdba->atom[i].resind].nr, *pdba->atomname[i],
-                                *pdba->resinfo[pdba->atom[aj].resind].name,
-                                pdba->resinfo[pdba->atom[aj].resind].nr, *pdba->atomname[aj],
-                                std::sqrt(d2), a);
-                    }
                     hbond[i] = TRUE;
                     bHB      = TRUE;
                 }
@@ -266,10 +235,6 @@ void set_histp(t_atoms *pdba, rvec *x, real angle, real dist)
     }
     fprintf(stderr, " %d donors and %d acceptors were found.\n", nd, na);
     chk_allhb(pdba, x, hb, donor, acceptor, dist);
-    if (debug)
-    {
-        pr_hbonds(debug, hb, pdba);
-    }
     fprintf(stderr, "There are %d hydrogen bonds\n", hb->nra);
 
     /* Now do the HIS stuff */

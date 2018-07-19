@@ -134,11 +134,6 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
     int          i, n, nab, nah;
     t_hackblock *aah;
 
-    if (debug)
-    {
-        fprintf(debug, "Hydrogen Database (%s):\n", hfn);
-    }
-
     fflib_filename_base(hfn, filebase, STRLEN);
     /* Currently filebase is read and set, but not used.
      * hdb entries from any hdb file and be applied to rtp entries
@@ -162,10 +157,6 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
                     nah, line);
             break;
         }
-        if (debug)
-        {
-            fprintf(debug, "%s", buf);
-        }
         srenew(aah, nah+1);
         clear_t_hackblock(&aah[nah]);
         aah[nah].name     = gmx_strdup(buf);
@@ -173,10 +164,6 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
 
         if (sscanf(line+n, "%d", &nab) == 1)
         {
-            if (debug)
-            {
-                fprintf(debug, "  %d\n", nab);
-            }
             snew(aah[nah].hack, nab);
             aah[nah].nhack = nab;
             for (i = 0; (i < nab); i++)
@@ -203,11 +190,6 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
         /* Sort the list (necessary to be able to use bsearch */
         qsort(aah, nah, (size_t)sizeof(**ah), compaddh);
     }
-
-    /*
-       if (debug)
-       dump_h_db(hfn,nah,aah);
-     */
 
     *nahptr = nah;
     *ah     = aah;
