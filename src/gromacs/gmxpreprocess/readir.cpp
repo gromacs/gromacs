@@ -2608,11 +2608,6 @@ static bool do_numbering(int natoms, gmx_groups_t *groups, int ng, char *ptrs[],
     bool            bRest;
     char            warn_buf[STRLEN];
 
-    if (debug)
-    {
-        fprintf(debug, "Starting numbering %d groups of type %d\n", ng, gtype);
-    }
-
     title = gtypes[gtype];
 
     snew(cbuf, natoms);
@@ -2630,10 +2625,6 @@ static bool do_numbering(int natoms, gmx_groups_t *groups, int ng, char *ptrs[],
         if ((grptp != egrptpONE) || (i == 0))
         {
             grps->nm_ind[grps->nr++] = gid;
-        }
-        if (debug)
-        {
-            fprintf(debug, "Found gid %d for group %s\n", gid, ptrs[i]);
         }
 
         /* Now go over the atoms in the group */
@@ -2981,11 +2972,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
             /* Correct for VCM removal according to the fraction of each VCM
              * group present in this TC group.
              */
-            nrdf_uc = nrdf_tc[i];
-            if (debug)
-            {
-                fprintf(debug, "T-group[%d] nrdf_uc = %g\n", i, nrdf_uc);
-            }
+            nrdf_uc    = nrdf_tc[i];
             nrdf_tc[i] = 0;
             for (j = 0; j < groups->grps[egcVCM].nr+1; j++)
             {
@@ -2993,11 +2980,6 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                 {
                     nrdf_tc[i] += nrdf_uc*((double)na_vcm[j]/(double)na_tot)*
                         (nrdf_vcm[j] - nrdf_vcm_sub[j])/nrdf_vcm[j];
-                }
-                if (debug)
-                {
-                    fprintf(debug, "  nrdf_vcm[%d] = %g, nrdf = %g\n",
-                            j, nrdf_vcm[j], nrdf_tc[i]);
                 }
             }
         }

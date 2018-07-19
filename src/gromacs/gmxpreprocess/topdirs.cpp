@@ -394,10 +394,6 @@ void DS_Init(DirStack **DS)
 
         for (i = 0; (i < d_maxdir); i++)
         {
-            if (debug)
-            {
-                fprintf(debug, "%20s:  ", dir2str((directive)i));
-            }
             if (necessary[i])
             {
                 directive d;
@@ -405,16 +401,8 @@ void DS_Init(DirStack **DS)
                 do
                 {
                     d = necessary[i][j++];
-                    if (debug)
-                    {
-                        fprintf(debug, "%20s  ", dir2str(d));
-                    }
                 }
                 while (d != d_none);
-            }
-            if (debug)
-            {
-                fprintf(debug, "\n");
             }
         }
     }

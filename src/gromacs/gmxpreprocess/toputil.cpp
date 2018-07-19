@@ -447,12 +447,6 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
 
     qtot  = 0;
 
-    if (debug)
-    {
-        fprintf(debug, "This molecule has %d atoms and %d residues\n",
-                at->nr, at->nres);
-    }
-
     if (at->nres)
     {
         /* if the information is present... */

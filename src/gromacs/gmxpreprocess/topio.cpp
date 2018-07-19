@@ -141,11 +141,6 @@ static void gen_pairs(t_params *nbs, t_params *pairs, real fudge, int comb)
     }
 
     fprintf(stderr, "Generating 1-4 interactions: fudge = %g\n", fudge);
-    if (debug)
-    {
-        fprintf(debug, "Fudge factor for 1-4 interactions: %g\n", fudge);
-        fprintf(debug, "Holy Cow! there are %d types\n", ntp);
-    }
     snew(pairs->param, pairs->nr);
     for (i = 0; (i < ntp); i++)
     {
@@ -597,10 +592,6 @@ static char **read_topol(const char *infile, const char *outfile,
                     else
                     {
                         /* Directive found */
-                        if (debug)
-                        {
-                            fprintf(debug, "found directive '%s'\n", dir2str(newd));
-                        }
                         if (DS_Check_Order (DS, newd))
                         {
                             DS_Push (&DS, newd);

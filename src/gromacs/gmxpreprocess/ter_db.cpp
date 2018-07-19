@@ -261,10 +261,6 @@ static void read_ter_db_file(char *fn,
     }
 
     in = fflib_open(fn);
-    if (debug)
-    {
-        fprintf(debug, "Opened %s\n", fn);
-    }
 
     tb    = *tbptr;
     nb    = *ntbptr - 1;

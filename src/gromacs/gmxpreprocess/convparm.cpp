@@ -484,11 +484,6 @@ static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
     {
         type = ffparams->ntypes;
     }
-    if (debug)
-    {
-        fprintf(debug, "copying newparam to ffparams->iparams[%d] (ntypes=%d)\n",
-                type, ffparams->ntypes);
-    }
     memcpy(&ffparams->iparams[type], &newparam, (size_t)sizeof(newparam));
 
     ffparams->ntypes++;
@@ -529,11 +524,6 @@ static void enter_function(t_params *p, t_functype ftype, int comb, real reppow,
             *maxtypes += 1000;
             srenew(ffparams->functype, *maxtypes);
             srenew(ffparams->iparams, *maxtypes);
-            if (debug)
-            {
-                fprintf(debug, "%s, line %d: srenewed idef->functype and idef->iparams to %d\n",
-                        __FILE__, __LINE__, *maxtypes);
-            }
         }
         type = enter_params(ffparams, ftype, p->param[k].c, comb, reppow, start, bAppend);
         /* Type==-1 is used as a signal that this interaction is all-zero and should not be added. */
@@ -643,12 +633,6 @@ void convert_params(int atnr, t_params nbtypes[],
         {
             sfree(mtop->intermolecular_ilist);
         }
-    }
-
-    if (debug)
-    {
-        fprintf(debug, "%s, line %d: There are %d functypes in idef\n",
-                __FILE__, __LINE__, ffp->ntypes);
     }
 
     ffp->fudgeQQ = fudgeQQ;

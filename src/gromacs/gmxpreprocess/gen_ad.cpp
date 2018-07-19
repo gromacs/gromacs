@@ -212,13 +212,6 @@ static void rm2par(t_param p[], int *np, peq eq)
         }
         if (p[index[i]].a[0] == p[index[i]].a[1])
         {
-            if (debug)
-            {
-                fprintf(debug,
-                        "Something VERY strange is going on in rm2par (gen_ad.c)\n"
-                        "a[0] %d a[1] %d a[2] %d a[3] %d\n",
-                        p[i].a[0], p[i].a[1], p[i].a[2], p[i].a[3]);
-            }
             strcpy(p[i].s, "");
         }
         else if (index[i] > i)
@@ -977,10 +970,6 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                 }
 
                                 nbd = nb_dist(nnb, i, l1);
-                                if (debug)
-                                {
-                                    fprintf(debug, "Distance (%d-%d) = %d\n", i+1, l1+1, nbd);
-                                }
                                 if (nbd == 3)
                                 {
                                     i1    = std::min(i, l1);

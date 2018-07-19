@@ -479,10 +479,6 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
         warning_error_and_exit(wi, errbuf, FARGS);
     }
     pt = xl[j].ptype;
-    if (debug)
-    {
-        fprintf(debug, "ptype: %s\n", ptype_str[pt]);
-    }
 
     atom->q     = q;
     atom->m     = m;
@@ -1298,11 +1294,6 @@ static void push_atom_now(t_symtab *symtab, t_atoms *at, int atomnr,
 
 static void push_cg(t_block *block, int *lastindex, int index, int a)
 {
-    if (debug)
-    {
-        fprintf (debug, "Index %d, Atom %d\n", index, a);
-    }
-
     if (((block->nr) && (*lastindex != index)) || (!block->nr))
     {
         /* add a new block */
@@ -1384,10 +1375,6 @@ void push_atom(t_symtab *symtab, t_block *cgs,
                 }
             }
         }
-    }
-    if (debug)
-    {
-        fprintf(debug, "mB=%g, qB=%g, typeB=%d\n", mB, qB, typeB);
     }
 
     push_cg(cgs, lastcg, cgnumber, nr);
@@ -2440,10 +2427,6 @@ void push_excl(char *line, t_block2 *b2, warninp_t wi)
     }
     else
     {
-        if (debug)
-        {
-            fprintf(debug, "Unbound atom %d\n", i-1);
-        }
         return;
     }
     strcpy(base, "%*d");
@@ -2530,10 +2513,6 @@ void merge_excl(t_blocka *excl, t_block2 *b2, warninp_t wi)
         sprintf(errbuf, "DEATH HORROR: b2->nr = %d, while excl->nr = %d",
                 b2->nr, excl->nr);
         warning_error_and_exit(wi, errbuf, FARGS);
-    }
-    else if (debug)
-    {
-        fprintf(debug, "Entering merge_excl\n");
     }
 
     /* First copy all entries from excl to b2 */
