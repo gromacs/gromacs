@@ -1377,6 +1377,16 @@ int Mdrunner::mdrunner()
         fplog = nullptr;
     }
 
+    /* Reset FPEs (important for unit tests) by disabling them. Assumes no
+     * exceptions were enabled before function was called. */
+#if !defined NDEBUG && !(defined __clang__ && defined __OPTIMIZE__)
+    if (!EI_TPI(inputrec->eI) &&
+        inputrec->cutoff_scheme == ecutsVERLET)
+    {
+        gmx_fedisableexcept();
+    }
+#endif
+
     rc = (int)gmx_get_stop_condition();
 
 #if GMX_THREAD_MPI
