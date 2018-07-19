@@ -178,23 +178,14 @@ static real search_e_diss(int n2m, t_2morse t2m[], char *ai, char *aj)
         }
     }
     /* Return the dissocation energy corresponding to the best match, if we have
-     * found one. Do some debug output anyway.
+     * found one.
      */
     if (ibest == -1)
     {
-        if (debug)
-        {
-            fprintf(debug, "MORSE: Couldn't find E_diss for bond %s - %s, using default %g\n", ai, aj, ediss);
-        }
         return ediss;
     }
     else
     {
-        if (debug)
-        {
-            fprintf(debug, "MORSE: Dissoc. E (%10.3f) for bond %4s-%4s taken from bond %4s-%4s\n",
-                    t2m[ibest].e_diss, ai, aj, t2m[ibest].ai, t2m[ibest].aj);
-        }
         return t2m[ibest].e_diss;
     }
 }
@@ -211,10 +202,6 @@ void convert_harmonics(int nrmols, t_molinfo mols[], gpp_atomtype_t atype)
 
     /* First get the data */
     t2m = read_dissociation_energies(&n2m);
-    if (debug)
-    {
-        fprintf(debug, "MORSE: read %d dissoc energies\n", n2m);
-    }
     if (n2m <= 0)
     {
         fprintf(stderr, "No dissocation energies read\n");

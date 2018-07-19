@@ -1392,7 +1392,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     gpp_atomtype_t    atype;
     gmx_residuetype_t*rt;
     const char       *top_fn;
-    char              fn[256], itp_fn[STRLEN], posre_fn[STRLEN], buf_fn[STRLEN];
+    char              itp_fn[STRLEN], posre_fn[STRLEN], buf_fn[STRLEN];
     char              molname[STRLEN], title[STRLEN];
     char             *c, forcefield[STRLEN], ffdir[STRLEN];
     char              ffname[STRLEN], suffix[STRLEN], buf[STRLEN];
@@ -1980,20 +1980,6 @@ int gmx_pdb2gmx(int argc, char *argv[])
                           &symtab, bVerbose);
         }
 
-        if (debug)
-        {
-            if (nch == 1)
-            {
-                sprintf(fn, "chain.pdb");
-            }
-            else
-            {
-                sprintf(fn, "chain_%c%d.pdb", cc->chainid, cc->chainnum);
-            }
-            write_sto_conf(fn, title, pdba, x, nullptr, ePBC, box);
-        }
-
-
         for (i = 0; i < cc->nterpairs; i++)
         {
 
@@ -2124,25 +2110,11 @@ int gmx_pdb2gmx(int argc, char *argv[])
 
         /* Generate Hydrogen atoms (and termini) in the sequence */
         printf("Generating any missing hydrogen atoms and/or adding termini.\n");
-        natom = add_h(&pdba, &x, nah, ah,
+        add_h(&pdba, &x, nah, ah,
                       cc->nterpairs, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end, bAllowMissing,
                       nullptr, nullptr, TRUE, FALSE);
         printf("Now there are %d residues with %d atoms\n",
                pdba->nres, pdba->nr);
-        if (debug)
-        {
-            write_pdbfile(debug, title, pdba, x, ePBC, box, ' ', 0, nullptr, TRUE);
-        }
-
-        if (debug)
-        {
-            for (i = 0; (i < natom); i++)
-            {
-                fprintf(debug, "Res %s%d atom %d %s\n",
-                        *(pdba->resinfo[pdba->atom[i].resind].name),
-                        pdba->resinfo[pdba->atom[i].resind].nr, i+1, *pdba->atomname[i]);
-            }
-        }
 
         strcpy(posre_fn, ftp2fn(efITP, NFILE, fnm));
 
@@ -2277,18 +2249,6 @@ int gmx_pdb2gmx(int argc, char *argv[])
         cc->pdba = pdba;
         cc->x    = x;
 
-        if (debug)
-        {
-            if (cc->chainid == ' ')
-            {
-                sprintf(fn, "chain.pdb");
-            }
-            else
-            {
-                sprintf(fn, "chain_%c.pdb", cc->chainid);
-            }
-            write_sto_conf(fn, "", pdba, x, nullptr, ePBC, box);
-        }
     }
 
     if (watermodel == nullptr)

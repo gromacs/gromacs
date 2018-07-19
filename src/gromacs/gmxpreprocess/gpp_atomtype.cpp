@@ -220,10 +220,6 @@ int add_atomtype(gpp_atomtype_t ga, t_symtab *tab,
     {
         if (strcmp(*ga->atomname[i], name) == 0)
         {
-            if (nullptr != debug)
-            {
-                fprintf(debug, "Trying to add atomtype %s again. Skipping it.\n", name);
-            }
             break;
         }
     }
@@ -317,10 +313,6 @@ static int search_atomtypes(gpp_atomtype_t ga, int *n, int typelist[],
 
     if (i == nn)
     {
-        if (debug)
-        {
-            fprintf(debug, "Renumbering atomtype %d to %d\n", thistype, nn);
-        }
         if (nn == ntype)
         {
             gmx_fatal(FARGS, "Atomtype horror n = %d, %s, %d", nn, __FILE__, __LINE__);
@@ -400,13 +392,7 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
 
     snew(new_atomnumber, nat);
     snew(new_atomname, nat);
-
     /* We now have a list of unique atomtypes in typelist */
-
-    if (debug)
-    {
-        pr_ivec(debug, 0, "typelist", typelist, nat, TRUE);
-    }
 
     /* Renumber nlist */
     nbsnew = nullptr;

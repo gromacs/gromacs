@@ -212,10 +212,6 @@ static void add_define(const char *name, const char *value)
     }
     else if (defs[i].def)
     {
-        if (debug)
-        {
-            fprintf(debug, "Overriding define %s\n", name);
-        }
         sfree(defs[i].def);
     }
     if (value && strlen(value) > 0)
@@ -279,10 +275,6 @@ int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
             i++;
         }
     }
-    if (debug)
-    {
-        fprintf(debug, "GMXCPP: added %d command line arguments\n", i);
-    }
 
     snew(cpp, 1);
     *handle      = cpp;
@@ -316,10 +308,6 @@ int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
     {
         gmx_fatal(FARGS, "Topology include file \"%s\" not found", filenm);
     }
-    if (nullptr != debug)
-    {
-        fprintf(debug, "GMXCPP: cpp file open %s\n", cpp->fn);
-    }
     /* If the file name has a path component, we need to change to that
      * directory. Note that we - just as C - always use UNIX path separators
      * internally in include file names.
@@ -344,16 +332,7 @@ int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
         snew(cpp->cwd, STRLEN);
 
         gmx_getcwd(cpp->cwd, STRLEN);
-        if (nullptr != debug)
-        {
-            fprintf(debug, "GMXCPP: cwd %s\n", cpp->cwd);
-        }
         gmx_chdir(cpp->path);
-
-        if (nullptr != debug)
-        {
-            fprintf(debug, "GMXCPP: chdir to %s\n", cpp->path);
-        }
     }
     cpp->line_len = 0;
     cpp->line     = nullptr;
@@ -364,10 +343,6 @@ int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
     cpp->parent   = nullptr;
     if (cpp->fp == nullptr)
     {
-        if (nullptr != debug)
-        {
-            fprintf(debug, "GMXCPP: opening file %s\n", cpp->fn);
-        }
         cpp->fp = fopen(cpp->fn, "r");
     }
     if (cpp->fp == nullptr)
@@ -511,11 +486,6 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
         strncpy(inc_fn, dval+i0, len);
         inc_fn[len] = '\0';
 
-        if (debug)
-        {
-            fprintf(debug, "Going to open include file '%s' i0 = %d, strlen = %d\n",
-                    inc_fn, i0, len);
-        }
         /* Open include file and store it as a child in the handle structure */
         status = cpp_open_file(inc_fn, &(handle->child), nullptr);
         sfree(inc_fn);
@@ -653,12 +623,7 @@ int cpp_read_line(gmx_cpp_t *handlep, int n, char buf[])
         }
         strcpy(handle->line, buf);
         handle->line_nr++;
-    }
-    /* Now we've read a line! */
-    if (debug)
-    {
-        fprintf(debug, "%s : %4d : %s\n", handle->fn, handle->line_nr, buf);
-    }
+    } /* Now we've read a line! */
 
     /* Process directives if this line contains one */
     if (find_directive(buf, &dname, &dval))
@@ -741,17 +706,9 @@ int cpp_close_file(gmx_cpp_t *handlep)
     {
         return eCPP_FILE_NOT_OPEN;
     }
-    if (debug)
-    {
-        fprintf(debug, "GMXCPP: closing file %s\n", handle->fn);
-    }
     fclose(handle->fp);
     if (nullptr != handle->cwd)
     {
-        if (nullptr != debug)
-        {
-            fprintf(debug, "GMXCPP: chdir to %s\n", handle->cwd);
-        }
         gmx_chdir(handle->cwd);
     }
 
@@ -768,10 +725,6 @@ int cpp_close_file(gmx_cpp_t *handlep)
             case EINTR:
                 return eCPP_INTERRUPT;
             default:
-                if (debug)
-                {
-                    fprintf(debug, "Strange stuff closing file, errno = %d", errno);
-                }
                 return eCPP_UNKNOWN;
         }
     }

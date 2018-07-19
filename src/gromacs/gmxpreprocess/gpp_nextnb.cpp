@@ -189,10 +189,6 @@ static void nnb2excl(t_nextnb *nnb, t_blocka *excl)
             nr_of_sortables += nnb->nrexcl[i][nre];
         }
 
-        if (debug)
-        {
-            fprintf(debug, "nr_of_sortables: %d\n", nr_of_sortables);
-        }
         /* make space for sortable array */
         snew(s, nr_of_sortables);
 
@@ -247,10 +243,6 @@ static void nnb2excl(t_nextnb *nnb, t_blocka *excl)
 
         /* cleanup temporary space */
         sfree (s);
-    }
-    if (debug)
-    {
-        print_blocka(debug, "Exclusions", "Atom", "Excluded", excl);
     }
 }
 
