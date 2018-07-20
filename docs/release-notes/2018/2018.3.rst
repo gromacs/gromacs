@@ -12,6 +12,12 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix bfactor output error caused by fix for :issue:`2511`
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The fix for the PQR file output broke the output of bfactors from other tools.
+
+:issue:`2575`
+
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
