@@ -131,13 +131,9 @@ the first integration step.
 Restarts without checkpoint files
 ---------------------------------
 
-It is possible to perform an exact restart a simulation if you lack a
-checkpoint file but have a matching pair of frames in a :ref:`trr` and
-:ref:`edr` file written by :ref:`gmx mdrun`. To do this, use
-
-::
-
-   gmx convert-tpr -s old.tpr -e matching.edr -t matching.trr -o new.tpr
+It used to be possible to continue simulations without the checkpoint
+files. As this approach could be unreliable or lead to
+unphysical results, only restarts from checkpoints are permitted now.
 
 Are continuations exact?
 ------------------------
