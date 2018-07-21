@@ -71,6 +71,13 @@
 #    define _SC_NPROCESSORS_ONLN _SC_NPROC_ONLN
 #endif
 
+// Preprocessor variable for if hwloc api is version 1.x.x or 2.x.x
+#if HWLOC_API_VERSION >= 0x00020000
+#    define HWLOC_API_VERSION_IS_2XX 1
+#else
+#    define HWLOC_API_VERSION_IS_2XX 0
+#endif
+
 namespace gmx
 {
 
@@ -163,8 +170,20 @@ parseCpuInfo(HardwareTopology::Machine *        machine,
  *                                                                           *
  *****************************************************************************/
 
+// Compatibility function for accessing hwloc_obj_t object memory with different API versions of hwloc
+std::size_t
+getHwLocObjectMemory(const hwloc_obj_t obj)
+{
+#if HWLOC_API_VERSION_IS_2XX
+    return obj->total_memory;
+#else
+    return obj->memory.total_memory;
+#endif
+}
+
 /*! \brief Return vector of all descendants of a given type in hwloc topology
  *
+ *  \param topo  hwloc topology handle that has been initialized and loaded
  *  \param obj   Non-null hwloc object.
  *  \param type  hwloc object type to find. The routine will only search
  *               on levels below obj.
@@ -174,27 +193,23 @@ parseCpuInfo(HardwareTopology::Machine *        machine,
  *          were found, the vector will be empty.
  */
 const std::vector<hwloc_obj_t>
-getHwLocDescendantsByType(const hwloc_obj* obj, const hwloc_obj_type_t type)
+getHwLocDescendantsByType(const hwloc_topology_t topo, const hwloc_obj_t obj, const hwloc_obj_type_t type)
 {
     GMX_RELEASE_ASSERT(obj, "NULL hwloc object provided to getHwLocDescendantsByType()");
 
     std::vector<hwloc_obj_t> v;
 
+    if (obj->type == type)
+    {
+        v.push_back(obj);
+    }
     // Go through children; if this object has no children obj->arity is 0,
     // and we'll return an empty vector.
-    for (std::size_t i = 0; i < obj->arity; i++)
+    hwloc_obj_t tempNode = NULL;
+    while((tempNode = hwloc_get_next_child(topo, obj, tempNode)) != NULL)
     {
-        // If the child is the type we're looking for, add it directly.
-        // Otherwise call this routine recursively for each child.
-        if (obj->children[i]->type == type)
-        {
-            v.push_back(obj->children[i]);
-        }
-        else
-        {
-            std::vector<hwloc_obj_t> v2 = getHwLocDescendantsByType(obj->children[i], type);
-            v.insert(v.end(), v2.begin(), v2.end());
-        }
+        std::vector<hwloc_obj_t> v2 = getHwLocDescendantsByType(topo, tempNode, type);
+        v.insert(v.end(), v2.begin(), v2.end());
     }
     return v;
 }
@@ -211,8 +226,8 @@ int
 parseHwLocSocketsCoresThreads(hwloc_topology_t                   topo,
                               HardwareTopology::Machine *        machine)
 {
-    const hwloc_obj *const         root         = hwloc_get_root_obj(topo);
-    std::vector<hwloc_obj_t>       hwlocSockets = getHwLocDescendantsByType(root, HWLOC_OBJ_PACKAGE);
+    const hwloc_obj_t                      root = hwloc_get_root_obj(topo);
+    std::vector<hwloc_obj_t>       hwlocSockets = getHwLocDescendantsByType(topo, root, HWLOC_OBJ_PACKAGE);
 
     machine->logicalProcessorCount = hwloc_get_nbobjs_by_type(topo, HWLOC_OBJ_PU);
     machine->logicalProcessors.resize(machine->logicalProcessorCount);
@@ -226,7 +241,7 @@ parseHwLocSocketsCoresThreads(hwloc_topology_t                   topo,
         machine->sockets[i].id = hwlocSockets[i]->logical_index;
 
         // Get children (cores)
-        std::vector<hwloc_obj_t> hwlocCores = getHwLocDescendantsByType(hwlocSockets[i], HWLOC_OBJ_CORE);
+        std::vector<hwloc_obj_t> hwlocCores = getHwLocDescendantsByType(topo, hwlocSockets[i], HWLOC_OBJ_CORE);
         machine->sockets[i].cores.resize(hwlocCores.size());
 
         topologyOk = topologyOk && !hwlocCores.empty(); // Fail if we have no cores in socket
@@ -239,7 +254,7 @@ parseHwLocSocketsCoresThreads(hwloc_topology_t                   topo,
             machine->sockets[i].cores[j].numaNodeId = -1;
 
             // Get children (hwthreads)
-            std::vector<hwloc_obj_t> hwlocPUs = getHwLocDescendantsByType(hwlocCores[j], HWLOC_OBJ_PU);
+            std::vector<hwloc_obj_t> hwlocPUs = getHwLocDescendantsByType(topo, hwlocCores[j], HWLOC_OBJ_PU);
             machine->sockets[i].cores[j].hwThreads.resize(hwlocPUs.size());
 
             topologyOk = topologyOk && !hwlocPUs.empty(); // Fail if we have no hwthreads in core
@@ -302,7 +317,7 @@ parseHwLocCache(hwloc_topology_t                   topo,
             hwloc_obj_t cache = hwloc_get_next_obj_by_depth(topo, depth, nullptr);
             if (cache != nullptr)
             {
-                std::vector<hwloc_obj_t> hwThreads = getHwLocDescendantsByType(cache, HWLOC_OBJ_PU);
+                std::vector<hwloc_obj_t> hwThreads = getHwLocDescendantsByType(topo, cache, HWLOC_OBJ_PU);
 
                 machine->caches.push_back( {
                                                static_cast<int>(cache->attr->cache.depth),
@@ -340,8 +355,8 @@ int
 parseHwLocNuma(hwloc_topology_t                   topo,
                HardwareTopology::Machine *        machine)
 {
-    const hwloc_obj *const   root           = hwloc_get_root_obj(topo);
-    std::vector<hwloc_obj_t> hwlocNumaNodes = getHwLocDescendantsByType(root, HWLOC_OBJ_NUMANODE);
+    const hwloc_obj_t                  root = hwloc_get_root_obj(topo);
+    std::vector<hwloc_obj_t> hwlocNumaNodes = getHwLocDescendantsByType(topo, root, HWLOC_OBJ_NUMANODE);
     bool                     topologyOk     = true;
 
     if (!hwlocNumaNodes.empty())
@@ -351,12 +366,15 @@ parseHwLocNuma(hwloc_topology_t                   topo,
         for (std::size_t i = 0; i < hwlocNumaNodes.size(); i++)
         {
             machine->numa.nodes[i].id     = hwlocNumaNodes[i]->logical_index;
-            machine->numa.nodes[i].memory = hwlocNumaNodes[i]->memory.total_memory;
+            machine->numa.nodes[i].memory = getHwLocObjectMemory(hwlocNumaNodes[i]);;
             machine->numa.nodes[i].logicalProcessorId.clear();
 
-            // Get list of PUs in this numa node
-            std::vector<hwloc_obj_t> hwlocPUs = getHwLocDescendantsByType(hwlocNumaNodes[i], HWLOC_OBJ_PU);
-
+            // Get list of PUs in this numa node. Get from numa node if v1.x.x, get from numa node's parent if 2.x.x
+#if HWLOC_API_VERSION_IS_2XX
+            std::vector<hwloc_obj_t> hwlocPUs = getHwLocDescendantsByType(topo, hwlocNumaNodes[i]->parent, HWLOC_OBJ_PU);
+#else
+            std::vector<hwloc_obj_t> hwlocPUs = getHwLocDescendantsByType(topo, hwlocNumaNodes[i], HWLOC_OBJ_PU);
+#endif
             for (auto &p : hwlocPUs)
             {
                 machine->numa.nodes[i].logicalProcessorId.push_back(p->os_index);
@@ -373,7 +391,47 @@ parseHwLocNuma(hwloc_topology_t                   topo,
                 machine->sockets[s].cores[c].numaNodeId = i;
             }
         }
+        // Getting the distance matrix
+#if HWLOC_API_VERSION_IS_2XX
+        // with hwloc api v. 2.x.x, distances are no longer directly accessible. Need to retrieve and release hwloc_distances_s object
+        // In addition, there can now be multiple types of distances, ie latency, bandwidth. We look only for latency, but have to check
+        // if multiple distance matrices are returned.
 
+        // If only 1 numa node exists, the v2.x.x hwloc api won't have a distances matrix, set manually
+        if (hwlocNumaNodes.size() == 1)
+        {
+            machine->numa.relativeLatency       = { { 1.0 } };
+        }
+        else
+        {
+            hwloc_distances_s** dist = new hwloc_distances_s*;
+            // Set the number of distance matrices to return (1 in our case, but hwloc 2.x.x allows
+            // for multiple distances types and therefore multiple distance matrices)
+            unsigned *nr = new unsigned(1);
+            hwloc_distances_get(topo, nr, dist, HWLOC_DISTANCES_KIND_MEANS_LATENCY, 0);
+            // If no distances were found, *nr will be 0, otherwise distances will be populated with 1
+            // hwloc_distances_s object
+            if (*nr > 0 && dist[0]->nbobjs == hwlocNumaNodes.size())
+            {
+
+                machine->numa.relativeLatency.resize(dist[0]->nbobjs);
+                for (std::size_t i = 0; i < dist[0]->nbobjs; i++)
+                {
+                    machine->numa.relativeLatency[i].resize(dist[0]->nbobjs);
+                    for (std::size_t j = 0; j < dist[0]->nbobjs; j++)
+                    {
+                        machine->numa.relativeLatency[i][j] = dist[0]->values[i*dist[0]->nbobjs+j];
+                    }
+                }
+            }
+            else
+            {
+                topologyOk = false;
+            }
+            hwloc_distances_release(topo, dist[0]);
+        }
+
+#else // HWLOC_API_VERSION_IS_2XX = false, hwloc api is 1.x.x
         int depth = hwloc_get_type_depth(topo, HWLOC_OBJ_NUMANODE);
         const struct hwloc_distances_s * dist = hwloc_get_whole_distance_matrix_by_depth(topo, depth);
         if (dist != nullptr && dist->nbobjs == hwlocNumaNodes.size())
@@ -394,10 +452,20 @@ parseHwLocNuma(hwloc_topology_t                   topo,
         {
             topologyOk = false;
         }
+#endif // end HWLOC_API_VERSION_IS_2XX is false
     }
     else
+    // Deals with the case of no numa nodes found.
+#if HWLOC_API_VERSION_IS_2XX
+    // If the hwloc version is 2.x.x, and there is no numa node, something went wrong
+    {
+        topologyOk = false;
+    }
+#else
     {
         // No numa nodes found. Use the entire machine as a numa node.
+        // Note that this should only be the case with hwloc api v 1.x.x,
+        // a numa node is assigned to the machine by default in v 2.x.x
         const hwloc_obj*const hwlocMachine = hwloc_get_next_obj_by_type(topo, HWLOC_OBJ_MACHINE, nullptr);
 
         if (hwlocMachine != nullptr)
@@ -430,7 +498,7 @@ parseHwLocNuma(hwloc_topology_t                   topo,
             topologyOk = false;
         }
     }
-
+#endif // end if not HWLOC_API_VERSION_IS_2XX
     if (topologyOk)
     {
         return 0;
@@ -455,13 +523,28 @@ int
 parseHwLocDevices(hwloc_topology_t                   topo,
                   HardwareTopology::Machine *        machine)
 {
-    const hwloc_obj *const   root    = hwloc_get_root_obj(topo);
-    std::vector<hwloc_obj_t> pcidevs = getHwLocDescendantsByType(root, HWLOC_OBJ_PCI_DEVICE);
+    const hwloc_obj_t   root    = hwloc_get_root_obj(topo);
+    std::vector<hwloc_obj_t> pcidevs = getHwLocDescendantsByType(topo, root, HWLOC_OBJ_PCI_DEVICE);
 
     for (auto &p : pcidevs)
     {
-        const hwloc_obj *const ancestor = hwloc_get_ancestor_obj_by_type(topo, HWLOC_OBJ_NUMANODE, p);
-        int                    numaId;
+#if HWLOC_API_VERSION_IS_2XX
+        const hwloc_obj * ancestor = nullptr;
+        // Numa nodes not directly part of tree. Walk up the tree until we find an ancestor with a numa node
+        hwloc_obj_t parent = p->parent;
+        while (parent && !parent->memory_arity)
+        {
+            parent = parent->parent;
+        }
+        if (parent)
+        {
+            ancestor = parent->memory_first_child;
+        }
+#else   // HWLOC_API_VERSION_IS_2XX = false, api v 1.x.x
+        // numa nodes are normal part of tree, can use hwloc ancestor function
+        const hwloc_obj * const ancestor = hwloc_get_ancestor_obj_by_type(topo, HWLOC_OBJ_NUMANODE, p);
+#endif  // end if HWLOC_API_VERSION_IS_2XX
+        int numaId;
         if (ancestor != nullptr)
         {
             numaId = ancestor->logical_index;
@@ -503,8 +586,12 @@ parseHwLoc(HardwareTopology::Machine *        machine,
         hwloc_topology_destroy(topo);
         return; // SupportLevel::None.
     }
-
+    // Flags to look for io devices
+#if HWLOC_API_VERSION_IS_2XX
+    hwloc_topology_set_io_types_filter(topo, HWLOC_TYPE_FILTER_KEEP_IMPORTANT);
+#else
     hwloc_topology_set_flags(topo, HWLOC_TOPOLOGY_FLAG_IO_DEVICES);
+#endif
 
     if (hwloc_topology_load(topo) != 0 || hwloc_get_root_obj(topo) == nullptr)
     {
