@@ -118,7 +118,7 @@ static double DCoulomb_PP(double r)
     {
         return 0;
     }
-    return -1/gmx::square(r);
+    return 1/gmx::square(r);
 }
 
 static void lj(double r,

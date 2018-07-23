@@ -354,7 +354,7 @@ void print_electric_props(FILE                           *fp,
             }
 
             fprintf(fp, "Atom   Type      q_Calc     q_ESP     q_CM5     q_HPA     q_MPA       x       y       z\n");
-            auto qcm5 = mol.chargeQM(qtCM5);
+            auto qcm5 = mol.chargeQM(qtESP);
             auto x    = mol.x();
             double qrmsd = 0;
             for (j = i = 0; j < mol.topology_->atoms.nr; j++)

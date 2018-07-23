@@ -1226,7 +1226,7 @@ void Optimization::polData2TuneFc()
                 {
                     if (n == 0)
                     {
-                        param_.push_back(std::move(p));
+                        De_.push_back(std::move(p));
                     }
                     else
                     {
@@ -1262,7 +1262,7 @@ void Optimization::polData2TuneFc()
 void Optimization::tuneFc2PolData()
 {
     int n = 0;
-    //int m = 0;
+    int m = 0;
     std::vector<std::string> atoms;
 
     for (auto &fc : ForceConstants_)
@@ -1281,7 +1281,7 @@ void Optimization::tuneFc2PolData()
                     strncat(buf, " ", sizeof(buf)-1);
                     if (j == 0)
                     {
-                        strncat(buf, gmx_ftoa(param_[n++]).c_str(), sizeof(buf)-1);
+                        strncat(buf, gmx_ftoa(De_[m++]).c_str(), sizeof(buf)-1);
                     }
                     else
                     {

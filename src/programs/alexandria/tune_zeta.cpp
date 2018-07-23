@@ -212,7 +212,7 @@ void OptZeta::tuneZeta2PolData()
             std::string rowstr = ei->getRowstr();
             zstr[0]  = '\0';
             z_sig[0] = '\0';            
-            if (iChargeDistributionModel() == eqdAXps)
+            if (iChargeDistributionModel() == eqdAXps || iChargeDistributionModel() == eqdAXpg)
             {
                 auto nzeta   = ei->getNzeta();
                 double zeta  = ei->getZeta(0);
