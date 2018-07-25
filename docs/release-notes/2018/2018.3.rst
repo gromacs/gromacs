@@ -12,6 +12,13 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Made sure that gmx rms can skip values
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When requested to skip values, gmx rms would still output all values despite
+the option. Now it only outputs values that are requested to be processed.
+
+:issue:`2565`
+
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
