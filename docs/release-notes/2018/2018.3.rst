@@ -21,6 +21,13 @@ The fix for the PQR file output broke the output of bfactors from other tools.
 
 :issue:`2575`
 
+Made sure that gmx rms can skip values
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When requested to skip values, gmx rms would still output all values despite
+the option. Now it only outputs values that are requested to be processed.
+
+:issue:`2565`
+
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

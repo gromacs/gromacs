@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -222,7 +222,7 @@ int gmx_rms(int argc, char *argv[])
           "HIDDENAverage over this distance in the RMSD matrix" }
     };
     int             natoms_trx, natoms_trx2, natoms;
-    int             i, j, k, m, teller, teller2, tel_mat, tel_mat2;
+    int             i, j, k, m;
 #define NFRAME 5000
     int             maxframe = NFRAME, maxframe2 = NFRAME;
     real            t, *w_rls, *w_rms, *w_rls_m = nullptr, *w_rms_m = nullptr;
@@ -610,8 +610,9 @@ int gmx_rms(int argc, char *argv[])
     }
 
     /* start looping over frames: */
-    tel_mat = 0;
-    teller  = 0;
+    int tel_mat = 0;
+    int teller  = 0;
+    int frame   = 0;
     do
     {
         if (bPBC)
@@ -634,7 +635,7 @@ int gmx_rms(int argc, char *argv[])
             do_fit(natoms, w_rls, xp, x);
         }
 
-        if (teller % freq == 0)
+        if (frame % freq == 0)
         {
             /* keep frame for matrix calculation */
             if (bMat || bBond || bPrev)
@@ -650,60 +651,61 @@ int gmx_rms(int argc, char *argv[])
                 }
             }
             tel_mat++;
-        }
 
-        /*calculate energy of root_least_squares*/
-        if (bPrev)
-        {
-            j = tel_mat-prev-1;
-            if (j < 0)
+            /*calculate energy of root_least_squares*/
+            if (bPrev)
             {
-                j = 0;
+                j = tel_mat-prev-1;
+                if (j < 0)
+                {
+                    j = 0;
+                }
+                for (i = 0; i < n_ind_m; i++)
+                {
+                    copy_rvec(mat_x[j][i], xp[ind_m[i]]);
+                }
+                if (bReset)
+                {
+                    reset_x(ifit, ind_fit, natoms, nullptr, xp, w_rls);
+                }
+                if (bFit)
+                {
+                    do_fit(natoms, w_rls, x, xp);
+                }
             }
-            for (i = 0; i < n_ind_m; i++)
+            for (j = 0; (j < nrms); j++)
             {
-                copy_rvec(mat_x[j][i], xp[ind_m[i]]);
+                rls[j][teller] =
+                    calc_similar_ind(ewhat != ewRMSD, irms[j], ind_rms[j], w_rms, x, xp);
             }
-            if (bReset)
+            if (bNorm)
             {
-                reset_x(ifit, ind_fit, natoms, nullptr, xp, w_rls);
-            }
-            if (bFit)
-            {
-                do_fit(natoms, w_rls, x, xp);
-            }
-        }
-        for (j = 0; (j < nrms); j++)
-        {
-            rls[j][teller] =
-                calc_similar_ind(ewhat != ewRMSD, irms[j], ind_rms[j], w_rms, x, xp);
-        }
-        if (bNorm)
-        {
-            for (j = 0; (j < irms[0]); j++)
-            {
-                rlsnorm[j] +=
-                    calc_similar_ind(ewhat != ewRMSD, 1, &(ind_rms[0][j]), w_rms, x, xp);
-            }
-        }
-
-        if (bMirror)
-        {
-            if (bFit)
-            {
-                /*do the least squares fit to mirror of original structure*/
-                do_fit(natoms, w_rls, xm, x);
+                for (j = 0; (j < irms[0]); j++)
+                {
+                    rlsnorm[j] +=
+                        calc_similar_ind(ewhat != ewRMSD, 1, &(ind_rms[0][j]), w_rms, x, xp);
+                }
             }
 
-            for (j = 0; j < nrms; j++)
+            if (bMirror)
             {
-                rlsm[j][teller] =
-                    calc_similar_ind(ewhat != ewRMSD, irms[j], ind_rms[j], w_rms, x, xm);
-            }
-        }
-        time[teller] = output_env_conv_time(oenv, t);
+                if (bFit)
+                {
+                    /*do the least squares fit to mirror of original structure*/
+                    do_fit(natoms, w_rls, xm, x);
+                }
 
-        teller++;
+                for (j = 0; j < nrms; j++)
+                {
+                    rlsm[j][teller] =
+                        calc_similar_ind(ewhat != ewRMSD, irms[j], ind_rms[j], w_rms, x, xm);
+                }
+            }
+            time[teller] = output_env_conv_time(oenv, t);
+
+            teller++;
+        }
+        frame++;
         if (teller >= maxframe)
         {
             maxframe += NFRAME;
@@ -724,6 +726,9 @@ int gmx_rms(int argc, char *argv[])
     while (read_next_x(oenv, status, &t, x, box));
     close_trx(status);
 
+    int tel_mat2 = 0;
+    int teller2  = 0;
+    int frame2   = 0;
     if (bFile2)
     {
         snew(time2, maxframe2);
@@ -738,8 +743,7 @@ int gmx_rms(int argc, char *argv[])
                       "Second trajectory (%d atoms) does not match the first one"
                       " (%d atoms)", natoms_trx2, natoms_trx);
         }
-        tel_mat2 = 0;
-        teller2  = 0;
+        frame2 = 0;
         do
         {
             if (bPBC)
@@ -762,7 +766,7 @@ int gmx_rms(int argc, char *argv[])
                 do_fit(natoms, w_rls, xp, x);
             }
 
-            if (teller2 % freq2 == 0)
+            if (frame2 % freq2 == 0)
             {
                 /* keep frame for matrix calculation */
                 if (bMat)
@@ -778,11 +782,12 @@ int gmx_rms(int argc, char *argv[])
                     }
                 }
                 tel_mat2++;
+
+                time2[teller2] = output_env_conv_time(oenv, t);
+
+                teller2++;
             }
-
-            time2[teller2] = output_env_conv_time(oenv, t);
-
-            teller2++;
+            frame2++;
             if (teller2 >= maxframe2)
             {
                 maxframe2 += NFRAME;
