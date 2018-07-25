@@ -212,7 +212,7 @@ void OptZeta::tuneZeta2PolData()
             std::string rowstr = ei->getRowstr();
             zstr[0]  = '\0';
             z_sig[0] = '\0';            
-            if (iChargeDistributionModel() == eqdAXps)
+            if (iChargeDistributionModel() == eqdAXps || iChargeDistributionModel() == eqdAXpg)
             {
                 auto nzeta   = ei->getNzeta();
                 double zeta  = ei->getZeta(0);
@@ -291,16 +291,10 @@ void OptZeta::InitOpt(real  factor)
 void OptZeta::calcDeviation()
 {
     int    j;
-    double qtot      = 0;
-    real   rrms      = 0;
-    real   wtot      = 0;
-    int    maxiter   = 10;
-    int    iter      = 0;
-    int    cur       = 0;
-    bool   converged = false;
+    double qtot = 0;
+    real   rrms = 0;
+    real   wtot = 0;
 
-    double chi2[2]   = {1e8, 1e8};
-    
     if (PAR(commrec()))
     {
         bool bFinal = final();
@@ -320,38 +314,17 @@ void OptZeta::calcDeviation()
         if ((mymol.eSupp_ == eSupportLocal) ||
             (final() && (mymol.eSupp_ == eSupportRemote)))
         {
-            do
+            mymol.Qgresp_.updateZeta(&mymol.topology_->atoms, poldata());
+            mymol.Qgresp_.optimizeCharges();
+            if (nullptr != mymol.shellfc_)
             {
-                mymol.Qgresp_.updateZeta(&mymol.topology_->atoms, poldata());
-                mymol.Qgresp_.optimizeCharges();
-                if (nullptr != mymol.shellfc_)
+                if (bFitAlpha_)
                 {
-                    if (bFitAlpha_)
-                    {
-                        mymol.UpdateIdef(poldata(), eitPOLARIZATION);
-                    }
-                    mymol.computeForces(nullptr, commrec());
-                    mymol.Qgresp_.updateAtomCoords(mymol.x());
-                    mymol.Qgresp_.calcPot();
-                    chi2[cur] = mymol.Qgresp_.getRms(&wtot, &rrms); 
-                    
-                    for (auto i = 0; i < mymol.topology_->atoms.nr; i++)
-                    {
-                        mymol.mtop_->moltype[0].atoms.atom[i].q      =
-                            mymol.mtop_->moltype[0].atoms.atom[i].qB = mymol.Qgresp_.getAtomCharge(i);
-                    }                   
-                }                               
-                converged = (fabs(chi2[cur] - chi2[1-cur]) < qtol()) || (nullptr == mymol.shellfc_);
-                cur       = 1-cur;
-                iter++;
+                    mymol.UpdateIdef(poldata(), eitPOLARIZATION);
+                }
+                mymol.computeForces(nullptr, commrec());
+                mymol.Qgresp_.updateAtomCoords(mymol.x());
             }
-            while ((!converged) && (iter < maxiter));
-            for (auto i = 0; i < mymol.topology_->atoms.nr; i++)
-            {
-                mymol.mtop_->moltype[0].atoms.atom[i].q      =
-                    mymol.mtop_->moltype[0].atoms.atom[i].qB = mymol.Qgresp_.getAtomCharge(i);
-            }
-                
             if (bCharge_)
             {
                 qtot = 0;
@@ -380,11 +353,11 @@ void OptZeta::calcDeviation()
 
                 }
                 increaseEnergy(ermsCHARGE,
-                               gmx::square(qtot - mymol.molProp()->getCharge()));
+                         gmx::square(qtot - mymol.molProp()->getCharge()));
             }
             mymol.Qgresp_.calcPot();
             increaseEnergy(ermsESP,
-                           convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms), eg2cHartree_e));
+                     convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms), eg2cHartree_e));
             if (bDipole_)
             {
                 mymol.CalcDipole();
@@ -409,7 +382,7 @@ void OptZeta::calcDeviation()
                         if (fullTensor() || mm == nn)
                         {
                             increaseEnergy(ermsQUAD, 
-                                           gmx::square(mymol.QQM(qtCalc)[mm][nn] - mymol.QQM(qtElec)[mm][nn]));
+                                     gmx::square(mymol.QQM(qtCalc)[mm][nn] - mymol.QQM(qtElec)[mm][nn]));
                         }
                     }
                 }
