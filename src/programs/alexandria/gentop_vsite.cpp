@@ -522,7 +522,7 @@ static void set_linear_angle_params(const int                  atoms[],
 
     if (plist.end() == pangle)
     {
-        fprintf(stderr, "Cannot find either the angles in the plist to set the linear angle params.");
+        fprintf(stderr, "Cannot find either the angles in the plist to set the linear angle params.\n");
         return;
     }
 
