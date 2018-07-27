@@ -1385,7 +1385,7 @@ static int read_checked_edint(FILE *file, const char *label)
 }
 
 
-static int read_edint(FILE *file, gmx_bool *bEOF)
+static int read_edint(FILE *file, bool *bEOF)
 {
     char  line[STRLEN+1];
     int   idum;
@@ -1578,39 +1578,80 @@ static gmx_bool check_if_same(struct gmx_edx sref, struct gmx_edx sav)
     return TRUE;
 }
 
-
-static int read_edi(FILE* in, t_edpar *edi, int nr_mdatoms, const char *fn)
+namespace
 {
-    int       readmagic;
-    const int magic = 670;
-    gmx_bool  bEOF;
 
-    /* Was a specific reference point for the flooding/umbrella potential provided in the edi file? */
-    gmx_bool bHaveReference = FALSE;
+static constexpr int c_oldestUnsupportedMagicNumber = 666;
+static constexpr int c_oldestSupportedMagicNumber   = 669;
+static constexpr int c_latestSupportedMagicNumber   = 670;
 
-
-    /* the edi file is not free format, so expect problems if the input is corrupt. */
-
-    /* check the magic number */
-    readmagic = read_edint(in, &bEOF);
-    /* Check whether we have reached the end of the input file */
-    if (bEOF)
+/*!\brief Set up essential dynamics work parameters.
+ * \param[in] edi Essential dynamics working structure.
+ */
+void setup_edi(t_edpar *edi)
+{
+    snew(edi->sref.x_old, edi->sref.nr);
+    edi->sref.sqrtm    = nullptr;
+    snew(edi->sav.x_old, edi->sav.nr);
+    if (edi->star.nr > 0)
     {
-        return 0;
+        edi->star.sqrtm    = nullptr;
     }
-
-    if (readmagic != magic)
+    if (edi->sori.nr > 0)
     {
-        if (readmagic == 666 || readmagic == 667 || readmagic == 668)
+        edi->sori.sqrtm    = nullptr;
+    }
+}
+
+/*!\brief Check if edi file version supports CONST_FORCE_FLOODING.
+ * \returns true if CONST_FORCE_FLOODING is supported
+ */
+bool ediFileHasConstForceFlooding(int magicNumber)
+{
+    return magicNumber > c_oldestSupportedMagicNumber;
+};
+
+/*!\brief Reads an EdiFileVersion from the input file.
+ * \param[in] in pointer to input file
+ * \param[in] fn name of input file for error reporting
+ * \returns true if setting file version from input file was successful.
+ */
+bool ediFileHasValidDataSet(FILE *in, int * magicNumber)
+{
+    /* the edi file is not free format, so expect problems if the input is corrupt. */
+    bool reachedEndOfFile = true;
+    /* check the magic number */
+    *magicNumber = read_edint(in, &reachedEndOfFile);
+    /* Check whether we have reached the end of the input file */
+    return !reachedEndOfFile;
+}
+
+/*!\brief Trigger fatal error if magic number is unsupported.
+ * \param[in] magicNumber A magic number read from the edi file
+ * \param[in] fn name of input file for error reporting
+ */
+void exitWhenMagicNumberIsInvalid(int magicNumber, const char * fn)
+{
+
+    if (magicNumber < c_oldestSupportedMagicNumber || magicNumber > c_latestSupportedMagicNumber)
+    {
+        if (magicNumber >= c_oldestUnsupportedMagicNumber && magicNumber < c_oldestSupportedMagicNumber)
         {
             gmx_fatal(FARGS, "Wrong magic number: Use newest version of make_edi to produce edi file");
         }
-        else if (readmagic != 669)
+        else
         {
-            gmx_fatal(FARGS, "Wrong magic number %d in %s", readmagic, fn);
+            gmx_fatal(FARGS, "Wrong magic number %d in %s", magicNumber, fn);
         }
     }
+}
 
+void read_edi(FILE* in, t_edpar *edi, int nr_mdatoms, bool hasConstForceFlooding, const char *fn)
+{
+    /* Was a specific reference point for the flooding/umbrella potential provided in the edi file? */
+    gmx_bool  bHaveReference = FALSE;
+
+    bool      bEOF;
     /* check the number of atoms */
     edi->nini = read_edint(in, &bEOF);
     if (edi->nini != nr_mdatoms)
@@ -1633,7 +1674,7 @@ static int read_edi(FILE* in, t_edpar *edi, int nr_mdatoms, const char *fn)
     edi->flood.alpha2    = read_checked_edreal(in, "ALPHA2");
     edi->flood.kT        = read_checked_edreal(in, "KT");
     edi->flood.bHarmonic = read_checked_edint(in, "HARMONIC");
-    if (readmagic > 669)
+    if (hasConstForceFlooding)
     {
         edi->flood.bConstForce = read_checked_edint(in, "CONST_FORCE_FLOODING");
     }
@@ -1646,15 +1687,12 @@ static int read_edi(FILE* in, t_edpar *edi, int nr_mdatoms, const char *fn)
     /* allocate space for reference positions and read them */
     snew(edi->sref.anrs, edi->sref.nr);
     snew(edi->sref.x, edi->sref.nr);
-    snew(edi->sref.x_old, edi->sref.nr);
-    edi->sref.sqrtm    = nullptr;
     read_edx(in, edi->sref.nr, edi->sref.anrs, edi->sref.x);
 
     /* average positions. they define which atoms will be used for ED sampling */
     edi->sav.nr = read_checked_edint(in, "NAV");
     snew(edi->sav.anrs, edi->sav.nr);
     snew(edi->sav.x, edi->sav.nr);
-    snew(edi->sav.x_old, edi->sav.nr);
     read_edx(in, edi->sav.nr, edi->sav.anrs, edi->sav.x);
 
     /* Check if the same atom indices are used for reference and average positions */
@@ -1670,7 +1708,6 @@ static int read_edi(FILE* in, t_edpar *edi, int nr_mdatoms, const char *fn)
     {
         snew(edi->star.anrs, edi->star.nr);
         snew(edi->star.x, edi->star.nr);
-        edi->star.sqrtm    = nullptr;
         read_edx(in, edi->star.nr, edi->star.anrs, edi->star.x);
     }
 
@@ -1687,15 +1724,11 @@ static int read_edi(FILE* in, t_edpar *edi, int nr_mdatoms, const char *fn)
         }
         snew(edi->sori.anrs, edi->sori.nr);
         snew(edi->sori.x, edi->sori.nr);
-        edi->sori.sqrtm    = nullptr;
         read_edx(in, edi->sori.nr, edi->sori.anrs, edi->sori.x);
     }
-
-    /* all done */
-    return 1;
 }
 
-
+} // anonymous namespace
 
 /* Read in the edi input file. Note that it may contain several ED data sets which were
  * achieved by concatenating multiple edi files. The standard case would be a single ED
@@ -1717,8 +1750,13 @@ static int read_edi_file(const char *fn, t_edpar *edi, int nr_mdatoms)
     /* Now read a sequence of ED input parameter sets from the edi file */
     curr_edi = edi;
     last_edi = edi;
-    while (read_edi(in, curr_edi, nr_mdatoms, fn) )
+    int ediFileMagicNumber;
+    while (ediFileHasValidDataSet(in, &ediFileMagicNumber))
     {
+        exitWhenMagicNumberIsInvalid(ediFileMagicNumber, fn);
+        bool hasConstForceFlooding = ediFileHasConstForceFlooding(ediFileMagicNumber);
+        read_edi(in, curr_edi, nr_mdatoms, hasConstForceFlooding, fn);
+        setup_edi(curr_edi);
         edi_nr++;
 
         /* Since we arrived within this while loop we know that there is still another data set to be read in */
