@@ -117,7 +117,7 @@ void gmx_tng_prepare_low_prec_writing(gmx_tng_trajectory_t  tng,
  * The pointers tng, x, v, f may be NULL, which triggers not writing
  * (that component). box can only be NULL if x is also NULL. */
 void gmx_fwrite_tng(gmx_tng_trajectory_t tng,
-                    const gmx_bool       bUseLossyCompression,
+                    gmx_bool             bUseLossyCompression,
                     gmx_int64_t          step,
                     real                 elapsedPicoSeconds,
                     real                 lambda,
@@ -169,7 +169,7 @@ void gmx_write_tng_from_trxframe(gmx_tng_trajectory_t    output,
  * the number of all other molecules to 0. Works similar to a
  * selection group. */
 void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t tng,
-                                 const int            nind,
+                                 int                  nind,
                                  const int           *ind,
                                  const char          *name);
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -108,7 +108,7 @@ class SimdDIBool
 
 
 static inline SimdDouble gmx_simdcall
-simdLoad(const double *m, SimdDoubleTag = {})
+simdLoad(const double *m, SimdDoubleTag  /*unused*/ = {})
 {
     assert(std::size_t(m) % 32 == 0);
     return {
@@ -124,7 +124,7 @@ store(double *m, SimdDouble a)
 }
 
 static inline SimdDouble gmx_simdcall
-simdLoadU(const double *m, SimdDoubleTag = {})
+simdLoadU(const double *m, SimdDoubleTag  /*unused*/ = {})
 {
     return {
                _mm256_loadu_pd(m)
@@ -146,7 +146,7 @@ setZeroD()
 }
 
 static inline SimdDInt32 gmx_simdcall
-simdLoad(const std::int32_t * m, SimdDInt32Tag)
+simdLoad(const std::int32_t * m, SimdDInt32Tag /*unused*/)
 {
     assert(std::size_t(m) % 16 == 0);
     return {
@@ -162,7 +162,7 @@ store(std::int32_t * m, SimdDInt32 a)
 }
 
 static inline SimdDInt32 gmx_simdcall
-simdLoadU(const std::int32_t *m, SimdDInt32Tag)
+simdLoadU(const std::int32_t *m, SimdDInt32Tag /*unused*/)
 {
     return {
                _mm_loadu_si128(reinterpret_cast<const __m128i *>(m))

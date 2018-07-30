@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,7 +63,7 @@ class SimdReference
         //! \brief Conversion method that will execute load
         operator non_const_T() const { return load<non_const_T>(m_); }
         //! \brief Assignment operator that will execute store
-        SimdReference operator=(T o)
+        SimdReference operator=(T o) // NOLINT(misc-unconventional-assign-operator,cppcoreguidelines-c-copy-assignment-signature)
         {
             store(m_, o);
             return *this;
@@ -204,7 +204,7 @@ class SimdArrayRef
                        "Size of ArrayRef needs to be divisible by type size");
         }
         //! \copydoc ArrayRef::ArrayRef(const EmptyArrayRef&)
-        SimdArrayRef(const EmptyArrayRef &) : begin_(nullptr), end_(nullptr) {}
+        SimdArrayRef(const EmptyArrayRef & /*unused*/) : begin_(nullptr), end_(nullptr) {}
         //! \copydoc ArrayRef::ArrayRef(U)
         template<typename U,
                  typename = typename std::enable_if<

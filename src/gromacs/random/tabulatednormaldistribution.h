@@ -61,11 +61,11 @@
 namespace gmx
 {
 
-namespace
+namespace detail
 {
 
 //! Number of bits that determines the resolution of the lookup table for the normal distribution.
-const int c_TabulatedNormalDistributionDefaultBits = 14;
+constexpr int c_TabulatedNormalDistributionDefaultBits = 14;
 
 }
 
@@ -104,7 +104,7 @@ const int c_TabulatedNormalDistributionDefaultBits = 14;
  *        return arbitrarily small/large values, but with e.g. 14 bits
  *        the results are limited to roughly +/- 4 standard deviations.
  */
-template<class RealType = real, unsigned int tableBits = c_TabulatedNormalDistributionDefaultBits>
+template<class RealType = real, unsigned int tableBits = detail::c_TabulatedNormalDistributionDefaultBits>
 class TabulatedNormalDistribution
 {
     static_assert(tableBits <= 24, "Normal distribution table is limited to 24bits (64MB in single precision)");
@@ -376,10 +376,10 @@ class TabulatedNormalDistribution
 #if !defined(_MSC_VER) && !defined(DOXYGEN)
 // Declaration of template specialization
 template<>
-const std::array<real, 1<<c_TabulatedNormalDistributionDefaultBits> TabulatedNormalDistribution<real, c_TabulatedNormalDistributionDefaultBits>::c_table_;
+const std::array<real, 1<<detail::c_TabulatedNormalDistributionDefaultBits> TabulatedNormalDistribution<>::c_table_;
 
 extern template
-const std::array<real, 1<<c_TabulatedNormalDistributionDefaultBits> TabulatedNormalDistribution<real, c_TabulatedNormalDistributionDefaultBits>::c_table_;
+const std::array<real, 1<<detail::c_TabulatedNormalDistributionDefaultBits> TabulatedNormalDistribution<>::c_table_;
 #endif
 
 // Instantiation for all tables without specialization

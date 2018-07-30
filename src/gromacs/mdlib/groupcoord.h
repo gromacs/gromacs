@@ -79,7 +79,7 @@ extern "C" {
  */
 
 extern void dd_make_local_group_indices(gmx_ga2la_t *ga2la,
-                                        const int nr, int anrs[], int *nr_loc,
+                                        int nr, int anrs[], int *nr_loc,
                                         int *anrs_loc[], int *nalloc_loc,
                                         int coll_ind[]);
 
@@ -128,8 +128,8 @@ extern void dd_make_local_group_indices(gmx_ga2la_t *ga2la,
  *                             the group becomes whole (optional).
  */
 extern void communicate_group_positions(const t_commrec *cr, rvec *xcoll, ivec *shifts,
-                                        ivec *extra_shifts, const gmx_bool bNS,
-                                        const rvec *x_loc, const int nr, const int nr_loc,
+                                        ivec *extra_shifts, gmx_bool bNS,
+                                        const rvec *x_loc, int nr, int nr_loc,
                                         const int *anrs_loc, const int *coll_ind, rvec *xcoll_old,
                                         matrix box);
 
@@ -145,7 +145,7 @@ extern void communicate_group_positions(const t_commrec *cr, rvec *xcoll, ivec *
  * \param[out]  center       The (weighted) center of the positions.
  *
  */
-extern void get_center(rvec x[], real weight[], const int nr, rvec center);
+extern void get_center(rvec x[], real weight[], int nr, rvec center);
 
 
 /*! \brief Calculates the sum of the positions x locally.
@@ -161,7 +161,7 @@ extern void get_center(rvec x[], real weight[], const int nr, rvec center);
  * \return Sum of weights.
  *
  */
-extern double get_sum_of_positions(rvec x[], real weight[], const int nr, dvec dsumvec);
+extern double get_sum_of_positions(rvec x[], real weight[], int nr, dvec dsumvec);
 
 
 /*! \brief Calculates the global center of all local arrays x.
@@ -195,7 +195,7 @@ extern void get_center_comm(const t_commrec *cr, rvec x_loc[], real weight_loc[]
  * \param[in]     transvec   Translation vector to be added to all positions.
  *
  */
-extern void translate_x(rvec x[], const int nr, const rvec transvec);
+extern void translate_x(rvec x[], int nr, const rvec transvec);
 
 
 /*! \brief Rotate positions.
@@ -207,7 +207,7 @@ extern void translate_x(rvec x[], const int nr, const rvec transvec);
  * \param[in]     rmat       Rotation matrix to operate on all positions.
  *
  */
-extern void rotate_x(rvec x[], const int nr, matrix rmat);
+extern void rotate_x(rvec x[], int nr, matrix rmat);
 
 #ifdef __cplusplus
 }

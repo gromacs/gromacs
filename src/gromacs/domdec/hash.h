@@ -54,7 +54,7 @@
 #include <cstdio>
 
 //! Forward declation
-static void gmx_hash_resize(gmx_hash_t *, int);
+static void gmx_hash_resize(gmx_hash_t * /*hash*/, int /*nkey_used_estimate*/);
 
 /*! \internal \brief Hashing key-generation helper struct */
 struct gmx_hash_e_t

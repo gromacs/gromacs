@@ -703,7 +703,7 @@ load4DuplicateN(const double* f)
     return load<Simd4NDouble>(f);
 }
 static inline Simd4NDouble gmx_simdcall
-loadU4NOffset(const double* f, int)
+loadU4NOffset(const double* f, int /*unused*/)
 {
     return loadU<Simd4NDouble>(f);
 }

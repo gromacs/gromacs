@@ -105,7 +105,7 @@ typedef struct t_pbc {
     rvec       tric_vec[MAX_NTRICVEC];
 } t_pbc;
 
-#define TRICLINIC(box) (box[YY][XX] != 0 || box[ZZ][XX] != 0 || box[ZZ][YY] != 0)
+#define TRICLINIC(box) ((box)[YY][XX] != 0 || (box)[ZZ][XX] != 0 || (box)[ZZ][YY] != 0)
 
 #define NTRICIMG 14
 #define NCUCVERT 24

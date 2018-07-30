@@ -105,7 +105,7 @@ trjtools_gmx_prepare_tng_writing(const char               *filename,
                                  char                      filemode,
                                  t_trxstatus              *in,
                                  const char               *infile,
-                                 const int                 natoms,
+                                 int                       natoms,
                                  const struct gmx_mtop_t  *mtop,
                                  const int                *index,
                                  const char               *index_group_name);

@@ -72,7 +72,7 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
  * for the number of equally sized lists is below min_ci_balanced.
  * With perturbed particles, also a group scheme style nbl_fep list is made.
  */
-void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
+void nbnxn_make_pairlist(nbnxn_search_t        nbs,
                          nbnxn_atomdata_t     *nbat,
                          const t_blocka       *excl,
                          real                  rlist,

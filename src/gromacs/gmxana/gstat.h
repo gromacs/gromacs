@@ -58,7 +58,7 @@ enum {
 
 #define NHISTO 360
 #define NONCHI 3
-#define MAXCHI edMax-NONCHI
+#define MAXCHI (edMax-NONCHI)
 #define NROT 4  /* number of rotamers: 1=g(-), 2=t, 3=g(+), 0=other */
 
 typedef struct {

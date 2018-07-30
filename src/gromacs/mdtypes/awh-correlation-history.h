@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,29 +74,26 @@ struct CorrelationBlockDataHistory
 //! Grid of local correlation matrices.
 struct CorrelationGridHistory
 {
+    //! Default constructor. Only used for resize of vector of these.
+    CorrelationGridHistory() = default;
+    /*! \brief
+     * Initialize correlation grid history, sets all sizes.
+     *
+     * \param[in] numCorrelationTensors       Number of correlation tensors in the grid.
+     * \param[in] tensorSize                  Number of correlation elements in each tensor.
+     * \param[in] blockDataListSize           The number of blocks in the list of each tensor element.
+     */
+    CorrelationGridHistory(int numCorrelationTensors, int tensorSize, int blockDataListSize);
     /* These counts here since we curently need them for initializing the correlation grid when reading a checkpoint */
-    int numCorrelationTensors; /**< Number correlation tensors in the grid (equal to the number of points). */
-    int tensorSize;            /**< The number of stored correlation matrix elements. */
-    int blockDataListSize;     /**< To be able to increase the block length later on, data is saved for several block lengths for each element. */
+    int numCorrelationTensors = 0; /**< Number correlation tensors in the grid (equal to the number of points). */
+    int tensorSize            = 0; /**< The number of stored correlation matrix elements. */
+    int blockDataListSize     = 0; /**< To be able to increase the block length later on, data is saved for several block lengths for each element. */
 
     /* We store all tensor sequentially in a buffer */
     std::vector<CorrelationBlockDataHistory> blockDataBuffer; /**< Buffer that contains the correlation data. */
 };
 
 /*! \endcond */
-
-/*! \brief
- * Initialize correlation grid history, sets all sizes.
- *
- * \param[in,out] correlationGridHistory  Correlation grid history for master rank.
- * \param[in] numCorrelationTensors       Number of correlation tensors in the grid.
- * \param[in] tensorSize                  Number of correlation elements in each tensor.
- * \param[in] blockDataListSize           The number of blocks in the list of each tensor element.
- */
-void initCorrelationGridHistory(CorrelationGridHistory *correlationGridHistory,
-                                int                     numCorrelationTensors,
-                                int                     tensorSize,
-                                int                     blockDataListSize);
 
 }      // namespace gmx
 
