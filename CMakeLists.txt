@@ -40,6 +40,14 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_
 
 project(Gromacs)
 
+# Use ccache if available to wrap CMAKE_C_COMPILER and CMAKE_CXX_COMPILER.
+# Reference https://ccache.samba.org
+option(ENABLE_CCACHE "Allow CMake to use ccache compiler wrappers if available." ON)
+# CMAKE_C_COMPILER and CMAKE_CXX_COMPILER do not change after this line.
+if(ENABLE_CCACHE)
+    include(gmxCcache)
+endif()
+
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
