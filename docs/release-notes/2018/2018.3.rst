@@ -82,3 +82,12 @@ Fixes to improve portability
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Improve OpenCL kernel performance on AMD Vega GPUs
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The OpenCL kernel optimization flags did not explicitly turn off denorm handling
+which could lead to performance loss. The optimization is now explicitly turned
+on both for consistency with CUDA and performance reasons.
+On AMD Vega GPUs (with ROCm) kernel performance improves by up to 30%.
+
+
