@@ -68,53 +68,6 @@ typedef struct {
     gmx_ana_selmethod_t   *method;
 } t_register_method;
 
-/** Array of selection methods defined in the library. */
-static const t_register_method smtable_def[] = {
-    {nullptr,         &sm_cog},
-    {nullptr,         &sm_com},
-
-    {nullptr,         &sm_all},
-    {nullptr,         &sm_none},
-    {nullptr,         &sm_atomnr},
-    {nullptr,         &sm_resnr},
-    {"resid",      &sm_resnr},
-    {nullptr,         &sm_resindex},
-    {"residue",    &sm_resindex},
-    {nullptr,         &sm_molindex},
-    {"mol",        &sm_molindex},
-    {"molecule",   &sm_molindex},
-    {nullptr,         &sm_atomname},
-    {"name",       &sm_atomname},
-    {nullptr,         &sm_pdbatomname},
-    {"pdbname",    &sm_pdbatomname},
-    {nullptr,         &sm_atomtype},
-    {"type",       &sm_atomtype},
-    {nullptr,         &sm_resname},
-    {nullptr,         &sm_insertcode},
-    {nullptr,         &sm_chain},
-    {nullptr,         &sm_mass},
-    {nullptr,         &sm_charge},
-    {nullptr,         &sm_altloc},
-    {nullptr,         &sm_occupancy},
-    {nullptr,         &sm_betafactor},
-    {"beta",       &sm_betafactor},
-    {nullptr,         &sm_x},
-    {nullptr,         &sm_y},
-    {nullptr,         &sm_z},
-
-    {nullptr,         &sm_distance},
-    {"dist",       &sm_distance},
-    {nullptr,         &sm_mindistance},
-    {"mindist",    &sm_mindistance},
-    {nullptr,         &sm_within},
-    {nullptr,         &sm_insolidangle},
-    {nullptr,         &sm_same},
-
-    {nullptr,         &sm_merge},
-    {nullptr,         &sm_plus},
-    {nullptr,         &sm_permute},
-};
-
 /*! \brief
  * Convenience function for reporting errors found in selection methods.
  */
@@ -621,9 +574,56 @@ gmx_ana_selmethod_register(gmx::SelectionParserSymbolTable *symtab,
 int
 gmx_ana_selmethod_register_defaults(gmx::SelectionParserSymbolTable *symtab)
 {
-    size_t i;
-    int    rc;
-    bool   bOk;
+    /** Array of selection methods defined in the library. */
+    const t_register_method smtable_def[] = {
+        {nullptr,         &sm_cog},
+        {nullptr,         &sm_com},
+
+        {nullptr,         &sm_all},
+        {nullptr,         &sm_none},
+        {nullptr,         &sm_atomnr},
+        {nullptr,         &sm_resnr},
+        {"resid",      &sm_resnr},
+        {nullptr,         &sm_resindex},
+        {"residue",    &sm_resindex},
+        {nullptr,         &sm_molindex},
+        {"mol",        &sm_molindex},
+        {"molecule",   &sm_molindex},
+        {nullptr,         &sm_atomname},
+        {"name",       &sm_atomname},
+        {nullptr,         &sm_pdbatomname},
+        {"pdbname",    &sm_pdbatomname},
+        {nullptr,         &sm_atomtype},
+        {"type",       &sm_atomtype},
+        {nullptr,         &sm_resname},
+        {nullptr,         &sm_insertcode},
+        {nullptr,         &sm_chain},
+        {nullptr,         &sm_mass},
+        {nullptr,         &sm_charge},
+        {nullptr,         &sm_altloc},
+        {nullptr,         &sm_occupancy},
+        {nullptr,         &sm_betafactor},
+        {"beta",       &sm_betafactor},
+        {nullptr,         &sm_x},
+        {nullptr,         &sm_y},
+        {nullptr,         &sm_z},
+
+        {nullptr,         &sm_distance},
+        {"dist",       &sm_distance},
+        {nullptr,         &sm_mindistance},
+        {"mindist",    &sm_mindistance},
+        {nullptr,         &sm_within},
+        {nullptr,         &sm_insolidangle},
+        {nullptr,         &sm_same},
+
+        {nullptr,         &sm_merge},
+        {nullptr,         &sm_plus},
+        {nullptr,         &sm_permute},
+    };
+
+    size_t                  i;
+    int                     rc;
+    bool                    bOk;
 
     bOk = true;
     for (i = 0; i < asize(smtable_def); ++i)

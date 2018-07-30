@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -133,7 +133,7 @@ class Allocator : public AllocationPolicy
          * it in debug mode, presumably to implement some checks.
          */
         template <class U>
-        explicit Allocator(const Allocator<U, AllocationPolicy> &) {}
+        explicit Allocator(const Allocator<U, AllocationPolicy> & /*unused*/) {}
 
         /*! \brief Constructor
          *
@@ -239,7 +239,7 @@ class Allocator : public AllocationPolicy
          */
         template<class T2>
         bool
-        operator==(const Allocator<T2, AllocationPolicy> &) const { return std::is_same<T, T2>::value; }
+        operator==(const Allocator<T2, AllocationPolicy> & /*unused*/) const { return std::is_same<T, T2>::value; }
 
         /*! \brief Return true if two allocators are different
          *

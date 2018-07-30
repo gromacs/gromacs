@@ -77,7 +77,7 @@ extern gmx_bool gmx_debug_at;
  * For command line programs, gmx::CommandLineModuleManager takes care
  * of this if the user requests debugging.
  */
-void gmx_init_debug(const int dbglevel, const char *dbgfile);
+void gmx_init_debug(int dbglevel, const char *dbgfile);
 
 /** Returns TRUE when the program was started in debug mode */
 gmx_bool bDebugMode(void);

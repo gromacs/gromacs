@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -317,7 +317,7 @@ class StringOption : public OptionTemplate<std::string, StringOption>
         template <size_t count>
         MyClass &enumValue(const char *const (&values)[count])
         {
-            GMX_ASSERT(enumValues_ == NULL,
+            GMX_ASSERT(enumValues_ == nullptr,
                        "Multiple sets of enumerated values specified");
             enumValues_      = values;
             enumValuesCount_ = count;
@@ -337,7 +337,7 @@ class StringOption : public OptionTemplate<std::string, StringOption>
          */
         MyClass &enumValueFromNullTerminatedArray(const char *const *values)
         {
-            GMX_ASSERT(enumValues_ == NULL,
+            GMX_ASSERT(enumValues_ == nullptr,
                        "Multiple sets of enumerated values specified");
             enumValues_      = values;
             enumValuesCount_ = -1;
@@ -533,7 +533,7 @@ class EnumOption : public OptionTemplate<EnumType, EnumOption<EnumType> >
         template <size_t count>
         EnumOption &enumValue(const char *const (&values)[count])
         {
-            GMX_ASSERT(enumValues_ == NULL,
+            GMX_ASSERT(enumValues_ == nullptr,
                        "Multiple sets of enumerated values specified");
             enumValues_      = values;
             enumValuesCount_ = count;
@@ -553,7 +553,7 @@ class EnumOption : public OptionTemplate<EnumType, EnumOption<EnumType> >
          */
         EnumOption &enumValueFromNullTerminatedArray(const char *const *values)
         {
-            GMX_ASSERT(enumValues_ == NULL,
+            GMX_ASSERT(enumValues_ == nullptr,
                        "Multiple sets of enumerated values specified");
             enumValues_      = values;
             enumValuesCount_ = -1;
