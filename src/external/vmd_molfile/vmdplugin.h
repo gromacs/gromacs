@@ -203,7 +203,7 @@ typedef struct {
 /*@{*/
 /** Error return code for use in the plugin registration and init functions */
 #define VMDPLUGIN_SUCCESS      0
-#define VMDPLUGIN_ERROR       -1
+#define VMDPLUGIN_ERROR       (-1)
 /*@}*/
 
 /** 

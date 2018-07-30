@@ -415,7 +415,7 @@ GPU_FUNC_QUALIFIER void pme_gpu_spread(const PmeGpu    *GPU_FUNC_ARGUMENT(pmeGpu
  */
 void pme_gpu_3dfft(const PmeGpu          *pmeGpu,
                    enum gmx_fft_direction direction,
-                   const int              gridIndex);
+                   int                    gridIndex);
 
 /*! \libinternal \brief
  * A GPU Fourier space solving function.

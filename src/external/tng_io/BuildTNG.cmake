@@ -71,7 +71,7 @@ function(add_tng_io_library NAME)
     target_include_directories(${_build_target} PRIVATE
                                $<BUILD_INTERFACE:${TNG_ROOT_SOURCE_DIR}/include>
                                $<BUILD_INTERFACE:${TNG_ROOT_BINARY_DIR}/include>)
-    target_include_directories(${NAME} INTERFACE
+    target_include_directories(${NAME} SYSTEM INTERFACE
                                $<BUILD_INTERFACE:${TNG_ROOT_SOURCE_DIR}/include>
                                $<BUILD_INTERFACE:${TNG_ROOT_BINARY_DIR}/include>)
 

@@ -120,7 +120,7 @@ class CorrelationGrid
          */
         int tensorSize() const
         {
-            GMX_RELEASE_ASSERT(tensors_.size() > 0, "Should only call tensorSize on a valid grid");
+            GMX_RELEASE_ASSERT(!tensors_.empty(), "Should only call tensorSize on a valid grid");
 
             return tensors_[0].blockDataList()[0].correlationIntegral().size();
         }
@@ -129,7 +129,7 @@ class CorrelationGrid
          */
         int blockDataListSize() const
         {
-            GMX_RELEASE_ASSERT(tensors_.size() > 0, "Should only call tensorSize on a valid grid");
+            GMX_RELEASE_ASSERT(!tensors_.empty(), "Should only call tensorSize on a valid grid");
 
             return tensors_[0].blockDataList().size();
         }

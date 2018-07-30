@@ -40,6 +40,7 @@
 #include <cstring>
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "gromacs/utility/arrayref.h"
@@ -71,8 +72,8 @@ struct t_inpfile
         bObsolete_(bObsolete),
         bSet_(bSet),
         bHandledAsKeyValueTree_(bHandledAsKeyValueTree),
-        name_(name),
-        value_(value),
+        name_(std::move(name)),
+        value_(std::move(value)),
         inp_count_(inp_count)
     {
     }
@@ -137,7 +138,7 @@ int get_eint(std::vector<t_inpfile> *inp, const char *name, int def,
 
 gmx_int64_t get_eint64(std::vector<t_inpfile> *inp,
                        const char *name, gmx_int64_t def,
-                       warninp_t);
+                       warninp_t /*wi*/);
 
 double get_ereal(std::vector<t_inpfile> *inp, const char *name, double def,
                  warninp_t wi);

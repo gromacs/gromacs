@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -80,13 +80,13 @@ enum class TaskTarget : int
  *
  * \throws     std::bad_alloc          If out of memory
  *             InconsistentInputError  If the user requirements are inconsistent. */
-bool decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget          nonbondedTarget,
+bool decideWhetherToUseGpusForNonbondedWithThreadMpi(TaskTarget                nonbondedTarget,
                                                      const std::vector<int>   &gpuIdsToUse,
                                                      const std::vector<int>   &userGpuTaskAssignment,
-                                                     const EmulateGpuNonbonded emulateGpuNonbonded,
-                                                     const bool                usingVerletScheme,
-                                                     const bool                nonbondedOnGpuIsUseful,
-                                                     const int                 numRanksPerSimulation);
+                                                     EmulateGpuNonbonded       emulateGpuNonbonded,
+                                                     bool                      usingVerletScheme,
+                                                     bool                      nonbondedOnGpuIsUseful,
+                                                     int                       numRanksPerSimulation);
 
 /*! \brief Decide whether this thread-MPI simulation will run
  * PME tasks on GPUs.
@@ -108,13 +108,13 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget          n
  *
  * \throws     std::bad_alloc          If out of memory
  *             InconsistentInputError  If the user requirements are inconsistent. */
-bool decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuForNonbonded,
-                                               const TaskTarget        pmeTarget,
+bool decideWhetherToUseGpusForPmeWithThreadMpi(bool                    useGpuForNonbonded,
+                                               TaskTarget              pmeTarget,
                                                const std::vector<int> &gpuIdsToUse,
                                                const std::vector<int> &userGpuTaskAssignment,
-                                               const bool              canUseGpuForPme,
-                                               const int               numRanksPerSimulation,
-                                               const int               numPmeRanksPerSimulation);
+                                               bool                    canUseGpuForPme,
+                                               int                     numRanksPerSimulation,
+                                               int                     numPmeRanksPerSimulation);
 
 /*! \brief Decide whether the simulation will try to run nonbonded
  * tasks on GPUs.
@@ -143,12 +143,12 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuFor
  *
  * \throws     std::bad_alloc          If out of memory
  *             InconsistentInputError  If the user requirements are inconsistent. */
-bool decideWhetherToUseGpusForNonbonded(const TaskTarget           nonbondedTarget,
+bool decideWhetherToUseGpusForNonbonded(TaskTarget                 nonbondedTarget,
                                         const std::vector<int>    &userGpuTaskAssignment,
-                                        const EmulateGpuNonbonded  emulateGpuNonbonded,
-                                        const bool                 usingVerletScheme,
-                                        const bool                 nonbondedOnGpuIsUseful,
-                                        const bool                 gpusWereDetected);
+                                        EmulateGpuNonbonded        emulateGpuNonbonded,
+                                        bool                       usingVerletScheme,
+                                        bool                       nonbondedOnGpuIsUseful,
+                                        bool                       gpusWereDetected);
 
 /*! \brief Decide whether the simulation will try to run tasks of
  * different types on GPUs.
@@ -178,13 +178,13 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget           nonbondedTarg
  *
  * \throws     std::bad_alloc          If out of memory
  *             InconsistentInputError  If the user requirements are inconsistent. */
-bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
-                                  const TaskTarget        pmeTarget,
+bool decideWhetherToUseGpusForPme(bool                    useGpuForNonbonded,
+                                  TaskTarget              pmeTarget,
                                   const std::vector<int> &userGpuTaskAssignment,
-                                  const bool              canUseGpuForPme,
-                                  const int               numRanksPerSimulation,
-                                  const int               numPmeRanksPerSimulation,
-                                  const bool              gpusWereDetected);
+                                  bool                    canUseGpuForPme,
+                                  int                     numRanksPerSimulation,
+                                  int                     numPmeRanksPerSimulation,
+                                  bool                    gpusWereDetected);
 
 }
 

@@ -840,7 +840,7 @@
 #endif /* LJ_CUT */
 
 #ifdef LJ_FORCE_SWITCH
-#define v_fswitch_r(rsw, rsw2, c0, c3, c4) fma(fma(c4, rsw, c3), (rsw2 * rsw), c0)
+#define v_fswitch_r(rsw, rsw2, c0, c3, c4) fma(fma((c4), (rsw), (c3)), ((rsw2) * (rsw)), (c0))
 
     SimdReal VLJ6_S0  = c6_S0 * fma(sixth_S, rinvsix_S0, v_fswitch_r(rsw_S0, rsw2_S0, p6_6cpot_S, p6_vc3_S, p6_vc4_S));
     SimdReal VLJ6_S1  = c6_S1 * fma(sixth_S, rinvsix_S1, v_fswitch_r(rsw_S1, rsw2_S1, p6_6cpot_S, p6_vc3_S, p6_vc4_S));
@@ -884,8 +884,8 @@
         SimdReal sw_S3, dsw_S3;
 #endif
 
-#define switch_r(rsw, rsw2, c3, c4, c5) fma(fma(fma(c5, rsw, c4), rsw, c3), (rsw2 * rsw), one_S)
-#define dswitch_r(rsw, rsw2, c2, c3, c4) (fma(fma(c4, rsw, c3), rsw, c2) * rsw2)
+#define switch_r(rsw, rsw2, c3, c4, c5) fma(fma(fma(c5, rsw, c4), rsw, c3), ((rsw2) * (rsw)), one_S)
+#define dswitch_r(rsw, rsw2, c2, c3, c4) (fma(fma(c4, rsw, c3), rsw, c2) * (rsw2))
 
         sw_S0  = switch_r(rsw_S0, rsw2_S0, swV3_S, swV4_S, swV5_S);
         dsw_S0 = dswitch_r(rsw_S0, rsw2_S0, swF2_S, swF3_S, swF4_S);

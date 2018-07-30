@@ -251,8 +251,6 @@ static inline void ga2la_del(gmx_ga2la_t *ga2la, int a_gl)
         ind      = ga2la->lal[ind].next;
     }
     while (ind >= 0);
-
-    return;
 }
 
 /*! \brief Change the local atom for present ga2la entry for global atom a_gl
@@ -284,8 +282,6 @@ static inline void ga2la_change_la(gmx_ga2la_t *ga2la, int a_gl, int a_loc)
         ind = ga2la->lal[ind].next;
     }
     while (ind >= 0);
-
-    return;
 }
 
 /*! \brief Returns if the global atom a_gl available locally

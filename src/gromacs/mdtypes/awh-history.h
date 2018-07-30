@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -107,13 +107,6 @@ struct AwhBiasHistory
 
     AwhBiasStateHistory               state;                /**< The global state of the AWH bias. */
     CorrelationGridHistory            forceCorrelationGrid; /**< History for force correlation statistics. */
-
-    /*! \brief Constructor. */
-    AwhBiasHistory() : pointState(),
-                       state(),
-                       forceCorrelationGrid()
-    {
-    }
 };
 
 //! A collection of AWH bias history data. */
@@ -123,8 +116,8 @@ struct AwhHistory
     double                      potentialOffset; /**< The offset of the bias potential due to bias updates. */
 
     /*! \brief Constructor. */
-    AwhHistory() : bias(),
-                   potentialOffset(0)
+    AwhHistory() :
+        potentialOffset(0)
     {
     }
 };

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,7 +97,7 @@ class Variant
          * method avoids copying when move-construction is possible.
          */
         template <typename T>
-        static Variant create(T &&value) { return Variant(std::move(value)); }
+        static Variant create(T &&value) { return Variant(std::forward<T>(value)); }
 
         //! Creates an empty variant value.
         Variant() {}
@@ -106,19 +106,9 @@ class Variant
          *
          * \throws std::bad_alloc if out of memory.
          */
-        template <typename T>
-        explicit Variant(const T &value)
-            : content_(new Content<typename std::decay<T>::type>(value))
-        {
-        }
-        /*! \brief
-         * Creates a variant that holds the given value.
-         *
-         * \throws std::bad_alloc if out of memory.
-         */
-        template <typename T>
+        template <typename T, typename = typename std::enable_if<!std::is_same<T, Variant>::value>::type>
         explicit Variant(T &&value)
-            : content_(new Content<typename std::decay<T>::type>(std::move(value)))
+            : content_(new Content<typename std::decay<T>::type>(std::forward<T>(value)))
         {
         }
         /*! \brief
