@@ -224,7 +224,7 @@ double biasedLogWeightFromPoint(const std::vector<DimParams>  &dimParams,
                                 double                         pointBias,
                                 const awh_dvec                 value)
 {
-    double logWeight = c_largeNegativeExponent;
+    double logWeight = detail::c_largeNegativeExponent;
 
     /* Only points in the target reigon have non-zero weight */
     if (points[pointIndex].inTargetRegion())
@@ -1050,7 +1050,7 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
            the free energy values grow less than 0.5*c_largePositiveExponent in a return time to this
            neighborhood. For reasonable update sizes it's unlikely that this requirement would be
            broken. */
-        if (std::abs(points_[globalIndex].freeEnergy()) > 0.5*c_largePositiveExponent)
+        if (std::abs(points_[globalIndex].freeEnergy()) > 0.5*detail::c_largePositiveExponent)
         {
             needToNormalizeFreeEnergy = true;
             break;
@@ -1185,7 +1185,7 @@ double BiasState::updateProbabilityWeightsAndConvolvedBias(const std::vector<Dim
             else
             {
                 /* Pad with values that don't affect the result */
-                (*weight)[n] = c_largeNegativeExponent;
+                (*weight)[n] = detail::c_largeNegativeExponent;
             }
         }
         PackType weightPack = load<PackType>(weightData + i);

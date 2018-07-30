@@ -330,7 +330,7 @@ struct t_swapcoords
     gmx_swapcoords_t         si_priv;
 };
 
-struct t_inputrec
+struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
 {
     t_inputrec();
     explicit t_inputrec(const t_inputrec &) = delete;

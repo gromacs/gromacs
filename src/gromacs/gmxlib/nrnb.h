@@ -42,7 +42,7 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
-#define eNR_NBKERNEL_NONE -1
+#define eNR_NBKERNEL_NONE (-1)
 
 enum
 {

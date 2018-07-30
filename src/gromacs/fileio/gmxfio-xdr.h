@@ -110,16 +110,16 @@ gmx_bool gmx_fio_ndoe_string(struct t_fileio *fio, char *item[], int n,
 /* convenience macros */
 #define gmx_fio_write_string(fio, item)         gmx_fio_writee_string(fio, item, (#item), __FILE__, __LINE__)
 
-#define gmx_fio_do_real(fio, item)              gmx_fio_doe_real(fio, &item, (#item), __FILE__, __LINE__)
-#define gmx_fio_do_float(fio, item)             gmx_fio_doe_float(fio, &item, (#item), __FILE__, __LINE__)
-#define gmx_fio_do_double(fio, item)            gmx_fio_doe_double(fio, &item, (#item), __FILE__, __LINE__)
-#define gmx_fio_do_gmx_bool(fio, item)          gmx_fio_doe_gmx_bool(fio, &item, (#item), __FILE__, __LINE__)
-#define gmx_fio_do_int(fio, item)               gmx_fio_doe_int(fio, &item, (#item), __FILE__, __LINE__)
-#define gmx_fio_do_int64(fio, item)             gmx_fio_doe_int64(fio, &item, (#item), __FILE__, __LINE__)
-#define gmx_fio_do_uchar(fio, item)             gmx_fio_doe_uchar(fio, &item, (#item), __FILE__, __LINE__)
-#define gmx_fio_do_ushort(fio, item)            gmx_fio_doe_ushort(fio, &item, (#item), __FILE__, __LINE__)
-#define gmx_fio_do_rvec(fio, item)              gmx_fio_doe_rvec(fio, &item, (#item), __FILE__, __LINE__)
-#define gmx_fio_do_ivec(fio, item)              gmx_fio_doe_ivec(fio, &item, (#item), __FILE__, __LINE__)
+#define gmx_fio_do_real(fio, item)              gmx_fio_doe_real(fio, &(item), (#item), __FILE__, __LINE__)
+#define gmx_fio_do_float(fio, item)             gmx_fio_doe_float(fio, &(item), (#item), __FILE__, __LINE__)
+#define gmx_fio_do_double(fio, item)            gmx_fio_doe_double(fio, &(item), (#item), __FILE__, __LINE__)
+#define gmx_fio_do_gmx_bool(fio, item)          gmx_fio_doe_gmx_bool(fio, &(item), (#item), __FILE__, __LINE__)
+#define gmx_fio_do_int(fio, item)               gmx_fio_doe_int(fio, &(item), (#item), __FILE__, __LINE__)
+#define gmx_fio_do_int64(fio, item)             gmx_fio_doe_int64(fio, &(item), (#item), __FILE__, __LINE__)
+#define gmx_fio_do_uchar(fio, item)             gmx_fio_doe_uchar(fio, &(item), (#item), __FILE__, __LINE__)
+#define gmx_fio_do_ushort(fio, item)            gmx_fio_doe_ushort(fio, &(item), (#item), __FILE__, __LINE__)
+#define gmx_fio_do_rvec(fio, item)              gmx_fio_doe_rvec(fio, &(item), (#item), __FILE__, __LINE__)
+#define gmx_fio_do_ivec(fio, item)              gmx_fio_doe_ivec(fio, &(item), (#item), __FILE__, __LINE__)
 #define gmx_fio_do_string(fio, item)            gmx_fio_doe_string(fio, item, (#item), __FILE__, __LINE__)
 
 

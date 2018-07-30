@@ -229,7 +229,7 @@ struct pme_spline_work;
 struct pme_solve_work_t;
 
 /*! \brief Master PME data structure */
-struct gmx_pme_t {
+struct gmx_pme_t {            //NOLINT(clang-analyzer-optin.performance.Padding)
     int           ndecompdim; /* The number of decomposition dimensions */
     int           nodeid;     /* Our nodeid in mpi->mpi_comm */
     int           nodeid_major;

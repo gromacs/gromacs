@@ -240,7 +240,7 @@ void gmx_pme_receive_f(const t_commrec *cr,
  * \param[in] nAtoms         The number of particles.
  * \param[in] charges        The pointer to the array of particle charges.
  */
-void gmx_pme_reinit_atoms(const gmx_pme_t *pme, const int nAtoms, const real *charges);
+void gmx_pme_reinit_atoms(const gmx_pme_t *pme, int nAtoms, const real *charges);
 
 /* A block of PME GPU functions */
 

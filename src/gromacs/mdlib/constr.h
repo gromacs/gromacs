@@ -251,7 +251,7 @@ int countFlexibleConstraints(const t_ilist   *ilist,
 /*! \brief Macro for getting the constraint iatoms for a constraint number con
  * which comes from a list where F_CONSTR and F_CONSTRNC constraints
  * are concatenated. */
-#define constr_iatomptr(nconstr, iatom_constr, iatom_constrnc, con) ((con) < (nconstr) ? (iatom_constr)+(con)*3 : (iatom_constrnc)+(con-nconstr)*3)
+#define constr_iatomptr(nconstr, iatom_constr, iatom_constrnc, con) ((con) < (nconstr) ? (iatom_constr)+(con)*3 : (iatom_constrnc)+((con)-(nconstr))*3)
 
 /*! \brief Returns whether there are inter charge group constraints */
 bool inter_charge_group_constraints(const gmx_mtop_t &mtop);

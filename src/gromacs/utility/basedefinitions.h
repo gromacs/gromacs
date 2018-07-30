@@ -168,6 +168,18 @@ using index = std::ptrdiff_t;
  */
 #define GMX_UNUSED_VALUE(value) (void)value
 
+#ifdef __clang__
+#define DO_PRAGMA(x) _Pragma (#x)
+#define CLANG_DIAGNOSTIC_IGNORE(warning) _Pragma("clang diagnostic push") \
+    DO_PRAGMA(clang diagnostic ignored #warning)
+#define DIAGNOSTIC_RESET _Pragma("clang diagnostic pop")
+#else
+//! Ignore specified clang warning until DIAGNOSTIC_RESET
+#define CLANG_DIAGNOSTIC_IGNORE(warning)
+//! Reset all diagnostics to default
+#define DIAGNOSTIC_RESET
+#endif
+
 #ifdef __cplusplus
 namespace gmx
 {
@@ -180,7 +192,7 @@ namespace internal
  * \ingroup module_utility
  */
 template <typename T>
-static inline void ignoreValueHelper(const T &)
+static inline void ignoreValueHelper(const T & /*unused*/)
 {
 }
 //! \endcond

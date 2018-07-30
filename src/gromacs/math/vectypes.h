@@ -116,9 +116,9 @@ class BasicVector
         //! Default copy assignment operator.
         BasicVector &operator=(const BasicVector &v) = default;
         //! Default move constructor.
-        BasicVector(BasicVector &&src) = default;
+        BasicVector(BasicVector &&src) noexcept = default;
         //! Default move assignment operator.
-        BasicVector &operator=(BasicVector &&v) = default;
+        BasicVector &operator=(BasicVector &&v) noexcept = default;
         //! Indexing operator to make the class work as the raw array.
         ValueType &operator[](int i) { return x_[i]; }
         //! Indexing operator to make the class work as the raw array.

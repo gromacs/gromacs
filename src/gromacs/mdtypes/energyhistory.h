@@ -70,10 +70,10 @@ class delta_h_history_t
         gmx_bool                        start_lambda_set;
 
         //! Constructor
-        delta_h_history_t() : dh(),
-                              start_time(0),
-                              start_lambda(0),
-                              start_lambda_set(false)
+        delta_h_history_t() :
+            start_time(0),
+            start_lambda(0),
+            start_lambda_set(false)
         {
         }
 };
@@ -97,8 +97,7 @@ class energyhistory_t
         //! Constructor
         energyhistory_t() : nsteps(0),
                             nsum(0),
-                            ener_ave(),
-                            ener_sum(),
+
                             nsteps_sim(0),
                             nsum_sim(0),
                             ener_sum_sim(0)

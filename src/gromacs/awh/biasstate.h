@@ -490,7 +490,7 @@ class BiasState
          *
          * \param[out] pmf  Array(ref) to be filled with the PMF values, should have the same size as the bias grid.
          */
-        void getPmf(gmx::ArrayRef<float>) const;
+        void getPmf(gmx::ArrayRef<float> /*pmf*/) const;
 
         /*! \brief Returns the current coordinate state.
          */

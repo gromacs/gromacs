@@ -220,7 +220,6 @@ highBitCounter
         {
             GMX_THROW(InternalError("Random engine stream ran out of internal counter space."));
         }
-        return;
     }
 
     /*! \brief Increment the internal counter in highBits by a value.
@@ -277,7 +276,6 @@ highBitCounter
         {
             GMX_THROW(InternalError("Random engine stream ran out of internal counter space."));
         }
-        return;
     }
 };
 }

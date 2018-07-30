@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,6 +56,7 @@
 #include <memory>
 #include <string>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxassert.h"
@@ -110,7 +111,7 @@ class SelectionParserValue
         //! Allocates and initializes an empty value list.
         static SelectionParserValueListPointer createList()
         {
-            return SelectionParserValueListPointer(new SelectionParserValueList);
+            return compat::make_unique<SelectionParserValueList>();
         }
         /*! \brief
          * Allocates and initializes a value list with a single value.
@@ -303,16 +304,16 @@ class SelectionParserParameter
     public:
         // Default move constructor and assignment. Only needed for old compilers.
         //! \cond
-        SelectionParserParameter(SelectionParserParameter &&o)
-            : name_(std::move(o.name_)), location_(std::move(o.location_)),
+        SelectionParserParameter(SelectionParserParameter &&o) noexcept
+            : name_(std::move(o.name_)), location_(o.location_),
               values_(std::move(o.values_))
         {
         }
 
-        SelectionParserParameter &operator=(SelectionParserParameter &&o)
+        SelectionParserParameter &operator=(SelectionParserParameter &&o) noexcept
         {
             name_     = std::move(o.name_);
-            location_ = std::move(o.location_);
+            location_ = o.location_;
             values_   = std::move(o.values_);
             return *this;
         }
@@ -321,8 +322,7 @@ class SelectionParserParameter
         //! Allocates and initializes an empty parameter list.
         static SelectionParserParameterListPointer createList()
         {
-            return SelectionParserParameterListPointer(
-                    new SelectionParserParameterList);
+            return compat::make_unique<SelectionParserParameterList>();
         }
         /*! \brief
          * Allocates and initializes a parsed method parameter.

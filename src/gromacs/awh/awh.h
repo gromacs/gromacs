@@ -273,8 +273,8 @@ prepareAwhModule(FILE                 *fplog,
                  t_state              *stateGlobal,
                  const t_commrec      *commRecord,
                  const gmx_multisim_t *multiSimRecord,
-                 const bool            startingFromCheckpoint,
-                 const bool            usingShellParticles,
+                 bool                  startingFromCheckpoint,
+                 bool                  usingShellParticles,
                  const std::string    &biasInitFilename,
                  pull_t               *pull_work);
 

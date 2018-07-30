@@ -119,7 +119,7 @@ typedef struct gmx_groups_t
  * TODO: Find a solution for ensuring that the derived data is in sync
  *       with the primary data, possibly by converting to a class.
  */
-struct gmx_mtop_t
+struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
 {
     /* Constructor */
     gmx_mtop_t();

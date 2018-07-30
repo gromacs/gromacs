@@ -146,7 +146,7 @@ class ArrayRef
          * used to initialize any ArrayRef, without specifying the template
          * type.  It is not explicit to enable that usage.
          */
-        ArrayRef(const EmptyArrayRef &) : begin_(nullptr), end_(nullptr) {}
+        ArrayRef(const EmptyArrayRef & /*unused*/) : begin_(nullptr), end_(nullptr) {}
         /*! \brief
          * Constructs a reference to a container or reference
          *

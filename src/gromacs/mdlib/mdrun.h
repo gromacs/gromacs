@@ -139,14 +139,10 @@ struct MdrunOptions
         globalCommunicationInterval(-1),
         reproducible(FALSE),
         writeConfout(TRUE),
-        continuationOptions(),
-        checkpointOptions(),
         numStepsCommandline(-2),
         maximumHoursToRun(-1),
-        timingOptions(),
         tunePme(TRUE),
         ntompOptionIsSet(FALSE),
-        imdOptions(),
         verbose(FALSE),
         verboseStepPrintInterval(100)
     {

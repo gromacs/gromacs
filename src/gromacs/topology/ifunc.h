@@ -91,7 +91,7 @@ typedef real t_ifunc (int nbonds, const t_iatom iatoms[],
  * it not assigned to any node by the domain decompostion, the simulation
  * still continue, if mdrun has been told so.
  */
-typedef struct
+typedef struct                // NOLINT (clang-analyzer-optin.performance.Padding)
 {
     const char *name;         /* the name of this function			*/
     const char *longname;     /* The name for printing etc.                   */

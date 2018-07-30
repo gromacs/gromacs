@@ -278,7 +278,7 @@ enum {
     ljcrGEOM, ljcrLB, ljcrNONE, ljcrNR
 };
 
-typedef struct nbnxn_atomdata_t {
+typedef struct nbnxn_atomdata_t { //NOLINT(clang-analyzer-optin.performance.Padding)
     nbnxn_alloc_t           *alloc;
     nbnxn_free_t            *free;
     int                      ntype;           /* The number of different atom types                 */

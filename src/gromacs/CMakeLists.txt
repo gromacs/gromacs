@@ -346,10 +346,14 @@ if (GMX_CLANG_TIDY)
        "-readability-implicit-bool-conversion" #TODO: Remove gmx_bool
        "modernize-use-nullptr" "modernize-use-emplace"
        "modernize-make-unique" "modernize-make-shared"
+       "cppcoreguidelines-*" "-cppcoreguidelines-pro-*"
+       "-cppcoreguidelines-owning-memory"
+       "-cppcoreguidelines-no-malloc"
+       "-cppcoreguidelines-special-member-functions" #in conflict with Wunused-member-function
        )
    string(REPLACE ";" "," CLANG_TIDY_CHECKS "${CLANG_TIDY_CHECKS}")
    set_target_properties(libgromacs PROPERTIES CXX_CLANG_TIDY
-       "${CLANG_TIDY_EXE};--checks=${CLANG_TIDY_CHECKS};-warnings-as-errors=*;-fix")
+       "${CLANG_TIDY_EXE};--checks=${CLANG_TIDY_CHECKS};-warnings-as-errors=*;-header-filter=.*")
 endif()
 
 gmx_write_installed_header_list()

@@ -61,16 +61,16 @@
 namespace gmx
 {
 
-namespace
+namespace detail
 {
 
 //! A value that can be passed to exp() with result 0, also with SIMD
-static constexpr double c_largeNegativeExponent = -10000.0;
+constexpr double c_largeNegativeExponent = -10000.0;
 
 //! The largest acceptable positive exponent for variables that are passed to exp().
-static constexpr double c_largePositiveExponent =  700.0;
+constexpr double c_largePositiveExponent =  700.0;
 
-}   // namepace
+}   // namepace detail
 
 /*! \internal
  * \brief The state of a coordinate point.
@@ -155,7 +155,7 @@ class PointState
         {
             target_ = 0;
             /* the bias = log(target) + const = -infty */
-            bias_   = c_largeNegativeExponent;
+            bias_   = detail::c_largeNegativeExponent;
         }
 
         /*! \brief Return the free energy. */
@@ -379,7 +379,7 @@ class PointState
             double df                 = -std::log(weighthistSampled/weighthistTarget);
             freeEnergy_              += df;
 
-            GMX_RELEASE_ASSERT(std::abs(freeEnergy_) < c_largePositiveExponent,
+            GMX_RELEASE_ASSERT(std::abs(freeEnergy_) < detail::c_largePositiveExponent,
                                "Very large free energy differences or badly normalized free energy in AWH update.");
         }
 

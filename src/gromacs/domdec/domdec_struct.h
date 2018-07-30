@@ -126,7 +126,7 @@ struct gmx_ddbox_t {
 };
 
 
-struct gmx_domdec_t {
+struct gmx_domdec_t { //NOLINT(clang-analyzer-optin.performance.Padding)
     /* The DD particle-particle nodes only */
     /* The communication setup within the communicator all
      * defined in dd->comm in domdec.c

@@ -74,6 +74,6 @@ using PmeGpuProgramHandle = const PmeGpuProgram *;
 /*! \brief
  * Factory function used to build persistent PME GPU program for the device at once.
  */
-PmeGpuProgramStorage buildPmeGpuProgram(const gmx_device_info_t *);
+PmeGpuProgramStorage buildPmeGpuProgram(const gmx_device_info_t * /*deviceInfo*/);
 
 #endif

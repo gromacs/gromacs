@@ -332,7 +332,7 @@ class Bias
         {
             GMX_RELEASE_ASSERT(forceCorrelationGrid_ != nullptr, "forceCorrelationGrid() should only be called with a valid force correlation object");
 
-            return *forceCorrelationGrid_.get();
+            return *forceCorrelationGrid_;
         }
 
         /*! \brief Return the number of data blocks that have been prepared for writing.

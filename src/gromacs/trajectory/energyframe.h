@@ -88,7 +88,7 @@ class EnergyFrame
         using MapConstIterator = MapType::const_iterator;
         //! Constructor
         EnergyFrame(const t_enxframe &enxframe,
-                    const std::map<std::string, int> indicesOfEnergyFields);
+                    std::map<std::string, int> indicesOfEnergyFields);
         /*! \brief Return string that helps users identify this frame, containing time and step number.
          *
          * \throws std::bad_alloc  when out of memory */

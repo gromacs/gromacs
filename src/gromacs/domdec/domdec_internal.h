@@ -382,7 +382,7 @@ struct dd_comm_setup_work_t
  * All arrays are indexed with 0 to dd->ndim (not Cartesian indexing),
  * unless stated otherwise.
  */
-struct gmx_domdec_comm_t
+struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
 {
     /* PME and Cartesian communicator stuff */
     int         npmedecompdim;     /**< The number of decomposition dimensions for PME, 0: no PME */
