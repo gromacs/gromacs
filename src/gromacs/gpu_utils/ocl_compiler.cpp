@@ -179,6 +179,11 @@ selectCompilerOptions(ocl_vendor_id_t deviceVendorId)
     if (getenv("GMX_OCL_DISABLE_FASTMATH") == NULL)
     {
         compilerOptions += " -cl-fast-relaxed-math";
+
+        // Hint to the compiler that it can flush denorms to zero.
+        // In CUDA this is triggered by the -use_fast_math flag, equivalent with
+        // -cl-fast-relaxed-math, hence the inclusion on the conditional block.
+        compilerOptions += " -cl-denorms-are-zero";
     }
 
     if ((deviceVendorId == OCL_VENDOR_NVIDIA) && getenv("GMX_OCL_VERBOSE"))
