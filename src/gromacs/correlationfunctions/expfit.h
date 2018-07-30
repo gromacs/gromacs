@@ -97,7 +97,7 @@ int sffn2effn(const char **sffn);
  * \param[in] x The value of x
  * \return the value of the fit
  */
-double fit_function(const int eFitFn, const double parm[], const double x);
+double fit_function(int eFitFn, const double parm[], double x);
 
 /*! \brief
  * Use Levenberg-Marquardt method to fit to a nfitparm parameter exponential

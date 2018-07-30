@@ -123,7 +123,7 @@ struct gmx_ewald_tab_t;
 
 struct ewald_corr_thread_t;
 
-struct t_forcerec {
+struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     struct interaction_const_t *ic;
 
     /* PBC stuff */

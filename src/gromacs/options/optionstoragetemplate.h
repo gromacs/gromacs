@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -332,6 +332,7 @@ class OptionStorageTemplateSimple : public OptionStorageTemplate<T>
         {
             const_cast<MyBase *>(this)->ensureConverterInitialized();
             std::vector<Variant> result;
+            result.reserve(values.size());
             for (const auto &value : values)
             {
                 result.push_back(normalizeValue(converter_.convert(value)));
@@ -436,7 +437,9 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const AbstractOption &settings,
 
 template <typename T>
 std::unique_ptr<IOptionValueStore<T> > OptionStorageTemplate<T>::createStore(
-        ValueList *storeVector, T *store, int *storeCount, int initialCount)
+        ValueList *storeVector, T *store,
+        int *storeCount, // NOLINT(readability-non-const-parameter) passed non-const to OptionValueStorePlain
+        int initialCount)
 {
     if (storeVector != nullptr)
     {
@@ -503,7 +506,7 @@ std::vector<std::string> OptionStorageTemplate<T>::defaultValuesAsStrings() cons
     if (result.empty() || (result.size() == 1 && result[0].empty()))
     {
         result.clear();
-        if (defaultValueIfSet_.get() != nullptr)
+        if (defaultValueIfSet_ != nullptr)
         {
             result.push_back(formatSingleValue(*defaultValueIfSet_));
         }
@@ -523,7 +526,7 @@ template <typename T>
 void OptionStorageTemplate<T>::processSet()
 {
     processSetValues(&setValues_);
-    if (setValues_.empty() && defaultValueIfSet_.get() != nullptr)
+    if (setValues_.empty() && defaultValueIfSet_ != nullptr)
     {
         addValue(*defaultValueIfSet_);
         setFlag(efOption_HasDefaultValue);
@@ -552,7 +555,6 @@ void OptionStorageTemplate<T>::addValue(const T &value)
     setValues_.push_back(value);
 }
 
-
 template <typename T>
 void OptionStorageTemplate<T>::commitValues()
 {
@@ -561,13 +563,15 @@ void OptionStorageTemplate<T>::commitValues()
         store_->clear();
     }
     store_->reserve(setValues_.size());
-    for (T value : setValues_)
+    // For bool the loop variable isn't a reference (it's its special reference type)
+    CLANG_DIAGNOSTIC_IGNORE(-Wrange-loop-analysis)
+    for (const auto &value : setValues_)
     {
         store_->append(value);
     }
+    DIAGNOSTIC_RESET;
     clearSet();
 }
-
 
 template <typename T>
 void OptionStorageTemplate<T>::setDefaultValue(const T &value)

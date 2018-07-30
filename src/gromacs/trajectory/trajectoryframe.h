@@ -53,7 +53,7 @@
 
 struct t_atoms;
 
-typedef struct t_trxframe
+typedef struct t_trxframe      // NOLINT (clang-analyzer-optin.performance.Padding)
 {
     int             not_ok;    /* integrity flags                  */
     gmx_bool        bDouble;   /* Double precision?                */

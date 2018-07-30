@@ -48,7 +48,7 @@
  * \ingroup module_utility
  */
 template <typename T, int N>
-constexpr int asize(T(&)[N])
+constexpr int asize(T(&/*unused*/)[N])
 {
     static_assert(N >= 0, "Do negative size arrays exist?");
     return N;

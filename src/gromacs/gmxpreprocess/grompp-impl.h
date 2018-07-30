@@ -79,7 +79,7 @@ typedef struct {
     real      &c2() { return c[2]; }
 } t_param;
 
-typedef struct {
+typedef struct {        // NOLINT (clang-analyzer-optin.performance.Padding)
     int          nr;    /* The number of bonds in this record   */
     int          maxnr; /* The amount of elements in the array  */
     t_param     *param; /* Array of parameters (dim: nr or nr*nr) */

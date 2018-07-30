@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -134,9 +134,10 @@ class LogWriteHelper
          * technique for implementing macros that allow streming information to
          * them (see, e.g., Google Test).
          */
-        void operator=(const LogEntryWriter &entryWriter)
+        LogWriteHelper &operator=(const LogEntryWriter &entryWriter)
         {
             target_->writeEntry(entryWriter.entry_);
+            return *this;
         }
 
     private:

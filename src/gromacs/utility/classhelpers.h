@@ -89,10 +89,10 @@ namespace gmx
 #else
 #define GMX_DEFAULT_CONSTRUCTORS(ClassName) \
     ClassName()                                             = default;    \
-    ClassName                 &operator=(const ClassName &) = default;    \
+    ClassName                 &operator=(const ClassName &) = default; /* NOLINT(misc-macro-parentheses) */ \
     ClassName(const ClassName &)                            = default;    \
-    ClassName                 &operator=(ClassName &&)      = default;    \
-    ClassName(ClassName &&)                                 = default
+    ClassName                 &operator=(ClassName &&)      = default; /* NOLINT(misc-macro-parentheses) */ \
+    ClassName(ClassName &&)                                 = default  /* NOLINT(misc-macro-parentheses) */
 #endif
 
 /*! \brief

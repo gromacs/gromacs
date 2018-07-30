@@ -48,7 +48,7 @@
 #define REAL_FUNC_TERM_WITH_RETURN(arg) ;
 
 #define NULL_FUNC_QUALIFIER gmx_unused static
-#define NULL_FUNC_ARGUMENT(arg) /*arg*/
+#define NULL_FUNC_ARGUMENT(arg) arg gmx_unused
 #define NULL_FUNC_TERM {}
 #define NULL_FUNC_TERM_WITH_RETURN(arg) { return (arg); }
 

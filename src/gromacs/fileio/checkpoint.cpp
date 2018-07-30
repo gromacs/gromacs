@@ -1537,7 +1537,8 @@ static int do_cpt_correlation_grid(XDR *xd, gmx_bool bRead, gmx_unused int fflag
 
     if (bRead)
     {
-        initCorrelationGridHistory(corrGrid, corrGrid->numCorrelationTensors, corrGrid->tensorSize, corrGrid->blockDataListSize);
+        *corrGrid = gmx::CorrelationGridHistory(corrGrid->numCorrelationTensors,
+                                                corrGrid->tensorSize, corrGrid->blockDataListSize);
     }
 
     for (gmx::CorrelationBlockDataHistory &blockData : corrGrid->blockDataBuffer)

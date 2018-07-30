@@ -95,7 +95,7 @@ struct t_filenm;
 void handleRestart(t_commrec            *cr,
                    const gmx_multisim_t *ms,
                    gmx_bool              bTryToAppendFiles,
-                   const int             NFILE,
+                   int                   NFILE,
                    t_filenm              fnm[],
                    bool                 *bDoAppendFiles,
                    bool                 *bStartFromCpt);
