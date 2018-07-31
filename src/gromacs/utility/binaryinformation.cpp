@@ -263,10 +263,7 @@ void gmx_print_version_info(gmx::TextWriter *writer)
     writer->writeLine("TNG support:        disabled");
 #endif
 #if GMX_HWLOC
-    writer->writeLine(formatString("Hwloc support:      hwloc-%d.%d.%d",
-                                   HWLOC_API_VERSION>>16,
-                                   (HWLOC_API_VERSION>>8) & 0xFF,
-                                   HWLOC_API_VERSION & 0xFF));
+    writer->writeLine(formatString("Hwloc support:      hwloc-%s", HWLOC_VERSION));
 #else
     writer->writeLine("Hwloc support:      disabled");
 #endif
