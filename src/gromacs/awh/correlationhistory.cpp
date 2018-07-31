@@ -61,25 +61,10 @@
 namespace gmx
 {
 
-void initCorrelationGridHistory(CorrelationGridHistory *correlationGridHistory,
-                                int                     numCorrelationTensors,
-                                int                     tensorSize,
-                                int                     blockDataListSize)
+CorrelationGridHistory createCorrelationGridHistoryFromState(const CorrelationGrid &correlationGrid)
 {
-    correlationGridHistory->numCorrelationTensors = numCorrelationTensors;
-    correlationGridHistory->tensorSize            = tensorSize;
-    correlationGridHistory->blockDataListSize     = blockDataListSize;
-
-    correlationGridHistory->blockDataBuffer.resize(numCorrelationTensors*tensorSize*blockDataListSize);
-}
-
-CorrelationGridHistory initCorrelationGridHistoryFromState(const CorrelationGrid &correlationGrid)
-{
-    CorrelationGridHistory correlationGridHistory;
-
-    initCorrelationGridHistory(&correlationGridHistory, correlationGrid.tensors().size(), correlationGrid.tensorSize(), correlationGrid.blockDataListSize());
-
-    return correlationGridHistory;
+    return CorrelationGridHistory(correlationGrid.tensors().size(), correlationGrid.tensorSize(),
+                                  correlationGrid.blockDataListSize());
 }
 
 /* Update the correlation grid history for checkpointing. */

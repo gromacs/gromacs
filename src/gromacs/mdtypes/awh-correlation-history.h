@@ -74,6 +74,20 @@ struct CorrelationBlockDataHistory
 //! Grid of local correlation matrices.
 struct CorrelationGridHistory
 {
+    //! Default constructor
+    CorrelationGridHistory() = default;
+    /*! \brief
+     * Initialize correlation grid history, sets all sizes.
+     *
+     * \param[in] numCorrelationTensors       Number of correlation tensors in the grid.
+     * \param[in] tensorSize                  Number of correlation elements in each tensor.
+     * \param[in] blockDataListSize           The number of blocks in the list of each tensor element.
+     */
+    CorrelationGridHistory(int numCorrelationTensors, int tensorSize, int blockDataListSize)
+        : numCorrelationTensors(numCorrelationTensors), tensorSize(tensorSize),
+          blockDataListSize (blockDataListSize)
+    { blockDataBuffer.resize(numCorrelationTensors*tensorSize*blockDataListSize); }
+
     /* These counts here since we curently need them for initializing the correlation grid when reading a checkpoint */
     int numCorrelationTensors = 0; /**< Number correlation tensors in the grid (equal to the number of points). */
     int tensorSize            = 0; /**< The number of stored correlation matrix elements. */
@@ -84,19 +98,6 @@ struct CorrelationGridHistory
 };
 
 /*! \endcond */
-
-/*! \brief
- * Initialize correlation grid history, sets all sizes.
- *
- * \param[in,out] correlationGridHistory  Correlation grid history for master rank.
- * \param[in] numCorrelationTensors       Number of correlation tensors in the grid.
- * \param[in] tensorSize                  Number of correlation elements in each tensor.
- * \param[in] blockDataListSize           The number of blocks in the list of each tensor element.
- */
-void initCorrelationGridHistory(CorrelationGridHistory *correlationGridHistory,
-                                int                     numCorrelationTensors,
-                                int                     tensorSize,
-                                int                     blockDataListSize);
 
 }      // namespace gmx
 

@@ -290,16 +290,17 @@ void Bias::restoreStateFromHistory(const AwhBiasHistory *biasHistory,
     }
 }
 
-void Bias::initHistoryFromState(AwhBiasHistory *biasHistory) const
+AwhBiasHistory Bias::createHistoryFromState() const
 {
-    GMX_RELEASE_ASSERT(biasHistory != nullptr, "Need a valid biasHistory");
+    AwhBiasHistory biasHistory;
 
-    state_.initHistoryFromState(biasHistory);
+    state_.initHistoryFromState(&biasHistory);
 
     if (forceCorrelationGrid_ != nullptr)
     {
-        biasHistory->forceCorrelationGrid = initCorrelationGridHistoryFromState(forceCorrelationGrid());
+        biasHistory.forceCorrelationGrid = createCorrelationGridHistoryFromState(forceCorrelationGrid());
     }
+    return biasHistory;
 }
 
 void Bias::updateHistory(AwhBiasHistory *biasHistory) const

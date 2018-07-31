@@ -283,11 +283,11 @@ std::shared_ptr<AwhHistory> Awh::initHistoryFromState() const
     {
         std::shared_ptr<AwhHistory> awhHistory(new AwhHistory);
         awhHistory->bias.clear();
-        awhHistory->bias.resize(biasCoupledToSystem_.size());
+        awhHistory->bias.reserve(biasCoupledToSystem_.size());
 
         for (size_t k = 0; k < awhHistory->bias.size(); k++)
         {
-            biasCoupledToSystem_[k].bias.initHistoryFromState(&awhHistory->bias[k]);
+            awhHistory->bias[k] = biasCoupledToSystem_[k].bias.createHistoryFromState();
         }
 
         return awhHistory;
