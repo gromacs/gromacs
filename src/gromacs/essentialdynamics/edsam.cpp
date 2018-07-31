@@ -97,9 +97,6 @@ typedef struct
     real   *fproj;   /* instantaneous f projections    */
     real    radius;  /* instantaneous radius           */
     real   *refproj; /* starting or target projections */
-    /* When using flooding as harmonic restraint: The current reference projection
-     * is at each step calculated from the initial refproj0 and the slope. */
-    real  *refproj0, *refprojslope;
 } t_eigvec;
 
 
@@ -131,6 +128,10 @@ typedef struct
     real     alpha2;
     rvec    *forces_cartesian;
     t_eigvec vecs;         /* use flooding for these */
+    /* When using flooding as harmonic restraint: The current reference projection
+     * is at each step calculated from the initial intialReferenceProjection and the slope. */
+    real  *intialReferenceProjection;
+    real  *refprojslope;
 } t_edflood;
 
 
@@ -709,7 +710,7 @@ static void write_edo_flood(t_edpar *edi, FILE *fp, real rmsd)
         /* Check whether the reference projection changes with time (this can happen
          * in case flooding is used as harmonic restraint). If so, output the
          * current reference projection */
-        if (edi->flood.bHarmonic && edi->flood.vecs.refprojslope[i] != 0.0)
+        if (edi->flood.bHarmonic && edi->flood.refprojslope[i] != 0.0)
         {
             fprintf(fp, EDcol_efmt, edi->flood.vecs.refproj[i]);
         }
@@ -754,7 +755,7 @@ static real flood_energy(t_edpar *edi, gmx_int64_t step)
     {
         for (i = 0; i < edi->flood.vecs.neig; i++)
         {
-            edi->flood.vecs.refproj[i] = edi->flood.vecs.refproj0[i] + step * edi->flood.vecs.refprojslope[i];
+            edi->flood.vecs.refproj[i] = edi->flood.intialReferenceProjection[i] + step * edi->flood.refprojslope[i];
         }
     }
 
@@ -1206,7 +1207,7 @@ static void bc_ed_positions(const t_commrec *cr, struct gmx_edx *s, int stype)
 
 
 /* Broadcasts the eigenvector data */
-static void bc_ed_vecs(const t_commrec *cr, t_eigvec *ev, int length, gmx_bool bHarmonic)
+static void bc_ed_vecs(const t_commrec *cr, t_eigvec *ev, int length)
 {
     int i;
 
@@ -1229,14 +1230,6 @@ static void bc_ed_vecs(const t_commrec *cr, t_eigvec *ev, int length, gmx_bool b
         nblock_bc(cr, length, ev->vec[i]);
     }
 
-    /* For harmonic restraints the reference projections can change with time */
-    if (bHarmonic)
-    {
-        snew_bc(cr, ev->refproj0, ev->neig);
-        snew_bc(cr, ev->refprojslope, ev->neig);
-        nblock_bc(cr, ev->neig, ev->refproj0    );
-        nblock_bc(cr, ev->neig, ev->refprojslope);
-    }
 }
 
 
@@ -1266,14 +1259,24 @@ static void broadcast_ed_data(const t_commrec *cr, gmx_edsam_t ed, int numedis)
         bc_ed_positions(cr, &(edi->sori), eedORI); /* origin positions                                */
 
         /* Broadcast eigenvectors */
-        bc_ed_vecs(cr, &edi->vecs.mon, edi->sav.nr, FALSE);
-        bc_ed_vecs(cr, &edi->vecs.linfix, edi->sav.nr, FALSE);
-        bc_ed_vecs(cr, &edi->vecs.linacc, edi->sav.nr, FALSE);
-        bc_ed_vecs(cr, &edi->vecs.radfix, edi->sav.nr, FALSE);
-        bc_ed_vecs(cr, &edi->vecs.radacc, edi->sav.nr, FALSE);
-        bc_ed_vecs(cr, &edi->vecs.radcon, edi->sav.nr, FALSE);
+        bc_ed_vecs(cr, &edi->vecs.mon, edi->sav.nr);
+        bc_ed_vecs(cr, &edi->vecs.linfix, edi->sav.nr);
+        bc_ed_vecs(cr, &edi->vecs.linacc, edi->sav.nr);
+        bc_ed_vecs(cr, &edi->vecs.radfix, edi->sav.nr);
+        bc_ed_vecs(cr, &edi->vecs.radacc, edi->sav.nr);
+        bc_ed_vecs(cr, &edi->vecs.radcon, edi->sav.nr);
         /* Broadcast flooding eigenvectors and, if needed, values for the moving reference */
-        bc_ed_vecs(cr, &edi->flood.vecs,  edi->sav.nr, edi->flood.bHarmonic);
+        bc_ed_vecs(cr, &edi->flood.vecs,  edi->sav.nr);
+
+        /* For harmonic restraints the reference projections can change with time */
+        if (edi->flood.bHarmonic)
+        {
+            snew_bc(cr, edi->flood.intialReferenceProjection, edi->flood.vecs.neig);
+            snew_bc(cr, edi->flood.refprojslope, edi->flood.vecs.neig);
+            nblock_bc(cr, edi->flood.vecs.neig, edi->flood.intialReferenceProjection);
+            nblock_bc(cr, edi->flood.vecs.neig, edi->flood.refprojslope);
+        }
+
 
         /* Set the pointer to the next ED group */
         if (edi->next_edi)
@@ -1443,114 +1446,6 @@ static void read_edx(FILE *file, int number, int *anrs, rvec *x)
     }
 }
 
-
-static void scan_edvec(FILE *in, int nr, rvec *vec)
-{
-    char   line[STRLEN+1];
-    int    i;
-    double x, y, z;
-
-
-    for (i = 0; (i < nr); i++)
-    {
-        fgets2 (line, STRLEN, in);
-        sscanf (line, max_ev_fmt_lelele, &x, &y, &z);
-        vec[i][XX] = x;
-        vec[i][YY] = y;
-        vec[i][ZZ] = z;
-    }
-}
-
-
-static void read_edvec(FILE *in, int nr, t_eigvec *tvec, gmx_bool bReadRefproj, gmx_bool *bHaveReference)
-{
-    int    i, idum, nscan;
-    double rdum, refproj_dum = 0.0, refprojslope_dum = 0.0;
-    char   line[STRLEN+1];
-
-
-    tvec->neig = read_checked_edint(in, "NUMBER OF EIGENVECTORS");
-    if (tvec->neig > 0)
-    {
-        snew(tvec->ieig, tvec->neig);
-        snew(tvec->stpsz, tvec->neig);
-        snew(tvec->vec, tvec->neig);
-        snew(tvec->xproj, tvec->neig);
-        snew(tvec->fproj, tvec->neig);
-        snew(tvec->refproj, tvec->neig);
-        if (bReadRefproj)
-        {
-            snew(tvec->refproj0, tvec->neig);
-            snew(tvec->refprojslope, tvec->neig);
-        }
-
-        for (i = 0; (i < tvec->neig); i++)
-        {
-            fgets2 (line, STRLEN, in);
-            if (bReadRefproj) /* ONLY when using flooding as harmonic restraint */
-            {
-                nscan = sscanf(line, max_ev_fmt_dlflflf, &idum, &rdum, &refproj_dum, &refprojslope_dum);
-                /* Zero out values which were not scanned */
-                switch (nscan)
-                {
-                    case 4:
-                        /* Every 4 values read, including reference position */
-                        *bHaveReference = TRUE;
-                        break;
-                    case 3:
-                        /* A reference position is provided */
-                        *bHaveReference = TRUE;
-                        /* No value for slope, set to 0 */
-                        refprojslope_dum = 0.0;
-                        break;
-                    case 2:
-                        /* No values for reference projection and slope, set to 0 */
-                        refproj_dum      = 0.0;
-                        refprojslope_dum = 0.0;
-                        break;
-                    default:
-                        gmx_fatal(FARGS, "Expected 2 - 4 (not %d) values for flooding vec: <nr> <spring const> <refproj> <refproj-slope>\n", nscan);
-                }
-                tvec->refproj[i]      = refproj_dum;
-                tvec->refproj0[i]     = refproj_dum;
-                tvec->refprojslope[i] = refprojslope_dum;
-            }
-            else /* Normal flooding */
-            {
-                nscan = sscanf(line, max_ev_fmt_dlf, &idum, &rdum);
-                if (nscan != 2)
-                {
-                    gmx_fatal(FARGS, "Expected 2 values for flooding vec: <nr> <stpsz>\n");
-                }
-            }
-            tvec->ieig[i]  = idum;
-            tvec->stpsz[i] = rdum;
-        } /* end of loop over eigenvectors */
-
-        for (i = 0; (i < tvec->neig); i++)
-        {
-            snew(tvec->vec[i], nr);
-            scan_edvec(in, nr, tvec->vec[i]);
-        }
-    }
-}
-
-
-/* calls read_edvec for the vector groups, only for flooding there is an extra call */
-static void read_edvecs(FILE *in, int nr, t_edvecs *vecs)
-{
-    gmx_bool bHaveReference = FALSE;
-
-
-    read_edvec(in, nr, &vecs->mon, FALSE, &bHaveReference);
-    read_edvec(in, nr, &vecs->linfix, FALSE, &bHaveReference);
-    read_edvec(in, nr, &vecs->linacc, FALSE, &bHaveReference);
-    read_edvec(in, nr, &vecs->radfix, FALSE, &bHaveReference);
-    read_edvec(in, nr, &vecs->radacc, FALSE, &bHaveReference);
-    read_edvec(in, nr, &vecs->radcon, FALSE, &bHaveReference);
-}
-
-
 /* Check if the same atom indices are used for reference and average positions */
 static gmx_bool check_if_same(struct gmx_edx sref, struct gmx_edx sav)
 {
@@ -1588,6 +1483,138 @@ constexpr int c_oldestSupportedMagicNumber   = 669;
 //! Latest (highest) magic number indicating supported essential dynamics input
 constexpr int c_latestSupportedMagicNumber   = 670;
 
+/*!\brief Read eigenvector coordinates for multiple eigenvectors from a file.
+ * \param[in] in the file to read from
+ * \param[in] the number of atoms/coordinates for the eigenvector
+ * \param[out] vec the eigen-vectors
+ * \param[in] the number of eigenvectors
+ */
+void scan_edvec(FILE *in, int numAtoms, rvec **vec, int nEig)
+{
+    snew(vec, nEig);
+    for (int iEigenvector = 0; iEigenvector < nEig; iEigenvector++)
+    {
+        snew(vec[iEigenvector], numAtoms);
+        for (int iAtom = 0; iAtom < numAtoms; iAtom++)
+        {
+            char   line[STRLEN+1];
+            double x, y, z;
+            fgets2(line, STRLEN, in);
+            sscanf(line, max_ev_fmt_lelele, &x, &y, &z);
+            vec[iEigenvector][iAtom][XX] = x;
+            vec[iEigenvector][iAtom][YY] = y;
+            vec[iEigenvector][iAtom][ZZ] = z;
+        }
+    }
+}
+
+/*!\brief Read an essential dynamics eigenvector and intial reference projections and slopes if available.
+ *
+ * Eigenvector and its intial reference and slope are stored on the
+ * same line in the .edi format. To avoid re-winding the .edi file,
+ * the reference eigen-vector and reference data are read in one go.
+ *
+ * \param[in] in input file
+ * \param[in] nrAtoms number of atoms/coordinates
+ * \param[out] tvec the eigenvector
+ */
+bool readEdVecWithReferenceProjection(FILE *in, int nr, t_eigvec *tvec, real * intialReferenceProjection, real * refprojslope)
+{
+    bool providesReference = false;
+    tvec->neig = read_checked_edint(in, "NUMBER OF EIGENVECTORS");
+    if (tvec->neig <= 0)
+    {
+        return false;
+    }
+
+    snew(tvec->ieig, tvec->neig);
+    snew(tvec->stpsz, tvec->neig);
+    snew(intialReferenceProjection, tvec->neig);
+    snew(refprojslope, tvec->neig);
+    for (int i = 0; i < tvec->neig; i++)
+    {
+        char      line[STRLEN+1];
+        fgets2 (line, STRLEN, in);
+        int       numEigenVectors;
+        double    stepSize            = 0.;
+        double    referenceProjection = 0.;
+        double    referenceSlope      = 0.;
+        const int nscan               = sscanf(line, max_ev_fmt_dlflflf, &numEigenVectors, &stepSize, &referenceProjection, &referenceSlope);
+        /* Zero out values which were not scanned */
+        switch (nscan)
+        {
+            case 4:
+                /* Every 4 values read, including reference position */
+                providesReference = true;
+                break;
+            case 3:
+                /* A reference position is provided */
+                providesReference = true;
+                /* No value for slope, set to 0 */
+                referenceSlope = 0.0;
+                break;
+            case 2:
+                /* No values for reference projection and slope, set to 0 */
+                referenceProjection = 0.0;
+                referenceSlope      = 0.0;
+                break;
+            default:
+                gmx_fatal(FARGS, "Expected 2 - 4 (not %d) values for flooding vec: <nr> <spring const> <refproj> <refproj-slope>\n", nscan);
+        }
+        intialReferenceProjection[i]     = referenceProjection;
+        refprojslope[i]                  = referenceSlope;
+
+        tvec->ieig[i]  = numEigenVectors;
+        tvec->stpsz[i] = stepSize;
+    }   /* end of loop over eigenvectors */
+
+    scan_edvec(in, nr, tvec->vec, tvec->neig);
+    return providesReference;
+}
+
+/*!\brief Read an essential dynamics eigenvector and corresponding step size.
+ * \param[in] in input file
+ * \param[in] nrAtoms number of atoms/coordinates
+ * \param[out] tvec the eigenvector
+ */
+void read_edvec(FILE *in, int nrAtoms, t_eigvec *tvec)
+{
+    tvec->neig = read_checked_edint(in, "NUMBER OF EIGENVECTORS");
+    if (tvec->neig <= 0)
+    {
+        return;
+    }
+
+    snew(tvec->ieig, tvec->neig);
+    snew(tvec->stpsz, tvec->neig);
+    for (int i = 0; i < tvec->neig; i++)
+    {
+        char      line[STRLEN+1];
+        fgets2(line, STRLEN, in);
+        int       numEigenVectors;
+        double    stepSize;
+        const int nscan = sscanf(line, max_ev_fmt_dlf, &numEigenVectors, &stepSize);
+        if (nscan != 2)
+        {
+            gmx_fatal(FARGS, "Expected 2 values for flooding vec: <nr> <stpsz>\n");
+        }
+        tvec->ieig[i]  = numEigenVectors;
+        tvec->stpsz[i] = stepSize;
+    }   /* end of loop over eigenvectors */
+
+    scan_edvec(in, nrAtoms, tvec->vec, tvec->neig);
+}
+
+/*!\brief Allocate working memory for the eigenvectors.
+ * \param[in,out] tvec eigenvector for which memory will be allocated
+ */
+void setup_edvec(t_eigvec *tvec)
+{
+    snew(tvec->xproj, tvec->neig);
+    snew(tvec->fproj, tvec->neig);
+    snew(tvec->refproj, tvec->neig);
+}
+
 /*!\brief Set up essential dynamics work parameters.
  * \param[in] edi Essential dynamics working structure.
  */
@@ -1604,6 +1631,14 @@ void setup_edi(t_edpar *edi)
     {
         edi->sori.sqrtm    = nullptr;
     }
+
+    setup_edvec(&edi->vecs.linacc);
+    setup_edvec(&edi->vecs.mon);
+    setup_edvec(&edi->vecs.linfix);
+    setup_edvec(&edi->vecs.linacc);
+    setup_edvec(&edi->vecs.radfix);
+    setup_edvec(&edi->vecs.radacc);
+    setup_edvec(&edi->vecs.radcon);
 }
 
 /*!\brief Check if edi file version supports CONST_FORCE_FLOODING.
@@ -1660,9 +1695,6 @@ void exitWhenMagicNumberIsInvalid(int magicNumber, const char * fn)
  */
 void read_edi(FILE* in, t_edpar *edi, int nr_mdatoms, bool hasConstForceFlooding, const char *fn)
 {
-    /* Was a specific reference point for the flooding/umbrella potential provided in the edi file? */
-    gmx_bool  bHaveReference = FALSE;
-
     bool      bEOF;
     /* check the number of atoms */
     edi->nini = read_edint(in, &bEOF);
@@ -1711,8 +1743,24 @@ void read_edi(FILE* in, t_edpar *edi, int nr_mdatoms, bool hasConstForceFlooding
     edi->bRefEqAv = check_if_same(edi->sref, edi->sav);
 
     /* eigenvectors */
-    read_edvecs(in, edi->sav.nr, &edi->vecs);
-    read_edvec(in, edi->sav.nr, &edi->flood.vecs, edi->flood.bHarmonic, &bHaveReference);
+
+    read_edvec(in, edi->sav.nr, &edi->vecs.mon);
+    read_edvec(in, edi->sav.nr, &edi->vecs.linfix);
+    read_edvec(in, edi->sav.nr, &edi->vecs.linacc);
+    read_edvec(in, edi->sav.nr, &edi->vecs.radfix);
+    read_edvec(in, edi->sav.nr, &edi->vecs.radacc);
+    read_edvec(in, edi->sav.nr, &edi->vecs.radcon);
+
+    /* Was a specific reference point for the flooding/umbrella potential provided in the edi file? */
+    bool  bHaveReference = false;
+    if (edi->flood.bHarmonic)
+    {
+        bHaveReference = readEdVecWithReferenceProjection(in, edi->sav.nr, &edi->flood.vecs, edi->flood.intialReferenceProjection, edi->flood.refprojslope);
+    }
+    else
+    {
+        read_edvec(in, edi->sav.nr, &edi->flood.vecs);
+    }
 
     /* target positions */
     edi->star.nr = read_edint(in, &bEOF);
@@ -2273,21 +2321,21 @@ static int ed_constraints(gmx_bool edtype, t_edpar *edi)
 }
 
 
-/* Copies reference projection 'refproj' to fixed 'refproj0' variable for flooding/
+/* Copies reference projection 'refproj' to fixed 'intialReferenceProjection' variable for flooding/
  * umbrella sampling simulations. */
-static void copyEvecReference(t_eigvec* floodvecs)
+static void copyEvecReference(t_eigvec* floodvecs, real * intialReferenceProjection)
 {
     int i;
 
 
-    if (nullptr == floodvecs->refproj0)
+    if (nullptr == intialReferenceProjection)
     {
-        snew(floodvecs->refproj0, floodvecs->neig);
+        snew(intialReferenceProjection, floodvecs->neig);
     }
 
     for (i = 0; i < floodvecs->neig; i++)
     {
-        floodvecs->refproj0[i] = floodvecs->refproj[i];
+        intialReferenceProjection[i] = floodvecs->refproj[i];
     }
 }
 
@@ -2543,7 +2591,7 @@ static void write_edo_legend(gmx_edsam_t ed, int nED, const gmx_output_env_t *oe
 
                 /* Output the current reference projection if it changes with time;
                  * this can happen when flooding is used as harmonic restraint */
-                if (edi->flood.bHarmonic && edi->flood.vecs.refprojslope[i] != 0.0)
+                if (edi->flood.bHarmonic && edi->flood.refprojslope[i] != 0.0)
                 {
                     sprintf(buf, "EV%d ref.prj.", edi->flood.vecs.ieig[i]);
                     nice_legend(&setname, &nsets, &LegendStr, buf, "nm", get_EDgroupChar(nr_edi, nED));
@@ -2832,7 +2880,7 @@ gmx_edsam_t init_edsam(
                     rad_project(edi, &edi->sori.x[avindex], &edi->flood.vecs);
                     /* We already know that no (moving) reference position was provided,
                      * therefore we can overwrite refproj[0]*/
-                    copyEvecReference(&edi->flood.vecs);
+                    copyEvecReference(&edi->flood.vecs, edi->flood.intialReferenceProjection);
                 }
             }
             else /* No origin structure given */
@@ -2846,7 +2894,7 @@ gmx_edsam_t init_edsam(
                         fprintf(stderr, "ED: A (possibly changing) ref. projection will define the flooding potential center.\n");
                         for (i = 0; i < edi->flood.vecs.neig; i++)
                         {
-                            edi->flood.vecs.refproj[i] = edi->flood.vecs.refproj0[i];
+                            edi->flood.vecs.refproj[i] = edi->flood.intialReferenceProjection[i];
                         }
                     }
                     else
@@ -2869,7 +2917,7 @@ gmx_edsam_t init_edsam(
                     fprintf(stdout, "ED: EV %d flooding potential center: %11.4e", edi->flood.vecs.ieig[i], edi->flood.vecs.refproj[i]);
                     if (edi->flood.bHarmonic)
                     {
-                        fprintf(stdout, " (adding %11.4e/timestep)", edi->flood.vecs.refprojslope[i]);
+                        fprintf(stdout, " (adding %11.4e/timestep)", edi->flood.refprojslope[i]);
                     }
                     fprintf(stdout, "\n");
                 }
