@@ -1,7 +1,6 @@
 /bin
 /lib
 *~
-#*
 *.a
 *.cache
 *.DS_Store
