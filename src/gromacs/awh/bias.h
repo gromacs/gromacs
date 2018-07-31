@@ -247,7 +247,7 @@ class Bias
          *
          * \param[in,out] biasHistory  AWH history to initialize.
          */
-        void initHistoryFromState(AwhBiasHistory *biasHistory) const;
+        AwhBiasHistory createHistoryFromState() const;
 
         /*! \brief
          * Update the bias history with the current state.

@@ -1525,12 +1525,10 @@ static int do_cpt_EDstate(XDR *xd, gmx_bool bRead,
     return 0;
 }
 
-static int do_cpt_correlation_grid(XDR *xd, gmx_bool bRead, gmx_unused int fflags,
-                                   gmx::CorrelationGridHistory *corrGrid,
-                                   FILE *list, int eawhh)
+static void do_cpt_correlation_grid(XDR *xd, gmx_bool bRead, gmx_unused int fflags,
+                                    gmx::CorrelationGridHistory *corrGrid,
+                                    FILE *list, int eawhh)
 {
-    int ret = 0;
-
     do_cpt_int_err(xd, eawhh_names[eawhh], &(corrGrid->numCorrelationTensors), list);
     do_cpt_int_err(xd, eawhh_names[eawhh], &(corrGrid->tensorSize), list);
     do_cpt_int_err(xd, eawhh_names[eawhh], &(corrGrid->blockDataListSize), list);
@@ -1555,18 +1553,14 @@ static int do_cpt_correlation_grid(XDR *xd, gmx_bool bRead, gmx_unused int fflag
         do_cpt_int_err(xd, eawhh_names[eawhh], &(blockData.previousBlockIndex), list);
         do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData.correlationIntegral), list);
     }
-
-    return ret;
 }
 
-static int do_cpt_awh_bias(XDR *xd, gmx_bool bRead,
-                           int fflags, gmx::AwhBiasHistory *biasHistory,
-                           FILE *list)
+static void do_cpt_awh_bias(XDR *xd, gmx_bool bRead,
+                            int fflags, gmx::AwhBiasHistory *biasHistory,
+                            FILE *list)
 {
-    int                       ret   = 0;
-
     gmx::AwhBiasStateHistory *state = &biasHistory->state;
-    for (int i = 0; (i < eawhhNR && ret == 0); i++)
+    for (int i = 0; i < eawhhNR; i++)
     {
         if (fflags & (1<<i))
         {
@@ -1622,23 +1616,19 @@ static int do_cpt_awh_bias(XDR *xd, gmx_bool bRead,
                     do_cpt_step_err(xd, eawhh_names[i], &(state->numUpdates), list);
                     break;
                 case eawhhFORCECORRELATIONGRID:
-                    ret = do_cpt_correlation_grid(xd, bRead, fflags, &biasHistory->forceCorrelationGrid, list, i);
+                    do_cpt_correlation_grid(xd, bRead, fflags, &biasHistory->forceCorrelationGrid, list, i);
                     break;
                 default:
                     gmx_fatal(FARGS, "Unknown awh history entry %d\n", i);
             }
         }
     }
-
-    return ret;
 }
 
 static int do_cpt_awh(XDR *xd, gmx_bool bRead,
                       int fflags, gmx::AwhHistory *awhHistory,
                       FILE *list)
 {
-    int ret = 0;
-
     if (fflags != 0)
     {
         std::shared_ptr<gmx::AwhHistory> awhHistoryLocal;
@@ -1674,15 +1664,11 @@ static int do_cpt_awh(XDR *xd, gmx_bool bRead,
         }
         for (auto &bias : awhHistory->bias)
         {
-            ret = do_cpt_awh_bias(xd, bRead, fflags, &bias, list);
-            if (ret)
-            {
-                return ret;
-            }
+            do_cpt_awh_bias(xd, bRead, fflags, &bias, list);
         }
         do_cpt_double_err(xd, "awh_potential_offset", &awhHistory->potentialOffset, list);
     }
-    return ret;
+    return 0;
 }
 
 static int do_cpt_files(XDR *xd, gmx_bool bRead,
