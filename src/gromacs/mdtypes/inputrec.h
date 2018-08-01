@@ -334,6 +334,14 @@ struct t_swapcoords
     gmx_swapcoords_t         si_priv;
 };
 
+typedef struct HybridMCMDParams {
+    int                      nstMetropolis;            /* The frequency at which the Metropolis criterion is evaluated */
+    int                      seed;                     /* The random seed for the Metropolis step */
+    real                     temperatureEnsemble;      /* The ensemble temperature used together with the potential energy in the Metropolis criterion
+                                                        * (can be different from temperatureVelocities) */
+    real                     temperatureVelocities;    /* The temperature used to generate initial velocities */
+} HybridMCMDParams;
+
 struct t_inputrec
 {
     t_inputrec();
@@ -592,6 +600,10 @@ struct t_inputrec
     int       QMMMscheme;
     //! Factor for scaling the MM charges in QM calc.
     real      scalefactor;
+
+    /* Hybrid MC/MD data */
+    gmx_bool                 bDoHybridMCMD;    /* Whether to use hybrid MC/MD or not */
+    HybridMCMDParams        *hybridMCMDParams; /* Hybrid MC/MD input parameters */
 
     /* Fields for removed features go here (better caching) */
     //! Whether AdResS is enabled - always false if a valid .tpr was read

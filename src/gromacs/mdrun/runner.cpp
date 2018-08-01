@@ -820,6 +820,11 @@ int Mdrunner::mdrunner()
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
+        // Hybrid MC/MD: turn off dynamic load balancing
+        if (inputrec->bDoHybridMCMD)
+        {
+            domdecOptions.dlbOption = DlbOption::no;
+        }
         cr->dd = init_domain_decomposition(fplog, cr, domdecOptions, mdrunOptions,
                                            &mtop, inputrec,
                                            box, positionsFromStatePointer(globalState.get()),
