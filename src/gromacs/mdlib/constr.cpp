@@ -153,7 +153,7 @@ class Constraints::Impl
         //! The number of warnings for SETTLE.
         int                   warncount_settle = 0;
         //! The essential dynamics data.
-        gmx_edsam_t           ed = nullptr;
+        gmx_edsam *           ed = nullptr;
 
         //! Thread-local virial contribution.
         tensor            *vir_r_m_dr_th = {nullptr};
@@ -1102,7 +1102,7 @@ Constraints::Impl::~Impl()
     done_lincs(lincsd);
 }
 
-void Constraints::saveEdsamPointer(gmx_edsam_t ed)
+void Constraints::saveEdsamPointer(gmx_edsam * ed)
 {
     impl_->ed = ed;
 }
