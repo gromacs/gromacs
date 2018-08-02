@@ -7,6 +7,7 @@ Several tools have their own individual pages and are listed below.
    :maxdepth: 2
 
    doxygen
+   change-management
    jenkins
    releng/index
    gmxtree
@@ -23,12 +24,15 @@ Several tools have their own individual pages and are listed below.
 Change management
 -----------------
 
-git
-  |Gromacs| uses `git<https://git-scm.com/>` as the version control system.
-  Instructions for setting up git for |Gromacs|, as well as tips and tricks for
-  its use, can be found on the wiki: `Git Tips & Tricks`_
+|Gromacs| change management is supported by the following tools.
+(For change submission guidelines, refer to :doc:`contribute`.)
 
-  Other basic tutorial material for ``git`` can be found on the `web<https://git-scm.com/doc/ext>`.
+git
+  |Gromacs| uses `git <https://git-scm.com/>`__ as the version control system.
+  Instructions for setting up git for |Gromacs|, as well as tips and tricks for
+  its use, can be found in :doc:`change-management`.
+
+  Other basic tutorial material for ``git`` can be found on the `web <https://git-scm.com/doc/ext>`__.
 
 Gerrit
   All code changes go through a code review system at
