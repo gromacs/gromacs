@@ -729,29 +729,21 @@ static void add_solv(const char *fn, t_topology *top,
     sfree(top_solvt);
 }
 
-static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
+static void update_top(t_atoms *atoms, int firstSolventResidueIndex, matrix box, int NFILE, t_filenm fnm[],
                        gmx_atomprop_t aps)
 {
-    FILE       *fpin, *fpout;
-    char        buf[STRLEN], buf2[STRLEN], *temp;
-    const char *topinout;
-    int         line;
-    gmx_bool    bSystem, bMolecules, bSkip;
-    int         i, nsol = 0;
-    double      mtot;
-    real        vol, mm;
+    FILE        *fpin, *fpout;
+    char         buf[STRLEN], buf2[STRLEN], *temp;
+    const char  *topinout;
+    int          line;
+    gmx_bool     bSystem;
+    int          i;
+    double       mtot;
+    real         vol, mm;
 
-    for (i = 0; (i < atoms->nres); i++)
-    {
-        /* calculate number of SOLvent molecules */
-        if ( (strcmp(*atoms->resinfo[i].name, "SOL") == 0) ||
-             (strcmp(*atoms->resinfo[i].name, "WAT") == 0) ||
-             (strcmp(*atoms->resinfo[i].name, "HOH") == 0) )
-        {
-            nsol++;
-        }
-    }
-    mtot = 0;
+    int          nsol                     =  atoms->nres - firstSolventResidueIndex;
+
+    mtot                     = 0;
     for (i = 0; (i < atoms->nr); i++)
     {
         gmx_atomprop_query(aps, epropMass,
@@ -765,7 +757,7 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
     fprintf(stderr, "Volume                 :  %10g (nm^3)\n", vol);
     fprintf(stderr, "Density                :  %10g (g/l)\n",
             (mtot*1e24)/(AVOGADRO*vol));
-    fprintf(stderr, "Number of SOL molecules:  %5d   \n\n", nsol);
+    fprintf(stderr, "Number of solvent molecules:  %5d   \n\n", nsol);
 
     /* open topology file and append sol molecules */
     topinout  = ftp2fn(efTOP, NFILE, fnm);
@@ -778,10 +770,9 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
         fpin    = gmx_ffopen(topinout, "r");
         fpout   = gmx_fopen_temporary(temporary_filename);
         line    = 0;
-        bSystem = bMolecules = FALSE;
+        bSystem = FALSE;
         while (fgets(buf, STRLEN, fpin))
         {
-            bSkip = FALSE;
             line++;
             strcpy(buf2, buf);
             if ((temp = strchr(buf2, '\n')) != nullptr)
@@ -803,7 +794,6 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
                     ltrim(buf2);
                     rtrim(buf2);
                     bSystem    = (gmx_strcasecmp(buf2, "system") == 0);
-                    bMolecules = (gmx_strcasecmp(buf2, "molecules") == 0);
                 }
             }
             else if (bSystem && nsol && (buf[0] != ';') )
@@ -816,41 +806,37 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
                     bSystem = FALSE;
                 }
             }
-            else if (bMolecules)
-            {
-                /* check if this is a line with solvent molecules */
-                sscanf(buf, "%4095s", buf2);
-                if (strcmp(buf2, "SOL") == 0)
-                {
-                    sscanf(buf, "%*4095s %20d", &i);
-                    nsol -= i;
-                    if (nsol < 0)
-                    {
-                        bSkip = TRUE;
-                        nsol += i;
-                    }
-                }
-            }
-            if (bSkip)
-            {
-                if ((temp = strchr(buf, '\n')) != nullptr)
-                {
-                    temp[0] = '\0';
-                }
-                fprintf(stdout, "Removing line #%d '%s' from topology file (%s)\n",
-                        line, buf, topinout);
-            }
-            else
-            {
-                fprintf(fpout, "%s", buf);
-            }
+            fprintf(fpout, "%s", buf);
         }
         gmx_ffclose(fpin);
-        if (nsol)
+
+        // Add new solvent molecules to the topology
+        if (nsol > 0)
         {
-            fprintf(stdout, "Adding line for %d solvent molecules to "
-                    "topology file (%s)\n", nsol, topinout);
-            fprintf(fpout, "%-15s %5d\n", "SOL", nsol);
+            std::string currRes  = *atoms->resinfo[firstSolventResidueIndex].name;
+            int         resCount = 0;
+
+            // Iterate through solvent molecules and increment a count until new resname found
+            for (int i = firstSolventResidueIndex; i < atoms->nres; i++)
+            {
+                if (*atoms->resinfo[i].name == currRes)
+                {
+                    resCount += 1;
+                }
+                else
+                {
+                    // Change topology and restart count
+                    fprintf(stdout, "Adding line for %d solvent molecules with resname (%s) to "
+                            "topology file (%s)\n", resCount, currRes.c_str(), topinout);
+                    fprintf(fpout, "%-15s %5d\n", currRes.c_str(), resCount);
+                    currRes  = *atoms->resinfo[i].name;
+                    resCount = 1;
+                }
+            }
+            // One more print needed for last residue type
+            fprintf(stdout, "Adding line for %d solvent molecules with resname (%s) to "
+                    "topology file (%s)\n", resCount, currRes.c_str(), topinout);
+            fprintf(fpout, "%-15s %5d\n", currRes.c_str(), resCount);
         }
         gmx_ffclose(fpout);
         make_backup(topinout);
@@ -935,10 +921,11 @@ int gmx_solvate(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    real              defaultDistance = 0.105, r_shell = 0, scaleFactor = 0.57;
-    rvec              new_box         = {0.0, 0.0, 0.0};
-    gmx_bool          bReadV          = FALSE;
-    int               max_sol         = 0;
+    real              defaultDistance          = 0.105, r_shell = 0, scaleFactor = 0.57;
+    rvec              new_box                  = {0.0, 0.0, 0.0};
+    gmx_bool          bReadV                   = FALSE;
+    int               max_sol                  = 0;
+    int               firstSolventResidueIndex = 0;
     gmx_output_env_t *oenv;
     t_pargs           pa[]              = {
         { "-box",    FALSE, etRVEC, {new_box},
@@ -992,6 +979,10 @@ int gmx_solvate(int argc, char *argv[])
             fprintf(stderr, "Note: no atoms in %s\n", conf_prot);
             bProt = FALSE;
         }
+        else
+        {
+            firstSolventResidueIndex = top->atoms.nres;
+        }
     }
     if (bBox)
     {
@@ -1020,7 +1011,7 @@ int gmx_solvate(int argc, char *argv[])
     /* print size of generated configuration */
     fprintf(stderr, "\nOutput configuration contains %d atoms in %d residues\n",
             top->atoms.nr, top->atoms.nres);
-    update_top(&top->atoms, box, NFILE, fnm, aps);
+    update_top(&top->atoms, firstSolventResidueIndex, box, NFILE, fnm, aps);
 
     gmx_atomprop_destroy(aps);
     done_top(top);
