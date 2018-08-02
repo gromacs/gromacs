@@ -1,10 +1,10 @@
+.. _style-guidelines:
+
 Style guidelines
 ================
 
-.. _style-guidelines:
-
 Different style guidelines are available under the respective sections of
-this page. 
+this page.
 
 .. toctree::
    :maxdepth: 2
