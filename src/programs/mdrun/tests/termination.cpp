@@ -94,5 +94,5 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWorksWithNoAppend)
     helper.runSecondMdrunWithNoAppend();
 }
 
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx

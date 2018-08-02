@@ -112,6 +112,6 @@ class EnergyFrame
         double       time_;
 };
 
-} // namespace
+}  // namespace gmx
 
 #endif

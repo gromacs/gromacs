@@ -122,6 +122,6 @@ TEST(UniformIntDistributionTest, AltParam)
 }
 
 
-}      // namespace anonymous
+}  // namespace
 
-}      // namespace gmx
+}  // namespace gmx

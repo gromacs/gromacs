@@ -375,6 +375,6 @@ INSTANTIATE_TEST_CASE_P(DifferentEpsilonR, PmeSolveTest, ::testing::Combine(c_in
                                                                             testing::Values(1.9), c_inputEwaldCoeff_q, c_inputEwaldCoeff_lj,
                                                                             c_inputMethods));
 
-}
-}
-}
+}  // namespace
+}  // namespace test
+}  // namespace gmx

@@ -4,7 +4,9 @@ Checks:  clang-diagnostic-*,clang-analyzer-*,-clang-analyzer-security.insecureAP
          -readability-function-size,-readability-else-after-return,
          modernize-use-nullptr,modernize-use-emplace,
          cppcoreguidelines-*,-cppcoreguidelines-pro-*,-cppcoreguidelines-owning-memory,
-         -cppcoreguidelines-no-malloc,-cppcoreguidelines-special-member-functions
+         -cppcoreguidelines-no-malloc,-cppcoreguidelines-special-member-functions,
+         google-*,-google-build-using-namespace,-google-explicit-constructor,-google-readability-casting,
+         -google-readability-function-size,-google-readability-todo,-google-runtime-int
 
 CheckOptions:
   - key:           cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor

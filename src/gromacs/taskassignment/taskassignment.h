@@ -131,6 +131,6 @@ bool hasTaskType(const GpuTaskMapping &mapping)
     return mapping.task_ == TaskType;
 }
 
-} // namespace
+}  // namespace gmx
 
 #endif

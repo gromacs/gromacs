@@ -339,5 +339,5 @@ TEST(BiasTest, DetectsCovering)
     }
 }
 
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx

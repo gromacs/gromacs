@@ -2646,4 +2646,4 @@ bool constrain_lincs(bool computeRmsd,
     return bOK;
 }
 
-} // namespace
+}  // namespace gmx

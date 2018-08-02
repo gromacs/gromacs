@@ -116,6 +116,6 @@ std::unique_ptr<Constraints> makeConstraints(const gmx_mtop_t &mtop,
                (mtop, ir, std::forward<Args>(args) ..., numConstraints, numSettles);
 }
 
-} // namespace
+}  // namespace gmx
 
 #endif

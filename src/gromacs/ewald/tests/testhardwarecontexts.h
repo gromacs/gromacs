@@ -128,6 +128,6 @@ const PmeTestEnvironment *getPmeTestEnv();
  * unit test so that they can use the hardware context. */
 void callAddGlobalTestEnvironment();
 
-}
-}
+}  // namespace test
+}  // namespace gmx
 #endif

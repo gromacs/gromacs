@@ -141,6 +141,6 @@ TEST_P(TpiTest, ReproducesOutput)
 
 INSTANTIATE_TEST_CASE_P(Simple, TpiTest, ::testing::Values(1993, 2994));
 
-}
-}
-}
+}  // namespace
+}  // namespace test
+}  // namespace gmx

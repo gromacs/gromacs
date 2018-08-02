@@ -946,7 +946,7 @@ detectProcCpuInfo(CpuInfo::Vendor *              vendor,
     }
 }
 /*! \endcond */
-}   // namespace anonymous
+}   // namespace
 
 
 // static

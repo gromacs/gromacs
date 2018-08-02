@@ -196,6 +196,6 @@ TEST_F (PullTest, MaxPullDistanceXySkewedBox)
     test(epbcXY, box);
 }
 
-}
+}  // namespace
 
-}
+}  // namespace gmx

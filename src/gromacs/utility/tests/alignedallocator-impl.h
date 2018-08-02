@@ -123,7 +123,7 @@ TYPED_TEST(AllocatorTest, VectorAllocatesAndReservesWithAlignment) //NOLINT(misc
     }
 }
 
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx
 
 #endif

@@ -86,4 +86,4 @@ std::unique_ptr<ClfftInitializer> initializeClfftLibrary()
     return compat::make_unique<ClfftInitializer>();
 }
 
-}
+}  // namespace gmx

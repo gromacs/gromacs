@@ -136,7 +136,7 @@ class TrajectoryFrameReader
 //! Convenience smart pointer typedef
 typedef std::unique_ptr<TrajectoryFrameReader> TrajectoryFrameReaderPtr;
 
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx
 
 #endif

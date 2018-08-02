@@ -178,6 +178,6 @@ TEST(TabulatedNormalDistributionTableTest, HasValidProperties)
     EXPECT_REAL_EQ_TOL(1.0, variance, tolerance) << "Table should have unit variance";
 }
 
-}      // namespace anonymous
+}  // namespace
 
-}      // namespace gmx
+}  // namespace gmx

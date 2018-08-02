@@ -148,4 +148,4 @@ void SimulationSignaller::finalizeSignals()
     setSignals();
 }
 
-} // namespace
+}  // namespace gmx

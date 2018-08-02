@@ -525,4 +525,4 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     return rc;
 }
 
-} // namespace
+}  // namespace gmx

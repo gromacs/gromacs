@@ -991,6 +991,6 @@ TEST_F(SimdFloatingpointUtilTest, loadU4NOffset)
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace
-}      // namespace
+}  // namespace
+}  // namespace test
+}  // namespace gmx

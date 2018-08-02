@@ -575,7 +575,7 @@ detectLogicalProcessorCount()
     return count;
 }
 
-}   // namespace anonymous
+}   // namespace
 
 // static
 HardwareTopology HardwareTopology::detect()

@@ -94,6 +94,6 @@ class ClfftInitializer
  */
 std::unique_ptr<ClfftInitializer> initializeClfftLibrary();
 
-}
+}  // namespace gmx
 
 #endif

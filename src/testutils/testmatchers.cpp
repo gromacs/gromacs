@@ -172,5 +172,5 @@ RVecEq(const FloatingPointTolerance &tolerance)
     return testing::MakeMatcher(new RVecMatcher<real>(tolerance));
 }
 
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx

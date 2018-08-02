@@ -209,5 +209,5 @@ void compareTrajectoryFrames(const TrajectoryFrame              &reference,
     compareForces(reference, test, matchSettings, tolerances.forces);
 }
 
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx

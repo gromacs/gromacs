@@ -207,8 +207,8 @@ static real *pmeGetRealGridInternal(const gmx_pme_t *pme)
 //! Getting local PME real grid dimensions
 static void pmeGetRealGridSizesInternal(const gmx_pme_t      *pme,
                                         CodePath              mode,
-                                        IVec                 &gridSize,
-                                        IVec                 &paddedGridSize)
+                                        IVec                 &gridSize,       //NOLINT(google-runtime-references)
+                                        IVec                 &paddedGridSize) //NOLINT(google-runtime-references)
 {
     const size_t gridIndex = 0;
     IVec         gridOffsetUnused;
@@ -236,8 +236,8 @@ static t_complex *pmeGetComplexGridInternal(const gmx_pme_t *pme)
 
 //! Getting local PME complex grid dimensions
 static void pmeGetComplexGridSizesInternal(const gmx_pme_t      *pme,
-                                           IVec                 &gridSize,
-                                           IVec                 &paddedGridSize)
+                                           IVec                 &gridSize,       //NOLINT(google-runtime-references)
+                                           IVec                 &paddedGridSize) //NOLINT(google-runtime-references)
 {
     const size_t gridIndex = 0;
     IVec         gridOffsetUnused, complexOrderUnused;
@@ -245,7 +245,7 @@ static void pmeGetComplexGridSizesInternal(const gmx_pme_t      *pme,
 }
 
 //! Getting the PME grid memory buffer and its sizes - template definition
-template<typename ValueType> static void pmeGetGridAndSizesInternal(const gmx_pme_t * /*unused*/, CodePath /*unused*/, ValueType * & /*unused*/, IVec & /*unused*/, IVec & /*unused*/)
+template<typename ValueType> static void pmeGetGridAndSizesInternal(const gmx_pme_t * /*unused*/, CodePath /*unused*/, ValueType * & /*unused*/, IVec & /*unused*/, IVec & /*unused*/) //NOLINT(google-runtime-references)
 {
     GMX_THROW(InternalError("Deleted function call"));
     // explicitly deleting general template does not compile in clang/icc, see https://llvm.org/bugs/show_bug.cgi?id=17537
@@ -721,5 +721,5 @@ PmeSolveOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t *pme, CodePath mo
     return std::make_tuple(energy, virial);
 }
 
-}
-}
+}  // namespace test
+}  // namespace gmx

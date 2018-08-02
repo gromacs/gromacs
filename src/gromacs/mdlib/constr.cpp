@@ -1210,4 +1210,4 @@ bool inter_charge_group_settles(const gmx_mtop_t &mtop)
     return bInterCG;
 }
 
-} // namespace
+}  // namespace gmx

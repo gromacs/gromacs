@@ -79,7 +79,7 @@ namespace internal
  */
 void processExpectedException(const std::exception &ex);
 //! \endcond
-}
+}       // namespace internal
 
 //! \libinternal \addtogroup module_testutils
 //! \{

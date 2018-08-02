@@ -98,6 +98,6 @@ prepareBoxDeformation(const matrix     &initialBox,
                       t_commrec        *cr,
                       const t_inputrec &inputrec);
 
-} // namespace
+}  // namespace gmx
 
 #endif

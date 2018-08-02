@@ -278,7 +278,7 @@ highBitCounter
         }
     }
 };
-}
+}   // namespace internal
 
 /*! \brief General implementation class for ThreeFry counter-based random engines.
  *

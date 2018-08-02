@@ -353,6 +353,6 @@ INSTANTIATE_TEST_CASE_P(SaneInput13, PmeSplineAndSpreadTest, ::testing::Combine(
                                                                                     ::testing::Values(c_sampleCoordinates13),
                                                                                     ::testing::Values(c_sampleCharges13)
                                                                                 ));
-}
-}
-}
+}  // namespace
+}  // namespace test
+}  // namespace gmx

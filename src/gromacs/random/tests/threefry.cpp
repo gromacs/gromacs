@@ -244,6 +244,6 @@ TEST_F(ThreeFry2x64Test, ExhaustInternalCounter)
     EXPECT_THROW_GMX(rngA(), gmx::InternalError);
 }
 
-}      // namespace anonymous
+}  // namespace
 
-}      // namespace gmx
+}  // namespace gmx

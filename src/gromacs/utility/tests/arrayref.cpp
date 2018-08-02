@@ -268,4 +268,4 @@ TEST(DISABLED_ArrayRefTest, GenericTests)
 
 }      // namespace
 
-}      // namespace
+}      // namespace gmx

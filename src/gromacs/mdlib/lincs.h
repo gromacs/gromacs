@@ -107,6 +107,6 @@ constrain_lincs(bool computeRmsd,
                 t_nrnb *nrnb,
                 int maxwarn, int *warncount);
 
-} // namespace
+}  // namespace gmx
 
 #endif

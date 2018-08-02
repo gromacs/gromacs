@@ -526,7 +526,7 @@ TEST_F(SimdFloatingpointTest, cvtDouble2Float)
 /*! \endcond */
 
 }      // namespace
-}      // namespace
-}      // namespace
+}      // namespace test
+}      // namespace gmx
 
 #endif // GMX_SIMD

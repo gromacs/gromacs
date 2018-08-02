@@ -159,6 +159,6 @@ class SimulationSignaller
         std::array<real, eglsNR> mpiBuffer_;
 };
 
-} // namespace
+}  // namespace gmx
 
 #endif

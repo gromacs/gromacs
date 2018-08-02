@@ -98,4 +98,4 @@ EnergyFrame::MapConstIterator EnergyFrame::find(const std::string &key) const
     return values_.find(key);
 }
 
-} // namespace
+}  // namespace gmx
