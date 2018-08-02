@@ -359,4 +359,4 @@ TEST_F(ShakeTest, ConstrainsThreeBondsWithCommonAtoms)
 }
 
 } // namespace
-} // namespace
+} // namespace gmx

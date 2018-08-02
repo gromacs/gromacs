@@ -107,6 +107,6 @@ void cshake(const int iatom[], int ncon, int *nnit, int maxnit,
             const real dist2[], real xp[], const real rij[], const real m2[], real omega,
             const real invmass[], const real tt[], real lagr[], int *nerror);
 
-} // namespace
+}  // namespace gmx
 
 #endif

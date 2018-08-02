@@ -249,6 +249,6 @@ TEST_F(PmeTest, ScalesTheBox)
     runTest(runModes);
 }
 
-}
-}
-}
+}  // namespace
+}  // namespace test
+}  // namespace gmx

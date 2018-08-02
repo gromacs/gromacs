@@ -181,8 +181,8 @@ Simd4Real   setSimd4RealFrom1R(real value);
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace
+}      // namespace test
+}      // namespace gmx
 
 #endif // GMX_SIMD
 

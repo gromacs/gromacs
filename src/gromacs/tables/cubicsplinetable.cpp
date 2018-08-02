@@ -298,7 +298,7 @@ fillSingleCubicSplineTableData(ArrayRef<const double>                 function,
 
 }
 
-}   // namespace anonymous
+}   // namespace
 
 
 

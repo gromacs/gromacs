@@ -186,6 +186,6 @@ bool decideWhetherToUseGpusForPme(bool                    useGpuForNonbonded,
                                   int                     numPmeRanksPerSimulation,
                                   bool                    gpusWereDetected);
 
-}
+}  // namespace gmx
 
 #endif

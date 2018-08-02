@@ -93,5 +93,5 @@ void TerminationHelper::runSecondMdrunWithNoAppend()
     ASSERT_EQ(0, runner_->callMdrun(secondPart));
 }
 
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx

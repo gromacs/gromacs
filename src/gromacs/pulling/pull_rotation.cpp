@@ -316,7 +316,7 @@ gmx_enfrot *EnforcedRotation::getLegacyEnfrot()
     return &impl_->enforcedRotation_;
 }
 
-} // namespace
+}  // namespace gmx
 
 /* Activate output of forces for correctness checks */
 /* #define PRINT_FORCES */

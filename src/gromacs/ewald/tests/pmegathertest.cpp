@@ -455,6 +455,6 @@ INSTANTIATE_TEST_CASE_P(SaneInput, PmeGatherTest, ::testing::Combine(::testing::
                                                                          ::testing::Values(PmeForceOutputHandling::Set, PmeForceOutputHandling::ReduceWithInput),
                                                                          ::testing::ValuesIn(atomCounts)));
 
-}
-}
-}
+}  // namespace
+}  // namespace test
+}  // namespace gmx

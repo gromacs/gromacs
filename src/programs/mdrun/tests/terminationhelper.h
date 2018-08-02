@@ -93,7 +93,7 @@ class TerminationHelper
         SimulationRunner *runner_;
 };
 
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx
 
 #endif

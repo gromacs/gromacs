@@ -120,6 +120,6 @@ TEST(GammaDistributionTest, AltParam)
     EXPECT_REAL_EQ_TOL(distA(rngA), distB(rngB, paramA), gmx::test::ulpTolerance(0));
 }
 
-}      // namespace anonymous
+}  // namespace
 
-}      // namespace gmx
+}  // namespace gmx

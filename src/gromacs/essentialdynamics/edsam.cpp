@@ -294,7 +294,7 @@ bool bNeedDoEdsam(const t_edpar &edi)
            || edi.vecs.radacc.neig
            || edi.vecs.radcon.neig;
 }
-}
+}  // namespace
 
 
 /* Multiple ED groups will be labeled with letters instead of numbers
@@ -433,7 +433,7 @@ real calc_radius(const t_eigvec &vec)
 
     return rad = sqrt(rad);
 }
-}
+}  // namespace
 
 struct t_do_edfit {
     double **omega;
@@ -1533,7 +1533,7 @@ void setup_edvec(t_eigvec *tvec)
     snew(tvec->fproj, tvec->neig);
     snew(tvec->refproj, tvec->neig);
 }
-}
+}  // namespace
 
 
 /* Check if the same atom indices are used for reference and average positions */

@@ -230,6 +230,6 @@ TEST_F (AutocorrTest, EacP4)
 }
 
 
-}
+}  // namespace
 
-}
+}  // namespace gmx

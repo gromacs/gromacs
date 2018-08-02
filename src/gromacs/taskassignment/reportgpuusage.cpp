@@ -139,4 +139,4 @@ reportGpuUsage(const MDLogger                &mdlog,
     GMX_LOG(mdlog.warning).appendText(output);
 }
 
-} // namespace
+}  // namespace gmx

@@ -354,7 +354,7 @@ TEST_F(Simd4FloatingpointTest, transpose)
 /*! \endcond */
 
 }      // namespace
-}      // namespace
-}      // namespace
+}      // namespace test
+}      // namespace gmx
 
 #endif // GMX_SIMD

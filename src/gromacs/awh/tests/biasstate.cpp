@@ -176,5 +176,5 @@ INSTANTIATE_TEST_CASE_P(WithParameters, BiasStateTest,
                             ::testing::Values("pmf_target_format0.xvg",
                                               "pmf_target_format1.xvg"));
 
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx

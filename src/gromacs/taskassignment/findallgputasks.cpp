@@ -219,4 +219,4 @@ findAllGpuTasksOnThisNode(ArrayRef<const GpuTask>         gpuTasksOnThisRank,
     return gpuTasksOnRanksOfThisNode;
 }
 
-} // namespace
+}  // namespace gmx

@@ -194,5 +194,5 @@ EnergyFrameReader::frame()
     return EnergyFrame(*enxframeGuard_.get(), indicesOfEnergyFields_);
 }
 
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx

@@ -154,5 +154,5 @@ INSTANTIATE_TEST_CASE_P(ForCharmm27, Pdb2gmxTest,
                         );
 
 } // namespace
-} // namespace
-} // namespace
+} // namespace test
+} // namespace gmx

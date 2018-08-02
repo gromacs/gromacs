@@ -118,5 +118,5 @@ TEST(RegexBasicTest, MatchesForCharacterClassesWorkWhenSupported)
 }
 
 } // namespace
-} // namespace
-} // namespace
+} // namespace test
+} // namespace gmx

@@ -315,5 +315,5 @@ INSTANTIATE_TEST_CASE_P(WithParameters, SettleTest,
                                                    ::testing::Bool(),
                                                    ::testing::Bool()));
 
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx

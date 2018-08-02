@@ -215,7 +215,7 @@ t_commrec *Mdrunner::spawnThreads(int numThreadsToLaunch) const
     return reinitialize_commrec_for_this_thread(cr);
 }
 
-}      // namespace
+}  // namespace gmx
 
 /*! \brief Initialize variables for Verlet scheme simulation */
 static void prepare_verlet_scheme(FILE                           *fplog,

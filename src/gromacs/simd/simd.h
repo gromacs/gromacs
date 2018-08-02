@@ -97,7 +97,7 @@ struct SimdDoubleTag {};
 struct SimdFInt32Tag {};
 /*! \libinternal \brief Tag type to select to load SimdDInt32 with simdLoad(U) */
 struct SimdDInt32Tag {};
-}
+}  // namespace gmx
 
 /*! \name SIMD predefined macros to describe high-level capabilities
  *
