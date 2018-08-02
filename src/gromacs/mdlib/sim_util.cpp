@@ -895,7 +895,7 @@ computeSpecialForces(FILE                          *fplog,
     /* Add forces from interactive molecular dynamics (IMD), if bIMD == TRUE. */
     if (inputrec->bIMD && computeForces)
     {
-        IMD_apply_forces(inputrec->bIMD, inputrec->imd, cr, f, wcycle);
+        IMD_apply_forces(inputrec->bIMD, inputrec->imd, f, wcycle);
     }
 }
 

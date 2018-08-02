@@ -89,6 +89,11 @@ class t_state;
 
 static const char IMDstr[] = "IMD:";  /**< Tag output from the IMD module with this string. */
 
+namespace gmx
+{
+class LocalAtomSetManager;
+}
+
 /*! \brief Writes out the group of atoms selected for interactive manipulation.
  *
  * Called by grompp.
@@ -105,23 +110,6 @@ static const char IMDstr[] = "IMD:";  /**< Tag output from the IMD module with t
 void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, t_state *state,
                             gmx_mtop_t *sys, int nfile, const t_filenm fnm[]);
 
-
-/*! \brief Make a selection of the home atoms for the IMD group.
- *
- * Should be called at every domain decomposition.
- * Each node checks which of the atoms from "ind" are local and puts its local
- * atom numbers into the "ind_local" array. Furthermore, in "xa_ind" it is
- * stored at which position each local atom belongs in the assembled/collective
- * array, so that on the master node all positions can be merged into the
- * assembled array correctly.
- *
- * \param bIMD    Only springs into action if bIMD is TRUE. Otherwise returns directly.
- * \param dd      Structure containing domain decomposition data.
- * \param imd     The IMD group of atoms.
- */
-void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd);
-
-
 /*! \brief Initializes (or disables) IMD.
  *
  * This function is called before the main MD loop over time steps.
@@ -129,6 +117,7 @@ void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd);
  * \param ir           The inputrec structure containing the MD input parameters
  *                     including a pointer to the IMD data structure.
  * \param cr           Information structure for MPI communication.
+ * \param atomSets     The manager that handles the imd atom sets.
  * \param ms           Handler for multi-simulations.
  * \param top_global   The topology of the whole system.
  * \param fplog        General output file, normally md.log.
@@ -139,7 +128,7 @@ void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd);
  * \param oenv         Output options.
  * \param mdrunOptions Options for mdrun.
  */
-void init_IMD(t_inputrec *ir, const t_commrec *cr,
+void init_IMD(t_inputrec *ir, const t_commrec *cr, gmx::LocalAtomSetManager *atomSets,
               const gmx_multisim_t *ms,
               gmx_mtop_t *top_global,
               FILE *fplog, int defnstimd, rvec x[],
@@ -182,12 +171,11 @@ int IMD_get_step(t_gmx_IMD *IMDsetup);
  *
  * \param bIMD         Returns directly if bIMD is FALSE.
  * \param imd          The IMD data structure.
- * \param cr           Information structure for MPI communication.
  * \param f            The forces.
  * \param wcycle       Count wallcycles of IMD routines for diagnostic output.
  */
 void IMD_apply_forces(gmx_bool bIMD, t_IMD *imd,
-                      const t_commrec *cr, rvec *f,
+                      rvec *f,
                       gmx_wallcycle *wcycle);
 
 
