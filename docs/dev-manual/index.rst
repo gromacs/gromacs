@@ -53,6 +53,7 @@ locations in the developer guide.
    contribute
    overview
    build-system
+   change-management
    relocatable-binaries
    documentation-generation
    style

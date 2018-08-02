@@ -288,6 +288,7 @@ if (SPHINX_FOUND)
         conf.py
         links.dat
         dev-manual/build-system.rst
+        dev-manual/change-management.rst
         dev-manual/commitstyle.rst
         dev-manual/documentation-generation.rst
         dev-manual/contribute.rst
