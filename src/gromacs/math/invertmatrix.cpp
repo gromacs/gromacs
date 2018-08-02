@@ -97,4 +97,4 @@ void invertMatrix(const matrix src, matrix dest)
     dest[ZZ][ZZ] = c*(src[XX][XX]*src[YY][YY]-src[YY][XX]*src[XX][YY]);
 }
 
-} // namespace
+}  // namespace gmx

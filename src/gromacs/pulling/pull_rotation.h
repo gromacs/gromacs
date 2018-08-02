@@ -87,7 +87,7 @@ class EnforcedRotation
         PrivateImplPointer<Impl> impl_;
 };
 
-} // namespace
+}  // namespace gmx
 
 /*! \brief Initializes the enforced rotation groups.
  *

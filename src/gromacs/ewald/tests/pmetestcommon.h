@@ -142,7 +142,7 @@ void pmePerformSolve(const gmx_pme_t *pme, CodePath mode,
                      GridOrdering gridOrdering, bool computeEnergyAndVirial);
 //! PME force gathering
 void pmePerformGather(gmx_pme_t *pme, CodePath mode,
-                      PmeForceOutputHandling inputTreatment, ForcesVector &forces);
+                      PmeForceOutputHandling inputTreatment, ForcesVector &forces); //NOLINT(google-runtime-references)
 //! PME test finalization before fetching the outputs
 void pmeFinalizeTest(const gmx_pme_t *pme, CodePath mode);
 
@@ -175,7 +175,7 @@ SparseComplexGridValuesOutput pmeGetComplexGrid(const gmx_pme_t *pme, CodePath m
 //! Getting the reciprocal energy and virial
 PmeSolveOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t *pme, CodePath mode,
                                                PmeSolveAlgorithm method);
-}
-}
+}  // namespace test
+}  // namespace gmx
 
 #endif

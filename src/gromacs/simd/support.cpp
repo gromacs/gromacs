@@ -310,4 +310,4 @@ simdCheck(gmx::SimdType    wanted,
 
 /*! \endcond */
 
-}
+}  // namespace gmx

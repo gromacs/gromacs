@@ -124,4 +124,4 @@ void PhysicalNodeCommunicator::barrier() const
 #endif
 }
 
-} // namespace
+}  // namespace gmx

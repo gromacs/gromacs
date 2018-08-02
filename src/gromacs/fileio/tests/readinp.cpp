@@ -132,5 +132,5 @@ TEST_F(ReadTest, get_ereal_WarnsAboutString)
     ASSERT_TRUE(warning_errors_exist(wi_));
 }
 
-} // namespace
-} // namespace
+}  // namespace testing
+}  // namespace gmx

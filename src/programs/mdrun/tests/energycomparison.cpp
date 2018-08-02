@@ -75,5 +75,5 @@ void compareEnergyFrames(const EnergyFrame      &reference,
     }
 }
 
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx

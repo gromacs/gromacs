@@ -345,7 +345,7 @@ using AllocatorTypesToTest = ::testing::Types<HostAllocator<real>,
 TYPED_TEST_CASE(AllocatorTest, AllocatorTypesToTest);
 
 } // namespace
-} // namespace
+} // namespace gmx
 
 // Includes tests common to all allocation policies.
 #include "gromacs/utility/tests/alignedallocator-impl.h"

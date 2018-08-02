@@ -408,4 +408,4 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
     return false;
 }
 
-} // namespace
+}  // namespace gmx

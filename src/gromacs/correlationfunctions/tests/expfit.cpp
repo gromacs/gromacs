@@ -209,6 +209,6 @@ TEST_F (ExpfitTest, EffnPRES) {
 
 #endif
 
-}
+}  // namespace
 
-}
+}  // namespace gmx

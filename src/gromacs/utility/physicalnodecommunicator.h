@@ -84,6 +84,6 @@ class PhysicalNodeCommunicator
         void barrier() const;
 };
 
-} // namespace
+}  // namespace gmx
 
 #endif

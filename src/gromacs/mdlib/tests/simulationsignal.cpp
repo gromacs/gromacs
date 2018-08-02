@@ -173,5 +173,5 @@ TEST_F(SignalTest, NonLocalSignalPropagatesWhenBothTakePlace)
     EXPECT_EQ(0, signals_[2].set);
 }
 
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx

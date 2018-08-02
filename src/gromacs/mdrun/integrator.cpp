@@ -92,4 +92,4 @@ void Integrator::run(unsigned int ei)
     }
 }
 
-} // namespace
+}  // namespace gmx

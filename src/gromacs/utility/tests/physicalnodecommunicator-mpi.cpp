@@ -61,4 +61,4 @@ TEST(PhysicalNodeCommunicatorTest, CanCallBarrier)
 }
 
 } // namespace
-} // namespace
+} // namespace gmx

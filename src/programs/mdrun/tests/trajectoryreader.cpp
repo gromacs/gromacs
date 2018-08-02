@@ -156,5 +156,5 @@ TrajectoryFrameReader::frame()
     return TrajectoryFrame(*trxframeGuard_.get());
 }
 
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx

@@ -97,6 +97,6 @@ void settle_proj(settledata *settled, ConstraintVariable econq,
                  rvec *der, rvec *derp,
                  int CalcVirAtomEnd, tensor vir_r_m_dder);
 
-} // namespace
+}  // namespace gmx
 
 #endif

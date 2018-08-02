@@ -209,5 +209,5 @@ TEST_F(GetIrTest, ImplicitSolventYesWorks)
     EXPECT_DEATH_IF_SUPPORTED(runTest(inputMdpFile), "Invalid enum");
 }
 
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx

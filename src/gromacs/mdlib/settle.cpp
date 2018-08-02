@@ -902,4 +902,4 @@ void csettle(settledata *settled,
     }
 }
 
-} // namespace
+}  // namespace gmx

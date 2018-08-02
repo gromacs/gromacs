@@ -213,7 +213,7 @@ restore_ekinstate_from_state(const t_commrec *cr,
                              gmx_ekindata_t *ekind, const ekinstate_t *ekinstate);
 
 void berendsen_tcoupl(const t_inputrec *ir, const gmx_ekindata_t *ekind, real dt,
-                      std::vector<double> &therm_integral);
+                      std::vector<double> &therm_integral); //NOLINT(google-runtime-references)
 
 void andersen_tcoupl(t_inputrec *ir, int64_t step,
                      const t_commrec *cr, const t_mdatoms *md, t_state *state, real rate, const gmx_bool *randomize, const real *boltzfac);

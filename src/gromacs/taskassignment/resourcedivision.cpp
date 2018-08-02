@@ -946,4 +946,4 @@ void checkHardwareOversubscription(int                             numThreadsOnT
     }
 }
 
-} // namespace
+}  // namespace gmx

@@ -325,4 +325,4 @@ runTaskAssignment(const std::vector<int>         &gpuIdsToUse,
     // would require communication.
 }
 
-} // namespace
+}  // namespace gmx

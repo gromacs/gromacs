@@ -106,7 +106,7 @@ void compareTrajectoryFrames(const TrajectoryFrame              &reference,
                              const TrajectoryFrameMatchSettings &matchSettings,
                              const TrajectoryTolerances         &tolerances);
 
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx
 
 #endif
