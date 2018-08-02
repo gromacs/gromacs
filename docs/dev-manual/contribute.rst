@@ -15,8 +15,8 @@ stage. New things can lead to exciting science, and we love
 that. However, the subsequent code maintenance is time-consuming and
 requires both "up front" and long-term commitment from you, and others
 who might not share your particular scientific enthusiasm. Please read
-this page first, and at least post on the `developer mailing
-list`_. Sometimes we'll be able to save you a lot of time even at the
+this page first, and at least post on the `developer mailing list`_.
+Sometimes we'll be able to save you a lot of time even at the
 planning stage!
 
 Much of the documentation is found alongside the source code in the
@@ -121,6 +121,20 @@ please make sure that you have checked all the points on this list:
   concerning the :ref:`commit style <code-commitstyle>`. This will also
   facilitate the code review process.
 
+Preparing code for submission
+-----------------------------
+
+|Gromacs| revision control uses a ``git`` repository managed by :doc:`Gerrit <change-management>`.
+Instead of accepting "pull requests", |Gromacs| changes are submitted as individual
+commits on the tip of the ``master`` branch hosted at https://gerrit.gromacs.org.
+Preparing, submitting, and managing patches for a change requires a little bit
+of set-up. Refer to :doc:`change-management` for information about
+
+* accessing the |Gromacs| Gerrit server
+* structure of the repository
+* source control without merge commits
+* ``git`` usage that may be less common in other development work flows
+
 Alternatives
 ------------
 
@@ -132,7 +146,7 @@ help make the case for contributing the feature to the core. This process
 would then still need to follow the remaining criteria outlined here.
 
 There is a project underway to develop a stable API for |Gromacs|,
-which promises to be a great tool for permtting innovation while
+which promises to be a great tool for permitting innovation while
 ensuring ongoing quality of the core functionality. You might prefer
 to plan to port your functionality to that API when it becomes
 available. Do keep in touch on the `developer mailing list`_, so
