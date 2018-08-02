@@ -67,6 +67,9 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/hybridMCMD/acceptorrewind.h"
+#include "gromacs/hybridMCMD/hybridmcmdvelocities.h"
+#include "gromacs/hybridMCMD/metropolis.h"
 #include "gromacs/imd/imd.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/functions.h"
@@ -139,6 +142,10 @@
 #endif
 
 using gmx::SimulationSignaller;
+// Hybrid MC/MD
+using gmx::MetropolisStepMehlig;
+using gmx::HybridMCMDVelocities;
+using gmx::AcceptOrRewind;
 
 //! Resets all the counters.
 static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
@@ -324,6 +331,10 @@ void gmx::Integrator::do_md()
 
     /* Interactive MD */
     gmx_bool          bIMDstep = FALSE;
+
+    /* Hybrid MC/MD */
+    bool              accepted      = true;
+    bool              bDoMetropolis = false;
 
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
@@ -547,10 +558,10 @@ void gmx::Integrator::do_md()
                                         replExParams);
     }
     /* PME tuning is only supported in the Verlet scheme, with PME for
-     * Coulomb. It is not supported with only LJ PME, or for
+     * Coulomb. It is not supported with only LJ PME, hybrid MC/MD, or for
      * reruns. */
     bPMETune = (mdrunOptions.tunePme && EEL_PME(fr->ic->eeltype) && !bRerunMD &&
-                !mdrunOptions.reproducible && ir->cutoff_scheme != ecutsGROUP);
+                !mdrunOptions.reproducible && ir->cutoff_scheme != ecutsGROUP && !ir->bDoHybridMCMD);
     if (bPMETune)
     {
         pme_loadbal_init(&pme_loadbal, cr, mdlog, ir, state->box,
@@ -742,6 +753,25 @@ void gmx::Integrator::do_md()
             }
         }
         fprintf(fplog, "\n");
+    }
+
+    // instanciate classes needed for hybrid MC/MD
+    std::unique_ptr<MetropolisStepMehlig> metropolisStepMehligInstance;
+    MetropolisStepMehlig *                metropolisStepMehlig = nullptr;
+    std::unique_ptr<HybridMCMDVelocities> hybridMCMDVelocitiesInstance;
+    HybridMCMDVelocities *                hybridMCMDVelocities = nullptr;
+    std::unique_ptr<AcceptOrRewind>       acceptOrRewindInstance;
+    AcceptOrRewind *                      acceptOrRewind = nullptr;
+
+    if (ir->bDoHybridMCMD)
+    {
+        metropolisStepMehligInstance = gmx::compat::make_unique<MetropolisStepMehlig>(ir->hybridMCMDParams->temperatureEnsemble, ir->hybridMCMDParams->temperatureVelocities,
+                                                                                      ir->hybridMCMDParams->seed, ir->init_step, startingFromCheckpoint);
+        metropolisStepMehlig         = metropolisStepMehligInstance.get();
+        hybridMCMDVelocitiesInstance = gmx::compat::make_unique<HybridMCMDVelocities>(metropolisStepMehlig);
+        hybridMCMDVelocities         = hybridMCMDVelocitiesInstance.get();
+        acceptOrRewindInstance       = gmx::compat::make_unique<AcceptOrRewind>(metropolisStepMehlig);
+        acceptOrRewind               = acceptOrRewindInstance.get();
     }
 
     walltime_accounting_start(walltime_accounting);
@@ -970,12 +1000,20 @@ void gmx::Integrator::do_md()
         else
         {
             /* Determine whether or not to do Neighbour Searching */
+            // bNS is used for signalling in checkpointing/simulation termination, domain decomposition, neighbour searching (only aspect to be used by hybrid MC/MD)
             bNS = (bFirstStep || bNStList || bExchanged || bNeedRepartition);
         }
 
-        /* < 0 means stop at next step, > 0 means stop at next NS step */
+        /* Hybrid MC/MD: signal when to do Metropolis step */
+        if (ir->bDoHybridMCMD)
+        {
+            bDoMetropolis = (do_per_step(step, ir->hybridMCMDParams->nstMetropolis) || step == ir->init_step || startingFromCheckpoint);
+        }
+
+        /* < 0 means stop at next step, > 0 means stop at next NS step or at next Metropolis step in case of Hybrid MC/MD */
         if ( (signals[eglsSTOPCOND].set < 0) ||
-             ( (signals[eglsSTOPCOND].set > 0 ) && ( bNS || ir->nstlist == 0)))
+             ( (signals[eglsSTOPCOND].set > 0 ) && !ir->bDoHybridMCMD && ( bNS || ir->nstlist == 0)) ||
+             ( (signals[eglsSTOPCOND].set > 0 ) && bDoMetropolis))
         {
             bLastStep = TRUE;
         }
@@ -986,11 +1024,16 @@ void gmx::Integrator::do_md()
          * Note that the || bLastStep can result in non-exact continuation
          * beyond the last step. But we don't consider that to be an issue.
          */
-        do_log     = do_per_step(step, ir->nstlog) || (bFirstStep && !startingFromCheckpoint) || bLastStep || bRerunMD;
+        /* With Hybrid MC/MD, output is only meaningful after the configuration has been "metropolised"
+         * We do not enforce this for do_verbose because users might be interested in getting information
+         * about steps in between Metropolis steps when setting the verbose flag.
+         */
+        do_log     = do_per_step(step, ir->nstlog) || (bFirstStep && !startingFromCheckpoint) || (bLastStep && !ir->bDoHybridMCMD) || (bLastStep && bDoMetropolis) || bRerunMD;
         do_verbose = mdrunOptions.verbose &&
             (step % mdrunOptions.verboseStepPrintInterval == 0 || bFirstStep || bLastStep || bRerunMD);
 
-        if (bNS && !(bFirstStep && ir->bContinuation && !bRerunMD))
+        // Hybrid MC/MD: if structure is rejected, domain decomposition will be handled by AcceptOrRewind class
+        if (bNS && !(bFirstStep && ir->bContinuation && !bRerunMD) && accepted)
         {
             if (bRerunMD)
             {
@@ -1060,9 +1103,20 @@ void gmx::Integrator::do_md()
          * or at the last step (but not when we do not want confout),
          * but never at the first step or with rerun.
          */
-        bCPT = (((signals[eglsCHKPT].set && (bNS || ir->nstlist == 0)) ||
-                 (bLastStep && mdrunOptions.writeConfout)) &&
-                step > ir->init_step && !bRerunMD);
+        /* If hybrid MC/MD is used, enforce checkpointing at Metropolis steps rather than at NS steps or the last step
+         * (checkpointing in do_md_trajectory_writing is done immediately after calling acceptOrRewind->updateTState())
+         */
+        if (ir->bDoHybridMCMD)
+        {
+            bCPT = (signals[eglsCHKPT].set && bDoMetropolis &&
+                    step > ir->init_step && !bRerunMD);
+        }
+        else
+        {
+            bCPT = (((signals[eglsCHKPT].set && (bNS || ir->nstlist == 0)) ||
+                     (bLastStep && mdrunOptions.writeConfout)) &&
+                    step > ir->init_step && !bRerunMD);
+        }
         if (bCPT)
         {
             signals[eglsCHKPT].set = 0;
@@ -1071,19 +1125,35 @@ void gmx::Integrator::do_md()
         /* Determine the energy and pressure:
          * at nstcalcenergy steps and at energy output steps (set below).
          */
-        if (EI_VV(ir->eI) && (!bInitStep))
+        if (EI_VV(ir->eI) && (!bInitStep) && (!ir->bDoHybridMCMD))
         {
             /* for vv, the first half of the integration actually corresponds
                to the previous step.  bCalcEner is only required to be evaluated on the 'next' step,
                but the virial needs to be calculated on both the current step and the 'next' step. Future
                reorganization may be able to get rid of one of the bCalcVir=TRUE steps. */
-
-            /* TODO: This is probably not what we want, we will write to energy file one step after nstcalcenergy steps. */
+            /* TODO: This is probably not what we want, we will write to energy file one step after nstcalcenergy steps. (You might want this due to requirements of trotter update) */
             bCalcEnerStep = do_per_step(step - 1, ir->nstcalcenergy);
             bCalcVir      = bCalcEnerStep ||
                 (ir->epc != epcNO && (do_per_step(step, ir->nstpcouple) || do_per_step(step-1, ir->nstpcouple)));
         }
         else
+        /* changed md-vv logic here
+         * for md-vv, the first half of the integration actually corresponds to the 'previous' step,
+         * but calculates quantities for the 'current' step.
+         *
+         * bCalcEnerStep:
+         * TODO: Hybrid MC/MD: nstHyrbidMCMD = nstcalcenergy (current requirement while checking input) => keep bDoMetropolis synchronised with bCalcEnerStep
+         *
+         * bCalcVir:
+         * - MD barostats compatible with hybrid MC/MD:
+         *   - Berendsen: yes
+         *   - Parrinello-Rahman: not supported for md-vv => no
+         *   - MTTK without thermostat (inputrecNphTrotter): implemented, but forbidden in gmxpreprocess/readir.cpp => no
+         * - Berendsen is applied if do_per_step(step, ir->nstpcouple)
+         * - pressure calculation can be done accurately in one step, too
+         * => everything that depends on freshly calculated and communicated virials can be done at do_per_step(step, ir->nstpcouple)
+         * - synchronise with bCalcEnerStep for accurate book-keeping of pressure
+         */
         {
             bCalcEnerStep = do_per_step(step, ir->nstcalcenergy);
             bCalcVir      = bCalcEnerStep ||
@@ -1091,7 +1161,8 @@ void gmx::Integrator::do_md()
         }
         bCalcEner = bCalcEnerStep;
 
-        do_ene = (do_per_step(step, ir->nstenergy) || bLastStep || bRerunMD);
+        /* With Hybrid MC/MD, output is only meaningful after the configuration has been "metropolised" */
+        do_ene = (do_per_step(step, ir->nstenergy) || (bLastStep && !ir->bDoHybridMCMD) || (bLastStep && bDoMetropolis) || bRerunMD);
 
         if (do_ene || do_log || bDoReplEx)
         {
@@ -1100,6 +1171,10 @@ void gmx::Integrator::do_md()
         }
 
         /* Do we need global communication ? */
+        /* Haven't explicitly changed md-vv logic here, but note that with hybrid MC/MD, bCalcEner is TRUE one step earlier than for pure md-vv
+         * => bGStat is no longer set at do_per_step(step - 1, ir->nstcalcenergy)
+         * With hybrid MC/MD, no thermostat is supported => we don't need a condition for inputrecNvtTrotter(ir) (inputrecNvtTrotter(ir) => !ir->bDoHybridMCMD)
+         */
         bGStat = (bCalcVir || bCalcEner || bStopCM ||
                   do_per_step(step, nstglobalcomm) ||
                   (EI_VV(ir->eI) && inputrecNvtTrotter(ir) && do_per_step(step-1, nstglobalcomm)));
@@ -1112,11 +1187,12 @@ void gmx::Integrator::do_md()
                        (bDoFEP ? GMX_FORCE_DHDL : 0)
                        );
 
+        // Hybrid MC/MD: enforce neighbour searching after rejection (i.e. rewinding and domain decomposition in the current step)
         if (shellfc)
         {
             /* Now is the time to relax the shells */
             relax_shell_flexcon(fplog, cr, ms, mdrunOptions.verbose, step,
-                                ir, bNS, force_flags, top,
+                                ir, (bNS || !accepted), force_flags, top,
                                 constr, enerd, fcd,
                                 state, f, force_vir, mdatoms,
                                 nrnb, wcycle, graph, groups,
@@ -1150,7 +1226,7 @@ void gmx::Integrator::do_md()
                      f, force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
                      fr, vsite, mu_tot, t, ed,
-                     (bNS ? GMX_FORCE_NS : 0) | force_flags,
+                     ((bNS || !accepted) ? GMX_FORCE_NS : 0) | force_flags,
                      ddOpenBalanceRegion, ddCloseBalanceRegion);
         }
 
@@ -1177,25 +1253,29 @@ void gmx::Integrator::do_md()
                 trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ1);
             }
 
-            update_coords(step, ir, mdatoms, state, f, fcd,
-                          ekind, M, upd, etrtVELOCITY1,
-                          cr, constr);
+            /* Hybrid MC/MD: if we rewind to a previous configuration, we will load full-step velocities and properly shifted co-ordinates */
+            if (accepted)
+            {
+                update_coords(step, ir, mdatoms, state, f, fcd,
+                              ekind, M, upd, etrtVELOCITY1,
+                              cr, constr);
 
-            if (!bRerunMD || rerun_fr.bV || bForceUpdate)         /* Why is rerun_fr.bV here?  Unclear. */
-            {
-                wallcycle_stop(wcycle, ewcUPDATE);
-                constrain_velocities(step, nullptr,
-                                     state,
-                                     shake_vir,
-                                     wcycle, constr,
-                                     bCalcVir, do_log, do_ene);
-                wallcycle_start(wcycle, ewcUPDATE);
-            }
-            else if (graph)
-            {
-                /* Need to unshift here if a do_force has been
-                   called in the previous step */
-                unshift_self(graph, state->box, as_rvec_array(state->x.data()));
+                if (!bRerunMD || rerun_fr.bV || bForceUpdate)         /* Why is rerun_fr.bV here?  Unclear. */
+                {
+                    wallcycle_stop(wcycle, ewcUPDATE);
+                    constrain_velocities(step, nullptr,
+                                         state,
+                                         shake_vir,
+                                         wcycle, constr,
+                                         bCalcVir, do_log, do_ene);
+                    wallcycle_start(wcycle, ewcUPDATE);
+                }
+                else if (graph)
+                {
+                    /* Need to unshift here if a do_force has been
+                       called in the previous step */
+                    unshift_self(graph, state->box, as_rvec_array(state->x.data()));
+                }
             }
             /* if VV, compute the pressure and constraints */
             /* For VV2, we strictly only need this if using pressure
@@ -1214,7 +1294,16 @@ void gmx::Integrator::do_md()
             }
             /* for vv, the first half of the integration actually corresponds to the previous step.
                So we need information from the last step in the first half of the integration */
-            if (bGStat || do_per_step(step-1, nstglobalcomm))
+            /* changed md-vv logic here
+             * Signalling by bGStat:
+             * - bGStat activates the compute_globals call below, is used for checkpointing (fine: nstMetropolis = nstcalcenergy), md-vv-avek (temperature for trotter -> not supported),
+             *   and constraints/pressure (controlled by do_log, do_ene, or nstpcouple and bCalcVir)/shouldCheckNumberOfBondedInteractions (after dd_partition_system => taken care of by
+             *   bGStat = do_per_step(step, nstglobalcomm))/non-md-vv integrators (not supported)
+             * => bGStat signalling based on nstcalcenergy with hybrid MC/MD only has to ensure that the compute_globals call below is done at the right steps
+             * Without hybrid MC/MD, bGStat (includes do_per_step(step, nstglobalcomm)) is the first communication step and do_per_step(step-1, nstglobalcomm)) the second.
+             * With hybrid MC/MD (md-vv, NVE or NpE simulations with Berendsen), it should be sufficient to call compute_globals if bGStat == TRUE (for all quantities calculated here).
+             */
+            if (bGStat || (!ir->bDoHybridMCMD && do_per_step(step-1, nstglobalcomm)))
             {
                 wallcycle_stop(wcycle, ewcUPDATE);
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
@@ -1308,6 +1397,43 @@ void gmx::Integrator::do_md()
             }
         }
 
+        // Hybrid MC/MD: evaluate Metropolis criterion and update configuration/simulation state accordingly
+        if (bDoMetropolis)
+        {
+            /* As we will not increase the step count if the proposed configuration is rejected,
+             * we need to signal somehow that we don't want the Metropolis step to be executed again immediately after rewinding.
+             * Therefore, the default value of accepted is TRUE and will only be FALSE if a configuration is rejected.
+             * It will be reset to TRUE in the following iteration then.
+             */
+            if (accepted)
+            {
+                accepted = acceptOrRewind->updateTState(step, state, enerd, fplog, cr, top_global, ir, &f,
+                                                        mdAtoms, top, fr, vsite, constr, nrnb, wcycle, upd,
+                                                        &shouldCheckNumberOfBondedInteractions);
+
+            }
+            else
+            {
+                accepted = true;
+            }
+            /* AcceptOrRewind will only update the contents of t_state if current structure is rejected
+             * => forces (for correct propagation) and energies (for correct output) have to be re-computed
+             * => idea: start loop iteration again
+             * NOTE: step count will not be updated => consider implications (see above)
+             * nstMetropolis = nstcalcenergy
+             * => bGStat, bCalcEner, and bCalcVir are set after rejection and forces are calculated
+             * => we get all the data we need to correctly propagate the configuration we rewinded to
+             */
+            if (!accepted)
+            {
+                /* As we want to do another iteration to get the correct energies and forces for the structure we rewind to,
+                 * we have to set bLastStep to FALSE here and have it set to TRUE again while "repeating" the step
+                 */
+                bLastStep = false;
+                continue;
+            }
+        }
+
         /* ########  END FIRST UPDATE STEP  ############## */
         /* ########  If doing VV, we now have v(dt) ###### */
         if (bDoExpanded)
@@ -1393,7 +1519,8 @@ void gmx::Integrator::do_md()
             fflush(stderr);
             handled_stop_condition = (int)gmx_get_stop_condition();
         }
-        else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
+        // Hybrid MC/MD: terminate after configuration has been "metropolised" (bDOMetroplis: default value is false)
+        else if (MASTER(cr) && ((!ir->bDoHybridMCMD && (bNS || ir->nstlist <= 0)) || bDoMetropolis) &&
                  (max_hours > 0 && elapsed_time > max_hours*60.0*60.0*0.99) &&
                  signals[eglsSTOPCOND].sig == 0 && signals[eglsSTOPCOND].set == 0)
         {
@@ -1431,6 +1558,15 @@ void gmx::Integrator::do_md()
 
         /* at the start of step, randomize or scale the velocities ((if vv. Restriction of Andersen controlled
            in preprocessing */
+
+        // Hybrid MC/MD: draw initial velocities randomly from Boltzmann distribution
+        if (ir->bDoHybridMCMD)
+        {
+            hybridMCMDVelocities->draw(ir, step, cr, mdatoms, state, constr,
+                                       tmp_vir, wcycle, bCalcVir, do_log, do_ene,
+                                       fplog, gstat, fr, ekind, nrnb, vcm, enerd, mu_tot,
+                                       &nullSignaller, &bSumEkinhOld);
+        }
 
         if (ETC_ANDERSEN(ir->etc)) /* keep this outside of update_tcouple because of the extra info required to pass */
         {
@@ -1689,6 +1825,12 @@ void gmx::Integrator::do_md()
         /* Output stuff */
         if (MASTER(cr))
         {
+            // Hybrid MC/MD output
+            if (ir->bDoHybridMCMD)
+            {
+                acceptOrRewind->printOutput(fplog, ir->nstlog, step);
+            }
+
             if (fplog && do_log && bDoExpanded)
             {
                 /* only needed if doing expanded ensemble */

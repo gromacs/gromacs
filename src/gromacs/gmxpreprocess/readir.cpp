@@ -545,6 +545,66 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         warning_note(wi, "For a correct single-point energy evaluation with nsteps = 0, use continuation = yes to avoid constraining the input coordinates.");
     }
 
+    /* Hybrid MC/MD */
+    if (ir->bDoHybridMCMD)
+    {
+        /* allow only md-vv as integrator */
+        if (ir->eI != eiVV)
+        {
+            warning_error(wi, "The hybrid Monte Carlo scheme is only implemented with the velocity Verlet integrator (md-vv).");
+        }
+        /* force user to specify ensemble temperature */
+        if (ir->hybridMCMDParams->temperatureEnsemble < 0)
+        {
+            warning_error(wi, "For hybrid Monte Carlo, the ensemble temperature (hmc-ens-temp) must be specified.");
+        }
+        /* allow no temperature coupling (it is against the logic of hybrid MC/MD) */
+        if (ir->etc != etcNO)
+        {
+            warning_error(wi, "In hybrid Monte Carlo simulations, the ensemble temperature is controlled by the Metropolis criterion. Do not use thermostats.");
+        }
+        /* allow no pressure coupling (to be implemented soon) */
+        if (ir->epc != epcNO)
+        {
+            warning_error(wi, "Pressure coupling has not been implemented for hybrid Monte Carlo yet.");
+        }
+
+        /* do not allow NMR refinement because moving averages cannot be calculated correctly */
+        if (ir->eDisre != edrNone || opts->bOrire)
+        {
+            warning_error(wi, "The time averages required for distance and orientational restraints cannot be handled properly in hybrid Monte Carlo simulations yet.");
+        }
+
+        /* pme-tuning and dynamic loadbalancing are turned off*/
+        sprintf(warn_buf, "In hybrid Monte Carlo simulations, dynamic load balancing and PME tuning are turned off.");
+        warning_note(wi, warn_buf);
+
+        /* check nst parameters */
+        /* identical */
+        /* nstMetropolis = nstcalcenergy is crucial to run a correct simulation*/
+        if (ir->hybridMCMDParams->nstMetropolis != ir->nstcalcenergy)
+        {
+            warning_error(wi, "For hybrid Monte Carlo, nsthmc and nstcalcenergy must be identical.");
+        }
+        /* multiples */
+        /* centre-of-mass motion removal */
+        check_nst("nsthmc", ir->hybridMCMDParams->nstMetropolis,
+                  "nstcomm", &(ir->nstcomm), wi);
+        /* output-related settings */
+        check_nst("nsthmc", ir->hybridMCMDParams->nstMetropolis,
+                  "nstxout", &(ir->nstxout), wi);
+        check_nst("nsthmc", ir->hybridMCMDParams->nstMetropolis,
+                  "nstxout_compressed", &(ir->nstxout_compressed), wi);
+        check_nst("nsthmc", ir->hybridMCMDParams->nstMetropolis,
+                  "nstlog", &(ir->nstlog), wi);
+        check_nst("nsthmc", ir->hybridMCMDParams->nstMetropolis,
+                  "nstenergy", &(ir->nstenergy), wi);
+
+        /* This is just the first version of a hybrid MC/MD integrator. It does not support any fancy stuff. */
+        sprintf(warn_buf, "The current implementation of hybrid Monte Carlo only supports pure MD simulation. It does not support any type of enhanced sampling simulation (replica exchange, simulated tempering/expanded ensemble, FEP, pull code/umbrella sampling, ...) yet.");
+        warning_note(wi, warn_buf);
+    }
+
     /* LD STUFF */
     if ((EI_SD(ir->eI) || ir->eI == eiBD) &&
         ir->bContinuation && ir->ld_seed != -1)
@@ -1691,6 +1751,14 @@ static void read_expandedparams(std::vector<t_inpfile> *inp,
     expand->bWLoneovert         = get_eeenum(inp, "wl-oneovert", yesno_names, wi);
 }
 
+static void read_hybridMCMDParams(std::vector<t_inpfile> *inp, HybridMCMDParams *hybridMCMDParams, warninp_t wi)
+{
+    hybridMCMDParams->nstMetropolis            = get_eint(inp, "nsthmc", 100, wi);
+    hybridMCMDParams->seed                     = get_eint(inp, "hmc-seed", -1, wi);
+    hybridMCMDParams->temperatureEnsemble      = get_ereal(inp, "hmc-ens-temp", -1, wi);
+    hybridMCMDParams->temperatureVelocities    = get_ereal(inp, "hmc-vel-temp", hybridMCMDParams->temperatureEnsemble, wi);
+}
+
 /*! \brief Return whether an end state with the given coupling-lambda
  * value describes fully-interacting VDW.
  *
@@ -1853,6 +1921,14 @@ void get_ir(const char *mdparin, const char *mdparout,
     printStringNoNewline(&inp, "Friction coefficient (amu/ps) and random seed");
     ir->bd_fric = get_ereal(&inp, "bd-fric",    0.0, wi);
     ir->ld_seed = get_eint64(&inp, "ld-seed",    -1, wi);
+
+    /* Hybrid MC/MD */
+    printStringNewline(&inp, "HYBRID MONTE CARLO OPTIONS");
+    ir->bDoHybridMCMD = get_eeenum(&inp, "hmc", yesno_names, wi);
+    if (ir->bDoHybridMCMD)
+    {
+        read_hybridMCMDParams(&inp, ir->hybridMCMDParams, wi);
+    }
 
     /* Em stuff */
     printStringNewline(&inp, "ENERGY MINIMIZATION OPTIONS");

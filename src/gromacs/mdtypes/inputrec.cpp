@@ -827,6 +827,13 @@ static void pr_imd(FILE *fp, int indent, const t_IMD *imd)
     pr_ivec_block(fp, indent, "atom", imd->ind, imd->nat, TRUE);
 }
 
+static void pr_hybridMCMDParams(FILE *fp, int indent, const HybridMCMDParams *hybridMCMDParams)
+{
+    PI("nsthmc", hybridMCMDParams->nstMetropolis);
+    PI("hmc-seed", hybridMCMDParams->seed);
+    PR("hmc-ens-temp", hybridMCMDParams->temperatureEnsemble);
+    PR("hmc-vel-temp", hybridMCMDParams->temperatureVelocities);
+}
 
 void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
                  gmx_bool bMDPformat)
@@ -855,6 +862,12 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
         /* Langevin dynamics */
         PR("bd-fric", ir->bd_fric);
         PSTEP("ld-seed", ir->ld_seed);
+
+        /* Hybrid MC/MD */
+        if (ir->bDoHybridMCMD)
+        {
+            pr_hybridMCMDParams(fp, indent, ir->hybridMCMDParams);
+        }
 
         /* Energy minimization */
         PR("emtol", ir->em_tol);
@@ -1256,6 +1269,14 @@ static void cmp_fepvals(FILE *fp, const t_lambda *fep1, const t_lambda *fep2, re
     cmp_double(fp, "inputrec->dh_hist_spacing", -1, fep1->dh_hist_spacing, fep2->dh_hist_spacing, ftol, abstol);
 }
 
+static void cmp_hybridMCMDParams(FILE *fp, const HybridMCMDParams *hybridMCMDParams1, const HybridMCMDParams *hybridMCMDParams2, real ftol, real abstol)
+{
+    cmp_int(fp, "inputrec->hmcvals->nsthmc", -1, hybridMCMDParams1->nstMetropolis, hybridMCMDParams2->nstMetropolis);
+    cmp_int(fp, "inputrec->hmcvals->hmc-seed", -1, hybridMCMDParams1->seed, hybridMCMDParams2->seed);
+    cmp_real(fp, "inputrec->hmcvals->hmc-ens-temp", -1, hybridMCMDParams1->temperatureEnsemble, hybridMCMDParams2->temperatureEnsemble, ftol, abstol);
+    cmp_real(fp, "inputrec->hmcvals->hmc-vel-temp", -1, hybridMCMDParams1->temperatureVelocities, hybridMCMDParams2->temperatureVelocities, ftol, abstol);
+}
+
 void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real ftol, real abstol)
 {
     fprintf(fp, "comparing inputrec\n");
@@ -1271,6 +1292,13 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     cmp_int64(fp, "inputrec->nsteps", ir1->nsteps, ir2->nsteps);
     cmp_int64(fp, "inputrec->init_step", ir1->init_step, ir2->init_step);
     cmp_int(fp, "inputrec->simulation_part", -1, ir1->simulation_part, ir2->simulation_part);
+
+    cmp_bool(fp, "inputrec->hmc", -1, ir1->bDoHybridMCMD, ir2->bDoHybridMCMD);
+    if (ir1->bDoHybridMCMD && ir2->bDoHybridMCMD)
+    {
+        cmp_hybridMCMDParams(fp, ir1->hybridMCMDParams, ir2->hybridMCMDParams, ftol, abstol);
+    }
+
     cmp_int(fp, "inputrec->ePBC", -1, ir1->ePBC, ir2->ePBC);
     cmp_int(fp, "inputrec->bPeriodicMols", -1, ir1->bPeriodicMols, ir2->bPeriodicMols);
     cmp_int(fp, "inputrec->cutoff_scheme", -1, ir1->cutoff_scheme, ir2->cutoff_scheme);
