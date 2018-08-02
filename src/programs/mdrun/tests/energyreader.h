@@ -154,7 +154,7 @@ class EnergyFrameReader
         GMX_DISALLOW_COPY_AND_ASSIGN(EnergyFrameReader);
 };
 
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx
 
 #endif

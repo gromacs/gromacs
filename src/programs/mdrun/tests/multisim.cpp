@@ -115,5 +115,5 @@ TEST_F(MultiSimTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenResta
     runMaxhTest();
 }
 
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx

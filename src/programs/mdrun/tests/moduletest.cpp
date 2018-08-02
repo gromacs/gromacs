@@ -89,7 +89,7 @@ GMX_TEST_OPTIONS(MdrunTestOptions, options)
 }
 //! \endcond
 
-}
+}       // namespace
 
 SimulationRunner::SimulationRunner(TestFileManager *fileManager) :
     mdpOutputFileName_(fileManager->getTemporaryFilePath("output.mdp")),

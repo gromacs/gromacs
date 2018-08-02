@@ -267,7 +267,7 @@ SimdTest::compareSimdEq(const char *  refExpr,      const char *  tstExpr,
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace
+}      // namespace test
+}      // namespace gmx
 
 #endif // GMX_SIMD

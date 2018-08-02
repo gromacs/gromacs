@@ -60,4 +60,4 @@ makeRandomSeed()
     return result;
 }
 
-}
+}  // namespace gmx

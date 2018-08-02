@@ -240,5 +240,5 @@ TEST(MutexTaskTest, MutualExclusionWorksWithTryLockOnSameThread)
 }
 
 } // namespace
-} // namespace
-} // namespace
+} // namespace test
+} // namespace gmx

@@ -79,7 +79,7 @@ GMX_TEST_OPTIONS(ExceptionOptions, options)
                                         "exceptions"));
 }
 //! \endcond
-}
+}       // namespace
 
 namespace internal
 {

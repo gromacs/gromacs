@@ -128,6 +128,6 @@ const EnergyIntegratorType c_integratorsToTest [] = {"md", "md-vv", "md-vv-avek"
 
 INSTANTIATE_TEST_CASE_P(Checking, InitialConstraintsTest, ::testing::ValuesIn(c_integratorsToTest));
 
-}
-}
-}
+}  // namespace
+}  // namespace test
+}  // namespace gmx

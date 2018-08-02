@@ -177,5 +177,5 @@ INSTANTIATE_TEST_CASE_P(ChainSep, Pdb2gmxTest,
 
 
 } // namespace
-} // namespace
-} // namespace
+} // namespace test
+} // namespace gmx

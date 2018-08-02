@@ -154,6 +154,6 @@ TEST_F(PrintEbin, pr_ebin_HandlesEmptyAverages)
     checker_.checkString(TextReader::readFileToString(logFilename_), "log");
 }
 
-}      // namespace
-}      // namespace
-}      // namespace
+}  // namespace
+}  // namespace test
+}  // namespace gmx

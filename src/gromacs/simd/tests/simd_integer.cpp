@@ -314,7 +314,7 @@ TEST_F(SimdIntegerTest, cvtIB2B)
 /*! \endcond */
 
 }      // namespace
-}      // namespace
-}      // namespace
+}      // namespace test
+}      // namespace gmx
 
 #endif // GMX_SIMD

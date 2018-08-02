@@ -204,6 +204,6 @@ TEST_F(BondedInteractionsTest, TabulatedDihedralWorks)
     checkMdrun();
 }
 
-} // namespace
+}  // namespace test
 
-} // namespace
+}  // namespace gmx

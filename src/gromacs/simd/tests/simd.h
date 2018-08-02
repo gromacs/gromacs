@@ -305,8 +305,8 @@ SimdInt32   setSimdIntFrom1I(int value);
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace
+}      // namespace test
+}      // namespace gmx
 
 #endif // GMX_SIMD
 

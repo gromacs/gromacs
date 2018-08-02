@@ -130,6 +130,6 @@ void checkHardwareOversubscription(int                             numThreadsOnT
                                    const PhysicalNodeCommunicator &comm,
                                    const MDLogger                 &mdlog);
 
-} // namespace
+}  // namespace gmx
 
 #endif

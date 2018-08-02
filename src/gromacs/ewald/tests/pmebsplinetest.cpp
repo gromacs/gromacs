@@ -191,6 +191,6 @@ INSTANTIATE_TEST_CASE_P(SaneInput1, PmeBSplineModuliCorrectnessTest, ::testing::
                                     ::testing::Range(3, 8 + 1),
                                     ::testing::Values(ModuliType::PME, ModuliType::P3M)
                                 ));
-}
-}
-}
+}  // namespace
+}  // namespace test
+}  // namespace gmx

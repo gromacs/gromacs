@@ -857,4 +857,4 @@ constrain_shake(FILE              *log,
     return bOK;
 }
 
-} // namespace
+}  // namespace gmx

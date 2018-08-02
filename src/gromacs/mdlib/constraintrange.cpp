@@ -240,4 +240,4 @@ real constr_r_max(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir)
     return rmax;
 }
 
-} // namespace
+}  // namespace gmx

@@ -56,12 +56,12 @@ namespace
 {
 
 //! Helper function to call visitOptions() and handle correct indirection.
-void visitOption(OptionsVisitor *visitor, OptionInfo &optionInfo)
+void visitOption(OptionsVisitor *visitor, OptionInfo &optionInfo) //NOLINT(google-runtime-references)
 {
     visitor->visitOption(optionInfo);
 }
 //! Helper function to call visitOptions() and handle correct indirection.
-void visitOption(OptionsModifyingVisitor *visitor, OptionInfo &optionInfo)
+void visitOption(OptionsModifyingVisitor *visitor, OptionInfo &optionInfo) //NOLINT(google-runtime-references)
 {
     visitor->visitOption(&optionInfo);
 }

@@ -407,4 +407,4 @@ int BiasWriter::writeToEnergySubblocks(const Bias    &bias,
     return block_.size();
 }
 
-} // namepace gmx
+}  // namespace gmx

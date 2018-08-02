@@ -827,4 +827,4 @@ std::string getCoolQuote()
     }
 }
 
-} // namespace
+}  // namespace gmx

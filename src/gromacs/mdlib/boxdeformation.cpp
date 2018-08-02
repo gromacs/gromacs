@@ -156,4 +156,4 @@ BoxDeformation::apply(ArrayRef<RVec> x,
     }
 }
 
-} // namespace
+}  // namespace gmx

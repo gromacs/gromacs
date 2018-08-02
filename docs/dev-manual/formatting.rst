@@ -21,7 +21,8 @@ The following list provides the general formatting/indentation rules for
   functions in C++ classes, which can be put on a single line.
 * Use spaces liberally.
 * ``extern "C"`` and ``namespace`` blocks are not indented, but all others
-  (including ``class`` and ``switch`` bodies) are.
+  (including ``class`` and ``switch`` bodies) are. Namespace blocks have
+  to have a closing comment with the name of it.
 
 Additionally:
 

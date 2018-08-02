@@ -192,7 +192,7 @@ class SimdBaseTest : public ::testing::Test
         std::pair<real, real>  range_;        //!< Range for math function tests.
 };
 
-}      // namespace
-}      // namespace
+}      // namespace test
+}      // namespace gmx
 
 #endif // GMX_SIMD_TESTS_BASE_H

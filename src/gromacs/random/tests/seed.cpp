@@ -66,6 +66,6 @@ TEST(SeedTest, makeRandomSeed)
     EXPECT_NE(i0, i1);
 }
 
-}      // namespace anonymous
+}  // namespace
 
-}      // namespace gmx
+}  // namespace gmx

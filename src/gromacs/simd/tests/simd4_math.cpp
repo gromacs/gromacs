@@ -223,7 +223,7 @@ TEST_F(Simd4MathTest, invsqrtSingleaccuracy)
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace
+}      // namespace test
+}      // namespace gmx
 
 #endif // GMX_SIMD

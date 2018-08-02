@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -113,7 +113,7 @@ class RstParagraphIterator
         };
 
         //! The text to iterate over.
-        const std::string &text_;
+        const std::string &text_; //NOLINT(google-runtime-member-string-references)
 
         //! Start of the current paragraph.
         size_t             begin_;

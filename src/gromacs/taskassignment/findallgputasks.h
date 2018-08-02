@@ -60,6 +60,6 @@ GpuTasksOnRanks
 findAllGpuTasksOnThisNode(ArrayRef<const GpuTask>         gpuTasksOnThisRank,
                           const PhysicalNodeCommunicator &physicalNodeComm);
 
-} // namespace
+}  // namespace gmx
 
 #endif

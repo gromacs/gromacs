@@ -102,7 +102,7 @@ std::unique_ptr<MDAtoms>
 makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
             bool useGpuForPme);
 
-} // namespace
+}  // namespace gmx
 
 void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
               int nindex, const int *index,

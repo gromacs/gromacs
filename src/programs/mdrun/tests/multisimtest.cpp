@@ -169,5 +169,5 @@ void MultiSimTest::runMaxhTest()
     helper.runSecondMdrun();
 }
 
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx

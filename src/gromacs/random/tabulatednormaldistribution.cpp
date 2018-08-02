@@ -55,4 +55,4 @@ TabulatedNormalDistribution<>::c_table_ = TabulatedNormalDistribution<>::makeTab
 void TabulatedNormalDistributionDummy(){}
 #endif
 
-}
+}  // namespace gmx

@@ -102,7 +102,7 @@ RealEq(const FloatingPointTolerance &tolerance);
 testing::Matcher < std::tuple < RVec, RVec>>
 RVecEq(const FloatingPointTolerance &tolerance);
 
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx
 
 #endif

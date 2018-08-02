@@ -181,5 +181,5 @@ TEST(gridTest, neighborhood)
     EXPECT_TRUE(haveCorrectNumNeighbors);
 }
 
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx

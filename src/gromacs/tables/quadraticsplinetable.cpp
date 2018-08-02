@@ -261,7 +261,7 @@ fillDdfzTableData(const std::vector<real>    &functionTableData,
     }
 }
 
-}   // namespace anonymous
+}   // namespace
 
 
 
