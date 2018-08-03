@@ -57,9 +57,8 @@ namespace gmx
 {
 
 TopologyInformation::TopologyInformation()
-    : mtop_(nullptr), top_(nullptr), bTop_(false), xtop_(nullptr), ePBC_(-1)
+    : mtop_(nullptr), top_(nullptr), bTop_(false), xtop_(nullptr), boxtop_(), ePBC_(-1)
 {
-    clear_mat(boxtop_);
 }
 
 

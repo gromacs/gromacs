@@ -49,6 +49,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/ivaluestore.h"
 #include "gromacs/utility/arrayref.h"
@@ -463,7 +464,7 @@ AbstractOptionStorage *
 createEnumOptionStorage(const AbstractOption &option,
                         const char *const *enumValues, int count,
                         int defaultValue, int defaultValueIfSet,
-                        IOptionValueStore<int> *store);
+                        std::unique_ptr<IOptionValueStore<int> > store);
 //! \endcond
 
 }   // namespace internal
@@ -576,7 +577,7 @@ class EnumOption : public OptionTemplate<EnumType, EnumOption<EnumType> >
                     *this, enumValues_, enumValuesCount_,
                     convertToInt(MyBase::defaultValue()),
                     convertToInt(MyBase::defaultValueIfSet()),
-                    new internal::EnumIndexStore<EnumType>(
+                    compat::make_unique<internal::EnumIndexStore<EnumType> >(
                             MyBase::store(), MyBase::storeVector()));
         }
 

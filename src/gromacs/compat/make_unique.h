@@ -34,7 +34,7 @@
  */
 #ifndef GMX_COMPAT_MAKE_UNIQUE_H
 #define GMX_COMPAT_MAKE_UNIQUE_H
-/*! \libinternal
+/*!
  * \defgroup module_compat C++ standard library compatibility helpers.
  * \brief Provide uniform interface to selected C++ standard library features.
  *
@@ -43,7 +43,7 @@
  * library implementations as appropriate.
  */
 
-/*! \libinternal
+/*!
  * \file
  * \brief Provides template gmx::compat::make_unique
  *
@@ -53,8 +53,8 @@
  * though additional wrapping has been added for use in \Gromacs.
  *
  * \author M. Eric Irrgang <ericirrgang@gmail.com>
+ * \inpublicapi
  * \ingroup module_compat
- * \inlibraryapi
  */
 /*! \addtogroup module_compat
  * ### gmx::compat::make_unique
