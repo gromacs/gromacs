@@ -51,6 +51,7 @@
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/analysisdata/modules/plot.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
@@ -318,9 +319,9 @@ Angle::Angle()
       g1type_(Group1Type_Angle), g2type_(Group2Type_None),
       binWidth_(1.0), natoms1_(0), natoms2_(0)
 {
-    averageModule_.reset(new AnalysisDataFrameAverageModule());
+    averageModule_ = compat::make_unique<AnalysisDataFrameAverageModule>();
     angles_.addModule(averageModule_);
-    histogramModule_.reset(new AnalysisDataSimpleHistogramModule());
+    histogramModule_ = compat::make_unique<AnalysisDataSimpleHistogramModule>();
     angles_.addModule(histogramModule_);
 
     registerAnalysisDataset(&angles_, "angle");

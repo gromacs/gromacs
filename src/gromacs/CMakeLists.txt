@@ -302,7 +302,7 @@ endif()
 
 if (GMX_CLANG_TIDY)
    set_target_properties(libgromacs PROPERTIES CXX_CLANG_TIDY
-       "${CLANG_TIDY_EXE};-warnings-as-errors=*;-header-filter=.*")
+       "${CLANG_TIDY_EXE};-warnings-as-errors=*")
 endif()
 
 gmx_write_installed_header_list()
