@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,7 +76,7 @@ AnalysisDataPointSetRef::AnalysisDataPointSetRef(
     : header_(header),
       dataSetIndex_(pointSetInfo.dataSetIndex()),
       firstColumn_(pointSetInfo.firstColumn()),
-      values_(constArrayRefFromArray(&*values.begin() + pointSetInfo.valueOffset(),
+      values_(constArrayRefFromArray(&values[pointSetInfo.valueOffset()],
                                      pointSetInfo.valueCount()))
 {
     GMX_ASSERT(header_.isValid(),

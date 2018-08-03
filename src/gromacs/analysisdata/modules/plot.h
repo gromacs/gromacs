@@ -48,6 +48,7 @@
 
 #include "gromacs/analysisdata/datamodule.h"
 #include "gromacs/options/timeunitmanager.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 
 namespace gmx
@@ -205,7 +206,7 @@ class AbstractPlotModule : public AnalysisDataModuleSerial
          * Multiple calls to setLegend() and/or appendLegend() are added
          * together.
          */
-        void setLegend(int nsets, const char * const *setname);
+        void setLegend(ArrayRef<const char *> setname);
         /*! \brief
          * Add a legend string for the next data set.
          *
@@ -227,7 +228,7 @@ class AbstractPlotModule : public AnalysisDataModuleSerial
         virtual int flags() const;
 
         virtual void dataStarted(AbstractAnalysisData *data);
-        virtual void frameStarted(const AnalysisDataFrameHeader &header);
+        virtual void frameStarted(const AnalysisDataFrameHeader &frame);
         virtual void pointsAdded(const AnalysisDataPointSetRef &points) = 0;
         virtual void frameFinished(const AnalysisDataFrameHeader &header);
         virtual void dataFinished();
@@ -315,7 +316,7 @@ class AnalysisDataVectorPlotModule : public AbstractPlotModule
         /*! \brief
          * Set mask for what to write.
          */
-        void setWriteMask(const bool bWrite[4]);
+        void setWriteMask(ArrayRef<const bool/*, 4*/> bWrite);
 
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
 

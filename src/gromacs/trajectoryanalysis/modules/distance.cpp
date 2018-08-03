@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -109,16 +109,16 @@ class Distance : public TrajectoryAnalysisModule
 };
 
 Distance::Distance()
-    : meanLength_(0.1), lengthDev_(1.0), binWidth_(0.001)
+    : meanLength_(0.1), lengthDev_(1.0), binWidth_(0.001),
+      summaryStatsModule_(compat::make_unique<AnalysisDataAverageModule>()),
+      allStatsModule_(compat::make_unique<AnalysisDataAverageModule>()),
+      averageModule_(compat::make_unique<AnalysisDataFrameAverageModule>()),
+      histogramModule_(compat::make_unique<AnalysisDataSimpleHistogramModule>())
 {
-    summaryStatsModule_.reset(new AnalysisDataAverageModule());
     summaryStatsModule_->setAverageDataSets(true);
     distances_.addModule(summaryStatsModule_);
-    allStatsModule_.reset(new AnalysisDataAverageModule());
     distances_.addModule(allStatsModule_);
-    averageModule_.reset(new AnalysisDataFrameAverageModule());
     distances_.addModule(averageModule_);
-    histogramModule_.reset(new AnalysisDataSimpleHistogramModule());
     distances_.addModule(histogramModule_);
 
     registerAnalysisDataset(&distances_, "dist");
@@ -345,7 +345,7 @@ Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             real dist     = norm(dx);
             bool bPresent = p1.selected() && p2.selected();
             distHandle.setPoint(n, dist, bPresent);
-            xyzHandle.setPoints(n*3, 3, dx, bPresent);
+            xyzHandle.setPoints(n*3, dx, bPresent);
         }
     }
     distHandle.finishFrame();

@@ -87,15 +87,17 @@ TimeUnitManager::TimeUnitManager()
 }
 
 TimeUnitManager::TimeUnitManager(TimeUnit unit)
-{
-    setTimeUnit(unit);
-}
-
-void TimeUnitManager::setTimeUnit(TimeUnit unit)
+    : timeUnit_(unit)
 {
     GMX_RELEASE_ASSERT(unit >= 0 && unit <= TimeUnit_s,
                        "Invalid time unit");
-    timeUnit_ = unit;
+}
+
+void TimeUnitManager::setTimeUnit(TimeUnit timeunit)
+{
+    GMX_RELEASE_ASSERT(timeunit >= 0 && timeunit <= TimeUnit_s,
+                       "Invalid time unit");
+    timeUnit_ = timeunit;
 }
 
 const char *TimeUnitManager::timeUnitAsString() const
