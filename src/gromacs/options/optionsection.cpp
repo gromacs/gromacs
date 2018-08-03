@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,7 @@
 
 #include "optionsection.h"
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/options/isectionstorage.h"
 
 namespace gmx
@@ -54,9 +55,9 @@ class OptionSectionStorage : public IOptionSectionStorage
 
 }   // namespace
 
-IOptionSectionStorage *OptionSection::createStorage() const
+std::unique_ptr<IOptionSectionStorage> OptionSection::createStorage() const
 {
-    return new OptionSectionStorage();
+    return compat::make_unique<OptionSectionStorage>();
 }
 
 } // namespace gmx
