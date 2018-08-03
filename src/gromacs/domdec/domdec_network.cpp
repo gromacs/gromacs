@@ -194,7 +194,7 @@ void dd_sendrecv2_rvec(const struct gmx_domdec_t gmx_unused *dd,
         }
         if (nreq)
         {
-            MPI_Waitall(nreq, req, stat);
+            MPI_Waitall(nreq, req, stat); //NOLINT(clang-analyzer-optin.mpi.MPI-Checker)
         }
     }
     else
