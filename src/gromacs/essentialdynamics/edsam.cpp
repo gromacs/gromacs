@@ -237,6 +237,16 @@ struct t_ed_buffer
     struct t_do_radcon *            do_radcon;
 };
 
+/* Function declarations */
+static void fit_to_reference(rvec *xcoll, rvec transvec, matrix rotmat, t_edpar *edi);
+static void translate_and_rotate(rvec *x, int nat, rvec transvec, matrix rotmat);
+static real rmsd_from_structure(rvec *x, struct gmx_edx *s);
+static int read_edi_file(const char *fn, t_edpar *edi, int nr_mdatoms);
+static void crosscheck_edi_file_vs_checkpoint(const gmx_edsam &ed, edsamhistory_t *EDstate);
+static void init_edsamstate(gmx_edsam * ed, edsamhistory_t *EDstate);
+static void write_edo_legend(gmx_edsam * ed, int nED, const gmx_output_env_t *oenv);
+/* End function declarations */
+
 namespace
 {
 /*!\brief Determines whether to perform essential dynamics constraints other than flooding.
@@ -315,9 +325,7 @@ void rad_project(const t_edpar &edi, rvec *x, t_eigvec *vec)
  * \param[in,out] vec The eigenvectors
  * \param[in] edi essential dynamics parameters holding average structure and masses
  */
-void project_to_eigvectors(rvec          *x,     /*  */
-                           t_eigvec      *vec,   /*  */
-                           const t_edpar &edi)
+void project_to_eigvectors(rvec *x, t_eigvec *vec, const t_edpar &edi)
 {
     if (!vec->neig)
     {
@@ -411,6 +419,81 @@ void do_linacc(rvec *xcoll, t_edpar *edi)
         edi->vecs.linacc.refproj[i] = proj + preFactor;
     }
 }
+/*!\brief Evaluates the distance from reference to current eigenvector projection.
+ * \param[in] vec eigenvector
+ * \returns distance
+ */
+real calc_radius(const t_eigvec &vec)
+{
+    real rad = 0.0;
+
+    for (int i = 0; i < vec.neig; i++)
+    {
+        rad += gmx::square((vec.refproj[i]-vec.xproj[i]));
+    }
+
+    return sqrt(rad);
+}
+
+
+/* Define formats for the column width in the output file */
+const char EDcol_sfmt[]         = "%17s";
+const char EDcol_efmt[]         = "%17.5e";
+const char EDcol_ffmt[]         = "%17f";
+
+/*!\brief Write out the projections onto the eigenvectors.
+ * The order of output corresponds to ed_output_legend().
+ * \param[in] t_edpar The essential dyanmics parameters
+ * \param[in] fp The output file
+ * \param[in] rmsd the rmsd to the reference structure
+ */
+void write_edo(const t_edpar &edi, FILE *fp, real rmsd)
+{
+    /* Output how well we fit to the reference structure */
+    fprintf(fp, EDcol_ffmt, rmsd);
+
+    for (int i = 0; i < edi.vecs.mon.neig; i++)
+    {
+        fprintf(fp, EDcol_efmt, edi.vecs.mon.xproj[i]);
+    }
+
+    for (int i = 0; i < edi.vecs.linfix.neig; i++)
+    {
+        fprintf(fp, EDcol_efmt, edi.vecs.linfix.xproj[i]);
+    }
+
+    for (int i = 0; i < edi.vecs.linacc.neig; i++)
+    {
+        fprintf(fp, EDcol_efmt, edi.vecs.linacc.xproj[i]);
+    }
+
+    for (int i = 0; i < edi.vecs.radfix.neig; i++)
+    {
+        fprintf(fp, EDcol_efmt, edi.vecs.radfix.xproj[i]);
+    }
+    if (edi.vecs.radfix.neig)
+    {
+        fprintf(fp, EDcol_ffmt, calc_radius(edi.vecs.radfix)); /* fixed increment radius */
+    }
+
+    for (int i = 0; i < edi.vecs.radacc.neig; i++)
+    {
+        fprintf(fp, EDcol_efmt, edi.vecs.radacc.xproj[i]);
+    }
+    if (edi.vecs.radacc.neig)
+    {
+        fprintf(fp, EDcol_ffmt, calc_radius(edi.vecs.radacc)); /* acceptance radius */
+    }
+
+    for (int i = 0; i < edi.vecs.radcon.neig; i++)
+    {
+        fprintf(fp, EDcol_efmt, edi.vecs.radcon.xproj[i]);
+    }
+    if (edi.vecs.radcon.neig)
+    {
+        fprintf(fp, EDcol_ffmt, calc_radius(edi.vecs.radcon)); /* contracting radius */
+    }
+}
 } // namespace
 
 namespace gmx
@@ -431,29 +514,12 @@ gmx_edsam *EssentialDynamics::getLegacyED()
 }
 } // namespace gmx
 
-/* Function declarations */
-static void fit_to_reference(rvec *xcoll, rvec transvec, matrix rotmat, t_edpar *edi);
-static void translate_and_rotate(rvec *x, int nat, rvec transvec, matrix rotmat);
-static real rmsd_from_structure(rvec *x, struct gmx_edx *s);
-static int read_edi_file(const char *fn, t_edpar *edi, int nr_mdatoms);
-static void crosscheck_edi_file_vs_checkpoint(const gmx_edsam &ed, edsamhistory_t *EDstate);
-static void init_edsamstate(gmx_edsam * ed, edsamhistory_t *EDstate);
-static void write_edo_legend(gmx_edsam * ed, int nED, const gmx_output_env_t *oenv);
-/* End function declarations */
-
-/* Define formats for the column width in the output file */
-const char EDcol_sfmt[]         = "%17s";
-const char EDcol_efmt[]         = "%17.5e";
-const char EDcol_ffmt[]         = "%17f";
-
 /* Define a formats for reading, otherwise cppcheck complains for scanf without width limits */
 const char max_ev_fmt_d[]       = "%7d";             /* Number of eigenvectors. 9,999,999 should be enough */
 const char max_ev_fmt_lf[]      = "%12lf";
 const char max_ev_fmt_dlf[]     = "%7d%12lf";
 const char max_ev_fmt_dlflflf[] = "%7d%12lf%12lf%12lf";
 const char max_ev_fmt_lelele[]  = "%12le%12le%12le";
-
-
 
 /* Multiple ED groups will be labeled with letters instead of numbers
  * to avoid confusion with eigenvector indices */
@@ -470,7 +536,6 @@ static char get_EDgroupChar(int nr_edi, int nED)
     return 'A' + nr_edi - 1;
 }
 
-
 /* Project vector x onto all edi->vecs (mon, linfix,...) */
 static void project(rvec      *x,     /* positions to project */
                     t_edpar   *edi)   /* edi data set */
@@ -484,22 +549,6 @@ static void project(rvec      *x,     /* positions to project */
     project_to_eigvectors(x, &edi->vecs.radacc, *edi);
     project_to_eigvectors(x, &edi->vecs.radcon, *edi);
 }
-
-
-static real calc_radius(t_eigvec *vec)
-{
-    int  i;
-    real rad = 0.0;
-
-
-    for (i = 0; i < vec->neig; i++)
-    {
-        rad += gmx::square((vec->refproj[i]-vec->xproj[i]));
-    }
-
-    return rad = sqrt(rad);
-}
-
 
 /* Debug helper */
 static void dump_edi_positions(FILE *out, struct gmx_edx *s, const char name[])
@@ -805,42 +854,91 @@ static void rmfit(int nat, rvec *xcoll, const rvec transvec, matrix rotmat)
    two edsam files from two peptide chains
  */
 
-static void write_edo_flood(t_edpar *edi, FILE *fp, real rmsd)
+// Duplicating the anonymous namespace at this point to keep the file structure
+// where flooding related routines are collected at the end
+// TODO split this into multiple files
+namespace
 {
-    int i;
-
-
+/*!\brief Output flooding simulation settings and results to file.
+ * \param[in] edi Essential dynamics input parameters
+ * \param[in] fp output file
+ * \param[in] rmsd rmsd to reference structure
+ */
+void write_edo_flood(const t_edpar &edi, FILE *fp, real rmsd)
+{
     /* Output how well we fit to the reference structure */
     fprintf(fp, EDcol_ffmt, rmsd);
 
-    for (i = 0; i < edi->flood.vecs.neig; i++)
+    for (int i = 0; i < edi.flood.vecs.neig; i++)
     {
-        fprintf(fp, EDcol_efmt, edi->flood.vecs.xproj[i]);
+        fprintf(fp, EDcol_efmt, edi.flood.vecs.xproj[i]);
 
         /* Check whether the reference projection changes with time (this can happen
          * in case flooding is used as harmonic restraint). If so, output the
          * current reference projection */
-        if (edi->flood.bHarmonic && edi->flood.vecs.refprojslope[i] != 0.0)
+        if (edi.flood.bHarmonic && edi.flood.vecs.refprojslope[i] != 0.0)
         {
-            fprintf(fp, EDcol_efmt, edi->flood.vecs.refproj[i]);
+            fprintf(fp, EDcol_efmt, edi.flood.vecs.refproj[i]);
         }
 
         /* Output Efl if we are doing adaptive flooding */
-        if (0 != edi->flood.tau)
+        if (0 != edi.flood.tau)
         {
-            fprintf(fp, EDcol_efmt, edi->flood.Efl);
+            fprintf(fp, EDcol_efmt, edi.flood.Efl);
         }
-        fprintf(fp, EDcol_efmt, edi->flood.Vfl);
+        fprintf(fp, EDcol_efmt, edi.flood.Vfl);
 
         /* Output deltaF if we are doing adaptive flooding */
-        if (0 != edi->flood.tau)
+        if (0 != edi.flood.tau)
         {
-            fprintf(fp, EDcol_efmt, edi->flood.deltaF);
+            fprintf(fp, EDcol_efmt, edi.flood.deltaF);
         }
-        fprintf(fp, EDcol_efmt, edi->flood.vecs.fproj[i]);
+        fprintf(fp, EDcol_efmt, edi.flood.vecs.fproj[i]);
     }
 }
 
+/*!\brief Raise forces from subspace into cartesian space.
+ * This function lifts the forces from the subspace to the cartesian space
+ * all the values not contained in the subspace are assumed to be zero and then
+ * a coordinate transformation from eigenvector to cartesian vectors is performed
+ * The nonexistent values don't have to be set to zero explicitly, they would occur
+ * as zero valued summands, hence we just stop to compute this part of the sum.
+ * For every atom we add all the contributions to this atom from all the different eigenvectors.
+ * NOTE: one could add directly to the forcefield forces, would mean we wouldn't have to clear the
+ * field forces_cart prior the computation, but we compute the forces separately
+ * to have them accessible for diagnostics
+ *
+ * \param[in] edi Essential dynamics input parameters
+ * \param[out] forces_cart The cartesian forces
+ */
+
+void flood_blowup(const t_edpar &edi, rvec *forces_cart)
+{
+    const real * forces_sub = edi.flood.vecs.fproj;
+    /* Calculate the cartesian forces for the local atoms */
+
+    /* Clear forces first */
+    for (int j = 0; j < edi.sav.nr_loc; j++)
+    {
+        clear_rvec(forces_cart[j]);
+    }
+
+    /* Now compute atomwise */
+    for (int j = 0; j < edi.sav.nr_loc; j++)
+    {
+        /* Compute forces_cart[edi.sav.anrs[j]] */
+        for (int eig = 0; eig < edi.flood.vecs.neig; eig++)
+        {
+            rvec addedForce;
+            /* Force vector is force * eigenvector (compute only atom j) */
+            svmul(forces_sub[eig], edi.flood.vecs.vec[eig][edi.sav.c_ind[j]], addedForce);
+            /* Add this vector to the cartesian forces */
+            rvec_inc(forces_cart[j], addedForce);
+        }
+    }
+}
+
+} // namespace
 
 /* From flood.xproj compute the Vfl(x) at this point */
 static real flood_energy(t_edpar *edi, gmx_int64_t step)
@@ -917,53 +1015,6 @@ static void flood_forces(t_edpar *edi)
         }
     }
 }
-
-
-/* Raise forces from subspace into cartesian space */
-static void flood_blowup(t_edpar *edi, rvec *forces_cart)
-{
-    /* this function lifts the forces from the subspace to the cartesian space
-       all the values not contained in the subspace are assumed to be zero and then
-       a coordinate transformation from eigenvector to cartesian vectors is performed
-       The nonexistent values don't have to be set to zero explicitly, they would occur
-       as zero valued summands, hence we just stop to compute this part of the sum.
-
-       for every atom we add all the contributions to this atom from all the different eigenvectors.
-
-       NOTE: one could add directly to the forcefield forces, would mean we wouldn't have to clear the
-       field forces_cart prior the computation, but we compute the forces separately
-       to have them accessible for diagnostics
-     */
-    int   j, eig;
-    rvec  dum;
-    real *forces_sub;
-
-
-    forces_sub = edi->flood.vecs.fproj;
-
-
-    /* Calculate the cartesian forces for the local atoms */
-
-    /* Clear forces first */
-    for (j = 0; j < edi->sav.nr_loc; j++)
-    {
-        clear_rvec(forces_cart[j]);
-    }
-
-    /* Now compute atomwise */
-    for (j = 0; j < edi->sav.nr_loc; j++)
-    {
-        /* Compute forces_cart[edi->sav.anrs[j]] */
-        for (eig = 0; eig < edi->flood.vecs.neig; eig++)
-        {
-            /* Force vector is force * eigenvector (compute only atom j) */
-            svmul(forces_sub[eig], edi->flood.vecs.vec[eig][edi->sav.c_ind[j]], dum);
-            /* Add this vector to the cartesian forces */
-            rvec_inc(forces_cart[j], dum);
-        }
-    }
-}
-
 
 /* Update the values of Efl, deltaF depending on tau and Vfl */
 static void update_adaption(t_edpar *edi)
@@ -1055,7 +1106,7 @@ static void do_single_flood(
     }
 
     /* Translate them into cartesian positions */
-    flood_blowup(edi, edi->flood.forces_cartesian);
+    flood_blowup(*edi, edi->flood.forces_cartesian);
 
     /* Rotate forces back so that they correspond to the given structure and not to the fitted one */
     /* Each node rotates back its local forces */
@@ -1085,7 +1136,7 @@ static void do_single_flood(
             rmsdev = rmsd_from_structure(buf->xc_ref, &edi->sref);
         }
 
-        write_edo_flood(edi, edo, rmsdev);
+        write_edo_flood(*edi, edo, rmsdev);
     }
 }
 
@@ -2193,60 +2244,6 @@ static void ed_apply_constraints(rvec *xcoll, t_edpar *edi, gmx_int64_t step)
     }
 }
 
-
-/* Write out the projections onto the eigenvectors. The order of output
- * corresponds to ed_output_legend() */
-static void write_edo(t_edpar *edi, FILE *fp, real rmsd)
-{
-    int i;
-
-
-    /* Output how well we fit to the reference structure */
-    fprintf(fp, EDcol_ffmt, rmsd);
-
-    for (i = 0; i < edi->vecs.mon.neig; i++)
-    {
-        fprintf(fp, EDcol_efmt, edi->vecs.mon.xproj[i]);
-    }
-
-    for (i = 0; i < edi->vecs.linfix.neig; i++)
-    {
-        fprintf(fp, EDcol_efmt, edi->vecs.linfix.xproj[i]);
-    }
-
-    for (i = 0; i < edi->vecs.linacc.neig; i++)
-    {
-        fprintf(fp, EDcol_efmt, edi->vecs.linacc.xproj[i]);
-    }
-
-    for (i = 0; i < edi->vecs.radfix.neig; i++)
-    {
-        fprintf(fp, EDcol_efmt, edi->vecs.radfix.xproj[i]);
-    }
-    if (edi->vecs.radfix.neig)
-    {
-        fprintf(fp, EDcol_ffmt, calc_radius(&edi->vecs.radfix)); /* fixed increment radius */
-    }
-
-    for (i = 0; i < edi->vecs.radacc.neig; i++)
-    {
-        fprintf(fp, EDcol_efmt, edi->vecs.radacc.xproj[i]);
-    }
-    if (edi->vecs.radacc.neig)
-    {
-        fprintf(fp, EDcol_ffmt, calc_radius(&edi->vecs.radacc)); /* acceptance radius */
-    }
-
-    for (i = 0; i < edi->vecs.radcon.neig; i++)
-    {
-        fprintf(fp, EDcol_efmt, edi->vecs.radcon.xproj[i]);
-    }
-    if (edi->vecs.radcon.neig)
-    {
-        fprintf(fp, EDcol_ffmt, calc_radius(&edi->vecs.radcon)); /* contracting radius */
-    }
-}
-
 /* Returns if any constraints are switched on */
 static int ed_constraints(gmx_bool edtype, t_edpar *edi)
 {
@@ -3017,7 +3014,7 @@ void do_edsam(const t_inputrec *ir,
             if (ed->bFirst)
             {
                 /* initialize radacc radius for slope criterion */
-                buf->oldrad = calc_radius(&edi->vecs.radacc);
+                buf->oldrad = calc_radius(edi->vecs.radacc);
             }
 
             /* Copy the positions into buf->xc* arrays and after ED
@@ -3088,7 +3085,7 @@ void do_edsam(const t_inputrec *ir,
             /* update radacc references, when required */
             if (do_per_step(step, iupdate) && step >= edi->presteps)
             {
-                edi->vecs.radacc.radius = calc_radius(&edi->vecs.radacc);
+                edi->vecs.radacc.radius = calc_radius(edi->vecs.radacc);
                 if (edi->vecs.radacc.radius - buf->oldrad < edi->slope)
                 {
                     project(buf->xcoll, edi);
@@ -3115,7 +3112,7 @@ void do_edsam(const t_inputrec *ir,
                 project(buf->xcoll, edi);
                 if (MASTER(cr) && !bSuppress)
                 {
-                    write_edo(edi, ed->edo, rmsdev);
+                    write_edo(*edi, ed->edo, rmsdev);
                 }
             }
 
