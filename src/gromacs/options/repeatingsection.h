@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 #include <memory>
 #include <vector>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/options/abstractsection.h"
 #include "gromacs/options/ioptionscontainerwithsections.h"
 #include "gromacs/options/isectionstorage.h"
@@ -90,7 +91,7 @@ class RepeatingOptionSection : public AbstractOptionSection
         }
 
     private:
-        virtual IOptionSectionStorage *createStorage() const;
+        virtual std::unique_ptr<IOptionSectionStorage> createStorage() const;
 
         std::vector<T> *values_;
 
@@ -150,9 +151,10 @@ class RepeatingOptionSectionStorage : public IOptionSectionStorage
 };
 
 template <class T>
-IOptionSectionStorage *RepeatingOptionSection<T>::createStorage() const
+std::unique_ptr<IOptionSectionStorage> RepeatingOptionSection<T>::createStorage() const
 {
-    return new RepeatingOptionSectionStorage<T>(*this);
+
+    return compat::make_unique<RepeatingOptionSectionStorage<T> >(*this);
 }
 
 /*! \brief

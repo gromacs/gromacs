@@ -120,6 +120,7 @@ add_subdirectory(pulling)
 add_subdirectory(awh)
 add_subdirectory(simd)
 add_subdirectory(imd)
+add_subdirectory(compat)
 if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(gmxana)
     add_subdirectory(gmxpreprocess)
@@ -302,7 +303,7 @@ endif()
 
 if (GMX_CLANG_TIDY)
    set_target_properties(libgromacs PROPERTIES CXX_CLANG_TIDY
-       "${CLANG_TIDY_EXE};-warnings-as-errors=*;-header-filter=.*")
+       "${CLANG_TIDY_EXE};-warnings-as-errors=*")
 endif()
 
 gmx_write_installed_header_list()
@@ -346,8 +347,4 @@ if(GMX_USE_OPENCL)
 
     install(FILES ${OPENCL_KERNELS} DESTINATION
         ${GMX_INSTALL_OCLDIR} COMPONENT libraries)
-endif()
-
-if (BUILD_TESTING)
-    add_subdirectory(compat/tests)
 endif()

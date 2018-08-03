@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -324,14 +324,13 @@ class AnalysisNeighborhoodPair
 {
     public:
         //! Initializes an invalid pair.
-        AnalysisNeighborhoodPair() : refIndex_(-1), testIndex_(0), distance2_(0.0)
+        AnalysisNeighborhoodPair() : refIndex_(-1), testIndex_(0), distance2_(0.0), dx_()
         {
-            clear_rvec(dx_);
         }
         //! Initializes a pair object with the given data.
         AnalysisNeighborhoodPair(int refIndex, int testIndex, real distance2,
                                  const rvec dx)
-            : refIndex_(refIndex), testIndex_(testIndex), distance2_(distance2)
+            : refIndex_(refIndex), testIndex_(testIndex), distance2_(distance2), dx_()
         {
             copy_rvec(dx, dx_);
         }

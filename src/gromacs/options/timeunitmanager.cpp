@@ -87,8 +87,10 @@ TimeUnitManager::TimeUnitManager()
 }
 
 TimeUnitManager::TimeUnitManager(TimeUnit unit)
+    : timeUnit_(unit)
 {
-    setTimeUnit(unit);
+    GMX_RELEASE_ASSERT(unit >= 0 && unit <= TimeUnit_s,
+                       "Invalid time unit");
 }
 
 void TimeUnitManager::setTimeUnit(TimeUnit unit)
@@ -127,14 +129,14 @@ TimeUnitBehavior::TimeUnitBehavior()
 {
 }
 
-void TimeUnitBehavior::setTimeUnit(TimeUnit timeUnit)
+void TimeUnitBehavior::setTimeUnit(TimeUnit unit)
 {
-    GMX_RELEASE_ASSERT(timeUnit >= 0 && timeUnit <= TimeUnit_s,
+    GMX_RELEASE_ASSERT(unit >= 0 && unit <= TimeUnit_s,
                        "Invalid time unit");
-    timeUnit_ = timeUnit;
+    timeUnit_ = unit;
     if (timeUnitStore_ != nullptr)
     {
-        *timeUnitStore_ = timeUnit;
+        *timeUnitStore_ = unit;
     }
 }
 
