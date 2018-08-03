@@ -263,7 +263,7 @@ DoubleOptionStorage::DoubleOptionStorage(const DoubleOption &settings)
 
 std::string DoubleOptionStorage::typeString() const
 {
-    return isVector() ? "vector" : (isTime() ? "time" : "real");
+    return isVector() ? "vector"_s : (isTime() ? "time"_s : "real"_s);
 }
 
 std::string DoubleOptionStorage::formatSingleValue(const double &value) const
@@ -356,7 +356,7 @@ FloatOptionStorage::FloatOptionStorage(const FloatOption &settings)
 
 std::string FloatOptionStorage::typeString() const
 {
-    return isVector() ? "vector" : (isTime() ? "time" : "real");
+    return isVector() ? "vector"_s : (isTime() ? "time"_s : "real"_s);
 }
 
 std::string FloatOptionStorage::formatSingleValue(const float &value) const
@@ -455,6 +455,7 @@ StringOptionStorage::StringOptionStorage(const StringOption &settings)
         if (count < 0)
         {
             count = 0;
+            //NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             while (settings.enumValues_[count] != nullptr)
             {
                 ++count;
@@ -462,10 +463,12 @@ StringOptionStorage::StringOptionStorage(const StringOption &settings)
         }
         for (int i = 0; i < count; ++i)
         {
+            //NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             if (settings.enumValues_[i] == nullptr)
             {
                 GMX_THROW(APIError("Enumeration value cannot be NULL"));
             }
+            //NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             allowed_.emplace_back(settings.enumValues_[i]);
         }
         if (settings.defaultEnumIndex_ >= 0)
@@ -566,6 +569,7 @@ EnumOptionStorage::EnumOptionStorage(const AbstractOption &settings,
     if (count < 0)
     {
         count = 0;
+        //NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         while (enumValues[count] != nullptr)
         {
             ++count;
@@ -573,10 +577,12 @@ EnumOptionStorage::EnumOptionStorage(const AbstractOption &settings,
     }
     for (int i = 0; i < count; ++i)
     {
+        //NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         if (enumValues[i] == nullptr)
         {
             GMX_THROW(APIError("Enumeration value cannot be NULL"));
         }
+        //NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         allowed_.emplace_back(enumValues[i]);
     }
 
@@ -655,11 +661,10 @@ AbstractOptionStorage *
 createEnumOptionStorage(const AbstractOption &option,
                         const char *const *enumValues, int count,
                         int defaultValue, int defaultValueIfSet,
-                        IOptionValueStore<int> *store)
+                        std::unique_ptr<IOptionValueStore<int> > store)
 {
-    std::unique_ptr<IOptionValueStore<int> > storePtr(store);
     return new EnumOptionStorage(option, enumValues, count, defaultValue,
-                                 defaultValueIfSet, move(storePtr));
+                                 defaultValueIfSet, move(store));
 }
 //! \endcond
 

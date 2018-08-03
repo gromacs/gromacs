@@ -49,6 +49,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/ivaluestore.h"
 #include "gromacs/utility/arrayref.h"
@@ -405,6 +406,7 @@ class EnumIndexStore : public IOptionValueStore<int>
             else if (store_ != nullptr)
             {
                 // TODO: Copy more than one value if that would make sense.
+                //NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 intStore_.push_back(static_cast<int>(store_[0]));
             }
         }
@@ -433,6 +435,7 @@ class EnumIndexStore : public IOptionValueStore<int>
             intStore_.push_back(value);
             if (store_ != nullptr)
             {
+                //NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 store_[count] = static_cast<EnumType>(value);
             }
             if (storeVector_ != nullptr)
@@ -463,7 +466,7 @@ AbstractOptionStorage *
 createEnumOptionStorage(const AbstractOption &option,
                         const char *const *enumValues, int count,
                         int defaultValue, int defaultValueIfSet,
-                        IOptionValueStore<int> *store);
+                        std::unique_ptr<IOptionValueStore<int> > store);
 //! \endcond
 
 }   // namespace internal
@@ -576,7 +579,7 @@ class EnumOption : public OptionTemplate<EnumType, EnumOption<EnumType> >
                     *this, enumValues_, enumValuesCount_,
                     convertToInt(MyBase::defaultValue()),
                     convertToInt(MyBase::defaultValueIfSet()),
-                    new internal::EnumIndexStore<EnumType>(
+                    compat::make_unique<internal::EnumIndexStore<EnumType> >(
                             MyBase::store(), MyBase::storeVector()));
         }
 
