@@ -93,6 +93,6 @@ int gmx_physicalnode_id_hash();
 void gmx_broadcast_world(int size, void *buffer);
 
 /** Abort the parallel run */
-void gmx_abort(int errorno);
+[[noreturn]] void gmx_abort(int errorno);
 
 #endif

@@ -186,8 +186,9 @@ void gmx_exit_on_fatal_error(ExitType exitType, int returnValue)
             case ExitType_Abort:
 #if GMX_LIB_MPI
                 gmx_abort(returnValue);
-#endif
+#else
                 break;
+#endif
             case ExitType_NonMasterAbort:
                 // Let all other processes wait till the master has printed
                 // the error message and issued MPI_Abort.
