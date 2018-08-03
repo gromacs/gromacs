@@ -392,7 +392,7 @@ void gmx::Integrator::do_md()
     }
     groups = &top_global->groups;
 
-    gmx_edsam *ed = nullptr;
+    std::unique_ptr<EssentialDynamics> ed = nullptr;
     if (opt2bSet("-ei", nfile, fnm) || observablesHistory->edsamHistory != nullptr)
     {
         /* Initialize essential dynamics sampling */
@@ -1149,7 +1149,7 @@ void gmx::Integrator::do_md()
                      state->box, state->x, &state->hist,
                      f, force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
-                     fr, vsite, mu_tot, t, ed,
+                     fr, vsite, mu_tot, t, ed ? ed->getLegacyED() : nullptr,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags,
                      ddOpenBalanceRegion, ddCloseBalanceRegion);
         }
@@ -1927,9 +1927,6 @@ void gmx::Integrator::do_md()
     {
         finish_swapcoords(ir->swap);
     }
-
-    /* Do essential dynamics cleanup if needed. Close .edo file */
-    done_ed(&ed);
 
     /* IMD cleanup, if bIMD is TRUE. */
     IMD_finalize(ir->bIMD, ir->imd);
