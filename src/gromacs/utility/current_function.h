@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,7 +74,7 @@ inline void current_function_helper()
 
 #if defined(__GNUC__) || (defined(__MWERKS__) && (__MWERKS__ >= 0x3000)) || (defined(__ICC) && (__ICC >= 600)) || defined(__ghs__)
 
-# define GMX_CURRENT_FUNCTION __PRETTY_FUNCTION__
+# define GMX_CURRENT_FUNCTION static_cast<const char*>(__PRETTY_FUNCTION__)
 
 #elif defined(__DMC__) && (__DMC__ >= 0x810)
 

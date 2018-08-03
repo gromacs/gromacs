@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,6 +62,7 @@ namespace gmx
  */
 static inline bool isNullOrEmpty(const char *str)
 {
+    //NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return str == nullptr || str[0] == '\0';
 }
 
@@ -685,6 +686,14 @@ class TextLineWrapper
     private:
         TextLineWrapperSettings settings_;
 };
+
+//! Forms a string literal (similar to C++14 but with extra underscore)
+static inline std::string operator"" _s(const char *str, std::size_t len)
+{
+    return {
+               str, len
+    };
+}
 
 //! \}
 
