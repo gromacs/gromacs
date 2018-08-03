@@ -1230,9 +1230,8 @@ class GTEST_TEST_CLASS_NAME_(test_case_name, test_name) : public parent_class {\
         (parent_id), \
         parent_class::SetUpTestCase, \
         parent_class::TearDownTestCase, \
-        new ::testing::internal::TestFactoryImpl<\
-            GTEST_TEST_CLASS_NAME_(test_case_name, test_name)>);\
-void GTEST_TEST_CLASS_NAME_(test_case_name, test_name)::TestBody()
+        new ::testing::internal::TestFactoryImpl<GTEST_TEST_CLASS_NAME_(test_case_name, test_name)>); /*NOLINT(cppcoreguidelines-owning-memory)*/ \
+ void GTEST_TEST_CLASS_NAME_(test_case_name, test_name)::TestBody()
 
 #endif  // GTEST_INCLUDE_GTEST_INTERNAL_GTEST_INTERNAL_H_
 

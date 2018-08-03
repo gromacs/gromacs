@@ -163,15 +163,11 @@ class AnalysisDataModuleManager::Impl
 };
 
 AnalysisDataModuleManager::Impl::Impl()
-    : bAllowMissing_(true), bSerialModules_(false), bParallelModules_(false),
+    : bDataProperty_(), // This must be in sync with how AbstractAnalysisData
+                        // is actually initialized.
+      bAllowMissing_(true), bSerialModules_(false), bParallelModules_(false),
       state_(eNotStarted), currIndex_(0)
 {
-    // This must be in sync with how AbstractAnalysisData is actually
-    // initialized.
-    for (int i = 0; i < eDataPropertyNR; ++i)
-    {
-        bDataProperty_[i] = false;
-    }
 }
 
 void

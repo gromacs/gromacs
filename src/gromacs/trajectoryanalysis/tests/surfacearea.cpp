@@ -70,10 +70,9 @@ class SurfaceAreaTest : public ::testing::Test
 {
     public:
         SurfaceAreaTest()
-            : rng_(12345), area_(0.0), volume_(0.0),
+            : box_(), rng_(12345), area_(0.0), volume_(0.0),
               atomArea_(nullptr), dotCount_(0), dots_(nullptr)
         {
-            clear_mat(box_);
         }
         ~SurfaceAreaTest()
         {
