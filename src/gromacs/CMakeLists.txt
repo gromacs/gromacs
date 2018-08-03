@@ -120,6 +120,7 @@ add_subdirectory(pulling)
 add_subdirectory(awh)
 add_subdirectory(simd)
 add_subdirectory(imd)
+add_subdirectory(compat)
 if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(gmxana)
     add_subdirectory(gmxpreprocess)
@@ -346,8 +347,4 @@ if(GMX_USE_OPENCL)
 
     install(FILES ${OPENCL_KERNELS} DESTINATION
         ${GMX_INSTALL_OCLDIR} COMPONENT libraries)
-endif()
-
-if (BUILD_TESTING)
-    add_subdirectory(compat/tests)
 endif()

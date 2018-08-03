@@ -166,6 +166,7 @@ class ArrayRef
                  typename = typename std::enable_if<
                          std::is_convertible<typename std::remove_reference<U>::type::pointer,
                                              pointer>::value>::type>
+        //NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         ArrayRef(U &&o) : begin_(o.data()), end_(o.data()+o.size()) {}
         /*! \brief
          * Constructs a reference to a particular range.
@@ -267,6 +268,7 @@ class ArrayRef
 template <typename T>
 ArrayRef<T> arrayRefFromArray(T *begin, size_t size)
 {
+    //NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return ArrayRef<T>(begin, begin+size);
 }
 
@@ -275,6 +277,7 @@ ArrayRef<T> arrayRefFromArray(T *begin, size_t size)
 template <typename T>
 ArrayRef<const T> constArrayRefFromArray(const T *begin, size_t size)
 {
+    //NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return ArrayRef<const T>(begin, begin+size);
 }
 

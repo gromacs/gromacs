@@ -396,8 +396,9 @@ AbstractAverageHistogram::scaleAll(real factor)
 
 
 void
-AbstractAverageHistogram::scaleAllByVector(const real factor[])
+AbstractAverageHistogram::scaleAllByVector(ArrayRef<const real> factor)
 {
+    GMX_ASSERT(factor.size() == rowCount(), "Number of factors don't match row count");
     for (int c = 0; c < columnCount(); ++c)
     {
         for (int i = 0; i < rowCount(); ++i)

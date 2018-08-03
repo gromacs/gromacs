@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 #define GMX_ANALYSISDATA_ANALYSISDATA_H
 
 #include "gromacs/analysisdata/abstractdata.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 namespace gmx
@@ -324,7 +325,6 @@ class AnalysisDataHandle
          * Set values for consecutive columns for the current frame.
          *
          * \param[in] firstColumn  Zero-based column index.
-         * \param[in] count        Number of columns to set.
          * \param[in] values       Value array of \p column items.
          * \param[in] bPresent     Present flag to set for the column.
          *
@@ -333,7 +333,7 @@ class AnalysisDataHandle
          *
          * Does not throw.
          */
-        void setPoints(int firstColumn, int count, const real *values, bool bPresent = true);
+        void setPoints(int firstColumn, ArrayRef<const real> values, bool bPresent = true);
         /*! \brief
          * Finish data for the current point set.
          *
