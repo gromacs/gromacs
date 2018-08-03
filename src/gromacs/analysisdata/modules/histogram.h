@@ -306,7 +306,7 @@ class AbstractAverageHistogram : public AbstractAnalysisArrayData
         //! Scales all histograms by a uniform scaling factor.
         void scaleAll(real factor);
         //! Scales the value of each bin by a different scaling factor.
-        void scaleAllByVector(const real factor[]);
+        void scaleAllByVector(ArrayRef<const real> factor);
         /*! \brief
          * Notifies attached modules of the histogram data.
          *

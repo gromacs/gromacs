@@ -92,7 +92,7 @@ class AnalysisDataDisplacementModule::Impl
         //! The total number of positions ever stored (can be larger than \p max_store).
         int                            nstored;
         //! Old values.
-        real                          *oldval;
+        std::vector<real>              oldval;
         //! The most recently calculated displacements.
         std::vector<AnalysisDataValue> currValues_;
 
@@ -103,14 +103,13 @@ class AnalysisDataDisplacementModule::Impl
 AnalysisDataDisplacementModule::Impl::Impl()
     : nmax(0), tmax(0.0), ndim(3),
       bFirst(true), t0(0.0), dt(0.0), t(0.0), ci(0),
-      max_store(-1), nstored(0), oldval(nullptr),
+      max_store(-1), nstored(0),
       histm(nullptr)
 {
 }
 
 AnalysisDataDisplacementModule::Impl::~Impl()
 {
-    sfree(oldval);
 }
 
 /********************************************************************
@@ -175,7 +174,7 @@ AnalysisDataDisplacementModule::dataStarted(AbstractAnalysisData *data)
         GMX_THROW(APIError("Data has incorrect number of columns"));
     }
     _impl->nmax = data->columnCount();
-    snew(_impl->oldval, _impl->nmax);
+    _impl->oldval.resize(_impl->nmax);
     _impl->ci = -_impl->nmax;
 
     int ncol = _impl->nmax / _impl->ndim + 1;
@@ -212,8 +211,8 @@ AnalysisDataDisplacementModule::frameStarted(const AnalysisDataFrameHeader &head
     // Allocate memory for all the positions once it is possible.
     if (_impl->max_store == -1 && !_impl->bFirst)
     {
-        _impl->max_store = _impl->nmax * (int)(_impl->tmax/_impl->dt + 1);
-        srenew(_impl->oldval, _impl->max_store);
+        _impl->max_store = _impl->nmax * int(_impl->tmax/_impl->dt + 1);
+        _impl->oldval.resize(_impl->max_store);
     }
 
     // Increment the index where current positions are stored.
