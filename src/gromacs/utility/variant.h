@@ -50,6 +50,7 @@
 #include <typeinfo>
 #include <utility>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx
@@ -126,7 +127,7 @@ class Variant
          */
         Variant &operator=(const Variant &other)
         {
-            content_.reset(other.cloneContent());
+            content_ = other.cloneContent();
             return *this;
         }
         //! Move-assigns the variant.
@@ -214,7 +215,7 @@ class Variant
             public:
                 virtual ~IContent() {}
                 virtual const std::type_info &typeInfo() const = 0;
-                virtual IContent *clone() const                = 0;
+                virtual std::unique_ptr<IContent> clone() const = 0;
         };
 
         template <typename T>
@@ -225,13 +226,13 @@ class Variant
                 explicit Content(T &&value) : value_(std::move(value)) {}
 
                 virtual const std::type_info &typeInfo() const { return typeid(T); }
-                virtual IContent *clone() const { return new Content(value_); }
+                virtual std::unique_ptr<IContent> clone() const { return compat::make_unique<Content>(value_); }
 
                 T value_;
         };
 
         //! Creates a deep copy of the content.
-        IContent *cloneContent() const
+        std::unique_ptr<IContent> cloneContent() const
         {
             return content_ != nullptr ? content_->clone() : nullptr;
         }

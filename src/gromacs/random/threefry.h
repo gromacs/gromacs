@@ -455,6 +455,7 @@ class ThreeFry2x64General
          *  \throws InternalError if the high bits needed to encode the number of counter
          *          bits are nonzero.
          */
+        //NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
         ThreeFry2x64General(gmx_uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other)
         {
             seed(key0, domain);
@@ -473,6 +474,7 @@ class ThreeFry2x64General
          *  \throws InternalError if the high bits needed to encode the number of counter
          *          bits are nonzero. To test arbitrary values, use 0 internal counter bits.
          */
+        //NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
         ThreeFry2x64General(gmx_uint64_t key0, gmx_uint64_t key1)
         {
             seed(key0, key1);

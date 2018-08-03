@@ -43,7 +43,7 @@
  * library implementations as appropriate.
  */
 
-/*! \libinternal
+/*!
  * \file
  * \brief Provides template gmx::compat::make_unique
  *

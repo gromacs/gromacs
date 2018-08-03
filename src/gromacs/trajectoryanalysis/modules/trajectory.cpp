@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -92,19 +92,17 @@ class Trajectory : public TrajectoryAnalysisModule
         std::string                         fnX_;
         std::string                         fnV_;
         std::string                         fnF_;
-        bool                                dimMask_[4];
-        bool                                maskSet_[4];
+        std::array<bool, 4>                 dimMask_;
+        std::array<bool, 4>                 maskSet_;
 
         AnalysisData                        xdata_;
         AnalysisData                        vdata_;
         AnalysisData                        fdata_;
 };
 
-Trajectory::Trajectory()
+Trajectory::Trajectory() :
+    dimMask_ {true, true, true, false}, maskSet_ {}
 {
-    std::fill(std::begin(dimMask_), std::end(dimMask_), true);
-    dimMask_[DIM] = false;
-    std::fill(std::begin(maskSet_), std::end(maskSet_), false);
     registerAnalysisDataset(&xdata_, "x");
     registerAnalysisDataset(&vdata_, "v");
     registerAnalysisDataset(&fdata_, "f");
@@ -194,7 +192,7 @@ Trajectory::initAnalysis(const TrajectoryAnalysisSettings &settings,
         }
         AnalysisDataVectorPlotModulePointer plot(
                 new AnalysisDataVectorPlotModule(settings.plotSettings()));
-        plot->setWriteMask(dimMask_);
+        plot->setWriteMask(dimMask_.data());
         plot->setFileName(fnX_);
         plot->setTitle("Coordinates");
         plot->setXAxisIsTime();
@@ -211,7 +209,7 @@ Trajectory::initAnalysis(const TrajectoryAnalysisSettings &settings,
         }
         AnalysisDataVectorPlotModulePointer plot(
                 new AnalysisDataVectorPlotModule(settings.plotSettings()));
-        plot->setWriteMask(dimMask_);
+        plot->setWriteMask(dimMask_.data());
         plot->setFileName(fnV_);
         plot->setTitle("Velocities");
         plot->setXAxisIsTime();
@@ -228,7 +226,7 @@ Trajectory::initAnalysis(const TrajectoryAnalysisSettings &settings,
         }
         AnalysisDataVectorPlotModulePointer plot(
                 new AnalysisDataVectorPlotModule(settings.plotSettings()));
-        plot->setWriteMask(dimMask_);
+        plot->setWriteMask(dimMask_.data());
         plot->setFileName(fnF_);
         plot->setTitle("Forces");
         plot->setXAxisIsTime();

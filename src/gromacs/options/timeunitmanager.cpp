@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,8 +87,10 @@ TimeUnitManager::TimeUnitManager()
 }
 
 TimeUnitManager::TimeUnitManager(TimeUnit unit)
+    : timeUnit_(unit)
 {
-    setTimeUnit(unit);
+    GMX_RELEASE_ASSERT(unit >= 0 && unit <= TimeUnit_s,
+                       "Invalid time unit");
 }
 
 void TimeUnitManager::setTimeUnit(TimeUnit unit)
@@ -127,14 +129,14 @@ TimeUnitBehavior::TimeUnitBehavior()
 {
 }
 
-void TimeUnitBehavior::setTimeUnit(TimeUnit timeUnit)
+void TimeUnitBehavior::setTimeUnit(TimeUnit unit)
 {
-    GMX_RELEASE_ASSERT(timeUnit >= 0 && timeUnit <= TimeUnit_s,
+    GMX_RELEASE_ASSERT(unit >= 0 && unit <= TimeUnit_s,
                        "Invalid time unit");
-    timeUnit_ = timeUnit;
+    timeUnit_ = unit;
     if (timeUnitStore_ != nullptr)
     {
-        *timeUnitStore_ = timeUnit;
+        *timeUnitStore_ = unit;
     }
 }
 

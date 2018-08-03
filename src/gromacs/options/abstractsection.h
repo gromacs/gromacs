@@ -79,7 +79,7 @@ class AbstractOptionSection
          *
          * Similar to AbstractOption::createStorage().
          */
-        virtual IOptionSectionStorage *createStorage() const = 0;
+        virtual std::unique_ptr<IOptionSectionStorage> createStorage() const = 0;
         //! \endcond
 
     private:
