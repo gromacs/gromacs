@@ -41,6 +41,9 @@
 #include <ctype.h>
 #include <string.h>
 
+#include <string>
+#include <vector>
+
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/topology/residuetypes.h"
@@ -58,7 +61,7 @@ typedef struct {
     char *replace;
 } t_xlate_atom;
 
-static void get_xlatoms(const char *fn, FILE *fp,
+static void get_xlatoms(const std::string &filename, FILE *fp,
                         int *nptr, t_xlate_atom **xlptr)
 {
     char          filebase[STRLEN];
@@ -68,7 +71,7 @@ static void get_xlatoms(const char *fn, FILE *fp,
     int           n, na, idum;
     t_xlate_atom *xl;
 
-    fflib_filename_base(fn, filebase, STRLEN);
+    fflib_filename_base(filename.c_str(), filebase, STRLEN);
 
     n  = *nptr;
     xl = *xlptr;
@@ -85,7 +88,7 @@ static void get_xlatoms(const char *fn, FILE *fp,
         }
         if (na != 3)
         {
-            gmx_fatal(FARGS, "Expected a residue name and two atom names in file '%s', not '%s'", fn, line);
+            gmx_fatal(FARGS, "Expected a residue name and two atom names in file '%s', not '%s'", filename.c_str(), line);
         }
 
         srenew(xl, n+1);
@@ -133,7 +136,7 @@ static void done_xlatom(int nxlate, t_xlate_atom *xlatom)
     sfree(xlatom);
 }
 
-void rename_atoms(const char *xlfile, const char *ffdir,
+void rename_atoms(const char* xlfile, const char *ffdir,
                   t_atoms *atoms, t_symtab *symtab, const t_restp *restp,
                   bool bResname, gmx_residuetype_t *rt, bool bReorderNum,
                   bool bVerbose)
@@ -141,8 +144,6 @@ void rename_atoms(const char *xlfile, const char *ffdir,
     FILE         *fp;
     int           nxlate, a, i, resind;
     t_xlate_atom *xlatom;
-    int           nf;
-    char        **f;
     char          c, *rnm, atombuf[32], *ptr0, *ptr1;
     bool          bReorderedNum, bRenamed, bMatch;
     bool          bStartTerm, bEndTerm;
@@ -157,15 +158,13 @@ void rename_atoms(const char *xlfile, const char *ffdir,
     }
     else
     {
-        nf = fflib_search_file_end(ffdir, ".arn", FALSE, &f);
-        for (i = 0; i < nf; i++)
+        std::vector<std::string> fns = fflib_search_file_end(ffdir, ".arn", FALSE);
+        for (const auto &filename : fns)
         {
-            fp = fflib_open(f[i]);
-            get_xlatoms(f[i], fp, &nxlate, &xlatom);
+            fp = fflib_open(filename);
+            get_xlatoms(filename, fp, &nxlate, &xlatom);
             gmx_ffclose(fp);
-            sfree(f[i]);
         }
-        sfree(f);
     }
 
     for (a = 0; (a < atoms->nr); a++)
