@@ -41,6 +41,9 @@
 #include <ctype.h>
 #include <string.h>
 
+#include <string>
+#include <vector>
+
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/h_db.h"
@@ -242,7 +245,7 @@ static void print_ter_db(const char *ff, char C, int nb, t_hackblock tb[],
     gmx_fio_fclose(out);
 }
 
-static void read_ter_db_file(char *fn,
+static void read_ter_db_file(const char *fn,
                              int *ntbptr, t_hackblock **tbptr,
                              gpp_atomtype_t atype)
 {
@@ -403,8 +406,6 @@ int read_ter_db(const char *ffdir, char ter,
                 t_hackblock **tbptr, gpp_atomtype_t atype)
 {
     char   ext[STRLEN];
-    int    ntdbf, f;
-    char **tdbf;
     int    ntb;
 
     sprintf(ext, ".%c.tdb", ter);
@@ -412,15 +413,13 @@ int read_ter_db(const char *ffdir, char ter,
     /* Search for termini database files.
      * Do not generate an error when none are found.
      */
-    ntdbf  = fflib_search_file_end(ffdir, ext, FALSE, &tdbf);
+    std::vector<std::string> tdbf  = fflib_search_file_end(ffdir, ext, FALSE);
     ntb    = 0;
     *tbptr = nullptr;
-    for (f = 0; f < ntdbf; f++)
+    for (const auto &filename : tdbf)
     {
-        read_ter_db_file(tdbf[f], &ntb, tbptr, atype);
-        sfree(tdbf[f]);
+        read_ter_db_file(filename.c_str(), &ntb, tbptr, atype);
     }
-    sfree(tdbf);
 
     if (debug)
     {
