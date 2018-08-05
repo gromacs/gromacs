@@ -56,7 +56,7 @@ t_restp *get_restp(const char *rtpname, int nrtp, t_restp rtp[]);
 gpp_atomtype_t read_atype(const char *ffdir, struct t_symtab *tab);
 /* read atom type database(s) */
 
-void read_resall(char *resdb, int *nrtp, t_restp **rtp,
+void read_resall(const char *resdb, int *nrtp, t_restp **rtp,
                  gpp_atomtype_t atype, struct t_symtab *tab,
                  bool bAllowOverrideRTP);
 /* read rtp database, append to the existing database */
