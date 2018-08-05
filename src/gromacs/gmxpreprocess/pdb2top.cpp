@@ -358,7 +358,6 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
                        char **watermodel)
 {
     const char *fn_watermodels = "watermodels.dat";
-    char        fn_list[STRLEN];
     FILE       *fp;
     char        buf[STRLEN];
     int         nwm, sel, i;
@@ -378,9 +377,8 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
         return;
     }
 
-    sprintf(fn_list, "%s%c%s", ffdir, DIR_SEPARATOR, fn_watermodels);
-
-    if (!fflib_fexist(fn_list))
+    std::string filename = gmx::Path::join(ffdir, fn_watermodels);
+    if (!fflib_fexist(filename))
     {
         fprintf(stderr, "No file '%s' found, will not include a water model\n",
                 fn_watermodels);
@@ -389,7 +387,7 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
         return;
     }
 
-    fp = fflib_open(fn_list);
+    fp = fflib_open(filename);
     printf("\nSelect the Water Model:\n");
     nwm   = 0;
     model = nullptr;
