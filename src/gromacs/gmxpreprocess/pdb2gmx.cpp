@@ -44,6 +44,8 @@
 #include <ctime>
 
 #include <algorithm>
+#include <string>
+#include <vector>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
@@ -1387,10 +1389,6 @@ int gmx_pdb2gmx(int argc, char *argv[])
     char              ffname[STRLEN], suffix[STRLEN], buf[STRLEN];
     char             *watermodel;
     const char       *watres;
-    int               nrtpf;
-    char            **rtpf;
-    int               nrrn;
-    char            **rrn;
     int               nrtprename;
     rtprename_t      *rtprename = nullptr;
     int               nah, nNtdb, nCtdb, ntdblist;
@@ -1599,18 +1597,16 @@ int gmx_pdb2gmx(int argc, char *argv[])
     gmx_residuetype_init(&rt);
 
     /* Read residue renaming database(s), if present */
-    nrrn = fflib_search_file_end(ffdir, ".r2b", FALSE, &rrn);
+    std::vector<std::string> rrn = fflib_search_file_end(ffdir, ".r2b", FALSE);
 
     nrtprename = 0;
     rtprename  = nullptr;
-    for (i = 0; i < nrrn; i++)
+    for (const auto &filename : rrn)
     {
-        fp = fflib_open(rrn[i]);
-        read_rtprename(rrn[i], fp, &nrtprename, &rtprename);
+        fp = fflib_open(filename);
+        read_rtprename(filename.c_str(), fp, &nrtprename, &rtprename);
         gmx_ffclose(fp);
-        sfree(rrn[i]);
     }
-    sfree(rrn);
 
     /* Add all alternative names from the residue renaming database to the list of recognized amino/nucleic acids. */
     for (i = 0; i < nrtprename; i++)
@@ -1883,15 +1879,13 @@ int gmx_pdb2gmx(int argc, char *argv[])
 
     /* read residue database */
     printf("Reading residue database... (%s)\n", forcefield);
-    nrtpf = fflib_search_file_end(ffdir, ".rtp", TRUE, &rtpf);
+    std::vector<std::string> rtpf = fflib_search_file_end(ffdir, ".rtp", TRUE);
     nrtp  = 0;
     restp = nullptr;
-    for (i = 0; i < nrtpf; i++)
+    for (const auto &filename : rtpf)
     {
-        read_resall(rtpf[i], &nrtp, &restp, atype, &symtab, FALSE);
-        sfree(rtpf[i]);
+        read_resall(filename.c_str(), &nrtp, &restp, atype, &symtab, FALSE);
     }
-    sfree(rtpf);
     if (bNewRTP)
     {
         /* Not correct with multiple rtp input files with different bonded types */
