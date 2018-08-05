@@ -96,10 +96,9 @@ void fflib_filename_base(const char *filename, char *filebase, int maxlen)
     }
 }
 
-int fflib_search_file_end(const char *ffdir,
-                          const char *file_end,
-                          bool        bFatalError,
-                          char     ***filenames)
+std::vector<std::string> fflib_search_file_end(const char *ffdir,
+                                               const char *file_end,
+                                               bool        bFatalError)
 {
     try
     {
@@ -115,19 +114,11 @@ int fflib_search_file_end(const char *ffdir,
                                     file_end, ffdir);
             GMX_THROW(gmx::InvalidInputError(message));
         }
-        const int count = static_cast<int>(result.size());
-        for (int i = 0; i < count; ++i)
+        for (std::string &filename : result)
         {
-            result[i] = gmx::Path::join(ffdir, result[i]);
+            filename = gmx::Path::join(ffdir, filename);
         }
-        char    **fns;
-        snew(fns, count);
-        for (int i = 0; i < count; ++i)
-        {
-            fns[i] = gmx_strdup(result[i].c_str());
-        }
-        *filenames = fns;
-        return count;
+        return result;
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
@@ -167,11 +158,11 @@ std::vector<gmx::DataFileInfo> fflib_enumerate_forcefields()
     return result;
 }
 
-bool fflib_fexist(const char *file)
+bool fflib_fexist(std::string file)
 {
     char *file_fullpath;
 
-    file_fullpath = low_gmxlibfn(file, TRUE, FALSE);
+    file_fullpath = low_gmxlibfn(file.c_str(), TRUE, FALSE);
 
     if (file_fullpath == nullptr)
     {
@@ -186,12 +177,12 @@ bool fflib_fexist(const char *file)
 }
 
 
-FILE *fflib_open(const char *file)
+FILE *fflib_open(std::string file)
 {
     char *file_fullpath;
     FILE *fp;
 
-    file_fullpath = gmxlibfn(file);
+    file_fullpath = gmxlibfn(file.c_str());
     fprintf(stderr, "Opening force field file %s\n", file_fullpath);
     fp = gmx_ffopen(file_fullpath, "r");
     sfree(file_fullpath);
