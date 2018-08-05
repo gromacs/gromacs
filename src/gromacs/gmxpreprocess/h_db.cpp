@@ -42,6 +42,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <string>
+#include <vector>
+
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/utility/arraysize.h"
@@ -197,23 +200,17 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
 
 int read_h_db(const char *ffdir, t_hackblock **ah)
 {
-    int    nhdbf, f;
-    char **hdbf;
-    int    nah;
-
     /* Read the hydrogen database file(s).
      * Do not generate an error when no files are found.
      */
-    nhdbf = fflib_search_file_end(ffdir, ".hdb", FALSE, &hdbf);
-    nah   = 0;
-    *ah   = nullptr;
-    for (f = 0; f < nhdbf; f++)
-    {
-        read_h_db_file(hdbf[f], &nah, ah);
-        sfree(hdbf[f]);
-    }
-    sfree(hdbf);
 
+    std::vector<std::string> hdbf = fflib_search_file_end(ffdir, ".hdb", FALSE);
+    int nah                       = 0;
+    *ah   = nullptr;
+    for (const auto &filename : hdbf)
+    {
+        read_h_db_file(filename.c_str(), &nah, ah);
+    }
     return nah;
 }
 
