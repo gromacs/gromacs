@@ -43,6 +43,8 @@
 #include <string.h>
 
 #include <cmath>
+#include <string>
+#include <vector>
 
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/add_par.h"
@@ -1536,8 +1538,6 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
     t_params         *params;
     char           ***newatomname;
     char             *resnm = nullptr;
-    int               ndb, f;
-    char            **db;
     int               nvsiteconf, nvsitetop, cmplength;
     bool              isN, planarN, bFound;
     gmx_residuetype_t*rt;
@@ -1597,17 +1597,15 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
         fprintf(debug, "# # # VSITES # # #\n");
     }
 
-    ndb           = fflib_search_file_end(ffdir, ".vsd", FALSE, &db);
+    std::vector<std::string> db = fflib_search_file_end(ffdir, ".vsd", FALSE);
     nvsiteconf    = 0;
     vsiteconflist = nullptr;
     nvsitetop     = 0;
     vsitetop      = nullptr;
-    for (f = 0; f < ndb; f++)
+    for (const auto &filename : db)
     {
-        read_vsite_database(db[f], &vsiteconflist, &nvsiteconf, &vsitetop, &nvsitetop);
-        sfree(db[f]);
+        read_vsite_database(filename.c_str(), &vsiteconflist, &nvsiteconf, &vsitetop, &nvsitetop);
     }
-    sfree(db);
 
     bFirstWater = TRUE;
     nvsite      = 0;
@@ -1873,7 +1871,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 
                     if (ch == nullptr)
                     {
-                        if (ndb > 0)
+                        if (db.size() > 0)
                         {
                             gmx_fatal(FARGS, "Can't find dummy mass for type %s bonded to type %s in the virtual site database (.vsd files). Add it to the database!\n", tpname, nexttpname);
                         }

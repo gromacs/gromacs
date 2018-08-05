@@ -42,6 +42,8 @@
 #include <string.h>
 
 #include <algorithm>
+#include <string>
+#include <vector>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
@@ -58,7 +60,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
+static void rd_nm2type_file(std::string filename, int *nnm, t_nm2type **nmp)
 {
     FILE         *fp;
     bool          bCont;
@@ -69,10 +71,10 @@ static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
     double        qq, mm;
     t_nm2type    *nm2t = nullptr;
 
-    fp = fflib_open(fn);
+    fp = fflib_open(filename.c_str());
     if (nullptr == fp)
     {
-        gmx_fatal(FARGS, "Can not find %s in library directory", fn);
+        gmx_fatal(FARGS, "Can not find %s in library directory", filename.c_str());
     }
 
     nnnm = *nnm;
@@ -132,20 +134,13 @@ static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
 
 t_nm2type *rd_nm2type(const char *ffdir, int *nnm)
 {
-    int        nff, f;
-    char     **ff;
-    t_nm2type *nm;
-
-    nff  = fflib_search_file_end(ffdir, ".n2t", FALSE, &ff);
+    std::vector<std::string> ff  = fflib_search_file_end(ffdir, ".n2t", FALSE);
     *nnm = 0;
-    nm   = nullptr;
-    for (f = 0; f < nff; f++)
+    t_nm2type               *nm = nullptr;
+    for (const auto &filename : ff)
     {
-        rd_nm2type_file(ff[f], nnm, &nm);
-        sfree(ff[f]);
+        rd_nm2type_file(filename, nnm, &nm);
     }
-    sfree(ff);
-
     return nm;
 }
 
