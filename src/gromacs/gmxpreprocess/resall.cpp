@@ -43,6 +43,8 @@
 #include <string.h>
 
 #include <algorithm>
+#include <string>
+#include <vector>
 
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/notset.h"
@@ -56,24 +58,22 @@
 
 gpp_atomtype_t read_atype(const char *ffdir, t_symtab *tab)
 {
-    int            nfile, f;
-    char         **file;
-    FILE          *in;
-    char           buf[STRLEN], name[STRLEN];
-    double         m;
-    int            nratt = 0;
-    gpp_atomtype_t at;
-    t_atom        *a;
-    t_param       *nb;
+    FILE                    *in;
+    char                     buf[STRLEN], name[STRLEN];
+    double                   m;
+    int                      nratt = 0;
+    gpp_atomtype_t           at;
+    t_atom                  *a;
+    t_param                 *nb;
 
-    nfile = fflib_search_file_end(ffdir, ".atp", TRUE, &file);
+    std::vector<std::string> files = fflib_search_file_end(ffdir, ".atp", TRUE);
     at    = init_atomtype();
     snew(a, 1);
     snew(nb, 1);
 
-    for (f = 0; f < nfile; f++)
+    for (const auto &filename : files)
     {
-        in = fflib_open(file[f]);
+        in = fflib_open(filename);
         while (!feof(in))
         {
             /* Skip blank or comment-only lines */
@@ -100,10 +100,8 @@ gpp_atomtype_t read_atype(const char *ffdir, t_symtab *tab)
             }
         }
         gmx_ffclose(in);
-        sfree(file[f]);
     }
     fprintf(stderr, "\n");
-    sfree(file);
 
     return at;
 }
@@ -245,7 +243,7 @@ static void print_resbondeds(FILE *out, int bt, t_restp *rtp)
     }
 }
 
-static void check_rtp(int nrtp, t_restp rtp[], char *libfn)
+static void check_rtp(int nrtp, t_restp rtp[], const char *libfn)
 {
     int i;
 
@@ -320,7 +318,7 @@ void print_resall(FILE *out, int nrtp, t_restp rtp[],
     }
 }
 
-void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
+void read_resall(const char *rrdb, int *nrtpptr, t_restp **rtp,
                  gpp_atomtype_t atype, t_symtab *tab,
                  bool bAllowOverrideRTP)
 {
