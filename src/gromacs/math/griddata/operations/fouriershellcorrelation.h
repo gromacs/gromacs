@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,39 +32,47 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \internal \file
  * \brief
- * Defines an enumeration type for specifying file types for options.
+ * Implements helper class for autocorrelation tests
  *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inpublicapi
- * \ingroup module_options
+ * \author Christian Blau <cblau@gwdg.de>
  */
-#ifndef GMX_OPTIONS_OPTIONFILETYPE_HPP
-#define GMX_OPTIONS_OPTIONFILETYPE_HPP
+#ifndef GMX_MATH_FOURIERSHELLCORRELATION_H_
+#define GMX_MATH_FOURIERSHELLCORRELATION_H_
+
+#include "gromacs/math/griddata/griddata.h"
+#include "gromacs/math/gmxcomplex.h"
+#include <set>
+#include <map>
+#include <vector>
 
 namespace gmx
 {
 
-/*! \brief
- * Purpose of file(s) provided through an option.
- *
- * \ingroup module_options
- */
-enum OptionFileType {
-    eftUnknown,
-    eftTopology,
-    eftTrajectory,
-    eftEnergy,
-    eftPDB,
-    eftIndex,
-    eftPlot,
-    eftGenericData,
-    eftCCP4,
-    eftXPLOR,
-    eftOptionFileType_NR
+class FourierShellCorrelation
+{
+    public:
+        typedef std::map < real, std::vector < t_complex>> fourierShell;
+        FourierShellCorrelation() = default;
+        /*! \brief Set bins from real-space grid guaranteeing six datapoints per shell.
+         *
+         */
+        FourierShellCorrelation(const GridWithTranslation<DIM> &RealGrid);
+        /*! \brief Calculate fourier shells with custom binning. */
+        FourierShellCorrelation(const std::set<real> &binEdges);
+        const std::set<real> &getBinEdges() const;
+        std::vector<real> getFscCurve(const GridDataReal3D &reference, const GridDataReal3D &other);
+
+    private:
+        class BinShells_;
+        void allocateShellDataContainersFromBins_(const std::set<real> &binEdges);
+        real correlateComplex_(const std::vector<t_complex> &a, const std::vector<t_complex> &b) const;
+        std::set<real> binEdges_;
+        fourierShell   referenceShells_;
+        fourierShell   otherShells_;
+
 };
 
-} // namespace gmx
-
-#endif
+}
+#endif /* end of include guard: GMX_MATH_FOURIERSHELLCORRELATION_H_ */
