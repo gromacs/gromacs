@@ -790,8 +790,9 @@ TEST_F(SimdFloatingpointUtilTest, incrDualHsimd)
 
 TEST_F(SimdFloatingpointUtilTest, incrDualHsimdOverlapping)
 {
-    real            reference[GMX_SIMD_REAL_WIDTH/2];
-    SimdReal        v0;
+    real                              reference[GMX_SIMD_REAL_WIDTH/2];
+    SimdReal                          v0;
+    FloatingPointTolerance            tolerance(defaultRealTolerance());
 
     // Create reference values
     for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH/2; i++)
@@ -804,7 +805,7 @@ TEST_F(SimdFloatingpointUtilTest, incrDualHsimdOverlapping)
 
     for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH/2; i++)
     {
-        EXPECT_EQ(reference[i], val0_[i]);
+        EXPECT_REAL_EQ_TOL(reference[i], val0_[i], tolerance);
     }
 }
 

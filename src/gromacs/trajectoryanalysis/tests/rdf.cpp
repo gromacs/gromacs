@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -105,7 +105,7 @@ TEST_F(RdfModuleTest, CalculatesXY)
 {
     const char *const cmdline[] = {
         "rdf",
-        "-bin", "0.05", "-xy",
+        "-bin", "0.0499", "-xy",
         "-ref", "name OW",
         "-sel", "name OW", "not name OW"
     };

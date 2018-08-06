@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="CommandLine">distance -select 'atomname S1 S2 and res_cog x &lt; 2.8' -len 2 -binw 0.5</String>
+  <String Name="CommandLine">distance -select 'atomname S1 S2 and res_cog x &lt; 2.8' -len 2 -binw 0.4999</String>
   <OutputData Name="Data">
     <AnalysisData Name="allstats">
       <DataFrame Name="Frame0">
@@ -93,7 +93,7 @@
     </AnalysisData>
     <AnalysisData Name="histogram">
       <DataFrame Name="Frame0">
-        <Real Name="X">0.25</Real>
+        <Real Name="X">0.24995001</Real>
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
@@ -103,7 +103,7 @@
         </DataValues>
       </DataFrame>
       <DataFrame Name="Frame1">
-        <Real Name="X">0.75</Real>
+        <Real Name="X">0.74985003</Real>
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
@@ -113,17 +113,17 @@
         </DataValues>
       </DataFrame>
       <DataFrame Name="Frame2">
-        <Real Name="X">1.25</Real>
+        <Real Name="X">1.24975</Real>
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">1.3333333333333333</Real>
+            <Real Name="Value">1.3336</Real>
             <Real Name="Error">0</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
       <DataFrame Name="Frame3">
-        <Real Name="X">1.75</Real>
+        <Real Name="X">1.74965</Real>
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
@@ -133,7 +133,7 @@
         </DataValues>
       </DataFrame>
       <DataFrame Name="Frame4">
-        <Real Name="X">2.25</Real>
+        <Real Name="X">2.2495501</Real>
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
@@ -143,7 +143,7 @@
         </DataValues>
       </DataFrame>
       <DataFrame Name="Frame5">
-        <Real Name="X">2.75</Real>
+        <Real Name="X">2.74945</Real>
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
@@ -153,17 +153,17 @@
         </DataValues>
       </DataFrame>
       <DataFrame Name="Frame6">
-        <Real Name="X">3.25</Real>
+        <Real Name="X">3.2493501</Real>
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">0.66666666666666663</Real>
+            <Real Name="Value">0.66680002</Real>
             <Real Name="Error">0</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
       <DataFrame Name="Frame7">
-        <Real Name="X">3.75</Real>
+        <Real Name="X">3.7492502</Real>
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>

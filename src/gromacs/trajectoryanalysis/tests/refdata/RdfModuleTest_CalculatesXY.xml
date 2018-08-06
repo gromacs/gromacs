@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="CommandLine">rdf -bin 0.05 -xy -ref 'name OW' -sel 'name OW' 'not name OW'</String>
+  <String Name="CommandLine">rdf -bin 0.0499 -xy -ref 'name OW' -sel 'name OW' 'not name OW'</String>
   <OutputData Name="Data">
     <AnalysisData Name="norm">
       <DataFrame Name="Frame0">
@@ -51,91 +51,91 @@
             <Real Name="Value">366</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">420</Real>
+            <Real Name="Value">414</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">522</Real>
+            <Real Name="Value">514</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">600</Real>
+            <Real Name="Value">596</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">632</Real>
+            <Real Name="Value">638</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">644</Real>
+            <Real Name="Value">640</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">766</Real>
+            <Real Name="Value">752</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">820</Real>
+            <Real Name="Value">824</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">818</Real>
+            <Real Name="Value">822</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">828</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">932</Real>
+            <Real Name="Value">922</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">950</Real>
-          </DataValue>
-          <DataValue>
-            <Real Name="Value">1042</Real>
-          </DataValue>
-          <DataValue>
-            <Real Name="Value">1088</Real>
+            <Real Name="Value">954</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">1030</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1184</Real>
+            <Real Name="Value">1084</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1276</Real>
+            <Real Name="Value">1030</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1346</Real>
+            <Real Name="Value">1180</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1268</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1360</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1364</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">1388</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1380</Real>
+            <Real Name="Value">1426</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1466</Real>
-          </DataValue>
-          <DataValue>
-            <Real Name="Value">1572</Real>
+            <Real Name="Value">1576</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">1474</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1578</Real>
+            <Real Name="Value">1572</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1630</Real>
+            <Real Name="Value">1604</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1782</Real>
+            <Real Name="Value">1776</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1754</Real>
+            <Real Name="Value">1766</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1772</Real>
+            <Real Name="Value">1734</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1854</Real>
+            <Real Name="Value">1890</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1686</Real>
+            <Real Name="Value">1810</Real>
           </DataValue>
         </DataValues>
         <DataValues>
@@ -148,28 +148,28 @@
             <Real Name="Value">184</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">288</Real>
+            <Real Name="Value">283</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">567</Real>
+            <Real Name="Value">561</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">408</Real>
+            <Real Name="Value">414</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">539</Real>
+            <Real Name="Value">536</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">630</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">743</Real>
+            <Real Name="Value">740</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">821</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">897</Real>
+            <Real Name="Value">882</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">1094</Real>
@@ -178,25 +178,25 @@
             <Real Name="Value">1236</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1394</Real>
+            <Real Name="Value">1388</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1504</Real>
+            <Real Name="Value">1496</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">1568</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1691</Real>
+            <Real Name="Value">1674</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1770</Real>
+            <Real Name="Value">1781</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1827</Real>
+            <Real Name="Value">1814</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1907</Real>
+            <Real Name="Value">1887</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">2001</Real>
@@ -205,52 +205,52 @@
             <Real Name="Value">2170</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">2194</Real>
+            <Real Name="Value">2164</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">2367</Real>
+            <Real Name="Value">2370</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">2521</Real>
+            <Real Name="Value">2504</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">2546</Real>
+            <Real Name="Value">2537</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">2731</Real>
+            <Real Name="Value">2722</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">2909</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">2962</Real>
+            <Real Name="Value">2930</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">3044</Real>
+            <Real Name="Value">3034</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">3038</Real>
+            <Real Name="Value">3060</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">3139</Real>
+            <Real Name="Value">3112</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">3296</Real>
+            <Real Name="Value">3259</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">3507</Real>
+            <Real Name="Value">3514</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">3404</Real>
+            <Real Name="Value">3370</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">3612</Real>
+            <Real Name="Value">3604</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">3945</Real>
+            <Real Name="Value">3928</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">3388</Real>
+            <Real Name="Value">3666</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
