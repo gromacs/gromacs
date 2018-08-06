@@ -77,20 +77,20 @@ function(gmx_set_cmake_compiler_flags)
         # builds and language types, and also those common to all
         # build types.
         foreach(build_type "" ${build_types_with_explicit_flags})
-            if("${build_type}" STREQUAL "")
-                set(punctuation "") # for general compiler flags (e.g.) CMAKE_CXX_FLAGS
-            else()
-                set(punctuation "_") # for build-type-specific compiler flags (e.g.) CMAKE_CXX_FLAGS_RELEASE
-            endif()
-
             # Append to the variables for the given build type for
             # each language, in the parent scope. We add our new variables at the end, so
             # compiler-specific choices are more likely to override default CMake choices.
             # This is for instance useful for RelWithDebInfo builds, where we want to use the full
             # set of our optimization flags detected in this file, rather than having -O2 override them.
-            set(CMAKE_${language}_FLAGS${punctuation}${build_type}
-                "${CMAKE_${language}_FLAGS${punctuation}${build_type}} ${GMXC_${language}FLAGS${punctuation}${build_type}}"
-                PARENT_SCOPE)
+            if("${build_type}" STREQUAL "")
+                set(punctuation "") # for general compiler flags (e.g.) CMAKE_CXX_FLAGS
+                string(REPLACE " " ";" GMXC_${language}FLAGS${punctuation}${build_type} "${GMXC_${language}FLAGS${punctuation}${build_type}}")
+                add_compile_options("$<$<COMPILE_LANGUAGE:${language}>:${GMXC_${language}FLAGS${punctuation}${build_type}}>")
+            else()
+                set(punctuation "_") # for build-type-specific compiler flags (e.g.) CMAKE_CXX_FLAGS_RELEASE
+                string(REPLACE " " ";" GMXC_${language}FLAGS${punctuation}${build_type} "${GMXC_${language}FLAGS${punctuation}${build_type}}")
+                add_compile_options("$<$<CONFIG:${build_type}>:$<$<COMPILE_LANGUAGE:${language}>:${GMXC_${language}FLAGS${punctuation}${build_type}}>>")
+            endif()
         endforeach()
     endforeach()
 endfunction()
