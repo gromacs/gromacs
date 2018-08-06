@@ -413,7 +413,6 @@ static void init_em(FILE *fplog, const char *title,
         /* Distribute the charge groups over the nodes from the master node */
         dd_partition_system(fplog, ir->init_step, cr, TRUE, 1,
                             state_global, top_global, ir,
-                            nullptr,
                             &ems->s, &ems->f, mdAtoms, *top,
                             fr, vsite, constr,
                             nrnb, nullptr, FALSE);
@@ -730,7 +729,6 @@ static void em_dd_partition_system(FILE *fplog, int step, const t_commrec *cr,
     /* Repartition the domain decomposition */
     dd_partition_system(fplog, step, cr, FALSE, 1,
                         nullptr, top_global, ir,
-                        nullptr,
                         &ems->s, &ems->f,
                         mdAtoms, top, fr, vsite, constr,
                         nrnb, wcycle, FALSE);
