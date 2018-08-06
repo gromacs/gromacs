@@ -43,24 +43,47 @@
 #define GMX_MDRUN_RUNNER_H
 
 #include <cstdio>
+#include <cassert>
 
 #include <array>
+#include <memory>
+#include <vector>
+#include <string>
+#include <mutex>
+#include <bitset>
+#include "gromacs/commandline/pargs.h"
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/main.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/repl_ex.h"
+#include "gromacs/mdlib/simulationsignal.h"
+#include "gromacs/mdtypes/imdmodule.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_output_env_t;
 struct ReplicaExchangeParameters;
 struct t_commrec;
+class PotentialContainer; // // defined in pulling/pullpotential.h
 
 namespace gmx
 {
+
+// Todo: move to forward declaration headers...
+class MDModules;
+
+namespace restraint
+{
+class Manager;
+}
+
+class TpxState;            // defined in mdtypes/TpxState.h
+class IRestraintPotential; // defined in pulling/pullpotential.h
 
 /*! \libinternal \brief Runner object for supporting setup and execution of mdrun.
  *
@@ -85,8 +108,14 @@ class Mdrunner
     private:
         //! Parallelism-related user options.
         gmx_hw_opt_t             hw_opt;
+        /*! \brief Number of filename argument values.
+         *
+         * Provided for compatibility with old C-style code accessing
+         * command-line arguments that are file names. */
+        constexpr static int nfile = 34;
+
         //! Filenames and properties from command-line argument values.
-        std::array<t_filenm, 34> filenames =
+        std::array<t_filenm, nfile> filenames =
         {{{ efTPR, nullptr,     nullptr,     ffREAD },
           { efTRN, "-o",        nullptr,     ffWRITE },
           { efCOMPRESSED, "-x", nullptr,     ffOPTWR },
@@ -126,11 +155,6 @@ class Mdrunner
          * Provided for compatibility with old C-style code accessing
          * command-line arguments that are file names. */
         t_filenm *fnm = filenames.data();
-        /*! \brief Number of filename argument values.
-         *
-         * Provided for compatibility with old C-style code accessing
-         * command-line arguments that are file names. */
-        int nfile = filenames.size();
         //! Output context for writing text files
         gmx_output_env_t                *oenv = nullptr;
         //! Ongoing collection of mdrun options
@@ -150,31 +174,126 @@ class Mdrunner
         //! Print a warning if any force is larger than this (in kJ/mol nm).
         real                             pforce = -1;
         //! Handle to file used for logging.
-        FILE                            *fplog;
+        FILE                            *fplog {nullptr};
         //! Handle to communication data structure.
         t_commrec                       *cr;
         //! Handle to multi-simulation handler.
         gmx_multisim_t                  *ms;
 
+        //! Allow override of final step from original input.
+        volatile bool                        finalStep_ {false};
+
+        //! hold the signaling object since integrator_t is just a function.
+        //! Signals are always mutable.
+        mutable SimulationSignals               simulationSignals_;
+
+        std::shared_ptr<restraint::Manager>     restraintManager_ {nullptr};
+        std::shared_ptr<TpxState>               tpxState_ {nullptr};
+
     public:
-        /*! \brief Defaulted constructor.
+        /*! \brief Constructor.
          *
          * Note that when member variables are not present in the constructor
          * member initialization list (which is true for the default constructor),
          * then they are initialized with any default member initializer specified
          * when they were declared, or default initialized. */
-        Mdrunner() = default;
+        Mdrunner();
         //! Start running mdrun by calling its C-style main function.
         int mainFunction(int argc, char *argv[]);
+        /*!
+         * \brief Provide handling for members requiring special attention.
+         *
+         * Note that initFromCLI() is assumed to be called zero or one times, but Mdrunner is
+         * copyable and may be duplicated on the master thread, so more careful management may be
+         * necessary.
+         */
+        ~Mdrunner();
+
+        // Copy requires special attention. Use clone methods.
+        Mdrunner(const Mdrunner &)            = delete;
+        Mdrunner &operator=(const Mdrunner &) = delete;
+
+        // Allow move
+        Mdrunner(Mdrunner &&);
+        Mdrunner &operator=(Mdrunner &&);
+
+        //! Set up mdrun by calling its C-style main function.
+        void initFromCLI(int argc, char *argv[]);
+
+        //! Set up mdrun with parameters provided by API instead of CLI.
+        void initFromAPI(const std::vector<std::string> &args);
+
         /*! \brief Driver routine, that calls the different simulation methods. */
+        /*!
+         * Currently, thread-MPI does not spawn threads until during mdrunner() and parallelism
+         * is not initialized until some time during this call...
+         */
         int mdrunner();
+
+        /*!
+         * \brief Set or replace the TPX state of the runner.
+         *
+         * To avoid race conditions, do not set a dirty state and expect to fix it later.
+         *
+         * Note: does not yet raise any notifications or permit subscribers. Every
+         * member function should assume state gets changed between calls.
+         *
+         * Warning: not thread safe.
+         *
+         */
+        void setTpx(std::shared_ptr<gmx::TpxState> newState);
+
+        /*!
+         * \brief Add a pulling potential to be evaluated during integration.
+         *
+         * \param puller GROMACS-provided or custom pulling potential
+         * \param name User-friendly plain-text name to uniquely identify the puller
+         */
+        void addPullPotential(std::shared_ptr<gmx::IRestraintPotential> puller,
+                              std::string                               name);
+
         //! Called when thread-MPI spawns threads.
         t_commrec *spawnThreads(int numThreadsToLaunch) const;
         /*! \brief Re-initializes the object after threads spawn.
          *
          * \todo Can this be refactored so that the Mdrunner on a spawned thread is
          * constructed ready to use? */
-        void reinitializeOnSpawnedThread();
+        // Replace with cloneOnSpawnedThread to get a new ready-to-use Mdrunner on the new thread.
+//        void reinitializeOnSpawnedThread();
+
+        /*!
+         * \brief API hook to allow a toggle to end the simulation.
+         *
+         * Sets a simulation stop condition. The
+         * next pass through the MD loop exits cleanly. Allows a client of the Mdrunner
+         * to cleanly interrupt a integrator_t function during execution of an MD loop.
+         *
+         * Note that the runner does not know the current step of the executing MD loop.
+         * It just owns the data resource that the integrator will check. The calling code
+         * should bear this in mind.
+         *
+         * May be called on any or all ranks.
+         */
+        void declareFinalStep();
+
+        /*!
+         * \brief Get raw pointer to the simulation signals mediated by the runner.
+         *
+         * The array pointed to is guaranteed to exist, but the elements may not yet be
+         * initialized.
+         *
+         * \return pointer to array of Signal objects.
+         */
+        SimulationSignals* signals() const;
+
+
+        /*! \brief Initializes a new Mdrunner from the master.
+         *
+         * Run in a new thread from a const pointer to the master.
+         * \returns New Mdrunner instance suitable for running in additional threads.
+         */
+        std::unique_ptr<Mdrunner> cloneOnSpawnedThread() const;
+
 };
 
 }      // namespace gmx

@@ -1,0 +1,11 @@
+integrator = md
+nsteps = 10000
+nstxout = 2
+nstvout = 2
+nstfout = 4
+nstxout-compressed = 5
+tcoupl = v-rescale
+tc-grps = System
+tau-t = 1
+ref-t = 298
+compressed-x-grps = Sol

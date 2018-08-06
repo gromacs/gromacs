@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,49 +32,37 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \defgroup module_mdrun Implementation of mdrun
- * \ingroup group_mdrun
+#ifndef GMXAPI_MD_IMPL_H
+#define GMXAPI_MD_IMPL_H
+/*! \file
+ * \brief Declarations for molecular dynamics API implementation details.
  *
- * \brief This module contains code that implements mdrun.
+ * \ingroup gmxapi
  */
-/*! \internal \file
- *
- * \brief This file implements mdrun
- *
- * \author Berk Hess <hess@kth.se>
- * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \author Erik Lindahl <erik@kth.se>
- * \author Mark Abraham <mark.j.abraham@gmail.com>
- *
- * \ingroup module_mdrun
- */
-#include "gmxpre.h"
 
-#include "config.h"
+#include "gmxapi/md.h"
+#include "gmxapi/gmxapi.h"
 
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
+#include <memory>
 
-#include "gromacs/commandline/filenm.h"
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/domdec/domdec.h"
-#include "gromacs/gmxlib/network.h"
-#include "gromacs/mdlib/main.h"
-#include "gromacs/mdlib/mdrun.h"
-#include "gromacs/mdlib/repl_ex.h"
-#include "gromacs/mdrun/runner.h"
-#include "gromacs/mdrunutility/handlerestart.h"
-#include "gromacs/mdtypes/commrec.h"
-#include "gromacs/utility/arraysize.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
-
-#include "mdrun_main.h"
-
-//! Implements C-style main function for mdrun
-int gmx_mdrun(int argc, char *argv[])
+namespace gmxapi
 {
-    gmx::Mdrunner runner;
-    return runner.mainFunction(argc, argv);
-}
+
+class MDWorkSpec;
+
+/*!
+ * \brief Implementation class to hide guts of MDHolder
+ *
+ * Holds the gmxapi interface for an object that can help instantiate the gmx::MdRunner
+ */
+class MDHolder::Impl
+{
+    public:
+        explicit Impl(std::shared_ptr<MDWorkSpec> &&spec);
+
+        std::shared_ptr<MDWorkSpec> spec_ {nullptr};
+};
+
+}      // namespace gmxapi
+
+#endif // header guard

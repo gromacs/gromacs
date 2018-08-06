@@ -57,6 +57,8 @@ give an overview of some of the topics that are documented:
  - \subpage page_usinglibrary <br/>
    Provides general guidance for writing software that uses the \Gromacs
    library.
+ - \subpage page_pullcodeextension <br/>
+   Adding external potentials by extending the pull code.
 \if libapi
  - \subpage page_wrapperbinary <br/>
    Provides an overview of how the `gmx` wrapper binary is implemented.
