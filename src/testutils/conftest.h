@@ -46,6 +46,7 @@
 #include <string>
 
 #include "gromacs/fileio/filetypes.h"
+
 #include "testutils/testasserts.h"
 #include "testutils/textblockmatchers.h"
 
