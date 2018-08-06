@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "RMS fluctuation"
+xaxis  label "Atom"
+yaxis  label "(nm)"
+TYPE xy
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data"></XvgData>
+    </File>
+    <File Name="-oq">
+      <GroFile Name="Header">
+        <String Name="Title">TITLE     Glycine aRginine prOline Methionine Alanine Cystine Serine</String>
+        <Int Name="Number of atoms">0</Int>
+      </GroFile>
+    </File>
+  </OutputFiles>
+</ReferenceData>
