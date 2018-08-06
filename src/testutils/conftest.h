@@ -45,6 +45,7 @@
 
 #include <string>
 
+#include "gromacs/fileio/filetypes.h"
 #include "testutils/testasserts.h"
 #include "testutils/textblockmatchers.h"
 
@@ -60,15 +61,17 @@ class TestReferenceChecker;
 
 struct ConfMatchSettings
 {
-    ConfMatchSettings() : tolerance(defaultRealTolerance())
+    ConfMatchSettings() : tolerance_(defaultRealTolerance()),
+						  filetype_(efGRO)
     {
     }
 
-    FloatingPointTolerance  tolerance;
+    FloatingPointTolerance  tolerance_;
+	int filetype_;
 };
 
 /*! \brief
- * Adds content of a gro file to TestReferenceChecker object.
+ * Adds content of a configuration file to TestReferenceChecker object.
  *
  * \param[in] input       Stream that provides the gro content.
  * \param[in,out] checker Checker to use.
@@ -83,10 +86,17 @@ void checkConfFile(TextInputStream         *input,
                    TestReferenceChecker    *checker,
                    const ConfMatchSettings &settings);
 
+void checkGroFile(TextInputStream *input,
+				TestReferenceChecker *checker);
+
+void checkPdbFile(TextInputStream *input,
+				TestReferenceChecker *checker);
+
+
 /*! \libinternal \brief
  * Match the contents as an gro file.
  *
- * \see checkGroFile()
+ * \see checkConfFile()
  *
  * \inlibraryapi
  * \ingroup module_testutils
@@ -97,9 +107,15 @@ class ConfMatch : public ITextBlockMatcherSettings
         //! Sets the tolerance for matching floating point values.
         ConfMatch &tolerance(const FloatingPointTolerance &tolerance)
         {
-            settings_.tolerance = tolerance;
+            settings_.tolerance_ = tolerance;
             return *this;
         }
+
+		ConfMatch &filetype(const int &filetype)
+		{
+				settings_.filetype_ = filetype;
+				return *this;
+		}
 
         virtual TextBlockMatcherPointer createMatcher() const;
 
