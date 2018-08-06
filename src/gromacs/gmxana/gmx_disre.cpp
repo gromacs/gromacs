@@ -618,7 +618,7 @@ static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
             {
                 fprintf(debug, "DR %d, atoms %d, %d, distance %g\n", i, ai, aj, rav);
             }
-            rviol           = std::max(static_cast<real>(0.0), rav-idef->iparams[tp].disres.up1);
+            rviol           = std::max(0.0_real, rav-idef->iparams[tp].disres.up1);
             matrix[ri][rj] += w_dr[i]*rviol;
             matrix[rj][ri] += w_dr[i]*rviol;
             hi              = std::max(hi, matrix[ri][rj]);

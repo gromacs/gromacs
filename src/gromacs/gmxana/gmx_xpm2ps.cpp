@@ -756,7 +756,7 @@ static void tick_spacing(int n, real axis[], real offset, char axisnm,
     {
         for (f = 0; f < NFACT && bTryAgain; f++)
         {
-            space = std::pow(static_cast<real>(10.0), static_cast<real>(t)) * major_fact[f];
+            space = std::pow(10.0_real, static_cast<real>(t)) * major_fact[f];
             /* count how many ticks we would get: */
             i = 0;
             for (j = 0; j < n; j++)

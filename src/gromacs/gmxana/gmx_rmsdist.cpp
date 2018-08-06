@@ -590,7 +590,7 @@ static void calc_rms(int nind, int nframes,
         {
             mean  = dtot[i][j]/nframes;
             mean2 = dtot2[i][j]/nframes;
-            rms   = std::sqrt(std::max(static_cast<real>(0.0), mean2-mean*mean));
+            rms   = std::sqrt(std::max(0.0_real, mean2-mean*mean));
             rmsc  = rms/mean;
             if (mean > *meanmax)
             {
