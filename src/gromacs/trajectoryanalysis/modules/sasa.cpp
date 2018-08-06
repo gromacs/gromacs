@@ -830,8 +830,7 @@ void computeAreas(const Selection &surfaceSel, const Selection &sel,
 
     if (bResAt)
     {
-        std::fill(resAreaWork->begin(), resAreaWork->end(),
-                  static_cast<real>(0.0));
+        std::fill(resAreaWork->begin(), resAreaWork->end(), 0.0_real);
     }
     for (int i = 0; i < sel.posCount(); ++i)
     {
@@ -938,7 +937,7 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         if (surfaceSel.isDynamic())
         {
             std::fill(frameData.atomAreas_.begin(), frameData.atomAreas_.end(),
-                      static_cast<real>(0.0));
+                      0.0_real);
             for (size_t i = 0; i < frameData.index_.size(); ++i)
             {
                 frameData.atomAreas_[frameData.index_[i]] = area[i];

@@ -231,7 +231,7 @@ int gmx_genpr(int argc, char *argv[])
                         {
                             dd = disre_dist;
                         }
-                        lo = std::max(static_cast<real>(0.0), d-dd);
+                        lo = std::max(0.0_real, d-dd);
                         hi = d+dd;
                         fprintf(out, "%5d %5d %1d %5d %10d %10g %10g %10g %10g\n",
                                 ind_grp[i]+1, ind_grp[j]+1, 1, k, 1,

@@ -2756,7 +2756,7 @@ static void get_nsubpair_target(const nbnxn_search   *nbs,
          * groups of atoms we'll anyhow be limited by nsubpair_target_min,
          * so this overestimation will not matter.
          */
-        nsp_est = std::max(nsp_est, grid->nsubc_tot*static_cast<real>(14));
+        nsp_est = std::max(nsp_est, grid->nsubc_tot*14._real);
 
         if (debug)
         {
