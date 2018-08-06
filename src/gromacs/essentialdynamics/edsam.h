@@ -48,16 +48,17 @@
 #ifndef GMX_ESSENTIALDYNAMICS_EDSAM_H
 #define GMX_ESSENTIALDYNAMICS_EDSAM_H
 
+#include <memory>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
-
+#include "gromacs/utility/classhelpers.h"
 
 /*! \brief Abstract type for essential dynamics
  *
  * The main type is defined only in edsam.cpp
  */
-typedef struct gmx_edsam *gmx_edsam_t;
-
+struct gmx_edsam;
 struct gmx_domdec_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
@@ -70,7 +71,23 @@ class t_state;
 namespace gmx
 {
 class Constraints;
-}
+class EssentialDynamics
+{
+    public:
+        EssentialDynamics();
+        ~EssentialDynamics();
+
+        /*! \brief Getter for working data
+         *
+         * This is needed while the module is still under
+         * construction. */
+        gmx_edsam *getLegacyED();
+    private:
+        class Impl;
+
+        PrivateImplPointer<Impl> impl_;
+};
+} // namespace gmx
 
 /*! \brief Applies essential dynamics constrains as defined in the .edi input file.
  *
@@ -101,7 +118,7 @@ void do_edsam(const t_inputrec *ir, gmx_int64_t step,
  *
  * \returns                 A pointer to the ED data structure.
  */
-gmx_edsam_t init_edsam(
+std::unique_ptr<gmx::EssentialDynamics> init_edsam(
         const char             *ediFileName,
         const char             *edoFileName,
         const gmx_mtop_t       *mtop,
@@ -120,7 +137,7 @@ gmx_edsam_t init_edsam(
  * \param dd                Domain decomposition data.
  * \param ed                Essential dynamics and flooding data.
  */
-void dd_make_local_ed_indices(gmx_domdec_t *dd, gmx_edsam_t ed);
+void dd_make_local_ed_indices(gmx_domdec_t *dd, gmx_edsam * ed);
 
 
 /*! \brief Evaluate the flooding potential(s) and forces as requested in the .edi input file.
@@ -142,11 +159,5 @@ void do_flood(const t_commrec  *cr,
               matrix            box,
               gmx_int64_t       step,
               gmx_bool          bNS);
-
-/*! \brief Clean up
- *
- * \param ed                The essential dynamics data
- */
-void done_ed(gmx_edsam_t *ed);
 
 #endif

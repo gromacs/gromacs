@@ -45,6 +45,7 @@
 #include <cmath>
 
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -188,14 +189,24 @@ typedef struct edpar
 } t_edpar;
 
 
-typedef struct gmx_edsam
+struct gmx_edsam
 {
-    int            eEDtype;       /* Type of ED: see enums above          */
-    FILE          *edo;           /* output file pointer                  */
-    t_edpar       *edpar;
-    gmx_bool       bFirst;
-} t_gmx_edsam;
-
+    ~gmx_edsam();
+    int            eEDtype = eEDnone;       /* Type of ED: see enums above          */
+    FILE          *edo     = nullptr;       /* output file pointer                  */
+    t_edpar       *edpar   = nullptr;
+    gmx_bool       bFirst  = false;
+};
+gmx_edsam::~gmx_edsam()
+{
+    if (edo)
+    {
+        /* edo is opened sometimes with xvgropen, sometimes with
+         * gmx_fio_fopen, so we use the least common denominator for
+         * closing. */
+        gmx_fio_fclose(edo);
+    }
+}
 
 struct t_do_edsam
 {
@@ -226,15 +237,33 @@ struct t_ed_buffer
     struct t_do_radcon *            do_radcon;
 };
 
+namespace gmx
+{
+class EssentialDynamics::Impl
+{
+    public:
+        // TODO: move all fields from gmx_edsam here and remove gmx_edsam
+        gmx_edsam essentialDynamics_;
+};
+EssentialDynamics::EssentialDynamics() : impl_(new Impl)
+{
+}
+EssentialDynamics::~EssentialDynamics() = default;
+
+gmx_edsam *EssentialDynamics::getLegacyED()
+{
+    return &impl_->essentialDynamics_;
+}
+} // namespace gmx
 
 /* Function declarations */
 static void fit_to_reference(rvec *xcoll, rvec transvec, matrix rotmat, t_edpar *edi);
 static void translate_and_rotate(rvec *x, int nat, rvec transvec, matrix rotmat);
 static real rmsd_from_structure(rvec *x, struct gmx_edx *s);
 static int read_edi_file(const char *fn, t_edpar *edi, int nr_mdatoms);
-static void crosscheck_edi_file_vs_checkpoint(gmx_edsam_t ed, edsamhistory_t *EDstate);
-static void init_edsamstate(gmx_edsam_t ed, edsamhistory_t *EDstate);
-static void write_edo_legend(gmx_edsam_t ed, int nED, const gmx_output_env_t *oenv);
+static void crosscheck_edi_file_vs_checkpoint(const gmx_edsam &ed, edsamhistory_t *EDstate);
+static void init_edsamstate(gmx_edsam * ed, edsamhistory_t *EDstate);
+static void write_edo_legend(gmx_edsam * ed, int nED, const gmx_output_env_t *oenv);
 /* End function declarations */
 
 /* Define formats for the column width in the output file */
@@ -1020,7 +1049,7 @@ extern void do_flood(const t_commrec  *cr,
 
 /* Called by init_edi, configure some flooding related variables and structures,
  * print headers to output files */
-static void init_flood(t_edpar *edi, gmx_edsam_t ed, real dt)
+static void init_flood(t_edpar *edi, gmx_edsam * ed, real dt)
 {
     int i;
 
@@ -1103,7 +1132,7 @@ static void get_flood_energies(t_edpar *edi, real Vfl[], int nnames)
  * with the essential dynamics data found in the checkpoint file (if present).
  * gmx make_edi can be used to create an .edi input file.
  */
-static gmx_edsam_t ed_open(
+static std::unique_ptr<gmx::EssentialDynamics> ed_open(
         int                     natoms,
         ObservablesHistory     *oh,
         const char             *ediFileName,
@@ -1112,11 +1141,9 @@ static gmx_edsam_t ed_open(
         const gmx_output_env_t *oenv,
         const t_commrec        *cr)
 {
-    gmx_edsam_t ed;
+    auto        edHandle = gmx::compat::make_unique<gmx::EssentialDynamics>();
+    auto        ed       = edHandle->getLegacyED();
     int         nED;
-
-    /* Allocate space for the ED data structure */
-    snew(ed, 1);
 
     /* We want to perform ED (this switch might later be upgraded to eEDflood) */
     ed->eEDtype = eEDedsam;
@@ -1138,7 +1165,7 @@ static gmx_edsam_t ed_open(
         /* Make sure the checkpoint was produced in a run using this .edi file */
         if (EDstate->bFromCpt)
         {
-            crosscheck_edi_file_vs_checkpoint(ed, EDstate);
+            crosscheck_edi_file_vs_checkpoint(*ed, EDstate);
         }
         else
         {
@@ -1162,7 +1189,7 @@ static gmx_edsam_t ed_open(
             write_edo_legend(ed, EDstate->nED, oenv);
         }
     }
-    return ed;
+    return edHandle;
 }
 
 
@@ -1242,7 +1269,7 @@ static void bc_ed_vecs(const t_commrec *cr, t_eigvec *ev, int length, gmx_bool b
 
 /* Broadcasts the ED / flooding data to other nodes
  * and allocates memory where needed */
-static void broadcast_ed_data(const t_commrec *cr, gmx_edsam_t ed, int numedis)
+static void broadcast_ed_data(const t_commrec *cr, gmx_edsam * ed, int numedis)
 {
     int      nr;
     t_edpar *edi;
@@ -2244,7 +2271,7 @@ static void copyEvecReference(t_eigvec* floodvecs)
 
 /* Call on MASTER only. Check whether the essential dynamics / flooding
  * groups of the checkpoint file are consistent with the provided .edi file. */
-static void crosscheck_edi_file_vs_checkpoint(gmx_edsam_t ed, edsamhistory_t *EDstate)
+static void crosscheck_edi_file_vs_checkpoint(const gmx_edsam &ed, edsamhistory_t *EDstate)
 {
     t_edpar *edi = nullptr;    /* points to a single edi data set */
     int      edinum;
@@ -2259,7 +2286,7 @@ static void crosscheck_edi_file_vs_checkpoint(gmx_edsam_t ed, edsamhistory_t *ED
                   "from without a checkpoint.\n");
     }
 
-    edi    = ed->edpar;
+    edi    = ed.edpar;
     edinum = 0;
     while (edi != nullptr)
     {
@@ -2296,7 +2323,7 @@ static void crosscheck_edi_file_vs_checkpoint(gmx_edsam_t ed, edsamhistory_t *ED
  * c) in any case, for subsequent checkpoint writing, we set the pointers in
  * edsamstate to the x_old arrays, which contain the correct PBC representation of
  * all ED structures at the last time step. */
-static void init_edsamstate(gmx_edsam_t ed, edsamhistory_t *EDstate)
+static void init_edsamstate(gmx_edsam * ed, edsamhistory_t *EDstate)
 {
     int      i, nr_edi;
     t_edpar *edi;
@@ -2395,7 +2422,7 @@ static void nice_legend_evec(const char ***setname, int *nsets, char **LegendStr
 
 
 /* Makes a legend for the xvg output file. Call on MASTER only! */
-static void write_edo_legend(gmx_edsam_t ed, int nED, const gmx_output_env_t *oenv)
+static void write_edo_legend(gmx_edsam * ed, int nED, const gmx_output_env_t *oenv)
 {
     t_edpar     *edi = nullptr;
     int          i;
@@ -2572,7 +2599,7 @@ static void write_edo_legend(gmx_edsam_t ed, int nED, const gmx_output_env_t *oe
 
 /* Init routine for ED and flooding. Calls init_edi in a loop for every .edi-cycle
  * contained in the input file, creates a NULL terminated list of t_edpar structures */
-gmx_edsam_t init_edsam(
+std::unique_ptr<gmx::EssentialDynamics> init_edsam(
         const char             *ediFileName,
         const char             *edoFileName,
         const gmx_mtop_t       *mtop,
@@ -2606,7 +2633,8 @@ gmx_edsam_t init_edsam(
     }
 
     /* Open input and output files, allocate space for ED data structure */
-    gmx_edsam_t ed = ed_open(mtop->natoms, oh, ediFileName, edoFileName, bAppend, oenv, cr);
+    auto edHandle = ed_open(mtop->natoms, oh, ediFileName, edoFileName, bAppend, oenv, cr);
+    auto ed       = edHandle->getLegacyED();
     GMX_RELEASE_ASSERT(constr != nullptr, "Must have valid constraints object");
     constr->saveEdsamPointer(ed);
 
@@ -2934,7 +2962,7 @@ gmx_edsam_t init_edsam(
         fflush(ed->edo);
     }
 
-    return ed;
+    return edHandle;
 }
 
 
@@ -2944,7 +2972,7 @@ void do_edsam(const t_inputrec *ir,
               rvec              xs[],
               rvec              v[],
               matrix            box,
-              gmx_edsam_t       ed)
+              gmx_edsam        *ed)
 {
     int                i, edinr, iupdate = 500;
     matrix             rotmat;         /* rotation matrix */
@@ -3118,17 +3146,4 @@ void do_edsam(const t_inputrec *ir,
     } /* END of loop over ED groups */
 
     ed->bFirst = FALSE;
-}
-
-void done_ed(gmx_edsam_t *ed)
-{
-    if (*ed)
-    {
-        /* ed->edo is opened sometimes with xvgropen, sometimes with
-         * gmx_fio_fopen, so we use the least common denominator for
-         * closing. */
-        gmx_fio_fclose((*ed)->edo);
-    }
-
-    /* TODO deallocate ed and set pointer to NULL */
 }
