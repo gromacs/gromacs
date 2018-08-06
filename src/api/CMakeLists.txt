@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,40 +32,21 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-######################################
-# Output compiler and CFLAGS used
-######################################
-include(GetCompilerInfo.cmake)
-get_compiler_info(C BUILD_C_COMPILER BUILD_CFLAGS)
-get_compiler_info(CXX BUILD_CXX_COMPILER BUILD_CXXFLAGS)
-if(GMX_USE_CUDA)
-    if(NOT GMX_CLANG_CUDA)
-        GMX_SET_CUDA_NVCC_FLAGS()
-    endif()
+# TODO: At some point, we need to clarify the relationship between this versioning
+# and the single-integer monotonic versioning in GMX_API_VERSION that currently
+# tracks the Gromacs release, or the LIBRARY_VERSION that annotates the shared object.
+set(GMXAPI_MAJOR 0)
+set(GMXAPI_MINOR 0)
+set(GMXAPI_PATCH 7)
+set(GMXAPI_RELEASE ${GMXAPI_MAJOR}.${GMXAPI_MINOR}.${GMXAPI_PATCH})
 
-    get_cuda_compiler_info(CUDA_COMPILER_INFO CUDA_COMPILER_FLAGS)
-endif()
+###############################
+# New public C++ API components
+###############################
+add_subdirectory(cpp)
 
-configure_file(config.h.cmakein config.h)
-configure_file(gmxpre-config.h.cmakein gmxpre-config.h)
-configure_file(buildinfo.h.cmakein buildinfo.h ESCAPE_QUOTES)
+# After processing the cpp dir, this CMake scope will have a
+# GMXAPI_PUBLIC_BUILD_HEADERS variable with the sources for automatically
+# extracted public API documentation.
 
-if (BUILD_TESTING)
-    if(NOT GMX_DEVELOPER_BUILD)
-        set(UNITTEST_TARGET_OPTIONS EXCLUDE_FROM_ALL)
-    endif()
-    if (GMX_BUILD_UNITTESTS)
-        add_subdirectory(external/googletest)
-    endif()
-    include(testutils/TestMacros.cmake)
-    add_subdirectory(testutils)
-endif()
-
-add_subdirectory(gromacs)
-add_subdirectory(programs)
-
-# Activate targets for new C++ API components and docs.
-option(GMXAPI "Experimental external interfaces" ON)
-if (GMXAPI)
-   add_subdirectory(api)
-endif()
+add_subdirectory(docs)
