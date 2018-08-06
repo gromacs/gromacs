@@ -53,6 +53,16 @@ namespace gmx
 class Path
 {
     public:
+        //!Create Path from string/char*
+        template<class T>
+        Path(T &&path) : path_(std::forward<T>(path)) {}
+        //!Convert to string
+        operator std::string() const { return path_; }
+        //!Return null terminated const char*
+        const char* c_str() const { return path_.c_str(); }
+        Path &operator/=(Path o) { path_ = join(path_, o.path_); return *this; }
+        Path normalize() { return normalize(path_); }
+
         static bool containsDirectory(const std::string &path);
         static bool isAbsolute(const char *path);
         static bool isAbsolute(const std::string &path);
@@ -93,7 +103,14 @@ class Path
     private:
         // Disallow instantiation.
         Path();
+        std::string path_;
 };
+
+//! Concatenates two path.
+static inline Path operator/(const Path &a, const Path &b)
+{
+    return Path::join(a, b);
+}
 
 class File
 {
