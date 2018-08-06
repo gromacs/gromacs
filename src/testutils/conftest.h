@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,8 @@
 
 #include <string>
 
+#include "gromacs/fileio/filetypes.h"
+
 #include "testutils/testasserts.h"
 #include "testutils/textblockmatchers.h"
 
@@ -60,33 +62,64 @@ class TestReferenceChecker;
 
 struct ConfMatchSettings
 {
-    ConfMatchSettings() : tolerance(defaultRealTolerance())
+    ConfMatchSettings() : tolerance_(defaultRealTolerance()),
+                          filetype_(efGRO), fullCheck_(false)
     {
     }
 
-    FloatingPointTolerance  tolerance;
+    FloatingPointTolerance  tolerance_;
+    int                     filetype_;
+    bool                    fullCheck_;
 };
 
 /*! \brief
- * Adds content of a gro file to TestReferenceChecker object.
+ * Adds content of a configuration file to TestReferenceChecker object.
  *
  * \param[in] input       Stream that provides the gro content.
  * \param[in,out] checker Checker to use.
  * \param[in] settings    Settings to use for matching.
  *
- * Parses a gro file from the input stream, and checks the contents against
- * reference data (only first two lines for now).
- *
- * \see ConfMatch
+ * The exact form of the checker is determined by the file type used when
+ * declaring the checker.
  */
 void checkConfFile(TextInputStream         *input,
                    TestReferenceChecker    *checker,
                    const ConfMatchSettings &settings);
 
+/*! \brief
+ * Performs comparison checks on a GRO file.
+ *
+ * \param[in] input       Stream that provides the gro content.
+ * \param[in,out] checker Checker to use.
+ * \param[in] settings    Settings to use for matching.
+ *
+ * The checker parses the file from input and compares against the stored
+ * reference data. If the fullCheck_ setting is used, the complete file
+ * will be compared field by field. Otherwise only the first two lines are compared.
+ */
+void checkGroFile(TextInputStream         *input,
+                  TestReferenceChecker    *checker,
+                  const ConfMatchSettings &settings);
+
+/*! \brief
+ * Performs comparison checks on a PDB file.
+ *
+ * \param[in] input       Stream that provides the gro content.
+ * \param[in,out] checker Checker to use.
+ * \param[in] settings    Settings to use for matching.
+ *
+ * The checker parses the file from input and compares against the stored
+ * reference data. If the fullCheck_ setting is used, the complete file
+ * will be compared field by field. Otherwise only the title line is checked.
+ */
+void checkPdbFile(TextInputStream         *input,
+                  TestReferenceChecker    *checker,
+                  const ConfMatchSettings &settings);
+
 /*! \libinternal \brief
  * Match the contents as an gro file.
  *
- * \see checkGroFile()
+ * \see checkConfFile()
  *
  * \inlibraryapi
  * \ingroup module_testutils
@@ -97,7 +130,19 @@ class ConfMatch : public ITextBlockMatcherSettings
         //! Sets the tolerance for matching floating point values.
         ConfMatch &tolerance(const FloatingPointTolerance &tolerance)
         {
-            settings_.tolerance = tolerance;
+            settings_.tolerance_ = tolerance;
+            return *this;
+        }
+        //! Sets the filetype of the output file, used to determine the checker that should be used.
+        ConfMatch &filetype(const int &filetype)
+        {
+            settings_.filetype_ = filetype;
+            return *this;
+        }
+        //! Sets the flag to determine if a complete file comparison should be attempted or not.
+        ConfMatch &fullCheck(const bool &fullCheck)
+        {
+            settings_.fullCheck_ = fullCheck;
             return *this;
         }
 
