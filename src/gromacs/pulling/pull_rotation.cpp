@@ -51,6 +51,8 @@
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
+#include "gromacs/domdec/localatomset.h"
+#include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/network.h"
@@ -70,6 +72,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/qsort_threadsafe.h"
@@ -133,19 +136,15 @@ struct gmx_potfit
 struct gmx_enfrotgrp
 {
     //! Input parameters for this group
-    const t_rotgrp *rotg = nullptr;
+    const t_rotgrp                    *rotg = nullptr;
     //! Index of this group within the set of groups
-    int             groupIndex;
+    int                                groupIndex;
     //! Rotation angle in degrees
-    real            degangle;
+    real                               degangle;
     //! Rotation matrix
-    matrix          rotmat;
-    //! Local rotation indices
-    int            *ind_loc;
-    //! Number of local group atoms
-    int             nat_loc;
-    //! Allocation size for ind_loc and weight_loc
-    int             nalloc_loc;
+    matrix                             rotmat;
+    //! The atoms subject to enforced rotation
+    std::unique_ptr<gmx::LocalAtomSet> atomSet;
 
     //! The normalized rotation vector
     rvec  vec;
@@ -157,8 +156,6 @@ struct gmx_enfrotgrp
     /* Collective coordinates for the whole rotation group */
     //! Length of each x_rotref vector after x_rotref has been put into origin
     real  *xc_ref_length;
-    //! Position of each local atom in the collective array
-    int   *xc_ref_ind;
     //! Center of the rotation group positions, may be mass weighted
     rvec   xc_center;
     //! Center of the rotation group reference positions
@@ -601,10 +598,11 @@ real add_rot_forces(gmx_enfrot *er,
     {
         gmx_enfrotgrp *erg = &ergRef;
         Vrot += erg->V;  /* add the local parts from the nodes */
-        for (int l = 0; l < erg->nat_loc; l++)
+        const auto    &localRotationGroupIndex = erg->atomSet->localIndex();
+        for (gmx::index l = 0; l < localRotationGroupIndex.size(); l++)
         {
             /* Get the right index of the local force */
-            int ii = erg->ind_loc[l];
+            int ii = localRotationGroupIndex[l];
             /* Add */
             rvec_inc(f[ii], erg->f_rot_loc[l]);
         }
@@ -1963,12 +1961,15 @@ static real do_flex2_lowlevel(
     N_M      = erg->rotg->nat * erg->invmass;
     V        = 0.0;
     OOsigma2 = 1.0 / (sigma*sigma);
-    for (int j = 0; j < erg->nat_loc; j++)
+    const auto &localRotationGroupIndex      = erg->atomSet->localIndex();
+    const auto &collectiveRotationGroupIndex = erg->atomSet->collectiveIndex();
+
+    for (gmx::index j = 0; j < localRotationGroupIndex.size(); j++)
     {
         /* Local index of a rotation group atom  */
-        ii = erg->ind_loc[j];
+        ii = localRotationGroupIndex[j];
         /* Position of this atom in the collective array */
-        iigrp = erg->xc_ref_ind[j];
+        iigrp = collectiveRotationGroupIndex[j];
         /* Mass-weighting */
         mj = erg->mc[iigrp];  /* need the unsorted mass here */
         wj = N_M*mj;
@@ -2199,12 +2200,15 @@ static real do_flex_lowlevel(
     OOsigma2 = 1.0/(sigma*sigma);
     N_M      = erg->rotg->nat * erg->invmass;
     V        = 0.0;
-    for (int j = 0; j < erg->nat_loc; j++)
+    const auto &localRotationGroupIndex      = erg->atomSet->localIndex();
+    const auto &collectiveRotationGroupIndex = erg->atomSet->collectiveIndex();
+
+    for (gmx::index j = 0; j < localRotationGroupIndex.size(); j++)
     {
         /* Local index of a rotation group atom  */
-        int ii = erg->ind_loc[j];
+        int ii = localRotationGroupIndex[j];
         /* Position of this atom in the collective array */
-        iigrp = erg->xc_ref_ind[j];
+        iigrp = collectiveRotationGroupIndex[j];
         /* Mass-weighting */
         mj = erg->mc[iigrp];  /* need the unsorted mass here */
         wj = N_M*mj;
@@ -2665,9 +2669,9 @@ static void do_fixed(
     bCalcPotFit = (bOutstepRot || bOutstepSlab) && (erotgFitPOT == erg->rotg->eFittype);
 
     N_M = erg->rotg->nat * erg->invmass;
-
+    const auto &collectiveRotationGroupIndex = erg->atomSet->collectiveIndex();
     /* Each process calculates the forces on its local atoms */
-    for (int j = 0; j < erg->nat_loc; j++)
+    for (size_t j = 0; j < erg->atomSet->numAtomsLocal(); j++)
     {
         /* Calculate (x_i-x_c) resp. (x_i-u) */
         rvec_sub(erg->x_loc_pbc[j], erg->xc_center, xi_xc);
@@ -2700,7 +2704,7 @@ static void do_fixed(
             for (int ifit = 0; ifit < erg->rotg->PotAngle_nstep; ifit++)
             {
                 /* Index of this rotation group atom with respect to the whole rotation group */
-                int jj = erg->xc_ref_ind[j];
+                int jj = collectiveRotationGroupIndex[j];
 
                 /* Rotate with the alternative angle. Like rotate_local_reference(),
                  * just for a single local atom */
@@ -2768,9 +2772,9 @@ static void do_radial_motion(
     bCalcPotFit = (bOutstepRot || bOutstepSlab) && (erotgFitPOT == erg->rotg->eFittype);
 
     N_M = erg->rotg->nat * erg->invmass;
-
+    const auto &collectiveRotationGroupIndex = erg->atomSet->collectiveIndex();
     /* Each process calculates the forces on its local atoms */
-    for (int j = 0; j < erg->nat_loc; j++)
+    for (size_t j = 0; j < erg->atomSet->numAtomsLocal(); j++)
     {
         /* Calculate (xj-u) */
         rvec_sub(erg->x_loc_pbc[j], erg->xc_center, xj_u);  /* xj_u = xj-u */
@@ -2801,7 +2805,7 @@ static void do_radial_motion(
             for (int ifit = 0; ifit < erg->rotg->PotAngle_nstep; ifit++)
             {
                 /* Index of this rotation group atom with respect to the whole rotation group */
-                int jj = erg->xc_ref_ind[j];
+                int jj = collectiveRotationGroupIndex[j];
 
                 /* Rotate with the alternative angle. Like rotate_local_reference(),
                  * just for a single local atom */
@@ -2897,12 +2901,14 @@ static void do_radial_motion_pf(
     svmul(erg->rotg->k*erg->invmass, innersumvec, innersumveckM);
 
     /* Each process calculates the forces on its local atoms */
-    for (int j = 0; j < erg->nat_loc; j++)
+    const auto &localRotationGroupIndex      = erg->atomSet->localIndex();
+    const auto &collectiveRotationGroupIndex = erg->atomSet->collectiveIndex();
+    for (gmx::index j = 0; j < localRotationGroupIndex.size(); j++)
     {
         /* Local index of a rotation group atom  */
-        int ii = erg->ind_loc[j];
+        int ii = localRotationGroupIndex[j];
         /* Position of this atom in the collective array */
-        int iigrp = erg->xc_ref_ind[j];
+        int iigrp = collectiveRotationGroupIndex[j];
         /* Mass-weighting */
         mj = erg->mc[iigrp];  /* need the unsorted mass here */
         wj = N_M*mj;
@@ -3086,14 +3092,16 @@ static void do_radial_motion2(
     N_M = erg->rotg->nat * erg->invmass;
 
     /* Each process calculates the forces on its local atoms */
-    for (int j = 0; j < erg->nat_loc; j++)
+    const auto &localRotationGroupIndex      = erg->atomSet->localIndex();
+    const auto &collectiveRotationGroupIndex = erg->atomSet->collectiveIndex();
+    for (gmx::index j = 0; j < localRotationGroupIndex.size(); j++)
     {
         if (bPF)
         {
             /* Local index of a rotation group atom  */
-            int ii = erg->ind_loc[j];
+            int ii = localRotationGroupIndex[j];
             /* Position of this atom in the collective array */
-            int iigrp = erg->xc_ref_ind[j];
+            int iigrp = collectiveRotationGroupIndex[j];
             /* Mass-weighting */
             mj = erg->mc[iigrp];
 
@@ -3166,7 +3174,7 @@ static void do_radial_motion2(
                 else
                 {
                     /* Position of this atom in the collective array */
-                    int iigrp = erg->xc_ref_ind[j];
+                    int iigrp = collectiveRotationGroupIndex[j];
                     /* Rotate with the alternative angle. Like rotate_local_reference(),
                      * just for a single local atom */
                     mvmul(erg->PotAngleFit->rotmat[ifit], erg->rotg->x_ref[iigrp], fit_rj); /* fit_rj = Omega*(yj0-u) */
@@ -3386,7 +3394,6 @@ static void init_rot_group(FILE *fplog, const t_commrec *cr,
 
     copy_rvec(erg->rotg->inputVec, erg->vec);
     snew(erg->f_rot_loc, erg->rotg->nat);
-    snew(erg->xc_ref_ind, erg->rotg->nat);
 
     /* Make space for the calculation of the potential at other angles (used
      * for fitting only) */
@@ -3407,15 +3414,6 @@ static void init_rot_group(FILE *fplog, const t_commrec *cr,
     else
     {
         erg->PotAngleFit = nullptr;
-    }
-
-    /* xc_ref_ind needs to be set to identity in the serial case */
-    if (!PAR(cr))
-    {
-        for (int i = 0; i < erg->rotg->nat; i++)
-        {
-            erg->xc_ref_ind[i] = i;
-        }
     }
 
     /* Copy the masses so that the center can be determined. For all types of
@@ -3556,20 +3554,6 @@ static void init_rot_group(FILE *fplog, const t_commrec *cr,
     }
 }
 
-
-void dd_make_local_rotation_groups(gmx_domdec_t *dd,
-                                   gmx_enfrot   *er)
-{
-    gmx_ga2la_t      *ga2la = dd->ga2la;
-
-    for (auto &erg : er->enfrotgrp)
-    {
-        dd_make_local_group_indices(ga2la, erg.rotg->nat, erg.rotg->ind,
-                                    &erg.nat_loc, &erg.ind_loc, &erg.nalloc_loc, erg.xc_ref_ind);
-    }
-}
-
-
 /* Calculate the size of the MPI buffer needed in reduce_output() */
 static int calc_mpi_bufsize(const gmx_enfrot *er)
 
@@ -3605,7 +3589,7 @@ static int calc_mpi_bufsize(const gmx_enfrot *er)
 
 std::unique_ptr<gmx::EnforcedRotation>
 init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
-         const t_commrec *cr, const t_state *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
+         const t_commrec *cr, gmx::LocalAtomSetManager * atomSets, const t_state *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
          const MdrunOptions &mdrunOptions)
 {
     int             nat_max = 0;       /* Size of biggest rotation group */
@@ -3679,6 +3663,7 @@ init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
     {
         gmx_enfrotgrp *erg = &ergRef;
         erg->rotg       = &er->rot->grp[groupIndex];
+        erg->atomSet    = gmx::compat::make_unique<gmx::LocalAtomSet>(atomSets->add({erg->rotg->ind, erg->rotg->ind + erg->rotg->nat}));
         erg->groupIndex = groupIndex;
 
         if (nullptr != fplog)
@@ -3690,23 +3675,6 @@ init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
         {
             nat_max = std::max(nat_max, erg->rotg->nat);
 
-            if (PAR(cr))
-            {
-                erg->nat_loc    = 0;
-                erg->nalloc_loc = 0;
-                erg->ind_loc    = nullptr;
-            }
-            else
-            {
-                // Do a deep copy of the array that will be used for
-                // the local group indices.
-                erg->nat_loc = erg->rotg->nat;
-                srenew(erg->ind_loc, erg->nat_loc);
-                for (int i = 0; i < erg->nat_loc; ++i)
-                {
-                    erg->ind_loc[i] = erg->rotg->ind[i];
-                }
-            }
             init_rot_group(fplog, cr, erg, x_pbc, mtop, mdrunOptions.verbose, er->out_slabs, MASTER(cr) ? globalState->box : nullptr, ir,
                            !er->appendFiles); /* Do not output the reference centers
                                                * again if we are appending */
@@ -3767,10 +3735,11 @@ init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
  */
 static void rotate_local_reference(gmx_enfrotgrp *erg)
 {
-    for (int i = 0; i < erg->nat_loc; i++)
+    const auto &collectiveRotationGroupIndex = erg->atomSet->collectiveIndex();
+    for (size_t i = 0; i < erg->atomSet->numAtomsLocal(); i++)
     {
         /* Index of this rotation group atom with respect to the whole rotation group */
-        int ii = erg->xc_ref_ind[i];
+        int ii = collectiveRotationGroupIndex[i];
         /* Rotate */
         mvmul(erg->rotmat, erg->rotg->x_ref[ii], erg->xr_loc[i]);
     }
@@ -3784,10 +3753,11 @@ static void choose_pbc_image(rvec x[],
                              gmx_enfrotgrp *erg,
                              matrix box, int npbcdim)
 {
-    for (int i = 0; i < erg->nat_loc; i++)
+    const auto &localRotationGroupIndex = erg->atomSet->localIndex();
+    for (gmx::index i = 0; i < localRotationGroupIndex.size(); i++)
     {
         /* Index of a rotation group atom  */
-        int ii = erg->ind_loc[i];
+        int ii = localRotationGroupIndex[i];
 
         /* Get the correctly rotated reference position. The pivot was already
          * subtracted in init_rot_group() from the reference positions. Also,
@@ -3852,7 +3822,7 @@ void do_rotation(const t_commrec       *cr,
              * all of them. Every node contributes its local positions x and stores
              * it in the collective erg->xc array. */
             communicate_group_positions(cr, erg->xc, erg->xc_shifts, erg->xc_eshifts, bNS,
-                                        x, rotg->nat, erg->nat_loc, erg->ind_loc, erg->xc_ref_ind, erg->xc_old, box);
+                                        x, rotg->nat, erg->atomSet->numAtomsLocal(), erg->atomSet->localIndex().data(), erg->atomSet->collectiveIndex().data(), erg->xc_old, box);
         }
         else
         {
@@ -3860,10 +3830,11 @@ void do_rotation(const t_commrec       *cr,
              * this array changes in DD/neighborsearching steps */
             if (bNS)
             {
-                for (int i = 0; i < erg->nat_loc; i++)
+                const auto &collectiveRotationGroupIndex = erg->atomSet->collectiveIndex();
+                for (gmx::index i = 0; i < collectiveRotationGroupIndex.size(); i++)
                 {
                     /* Index of local atom w.r.t. the collective rotation group */
-                    int ii        = erg->xc_ref_ind[i];
+                    int ii        = collectiveRotationGroupIndex[i];
                     erg->m_loc[i] = erg->mc[ii];
                 }
             }
@@ -3878,7 +3849,7 @@ void do_rotation(const t_commrec       *cr,
             /* Get the center of the rotation group */
             if ( (rotg->eType == erotgISOPF) || (rotg->eType == erotgPMPF) )
             {
-                get_center_comm(cr, erg->x_loc_pbc, erg->m_loc, erg->nat_loc, rotg->nat, erg->xc_center);
+                get_center_comm(cr, erg->x_loc_pbc, erg->m_loc, erg->atomSet->numAtomsLocal(), rotg->nat, erg->xc_center);
             }
         }
 
