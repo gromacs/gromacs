@@ -277,17 +277,22 @@ const char max_ev_fmt_dlf[]     = "%7d%12lf";
 const char max_ev_fmt_dlflflf[] = "%7d%12lf%12lf%12lf";
 const char max_ev_fmt_lelele[]  = "%12le%12le%12le";
 
-/* Do we have to perform essential dynamics constraints or possibly only flooding
- * for any of the ED groups? */
-static gmx_bool bNeedDoEdsam(t_edpar *edi)
+namespace
 {
-    return edi->vecs.mon.neig
-           || edi->vecs.linfix.neig
-           || edi->vecs.linacc.neig
-           || edi->vecs.radfix.neig
-           || edi->vecs.radacc.neig
-           || edi->vecs.radcon.neig;
+/*!\brief Determines whether to perform essential dynamics constraints other than flooding.
+ * \param[in] edi the essential dynamics parameters
+ * \returns true if essential dyanmics constraints need to be performed
+ */
+bool bNeedDoEdsam(const t_edpar &edi)
+{
+    return edi.vecs.mon.neig
+           || edi.vecs.linfix.neig
+           || edi.vecs.linacc.neig
+           || edi.vecs.radfix.neig
+           || edi.vecs.radacc.neig
+           || edi.vecs.radcon.neig;
 }
+} // namespace
 
 
 /* Multiple ED groups will be labeled with letters instead of numbers
@@ -305,38 +310,48 @@ static char get_EDgroupChar(int nr_edi, int nED)
     return 'A' + nr_edi - 1;
 }
 
+namespace
+{
 
-/* Does not subtract average positions, projection on single eigenvector is returned
+/*! \brief The mass-weighted inner product of two coordinate vectors.
+ * Does not subtract average positions, projection on single eigenvector is returned
  * used by: do_linfix, do_linacc, do_radfix, do_radacc, do_radcon
  * Average position is subtracted in ed_apply_constraints prior to calling projectx
+ * \param[in] edi Essential dynamics parameters
+ * \param[in] xcoll vector of atom coordinates
+ * \param[in] vec vector of coordinates to project onto
+ * \return mass-weighted projection.
  */
-static real projectx(t_edpar *edi, rvec *xcoll, rvec *vec)
+real projectx(const t_edpar &edi, rvec *xcoll, rvec *vec)
 {
     int  i;
     real proj = 0.0;
 
 
-    for (i = 0; i < edi->sav.nr; i++)
+    for (i = 0; i < edi.sav.nr; i++)
     {
-        proj += edi->sav.sqrtm[i]*iprod(vec[i], xcoll[i]);
+        proj += edi.sav.sqrtm[i]*iprod(vec[i], xcoll[i]);
     }
 
     return proj;
 }
-
-
-/* Specialized: projection is stored in vec->refproj
- * -> used for radacc, radfix, radcon  and center of flooding potential
- * subtracts average positions, projects vector x */
-static void rad_project(t_edpar *edi, rvec *x, t_eigvec *vec)
+/*!\brief Project coordinates onto vector after substracting average position.
+ * projection is stored in vec->refproj which is used for radacc, radfix,
+ * radcon and center of flooding potential.
+ * Average positions are first substracted from x, then added back again.
+ * \param[in] edi essential dynamics parameters with average position
+ * \param[in] x Coordinates to be projected
+ * \param[out] vec eigenvector, radius and refproj are overwritten here
+ */
+void rad_project(const t_edpar &edi, rvec *x, t_eigvec *vec)
 {
     int  i;
     real rad = 0.0;
 
     /* Subtract average positions */
-    for (i = 0; i < edi->sav.nr; i++)
+    for (i = 0; i < edi.sav.nr; i++)
     {
-        rvec_dec(x[i], edi->sav.x[i]);
+        rvec_dec(x[i], edi.sav.x[i]);
     }
 
     for (i = 0; i < vec->neig; i++)
@@ -347,45 +362,46 @@ static void rad_project(t_edpar *edi, rvec *x, t_eigvec *vec)
     vec->radius = sqrt(rad);
 
     /* Add average positions */
-    for (i = 0; i < edi->sav.nr; i++)
+    for (i = 0; i < edi.sav.nr; i++)
     {
-        rvec_inc(x[i], edi->sav.x[i]);
+        rvec_inc(x[i], edi.sav.x[i]);
     }
 }
 
-
-/* Project vector x, subtract average positions prior to projection and add
- * them afterwards to retain the unchanged vector. Store in xproj. Mass-weighting
- * is applied. */
-static void project_to_eigvectors(rvec       *x,    /* The positions to project to an eigenvector */
-                                  t_eigvec   *vec,  /* The eigenvectors */
-                                  t_edpar    *edi)
+/*!\brief Projects coordinates onto eigenvectors and stores result in vec->xproj.
+ * Mass-weighting is applied. Subtracts average positions prior to projection and add
+ * them afterwards to retain the unchanged vector.
+ * \param[in] x The coordinates to project to an eigenvector
+ * \param[in,out] vec The eigenvectors
+ * \param[in] edi essential dynamics parameters holding average structure and masses
+ */
+void project_to_eigvectors(rvec          *x,     /*  */
+                           t_eigvec      *vec,   /*  */
+                           const t_edpar &edi)
 {
-    int  i;
-
-
     if (!vec->neig)
     {
         return;
     }
 
     /* Subtract average positions */
-    for (i = 0; i < edi->sav.nr; i++)
+    for (int i = 0; i < edi.sav.nr; i++)
     {
-        rvec_dec(x[i], edi->sav.x[i]);
+        rvec_dec(x[i], edi.sav.x[i]);
     }
 
-    for (i = 0; i < vec->neig; i++)
+    for (int i = 0; i < vec->neig; i++)
     {
         vec->xproj[i] = projectx(edi, x, vec->vec[i]);
     }
 
     /* Add average positions */
-    for (i = 0; i < edi->sav.nr; i++)
+    for (int i = 0; i < edi.sav.nr; i++)
     {
-        rvec_inc(x[i], edi->sav.x[i]);
+        rvec_inc(x[i], edi.sav.x[i]);
     }
 }
+} // namespace
 
 
 /* Project vector x onto all edi->vecs (mon, linfix,...) */
@@ -394,12 +410,12 @@ static void project(rvec      *x,     /* positions to project */
 {
     /* It is not more work to subtract the average position in every
      * subroutine again, because these routines are rarely used simultaneously */
-    project_to_eigvectors(x, &edi->vecs.mon, edi);
-    project_to_eigvectors(x, &edi->vecs.linfix, edi);
-    project_to_eigvectors(x, &edi->vecs.linacc, edi);
-    project_to_eigvectors(x, &edi->vecs.radfix, edi);
-    project_to_eigvectors(x, &edi->vecs.radacc, edi);
-    project_to_eigvectors(x, &edi->vecs.radcon, edi);
+    project_to_eigvectors(x, &edi->vecs.mon, *edi);
+    project_to_eigvectors(x, &edi->vecs.linfix, *edi);
+    project_to_eigvectors(x, &edi->vecs.linacc, *edi);
+    project_to_eigvectors(x, &edi->vecs.radfix, *edi);
+    project_to_eigvectors(x, &edi->vecs.radacc, *edi);
+    project_to_eigvectors(x, &edi->vecs.radcon, *edi);
 }
 
 
@@ -958,7 +974,7 @@ static void do_single_flood(
     translate_and_rotate(buf->xcoll, edi->sav.nr, transvec, rotmat);
 
     /* Project fitted structure onto supbspace -> store in edi->flood.vecs.xproj */
-    project_to_eigvectors(buf->xcoll, &edi->flood.vecs, edi);
+    project_to_eigvectors(buf->xcoll, &edi->flood.vecs, *edi);
 
     if (FALSE == edi->flood.bConstForce)
     {
@@ -1912,76 +1928,78 @@ static inline void ed_unshift_single_coord(matrix box, const rvec x, const ivec 
     }
 }
 
-
-static void do_linfix(rvec *xcoll, t_edpar *edi, gmx_int64_t step)
+namespace
 {
-    int  i, j;
-    real proj, add;
-    rvec vec_dum;
-
-
+/*!\brief Apply fixed linear constraints to essential dynamics variable.
+ * \param[in,out] xcoll The collected coordinates.
+ * \param[in] edi the essential dynamics parameters
+ * \param[in] step the current simulation step
+ */
+void do_linfix(rvec *xcoll, const t_edpar &edi, gmx_int64_t step)
+{
     /* loop over linfix vectors */
-    for (i = 0; i < edi->vecs.linfix.neig; i++)
+    for (int i = 0; i < edi.vecs.linfix.neig; i++)
     {
         /* calculate the projection */
-        proj = projectx(edi, xcoll, edi->vecs.linfix.vec[i]);
+        real proj = projectx(edi, xcoll, edi.vecs.linfix.vec[i]);
 
         /* calculate the correction */
-        add = edi->vecs.linfix.refproj[i] + step*edi->vecs.linfix.stpsz[i] - proj;
+        real preFactor = edi.vecs.linfix.refproj[i] + step*edi.vecs.linfix.stpsz[i] - proj;
 
         /* apply the correction */
-        add /= edi->sav.sqrtm[i];
-        for (j = 0; j < edi->sav.nr; j++)
+        preFactor /= edi.sav.sqrtm[i];
+        for (int j = 0; j < edi.sav.nr; j++)
         {
-            svmul(add, edi->vecs.linfix.vec[i][j], vec_dum);
-            rvec_inc(xcoll[j], vec_dum);
+            rvec differenceVector;
+            svmul(preFactor, edi.vecs.linfix.vec[i][j], differenceVector);
+            rvec_inc(xcoll[j], differenceVector);
         }
     }
 }
 
-
-static void do_linacc(rvec *xcoll, t_edpar *edi)
+/*!\brief Apply acceptance linear constraints to essential dynamics variable.
+ * \param[in,out] xcoll The collected coordinates.
+ * \param[in] edi the essential dynamics parameters
+ */
+void do_linacc(rvec *xcoll, t_edpar *edi)
 {
-    int  i, j;
-    real proj, add;
-    rvec vec_dum;
-
-
     /* loop over linacc vectors */
-    for (i = 0; i < edi->vecs.linacc.neig; i++)
+    for (int i = 0; i < edi->vecs.linacc.neig; i++)
     {
         /* calculate the projection */
-        proj = projectx(edi, xcoll, edi->vecs.linacc.vec[i]);
+        real proj = projectx(*edi, xcoll, edi->vecs.linacc.vec[i]);
 
         /* calculate the correction */
-        add = 0.0;
+        real preFactor = 0.0;
         if (edi->vecs.linacc.stpsz[i] > 0.0)
         {
             if ((proj-edi->vecs.linacc.refproj[i]) < 0.0)
             {
-                add = edi->vecs.linacc.refproj[i] - proj;
+                preFactor = edi->vecs.linacc.refproj[i] - proj;
             }
         }
         if (edi->vecs.linacc.stpsz[i] < 0.0)
         {
             if ((proj-edi->vecs.linacc.refproj[i]) > 0.0)
             {
-                add = edi->vecs.linacc.refproj[i] - proj;
+                preFactor = edi->vecs.linacc.refproj[i] - proj;
             }
         }
 
         /* apply the correction */
-        add /= edi->sav.sqrtm[i];
-        for (j = 0; j < edi->sav.nr; j++)
+        preFactor /= edi->sav.sqrtm[i];
+        for (int j = 0; j < edi->sav.nr; j++)
         {
-            svmul(add, edi->vecs.linacc.vec[i][j], vec_dum);
-            rvec_inc(xcoll[j], vec_dum);
+            rvec differenceVector;
+            svmul(preFactor, edi->vecs.linacc.vec[i][j], differenceVector);
+            rvec_inc(xcoll[j], differenceVector);
         }
 
         /* new positions will act as reference */
-        edi->vecs.linacc.refproj[i] = proj + add;
+        edi->vecs.linacc.refproj[i] = proj + preFactor;
     }
 }
+} // namespace
 
 
 static void do_radfix(rvec *xcoll, t_edpar *edi)
@@ -2002,7 +2020,7 @@ static void do_radfix(rvec *xcoll, t_edpar *edi)
     for (i = 0; i < edi->vecs.radfix.neig; i++)
     {
         /* calculate the projections, radius */
-        proj[i] = projectx(edi, xcoll, edi->vecs.radfix.vec[i]);
+        proj[i] = projectx(*edi, xcoll, edi->vecs.radfix.vec[i]);
         rad    += gmx::square(proj[i] - edi->vecs.radfix.refproj[i]);
     }
 
@@ -2047,7 +2065,7 @@ static void do_radacc(rvec *xcoll, t_edpar *edi)
     for (i = 0; i < edi->vecs.radacc.neig; i++)
     {
         /* calculate the projections, radius */
-        proj[i] = projectx(edi, xcoll, edi->vecs.radacc.vec[i]);
+        proj[i] = projectx(*edi, xcoll, edi->vecs.radacc.vec[i]);
         rad    += gmx::square(proj[i] - edi->vecs.radacc.refproj[i]);
     }
     rad = sqrt(rad);
@@ -2118,7 +2136,7 @@ static void do_radcon(rvec *xcoll, t_edpar *edi)
     for (i = 0; i < edi->vecs.radcon.neig; i++)
     {
         /* calculate the projections, radius */
-        loc->proj[i] = projectx(edi, xcoll, edi->vecs.radcon.vec[i]);
+        loc->proj[i] = projectx(*edi, xcoll, edi->vecs.radcon.vec[i]);
         rad         += gmx::square(loc->proj[i] - edi->vecs.radcon.refproj[i]);
     }
     rad = sqrt(rad);
@@ -2165,7 +2183,7 @@ static void ed_apply_constraints(rvec *xcoll, t_edpar *edi, gmx_int64_t step)
     /* apply the constraints */
     if (step >= 0)
     {
-        do_linfix(xcoll, edi, step);
+        do_linfix(xcoll, *edi, step);
     }
     do_linacc(xcoll, edi);
     if (step >= 0)
@@ -2554,7 +2572,7 @@ static void write_edo_legend(gmx_edsam * ed, int nED, const gmx_output_env_t *oe
     edi         = ed->edpar;
     for (nr_edi = 1; nr_edi <= nED; nr_edi++)
     {
-        if (bNeedDoEdsam(edi))  /* Only print ED legend if at least one ED option is on */
+        if (bNeedDoEdsam(*edi))  /* Only print ED legend if at least one ED option is on */
         {
             nice_legend(&setname, &nsets, &LegendStr, "RMSD to ref", "nm", get_EDgroupChar(nr_edi, nED) );
 
@@ -2769,11 +2787,11 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
                      * the average structure, which must be projected */
                     avindex = edi->star.nr - edi->sav.nr;
                 }
-                rad_project(edi, &edi->star.x[avindex], &edi->vecs.radcon);
+                rad_project(*edi, &edi->star.x[avindex], &edi->vecs.radcon);
             }
             else
             {
-                rad_project(edi, xstart, &edi->vecs.radcon);
+                rad_project(*edi, xstart, &edi->vecs.radcon);
             }
 
             /* process structure that will serve as origin of expansion circle */
@@ -2800,13 +2818,13 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
                     avindex = edi->sori.nr - edi->sav.nr;
                 }
 
-                rad_project(edi, &edi->sori.x[avindex], &edi->vecs.radacc);
-                rad_project(edi, &edi->sori.x[avindex], &edi->vecs.radfix);
+                rad_project(*edi, &edi->sori.x[avindex], &edi->vecs.radacc);
+                rad_project(*edi, &edi->sori.x[avindex], &edi->vecs.radfix);
                 if ( (eEDflood == ed->eEDtype) && (FALSE == edi->flood.bConstForce) )
                 {
                     fprintf(stderr, "ED: The ORIGIN structure will define the flooding potential center.\n");
                     /* Set center of flooding potential to the ORIGIN structure */
-                    rad_project(edi, &edi->sori.x[avindex], &edi->flood.vecs);
+                    rad_project(*edi, &edi->sori.x[avindex], &edi->flood.vecs);
                     /* We already know that no (moving) reference position was provided,
                      * therefore we can overwrite refproj[0]*/
                     copyEvecReference(&edi->flood.vecs);
@@ -2814,8 +2832,8 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
             }
             else /* No origin structure given */
             {
-                rad_project(edi, xstart, &edi->vecs.radacc);
-                rad_project(edi, xstart, &edi->vecs.radfix);
+                rad_project(*edi, xstart, &edi->vecs.radacc);
+                rad_project(*edi, xstart, &edi->vecs.radfix);
                 if ( (eEDflood == ed->eEDtype) && (FALSE == edi->flood.bConstForce) )
                 {
                     if (edi->flood.bHarmonic)
@@ -2853,8 +2871,8 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
             }
 
             /* set starting projections for linsam */
-            rad_project(edi, xstart, &edi->vecs.linacc);
-            rad_project(edi, xstart, &edi->vecs.linfix);
+            rad_project(*edi, xstart, &edi->vecs.linacc);
+            rad_project(*edi, xstart, &edi->vecs.linfix);
 
             /* Prepare for the next edi data set: */
             edi = edi->next_edi;
@@ -2998,7 +3016,7 @@ void do_edsam(const t_inputrec *ir,
     while (edi != nullptr)
     {
         edinr++;
-        if (bNeedDoEdsam(edi))
+        if (bNeedDoEdsam(*edi))
         {
 
             buf = edi->buf->do_edsam;
@@ -3069,8 +3087,8 @@ void do_edsam(const t_inputrec *ir,
             if (do_per_step(step, edi->maxedsteps) && step >= edi->presteps)
             {
                 project(buf->xcoll, edi);
-                rad_project(edi, buf->xcoll, &edi->vecs.radacc);
-                rad_project(edi, buf->xcoll, &edi->vecs.radfix);
+                rad_project(*edi, buf->xcoll, &edi->vecs.radacc);
+                rad_project(*edi, buf->xcoll, &edi->vecs.radfix);
                 buf->oldrad = -1.e5;
             }
 
@@ -3081,7 +3099,7 @@ void do_edsam(const t_inputrec *ir,
                 if (edi->vecs.radacc.radius - buf->oldrad < edi->slope)
                 {
                     project(buf->xcoll, edi);
-                    rad_project(edi, buf->xcoll, &edi->vecs.radacc);
+                    rad_project(*edi, buf->xcoll, &edi->vecs.radacc);
                     buf->oldrad = 0.0;
                 }
                 else
