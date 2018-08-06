@@ -62,7 +62,8 @@ a release.
 * Don't use C-style casts; use ``const_cast``, ``static_cast`` or
   ``reinterpret_cast as appropriate``. See the point on RTTI for
   ``dynamic_cast``. For emphasizing type (e.g. intentional integer division)
-  use constructor syntax.
+  use constructor syntax. For creating real constants use  _r user-defined
+  literal (example 2.5_r).
 * Avoid overloading functions unless all variants really do the same
   thing, just with different types. Instead, consider making the
   function names more descriptive.

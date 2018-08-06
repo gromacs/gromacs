@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -139,5 +139,13 @@ typedef float           real;
 #define GMX_REAL_MAX_SIMD_WIDTH  16
 
 #endif /* GMX_DOUBLE */
+
+#ifdef __cplusplus
+/*! \brief User defined literal for real numbers.
+ *
+ * Examples: 2._r, 2.5_r, .5_r. The number is always of type real.
+ */
+constexpr real operator"" _r(long double x) { return real(x); }
+#endif
 
 #endif
