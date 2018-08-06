@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "RMS fluctuation"
+xaxis  label "Atom"
+yaxis  label "(nm)"
+TYPE xy
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">2</Int>
+          <Real>1</Real>
+          <Real>1.9022</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">2</Int>
+          <Real>2</Real>
+          <Real>2.1668</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">2</Int>
+          <Real>3</Real>
+          <Real>2.5569</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">2</Int>
+          <Real>4</Real>
+          <Real>1.4654</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">2</Int>
+          <Real>5</Real>
+          <Real>1.5091</Real>
+        </Sequence>
+        <Sequence Name="Row5">
+          <Int Name="Length">2</Int>
+          <Real>6</Real>
+          <Real>1.6463</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+  </OutputFiles>
+</ReferenceData>
