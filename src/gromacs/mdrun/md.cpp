@@ -469,7 +469,6 @@ void gmx::Integrator::do_md()
         /* Distribute the charge groups over the nodes from the master node */
         dd_partition_system(fplog, ir->init_step, cr, TRUE, 1,
                             state_global, top_global, ir,
-                            enforcedRotation,
                             state, &f, mdAtoms, top, fr,
                             vsite, constr,
                             nrnb, nullptr, FALSE);
@@ -1020,7 +1019,6 @@ void gmx::Integrator::do_md()
                 dd_partition_system(fplog, step, cr,
                                     bMasterState, nstglobalcomm,
                                     state_global, top_global, ir,
-                                    enforcedRotation,
                                     state, &f, mdAtoms, top, fr,
                                     vsite, constr,
                                     nrnb, wcycle,
@@ -1781,7 +1779,6 @@ void gmx::Integrator::do_md()
         {
             dd_partition_system(fplog, step, cr, TRUE, 1,
                                 state_global, top_global, ir,
-                                enforcedRotation,
                                 state, &f, mdAtoms, top, fr,
                                 vsite, constr,
                                 nrnb, wcycle, FALSE);
