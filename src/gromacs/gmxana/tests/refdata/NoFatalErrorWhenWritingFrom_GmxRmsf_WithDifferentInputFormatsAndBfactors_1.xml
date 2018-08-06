@@ -1,0 +1,94 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "RMS fluctuation"
+xaxis  label "Atom"
+yaxis  label "(nm)"
+TYPE xy
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data"></XvgData>
+    </File>
+    <File Name="-oq">
+      <PdbFile Name="Header">
+        <String Name="Title">TITLE</String>
+        <String Name="Remark entry 0">REMARK    THIS IS A SIMULATION BOX</String>
+        <String Name="Remark entry 1">CRYST1   30.100   30.100   30.100  90.00  90.00  90.00 P 1           1</String>
+        <String Name="Remark entry 2">MODEL        1</String>
+        <Int Name="3_0">0</Int>
+        <Int Name="3_1">1</Int>
+        <Int Name="3_2">0</Int>
+        <Int Name="3_3">0</Int>
+        <Int Name="3_4">1</Int>
+        <String Name="3_5">5.690</String>
+        <String Name="3_6">48.274</String>
+        <String Name="3_7">13.049</String>
+        <String Name="3_8">1.00</String>
+        <String Name="3_9">9523.50</String>
+        <Int Name="Number of entries in line 3">10</Int>
+        <Int Name="4_0">0</Int>
+        <Int Name="4_1">2</Int>
+        <Int Name="4_2">0</Int>
+        <Int Name="4_3">0</Int>
+        <Int Name="4_4">1</Int>
+        <String Name="4_5">4.760</String>
+        <String Name="4_6">48.204</String>
+        <String Name="4_7">12.679</String>
+        <String Name="4_8">1.00</String>
+        <String Name="4_9">12356.82</String>
+        <Int Name="Number of entries in line 4">10</Int>
+        <Int Name="5_0">0</Int>
+        <Int Name="5_1">3</Int>
+        <Int Name="5_2">0</Int>
+        <Int Name="5_3">0</Int>
+        <Int Name="5_4">1</Int>
+        <String Name="5_5">5.800</String>
+        <String Name="5_6">49.164</String>
+        <String Name="5_7">13.489</String>
+        <String Name="5_8">1.00</String>
+        <String Name="5_9">17206.15</String>
+        <Int Name="Number of entries in line 5">10</Int>
+        <Int Name="6_0">0</Int>
+        <Int Name="6_1">4</Int>
+        <Int Name="6_2">0</Int>
+        <Int Name="6_3">0</Int>
+        <Int Name="6_4">2</Int>
+        <String Name="6_5">15.550</String>
+        <String Name="6_6">50.634</String>
+        <String Name="6_7">8.429</String>
+        <String Name="6_8">1.00</String>
+        <String Name="6_9">5651.49</String>
+        <Int Name="Number of entries in line 6">10</Int>
+        <Int Name="7_0">0</Int>
+        <Int Name="7_1">5</Int>
+        <Int Name="7_2">0</Int>
+        <Int Name="7_3">0</Int>
+        <Int Name="7_4">2</Int>
+        <String Name="7_5">14.980</String>
+        <String Name="7_6">50.474</String>
+        <String Name="7_7">9.239</String>
+        <String Name="7_8">1.00</String>
+        <String Name="7_9">5993.66</String>
+        <Int Name="Number of entries in line 7">10</Int>
+        <Int Name="8_0">0</Int>
+        <Int Name="8_1">6</Int>
+        <Int Name="8_2">0</Int>
+        <Int Name="8_3">0</Int>
+        <Int Name="8_4">2</Int>
+        <String Name="8_5">14.960</String>
+        <String Name="8_6">50.734</String>
+        <String Name="8_7">7.629</String>
+        <String Name="8_8">1.00</String>
+        <String Name="8_9">7133.45</String>
+        <Int Name="Number of entries in line 8">10</Int>
+        <String Name="Remark entry 9">TER</String>
+        <String Name="Remark entry 10">ENDMDL</String>
+        <Int Name="Number of lines in file">11</Int>
+      </PdbFile>
+    </File>
+  </OutputFiles>
+</ReferenceData>
