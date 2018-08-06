@@ -73,24 +73,25 @@ function(gmx_set_cmake_compiler_flags)
         # while using RelWithAssert (ie. without that suppression) in Jenkins.
         set(GMXC_${language}FLAGS_RELEASE "${GMXC_${language}FLAGS_RELEASE} ${GMXC_${language}FLAGS_RELEASE_ONLY}")
 
-        # Modify the real CMake variables for compiler flags for all
-        # builds and language types, and also those common to all
-        # build types.
+        # Set the actually compiler flags by adding them to the COMPILE_OPTIONS directory property.
+        # Also set add the GMXC_* variable to the parent scope for reporting in GetCompilerInfo.cmake.
+        # Do this for all builds and language types, and also those common to all build types.
         foreach(build_type "" ${build_types_with_explicit_flags})
-            if("${build_type}" STREQUAL "")
-                set(punctuation "") # for general compiler flags (e.g.) CMAKE_CXX_FLAGS
-            else()
-                set(punctuation "_") # for build-type-specific compiler flags (e.g.) CMAKE_CXX_FLAGS_RELEASE
-            endif()
-
-            # Append to the variables for the given build type for
-            # each language, in the parent scope. We add our new variables at the end, so
-            # compiler-specific choices are more likely to override default CMake choices.
+            # Note that add_compile_options adds after the default cmake flags.
             # This is for instance useful for RelWithDebInfo builds, where we want to use the full
             # set of our optimization flags detected in this file, rather than having -O2 override them.
-            set(CMAKE_${language}_FLAGS${punctuation}${build_type}
-                "${CMAKE_${language}_FLAGS${punctuation}${build_type}} ${GMXC_${language}FLAGS${punctuation}${build_type}}"
-                PARENT_SCOPE)
+            if("${build_type}" STREQUAL "")
+                set(GMXC_NAME GMXC_${language}FLAGS)
+            else()
+                set(GMXC_NAME GMXC_${language}FLAGS_${build_type})
+            endif()
+            set(${GMXC_NAME} "${${GMXC_NAME}}" PARENT_SCOPE)       #only for GetCompilerInfo
+            string(REPLACE " " ";" ${GMXC_NAME} "${${GMXC_NAME}}") #convert to list
+            if("${build_type}" STREQUAL "")
+                add_compile_options("$<$<COMPILE_LANGUAGE:${language}>:${${GMXC_NAME}}>")
+            else()
+                add_compile_options("$<$<CONFIG:${build_type}>:$<$<COMPILE_LANGUAGE:${language}>:${${GMXC_NAME}}>>")
+            endif()
         endforeach()
     endforeach()
 endfunction()
