@@ -13,7 +13,6 @@ this page.
    includestyle
    naming
    language-features
-   doxygen
    reportstyle
    commitstyle
    error-handling
