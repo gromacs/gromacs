@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -111,7 +111,11 @@ void checkGroFile(TextInputStream          *input,
                 bool stringIsNumber = true;
                 for (const char &c : token)
                 {
-                    stringIsNumber = stringIsNumber && isalnum(c);
+                    if (!(isdigit(c) || (ispunct(c))))
+                    {
+                        stringIsNumber = false;
+                        break;
+                    }
                 }
                 if (!stringIsNumber)
                 {
@@ -122,11 +126,11 @@ void checkGroFile(TextInputStream          *input,
                     // Crude check for floating point number
                     if (contains(token, "."))
                     {
-                        groChecker.checkValue(atof(token.c_str()), id.c_str());
+                        groChecker.checkValue(std::stod(token), id.c_str());
                     }
                     else
                     {
-                        groChecker.checkValue(atoi(token.c_str()), id.c_str());
+                        groChecker.checkValue(std::stoi(token), id.c_str());
                     }
                 }
                 entries++;
@@ -180,7 +184,11 @@ void checkPdbFile(TextInputStream          *input,
                     bool stringIsNumber = true;
                     for (const char &c : token)
                     {
-                        stringIsNumber = stringIsNumber && isalnum(c);
+                        if (!(isdigit(c) || (ispunct(c))))
+                        {
+                            stringIsNumber = false;
+                            break;
+                        }
                     }
                     if (!stringIsNumber)
                     {
@@ -191,11 +199,11 @@ void checkPdbFile(TextInputStream          *input,
                         // Crude check for floating point number
                         if (contains(token, "."))
                         {
-                            pdbChecker.checkValue(atof(token.c_str()), id.c_str());
+                            pdbChecker.checkValue(std::stod(token), id.c_str());
                         }
                         else
                         {
-                            pdbChecker.checkValue(atoi(token.c_str()), id.c_str());
+                            pdbChecker.checkValue(std::stoi(token), id.c_str());
                         }
                     }
                     entries++;
