@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,49 +32,62 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \defgroup module_mdrun Implementation of mdrun
- * \ingroup group_mdrun
- *
- * \brief This module contains code that implements mdrun.
- */
-/*! \internal \file
- *
- * \brief This file implements mdrun
- *
- * \author Berk Hess <hess@kth.se>
- * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \author Erik Lindahl <erik@kth.se>
- * \author Mark Abraham <mark.j.abraham@gmail.com>
- *
- * \ingroup module_mdrun
- */
-#include "gmxpre.h"
+#include "testingconfiguration.h"
 
-#include "config.h"
+#include <memory>
 
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
+#include "gmxapi/context.h"
+#include "gmxapi/md/mdmodule.h"
+#include "gmxapi/md.h"
+#include "gmxapi/session.h"
+#include "gmxapi/status.h"
+#include "gmxapi/system.h"
 
-#include "gromacs/commandline/filenm.h"
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/domdec/domdec.h"
-#include "gromacs/gmxlib/network.h"
-#include "gromacs/mdlib/main.h"
-#include "gromacs/mdlib/mdrun.h"
-#include "gromacs/mdlib/repl_ex.h"
-#include "gromacs/mdrun/runner.h"
-#include "gromacs/mdrunutility/handlerestart.h"
-#include "gromacs/mdtypes/commrec.h"
-#include "gromacs/utility/arraysize.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/restraint/restraintpotential.h"
+#include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/arrayref.h"
 
-#include "mdrun_main.h"
+#include <gtest/gtest.h>
 
-//! Implements C-style main function for mdrun
-int gmx_mdrun(int argc, char *argv[])
+namespace
 {
-    gmx::Mdrunner runner;
-    return runner.mainFunction(argc, argv);
-}
+
+const auto                   filename = gmxapi::testing::sample_tprfilename;
+
+class NullRestraint : public gmx::IRestraintPotential
+{
+    public:
+        gmx::PotentialPointData evaluate(gmx::Vector r1,
+                                         gmx::Vector r2,
+                                         double      t) override
+        {
+            (void)r1;
+            (void)r2;
+            (void)t;
+            return {};
+        }
+
+        std::vector<unsigned long> sites() const override
+        {
+            return {{0, 1}};
+        }
+};
+
+class SimpleApiModule : public gmxapi::MDModule
+{
+    public:
+        const char *name() override
+        {
+            return "SimpleApiModule";
+        }
+
+        std::shared_ptr<gmx::IRestraintPotential> getRestraint() override
+        {
+            auto restraint = std::make_shared<NullRestraint>();
+            return restraint;
+        }
+};
+
+
+} // end anonymous namespace

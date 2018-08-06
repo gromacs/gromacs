@@ -44,8 +44,22 @@
 # src/testutils/TestMacros.cmake, which does not allow arbitrary argument
 # passing to add_test. Instead, use set_tests_properties().
 
+# Copy test files to test directory
+configure_file(data/topol.tpr topol.tpr COPYONLY)
+configure_file(data/water.tpr water.tpr COPYONLY)
+
+configure_file(testingconfiguration.in.h testingconfiguration.h)
+
 gmx_add_gtest_executable(
     gmxapi-test
+    moduletest.cpp
+    test_md.cpp
+    test_restraint.cpp
+    test_runner.cpp
+    test_setup.cpp
+    test_status.cpp
+    test_system.cpp
+    test_workflow.cpp
     test_version_helpers.cpp
     )
 
@@ -63,7 +77,16 @@ set_tests_properties(GmxapiExternalInterfaceTests PROPERTIES
 
 gmx_add_gtest_executable(
     gmxapi-mpi-test MPI
+    moduletest.cpp
+    test_md.cpp
+    test_restraint.cpp
+    test_runner.cpp
+    # The tMPI pulling is currently broken
+    #test_setup.cpp
+    test_status.cpp
+    test_system.cpp
     test_version_helpers.cpp
+    test_workflow.cpp
     )
 
 target_include_directories(gmxapi-mpi-test PRIVATE
