@@ -73,12 +73,12 @@ void invertBoxMatrix(const matrix src, matrix dest)
 
 void invertMatrix(const matrix src, matrix dest)
 {
-    const real smallreal = static_cast<real>(1.0e-24);
-    const real largereal = static_cast<real>(1.0e24);
+    const real smallreal = 1.0e-24_real;
+    const real largereal = 1.0e24_real;
 
     real       determinant = det(src);
-    real       c           = static_cast<real>(1.0)/determinant;
-    real       fc          = static_cast<real>(std::fabs(c));
+    real       c           = 1.0_real/determinant;
+    real       fc          = std::fabs(c);
 
     if ((fc <= smallreal) || (fc >= largereal))
     {

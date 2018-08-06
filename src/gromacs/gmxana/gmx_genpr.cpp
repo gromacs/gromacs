@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -231,7 +231,7 @@ int gmx_genpr(int argc, char *argv[])
                         {
                             dd = disre_dist;
                         }
-                        lo = std::max(static_cast<real>(0.0), d-dd);
+                        lo = std::max(0.0_real, d-dd);
                         hi = d+dd;
                         fprintf(out, "%5d %5d %1d %5d %10d %10g %10g %10g %10g\n",
                                 ind_grp[i]+1, ind_grp[j]+1, 1, k, 1,
