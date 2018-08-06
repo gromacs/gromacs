@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textstream.h"
@@ -81,11 +82,10 @@ class ConfMatcher : public ITextBlockMatcher
 
 }       // namespace
 
-void checkConfFile(TextInputStream         *input,
-                   TestReferenceChecker    *checker,
-                   const ConfMatchSettings  &)
+void checkGroFile(TextInputStream          *input,
+                  TestReferenceChecker     *checker,
+                  const ConfMatchSettings  &settings)
 {
-
     TestReferenceChecker groChecker(checker->checkCompound("GroFile", "Header"));
     // Just check the first two lines of the output file
     std::string          line;
@@ -95,6 +95,143 @@ void checkConfFile(TextInputStream         *input,
     EXPECT_TRUE(input->readLine(&line));
     line = stripSuffixIfPresent(line, "\n");
     groChecker.checkInteger(std::atoi(line.c_str()), "Number of atoms");
+    if (settings.fullCheck_)
+    {
+        int lines = 0;
+        while (input->readLine(&line))
+        {
+            line = stripSuffixIfPresent(line, "\n");
+            std::vector<std::string> tokens = splitString(line);
+            int entries                     = 0;
+            for (const auto &token : tokens)
+            {
+                std::string id = std::to_string(lines);
+                id.append("_");
+                id.append(std::to_string(entries));
+                bool stringIsNumber = true;
+                for (const char &c : token)
+                {
+                    if (!(isdigit(c) || (ispunct(c))))
+                    {
+                        stringIsNumber = false;
+                        break;
+                    }
+                }
+                if (!stringIsNumber)
+                {
+                    groChecker.checkString(token, id.c_str());
+                }
+                else
+                {
+                    // Crude check for floating point number
+                    if (contains(token, "."))
+                    {
+                        groChecker.checkValue(std::stod(token), id.c_str());
+                    }
+                    else
+                    {
+                        groChecker.checkValue(std::stoi(token), id.c_str());
+                    }
+                }
+                entries++;
+            }
+            std::string id = formatString("Number of entries in line %d", lines);
+            groChecker.checkInteger(entries, id.c_str());
+            lines++;
+        }
+        groChecker.checkInteger(lines, "Number of lines in file");
+    }
+}
+
+void checkPdbFile(TextInputStream          *input,
+                  TestReferenceChecker     *checker,
+                  const ConfMatchSettings  &settings)
+{
+    TestReferenceChecker pdbChecker(checker->checkCompound("PdbFile", "Header"));
+    std::string          line;
+    /*
+     * Special read check first for the title, as we don't care that much about it.
+     */
+    EXPECT_TRUE(input->readLine(&line));
+    line = stripSuffixIfPresent(line, "\n");
+    line = line.substr(line.find("TITLE"), 5);
+    pdbChecker.checkString(line, "Title");
+    if (settings.fullCheck_)
+    {
+        /*
+         * Iterate over the entries in the file line by line.
+         * TODO have this as methods in the class? For checking if something is an
+         * ATOM entry or not?
+         */
+        int lines = 0;
+        while (input->readLine(&line))
+        {
+            line = stripSuffixIfPresent(line, "\n");
+            if (!contains(line, "ATOM"))
+            {
+                std::string id = formatString("Remark entry %d", lines);
+                pdbChecker.checkString(line, id.c_str());
+            }
+            else
+            {
+                std::vector<std::string> tokens = splitString(line);
+                int entries                     = 0;
+                for (const auto &token : tokens)
+                {
+                    std::string id = std::to_string(lines);
+                    id.append("_");
+                    id.append(std::to_string(entries));
+                    bool stringIsNumber = true;
+                    for (const char &c : token)
+                    {
+                        if (!(isdigit(c) || (ispunct(c))))
+                        {
+                            stringIsNumber = false;
+                            break;
+                        }
+                    }
+                    if (!stringIsNumber)
+                    {
+                        pdbChecker.checkString(token, id.c_str());
+                    }
+                    else
+                    {
+                        // Crude check for floating point number
+                        if (contains(token, "."))
+                        {
+                            pdbChecker.checkValue(std::stod(token), id.c_str());
+                        }
+                        else
+                        {
+                            pdbChecker.checkValue(std::stoi(token), id.c_str());
+                        }
+                    }
+                    entries++;
+                }
+                std::string id = formatString("Number of entries in line %d", lines);
+                pdbChecker.checkInteger(entries, id.c_str());
+            }
+            lines++;
+        }
+        pdbChecker.checkInteger(lines, "Number of lines in file");
+    }
+}
+
+void checkConfFile(TextInputStream          *input,
+                   TestReferenceChecker     *checker,
+                   const ConfMatchSettings  &settings)
+{
+    switch (settings.filetype_)
+    {
+        case (efGRO):
+            checkGroFile(input, checker, settings);
+            break;
+        case (efPDB):
+            checkPdbFile(input, checker, settings);
+            break;
+        default:
+            GMX_THROW(NotImplementedError("Configuration file matching not implemented for this file type"));
+    }
 }
 
 TextBlockMatcherPointer ConfMatch::createMatcher() const
