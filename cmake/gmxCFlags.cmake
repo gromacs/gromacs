@@ -119,9 +119,7 @@ macro (gmx_c_flags)
             endif()
         endif()
         # new in gcc 4.5
-        GMX_TEST_CFLAG(CFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CFLAGS_RELEASE)
-        GMX_TEST_CFLAG(CFLAGS_COPT "-funroll-all-loops"
-                       GMXC_CFLAGS_RELEASE)
+        GMX_TEST_CFLAG(CFLAGS_COPT "-funroll-all-loops -ffast-math" GMXC_CFLAGS_RELEASE)
         GMX_TEST_CFLAG(CFLAGS_NOINLINE "-fno-inline" GMXC_CFLAGS_DEBUG)
     endif()
     # g++
@@ -142,9 +140,7 @@ macro (gmx_c_flags)
             GMX_TEST_CFLAG(CXXFLAGS_WARN_REL "-Wno-array-bounds" GMXC_CXXFLAGS_RELEASE_ONLY)
         endif()
         # new in gcc 4.5
-        GMX_TEST_CXXFLAG(CXXFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CXXFLAGS_RELEASE)
-        GMX_TEST_CXXFLAG(CXXFLAGS_COPT "-funroll-all-loops"
-                         GMXC_CXXFLAGS_RELEASE)
+        GMX_TEST_CXXFLAG(CXXFLAGS_COPT "-funroll-all-loops -ffast-math" GMXC_CXXFLAGS_RELEASE)
         GMX_TEST_CXXFLAG(CXXFLAGS_NOINLINE "-fno-inline" GMXC_CXXFLAGS_DEBUG)
     endif()
 
@@ -308,6 +304,7 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd1419 /wd1
             GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused -Wunused-value -Wunused-parameter" GMXC_CFLAGS)
             GMX_TEST_CFLAG(CFLAGS_WARN_EXTRA "-Wpointer-arith" GMXC_CFLAGS_EXTRA)
         endif()
+        GMX_TEST_CFLAG(CFLAGS_COPT "-ffast-math" GMXC_CFLAGS_RELEASE)
     endif()
 
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -319,6 +316,7 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd1419 /wd1
             GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wpointer-arith -Wmissing-prototypes" GMXC_CXXFLAGS)
             GMX_TEST_CXXFLAG(CXXFLAGS_DEPRECATED "-Wdeprecated" GMXC_CXXFLAGS)
         endif()
+        GMX_TEST_CXXFLAG(CXXFLAGS_COPT "-ffast-math" GMXC_CXXFLAGS_RELEASE)
     endif()
 
     # Fujitsu compilers on PrimeHPC/Sparc64
