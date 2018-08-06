@@ -886,14 +886,20 @@ int Mdrunner::mdrunner()
 
     // Enable FP exception but not in Release mode and not for compilers
     // with known buggy FP exception support (clang with any optimization)
-#if !defined NDEBUG && !(defined __clang__ && defined __OPTIMIZE__)
+    // or suspected buggy FP exception support (gcc 7.* with optimization).
+#if !defined NDEBUG && \
+    !((defined __clang__ || (defined(__GNUC__) && !defined(__ICC) && __GNUC__ == 7)) \
+    && defined __OPTIMIZE__)
+    const bool ENABLE_FPE = !EI_TPI(inputrec->eI) &&
+        inputrec->cutoff_scheme == ecutsVERLET;
+#else
+    const bool ENABLE_FPE = false;
+#endif
     //FIXME - reconcile with gmx_feenableexcept() call from CommandLineModuleManager::run()
-    if (!EI_TPI(inputrec->eI) &&
-        inputrec->cutoff_scheme == ecutsVERLET)
+    if (ENABLE_FPE)
     {
         gmx_feenableexcept();
     }
-#endif
 
     // Build a data structure that expresses which kinds of non-bonded
     // task are handled by this rank.
@@ -1380,13 +1386,10 @@ int Mdrunner::mdrunner()
 
     /* Reset FPEs (important for unit tests) by disabling them. Assumes no
      * exceptions were enabled before function was called. */
-#if !defined NDEBUG && !(defined __clang__ && defined __OPTIMIZE__)
-    if (!EI_TPI(inputrec->eI) &&
-        inputrec->cutoff_scheme == ecutsVERLET)
+    if (ENABLE_FPE)
     {
         gmx_fedisableexcept();
     }
-#endif
 
     rc = (int)gmx_get_stop_condition();
 
