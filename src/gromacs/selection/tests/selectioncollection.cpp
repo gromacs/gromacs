@@ -1062,7 +1062,7 @@ TEST_F(SelectionCollectionDataTest, HandlesPositionKeywords)
 TEST_F(SelectionCollectionDataTest, HandlesDistanceKeyword)
 {
     static const char * const selections[] = {
-        "distance from cog of resnr 1 < 2"
+        "distance from cog of resnr 1 < 1.9999"
     };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
     runTest("simple.gro", selections);
@@ -1072,7 +1072,7 @@ TEST_F(SelectionCollectionDataTest, HandlesDistanceKeyword)
 TEST_F(SelectionCollectionDataTest, HandlesMinDistanceKeyword)
 {
     static const char * const selections[] = {
-        "mindistance from resnr 1 < 2"
+        "mindistance from resnr 1 < 1.9999"
     };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
     runTest("simple.gro", selections);
