@@ -1,0 +1,6 @@
+set(gmxapi_VERSION @GMXAPI_RELEASE@)
+@PACKAGE_INIT@
+# instead of set(FOO_DIR "\@SOME_INSTALL_DIR\@"), use set(FOO_DIR "\@PACKAGE_SOME_INSTALL_DIR\@")
+# where PACKAGE is "gmxapi"
+include("${CMAKE_CURRENT_LIST_DIR}/gmxapi.cmake")
+check_required_components(gmxapi)
