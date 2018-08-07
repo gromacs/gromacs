@@ -1020,7 +1020,7 @@ gmx_mtop_generate_local_top(const gmx_mtop_t *mtop,
 /*! \brief Fills an array with molecule begin/end atom indices
  *
  * \param[in]  mtop   The global topology
- * \param[out] index  Array of size nr. of molecules + 1 to be filled with molecule begin/end indices
+ * \param[out] index  Array of size nr. of molecules to be filled with molecule begin/end indices
  */
 static void fillMoleculeIndices(const gmx_mtop_t  &mtop,
                                 gmx::ArrayRef<int> index)
@@ -1034,8 +1034,8 @@ static void fillMoleculeIndices(const gmx_mtop_t  &mtop,
         for (int mol = 0; mol < molb.nmol; mol++)
         {
             globalAtomIndex       += numAtomsPerMolecule;
-            globalMolIndex        += 1;
             index[globalMolIndex]  = globalAtomIndex;
+            globalMolIndex        += 1;
         }
     }
 }
