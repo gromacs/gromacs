@@ -39,9 +39,6 @@
 # configuration, or anonymous/unknown if it cannot be detected
 # (Windows).
 #
-# BUILD_TIME
-# BUILD_USER
-# BUILD_HOST
 # BUILD_CPU_VENDOR
 # BUILD_CPU_BRAND
 # BUILD_CPU_FAMILY
@@ -53,34 +50,6 @@
 include(gmxDetectCpu)
 
 function(gmx_set_build_information)
-    if(NOT BUILD_USER)
-        if(CMAKE_HOST_UNIX)
-            execute_process( COMMAND whoami OUTPUT_VARIABLE TMP_USER OUTPUT_STRIP_TRAILING_WHITESPACE)
-            execute_process( COMMAND hostname OUTPUT_VARIABLE TMP_HOSTNAME OUTPUT_STRIP_TRAILING_WHITESPACE)
-        else()
-            set(TMP_USER "Anonymous")
-            set(TMP_HOSTNAME "unknown")
-        endif()
-        set(BUILD_USER "${TMP_USER}\@${TMP_HOSTNAME} [CMAKE]" CACHE INTERNAL "Build user")
-        message(STATUS "Setting build user - ${BUILD_USER}")
-    endif()
-
-    if(NOT BUILD_TIME)
-        STRING(TIMESTAMP TMP_TIME "%Y-%m-%d %H:%M:%S" UTC)
-        set(BUILD_TIME "${TMP_TIME}" CACHE INTERNAL "Build date & time")
-        message(STATUS "Setting build time - ${BUILD_TIME}")
-    endif()
-
-    if(NOT BUILD_HOST)
-        if(CMAKE_HOST_UNIX)
-            execute_process( COMMAND uname -srm OUTPUT_VARIABLE TMP_HOST OUTPUT_STRIP_TRAILING_WHITESPACE)
-        else()
-            set(TMP_HOST "${CMAKE_HOST_SYSTEM} ${CMAKE_HOST_SYSTEM_PROCESSOR}")
-        endif()
-        set(BUILD_HOST "${TMP_HOST}" CACHE INTERNAL "Build host & architecture")
-        message(STATUS "Setting build host - ${BUILD_HOST}")
-    endif()
-
     # Set up some defaults that will usually be overwritten
     if(CMAKE_CROSSCOMPILING)
         set(_reason ", cross-compiled")
