@@ -97,13 +97,37 @@
 #define CPT_MAGIC2 171819
 #define CPTSTRLEN 1024
 
-/* cpt_version should normally only be changed
- * when the header or footer format changes.
+/*! \brief Enum of values that describe the contents of a cpt file
+ * whose format matches a version number
+ *
+ * The enum helps the code be more self-documenting and ensure merges
+ * do not silently resolve when two patches make the same bump. When
+ * adding new functionality, add a new element just above cptv_Count
+ * in this enumeration, and write code below that does the right thing
+ * according to the value of file_version.
+ */
+enum cptv {
+    cptv_Unknown = 17,                                       /**< Version before numbering scheme */
+    cptv_RemoveBuildMachineInformation,                      /**< remove functionality that makes mdrun builds non-reproducible */
+    cptv_Count                                               /**< the total number of cptv versions */
+};
+
+/*! \brief Version number of the file format written to checkpoint
+ * files by this version of the code.
+ *
+ * cpt_version should normally only be changed, via adding a new field
+ * to cptv enumeration, when the header or footer format changes.
+ *
  * The state data format itself is backward and forward compatible.
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
- */
-static const int cpt_version = 17;
+ *
+ * The cpt_version increases whenever the file format in the main
+ * development branch changes, due to an extension of the cptv enum above.
+ * Backward compatibility for reading old run input files is maintained
+ * by checking this version number against that of the file and then using
+ * the correct code path. */
+static const int cpt_version = cptv_Count - 1;
 
 
 const char *est_names[estNR] =
@@ -887,13 +911,18 @@ static int do_cpte_matrices(XDR *xd, StatePart part, int ecpt, int sflags,
 // serialization, help separate comparison from reading, and have
 // better defined transformation functions to/from trajectory frame
 // data structures.
+//
+// Several fields were once written to checkpoint file headers, but
+// have been removed. So that old files can continue to be read,
+// the names of such fields contain the string "_UNUSED" so that it
+// is clear they should not be used.
 struct CheckpointHeaderContents
 {
     int         file_version;
     char        version[CPTSTRLEN];
-    char        btime[CPTSTRLEN];
-    char        buser[CPTSTRLEN];
-    char        bhost[CPTSTRLEN];
+    char        btime_UNUSED[CPTSTRLEN];
+    char        buser_UNUSED[CPTSTRLEN];
+    char        bhost_UNUSED[CPTSTRLEN];
     int         double_prec;
     char        fprog[CPTSTRLEN];
     char        ftime[CPTSTRLEN];
@@ -949,9 +978,15 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, FILE *list,
         gmx_gethostname(fhost, 255);
     }
     do_cpt_string_err(xd, "GROMACS version", contents->version, list);
-    do_cpt_string_err(xd, "GROMACS build time", contents->btime, list);
-    do_cpt_string_err(xd, "GROMACS build user", contents->buser, list);
-    do_cpt_string_err(xd, "GROMACS build host", contents->bhost, list);
+    // The following fields are no longer ever written with meaningful
+    // content, but because they precede the file version, there is no
+    // good way for new code to read the old and new formats, nor a
+    // good way for old code to avoid giving an error while reading a
+    // new format. So we read and write a field that no longer has a
+    // purpose.
+    do_cpt_string_err(xd, "GROMACS build time UNUSED", contents->btime_UNUSED, list);
+    do_cpt_string_err(xd, "GROMACS build user UNUSED", contents->buser_UNUSED, list);
+    do_cpt_string_err(xd, "GROMACS build host UNUSED", contents->bhost_UNUSED, list);
     do_cpt_string_err(xd, "generating program", contents->fprog, list);
     do_cpt_string_err(xd, "generation time", contents->ftime, list);
     contents->file_version = cpt_version;
@@ -1928,9 +1963,6 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         nED, eSwapCoords
     };
     std::strcpy(headerContents.version, gmx_version());
-    std::strcpy(headerContents.btime, BUILD_TIME);
-    std::strcpy(headerContents.buser, BUILD_USER);
-    std::strcpy(headerContents.bhost, BUILD_HOST);
     std::strcpy(headerContents.fprog, gmx::getProgramContext().fullBinaryPath());
     std::strcpy(headerContents.ftime, timebuf);
     if (DOMAINDECOMP(cr))
@@ -2095,9 +2127,6 @@ static void check_match(FILE *fplog, const t_commrec *cr, const ivec dd_nc,
 
     if (reproducibilityRequested)
     {
-        check_string(fplog, "Build time", BUILD_TIME, headerContents.btime, &mm);
-        check_string(fplog, "Build user", BUILD_USER, headerContents.buser, &mm);
-        check_string(fplog, "Build host", BUILD_HOST, headerContents.bhost, &mm);
         check_string(fplog, "Program name", gmx::getProgramContext().fullBinaryPath(), headerContents.fprog, &mm);
 
         check_int   (fplog, "#ranks", cr->nnodes, headerContents.nnodes, &mm);
@@ -2215,9 +2244,6 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         fprintf(fplog, "Reading checkpoint file %s\n", fn);
         fprintf(fplog, "  file generated by:     %s\n", headerContents->fprog);
         fprintf(fplog, "  file generated at:     %s\n", headerContents->ftime);
-        fprintf(fplog, "  GROMACS build time:    %s\n", headerContents->btime);
-        fprintf(fplog, "  GROMACS build user:    %s\n", headerContents->buser);
-        fprintf(fplog, "  GROMACS build host:    %s\n", headerContents->bhost);
         fprintf(fplog, "  GROMACS double prec.:  %d\n", headerContents->double_prec);
         fprintf(fplog, "  simulation part #:     %d\n", headerContents->simulation_part);
         fprintf(fplog, "  step:                  %s\n", gmx_step_str(headerContents->step, buf));
