@@ -526,25 +526,20 @@ static void write_posres(char *fn, t_atoms *pdba, real fc)
     gmx_fio_fclose(fp);
 }
 
-static int read_pdball(const char *inf, const char *outf, char *title,
+static int read_pdball(const char *inf, const char *outf, char **title,
                        t_atoms *atoms, rvec **x,
                        int *ePBC, matrix box, gmx_bool bRemoveH,
                        t_symtab *symtab, gmx_residuetype_t *rt, const char *watres,
                        gmx_atomprop_t aps, gmx_bool bVerbose)
 /* Read a pdb file. (containing proteins) */
 {
-    int  natom, new_natom, i;
+    int natom, new_natom, i;
 
     /* READ IT */
     printf("Reading %s...\n", inf);
-    t_topology *top;
-    snew(top, 1);
-    read_tps_conf(inf, top, ePBC, x, nullptr, box, FALSE);
-    strncpy(title, *top->name, STRLEN);
+    readConfAndAtoms(inf, symtab, title, atoms, ePBC, x, nullptr, box);
     title[STRLEN-1] = '\0';
-    *atoms          = top->atoms;
-    sfree(top);
-    natom = atoms->nr;
+    natom           = atoms->nr;
     if (atoms->pdbinfo == nullptr)
     {
         snew(atoms->pdbinfo, atoms->nr);
@@ -574,7 +569,7 @@ static int read_pdball(const char *inf, const char *outf, char *title,
     printf("Read");
     if (title[0])
     {
-        printf(" '%s',", title);
+        printf(" '%s',", *title);
     }
     printf(" %d atoms\n", natom);
 
@@ -593,7 +588,7 @@ static int read_pdball(const char *inf, const char *outf, char *title,
 
     if (outf)
     {
-        write_sto_conf(outf, title, atoms, *x, nullptr, *ePBC, box);
+        write_sto_conf(outf, *title, atoms, *x, nullptr, *ePBC, box);
     }
 
     return natom;
@@ -1393,7 +1388,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     gmx_residuetype_t*rt;
     const char       *top_fn;
     char              itp_fn[STRLEN], posre_fn[STRLEN], buf_fn[STRLEN];
-    char              molname[STRLEN], title[STRLEN];
+    char              molname[STRLEN];
     char             *c, forcefield[STRLEN], ffdir[STRLEN];
     char              ffname[STRLEN], suffix[STRLEN], buf[STRLEN];
     char             *watermodel;
@@ -1655,7 +1650,8 @@ int gmx_pdb2gmx(int argc, char *argv[])
     }
 
     aps   = gmx_atomprop_init();
-    natom = read_pdball(opt2fn("-f", NFILE, fnm), opt2fn_null("-q", NFILE, fnm), title,
+    char *title;
+    natom = read_pdball(opt2fn("-f", NFILE, fnm), opt2fn_null("-q", NFILE, fnm), &title,
                         &pdba_all, &pdbx, &ePBC, box, bRemoveH, &symtab, rt, watres,
                         aps, bVerbose);
 
