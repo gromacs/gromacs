@@ -46,6 +46,11 @@
 #include <cmath>
 #include <cstdint>
 
+#ifdef __SSE2__
+#include <emmintrin.h>
+#endif
+
+#include "gromacs/math/utilities.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
@@ -457,6 +462,79 @@ constexpr int32_t exactDiv(int32_t a, int32_t b)
 constexpr int64_t exactDiv(int64_t a, int64_t b)
 {
     return GMX_ASSERT(a%b == 0, "exactDiv called with non-divisible arguments"), a/b;
+}
+
+/* All gmx_round* functions assumes that FE_TONEAREST is default and not changed by anyone.
+ * For compilers with slow (l)lrint(f) implementations (GCC has it since 4.7) it is possible
+ * to add intrinsics here. This is outside of gromacs/simd because it is independent of
+ * vectorization. */
+//! Round float to int
+template <RoundingMode opt = RoundingMode::SlowFromZero>
+int gmx_round(float x)
+{
+    if (opt == RoundingMode::SlowFromZero)
+    {
+        return lround(x);
+    }
+    else
+    {
+#if __SSE2__ && !GMX_GNUC
+        return _mm_cvt_ss2si(_mm_set_ss(x));
+#else
+        return lrintf(x);
+#endif
+    }
+}
+//! Round double to int
+template <RoundingMode opt = RoundingMode::SlowFromZero>
+int gmx_round(double x)
+{
+    if (opt == RoundingMode::SlowFromZero)
+    {
+        return lround(x);
+    }
+    else
+    {
+#if __SSE2__ && !GMX_GNUC
+        return _mm_cvtsd_si32(_mm_set_sd(x));
+#else
+        return lrint(x);
+#endif
+    }
+}
+//! Round float to int64_t
+template <RoundingMode opt = RoundingMode::SlowFromZero>
+int64_t gmx_round64(float x)
+{
+    if (opt == RoundingMode::SlowFromZero)
+    {
+        return llround(x);
+    }
+    else
+    {
+#if __SSE2__ && !GMX_GNUC
+        return _mm_cvtss_si64(_mm_set_ss(x));
+#else
+        return llrintf(x);
+#endif
+    }
+}
+//! Round double to int64_t
+template <RoundingMode opt = RoundingMode::SlowFromZero>
+int64_t gmx_round64(double x)
+{
+    if (opt == RoundingMode::SlowFromZero)
+    {
+        return llround(x);
+    }
+    else
+    {
+#if __SSE2__ && !GMX_GNUC
+        return _mm_cvtsd_si64(_mm_set_sd(x));
+#else
+        return llrint(x);
+#endif
+    }
 }
 
 } // namespace gmx

@@ -69,6 +69,13 @@ typedef bool gmx_bool;
 /** Number of gmx_bool values. */
 #define BOOL_NR 2
 
+//! True if compiler is really GNU not one pretending to be
+#if defined __GNUC__ && !defined __clang__ && !defined __ICC
+#define GMX_GNUC 1
+#else
+#define GMX_GNUC 0
+#endif
+
 #if defined __cplusplus
 namespace gmx
 {

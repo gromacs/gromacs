@@ -105,6 +105,13 @@ enum class MathOptimization
     Unsafe   //!< Allow optimizations that can be VERY dangerous for general code.
 };
 
+//! Enum to select rounding mode for functions
+enum class RoundingMode
+{
+    SlowFromZero, //!< Rounding halfway cases away from zero. Slow on most HW.
+    FastToEven    //!< Rounding halfway cases to even. Fast on most HW.
+};
+
 /*! \brief Check if two numbers are within a tolerance
  *
  *  This routine checks if the relative difference between two numbers is
