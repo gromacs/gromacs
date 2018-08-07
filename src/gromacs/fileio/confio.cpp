@@ -247,7 +247,7 @@ static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
     int       chainnum = 0;
     char      chainid  = 'A';
     bool      outOfIds = false;
-    for (int m = 0; m < mols->nr; m++)
+    for (int m = 1; m < mols->nr; m++)
     {
         int a0 = mols->index[m];
         int a1 = mols->index[m+1];
