@@ -908,14 +908,22 @@ doSDUpdateGeneral(gmx_stochd_t *sd,
                   const rvec x[], rvec xprime[], rvec v[], const rvec f[],
                   int64_t step, int seed, const int *gatindex)
 {
-    if (updateType != SDUpdate::FrictionAndNoiseOnly)
+    // cTC, cACC and cFreeze can be nullptr any time, but various
+    // instantiations do not make sense with particular pointer
+    // values.
+    if (updateType == SDUpdate::ForcesOnly)
     {
-        GMX_ASSERT(f != nullptr, "SD update with forces requires forces");
-        GMX_ASSERT(cACC != nullptr, "SD update with forces requires acceleration groups");
+        GMX_ASSERT(f != nullptr, "SD update with only forces requires forces");
+        GMX_ASSERT(cTC == nullptr, "SD update with only forces cannot handle temperature groups");
     }
-    if (updateType != SDUpdate::ForcesOnly)
+    if (updateType == SDUpdate::FrictionAndNoiseOnly)
     {
-        GMX_ASSERT(cTC != nullptr, "SD update with noise requires temperature groups");
+        GMX_ASSERT(f == nullptr, "SD update with only noise cannot handle forces");
+        GMX_ASSERT(cACC == nullptr, "SD update with only noise cannot handle acceleration groups");
+    }
+    if (updateType == SDUpdate::Combined)
+    {
+        GMX_ASSERT(f != nullptr, "SD update with forces and noise requires forces");
     }
 
     // Even 0 bits internal counter gives 2x64 ints (more than enough for three table lookups)
