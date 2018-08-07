@@ -237,6 +237,7 @@ static void get_stx_coordnum(const char *infile, int *natoms)
     }
 }
 
+// TODO molecule index handling is suspected of being broken here
 static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
 {
     /* We always assign a new chain number, but save the chain id characters
@@ -349,10 +350,10 @@ static void read_stx_conf(const char *infile,
     }
 }
 
-static void readConfAndAtoms(const char *infile,
-                             t_symtab *symtab, char **name, t_atoms *atoms,
-                             int *ePBC,
-                             rvec **x, rvec **v, matrix box)
+void readConfAndAtoms(const char *infile,
+                      t_symtab *symtab, char **name, t_atoms *atoms,
+                      int *ePBC,
+                      rvec **x, rvec **v, matrix box)
 {
     int natoms;
     get_stx_coordnum(infile, &natoms);
