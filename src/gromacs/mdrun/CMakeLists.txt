@@ -33,6 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_libgromacs_sources(
+    context.cpp
     integrator.cpp
     md.cpp
     minimize.cpp
