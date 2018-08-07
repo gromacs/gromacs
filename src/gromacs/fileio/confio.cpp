@@ -349,10 +349,10 @@ static void read_stx_conf(const char *infile,
     }
 }
 
-static void readConfAndAtoms(const char *infile,
-                             t_symtab *symtab, char **name, t_atoms *atoms,
-                             int *ePBC,
-                             rvec **x, rvec **v, matrix box)
+void readConfAndAtoms(const char *infile,
+                      t_symtab *symtab, char **name, t_atoms *atoms,
+                      int *ePBC,
+                      rvec **x, rvec **v, matrix box)
 {
     int natoms;
     get_stx_coordnum(infile, &natoms);
