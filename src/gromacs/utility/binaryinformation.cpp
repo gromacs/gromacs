@@ -282,14 +282,9 @@ void gmx_print_version_info(gmx::TextWriter *writer)
     writer->writeLine(formatString("Built on:           %s", BUILD_TIME));
     writer->writeLine(formatString("Built by:           %s", BUILD_USER));
     writer->writeLine(formatString("Build OS/arch:      %s", BUILD_HOST));
-    writer->writeLine(formatString("Build CPU vendor:   %s", BUILD_CPU_VENDOR));
-    writer->writeLine(formatString("Build CPU brand:    %s", BUILD_CPU_BRAND));
-    writer->writeLine(formatString("Build CPU family:   %d   Model: %d   Stepping: %d",
-                                   BUILD_CPU_FAMILY, BUILD_CPU_MODEL, BUILD_CPU_STEPPING));
     /* TODO: The below strings can be quite long, so it would be nice to wrap
      * them. Can wait for later, as the master branch has ready code to do all
      * that. */
-    writer->writeLine(formatString("Build CPU features: %s", BUILD_CPU_FEATURES));
     writer->writeLine(formatString("C compiler:         %s", BUILD_C_COMPILER));
     writer->writeLine(formatString("C compiler flags:   %s", BUILD_CFLAGS));
     writer->writeLine(formatString("C++ compiler:       %s", BUILD_CXX_COMPILER));
