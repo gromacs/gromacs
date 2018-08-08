@@ -481,7 +481,7 @@ void gmx::Integrator::do_mimic()
             do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
                                      ir, state, state_global, observablesHistory,
                                      top_global, fr,
-                                     outf, mdebin, ekind, f,
+                                     outf, mdebin, ekind, f, nullptr,
                                      isCheckpointingStep, doRerun, isLastStep,
                                      mdrunOptions.writeConfout,
                                      bSumEkinhOld);

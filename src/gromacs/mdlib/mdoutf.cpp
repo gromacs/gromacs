@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/hybridMCMD/acceptorrewind.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/trajectory_writing.h"
@@ -251,7 +252,8 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
                                       int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
                                       ObservablesHistory *observablesHistory,
-                                      gmx::ArrayRef<gmx::RVec> f_local)
+                                      gmx::ArrayRef<gmx::RVec> f_local,
+                                      gmx::AcceptOrRewind *acceptOrRewind)
 {
     rvec *f_global;
 
@@ -301,7 +303,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
                              DOMAINDECOMP(cr) ? cr->dd->nnodes : cr->nnodes,
                              of->eIntegrator, of->simulation_part,
                              of->bExpanded, of->elamstats, step, t,
-                             state_global, observablesHistory);
+                             state_global, observablesHistory, acceptOrRewind);
         }
 
         if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))

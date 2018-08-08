@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -524,7 +524,7 @@ static inline void transpose(const matrix src, matrix dest)
 
 static inline void tmmul(const matrix a, const matrix b, matrix dest)
 {
-    /* Computes dest=mmul(transpose(a),b,dest) - used in do_pr_pcoupl */
+    /* Computes dest=mmul(transpose(a),b,dest) - used in parrinellorahman_pcoupl */
     dest[XX][XX] = a[XX][XX]*b[XX][XX]+a[YY][XX]*b[YY][XX]+a[ZZ][XX]*b[ZZ][XX];
     dest[XX][YY] = a[XX][XX]*b[XX][YY]+a[YY][XX]*b[YY][YY]+a[ZZ][XX]*b[ZZ][YY];
     dest[XX][ZZ] = a[XX][XX]*b[XX][ZZ]+a[YY][XX]*b[YY][ZZ]+a[ZZ][XX]*b[ZZ][ZZ];
@@ -538,7 +538,7 @@ static inline void tmmul(const matrix a, const matrix b, matrix dest)
 
 static inline void mtmul(const matrix a, const matrix b, matrix dest)
 {
-    /* Computes dest=mmul(a,transpose(b),dest) - used in do_pr_pcoupl */
+    /* Computes dest=mmul(a,transpose(b),dest) - used in parrinellorahman_pcoupl */
     dest[XX][XX] = a[XX][XX]*b[XX][XX]+a[XX][YY]*b[XX][YY]+a[XX][ZZ]*b[XX][ZZ];
     dest[XX][YY] = a[XX][XX]*b[YY][XX]+a[XX][YY]*b[YY][YY]+a[XX][ZZ]*b[YY][ZZ];
     dest[XX][ZZ] = a[XX][XX]*b[ZZ][XX]+a[XX][YY]*b[ZZ][YY]+a[XX][ZZ]*b[ZZ][ZZ];

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -172,11 +172,11 @@ class StopHandler final
          *   * the signal for stop at the next neighbor-searching step was received, and
          *     the current step is a neighbor-searching step.
          */
-        bool stoppingAfterCurrentStep(bool bNS) const
+        bool stoppingAfterCurrentStep(bool bNS, bool bDoHybridMCMD, bool bDoMetropolis) const
         {
             return convertToStopSignal(signal_.set) == StopSignal::stopImmediately ||
                    (convertToStopSignal(signal_.set) == StopSignal::stopAtNextNSStep &&
-                    (bNS || neverUpdateNeighborlist_));
+                    ((!bDoHybridMCMD && (bNS || neverUpdateNeighborlist_)) || bDoMetropolis));
         }
 
     private:

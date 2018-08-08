@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -95,11 +95,15 @@ void CheckpointHandler::setSignalImpl(
 }
 
 void CheckpointHandler::decideIfCheckpointingThisStepImpl(
-        bool bNS, bool bFirstStep, bool bLastStep)
+        bool bNS, bool bFirstStep, bool bLastStep, bool bDoHybridMCMD, bool bDoMetropolis)
 {
+    /* If hybrid MC/MD is used, enforce checkpointing at Metropolis steps rather than at NS steps.
+     * Checkpointing at the end of the simulation, too, will only be done if the final step includes a Metropolis step.
+     * (Checkpointing in do_md_trajectory_writing is done immediately after calling acceptOrRewind.run().)
+     */
     checkpointThisStep_ = (((convertToCheckpointSignal(signal_.set) == CheckpointSignal::doCheckpoint &&
-                             (bNS || neverUpdateNeighborlist_)) ||
-                            (bLastStep && writeFinalCheckpoint_)) &&
+                             (((bNS || neverUpdateNeighborlist_) && !bDoHybridMCMD) || bDoMetropolis)) ||
+                            (bLastStep && writeFinalCheckpoint_ && (!bDoHybridMCMD || bDoMetropolis))) &&
                            !bFirstStep);
     if (checkpointThisStep_)
     {

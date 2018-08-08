@@ -795,7 +795,6 @@ void andersen_tcoupl(const t_inputrec *ir, int64_t step,
     for (i = 0; i < md->homenr; i++)  /* now loop over the list of atoms */
     {
         int      ng = gatindex ? gatindex[i] : i;
-        gmx_bool bRandomize;
 
         rng.restart(step, ng);
 
@@ -803,28 +802,35 @@ void andersen_tcoupl(const t_inputrec *ir, int64_t step,
         {
             gc = md->cTC[i];  /* assign the atom to a temperature group if there are more than one */
         }
-        if (randomize[gc])
+
+        /* Do we have to randomize the velocities?
+         * Yes: - if the atom is in an Andersen temperature group (randomize[gc])
+         *      - if it is a hybrid MC/MD run
+         */
+        gmx_bool bRandomize = !ir->bDoHybridMCMD ? randomize[gc] : true;
+
+        if (bRandomize)
         {
-            if (ir->etc == etcANDERSENMASSIVE)
-            {
-                /* Randomize particle always */
-                bRandomize = TRUE;
-            }
-            else
+            /* - this function is only called for Andersen and Andersen-massive temperature coupling and in hybrid MC/MD simulations
+             * - only Andersen randomizes just a subset of the selected atoms
+             *   => re-evaluate bRandomize only for Andersen temperature coupling; in all other cases it stays TRUE
+             */
+            if (ir->etc == etcANDERSEN)
             {
                 /* Randomize particle probabilistically */
                 uniformDist.reset();
                 bRandomize = uniformDist(rng) < rate;
             }
+
+            /* need to check again, may have been changed for Andersen temperature coupling */
             if (bRandomize)
             {
-                real scal;
-                int  d;
-
-                scal = std::sqrt(boltzfac[gc]*md->invmass[i]);
+                real kBT  = !ir->bDoHybridMCMD ? boltzfac[gc] : BOLTZ*ir->hybridMCMDParams->temperatureVelocities;
+                real scal = std::sqrt(kBT*md->invmass[i]);
 
                 normalDist.reset();
 
+                int d;
                 for (d = 0; d < DIM; d++)
                 {
                     v[i][d] = scal*normalDist(rng);
@@ -868,6 +874,7 @@ void trotter_update(const t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
     rvec             sumv = {0, 0, 0};
     gmx_bool         bCouple;
 
+    // Hybrid MC/MD: don't need to change md-vv logic here as trotter_update is only used if temperature coupling is active (see bCouple below)
     if (trotter_seqno <= ettTSEQ2)
     {
         step_eff = step-1;  /* the velocity verlet calls are actually out of order -- the first half step

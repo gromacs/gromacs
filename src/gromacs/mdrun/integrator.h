@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,12 +72,15 @@ class t_state;
 namespace gmx
 {
 
+class AcceptOrRewind;
 class BoxDeformation;
 class Constraints;
 class PpForceWorkload;
+class HybridMCMDVelocities;
 class IMDOutputProvider;
 class MDLogger;
 class MDAtoms;
+class MetropolisStepMehlig;
 class StopHandlerBuilder;
 
 //! Function type for integrator code.
@@ -111,75 +114,79 @@ using IntegratorFunctionType = void();
 struct Integrator
 {
     //! Handles logging.
-    FILE                               *fplog;
+    FILE                                 *fplog;
     //! Handles communication.
-    t_commrec                          *cr;
+    t_commrec                            *cr;
     //! Coordinates multi-simulations.
-    const gmx_multisim_t               *ms;
+    const gmx_multisim_t                 *ms;
     //! Handles logging.
-    const MDLogger                     &mdlog;
+    const MDLogger                       &mdlog;
     //! Count of input file options.
-    int                                 nfile;
+    int                                   nfile;
     //! Content of input file options.
-    const t_filenm                     *fnm;
+    const t_filenm                       *fnm;
     //! Handles writing text output.
-    const gmx_output_env_t             *oenv;
+    const gmx_output_env_t               *oenv;
     //! Contains command-line options to mdrun.
-    const MdrunOptions                 &mdrunOptions;
+    const MdrunOptions                   &mdrunOptions;
     //! Handles virtual sites.
-    gmx_vsite_t                        *vsite;
+    gmx_vsite_t                          *vsite;
     //! Handles constraints.
-    Constraints                        *constr;
+    Constraints                          *constr;
     //! Handles enforced rotation.
-    gmx_enfrot                         *enforcedRotation;
+    gmx_enfrot                           *enforcedRotation;
     //! Handles box deformation.
-    BoxDeformation                     *deform;
+    BoxDeformation                       *deform;
     //! Handles writing output files.
-    IMDOutputProvider                  *outputProvider;
+    IMDOutputProvider                    *outputProvider;
     //! Contains user input mdp options.
-    t_inputrec                         *inputrec;
+    t_inputrec                           *inputrec;
     //! Full system topology.
-    gmx_mtop_t                         *top_global;
+    gmx_mtop_t                           *top_global;
     //! Helper struct for force calculations.
-    t_fcdata                           *fcd;
+    t_fcdata                             *fcd;
     //! Full simulation state (only non-nullptr on master rank).
-    t_state                            *state_global;
+    t_state                              *state_global;
     //! History of simulation observables.
-    ObservablesHistory                 *observablesHistory;
+    ObservablesHistory                   *observablesHistory;
     //! Atom parameters for this domain.
-    MDAtoms                            *mdAtoms;
+    MDAtoms                              *mdAtoms;
     //! Manages flop accounting.
-    t_nrnb                             *nrnb;
+    t_nrnb                               *nrnb;
     //! Manages wall cycle accounting.
-    gmx_wallcycle                      *wcycle;
+    gmx_wallcycle                        *wcycle;
     //! Parameters for force calculations.
-    t_forcerec                         *fr;
+    t_forcerec                           *fr;
     //! Schedule of force-calculation work each step for this task.
-    PpForceWorkload                    *ppForceWorkload;
+    PpForceWorkload                      *ppForceWorkload;
     //! Parameters for replica exchange algorihtms.
-    const ReplicaExchangeParameters    &replExParams;
+    const ReplicaExchangeParameters      &replExParams;
     //! Parameters for membrane embedding.
-    gmx_membed_t                       *membed;
+    gmx_membed_t                         *membed;
     //! Manages wall time accounting.
-    gmx_walltime_accounting            *walltime_accounting;
+    gmx_walltime_accounting              *walltime_accounting;
     //! Registers stop conditions
-    std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder;
+    std::unique_ptr<StopHandlerBuilder>   stopHandlerBuilder;
+    //! Classes for hybrid MC/MD simulations
+    std::unique_ptr<MetropolisStepMehlig> metropolisStepMehlig;
+    std::unique_ptr<HybridMCMDVelocities> hybridMCMDVelocities;
+    std::unique_ptr<AcceptOrRewind>       acceptOrRewind;
     //! Implements the normal MD integrators.
-    IntegratorFunctionType              do_md;
+    IntegratorFunctionType                do_md;
     //! Implements the rerun functionality.
-    IntegratorFunctionType              do_rerun;
+    IntegratorFunctionType                do_rerun;
     //! Implements steepest descent EM.
-    IntegratorFunctionType              do_steep;
+    IntegratorFunctionType                do_steep;
     //! Implements conjugate gradient energy minimization
-    IntegratorFunctionType              do_cg;
+    IntegratorFunctionType                do_cg;
     //! Implements onjugate gradient energy minimization using the L-BFGS algorithm
-    IntegratorFunctionType              do_lbfgs;
+    IntegratorFunctionType                do_lbfgs;
     //! Implements normal mode analysis
-    IntegratorFunctionType              do_nm;
+    IntegratorFunctionType                do_nm;
     //! Implements test particle insertion
-    IntegratorFunctionType              do_tpi;
+    IntegratorFunctionType                do_tpi;
     //! Implements MiMiC QM/MM workflow
-    IntegratorFunctionType              do_mimic;
+    IntegratorFunctionType                do_mimic;
     /*! \brief Function to run the correct IntegratorFunctionType,
      * based on the .mdp integrator field. */
     void run(unsigned int ei, bool doRerun);

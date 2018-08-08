@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,6 +62,7 @@
 #include "gromacs/fileio/xdr_datatype.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/hybridMCMD/acceptorrewind.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/math/vectypes.h"
@@ -1916,6 +1917,40 @@ static int do_cpt_awh(XDR *xd, gmx_bool bRead,
     return ret;
 }
 
+/* Hybrid MC/MD, but the back-up of the Metropolis step statistics can be used for all kinds of MC algorithms */
+static int doCptMetropolisStatistics(XDR                 *xd,
+                                     bool                 ReadingCpt,
+                                     gmx::AcceptOrRewind *acceptOrRewind,
+                                     FILE                *list)
+{
+    int ret = 0;
+
+    /* An instance of AcceptOrRewind is only made in hybrid MC/MD simulations. */
+    if (acceptOrRewind)
+    {
+        int accepted;
+        int total;
+        if (!ReadingCpt)
+        {
+            accepted = acceptOrRewind->getAcceptedProposedConfigurations();
+            total    = acceptOrRewind->getTotalProposedConfigurations();
+        }
+        do_cpt_int_err(xd, "Metropolis_step_accepted_configurations_", &accepted, list);
+        do_cpt_int_err(xd, "Metropolis_step_total_configurations_", &total, list);
+
+        if (ReadingCpt)
+        {
+            /* The function that calculates the Metropolis statistics assumes that one configuration at the beginning of the simulation is always accepted.
+             * If we re-start, a second configuration is always accepted. Therefore, we subtract 1 when reading.
+             */
+            acceptOrRewind->setAcceptedProposedConfigurations(accepted - 1);
+            acceptOrRewind->setTotalProposedConfigurations(total - 1);
+        }
+    }
+
+    return ret;
+}
+
 static int do_cpt_files(XDR *xd, gmx_bool bRead,
                         std::vector<gmx_file_position_t> *outputfiles,
                         FILE *list, int file_version)
@@ -2007,7 +2042,8 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                       int eIntegrator, int simulation_part,
                       gmx_bool bExpanded, int elamstats,
                       int64_t step, double t,
-                      t_state *state, ObservablesHistory *observablesHistory)
+                      t_state *state, ObservablesHistory *observablesHistory,
+                      gmx::AcceptOrRewind *acceptOrRewind)
 {
     t_fileio            *fp;
     char                *fntemp; /* the temporary checkpoint file name */
@@ -2172,6 +2208,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         (do_cpt_EDstate(gmx_fio_getxdr(fp), FALSE, nED, edsamhist, nullptr) < 0)      ||
         (do_cpt_awh(gmx_fio_getxdr(fp), FALSE, flags_awhh, state->awhHistory.get(), nullptr) < 0) ||
         (do_cpt_swapstate(gmx_fio_getxdr(fp), FALSE, eSwapCoords, swaphist, nullptr) < 0) ||
+        (doCptMetropolisStatistics(gmx_fio_getxdr(fp), false, acceptOrRewind, nullptr) < 0) ||
         (do_cpt_files(gmx_fio_getxdr(fp), FALSE, &outputfiles, nullptr,
                       headerContents.file_version) < 0))
     {
@@ -2486,6 +2523,7 @@ static void read_checkpoint(const char *fn, t_fileio *logfio,
                             CheckpointHeaderContents *headerContents,
                             t_state *state, gmx_bool *bReadEkin,
                             ObservablesHistory *observablesHistory,
+                            gmx::AcceptOrRewind *acceptOrRewind,
                             gmx_bool bAppendOutputFiles, gmx_bool bForceAppend,
                             gmx_bool reproducibilityRequested)
 {
@@ -2644,6 +2682,11 @@ static void read_checkpoint(const char *fn, t_fileio *logfio,
     {
         cp_error();
     }
+    ret = doCptMetropolisStatistics(gmx_fio_getxdr(fp), true, acceptOrRewind, nullptr);
+    if (ret)
+    {
+        cp_error();
+    }
 
     std::vector<gmx_file_position_t> outputfiles;
     ret = do_cpt_files(gmx_fio_getxdr(fp), TRUE, &outputfiles, nullptr, headerContents->file_version);
@@ -2740,6 +2783,7 @@ void load_checkpoint(const char *fn, t_fileio *logfio,
                      t_inputrec *ir, t_state *state,
                      gmx_bool *bReadEkin,
                      ObservablesHistory *observablesHistory,
+                     gmx::AcceptOrRewind *acceptOrRewind,
                      gmx_bool bAppend, gmx_bool bForceAppend,
                      gmx_bool reproducibilityRequested)
 {
@@ -2752,6 +2796,7 @@ void load_checkpoint(const char *fn, t_fileio *logfio,
                         ir->eI, &(ir->fepvals->init_fep_state),
                         &headerContents,
                         state, bReadEkin, observablesHistory,
+                        acceptOrRewind,
                         bAppend, bForceAppend,
                         reproducibilityRequested);
     }

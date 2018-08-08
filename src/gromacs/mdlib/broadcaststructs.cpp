@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -630,6 +630,18 @@ static void bc_simtempvals(const t_commrec *cr, t_simtemp *simtemp, int n_lambda
     }
 }
 
+// Hybrid MC/MD
+static void bc_hybridMCMDParams(const t_commrec *cr, HybridMCMDParams *hybridMCMDParams)
+{
+    block_bc(cr, hybridMCMDParams->nstMetropolis);
+    block_bc(cr, hybridMCMDParams->seed);
+    block_bc(cr, hybridMCMDParams->temperatureEnsemble);
+    block_bc(cr, hybridMCMDParams->temperatureVelocities);
+    if (debug)
+    {
+        fprintf(debug, "after bc_hybridMCMDParams\n");
+    }
+}
 
 static void bc_swapions(const t_commrec *cr, t_swapcoords *swap)
 {
@@ -705,6 +717,12 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
     if (inputrec->bSimTemp)
     {
         bc_simtempvals(cr, inputrec->simtempvals, inputrec->fepvals->n_lambda);
+    }
+    // Hybrid MC/MD
+    snew_bc(cr, inputrec->hybridMCMDParams, 1);
+    if (inputrec->bDoHybridMCMD)
+    {
+        bc_hybridMCMDParams(cr, inputrec->hybridMCMDParams);
     }
     if (inputrec->bPull)
     {

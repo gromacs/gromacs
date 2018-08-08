@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,7 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/tngio.h"
+#include "gromacs/hybridMCMD/acceptorrewind.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/mdrun.h"
@@ -71,9 +72,10 @@ do_md_trajectory_writing(FILE                    *fplog,
                          t_mdebin                *mdebin,
                          gmx_ekindata_t          *ekind,
                          gmx::ArrayRef<gmx::RVec> f,
+                         gmx::AcceptOrRewind     *acceptOrRewind,
                          gmx_bool                 bCPT,
                          gmx_bool                 bRerunMD,
-                         gmx_bool                 bLastStep,
+                         bool                     writeFinalConfiguration,
                          gmx_bool                 bDoConfOut,
                          gmx_bool                 bSumEkinhOld
                          )
@@ -120,9 +122,9 @@ do_md_trajectory_writing(FILE                    *fplog,
     }
 
 #if GMX_FAHCORE
-    if (bLastStep)
+    if (writeFinalConfiguration)
     {
-        /* Enforce writing positions and velocities at end of run */
+        /* Enforce writing positions and velocities at end of run (only for metropolised configurations if hybrid MC/MD) */
         mdof_flags |= (MDOF_X | MDOF_V);
     }
     if (MASTER(cr))
@@ -162,8 +164,10 @@ do_md_trajectory_writing(FILE                    *fplog,
             }
         }
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global,
-                                         step, t, state, state_global, observablesHistory, f);
-        if (bLastStep && step_rel == ir->nsteps &&
+                                         step, t, state, state_global, observablesHistory, f, acceptOrRewind);
+        /* With Hybrid MC/MD, output is only meaningful after the configuration has been "metropolised" */
+        if (writeFinalConfiguration &&
+            step_rel == ir->nsteps &&
             bDoConfOut && MASTER(cr) &&
             !bRerunMD)
         {

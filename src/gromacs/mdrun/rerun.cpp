@@ -516,7 +516,8 @@ void gmx::Integrator::do_rerun()
             prepareRerunState(rerun_fr, state_global, constructVsites, vsite, top.idef, ir->delta_t, *fr, graph);
         }
 
-        isLastStep = isLastStep || stopHandler->stoppingAfterCurrentStep(bNS);
+        /* Rerun never rejects a structure => both booleans related to hybrid MC/MD have to be set to false */
+        isLastStep = isLastStep || stopHandler->stoppingAfterCurrentStep(bNS, false, false);
 
         if (DOMAINDECOMP(cr))
         {
@@ -591,7 +592,7 @@ void gmx::Integrator::do_rerun()
             do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
                                      ir, state, state_global, observablesHistory,
                                      top_global, fr,
-                                     outf, mdebin, ekind, f,
+                                     outf, mdebin, ekind, f, nullptr,
                                      isCheckpointingStep, doRerun, isLastStep,
                                      mdrunOptions.writeConfout,
                                      bSumEkinhOld);

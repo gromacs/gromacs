@@ -74,6 +74,9 @@
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/printhardware.h"
+#include "gromacs/hybridMCMD/acceptorrewind.h"
+#include "gromacs/hybridMCMD/hybridmcmdvelocities.h"
+#include "gromacs/hybridMCMD/metropolis.h"
 #include "gromacs/listed-forces/disre.h"
 #include "gromacs/listed-forces/gpubonded.h"
 #include "gromacs/listed-forces/orires.h"
@@ -844,6 +847,21 @@ int Mdrunner::mdrunner()
 
     ContinuationOptions &continuationOptions = mdrunOptions.continuationOptions;
 
+    /* As one of the classes required in hybrid MC/MD simulations needs to read data from checkpoint files,
+     * they are initialised here.
+     */
+    std::unique_ptr<MetropolisStepMehlig> metropolisStepMehlig;
+    std::unique_ptr<HybridMCMDVelocities> hybridMCMDVelocities;
+    std::unique_ptr<AcceptOrRewind>       acceptOrRewind;
+
+    /* The additional classes for hybrid MC/MD are only needed on the particle-particle nodes */
+    if (inputrec->bDoHybridMCMD && thisRankHasDuty(cr, DUTY_PP))
+    {
+        metropolisStepMehlig = gmx::compat::make_unique<MetropolisStepMehlig>(inputrec->hybridMCMDParams->temperatureEnsemble, inputrec->hybridMCMDParams->temperatureVelocities, inputrec->hybridMCMDParams->seed);
+        hybridMCMDVelocities = gmx::compat::make_unique<HybridMCMDVelocities>(*metropolisStepMehlig.get());
+        acceptOrRewind       = gmx::compat::make_unique<AcceptOrRewind>(*metropolisStepMehlig.get());
+    }
+
     if (continuationOptions.startedFromCheckpoint)
     {
         /* Check if checkpoint file exists before doing continuation.
@@ -855,7 +873,7 @@ int Mdrunner::mdrunner()
                         logFileHandle,
                         cr, domdecOptions.numCells,
                         inputrec, globalState.get(),
-                        &bReadEkin, &observablesHistory,
+                        &bReadEkin, &observablesHistory, acceptOrRewind.get(),
                         continuationOptions.appendFiles,
                         continuationOptions.appendFilesOptionSet,
                         mdrunOptions.reproducible);
@@ -906,6 +924,18 @@ int Mdrunner::mdrunner()
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
+        /* Hybrid MC/MD: dynamic load balancing must be turned off; understand that default value "auto" means "no" here */
+        if (inputrec->bDoHybridMCMD)
+        {
+            if (domdecOptions.dlbOption == DlbOption::turnOnWhenUseful)
+            {
+                domdecOptions.dlbOption = DlbOption::no;
+            }
+            if (domdecOptions.dlbOption != DlbOption::no)
+            {
+                gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr), "Hybrid Monte Carlo simulations do not support dynamic load balancing.");
+            }
+        }
         cr->dd = init_domain_decomposition(mdlog, cr, domdecOptions, mdrunOptions,
                                            &mtop, inputrec,
                                            box, positionsFromStatePointer(globalState.get()),
@@ -1428,7 +1458,10 @@ int Mdrunner::mdrunner()
             replExParams,
             membed,
             walltime_accounting,
-            std::move(stopHandlerBuilder_)
+            std::move(stopHandlerBuilder_),
+            std::move(metropolisStepMehlig),
+            std::move(hybridMCMDVelocities),
+            std::move(acceptOrRewind),
         };
         integrator.run(inputrec->eI, doRerun);
 

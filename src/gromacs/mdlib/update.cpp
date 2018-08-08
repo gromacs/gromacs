@@ -1713,7 +1713,7 @@ void update_pcouple_after_coordinates(FILE             *fplog,
         case (epcPARRINELLORAHMAN):
             if (isPressureCouplingStep(step, inputrec))
             {
-                /* The box velocities were updated in do_pr_pcoupl,
+                /* The box velocities were updated in parrinellorahman_pcoupl,
                  * but we dont change the box vectors until we get here
                  * since we need to be able to shift/unshift above.
                  */

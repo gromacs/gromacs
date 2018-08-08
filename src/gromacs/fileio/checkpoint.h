@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,11 @@ struct t_inputrec;
 class t_state;
 struct t_trxframe;
 
+namespace gmx
+{
+class AcceptOrRewind;
+}
+
 /* the name of the environment variable to disable fsync failure checks with */
 #define GMX_IGNORE_FSYNC_FAILURE_ENV "GMX_IGNORE_FSYNC_FAILURE"
 
@@ -67,7 +72,8 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                       int eIntegrator, int simulation_part,
                       gmx_bool bExpanded, int elamstats,
                       int64_t step, double t,
-                      t_state *state, ObservablesHistory *observablesHistory);
+                      t_state *state, ObservablesHistory *observablesHistory,
+                      gmx::AcceptOrRewind *acceptOrRewind);
 
 /* Loads a checkpoint from fn for run continuation.
  * Generates a fatal error on system size mismatch.
@@ -85,6 +91,7 @@ void load_checkpoint(const char *fn, t_fileio *logfio,
                      t_inputrec *ir, t_state *state,
                      gmx_bool *bReadEkin,
                      ObservablesHistory *observablesHistory,
+                     gmx::AcceptOrRewind *acceptOrRewind,
                      gmx_bool bAppend, gmx_bool bForceAppend,
                      gmx_bool reproducibilityRequested);
 

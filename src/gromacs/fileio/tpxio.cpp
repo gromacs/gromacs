@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -123,6 +123,7 @@ enum tpxv {
     tpxv_PullPrevStepCOMAsReference,                         /**< Enabled using the COM of the pull group of the last frame as reference for PBC */
     tpxv_MimicQMMM,                                          /**< Inroduced support for MiMiC QM/MM interface */
     tpxv_PullAverage,                                        /**< Added possibility to output average pull force and position */
+    tpxv_HybridMCMD,                                         /**< support input parameters for hybrid Monte Carlo simulations*/
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -423,6 +424,18 @@ static void do_simtempvals(t_fileio *fio, t_simtemp *simtemp, int n_lambda, gmx_
             }
             gmx_fio_ndo_real(fio, simtemp->temperatures, n_lambda);
         }
+    }
+}
+
+// Hybrid MC/MD
+static void do_hybridMCMDParams(t_fileio *fio, HybridMCMDParams *hybridMCMDParams, int file_version)
+{
+    if (file_version >= tpxv_HybridMCMD)
+    {
+        gmx_fio_do_int(fio, hybridMCMDParams->nstMetropolis);
+        gmx_fio_do_int(fio, hybridMCMDParams->seed);
+        gmx_fio_do_real(fio, hybridMCMDParams->temperatureEnsemble);
+        gmx_fio_do_real(fio, hybridMCMDParams->temperatureVelocities);
     }
 }
 
@@ -1332,6 +1345,24 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     if (ir->bSimTemp)
     {
         do_simtempvals(fio, ir->simtempvals, ir->fepvals->n_lambda, bRead, file_version);
+    }
+
+    // Hybrid MC/MD
+    if (file_version >= tpxv_HybridMCMD)
+    {
+        gmx_fio_do_gmx_bool(fio, ir->bDoHybridMCMD);
+        if (ir->bDoHybridMCMD)
+        {
+            ir->bDoHybridMCMD = TRUE;
+        }
+    }
+    else
+    {
+        ir->bDoHybridMCMD = FALSE;
+    }
+    if (ir->bDoHybridMCMD)
+    {
+        do_hybridMCMDParams(fio, ir->hybridMCMDParams, file_version);
     }
 
     if (file_version >= 79)

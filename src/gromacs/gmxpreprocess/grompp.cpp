@@ -689,6 +689,16 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         sfree(mass);
     }
 
+    // Hybrid MC/MD
+    if (ir->bDoHybridMCMD)
+    {
+        if (ir->hybridMCMDParams->seed == -1)
+        {
+            ir->hybridMCMDParams->seed = int(gmx::makeRandomSeed());
+            fprintf(stderr, "Setting hmc-seed to %d\n", ir->hybridMCMDParams->seed);
+        }
+    }
+
     *nmi = nrmols;
     *mi  = molinfo;
 }

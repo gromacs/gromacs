@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,11 @@ struct t_commrec;
 struct t_filenm;
 struct t_forcerec;
 
+namespace gmx
+{
+class AcceptOrRewind;
+}
+
 /*! \brief Wrapper routine for writing trajectories during mdrun
  *
  * This routine does communication (e.g. collecting distributed coordinates)
@@ -72,9 +77,10 @@ do_md_trajectory_writing(FILE                     *fplog,
                          t_mdebin                 *mdebin,
                          struct gmx_ekindata_t    *ekind,
                          gmx::ArrayRef<gmx::RVec>  f,
+                         gmx::AcceptOrRewind      *acceptOrRewind,
                          gmx_bool                  bCPT,
                          gmx_bool                  bRerunMD,
-                         gmx_bool                  bLastStep,
+                         bool                      writeFinalConfiguration,
                          gmx_bool                  bDoConfOut,
                          gmx_bool                  bSumEkinhOld
                          );

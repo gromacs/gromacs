@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -330,6 +330,19 @@ struct t_swapcoords
     gmx_swapcoords_t         si_priv;
 };
 
+//! Input parameters for hybrid Monte Carlo simulations
+struct HybridMCMDParams
+{
+    /*! The frequency at which the Metropolis criterion is evaluated */
+    int                      nstMetropolis;
+    /*! The random seed for the Metropolis step */
+    int                      seed;
+    /*! The ensemble temperature used together with the potential energy in the Metropolis criterion (can be different from temperatureVelocities) */
+    real                     temperatureEnsemble;
+    /*! The temperature used to generate initial velocities */
+    real                     temperatureVelocities;
+};
+
 struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
 {
     t_inputrec();
@@ -588,6 +601,10 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     int       QMMMscheme;
     //! Factor for scaling the MM charges in QM calc.
     real      scalefactor;
+
+    /* Hybrid MC/MD data */
+    gmx_bool                 bDoHybridMCMD;    /* Whether to use hybrid MC/MD or not */
+    HybridMCMDParams        *hybridMCMDParams; /* Hybrid MC/MD input parameters */
 
     /* Fields for removed features go here (better caching) */
     //! Whether AdResS is enabled - always false if a valid .tpr was read

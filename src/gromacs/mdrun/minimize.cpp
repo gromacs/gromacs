@@ -551,7 +551,7 @@ static void write_em_traj(FILE *fplog, const t_commrec *cr,
     mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags,
                                      top_global, step, static_cast<double>(step),
                                      &state->s, state_global, observablesHistory,
-                                     state->f);
+                                     state->f, nullptr);
 
     if (confout != nullptr)
     {
@@ -1930,7 +1930,7 @@ Integrator::do_lbfgs()
         }
 
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags,
-                                         top_global, step, static_cast<real>(step), &ems.s, state_global, observablesHistory, ems.f);
+                                         top_global, step, static_cast<real>(step), &ems.s, state_global, observablesHistory, ems.f, nullptr);
 
         /* Do the linesearching in the direction dx[point][0..(n-1)] */
 
