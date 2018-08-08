@@ -157,6 +157,18 @@ class Mdrunner
         gmx_multisim_t                  *ms;
 
     public:
+        /*! \brief Builder class to manage object creation.
+         *
+         * This class is a member of gmx::Mdrunner to allow access to private
+         * gmx::Mdrunner members.
+         *
+         * It is non-trivial to establish an initialized gmx::Mdrunner invariant,
+         * so objects can be obtained by clients using a Builder, a move, or a
+         * clone() operation. Clients cannot default initialize or copy
+         * gmx::Mdrunner.
+         */
+        class BuilderImplementation;
+
         /*! \brief Defaulted constructor.
          *
          * Note that when member variables are not present in the constructor
@@ -164,8 +176,8 @@ class Mdrunner
          * then they are initialized with any default member initializer specified
          * when they were declared, or default initialized. */
         Mdrunner() = default;
-        //! Start running mdrun by calling its C-style main function.
-        int mainFunction(int argc, char *argv[]);
+        ~Mdrunner();
+
         /*! \brief Driver routine, that calls the different simulation methods. */
         int mdrunner();
         //! Called when thread-MPI spawns threads.
@@ -175,6 +187,97 @@ class Mdrunner
          * \todo Can this be refactored so that the Mdrunner on a spawned thread is
          * constructed ready to use? */
         void reinitializeOnSpawnedThread();
+};
+
+class MdrunnerBuilder final
+{
+    public:
+        MdrunnerBuilder();
+
+        std::unique_ptr<Mdrunner> build(const char* nbpu_opt,
+                                        const char* pme_opt,
+                                        const char* pme_fft_opt);
+
+        /*!
+         * \brief Provide access to the commrec to use.
+         *
+         * \param communicator non-owning handle to comm pointer.
+         * \return
+         */
+        MdrunnerBuilder &setCommunications(t_commrec** communicator);
+
+        /*!
+         * \brief Provide access to the multisim communicator to use.
+         *
+         * \param multisim non-owning handle to multisim comm pointer.
+         * \return
+         */
+        MdrunnerBuilder &addMultiSim(gmx_multisim_t** multisim);
+
+        /*!
+         * \brief Provide access to the output environment resources to use.
+         *
+         * \param outputEnvironment non-owning handle to output context.
+         * \param logFile non-owning handle to log filehandle.
+         * \return
+         */
+        MdrunnerBuilder &setOutputContext(gmx_output_env_t** outputEnvironment, FILE** logFile);
+
+        /*!
+         * \brief Set Mdrun options not owned by some other module.
+         *
+         * \param options structure to copy
+         * \param forceWarningThreshold Print a warning if any force is larger than this (in kJ/mol nm)
+         * \return
+         */
+        MdrunnerBuilder &setExtraMdrunOptions(const MdrunOptions &options,
+                                              real                forceWarningThreshold);
+
+        /*!
+         * \brief Set the domain decomposition module.
+         *
+         * \param options options with which to construct domain decomposition.
+         * \return
+         */
+        MdrunnerBuilder &setDomdec(const DomdecOptions &options);
+
+        /*!
+         * \brief Set parallelism resource management.
+         *
+         * \param options parallelism options to copy.
+         * \return
+         */
+        MdrunnerBuilder &setHardwareOptions(const gmx_hw_opt_t &options);
+
+        /*!
+         * \brief Set Verlet list manager.
+         *
+         * \param rebuildInterval override for the duration of a neighbor list with the Verlet scheme.
+         * \return
+         */
+        MdrunnerBuilder &setVerletList(int rebuildInterval);
+
+        /*!
+         * \brief Set replica exchange manager.
+         *
+         * \param params parameters with which to set up replica exchange.
+         * \return
+         */
+        MdrunnerBuilder &setReplicaExchange(const ReplicaExchangeParameters &params);
+
+        /*!
+         * \brief Set I/O files.
+         *
+         * \param filenames container of filename data to copy.
+         * \return
+         */
+        MdrunnerBuilder &setFilenames(const std::array<t_filenm, 34> &filenames);
+
+        ~MdrunnerBuilder();
+
+
+    private:
+        std::unique_ptr<Mdrunner::BuilderImplementation> impl_;
 };
 
 }      // namespace gmx
