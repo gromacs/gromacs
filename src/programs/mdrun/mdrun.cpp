@@ -91,15 +91,6 @@ static bool is_multisim_option_set(int argc, const char *const argv[])
 //! Implements C-style main function for mdrun
 int gmx_mdrun(int argc, char *argv[])
 {
-    gmx::Mdrunner runner;
-    return runner.mainFunction(argc, argv);
-}
-
-namespace gmx
-{
-
-int Mdrunner::mainFunction(int argc, char *argv[])
-{
     const char   *desc[] = {
         "[THISMODULE] is the main computational chemistry engine",
         "within GROMACS. Obviously, it performs Molecular Dynamics simulations,",
@@ -244,6 +235,73 @@ int Mdrunner::mainFunction(int argc, char *argv[])
         "When [TT]mdrun[tt] is started with MPI, it does not run niced by default."
     };
 
+    //! Ongoing collection of mdrun options
+    MdrunOptions                     mdrunOptions;
+    //! Options for the domain decomposition.
+    DomdecOptions                    domdecOptions;
+    //! Parallelism-related user options.
+    gmx_hw_opt_t                     hw_opt;
+    //! Command-line override for the duration of a neighbor list with the Verlet scheme.
+    int                              nstlist_cmdline = 0;
+    //! Parameters for replica-exchange simulations.
+    ReplicaExchangeParameters        replExParams;
+
+    //! Filenames and properties from command-line argument values.
+    std::array<t_filenm, 34> filenames =
+    {{{ efTPR, nullptr,     nullptr,     ffREAD },
+      { efTRN, "-o",        nullptr,     ffWRITE },
+      { efCOMPRESSED, "-x", nullptr,     ffOPTWR },
+      { efCPT, "-cpi",      nullptr,     ffOPTRD | ffALLOW_MISSING },
+      { efCPT, "-cpo",      nullptr,     ffOPTWR },
+      { efSTO, "-c",        "confout",   ffWRITE },
+      { efEDR, "-e",        "ener",      ffWRITE },
+      { efLOG, "-g",        "md",        ffWRITE },
+      { efXVG, "-dhdl",     "dhdl",      ffOPTWR },
+      { efXVG, "-field",    "field",     ffOPTWR },
+      { efXVG, "-table",    "table",     ffOPTRD },
+      { efXVG, "-tablep",   "tablep",    ffOPTRD },
+      { efXVG, "-tableb",   "table",     ffOPTRDMULT },
+      { efTRX, "-rerun",    "rerun",     ffOPTRD },
+      { efXVG, "-tpi",      "tpi",       ffOPTWR },
+      { efXVG, "-tpid",     "tpidist",   ffOPTWR },
+      { efEDI, "-ei",       "sam",       ffOPTRD },
+      { efXVG, "-eo",       "edsam",     ffOPTWR },
+      { efXVG, "-devout",   "deviatie",  ffOPTWR },
+      { efXVG, "-runav",    "runaver",   ffOPTWR },
+      { efXVG, "-px",       "pullx",     ffOPTWR },
+      { efXVG, "-pf",       "pullf",     ffOPTWR },
+      { efXVG, "-ro",       "rotation",  ffOPTWR },
+      { efLOG, "-ra",       "rotangles", ffOPTWR },
+      { efLOG, "-rs",       "rotslabs",  ffOPTWR },
+      { efLOG, "-rt",       "rottorque", ffOPTWR },
+      { efMTX, "-mtx",      "nm",        ffOPTWR },
+      { efRND, "-multidir", nullptr,     ffOPTRDMULT},
+      { efXVG, "-awh",      "awhinit",   ffOPTRD },
+      { efDAT, "-membed",   "membed",    ffOPTRD },
+      { efTOP, "-mp",       "membed",    ffOPTRD },
+      { efNDX, "-mn",       "membed",    ffOPTRD },
+      { efXVG, "-if",       "imdforces", ffOPTWR },
+      { efXVG, "-swap",     "swapions",  ffOPTWR }}};
+    /*! \brief Filename arguments.
+     *
+     * Provided for compatibility with old C-style code accessing
+     * command-line arguments that are file names. */
+    t_filenm *fnm = filenames.data();
+    /*! \brief Number of filename argument values.
+     *
+     * Provided for compatibility with old C-style code accessing
+     * command-line arguments that are file names. */
+    int nfile = filenames.size();
+
+    //! Print a warning if any force is larger than this (in kJ/mol nm).
+    real                             pforce = -1;
+
+    //! Output context for writing text files
+    gmx_output_env_t                *oenv = nullptr;
+
+    //! Handle to file used for logging.
+    FILE                            *fplog;
+
     /* Command line options */
     rvec              realddxyz                                               = {0, 0, 0};
     const char       *ddrank_opt_choices[static_cast<int>(DdRankOrder::nr)+1] =
@@ -370,9 +428,9 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     };
     int               rc;
 
-    cr = init_commrec();
+    t_commrec       * cr = init_commrec();
 
-    unsigned long PCA_Flags = PCA_CAN_SET_DEFFNM;
+    unsigned long     PCA_Flags = PCA_CAN_SET_DEFFNM;
     // With -multidir, the working directory still needs to be
     // changed, so we can't check for the existence of files during
     // parsing.  It isn't useful to do any completion based on file
@@ -443,7 +501,7 @@ int Mdrunner::mainFunction(int argc, char *argv[])
         gmx_fatal(FARGS, "Replica exchange number of exchanges needs to be positive");
     }
 
-    ms = init_multisystem(MPI_COMM_WORLD, multidir);
+    gmx_multisim_t* ms = init_multisystem(MPI_COMM_WORLD, multidir);
 
     /* Prepare the intra-simulation communication */
     // TODO consolidate this with init_commrec, after changing the
@@ -503,12 +561,22 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     domdecOptions.numCells[YY] = (int)(realddxyz[YY] + 0.5);
     domdecOptions.numCells[ZZ] = (int)(realddxyz[ZZ] + 0.5);
 
-    nbpu_opt    = nbpu_opt_choices[0];
-    pme_opt     = pme_opt_choices[0];
-    pme_fft_opt = pme_fft_opt_choices[0];
+    gmx::MdrunnerBuilder builder;
+    builder.setExtraMdrunOptions(mdrunOptions,
+                                 pforce);
+    builder.setDomdec(domdecOptions);
+    builder.setHardwareOptions(hw_opt);
+    builder.setVerletList(nstlist_cmdline);
+    builder.setReplicaExchange(replExParams);
+    builder.setFilenames(filenames);
+    builder.setCommunications(&cr);
+    builder.addMultiSim(&ms);
+    builder.setOutputContext(&oenv, &fplog);
+    auto runner = builder.build(nbpu_opt_choices[0],
+                                pme_opt_choices[0],
+                                pme_fft_opt_choices[0]);
 
-
-    rc = mdrunner();
+    rc = runner->mdrunner();
 
     /* Log file has to be closed in mdrunner if we are appending to it
        (fplog not set here) */
@@ -524,5 +592,3 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     done_multisim(ms);
     return rc;
 }
-
-} // namespace

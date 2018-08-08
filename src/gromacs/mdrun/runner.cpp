@@ -1414,4 +1414,249 @@ int Mdrunner::mdrunner()
     return rc;
 }
 
+Mdrunner::~Mdrunner() = default;
+
+class Mdrunner::BuilderImplementation
+{
+    public:
+        BuilderImplementation();
+        ~BuilderImplementation();
+
+        bool setExtraMdrunOptions(const MdrunOptions& options,
+                                          real forceWarningThreshold);
+        bool setDomdec(const DomdecOptions& options);
+        bool setHardwareOptions(const gmx_hw_opt_t& options);
+        bool setVerletList(int nstlist);
+        bool setReplicaExchange(const ReplicaExchangeParameters& params);
+        bool setFilenames(const std::array<t_filenm, 34>& filenames);
+        bool setCommunications(t_commrec** communicator);
+        bool addMultiSim(gmx_multisim_t** multisim);
+        bool setOutputContext(gmx_output_env_t** outputEnvironment, FILE** logFile);
+
+        std::unique_ptr<Mdrunner> build(const char* nbpu_opt,
+                                                const char* pme_opt,
+                                                const char* pme_fft_opt);
+    private:
+        MdrunOptions mdrunOptions_;
+        DomdecOptions domdecOptions_;
+        gmx_hw_opt_t hardwareOptions_;
+        ReplicaExchangeParameters replicaExchangeParameters_;
+        int nstlist_;
+        std::array<t_filenm, 34> filenames_;
+        //! Non-owning communicator handle.
+        std::unique_ptr<t_commrec*> communicator_;
+        //! Non-owning multisim communicator handle.
+        std::unique_ptr<gmx_multisim_t*> multisim_;
+        //! Non-owning handle to output environment.
+        std::unique_ptr<gmx_output_env_t*> outputEnvironment_;
+        //! Non-owning handle to MD log file.
+        std::unique_ptr<FILE*> logFile_;
+        real forceWarningThreshold_;
+};
+
+Mdrunner::BuilderImplementation::BuilderImplementation() :
+    nstlist_{0},
+    filenames_{{}},
+    communicator_{gmx::compat::make_unique<t_commrec*>()},
+    multisim_{gmx::compat::make_unique<gmx_multisim_t*>()},
+    outputEnvironment_{gmx::compat::make_unique<gmx_output_env_t*>()},
+    logFile_{gmx::compat::make_unique<FILE*>()},
+    forceWarningThreshold_{-1}
+{
+
+}
+
+Mdrunner::BuilderImplementation::~BuilderImplementation()
+{
+
+}
+
+bool Mdrunner::BuilderImplementation::setExtraMdrunOptions(const MdrunOptions& options,
+                                                           real forceWarningThreshold)
+{
+    bool success{false};
+    mdrunOptions_ = options;
+    forceWarningThreshold_ = forceWarningThreshold;
+    success = true;
+    return success;
+}
+
+bool Mdrunner::BuilderImplementation::setDomdec(const DomdecOptions& options)
+{
+    bool success{false};
+    domdecOptions_ = options;
+    success = true;
+    return success;
+}
+
+bool Mdrunner::BuilderImplementation::setHardwareOptions(const gmx_hw_opt_t& options)
+{
+    bool success{false};
+    hardwareOptions_ = options;
+    success = true;
+    return success;
+}
+
+bool Mdrunner::BuilderImplementation::setVerletList(int nstlist)
+{
+    nstlist_ = nstlist;
+    return true;
+}
+
+bool Mdrunner::BuilderImplementation::setReplicaExchange(const ReplicaExchangeParameters& params)
+{
+    replicaExchangeParameters_ = params;
+    return true;
+}
+
+bool Mdrunner::BuilderImplementation::setFilenames(const std::array<t_filenm, 34>& filenames)
+{
+    for(size_t i=0; i < filenames.size(); ++i)
+    {
+        filenames_[i].ftp = filenames[i].ftp;
+        filenames_[i].flag = filenames[i].flag;
+        filenames_[i].filenames = filenames[i].filenames;
+    }
+    return true;
+}
+
+bool Mdrunner::BuilderImplementation::setCommunications(t_commrec** communicator)
+{
+    communicator_.reset(communicator);
+    return true;
+}
+
+bool Mdrunner::BuilderImplementation::addMultiSim(gmx_multisim_t** multisim)
+{
+    multisim_.reset(multisim);
+    return true;
+}
+
+bool Mdrunner::BuilderImplementation::setOutputContext(gmx_output_env_t** outputEnvironment,
+                                                       FILE** logFile)
+{
+    outputEnvironment_.reset(outputEnvironment);
+    logFile_.reset(logFile);
+    return true;
+}
+
+std::unique_ptr<Mdrunner> Mdrunner::BuilderImplementation::build(const char* nbpu_opt,
+                                                                 const char* pme_opt,
+                                                                 const char* pme_fft_opt)
+{
+    auto newRunner = gmx::compat::make_unique<Mdrunner>();
+    newRunner->mdrunOptions = mdrunOptions_;
+    newRunner->domdecOptions = domdecOptions_;
+    newRunner->hw_opt = hardwareOptions_;
+    newRunner->nstlist_cmdline = nstlist_;
+    newRunner->replExParams = replicaExchangeParameters_;
+
+    for(size_t i=0; i < filenames_.size(); ++i)
+    {
+        newRunner->filenames[i].ftp = filenames_[i].ftp;
+        newRunner->filenames[i].flag = filenames_[i].flag;
+        newRunner->filenames[i].filenames = filenames_[i].filenames;
+    }
+
+    newRunner->fnm = newRunner->filenames.data();
+    newRunner->nfile = newRunner->filenames.size();
+
+    newRunner->cr = *communicator_.release();
+    newRunner->ms = *multisim_.release();
+
+    newRunner->oenv = *outputEnvironment_.release();
+    newRunner->fplog = *logFile_.release();
+
+    newRunner->nbpu_opt = nbpu_opt;
+    newRunner->pme_opt = pme_opt;
+    newRunner->pme_fft_opt = pme_fft_opt;
+    return newRunner;
+}
+
+MdrunnerBuilder::MdrunnerBuilder() :
+    impl_{gmx::compat::make_unique<Mdrunner::BuilderImplementation>()}
+{
+}
+
+MdrunnerBuilder::~MdrunnerBuilder()
+{}
+
+MdrunnerBuilder& MdrunnerBuilder::setExtraMdrunOptions(const MdrunOptions& options,
+                                                       real forceWarningThreshold)
+{
+    bool success = impl_->setExtraMdrunOptions(options,
+                                               forceWarningThreshold);
+    if (!success)
+    {
+        GMX_THROW(APIError("For some reason, couldn't setExtraMdrunOptions"));
+    }
+    return *this;
+}
+
+MdrunnerBuilder& MdrunnerBuilder::setDomdec(const DomdecOptions& options)
+{
+    bool success = impl_->setDomdec(options);
+    if (!success)
+    {
+        GMX_THROW(APIError("For some reason, couldn't setDomdec"));
+    }
+    return *this;
+}
+
+MdrunnerBuilder& MdrunnerBuilder::setHardwareOptions(const gmx_hw_opt_t& options)
+{
+    bool success = impl_->setHardwareOptions(options);
+    if (!success)
+    {
+        GMX_THROW(APIError("For some reason, couldn't setHardwareOptions."));
+    }
+    return *this;
+}
+
+MdrunnerBuilder& MdrunnerBuilder::setVerletList(int nstlist)
+{
+    impl_->setVerletList(nstlist);
+    return *this;
+}
+
+MdrunnerBuilder& MdrunnerBuilder::setReplicaExchange(const ReplicaExchangeParameters& params)
+{
+    impl_->setReplicaExchange(params);
+    return *this;
+}
+
+MdrunnerBuilder& MdrunnerBuilder::setFilenames(const std::array<t_filenm, 34>& filenames)
+{
+    impl_->setFilenames(filenames);
+    return *this;
+}
+
+MdrunnerBuilder& MdrunnerBuilder::setCommunications(t_commrec** communicator)
+{
+    impl_->setCommunications(communicator);
+    return *this;
+}
+
+MdrunnerBuilder& MdrunnerBuilder::addMultiSim(gmx_multisim_t** multisim)
+{
+    impl_->addMultiSim(multisim);
+    return *this;
+}
+
+MdrunnerBuilder& MdrunnerBuilder::setOutputContext(gmx_output_env_t** outputEnvironment,
+                                                   FILE** logFile)
+{
+    impl_->setOutputContext(outputEnvironment, logFile);
+    return *this;
+}
+
+std::unique_ptr<Mdrunner> MdrunnerBuilder::build(const char* nbpu_opt,
+                                                 const char* pme_opt,
+                                                 const char* pme_fft_opt)
+{
+    return impl_->build(nbpu_opt,
+                        pme_opt,
+                        pme_fft_opt);
+}
+
 } // namespace gmx
