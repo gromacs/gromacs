@@ -121,9 +121,9 @@ do_md_trajectory_writing(FILE                    *fplog,
     }
 
 #if defined(GMX_FAHCORE)
-    if (bLastStep)
+    if ((bLastStep && !ir->bDoHybridMCMD) || (bLastStep && (do_per_step(step, ir->hybridMCMDParams->nstMetropolis))))
     {
-        /* Enforce writing positions and velocities at end of run */
+        /* Enforce writing positions and velocities at end of run (only for metropolised configurations if hybrid MC/MD) */
         mdof_flags |= (MDOF_X | MDOF_V);
     }
     if (MASTER(cr))
@@ -168,7 +168,10 @@ do_md_trajectory_writing(FILE                    *fplog,
         {
             (*nchkpt)++;
         }
-        if (bLastStep && step_rel == ir->nsteps &&
+        /* With Hybrid MC/MD, output is only meaningful after the configuration has been "metropolised" */
+        if (((bLastStep && !ir->bDoHybridMCMD) ||
+             (bLastStep && do_per_step(step, ir->hybridMCMDParams->nstMetropolis))) &&
+            step_rel == ir->nsteps &&
             bDoConfOut && MASTER(cr) &&
             !bRerunMD)
         {

@@ -1728,7 +1728,7 @@ void update_pcouple_after_coordinates(FILE             *fplog,
         case (epcPARRINELLORAHMAN):
             if (isPressureCouplingStep(step, inputrec))
             {
-                /* The box velocities were updated in do_pr_pcoupl,
+                /* The box velocities were updated in do_pr_pcoupl (DOES THIS ROUTINE STILL EXIST???),
                  * but we dont change the box vectors until we get here
                  * since we need to be able to shift/unshift above.
                  */
@@ -1935,7 +1935,17 @@ extern gmx_bool update_randomize_velocities(t_inputrec *ir, int64_t step, const 
                                             t_mdatoms *md, t_state *state, gmx_update_t *upd, gmx::Constraints *constr)
 {
 
-    real rate = (ir->delta_t)/ir->opts.tau_t[0];
+    real rate;
+
+    // Hybrid MC/MD: draw new random velocities in every Metropolis step after calling acceptOrRewind.updateTState
+    if (ir->bDoHybridMCMD)
+    {
+        rate = 1.0/ir->hybridMCMDParams->nstMetropolis;
+    }
+    else
+    {
+        rate = (ir->delta_t)/ir->opts.tau_t[0];
+    }
 
     if (ir->etc == etcANDERSEN && constr != nullptr)
     {
@@ -1950,10 +1960,18 @@ extern gmx_bool update_randomize_velocities(t_inputrec *ir, int64_t step, const 
 
     /* proceed with andersen if 1) it's fixed probability per
        particle andersen or 2) it's massive andersen and it's tau_t/dt */
-    if ((ir->etc == etcANDERSEN) || do_per_step(step, static_cast<int>(1.0/rate + 0.5)))
+    if ((ir->etc == etcANDERSEN) || (do_per_step(step, static_cast<int>(1.0/rate + 0.5))  && !ir->bDoHybridMCMD))
     {
         andersen_tcoupl(ir, step, cr, md, state, rate,
                         upd->sd->randomize_group, upd->sd->boltzfac);
+        return TRUE;
+    }
+    else if (ir->bDoHybridMCMD && do_per_step(step, ir->hybridMCMDParams->nstMetropolis))
+    {
+        /* There is no thermostat with hybrid MC/MD so that gmx_update_t is not passed
+         * Parameter rate is kept to allow for partial randomization of velocities (future implementation of generalized hybrid Monte Carlo)
+         */
+        andersen_tcoupl(ir, step, cr, md, state, rate, nullptr, nullptr);
         return TRUE;
     }
     return FALSE;
