@@ -628,6 +628,18 @@ static void bc_simtempvals(const t_commrec *cr, t_simtemp *simtemp, int n_lambda
     }
 }
 
+// Hybrid MC/MD
+static void bc_hybridMCMDParams(const t_commrec *cr, HybridMCMDParams *hybridMCMDParams)
+{
+    block_bc(cr, hybridMCMDParams->nstMetropolis);
+    block_bc(cr, hybridMCMDParams->seed);
+    block_bc(cr, hybridMCMDParams->temperatureEnsemble);
+    block_bc(cr, hybridMCMDParams->temperatureVelocities);
+    if (debug)
+    {
+        fprintf(debug, "after bc_hybridMCMDParams\n");
+    }
+}
 
 static void bc_swapions(const t_commrec *cr, t_swapcoords *swap)
 {
@@ -705,6 +717,12 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
     if (inputrec->bSimTemp)
     {
         bc_simtempvals(cr, inputrec->simtempvals, inputrec->fepvals->n_lambda);
+    }
+    // Hybrid MC/MD
+    snew_bc(cr, inputrec->hybridMCMDParams, 1);
+    if (inputrec->bDoHybridMCMD)
+    {
+        bc_hybridMCMDParams(cr, inputrec->hybridMCMDParams);
     }
     if (inputrec->bPull)
     {

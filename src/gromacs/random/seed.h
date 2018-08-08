@@ -100,7 +100,8 @@ enum class RandomDomain
     Barostat                 = 0x00006000,   //!< Stochastic pressure coupling
     ReplicaExchange          = 0x00007000,   //!< Replica exchange metropolis moves
     ExpandedEnsemble         = 0x00008000,   //!< Expanded ensemble lambda moves
-    AwhBiasing               = 0x00009000    //!< AWH biasing reference value moves
+    AwhBiasing               = 0x00009000,   //!< AWH biasing reference value moves
+    HybridMCMD               = 0x00010000    //!< Hybrid Monte Carlo Metropolis step
 };
 
 }      // namespace gmx

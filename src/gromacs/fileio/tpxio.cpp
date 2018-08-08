@@ -422,6 +422,18 @@ static void do_simtempvals(t_fileio *fio, t_simtemp *simtemp, int n_lambda, gmx_
     }
 }
 
+// Hybrid MC/MD
+static void do_hybridMCMDParams(t_fileio *fio, HybridMCMDParams *hybridMCMDParams, int file_version)
+{
+    if (file_version >= 113)
+    {
+        gmx_fio_do_int(fio, hybridMCMDParams->nstMetropolis);
+        gmx_fio_do_int(fio, hybridMCMDParams->seed);
+        gmx_fio_do_real(fio, hybridMCMDParams->temperatureEnsemble);
+        gmx_fio_do_real(fio, hybridMCMDParams->temperatureVelocities);
+    }
+}
+
 static void do_imd(t_fileio *fio, t_IMD *imd, gmx_bool bRead)
 {
     gmx_fio_do_int(fio, imd->nat);
@@ -1309,6 +1321,24 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     if (ir->bSimTemp)
     {
         do_simtempvals(fio, ir->simtempvals, ir->fepvals->n_lambda, bRead, file_version);
+    }
+
+    // Hybrid MC/MD
+    if (file_version >= 113)
+    {
+        gmx_fio_do_gmx_bool(fio, ir->bDoHybridMCMD);
+        if (ir->bDoHybridMCMD)
+        {
+            ir->bDoHybridMCMD = TRUE;
+        }
+    }
+    else
+    {
+        ir->bDoHybridMCMD = FALSE;
+    }
+    if (ir->bDoHybridMCMD)
+    {
+        do_hybridMCMDParams(fio, ir->hybridMCMDParams, file_version);
     }
 
     if (file_version >= 79)
