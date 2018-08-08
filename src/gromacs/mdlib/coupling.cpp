@@ -796,6 +796,8 @@ void andersen_tcoupl(t_inputrec *ir, int64_t step,
     {
         int      ng = gatindex ? gatindex[i] : i;
         gmx_bool bRandomize;
+        real     scal;
+        int      d;
 
         rng.restart(step, ng);
 
@@ -803,32 +805,45 @@ void andersen_tcoupl(t_inputrec *ir, int64_t step,
         {
             gc = md->cTC[i];  /* assign the atom to a temperature group if there are more than one */
         }
-        if (randomize[gc])
+        if (!ir->bDoHybridMCMD)
         {
-            if (ir->etc == etcANDERSENMASSIVE)
+            if (randomize[gc])
             {
-                /* Randomize particle always */
-                bRandomize = TRUE;
-            }
-            else
-            {
-                /* Randomize particle probabilistically */
-                uniformDist.reset();
-                bRandomize = uniformDist(rng) < rate;
-            }
-            if (bRandomize)
-            {
-                real scal;
-                int  d;
-
-                scal = std::sqrt(boltzfac[gc]*md->invmass[i]);
-
-                normalDist.reset();
-
-                for (d = 0; d < DIM; d++)
+                if (ir->etc == etcANDERSENMASSIVE)
                 {
-                    state->v[i][d] = scal*normalDist(rng);
+                    /* Randomize particle always */
+                    bRandomize = TRUE;
                 }
+                else
+                {
+                    /* Randomize particle probabilistically */
+                    uniformDist.reset();
+                    bRandomize = uniformDist(rng) < rate;
+                }
+                if (bRandomize)
+                {
+                    scal = std::sqrt(boltzfac[gc]*md->invmass[i]);
+
+                    normalDist.reset();
+
+                    for (d = 0; d < DIM; d++)
+                    {
+                        state->v[i][d] = scal*normalDist(rng);
+                    }
+                }
+            }
+        }
+        /* With hybrid MC/MD, there is no thermostat, but all particles have to be randomized */
+        else
+        {
+            /* With hybrid MC/MD, use temperature stored in hybridMCMDParams->temperatureVelocities for all atoms */
+            scal = std::sqrt(BOLTZ*ir->hybridMCMDParams->temperatureVelocities*md->invmass[i]);
+
+            normalDist.reset();
+
+            for (d = 0; d < DIM; d++)
+            {
+                state->v[i][d] = scal*normalDist(rng);
             }
         }
     }
@@ -868,6 +883,7 @@ void trotter_update(t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
     rvec            sumv = {0, 0, 0};
     gmx_bool        bCouple;
 
+    // Hybrid MC/MD: don't need to change md-vv logic here as trotter_update is only used if temperature coupling is active (see bCouple below)
     if (trotter_seqno <= ettTSEQ2)
     {
         step_eff = step-1;  /* the velocity verlet calls are actually out of order -- the first half step
