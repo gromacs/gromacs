@@ -459,6 +459,39 @@ constexpr int64_t exactDiv(int64_t a, int64_t b)
     return GMX_ASSERT(a%b == 0, "exactDiv called with non-divisible arguments"), a/b;
 }
 
+/*! \brief Round float to int
+ *
+ * Rounding behavior is round to nearest. Rounding of halfway cases is implemention defined
+ * (either halway to even or halway away from zero).
+ */
+/* Implementation details: It is assumed that FE_TONEAREST is default and not changed by anyone.
+ * Currently the implementation is using rint(f) because 1) on all known HW that is faster than
+ * lround and 2) some compilers (e.g. clang (#22944) and icc) don't optimize (l)lrint(f) well.
+ * GCC(>=4.7) optimizes (l)lrint(f) well but with "-fno-math-errno -funsafe-math-optimizations"
+ * rint(f) is optimized as well. This avoids using intrinsics.
+ * rint(f) followed by float/double to int/int64 conversion produces the same result as directly
+ * rounding to int/int64.
+ */
+static inline int roundToInt(float x)
+{
+    return rintf(x);
+}
+//! Round double to int
+static inline int roundToInt(double x)
+{
+    return rint(x);
+}
+//! Round float to int64_t
+static inline int64_t roundToInt64(float x)
+{
+    return rintf(x);
+}
+//! Round double to int64_t
+static inline int64_t roundToInt64(double x)
+{
+    return rint(x);
+}
+
 } // namespace gmx
 
 
