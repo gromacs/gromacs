@@ -435,101 +435,6 @@ real calc_radius(const t_eigvec &vec)
 }
 }
 
-
-/* Debug helper */
-static void dump_edi_positions(FILE *out, struct gmx_edx *s, const char name[])
-{
-    int i;
-
-
-    fprintf(out, "#%s positions:\n%d\n", name, s->nr);
-    if (s->nr == 0)
-    {
-        return;
-    }
-
-    fprintf(out, "#index, x, y, z");
-    if (s->sqrtm)
-    {
-        fprintf(out, ", sqrt(m)");
-    }
-    for (i = 0; i < s->nr; i++)
-    {
-        fprintf(out, "\n%6d  %11.6f %11.6f %11.6f", s->anrs[i], s->x[i][XX], s->x[i][YY], s->x[i][ZZ]);
-        if (s->sqrtm)
-        {
-            fprintf(out, "%9.3f", s->sqrtm[i]);
-        }
-    }
-    fprintf(out, "\n");
-}
-
-
-/* Debug helper */
-static void dump_edi_eigenvecs(FILE *out, t_eigvec *ev,
-                               const char name[], int length)
-{
-    int i, j;
-
-
-    fprintf(out, "#%s eigenvectors:\n%d\n", name, ev->neig);
-    /* Dump the data for every eigenvector: */
-    for (i = 0; i < ev->neig; i++)
-    {
-        fprintf(out, "EV %4d\ncomponents %d\nstepsize %f\nxproj %f\nfproj %f\nrefproj %f\nradius %f\nComponents:\n",
-                ev->ieig[i], length, ev->stpsz[i], ev->xproj[i], ev->fproj[i], ev->refproj[i], ev->radius);
-        for (j = 0; j < length; j++)
-        {
-            fprintf(out, "%11.6f %11.6f %11.6f\n", ev->vec[i][j][XX], ev->vec[i][j][YY], ev->vec[i][j][ZZ]);
-        }
-    }
-}
-
-
-/* Debug helper */
-static void dump_edi(t_edpar *edpars, const t_commrec *cr, int nr_edi)
-{
-    FILE  *out;
-    char   fn[STRLEN];
-
-
-    sprintf(fn, "EDdump_rank%d_edi%d", cr->nodeid, nr_edi);
-    out = gmx_ffopen(fn, "w");
-
-    fprintf(out, "#NINI\n %d\n#FITMAS\n %s\n#ANALYSIS_MAS\n %s\n",
-            edpars->nini, gmx::boolToString(edpars->fitmas), gmx::boolToString(edpars->pcamas));
-    fprintf(out, "#OUTFRQ\n %d\n#MAXLEN\n %d\n#SLOPECRIT\n %f\n",
-            edpars->outfrq, edpars->maxedsteps, edpars->slope);
-    fprintf(out, "#PRESTEPS\n %d\n#DELTA_F0\n %f\n#TAU\n %f\n#EFL_NULL\n %f\n#ALPHA2\n %f\n",
-            edpars->presteps, edpars->flood.deltaF0, edpars->flood.tau,
-            edpars->flood.constEfl, edpars->flood.alpha2);
-
-    /* Dump reference, average, target, origin positions */
-    dump_edi_positions(out, &edpars->sref, "REFERENCE");
-    dump_edi_positions(out, &edpars->sav, "AVERAGE"  );
-    dump_edi_positions(out, &edpars->star, "TARGET"   );
-    dump_edi_positions(out, &edpars->sori, "ORIGIN"   );
-
-    /* Dump eigenvectors */
-    dump_edi_eigenvecs(out, &edpars->vecs.mon, "MONITORED", edpars->sav.nr);
-    dump_edi_eigenvecs(out, &edpars->vecs.linfix, "LINFIX", edpars->sav.nr);
-    dump_edi_eigenvecs(out, &edpars->vecs.linacc, "LINACC", edpars->sav.nr);
-    dump_edi_eigenvecs(out, &edpars->vecs.radfix, "RADFIX", edpars->sav.nr);
-    dump_edi_eigenvecs(out, &edpars->vecs.radacc, "RADACC", edpars->sav.nr);
-    dump_edi_eigenvecs(out, &edpars->vecs.radcon, "RADCON", edpars->sav.nr);
-
-    /* Dump flooding eigenvectors */
-    dump_edi_eigenvecs(out, &edpars->flood.vecs, "FLOODING", edpars->sav.nr);
-
-    /* Dump ed local buffer */
-    fprintf(out, "buf->do_edfit         =%p\n", (void*)edpars->buf->do_edfit  );
-    fprintf(out, "buf->do_edsam         =%p\n", (void*)edpars->buf->do_edsam  );
-    fprintf(out, "buf->do_radcon        =%p\n", (void*)edpars->buf->do_radcon );
-
-    gmx_ffclose(out);
-}
-
-
 struct t_do_edfit {
     double **omega;
     double **om;
@@ -3075,12 +2980,6 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
 
         /* Get memory for flooding forces */
         snew(edi->flood.forces_cartesian, edi->sav.nr);
-
-        if (gmx_debug_at)
-        {
-            /* Dump it all into one file per process */
-            dump_edi(edi, cr, nr_edi);
-        }
 
         /* Next ED group */
         edi = edi->next_edi;
