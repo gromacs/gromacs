@@ -302,6 +302,7 @@ if (SPHINX_FOUND)
         dev-manual/language-features.rst
         dev-manual/naming.rst
         dev-manual/overview.rst
+        dev-manual/physical_validation.rst
         dev-manual/redmine-states.png
         dev-manual/relocatable-binaries.rst
         dev-manual/reportstyle.rst
