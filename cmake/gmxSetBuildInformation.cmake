@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2012-2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -54,7 +54,7 @@ include(gmxDetectCpu)
 
 function(gmx_set_build_information)
     if(NOT BUILD_USER)
-        if(CMAKE_HOST_UNIX)
+        if(CMAKE_HOST_UNIX AND NOT GMX_REPRODUCIBLE_BUILD)
             execute_process( COMMAND whoami OUTPUT_VARIABLE TMP_USER OUTPUT_STRIP_TRAILING_WHITESPACE)
             execute_process( COMMAND hostname OUTPUT_VARIABLE TMP_HOSTNAME OUTPUT_STRIP_TRAILING_WHITESPACE)
         else()
@@ -72,7 +72,9 @@ function(gmx_set_build_information)
     endif()
 
     if(NOT BUILD_HOST)
-        if(CMAKE_HOST_UNIX)
+        if(GMX_REPRODUCIBLE_BUILD)
+            set(TMP_HOST "reproducible")
+        elseif(CMAKE_HOST_UNIX)
             execute_process( COMMAND uname -srm OUTPUT_VARIABLE TMP_HOST OUTPUT_STRIP_TRAILING_WHITESPACE)
         else()
             set(TMP_HOST "${CMAKE_HOST_SYSTEM} ${CMAKE_HOST_SYSTEM_PROCESSOR}")
@@ -84,6 +86,9 @@ function(gmx_set_build_information)
     # Set up some defaults that will usually be overwritten
     if(CMAKE_CROSSCOMPILING)
         set(_reason ", cross-compiled")
+    endif()
+    if(GMX_REPRODUCIBLE_BUILD)
+        set(_reason ", reproducible-build")
     endif()
 
     # Run the cpu detection. If it produces an empty output, set a

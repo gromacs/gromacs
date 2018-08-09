@@ -209,6 +209,12 @@ gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
 
 option(GMX_USE_OPENCL "Enable OpenCL acceleration" OFF)
 
+if($ENV{SOURCE_DATE_EPOCH})
+    set(GMX_REPRODUCIBLE_BUILD ON "Create reproducible binaries - suitable for distributions")
+else()
+    set(GMX_REPRODUCIBLE_BUILD OFF)
+endif()
+
 # Decide on GPU settings based on user-settings and GPU/CUDA
 # detection. VS2017 requires CUDA 9.0, for the other arch/compilers
 # rest we require CUDA 7.0 or later (including for clang-CUDA).
@@ -641,6 +647,9 @@ gmx_option_multichoice(
 mark_as_advanced(GMX_USE_RDTSCP)
 
 macro(gmx_check_rdtscp)
+    if (GMX_REPRODUCIBLE_BUILD)
+        message(FATAL_ERROR "For a reproducible build, you should not autodetect based on build system CPU. Use -DGMX_USE_RDTSCP=OFF")
+    endif()
     if (CPU_DETECTION_FEATURES MATCHES "rdtscp")
         set(HAVE_RDTSCP 1)
         set(RDTSCP_DETECTION_MESSAGE " - detected on the build host")
