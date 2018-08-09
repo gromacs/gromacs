@@ -58,6 +58,7 @@ locations in the developer guide.
    documentation-generation
    style
    tools
+   gmxapi
 
 *********************
 Doxygen documentation
