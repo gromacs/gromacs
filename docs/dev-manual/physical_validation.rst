@@ -77,8 +77,7 @@ LINCS settings where applicable.
   - ``integrator = md-vv``
 * *Long-range corrections LJ*:
   - ``vdwtype = PME``
-  - ``vdwtype = cut-off``, ``vdw-modifier = force-switch``,
-    ``rvdw-switch = 0.8``
+  - ``vdwtype = cut-off``, ``vdw-modifier = force-switch``, ``rvdw-switch = 0.8``
 
 **Water**:
 
@@ -87,16 +86,14 @@ LINCS settings where applicable.
   - ``integrator = md-vv``
 * *Long-range corrections LJ*:
   - ``vdwtype = PME``
-  - ``vdwtype = cut-off``, ``vdw-modifier = force-switch``,
-    ``rvdw-switch = 0.8``
+  - ``vdwtype = cut-off``, ``vdw-modifier = force-switch``, ``rvdw-switch = 0.8``
 * *Long-range corrections electrostatics*:
   - ``coulombtype = PME``, ``fourierspacing = 0.05``
 * *Constraint algorithms*:
-  - ``constraint-algorithm = lincs``, ``lincs-order = 6``,
-    ``lincs-iter = 2``
+  - ``constraint-algorithm = lincs``, ``lincs-order = 6``, ``lincs-iter = 2``
   - ``constraint-algorithm = none``
   - SETTLE
-    
+
 
 Ensemble tests
 ^^^^^^^^^^^^^^

@@ -78,6 +78,7 @@ unit test build.
 ``src/testutils/`` contains |Gromacs|-specific shared test code.  This includes
 a few parts:
 
+
 - CMake macros for declaring test binaries.  These take care of providing the
   ``main()`` method for the test executables and initializing the other parts of
   the framework, so that the test code in modules can focus on the actual
