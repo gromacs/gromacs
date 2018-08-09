@@ -64,8 +64,10 @@ function(gmx_run_cpu_detection TYPE)
     set(OUTPUT_VAR "")
     # We need to execute the binary, so this only works if not
     # cross-compiling. However, note that we are NOT limited to x86.
-    if(CMAKE_CROSSCOMPILING)
-        # TODO Need we explain that we're not detecting because we are cross compiling?
+    if(CMAKE_CROSSCOMPILING OR GMX_REPRODUCIBLE_BUILD)
+        # we're not detecting because we are cross compiling
+        # or building distribution packages, meant to run on machines
+        # that are different from the build machine
     else()
         set(CPU_DETECTION_BINARY "${PROJECT_BINARY_DIR}/CMakeFiles/GmxDetectCpu${CMAKE_EXECUTABLE_SUFFIX}")
         if(NOT CPU_DETECTION_COMPILED)

@@ -138,6 +138,9 @@ endfunction()
 
 function(gmx_detect_simd _suggested_simd)
     if(GMX_SIMD STREQUAL "AUTO")
+        if(GMX_REPRODUCIBLE_BUILD)
+            message(FATAL_ERROR "For a reproducible build, you should not autodetect based on build system CPU. Use -DGMX_SIMD=")
+        endif()
         if(GMX_TARGET_FUJITSU_SPARC64)
             # HPC-ACE is always present. In the future we
             # should add detection for HPC-ACE2 here.
