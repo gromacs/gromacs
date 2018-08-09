@@ -296,6 +296,7 @@ if (SPHINX_FOUND)
         dev-manual/error-handling.rst
         dev-manual/formatting.rst
         dev-manual/gmxtree.rst
+        dev-manual/gmxapi.rst
         dev-manual/includestyle.rst
         dev-manual/index.rst
         dev-manual/jenkins.rst
