@@ -60,7 +60,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "hash.h"
+#include "hashedmap.h"
 
 void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                       rvec *f, rvec *fshift)
@@ -362,7 +362,7 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
 int setup_specat_communication(gmx_domdec_t               *dd,
                                std::vector<int>           *ireq,
                                gmx_domdec_specat_comm_t   *spac,
-                               gmx_hash_t                 *ga2la_specat,
+                               HashedMap<int>             *ga2la_specat,
                                int                         at_start,
                                int                         vbuf_fac,
                                const char                 *specat_type,
@@ -479,7 +479,14 @@ int setup_specat_communication(gmx_domdec_t               *dd,
                 else
                 {
                     /* Search in the communicated atoms */
-                    ind = gmx_hash_get_minone(ga2la_specat, indr);
+                    if (const int *a = ga2la_specat->find(indr))
+                    {
+                        ind = *a;
+                    }
+                    else
+                    {
+                        ind = -1;
+                    }
                 }
                 if (ind >= 0)
                 {
@@ -554,7 +561,7 @@ int setup_specat_communication(gmx_domdec_t               *dd,
         /* Make a global to local index for the communication atoms */
         for (int i = nat_tot_prev; i < nat_tot_specat; i++)
         {
-            gmx_hash_change_or_set(ga2la_specat, dd->globalAtomIndices[i], i);
+            ga2la_specat->insert_or_assign(dd->globalAtomIndices[i], i);
         }
     }
 
@@ -569,9 +576,9 @@ int setup_specat_communication(gmx_domdec_t               *dd,
             {
                 for (int i = 0; i < numRequested; i++)
                 {
-                    int ind = gmx_hash_get_minone(ga2la_specat, (*ireq)[i]);
+                    const int *ind = ga2la_specat->find((*ireq)[i]);
                     fprintf(debug, " %s%d",
-                            (ind >= 0) ? "" : "!",
+                            ind ? "" : "!",
                             (*ireq)[i] + 1);
                 }
                 fprintf(debug, "\n");
@@ -581,7 +588,7 @@ int setup_specat_communication(gmx_domdec_t               *dd,
                 dd->ci[XX], dd->ci[YY], dd->ci[ZZ]);
         for (int i = 0; i < numRequested; i++)
         {
-            if (gmx_hash_get_minone(ga2la_specat, (*ireq)[i]) < 0)
+            if (!ga2la_specat->find((*ireq)[i]))
             {
                 fprintf(stderr, " %d", (*ireq)[i] + 1);
             }
