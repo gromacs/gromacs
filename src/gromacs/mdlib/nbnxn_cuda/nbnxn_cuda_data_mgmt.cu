@@ -527,7 +527,7 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
                              const nbnxn_pairlist_t *h_plist,
                              int                     iloc)
 {
-    if (canSkipWork(nb, iloc))
+    if (canSkipWork(h_plist, nb, iloc))
     {
         return;
     }
