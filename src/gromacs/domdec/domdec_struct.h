@@ -68,9 +68,9 @@ struct gmx_domdec_comm_t;
 struct gmx_domdec_constraints_t;
 struct gmx_domdec_specat_comm_t;
 class gmx_ga2la_t;
-struct gmx_hash_t;
 struct gmx_pme_comm_n_box_t;
 struct gmx_reverse_top_t;
+template <typename T> class HashedMap;
 
 namespace gmx
 {
@@ -178,7 +178,7 @@ struct gmx_domdec_t { //NOLINT(clang-analyzer-optin.performance.Padding)
     int  n_intercg_excl;
 
     /* Vsite stuff */
-    gmx_hash_t                *ga2la_vsite = nullptr;
+    HashedMap<int>            *ga2la_vsite = nullptr;
     gmx_domdec_specat_comm_t  *vsite_comm  = nullptr;
     std::vector<int>           vsite_requestedGlobalAtomIndices;
 

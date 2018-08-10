@@ -129,13 +129,16 @@ class HashedMap
             resize(numKeysEstimate);
         }
 
-        /*! \brief Inserts entry, key should not already be present (checked by assertion)
+    private:
+        /*! \brief Inserts or assigns a key and value
          *
-         * \param[in] key    The key for the entry
-         * \param[in] value  The value for the entry
+         * \tparam    allowAssign  Sets whether assignment of a key that is present is allowed
+         * \param[in] key          The key for the entry
+         * \param[in] value        The value for the entry
          */
-        void insert(int      key,
-                    const T &value)
+        // cppcheck-suppress unusedPrivateFunction
+        template<bool allowAssign> void insert_assign(int      key,
+                                                      const T &value)
         {
             GMX_ASSERT(key >= 0, "Only keys >= 0 are supported");
 
@@ -146,12 +149,34 @@ class HashedMap
                 /* Loop over the entries for this hash.
                  * If we find the matching key, return the value.
                  */
+                if (table_[ind].key == key)
+                {
+                    if (allowAssign)
+                    {
+                        table_[ind].value = value;
+                        return;
+                    }
+                    else
+                    {
+                        GMX_ASSERT(false, "The key to be inserted should not be present");
+                    }
+                }
                 int ind_prev = ind;
-                GMX_ASSERT(table_[ind_prev].key != key, "The key to be inserted should not be present");
                 while (table_[ind_prev].next >= 0)
                 {
                     ind_prev = table_[ind_prev].next;
-                    GMX_ASSERT(table_[ind_prev].key != key, "The key to be inserted should not be present");
+                    if (table_[ind_prev].key == key)
+                    {
+                        if (allowAssign)
+                        {
+                            table_[ind_prev].value = value;
+                            return;
+                        }
+                        else
+                        {
+                            GMX_ASSERT(false, "The key to be inserted should not be present");
+                        }
+                    }
                 }
                 /* Search for space in table_ */
                 ind = startIndexForSpaceForListEntry_;
@@ -173,6 +198,29 @@ class HashedMap
             table_[ind].value  = value;
 
             numKeys_          += 1;
+        }
+
+    public:
+        /*! \brief Inserts entry, key should not already be present (checked by assertion)
+         *
+         * \param[in] key    The key for the entry
+         * \param[in] value  The value for the entry
+         */
+        void insert(int      key,
+                    const T &value)
+        {
+            insert_assign<false>(key, value);
+        }
+
+        /*! \brief Inserts an entry when the key is not present, otherwise sets the value
+         *
+         * \param[in] key    The key for the entry
+         * \param[in] value  The value for the entry
+         */
+        void insert_or_assign(int      key,
+                              const T &value)
+        {
+            insert_assign<true>(key, value);
         }
 
         /*! \brief Delete the entry for key \p key, when present
