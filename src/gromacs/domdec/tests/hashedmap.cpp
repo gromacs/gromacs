@@ -85,6 +85,19 @@ TEST(HashedMap, InsertsFinds)
     checkDoesNotFind(map, 4);
 }
 
+TEST(HashedMap, NegativeKeysWork)
+{
+    gmx::HashedMap<char> map(5);
+
+    map.insert(-1, 'a');
+    map.insert(1,  'b');
+    map.insert(-3, 'c');
+
+    checkFinds(map, -1, 'a');
+    checkFinds(map, 1,  'b');
+    checkFinds(map, -3, 'c');
+}
+
 TEST(HashedMap, InsertsErases)
 {
     gmx::HashedMap<char> map(3);
@@ -112,15 +125,34 @@ TEST(HashedMap, Clears)
     checkDoesNotFind(map, 7);
 }
 
+// Check that entries with the same hash are handled correctly
+TEST(HashedMap, LinkedEntries)
+{
+    // HashedMap uses bit masking, so keys that differ by exactly
+    // a power of 2 larger than the table size will have the same hash
+
+    gmx::HashedMap<char> map(20);
+
+    const int            largePowerOf2 = 2048;
+
+    map.insert(3 + 0*largePowerOf2, 'a');
+    map.insert(3 + 1*largePowerOf2, 'b');
+    map.insert(3 + 2*largePowerOf2, 'c');
+
+    checkFinds(map, 3 + 0*largePowerOf2, 'a');
+    checkFinds(map, 3 + 1*largePowerOf2, 'b');
+    checkFinds(map, 3 + 2*largePowerOf2, 'c');
+
+    // Erase the middle entry in the linked list
+    map.erase(3 + 1*largePowerOf2);
+
+    checkFinds(map, 3 + 0*largePowerOf2, 'a');
+    checkDoesNotFind(map, 3 + 1*largePowerOf2);
+    checkFinds(map, 3 + 2*largePowerOf2, 'c');
+}
+
 // HashedMap only throws in debug mode, so only test in debug mode
 #ifndef NDEBUG
-
-TEST(HashedMap, CatchesInvalidKey)
-{
-    gmx::HashedMap<char> map(101);
-
-    EXPECT_THROW_GMX(map.insert(-1, 'a'), gmx::InvalidInputError);
-}
 
 TEST(HashedMap, CatchesDuplicateKey)
 {
