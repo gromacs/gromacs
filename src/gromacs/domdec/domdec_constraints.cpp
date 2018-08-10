@@ -70,7 +70,7 @@
 
 #include "domdec_specatomcomm.h"
 #include "domdec_vsite.h"
-#include "hash.h"
+#include "hashedmap.h"
 
 /*! \brief Struct used during constraint setup with domain decomposition */
 struct gmx_domdec_constraints_t
@@ -87,7 +87,7 @@ struct gmx_domdec_constraints_t
     std::vector<bool> gc_req;          /**< Boolean that tells if a global constraint index has been requested; note: size global #constraints */
 
     /* Hash table for keeping track of requests */
-    std::unique_ptr<gmx_hash_t> ga2la; /**< Global to local communicated constraint atom only index */
+    std::unique_ptr<HashedMap<int>> ga2la; /**< Global to local communicated constraint atom only index */
 
     /* Multi-threading stuff */
     int                  nthread; /**< Number of threads used for DD constraint setup */
@@ -130,15 +130,7 @@ void dd_clear_local_constraint_indices(gmx_domdec_t *dd)
 
     if (dd->constraint_comm)
     {
-        gmx_hash_clear_and_optimize(dc->ga2la.get());
-    }
-}
-
-void dd_clear_local_vsite_indices(gmx_domdec_t *dd)
-{
-    if (dd->vsite_comm)
-    {
-        gmx_hash_clear_and_optimize(dd->ga2la_vsite);
+        dc->ga2la->clear();
     }
 }
 
@@ -192,13 +184,13 @@ static void walk_out(int con, int con_offset, int a, int offset, int nrec,
         dc->ncon++;
     }
     /* Check to not ask for the same atom more than once */
-    if (gmx_hash_get_minone(dc->ga2la.get(), offset+a) == -1)
+    if (!dc->ga2la->find(offset + a))
     {
         assert(dcc);
         /* Add this non-home atom to the list */
         ireq->push_back(offset + a);
         /* Temporarily mark with -2, we get the index later */
-        gmx_hash_set(dc->ga2la.get(), offset+a, -2);
+        dc->ga2la->insert(offset + a, -2);
     }
 
     if (nrec > 0)
@@ -434,7 +426,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
     std::vector<int>             *ireq;
     gmx::ArrayRef<const t_blocka> at2con_mt;
     const int                   **at2settle_mt;
-    gmx_hash_t                   *ga2la_specat;
+    HashedMap<int>               *ga2la_specat;
     int at_end, i, j;
     t_iatom                      *iap;
 
@@ -598,7 +590,9 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
             {
                 if (iap[j] < 0)
                 {
-                    iap[j] = gmx_hash_get_minone(ga2la_specat, -iap[j]-1);
+                    const int *a = ga2la_specat->find(-iap[j] - 1);
+                    GMX_ASSERT(a, "We have checked before that this atom index has been set");
+                    iap[j] = *a;
                 }
             }
         }
@@ -611,7 +605,9 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
             {
                 if (iap[j] < 0)
                 {
-                    iap[j] = gmx_hash_get_minone(ga2la_specat, -iap[j]-1);
+                    const int *a = ga2la_specat->find(-iap[j] - 1);
+                    GMX_ASSERT(a, "We have checked before that this atom index has been set");
+                    iap[j] = *a;
                 }
             }
         }
@@ -663,7 +659,7 @@ void init_domdec_constraints(gmx_domdec_t     *dd,
      */
     int numKeysEstimate = std::min(mtop->natoms/20,
                                    mtop->natoms/(2*dd->nnodes));
-    dc->ga2la = gmx::compat::make_unique<gmx_hash_t>(numKeysEstimate);
+    dc->ga2la = gmx::compat::make_unique<HashedMap<int>>(numKeysEstimate);
 
     dc->nthread = gmx_omp_nthreads_get(emntDomdec);
     dc->ils.resize(dc->nthread);
