@@ -77,63 +77,119 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
-/* enum to identify the type of ED: none, normal ED, flooding */
-enum {
-    eEDnone, eEDedsam, eEDflood, eEDnr
+namespace
+{
+/*! \brief Identifies the type of ED: none, normal ED, flooding. */
+enum class EssentialDynamcisType
+{
+    //! No essential dynamics
+    None,
+    //! Essential dynamics sampling
+    EDSampling,
+    //! Essential dynamics flooding
+    Flooding
 };
 
-/* enum to identify operations on reference, average, origin, target structures */
-enum {
-    eedREF, eedAV, eedORI, eedTAR, eedNR
+/*! \brief Identify on which structure to operate. */
+enum class EssentialDynamicsStructure
+{
+    //! Reference structure
+    Reference,
+    //! Average Structure
+    Average,
+    //! Origin Structure
+    Origin,
+    //! Target Structure
+    Target
 };
 
-
-typedef struct
+/*! \brief Essential dynamics vector.
+ * TODO: split into working data and input data
+ * NOTE: called eigvec, because traditionally eigenvectors from PCA analysis
+ * were used as essential dynamics vectors, however, vectors used for ED need
+ * not have any special properties
+ */
+struct t_eigvec
 {
-    int     neig;    /* nr of eigenvectors             */
-    int    *ieig;    /* index nrs of eigenvectors      */
-    real   *stpsz;   /* stepsizes (per eigenvector)    */
-    rvec  **vec;     /* eigenvector components         */
-    real   *xproj;   /* instantaneous x projections    */
-    real   *fproj;   /* instantaneous f projections    */
-    real    radius;  /* instantaneous radius           */
-    real   *refproj; /* starting or target projections */
-} t_eigvec;
+    //! nr of eigenvectors
+    int     neig = 0;
+    //! index nrs of eigenvectors
+    int    *ieig = nullptr;
+    //! stepsizes (per eigenvector)
+    real   *stpsz = nullptr;
+    //! eigenvector components
+    rvec  **vec = nullptr;
+    //! instantaneous x projections
+    real   *xproj = nullptr;
+    //! instantaneous f projections
+    real   *fproj = nullptr;
+    //! instantaneous radius
+    real    radius = 0.;
+    //! starting or target projections
+    real   *refproj = nullptr;
+};
 
-
-typedef struct
+/*! \brief Essential dynamics vectors per method implementation.
+ */
+struct t_edvecs
 {
-    t_eigvec      mon;            /* only monitored, no constraints       */
-    t_eigvec      linfix;         /* fixed linear constraints             */
-    t_eigvec      linacc;         /* acceptance linear constraints        */
-    t_eigvec      radfix;         /* fixed radial constraints (exp)       */
-    t_eigvec      radacc;         /* acceptance radial constraints (exp)  */
-    t_eigvec      radcon;         /* acceptance rad. contraction constr.  */
-} t_edvecs;
+    //! only monitored, no constraints
+    t_eigvec      mon;
+    //! fixed linear constraints
+    t_eigvec      linfix;
+    //! acceptance linear constraints
+    t_eigvec      linacc;
+    //! fixed radial constraints (exp)
+    t_eigvec      radfix;
+    //! acceptance radial constraints (exp)
+    t_eigvec      radacc;
+    //! acceptance rad. contraction constr.
+    t_eigvec      radcon;
+};
 
-
-typedef struct
+/*! \brief Essential dynamics flooding parameters and work data.
+ * TODO: split into working data and input parameters
+ * NOTE: The implementation here follows:
+ * O.E. Lange, L.V. Schafer, and H. Grubmuller,
+ * “Flooding in GROMACS: Accelerated barrier crossings in molecular dynamics,”
+ *  J. Comp. Chem., 27 1693–1702 (2006)
+ */
+struct t_edflood
 {
+    /*! \brief Target destabilisation free energy.
+     * Controls the flooding potential strength.
+     * Linked to the expected speed-up of mean first passage time out of flooded minimum */
     real     deltaF0;
-    gmx_bool bHarmonic;           /* Use flooding for harmonic restraint on
-                                     the eigenvector                          */
-    gmx_bool bConstForce;         /* Do not calculate a flooding potential,
-                                     instead flood with a constant force      */
+    //! Do not calculate a flooding potential, instead flood with a constant force
+    bool     bConstForce;
+    //! Relaxation time scale for slowest flooded degree of freedom
     real     tau;
+    //! Current estimated destabilisation free energy
     real     deltaF;
+    //! Flooding energy, acting as a proportionality factor for the flooding potential
     real     Efl;
+    //! Boltzmann constant times temperature, provided by user
     real     kT;
+    //! The flooding potential
     real     Vfl;
+    //! Integration time step
     real     dt;
+    //! Inital flooding strenth
     real     constEfl;
+    //! Empirical global scaling parameter of the essential dynamics vectors.
     real     alpha2;
+    //! The forces from flooding in atom coordinate space (in contrast to projections onto essential dynamics vectors)
     rvec    *forces_cartesian;
-    t_eigvec vecs;         /* use flooding for these */
-    /* When using flooding as harmonic restraint: The current reference projection
-     * is at each step calculated from the initial initialReferenceProjection and the slope. */
-    real  *initialReferenceProjection;
-    real  *referenceProjectionSlope;
-} t_edflood;
+    //! The vectors along which to flood
+    t_eigvec vecs;
+    //! Use flooding for harmonic restraint on the eigenvector
+    bool     bHarmonic;
+    //! The initial reference projection of the flooding vectors. Only with harmonic restraint.
+    real    *initialReferenceProjection;
+    //! The current reference projection is the initialReferenceProjection + step * slope. Only with harmonic restraint.
+    real    *referenceProjectionSlope;
+};
+} // namespace
 
 
 /* This type is for the average, reference, target, and origin structure    */
@@ -192,10 +248,12 @@ typedef struct edpar
 struct gmx_edsam
 {
     ~gmx_edsam();
-    int                  eEDtype = eEDnone; /* Type of ED: see enums above          */
-    FILE                *edo     = nullptr; /* output file pointer                  */
-    std::vector<t_edpar> edpar;
-    gmx_bool             bFirst  = false;
+    //! The type of ED
+    EssentialDynamcisType eEDtype = EssentialDynamcisType::None;
+    //! output file pointer
+    FILE                 *edo     = nullptr;
+    std::vector<t_edpar>  edpar;
+    gmx_bool              bFirst  = false;
 };
 gmx_edsam::~gmx_edsam()
 {
@@ -960,7 +1018,7 @@ extern void do_flood(const t_commrec  *cr,
         fprintf(ed->edo, "\n%12f", ir->init_t + step*ir->delta_t);
     }
 
-    if (ed->eEDtype != eEDflood)
+    if (ed->eEDtype != EssentialDynamcisType::Flooding)
     {
         return;
     }
@@ -990,7 +1048,7 @@ static void init_flood(t_edpar *edi, gmx_edsam * ed, real dt)
     if (edi->flood.vecs.neig)
     {
         /* If in any of the ED groups we find a flooding vector, flooding is turned on */
-        ed->eEDtype = eEDflood;
+        ed->eEDtype = EssentialDynamcisType::Flooding;
 
         fprintf(stderr, "ED: Flooding %d eigenvector%s.\n", edi->flood.vecs.neig, edi->flood.vecs.neig > 1 ? "s" : "");
 
@@ -1072,8 +1130,8 @@ static std::unique_ptr<gmx::EssentialDynamics> ed_open(
 {
     auto        edHandle = gmx::compat::make_unique<gmx::EssentialDynamics>();
     auto        ed       = edHandle->getLegacyED();
-    /* We want to perform ED (this switch might later be upgraded to eEDflood) */
-    ed->eEDtype = eEDedsam;
+    /* We want to perform ED (this switch might later be upgraded to EssentialDynamcisType::Flooding) */
+    ed->eEDtype = EssentialDynamcisType::EDSampling;
 
     if (MASTER(cr))
     {
@@ -1119,7 +1177,7 @@ static std::unique_ptr<gmx::EssentialDynamics> ed_open(
 
 
 /* Broadcasts the structure data */
-static void bc_ed_positions(const t_commrec *cr, struct gmx_edx *s, int stype)
+static void bc_ed_positions(const t_commrec *cr, struct gmx_edx *s, EssentialDynamicsStructure stype)
 {
     snew_bc(cr, s->anrs, s->nr   );    /* Index numbers     */
     snew_bc(cr, s->x, s->nr   );       /* Positions         */
@@ -1128,7 +1186,7 @@ static void bc_ed_positions(const t_commrec *cr, struct gmx_edx *s, int stype)
 
     /* For the average & reference structures we need an array for the collective indices,
      * and we need to broadcast the masses as well */
-    if (stype == eedAV || stype == eedREF)
+    if (stype == EssentialDynamicsStructure::Average || stype == EssentialDynamicsStructure::Reference)
     {
         /* We need these additional variables in the parallel case: */
         snew(s->c_ind, s->nr   );       /* Collective indices */
@@ -1140,14 +1198,14 @@ static void bc_ed_positions(const t_commrec *cr, struct gmx_edx *s, int stype)
     }
 
     /* broadcast masses for the reference structure (for mass-weighted fitting) */
-    if (stype == eedREF)
+    if (stype == EssentialDynamicsStructure::Reference)
     {
         snew_bc(cr, s->m, s->nr);
         nblock_bc(cr, s->nr, s->m);
     }
 
     /* For the average structure we might need the masses for mass-weighting */
-    if (stype == eedAV)
+    if (stype == EssentialDynamicsStructure::Average)
     {
         snew_bc(cr, s->sqrtm, s->nr);
         nblock_bc(cr, s->nr, s->sqrtm);
@@ -1199,10 +1257,10 @@ static void broadcast_ed_data(const t_commrec *cr, gmx_edsam * ed, int numedis)
         block_bc(cr, edi);
 
         /* Broadcast positions */
-        bc_ed_positions(cr, &(edi.sref), eedREF); /* reference positions (don't broadcast masses)    */
-        bc_ed_positions(cr, &(edi.sav ), eedAV ); /* average positions (do broadcast masses as well) */
-        bc_ed_positions(cr, &(edi.star), eedTAR); /* target positions                                */
-        bc_ed_positions(cr, &(edi.sori), eedORI); /* origin positions                                */
+        bc_ed_positions(cr, &(edi.sref), EssentialDynamicsStructure::Reference); /* reference positions (don't broadcast masses)    */
+        bc_ed_positions(cr, &(edi.sav ), EssentialDynamicsStructure::Average );  /* average positions (do broadcast masses as well) */
+        bc_ed_positions(cr, &(edi.star), EssentialDynamicsStructure::Target);    /* target positions                                */
+        bc_ed_positions(cr, &(edi.sori), EssentialDynamicsStructure::Origin);    /* origin positions                                */
 
         /* Broadcast eigenvectors */
         bc_ed_vecs(cr, &edi.vecs.mon, edi.sav.nr);
@@ -1854,7 +1912,7 @@ static real rmsd_from_structure(rvec           *x,  /* The positions under consi
 
 void dd_make_local_ed_indices(gmx_domdec_t *dd, struct gmx_edsam *ed)
 {
-    if (ed->eEDtype != eEDnone)
+    if (ed->eEDtype != EssentialDynamcisType::None)
     {
         /* Loop over ED groups */
 
@@ -2235,9 +2293,9 @@ void write_edo(const t_edpar &edi, FILE *fp, real rmsd)
 
 
 /* Returns if any constraints are switched on */
-static bool ed_constraints(int edtype, const t_edpar &edi)
+static bool ed_constraints(EssentialDynamcisType edtype, const t_edpar &edi)
 {
-    if (edtype == eEDedsam || edtype == eEDflood)
+    if (edtype == EssentialDynamcisType::EDSampling || edtype == EssentialDynamcisType::Flooding)
     {
         return (edi.vecs.linfix.neig || edi.vecs.linacc.neig ||
                 edi.vecs.radfix.neig || edi.vecs.radacc.neig ||
@@ -2434,7 +2492,7 @@ static void write_edo_legend(gmx_edsam * ed, int nED, const gmx_output_env_t *oe
         if (edi->flood.vecs.neig)
         {
             /* If in any of the groups we find a flooding vector, flooding is turned on */
-            ed->eEDtype = eEDflood;
+            ed->eEDtype = EssentialDynamcisType::Flooding;
 
             /* Print what flavor of flooding we will do */
             if (0 == edi->flood.tau) /* constant flooding strength */
@@ -2484,7 +2542,7 @@ static void write_edo_legend(gmx_edsam * ed, int nED, const gmx_output_env_t *oe
 
     /* The flooding-related legend entries, if flooding is done */
     nsets = 0;
-    if (eEDflood == ed->eEDtype)
+    if (EssentialDynamcisType::Flooding == ed->eEDtype)
     {
         edi   = ed->edpar.begin();
         for (nr_edi = 1; nr_edi <= nED; nr_edi++)
@@ -2757,7 +2815,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
             }
 
             /* process structure that will serve as origin of expansion circle */
-            if ( (eEDflood == ed->eEDtype) && (FALSE == edi->flood.bConstForce) )
+            if ( (EssentialDynamcisType::Flooding == ed->eEDtype) && (FALSE == edi->flood.bConstForce) )
             {
                 fprintf(stderr, "ED: Setting center of flooding potential (0 = average structure)\n");
             }
@@ -2782,7 +2840,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
 
                 rad_project(*edi, &edi->sori.x[avindex], &edi->vecs.radacc);
                 rad_project(*edi, &edi->sori.x[avindex], &edi->vecs.radfix);
-                if ( (eEDflood == ed->eEDtype) && (FALSE == edi->flood.bConstForce) )
+                if ( (EssentialDynamcisType::Flooding == ed->eEDtype) && (FALSE == edi->flood.bConstForce) )
                 {
                     fprintf(stderr, "ED: The ORIGIN structure will define the flooding potential center.\n");
                     /* Set center of flooding potential to the ORIGIN structure */
@@ -2796,7 +2854,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
             {
                 rad_project(*edi, xstart, &edi->vecs.radacc);
                 rad_project(*edi, xstart, &edi->vecs.radfix);
-                if ( (eEDflood == ed->eEDtype) && (FALSE == edi->flood.bConstForce) )
+                if ( (EssentialDynamcisType::Flooding == ed->eEDtype) && (FALSE == edi->flood.bConstForce) )
                 {
                     if (edi->flood.bHarmonic)
                     {
@@ -2819,7 +2877,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
                 }
             }
             /* For convenience, output the center of the flooding potential for the eigenvectors */
-            if ( (eEDflood == ed->eEDtype) && (FALSE == edi->flood.bConstForce) )
+            if ( (EssentialDynamcisType::Flooding == ed->eEDtype) && (FALSE == edi->flood.bConstForce) )
             {
                 for (i = 0; i < edi->flood.vecs.neig; i++)
                 {
@@ -2958,7 +3016,7 @@ void do_edsam(const t_inputrec *ir,
 
 
     /* Check if ED sampling has to be performed */
-    if (ed->eEDtype == eEDnone)
+    if (ed->eEDtype == EssentialDynamcisType::None)
     {
         return;
     }
