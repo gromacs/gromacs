@@ -47,6 +47,8 @@
 #ifndef GMX_DOMDEC_HASHEDMAP_H
 #define GMX_DOMDEC_HASHEDMAP_H
 
+#include <climits>
+
 #include <algorithm>
 #include <vector>
 
@@ -72,16 +74,62 @@ class HashedMap
             int  next = -1;  /**< Index in the list of the next element with the same hash, -1 if none */
         };
 
+        /*! \brief Returns the base table size, i.e. the number of possible hashes */
+        int baseTableSize() const
+        {
+            return mask_ + 1;
+        }
+
+        /*! \brief The table size is set to at least this factor time the nr of keys */
+        static constexpr float c_relTableSizeSetMin       = 1.5;
+        /*! \brief Threshold for increasing the table size */
+        static constexpr float c_relTableSizeThresholdMin = 1.3;
+        /*! \brief Threshold for decreasing the table size */
+        static constexpr float c_relTableSizeThresholdMax = 3.5;
+
+        /*! \brief Resizes the table
+         *
+         * \param[in] numKeysEstimate  An estimate of the number of keys that will be stored
+         */
+        void resize(int numKeysEstimate)
+        {
+            GMX_RELEASE_ASSERT(numKeys_ == 0, "Table needs to be empty for resize");
+
+            /* Memory requirement: #keys*(2 + 1 - 2(1 - e^-1/2)) T elements
+             *
+             * The fraction of entries in the list with:
+             * 0   size lists: e^-f
+             * >=1 size lists: 1 - e^-f
+             * where f is: the #keys / mod
+             * The fraction of keys not in the direct list is: 1 - (1 - e^-f)/f.
+             * The optimal table size is roughly double #keys.
+             */
+            /* Make the hash table a power of 2 and at least 1.5 * #keys*/
+            int tableSize = 64;
+            while (tableSize <= INT_MAX/2 &&
+                   numKeysEstimate*c_relTableSizeSetMin > tableSize)
+            {
+                tableSize *= 2;
+            }
+            table_.resize(tableSize);
+
+            /* Table size is a power of 2, so a binary mask gives the hash */
+            mask_             = tableSize - 1;
+            startSpaceSearch_ = baseTableSize();
+        }
+
     public:
         /*! \brief Constructor
          *
-         * \param[in] baseTableSize  The size of the base table, optimal is around twice the number of expected entries
+         * \param[in] numKeysEstimate  An estimate of the number of keys that will be stored, used for optimizing initial performance
+         *
+         * Note that the estimate of the number of keys is only relevant
+         * for the performance up until the first call to clear(), after which
+         * table size is optimized based on the actual number of keys.
          */
-        HashedMap(int baseTableSize) :
-            table_(baseTableSize),
-            mod_(baseTableSize),
-            startSpaceSearch_(baseTableSize)
+        HashedMap(int numKeysEstimate)
         {
+            resize(numKeysEstimate);
         }
 
         /*! \brief Inserts entry, key should not already be present (checked by assertion)
@@ -94,7 +142,7 @@ class HashedMap
         {
             GMX_ASSERT(key >= 0, "Only keys >= 0 are supported");
 
-            size_t ind = key % mod_;
+            size_t ind = (key & mask_);
 
             if (table_[ind].key >= 0)
             {
@@ -124,18 +172,20 @@ class HashedMap
                 startSpaceSearch_ = ind + 1;
             }
 
-            table_[ind].key   = key;
-            table_[ind].value = value;
+            table_[ind].key    = key;
+            table_[ind].value  = value;
+
+            numKeys_          += 1;
         }
 
-        /*! \brief Delete the entry for key \p key
+        /*! \brief Delete the entry for key \p key, when present
          *
          * \param[in] key  The key
          */
         void erase(int key)
         {
             int ind_prev = -1;
-            int ind      = key % mod_;
+            int ind      = (key & mask_);
             do
             {
                 if (table_[ind].key == key)
@@ -152,8 +202,10 @@ class HashedMap
                             startSpaceSearch_ = ind;
                         }
                     }
-                    table_[ind].key  = -1;
-                    table_[ind].next = -1;
+                    table_[ind].key   = -1;
+                    table_[ind].next  = -1;
+
+                    numKeys_         -= 1;
 
                     return;
                 }
@@ -177,7 +229,7 @@ class HashedMap
          */
         const T *find(int key) const
         {
-            int ind = key % mod_;
+            int ind = (key & mask_);
             do
             {
                 if (table_[ind].key == key)
@@ -191,21 +243,36 @@ class HashedMap
             return nullptr;
         }
 
-        /*! \brief Clear all the entries in the list */
+        /*! \brief Clear all the entries in the list
+         *
+         * Also optimizes the size of the table based on the current
+         * number of keys stored.
+         */
         void clear()
         {
+            const int oldNumKeys = numKeys_;
+
             for (hashEntry &entry : table_)
             {
                 entry.key  = -1;
                 entry.next = -1;
             }
-            startSpaceSearch_ = mod_;
+            startSpaceSearch_ = baseTableSize();
+            numKeys_          = 0;
+
+            /* Resize the hash table when the occupation is far from optimal */
+            if (oldNumKeys*c_relTableSizeThresholdMax < baseTableSize() ||
+                oldNumKeys*c_relTableSizeThresholdMin > baseTableSize())
+            {
+                resize(oldNumKeys);
+            }
         }
 
     private:
-        std::vector<hashEntry> table_;            /**< The hash table list */
-        int                    mod_;              /**< The hash size */
-        int                    startSpaceSearch_; /**< Index in lal at which to start looking for empty space */
+        std::vector<hashEntry> table_;                /**< The hash table list */
+        int                    mask_             = 0; /**< The hash size */
+        int                    startSpaceSearch_ = 0; /**< Index in lal at which to start looking for empty space */
+        int                    numKeys_          = 0;
 };
 
 #endif
