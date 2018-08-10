@@ -8,7 +8,20 @@ earlier, which you can find described in the :ref:`release-notes`.
 
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Multi-domain GPU runs can no longer miss pair interactions
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+With systems with empty space in the unit cell, GPU runs with domain
+decomposition would not compute LJ and Coulomb interactions between
+domains when there we no interactions between domains on a rank at some
+point in time. Although this could cause unnoticed errors in short runs,
+most production length runs would become unstable when affected by this bug.
+
+:issue:`2502`
+
+
 Multi-domain Conjugate Gradient minimimization no longer segfaults.
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 :issue:`2554`
 
