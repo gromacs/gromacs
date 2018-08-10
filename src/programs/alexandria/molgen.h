@@ -370,7 +370,7 @@ class MolGen
             if (MASTER(commrec()))
             {
                 double normFactor = nmol_support_; // total number of molecules used in fitting
-                /*if (weight(ermsMU) && bQM())
+                if (weight(ermsMU) && bQM())
                 {
                     normFactor *= DIM; // three dipole residuals added per molecule if compared to QM dipole vector
                 }
@@ -378,7 +378,7 @@ class MolGen
                 {
                     normFactor *= DIM; // three quadrupole residuals added per molecule
                 } 
-                */               
+                              
                 for (int rms = 0; rms < ermsTOT; rms++)
                 {
                     ener_[ermsTOT] += ((fc_[rms]*ener_[rms])/normFactor);

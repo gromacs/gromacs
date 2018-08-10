@@ -442,7 +442,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         }
                         if (debug)
                         {
-                            fprintf(debug, "vvdw: %0.3f r: %0.3f sigma: %0.3f epsilon: %0.3f gamma %0.3f\n", vvdw, r, c, cexp1, cexp2);
+                            fprintf(debug, "vvdw: %0.3f r: %0.3f sigma: %0.3f epsilon: %0.3f gamma %0.3f  i: %d j: %d\n", vvdw, r, c, cexp1, cexp2, ii, jnr);
                         }
                         break;
                         

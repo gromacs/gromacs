@@ -445,7 +445,7 @@ void MyMol::MakeAngles(bool bPairs,
     }
     /* Make Harmonic Angles and Proper Dihedrals */
     snew(excls_, topology_->atoms.nr);
-    init_nnb(&nnb, topology_->atoms.nr, nexcl_); //nexcl_+2
+    init_nnb(&nnb, topology_->atoms.nr, nexcl_); //nexcl_ + 2?
     gen_nnb(&nnb, plist);
 
     print_nnb(&nnb, "NNB");
