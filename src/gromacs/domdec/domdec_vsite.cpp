@@ -53,6 +53,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
+#include "gromacs/domdec/hashedmap.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -62,7 +63,6 @@
 #include "gromacs/utility/gmxassert.h"
 
 #include "domdec_specatomcomm.h"
-#include "hash.h"
 
 void dd_move_f_vsites(gmx_domdec_t *dd, rvec *f, rvec *fshift)
 {
@@ -93,10 +93,18 @@ void dd_move_x_vsites(gmx_domdec_t *dd, const matrix box, rvec *x)
     }
 }
 
+void dd_clear_local_vsite_indices(gmx_domdec_t *dd)
+{
+    if (dd->vsite_comm)
+    {
+        dd->ga2la_vsite->clear();
+    }
+}
+
 int dd_make_local_vsites(gmx_domdec_t *dd, int at_start, t_ilist *lil)
 {
-    std::vector<int> &ireq         = dd->vsite_requestedGlobalAtomIndices;
-    gmx_hash_t       *ga2la_specat = dd->ga2la_vsite;
+    std::vector<int>    &ireq         = dd->vsite_requestedGlobalAtomIndices;
+    gmx::HashedMap<int> *ga2la_specat = dd->ga2la_vsite;
 
     ireq.clear();
     /* Loop over all the home vsites */
@@ -119,14 +127,14 @@ int dd_make_local_vsites(gmx_domdec_t *dd, int at_start, t_ilist *lil)
                          */
                         int a = -iatoms[j] - 1;
                         /* Check to not ask for the same atom more than once */
-                        if (gmx_hash_get_minone(dd->ga2la_vsite, a) == -1)
+                        if (!dd->ga2la_vsite->find(a))
                         {
                             /* Add this non-home atom to the list */
                             ireq.push_back(a);
                             /* Temporarily mark with -2,
                              * we get the index later.
                              */
-                            gmx_hash_set(ga2la_specat, a, -2);
+                            ga2la_specat->insert(a, -2);
                         }
                     }
                 }
@@ -152,7 +160,9 @@ int dd_make_local_vsites(gmx_domdec_t *dd, int at_start, t_ilist *lil)
                 {
                     if (iatoms[j] < 0)
                     {
-                        iatoms[j] = gmx_hash_get_minone(ga2la_specat, -iatoms[j]-1);
+                        const int *a = ga2la_specat->find(-iatoms[j] - 1);
+                        GMX_ASSERT(a, "We have checked before that this atom index has been set");
+                        iatoms[j] = *a;
                     }
                 }
             }
@@ -174,7 +184,7 @@ void init_domdec_vsites(gmx_domdec_t *dd, int n_intercg_vsite)
      */
     int numKeysEstimate = std::min(n_intercg_vsite/20,
                                    n_intercg_vsite/(2*dd->nnodes));
-    dd->ga2la_vsite = new gmx_hash_t(numKeysEstimate);
+    dd->ga2la_vsite = new gmx::HashedMap<int>(numKeysEstimate);
 
     dd->vsite_comm = new gmx_domdec_specat_comm_t;
 }
