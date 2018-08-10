@@ -69,20 +69,6 @@ static bool directListIsFaster(int numAtomsTotal,
             numAtomsTotal <= numAtomsLocal*c_memoryRatioHashedVersusDirect);
 }
 
-/*! \brief Returns the base size of the hash table
- *
- * Make the direct list twice as long as the number of local atoms.
- * The fraction of entries in the list with:
- * 0   size lists: e^-1/f
- * >=1 size lists: 1 - e^-1/f
- * where f is: the direct list length / nr. of local atoms
- * The fraction of atoms not in the direct list is: 1-f(1-e^-1/f).
- */
-static int baseTableSizeForHashTable(int numAtomsLocal)
-{
-    return 2*numAtomsLocal;
-}
-
 gmx_ga2la_t::gmx_ga2la_t(int numAtomsTotal,
                          int numAtomsLocal) :
     usingDirect_(directListIsFaster(numAtomsTotal, numAtomsLocal))
@@ -93,6 +79,6 @@ gmx_ga2la_t::gmx_ga2la_t(int numAtomsTotal,
     }
     else
     {
-        new(&(data_.hashed))HashedMap<Entry>(baseTableSizeForHashTable(numAtomsLocal));
+        new(&(data_.hashed))HashedMap<Entry>(numAtomsLocal);
     }
 }
