@@ -8,7 +8,36 @@ earlier, which you can find described in the :ref:`release-notes`.
 
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Multi-domain GPU runs can no longer miss pair interactions
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With systems with empty space in the unit cell, GPU runs with domain
+decomposition would not compute LJ and Coulomb interactions between
+domains when there we no interactions between domains on a rank at some
+point in time.
+
+ - This bug only affects simulations running on GPUs with domain decomposition
+   and containing empty regions of space that can lead to domains being empty.
+ - Possible observations of this bug may have been seemingly random failures
+   of calculations that where not reproducible when restarting a simulation
+   from a checkpoint file, as the domain would then again be filled properly
+   if interactions are present at the beginning.
+ - It is unlikely that this bug will have unnoticed effects on all but
+   very short simulations, as the missing interactions will inevitable lead
+   to simulation instability and crashes.
+ - If a simulation that crashed due to this bug is restarted it can contain
+   a small region around the crash that will be unphysical due to some
+   interactions not being calculated just before the crash itself.
+
+**This is a critical fix and users of 2018.x series that run on GPUs should
+update to this point release**
+
+:issue:`2502`
+
+
 Multi-domain Conjugate Gradient minimimization no longer segfaults.
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 :issue:`2554`
 
