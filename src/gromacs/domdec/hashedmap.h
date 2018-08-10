@@ -138,14 +138,17 @@ class HashedMap
             return bitMask_ + 1;
         }
 
-        /*! \brief Inserts entry, key should not already be present
+    private:
+        /*! \brief Inserts or assigns a key and value
          *
-         * \param[in] key    The key for the entry
-         * \param[in] value  The value for the entry
-         * \throws InvalidInputError from a debug build when attempting to insert a duplicate key
+         * \tparam    allowAssign  Sets whether assignment of a key that is present is allowed
+         * \param[in] key          The key for the entry
+         * \param[in] value        The value for the entry
+         * \throws InvalidInputError from a debug build when attempting to insert a duplicate key with \p allowAssign=true
          */
-        void insert(int      key,
-                    const T &value)
+        // cppcheck-suppress unusedPrivateFunction
+        template<bool allowAssign> void insert_assign(int      key,
+                                                      const T &value)
         {
             size_t ind = (key & bitMask_);
 
@@ -155,22 +158,38 @@ class HashedMap
                  * If we find the matching key, return the value.
                  */
                 int ind_prev = ind;
-// Note: This is performance critical, so we only throw in debug mode
-#ifndef NDEBUG
                 if (table_[ind_prev].key == key)
                 {
-                    GMX_THROW(InvalidInputError("Attempt to insert duplicate key"));
-                }
+                    if (allowAssign)
+                    {
+                        table_[ind].value = value;
+                        return;
+                    }
+                    else
+                    {
+// Note: This is performance critical, so we only throw in debug mode
+#ifndef NDEBUG
+                        GMX_THROW(InvalidInputError("Attempt to insert duplicate key"));
 #endif
+                    }
+                }
                 while (table_[ind_prev].next >= 0)
                 {
                     ind_prev = table_[ind_prev].next;
-#ifndef NDEBUG
                     if (table_[ind_prev].key == key)
                     {
-                        GMX_THROW(InvalidInputError("Attempt to insert duplicate key"));
-                    }
+                        if (allowAssign)
+                        {
+                            table_[ind_prev].value = value;
+                            return;
+                        }
+                        else
+                        {
+#ifndef NDEBUG
+                            GMX_THROW(InvalidInputError("Attempt to insert duplicate key"));
 #endif
+                        }
+                    }
                 }
                 /* Search for space in table_ */
                 ind = startIndexForSpaceForListEntry_;
@@ -192,6 +211,29 @@ class HashedMap
             table_[ind].value  = value;
 
             numElements_      += 1;
+        }
+
+    public:
+        /*! \brief Inserts entry, key should not already be present
+         *
+         * \param[in] key    The key for the entry
+         * \param[in] value  The value for the entry
+         * \throws InvalidInputError from a debug build when attempting to inser         */
+        void insert(int      key,
+                    const T &value)
+        {
+            insert_assign<false>(key, value);
+        }
+
+        /*! \brief Inserts an entry when the key is not present, otherwise sets the value
+         *
+         * \param[in] key    The key for the entry
+         * \param[in] value  The value for the entry
+         */
+        void insert_or_assign(int      key,
+                              const T &value)
+        {
+            insert_assign<true>(key, value);
         }
 
         /*! \brief Delete the entry for key \p key, when present

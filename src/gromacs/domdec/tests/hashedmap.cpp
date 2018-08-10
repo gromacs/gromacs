@@ -111,6 +111,21 @@ TEST(HashedMap, InsertsErases)
     checkDoesNotFind(map, 10);
 }
 
+TEST(HashedMap, InsertsOrAssigns)
+{
+    gmx::HashedMap<char> map(3);
+
+    map.insert(10, 'a');
+    map.insert(5,  'b');
+
+    map.insert_or_assign(7, 'c');
+    checkFinds(map, 7, 'c');
+
+    checkFinds(map, 10, 'a');
+    map.insert_or_assign(10, 'd');
+    checkFinds(map, 10, 'd');
+}
+
 TEST(HashedMap, Clears)
 {
     gmx::HashedMap<char> map(3);

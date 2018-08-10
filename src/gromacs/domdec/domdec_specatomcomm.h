@@ -50,8 +50,12 @@
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_domdec_t;
-struct gmx_hash_t;
 struct t_commrec;
+
+namespace gmx
+{
+template <typename T> class HashedMap;
+} // namespace
 
 /*! \internal \brief The communication setup along a single dimension */
 struct gmx_specatsend_t
@@ -110,7 +114,7 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
 int setup_specat_communication(gmx_domdec_t               *dd,
                                std::vector<int>           *ireq,
                                gmx_domdec_specat_comm_t   *spac,
-                               gmx_hash_t                 *ga2la_specat,
+                               gmx::HashedMap<int>        *ga2la_specat,
                                int                         at_start,
                                int                         vbuf_fac,
                                const char                 *specat_type,
