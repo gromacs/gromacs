@@ -125,7 +125,7 @@ const rvec *testFunction(const rvec &x)
 TEST(RVecTest, WorksAs_rvec_Reference)
 {
     RVec        v(1, 2, 3);
-    const rvec *r = testFunction(v.as_vec());
+    const rvec *r = testFunction(v);
     EXPECT_EQ(1, r[0][XX]);
     EXPECT_EQ(2, r[0][YY]);
     EXPECT_EQ(3, r[0][ZZ]);
@@ -135,9 +135,9 @@ TEST(RVecTest, CopyConstructorWorks)
 {
     RVec v(1, 2, 3);
     RVec copy(v);
-    EXPECT_EQ(1, copy.as_vec()[XX]);
-    EXPECT_EQ(2, copy.as_vec()[YY]);
-    EXPECT_EQ(3, copy.as_vec()[ZZ]);
+    EXPECT_EQ(1, copy[XX]);
+    EXPECT_EQ(2, copy[YY]);
+    EXPECT_EQ(3, copy[ZZ]);
 }
 
 TEST(RVecTest, CopyAssignmentWorks)
@@ -145,18 +145,18 @@ TEST(RVecTest, CopyAssignmentWorks)
     RVec v(1, 2, 3);
     RVec copy;
     copy = v;
-    EXPECT_EQ(1, copy.as_vec()[XX]);
-    EXPECT_EQ(2, copy.as_vec()[YY]);
-    EXPECT_EQ(3, copy.as_vec()[ZZ]);
+    EXPECT_EQ(1, copy[XX]);
+    EXPECT_EQ(2, copy[YY]);
+    EXPECT_EQ(3, copy[ZZ]);
 }
 
 TEST(RVecTest, MoveConstructorWorks)
 {
     RVec v(1, 2, 3);
     RVec copy(std::move(v));
-    EXPECT_EQ(1, copy.as_vec()[XX]);
-    EXPECT_EQ(2, copy.as_vec()[YY]);
-    EXPECT_EQ(3, copy.as_vec()[ZZ]);
+    EXPECT_EQ(1, copy[XX]);
+    EXPECT_EQ(2, copy[YY]);
+    EXPECT_EQ(3, copy[ZZ]);
 }
 
 TEST(RVecTest, MoveAssignmentWorks)
@@ -164,9 +164,9 @@ TEST(RVecTest, MoveAssignmentWorks)
     RVec v(1, 2, 3);
     RVec copy;
     copy = std::move(v);
-    EXPECT_EQ(1, copy.as_vec()[XX]);
-    EXPECT_EQ(2, copy.as_vec()[YY]);
-    EXPECT_EQ(3, copy.as_vec()[ZZ]);
+    EXPECT_EQ(1, copy[XX]);
+    EXPECT_EQ(2, copy[YY]);
+    EXPECT_EQ(3, copy[ZZ]);
 }
 
 } // namespace
