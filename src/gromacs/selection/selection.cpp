@@ -114,7 +114,7 @@ SelectionData::SelectionData(SelectionTreeElement *elem,
             {
                 child = child->child->child;
             }
-            bDynamic_ = (child->child->flags & SEL_DYNAMIC);
+            bDynamic_ = ((child->child->flags & SEL_DYNAMIC) != 0);
         }
     }
     initCoveredFraction(CFRAC_NONE);

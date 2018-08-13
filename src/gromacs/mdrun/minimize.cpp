@@ -701,7 +701,7 @@ static bool do_em_step(const t_commrec *cr,
              * parallelization, but we can not really avoid it.
              * But usually EM is not run at high parallelization.
              */
-            int reductionBuffer = !validStep;
+            int reductionBuffer = static_cast<int>(!validStep);
             gmx_sumi(1, &reductionBuffer, cr);
             validStep           = (reductionBuffer == 0);
         }
@@ -1262,8 +1262,8 @@ Integrator::do_cg()
         }
 
         /* Write coordinates if necessary */
-        do_x = do_per_step(step, inputrec->nstxout);
-        do_f = do_per_step(step, inputrec->nstfout);
+        do_x = (do_per_step(step, inputrec->nstxout) != 0);
+        do_f = (do_per_step(step, inputrec->nstfout) != 0);
 
         write_em_traj(fplog, cr, outf, do_x, do_f, nullptr,
                       top_global, inputrec, step,
@@ -1562,8 +1562,8 @@ Integrator::do_cg()
                        mdatoms->tmass, enerd, &s_min->s, inputrec->fepvals, inputrec->expandedvals, s_min->s.box,
                        nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
-            do_log = do_per_step(step, inputrec->nstlog);
-            do_ene = do_per_step(step, inputrec->nstenergy);
+            do_log = (do_per_step(step, inputrec->nstlog) != 0);
+            do_ene = (do_per_step(step, inputrec->nstenergy) != 0);
 
             /* Prepare IMD energy record, if bIMD is TRUE. */
             IMD_fill_energy_record(inputrec->bIMD, inputrec->imd, enerd, step, TRUE);
@@ -1640,8 +1640,8 @@ Integrator::do_cg()
      * However, we should only do it if we did NOT already write this step
      * above (which we did if do_x or do_f was true).
      */
-    do_x = !do_per_step(step, inputrec->nstxout);
-    do_f = (inputrec->nstfout > 0 && !do_per_step(step, inputrec->nstfout));
+    do_x = (do_per_step(step, inputrec->nstxout) == 0);
+    do_f = (inputrec->nstfout > 0 && (do_per_step(step, inputrec->nstfout) == 0));
 
     write_em_traj(fplog, cr, outf, do_x, do_f, ftp2fn(efSTO, nfile, fnm),
                   top_global, inputrec, step,
@@ -1765,7 +1765,7 @@ Integrator::do_lbfgs()
         }
         for (m = 0; m < DIM; m++)
         {
-            frozen[3*i+m] = inputrec->opts.nFreeze[gf][m];
+            frozen[3*i+m] = (inputrec->opts.nFreeze[gf][m] != 0);
         }
     }
     if (MASTER(cr))
@@ -1866,8 +1866,8 @@ Integrator::do_lbfgs()
     {
 
         /* Write coordinates if necessary */
-        do_x = do_per_step(step, inputrec->nstxout);
-        do_f = do_per_step(step, inputrec->nstfout);
+        do_x = (do_per_step(step, inputrec->nstxout) != 0);
+        do_f = (do_per_step(step, inputrec->nstfout) != 0);
 
         mdof_flags = 0;
         if (do_x)
@@ -2290,8 +2290,8 @@ Integrator::do_lbfgs()
             upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(step),
                        mdatoms->tmass, enerd, state_global, inputrec->fepvals, inputrec->expandedvals, state_global->box,
                        nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
-            do_log = do_per_step(step, inputrec->nstlog);
-            do_ene = do_per_step(step, inputrec->nstenergy);
+            do_log = (do_per_step(step, inputrec->nstlog) != 0);
+            do_ene = (do_per_step(step, inputrec->nstenergy) != 0);
             if (do_log)
             {
                 print_ebin_header(fplog, step, step);
@@ -2362,8 +2362,8 @@ Integrator::do_lbfgs()
      * However, we should only do it if we did NOT already write this step
      * above (which we did if do_x or do_f was true).
      */
-    do_x = !do_per_step(step, inputrec->nstxout);
-    do_f = !do_per_step(step, inputrec->nstfout);
+    do_x = (do_per_step(step, inputrec->nstxout) == 0);
+    do_f = (do_per_step(step, inputrec->nstfout) == 0);
     write_em_traj(fplog, cr, outf, do_x, do_f, ftp2fn(efSTO, nfile, fnm),
                   top_global, inputrec, step,
                   &ems, state_global, observablesHistory);
@@ -2511,8 +2511,8 @@ Integrator::do_steep()
                 IMD_fill_energy_record(inputrec->bIMD, inputrec->imd, enerd, count, TRUE);
 
                 print_ebin(mdoutf_get_fp_ene(outf), TRUE,
-                           do_per_step(steps_accepted, inputrec->nstdisreout),
-                           do_per_step(steps_accepted, inputrec->nstorireout),
+                           do_per_step(steps_accepted, inputrec->nstdisreout) != 0,
+                           do_per_step(steps_accepted, inputrec->nstorireout) != 0,
                            fplog, count, count, eprNORMAL,
                            mdebin, fcd, &(top_global->groups), &(inputrec->opts), nullptr);
                 fflush(fplog);
@@ -2541,8 +2541,8 @@ Integrator::do_steep()
             }
 
             /* Write to trn, if necessary */
-            do_x = do_per_step(steps_accepted, inputrec->nstxout);
-            do_f = do_per_step(steps_accepted, inputrec->nstfout);
+            do_x = (do_per_step(steps_accepted, inputrec->nstxout) != 0);
+            do_f = (do_per_step(steps_accepted, inputrec->nstfout) != 0);
             write_em_traj(fplog, cr, outf, do_x, do_f, nullptr,
                           top_global, inputrec, count,
                           s_min, state_global, observablesHistory);
@@ -2599,7 +2599,7 @@ Integrator::do_steep()
     {
         fprintf(stderr, "\nwriting lowest energy coordinates.\n");
     }
-    write_em_traj(fplog, cr, outf, TRUE, inputrec->nstfout, ftp2fn(efSTO, nfile, fnm),
+    write_em_traj(fplog, cr, outf, TRUE, inputrec->nstfout != 0, ftp2fn(efSTO, nfile, fnm),
                   top_global, inputrec, count,
                   s_min, state_global, observablesHistory);
 

@@ -267,7 +267,7 @@ void pr_blocka(FILE *fp, int indent, const char *title, const t_blocka *block, g
         indent = pr_blocka_title(fp, indent, title, block);
         start  = 0;
         end    = start;
-        if ((ok = (block->index[start] == 0)) == 0)
+        if ((ok = static_cast<int>(block->index[start] == 0)) == 0)
         {
             fprintf(fp, "block->index[%d] should be 0\n", start);
         }

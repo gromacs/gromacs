@@ -156,9 +156,9 @@ static int nral_rt(int ftype)
 static gmx_bool dd_check_ftype(int ftype, gmx_bool bBCheck,
                                gmx_bool bConstr, gmx_bool bSettle)
 {
-    return (((interaction_function[ftype].flags & IF_BOND) &&
-             !(interaction_function[ftype].flags & IF_VSITE) &&
-             (bBCheck || !(interaction_function[ftype].flags & IF_LIMZERO))) ||
+    return ((((interaction_function[ftype].flags & IF_BOND) != 0u) &&
+             ((interaction_function[ftype].flags & IF_VSITE) == 0u) &&
+             (bBCheck || ((interaction_function[ftype].flags & IF_LIMZERO) == 0u))) ||
             (bConstr && (ftype == F_CONSTR || ftype == F_CONSTRNC)) ||
             (bSettle && ftype == F_SETTLE));
 }
@@ -527,7 +527,7 @@ static int low_make_reverse_ilist(const t_ilist *il_mt, const t_atom *atom,
             (bConstr && (ftype == F_CONSTR || ftype == F_CONSTRNC)) ||
             (bSettle && ftype == F_SETTLE))
         {
-            bVSite = (interaction_function[ftype].flags & IF_VSITE);
+            bVSite = ((interaction_function[ftype].flags & IF_VSITE) != 0u);
             nral   = NRAL(ftype);
             il     = &il_mt[ftype];
             for (i = 0; i < il->nr; i += 1+nral)
@@ -1193,7 +1193,7 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
             gmx_bool vpbc;
             int      nral1 = 0, ftv = 0;
 
-            vpbc = ((interaction_function[ftype].flags & IF_VSITE) &&
+            vpbc = (((interaction_function[ftype].flags & IF_VSITE) != 0u) &&
                     vsite->vsite_pbc_loc != nullptr);
             if (vpbc)
             {
@@ -1472,7 +1472,7 @@ check_assign_interactions_atom(int i, int i_gl,
                     }
                 }
                 bUse = (bUse &&
-                        k_zero[XX] && k_zero[YY] && k_zero[ZZ]);
+                        (k_zero[XX] != 0) && (k_zero[YY] != 0) && (k_zero[ZZ] != 0));
                 if (bRCheckMB)
                 {
                     int d;

@@ -1055,7 +1055,7 @@ static void sort_columns_supersub(nbnxn_search *nbs,
             if (c_gpuNumClusterPerCellY > 1)
             {
                 /* Sort the atoms along y */
-                sort_atoms(YY, (sub_z & 1), dd_zone,
+                sort_atoms(YY, (sub_z & 1) != 0, dd_zone,
                            nbs->a.data() + ash_z, na_z, x,
                            grid->c0[YY] + gridY*grid->cellSize[YY],
                            grid->invCellSize[YY], subdiv_z,
@@ -1070,7 +1070,7 @@ static void sort_columns_supersub(nbnxn_search *nbs,
                 if (c_gpuNumClusterPerCellX > 1)
                 {
                     /* Sort the atoms along x */
-                    sort_atoms(XX, ((cz*c_gpuNumClusterPerCellY + sub_y) & 1), dd_zone,
+                    sort_atoms(XX, ((cz*c_gpuNumClusterPerCellY + sub_y) & 1) != 0, dd_zone,
                                nbs->a.data() + ash_y, na_y, x,
                                grid->c0[XX] + gridX*grid->cellSize[XX],
                                grid->invCellSize[XX], subdiv_y,

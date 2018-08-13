@@ -212,7 +212,7 @@ rbonded_find_atoms_in_list(t_rbonded *b, t_rbonded blist[], int nlist, int natom
         atomsMatch = TRUE;
         for (k = 0; k < natoms && atomsMatch; k++)
         {
-            atomsMatch = atomsMatch && !strcmp(b->a[k], blist[i].a[k]);
+            atomsMatch = atomsMatch && (strcmp(b->a[k], blist[i].a[k]) == 0);
         }
         /* Try reverse if forward match did not work */
         if (!atomsMatch)
@@ -220,7 +220,7 @@ rbonded_find_atoms_in_list(t_rbonded *b, t_rbonded blist[], int nlist, int natom
             atomsMatch = TRUE;
             for (k = 0; k < natoms && atomsMatch; k++)
             {
-                atomsMatch = atomsMatch && !strcmp(b->a[k], blist[i].a[natoms-1-k]);
+                atomsMatch = atomsMatch && (strcmp(b->a[k], blist[i].a[natoms-1-k]) == 0);
             }
         }
         if (atomsMatch)

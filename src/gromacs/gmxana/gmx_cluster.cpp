@@ -557,7 +557,7 @@ static void jarvis_patrick(int n1, real **mat, int M, int P,
     {
         for (j = i+1; j < n1; j++)
         {
-            mcpy[i][j] = jp_same(nnb, i, j, P);
+            mcpy[i][j] = static_cast<real>(jp_same(nnb, i, j, P));
         }
     }
     do
@@ -568,7 +568,7 @@ static void jarvis_patrick(int n1, real **mat, int M, int P,
         {
             for (j = i+1; j < n1; j++)
             {
-                if (mcpy[i][j])
+                if (mcpy[i][j] != 0.0f)
                 {
                     diff = c[j].clust - c[i].clust;
                     if (diff)
@@ -1911,7 +1911,7 @@ int gmx_cluster(int argc, char *argv[])
         {
             for (i1 = i2+1; (i1 < nf); i1++)
             {
-                if (rms->mat[i1][i2])
+                if (rms->mat[i1][i2] != 0.0f)
                 {
                     rms->mat[i1][i2] = rms->maxrms;
                 }

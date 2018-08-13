@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -85,7 +85,7 @@ bool readLineImpl(FILE *fp, std::string *line)
                              "fgets", errno);
     }
     *line = result;
-    return !result.empty() || !std::feof(fp);
+    return !result.empty() || (std::feof(fp) == 0);
 }
 
 }   // namespace
@@ -166,7 +166,7 @@ using internal::FileStreamImpl;
 bool StandardInputStream::isInteractive() const
 {
 #ifdef HAVE_UNISTD_H
-    return isatty(fileno(stdin));
+    return isatty(fileno(stdin)) != 0;
 #else
     return true;
 #endif

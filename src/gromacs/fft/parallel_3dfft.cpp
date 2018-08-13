@@ -88,7 +88,7 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t           *    pfft_setup,
     (*pfft_setup)->p2 = fft5d_plan_3d(Nb, Mb, Kb, rcomm,
                                       (flags|FFT5D_BACKWARD|FFT5D_NOMALLOC)^FFT5D_ORDER_YZ, complex_data, reinterpret_cast<t_complex**>(real_data), &buf1, &buf2, nthreads);
 
-    return (*pfft_setup)->p1 != nullptr && (*pfft_setup)->p2 != nullptr;
+    return static_cast<int>((*pfft_setup)->p1 != nullptr && (*pfft_setup)->p2 != nullptr);
 }
 
 
@@ -169,7 +169,7 @@ gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
                            int                     thread,
                            gmx_wallcycle_t         wcycle)
 {
-    if ((!(pfft_setup->p1->flags&FFT5D_REALCOMPLEX)) ^ (dir == GMX_FFT_FORWARD || dir == GMX_FFT_BACKWARD))
+    if (((pfft_setup->p1->flags&FFT5D_REALCOMPLEX) == 0) ^ (dir == GMX_FFT_FORWARD || dir == GMX_FFT_BACKWARD))
     {
         gmx_fatal(FARGS, "Invalid transform. Plan and execution don't match regarding reel/complex");
     }

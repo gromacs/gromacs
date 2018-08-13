@@ -63,7 +63,7 @@ gmx_within_tol(double   f1,
 int
 gmx_numzero(double a)
 {
-    return gmx_within_tol(a, 0.0, GMX_REAL_MIN/GMX_REAL_EPS);
+    return static_cast<int>(gmx_within_tol(a, 0.0, GMX_REAL_MIN/GMX_REAL_EPS));
 }
 
 

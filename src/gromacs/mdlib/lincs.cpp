@@ -2140,7 +2140,7 @@ void set_lincs(const t_idef         &idef,
                         /* We can generate independent tasks. Check if we
                          * need to assign connected constraints to our task.
                          */
-                        check_assign_connected(li, iatom, idef, bDynamics,
+                        check_assign_connected(li, iatom, idef, static_cast<int>(bDynamics),
                                                a1, a2, &at2con);
                     }
                     if (li->ntask > 1 && li->ncg_triangle > 0)
@@ -2148,7 +2148,7 @@ void set_lincs(const t_idef         &idef,
                         /* Ensure constraints in one triangle are assigned
                          * to the same task.
                          */
-                        check_assign_triangle(li, iatom, idef, bDynamics,
+                        check_assign_triangle(li, iatom, idef, static_cast<int>(bDynamics),
                                               con, a1, a2, &at2con);
                     }
                 }

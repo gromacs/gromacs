@@ -536,7 +536,7 @@ int gmx_do_dssp(int argc, char *argv[])
     fnArea     = opt2fn_null("-a", NFILE, fnm);
     fnTArea    = opt2fn_null("-ta", NFILE, fnm);
     fnAArea    = opt2fn_null("-aa", NFILE, fnm);
-    bDoAccSurf = (fnArea || fnTArea || fnAArea);
+    bDoAccSurf = ((fnArea != nullptr) || (fnTArea != nullptr) || (fnAArea != nullptr));
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xp, nullptr, box, FALSE);
     atoms = &(top.atoms);

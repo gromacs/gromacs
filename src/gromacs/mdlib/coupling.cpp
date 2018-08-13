@@ -606,7 +606,7 @@ void berendsen_pcoupl(FILE *fplog, int64_t step,
         case epctSURFACETENSION:
             /* ir->ref_p[0/1] is the reference surface-tension times *
              * the number of surfaces                                */
-            if (ir->compress[ZZ][ZZ])
+            if (ir->compress[ZZ][ZZ] != 0.0f)
             {
                 p_corr_z = dt/ir->tau_p*(ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ]);
             }
@@ -879,7 +879,7 @@ void trotter_update(t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
     }
 
     bCouple = (ir->nsttcouple == 1 ||
-               do_per_step(step_eff+ir->nsttcouple, ir->nsttcouple));
+               (do_per_step(step_eff+ir->nsttcouple, ir->nsttcouple) != 0));
 
     trotter_seq = trotter_seqlist[trotter_seqno];
 

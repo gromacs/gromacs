@@ -750,7 +750,7 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
     ptr = getenv("GMX_USE_TREEREDUCE");
     if (ptr != nullptr)
     {
-        nbat->bUseTreeReduce = strtol(ptr, nullptr, 10);
+        nbat->bUseTreeReduce = (strtol(ptr, nullptr, 10) != 0);
     }
 #if defined __MIC__
     else if (nth > 8) /*on the CPU we currently don't benefit even at 32*/
