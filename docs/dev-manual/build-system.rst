@@ -337,14 +337,6 @@ Variables affecting the ``all`` target
 Variables affecting special targets
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. cmake:: CPPCHECK_XML_OUTPUT
-
-   If set ``ON``, the ``cppcheck`` target generates reports for all found
-   issues in XML format.  This is used by Jenkins, which parses the XML files
-   to show the issues on the web page.
-   If ``OFF`` (the default), issues are reported as plain text to standard
-   output and to a text file.
-
 .. cmake:: GMX_BUILD_MANUAL
 
    If set ``ON``, CMake detection for LaTeX and other prerequisites for the
@@ -438,10 +430,6 @@ completion
    :cmake:`GMX_BUILD_HELP` is not ``OFF``, and it is run automatically as part
    of the default ``all`` target.  See :cmake:`GMX_BUILD_HELP`.
    All CMake code is in :file:`src/programs/`.
-cppcheck
-   Runs :command:`cppcheck` with the flags used in Jenkins for all the source
-   files.  This target is directly used by the Jenkins cppcheck job.
-   All CMake code is in :file:`tests/CppCheck.cmake`.
 dep-graphs*
    Builds include dependency graphs for the source files using :command:`dot`
    from graphviz.

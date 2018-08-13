@@ -378,7 +378,6 @@ void do_nonbonded(const t_forcerec  *fr,
          * improvement, this assertion will stop code segfaulting if
          * someone assumes that extending the group-scheme table-type
          * enumeration is something that GROMACS supports. */
-        /* cppcheck-suppress duplicateExpression */
         static_assert(etiNR == 3, "");
 
         kernel_data.table_elec              = nblists->table_elec;

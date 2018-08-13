@@ -689,7 +689,6 @@ void berendsen_pscale(const t_inputrec *ir, const matrix mu,
     int     nthreads gmx_unused;
 
 #ifndef __clang_analyzer__
-    // cppcheck-suppress unreadVariable
     nthreads = gmx_omp_nthreads_get(emntUpdate);
 #endif
 

@@ -103,7 +103,6 @@ typedef std::vector < std::unique_ptr < TestHardwareContext>> TestHardwareContex
 /*! \internal \brief
  * This class performs one-time test initialization (enumerating the hardware)
  */
-// cppcheck-suppress noConstructor
 class PmeTestEnvironment : public ::testing::Environment
 {
     private:

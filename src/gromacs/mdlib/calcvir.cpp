@@ -130,7 +130,6 @@ void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
             int end   = std::min(nxf*(thread + 1)/nthreads, nxf);
 
             calc_x_times_f(end - start, x + start, f + start, bScrewPBC, box,
-                           // cppcheck-suppress uninitvar
                            thread == 0 ? x_times_f : xf_buf[thread*3]);
         }
 

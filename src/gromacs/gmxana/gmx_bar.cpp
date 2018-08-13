@@ -3329,13 +3329,8 @@ static void read_barsim_edr(const char *fn, real *temp, sim_data_t *sd)
             if ( (std::abs(last_t - start_time) > 2*delta_time)  && last_t >= 0)
             {
                 /* it didn't. We need to store our samples and reallocate */
-
                 for (i = 0; i < nsamples; i++)
                 {
-                    // nsamples is always >0 here, so samples_rawdh must be a valid pointer. Unfortunately
-                    // cppcheck does not understand the logic unless the assert is inside the loop, but
-                    // this is not performance-sensitive code.
-                    GMX_RELEASE_ASSERT(samples_rawdh != nullptr, "samples_rawdh==NULL with nsamples>0");
                     if (samples_rawdh[i])
                     {
                         /* insert it into the existing list */

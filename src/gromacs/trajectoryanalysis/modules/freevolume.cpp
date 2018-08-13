@@ -339,7 +339,6 @@ FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         for (int m = 0; (m < DIM); m++)
         {
             // Generate random number between 0 and 1
-            // cppcheck-suppress uninitvar
             rand[m] = dist(rng_);
         }
         // Generate random 3D position within the box

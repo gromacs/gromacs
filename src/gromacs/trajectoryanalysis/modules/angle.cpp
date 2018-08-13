@@ -766,20 +766,14 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     rvec dx[3];
                     if (pbc)
                     {
-                        // cppcheck-suppress uninitvar
                         pbc_dx(pbc, x[0], x[1], dx[0]);
-                        // cppcheck-suppress uninitvar
                         pbc_dx(pbc, x[2], x[1], dx[1]);
-                        // cppcheck-suppress uninitvar
                         pbc_dx(pbc, x[2], x[3], dx[2]);
                     }
                     else
                     {
-                        // cppcheck-suppress uninitvar
                         rvec_sub(x[0], x[1], dx[0]);
-                        // cppcheck-suppress uninitvar
                         rvec_sub(x[2], x[1], dx[1]);
-                        // cppcheck-suppress uninitvar
                         rvec_sub(x[2], x[3], dx[2]);
                     }
                     cprod(dx[0], dx[1], v1);

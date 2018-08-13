@@ -373,27 +373,17 @@ static void *
 init_data_insolidangle(int /* npar */, gmx_ana_selparam_t *param)
 {
     t_methoddata_insolidangle *data = new t_methoddata_insolidangle();
-    // cppcheck-suppress uninitdata
     data->angcut        = 5.0;
-    // cppcheck-suppress uninitdata
     data->cfrac         = 0.0;
 
-    // cppcheck-suppress uninitdata
     data->distccut      = 0.0;
-    // cppcheck-suppress uninitdata
     data->targetbinsize = 0.0;
 
-    // cppcheck-suppress uninitdata
     data->ntbins        = 0;
-    // cppcheck-suppress uninitdata
     data->tbinsize      = 0.0;
-    // cppcheck-suppress uninitdata
     data->tbin          = nullptr;
-    // cppcheck-suppress uninitdata
     data->maxbins       = 0;
-    // cppcheck-suppress uninitdata
     data->nbins         = 0;
-    // cppcheck-suppress uninitdata
     data->bin           = nullptr;
 
     param[0].val.u.p = &data->center;

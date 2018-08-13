@@ -171,7 +171,6 @@ class TabulatedNormalDistribution
          */
         static const
         std::array<RealType, 1<<tableBits>
-        // cppcheck-suppress unusedPrivateFunction
         makeTable()
         {
             /* Fill the table with the integral of a gaussian distribution, which

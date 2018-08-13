@@ -84,21 +84,6 @@ this will also analyze C code, but Jenkins ignores C code for analysis. This
 can result in extra warnings, which can be suppressed by manually setting
 CMAKE_C_COMPILER to a value other than Clang static analyzer.
 
-cppcheck
-^^^^^^^^
-
-This build runs the :command:`cppcheck` static analysis tool.  Any issues found
-mark the build unstable, and can be browsed in Jenkins.
-
-It runs :command:`cmake` to generate the build system, and then builds the
-``cppcheck`` target.  Nothing is compiled by this target, it only runs
-:command:`cppcheck` for the designated source files.  The CMake configuration
-options do not affect the set of files checked, but they do affect the checked
-code through :file:`config.h` and such.
-
-The exact build sequence and the CMake configuration used is in
-:file:`admin/builds/cppcheck.py`.
-
 uncrustify
 ^^^^^^^^^^
 

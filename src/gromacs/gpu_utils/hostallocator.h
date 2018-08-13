@@ -208,7 +208,6 @@ class HostAllocationPolicy
          *
          * Does not throw.
          */
-        // cppcheck-suppress unusedPrivateFunction
         void setPinningPolicy(PinningPolicy pinningPolicy);
         /*! \brief Declare as a friend function the only supported way
          * to change the pinning policy.

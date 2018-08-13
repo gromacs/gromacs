@@ -670,7 +670,6 @@ void construct_vsites(const gmx_vsite_t *vsite,
         dd_move_x_vsites(cr->dd, box, x);
     }
 
-    // cppcheck-suppress nullPointerRedundantCheck
     if (vsite == nullptr || vsite->nthreads == 1)
     {
         construct_vsites_thread(vsite,

@@ -92,7 +92,6 @@ template <typename T>
 class OptionValueStoreVector : public IOptionValueStore<T>
 {
     public:
-        // cppcheck-suppress uninitMemberVar
         explicit OptionValueStoreVector(std::vector<T> *store) : store_(store) {}
 
         virtual int valueCount() { return static_cast<int>(store_->size()); }
@@ -113,7 +112,6 @@ class OptionValueStoreVector : public IOptionValueStore<T>
 
 // Specialization that works around std::vector<bool> specialities.
 template <>
-// cppcheck-suppress noConstructor
 class OptionValueStoreVector<bool> : public IOptionValueStore<bool>
 {
     public:

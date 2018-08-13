@@ -225,7 +225,6 @@ static void sum_forces(rvec f[], gmx::ArrayRef<const gmx::RVec> forceToAdd)
 {
     const int end = forceToAdd.size();
 
-    // cppcheck-suppress unreadVariable
     int gmx_unused nt = gmx_omp_nthreads_get(emntDefault);
 #pragma omp parallel for num_threads(nt) schedule(static)
     for (int i = 0; i < end; i++)
