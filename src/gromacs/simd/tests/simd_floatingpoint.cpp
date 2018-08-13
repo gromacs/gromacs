@@ -415,16 +415,30 @@ TEST_F(SimdFloatingpointTest, orB)
 TEST_F(SimdFloatingpointTest, anyTrueB)
 {
     SimdBool eq;
+    SimdReal zero = setZero();
 
-    /* this test is a bit tricky since we don't know the simd width.
-     * We cannot check for truth values for "any" element beyond the first,
-     * since that part of the data will not be used if simd width is 1.
-     */
-    eq = rSimd_c4c6c8 == setSimdRealFrom3R(c4, 0, 0);
-    EXPECT_TRUE(anyTrue(eq));
+    // This test is a bit tricky since we want to test all relevant elements,
+    // but the instruction will only test bits up to the SIMD width.
 
-    eq = rSimd_c0c1c2 == rSimd_c3c4c5;
+    alignas(GMX_SIMD_ALIGNMENT) real data[GMX_SIMD_REAL_WIDTH];
+
+    for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        data[i] = 0.0;
+    }
+
+    // Test the false case
+    eq = zero < load<SimdReal>(data);
     EXPECT_FALSE(anyTrue(eq));
+
+    // Test each bit (these should all be true)
+    for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        data[i] = 1.0;
+        eq      = zero < load<SimdReal>(data);
+        EXPECT_TRUE(anyTrue(eq)) << "Not detecting true in element " << i;
+        data[i] = 0.0;
+    }
 }
 
 TEST_F(SimdFloatingpointTest, blend)

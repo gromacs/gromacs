@@ -275,15 +275,30 @@ TEST_F(SimdIntegerTest, orB)
 TEST_F(SimdIntegerTest, anyTrue)
 {
     SimdIBool eq;
+    SimdInt32 zero = setZero();
 
-    /* See comment in floatingpoint.cpp. We should only check the first element here,
-     * since the SIMD width could be 1 as a special case.
-     */
-    eq = (iSimd_5_7_9 == setSimdIntFrom3I(5, 0, 0));
-    EXPECT_TRUE(anyTrue(eq));
+    // This test is a bit tricky since we want to test all relevant elements,
+    // but the instruction will only test bits up to the SIMD width.
 
-    eq = (iSimd_1_2_3 == iSimd_4_5_6);
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t idata[GMX_SIMD_REAL_WIDTH];
+
+    for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        idata[i] = 0;
+    }
+
+    // Test the false case
+    eq = zero < load<SimdInt32>(idata);
     EXPECT_FALSE(anyTrue(eq));
+
+    // Test each bit (these should all be true)
+    for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        idata[i] = 1;
+        eq       = zero < load<SimdInt32>(idata);
+        EXPECT_TRUE(anyTrue(eq)) << "Not detecting true in element " << i;
+        idata[i] = 0;
+    }
 }
 
 TEST_F(SimdIntegerTest, blend)
