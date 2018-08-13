@@ -104,7 +104,7 @@ static real thistime(t_corr *curr)
     return curr->time[curr->nframes];
 }
 
-static gmx_bool in_data(t_corr *curr, int nx00)
+static int in_data(t_corr *curr, int nx00)
 {
     return curr->nframes-curr->n_offs[nx00];
 }
