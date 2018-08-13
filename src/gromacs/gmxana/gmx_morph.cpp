@@ -169,7 +169,7 @@ int gmx_morph(int argc, char *argv[])
         printf("Select group for RMSD calculation:\n");
         get_index(&atoms, opt2fn_null("-n", NFILE, fnm), 1, &isize, &index, &grpname);
         printf("You selected group %s, containing %d atoms\n", grpname, isize);
-        rms1 = rmsdev_ind(isize, index, mass, x1, x2);
+        rms1 = gmx::StructureSimilarityMeasure::rmsd(isize, mass, x1, x2, index);
         fprintf(stderr, "RMSD between input conformations is %g nm\n", rms1);
     }
 
@@ -186,8 +186,8 @@ int gmx_morph(int argc, char *argv[])
         write_trx(status, nat1, dummy, &atoms, i, fac, box, xx, nullptr, nullptr);
         if (bRMS)
         {
-            rms1 = rmsdev_ind(isize, index, mass, x1, xx);
-            rms2 = rmsdev_ind(isize, index, mass, x2, xx);
+            rms1 = gmx::StructureSimilarityMeasure::rmsd(isize, mass, x1, xx, index);
+            rms2 = gmx::StructureSimilarityMeasure::rmsd(isize, mass, x2, xx, index);
             fprintf(fp, "%10g  %10g  %10g\n", fac, rms1, rms2);
         }
     }

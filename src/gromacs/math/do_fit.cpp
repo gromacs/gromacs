@@ -46,70 +46,115 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-real calc_similar_ind(gmx_bool bRho, int nind, const int *index, const real mass[],
-                      rvec x[], rvec xp[])
+namespace gmx
 {
-    int  i, j, d;
-    real m, tm, xs, xd, rs, rd;
-
-    tm = 0;
-    rs = 0;
-    rd = 0;
-    for (j = 0; j < nind; j++)
+namespace
+{
+/*!\brief Mass weighted root mean square deviation kernel.
+ * This struct aids templating the loop for over the atoms for structure simlarity measurements.
+ * The total rmsd = sqrt(sum(m*(x-y)*(x-y)/sum(m)).
+ */
+struct RMSDKernel
+{
+    /*!\brief The nominator for the rmsd calculation.
+     * \param[in] m mass of the atom
+     * \param[in] x coordinate
+     * \param[in] y coordinate
+     * \returns contribution of this atom pair to nominator of rmsd calculation
+     */
+    static inline real nominator(real m, const gmx::RVec &x, const gmx::RVec &y)
     {
-        if (index)
-        {
-            i = index[j];
-        }
-        else
-        {
-            i = j;
-        }
-        m   = mass[i];
-        tm += m;
-        for (d = 0; d < DIM; d++)
-        {
-            xd  = x[i][d] - xp[i][d];
-            rd += m * gmx::square(xd);
-            if (bRho)
-            {
-                xs  = x[i][d] + xp[i][d];
-                rs += m * gmx::square(xs);
-            }
-        }
+        return m * distance2(x, y);
     }
-    if (bRho)
+    /*!\brief The denominator for the rmsd calculation.
+     * \param[in] m mass of the atom
+     * \param[in] x coordinate
+     * \param[in] y coordinate
+     * \returns contribution of this atom pair to denominator of rmsd calculation
+     */
+    static inline real denominator(real m, const gmx::RVec & /*x*/, const gmx::RVec & /*y*/)
     {
-        return 2*std::sqrt(rd/rs);
+        return m;
+    };
+};
+/*!\brief Mass weighted rho-measure kernel.
+ * This struct aids templating the loop for over the atoms for structure simlarity measurements.
+ * The total rho = sqrt(sum(m*(x-y)*(x-y)/sum(m*(x+y)*(x+y)/4)).
+ */
+struct RhoMeasureKernel
+{
+    /*!\brief The nominator for the rho-measure calculation.
+     * \param[in] m mass of the atom
+     * \param[in] x coordinate
+     * \param[in] y coordinate
+     * \returns contribution of this atom pair to nominator of rho-measure calculation
+     */
+    static inline real nominator(real m, const gmx::RVec &x, const gmx::RVec &y)
+    {
+        return RMSDKernel::nominator(m, x, y);
+    }
+    /*!\brief The denominator for the rho-measure calculation.
+     * \param[in] m mass of the atom
+     * \param[in] x coordinate
+     * \param[in] y coordinate
+     * \returns contribution of this atom pair to denominator of rho-measure calculation
+     */
+    static inline real denominator(real m, const gmx::RVec &x, const gmx::RVec &y)
+    {
+        rvec sum;
+        rvec_add(x, y, sum);
+        return m * norm2(sum) / 4.;
+    }
+};
+
+/*!\brief Evaluate structural simlarity in the form sqrt(sum(nominator(mass,x,y))/sum(denominator(mass,x,y))).
+   *\param[in] nAtoms number of atoms of structures to compare
+   *\param[in] index Index for selecting a sub-set of atoms, that is applied to mass, x, and xp
+   *\param[in] mass Masses of the atoms for similarity comparison
+   *\param[in] x the coordinates of the reference structure
+   *\param[in] xp the coordinates of the structure to compare
+   *\returns Mass-weighted measure of similarity between two structures
+ */
+template <typename F>
+real structureSimilarity(int nAtoms, const int *index, const real *mass, const rvec *x, const rvec *xp)
+{
+    real denominator = 0;
+    real nominator   = 0;
+    if (index != nullptr)
+    {
+        gmx::ArrayRef<const int> indexRef = {index, index+nAtoms};
+        for (int i : indexRef)
+        {
+            nominator   += F::nominator(mass[i], x[i], xp[i]);
+            denominator += F::denominator(mass[i], x[i], xp[i]);
+        }
     }
     else
     {
-        return std::sqrt(rd/tm);
+        for (int i = 0; i < nAtoms; i++)
+        {
+            nominator   += F::nominator(mass[i], x[i], xp[i]);
+            denominator += F::denominator(mass[i], x[i], xp[i]);
+        }
     }
+    return std::sqrt(nominator/denominator);
+}
+}   // namespace
+
+real StructureSimilarityMeasure::rmsd(int nAtoms, const real *mass, const rvec *x, const rvec *xp, const int * ind )
+{
+    return structureSimilarity<RMSDKernel>(nAtoms, ind, mass, x, xp);
 }
 
-real rmsdev_ind(int nind, int index[], real mass[], rvec x[], rvec xp[])
+real StructureSimilarityMeasure::sizeIndependentRho(int nAtoms, const real *mass, const rvec *x, const rvec *xp, const int *index)
 {
-    return calc_similar_ind(FALSE, nind, index, mass, x, xp);
+    return structureSimilarity<RhoMeasureKernel>(nAtoms, index, mass, x, xp);
 }
-
-real rmsdev(int natoms, real mass[], rvec x[], rvec xp[])
-{
-    return calc_similar_ind(FALSE, natoms, nullptr, mass, x, xp);
-}
-
-real rhodev_ind(int nind, int index[], real mass[], rvec x[], rvec xp[])
-{
-    return calc_similar_ind(TRUE, nind, index, mass, x, xp);
-}
-
-real rhodev(int natoms, real mass[], rvec x[], rvec xp[])
-{
-    return calc_similar_ind(TRUE, natoms, nullptr, mass, x, xp);
-}
+} // namespace gmx
 
 void calc_fit_R(int ndim, int natoms, const real *w_rls, const rvec *xp, rvec *x, matrix R)
 {
