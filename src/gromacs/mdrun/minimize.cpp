@@ -625,7 +625,6 @@ static bool do_em_step(const t_commrec *cr,
     start = 0;
     end   = md->homenr;
 
-    // cppcheck-suppress unreadVariable
     nthreads = gmx_omp_nthreads_get(emntUpdate);
 #pragma omp parallel num_threads(nthreads)
     {

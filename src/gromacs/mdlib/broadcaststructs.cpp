@@ -673,14 +673,12 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
     {
         // block_bc() above overwrites the old pointer, so set it to a
         // reasonable value in case code below throws.
-        // cppcheck-suppress redundantAssignment
         inputrec->params = nullptr;
         std::vector<char> buffer;
         size_t            size;
         block_bc(cr, size);
         nblock_abc(cr, size, &buffer);
         gmx::InMemoryDeserializer serializer(buffer);
-        // cppcheck-suppress redundantAssignment
         inputrec->params = new gmx::KeyValueTreeObject(
                     gmx::deserializeKeyValueTree(&serializer));
     }

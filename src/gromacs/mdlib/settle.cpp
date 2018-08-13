@@ -679,7 +679,6 @@ static void settleTemplate(const settledata *settled,
         transposeScatterStoreU<3>(xprime, hw2, xprime_hw2[XX], xprime_hw2[YY], xprime_hw2[ZZ]);
         transposeScatterStoreU<3>(xprime, hw3, xprime_hw3[XX], xprime_hw3[YY], xprime_hw3[ZZ]);
 
-        // cppcheck-suppress duplicateExpression
         if (bCorrectVelocity || bCalcVirial)
         {
             T da[DIM], db[DIM], dc[DIM];

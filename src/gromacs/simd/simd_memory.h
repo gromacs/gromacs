@@ -58,7 +58,6 @@ class SimdReference
         using pointer     = typename SimdTraits<T>::type*;
     public:
         //! \brief Constructor
-        // cppcheck-suppress uninitMemberVar
         explicit SimdReference(pointer m) : m_(m) {}
         //! \brief Conversion method that will execute load
         operator non_const_T() const { return load<non_const_T>(m_); }

@@ -95,13 +95,6 @@ clang-tidy
   enabled, so you may want to run this tool locally to apply the fixes before
   you upload to Gerrit.
 
-cppcheck
-  `cppcheck <http://cppcheck.sourceforge.net>`_ is used for static code
-  analysis, and is run automatically on Jenkins for each commit.  Different rules
-  are used for C and C++ code (with stricter checking for C++ code, as that is
-  newer).  The build system provides a ``cppcheck`` target (produced from
-  ``tests/CppCheck.cmake``) to run the tool.  This target is used also by Jenkins.
-
 clang static analyzer
 
 coverage

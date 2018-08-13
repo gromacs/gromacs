@@ -97,8 +97,7 @@ static void sort_molecule(t_atoms **atoms_solvt, std::vector<RVec> *x,
             moltp = -1;
             for (j = 0; (j < nrmoltypes) && (moltp == -1); j++)
             {
-                /* cppcheck-suppress nullPointer
-                 * moltypes is guaranteed to be allocated because otherwise
+                /* moltypes is guaranteed to be allocated because otherwise
                  * nrmoltypes is 0. */
                 if (strcmp(*(atoms->resinfo[atoms->atom[i].resind].name), moltypes[j].name) == 0)
                 {

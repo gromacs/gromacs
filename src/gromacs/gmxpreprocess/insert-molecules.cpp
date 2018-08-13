@@ -243,9 +243,7 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
 
     while (mol < nmol_insrt && trial < ntry*nmol_insrt)
     {
-        // cppcheck 1.72 complains about uninitialized variables in the
-        // assignments below otherwise...
-        rvec offset_x = {0};
+        rvec offset_x;
         if (!insertAtPositions)
         {
             // Insert at random positions.

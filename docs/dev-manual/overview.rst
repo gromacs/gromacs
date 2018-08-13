@@ -35,8 +35,7 @@ All other content is in the following top-level directories:
   Contains all source code.  See :ref:`dev-source-layout`.
 :file:`tests/`
   Contains build system logic for some high-level tests.  Currently, only the
-  regression test build system logic and cppcheck rules are in this directory,
-  while other tests are under :file:`src/`.
+  regression test build system logic, while other tests are under :file:`src/`.
 
 .. _dev-source-layout:
 

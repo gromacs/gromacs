@@ -246,7 +246,6 @@ t_state::t_state() : natoms(0),
     // above initialization list, but uncrustify doesn't understand
     // that.
     // TODO Fix this if we switch to clang-format some time.
-    // cppcheck-suppress useInitializationList
     lambda = {{ 0 }};
     clear_mat(box);
     clear_mat(box_rel);

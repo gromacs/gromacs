@@ -348,8 +348,7 @@ void do_stopcm_grp(const t_mdatoms &mdatoms,
         const int             homenr   = mdatoms.homenr;
         const unsigned short *group_id = mdatoms.cVCM;
 
-        // cppcheck-suppress unreadVariable
-        int gmx_unused nth = gmx_omp_nthreads_get(emntDefault);
+        int gmx_unused        nth = gmx_omp_nthreads_get(emntDefault);
 #pragma omp parallel num_threads(nth)
         {
             if (vcm.mode == ecmLINEAR ||
