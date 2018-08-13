@@ -319,7 +319,6 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
 
     int molb = 0;
 
-    // cppcheck-suppress unreadVariable
     nthreads = gmx_omp_nthreads_get(emntDefault);
 #pragma omp parallel for num_threads(nthreads) schedule(static) firstprivate(molb)
     for (int i = 0; i < md->nr; i++)
@@ -532,7 +531,6 @@ void update_mdatoms(t_mdatoms *md, real lambda)
         real L1 = 1 - lambda;
 
         /* Update masses of perturbed atoms for the change in lambda */
-        // cppcheck-suppress unreadVariable
         int gmx_unused nthreads = gmx_omp_nthreads_get(emntDefault);
 #pragma omp parallel for num_threads(nthreads) schedule(static)
         for (int i = 0; i < md->nr; i++)

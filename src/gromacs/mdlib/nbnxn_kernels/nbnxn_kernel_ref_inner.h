@@ -113,7 +113,6 @@
             skipmask = 1.0;
 #endif
 
-            // cppcheck-suppress unreadVariable
             VLJ = 0;
 
             aj = cj*UNROLLJ + j;

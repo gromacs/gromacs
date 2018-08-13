@@ -122,7 +122,6 @@ makeClusterListSimd4xn(const nbnxn_grid_t *      gridj,
     int                                xind_f, xind_l;
 
     /* Convert the j-range from i-cluster size indexing to j-cluster indexing */
-    /* cppcheck-suppress selfAssignment . selfAssignment for width 4.*/
     int jclusterFirst = cjFromCi<NbnxnLayout::Simd4xN>(firstCell);
 #if GMX_SIMD_REAL_WIDTH >= NBNXN_CPU_CLUSTER_I_SIZE
     int jclusterLast  = cjFromCi<NbnxnLayout::Simd4xN>(lastCell);

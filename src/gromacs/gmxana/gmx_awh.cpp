@@ -321,7 +321,6 @@ OutputFile::OutputFile(const std::string &filename,
     useKTForEnergy_(0)
 
 {
-    // cppcheck-suppress useInitializationList
     baseFilename_ = filename.substr(0, filename.find('.'));
     title_        = baseTitle;
     if (numBias > 1)

@@ -686,7 +686,6 @@ Constraints::Impl::apply(bool                  bLog,
     {
         /* Set the velocities of frozen dimensions to zero */
 
-        // cppcheck-suppress unreadVariable
         int gmx_unused numThreads = gmx_omp_nthreads_get(emntUpdate);
 
 #pragma omp parallel for num_threads(numThreads) schedule(static)

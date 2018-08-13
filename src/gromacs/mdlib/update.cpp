@@ -1670,9 +1670,8 @@ void finish_update(const t_inputrec              *inputrec,  /* input record and
         else
         {
             /* The copy is performance sensitive, so use a bare pointer */
-            rvec *xp = as_rvec_array(upd->xp.data());
+            rvec          *xp = as_rvec_array(upd->xp.data());
 #ifndef __clang_analyzer__
-            // cppcheck-suppress unreadVariable
             int gmx_unused nth = gmx_omp_nthreads_get(emntUpdate);
 #endif
 #pragma omp parallel for num_threads(nth) schedule(static)

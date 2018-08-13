@@ -380,13 +380,9 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
 
     gmx_sel_lexer_t *state = new gmx_sel_lexer_t;
 
-    // cppcheck-suppress uninitdata
     state->sc        = sc;
-    // cppcheck-suppress uninitdata
     state->bGroups   = bGroups;
-    // cppcheck-suppress uninitdata
     state->grps      = grps;
-    // cppcheck-suppress uninitdata
     state->nexpsel   = (maxnr > 0 ? static_cast<int>(sc->sel.size()) + maxnr : -1);
 
     state->statusWriter = statusWriter;

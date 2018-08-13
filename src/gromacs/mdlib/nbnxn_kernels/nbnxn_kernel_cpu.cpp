@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -104,7 +104,6 @@ reduceGroupEnergySimdBuffers(int                       numGroups,
                              real * gmx_restrict       vVdw,
                              real * gmx_restrict       vCoulomb)
 {
-    // cppcheck-suppress duplicateExpression
     const int unrollj_half     = unrollj/2;
     /* Energies are stored in SIMD registers with size 2^numGroups_2log */
     const int numGroupsStorage = (1 << numGroups_2log);
@@ -224,7 +223,6 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
 
     GMX_ASSERT(nbl[0]->nci >= 0, "nci<0, which signals an invalid pair-list");
 
-    // cppcheck-suppress unreadVariable
     int gmx_unused nthreads = gmx_omp_nthreads_get(emntNonbonded);
 #pragma omp parallel for schedule(static) num_threads(nthreads)
     for (int nb = 0; nb < nnbl; nb++)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -92,7 +92,6 @@ template <typename T>
 class OptionValueStoreVector : public IOptionValueStore<T>
 {
     public:
-        // cppcheck-suppress uninitMemberVar
         explicit OptionValueStoreVector(std::vector<T> *store) : store_(store) {}
 
         virtual int valueCount() { return static_cast<int>(store_->size()); }
@@ -113,7 +112,6 @@ class OptionValueStoreVector : public IOptionValueStore<T>
 
 // Specialization that works around std::vector<bool> specialities.
 template <>
-// cppcheck-suppress noConstructor
 class OptionValueStoreVector<bool> : public IOptionValueStore<bool>
 {
     public:

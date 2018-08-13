@@ -357,21 +357,18 @@ struct xdr_type
 template <>
 struct xdr_type<int>
 {
-    // cppcheck-suppress unusedStructMember
     static const int value = xdr_datatype_int;
 };
 
 template <>
 struct xdr_type<float>
 {
-    // cppcheck-suppress unusedStructMember
     static const int value = xdr_datatype_float;
 };
 
 template <>
 struct xdr_type<double>
 {
-    // cppcheck-suppress unusedStructMember
     static const int value = xdr_datatype_double;
 };
 
@@ -436,14 +433,12 @@ static bool_t listXdrVector(XDR *xd, StatePart part, int ecpt, int nf, int xdrTy
 #if !GMX_DOUBLE
                 if (cptElementType == CptElementType::real3)
                 {
-                    // cppcheck-suppress invalidPointerCast
                     pr_rvecs(list, 0, entryName(part, ecpt), reinterpret_cast<const rvec *>(data.data()), nf/3);
                 }
                 else
 #endif
                 {
                     /* Note: With double precision code dumping a single precision rvec will produce float iso rvec print, but that's a minor annoyance */
-                    // cppcheck-suppress invalidPointerCast
                     pr_fvec(list, 0, entryName(part, ecpt), reinterpret_cast<const float *>(data.data()), nf, TRUE);
                 }
                 break;
@@ -451,14 +446,12 @@ static bool_t listXdrVector(XDR *xd, StatePart part, int ecpt, int nf, int xdrTy
 #if GMX_DOUBLE
                 if (cptElementType == CptElementType::real3)
                 {
-                    // cppcheck-suppress invalidPointerCast
                     pr_rvecs(list, 0, entryName(part, ecpt), reinterpret_cast<const rvec *>(data.data()), nf/3);
                 }
                 else
 #endif
                 {
                     /* Note: With single precision code dumping a double precision rvec will produce float iso rvec print, but that's a minor annoyance */
-                    // cppcheck-suppress invalidPointerCast
                     pr_dvec(list, 0, entryName(part, ecpt), reinterpret_cast<const double *>(data.data()), nf, TRUE);
                 }
                 break;
@@ -472,7 +465,6 @@ static bool_t listXdrVector(XDR *xd, StatePart part, int ecpt, int nf, int xdrTy
 //! \brief Convert a double array, typed char*, to float
 gmx_unused static void convertArrayRealPrecision(const char *c, float *v, int n)
 {
-    // cppcheck-suppress invalidPointerCast
     const double *d = reinterpret_cast<const double *>(c);
     for (int i = 0; i < n; i++)
     {
@@ -483,7 +475,6 @@ gmx_unused static void convertArrayRealPrecision(const char *c, float *v, int n)
 //! \brief Convert a float array, typed char*, to double
 static void convertArrayRealPrecision(const char *c, double *v, int n)
 {
-    // cppcheck-suppress invalidPointerCast
     const float *f = reinterpret_cast<const float *>(c);
     for (int i = 0; i < n; i++)
     {
@@ -539,7 +530,6 @@ static int doVectorLow(XDR *xd, StatePart part, int ecpt, int sflags,
             if (v != nullptr)
             {
                 GMX_RELEASE_ASSERT(nptr != nullptr, "With nval<0 we should have nptr!=NULL");
-                // cppcheck-suppress nullPointer
                 numElemInTheFile = *nptr;
             }
             else

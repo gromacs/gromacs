@@ -54,7 +54,6 @@
 #elif GMX_GPU == GMX_GPU_OPENCL
 #include "gromacs/gpu_utils/devicebuffer_ocl.h"
 #else
-// cppcheck-suppress preprocessorErrorDirective
 #error "devicebuffer.h included on non-GPU build!"
 #endif
 

@@ -1074,7 +1074,7 @@ _gmx_sel_parse_params(const gmx::SelectionParserParameterList &pparams,
     {
         try
         {
-            // Always assigned afterwards, but cppcheck does not see that.
+            // Always assigned afterwards, but clang does not see that.
             gmx_ana_selparam_t *oparam = nullptr;
             /* Find the parameter and make some checks */
             if (!pparam->name().empty())
