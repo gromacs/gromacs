@@ -640,11 +640,11 @@ immStatus MyMol::zeta2atoms(ChargeDistributionModel eqdModel,
     {
         zeta = pd.getZeta(eqdModel, *topology_->atoms.atomtype[i], 0); 
         row  = pd.getRow(eqdModel, *topology_->atoms.atomtype[i], 0);      
-        if (zeta == 0 && (eqdModel != eqdAXp && 
-                          eqdModel != eqdAXpp && 
+        if (zeta == 0 && (eqdModel != eqdAXp  && 
+                          eqdModel != eqdAXpp &&
+                          eqdModel != eqdAXpg &&
                           eqdModel != eqdBultinck))
         {
-            printf("Zeta is zero for %s atom\n", *topology_->atoms.atomtype[i]);
             return immZeroZeta;
         }
         topology_->atoms.atom[i].zetaA = 
