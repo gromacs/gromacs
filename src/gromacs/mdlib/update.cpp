@@ -132,7 +132,7 @@ static bool isTemperatureCouplingStep(int64_t step, const t_inputrec *ir)
     }
     return ir->etc != etcNO &&
            (ir->nsttcouple == 1 ||
-            do_per_step(step + ir->nsttcouple - offset, ir->nsttcouple));
+            (do_per_step(step + ir->nsttcouple - offset, ir->nsttcouple) != 0));
 }
 
 static bool isPressureCouplingStep(int64_t step, const t_inputrec *ir)
@@ -151,7 +151,7 @@ static bool isPressureCouplingStep(int64_t step, const t_inputrec *ir)
     /* We should only couple after a step where pressures were determined */
     return ir->epc != etcNO &&
            (ir->nstpcouple == 1 ||
-            do_per_step(step + ir->nstpcouple - offset, ir->nstpcouple));
+            (do_per_step(step + ir->nstpcouple - offset, ir->nstpcouple) != 0));
 }
 
 /*! \brief Sets the velocities of virtual sites to zero */

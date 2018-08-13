@@ -4097,7 +4097,7 @@ static void print_dd_settings(FILE *fplog, gmx_domdec_t *dd,
         fprintf(fplog, "\n\n");
     }
 
-    gmx_bool bInterCGVsites = count_intercg_vsites(mtop);
+    gmx_bool bInterCGVsites = count_intercg_vsites(mtop) != 0;
 
     if (comm->bInterCGBondeds ||
         bInterCGVsites ||
@@ -4337,7 +4337,7 @@ static void set_dd_envvar_options(FILE *fplog, gmx_domdec_t *dd, int rank_mysim)
 {
     gmx_domdec_comm_t *comm = dd->comm;
 
-    dd->bSendRecv2      = dd_getenv(fplog, "GMX_DD_USE_SENDRECV2", 0);
+    dd->bSendRecv2      = (dd_getenv(fplog, "GMX_DD_USE_SENDRECV2", 0) != 0);
     comm->dlb_scale_lim = dd_getenv(fplog, "GMX_DLB_MAX_BOX_SCALING", 10);
     comm->eFlop         = dd_getenv(fplog, "GMX_DLB_BASED_ON_FLOPS", 0);
     int recload         = dd_getenv(fplog, "GMX_DD_RECORD_LOAD", 1);
@@ -6785,7 +6785,7 @@ void dd_partition_system(FILE                *fplog,
         /* Send the charges and/or c6/sigmas to our PME only node */
         gmx_pme_send_parameters(cr,
                                 fr->ic,
-                                mdatoms->nChargePerturbed, mdatoms->nTypePerturbed,
+                                mdatoms->nChargePerturbed != 0, mdatoms->nTypePerturbed != 0,
                                 mdatoms->chargeA, mdatoms->chargeB,
                                 mdatoms->sqrt_c6A, mdatoms->sqrt_c6B,
                                 mdatoms->sigmaA, mdatoms->sigmaB,

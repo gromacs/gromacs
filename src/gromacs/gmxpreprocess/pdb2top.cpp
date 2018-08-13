@@ -95,7 +95,7 @@ static int missing_atoms(t_restp *rp, int resind, t_atoms *at, int i0, int i)
         bFound = FALSE;
         for (k = i0; k < i; k++)
         {
-            bFound = (bFound || !gmx_strcasecmp(*(at->atomname[k]), name));
+            bFound = (bFound || (gmx_strcasecmp(*(at->atomname[k]), name) == 0));
         }
         if (!bFound)
         {
@@ -937,10 +937,10 @@ static void check_restp_types(t_restp *r0, t_restp *r1)
 {
     int i;
 
-    check_restp_type("all dihedrals", r0->bKeepAllGeneratedDihedrals, r1->bKeepAllGeneratedDihedrals);
+    check_restp_type("all dihedrals", static_cast<int>(r0->bKeepAllGeneratedDihedrals), static_cast<int>(r1->bKeepAllGeneratedDihedrals));
     check_restp_type("nrexcl", r0->nrexcl, r1->nrexcl);
-    check_restp_type("HH14", r0->bGenerateHH14Interactions, r1->bGenerateHH14Interactions);
-    check_restp_type("remove dihedrals", r0->bRemoveDihedralIfWithImproper, r1->bRemoveDihedralIfWithImproper);
+    check_restp_type("HH14", static_cast<int>(r0->bGenerateHH14Interactions), static_cast<int>(r1->bGenerateHH14Interactions));
+    check_restp_type("remove dihedrals", static_cast<int>(r0->bRemoveDihedralIfWithImproper), static_cast<int>(r1->bRemoveDihedralIfWithImproper));
 
     for (i = 0; i < ebtsNR; i++)
     {

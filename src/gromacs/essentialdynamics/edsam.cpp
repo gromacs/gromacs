@@ -286,12 +286,12 @@ namespace
  */
 bool bNeedDoEdsam(const t_edpar &edi)
 {
-    return edi.vecs.mon.neig
-           || edi.vecs.linfix.neig
-           || edi.vecs.linacc.neig
-           || edi.vecs.radfix.neig
-           || edi.vecs.radacc.neig
-           || edi.vecs.radcon.neig;
+    return (edi.vecs.mon.neig != 0)
+           || (edi.vecs.linfix.neig != 0)
+           || (edi.vecs.linacc.neig != 0)
+           || (edi.vecs.radfix.neig != 0)
+           || (edi.vecs.radacc.neig != 0)
+           || (edi.vecs.radcon.neig != 0);
 }
 }
 
@@ -2281,9 +2281,9 @@ static int ed_constraints(int edtype, t_edpar *edi)
 {
     if (edtype == eEDedsam || edtype == eEDflood)
     {
-        return (edi->vecs.linfix.neig || edi->vecs.linacc.neig ||
-                edi->vecs.radfix.neig || edi->vecs.radacc.neig ||
-                edi->vecs.radcon.neig);
+        return static_cast<int>((edi->vecs.linfix.neig != 0) || (edi->vecs.linacc.neig != 0) ||
+                                (edi->vecs.radfix.neig != 0) || (edi->vecs.radacc.neig != 0) ||
+                                (edi->vecs.radcon.neig != 0));
     }
     return 0;
 }

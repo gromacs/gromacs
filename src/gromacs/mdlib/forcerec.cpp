@@ -2521,7 +2521,7 @@ void init_forcerec(FILE                             *fp,
             if ((fr->cutoff_scheme == ecutsGROUP || bSHAKE) &&
                 !mtop->bIntermolecularInteractions)
             {
-                fr->bMolPBC = ir->bPeriodicMols;
+                fr->bMolPBC = (ir->bPeriodicMols != 0);
 
                 if (bSHAKE && fr->bMolPBC)
                 {
@@ -3098,7 +3098,7 @@ void init_forcerec(FILE                             *fp,
 void free_gpu_resources(const t_forcerec                    *fr,
                         const gmx::PhysicalNodeCommunicator &physicalNodeCommunicator)
 {
-    bool isPPrankUsingGPU = fr && fr->nbv && fr->nbv->bUseGPU;
+    bool isPPrankUsingGPU = (fr != nullptr) && (fr->nbv != nullptr) && fr->nbv->bUseGPU;
 
     /* stop the GPU profiler (only CUDA) */
     stopGpuProfiler();

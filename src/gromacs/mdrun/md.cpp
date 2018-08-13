@@ -818,8 +818,8 @@ void gmx::Integrator::do_md()
     {
         // TODO This implementation of ensemble orientation restraints is nasty because
         // a user can't just do multi-sim with single-sim orientation restraints.
-        bool usingEnsembleRestraints = (fcd->disres.nsystems > 1) || (ms && fcd->orires.nr);
-        bool awhUsesMultiSim         = (ir->bDoAwh && ir->awhParams->shareBiasMultisim && ms);
+        bool usingEnsembleRestraints = (fcd->disres.nsystems > 1) || ((ms != nullptr) && (fcd->orires.nr != 0));
+        bool awhUsesMultiSim         = (ir->bDoAwh && ir->awhParams->shareBiasMultisim && (ms != nullptr));
 
         // Replica exchange, ensemble restraints and AWH need all
         // simulations to remain synchronized, so they need
@@ -925,14 +925,14 @@ void gmx::Integrator::do_md()
             {
                 setCurrentLambdasLocal(step, ir->fepvals, lam0, state);
             }
-            bDoDHDL      = do_per_step(step, ir->fepvals->nstdhdl);
-            bDoFEP       = ((ir->efep != efepNO) && do_per_step(step, nstfep));
-            bDoExpanded  = (do_per_step(step, ir->expandedvals->nstexpanded)
+            bDoDHDL      = (do_per_step(step, ir->fepvals->nstdhdl) != 0);
+            bDoFEP       = ((ir->efep != efepNO) && (do_per_step(step, nstfep) != 0));
+            bDoExpanded  = ((do_per_step(step, ir->expandedvals->nstexpanded) != 0)
                             && (ir->bExpanded) && (step > 0) && (!startingFromCheckpoint));
         }
 
         bDoReplEx = (useReplicaExchange && (step > 0) && !bLastStep &&
-                     do_per_step(step, replExParams.exchangeInterval));
+                     (do_per_step(step, replExParams.exchangeInterval) != 0));
 
         if (bSimAnn)
         {
@@ -941,7 +941,7 @@ void gmx::Integrator::do_md()
 
         if (bRerunMD && MASTER(cr))
         {
-            const bool constructVsites = (vsite && mdrunOptions.rerunConstructVsites);
+            const bool constructVsites = ((vsite != nullptr) && mdrunOptions.rerunConstructVsites);
             if (constructVsites && DOMAINDECOMP(cr))
             {
                 gmx_fatal(FARGS, "Vsite recalculation with -rerun is not implemented with domain decomposition, use a single rank");
@@ -950,7 +950,7 @@ void gmx::Integrator::do_md()
         }
 
         /* Stop Center of Mass motion */
-        bStopCM = (ir->comm_mode != ecmNO && do_per_step(step, ir->nstcomm));
+        bStopCM = (ir->comm_mode != ecmNO && (do_per_step(step, ir->nstcomm) != 0));
 
         if (bRerunMD)
         {
@@ -976,7 +976,7 @@ void gmx::Integrator::do_md()
          * Note that the || bLastStep can result in non-exact continuation
          * beyond the last step. But we don't consider that to be an issue.
          */
-        do_log     = do_per_step(step, ir->nstlog) || (bFirstStep && !startingFromCheckpoint) || bLastStep || bRerunMD;
+        do_log     = (do_per_step(step, ir->nstlog) != 0) || (bFirstStep && !startingFromCheckpoint) || bLastStep || bRerunMD;
         do_verbose = mdrunOptions.verbose &&
             (step % mdrunOptions.verboseStepPrintInterval == 0 || bFirstStep || bLastStep || bRerunMD);
 
@@ -1050,7 +1050,7 @@ void gmx::Integrator::do_md()
          * or at the last step (but not when we do not want confout),
          * but never at the first step or with rerun.
          */
-        bCPT = (((signals[eglsCHKPT].set && (bNS || ir->nstlist == 0)) ||
+        bCPT = ((((signals[eglsCHKPT].set != 0) && (bNS || ir->nstlist == 0)) ||
                  (bLastStep && mdrunOptions.writeConfout)) &&
                 step > ir->init_step && !bRerunMD);
         if (bCPT)
@@ -1069,19 +1069,19 @@ void gmx::Integrator::do_md()
                reorganization may be able to get rid of one of the bCalcVir=TRUE steps. */
 
             /* TODO: This is probably not what we want, we will write to energy file one step after nstcalcenergy steps. */
-            bCalcEnerStep = do_per_step(step - 1, ir->nstcalcenergy);
+            bCalcEnerStep = (do_per_step(step - 1, ir->nstcalcenergy) != 0);
             bCalcVir      = bCalcEnerStep ||
-                (ir->epc != epcNO && (do_per_step(step, ir->nstpcouple) || do_per_step(step-1, ir->nstpcouple)));
+                (ir->epc != epcNO && ((do_per_step(step, ir->nstpcouple) != 0) || (do_per_step(step-1, ir->nstpcouple) != 0)));
         }
         else
         {
-            bCalcEnerStep = do_per_step(step, ir->nstcalcenergy);
+            bCalcEnerStep = (do_per_step(step, ir->nstcalcenergy) != 0);
             bCalcVir      = bCalcEnerStep ||
-                (ir->epc != epcNO && do_per_step(step, ir->nstpcouple));
+                (ir->epc != epcNO && (do_per_step(step, ir->nstpcouple) != 0));
         }
         bCalcEner = bCalcEnerStep;
 
-        do_ene = (do_per_step(step, ir->nstenergy) || bLastStep || bRerunMD);
+        do_ene = ((do_per_step(step, ir->nstenergy) != 0) || bLastStep || bRerunMD);
 
         if (do_ene || do_log || bDoReplEx)
         {
@@ -1091,8 +1091,8 @@ void gmx::Integrator::do_md()
 
         /* Do we need global communication ? */
         bGStat = (bCalcVir || bCalcEner || bStopCM ||
-                  do_per_step(step, nstglobalcomm) ||
-                  (EI_VV(ir->eI) && inputrecNvtTrotter(ir) && do_per_step(step-1, nstglobalcomm)));
+                  (do_per_step(step, nstglobalcomm) != 0) ||
+                  (EI_VV(ir->eI) && inputrecNvtTrotter(ir) && (do_per_step(step-1, nstglobalcomm) != 0)));
 
         force_flags = (GMX_FORCE_STATECHANGED |
                        ((inputrecDynamicBox(ir) || bRerunMD) ? GMX_FORCE_DYNAMICBOX : 0) |
@@ -1588,7 +1588,7 @@ void gmx::Integrator::do_md()
         {
             // Organize to do inter-simulation signalling on steps if
             // and when algorithms require it.
-            bool doInterSimSignal = (simulationsShareState && do_per_step(step, nstSignalComm));
+            bool doInterSimSignal = (simulationsShareState && (do_per_step(step, nstSignalComm) != 0));
 
             if (bGStat || (!EI_VV(ir->eI) && do_per_step(step+1, nstglobalcomm)) || doInterSimSignal)
             {
@@ -1699,8 +1699,8 @@ void gmx::Integrator::do_md()
                 upd_mdebin_step(mdebin);
             }
 
-            gmx_bool do_dr  = do_per_step(step, ir->nstdisreout);
-            gmx_bool do_or  = do_per_step(step, ir->nstorireout);
+            gmx_bool do_dr  = do_per_step(step, ir->nstdisreout) != 0;
+            gmx_bool do_or  = do_per_step(step, ir->nstorireout) != 0;
 
             print_ebin(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or, do_log ? fplog : nullptr,
                        step, t,

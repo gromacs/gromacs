@@ -273,7 +273,7 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
                 {
                     ptr = (static_cast<rvec *>(item))[j];
                 }
-                res = do_xdr(fio, ptr, 1, eioRVEC, desc, srcfile, line);
+                res = static_cast<bool_t>(do_xdr(fio, ptr, 1, eioRVEC, desc, srcfile, line));
             }
             break;
         case eioIVEC:
@@ -406,11 +406,11 @@ gmx_bool gmx_fio_doe_gmx_bool(t_fileio *fio, gmx_bool *item,
     {
         int itmp = 0;
         ret      = do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
-        *item    = itmp;
+        *item    = (itmp != 0);
     }
     else
     {
-        int itmp = *item;
+        int itmp = static_cast<int>(*item);
         ret      = do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
     }
     gmx_fio_unlock(fio);
@@ -554,11 +554,11 @@ gmx_bool gmx_fio_ndoe_gmx_bool(t_fileio *fio, gmx_bool *item, int n,
         {
             int itmp = 0;
             ret      = ret && do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
-            item[i]  = itmp;
+            item[i]  = (itmp != 0);
         }
         else
         {
-            int itmp = item[i];
+            int itmp = static_cast<int>(item[i]);
             ret      = ret && do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
         }
     }

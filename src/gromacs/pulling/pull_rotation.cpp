@@ -422,13 +422,13 @@ static real get_fitangle(const gmx_enfrotgrp *erg)
 /* Reduce potential angle fit data for this group at this time step? */
 static inline gmx_bool bPotAngle(const gmx_enfrot *er, const t_rotgrp *rotg, int64_t step)
 {
-    return ( (erotgFitPOT == rotg->eFittype) && (do_per_step(step, er->nstsout) || do_per_step(step, er->nstrout)) );
+    return ( (erotgFitPOT == rotg->eFittype) && ((do_per_step(step, er->nstsout) != 0) || (do_per_step(step, er->nstrout) != 0)) );
 }
 
 /* Reduce slab torqe data for this group at this time step? */
 static inline gmx_bool bSlabTau(const gmx_enfrot *er, const t_rotgrp *rotg, int64_t step)
 {
-    return ( (ISFLEX(rotg)) && do_per_step(step, er->nstsout) );
+    return ( (ISFLEX(rotg)) && (do_per_step(step, er->nstsout) != 0) );
 }
 
 /* Output rotation energy, torques, etc. for each rotation group */
@@ -3775,9 +3775,9 @@ void do_rotation(const t_commrec       *cr,
 #endif
 
     /* When to output in main rotation output file */
-    outstep_rot  = do_per_step(step, er->nstrout) && er->bOut;
+    outstep_rot  = (do_per_step(step, er->nstrout) != 0) && er->bOut;
     /* When to output per-slab data */
-    outstep_slab = do_per_step(step, er->nstsout) && er->bOut;
+    outstep_slab = (do_per_step(step, er->nstsout) != 0) && er->bOut;
 
     /* Output time into rotation output file */
     if (outstep_rot && MASTER(cr))

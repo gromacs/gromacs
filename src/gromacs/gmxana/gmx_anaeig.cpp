@@ -1091,20 +1091,20 @@ int gmx_anaeig(int argc, char *argv[])
     OverlapFile     = opt2fn_null("-over", NFILE, fnm);
     InpMatFile      = ftp2fn_null(efXPM, NFILE, fnm);
 
-    bProj  = ProjOnVecFile || TwoDPlotFile || ThreeDPlotFile
-        || FilterFile || ExtremeFile;
+    bProj  = (ProjOnVecFile != nullptr) || (TwoDPlotFile != nullptr) || (ThreeDPlotFile != nullptr)
+        || (FilterFile != nullptr) || (ExtremeFile != nullptr);
     bFirstLastSet  =
         opt2parg_bSet("-first", NPA, pa) && opt2parg_bSet("-last", NPA, pa);
-    bFirstToLast = CompFile || RmsfFile || ProjOnVecFile || FilterFile ||
-        OverlapFile || ((ExtremeFile || InpMatFile) && bFirstLastSet);
-    bVec2  = Vec2File || OverlapFile || InpMatFile;
-    bM     = RmsfFile || bProj;
-    bTraj  = ProjOnVecFile || FilterFile || (ExtremeFile && (max == 0))
-        || TwoDPlotFile || ThreeDPlotFile;
+    bFirstToLast = (CompFile != nullptr) || (RmsfFile != nullptr) || (ProjOnVecFile != nullptr) || (FilterFile != nullptr) ||
+        (OverlapFile != nullptr) || (((ExtremeFile != nullptr) || (InpMatFile != nullptr)) && bFirstLastSet);
+    bVec2  = (Vec2File != nullptr) || (OverlapFile != nullptr) || (InpMatFile != nullptr);
+    bM     = (RmsfFile != nullptr) || bProj;
+    bTraj  = (ProjOnVecFile != nullptr) || (FilterFile != nullptr) || ((ExtremeFile != nullptr) && (max == 0))
+        || (TwoDPlotFile != nullptr) || (ThreeDPlotFile != nullptr);
     bIndex = bM || bProj;
     bTPS   = ftp2bSet(efTPS, NFILE, fnm) || bM || bTraj ||
-        FilterFile  || (bIndex && indexfile);
-    bCompare = Vec2File || Eig2File;
+        (FilterFile != nullptr)  || (bIndex && (indexfile != nullptr));
+    bCompare = (Vec2File != nullptr) || (Eig2File != nullptr);
     bPDB3D   = fn2ftp(ThreeDPlotFile) == efPDB;
 
     read_eigenvectors(VecFile, &natoms, &bFit1,

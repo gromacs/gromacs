@@ -201,7 +201,7 @@ int gmx_strcasecmp_min(const char *str1, const char *str2)
             return (ch1-ch2);
         }
     }
-    while (ch1);
+    while (ch1 != 0);
     return 0;
 }
 
@@ -230,7 +230,7 @@ int gmx_strncasecmp_min(const char *str1, const char *str2, int n)
             return (ch1-ch2);
         }
     }
-    while (ch1 && (str1-stri1 < n) && (str2-stri2 < n));
+    while ((ch1 != 0) && (str1-stri1 < n) && (str2-stri2 < n));
     return 0;
 }
 
@@ -247,7 +247,7 @@ int gmx_strcasecmp(const char *str1, const char *str2)
             return (ch1-ch2);
         }
     }
-    while (ch1);
+    while (ch1 != 0);
     return 0;
 }
 
@@ -270,7 +270,7 @@ int gmx_strncasecmp(const char *str1, const char *str2, int n)
         }
         n--;
     }
-    while (ch1 && n);
+    while ((ch1 != 0) && (n != 0));
     return 0;
 }
 
@@ -497,7 +497,7 @@ char *wrap_lines(const char *buf, int line_width, int indent, gmx_bool bIndentFi
             }
         }
     }
-    while (buf[i]);
+    while (buf[i] != 0);
     b2[i2] = '\0';
 
     return b2;

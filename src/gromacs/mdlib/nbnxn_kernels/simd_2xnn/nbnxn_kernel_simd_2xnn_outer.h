@@ -387,9 +387,9 @@
          * inner LJ + C      for full-LJ + C
          * inner LJ          for full-LJ + no-C / half-LJ + no-C
          */
-        do_LJ   = (nbln->shift & NBNXN_CI_DO_LJ(0));
-        do_coul = (nbln->shift & NBNXN_CI_DO_COUL(0));
-        half_LJ = ((nbln->shift & NBNXN_CI_HALF_LJ(0)) || !do_LJ) && do_coul;
+        do_LJ   = ((nbln->shift & NBNXN_CI_DO_LJ(0)) != 0);
+        do_coul = ((nbln->shift & NBNXN_CI_DO_COUL(0)) != 0);
+        half_LJ = (((nbln->shift & NBNXN_CI_HALF_LJ(0)) != 0) || !do_LJ) && do_coul;
 
 #ifdef ENERGY_GROUPS
         egps_i = nbat->energrp[ci];

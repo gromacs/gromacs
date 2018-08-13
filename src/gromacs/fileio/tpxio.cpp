@@ -2868,7 +2868,7 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
             if (!bRead)
             {
                 ePBC          = ir->ePBC;
-                bPeriodicMols = ir->bPeriodicMols;
+                bPeriodicMols = (ir->bPeriodicMols != 0);
             }
             gmx_fio_do_int(fio, ePBC);
             gmx_fio_do_gmx_bool(fio, bPeriodicMols);
@@ -2883,14 +2883,14 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
             if (fileVersion < 53)
             {
                 ePBC          = ir->ePBC;
-                bPeriodicMols = ir->bPeriodicMols;
+                bPeriodicMols = (ir->bPeriodicMols != 0);
             }
         }
         if (bRead && ir && fileVersion >= 53)
         {
             /* We need to do this after do_inputrec, since that initializes ir */
             ir->ePBC          = ePBC;
-            ir->bPeriodicMols = bPeriodicMols;
+            ir->bPeriodicMols = static_cast<int>(bPeriodicMols);
         }
     }
 

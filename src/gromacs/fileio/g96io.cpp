@@ -343,7 +343,7 @@ int read_g96_conf(FILE *fp, const char *infile, char **name, t_trxframe *fr,
             bFinished = TRUE;
         }
     }
-    while (!bFinished && fgets2(line, STRLEN, fp));
+    while (!bFinished && (fgets2(line, STRLEN, fp) != nullptr));
 
     fr->natoms = natoms;
 
@@ -460,8 +460,8 @@ void write_g96_conf(FILE *out, const char *title, const t_trxframe *fr,
         fprintf(out, "BOX\n");
         fprintf(out, "%15.9f%15.9f%15.9f",
                 fr->box[XX][XX], fr->box[YY][YY], fr->box[ZZ][ZZ]);
-        if (fr->box[XX][YY] || fr->box[XX][ZZ] || fr->box[YY][XX] ||
-            fr->box[YY][ZZ] || fr->box[ZZ][XX] || fr->box[ZZ][YY])
+        if ((fr->box[XX][YY] != 0.0f) || (fr->box[XX][ZZ] != 0.0f) || (fr->box[YY][XX] != 0.0f) ||
+            (fr->box[YY][ZZ] != 0.0f) || (fr->box[ZZ][XX] != 0.0f) || (fr->box[ZZ][YY] != 0.0f))
         {
             fprintf(out, "%15.9f%15.9f%15.9f%15.9f%15.9f%15.9f",
                     fr->box[XX][YY], fr->box[XX][ZZ], fr->box[YY][XX],
