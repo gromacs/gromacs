@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -650,7 +650,7 @@ operator||(SimdDIBool a, SimdDIBool b)
 }
 
 static inline bool gmx_simdcall
-anyTrue(SimdDIBool a) { return _mm_movemask_epi8(_mm_shuffle_epi32(a.simdInternal_, _MM_SHUFFLE(1, 0, 1, 0))) != 0; }
+anyTrue(SimdDIBool a) { return _mm_movemask_epi8(a.simdInternal_) != 0; }
 
 static inline SimdDInt32 gmx_simdcall
 selectByMask(SimdDInt32 a, SimdDIBool mask)

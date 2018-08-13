@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,6 +35,8 @@
 #include "gmxpre.h"
 
 #include <cmath>
+
+#include <array>
 
 #include "gromacs/math/utilities.h"
 #include "gromacs/simd/simd.h"
@@ -414,17 +416,18 @@ TEST_F(SimdFloatingpointTest, orB)
 
 TEST_F(SimdFloatingpointTest, anyTrueB)
 {
-    SimdBool eq;
+    alignas(GMX_SIMD_ALIGNMENT) std::array<real, GMX_SIMD_REAL_WIDTH> mem {};
 
-    /* this test is a bit tricky since we don't know the simd width.
-     * We cannot check for truth values for "any" element beyond the first,
-     * since that part of the data will not be used if simd width is 1.
-     */
-    eq = rSimd_c4c6c8 == setSimdRealFrom3R(c4, 0, 0);
-    EXPECT_TRUE(anyTrue(eq));
+    // Test the false case
+    EXPECT_FALSE(anyTrue(setZero() < load<SimdReal>(mem.data())));
 
-    eq = rSimd_c0c1c2 == rSimd_c3c4c5;
-    EXPECT_FALSE(anyTrue(eq));
+    // Test each bit (these should all be true)
+    for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        mem.fill(0.0);
+        mem[i] = 1.0;
+        EXPECT_TRUE(anyTrue(setZero() < load<SimdReal>(mem.data()))) << "Not detecting true in element " << i;
+    }
 }
 
 TEST_F(SimdFloatingpointTest, blend)
