@@ -257,10 +257,10 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
         // Lookup the Van der Waals radius of this atom
         int resnr = atoms->atom[i].resind;
-        if (TRUE == gmx_atomprop_query(aps, epropVDW,
-                                       *(atoms->resinfo[resnr].name),
-                                       *(atoms->atomname[i]),
-                                       &value))
+        if (gmx_atomprop_query(aps, epropVDW,
+                               *(atoms->resinfo[resnr].name),
+                               *(atoms->atomname[i]),
+                               &value))
         {
             vdw_radius_.push_back(value);
             if (value > cutoff_)

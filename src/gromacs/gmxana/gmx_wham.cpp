@@ -900,7 +900,7 @@ static void setup_acc_wham(const double *profile, t_UmbrellaWindow * window, int
                 contrib1                 = profile[k]*std::exp(-U/(BOLTZ*opt->Temperature));
                 contrib2                 = window[i].N[j]*std::exp(-U/(BOLTZ*opt->Temperature) + window[i].z[j]);
                 window[i].bContrib[j][k] = (contrib1 > wham_contrib_lim || contrib2 > wham_contrib_lim);
-                bAnyContrib              = (bAnyContrib | window[i].bContrib[j][k]);
+                bAnyContrib              = bAnyContrib || window[i].bContrib[j][k];
                 if (window[i].bContrib[j][k])
                 {
                     nContrib++;
@@ -2205,7 +2205,7 @@ static void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
     snew(nColCOMCrd,  header->npullcrds);
     snew(nColRefCrd,  header->npullcrds);
 
-    if (opt->bPullx == FALSE)
+    if (!opt->bPullx)
     {
         /* pullf reading: simply one column per coordinate */
         for (g = 0; g < header->npullcrds; g++)
@@ -2332,7 +2332,7 @@ static void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
            all pull groups from header (tpr file) may be used in window variable */
         for (g = 0, gUsed = 0; g < header->npullcrds; ++g)
         {
-            if (coordsel && (coordsel->bUse[g] == FALSE))
+            if (coordsel && !coordsel->bUse[g])
             {
                 continue;
             }
@@ -2392,7 +2392,7 @@ static void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
             for (g = 0; g < header->npullcrds; ++g)
             {
                 /* was this group selected for application in WHAM? */
-                if (coordsel && (coordsel->bUse[g] == FALSE))
+                if (coordsel && !coordsel->bUse[g])
                 {
                     continue;
                 }
@@ -2969,7 +2969,8 @@ static void computeAverageForce(t_UmbrellaWindow *window, int nWindows, t_Umbrel
 static void  checkReactionCoordinateCovered(t_UmbrellaWindow *window, int nwins,
                                             t_UmbrellaOptions *opt)
 {
-    int  i, ig, j, bins = opt->bins, bBoundary;
+    int  i, ig, j, bins = opt->bins;
+    bool bBoundary;
     real avcount = 0, z, relcount, *count;
     snew(count, opt->bins);
 
@@ -2989,7 +2990,7 @@ static void  checkReactionCoordinateCovered(t_UmbrellaWindow *window, int nwins,
     {
         relcount  = count[j]/avcount;
         z         = (j+0.5)*opt->dz+opt->min;
-        bBoundary = ( j<bins/20 || (bins-j)>bins/20 );
+        bBoundary = j<bins/20 || (bins-j)>bins/20;
         /* check for bins with no data */
         if (count[j] == 0)
         {

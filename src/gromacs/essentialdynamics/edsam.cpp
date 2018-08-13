@@ -887,7 +887,7 @@ static void do_single_flood(
     /* Project fitted structure onto supbspace -> store in edi->flood.vecs.xproj */
     project_to_eigvectors(buf->xcoll, &edi->flood.vecs, *edi);
 
-    if (FALSE == edi->flood.bConstForce)
+    if (!edi->flood.bConstForce)
     {
         /* Compute Vfl(x) from flood.xproj */
         edi->flood.Vfl = flood_energy(edi, step);
@@ -1339,6 +1339,10 @@ static int read_checked_edint(FILE *file, const char *label)
     return idum;
 }
 
+static bool read_checked_edbool(FILE *file, const char *label)
+{
+    return read_checked_edint(file, label) != 0;
+}
 
 static int read_edint(FILE *file, bool *bEOF)
 {
@@ -1661,8 +1665,8 @@ void read_edi(FILE* in, t_edpar *edi, int nr_mdatoms, bool hasConstForceFlooding
     }
 
     /* Done checking. For the rest we blindly trust the input */
-    edi->fitmas          = read_checked_edint(in, "FITMAS");
-    edi->pcamas          = read_checked_edint(in, "ANALYSIS_MAS");
+    edi->fitmas          = read_checked_edbool(in, "FITMAS");
+    edi->pcamas          = read_checked_edbool(in, "ANALYSIS_MAS");
     edi->outfrq          = read_checked_edint(in, "OUTFRQ");
     edi->maxedsteps      = read_checked_edint(in, "MAXLEN");
     edi->slope           = read_checked_edreal(in, "SLOPECRIT");
@@ -1674,10 +1678,10 @@ void read_edi(FILE* in, t_edpar *edi, int nr_mdatoms, bool hasConstForceFlooding
     edi->flood.constEfl  = read_checked_edreal(in, "EFL_NULL");
     edi->flood.alpha2    = read_checked_edreal(in, "ALPHA2");
     edi->flood.kT        = read_checked_edreal(in, "KT");
-    edi->flood.bHarmonic = read_checked_edint(in, "HARMONIC");
+    edi->flood.bHarmonic = read_checked_edbool(in, "HARMONIC");
     if (hasConstForceFlooding)
     {
-        edi->flood.bConstForce = read_checked_edint(in, "CONST_FORCE_FLOODING");
+        edi->flood.bConstForce = read_checked_edbool(in, "CONST_FORCE_FLOODING");
     }
     else
     {
@@ -2813,7 +2817,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
             }
 
             /* process structure that will serve as origin of expansion circle */
-            if ( (eEDflood == ed->eEDtype) && (FALSE == edi->flood.bConstForce) )
+            if (eEDflood == ed->eEDtype && !edi->flood.bConstForce)
             {
                 fprintf(stderr, "ED: Setting center of flooding potential (0 = average structure)\n");
             }
@@ -2838,7 +2842,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
 
                 rad_project(*edi, &edi->sori.x[avindex], &edi->vecs.radacc);
                 rad_project(*edi, &edi->sori.x[avindex], &edi->vecs.radfix);
-                if ( (eEDflood == ed->eEDtype) && (FALSE == edi->flood.bConstForce) )
+                if (eEDflood == ed->eEDtype && !edi->flood.bConstForce)
                 {
                     fprintf(stderr, "ED: The ORIGIN structure will define the flooding potential center.\n");
                     /* Set center of flooding potential to the ORIGIN structure */
@@ -2852,7 +2856,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
             {
                 rad_project(*edi, xstart, &edi->vecs.radacc);
                 rad_project(*edi, xstart, &edi->vecs.radfix);
-                if ( (eEDflood == ed->eEDtype) && (FALSE == edi->flood.bConstForce) )
+                if (eEDflood == ed->eEDtype && !edi->flood.bConstForce)
                 {
                     if (edi->flood.bHarmonic)
                     {
@@ -2875,7 +2879,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
                 }
             }
             /* For convenience, output the center of the flooding potential for the eigenvectors */
-            if ( (eEDflood == ed->eEDtype) && (FALSE == edi->flood.bConstForce) )
+            if (eEDflood == ed->eEDtype && !edi->flood.bConstForce)
             {
                 for (i = 0; i < edi->flood.vecs.neig; i++)
                 {

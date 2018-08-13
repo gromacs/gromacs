@@ -449,7 +449,8 @@ static char **read_topol(const char *infile, const char *outfile,
     int             lastcg = -1;
     int             dcatt  = -1, nmol_couple;
     /* File handling variables */
-    int             status, done;
+    int             status;
+    bool            done;
     gmx_cpp_t       handle;
     char           *tmp_line = nullptr;
     char            warn_buf[STRLEN];

@@ -477,7 +477,7 @@ static int lambda_vec_cmp_foreign(const lambda_vec_t *a,
         {
             return (a->dhdl >= 0) ? 1 : -1;
         }
-        return a->dhdl > b->dhdl;
+        return 0;
     }
 
     /* neither has an index, so we can only sort on the lambda components,
@@ -495,7 +495,7 @@ static int lambda_vec_cmp_foreign(const lambda_vec_t *a,
     {
         return 0;
     }
-    return norm_a > norm_b;
+    return (norm_a > norm_b) ? 1 : -1; //fixes bug
 }
 
 /* Compare the sort order of two native lambda vectors

@@ -2451,7 +2451,7 @@ static float dd_vol_min(gmx_domdec_t *dd)
     return dd->comm->load[0].cvol_min*dd->nnodes;
 }
 
-static gmx_bool dd_load_flags(gmx_domdec_t *dd)
+static int dd_load_flags(gmx_domdec_t *dd) //fixes bug
 {
     return dd->comm->load[0].flags;
 }
@@ -2815,7 +2815,7 @@ static void setup_neighbor_relations(gmx_domdec_t *dd)
 static void make_pp_communicator(FILE                 *fplog,
                                  gmx_domdec_t         *dd,
                                  t_commrec gmx_unused *cr,
-                                 int gmx_unused        reorder)
+                                 bool gmx_unused       reorder)
 {
 #if GMX_MPI
     gmx_domdec_comm_t *comm;
@@ -2838,7 +2838,7 @@ static void make_pp_communicator(FILE                 *fplog,
         {
             periods[i] = TRUE;
         }
-        MPI_Cart_create(cr->mpi_comm_mygroup, DIM, dd->nc, periods, reorder,
+        MPI_Cart_create(cr->mpi_comm_mygroup, DIM, dd->nc, periods, static_cast<int>(reorder),
                         &comm_cart);
         /* We overwrite the old communicator with the new cartesian one */
         cr->mpi_comm_mygroup = comm_cart;
@@ -2964,7 +2964,7 @@ static void receive_ddindex2simnodeid(gmx_domdec_t         *dd,
 
 static void split_communicator(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
                                DdRankOrder gmx_unused rankOrder,
-                               int gmx_unused reorder)
+                               bool gmx_unused reorder)
 {
     gmx_domdec_comm_t *comm;
     int                i;
@@ -3027,7 +3027,7 @@ static void split_communicator(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
         {
             periods[i] = TRUE;
         }
-        MPI_Cart_create(cr->mpi_comm_mysim, DIM, comm->ntot, periods, reorder,
+        MPI_Cart_create(cr->mpi_comm_mysim, DIM, comm->ntot, periods, static_cast<int>(reorder),
                         &comm_cart);
         MPI_Comm_rank(comm_cart, &rank);
         if (MASTER(cr) && rank != 0)
@@ -3120,7 +3120,7 @@ static void make_dd_communicators(FILE *fplog, t_commrec *cr,
                                   gmx_domdec_t *dd, DdRankOrder ddRankOrder)
 {
     gmx_domdec_comm_t *comm;
-    int                CartReorder;
+    bool               CartReorder;
 
     comm = dd->comm;
 
@@ -3133,7 +3133,7 @@ static void make_dd_communicators(FILE *fplog, t_commrec *cr,
      * Real reordering is only supported on very few architectures,
      * Blue Gene is one of them.
      */
-    CartReorder = (getenv("GMX_NO_CART_REORDER") == nullptr);
+    CartReorder = getenv("GMX_NO_CART_REORDER") == nullptr;
 
     if (cr->npmenodes > 0)
     {
@@ -4551,7 +4551,7 @@ static void dd_dlb_set_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd, gmx
     {
         dd->comm->bCheckWhetherToTurnDlbOn = bValue;
 
-        if (bValue == TRUE)
+        if (bValue)
         {
             /* Store the DD partitioning count, so we can ignore cycle counts
              * over the next nstlist steps, which are often slower.

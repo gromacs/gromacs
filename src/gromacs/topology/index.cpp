@@ -200,14 +200,14 @@ mk_aid(const t_atoms *atoms, const char ** restype, const char * typestring, int
 {
     int     *a;
     int      i;
-    int      res;
+    bool     res;
 
     snew(a, atoms->nr);
     *nra = 0;
     for (i = 0; (i < atoms->nr); i++)
     {
-        res = !gmx_strcasecmp(restype[atoms->atom[i].resind], typestring);
-        if (bMatch == FALSE)
+        res = gmx_strcasecmp(restype[atoms->atom[i].resind], typestring) == 0;
+        if (!bMatch)
         {
             res = !res;
         }
@@ -579,7 +579,7 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
     char           ** p_typename;
     int               iwater, iion;
     int               nwater, nion;
-    int               found;
+    bool              found;
 
     if (bVerb)
     {
@@ -619,10 +619,10 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
             /* Note that this does not lead to a N*N loop, but N*K, where
              * K is the number of residue _types_, which is small and independent of N.
              */
-            found = 0;
+            found = false;
             for (k = 0; k < ntypes && !found; k++)
             {
-                found = !strcmp(restype[i], p_typename[k]);
+                found = strcmp(restype[i], p_typename[k]) == 0;
             }
             if (!found)
             {
