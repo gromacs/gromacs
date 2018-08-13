@@ -672,7 +672,7 @@ static int doRvecVector(XDR *xd, StatePart part, int ecpt, int sflags,
         GMX_RELEASE_ASSERT(sflags & (1 << ecpt), "When not listing, the flag for the entry should be set when requesting i/o");
         GMX_RELEASE_ASSERT(v->size() >= static_cast<size_t>(numAtoms), "v should have sufficient size for numAtoms");
 
-        real *v_real = v->data()->as_vec();
+        real *v_real = (*v)[0];
 
         // PaddedRVecVector is padded beyond numAtoms, we should only write
         // numAtoms RVecs
