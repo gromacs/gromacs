@@ -140,7 +140,7 @@ int gmx_stats_get_point(gmx_stats_t gstats, real *x, real *y,
     while ((outlier == 0) && (stats->np_c < stats->np))
     {
         r       = std::abs(stats->x[stats->np_c] - stats->y[stats->np_c]);
-        outlier = (r > rmsd*level);
+        outlier = static_cast<int>(r > rmsd*level);
         if (outlier)
         {
             if (nullptr != x)
@@ -214,7 +214,7 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
         for (int i = 0; (i < N); i++)
         {
             d2 += gmx::square(stats->x[i]-stats->y[i]);
-            if ((stats->dy[i]) && (weight == elsqWEIGHT_Y))
+            if (((stats->dy[i]) != 0.0) && (weight == elsqWEIGHT_Y))
             {
                 w = 1/gmx::square(stats->dy[i]);
             }

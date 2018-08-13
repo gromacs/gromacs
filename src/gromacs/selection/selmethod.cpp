@@ -285,7 +285,7 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
             continue;
         }
         /* Check that the name does not conflict with a method */
-        if (symtab.findSymbol(param[i].name))
+        if (symtab.findSymbol(param[i].name) != nullptr)
         {
             report_param_error(fp, name, param[i].name, "error: name conflicts with another method or a keyword");
             bOk = false;

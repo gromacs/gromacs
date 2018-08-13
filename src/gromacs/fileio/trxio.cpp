@@ -763,11 +763,11 @@ static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
 
     fr->step  = 0;
     step      = std::strstr(title, " step= ");
-    fr->bStep = (step && sscanf(step+7, "%" SCNd64, &fr->step) == 1);
+    fr->bStep = ((step != nullptr) && sscanf(step+7, "%" SCNd64, &fr->step) == 1);
 
     dbl       = 0.0;
     time      = std::strstr(title, " t= ");
-    fr->bTime = (time && sscanf(time+4, "%lf", &dbl) == 1);
+    fr->bTime = ((time != nullptr) && sscanf(time+4, "%lf", &dbl) == 1);
     fr->time  = dbl;
 
     if (na == 0)
@@ -852,8 +852,8 @@ bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_trxfra
                     }
                     initcount(status);
                 }
-                bRet = read_next_xtc(status->fio, fr->natoms, &fr->step, &fr->time, fr->box,
-                                     fr->x, &fr->prec, &bOK);
+                bRet = (read_next_xtc(status->fio, fr->natoms, &fr->step, &fr->time, fr->box,
+                                      fr->x, &fr->prec, &bOK) != 0);
                 fr->bPrec = (bRet && fr->prec > 0);
                 fr->bStep = bRet;
                 fr->bTime = bRet;
@@ -888,9 +888,9 @@ bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_trxfra
 
         if (bRet)
         {
-            bMissingData = (((status->flags & TRX_NEED_X) && !fr->bX) ||
-                            ((status->flags & TRX_NEED_V) && !fr->bV) ||
-                            ((status->flags & TRX_NEED_F) && !fr->bF));
+            bMissingData = ((((status->flags & TRX_NEED_X) != 0) && !fr->bX) ||
+                            (((status->flags & TRX_NEED_V) != 0) && !fr->bV) ||
+                            (((status->flags & TRX_NEED_F) != 0) && !fr->bF));
             bSkip = FALSE;
             if (!bMissingData)
             {

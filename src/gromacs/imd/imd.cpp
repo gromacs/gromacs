@@ -335,7 +335,7 @@ static int imd_handshake(IMDSocket *socket)
     fill_header(&header, IMD_HANDSHAKE, 1);
     header.length = IMDVERSION; /* client wants unswapped version */
 
-    return (imd_write_multiple(socket, reinterpret_cast<char *>(&header), HEADERSIZE) != HEADERSIZE);
+    return static_cast<int>(imd_write_multiple(socket, reinterpret_cast<char *>(&header), HEADERSIZE) != HEADERSIZE);
 }
 
 
@@ -349,7 +349,7 @@ static int imd_send_energies(IMDSocket *socket, const IMDEnergyBlock *energies, 
     fill_header(reinterpret_cast<IMDHeader *>(buffer), IMD_ENERGIES, 1);
     memcpy(buffer + HEADERSIZE, energies, sizeof(IMDEnergyBlock));
 
-    return (imd_write_multiple(socket, buffer, recsize) != recsize);
+    return static_cast<int>(imd_write_multiple(socket, buffer, recsize) != recsize);
 }
 
 
@@ -459,7 +459,7 @@ static int imd_send_rvecs(IMDSocket *socket, int nat, rvec *x, char *buffer)
         memcpy(buffer + HEADERSIZE + i * tuplesize, sendx, tuplesize);
     }
 
-    return (imd_write_multiple(socket, buffer, size) != size);
+    return static_cast<int>(imd_write_multiple(socket, buffer, size) != size);
 }
 
 

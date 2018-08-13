@@ -255,7 +255,7 @@ int gmx_fft_transpose_2d(t_complex *          in_data,
             i = j;
             j = k;
         }
-        while (k);
+        while (k != 0);
         ncount += i-1;
     }
 

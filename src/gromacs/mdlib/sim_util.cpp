@@ -395,7 +395,7 @@ static void post_process_forces(const t_commrec           *cr,
              */
             matrix virial = { { 0 } };
             spread_vsite_f(vsite, x, fDirectVir, nullptr,
-                           (flags & GMX_FORCE_VIRIAL), virial,
+                           (flags & GMX_FORCE_VIRIAL) != 0, virial,
                            nrnb,
                            &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr, wcycle);
             forceWithVirial->addVirialContribution(virial);
@@ -842,7 +842,7 @@ computeSpecialForces(FILE                          *fplog,
                      const gmx_edsam               *ed,
                      gmx_bool                       bNS)
 {
-    const bool computeForces = (forceFlags & GMX_FORCE_FORCES);
+    const bool computeForces = (forceFlags & GMX_FORCE_FORCES) != 0;
 
     /* NOTE: Currently all ForceProviders only provide forces.
      *       When they also provide energies, remove this conditional.
@@ -917,7 +917,7 @@ static inline void launchPmeGpuSpread(gmx_pme_t      *pmedata,
     pmeFlags |= (flags & GMX_FORCE_FORCES) ? GMX_PME_CALC_F : 0;
     pmeFlags |= (flags & GMX_FORCE_VIRIAL) ? GMX_PME_CALC_ENER_VIR : 0;
 
-    pme_gpu_prepare_computation(pmedata, flags & GMX_FORCE_DYNAMICBOX, box, wcycle, pmeFlags);
+    pme_gpu_prepare_computation(pmedata, (flags & GMX_FORCE_DYNAMICBOX) != 0, box, wcycle, pmeFlags);
     pme_gpu_launch_spread(pmedata, x, wcycle);
 }
 
@@ -1088,7 +1088,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     bNS           = ((flags & GMX_FORCE_NS) != 0) && (!fr->bAllvsAll);
     bFillGrid     = (bNS && bStateChanged);
     bCalcCGCM     = (bFillGrid && !DOMAINDECOMP(cr));
-    bDoForces     = (flags & GMX_FORCE_FORCES);
+    bDoForces     = ((flags & GMX_FORCE_FORCES) != 0);
     bUseGPU       = fr->nbv->bUseGPU;
     bUseOrEmulGPU = bUseGPU || (fr->nbv->emulateGpu == EmulateGpuNonbonded::Yes);
 
@@ -1163,7 +1163,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         }
     }
 
-    nbnxn_atomdata_copy_shiftvec(flags & GMX_FORCE_DYNAMICBOX,
+    nbnxn_atomdata_copy_shiftvec((flags & GMX_FORCE_DYNAMICBOX) != 0,
                                  fr->shift_vec, nbv->nbat);
 
 #if GMX_MPI
@@ -1176,7 +1176,7 @@ static void do_force_cutsVERLET(FILE *fplog,
          */
         gmx_pme_send_coordinates(cr, box, as_rvec_array(x.data()),
                                  lambda[efptCOUL], lambda[efptVDW],
-                                 (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)),
+                                 (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)) != 0,
                                  step, wcycle);
     }
 #endif /* GMX_MPI */
@@ -1450,7 +1450,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     }
 
     /* forceWithVirial uses the local atom range only */
-    gmx::ForceWithVirial forceWithVirial(forceRef, flags & GMX_FORCE_VIRIAL);
+    gmx::ForceWithVirial forceWithVirial(forceRef, (flags & GMX_FORCE_VIRIAL) != 0);
 
     if (inputrec->bPull && pull_have_constraint(inputrec->pull_work))
     {
@@ -1805,7 +1805,7 @@ static void do_force_cutsGROUP(FILE *fplog,
     /* Should we perform the long-range nonbonded evaluation inside the neighborsearching? */
     bFillGrid      = (bNS && bStateChanged);
     bCalcCGCM      = (bFillGrid && !DOMAINDECOMP(cr));
-    bDoForces      = (flags & GMX_FORCE_FORCES);
+    bDoForces      = ((flags & GMX_FORCE_FORCES) != 0);
 
     if (bStateChanged)
     {
@@ -1865,7 +1865,7 @@ static void do_force_cutsGROUP(FILE *fplog,
          */
         gmx_pme_send_coordinates(cr, box, as_rvec_array(x.data()),
                                  lambda[efptCOUL], lambda[efptVDW],
-                                 (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)),
+                                 (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)) != 0,
                                  step, wcycle);
     }
 #endif /* GMX_MPI */
@@ -1975,7 +1975,7 @@ static void do_force_cutsGROUP(FILE *fplog,
     }
 
     /* forceWithVirial might need the full force atom range */
-    gmx::ForceWithVirial forceWithVirial(forceRef, flags & GMX_FORCE_VIRIAL);
+    gmx::ForceWithVirial forceWithVirial(forceRef, (flags & GMX_FORCE_VIRIAL) != 0);
 
     if (inputrec->bPull && pull_have_constraint(inputrec->pull_work))
     {

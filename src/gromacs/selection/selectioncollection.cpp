@@ -359,7 +359,7 @@ SelectionList runParser(yyscan_t scanner, TextInputStream *inputStream,
                         continue;
                     }
                     if (startsWith(line, "help")
-                        && (line[4] == 0 || std::isspace(line[4])))
+                        && (line[4] == 0 || (std::isspace(line[4]) != 0)))
                     {
                         printHelp(statusWriter, sc, line);
                         continue;

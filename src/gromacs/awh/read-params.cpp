@@ -286,7 +286,7 @@ static void read_bias_params(std::vector<t_inpfile> *inp, AwhBiasParams *awhBias
         printStringNoNewline(inp, "Start the simulation by equilibrating histogram towards the target distribution: no or yes");
     }
     sprintf(opt, "%s-equilibrate-histogram", prefix);
-    awhBiasParams->equilibrateHistogram = get_eeenum(inp, opt, yesno_names, wi);
+    awhBiasParams->equilibrateHistogram = (get_eeenum(inp, opt, yesno_names, wi) != 0);
     if (awhBiasParams->equilibrateHistogram && awhBiasParams->eGrowth != eawhgrowthEXP_LINEAR)
     {
         sprintf(warningmsg, "Option %s will only have an effect for histogram growth type '%s'.",
@@ -527,7 +527,7 @@ AwhParams *readAndCheckAwhParams(std::vector<t_inpfile> *inp, const t_inputrec *
 
     printStringNoNewline(inp, "When true, biases with share-group>0 are shared between multiple simulations");
     sprintf(opt, "%s-share-multisim", prefix);
-    awhParams->shareBiasMultisim = get_eeenum(inp, opt, yesno_names, wi);
+    awhParams->shareBiasMultisim = (get_eeenum(inp, opt, yesno_names, wi) != 0);
 
     printStringNoNewline(inp, "The number of independent AWH biases");
     sprintf(opt, "%s-nbias", prefix);

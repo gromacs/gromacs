@@ -331,7 +331,7 @@ static int nitrogen_is_planar(t_vsiteconf vsiteconflist[], int nvsiteconf, char 
     bool     found = FALSE;
     for (i = 0; i < nvsiteconf && !found; i++)
     {
-        found = (!gmx_strcasecmp(vsiteconflist[i].atomtype, atomtype) && (vsiteconflist[i].nhydrogens == 2));
+        found = ((gmx_strcasecmp(vsiteconflist[i].atomtype, atomtype) == 0) && (vsiteconflist[i].nhydrogens == 2));
     }
     if (found)
     {
@@ -352,8 +352,8 @@ static char *get_dummymass_name(t_vsiteconf vsiteconflist[], int nvsiteconf, cha
     bool     found = FALSE;
     for (i = 0; i < nvsiteconf && !found; i++)
     {
-        found = (!gmx_strcasecmp(vsiteconflist[i].atomtype, atom) &&
-                 !gmx_strcasecmp(vsiteconflist[i].nextheavytype, nextheavy));
+        found = ((gmx_strcasecmp(vsiteconflist[i].atomtype, atom) == 0) &&
+                 (gmx_strcasecmp(vsiteconflist[i].nextheavytype, nextheavy) == 0));
     }
     if (found)
     {
@@ -520,7 +520,7 @@ static int get_atype(int atom, t_atoms *at, int nrtp, t_restp rtp[],
     int      j;
     t_restp *rtpp;
 
-    if (at->atom[atom].m)
+    if (at->atom[atom].m != 0.0f)
     {
         type = at->atom[atom].type;
     }
@@ -558,7 +558,7 @@ static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[],
     int      j;
     t_restp *rtpp;
 
-    if (at->atom[atom].m)
+    if (at->atom[atom].m != 0.0f)
     {
         mass = at->atom[atom].m;
     }

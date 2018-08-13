@@ -737,7 +737,7 @@ static void
 set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, bool bBase)
 {
     const gmx_mtop_t *top = pc->coll->top_;
-    gmx_ana_index_make_block(&pc->b, top, g, pc->itype, pc->flags & POS_COMPLWHOLE);
+    gmx_ana_index_make_block(&pc->b, top, g, pc->itype, (pc->flags & POS_COMPLWHOLE) != 0);
     /* Set the type to POS_ATOM if the calculation in fact is such. */
     if (pc->b.nr == pc->b.nra)
     {
@@ -1332,7 +1332,7 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
         }
         gmx::ArrayRef<const int> index = pc->coll->getFrameIndices(pc->b.nra, pc->b.a);
         const gmx_mtop_t        *top   = pc->coll->top_;
-        const bool               bMass = pc->flags & POS_MASS;
+        const bool               bMass = (pc->flags & POS_MASS) != 0;
         switch (pc->type)
         {
             case POS_ATOM:

@@ -193,7 +193,7 @@ makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
         }
     }
 
-    md->bOrires = gmx_mtop_ftype_count(&mtop, F_ORIRES);
+    md->bOrires = (gmx_mtop_ftype_count(&mtop, F_ORIRES) != 0);
 
     return mdAtoms;
 }

@@ -237,7 +237,7 @@ static void get_input(const char *membed_input, real *xy_fac, real *xy_max, real
     {
         "no", "yes", nullptr
     };
-    *bALLOW_ASYMMETRY = get_eeenum(&inp, "asymmetry", yesno_names, wi);
+    *bALLOW_ASYMMETRY = (get_eeenum(&inp, "asymmetry", yesno_names, wi) != 0);
 
     check_warning_error(wi, FARGS);
     {
