@@ -249,6 +249,11 @@ class Allocator : public AllocationPolicy
          */
         bool
         operator!=(const Allocator &rhs) const { return !operator==(rhs); }
+
+        Allocator select_on_container_copy_construction() const
+        {
+            return Allocator(AllocationPolicy::select_on_container_copy_construction());
+        }
 };
 
 }      // namespace gmx
