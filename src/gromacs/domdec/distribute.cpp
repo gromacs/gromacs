@@ -278,6 +278,108 @@ static void dd_distribute_state(gmx_domdec_t *dd,
     }
 }
 
+/* Computes and returns the domain index for the given atom group.
+ *
+ * Also updates the coordinates in pos for PBC, when necessary.
+ */
+static inline int
+computeAtomGroupDomainIndex(const gmx_domdec_t                         &dd,
+                            const gmx_ddbox_t                          &ddbox,
+                            const matrix                               &triclinicCorrectionMatrix,
+                            gmx::ArrayRef < const std::vector < real>>  cellBoundaries,
+                            int                                         atomBegin,
+                            int                                         atomEnd,
+                            const matrix                                box,
+                            rvec                                       *pos)
+{
+    /* Set the reference location cg_cm for assigning the group */
+    rvec cog;
+    int  numAtoms = atomEnd - atomBegin;
+    if (numAtoms == 1)
+    {
+        copy_rvec(pos[atomBegin], cog);
+    }
+    else
+    {
+        real invNumAtoms = 1/static_cast<real>(numAtoms);
+
+        clear_rvec(cog);
+        for (int a = atomBegin; a < atomEnd; a++)
+        {
+            rvec_inc(cog, pos[a]);
+        }
+        for (int d = 0; d < DIM; d++)
+        {
+            cog[d] *= invNumAtoms;
+        }
+    }
+    /* Put the charge group in the box and determine the cell index ind */
+    ivec ind;
+    for (int d = DIM - 1; d >= 0; d--)
+    {
+        real pos_d = cog[d];
+        if (d < dd.npbcdim)
+        {
+            bool bScrew = (dd.bScrewPBC && d == XX);
+            if (ddbox.tric_dir[d] && dd.nc[d] > 1)
+            {
+                /* Use triclinic coordinates for this dimension */
+                for (int j = d + 1; j < DIM; j++)
+                {
+                    pos_d += cog[j]*triclinicCorrectionMatrix[j][d];
+                }
+            }
+            while (pos_d >= box[d][d])
+            {
+                pos_d -= box[d][d];
+                rvec_dec(cog, box[d]);
+                if (bScrew)
+                {
+                    cog[YY] = box[YY][YY] - cog[YY];
+                    cog[ZZ] = box[ZZ][ZZ] - cog[ZZ];
+                }
+                for (int a = atomBegin; a < atomEnd; a++)
+                {
+                    rvec_dec(pos[a], box[d]);
+                    if (bScrew)
+                    {
+                        pos[a][YY] = box[YY][YY] - pos[a][YY];
+                        pos[a][ZZ] = box[ZZ][ZZ] - pos[a][ZZ];
+                    }
+                }
+            }
+            while (pos_d < 0)
+            {
+                pos_d += box[d][d];
+                rvec_inc(cog, box[d]);
+                if (bScrew)
+                {
+                    cog[YY] = box[YY][YY] - cog[YY];
+                    cog[ZZ] = box[ZZ][ZZ] - cog[ZZ];
+                }
+                for (int a = atomBegin; a < atomEnd; a++)
+                {
+                    rvec_inc(pos[a], box[d]);
+                    if (bScrew)
+                    {
+                        pos[a][YY] = box[YY][YY] - pos[a][YY];
+                        pos[a][ZZ] = box[ZZ][ZZ] - pos[a][ZZ];
+                    }
+                }
+            }
+        }
+        /* This could be done more efficiently */
+        ind[d] = 0;
+        while (ind[d] + 1 < dd.nc[d] && pos_d >= cellBoundaries[d][ind[d] + 1])
+        {
+            ind[d]++;
+        }
+    }
+
+    return dd_index(dd.nc, ind);
+}
+
+
 static std::vector < std::vector < int>>
 getAtomGroupDistribution(const gmx::MDLogger &mdlog,
                          const matrix box, const gmx_ddbox_t &ddbox,
@@ -292,8 +394,8 @@ getAtomGroupDistribution(const gmx::MDLogger &mdlog,
         ma.domainGroups[rank].numAtoms = 0;
     }
 
-    matrix tcm;
-    make_tric_corr_matrix(dd->npbcdim, box, tcm);
+    matrix triclinicCorrectionMatrix;
+    make_tric_corr_matrix(dd->npbcdim, box, triclinicCorrectionMatrix);
 
     ivec       npulse;
     const auto cellBoundaries =
@@ -307,92 +409,12 @@ getAtomGroupDistribution(const gmx::MDLogger &mdlog,
     /* Compute the center of geometry for all charge groups */
     for (int icg = 0; icg < cgs->nr; icg++)
     {
-        /* Set the reference location cg_cm for assigning the group */
-        rvec cg_cm;
-        int  k0      = cgindex[icg];
-        int  k1      = cgindex[icg + 1];
-        int  nrcg    = k1 - k0;
-        if (nrcg == 1)
-        {
-            copy_rvec(pos[k0], cg_cm);
-        }
-        else
-        {
-            real inv_ncg = 1/static_cast<real>(nrcg);
+        int domainIndex =
+            computeAtomGroupDomainIndex(*dd, ddbox, triclinicCorrectionMatrix,
+                                        cellBoundaries,
+                                        cgindex[icg], cgindex[icg + 1], box,
+                                        pos);
 
-            clear_rvec(cg_cm);
-            for (int k = k0; k < k1; k++)
-            {
-                rvec_inc(cg_cm, pos[k]);
-            }
-            for (int d = 0; d < DIM; d++)
-            {
-                cg_cm[d] *= inv_ncg;
-            }
-        }
-        /* Put the charge group in the box and determine the cell index ind */
-        ivec ind;
-        for (int d = DIM - 1; d >= 0; d--)
-        {
-            real pos_d = cg_cm[d];
-            if (d < dd->npbcdim)
-            {
-                bool bScrew = (dd->bScrewPBC && d == XX);
-                if (ddbox.tric_dir[d] && dd->nc[d] > 1)
-                {
-                    /* Use triclinic coordinates for this dimension */
-                    for (int j = d + 1; j < DIM; j++)
-                    {
-                        pos_d += cg_cm[j]*tcm[j][d];
-                    }
-                }
-                while (pos_d >= box[d][d])
-                {
-                    pos_d -= box[d][d];
-                    rvec_dec(cg_cm, box[d]);
-                    if (bScrew)
-                    {
-                        cg_cm[YY] = box[YY][YY] - cg_cm[YY];
-                        cg_cm[ZZ] = box[ZZ][ZZ] - cg_cm[ZZ];
-                    }
-                    for (int k = k0; k < k1; k++)
-                    {
-                        rvec_dec(pos[k], box[d]);
-                        if (bScrew)
-                        {
-                            pos[k][YY] = box[YY][YY] - pos[k][YY];
-                            pos[k][ZZ] = box[ZZ][ZZ] - pos[k][ZZ];
-                        }
-                    }
-                }
-                while (pos_d < 0)
-                {
-                    pos_d += box[d][d];
-                    rvec_inc(cg_cm, box[d]);
-                    if (bScrew)
-                    {
-                        cg_cm[YY] = box[YY][YY] - cg_cm[YY];
-                        cg_cm[ZZ] = box[ZZ][ZZ] - cg_cm[ZZ];
-                    }
-                    for (int k = k0; k < k1; k++)
-                    {
-                        rvec_inc(pos[k], box[d]);
-                        if (bScrew)
-                        {
-                            pos[k][YY] = box[YY][YY] - pos[k][YY];
-                            pos[k][ZZ] = box[ZZ][ZZ] - pos[k][ZZ];
-                        }
-                    }
-                }
-            }
-            /* This could be done more efficiently */
-            ind[d] = 0;
-            while (ind[d]+1 < dd->nc[d] && pos_d >= cellBoundaries[d][ind[d] + 1])
-            {
-                ind[d]++;
-            }
-        }
-        int domainIndex = dd_index(dd->nc, ind);
         indices[domainIndex].push_back(icg);
         ma.domainGroups[domainIndex].numAtoms += cgindex[icg + 1] - cgindex[icg];
     }
