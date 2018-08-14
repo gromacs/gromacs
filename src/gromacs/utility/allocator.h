@@ -126,14 +126,15 @@ class Allocator : public AllocationPolicy
             typedef Allocator<U, AllocationPolicy> other; //!< Align class U with our alignment
         };
 
-        /*! \brief Templated copy constructor
-         *
-         * This template constructor cannot be auto-generated, and is
-         * normally unused, except e.g. MSVC2015 standard library uses
-         * it in debug mode, presumably to implement some checks.
-         */
-        template <class U>
-        explicit Allocator(const Allocator<U, AllocationPolicy> & /*unused*/) {}
+
+        //! copy constructor
+        Allocator(const Allocator &) = default;
+        //! move constroctor
+        Allocator(Allocator &&) = default;
+        //! copy assignment
+        Allocator &operator=(const Allocator &) = default;
+        //! move assignment
+        Allocator &operator=(Allocator &&) = default;
 
         /*! \brief Constructor
          *
@@ -249,6 +250,12 @@ class Allocator : public AllocationPolicy
          */
         bool
         operator!=(const Allocator &rhs) const { return !operator==(rhs); }
+
+        //! Obtain allocator for copy construction
+        Allocator select_on_container_copy_construction() const
+        {
+            return Allocator(AllocationPolicy::select_on_container_copy_construction());
+        }
 };
 
 }      // namespace gmx
