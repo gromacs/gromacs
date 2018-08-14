@@ -134,8 +134,8 @@ using HostVector = std::vector<T, HostAllocator<T> >;
 class HostAllocationPolicy
 {
     public:
-        //! Default constructor.
-        HostAllocationPolicy();
+        //! Constructor
+        HostAllocationPolicy(PinningPolicy policy = PinningPolicy::CannotBePinned);
         /*! \brief Return the alignment size currently used by the active pinning policy. */
         std::size_t alignment();
         /*! \brief Allocate and perhaps pin page-aligned memory suitable for
@@ -178,7 +178,7 @@ class HostAllocationPolicy
          *
          * Does not throw.
          */
-        void pin() const noexcept;
+        void pin(void* p, size_t n) const noexcept;
         /*! \brief Unpin the allocation, if appropriate.
          *
          * Regardless of the allocation policy, unpin the memory if
@@ -186,49 +186,28 @@ class HostAllocationPolicy
          *
          * Does not throw.
          */
-        void unpin() const noexcept;
+        void unpin(void* p) const noexcept;
         /*! \brief Return the current pinning policy (which is semi-independent
          * of whether the buffer is actually pinned).
          *
          * Does not throw.
          */
-        PinningPolicy pinningPolicy() const;
-        //! Specify an allocator trait so that the stateful allocator should propagate.
-        using propagate_on_container_copy_assignment = std::true_type;
-        //! Specify an allocator trait so that the stateful allocator should propagate.
+        PinningPolicy pinningPolicy() const { return pinningPolicy_; }
+        //! Don't propagate for copy
+        using propagate_on_container_copy_assignment = std::false_type;
+        //! Propagate for move
         using propagate_on_container_move_assignment = std::true_type;
-        //! Specify an allocator trait so that the stateful allocator should propagate.
+        //! Propagate for move
         using propagate_on_container_swap = std::true_type;
+        //! Use default allocator for copy (same as construct+copy)
+        template<typename U = void>
+        HostAllocationPolicy select_on_container_copy_construction() const
+        {
+            return {};
+        }
     private:
-        /*! \brief Set the current pinning policy.
-         *
-         * Does not pin any current buffer. Use changePinningPolicy to
-         * orchestrate the necessary unpin, allocate, copy, pin for
-         * effectively changing the pinning policy of a HostVector.
-         *
-         * Does not throw.
-         */
-        void setPinningPolicy(PinningPolicy pinningPolicy);
-        /*! \brief Declare as a friend function the only supported way
-         * to change the pinning policy.
-         *
-         * When the pinning policy changes, we want the state of the
-         * allocation to match the new policy. However, that requires
-         * a copy and swap of the buffers, which can only take place
-         * at the level of the container. So we wrap the required
-         * operations in a helper friend function.
-         *
-         * Of course, if there is no allocation because the vector is
-         * empty, then nothing will change. */
-        template <class T> friend
-        void changePinningPolicy(HostVector<T> *v, PinningPolicy pinningPolicy);
-        //! Private implementation class.
-        class Impl;
-        /*! \brief State of the allocator.
-         *
-         * This could change through move- or copy-assignment of one
-         * policy to another, so isn't const. */
-        std::shared_ptr<Impl> impl_;
+        //! Pinning policy
+        PinningPolicy pinningPolicy_;
 };
 
 /*! \brief Helper function for changing the pinning policy of a HostVector.
@@ -242,26 +221,13 @@ class HostAllocationPolicy
 template <class T>
 void changePinningPolicy(HostVector<T> *v, PinningPolicy pinningPolicy)
 {
-    // Do we have anything to do?
-    HostAllocationPolicy vAllocationPolicy = v->get_allocator().getPolicy();
-    if (pinningPolicy == vAllocationPolicy.pinningPolicy())
+    if (v->get_allocator().pinningPolicy() == pinningPolicy)
     {
         return;
     }
-    // Make sure we never have two allocated buffers that are both pinned.
-    vAllocationPolicy.unpin();
-
-    // Construct a new vector that has the requested
-    // allocation+pinning policy, to swap into *v. If *v is empty,
-    // then no real work is done.
-    HostAllocator<T> newAllocator;
-    newAllocator.getPolicy().setPinningPolicy(pinningPolicy);
-    HostVector<T>    newV(v->begin(), v->end(), newAllocator);
-    // Replace the contents of *v, including the stateful allocator.
-    v->swap(newV);
-    // The destructor of newV cleans up the memory formerly managed by *v.
+    //Force reallocation by creating copy
+    *v = HostVector<T>(*v, {pinningPolicy});
 }
-
 }      // namespace gmx
 
 #endif
