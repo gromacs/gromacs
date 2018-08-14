@@ -1595,7 +1595,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     done_nnb(&nnb);
 
     /* Make CMAP */
-    if (TRUE == bCmap)
+    if (bCmap)
     {
         gen_cmap(&(plist[F_CMAP]), restp, atoms);
         if (plist[F_CMAP].nr > 0)
@@ -1630,7 +1630,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 
     print_sums(atoms, FALSE);
 
-    if (FALSE == bChargeGroups)
+    if (!bChargeGroups)
     {
         scrub_charge_groups(cgnr, atoms->nr);
     }

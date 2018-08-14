@@ -1606,7 +1606,7 @@ void init_swapcoords(
     for (int j = eGrpSplit0; j <= eGrpSplit1; j++)
     {
         g = &(s->group[j]);
-        if (TRUE == sc->massw_split[j])
+        if (sc->massw_split[j])
         {
             /* Save the split group masses if mass-weighting is requested */
             snew(g->m, g->atomset.numAtomsGlobal());

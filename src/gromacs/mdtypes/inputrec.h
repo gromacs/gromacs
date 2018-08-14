@@ -400,7 +400,7 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     //! Type of periodic boundary conditions
     int                         ePBC;
     //! Periodic molecules
-    int                         bPeriodicMols;
+    bool                        bPeriodicMols;
     //! Continuation run: starting state is correct (ie. constrained)
     gmx_bool                    bContinuation;
     //! Temperature coupling

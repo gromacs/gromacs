@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,12 +52,12 @@ struct t_topology;
 
 struct t_tpxheader
 {
-    int   bIr;       /* Non zero if input_rec is present		*/
-    int   bBox;      /* Non zero if a box is present			*/
-    int   bTop;      /* Non zero if a topology is present		*/
-    int   bX;        /* Non zero if coordinates are present		*/
-    int   bV;        /* Non zero if velocities are present		*/
-    int   bF;        /* Non zero if forces are present (no longer
+    bool  bIr;       /* Non zero if input_rec is present		*/
+    bool  bBox;      /* Non zero if a box is present			*/
+    bool  bTop;      /* Non zero if a topology is present		*/
+    bool  bX;        /* Non zero if coordinates are present		*/
+    bool  bV;        /* Non zero if velocities are present		*/
+    bool  bF;        /* Non zero if forces are present (no longer
                         supported, but retained so old .tpr can be read) */
 
     int   natoms;    /* The total number of atoms			*/

@@ -1272,7 +1272,7 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     cmp_int64(fp, "inputrec->init_step", ir1->init_step, ir2->init_step);
     cmp_int(fp, "inputrec->simulation_part", -1, ir1->simulation_part, ir2->simulation_part);
     cmp_int(fp, "inputrec->ePBC", -1, ir1->ePBC, ir2->ePBC);
-    cmp_int(fp, "inputrec->bPeriodicMols", -1, ir1->bPeriodicMols, ir2->bPeriodicMols);
+    cmp_bool(fp, "inputrec->bPeriodicMols", -1, ir1->bPeriodicMols, ir2->bPeriodicMols);
     cmp_int(fp, "inputrec->cutoff_scheme", -1, ir1->cutoff_scheme, ir2->cutoff_scheme);
     cmp_int(fp, "inputrec->ns_type", -1, ir1->ns_type, ir2->ns_type);
     cmp_int(fp, "inputrec->nstlist", -1, ir1->nstlist, ir2->nstlist);

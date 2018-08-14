@@ -68,7 +68,7 @@ void check_mcover(real mcover)
     {
         gmx_fatal(FARGS, "mcover should be -1 or (0,1]");
     }
-    else if ((mcover < 0)&(mcover != -1))
+    else if ((mcover < 0) && (mcover != -1))
     {
         gmx_fatal(FARGS, "mcover should be -1 or (0,1]");
     }

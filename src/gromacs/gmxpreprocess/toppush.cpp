@@ -1645,7 +1645,7 @@ static bool default_params(int ftype, t_params bt[],
             }
         }
 
-        if (bFound == TRUE)
+        if (bFound)
         {
             int j;
 
