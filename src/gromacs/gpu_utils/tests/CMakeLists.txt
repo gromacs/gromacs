@@ -89,6 +89,21 @@ gmx_add_unit_test(GpuUtilsUnitTests gpu_utils-test
     ${SOURCES_FROM_CXX}
     )
 
+function(gmx_compile_test)
+   if(NOT GMX_DEVELOPER_BUILD)
+      return() #Users might run tests on a different machine
+   endif()
+   set(NAME ${ARGV0})
+   set(SOURCE ${ARGV1})
+   set(ERRORMSG ${ARGV2})
+   add_library(${NAME} OBJECT EXCLUDE_FROM_ALL ${SOURCE})
+   add_test(NAME ${NAME} COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target ${NAME})
+   set_tests_properties(${NAME} PROPERTIES PASS_REGULAR_EXPRESSION ${ERRORMSG})
+endfunction()
+
+gmx_compile_test(HostAllocatorCompileTest "hostallocator_compile.cpp"
+   "This allocator policy doesn't support copy construction")
+
 if(GMX_USE_CUDA)
     target_link_libraries(gpu_utils-test gpu_utilstest_cuda)
 endif()
