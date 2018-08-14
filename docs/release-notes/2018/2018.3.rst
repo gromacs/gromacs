@@ -8,7 +8,18 @@ earlier, which you can find described in the :ref:`release-notes`.
 
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix Conjugate Gradient assertion failure at end of minimization
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When the final step coincided with a coordinate output step,
+conjugate gradient minimization would exit with an assertion failure
+instead of writing confout.gro.
+
+:issue:`2554`
+
 Multi-domain Conjugate Gradient minimimization no longer segfaults.
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 :issue:`2554`
 
