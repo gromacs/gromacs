@@ -874,6 +874,8 @@ interaction sites (see sec. :ref:`rmfast`), which brings the shortest
 time step up to PME mesh update frequency of a multiple time stepping
 scheme.
 
+.. _temp-coupling:
+
 Temperature coupling
 ~~~~~~~~~~~~~~~~~~~~
 
