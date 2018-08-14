@@ -518,7 +518,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
 {
     int                 myunit;
     double              xx, yy, zz;
-    int                 natom;
+    int                 natom = 0;
     immStatus           imm   = immOK;
             
     ExperimentIterator  ci = molProp()->getLot(lot);
