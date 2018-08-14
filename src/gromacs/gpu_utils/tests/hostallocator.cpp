@@ -287,6 +287,12 @@ TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkWithCuda)
     input.get_allocator().getPolicy().pin();
     EXPECT_TRUE(isPinned(input));
 
+    // Per HostAllocationPolicy::malloc() implementation, to conserve
+    // the pinnable pages, the rhs is unpinned during assugnment.
+    auto copyOfInput = input;
+    EXPECT_FALSE(isPinned(input));
+    EXPECT_TRUE(isPinned(copyOfInput));
+
     // Switching policy to CannotBePinned must unpin the buffer (via
     // realloc and copy).
     auto oldInputData = input.data();
