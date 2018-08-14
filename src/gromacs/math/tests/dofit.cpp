@@ -101,4 +101,40 @@ TEST_F(StructureSimilarityTest, YieldsCorrectRhoWidthIndex)
     EXPECT_REAL_EQ_TOL(2., findStructureSimilarity<RhoMeasure>(index.size(), m, x1, x2, index.data()), defaultRealTolerance());
 }
 
+TEST_F(StructureSimilarityTest, YieldsCorrectFitRotationMatrixThreeD)
+{
+    constexpr matrix expected = {{0, 1, 0},
+                                 {0, 0, 1},
+                                 {1, 0, 0}};
+    matrix           R;
+    calc_fit_R(3, nAtoms, m, x1, x2, R);
+    EXPECT_REAL_EQ_TOL(expected[XX][XX], R[XX][XX], defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(expected[XX][YY], R[XX][YY], defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(expected[XX][ZZ], R[XX][ZZ], defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(expected[YY][XX], R[YY][XX], defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(expected[YY][YY], R[YY][YY], defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(expected[YY][ZZ], R[YY][ZZ], defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(expected[ZZ][XX], R[ZZ][XX], defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(expected[ZZ][YY], R[ZZ][YY], defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(expected[ZZ][ZZ], R[ZZ][ZZ], defaultRealTolerance());
+}
+
+TEST_F(StructureSimilarityTest, YieldsCorrectFitRotationMatrixTwoD)
+{
+    constexpr matrix expected = {{0, 1, 0},
+                                 {-1, 0, 0},
+                                 {0, 0, 1}};
+    matrix           R;
+    calc_fit_R(2, nAtoms, m, x1, x2, R);
+    EXPECT_REAL_EQ_TOL(expected[XX][XX], R[XX][XX], defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(expected[XX][YY], R[XX][YY], defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(expected[XX][ZZ], R[XX][ZZ], defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(expected[YY][XX], R[YY][XX], defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(expected[YY][YY], R[YY][YY], defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(expected[YY][ZZ], R[YY][ZZ], defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(expected[ZZ][XX], R[ZZ][XX], defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(expected[ZZ][YY], R[ZZ][YY], defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(expected[ZZ][ZZ], R[ZZ][ZZ], defaultRealTolerance());
+}
+
 } // namespace
