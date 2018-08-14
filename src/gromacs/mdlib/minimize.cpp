@@ -1045,8 +1045,17 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
 
     if (MASTER(cr))
     {
-        // Ensure the extra per-atom state array gets allocated
+        // In CG, the state is extended with a search direction
         state_global->flags |= (1<<estCGP);
+
+        // Ensure the extra per-atom state array gets allocated
+        state_change_natoms(state_global, state_global->natoms);
+
+        // Initialize the search direction to zero
+        for (RVec &cg_p : state_global->cg_p)
+        {
+            cg_p = { 0, 0, 0 };
+        }
     }
 
     /* Create 4 states on the stack and extract pointers that we will swap */
@@ -1210,7 +1219,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
             gmx_sumd(1, &minstep, cr);
         }
 
-        minstep = GMX_REAL_EPS/sqrt(minstep/(3*state_global->natoms));
+        minstep = GMX_REAL_EPS/sqrt(minstep/(3*top_global->natoms));
 
         if (stepsize < minstep)
         {
@@ -1543,7 +1552,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
         }
 
         /* Send energies and positions to the IMD client if bIMD is TRUE. */
-        if (do_IMD(inputrec->bIMD, step, cr, TRUE, state_global->box, as_rvec_array(state_global->x.data()), inputrec, 0, wcycle) && MASTER(cr))
+        if (MASTER(cr) && do_IMD(inputrec->bIMD, step, cr, TRUE, state_global->box, as_rvec_array(state_global->x.data()), inputrec, 0, wcycle))
         {
             IMD_send_positions(inputrec->imd);
         }
