@@ -320,6 +320,20 @@ static void get_state_f_norm_max(t_commrec *cr,
                    &ems->fnorm, &ems->fmax, &ems->a_fmax);
 }
 
+//! When pinning policy for src is CanBePinned, also set it for target
+// TODO: find a more elegant solution
+static void copyPinningPolicy(em_state_t       *target,
+                              const em_state_t &src)
+{
+    GMX_RELEASE_ASSERT(target->s.x.get_allocator().pinningPolicy() == gmx::PinningPolicy::CannotBePinned,
+                       "Here target is expected not to use pinning");
+
+    if (src.s.x.get_allocator().pinningPolicy() == gmx::PinningPolicy::CanBePinned)
+    {
+        changePinningPolicy(&target->s.x, gmx::PinningPolicy::CanBePinned);
+    }
+}
+
 //! Initialize the energy minimization
 static void init_em(FILE *fplog, const char *title,
                     t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
@@ -533,27 +547,36 @@ static void write_em_traj(FILE *fplog, t_commrec *cr,
                                      &state->s, state_global, observablesHistory,
                                      state->f);
 
-    if (confout != nullptr && MASTER(cr))
+    if (confout != nullptr)
     {
-        GMX_RELEASE_ASSERT(bX, "The code below assumes that (with domain decomposition), x is collected to state_global in the call above.");
-        /* With domain decomposition the call above collected the state->s.x
-         * into state_global->x. Without DD we copy the local state pointer.
-         */
-        if (!DOMAINDECOMP(cr))
+        if (DOMAINDECOMP(cr))
         {
+            /* If bX=true, x was collected to state_global in the call above */
+            if (!bX)
+            {
+                gmx::ArrayRef<gmx::RVec> globalXRef = MASTER(cr) ? gmx::makeArrayRef(state_global->x) : gmx::EmptyArrayRef();
+                dd_collect_vec(cr->dd, &state->s, state->s.x, globalXRef);
+            }
+        }
+        else
+        {
+            /* Copy the local state pointer */
             state_global = &state->s;
         }
 
-        if (ir->ePBC != epbcNONE && !ir->bPeriodicMols && DOMAINDECOMP(cr))
+        if (MASTER(cr))
         {
-            /* Make molecules whole only for confout writing */
-            do_pbc_mtop(fplog, ir->ePBC, state->s.box, top_global,
-                        as_rvec_array(state_global->x.data()));
-        }
+            if (ir->ePBC != epbcNONE && !ir->bPeriodicMols && DOMAINDECOMP(cr))
+            {
+                /* Make molecules whole only for confout writing */
+                do_pbc_mtop(fplog, ir->ePBC, state->s.box, top_global,
+                            as_rvec_array(state_global->x.data()));
+            }
 
-        write_sto_conf_mtop(confout,
-                            *top_global->name, top_global,
-                            as_rvec_array(state_global->x.data()), nullptr, ir->ePBC, state->s.box);
+            write_sto_conf_mtop(confout,
+                                *top_global->name, top_global,
+                                as_rvec_array(state_global->x.data()), nullptr, ir->ePBC, state->s.box);
+        }
     }
 }
 
@@ -1045,8 +1068,17 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
 
     if (MASTER(cr))
     {
-        // Ensure the extra per-atom state array gets allocated
+        // In CG, the state is extended with a search direction
         state_global->flags |= (1<<estCGP);
+
+        // Ensure the extra per-atom state array gets allocated
+        state_change_natoms(state_global, state_global->natoms);
+
+        // Initialize the search direction to zero
+        for (RVec &cg_p : state_global->cg_p)
+        {
+            cg_p = { 0, 0, 0 };
+        }
     }
 
     /* Create 4 states on the stack and extract pointers that we will swap */
@@ -1062,6 +1094,10 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
             nrnb, mu_tot, fr, &enerd, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr,
             nfile, fnm, &outf, &mdebin, wcycle);
+
+    copyPinningPolicy(s_a, *s_min);
+    copyPinningPolicy(s_b, *s_min);
+    copyPinningPolicy(s_c, *s_min);
 
     /* Print to log file */
     print_em_start(fplog, cr, walltime_accounting, wcycle, CG);
@@ -1210,7 +1246,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
             gmx_sumd(1, &minstep, cr);
         }
 
-        minstep = GMX_REAL_EPS/sqrt(minstep/(3*state_global->natoms));
+        minstep = GMX_REAL_EPS/sqrt(minstep/(3*top_global->natoms));
 
         if (stepsize < minstep)
         {
@@ -1543,7 +1579,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
         }
 
         /* Send energies and positions to the IMD client if bIMD is TRUE. */
-        if (do_IMD(inputrec->bIMD, step, cr, TRUE, state_global->box, as_rvec_array(state_global->x.data()), inputrec, 0, wcycle) && MASTER(cr))
+        if (MASTER(cr) && do_IMD(inputrec->bIMD, step, cr, TRUE, state_global->box, as_rvec_array(state_global->x.data()), inputrec, 0, wcycle))
         {
             IMD_send_positions(inputrec->imd);
         }
@@ -1604,6 +1640,9 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
      *
      * However, we should only do it if we did NOT already write this step
      * above (which we did if do_x or do_f was true).
+     */
+    /* Note that with 0 < nstfout != nstxout we can end up with two frames
+     * in the trajectory with the same step number.
      */
     do_x = !do_per_step(step, inputrec->nstxout);
     do_f = (inputrec->nstfout > 0 && !do_per_step(step, inputrec->nstfout));
@@ -1745,6 +1784,11 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
     *sa              = ems;
     *sb              = ems;
     *sc              = ems;
+
+    copyPinningPolicy(sa,   ems);
+    copyPinningPolicy(sb,   ems);
+    copyPinningPolicy(sc,   ems);
+    copyPinningPolicy(last, ems);
 
     /* Print to log file */
     print_em_start(fplog, cr, walltime_accounting, wcycle, LBFGS);
@@ -2461,6 +2505,8 @@ double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
             nrnb, mu_tot, fr, &enerd, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr,
             nfile, fnm, &outf, &mdebin, wcycle);
+
+    copyPinningPolicy(s_min, *s_try);
 
     /* Print to log file  */
     print_em_start(fplog, cr, walltime_accounting, wcycle, SD);
