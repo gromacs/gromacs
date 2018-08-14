@@ -12,6 +12,14 @@ Multi-domain Conjugate Gradient minimimization no longer segfaults.
 
 :issue:`2554`
 
+Energy minimization now works with PME on a GPU
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Energy minimization with PME on a GPU would stop with an assertion failure:
+Source buffer was not pinned for CUDA".
+
+:issue:`2578`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

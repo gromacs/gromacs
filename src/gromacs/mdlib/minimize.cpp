@@ -1049,19 +1049,23 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
         state_global->flags |= (1<<estCGP);
     }
 
-    /* Create 4 states on the stack and extract pointers that we will swap */
-    em_state_t  s0 {}, s1 {}, s2 {}, s3 {};
-    em_state_t *s_min = &s0;
-    em_state_t *s_a   = &s1;
-    em_state_t *s_b   = &s2;
-    em_state_t *s_c   = &s3;
-
     /* Init em and store the local state in s_min */
+    em_state_t state0;
     init_em(fplog, CG, cr, outputProvider, inputrec, mdrunOptions,
-            state_global, top_global, s_min, &top,
+            state_global, top_global, &state0, &top,
             nrnb, mu_tot, fr, &enerd, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr,
             nfile, fnm, &outf, &mdebin, wcycle);
+
+    /* Create 4 states on the stack and extract pointers that we will swap */
+    em_state_t state1 = state0;
+    em_state_t state2 = state0;
+    em_state_t state3 = state0;
+
+    em_state_t *s_min = &state0;
+    em_state_t *s_a   = &state1;
+    em_state_t *s_b   = &state2;
+    em_state_t *s_c   = &state3;
 
     /* Print to log file */
     print_em_start(fplog, cr, walltime_accounting, wcycle, CG);
@@ -1736,15 +1740,14 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
     end   = mdatoms->homenr;
 
     /* We need 4 working states */
-    em_state_t  s0 {}, s1 {}, s2 {}, s3 {};
-    em_state_t *sa   = &s0;
-    em_state_t *sb   = &s1;
-    em_state_t *sc   = &s2;
-    em_state_t *last = &s3;
-    /* Initialize by copying the state from ems (we could skip x and f here) */
-    *sa              = ems;
-    *sb              = ems;
-    *sc              = ems;
+    em_state_t state0 = ems;
+    em_state_t state1 = ems;
+    em_state_t state2 = ems;
+    em_state_t state3 = ems;
+    em_state_t *sa   = &state0;
+    em_state_t *sb   = &state1;
+    em_state_t *sc   = &state2;
+    em_state_t *last = &state3;
 
     /* Print to log file */
     print_em_start(fplog, cr, walltime_accounting, wcycle, LBFGS);
@@ -2450,17 +2453,19 @@ double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
     int               steps_accepted = 0;
     auto              mdatoms        = mdAtoms->mdatoms();
 
-    /* Create 2 states on the stack and extract pointers that we will swap */
-    em_state_t  s0 {}, s1 {};
-    em_state_t *s_min = &s0;
-    em_state_t *s_try = &s1;
-
-    /* Init em and store the local state in s_try */
+    /* Init em and store the local state in state0 */
+    em_state_t state0;
     init_em(fplog, SD, cr, outputProvider, inputrec, mdrunOptions,
-            state_global, top_global, s_try, &top,
+            state_global, top_global, &state0, &top,
             nrnb, mu_tot, fr, &enerd, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr,
             nfile, fnm, &outf, &mdebin, wcycle);
+
+    /* We create 2 states on the stack and extract pointers that we will swap */
+    em_state_t state1 = state0;
+
+    em_state_t *s_try = &state0;
+    em_state_t *s_min = &state1;
 
     /* Print to log file  */
     print_em_start(fplog, cr, walltime_accounting, wcycle, SD);
