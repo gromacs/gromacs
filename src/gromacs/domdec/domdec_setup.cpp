@@ -104,7 +104,7 @@ static void factorize(int               n,
 }
 
 /*! \brief Find largest divisor of \p n smaller than \p n*/
-static gmx_bool largest_divisor(int n)
+static int largest_divisor(int n)
 {
     std::vector<int> div;
     std::vector<int> mdiv;
