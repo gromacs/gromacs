@@ -41,30 +41,35 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-real calc_similar_ind(gmx_bool bRho, int nind, const int *index, const real mass[],
-                      rvec x[], rvec xp[]);
-/* Returns RMSD or Rho (depending on bRho) over all atoms in index */
-
-real rmsdev_ind(int nind, int index[], real mass[],
-                rvec x[], rvec xp[]);
-/* Returns the RMS Deviation betweem x and xp over all atoms in index */
-
-real rmsdev(int natoms, real mass[], rvec x[], rvec xp[]);
-/* Returns the RMS Deviation betweem x and xp over all atoms */
-
-real rhodev_ind(int nind, int index[], real mass[], rvec x[], rvec xp[]);
-/* Returns size-independent Rho similarity parameter over all atoms in index
- * Maiorov & Crippen, PROTEINS 22, 273 (1995).
+namespace gmx
+{
+/*!\brief Mass weighted comparisons of structures with the same number of atoms.
  */
-
-real rhodev(int natoms, real mass[], rvec x[], rvec xp[]);
-/* Returns size-independent Rho similarity parameter over all atoms
- * Maiorov & Crippen, PROTEINS 22, 273 (1995).
- */
+struct StructureSimilarityMeasure
+{
+    //! convenience definition for function pointer to comparison function
+    using comparisonFunction = real (*)(int nAtoms, const real *mass, const rvec *x, const rvec *xp, const int *index);
+    /*!\brief Evaluate the mass-weighted RMS Deviation between two input structures.
+       *\param[in] nAtoms number of atoms to compare
+       *\param[in] mass the masses of the atoms
+       *\param[in] x the coordinates of the reference structure
+       *\param[in] xp the coordinates of the structure to compare
+       *\param[in] index Index for selecting a sub-set of atoms, that is applied to mass, x, and xp
+       *\returns Mass-weighted root mean square deviation between two structures
+     */
+    static real rmsd(int nAtoms, const real *mass, const rvec *x, const rvec *xp, const int *index = nullptr);
+    /*!\brief Returns size independent rho over two equal length coordinate vectors.
+       *\param[in] nAtoms number of atoms to compare
+       *\param[in] mass the masses of the atoms
+       *\param[in] x the coordinates of the reference structure
+       *\param[in] xp the coordinates of the structure to compare
+       *\param[in] index Index for selecting a sub-set of atoms, that is applied to mass, x, and xp
+     * Rho is evaluated as described in Maiorov & Crippen, PROTEINS 22, 273 (1995).
+     * \returns Size-independent rho comparison value.
+     */
+    static real sizeIndependentRho(int nAtoms, const real *mass, const rvec *x, const rvec *xp, const int *index = nullptr);
+};
+}
 
 void calc_fit_R(int ndim, int natoms, const real *w_rls, const rvec *xp, rvec *x,
                 matrix R);
@@ -101,9 +106,5 @@ void reset_x(int ncm, const int *ind_cm,
              int nreset, const int *ind_reset,
              rvec x[], const real mass[]);
 /* Calls reset_x with ndim=3, thus resetting all dimesions */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

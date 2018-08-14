@@ -1739,7 +1739,7 @@ int gmx_cluster(int argc, char *argv[])
                     {
                         do_fit(isize, mass, xx[i2], x1);
                     }
-                    rmsd = rmsdev(isize, mass, xx[i2], x1);
+                    rmsd = gmx::StructureSimilarityMeasure::rmsd(isize, mass, xx[i2], x1);
                     set_mat_entry(rms, i1, i2, rmsd);
                 }
                 nrms -= nf-i1-1;

@@ -54,8 +54,9 @@ namespace
 {
 
 using gmx::RVec;
+using gmx::StructureSimilarityMeasure;
 using gmx::test::defaultRealTolerance;
-class StructureSimilarityTest : public ::testing::Test
+class StructureSimilarityTest : public ::testing::Test, public StructureSimilarityMeasure
 {
     protected:
         static constexpr int     nAtoms = 4;
@@ -70,32 +71,32 @@ class StructureSimilarityTest : public ::testing::Test
 
 TEST_F(StructureSimilarityTest, StructureComparedToSelfHasZeroRMSD)
 {
-    EXPECT_REAL_EQ_TOL(0., rmsdev(nAtoms, m, x1, x1), defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(0., rmsd(nAtoms, m, x1, x1), defaultRealTolerance());
 }
 
 TEST_F(StructureSimilarityTest, StructureComparedToSelfHasZeroRho)
 {
-    EXPECT_REAL_EQ_TOL(0., rhodev(nAtoms, m, x1, x1), defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(0., sizeIndependentRho(nAtoms, m, x1, x1), defaultRealTolerance());
 }
 
 TEST_F(StructureSimilarityTest, YieldsCorrectRMSD)
 {
-    EXPECT_REAL_EQ_TOL(sqrt(2.0), rmsdev(nAtoms, m, x1, x2), defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(sqrt(2.0), rmsd(nAtoms, m, x1, x2), defaultRealTolerance());
 }
 
 TEST_F(StructureSimilarityTest, YieldsCorrectRho)
 {
-    EXPECT_REAL_EQ_TOL(2., rhodev(nAtoms, m, x1, x2), defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(2., sizeIndependentRho(nAtoms, m, x1, x2), defaultRealTolerance());
 }
 
 TEST_F(StructureSimilarityTest, YieldsCorrectRMSDWithIndex)
 {
-    EXPECT_REAL_EQ_TOL(sqrt(2.0), rmsdev_ind(index.size(), index.data(), m, x1, x2), defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(sqrt(2.0), rmsd(index.size(), m, x1, x2, index.data()), defaultRealTolerance());
 }
 
 TEST_F(StructureSimilarityTest, YieldsCorrectRhoWidthIndex)
 {
-    EXPECT_REAL_EQ_TOL(2., rhodev_ind(index.size(), index.data(), m, x1, x2), defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(2., sizeIndependentRho(index.size(), m, x1, x2, index.data()), defaultRealTolerance());
 }
 
 } // namespace
