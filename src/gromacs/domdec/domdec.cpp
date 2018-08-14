@@ -2452,7 +2452,7 @@ static float dd_vol_min(gmx_domdec_t *dd)
     return dd->comm->load[0].cvol_min*dd->nnodes;
 }
 
-static gmx_bool dd_load_flags(gmx_domdec_t *dd)
+static int dd_load_flags(gmx_domdec_t *dd)
 {
     return dd->comm->load[0].flags;
 }
