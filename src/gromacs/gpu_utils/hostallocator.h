@@ -192,12 +192,21 @@ class HostAllocationPolicy
          * Does not throw.
          */
         PinningPolicy pinningPolicy() const;
-        //! Specify an allocator trait so that the stateful allocator should propagate.
-        using propagate_on_container_copy_assignment = std::true_type;
-        //! Specify an allocator trait so that the stateful allocator should propagate.
-        using propagate_on_container_move_assignment = std::true_type;
-        //! Specify an allocator trait so that the stateful allocator should propagate.
-        using propagate_on_container_swap = std::true_type;
+        //! Specify an allocator trait so that the stateful allocator doesn't propagate.
+        using propagate_on_container_copy_assignment = std::false_type;
+        //! Specify an allocator trait so that the stateful allocator doesn't propagate.
+        using propagate_on_container_move_assignment = std::false_type;
+        //! Specify an allocator trait so that the stateful allocator doesn't propagate.
+        using propagate_on_container_swap = std::false_type;
+        //! Prevent copy construction of containers with this allocator
+        template<typename U = void>
+        HostAllocationPolicy select_on_container_copy_construction() const
+        {
+            //Always false. Delay evaluation until method instantiation.
+            constexpr bool bFalse = !std::is_void<U>::value; //U is always void
+            static_assert(bFalse, "This allocator policy doesn't support copy construction.");
+            return *this;
+        }
     private:
         /*! \brief Set the current pinning policy.
          *
