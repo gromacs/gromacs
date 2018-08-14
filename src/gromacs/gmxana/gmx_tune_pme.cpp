@@ -858,7 +858,7 @@ static void make_benchmark_tprs(
         int64_t               statesteps,      /* Step counter in checkpoint file               */
         real                  rmin,            /* Minimal Coulomb radius                        */
         real                  rmax,            /* Maximal Coulomb radius                        */
-        real                  bScaleRvdw,      /* Scale rvdw along with rcoulomb                */
+        bool                  bScaleRvdw,      /* Scale rvdw along with rcoulomb                */
         const int            *ntprs,           /* No. of TPRs to write, each with a different
                                                   rcoulomb and fourierspacing                   */
         t_inputinfo          *info,            /* Contains information about mdp file options   */
@@ -1905,7 +1905,7 @@ static void create_command_line_snippets(
         sprintf(strbuf, "-deffnm %s ", deffnm);
         add_to_string(cmd_args_launch, strbuf);
     }
-    if (FALSE == bAppendFiles)
+    if (!bAppendFiles)
     {
         add_to_string(cmd_args_launch, "-noappend ");
     }

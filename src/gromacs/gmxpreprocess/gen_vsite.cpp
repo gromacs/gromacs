@@ -335,7 +335,7 @@ static int nitrogen_is_planar(t_vsiteconf vsiteconflist[], int nvsiteconf, char 
     }
     if (found)
     {
-        res = (vsiteconflist[i-1].isplanar == TRUE);
+        res = static_cast<int>(vsiteconflist[i-1].isplanar);
     }
     else
     {

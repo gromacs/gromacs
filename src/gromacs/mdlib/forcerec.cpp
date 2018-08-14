@@ -382,7 +382,7 @@ check_solvent_cg(const gmx_moltype_t    *molt,
         }
 
         /* Check that types & charges match for all atoms in molecule */
-        for (j = 0; j < nj && match == TRUE; j++)
+        for (j = 0; j < nj && match; j++)
         {
             if (tmp_vdwtype[j] != solvent_parameters[k].vdwtype[j])
             {
@@ -393,7 +393,7 @@ check_solvent_cg(const gmx_moltype_t    *molt,
                 match = FALSE;
             }
         }
-        if (match == TRUE)
+        if (match)
         {
             /* Congratulations! We have a matched solvent.
              * Flag it with this type for later processing.
@@ -419,7 +419,7 @@ check_solvent_cg(const gmx_moltype_t    *molt,
         /* Go through all other tpes and see if any have non-zero
          * VdW parameters when combined with this one.
          */
-        for (k = 0; k < fr->ntype && (has_vdw[j] == FALSE); k++)
+        for (k = 0; k < fr->ntype && (!has_vdw[j]); k++)
         {
             /* We already checked that the atoms weren't perturbed,
              * so we only need to check state A now.
@@ -449,8 +449,8 @@ check_solvent_cg(const gmx_moltype_t    *molt,
          * the charges on atom 2 & 3 should be the same, and only
          * atom 1 might have VdW.
          */
-        if (has_vdw[1] == FALSE &&
-            has_vdw[2] == FALSE &&
+        if (!has_vdw[1] &&
+            !has_vdw[2] &&
             tmp_charge[0]  != 0 &&
             tmp_charge[1]  != 0 &&
             tmp_charge[2]  == tmp_charge[1])
@@ -474,9 +474,9 @@ check_solvent_cg(const gmx_moltype_t    *molt,
          * For this we require thatn atoms 2,3,4 have charge, but not atom 1.
          * Only atom 1 mght have VdW.
          */
-        if (has_vdw[1] == FALSE &&
-            has_vdw[2] == FALSE &&
-            has_vdw[3] == FALSE &&
+        if (!has_vdw[1] &&
+            !has_vdw[2] &&
+            !has_vdw[3] &&
             tmp_charge[0]  == 0 &&
             tmp_charge[1]  != 0 &&
             tmp_charge[2]  == tmp_charge[1] &&
@@ -2440,7 +2440,7 @@ void init_forcerec(FILE                             *fp,
         bGenericKernelOnly = TRUE;
     }
 
-    if (bGenericKernelOnly == TRUE)
+    if (bGenericKernelOnly)
     {
         bNoSolvOpt         = TRUE;
     }
@@ -2669,7 +2669,7 @@ void init_forcerec(FILE                             *fp,
          */
         if (fr->nbkernel_elec_modifier == eintmodPOTSWITCH &&
             fr->nbkernel_vdw_modifier == eintmodPOTSWITCH &&
-            bGenericKernelOnly == FALSE)
+            !bGenericKernelOnly)
         {
             if ((ic->rcoulomb_switch != ic->rvdw_switch) || (ic->rcoulomb != ic->rvdw))
             {
@@ -2684,7 +2684,7 @@ void init_forcerec(FILE                             *fp,
                    fr->nbkernel_elec_modifier == eintmodEXACTCUTOFF &&
                    (fr->nbkernel_vdw_modifier == eintmodPOTSWITCH || fr->nbkernel_vdw_modifier == eintmodPOTSHIFT))))
         {
-            if ((ic->rcoulomb != ic->rvdw) && (bGenericKernelOnly == FALSE))
+            if ((ic->rcoulomb != ic->rvdw) && (!bGenericKernelOnly))
             {
                 fr->bcoultab = TRUE;
             }
@@ -2713,12 +2713,12 @@ void init_forcerec(FILE                             *fp,
                     gmx::boolToString(fr->bvdwtab));
         }
 
-        if (fr->bvdwtab == TRUE)
+        if (fr->bvdwtab)
         {
             fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_CUBICSPLINETABLE;
             fr->nbkernel_vdw_modifier    = eintmodNONE;
         }
-        if (fr->bcoultab == TRUE)
+        if (fr->bcoultab)
         {
             fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_CUBICSPLINETABLE;
             fr->nbkernel_elec_modifier    = eintmodNONE;

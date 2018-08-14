@@ -163,7 +163,7 @@ static int get_mtype_list(t_block *at, gmx_mtop_t *mtop, t_block *tlist)
             }
         }
 
-        if (bNEW == TRUE)
+        if (bNEW)
         {
             tlist->index[nr] = type;
             nr++;
@@ -838,13 +838,13 @@ static int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
         natom        = mtop->moltype[type].atoms.nr;
         nmol         = mtop->molblock[i].nmol;
 
-        for (j = 0; j < natom*nmol && bRM[type] == TRUE; j++)
+        for (j = 0; j < natom*nmol && bRM[type]; j++)
         {
             /*loop over atoms in the block*/
             at   = j+atom1; /*atom index = block index + offset*/
             bINS = FALSE;
 
-            for (m = 0; (m < ins_at->nr) && (bINS == FALSE); m++)
+            for (m = 0; (m < ins_at->nr) && (!bINS); m++)
             {
                 /*loop over atoms in insertion index group to determine if we're inserting one*/
                 if (at == ins_at->index[m])

@@ -1465,7 +1465,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     if (file_version >= 74)
     {
         gmx_fio_do_gmx_bool(fio, ir->bRot);
-        if (ir->bRot == TRUE)
+        if (ir->bRot)
         {
             if (bRead)
             {
@@ -1483,7 +1483,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     if (file_version >= tpxv_InteractiveMolecularDynamics)
     {
         gmx_fio_do_gmx_bool(fio, ir->bIMD);
-        if (TRUE == ir->bIMD)
+        if (ir->bIMD)
         {
             if (bRead)
             {
@@ -2694,12 +2694,12 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
         gmx_fio_do_int(fio, tpx->fep_state);
     }
     gmx_fio_do_real(fio, tpx->lambda);
-    gmx_fio_do_int(fio, tpx->bIr);
-    gmx_fio_do_int(fio, tpx->bTop);
-    gmx_fio_do_int(fio, tpx->bX);
-    gmx_fio_do_int(fio, tpx->bV);
-    gmx_fio_do_int(fio, tpx->bF);
-    gmx_fio_do_int(fio, tpx->bBox);
+    gmx_fio_do_gmx_bool(fio, tpx->bIr);
+    gmx_fio_do_gmx_bool(fio, tpx->bTop);
+    gmx_fio_do_gmx_bool(fio, tpx->bX);
+    gmx_fio_do_gmx_bool(fio, tpx->bV);
+    gmx_fio_do_gmx_bool(fio, tpx->bF);
+    gmx_fio_do_gmx_bool(fio, tpx->bBox);
 
     if ((fileGeneration > tpx_generation))
     {
@@ -2726,10 +2726,10 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         tpx.ngtc      = state->ngtc;
         tpx.fep_state = state->fep_state;
         tpx.lambda    = state->lambda[efptFEP];
-        tpx.bIr       = (ir       != nullptr);
-        tpx.bTop      = (mtop     != nullptr);
-        tpx.bX        = (state->flags & (1 << estX));
-        tpx.bV        = (state->flags & (1 << estV));
+        tpx.bIr       = ir       != nullptr;
+        tpx.bTop      = mtop     != nullptr;
+        tpx.bX        = (state->flags & (1 << estX)) != 0;
+        tpx.bV        = (state->flags & (1 << estV)) != 0;
         tpx.bF        = FALSE;
         tpx.bBox      = TRUE;
     }

@@ -402,7 +402,8 @@ void gen_nnb(t_nextnb *nnb, t_params plist[])
 static void
 sort_and_purge_nnb(t_nextnb *nnb)
 {
-    int i, j, k, m, n, cnt, found, prev, idx;
+    int  i, j, k, m, n, cnt, prev, idx;
+    bool found;
 
     for (i = 0; (i < nnb->nr); i++)
     {
@@ -417,12 +418,12 @@ sort_and_purge_nnb(t_nextnb *nnb)
             {
                 idx = nnb->a[i][n][j];
 
-                found = 0;
+                found = false;
                 for (m = 0; m < n && !found; m++)
                 {
                     for (k = 0; k < nnb->nrexcl[i][m] && !found; k++)
                     {
-                        found = (idx == nnb->a[i][m][k]);
+                        found = idx == nnb->a[i][m][k];
                     }
                 }
 
