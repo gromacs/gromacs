@@ -325,13 +325,13 @@ void gmx_gro_read_conf(const char *infile,
 static gmx_bool gmx_one_before_eof(FILE *fp)
 {
     char     data[4];
-    gmx_bool beof;
+    gmx_bool beof = fread(data, 1, 1, fp) != 1;
 
-    if ((beof = fread(data, 1, 1, fp)) == 1)
+    if (!beof)
     {
         gmx_fseek(fp, -1, SEEK_CUR);
     }
-    return !beof;
+    return beof;
 }
 
 gmx_bool gro_next_x_or_v(FILE *status, t_trxframe *fr)

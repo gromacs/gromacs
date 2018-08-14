@@ -442,9 +442,9 @@ gmx_fft_1d               (gmx_fft_t                  fft,
                           void *                     in_data,
                           void *                     out_data)
 {
-    int           aligned   = (((size_t(in_data) | size_t(out_data)) & 0xf) == 0);
-    int           inplace   = (in_data == out_data);
-    int           isforward = (dir == GMX_FFT_FORWARD);
+    bool          aligned   = (((size_t(in_data) | size_t(out_data)) & 0xf) == 0);
+    bool          inplace   = (in_data == out_data);
+    bool          isforward = (dir == GMX_FFT_FORWARD);
 
     /* Some checks */
     if ( (fft->real_transform == 1) || (fft->ndim != 1) ||
@@ -476,9 +476,9 @@ gmx_fft_1d_real          (gmx_fft_t                  fft,
                           void *                     in_data,
                           void *                     out_data)
 {
-    int           aligned   = (((size_t(in_data) | size_t(out_data)) & 0xf) == 0);
-    int           inplace   = (in_data == out_data);
-    int           isforward = (dir == GMX_FFT_REAL_TO_COMPLEX);
+    bool          aligned   = (((size_t(in_data) | size_t(out_data)) & 0xf) == 0);
+    bool          inplace   = (in_data == out_data);
+    bool          isforward = (dir == GMX_FFT_REAL_TO_COMPLEX);
 
     /* Some checks */
     if ( (fft->real_transform != 1) || (fft->ndim != 1) ||
@@ -517,9 +517,9 @@ gmx_fft_2d_real          (gmx_fft_t                  fft,
                           void *                     in_data,
                           void *                     out_data)
 {
-    int           aligned   = (((size_t(in_data) | size_t(out_data)) & 0xf) == 0);
-    int           inplace   = (in_data == out_data);
-    int           isforward = (dir == GMX_FFT_REAL_TO_COMPLEX);
+    bool          aligned   = (((size_t(in_data) | size_t(out_data)) & 0xf) == 0);
+    bool          inplace   = (in_data == out_data);
+    bool          isforward = (dir == GMX_FFT_REAL_TO_COMPLEX);
 
     /* Some checks */
     if ( (fft->real_transform != 1) || (fft->ndim != 2) ||

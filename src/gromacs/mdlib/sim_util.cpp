@@ -1084,8 +1084,8 @@ static void do_force_cutsVERLET(FILE *fplog,
     float               cycles_pme, cycles_wait_gpu;
     nonbonded_verlet_t *nbv = fr->nbv;
 
-    bStateChanged = (flags & GMX_FORCE_STATECHANGED);
-    bNS           = (flags & GMX_FORCE_NS) && (fr->bAllvsAll == FALSE);
+    bStateChanged = ((flags & GMX_FORCE_STATECHANGED) != 0);
+    bNS           = ((flags & GMX_FORCE_NS) != 0) && (!fr->bAllvsAll);
     bFillGrid     = (bNS && bStateChanged);
     bCalcCGCM     = (bFillGrid && !DOMAINDECOMP(cr));
     bDoForces     = (flags & GMX_FORCE_FORCES);
@@ -1800,8 +1800,8 @@ static void do_force_cutsGROUP(FILE *fplog,
         cg1--;
     }
 
-    bStateChanged  = (flags & GMX_FORCE_STATECHANGED);
-    bNS            = (flags & GMX_FORCE_NS) && (fr->bAllvsAll == FALSE);
+    bStateChanged  = ((flags & GMX_FORCE_STATECHANGED) != 0);
+    bNS            = ((flags & GMX_FORCE_NS) != 0) && (!fr->bAllvsAll);
     /* Should we perform the long-range nonbonded evaluation inside the neighborsearching? */
     bFillGrid      = (bNS && bStateChanged);
     bCalcCGCM      = (bFillGrid && !DOMAINDECOMP(cr));
@@ -2838,7 +2838,7 @@ extern void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, gmx:
     /* this function works, but could probably use a logic rewrite to keep all the different
        types of efep straight. */
 
-    if ((ir->efep == efepNO) && (ir->bSimTemp == FALSE))
+    if ((ir->efep == efepNO) && (!ir->bSimTemp))
     {
         return;
     }

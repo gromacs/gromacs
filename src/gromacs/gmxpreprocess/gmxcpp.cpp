@@ -365,11 +365,11 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
     unsigned int i1;
     char        *inc_fn, *name;
     const char  *ptr;
-    int          bIfdef, bIfndef;
+    bool         bIfdef, bIfndef;
 
     /* #ifdef or ifndef statement */
-    bIfdef  = (strcmp(dname, "ifdef") == 0);
-    bIfndef = (strcmp(dname, "ifndef") == 0);
+    bIfdef  = strcmp(dname, "ifdef") == 0;
+    bIfndef = strcmp(dname, "ifndef") == 0;
     if (bIfdef || bIfndef)
     {
         GMX_RELEASE_ASSERT(dval, "#ifdef/#ifndef requires an argument");

@@ -223,7 +223,7 @@ static void pme_dd_sendrecv(pme_atomcomm_t gmx_unused *atc,
     int        dest, src;
     MPI_Status stat;
 
-    if (bBackward == FALSE)
+    if (!bBackward)
     {
         dest = atc->node_dest[shift];
         src  = atc->node_src[shift];

@@ -1844,7 +1844,7 @@ static int nsgrid_core(const t_commrec *cr,
             /* Skip this charge group if it is not a QM atom while making a
              * QM/MM neighbourlist
              */
-            if (md->bQM[i0] == FALSE)
+            if (!md->bQM[i0])
             {
                 continue; /* MM particle, go to next particle */
             }

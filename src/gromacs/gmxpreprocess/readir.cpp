@@ -1899,7 +1899,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     ir->ns_type = get_eeenum(&inp, "ns-type",    ens_names, wi);
     printStringNoNewline(&inp, "Periodic boundary conditions: xyz, no, xy");
     ir->ePBC          = get_eeenum(&inp, "pbc",       epbc_names, wi);
-    ir->bPeriodicMols = get_eeenum(&inp, "periodic-molecules", yesno_names, wi);
+    ir->bPeriodicMols = get_eeenum(&inp, "periodic-molecules", yesno_names, wi) != 0;
     printStringNoNewline(&inp, "Allowed energy error due to the Verlet buffer in kJ/mol/ps per atom,");
     printStringNoNewline(&inp, "a value of -1 means: use rlist");
     ir->verletbuf_tol = get_ereal(&inp, "verlet-buffer-tolerance",    0.005, wi);
@@ -3919,14 +3919,14 @@ check_combination_rule_differences(const gmx_mtop_t *mtop, int state,
                 bCanDoLBRules = gmx_within_tol(c6_LB, c6, tol);
             }
 
-            if (FALSE == bCanDoLBRules)
+            if (!bCanDoLBRules)
             {
                 *bC6ParametersWorkWithLBRules = FALSE;
             }
 
             bCanDoGeometricRules = gmx_within_tol(c6_geometric, c6, tol);
 
-            if (FALSE == bCanDoGeometricRules)
+            if (!bCanDoGeometricRules)
             {
                 *bC6ParametersWorkWithGeometricRules = FALSE;
             }
@@ -3947,7 +3947,7 @@ check_combination_rules(const t_inputrec *ir, const gmx_mtop_t *mtop,
                                        &bLBRulesPossible);
     if (ir->ljpme_combination_rule == eljpmeLB)
     {
-        if (FALSE == bC6ParametersWorkWithLBRules || FALSE == bLBRulesPossible)
+        if (!bC6ParametersWorkWithLBRules || !bLBRulesPossible)
         {
             warning(wi, "You are using arithmetic-geometric combination rules "
                     "in LJ-PME, but your non-bonded C6 parameters do not "
@@ -3956,7 +3956,7 @@ check_combination_rules(const t_inputrec *ir, const gmx_mtop_t *mtop,
     }
     else
     {
-        if (FALSE == bC6ParametersWorkWithGeometricRules)
+        if (!bC6ParametersWorkWithGeometricRules)
         {
             if (ir->eDispCorr != edispcNO)
             {

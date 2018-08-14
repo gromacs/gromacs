@@ -99,7 +99,7 @@ void global_stat(gmx_global_stat_t gs,
                  gmx_bool bSumEkinhOld, int flags);
 /* All-reduce energy-like quantities over cr->mpi_comm_mysim */
 
-int do_per_step(int64_t step, int64_t nstep);
+bool do_per_step(int64_t step, int64_t nstep);
 /* Return TRUE if io should be done */
 
 /* ROUTINES from sim_util.c */
