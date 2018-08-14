@@ -146,7 +146,8 @@ static int vmax(const int* a, int s)
 fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_complex** rlin, t_complex** rlout, t_complex** rlout2, t_complex** rlout3, int nthreads, gmx::PinningPolicy realGridAllocationPinningPolicy)
 {
 
-    int        P[2], bMaster, prank[2], i, t;
+    int        P[2], prank[2], i, t;
+    bool       bMaster;
     int        rNG, rMG, rKG;
     int       *N0 = nullptr, *N1 = nullptr, *M0 = nullptr, *M1 = nullptr, *K0 = nullptr, *K1 = nullptr, *oN0 = nullptr, *oN1 = nullptr, *oM0 = nullptr, *oM1 = nullptr, *oK0 = nullptr, *oK1 = nullptr;
     int        N[3], M[3], K[3], pN[3], pM[3], pK[3], oM[3], oK[3], *iNin[3] = {nullptr}, *oNin[3] = {nullptr}, *iNout[3] = {nullptr}, *oNout[3] = {nullptr};
@@ -182,7 +183,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         prank[1] = 0;
     }
 
-    bMaster = (prank[0] == 0 && prank[1] == 0);
+    bMaster = prank[0] == 0 && prank[1] == 0;
 
 
     if (debug)

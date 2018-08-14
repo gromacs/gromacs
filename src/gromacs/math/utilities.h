@@ -139,7 +139,7 @@ gmx_within_tol(double   f1,
  *
  * \return 1  if 'almost' numerically zero, 0 otherwise.
  */
-int
+bool
 gmx_numzero(double a);
 
 /*! \brief Multiply two large ints

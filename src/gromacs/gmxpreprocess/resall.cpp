@@ -289,10 +289,10 @@ static void print_resall_header(FILE *out, t_restp rtp[])
             rtp[0].rb[1].type,
             rtp[0].rb[2].type,
             rtp[0].rb[3].type,
-            int{rtp[0].bKeepAllGeneratedDihedrals},
+            static_cast<int>(rtp[0].bKeepAllGeneratedDihedrals),
             rtp[0].nrexcl,
-            int{rtp[0].bGenerateHH14Interactions},
-            int{rtp[0].bRemoveDihedralIfWithImproper});
+            static_cast<int>(rtp[0].bGenerateHH14Interactions),
+            static_cast<int>(rtp[0].bRemoveDihedralIfWithImproper));
 }
 
 void print_resall(FILE *out, int nrtp, t_restp rtp[],

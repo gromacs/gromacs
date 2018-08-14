@@ -1543,7 +1543,7 @@ Lincs *init_lincs(FILE *fplog, const gmx_mtop_t &mtop,
     if (debug && bPLINCS)
     {
         fprintf(debug, "PLINCS communication before each iteration: %d\n",
-                int{li->bCommIter});
+                static_cast<int>(li->bCommIter));
     }
 
     /* LINCS can run on any number of threads.
@@ -1774,7 +1774,7 @@ static void assign_constraint(Lincs *li,
 static void check_assign_connected(Lincs *li,
                                    const t_iatom *iatom,
                                    const t_idef &idef,
-                                   int bDynamics,
+                                   bool bDynamics,
                                    int a1, int a2,
                                    const t_blocka *at2con)
 {
@@ -1823,7 +1823,7 @@ static void check_assign_connected(Lincs *li,
 static void check_assign_triangle(Lincs *li,
                                   const t_iatom *iatom,
                                   const t_idef &idef,
-                                  int bDynamics,
+                                  bool bDynamics,
                                   int constraint_index,
                                   int a1, int a2,
                                   const t_blocka *at2con)

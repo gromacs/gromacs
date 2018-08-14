@@ -2554,7 +2554,7 @@ void split_vsites_over_threads(const t_ilist   *ilist,
     if (debug && vsite->nthreads > 1)
     {
         fprintf(debug, "virtual site useInterdependentTask %d, nuse:\n",
-                int{vsite->tData[0]->useInterdependentTask});
+                static_cast<int>(vsite->tData[0]->useInterdependentTask));
         for (int th = 0; th < vsite->nthreads + 1; th++)
         {
             fprintf(debug, " %4d", vsite->tData[th]->idTask.nuse);

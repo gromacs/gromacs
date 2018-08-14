@@ -60,7 +60,7 @@ gmx_within_tol(double   f1,
     return fabs(f1-f2) <= tol*0.5*(fabs(f1)+fabs(f2));
 }
 
-int
+bool
 gmx_numzero(double a)
 {
     return gmx_within_tol(a, 0.0, GMX_REAL_MIN/GMX_REAL_EPS);

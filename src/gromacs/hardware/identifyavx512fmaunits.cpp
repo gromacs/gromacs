@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -224,7 +224,7 @@ timeFmaOnlyLoop(uint64_t loopCount)
     return cycles;
 }
 
-int
+bool
 checkDualAvx512FmaUnits()
 {
     uint64_t timeFmaAndShuf = 1e9;             // Large value
@@ -241,7 +241,7 @@ checkDualAvx512FmaUnits()
         timeFmaOnly    = std::min(timeFmaOnly, timeFmaOnlyLoop(1000) );
     }
 
-    return (timeFmaAndShuf > 1.5 * timeFmaOnly);
+    return timeFmaAndShuf > 1.5 * timeFmaOnly;
 }
 
 #endif  // GMX_X86_GCC_INLINE_ASM && SIMD_AVX_512_CXX_SUPPORTED
