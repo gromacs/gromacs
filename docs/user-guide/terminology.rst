@@ -5,7 +5,7 @@ Pressure
 --------
 
 The pressure in molecular dynamics can be computed from the kinetic energy and
-the virial.
+the virial. 
 
 Fluctuation
 ^^^^^^^^^^^
@@ -67,7 +67,7 @@ adjusting for periodicity effects, and the solution with :ref:`gmx trjconv`
 follows the same lines. Some complex cases needing more than one operation will
 require more than one invocation of :ref:`gmx trjconv` in order to work.
 
-For further information, see `Reference Manual`_.
+For further information, see the corresponding section in the :ref:`Reference Manual <pbc>`.
 
 Suggested workflow
 ^^^^^^^^^^^^^^^^^^
@@ -130,7 +130,8 @@ think of the role of a thermostat as ensuring that we have
 (a) the correct average temperature, and
 (b) the fluctuations of the correct size.
 
-See `Reference Manual`_ for details on how temperature coupling is applied and
+See the relevant section in the :ref:`Reference Manual <temp-coupling>`
+for details on how temperature coupling is applied and
 the types currently available.
 
 .. _gmx-thermostats-do:
@@ -359,12 +360,13 @@ Other sources of possible problems are in the biomolecule topology itself.
 #. Did you override long/short bond warnings by changing the lengths? If so,
    don't. You probably have missing atoms or some terrible input geometry.
 
-.. _reference manual: gmx-manual-parent-dir_
-
 .. _gmx-md:
 
 Molecular dynamics
 ------------------
+
+A short introduction to Molecular Dynamics can be found in the
+:ref:`Reference Manual <md>`.
 
 .. TODO refer to reference manual definitions
 
