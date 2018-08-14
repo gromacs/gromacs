@@ -495,7 +495,7 @@ static int lambda_vec_cmp_foreign(const lambda_vec_t *a,
     {
         return 0;
     }
-    return norm_a > norm_b;
+    return (norm_a > norm_b) ? 1 : -1;
 }
 
 /* Compare the sort order of two native lambda vectors
