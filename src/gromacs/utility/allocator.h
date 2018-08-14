@@ -133,7 +133,10 @@ class Allocator : public AllocationPolicy
          * it in debug mode, presumably to implement some checks.
          */
         template <class U>
-        explicit Allocator(const Allocator<U, AllocationPolicy> & /*unused*/) {}
+        explicit Allocator(const Allocator<U, AllocationPolicy> &o) : AllocationPolicy(o) {}
+
+        template <class U>
+        explicit Allocator(Allocator<U, AllocationPolicy> &&o) : AllocationPolicy(o) {}
 
         /*! \brief Constructor
          *
@@ -249,6 +252,12 @@ class Allocator : public AllocationPolicy
          */
         bool
         operator!=(const Allocator &rhs) const { return !operator==(rhs); }
+
+        //! Obtain allocator for copy construction
+        Allocator select_on_container_copy_construction() const
+        {
+            return Allocator(AllocationPolicy::select_on_container_copy_construction());
+        }
 };
 
 }      // namespace gmx
