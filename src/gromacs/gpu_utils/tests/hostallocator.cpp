@@ -258,14 +258,15 @@ TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkWithCuda)
 
     typename TestFixture::VectorType input;
     changePinningPolicy(&input, PinningPolicy::CanBePinned);
+    EXPECT_TRUE(input.get_allocator().pinningPolicy() == PinningPolicy::CanBePinned);
     EXPECT_FALSE(isPinned(input));
 
     // Unpin before allocation is fine, but does nothing.
-    input.get_allocator().getPolicy().unpin();
+    input.get_allocator().getPolicy().unpin(input.data());
     EXPECT_FALSE(isPinned(input));
 
     // Pin with no contents is fine, but does nothing.
-    input.get_allocator().getPolicy().pin();
+    input.get_allocator().getPolicy().pin(input.data(), 0);
     EXPECT_FALSE(isPinned(input));
 
     // Fill some contents, which will be pinned because of the policy.
@@ -273,18 +274,19 @@ TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkWithCuda)
     EXPECT_TRUE(isPinned(input));
 
     // Unpin after pin is fine.
-    input.get_allocator().getPolicy().unpin();
+    input.get_allocator().getPolicy().unpin(input.data());
     EXPECT_FALSE(isPinned(input));
 
     // Repeated unpin should be a no-op.
-    input.get_allocator().getPolicy().unpin();
+    input.get_allocator().getPolicy().unpin(input.data());
 
     // Pin after unpin is fine.
-    input.get_allocator().getPolicy().pin();
+    const size_t size = input.size() * sizeof(typename TestFixture::VectorType::value_type);
+    input.get_allocator().getPolicy().pin(input.data(), size);
     EXPECT_TRUE(isPinned(input));
 
     // Repeated pin should be a no-op, and still pinned.
-    input.get_allocator().getPolicy().pin();
+    input.get_allocator().getPolicy().pin(input.data(), size);
     EXPECT_TRUE(isPinned(input));
 
     // Switching policy to CannotBePinned must unpin the buffer (via
@@ -321,8 +323,9 @@ TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkEvenWithoutCuda)
 
     // Since the buffer can't be pinned and isn't pinned, and the
     // calling code can't be unhappy about this, these are OK.
-    input.get_allocator().getPolicy().pin();
-    input.get_allocator().getPolicy().unpin();
+    input.get_allocator().getPolicy().pin(input.data(),
+                                          input.size()*sizeof(typename TestFixture::VectorType::value_type));
+    input.get_allocator().getPolicy().unpin(input.data());
 }
 
 #endif
