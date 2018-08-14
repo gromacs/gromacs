@@ -129,7 +129,7 @@ gmx_residuetype_get_type(gmx_residuetype_t *rt, const char * resname, const char
 int
 gmx_residuetype_add(gmx_residuetype_t *rt, const char *newresname, const char *newrestype)
 {
-    int           found;
+    bool          found;
     const char *  p_oldtype;
 
     found = !gmx_residuetype_get_type(rt, newresname, &p_oldtype);
@@ -140,7 +140,7 @@ gmx_residuetype_add(gmx_residuetype_t *rt, const char *newresname, const char *n
                 newresname, p_oldtype, newrestype);
     }
 
-    if (found == 0)
+    if (!found)
     {
         srenew(rt->resname, rt->n+1);
         srenew(rt->restype, rt->n+1);

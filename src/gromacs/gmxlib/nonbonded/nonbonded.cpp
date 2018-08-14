@@ -111,14 +111,14 @@ gmx_nonbonded_setup(t_forcerec *   fr,
 {
     tMPI_Thread_mutex_lock(&nonbonded_setup_mutex);
     /* Here we are guaranteed only one thread made it. */
-    if (nonbonded_setup_done == FALSE)
+    if (!nonbonded_setup_done)
     {
-        if (bGenericKernelOnly == FALSE)
+        if (!bGenericKernelOnly)
         {
             /* Add the generic kernels to the structure stored statically in nb_kernel.c */
             nb_kernel_list_add_kernels(kernellist_c, kernellist_c_size);
 
-            if (!(fr != nullptr && fr->use_simd_kernels == FALSE))
+            if (!(fr != nullptr && !fr->use_simd_kernels))
             {
                 /* Add interaction-specific kernels for different architectures */
                 /* Single precision */
@@ -221,7 +221,7 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
     int              narch = asize(arch_and_padding);
     int              i;
 
-    if (nonbonded_setup_done == FALSE)
+    if (!nonbonded_setup_done)
     {
         /* We typically call this setup routine before starting timers,
          * but if that has not been done for whatever reason we do it now.

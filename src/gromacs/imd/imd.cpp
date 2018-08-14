@@ -1302,7 +1302,7 @@ void init_IMD(t_inputrec             *ir,
 
 
     /* We will allow IMD sessions only if explicitly enabled in the .tpr file */
-    if (FALSE == ir->bIMD)
+    if (!ir->bIMD)
     {
         return;
     }

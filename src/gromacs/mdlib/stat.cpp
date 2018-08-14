@@ -380,14 +380,14 @@ void global_stat(gmx_global_stat_t gs,
     }
 }
 
-int do_per_step(int64_t step, int64_t nstep)
+bool do_per_step(int64_t step, int64_t nstep)
 {
     if (nstep != 0)
     {
-        return ((step % nstep) == 0);
+        return (step % nstep) == 0;
     }
     else
     {
-        return 0;
+        return false;
     }
 }

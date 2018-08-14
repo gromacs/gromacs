@@ -1357,7 +1357,7 @@ static int is_hbond(t_hbdata *hb, int grpd, int grpa, int d, int a,
  * Will do some more testing before removing the function entirely.
  * - Erik Marklund, MAY 10 2010 */
 static void do_merge(t_hbdata *hb, int ntmp,
-                     unsigned int htmp[], unsigned int gtmp[],
+                     bool htmp[], bool gtmp[],
                      t_hbond *hb0, t_hbond *hb1)
 {
     /* Here we need to make sure we're treating periodicity in
@@ -1373,8 +1373,8 @@ static void do_merge(t_hbdata *hb, int ntmp,
     /* Initiate tmp arrays */
     for (m = 0; (m < ntmp); m++)
     {
-        htmp[m] = 0;
-        gtmp[m] = 0;
+        htmp[m] = false;
+        gtmp[m] = false;
     }
     /* Fill tmp arrays with values due to first HB */
     /* Once again '<' had to be replaced with '<='
@@ -1420,7 +1420,7 @@ static void do_merge(t_hbdata *hb, int ntmp,
 static void merge_hb(t_hbdata *hb, gmx_bool bTwo, gmx_bool bContact)
 {
     int           i, inrnew, indnew, j, ii, jj, id, ia, ntmp;
-    unsigned int *htmp, *gtmp;
+    bool         *htmp, *gtmp;
     t_hbond      *hb0, *hb1;
 
     inrnew = hb->nrhb;
@@ -2507,7 +2507,7 @@ int gmx_hbond(int argc, char *argv[])
     t_rgb                 hbrgb [HB_NR] = { {1, 1, 1}, {1, 0, 0},   {0, 0, 1},    {1, 0, 1} };
 
     t_trxstatus          *status;
-    int                   trrStatus = 1;
+    bool                  trrStatus = true;
     t_topology            top;
     t_pargs              *ppa;
     int                   npargs, natoms, nframes = 0, shatom;

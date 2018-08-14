@@ -463,7 +463,7 @@ do_pairs_general(int ftype, int nbonds,
         c12 *= 12.0;
 
         /* Do we need to apply full periodic boundary conditions? */
-        if (fr->bMolPBC == TRUE)
+        if (fr->bMolPBC)
         {
             fshift_index = pbc_dx_aiuc(pbc, x[ai], x[aj], dx);
         }
@@ -478,7 +478,7 @@ do_pairs_general(int ftype, int nbonds,
         {
             /* This check isn't race free. But it doesn't matter because if a race occurs the only
              * disadvantage is that the warning is printed twice */
-            if (warned_rlimit == FALSE)
+            if (!warned_rlimit)
             {
                 warning_rlimit(x, ai, aj, global_atom_index, sqrt(r2), fr->pairsTable->r);
                 warned_rlimit = TRUE;

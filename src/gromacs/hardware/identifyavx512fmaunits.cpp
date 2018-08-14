@@ -224,7 +224,7 @@ timeFmaOnlyLoop(uint64_t loopCount)
     return cycles;
 }
 
-int
+bool
 checkDualAvx512FmaUnits()
 {
     uint64_t timeFmaAndShuf = 1e9;             // Large value
@@ -241,7 +241,7 @@ checkDualAvx512FmaUnits()
         timeFmaOnly    = std::min(timeFmaOnly, timeFmaOnlyLoop(1000) );
     }
 
-    return (timeFmaAndShuf > 1.5 * timeFmaOnly);
+    return timeFmaAndShuf > 1.5 * timeFmaOnly;
 }
 
 #endif  // GMX_X86_GCC_INLINE_ASM && SIMD_AVX_512_CXX_SUPPORTED
