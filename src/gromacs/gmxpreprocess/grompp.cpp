@@ -561,7 +561,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
             warning_note(wi, warn_buf);
         }
     }
-    if (opts->bOrire == FALSE)
+    if (!opts->bOrire)
     {
         i = rm_interactions(F_ORIRES, nrmols, molinfo);
         if (i > 0)
@@ -648,9 +648,9 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         fprintf(stderr, "double-checking input for internal consistency...\n");
     }
     {
-        int bHasNormalConstraints = 0 < (nint_ftype(sys, molinfo, F_CONSTR) +
-                                         nint_ftype(sys, molinfo, F_CONSTRNC));
-        int bHasAnyConstraints = bHasNormalConstraints || 0 < nint_ftype(sys, molinfo, F_SETTLE);
+        bool bHasNormalConstraints = 0 < (nint_ftype(sys, molinfo, F_CONSTR) +
+                                          nint_ftype(sys, molinfo, F_CONSTRNC));
+        bool bHasAnyConstraints = bHasNormalConstraints || 0 < nint_ftype(sys, molinfo, F_SETTLE);
         double_check(ir, state->box,
                      bHasNormalConstraints,
                      bHasAnyConstraints,
@@ -898,7 +898,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
                     gmx_fatal(FARGS, "Position restraint atom index (%d) in moltype '%s' is larger than number of atoms in %s (%d).\n",
                               ai+1, *molinfo[molb.type].name, fn, natoms);
                 }
-                if (rc_scaling == erscCOM && hadAtom[ai] == FALSE)
+                if (rc_scaling == erscCOM && !hadAtom[ai])
                 {
                     /* Determine the center of mass of the posres reference coordinates */
                     for (j = 0; j < npbcdim; j++)

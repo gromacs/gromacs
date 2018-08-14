@@ -127,10 +127,10 @@ assign_param(t_functype ftype, t_iparams *newparam,
          * zero parameters (e.g. an index to a Cmap interaction, or LJ parameters), but
          * we use it for angles and torsions that are typically generated automatically.
          */
-        all_param_zero = (all_param_zero == TRUE) && fabs(old[j]) < GMX_REAL_MIN;
+        all_param_zero = all_param_zero && fabs(old[j]) < GMX_REAL_MIN;
     }
 
-    if (all_param_zero == TRUE)
+    if (all_param_zero)
     {
         if (IS_ANGLE(ftype) || IS_RESTRAINT_TYPE(ftype) || ftype == F_IDIHS ||
             ftype == F_PDIHS || ftype == F_PIDIHS || ftype == F_RBDIHS || ftype == F_FOURDIHS)

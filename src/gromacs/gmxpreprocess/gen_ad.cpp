@@ -999,7 +999,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
             hbang = &hb[i].rb[ebtsANGLES];
             for (j = 0; j < hbang->nb; j++)
             {
-                if (hbang->b[j].match == TRUE)
+                if (hbang->b[j].match)
                 {
                     /* We already used this entry, continue to the next */
                     continue;
@@ -1044,7 +1044,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
             hbdih = &hb[i].rb[ebtsPDIHS];
             for (j = 0; j < hbdih->nb; j++)
             {
-                if (hbdih->b[j].match == TRUE)
+                if (hbdih->b[j].match)
                 {
                     /* We already used this entry, continue to the next */
                     continue;

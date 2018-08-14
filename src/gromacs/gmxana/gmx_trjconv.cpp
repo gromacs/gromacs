@@ -1442,7 +1442,7 @@ int gmx_trjconv(int argc, char *argv[])
                 if (bSetBox)
                 {
                     /* generate new box */
-                    if (fr.bBox == FALSE)
+                    if (!fr.bBox)
                     {
                         clear_mat(fr.box);
                     }
@@ -1454,7 +1454,7 @@ int gmx_trjconv(int argc, char *argv[])
                         }
                         else
                         {
-                            if (fr.bBox == FALSE)
+                            if (!fr.bBox)
                             {
                                 gmx_fatal(FARGS, "Cannot preserve a box that does not exist.\n");
                             }

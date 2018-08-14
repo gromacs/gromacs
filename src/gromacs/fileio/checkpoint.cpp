@@ -294,6 +294,18 @@ static void do_cpt_int_err(XDR *xd, const char *desc, int *i, FILE *list)
     }
 }
 
+static void do_cpt_bool_err(XDR *xd, const char *desc, bool *b, FILE *list)
+{
+    int i   = static_cast<int>(*b);
+
+    if (do_cpt_int(xd, desc, &i, list) < 0)
+    {
+        cp_error();
+    }
+
+    *b = (i != 0);
+}
+
 static void do_cpt_step_err(XDR *xd, const char *desc, int64_t *i, FILE *list)
 {
     char   buf[STEPSTRSIZE];
@@ -1573,9 +1585,9 @@ static int do_cpt_awh_bias(XDR *xd, gmx_bool bRead,
             switch (i)
             {
                 case eawhhIN_INITIAL:
-                    do_cpt_int_err(xd, eawhh_names[i], &state->in_initial, list); break;
+                    do_cpt_bool_err(xd, eawhh_names[i], &state->in_initial, list); break;
                 case eawhhEQUILIBRATEHISTOGRAM:
-                    do_cpt_int_err(xd, eawhh_names[i], &state->equilibrateHistogram, list); break;
+                    do_cpt_bool_err(xd, eawhh_names[i], &state->equilibrateHistogram, list); break;
                 case eawhhHISTSIZE:
                     do_cpt_double_err(xd, eawhh_names[i], &state->histSize, list); break;
                 case eawhhNPOINTS:

@@ -161,7 +161,7 @@ real do_fbposres_cylinder(int fbdim, rvec fm, rvec dx, real rfb, real kk, gmx_bo
     }
 
     if  (dr2 > 0.0 &&
-         ( (dr2 > rfb2 && bInvert == FALSE ) || (dr2 < rfb2 && bInvert == TRUE ) )
+         ( (dr2 > rfb2 && !bInvert ) || (dr2 < rfb2 && bInvert ) )
          )
     {
         dr     = std::sqrt(dr2);
@@ -249,7 +249,7 @@ real fbposres(int nbonds,
                 /* spherical flat-bottom posres */
                 dr2 = norm2(dx);
                 if (dr2 > 0.0 &&
-                    ( (dr2 > rfb2 && bInvert == FALSE ) || (dr2 < rfb2 && bInvert == TRUE ) )
+                    ( (dr2 > rfb2 && !bInvert ) || (dr2 < rfb2 && bInvert ) )
                     )
                 {
                     dr   = std::sqrt(dr2);
@@ -281,12 +281,12 @@ real fbposres(int nbonds,
                 /* 1D flat-bottom potential */
                 fbdim = pr->fbposres.geom - efbposresX;
                 dr    = dx[fbdim];
-                if ( ( dr > rfb && bInvert == FALSE ) || ( 0 < dr && dr < rfb && bInvert == TRUE )  )
+                if ( ( dr > rfb && !bInvert ) || ( 0 < dr && dr < rfb && bInvert )  )
                 {
                     v         = 0.5*kk*gmx::square(dr - rfb);
                     fm[fbdim] = -kk*(dr - rfb);
                 }
-                else if ( (dr < (-rfb) && bInvert == FALSE ) || ( (-rfb) < dr && dr < 0 && bInvert == TRUE ))
+                else if ( (dr < (-rfb) && !bInvert ) || ( (-rfb) < dr && dr < 0 && bInvert ))
                 {
                     v         = 0.5*kk*gmx::square(dr + rfb);
                     fm[fbdim] = -kk*(dr + rfb);
