@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,12 +90,6 @@ std::size_t HostAllocationPolicy::alignment()
 }
 void *HostAllocationPolicy::malloc(std::size_t bytes) const noexcept
 {
-    // A container could have a pinned allocation that is being
-    // extended, in which case we must un-pin while we still know the
-    // old pinned vector, and which also ensures we don't pin two
-    // buffers at the same time. If there's no allocation, or it isn't
-    // pinned, then attempting to unpin it is OK, too.
-    unpin();
     impl_->pointer_ = (impl_->pinningPolicy_ == PinningPolicy::CanBePinned ?
                        PageAlignedAllocationPolicy::malloc(bytes) :
                        AlignedAllocationPolicy::malloc(bytes));

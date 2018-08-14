@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -141,8 +141,7 @@ class HostAllocationPolicy
         /*! \brief Allocate and perhaps pin page-aligned memory suitable for
          * e.g. GPU transfers.
          *
-         * Before attempting to allocate, unpin() is called. After a
-         * successful allocation, pin() is called. (Whether these do
+         * After a successful allocation, pin() is called. (Whether this does
          * things depends on the PinningPolicy that is in effect.)
          *
          *  \param bytes Amount of memory (bytes) to allocate. It is valid to ask for
