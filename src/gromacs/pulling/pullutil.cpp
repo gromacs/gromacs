@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -818,4 +818,135 @@ void pull_calc_coms(t_commrec *cr,
         /* Calculate the COMs for the cyclinder reference groups */
         make_cyl_refgrps(cr, pull, md, pbc, t, x);
     }
+}
+
+using BoolVec = gmx::BasicVector<bool>;
+
+/* Returns whether the pull group obeys the PBC restrictions */
+static bool pullGroupObeysPbcRestrictions(const pull_group_work_t &group,
+                                          const BoolVec           &dimUsed,
+                                          const rvec              *x,
+                                          const t_pbc             &pbc,
+                                          const rvec              &x_pbc)
+{
+    /* Determine which dimensions are relevant for PBC */
+    BoolVec dimUsesPbc       = { false, false, false };
+    bool    pbcIsRectangular = true;
+    for (int d = 0; d < pbc.ndim_ePBC; d++)
+    {
+        if (dimUsed[d])
+        {
+            dimUsesPbc[d] = true;
+            /* All non-zero dimensions of vector v are involved in PBC */
+            for (int d2 = d + 1; d2 < pbc.ndim_ePBC; d2++)
+            {
+                assert(d2 < DIM);
+                if (pbc.box[d2][d] != 0)
+                {
+                    dimUsesPbc[d2]   = true;
+                    pbcIsRectangular = false;
+                }
+            }
+        }
+    }
+
+    rvec marginPerDim;
+    real marginDistance2 = 0;
+    if (pbcIsRectangular)
+    {
+        /* Use margins for dimensions independently */
+        for (int d = 0; d < pbc.ndim_ePBC; d++)
+        {
+            marginPerDim[d] = c_pullGroupPbcMargin*pbc.hbox_diag[d];
+        }
+    }
+    else
+    {
+        /* Check the total distance along the relevant dimensions */
+        for (int d = 0; d < pbc.ndim_ePBC; d++)
+        {
+            if (dimUsesPbc[d])
+            {
+                marginDistance2 += c_pullGroupPbcMargin*gmx::square(0.5)*norm2(pbc.box[d]);
+            }
+        }
+    }
+
+    for (int i = 0; i < group.nat_loc; i++)
+    {
+        rvec dx;
+        pbc_dx(&pbc, x[group.ind_loc[i]], x_pbc, dx);
+
+        bool atomIsTooFar = false;
+        if (pbcIsRectangular)
+        {
+            for (int d = 0; d < pbc.ndim_ePBC; d++)
+            {
+                if (dimUsesPbc[d] && (dx[d] < -marginPerDim[d] ||
+                                      dx[d] >  marginPerDim[d]))
+                {
+                    atomIsTooFar = true;
+                }
+            }
+        }
+        else
+        {
+            real pbcDistance2 = 0;
+            for (int d = 0; d < pbc.ndim_ePBC; d++)
+            {
+                if (dimUsesPbc[d])
+                {
+                    pbcDistance2 += gmx::square(dx[d]);
+                }
+            }
+            atomIsTooFar = (pbcDistance2 > marginDistance2);
+        }
+        if (atomIsTooFar)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+int pullCheckPbcWithinGroups(const pull_t &pull,
+                             const rvec   *x,
+                             const t_pbc  &pbc)
+{
+    if (pbc.ePBC == epbcNONE)
+    {
+        return -1;
+    }
+
+    /* Determine what dimensions are used for each group by pull coordinates */
+    std::vector<BoolVec> dimUsed(pull.ngroup, { false, false, false });
+    for (int c = 0; c < pull.ncoord; c++)
+    {
+        const t_pull_coord &coordParams = pull.coord[c].params;
+        for (int groupIndex = 0; groupIndex < coordParams.ngroup; groupIndex++)
+        {
+            for (int d = 0; d < DIM; d++)
+            {
+                if (coordParams.dim[d] &&
+                    !(coordParams.eGeom == epullgCYL && groupIndex == 0))
+                {
+                    dimUsed[coordParams.group[groupIndex]][d] = true;
+                }
+            }
+        }
+    }
+
+    /* Check PBC for every group that uses a PBC reference atom treatment */
+    for (int g = 0; g < pull.ngroup; g++)
+    {
+        const pull_group_work_t &group = pull.group[g];
+        if (group.epgrppbc == epgrppbcREFAT &&
+            !pullGroupObeysPbcRestrictions(group, dimUsed[g], x, pbc, pull.comm.rbuf[g]))
+        {
+            return g;
+        }
+    }
+
+    return -1;
 }
