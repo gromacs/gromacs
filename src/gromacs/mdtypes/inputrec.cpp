@@ -1151,7 +1151,7 @@ static void cmp_awhBiasParams(FILE *fp, const gmx::AwhBiasParams *bias1, const g
     cmp_double(fp, "inputrec->awhParams->biastargetBetaScaling", biasIndex, bias1->targetBetaScaling, bias2->targetBetaScaling, ftol, abstol);
     cmp_double(fp, "inputrec->awhParams->biastargetCutoff", biasIndex, bias1->targetCutoff, bias2->targetCutoff, ftol, abstol);
     cmp_int(fp, "inputrec->awhParams->biaseGrowth", biasIndex, bias1->eGrowth, bias2->eGrowth);
-    cmp_bool(fp, "inputrec->awhParams->biasbUserData", biasIndex, bias1->bUserData, bias2->bUserData);
+    cmp_bool(fp, "inputrec->awhParams->biasbUserData", biasIndex, bias1->bUserData != 0, bias2->bUserData != 0);
     cmp_double(fp, "inputrec->awhParams->biaserror_initial", biasIndex, bias1->errorInitial, bias2->errorInitial, ftol, abstol);
     cmp_int(fp, "inputrec->awhParams->biasShareGroup", biasIndex, bias1->shareGroup, bias2->shareGroup);
 
@@ -1296,10 +1296,10 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     cmp_real(fp, "inputrec->ewald_rtol", -1, ir1->ewald_rtol, ir2->ewald_rtol, ftol, abstol);
     cmp_int(fp, "inputrec->ewald_geometry", -1, ir1->ewald_geometry, ir2->ewald_geometry);
     cmp_real(fp, "inputrec->epsilon_surface", -1, ir1->epsilon_surface, ir2->epsilon_surface, ftol, abstol);
-    cmp_int(fp, "inputrec->bContinuation", -1, ir1->bContinuation, ir2->bContinuation);
-    cmp_int(fp, "inputrec->bShakeSOR", -1, ir1->bShakeSOR, ir2->bShakeSOR);
+    cmp_int(fp, "inputrec->bContinuation", -1, static_cast<int>(ir1->bContinuation), static_cast<int>(ir2->bContinuation));
+    cmp_int(fp, "inputrec->bShakeSOR", -1, static_cast<int>(ir1->bShakeSOR), static_cast<int>(ir2->bShakeSOR));
     cmp_int(fp, "inputrec->etc", -1, ir1->etc, ir2->etc);
-    cmp_int(fp, "inputrec->bPrintNHChains", -1, ir1->bPrintNHChains, ir2->bPrintNHChains);
+    cmp_int(fp, "inputrec->bPrintNHChains", -1, static_cast<int>(ir1->bPrintNHChains), static_cast<int>(ir2->bPrintNHChains));
     cmp_int(fp, "inputrec->epc", -1, ir1->epc, ir2->epc);
     cmp_int(fp, "inputrec->epct", -1, ir1->epct, ir2->epct);
     cmp_real(fp, "inputrec->tau_p", -1, ir1->tau_p, ir2->tau_p, ftol, abstol);
@@ -1330,12 +1330,12 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     cmp_real(fp, "inputrec->shake_tol", -1, ir1->shake_tol, ir2->shake_tol, ftol, abstol);
     cmp_int(fp, "inputrec->efep", -1, ir1->efep, ir2->efep);
     cmp_fepvals(fp, ir1->fepvals, ir2->fepvals, ftol, abstol);
-    cmp_int(fp, "inputrec->bSimTemp", -1, ir1->bSimTemp, ir2->bSimTemp);
+    cmp_int(fp, "inputrec->bSimTemp", -1, static_cast<int>(ir1->bSimTemp), static_cast<int>(ir2->bSimTemp));
     if ((ir1->bSimTemp == ir2->bSimTemp) && (ir1->bSimTemp))
     {
         cmp_simtempvals(fp, ir1->simtempvals, ir2->simtempvals, std::min(ir1->fepvals->n_lambda, ir2->fepvals->n_lambda), ftol, abstol);
     }
-    cmp_int(fp, "inputrec->bExpanded", -1, ir1->bExpanded, ir2->bExpanded);
+    cmp_int(fp, "inputrec->bExpanded", -1, static_cast<int>(ir1->bExpanded), static_cast<int>(ir2->bExpanded));
     if ((ir1->bExpanded == ir2->bExpanded) && (ir1->bExpanded))
     {
         cmp_expandedvals(fp, ir1->expandedvals, ir2->expandedvals, std::min(ir1->fepvals->n_lambda, ir2->fepvals->n_lambda), ftol, abstol);
@@ -1363,7 +1363,7 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     cmp_int(fp, "inputrec->eDisre", -1, ir1->eDisre, ir2->eDisre);
     cmp_real(fp, "inputrec->dr_fc", -1, ir1->dr_fc, ir2->dr_fc, ftol, abstol);
     cmp_int(fp, "inputrec->eDisreWeighting", -1, ir1->eDisreWeighting, ir2->eDisreWeighting);
-    cmp_int(fp, "inputrec->bDisreMixed", -1, ir1->bDisreMixed, ir2->bDisreMixed);
+    cmp_int(fp, "inputrec->bDisreMixed", -1, static_cast<int>(ir1->bDisreMixed), static_cast<int>(ir2->bDisreMixed));
     cmp_int(fp, "inputrec->nstdisreout", -1, ir1->nstdisreout, ir2->nstdisreout);
     cmp_real(fp, "inputrec->dr_tau", -1, ir1->dr_tau, ir2->dr_tau, ftol, abstol);
     cmp_real(fp, "inputrec->orires_fc", -1, ir1->orires_fc, ir2->orires_fc, ftol, abstol);

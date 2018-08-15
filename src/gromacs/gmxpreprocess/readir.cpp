@@ -1680,14 +1680,14 @@ static void read_expandedparams(std::vector<t_inpfile> *inp,
     expand->lmc_repeats         = get_eint(inp, "lmc-repeats", 1, wi);
     expand->gibbsdeltalam       = get_eint(inp, "lmc-gibbsdelta", -1, wi);
     expand->lmc_forced_nstart   = get_eint(inp, "lmc-forced-nstart", 0, wi);
-    expand->bSymmetrizedTMatrix = get_eeenum(inp, "symmetrized-transition-matrix", yesno_names, wi);
+    expand->bSymmetrizedTMatrix = (get_eeenum(inp, "symmetrized-transition-matrix", yesno_names, wi) != 0);
     expand->nstTij              = get_eint(inp, "nst-transition-matrix", -1, wi);
     expand->minvarmin           = get_eint(inp, "mininum-var-min", 100, wi); /*default is reasonable */
     expand->c_range             = get_eint(inp, "weight-c-range", 0, wi);    /* default is just C=0 */
     expand->wl_scale            = get_ereal(inp, "wl-scale", 0.8, wi);
     expand->wl_ratio            = get_ereal(inp, "wl-ratio", 0.8, wi);
     expand->init_wl_delta       = get_ereal(inp, "init-wl-delta", 1.0, wi);
-    expand->bWLoneovert         = get_eeenum(inp, "wl-oneovert", yesno_names, wi);
+    expand->bWLoneovert         = (get_eeenum(inp, "wl-oneovert", yesno_names, wi) != 0);
 }
 
 /*! \brief Return whether an end state with the given coupling-lambda
@@ -1947,7 +1947,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     /* Implicit solvation is no longer supported, but we need grompp
        to be able to refuse old .mdp files that would have built a tpr
        to run it. Thus, only "no" is accepted. */
-    ir->implicit_solvent = get_eeenum(&inp, "implicit-solvent", no_names, wi);
+    ir->implicit_solvent = (get_eeenum(&inp, "implicit-solvent", no_names, wi) != 0);
 
     /* Coupling stuff */
     printStringNewline(&inp, "OPTIONS FOR WEAK COUPLING ALGORITHMS");
@@ -1955,7 +1955,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     ir->etc                = get_eeenum(&inp, "tcoupl",        etcoupl_names, wi);
     ir->nsttcouple         = get_eint(&inp, "nsttcouple",  -1, wi);
     ir->opts.nhchainlength = get_eint(&inp, "nh-chain-length", 10, wi);
-    ir->bPrintNHChains     = get_eeenum(&inp, "print-nose-hoover-chain-variables", yesno_names, wi);
+    ir->bPrintNHChains     = (get_eeenum(&inp, "print-nose-hoover-chain-variables", yesno_names, wi) != 0);
     printStringNoNewline(&inp, "Groups to couple separately");
     setStringEntry(&inp, "tc-grps",     is->tcgrps,         nullptr);
     printStringNoNewline(&inp, "Time constant (ps) and reference temperature (K)");
@@ -1974,7 +1974,7 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     /* QMMM */
     printStringNewline(&inp, "OPTIONS FOR QMMM calculations");
-    ir->bQMMM = get_eeenum(&inp, "QMMM", yesno_names, wi);
+    ir->bQMMM = (get_eeenum(&inp, "QMMM", yesno_names, wi) != 0);
     printStringNoNewline(&inp, "Groups treated Quantum Mechanically");
     setStringEntry(&inp, "QMMM-grps",  is->QMMM,          nullptr);
     printStringNoNewline(&inp, "QM method");
@@ -2011,7 +2011,7 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     /* Startup run */
     printStringNewline(&inp, "GENERATE VELOCITIES FOR STARTUP RUN");
-    opts->bGenVel = get_eeenum(&inp, "gen-vel",  yesno_names, wi);
+    opts->bGenVel = (get_eeenum(&inp, "gen-vel",  yesno_names, wi) != 0);
     opts->tempi   = get_ereal(&inp, "gen-temp",    300.0, wi);
     opts->seed    = get_eint(&inp, "gen-seed",     -1, wi);
 
@@ -2021,9 +2021,9 @@ void get_ir(const char *mdparin, const char *mdparout,
     printStringNoNewline(&inp, "Type of constraint algorithm");
     ir->eConstrAlg = get_eeenum(&inp, "constraint-algorithm", econstr_names, wi);
     printStringNoNewline(&inp, "Do not constrain the start configuration");
-    ir->bContinuation = get_eeenum(&inp, "continuation", yesno_names, wi);
+    ir->bContinuation = (get_eeenum(&inp, "continuation", yesno_names, wi) != 0);
     printStringNoNewline(&inp, "Use successive overrelaxation to reduce the number of shake iterations");
-    ir->bShakeSOR = get_eeenum(&inp, "Shake-SOR", yesno_names, wi);
+    ir->bShakeSOR = (get_eeenum(&inp, "Shake-SOR", yesno_names, wi) != 0);
     printStringNoNewline(&inp, "Relative tolerance of shake");
     ir->shake_tol = get_ereal(&inp, "shake-tol", 0.0001, wi);
     printStringNoNewline(&inp, "Highest order in the expansion of the constraint coupling matrix");
@@ -2036,7 +2036,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     printStringNoNewline(&inp, "rotates over more degrees than");
     ir->LincsWarnAngle = get_ereal(&inp, "lincs-warnangle", 30.0, wi);
     printStringNoNewline(&inp, "Convert harmonic bonds to morse potentials");
-    opts->bMorse = get_eeenum(&inp, "morse", yesno_names, wi);
+    opts->bMorse = (get_eeenum(&inp, "morse", yesno_names, wi) != 0);
 
     /* Energy group exclusions */
     printStringNewline(&inp, "ENERGY GROUP EXCLUSIONS");
@@ -2055,7 +2055,7 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     /* COM pulling */
     printStringNewline(&inp, "COM PULLING");
-    ir->bPull = get_eeenum(&inp, "pull", yesno_names, wi);
+    ir->bPull = (get_eeenum(&inp, "pull", yesno_names, wi) != 0);
     if (ir->bPull)
     {
         snew(ir->pull, 1);
@@ -2065,7 +2065,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     /* AWH biasing
        NOTE: needs COM pulling input */
     printStringNewline(&inp, "AWH biasing");
-    ir->bDoAwh = get_eeenum(&inp, "awh", yesno_names, wi);
+    ir->bDoAwh = (get_eeenum(&inp, "awh", yesno_names, wi) != 0);
     if (ir->bDoAwh)
     {
         if (ir->bPull)
@@ -2081,7 +2081,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     /* Enforced rotation */
     printStringNewline(&inp, "ENFORCED ROTATION");
     printStringNoNewline(&inp, "Enforced rotation: No or Yes");
-    ir->bRot = get_eeenum(&inp, "rotation", yesno_names, wi);
+    ir->bRot = (get_eeenum(&inp, "rotation", yesno_names, wi) != 0);
     if (ir->bRot)
     {
         snew(ir->rot, 1);
@@ -2105,13 +2105,13 @@ void get_ir(const char *mdparin, const char *mdparout,
     printStringNoNewline(&inp, "Force weighting of pairs in one distance restraint: Conservative or Equal");
     ir->eDisreWeighting = get_eeenum(&inp, "disre-weighting", edisreweighting_names, wi);
     printStringNoNewline(&inp, "Use sqrt of the time averaged times the instantaneous violation");
-    ir->bDisreMixed = get_eeenum(&inp, "disre-mixed", yesno_names, wi);
+    ir->bDisreMixed = (get_eeenum(&inp, "disre-mixed", yesno_names, wi) != 0);
     ir->dr_fc       = get_ereal(&inp, "disre-fc",  1000.0, wi);
     ir->dr_tau      = get_ereal(&inp, "disre-tau", 0.0, wi);
     printStringNoNewline(&inp, "Output frequency for pair distances to energy file");
     ir->nstdisreout = get_eint(&inp, "nstdisreout", 100, wi);
     printStringNoNewline(&inp, "Orientation restraints: No or Yes");
-    opts->bOrire = get_eeenum(&inp, "orire",   yesno_names, wi);
+    opts->bOrire = (get_eeenum(&inp, "orire",   yesno_names, wi) != 0);
     printStringNoNewline(&inp, "Orientation restraints force constant and tau for time averaging");
     ir->orires_fc  = get_ereal(&inp, "orire-fc",  0.0, wi);
     ir->orires_tau = get_ereal(&inp, "orire-tau", 0.0, wi);
@@ -2125,7 +2125,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     setStringEntry(&inp, "couple-moltype",  is->couple_moltype,  nullptr);
     opts->couple_lam0  = get_eeenum(&inp, "couple-lambda0", couple_lam, wi);
     opts->couple_lam1  = get_eeenum(&inp, "couple-lambda1", couple_lam, wi);
-    opts->bCoupleIntra = get_eeenum(&inp, "couple-intramol", yesno_names, wi);
+    opts->bCoupleIntra = (get_eeenum(&inp, "couple-intramol", yesno_names, wi) != 0);
 
     fep->init_lambda    = get_ereal(&inp, "init-lambda", -1, wi); /* start with -1 so
                                                                             we can recognize if
@@ -2147,7 +2147,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     fep->sc_power           = get_eint(&inp, "sc-power", 1, wi);
     fep->sc_r_power         = get_ereal(&inp, "sc-r-power", 6.0, wi);
     fep->sc_sigma           = get_ereal(&inp, "sc-sigma", 0.3, wi);
-    fep->bScCoul            = get_eeenum(&inp, "sc-coul", yesno_names, wi);
+    fep->bScCoul            = (get_eeenum(&inp, "sc-coul", yesno_names, wi) != 0);
     fep->dh_hist_size       = get_eint(&inp, "dh_hist_size", 0, wi);
     fep->dh_hist_spacing    = get_ereal(&inp, "dh_hist_spacing", 0.1, wi);
     fep->separate_dhdl_file = get_eeenum(&inp, "separate-dhdl-file", separate_dhdl_file_names, wi);
@@ -2166,7 +2166,7 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     /* simulated tempering variables */
     printStringNewline(&inp, "simulated tempering variables");
-    ir->bSimTemp                   = get_eeenum(&inp, "simulated-tempering", yesno_names, wi);
+    ir->bSimTemp                   = (get_eeenum(&inp, "simulated-tempering", yesno_names, wi) != 0);
     ir->simtempvals->eSimTempScale = get_eeenum(&inp, "simulated-tempering-scaling", esimtemp_names, wi);
     ir->simtempvals->simtemp_low   = get_ereal(&inp, "sim-temp-low", 300.0, wi);
     ir->simtempvals->simtemp_high  = get_ereal(&inp, "sim-temp-high", 300.0, wi);
@@ -2227,8 +2227,8 @@ void get_ir(const char *mdparin, const char *mdparout,
         setStringEntry(&inp, "split-group0", ir->swap->grp[eGrpSplit0].molname, nullptr);
         setStringEntry(&inp, "split-group1", ir->swap->grp[eGrpSplit1].molname, nullptr);
         printStringNoNewline(&inp, "Use center of mass of split groups (yes/no), otherwise center of geometry is used");
-        ir->swap->massw_split[0] = get_eeenum(&inp, "massw-split0", yesno_names, wi);
-        ir->swap->massw_split[1] = get_eeenum(&inp, "massw-split1", yesno_names, wi);
+        ir->swap->massw_split[0] = (get_eeenum(&inp, "massw-split0", yesno_names, wi) != 0);
+        ir->swap->massw_split[1] = (get_eeenum(&inp, "massw-split1", yesno_names, wi) != 0);
 
         printStringNoNewline(&inp, "Name of solvent molecules");
         setStringEntry(&inp, "solvent-group", ir->swap->grp[eGrpSolvent].molname, nullptr);
@@ -2279,7 +2279,7 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     /* AdResS is no longer supported, but we need grompp to be able to
        refuse to process old .mdp files that used it. */
-    ir->bAdress = get_eeenum(&inp, "adress", no_names, wi);
+    ir->bAdress = (get_eeenum(&inp, "adress", no_names, wi) != 0);
 
     /* User defined thingies */
     printStringNewline(&inp, "User defined thingies");
@@ -3531,7 +3531,7 @@ void do_index(const char* mdparin, const char *ndx,
     {
         for (j = 0; (j < DIM); j++, k++)
         {
-            ir->opts.nFreeze[i][j] = (gmx_strncasecmp(ptr1[k], "Y", 1) == 0);
+            ir->opts.nFreeze[i][j] = static_cast<int>(gmx_strncasecmp(ptr1[k], "Y", 1) == 0);
             if (!ir->opts.nFreeze[i][j])
             {
                 if (gmx_strncasecmp(ptr1[k], "N", 1) != 0)

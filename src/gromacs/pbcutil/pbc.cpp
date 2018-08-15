@@ -298,7 +298,7 @@ gmx_bool correct_box(FILE *fplog, int step, tensor box, t_graph *graph)
     zx = correct_box_elem(fplog, step, box, ZZ, XX);
     yx = correct_box_elem(fplog, step, box, YY, XX);
 
-    bCorrected = (zy || zx || yx);
+    bCorrected = ((zy != 0) || (zx != 0) || (yx != 0));
 
     if (bCorrected && graph)
     {

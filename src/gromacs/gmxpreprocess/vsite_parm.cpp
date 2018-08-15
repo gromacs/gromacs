@@ -1003,7 +1003,7 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
                             (pindex[atom].ftype == F_VSITE4FD ) ||
                             (pindex[atom].ftype == F_VSITE4FDN ) );
                 bThisOUT = ( (pindex[atom].ftype == F_VSITE3OUT) &&
-                             (interaction_function[cftype].flags & IF_CONSTRAINT) );
+                             ((interaction_function[cftype].flags & IF_CONSTRAINT) != 0u) );
                 bAllFD = bAllFD && bThisFD;
                 if (bThisFD || bThisOUT)
                 {

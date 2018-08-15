@@ -742,9 +742,9 @@ static int do_cpte_int(XDR *xd, StatePart part, int ecpt, int sflags,
 static int do_cpte_bool(XDR *xd, StatePart part, int ecpt, int sflags,
                         bool *b, FILE *list)
 {
-    int i   = *b;
+    int i   = static_cast<int>(*b);
     int ret = do_cpte_int(xd, part, ecpt, sflags, &i, list);
-    *b = i;
+    *b = (i != 0);
     return ret;
 }
 
@@ -2272,12 +2272,12 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     {
         cp_error();
     }
-    *bReadEkin = ((headerContents->flags_eks & (1<<eeksEKINH)) ||
-                  (headerContents->flags_eks & (1<<eeksEKINF)) ||
-                  (headerContents->flags_eks & (1<<eeksEKINO)) ||
-                  ((headerContents->flags_eks & (1<<eeksEKINSCALEF)) |
-                   (headerContents->flags_eks & (1<<eeksEKINSCALEH)) |
-                   (headerContents->flags_eks & (1<<eeksVSCALE))));
+    *bReadEkin = (((headerContents->flags_eks & (1<<eeksEKINH)) != 0) ||
+                  ((headerContents->flags_eks & (1<<eeksEKINF)) != 0) ||
+                  ((headerContents->flags_eks & (1<<eeksEKINO)) != 0) ||
+                  (((headerContents->flags_eks & (1<<eeksEKINSCALEF)) |
+                    (headerContents->flags_eks & (1<<eeksEKINSCALEH)) |
+                    (headerContents->flags_eks & (1<<eeksVSCALE))) != 0));
 
     if (headerContents->flags_enh && observablesHistory->energyHistory == nullptr)
     {
@@ -2653,18 +2653,18 @@ void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr)
     fr->lambda     = state.lambda[efptFEP];
     fr->fep_state  = state.fep_state;
     fr->bAtoms     = FALSE;
-    fr->bX         = (state.flags & (1<<estX));
+    fr->bX         = ((state.flags & (1<<estX)) != 0);
     if (fr->bX)
     {
         fr->x   = makeRvecArray(state.x, state.natoms);
     }
-    fr->bV      = (state.flags & (1<<estV));
+    fr->bV      = ((state.flags & (1<<estV)) != 0);
     if (fr->bV)
     {
         fr->v   = makeRvecArray(state.v, state.natoms);
     }
     fr->bF      = FALSE;
-    fr->bBox    = (state.flags & (1<<estBOX));
+    fr->bBox    = ((state.flags & (1<<estBOX)) != 0);
     if (fr->bBox)
     {
         copy_mat(state.box, fr->box);

@@ -233,7 +233,7 @@ AnalysisDataModuleManager::Impl::presentData(AbstractAnalysisData *data,
                        "Cannot apply a modules in mid-frame");
     module->dataStarted(data);
     const bool bCheckMissing = bAllowMissing_
-        && !(module->flags() & IAnalysisDataModule::efAllowMissing);
+        && ((module->flags() & IAnalysisDataModule::efAllowMissing) == 0);
     for (int i = 0; i < data->frameCount(); ++i)
     {
         AnalysisDataFrameRef frame = data->getDataFrame(i);

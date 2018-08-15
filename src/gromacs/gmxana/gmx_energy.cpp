@@ -276,7 +276,7 @@ static int *select_by_name(int nre, gmx_enxnm_t *nm, int *nset)
                     trim(ptr);
                 }
             }
-            while (!bEOF && (ptr && (std::strlen(ptr) > 0)));
+            while (!bEOF && ((ptr != nullptr) && (std::strlen(ptr) > 0)));
         }
     }
 

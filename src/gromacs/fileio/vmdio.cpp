@@ -435,7 +435,7 @@ int read_first_vmd_frame(const char *fn, gmx_vmdplugin_t **vmdpluginp, t_trxfram
     {
         vmdplugin->api->read_timestep_metadata(vmdplugin->handle, metadata);
         assert(metadata);
-        vmdplugin->bV = metadata->has_velocities;
+        vmdplugin->bV = (metadata->has_velocities != 0);
         if (vmdplugin->bV)
         {
             snew(fr->v, fr->natoms);

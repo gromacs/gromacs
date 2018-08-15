@@ -123,9 +123,9 @@ void
 trimString(std::string * s)
 {
     // heading
-    s->erase(s->begin(), std::find_if(s->begin(), s->end(), [](char &c) -> bool { return !std::isspace(c); }));
+    s->erase(s->begin(), std::find_if(s->begin(), s->end(), [](char &c) -> bool { return std::isspace(c) == 0; }));
     // trailing
-    s->erase(std::find_if(s->rbegin(), s->rend(), [](char &c) -> bool { return !std::isspace(c); }).base(), s->end());
+    s->erase(std::find_if(s->rbegin(), s->rend(), [](char &c) -> bool { return std::isspace(c) == 0; }).base(), s->end());
 }
 
 
@@ -344,7 +344,7 @@ detectX86Features(std::string *                  brand,
 
     // Check whether Hyper-threading is really possible to enable in the hardware,
     // not just technically supported by this generation of processors
-    if (features->count(CpuInfo::Feature::X86_Htt) && maxStdLevel >= 0x4)
+    if ((features->count(CpuInfo::Feature::X86_Htt) != 0u) && maxStdLevel >= 0x4)
     {
         executeX86CpuID(0x1, 0, &eax, &ebx, &ecx, &edx);
         unsigned int maxLogicalCores  = (ebx >> 16) & 0x0ff;
@@ -534,7 +534,7 @@ detectAmdApicIdLayout(unsigned int maxExtLevel)
     executeX86CpuID(0x1, 0, &eax, &ebx, &ecx, &edx);
     int          family = ((eax & 0x0ff00000) >> 20) + ((eax & 0x00000f00) >> 8);
     executeX86CpuID(0x80000001, 0, &eax, &ebx, &ecx, &edx);
-    bool         haveExtendedTopology = (ecx & (1 << 22));
+    bool         haveExtendedTopology = (ecx & (1 << 22)) != 0u;
 
     // NOTE: Here we assume 1 thread per core, unless we have family >= 17h
     layout.hwThreadBits = 0;
@@ -599,8 +599,8 @@ detectX86LogicalProcessors()
     if (maxStdLevel >= 0x1)
     {
         executeX86CpuID(0x1, 0, &eax, &ebx, &ecx, &edx);
-        haveX2Apic = (ecx & (1 << 21)) && maxStdLevel >= 0xb;
-        haveApic   = (edx & (1 <<  9)) && maxExtLevel >= 0x80000008;
+        haveX2Apic = ((ecx & (1 << 21)) != 0u) && maxStdLevel >= 0xb;
+        haveApic   = ((edx & (1 <<  9)) != 0u) && maxExtLevel >= 0x80000008;
     }
     else
     {
@@ -753,7 +753,7 @@ detectProcCpuInfoVendor(const std::map<std::string, std::string> &cpuInfo)
     // testNames map above, and if it's a match return the vendor.
     for (auto &l : { "vendor_id", "vendor", "manufacture", "model", "processor", "cpu" })
     {
-        if (cpuInfo.count(l))
+        if (cpuInfo.count(l) != 0u)
         {
             // there was a line with this left-hand side in /proc/cpuinfo
             const std::string &s1 = cpuInfo.at(l);
@@ -791,11 +791,11 @@ detectProcCpuInfoIbm(const std::map<std::string, std::string> &cpuInfo,
                      std::set<CpuInfo::Feature> *              features)
 {
     // Get brand string from 'cpu' label if present, otherwise 'Processor'
-    if (cpuInfo.count("cpu"))
+    if (cpuInfo.count("cpu") != 0u)
     {
         *brand = cpuInfo.at("cpu");
     }
-    else if (cpuInfo.count("Processor"))
+    else if (cpuInfo.count("Processor") != 0u)
     {
         *brand = cpuInfo.at("Processor");
     }
@@ -808,7 +808,7 @@ detectProcCpuInfoIbm(const std::map<std::string, std::string> &cpuInfo,
 
     for (auto &l : { "model name", "model", "Processor", "cpu" })
     {
-        if (cpuInfo.count(l))
+        if (cpuInfo.count(l) != 0u)
         {
             std::string s1 = cpuInfo.at(l);
             std::transform(s1.begin(), s1.end(), s1.begin(), ::tolower);
@@ -847,16 +847,16 @@ detectProcCpuInfoArm(const std::map<std::string, std::string>   &cpuInfo,
                      int *                                       stepping,
                      std::set<CpuInfo::Feature> *                features)
 {
-    if (cpuInfo.count("Processor"))
+    if (cpuInfo.count("Processor") != 0u)
     {
         *brand = cpuInfo.at("Processor");
     }
-    else if (cpuInfo.count("model name"))
+    else if (cpuInfo.count("model name") != 0u)
     {
         *brand = cpuInfo.at("model name");
     }
 
-    if (cpuInfo.count("CPU architecture"))
+    if (cpuInfo.count("CPU architecture") != 0u)
     {
         *family = std::strtol(cpuInfo.at("CPU architecture").c_str(), nullptr, 10);
         // For some 64-bit CPUs it appears to say 'AArch64' instead
@@ -865,16 +865,16 @@ detectProcCpuInfoArm(const std::map<std::string, std::string>   &cpuInfo,
             *family = 8;  // fragile - no idea how a future ARMv9 will be represented in this case
         }
     }
-    if (cpuInfo.count("CPU variant"))
+    if (cpuInfo.count("CPU variant") != 0u)
     {
         *model    = std::strtol(cpuInfo.at("CPU variant").c_str(), nullptr, 16);
     }
-    if (cpuInfo.count("CPU revision"))
+    if (cpuInfo.count("CPU revision") != 0u)
     {
         *stepping = std::strtol(cpuInfo.at("CPU revision").c_str(), nullptr, 10);
     }
 
-    if (cpuInfo.count("Features"))
+    if (cpuInfo.count("Features") != 0u)
     {
         const std::string &s = cpuInfo.at("Features");
         if (s.find("neon") != std::string::npos)

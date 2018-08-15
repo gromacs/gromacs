@@ -137,7 +137,7 @@ static void get_params(const char *mpin, const char *mpout, t_psrec *psr)
     psr->linewidth = get_ereal(&inp, "linewidth",      1.0, wi);
     setStringEntry(&inp, "titlefont",      psr->titfont,        "Helvetica");
     psr->titfontsize = get_ereal(&inp, "titlefontsize",    20.0, wi);
-    psr->legend      = get_eenum(&inp, "legend",         gmx_bools);
+    psr->legend      = (get_eenum(&inp, "legend",         gmx_bools) != 0);
     setStringEntry(&inp, "legendfont",     psr->legfont,        psr->titfont);
     setStringEntry(&inp, "legendlabel",    psr->leglabel,       "");
     setStringEntry(&inp, "legend2label",   psr->leg2label,      psr->leglabel);
@@ -154,7 +154,7 @@ static void get_params(const char *mpin, const char *mpout, t_psrec *psr)
     psr->X.major        = get_ereal(&inp, "x-major",        1, wi);
     psr->X.minor        = get_ereal(&inp, "x-minor",        1, wi);
     psr->X.offset       = get_ereal(&inp, "x-firstmajor",       0.0, wi);
-    psr->X.first        = get_eenum(&inp, "x-majorat0",        gmx_bools);
+    psr->X.first        = (get_eenum(&inp, "x-majorat0",        gmx_bools) != 0);
     psr->X.majorticklen = get_ereal(&inp, "x-majorticklen", 8.0, wi);
     psr->X.minorticklen = get_ereal(&inp, "x-minorticklen", 4.0, wi);
     setStringEntry(&inp, "x-label",        psr->X.label,        "");
@@ -166,7 +166,7 @@ static void get_params(const char *mpin, const char *mpout, t_psrec *psr)
     psr->Y.major        = get_ereal(&inp, "y-major",        psr->X.major, wi);
     psr->Y.minor        = get_ereal(&inp, "y-minor",        psr->X.minor, wi);
     psr->Y.offset       = get_ereal(&inp, "y-firstmajor",       psr->X.offset, wi);
-    psr->Y.first        = get_eenum(&inp, "y-majorat0",        gmx_bools);
+    psr->Y.first        = (get_eenum(&inp, "y-majorat0",        gmx_bools) != 0);
     psr->Y.majorticklen = get_ereal(&inp, "y-majorticklen", psr->X.majorticklen, wi);
     psr->Y.minorticklen = get_ereal(&inp, "y-minorticklen", psr->X.minorticklen, wi);
     setStringEntry(&inp, "y-label",        psr->Y.label,        psr->X.label);
@@ -888,8 +888,8 @@ static void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
         std::strcpy(mat[0].legend, psr->leglabel);
     }
 
-    bTitle          = bTitle     && mat[nmat-1].title[0];
-    bTitleOnce      = bTitleOnce && mat[nmat-1].title[0];
+    bTitle          = bTitle     && (mat[nmat-1].title[0] != 0);
+    bTitleOnce      = bTitleOnce && (mat[nmat-1].title[0] != 0);
     psr->bTitle     = bTitle;
     psr->bTitleOnce = bTitleOnce;
     psr->bYonce     = bYonce;
@@ -951,7 +951,7 @@ static void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
             xx = x0+x*psr->xboxsize;
             ps_moveto(out, xx, y0);
             y     = 0;
-            bMap1 = (!mat2 || (x < y || (x == y && bFirstDiag)));
+            bMap1 = ((mat2 == nullptr) || (x < y || (x == y && bFirstDiag)));
             if ((bDiag) || (x != y))
             {
                 col = mat[i].matrix[x][y];
@@ -962,7 +962,7 @@ static void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
             }
             for (nexty = 1; (nexty <= mat[i].ny); nexty++)
             {
-                bNextMap1 = (!mat2 || (x < nexty || (x == nexty && bFirstDiag)));
+                bNextMap1 = ((mat2 == nullptr) || (x < nexty || (x == nexty && bFirstDiag)));
                 /* TRUE:  upper left  -> map1 */
                 /* FALSE: lower right -> map2 */
                 if ((nexty == mat[i].ny) || (!bDiag && (x == nexty)))

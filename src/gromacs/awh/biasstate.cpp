@@ -824,7 +824,7 @@ void labelCoveredPoints(const std::vector<bool> &visited,
                 int notCoveredHigh = notVisitedHigh - coverRadius;
                 for (int i = notVisitedLow; i <= notVisitedHigh; i++)
                 {
-                    covered[i] = (i > notCoveredLow) && (i < notCoveredHigh);
+                    covered[i] = static_cast<int>((i > notCoveredLow) && (i < notCoveredHigh));
                 }
 
                 /* Find a new interval to set covering for. Make the notVisitedHigh of this interval the
@@ -862,7 +862,7 @@ void labelCoveredPoints(const std::vector<bool> &visited,
         for (int i = 0; i <= notVisitedHigh; i++)
         {
             /* For non-periodic boundaries notCoveredLow = -1 will impose no restriction. */
-            covered[i] = (i > notCoveredLow) && (i < notCoveredHigh);
+            covered[i] = static_cast<int>((i > notCoveredLow) && (i < notCoveredHigh));
         }
 
         /* Upper end. Same as for lower end but in the other direction. */
@@ -875,7 +875,7 @@ void labelCoveredPoints(const std::vector<bool> &visited,
         for (int i = notVisitedLow; i <= numPoints - 1; i++)
         {
             /* For non-periodic boundaries notCoveredHigh = numPoints will impose no restriction. */
-            covered[i] = (i > notCoveredLow) && (i < notCoveredHigh);
+            covered[i] = static_cast<int>((i > notCoveredLow) && (i < notCoveredHigh));
         }
     }
 }
@@ -982,7 +982,7 @@ bool BiasState::isSamplingRegionCovered(const BiasParams             &params,
     {
         for (int n = 0; n < grid.axis(d).numPoints() && allPointsCovered; n++)
         {
-            allPointsCovered = checkDim[d].covered[n];
+            allPointsCovered = (checkDim[d].covered[n] != 0);
         }
     }
 

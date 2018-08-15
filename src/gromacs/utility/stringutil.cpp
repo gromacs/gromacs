@@ -239,7 +239,7 @@ namespace
  */
 bool isWordChar(char c)
 {
-    return std::isalnum(c) || c == '-' || c == '_';
+    return (std::isalnum(c) != 0) || c == '-' || c == '_';
 }
 
 /*! \brief

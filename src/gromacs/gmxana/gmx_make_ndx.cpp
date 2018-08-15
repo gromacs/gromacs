@@ -538,7 +538,7 @@ static gmx_bool atoms_from_residuenumbers(const t_atoms *atoms, int group, t_blo
     }
     printf("Found %d atom%s in %d residues from group %s\n",
            *nr, (*nr == 1) ? "" : "s", j1-j0, gname);
-    return *nr;
+    return *nr != 0;
 }
 
 static gmx_bool comp_name(const char *name, const char *search)
@@ -997,11 +997,11 @@ static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
         {
             if (parse_int(string, &sel_nr1))
             {
-                bRet = select_atomnumbers(string, atoms, sel_nr1, nr, index, gname);
+                bRet = (select_atomnumbers(string, atoms, sel_nr1, nr, index, gname) != 0);
             }
             else if (parse_names(string, &n_names, names))
             {
-                bRet = select_atomnames(atoms, n_names, names, nr, index, FALSE);
+                bRet = (select_atomnames(atoms, n_names, names, nr, index, FALSE) != 0);
                 make_gname(n_names, names, gname);
             }
         }
@@ -1018,7 +1018,7 @@ static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
             }
             else
             {
-                bRet = select_atomnames(atoms, n_names, names, nr, index, TRUE);
+                bRet = (select_atomnames(atoms, n_names, names, nr, index, TRUE) != 0);
                 make_gname(n_names, names, gname);
             }
         }
@@ -1041,7 +1041,7 @@ static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
         if (check_have_atoms(atoms, ostring) &&
             parse_int_char(string, &sel_nr1, &c))
         {
-            bRet = select_residueindices(string, atoms, sel_nr1, c, nr, index, gname);
+            bRet = (select_residueindices(string, atoms, sel_nr1, c, nr, index, gname) != 0);
         }
     }
     else if ((*string)[0] == 'r')
@@ -1051,11 +1051,11 @@ static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
         {
             if (parse_int_char(string, &sel_nr1, &c))
             {
-                bRet = select_residuenumbers(string, atoms, sel_nr1, c, nr, index, gname);
+                bRet = (select_residuenumbers(string, atoms, sel_nr1, c, nr, index, gname) != 0);
             }
             else if (parse_names(string, &n_names, names))
             {
-                bRet = select_residuenames(atoms, n_names, names, nr, index);
+                bRet = (select_residuenames(atoms, n_names, names, nr, index) != 0);
                 make_gname(n_names, names, gname);
             }
         }
@@ -1066,7 +1066,7 @@ static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
         if (check_have_atoms(atoms, ostring) &&
             parse_names(string, &n_names, names))
         {
-            bRet = select_chainnames(atoms, n_names, names, nr, index);
+            bRet = (select_chainnames(atoms, n_names, names, nr, index) != 0);
             sprintf(gname, "ch%s", names[0]);
             for (i = 1; i < n_names; i++)
             {
@@ -1127,8 +1127,8 @@ static void list_residues(const t_atoms *atoms)
         resind = atoms->atom[i].resind;
         if ((resind != prev_resind) || (i == atoms->nr-1))
         {
-            if ((bDiff = std::strcmp(*atoms->resinfo[resind].name,
-                                     *atoms->resinfo[start].name)) ||
+            if ((bDiff = (std::strcmp(*atoms->resinfo[resind].name,
+                                      *atoms->resinfo[start].name) != 0)) ||
                 (i == atoms->nr-1))
             {
                 if (bDiff)

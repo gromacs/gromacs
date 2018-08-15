@@ -167,14 +167,14 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
     real     prescorr, enercorr, dvdlcorr, dvdl_ekin;
 
     /* translate CGLO flags to gmx_booleans */
-    bStopCM       = flags & CGLO_STOPCM;
-    bGStat        = flags & CGLO_GSTAT;
-    bReadEkin     = (flags & CGLO_READEKIN);
-    bScaleEkin    = (flags & CGLO_SCALEEKIN);
-    bEner         = flags & CGLO_ENERGY;
-    bTemp         = flags & CGLO_TEMPERATURE;
-    bPres         = (flags & CGLO_PRESSURE);
-    bConstrain    = (flags & CGLO_CONSTRAINT);
+    bStopCM       = ((flags & CGLO_STOPCM) != 0);
+    bGStat        = ((flags & CGLO_GSTAT) != 0);
+    bReadEkin     = ((flags & CGLO_READEKIN) != 0);
+    bScaleEkin    = ((flags & CGLO_SCALEEKIN) != 0);
+    bEner         = ((flags & CGLO_ENERGY) != 0);
+    bTemp         = ((flags & CGLO_TEMPERATURE) != 0);
+    bPres         = ((flags & CGLO_PRESSURE) != 0);
+    bConstrain    = ((flags & CGLO_CONSTRAINT) != 0);
 
     /* we calculate a full state kinetic energy either with full-step velocity verlet
        or half step where we need the pressure */

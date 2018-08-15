@@ -1400,7 +1400,7 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
             {
                 do_autocorr(corf, oenv, "Dipole Autocorrelation Function",
                             teller, gnx_tot, muall, dt,
-                            mode, std::strcmp(corrtype, "molsep"));
+                            mode, std::strcmp(corrtype, "molsep") != 0);
             }
         }
     }

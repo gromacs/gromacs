@@ -157,15 +157,15 @@ void global_stat(gmx_global_stat_t gs,
     int        nener, j;
     double     nb;
     gmx_bool   bVV, bTemp, bEner, bPres, bConstrVir, bEkinAveVel, bReadEkin;
-    bool       checkNumberOfBondedInteractions = flags & CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS;
+    bool       checkNumberOfBondedInteractions = (flags & CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS) != 0;
 
     bVV           = EI_VV(inputrec->eI);
-    bTemp         = flags & CGLO_TEMPERATURE;
-    bEner         = flags & CGLO_ENERGY;
-    bPres         = (flags & CGLO_PRESSURE);
-    bConstrVir    = (flags & CGLO_CONSTRAINT);
+    bTemp         = ((flags & CGLO_TEMPERATURE) != 0);
+    bEner         = ((flags & CGLO_ENERGY) != 0);
+    bPres         = ((flags & CGLO_PRESSURE) != 0);
+    bConstrVir    = ((flags & CGLO_CONSTRAINT) != 0);
     bEkinAveVel   = (inputrec->eI == eiVV || (inputrec->eI == eiVVAK && bPres));
-    bReadEkin     = (flags & CGLO_READEKIN);
+    bReadEkin     = ((flags & CGLO_READEKIN) != 0);
 
     rb   = gs->rb;
     itc0 = gs->itc0;
