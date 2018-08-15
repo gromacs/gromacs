@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -169,7 +169,7 @@ int gmx_morph(int argc, char *argv[])
         printf("Select group for RMSD calculation:\n");
         get_index(&atoms, opt2fn_null("-n", NFILE, fnm), 1, &isize, &index, &grpname);
         printf("You selected group %s, containing %d atoms\n", grpname, isize);
-        rms1 = rmsdev_ind(isize, index, mass, x1, x2);
+        rms1 = gmx::findStructureSimilarity<gmx::RMSD>(isize, mass, x1, x2, index);
         fprintf(stderr, "RMSD between input conformations is %g nm\n", rms1);
     }
 
@@ -186,8 +186,8 @@ int gmx_morph(int argc, char *argv[])
         write_trx(status, nat1, dummy, &atoms, i, fac, box, xx, nullptr, nullptr);
         if (bRMS)
         {
-            rms1 = rmsdev_ind(isize, index, mass, x1, xx);
-            rms2 = rmsdev_ind(isize, index, mass, x2, xx);
+            rms1 = gmx::findStructureSimilarity<gmx::RMSD>(isize, mass, x1, xx, index);
+            rms2 = gmx::findStructureSimilarity<gmx::RMSD>(isize, mass, x2, xx, index);
             fprintf(fp, "%10g  %10g  %10g\n", fac, rms1, rms2);
         }
     }

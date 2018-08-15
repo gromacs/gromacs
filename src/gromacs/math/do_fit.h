@@ -41,30 +41,25 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-real calc_similar_ind(gmx_bool bRho, int nind, const int *index, const real mass[],
-                      rvec x[], rvec xp[]);
-/* Returns RMSD or Rho (depending on bRho) over all atoms in index */
-
-real rmsdev_ind(int nind, int index[], real mass[],
-                rvec x[], rvec xp[]);
-/* Returns the RMS Deviation betweem x and xp over all atoms in index */
-
-real rmsdev(int natoms, real mass[], rvec x[], rvec xp[]);
-/* Returns the RMS Deviation betweem x and xp over all atoms */
-
-real rhodev_ind(int nind, int index[], real mass[], rvec x[], rvec xp[]);
-/* Returns size-independent Rho similarity parameter over all atoms in index
- * Maiorov & Crippen, PROTEINS 22, 273 (1995).
+namespace gmx
+{
+//! Evaluate the mass-weighted RMS Deviation between two input structures.
+struct RMSD;
+//! Evaluate size independent rho as in Maiorov & Crippen, PROTEINS 22, 273 (1995).
+struct RhoMeasure;
+/*!\brief Evaluate structural simlarity in the form sqrt(sum(numerator(mass,x,y))/sum(denominator(mass,x,y))).
+   *\tparam F provides the numerator and denominator function for the similarity measure
+   *\param[in] nAtoms number of atoms of structures to compare
+   *\param[in] index Index for selecting a sub-set of atoms, that is applied to mass, x, and xp
+   *\param[in] mass Masses of the atoms for similarity comparison
+   *\param[in] x the coordinates of the reference structure
+   *\param[in] xp the coordinates of the structure to compare
+   *\returns Mass-weighted measure of similarity between two structures
  */
-
-real rhodev(int natoms, real mass[], rvec x[], rvec xp[]);
-/* Returns size-independent Rho similarity parameter over all atoms
- * Maiorov & Crippen, PROTEINS 22, 273 (1995).
- */
+template<typename F> real findStructureSimilarity(int nAtoms, const real *mass, const rvec *x, const rvec *xp, const int *index = nullptr);
+//! convenience definition for function pointer to comparison function
+using structureSimilarityFunction = real (*)(int nAtoms, const real *mass, const rvec *x, const rvec *xp, const int *index);
+} // namespace gmx
 
 void calc_fit_R(int ndim, int natoms, const real *w_rls, const rvec *xp, rvec *x,
                 matrix R);
@@ -101,9 +96,5 @@ void reset_x(int ncm, const int *ind_cm,
              int nreset, const int *ind_reset,
              rvec x[], const real mass[]);
 /* Calls reset_x with ndim=3, thus resetting all dimesions */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
