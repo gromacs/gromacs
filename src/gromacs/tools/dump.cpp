@@ -192,7 +192,7 @@ static void list_top(const char *fn)
     do
     {
         status = cpp_read_line(&handle, BUFLEN, buf);
-        done   = (status == eCPP_EOF);
+        done   = static_cast<int>(status == eCPP_EOF);
         if (!done)
         {
             if (status != eCPP_OK)
@@ -205,7 +205,7 @@ static void list_top(const char *fn)
             }
         }
     }
-    while (!done);
+    while (done == 0);
     status = cpp_close_file(&handle);
     if (status != eCPP_OK)
     {
@@ -307,7 +307,7 @@ static void list_xtc(const char *fn)
         pr_rvecs(stdout, indent, "x", x, natoms);
         nframe++;
     }
-    while (read_next_xtc(xd, natoms, &step, &time, box, x, &prec, &bOK));
+    while (read_next_xtc(xd, natoms, &step, &time, box, x, &prec, &bOK) != 0);
     if (!bOK)
     {
         fprintf(stderr, "\nWARNING: Incomplete frame at time %g\n", time);

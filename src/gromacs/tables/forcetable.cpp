@@ -1323,7 +1323,7 @@ t_forcetable *make_tables(FILE *out,
     t_forcetable   *table;
 
     snew(table, 1);
-    b14only = (flags & GMX_MAKETABLES_14ONLY);
+    b14only = ((flags & GMX_MAKETABLES_14ONLY) != 0);
 
     if (flags & GMX_MAKETABLES_FORCEUSER)
     {

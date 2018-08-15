@@ -818,8 +818,8 @@ void gmx::Integrator::do_md()
     {
         // TODO This implementation of ensemble orientation restraints is nasty because
         // a user can't just do multi-sim with single-sim orientation restraints.
-        bool usingEnsembleRestraints = (fcd->disres.nsystems > 1) || (ms && fcd->orires.nr);
-        bool awhUsesMultiSim         = (ir->bDoAwh && ir->awhParams->shareBiasMultisim && ms);
+        bool usingEnsembleRestraints = (fcd->disres.nsystems > 1) || ((ms != nullptr) && (fcd->orires.nr != 0));
+        bool awhUsesMultiSim         = (ir->bDoAwh && ir->awhParams->shareBiasMultisim && (ms != nullptr));
 
         // Replica exchange, ensemble restraints and AWH need all
         // simulations to remain synchronized, so they need
@@ -941,7 +941,7 @@ void gmx::Integrator::do_md()
 
         if (bRerunMD && MASTER(cr))
         {
-            const bool constructVsites = (vsite && mdrunOptions.rerunConstructVsites);
+            const bool constructVsites = ((vsite != nullptr) && mdrunOptions.rerunConstructVsites);
             if (constructVsites && DOMAINDECOMP(cr))
             {
                 gmx_fatal(FARGS, "Vsite recalculation with -rerun is not implemented with domain decomposition, use a single rank");
@@ -1050,7 +1050,7 @@ void gmx::Integrator::do_md()
          * or at the last step (but not when we do not want confout),
          * but never at the first step or with rerun.
          */
-        bCPT = (((signals[eglsCHKPT].set && (bNS || ir->nstlist == 0)) ||
+        bCPT = ((((signals[eglsCHKPT].set != 0) && (bNS || ir->nstlist == 0)) ||
                  (bLastStep && mdrunOptions.writeConfout)) &&
                 step > ir->init_step && !bRerunMD);
         if (bCPT)

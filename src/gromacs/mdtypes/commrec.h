@@ -144,7 +144,7 @@ inline int getThisRankDuties(const t_commrec *cr)
 inline bool thisRankHasDuty(const t_commrec *cr, int duty)
 {
     GMX_ASSERT((duty == DUTY_PME) || (duty == DUTY_PP), "Invalid duty type");
-    return (getThisRankDuties(cr) & duty);
+    return (getThisRankDuties(cr) & duty) != 0;
 }
 
 //! True if this is a simulation with more than 1 node

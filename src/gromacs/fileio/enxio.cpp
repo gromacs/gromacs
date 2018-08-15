@@ -785,7 +785,7 @@ empty_file(const char *fn)
 
     fp     = gmx_fio_fopen(fn, "r");
     ret    = fread(&dum, sizeof(dum), 1, fp);
-    bEmpty = feof(fp);
+    bEmpty = (feof(fp) != 0);
     gmx_fio_fclose(fp);
 
     // bEmpty==TRUE but ret!=0 would likely be some strange I/O error, but at

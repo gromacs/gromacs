@@ -177,7 +177,7 @@ static void fill_ang(int nft, const int *ft, int fac,
                     }
                 }
             }
-            if (hq)
+            if (hq != 0.0f)
             {
                 for (j = 0; j < fac; j++)
                 {

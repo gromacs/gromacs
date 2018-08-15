@@ -409,7 +409,7 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
             copy_mat(cnb.box, box);
             *lambda_q       = cnb.lambda_q;
             *lambda_lj      = cnb.lambda_lj;
-            *bEnerVir       = (cnb.flags & PP_PME_ENER_VIR);
+            *bEnerVir       = ((cnb.flags & PP_PME_ENER_VIR) != 0u);
             *step           = cnb.step;
 
             /* Receive the coordinates in place */

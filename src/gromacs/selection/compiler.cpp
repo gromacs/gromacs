@@ -2114,7 +2114,7 @@ analyze_static(gmx_sel_evaluate_t                *data,
         alloc_selection_data(sel, g->isize, false);
     }
 
-    bDoMinMax = (sel->cdata->flags & SEL_CDATA_DOMINMAX);
+    bDoMinMax = ((sel->cdata->flags & SEL_CDATA_DOMINMAX) != 0);
     if (sel->type != SEL_SUBEXPR && bDoMinMax)
     {
         gmx_ana_index_deinit(sel->cdata->gmin);
@@ -2845,7 +2845,7 @@ SelectionCompiler::compile(SelectionCollection *coll)
     {
         if (item->child->cdata->flags & SEL_CDATA_COMMONSUBEXPR)
         {
-            bool bMinMax = item->child->cdata->flags & SEL_CDATA_DOMINMAX;
+            bool bMinMax = (item->child->cdata->flags & SEL_CDATA_DOMINMAX) != 0;
 
             mark_subexpr_dynamic(item->child, false);
             item->child->u.cgrp.isize = 0;

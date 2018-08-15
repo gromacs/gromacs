@@ -407,7 +407,7 @@ gmx_bool
 ftype_is_bonded_potential(int ftype)
 {
     return
-        (interaction_function[ftype].flags & IF_BOND) &&
+        ((interaction_function[ftype].flags & IF_BOND) != 0u) &&
         !(ftype == F_CONNBONDS || ftype == F_POSRES || ftype == F_FBPOSRES);
 }
 
@@ -501,7 +501,7 @@ void calc_listed(const t_commrec             *cr,
     const  t_pbc              *pbc_null;
     bonded_threading_t        *bt  = fr->bondedThreading;
 
-    bCalcEnerVir = (force_flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY));
+    bCalcEnerVir = ((force_flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)) != 0);
 
     if (fr->bMolPBC)
     {
@@ -579,7 +579,7 @@ void calc_listed(const t_commrec             *cr,
                              enerd->term, &enerd->grpp, dvdl,
                              bt,
                              bCalcEnerVir,
-                             force_flags & GMX_FORCE_DHDL);
+                             (force_flags & GMX_FORCE_DHDL) != 0);
 
         if (force_flags & GMX_FORCE_DHDL)
         {

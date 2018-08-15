@@ -335,8 +335,8 @@ SelectionTreeElement::requiredTopologyProperties() const
         bool needsMasses = false;
         if (u.expr.method != nullptr)
         {
-            needsTop    = (u.expr.method->flags & SMETH_REQTOP);
-            needsMasses = (u.expr.method->flags & SMETH_REQMASS);
+            needsTop    = ((u.expr.method->flags & SMETH_REQTOP) != 0);
+            needsMasses = ((u.expr.method->flags & SMETH_REQMASS) != 0);
         }
         if (u.expr.pc != nullptr)
         {
@@ -372,7 +372,7 @@ void SelectionTreeElement::checkUnsortedAtoms(
             || type == SEL_ROOT || type == SEL_SUBEXPR || type == SEL_SUBEXPRREF
             // TODO: Consolidate.
             || type == SEL_MODIFIER
-            || (type == SEL_EXPRESSION && (u.expr.method->flags & SMETH_ALLOW_UNSORTED));
+            || (type == SEL_EXPRESSION && ((u.expr.method->flags & SMETH_ALLOW_UNSORTED) != 0));
 
     // TODO: For some complicated selections, this may result in the same
     // index group reference being flagged as an error multiple times for the

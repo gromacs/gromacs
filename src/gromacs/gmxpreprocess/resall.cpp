@@ -85,7 +85,7 @@ gpp_atomtype_t read_atype(const char *ffdir, t_symtab *tab)
                     trim(buf);
                 }
             }
-            while (!feof(in) && strlen(buf) == 0);
+            while ((feof(in) == 0) && strlen(buf) == 0);
 
             if (sscanf(buf, "%s%lf", name, &m) == 2)
             {
@@ -471,7 +471,7 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
                           rrtp[nrtp].resname, line);
             }
         }
-        while (!feof(in) && !bNextResidue);
+        while ((feof(in) == 0) && !bNextResidue);
 
         if (rrtp[nrtp].natom == 0)
         {

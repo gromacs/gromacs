@@ -436,8 +436,8 @@ static const char *get_hconf_format(bool haveVelocities)
 
 static void write_hconf_box(FILE *out, const matrix box)
 {
-    if (box[XX][YY] || box[XX][ZZ] || box[YY][XX] || box[YY][ZZ] ||
-        box[ZZ][XX] || box[ZZ][YY])
+    if ((box[XX][YY] != 0.0f) || (box[XX][ZZ] != 0.0f) || (box[YY][XX] != 0.0f) || (box[YY][ZZ] != 0.0f) ||
+        (box[ZZ][XX] != 0.0f) || (box[ZZ][YY] != 0.0f))
     {
         fprintf(out, "%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f\n",
                 box[XX][XX], box[YY][YY], box[ZZ][ZZ],

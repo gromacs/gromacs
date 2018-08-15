@@ -1,6 +1,6 @@
 Checks:  clang-diagnostic-*,clang-analyzer-*,-clang-analyzer-security.insecureAPI.strcpy,
          bugprone-*,misc-*,readability-*,performance-*,mpi-*,-misc-incorrect-roundings,
-         -readability-inconsistent-declaration-parameter-name,-readability-implicit-bool-conversion,
+         -readability-inconsistent-declaration-parameter-name,
          -readability-function-size,-readability-else-after-return,
          modernize-use-nullptr,modernize-use-emplace,
          modernize-make-unique,modernize-make-shared,
@@ -22,3 +22,7 @@ CheckOptions:
     value:         google
   - key:           modernize-make-shared.IncludeStyle
     value:         google
+  - key:           readability-implicit-bool-conversion.AllowIntegerConditions
+    value:         1
+  - key:           readability-implicit-bool-conversion.AllowPointerConditions
+    value:         1

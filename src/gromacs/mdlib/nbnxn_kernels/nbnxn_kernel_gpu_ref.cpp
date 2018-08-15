@@ -120,7 +120,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
         clear_f(nbat, 0, f);
     }
 
-    bEner = (force_flags & GMX_FORCE_ENERGY);
+    bEner = ((force_flags & GMX_FORCE_ENERGY) != 0);
 
     bEwald = EEL_FULL(iconst->eeltype);
     if (bEwald)

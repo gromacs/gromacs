@@ -1565,7 +1565,7 @@ static void do_hblife(const char *fn, t_hbdata *hb, gmx_bool bMerge, gmx_bool bC
 
                     for (j = 0; (j <= hbh->nframes); j++)
                     {
-                        ihb      = is_hb(h[nh], j);
+                        ihb      = static_cast<int>(is_hb(h[nh], j));
                         if (debug && (ndump < 10))
                         {
                             fprintf(debug, "%5d  %5d\n", j, ihb);
@@ -1657,8 +1657,8 @@ static void dump_ac(t_hbdata *hb, gmx_bool oneHB, int nDump)
                 {
                     if (hbh->h[0])
                     {
-                        ihb    = is_hb(hbh->h[0], j);
-                        idist  = is_hb(hbh->g[0], j);
+                        ihb    = static_cast<int>(is_hb(hbh->h[0], j));
+                        idist  = static_cast<int>(is_hb(hbh->g[0], j));
                         bPrint = TRUE;
                     }
                 }
@@ -1666,8 +1666,8 @@ static void dump_ac(t_hbdata *hb, gmx_bool oneHB, int nDump)
                 {
                     for (m = 0; (m < hb->maxhydro) && !ihb; m++)
                     {
-                        ihb   = ihb   || ((hbh->h[m]) && is_hb(hbh->h[m], j));
-                        idist = idist || ((hbh->g[m]) && is_hb(hbh->g[m], j));
+                        ihb   = static_cast<int>((ihb != 0)   || (((hbh->h[m]) != nullptr) && is_hb(hbh->h[m], j)));
+                        idist = static_cast<int>((idist != 0) || (((hbh->g[m]) != nullptr) && is_hb(hbh->g[m], j)));
                     }
                     /* This is not correct! */
                     /* What isn't correct? -Erik M */
@@ -2049,8 +2049,8 @@ static void do_hbac(const char *fn, t_hbdata *hb,
                     {
                         if (j <= nf)
                         {
-                            ihb   = is_hb(h[nh], j);
-                            idist = is_hb(g[nh], j);
+                            ihb   = static_cast<int>(is_hb(h[nh], j));
+                            idist = static_cast<int>(is_hb(g[nh], j));
                         }
                         else
                         {
@@ -3347,7 +3347,7 @@ int gmx_hbond(int argc, char *argv[])
                                     {
                                         int nn0 = hb->hbmap[id][ia]->n0;
                                         range_check(y, 0, mat.ny);
-                                        mat.matrix[x+nn0][y] = is_hb(hb->hbmap[id][ia]->h[hh], x);
+                                        mat.matrix[x+nn0][y] = static_cast<t_matelmt>(is_hb(hb->hbmap[id][ia]->h[hh], x));
                                     }
                                     y++;
                                 }

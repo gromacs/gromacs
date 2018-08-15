@@ -289,7 +289,7 @@ Integrator::do_tpi()
         copy_rvec(state_global->x[i], x_mol[i-a_tp0]);
         /* Check if we need to print electrostatic energies */
         bCharge |= (mdatoms->chargeA[i] != 0 ||
-                    (mdatoms->chargeB && mdatoms->chargeB[i] != 0));
+                    ((mdatoms->chargeB != nullptr) && mdatoms->chargeB[i] != 0));
     }
     bRFExcl = (bCharge && EEL_RF(fr->ic->eeltype));
 

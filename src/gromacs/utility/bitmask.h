@@ -101,7 +101,7 @@ inline static bool bitmask_is_set(gmx_bitmask_t m, int b)
 /*! \brief Test if both bitmasks have no common bits enabled */
 inline static bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)
 {
-    return !(a & b);
+    return (a & b) == 0u;
 }
 
 /*! \brief Test if both bitmasks are equal */
@@ -113,7 +113,7 @@ inline static bool bitmask_is_equal(gmx_bitmask_t a, gmx_bitmask_t b)
 /*! \brief Test if bitmask has no enabled bits */
 inline static bool bitmask_is_zero(gmx_bitmask_t m)
 {
-    return !m;
+    return m == 0u;
 }
 
 /*! \brief Set all bits enabled in either mask and write into a */
@@ -159,7 +159,7 @@ inline static bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)
     bool     r = true;
     for (i = 0; i < BITMASK_ALEN; i++)
     {
-        r = r && !(a[i] & b[i]);
+        r = r && ((a[i] & b[i]) == 0u);
     }
     return r;
 }
@@ -181,7 +181,7 @@ inline static bool bitmask_is_zero(gmx_bitmask_t m)
     bool     r = true;
     for (i = 0; i < BITMASK_ALEN; i++)
     {
-        r = r && !m[i];
+        r = r && (m[i] == 0u);
     }
     return r;
 }

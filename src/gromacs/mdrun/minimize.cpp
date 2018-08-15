@@ -701,7 +701,7 @@ static bool do_em_step(const t_commrec *cr,
              * parallelization, but we can not really avoid it.
              * But usually EM is not run at high parallelization.
              */
-            int reductionBuffer = !validStep;
+            int reductionBuffer = static_cast<int>(!validStep);
             gmx_sumi(1, &reductionBuffer, cr);
             validStep           = (reductionBuffer == 0);
         }
@@ -1765,7 +1765,7 @@ Integrator::do_lbfgs()
         }
         for (m = 0; m < DIM; m++)
         {
-            frozen[3*i+m] = inputrec->opts.nFreeze[gf][m];
+            frozen[3*i+m] = (inputrec->opts.nFreeze[gf][m] != 0);
         }
     }
     if (MASTER(cr))
@@ -2599,7 +2599,7 @@ Integrator::do_steep()
     {
         fprintf(stderr, "\nwriting lowest energy coordinates.\n");
     }
-    write_em_traj(fplog, cr, outf, TRUE, inputrec->nstfout, ftp2fn(efSTO, nfile, fnm),
+    write_em_traj(fplog, cr, outf, TRUE, inputrec->nstfout != 0, ftp2fn(efSTO, nfile, fnm),
                   top_global, inputrec, count,
                   s_min, state_global, observablesHistory);
 

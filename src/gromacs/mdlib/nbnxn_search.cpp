@@ -1748,7 +1748,7 @@ static void make_fep_list(const nbnxn_search     *nbs,
             nlist->gid[nri]      = 0;
             nlist->shift[nri]    = nbl_ci->shift & NBNXN_CI_SHIFT;
 
-            bFEP_i = gridi->fep[ci - gridi->cell0] & (1 << i);
+            bFEP_i = ((gridi->fep[ci - gridi->cell0] & (1 << i)) != 0u);
 
             bFEP_i_all = bFEP_i_all && bFEP_i;
 
@@ -1949,7 +1949,7 @@ static void make_fep_list_supersub(const nbnxn_search     *nbs,
                 nlist->gid[nri]      = 0;
                 nlist->shift[nri]    = nbl_sci->shift & NBNXN_CI_SHIFT;
 
-                bFEP_i = (gridi->fep[c_abs - gridi->cell0*c_gpuNumClusterPerCell] & (1 << i));
+                bFEP_i = ((gridi->fep[c_abs - gridi->cell0*c_gpuNumClusterPerCell] & (1 << i)) != 0u);
 
                 xi = nbat->x[ind_i*nbat->xstride+XX] + shx;
                 yi = nbat->x[ind_i*nbat->xstride+YY] + shy;

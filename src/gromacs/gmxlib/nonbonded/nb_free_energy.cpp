@@ -177,9 +177,9 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     sc_r_power          = fr->sc_r_power;
     sigma6_def          = fr->sc_sigma6_def;
     sigma6_min          = fr->sc_sigma6_min;
-    bDoForces           = kernel_data->flags & GMX_NONBONDED_DO_FORCE;
-    bDoShiftForces      = kernel_data->flags & GMX_NONBONDED_DO_SHIFTFORCE;
-    bDoPotential        = kernel_data->flags & GMX_NONBONDED_DO_POTENTIAL;
+    bDoForces           = ((kernel_data->flags & GMX_NONBONDED_DO_FORCE) != 0);
+    bDoShiftForces      = ((kernel_data->flags & GMX_NONBONDED_DO_SHIFTFORCE) != 0);
+    bDoPotential        = ((kernel_data->flags & GMX_NONBONDED_DO_POTENTIAL) != 0);
 
     rcoulomb            = ic->rcoulomb;
     rvdw                = ic->rvdw;
@@ -333,8 +333,8 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 
     /* Ewald (not PME) table is special (icoul==enbcoulFEWALD) */
 
-    do_tab = (icoul == GMX_NBKERNEL_ELEC_CUBICSPLINETABLE ||
-              ivdw == GMX_NBKERNEL_VDW_CUBICSPLINETABLE);
+    do_tab = static_cast<int>(icoul == GMX_NBKERNEL_ELEC_CUBICSPLINETABLE ||
+                              ivdw == GMX_NBKERNEL_VDW_CUBICSPLINETABLE);
     if (do_tab)
     {
         tabscale         = kernel_data->table_elec_vdw->scale;
