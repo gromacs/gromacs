@@ -1306,6 +1306,7 @@ static void convert_mat(t_matrix *mat, t_mat *rms)
     }
     rms->nn = mat->nx;
 }
+extern template real gmx::findStructureSimilarity<gmx::RMSD>(int nAtoms, const real *mass, const rvec *x, const rvec *xp, const int *index);
 
 int gmx_cluster(int argc, char *argv[])
 {
@@ -1739,7 +1740,7 @@ int gmx_cluster(int argc, char *argv[])
                     {
                         do_fit(isize, mass, xx[i2], x1);
                     }
-                    rmsd = rmsdev(isize, mass, xx[i2], x1);
+                    rmsd = gmx::findStructureSimilarity<gmx::RMSD>(isize, mass, xx[i2], x1);
                     set_mat_entry(rms, i1, i2, rmsd);
                 }
                 nrms -= nf-i1-1;

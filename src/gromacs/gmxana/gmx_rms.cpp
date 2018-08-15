@@ -97,6 +97,9 @@ static void norm_princ(const t_atoms *atoms, int isize, int *index, int natoms,
     }
 }
 
+extern template real gmx::findStructureSimilarity<gmx::RMSD>(int nAtoms, const real *mass, const rvec *x, const rvec *xp, const int *index);
+extern template real gmx::findStructureSimilarity<gmx::RhoMeasure>(int nAtoms, const real *mass, const rvec *x, const rvec *xp, const int *index);
+
 int gmx_rms(int argc, char *argv[])
 {
     const char     *desc[] =
@@ -612,6 +615,16 @@ int gmx_rms(int argc, char *argv[])
     /* start looping over frames: */
     tel_mat = 0;
     teller  = 0;
+    gmx::structureSimilarityFunction similarityMeasure;
+    if (ewhat == ewRMSD)
+    {
+        similarityMeasure = gmx::findStructureSimilarity<gmx::RMSD>;
+    }
+    else
+    {
+        similarityMeasure = gmx::findStructureSimilarity<gmx::RhoMeasure>;
+    }
+
     do
     {
         if (bPBC)
@@ -676,14 +689,14 @@ int gmx_rms(int argc, char *argv[])
         for (j = 0; (j < nrms); j++)
         {
             rls[j][teller] =
-                calc_similar_ind(ewhat != ewRMSD, irms[j], ind_rms[j], w_rms, x, xp);
+                similarityMeasure(irms[j], w_rms, x, xp, ind_rms[j]);
         }
         if (bNorm)
         {
             for (j = 0; (j < irms[0]); j++)
             {
                 rlsnorm[j] +=
-                    calc_similar_ind(ewhat != ewRMSD, 1, &(ind_rms[0][j]), w_rms, x, xp);
+                    similarityMeasure(1, w_rms, x, xp, &(ind_rms[0][j]));
             }
         }
 
@@ -698,7 +711,7 @@ int gmx_rms(int argc, char *argv[])
             for (j = 0; j < nrms; j++)
             {
                 rlsm[j][teller] =
-                    calc_similar_ind(ewhat != ewRMSD, irms[j], ind_rms[j], w_rms, x, xm);
+                    similarityMeasure(irms[j], w_rms, x, xm, ind_rms[j]);
             }
         }
         time[teller] = output_env_conv_time(oenv, t);
@@ -898,8 +911,8 @@ int gmx_rms(int argc, char *argv[])
                     if (bFile2 || (i < j))
                     {
                         rmsd_mat[i][j] =
-                            calc_similar_ind(ewhat != ewRMSD, irms[0], ind_rms_m,
-                                             w_rms_m, mat_x[i], mat_x2_j);
+                            similarityMeasure(irms[0], w_rms_m, mat_x[i],
+                                              mat_x2_j, ind_rms_m);
                         if (rmsd_mat[i][j] > rmsd_max)
                         {
                             rmsd_max = rmsd_mat[i][j];
