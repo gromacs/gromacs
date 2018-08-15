@@ -281,9 +281,9 @@ char **read_pullparams(std::vector<t_inpfile> *inp,
     printStringNoNewline(inp, "Cylinder radius for dynamic reaction force groups (nm)");
     pull->cylinder_r     = get_ereal(inp, "pull-cylinder-r", 1.5, wi);
     pull->constr_tol     = get_ereal(inp, "pull-constr-tol", 1E-6, wi);
-    pull->bPrintCOM      = get_eeenum(inp, "pull-print-com", yesno_names, wi);
-    pull->bPrintRefValue = get_eeenum(inp, "pull-print-ref-value", yesno_names, wi);
-    pull->bPrintComp     = get_eeenum(inp, "pull-print-components", yesno_names, wi);
+    pull->bPrintCOM      = (get_eeenum(inp, "pull-print-com", yesno_names, wi) != 0);
+    pull->bPrintRefValue = (get_eeenum(inp, "pull-print-ref-value", yesno_names, wi) != 0);
+    pull->bPrintComp     = (get_eeenum(inp, "pull-print-components", yesno_names, wi) != 0);
     pull->nstxout        = get_eint(inp, "pull-nstxout", 50, wi);
     pull->nstfout        = get_eint(inp, "pull-nstfout", 50, wi);
     printStringNoNewline(inp, "Number of pull groups");
@@ -380,7 +380,7 @@ char **read_pullparams(std::vector<t_inpfile> *inp,
         sprintf(buf, "pull-coord%d-vec", coordNum);
         setStringEntry(inp, buf, vec_buf, "0.0 0.0 0.0");
         sprintf(buf, "pull-coord%d-start", coordNum);
-        pcrd->bStart = get_eeenum(inp, buf, yesno_names, wi);
+        pcrd->bStart = (get_eeenum(inp, buf, yesno_names, wi) != 0);
         sprintf(buf, "pull-coord%d-init", coordNum);
         pcrd->init = get_ereal(inp, buf, 0.0, wi);
         sprintf(buf, "pull-coord%d-rate", coordNum);

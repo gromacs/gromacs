@@ -431,7 +431,7 @@ do_pairs_general(int ftype, int nbonds,
             case F_LJ14:
                 bFreeEnergy =
                     (fr->efep != efepNO &&
-                     ((md->nPerturbed && (md->bPerturbed[ai] || md->bPerturbed[aj])) ||
+                     (((md->nPerturbed != 0) && (md->bPerturbed[ai] || md->bPerturbed[aj])) ||
                       iparams[itype].lj14.c6A != iparams[itype].lj14.c6B ||
                       iparams[itype].lj14.c12A != iparams[itype].lj14.c12B));
                 qq               = md->chargeA[ai]*md->chargeA[aj]*epsfac*fr->fudgeQQ;

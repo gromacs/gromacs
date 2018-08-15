@@ -260,7 +260,7 @@ int
 identifyAvx512FmaUnits()
 {
     static bool initialized = false;
-    static int  result      = false;
+    static int  result      = 0;
 
     if (!initialized)
     {

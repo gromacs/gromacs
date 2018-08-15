@@ -1130,9 +1130,9 @@ int gmx_pme_do(struct gmx_pme_t *pme,
     gmx_bool             bFirst, bDoSplines;
     int                  fep_state;
     int                  fep_states_lj           = pme->bFEP_lj ? 2 : 1;
-    const gmx_bool       bCalcEnerVir            = flags & GMX_PME_CALC_ENER_VIR;
-    const gmx_bool       bBackFFT                = flags & (GMX_PME_CALC_F | GMX_PME_CALC_POT);
-    const gmx_bool       bCalcF                  = flags & GMX_PME_CALC_F;
+    const gmx_bool       bCalcEnerVir            = (flags & GMX_PME_CALC_ENER_VIR) != 0;
+    const gmx_bool       bBackFFT                = (flags & (GMX_PME_CALC_F | GMX_PME_CALC_POT)) != 0;
+    const gmx_bool       bCalcF                  = (flags & GMX_PME_CALC_F) != 0;
 
     assert(pme->nnodes > 0);
     assert(pme->nnodes == 1 || pme->ndecompdim > 0);

@@ -442,7 +442,7 @@ int DS_Search(DirStack *DS, directive d)
         D = D->prev;
     }
 
-    return (D != nullptr);
+    return static_cast<int>(D != nullptr);
 }
 
 int DS_Check_Order(DirStack *DS, directive d)

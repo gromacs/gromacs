@@ -255,9 +255,9 @@ int read_first_xtc(t_fileio *fio, int *natoms, int64_t *step, real *time,
 
     snew(*x, *natoms);
 
-    *bOK = xtc_coord(xd, natoms, box, *x, prec, TRUE);
+    *bOK = (xtc_coord(xd, natoms, box, *x, prec, TRUE) != 0);
 
-    return *bOK;
+    return static_cast<int>(*bOK);
 }
 
 int read_next_xtc(t_fileio* fio,
@@ -286,7 +286,7 @@ int read_next_xtc(t_fileio* fio,
                   n, natoms);
     }
 
-    *bOK = xtc_coord(xd, &natoms, box, x, prec, TRUE);
+    *bOK = (xtc_coord(xd, &natoms, box, x, prec, TRUE) != 0);
 
-    return *bOK;
+    return static_cast<int>(*bOK);
 }

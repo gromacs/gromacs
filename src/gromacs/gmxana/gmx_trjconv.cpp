@@ -374,7 +374,7 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
                     break;
             }
             rvec_sub(newCom, com, shift);
-            if (norm2(shift))
+            if (norm2(shift) != 0.0f)
             {
                 if (debug)
                 {
@@ -1576,7 +1576,7 @@ int gmx_trjconv(int argc, char *argv[])
                 }
 
                 bWriteFrame =
-                    ( ( !bTDump && !frindex && frame % skip_nr == 0 ) || bDumpFrame );
+                    ( ( !bTDump && (frindex == nullptr) && frame % skip_nr == 0 ) || bDumpFrame );
 
                 if (bWriteFrame && (bDropUnder || bDropOver))
                 {

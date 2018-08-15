@@ -533,8 +533,8 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
     }
 
     // Positions are always present, so there's nothing to flag
-    bool                bV   = state->flags & (1<<estV);
-    bool                bCGP = state->flags & (1<<estCGP);
+    bool                bV   = (state->flags & (1<<estV)) != 0;
+    bool                bCGP = (state->flags & (1<<estCGP)) != 0;
 
     DDBufferAccess<int> moveBuffer(comm->intBuffer, dd->globalAtomGroupIndices.size());
     int                *move = moveBuffer.buffer.data();

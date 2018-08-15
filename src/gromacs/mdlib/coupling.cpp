@@ -606,7 +606,7 @@ void berendsen_pcoupl(FILE *fplog, int64_t step,
         case epctSURFACETENSION:
             /* ir->ref_p[0/1] is the reference surface-tension times *
              * the number of surfaces                                */
-            if (ir->compress[ZZ][ZZ])
+            if (ir->compress[ZZ][ZZ] != 0.0f)
             {
                 p_corr_z = dt/ir->tau_p*(ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ]);
             }

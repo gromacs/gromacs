@@ -94,7 +94,7 @@ const char cPathSeparator = ':';
 //! Check whether a given character is a directory separator.
 bool isDirSeparator(char chr)
 {
-    return std::strchr(cDirSeparators, chr);
+    return std::strchr(cDirSeparators, chr) != nullptr;
 }
 
 } // namespace

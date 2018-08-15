@@ -237,7 +237,7 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
         grid->cell_offset[i] = izones_x0[i];
         size                 = izones_size[i];
 
-        bDD = dd && (dd->nc[i] > 1);
+        bDD = (dd != nullptr) && (dd->nc[i] > 1);
         if (!bDD)
         {
             bDDRect = FALSE;
@@ -247,7 +247,7 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
             /* With DD grid cell jumps only the first decomposition
              * direction has uniform DD cell boundaries.
              */
-            bDDRect = !(ddbox->tric_dir[i] ||
+            bDDRect = !((ddbox->tric_dir[i] != 0) ||
                         (dd_dlb_is_on(dd) && i != dd->dim[0]));
 
             radd = rlist;
@@ -726,7 +726,7 @@ void fill_grid(gmx_domdec_zones_t *dd_zones,
             for (d = 0; d < DIM; d++)
             {
                 shift0[d] = dd_zones->shift[zone][d];
-                useall[d] = (shift0[d] == 0 || d >= grid->npbcdim);
+                useall[d] = static_cast<int>(shift0[d] == 0 || d >= grid->npbcdim);
                 /* Check if we need to do normal or optimized grid assignments.
                  * Normal is required for dims without DD or triclinic dims.
                  * DD edge cell on dims without pbc will be automatically

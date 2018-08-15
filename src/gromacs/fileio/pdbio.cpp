@@ -327,7 +327,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
     gmx_residuetype_init(&rt);
 
     fprintf(out, "TITLE     %s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
-    if (box && ( norm2(box[XX]) || norm2(box[YY]) || norm2(box[ZZ]) ) )
+    if (box && ( (norm2(box[XX]) != 0.0f) || (norm2(box[YY]) != 0.0f) || (norm2(box[ZZ]) != 0.0f) ) )
     {
         gmx_write_pdb_box(out, ePBC, box);
     }
@@ -810,7 +810,7 @@ gmx_bool is_dummymass(const char *nm)
     std::strcpy(buf, nm);
     trim(buf);
 
-    return (buf[0] == 'M') && std::isdigit(buf[strlen(buf)-1]);
+    return (buf[0] == 'M') && (std::isdigit(buf[strlen(buf)-1]) != 0);
 }
 
 static void gmx_conect_addline(gmx_conect_t *con, char *line)

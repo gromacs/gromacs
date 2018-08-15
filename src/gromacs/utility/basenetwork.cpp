@@ -57,7 +57,7 @@ bool gmx_mpi_initialized()
     int n;
     MPI_Initialized(&n);
 
-    return n;
+    return n != 0;
 #endif
 }
 

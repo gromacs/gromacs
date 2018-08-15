@@ -249,7 +249,7 @@ _gmx_selelem_is_default_kwpos(const gmx::SelectionTreeElement &sel)
 static void set_pos_method_flags(gmx_ana_selmethod_t *method,
                                  t_methoddata_pos    *d)
 {
-    const bool forces = (d->flags != -1 && (d->flags & POS_FORCES));
+    const bool forces = (d->flags != -1 && ((d->flags & POS_FORCES) != 0));
     switch (gmx::PositionCalculationCollection::requiredTopologyInfoForType(d->type, forces))
     {
         case gmx::PositionCalculationCollection::RequiredTopologyInfo::TopologyAndMasses:

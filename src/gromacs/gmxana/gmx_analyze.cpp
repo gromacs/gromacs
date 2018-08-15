@@ -1240,12 +1240,12 @@ int gmx_analyze(int argc, char *argv[])
         }
         printf("SS%d  %13.6e   %12.6e   %12.6e      %6.3f   %6.3f\n",
                s+1, av[s], sig[s], error,
-               sig[s] ? cum3/(sig[s]*sig[s]*sig[s]*std::sqrt(8/M_PI)) : 0,
-               sig[s] ? cum4/(sig[s]*sig[s]*sig[s]*sig[s]*3)-1 : 0);
+               sig[s] != 0.0 ? cum3/(sig[s]*sig[s]*sig[s]*std::sqrt(8/M_PI)) : 0,
+               sig[s] != 0.0 ? cum4/(sig[s]*sig[s]*sig[s]*sig[s]*3)-1 : 0);
     }
     printf("\n");
 
-    if (filtlen)
+    if (filtlen != 0.0f)
     {
         filter(filtlen, n, nset, val, dt);
     }
