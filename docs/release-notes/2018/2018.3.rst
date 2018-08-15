@@ -12,6 +12,15 @@ Multi-domain Conjugate Gradient minimimization no longer segfaults.
 
 :issue:`2554`
 
+grompp now checks that pull groups are not close to half the box size
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Pull groups that use a reference atom for periodic boundary treatment
+should have all their atoms well within half the box size of this reference.
+This is now checked by grompp.
+
+:issue:`2397`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

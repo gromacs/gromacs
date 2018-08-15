@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -819,3 +819,128 @@ void pull_calc_coms(t_commrec *cr,
         make_cyl_refgrps(cr, pull, md, pbc, t, x);
     }
 }
+
+using BoolVec = gmx::BasicVector<bool>;
+
+static bool pullGroupObeysPbcRestrictions(const pull_group_work_t &group,
+                                          const BoolVec           &dimUsed,
+                                          const rvec              *x,
+                                          const t_pbc             &pbc,
+                                          const rvec              &x_pbc)
+{
+    static const real c_margin = 0.9;
+
+    BoolVec dimUsesPbc       = { false, false, false };
+    bool    pbcIsRectangular = true;
+    for (int d = 0; d < pbc.ndim_ePBC; d++)
+    {
+        if (dimUsed[d])
+        {
+            dimUsesPbc[d] = true;
+            for (int d2 = d + 1; d2 < pbc.ndim_ePBC; d2++)
+            {
+                if (pbc.box[d2][d] != 0)
+                {
+                    dimUsesPbc[d2]   = true;
+                    pbcIsRectangular = false;
+                }
+            }
+        }
+    }
+
+    rvec marginPerDim;
+    real marginDistance2 = 0;
+    if (pbcIsRectangular)
+    {
+        for (int d = 0; d < pbc.ndim_ePBC; d++)
+        {
+            marginPerDim[d] = c_pullGroupPbcMargin*pbc.hbox_diag[d];
+        }
+    }
+    else
+    {
+        for (int d = 0; d < pbc.ndim_ePBC; d++)
+        {
+            if (dimUsesPbc[d])
+            {
+                marginDistance2 += c_margin*0.5*0.5*norm2(pbc.box[d]);
+            }
+        }
+    }
+
+    for (int i = 0; i < group.nat_loc; i++)
+    {
+        rvec dx;
+        pbc_dx(&pbc, x[group.ind_loc[i]], x_pbc, dx);
+
+        bool atomIsTooFar = false;
+        if (pbcIsRectangular)
+        {
+            for (int d = 0; d < pbc.ndim_ePBC; d++)
+            {
+                if (dimUsesPbc[d] && (dx[d] < -marginPerDim[d] ||
+                                      dx[d] >  marginPerDim[d]))
+                {
+                    atomIsTooFar = true;
+                }
+            }
+        }
+        else
+        {
+            real pbcDistance2 = 0;
+            for (int d = 0; d < pbc.ndim_ePBC; d++)
+            {
+                if (dimUsesPbc[d])
+                {
+                    pbcDistance2 += gmx::square(dx[d]);
+                }
+            }
+            atomIsTooFar = (pbcDistance2 > marginDistance2);
+        }
+        if (atomIsTooFar)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+int pullCheckPbcWithinGroups(const pull_t &pull,
+                             const rvec   *x,
+                             const t_pbc  &pbc)
+{
+    if (pbc.ePBC == epbcNONE)
+    {
+        return -1;
+    }
+
+    std::vector<BoolVec> dimUsed(pull.ngroup, { false, false, false });
+    for (int c = 0; c < pull.ncoord; c++)
+    {
+        const t_pull_coord &coordParams = pull.coord[c].params;
+        for (int g = 0; g < coordParams.ngroup; g++)
+        {
+            for (int d = 0; d < DIM; d++)
+            {
+                if (coordParams.dim[d])
+                {
+                    dimUsed[g][d] = true;
+                }
+            }
+        }
+    }
+
+    for (int g = 0; g < pull.ngroup; g++)
+    {
+        const pull_group_work_t &group = pull.group[g];
+        if (group.epgrppbc == epgrppbcREFAT &&
+            !pullGroupObeysPbcRestrictions(group, dimUsed[g], x, pbc, pull.comm.rbuf[g]))
+        {
+            return g;
+        }
+    }
+
+    return -1;
+}
+
