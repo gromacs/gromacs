@@ -406,17 +406,41 @@ getAtomGroupDistribution(const gmx::MDLogger &mdlog,
 
     std::vector < std::vector < int>> indices(dd->nnodes);
 
-    /* Compute the center of geometry for all charge groups */
-    for (int icg = 0; icg < cgs->nr; icg++)
+    if (dd->comm->useUpdateGroups)
     {
-        int domainIndex =
-            computeAtomGroupDomainIndex(*dd, ddbox, triclinicCorrectionMatrix,
-                                        cellBoundaries,
-                                        cgindex[icg], cgindex[icg + 1], box,
-                                        pos);
+        const gmx::RangePartitioning &updateGrouping = dd->comm->globalUpdateAtomGrouping;
 
-        indices[domainIndex].push_back(icg);
-        ma.domainGroups[domainIndex].numAtoms += cgindex[icg + 1] - cgindex[icg];
+        for (int g = 0; g < updateGrouping.numBlocks(); g++)
+        {
+            const auto &block = updateGrouping.block(g);
+
+            int domainIndex =
+                computeAtomGroupDomainIndex(*dd, ddbox, triclinicCorrectionMatrix,
+                                            cellBoundaries,
+                                            block.begin(), block.end(), box,
+                                            pos);
+
+            for (int atomIndex : block)
+            {
+                indices[domainIndex].push_back(atomIndex);
+            }
+            ma.domainGroups[domainIndex].numAtoms += block.size();
+        }
+    }
+    else
+    {
+        /* Compute the center of geometry for all atoms or charge groups */
+        for (int icg = 0; icg < cgs->nr; icg++)
+        {
+            int domainIndex =
+                computeAtomGroupDomainIndex(*dd, ddbox, triclinicCorrectionMatrix,
+                                            cellBoundaries,
+                                            cgindex[icg], cgindex[icg + 1], box,
+                                            pos);
+
+            indices[domainIndex].push_back(icg);
+            ma.domainGroups[domainIndex].numAtoms += cgindex[icg + 1] - cgindex[icg];
+        }
     }
 
     {
