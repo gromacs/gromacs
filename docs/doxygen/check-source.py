@@ -316,8 +316,8 @@ def check_cycles(graph, reporter):
                     # Only report cycles to nodes that haven't been processed
                     # yet to avoid duplicates.
                     elif linkorder[nextnode] == preorder[nextnode]:
-                        for index in xrange(len(currlist)):
-                            if currlist[index][0] == nextnode:
+                        for index, node in enumerate(currlist):
+                            if node[0] == nextnode:
                                 cycle = [(nextnode, edge)]
                                 cycle.extend(currlist[index+1:])
                                 graph.report_cycle(cycle, reporter)
