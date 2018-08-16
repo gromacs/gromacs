@@ -64,7 +64,15 @@ if (DEFINED PYTHON_EXECUTABLE)
     # Keep quiet on subsequent runs of cmake
     set(PythonInterp_FIND_QUIETLY ON)
 endif()
-find_package(PythonInterp 2.7)
+# TODO: Remove fallback when completely moving to Python3
+find_package(PythonInterp 3.3)
+if (NOT PythonInterp_FOUND)
+    find_package(PythonInterp 2.7)
+    if (PythonInterp_FOUND)
+        message(DEPRECATION "Could not find Python3.3+. Falling back to Python2.7. "
+                            "Note that Python2 support in GROMACS is deprecated.")
+    endif()
+endif()
 find_package(Sphinx ${EXPECTED_SPHINX_VERSION} QUIET COMPONENTS pygments)
 
 # Even if we aren't going to make the full webpage, set up to put all
