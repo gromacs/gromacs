@@ -178,20 +178,6 @@ class HostAllocationPolicy
          *
          * Does not throw.
          */
-        void pin(void* p, size_t n) const noexcept;
-        /*! \brief Unpin the allocation, if appropriate.
-         *
-         * Regardless of the allocation policy, unpin the memory if
-         * previously pinned, otherwise do nothing.
-         *
-         * Does not throw.
-         */
-        void unpin(void* p) const noexcept;
-        /*! \brief Return the current pinning policy (which is semi-independent
-         * of whether the buffer is actually pinned).
-         *
-         * Does not throw.
-         */
         PinningPolicy pinningPolicy() const { return pinningPolicy_; }
         //! Specify an allocator trait so that the stateful allocator doesn't propagate.
         using propagate_on_container_copy_assignment = std::false_type;
