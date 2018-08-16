@@ -22,6 +22,20 @@ systems with constraints.
 
 :issue:`2613`
 
+Avoid "atom moved to far" errors
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The introduction of the dual pair list has led to larger nstlist values,
+which leads to larger atom displacements between domain decomposition
+steps. This has made it more likely that the errors
+"An atom moved too far between two domain decomposition steps" and
+"N particles communicated to PME rank M are more than 2/3 times the cut-off
+out of the domain decomposition cell ..." appear for stable systems.
+Now atom displacements are correctly taken into account when determining
+the minimum cell size, so these errors should only appear for unstable systems.
+
+:issue:`2614`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

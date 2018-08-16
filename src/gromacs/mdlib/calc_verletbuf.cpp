@@ -1176,3 +1176,106 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
 
     *rlist = std::max(ir->rvdw, ir->rcoulomb) + ib1*resolution;
 }
+
+real minCellSizeForAtomDisplacement(const gmx_mtop_t &mtop,
+                                    const t_inputrec &ir,
+                                    real              chanceRequested)
+{
+    if (!EI_DYNAMICS(ir.eI) || (EI_MD(ir.eI) && ir.etc == etcNO))
+    {
+        return 0;
+    }
+
+    /* We use the maximum temperature with multiple T-coupl groups.
+     * We could use a per particle temperature, but since particles
+     * interact, this might underestimate the displacements.
+     */
+    const real            temperature = maxReferenceTemperature(ir);
+
+    const bool            setMassesToOne = (ir.eI == eiBD && ir.bd_fric > 0);
+
+    verletbuf_atomtype_t *att  = nullptr;
+    int                   natt = -1;
+    get_verlet_buffer_atomtypes(&mtop, setMassesToOne, &att, &natt, nullptr);
+
+    const real kT_fac = displacementVariance(ir, temperature,
+                                             ir.nstlist*ir.delta_t);
+
+    /* Resolution of the cell size */
+    real resolution = 0.001;
+
+    /* Search using bisection, avoid 0 and start at 1 */
+    int  ib0      = 0;
+    /* The chance will be neglible at 10 times the max sigma */
+    int  ib1      = (int)(10*maxSigma(kT_fac, natt, att)/resolution) + 1;
+    real cellSize = 0;
+    while (ib1 - ib0 > 1)
+    {
+        int ib = (ib0 + ib1)/2;
+        cellSize = ib*resolution;
+
+        /* We assumes atom are distributed uniformly over the cell width.
+         * Once an atom has moved by more than the cellSize (as passed
+         * as the buffer argument to energyDriftAtomPair() below),
+         * the chance of crossing the boundary of the neighbor cell
+         * thus increases as 1/cellSize with the additional displacement
+         * on to of cellSize. We thus create a linear interaction with
+         * derivative = -1/cellSize. Using this in the energyDriftAtomPair
+         * function will return the chance of crossing the next boundary.
+         */
+        const pot_derivatives_t boundaryInteraction = { 1/cellSize, 0, 0 };
+
+        real                    chance = 0;
+        for (int i = 0; i < natt; i++)
+        {
+            const atom_nonbonded_kinetic_prop_t &propAtom = att[i].prop;
+            real s2_2d;
+            real s2_3d;
+            get_atom_sigma2(kT_fac, &propAtom, &s2_2d, &s2_3d);
+
+            real chancePerAtom = energyDriftAtomPair(propAtom.bConstr, false,
+                                                     s2_2d + s2_3d, s2_2d, 0,
+                                                     cellSize,
+                                                     &boundaryInteraction);
+
+            if (propAtom.bConstr)
+            {
+                /* energyDriftAtomPair() uses an unlimited Gaussian displacement
+                 * distribution for constrained atoms, whereas they can
+                 * actually not move more than the COM of the two constrained
+                 * atoms plus twice the distance from the COM.
+                 * Use this maximum, limited displacement when this results in
+                 * a smaller chance (note that this is still an overestimate).
+                 */
+                real massFraction = propAtom.con_mass/(propAtom.mass + propAtom.con_mass);
+                real comDistance  = propAtom.con_len*massFraction;
+
+                real chanceWithMaxDistance =
+                    energyDriftAtomPair(false, false,
+                                        s2_3d, 0, 0,
+                                        cellSize - 2*comDistance,
+                                        &boundaryInteraction);
+                chancePerAtom = std::min(chancePerAtom, chanceWithMaxDistance);
+            }
+
+            /* Take into account the line density of the boundary */
+            chancePerAtom /= cellSize;
+
+            chance        += att[i].n*chancePerAtom;
+        }
+
+        /* Note: chance is for every nstlist steps */
+        if (chance > chanceRequested*ir.nstlist)
+        {
+            ib0 = ib;
+        }
+        else
+        {
+            ib1 = ib;
+        }
+    }
+
+    sfree(att);
+
+    return cellSize;
+}
