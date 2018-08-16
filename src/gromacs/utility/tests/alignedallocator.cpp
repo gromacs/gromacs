@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -82,6 +82,13 @@ TYPED_TEST(AllocatorTest, StatelessAllocatorUsesNoMemory)
     using value_type = typename TypeParam::value_type;
     EXPECT_EQ(sizeof(std::vector<value_type>),
               sizeof(std::vector<value_type, TypeParam>));
+}
+
+TEST(AllocatorUntypedTest, Comparison)
+{
+    //Should always be true for the same policy, indpendent of value_type
+    EXPECT_EQ(AlignedAllocator<float>{}, AlignedAllocator<double>{});
+    EXPECT_EQ(PageAlignedAllocator<float>{}, PageAlignedAllocator<double>{});
 }
 
 } // namespace
