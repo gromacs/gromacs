@@ -34,6 +34,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 """Script for generating spherical test configurations."""
+from __future__ import division
 
 import math
 import random
