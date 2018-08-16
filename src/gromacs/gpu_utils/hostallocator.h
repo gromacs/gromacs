@@ -178,20 +178,6 @@ class HostAllocationPolicy
          *
          * Does not throw.
          */
-        void pin(void* p, size_t n) const noexcept;
-        /*! \brief Unpin the allocation, if appropriate.
-         *
-         * Regardless of the allocation policy, unpin the memory if
-         * previously pinned, otherwise do nothing.
-         *
-         * Does not throw.
-         */
-        void unpin(void* p) const noexcept;
-        /*! \brief Return the current pinning policy (which is semi-independent
-         * of whether the buffer is actually pinned).
-         *
-         * Does not throw.
-         */
         PinningPolicy pinningPolicy() const { return pinningPolicy_; }
         //! Don't propagate for copy
         using propagate_on_container_copy_assignment = std::false_type;
@@ -205,10 +191,22 @@ class HostAllocationPolicy
         {
             return {};
         }
+
     private:
         //! Pinning policy
         PinningPolicy pinningPolicy_;
 };
+
+/*! \brief Return true if two allocators are identical
+ *
+ * True if pinning policy is the same.
+ */
+template<class T1, class T2>
+bool operator==(const Allocator<T1, HostAllocationPolicy> &a,
+                const Allocator<T2, HostAllocationPolicy> &b)
+{
+    return a.pinningPolicy() == b.pinningPolicy();
+}
 
 /*! \brief Helper function for changing the pinning policy of a HostVector.
  *
@@ -221,12 +219,9 @@ class HostAllocationPolicy
 template <class T>
 void changePinningPolicy(HostVector<T> *v, PinningPolicy pinningPolicy)
 {
-    if (v->get_allocator().pinningPolicy() == pinningPolicy)
-    {
-        return;
-    }
-    //Force reallocation by creating copy
-    *v = HostVector<T>(*v, {pinningPolicy});
+    //Force reallocation by element-wise move (because policy is different
+    //container is forced to realloc). Does nothing if policy is the same.
+    *v = HostVector<T>(std::move(*v), {pinningPolicy});
 }
 }      // namespace gmx
 

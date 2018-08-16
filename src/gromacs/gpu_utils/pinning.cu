@@ -44,6 +44,8 @@
 
 #include <cstddef>
 
+#include <algorithm>
+
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/exceptions.h"
@@ -65,6 +67,8 @@ void pinBuffer(void *pointer, std::size_t numBytes) noexcept
 
     GMX_ASSERT(isAligned(pointer, PageAlignedAllocationPolicy::alignment()),
                formatString("%s Host memory needs to be page aligned.", errorMessage).c_str());
+
+    numBytes = std::max<size_t>(1, numBytes); //C++11 3.7.4.1 gurantees that every pointer is different thus at least 1 byte
 
     ensureNoPendingCudaError(errorMessage);
     cudaError_t stat = cudaHostRegister(pointer, numBytes, cudaHostRegisterDefault);

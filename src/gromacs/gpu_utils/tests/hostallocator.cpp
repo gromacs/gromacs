@@ -161,8 +161,18 @@ void HostMemoryTest<T>::runTest(ConstViewType input, ViewType output) const
     this->compareVectors(input, output);
 }
 
+struct MoveOnly {
+    MoveOnly(real x = 0) : x(x) {}
+    MoveOnly(const MoveOnly &)            = delete;
+    MoveOnly(MoveOnly &&)                 = default;
+    MoveOnly &operator=(const MoveOnly &) = delete;
+    MoveOnly &operator=(MoveOnly &&)      = default;
+    bool operator==(const MoveOnly &o) const { return x == o.x; }
+    real x;
+};
+
 //! The types used in testing.
-typedef ::testing::Types<int, real, RVec> TestTypes;
+typedef ::testing::Types<int, real, RVec, MoveOnly> TestTypes;
 
 //! Typed test fixture
 template <typename T>
@@ -180,6 +190,13 @@ struct HostAllocatorTestNoMem : ::testing::Test
 };
 TYPED_TEST_CASE(HostAllocatorTestNoMem, TestTypes);
 
+//! Typed test fixture for tests requiring a copyable type
+template <typename T>
+struct HostAllocatorTestNoMemCopyable : HostAllocatorTestNoMem<T> {};
+//! The types used in testing minus move only types
+using TestTypesCopyable = ::testing::Types<int, real, RVec>;
+TYPED_TEST_CASE(HostAllocatorTestNoMemCopyable, TestTypesCopyable);
+
 // Note that in GoogleTest typed tests, the use of TestFixture:: and
 // this-> is sometimes required to get access to things in the fixture
 // class (or its base classes).
@@ -194,7 +211,7 @@ TYPED_TEST(HostAllocatorTest, EmptyMemoryAlwaysWorks)
 
 TYPED_TEST(HostAllocatorTest, VectorsWithDefaultHostAllocatorAlwaysWorks)
 {
-    typename TestFixture::VectorType input = {{1, 2, 3}}, output;
+    typename TestFixture::VectorType input(3), output;
     output.resize(input.size());
 }
 
@@ -251,7 +268,7 @@ TYPED_TEST(HostAllocatorTestNoMem, MoveConstruction)
     EXPECT_TRUE(input4.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
 }
 
-TYPED_TEST(HostAllocatorTestNoMem, CopyAssignment)
+TYPED_TEST(HostAllocatorTestNoMemCopyable, CopyAssignment)
 {
     typename TestFixture::VectorType input1;
     typename TestFixture::VectorType input2({PinningPolicy::PinnedIfSupported});
@@ -263,7 +280,7 @@ TYPED_TEST(HostAllocatorTestNoMem, CopyAssignment)
     EXPECT_TRUE (input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
 }
 
-TYPED_TEST(HostAllocatorTestNoMem, CopyConstruction)
+TYPED_TEST(HostAllocatorTestNoMemCopyable, CopyConstruction)
 {
     typename TestFixture::VectorType input1;
     typename TestFixture::VectorType input2(input1); //NOLINT(performance-unnecessary-copy-initialization)
@@ -286,6 +303,15 @@ TYPED_TEST(HostAllocatorTestNoMem, Swap)
     EXPECT_TRUE (input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
 }
 
+TYPED_TEST(HostAllocatorTestNoMem, Comparison)
+{
+    using AllocatorType = typename TestFixture::VectorType::allocator_type;
+    EXPECT_EQ(AllocatorType {}, AllocatorType {});
+    //Should be false for different pinning policy
+    EXPECT_NE(AllocatorType {}, AllocatorType {PinningPolicy::PinnedIfSupported});
+}
+
+//! Helper function for wrapping a call to isHostMemoryPinned.
 #if GMX_GPU == GMX_GPU_CUDA
 
 // Policy suitable for pinning is only supported for a CUDA build
@@ -307,7 +333,6 @@ TYPED_TEST(HostAllocatorTest, TransfersWithPinningWorkWithCuda)
     this->runTest(input, output);
 }
 
-//! Helper function for wrapping a call to isHostMemoryPinned.
 template <typename VectorType>
 bool isPinned(const VectorType &v)
 {
@@ -327,32 +352,8 @@ TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkWithCuda)
     EXPECT_TRUE(input.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
     EXPECT_FALSE(isPinned(input));
 
-    // Unpin before allocation is fine, but does nothing.
-    input.get_allocator().getPolicy().unpin(input.data());
-    EXPECT_FALSE(isPinned(input));
-
-    // Pin with no contents is fine, but does nothing.
-    input.get_allocator().getPolicy().pin(input.data(), 0);
-    EXPECT_FALSE(isPinned(input));
-
     // Fill some contents, which will be pinned because of the policy.
     this->fillInput(&input);
-    EXPECT_TRUE(isPinned(input));
-
-    // Unpin after pin is fine.
-    input.get_allocator().getPolicy().unpin(input.data());
-    EXPECT_FALSE(isPinned(input));
-
-    // Repeated unpin should be a no-op.
-    input.get_allocator().getPolicy().unpin(input.data());
-
-    // Pin after unpin is fine.
-    const size_t size = input.size() * sizeof(typename TestFixture::VectorType::value_type);
-    input.get_allocator().getPolicy().pin(input.data(), size);
-    EXPECT_TRUE(isPinned(input));
-
-    // Repeated pin should be a no-op, and still pinned.
-    input.get_allocator().getPolicy().pin(input.data(), size);
     EXPECT_TRUE(isPinned(input));
 
     // Switching policy to CannotBePinned must unpin the buffer (via
@@ -374,19 +375,6 @@ TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkWithCuda)
     EXPECT_NE(oldInputData, input.data());
 }
 
-#else
-
-TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkEvenWithoutCuda)
-{
-    typename TestFixture::VectorType input;
-
-    // Since the buffer can't be pinned and isn't pinned, and the
-    // calling code can't be unhappy about this, these are OK.
-    input.get_allocator().getPolicy().pin(input.data(),
-                                          input.size()*sizeof(typename TestFixture::VectorType::value_type));
-    input.get_allocator().getPolicy().unpin(input.data());
-}
-
 #endif
 
 TYPED_TEST(HostAllocatorTest, StatefulAllocatorUsesMemory)
@@ -398,10 +386,17 @@ TYPED_TEST(HostAllocatorTest, StatefulAllocatorUsesMemory)
               sizeof(typename TestFixture::VectorType));
 }
 
+TEST(HostAllocatorUntypedTest, Comparison)
+{
+    //Should always be true for the same policy, indpendent of value_type
+    EXPECT_EQ(HostAllocator<float>{}, HostAllocator<double>{});
+}
+
 //! Declare allocator types to test.
 using AllocatorTypesToTest = ::testing::Types<HostAllocator<real>,
                                               HostAllocator<int>,
-                                              HostAllocator<RVec>
+                                              HostAllocator<RVec>,
+                                              HostAllocator<MoveOnly>
                                               >;
 
 TYPED_TEST_CASE(AllocatorTest, AllocatorTypesToTest);
