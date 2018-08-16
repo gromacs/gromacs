@@ -46,6 +46,7 @@
 
 #include <cstddef>
 
+#include <algorithm>
 #include <memory>
 
 #include "gromacs/gpu_utils/gpu_utils.h"
@@ -69,12 +70,37 @@ std::size_t HostAllocationPolicy::alignment()
             AlignedAllocationPolicy::alignment());
 }
 
+/*! \brief  Pin memory starting at p of size n
+ *
+ * For every pin, unpin has to be called or resources will leak.
+ * This is guaranteed because for every p!=null&&pinningPolicy_==CanBePinned, the
+ * malloc and free calls handle pinning. For very standard-compliant containers,
+ * the allocator object can't be changed independently of the buffer (for move, it
+ * is propagated) and thus the allocator (and thus pinningPolicy_) can't change
+ * between malloc and free.
+ */
+static void pin(void gmx_unused *p, size_t gmx_unused n) noexcept
+{
+    //always pin (even for size 0) so that we can always unpin without any checks
+    n = std::max<size_t>(1, n); //C++11 3.7.4.1 gurantees that every pointer is different thus at least 1 byte
+    pinBuffer(p, n);
+}
+
+//! Unpin memory starting at p
+static void unpin(void gmx_unused *p) noexcept
+{
+    unpinBuffer(p);
+}
+
 void *HostAllocationPolicy::malloc(std::size_t bytes) const noexcept
 {
     if (pinningPolicy_ == PinningPolicy::PinnedIfSupported)
     {
         void *p = PageAlignedAllocationPolicy::malloc(bytes);
-        pin(p, bytes);
+        if (p)
+        {
+            pin(p, bytes);
+        }
         return p;
     }
     else
@@ -90,39 +116,15 @@ void HostAllocationPolicy::free(void *buffer) const noexcept
         // Nothing to do
         return;
     }
-    unpin(buffer);
     if (pinningPolicy_ == PinningPolicy::PinnedIfSupported)
     {
+        unpin(buffer);
         PageAlignedAllocationPolicy::free(buffer);
     }
     else
     {
         AlignedAllocationPolicy::free(buffer);
     }
-}
-
-void HostAllocationPolicy::pin(void gmx_unused *p, size_t gmx_unused n) const noexcept
-{
-#if GMX_GPU == GMX_GPU_CUDA
-    // I believe this if statement isn't required for calls from malloc. But it
-    // is required for the unit tests. Which might not make much sense to test
-    // cases which can't actually happen for an allocator.
-    if (p == nullptr || n == 0 || isHostMemoryPinned(p))
-    {
-        return;
-    }
-    pinBuffer(p, n);
-#endif
-}
-
-void HostAllocationPolicy::unpin(void gmx_unused *p) const noexcept
-{
-#if GMX_GPU == GMX_GPU_CUDA
-    if (isHostMemoryPinned(p))
-    {
-        unpinBuffer(p);
-    }
-#endif
 }
 
 } // namespace gmx

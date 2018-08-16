@@ -222,15 +222,15 @@ class Allocator : public AllocationPolicy
          * by size_type.
          */
         std::size_t
-        max_size() const { return (static_cast<std::size_t>(0) - static_cast<std::size_t>(1)) / sizeof(T); }
+        max_size() const { return SIZE_MAX / sizeof(T); }
 
         /*! \brief Return true if two allocators are identical
          *
          * This is a member function of the left-hand-side allocator.
+         * Always true for stateless polcies. Has to be defined in the policy for stateful policies.
          */
-        template<class T2>
-        bool
-        operator==(const Allocator<T2, AllocationPolicy> & /*unused*/) const { return std::is_same<T, T2>::value; }
+        template<class T2, class A = AllocationPolicy, typename = typename std::enable_if<std::is_empty<A>::value>::type>
+        bool operator==(const Allocator<T2, AllocationPolicy> & /*unused*/) const { return true; }
 
         /*! \brief Return true if two allocators are different
          *
@@ -239,13 +239,7 @@ class Allocator : public AllocationPolicy
          * This is a member function of the left-hand-side allocator.
          */
         bool
-        operator!=(const Allocator &rhs) const { return !operator==(rhs); }
-
-        //! Obtain allocator for copy construction
-        Allocator select_on_container_copy_construction() const
-        {
-            return Allocator(AllocationPolicy::select_on_container_copy_construction());
-        }
+        operator!=(const Allocator &rhs) const { return !(*this == rhs); }
 };
 
 }      // namespace gmx
