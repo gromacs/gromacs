@@ -210,8 +210,9 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd1419 /wd1
 # 304: access control not specified
 # 383: value copied to temporary, reference to temporary used
 # 444: destructor for base class ".." is not virtual
+# 869: was never referenced (false positives)
 #2282: unrecognized GCC pragma
-                GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-w3 -wd177 -wd304 -wd383 -wd411 -wd444 -wd981 -wd1418 -wd1572 -wd1599 -wd2259 -wd2547 -wd3280 -wd11074 -wd11076 -wd2282" GMXC_CXXFLAGS)
+                GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-w3 -wd177 -wd304 -wd383 -wd411 -wd444 -wd869 -wd981 -wd1418 -wd1572 -wd1599 -wd2259 -wd2547 -wd3280 -wd11074 -wd11076 -wd2282" GMXC_CXXFLAGS)
             endif()
             GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-ip -funroll-all-loops -alias-const -ansi-alias -no-prec-div -fimf-domain-exclusion=14 -qoverride-limits" GMXC_CXXFLAGS_RELEASE)
             GMX_TEST_CXXFLAG(CXXFLAGS_DEBUG "-O0" GMXC_CXXFLAGS_DEBUG)
@@ -222,7 +223,7 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd1419 /wd1
             endif()
             if (GMX_COMPILER_WARNINGS)
 #809: exception specification for virtual function X is incompatible with that of overridden function
-                GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/W3 /wd177 /wd304 /wd383 /wd411 /wd444 /wd809 /wd981 /wd1418 /wd1572 /wd1599 /wd1786 /wd2259 /wd2547 /wd3280 /wd11074 /wd11076 /wd2282" GMXC_CXXFLAGS)
+                GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/W3 /wd177 /wd304 /wd383 /wd411 /wd444 /wd809 /wd869 /wd981 /wd1418 /wd1572 /wd1599 /wd1786 /wd2259 /wd2547 /wd3280 /wd11074 /wd11076 /wd2282" GMXC_CXXFLAGS)
             endif()
             GMX_TEST_CXXFLAG(CXXFLAGS_OPT "/Qip" GMXC_CXXFLAGS_RELEASE)
         endif()
