@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -121,6 +121,16 @@ TYPED_TEST(AllocatorTest, VectorAllocatesAndReservesWithAlignment)
         v.reserve(i);
         EXPECT_EQ(0, reinterpret_cast<std::size_t>(v.data()) & this->mask(v.get_allocator()));
     }
+}
+
+TYPED_TEST(AllocatorTest, Move)
+{
+    using value_type = typename TypeParam::value_type;
+    std::vector<value_type, TypeParam> v1(1);
+    value_type* data = v1.data();
+    EXPECT_NE(data, nullptr);
+    std::vector<value_type, TypeParam> v2(std::move(v1));
+    EXPECT_EQ(data, v2.data());
 }
 
 } // namespace
