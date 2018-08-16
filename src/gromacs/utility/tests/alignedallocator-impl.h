@@ -123,6 +123,16 @@ TYPED_TEST(AllocatorTest, VectorAllocatesAndReservesWithAlignment) //NOLINT(misc
     }
 }
 
+TYPED_TEST(AllocatorTest, Move)
+{
+    using value_type = typename TypeParam::value_type;
+    std::vector<value_type, TypeParam> v1(1);
+    value_type* data = v1.data();
+    EXPECT_NE(data, nullptr);
+    std::vector<value_type, TypeParam> v2(std::move(v1));
+    EXPECT_EQ(data, v2.data());
+}
+
 } // namespace
 } // namespace
 
