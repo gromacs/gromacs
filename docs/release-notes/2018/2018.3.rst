@@ -12,6 +12,16 @@ Multi-domain Conjugate Gradient minimimization no longer segfaults.
 
 :issue:`2554`
 
+Fix pairlist buffer with Brownian Dynamics
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With Brownian Dynamics and bd-fric > 0, the Verlet pairlist buffer would
+be determined with incorrect masses for constrained atoms and virtual
+sites. This would lead to a too small buffer for typical atomistic
+systems with constraints.
+
+:issue:`2613`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

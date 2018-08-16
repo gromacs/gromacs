@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -204,8 +204,24 @@ static void add_at(verletbuf_atomtype_t **att_p, int *natt_p,
     }
 }
 
+/* Returns the mass of atom atomIndex or 1 when setMassesToOne=true */
+static real getMass(const t_atoms &atoms,
+                    int            atomIndex,
+                    bool           setMassesToOne)
+{
+    if (!setMassesToOne)
+    {
+        return atoms.atom[atomIndex].m;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
 static void get_vsite_masses(const gmx_moltype_t  *moltype,
                              const gmx_ffparams_t *ffparams,
+                             bool                  setMassesToOne,
                              real                 *vsite_m,
                              int                  *n_nonlin_vsite)
 {
@@ -225,7 +241,7 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
             {
                 const t_iparams *ip;
                 real             inv_mass, coeff, m_aj;
-                int              a1, aj;
+                int              a1;
 
                 ip = &ffparams->iparams[il->iatoms[i]];
 
@@ -243,17 +259,18 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
                     assert(maxj <= 5);
                     for (j = 1; j < maxj; j++)
                     {
-                        cam[j] = moltype->atoms.atom[il->iatoms[i+1+j]].m;
+                        int aj = il->iatoms[i + 1 + j];
+                        cam[j] = getMass(moltype->atoms, aj, setMassesToOne);
                         if (cam[j] == 0)
                         {
-                            cam[j] = vsite_m[il->iatoms[i+1+j]];
+                            cam[j] = vsite_m[aj];
                         }
                         if (cam[j] == 0)
                         {
                             gmx_fatal(FARGS, "In molecule type '%s' %s construction involves atom %d, which is a virtual site of equal or high complexity. This is not supported.",
                                       *moltype->name,
                                       interaction_function[ft].longname,
-                                      il->iatoms[i+1+j]+1);
+                                      aj + 1);
                         }
                     }
 
@@ -301,8 +318,8 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
                     inv_mass = 0;
                     for (j = 0; j < 3*ffparams->iparams[il->iatoms[i]].vsiten.n; j += 3)
                     {
-                        aj    = il->iatoms[i+j+2];
-                        coeff = ffparams->iparams[il->iatoms[i+j]].vsiten.a;
+                        int aj = il->iatoms[i + j + 2];
+                        coeff  = ffparams->iparams[il->iatoms[i+j]].vsiten.a;
                         if (moltype->atoms.atom[aj].ptype == eptVSite)
                         {
                             m_aj = vsite_m[aj];
@@ -332,6 +349,7 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
 }
 
 static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
+                                        bool                   setMassesToOne,
                                         verletbuf_atomtype_t **att_p,
                                         int                   *natt_p,
                                         int                   *n_nonlin_vsite)
@@ -376,14 +394,16 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
                 ip         = &mtop->ffparams.iparams[il->iatoms[i]];
                 a1         = il->iatoms[i+1];
                 a2         = il->iatoms[i+2];
-                if (atoms->atom[a2].m > prop[a1].con_mass)
+                real mass1 = getMass(*atoms, a1, setMassesToOne);
+                real mass2 = getMass(*atoms, a2, setMassesToOne);
+                if (mass2 > prop[a1].con_mass)
                 {
-                    prop[a1].con_mass = atoms->atom[a2].m;
+                    prop[a1].con_mass = mass2;
                     prop[a1].con_len  = ip->constr.dA;
                 }
-                if (atoms->atom[a1].m > prop[a2].con_mass)
+                if (mass1 > prop[a2].con_mass)
                 {
-                    prop[a2].con_mass = atoms->atom[a1].m;
+                    prop[a2].con_mass = mass1;
                     prop[a2].con_len  = ip->constr.dA;
                 }
             }
@@ -401,18 +421,19 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
              * If this is not the case, we overestimate the displacement,
              * which leads to a larger buffer (ok since this is an exotic case).
              */
-            prop[a1].con_mass = atoms->atom[a2].m;
+            prop[a1].con_mass = getMass(*atoms, a2, setMassesToOne);
             prop[a1].con_len  = ip->settle.doh;
 
-            prop[a2].con_mass = atoms->atom[a1].m;
+            prop[a2].con_mass = getMass(*atoms, a1, setMassesToOne);
             prop[a2].con_len  = ip->settle.doh;
 
-            prop[a3].con_mass = atoms->atom[a1].m;
+            prop[a3].con_mass = getMass(*atoms, a1, setMassesToOne);
             prop[a3].con_len  = ip->settle.doh;
         }
 
         get_vsite_masses(&mtop->moltype[mtop->molblock[mb].type],
                          &mtop->ffparams,
+                         setMassesToOne,
                          vsite_m,
                          &n_nonlin_vsite_mol);
         if (n_nonlin_vsite != nullptr)
@@ -428,7 +449,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
             }
             else
             {
-                prop[a].mass = atoms->atom[a].m;
+                prop[a].mass = getMass(*atoms, a, setMassesToOne);
             }
             prop[a].type     = atoms->atom[a].type;
             prop[a].q        = atoms->atom[a].q;
@@ -896,7 +917,8 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     /* Worst case assumption: HCP packing of particles gives largest distance */
     particle_distance = std::cbrt(boxvol*std::sqrt(2)/mtop->natoms);
 
-    get_verlet_buffer_atomtypes(mtop, &att, &natt, n_nonlin_vsite);
+    const bool setMassesToOne = (ir->eI == eiBD && ir->bd_fric > 0);
+    get_verlet_buffer_atomtypes(mtop, setMassesToOne, &att, &natt, n_nonlin_vsite);
     assert(att != NULL && natt >= 0);
 
     if (debug)
@@ -1028,14 +1050,6 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         {
             /* This is directly sigma^2 of the displacement */
             kT_fac /= ir->bd_fric;
-
-            /* Set the masses to 1 as kT_fac is the full sigma^2,
-             * but we divide by m in ener_drift().
-             */
-            for (i = 0; i < natt; i++)
-            {
-                att[i].prop.mass = 1;
-            }
         }
         else
         {
