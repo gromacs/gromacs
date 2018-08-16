@@ -49,10 +49,12 @@
 #include "gromacs/math/vec.h"
 
 #include "testutils/testasserts.h"
+#include "testutils/testmatchers.h"
 
 namespace
 {
 
+using ::testing::Pointwise;
 using gmx::RVec;
 using gmx::test::defaultRealTolerance;
 using gmx::findStructureSimilarity;
@@ -99,6 +101,26 @@ TEST_F(StructureSimilarityTest, YieldsCorrectRMSDWithIndex)
 TEST_F(StructureSimilarityTest, YieldsCorrectRhoWidthIndex)
 {
     EXPECT_REAL_EQ_TOL(2., findStructureSimilarity<RhoMeasure>(index.size(), m, x1, x2, index.data()), defaultRealTolerance());
+}
+
+TEST_F(StructureSimilarityTest, YieldsCorrectFitRotationMatrixThreeD)
+{
+    constexpr matrix expected = {{0, 1, 0},
+                                 {0, 0, 1},
+                                 {1, 0, 0}};
+    matrix           R;
+    calc_fit_R(3, nAtoms, m, x1, x2, R);
+    EXPECT_THAT(R, Pointwise(RVecEq(defaultRealTolerance()), expected));
+}
+
+TEST_F(StructureSimilarityTest, YieldsCorrectFitRotationMatrixTwoD)
+{
+    constexpr matrix expected = {{0, 1, 0},
+                                 {-1, 0, 0},
+                                 {0, 0, 1}};
+    matrix           R;
+    calc_fit_R(2, nAtoms, m, x1, x2, R);
+    EXPECT_THAT(R, Pointwise(RVecEq(defaultRealTolerance()), expected));
 }
 
 } // namespace
