@@ -325,14 +325,28 @@ static void gen_alexandria_tables(Poldata                 &pd,
                             case eqdAXg:
                             case eqdAXpg:
                                 cv = Coulomb_GG(rr, zetaI, zetaJ);
-                                cf = DCoulomb_GG(rr, zetaI, zetaJ);
+                                if (zetaI == 0 && zetaJ == 0 && rr != 0)
+                                {
+                                    cf = -DCoulomb_GG(rr, zetaI, zetaJ);
+                                }
+                                else
+                                {
+                                    cf = DCoulomb_GG(rr, zetaI, zetaJ);
+                                }
                                 break;
                             case eqdAXs:
                             case eqdAXps:
                             case eqdRappe:
                             case eqdYang:
                                 cv = Coulomb_SS(rr, rowI, rowJ, zetaI, zetaJ);
-                                cf = DCoulomb_SS(rr, rowI, rowJ, zetaI, zetaJ);
+                                if (rowI == 0 && rowJ == 0 && rr !=0)
+                                {
+                                    cf = -DCoulomb_SS(rr, rowI, rowJ, zetaI, zetaJ);
+                                }
+                                else
+                                {
+                                    cf = DCoulomb_SS(rr, rowI, rowJ, zetaI, zetaJ);
+                                }
                                 break;
                             default:
                                 gmx_fatal(FARGS, "Don't know how to handle model %s",
@@ -473,10 +487,10 @@ int alex_gen_table(int argc, char *argv[])
     
     gen_alexandria_tables(pd, opt2fn("-o", NFILE, fnm), iDistributionModel, rc, 1.0/pts_nm, oenv, atypes);
     
-    if (iDistributionModel != eqdAXp && iDistributionModel != eqdAXpp)
+    /*if (iDistributionModel != eqdAXp && iDistributionModel != eqdAXpp)
     {
         gen_alexandria_rho(pd, "rho.xvg", iDistributionModel, rc, 1.0/pts_nm, oenv);
-    }
+        }*/
     
     return 0;
 }
