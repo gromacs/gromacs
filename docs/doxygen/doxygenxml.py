@@ -1,8 +1,8 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2016,2018, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -72,6 +72,7 @@ actually in the XML documentation.
 
 import os.path
 import xml.etree.ElementTree as ET
+import functools
 
 import reporter
 
@@ -81,10 +82,11 @@ import reporter
 def _show_list(title, objlist):
     """Helper function for formatting a list of objects for debug output."""
     if objlist:
-        print '{0}:'.format(title)
+        print('{0}:'.format(title))
         for obj in objlist:
-            print '  ', obj
+            print('  ', obj)
 
+@functools.total_ordering
 class DocType(object):
 
     """Documentation visibility in the generated documentation."""
@@ -104,9 +106,13 @@ class DocType(object):
         """Return string representation for the documentation type."""
         return self._names[self._value]
 
-    def __cmp__(self, other):
+    def __eq__(self, other):
         """Order documentation types in the order of visibility."""
-        return cmp(self._value, other._value)
+        return self._value == other._value
+
+    def __lt__(self, other):
+        """Order documentation types in the order of visibility."""
+        return self._value < other._value
 
 # Static values for documentation types.
 DocType.none = DocType(0)
@@ -138,6 +144,7 @@ class Location(object):
     def get_full_string(self):
         return '{0}:{1}:{2}'.format(self.filepath, self.line, self.column)
 
+@functools.total_ordering
 class BodyLocation(object):
 
     """Body location of a Doxygen entity.
@@ -157,13 +164,22 @@ class BodyLocation(object):
         self.startline = int(elem.attrib['bodystart'])
         self.endline = int(elem.attrib['bodyend'])
 
-    def __cmp__(self, other):
-        result = cmp(self.filepath, other.filepath)
-        if result == 0:
-            result = cmp(self.startline, other.startline)
-        if result == 0:
-            result = cmp(self.endline, other.endline)
-        return result
+    def __eq__(self, other):
+        return (self.filepath == other.filepath and
+                self.startline == other.startline and
+                self.endline == other.endline)
+
+    def __lt__(self, other):
+        if self.filepath != other.filepath:
+            if other.filepath is None:
+                return False
+            if self.filepath is None:
+                return True
+            return self.filepath < other.filepath
+        elif self.startline != other.startline:
+            return self.startline < other.startline
+        else:  # check for endline
+            return self.endline < other.endline
 
     def __hash__(self):
         return hash(self.filepath) ^ hash(self.startline) ^ hash(self.endline)
@@ -333,9 +349,9 @@ class Entity(object):
         This is called from subclass show() methods to show base information
         about the entity.
         """
-        print 'ID:         {0}'.format(self._id)
-        print 'Name:       {0}'.format(self._name)
-        print 'Location:   {0}'.format(self.get_reporter_location())
+        print('ID:         {0}'.format(self._id))
+        print('Name:       {0}'.format(self._name))
+        print('Location:   {0}'.format(self.get_reporter_location()))
         doctype = []
         if self._has_brief_description:
             doctype.append('brief')
@@ -345,8 +361,8 @@ class Entity(object):
             doctype.append('in-body')
         if not doctype:
             doctype.append('none')
-        print 'Doc:        {0}'.format(', '.join(doctype))
-        print 'Visibility: {0}'.format(self._visibility)
+        print('Doc:        {0}'.format(', '.join(doctype)))
+        print('Visibility: {0}'.format(self._visibility))
 
 # Member entities
 
@@ -505,10 +521,10 @@ class Member(Entity):
         self.show_base()
         if self._alternates:
             idlist = [x.get_id() for x in self._alternates]
-            print 'Alt. IDs:   {0}'.format(', '.join(idlist))
-        print 'Parent vis: {0}'.format(self.get_inherited_visibility())
-        print 'Location:   {0}'.format(self.get_location().get_full_string())
-        print 'Body loc:   {0}'.format(self.get_body_location().get_full_string())
+            print('Alt. IDs:   {0}'.format(', '.join(idlist)))
+        print('Parent vis: {0}'.format(self.get_inherited_visibility()))
+        print('Location:   {0}'.format(self.get_location().get_full_string()))
+        print('Body loc:   {0}'.format(self.get_body_location().get_full_string()))
         _show_list('Parents', self._parents)
 
 class Define(Member):
@@ -756,7 +772,7 @@ class Compound(Entity):
         """
         Entity.show_base(self)
         if self._groups:
-            print 'Groups:   {0}'.format(', '.join(map(str, self._groups)))
+            print('Groups:   {0}'.format(', '.join(map(str, self._groups))))
 
     def show_members(self):
         """Show list of members.
@@ -765,9 +781,9 @@ class Compound(Entity):
         to print the list of members.
         """
         for section in self._sections:
-            print 'Member section: {0}'.format(section)
+            print('Member section: {0}'.format(section))
             for member in section._members:
-                print '  ', member
+                print('  ', member)
 
 class File(Compound):
     def __init__(self, name, refid):
@@ -811,9 +827,9 @@ class File(Compound):
 
     def show(self):
         self.show_base()
-        print 'Path:      {0}'.format(self._path)
-        print 'Directory: {0}'.format(self._directory)
-        print 'Source:    {0}'.format(self._is_source_file)
+        print('Path:      {0}'.format(self._path))
+        print('Directory: {0}'.format(self._directory))
+        print('Source:    {0}'.format(self._is_source_file))
         _show_list('Namespaces', self._namespaces)
         _show_list('Classes', self._classes)
         self.show_members()
@@ -854,9 +870,9 @@ class Directory(Compound):
 
     def show(self):
         self.show_base()
-        print 'Path:      {0}'.format(self._path)
+        print('Path:      {0}'.format(self._path))
         if self._parent:
-            print 'Parent:    {0}'.format(self._parent)
+            print('Parent:    {0}'.format(self._parent))
         _show_list('Subdirectories', self._subdirs)
         _show_list('Files', self._files)
 
@@ -896,10 +912,10 @@ class Group(Compound):
 
     def show(self):
         self.show_base()
-        print 'Title:     {0}'.format(self._title)
-        print 'Inner compounds:'
+        print('Title:     {0}'.format(self._title))
+        print('Inner compounds:')
         for compound in self._children:
-            print '  ', compound
+            print('  ', compound)
         self.show_members()
 
 class Namespace(Compound):
@@ -936,7 +952,7 @@ class Namespace(Compound):
 
     def show(self):
         self.show_base()
-        print 'Doc. loc.: {0}'.format(self._doclocation.get_full_string())
+        print('Doc. loc.: {0}'.format(self._doclocation.get_full_string()))
         _show_list('Inner namespaces', self._innernamespaces)
         _show_list('Classes', self._classes)
         self.show_members()
@@ -1001,12 +1017,12 @@ class Class(Compound):
 
     def show(self):
         self.show_base()
-        print 'Namespace:  {0}'.format(self._namespace)
+        print('Namespace:  {0}'.format(self._namespace))
         if self._outerclass:
-            print 'Outer cls:  {0}'.format(self._outerclass)
+            print('Outer cls:  {0}'.format(self._outerclass))
         location = self._location
-        print 'Location:   {0}'.format(location.get_location().get_full_string())
-        print 'Body loc:   {0}'.format(location.get_body_location().get_full_string())
+        print('Location:   {0}'.format(location.get_location().get_full_string()))
+        print('Body loc:   {0}'.format(location.get_body_location().get_full_string()))
         _show_list('Inner classes', self._innerclasses)
         self.show_members()
 
@@ -1123,7 +1139,7 @@ class DocumentationSet(object):
         If filelist is set, it should be a list of file paths, and details will
         be loaded only for files in those paths.  The paths should be relative
         to the root of the Gromacs source tree."""
-        for compound in self._compounds.itervalues():
+        for compound in self._compounds.values():
             if isinstance(compound, (Directory, Group)):
                 compound.load_details()
             elif not filelist and isinstance(compound, File):
@@ -1134,7 +1150,7 @@ class DocumentationSet(object):
             # details are loaded, because Doxygen does not write that into
             # index.xml.  But we can use the Directory objects (where the name
             # is the relative path) to get the path.
-            for compound in self._compounds.itervalues():
+            for compound in self._compounds.values():
                 if isinstance(compound, File):
                     dirobj = compound.get_directory()
                     if not dirobj:
@@ -1147,7 +1163,7 @@ class DocumentationSet(object):
 
     def load_details(self):
         """Load detailed XML files for each compound."""
-        for compound in self._compounds.itervalues():
+        for compound in self._compounds.values():
             compound.load_details()
             if isinstance(compound, File):
                 self._files[compound.get_path()] = compound
@@ -1166,14 +1182,14 @@ class DocumentationSet(object):
         method.
         """
         members_by_body = dict()
-        for member in self._members.itervalues():
+        for member in self._members.values():
             bodyloc = member.get_body_location()
             if bodyloc:
                 index = (bodyloc, type(member), member.get_name())
                 if index not in members_by_body:
                     members_by_body[index] = []
                 members_by_body[index].append(member)
-        for memberlist in members_by_body.itervalues():
+        for memberlist in members_by_body.values():
             if len(memberlist) > 1:
                 declaration = None
                 otherdeclarations = []
@@ -1226,7 +1242,7 @@ class DocumentationSet(object):
 
     def get_compounds(self, types, predicate=None):
         result = []
-        for compound in self._compounds.itervalues():
+        for compound in self._compounds.values():
             if isinstance(compound, types) and \
                     (predicate is None or predicate(compound)):
                 result.append(compound)
@@ -1235,7 +1251,7 @@ class DocumentationSet(object):
     def get_members(self, types=None, predicate=None):
         # self._members can contain duplicates because of merge_duplicates()
         result = set()
-        for member in self._members.itervalues():
+        for member in self._members.values():
             if (types is None or isinstance(member, types)) and \
                     (predicate is None or predicate(member)):
                 result.add(member)

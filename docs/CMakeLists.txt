@@ -64,14 +64,8 @@ if (DEFINED PYTHON_EXECUTABLE)
     # Keep quiet on subsequent runs of cmake
     set(PythonInterp_FIND_QUIETLY ON)
 endif()
-find_package(PythonInterp 2.7)
-
-
-if (NOT ${PYTHON_VERSION_MAJOR} EQUAL 3)
-    find_package(Sphinx ${EXPECTED_SPHINX_VERSION} QUIET COMPONENTS pygments)
-else()
-    MESSAGE(STATUS "Can not build documentation with Python 3")
-endif()
+find_package(PythonInterp 3.5)
+find_package(Sphinx ${EXPECTED_SPHINX_VERSION} QUIET COMPONENTS pygments)
 
 # Even if we aren't going to make the full webpage, set up to put all
 # the documentation output in the same place, for convenience
@@ -113,10 +107,7 @@ elseif (BUILD_IS_INSOURCE)
     set(MANUAL_BUILD_NOT_POSSIBLE_REASON "the build is in-source")
 else()
     include(manual/UseLATEX.cmake)
-    if(${PYTHON_VERSION_MAJOR} EQUAL 3)
-        set(MANUAL_BUILD_IS_POSSIBLE OFF)
-        set(MANUAL_BUILD_NOT_POSSIBLE_REASON "We can not build the documentation when using python3")
-    elseif(NOT SPHINX_FOUND)
+    if(NOT SPHINX_FOUND)
         set(MANUAL_BUILD_IS_POSSIBLE OFF)
         set(MANUAL_BUILD_NOT_POSSIBLE_REASON "Sphinx has not been found and is needed to create the LaTex input files")
     elseif(NOT PDFLATEX_COMPILER)
@@ -570,7 +561,7 @@ if (SPHINX_FOUND)
         DEPENDS sphinx-programs
         DEPENDS sphinx-input
         DEPENDS sphinx-image-conversion
-        DEPENDS manual 
+        DEPENDS manual
         COMMAND
             ${CMAKE_COMMAND} -E make_directory ${SPHINX_INPUT_DIR}/_static
         COMMAND

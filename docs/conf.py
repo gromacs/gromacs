@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -50,7 +50,7 @@ import datetime
 import os
 import sys
 
-execfile('conf-vars.py')
+exec(open('conf-vars.py').read())
 sys.path.append(gmx_sphinx_extension_path)
 if releng_path and os.path.isdir(releng_path):
     sys.path.append(releng_path)
@@ -346,7 +346,7 @@ latex_show_pagerefs = True
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 if tags.has('do_man'):
-    execfile('conf-man.py')
+    exec(open('conf-man.py').read())
 
 # If true, show URL addresses after external links.
 #man_show_urls = False

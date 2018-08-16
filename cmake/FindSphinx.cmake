@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2018, by the GROMACS development team, led by
+# Copyright (c) 2015,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -69,9 +69,11 @@ set(_find_deps_options)
 if (Sphinx_FIND_QUIETLY)
     set(_find_deps_options QUIET)
 endif()
-include(FindPythonModule)
-find_python_module(pygments ${_find_deps_options})
-if (PYTHONMODULE_PYGMENTS)
+execute_process(COMMAND "${PYTHON_EXECUTABLE}" "-c"
+                "import pygments"
+                RESULT_VARIABLE _pygments_status
+                ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+if (_pygments_status)
     set(Sphinx_pygments_FOUND 1)
 endif()
 
