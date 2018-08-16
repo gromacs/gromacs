@@ -826,6 +826,88 @@ static real md3_force_switch(real p, real rswitch, real rc)
     return md3_pot + md3_sw;
 }
 
+/* Returns the maximum reference temperature over all coupled groups */
+static real maxReferenceTemperature(const t_inputrec &ir)
+{
+    if (EI_MD(ir.eI) && ir.etc == etcNO)
+    {
+        /* This case should be handled outside calc_verlet_buffer_size */
+        gmx_incons("calc_verlet_buffer_size called with an NVE ensemble and reference_temperature < 0");
+    }
+
+    real maxTemperature = 0;
+    for (int i = 0; i < ir.opts.ngtc; i++)
+    {
+        if (ir.opts.tau_t[i] >= 0)
+        {
+            maxTemperature = std::max(maxTemperature, ir.opts.ref_t[i]);
+        }
+    }
+
+    return maxTemperature;
+}
+
+/* Returns the variance of the atomic displacement over timePeriod.
+ *
+ * Note: When not using BD with a non-mass dependendent friction coefficient,
+ *       the return value still needs to be divided by the particle mass.
+ */
+static real displacementVariance(const t_inputrec &ir,
+                                 real              temperature,
+                                 real              timePeriod)
+{
+    real kT_fac;
+
+    if (ir.eI == eiBD)
+    {
+        /* Get the displacement distribution from the random component only.
+         * With accurate integration the systematic (force) displacement
+         * should be negligible (unless nstlist is extremely large, which
+         * you wouldn't do anyhow).
+         */
+        kT_fac = 2*BOLTZ*temperature*timePeriod;
+        if (ir.bd_fric > 0)
+        {
+            /* This is directly sigma^2 of the displacement */
+            kT_fac /= ir.bd_fric;
+        }
+        else
+        {
+            /* Per group tau_t is not implemented yet, use the maximum */
+            real tau_t = ir.opts.tau_t[0];
+            for (int i = 1; i < ir.opts.ngtc; i++)
+            {
+                tau_t = std::max(tau_t, ir.opts.tau_t[i]);
+            }
+
+            kT_fac *= tau_t;
+            /* This kT_fac needs to be divided by the mass to get sigma^2 */
+        }
+    }
+    else
+    {
+        kT_fac = BOLTZ*temperature*gmx::square(timePeriod);
+    }
+
+    return kT_fac;
+}
+
+/* Returns the largest sigma of the Gaussian displacement over all particle
+ * types. This ignores constraints, so is an overestimate.
+ */
+static real maxSigma(real                        kT_fac,
+                     int                         natt,
+                     const verletbuf_atomtype_t *att)
+{
+    real smallestMass = att[0].prop.mass;
+    for (int i = 1; i < natt; i++)
+    {
+        smallestMass = std::min(smallestMass, att[i].prop.mass);
+    }
+
+    return 2*std::sqrt(kT_fac/smallestMass);
+}
+
 void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                              const t_inputrec *ir,
                              int               nstlist,
@@ -842,9 +924,8 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     real                  nb_clust_frac_pairs_not_in_list_at_cutoff;
 
     verletbuf_atomtype_t *att  = nullptr;
-    int                   natt = -1, i;
+    int                   natt = -1;
     real                  elfac;
-    real                  kT_fac, mass_min;
     int                   ib0, ib1, ib;
     real                  rb, rl;
     real                  drift;
@@ -860,25 +941,11 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
 
     if (reference_temperature < 0)
     {
-        if (EI_MD(ir->eI) && ir->etc == etcNO)
-        {
-            /* This case should be handled outside calc_verlet_buffer_size */
-            gmx_incons("calc_verlet_buffer_size called with an NVE ensemble and reference_temperature < 0");
-        }
-
         /* We use the maximum temperature with multiple T-coupl groups.
          * We could use a per particle temperature, but since particles
          * interact, this might underestimate the buffer size.
          */
-        reference_temperature = 0;
-        for (i = 0; i < ir->opts.ngtc; i++)
-        {
-            if (ir->opts.tau_t[i] >= 0)
-            {
-                reference_temperature = std::max(reference_temperature,
-                                                 ir->opts.ref_t[i]);
-            }
-        }
+        reference_temperature = maxReferenceTemperature(*ir);
     }
 
     /* Resolution of the buffer size */
@@ -1041,44 +1108,8 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
      * For inertial dynamics (not Brownian dynamics) the mass factor
      * is not included in kT_fac, it is added later.
      */
-    if (ir->eI == eiBD)
-    {
-        /* Get the displacement distribution from the random component only.
-         * With accurate integration the systematic (force) displacement
-         * should be negligible (unless nstlist is extremely large, which
-         * you wouldn't do anyhow).
-         */
-        kT_fac = 2*BOLTZ*reference_temperature*list_lifetime*ir->delta_t;
-        if (ir->bd_fric > 0)
-        {
-            /* This is directly sigma^2 of the displacement */
-            kT_fac /= ir->bd_fric;
-        }
-        else
-        {
-            real tau_t;
-
-            /* Per group tau_t is not implemented yet, use the maximum */
-            tau_t = ir->opts.tau_t[0];
-            for (i = 1; i < ir->opts.ngtc; i++)
-            {
-                tau_t = std::max(tau_t, ir->opts.tau_t[i]);
-            }
-
-            kT_fac *= tau_t;
-            /* This kT_fac needs to be divided by the mass to get sigma^2 */
-        }
-    }
-    else
-    {
-        kT_fac = BOLTZ*reference_temperature*gmx::square(list_lifetime*ir->delta_t);
-    }
-
-    mass_min = att[0].prop.mass;
-    for (i = 1; i < natt; i++)
-    {
-        mass_min = std::min(mass_min, att[i].prop.mass);
-    }
+    const real kT_fac = displacementVariance(*ir, reference_temperature,
+                                             list_lifetime*ir->delta_t);
 
     if (debug)
     {
@@ -1087,13 +1118,12 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         fprintf(debug, "LJ rep.  -V' %9.2e V'' %9.2e -V''' %9.2e\n", ljRep.md1, ljRep.d2, ljRep.md3);
         fprintf(debug, "Electro. -V' %9.2e V'' %9.2e\n", elec.md1, elec.d2);
         fprintf(debug, "sqrt(kT_fac) %f\n", std::sqrt(kT_fac));
-        fprintf(debug, "mass_min %f\n", mass_min);
     }
 
     /* Search using bisection */
     ib0 = -1;
     /* The drift will be neglible at 5 times the max sigma */
-    ib1 = (int)(5*2*std::sqrt(kT_fac/mass_min)/resolution) + 1;
+    ib1 = (int)(5*maxSigma(kT_fac, natt, att)/resolution) + 1;
     while (ib1 - ib0 > 1)
     {
         ib = (ib0 + ib1)/2;
