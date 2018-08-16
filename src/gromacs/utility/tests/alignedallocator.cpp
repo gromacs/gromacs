@@ -84,5 +84,12 @@ TYPED_TEST(AllocatorTest, StatelessAllocatorUsesNoMemory)
               sizeof(std::vector<value_type, TypeParam>));
 }
 
+TEST(AllocatorUntypedTest, Comparison)
+{
+    //Should always be true for the same policy, indpendent of value_type
+    EXPECT_EQ(AlignedAllocator<float>{}, AlignedAllocator<double>{});
+    EXPECT_EQ(PageAlignedAllocator<float>{}, PageAlignedAllocator<double>{});
+}
+
 }  // namespace test
 }  // namespace gmx

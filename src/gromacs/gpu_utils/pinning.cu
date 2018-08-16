@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,8 @@
 
 #include <cstddef>
 
+#include <algorithm>
+
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/exceptions.h"
@@ -65,6 +67,8 @@ void pinBuffer(void *pointer, std::size_t numBytes) noexcept
 
     GMX_ASSERT(isAligned(pointer, PageAlignedAllocationPolicy::alignment()),
                formatString("%s Host memory needs to be page aligned.", errorMessage).c_str());
+
+    numBytes = std::max<size_t>(1, numBytes); //C++11 3.7.4.1 gurantees that every pointer is different thus at least 1 byte
 
     ensureNoPendingCudaError(errorMessage);
     cudaError_t stat = cudaHostRegister(pointer, numBytes, cudaHostRegisterDefault);
