@@ -64,6 +64,7 @@ if (DEFINED PYTHON_EXECUTABLE)
     # Keep quiet on subsequent runs of cmake
     set(PythonInterp_FIND_QUIETLY ON)
 endif()
+# TODO: Change this to 3.X+ when moving to Python3
 find_package(PythonInterp 2.7)
 find_package(Sphinx ${EXPECTED_SPHINX_VERSION} QUIET COMPONENTS pygments)
 

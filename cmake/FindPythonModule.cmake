@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015, by the GROMACS development team, led by
+# Copyright (c) 2015,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -34,6 +34,7 @@
 
 # Adapted from code posted on cmake-users by Mark Moll (the execute_process()
 # call remains, but other things have been rewritten for nicer behavior).
+# TODO: Change this to 3.X+ when moving to Python3
 find_package(PythonInterp 2.7)
 
 function (find_python_module module)
@@ -60,7 +61,7 @@ function (find_python_module module)
             # A module's location is usually a directory, but for binary modules
             # it's a .so file.
             execute_process(COMMAND "${PYTHON_EXECUTABLE}" "-c"
-                "import re, ${module}; print re.compile('/__init__.py.*').sub('',${module}.__file__)"
+                "from __future__ import print_function; import re, ${module}; print(re.compile('/__init__.py.*').sub('',${module}.__file__))"
                 RESULT_VARIABLE _status
                 OUTPUT_VARIABLE _location
                 ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
