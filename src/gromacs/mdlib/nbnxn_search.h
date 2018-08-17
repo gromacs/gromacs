@@ -66,7 +66,7 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
                              nbnxn_alloc_t *alloc,
                              nbnxn_free_t  *free);
 
-/* Make a apir-list with radius rlist, store it in nbl.
+/* Make a pair-list with radius rlist, store it in nbl.
  * The parameter min_ci_balanced sets the minimum required
  * number or roughly equally sized ci blocks in nbl.
  * When set >0 ci lists will be chopped up when the estimate

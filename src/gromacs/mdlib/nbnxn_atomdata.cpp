@@ -489,6 +489,7 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
                          int nb_kernel_type,
                          int enbnxninitcombrule,
                          int ntype, const real *nbfp,
+			 const real *zeta_matrix,
                          int n_energygroups,
                          int nout,
                          nbnxn_alloc_t *alloc,
@@ -607,7 +608,16 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
         fprintf(debug, "Combination rules: geometric %d Lorentz-Berthelot %d\n",
                 bCombGeom, bCombLB);
     }
-
+    /* Now copy the zeta_matrix */
+    if (zeta_matrix)
+    {
+        nbat->alloc((void **)&nbat->zeta_matrix,
+                    nbat->ntype*nbat->ntype*sizeof(*nbat->zeta_matrix));
+        for (int i = 0; i < nbat->ntype*nbat->ntype; i++)
+        {
+            nbat->zeta_matrix[i] = zeta_matrix[i];
+        }
+    }
     simple = nbnxn_kernel_pairlist_simple(nb_kernel_type);
 
     switch (enbnxninitcombrule)

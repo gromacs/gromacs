@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,6 +78,11 @@
 #ifdef CALC_COULOMB
             real qq;
             real fcoul;
+#ifdef CALC_COUL_GAUSS
+	    real screening_factor;
+	    real zeta;
+	    real kappa;
+#endif
 #ifdef CALC_COUL_TAB
             real rs, frac;
             int  ri;
@@ -301,6 +306,22 @@
 #ifdef CALC_ENERGIES
             vcoul  = qq*(interact*rinv + k_rf*rsq - c_rf);
             /* 4 flops for RF energy */
+#endif
+#endif
+
+#ifdef CALC_COUL_GAUSS
+	    kappa = ic->ewaldcoeff_q;
+	    screening_factor = 1;
+	    zeta = 0;
+	    if (nbat->zeta_matrix)
+	    {
+	       zeta = nbat->zeta_matrix[ai*ntype+aj];
+	       screening_factor = std::erf(zeta*rsq*rinv)-std::erf(kappa*rsq*rinv);
+	    }
+	    fcoul = qq*interact*rinvsq*rinv*(screening_factor-2.0*rsq*rinv/std::sqrt(M_PI)*
+                    (zeta*std::exp(-zeta*zeta*rsq)-kappa*std::exp(-kappa*kappa*rsq)));
+#ifdef CALC_ENERGIES
+            vcoul  = qq*interact*rinv*screening_factor;
 #endif
 #endif
 

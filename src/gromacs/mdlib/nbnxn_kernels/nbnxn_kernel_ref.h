@@ -42,6 +42,11 @@ nbk_func_noener nbnxn_kernel_ElecRF_VdwLJFsw_F_ref;
 nbk_func_noener nbnxn_kernel_ElecRF_VdwLJPsw_F_ref;
 nbk_func_noener nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_ref;
 nbk_func_noener nbnxn_kernel_ElecRF_VdwLJEwCombLB_F_ref;
+nbk_func_noener nbnxn_kernel_ElecGauss_VdwLJ_F_ref;
+nbk_func_noener nbnxn_kernel_ElecGauss_VdwLJFsw_F_ref;
+nbk_func_noener nbnxn_kernel_ElecGauss_VdwLJPsw_F_ref;
+nbk_func_noener nbnxn_kernel_ElecGauss_VdwLJEwCombGeom_F_ref;
+nbk_func_noener nbnxn_kernel_ElecGauss_VdwLJEwCombLB_F_ref;
 nbk_func_noener nbnxn_kernel_ElecQSTab_VdwLJ_F_ref;
 nbk_func_noener nbnxn_kernel_ElecQSTab_VdwLJFsw_F_ref;
 nbk_func_noener nbnxn_kernel_ElecQSTab_VdwLJPsw_F_ref;
@@ -58,6 +63,11 @@ nbk_func_ener   nbnxn_kernel_ElecRF_VdwLJFsw_VF_ref;
 nbk_func_ener   nbnxn_kernel_ElecRF_VdwLJPsw_VF_ref;
 nbk_func_ener   nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VF_ref;
 nbk_func_ener   nbnxn_kernel_ElecRF_VdwLJEwCombLB_VF_ref;
+nbk_func_ener   nbnxn_kernel_ElecGauss_VdwLJ_VF_ref;
+nbk_func_ener   nbnxn_kernel_ElecGauss_VdwLJFsw_VF_ref;
+nbk_func_ener   nbnxn_kernel_ElecGauss_VdwLJPsw_VF_ref;
+nbk_func_ener   nbnxn_kernel_ElecGauss_VdwLJEwCombGeom_VF_ref;
+nbk_func_ener   nbnxn_kernel_ElecGauss_VdwLJEwCombLB_VF_ref;
 nbk_func_ener   nbnxn_kernel_ElecQSTab_VdwLJ_VF_ref;
 nbk_func_ener   nbnxn_kernel_ElecQSTab_VdwLJFsw_VF_ref;
 nbk_func_ener   nbnxn_kernel_ElecQSTab_VdwLJPsw_VF_ref;
@@ -74,6 +84,11 @@ nbk_func_ener   nbnxn_kernel_ElecRF_VdwLJFsw_VgrpF_ref;
 nbk_func_ener   nbnxn_kernel_ElecRF_VdwLJPsw_VgrpF_ref;
 nbk_func_ener   nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VgrpF_ref;
 nbk_func_ener   nbnxn_kernel_ElecRF_VdwLJEwCombLB_VgrpF_ref;
+nbk_func_ener   nbnxn_kernel_ElecGauss_VdwLJ_VgrpF_ref;
+nbk_func_ener   nbnxn_kernel_ElecGauss_VdwLJFsw_VgrpF_ref;
+nbk_func_ener   nbnxn_kernel_ElecGauss_VdwLJPsw_VgrpF_ref;
+nbk_func_ener   nbnxn_kernel_ElecGauss_VdwLJEwCombGeom_VgrpF_ref;
+nbk_func_ener   nbnxn_kernel_ElecGauss_VdwLJEwCombLB_VgrpF_ref;
 nbk_func_ener   nbnxn_kernel_ElecQSTab_VdwLJ_VgrpF_ref;
 nbk_func_ener   nbnxn_kernel_ElecQSTab_VdwLJFsw_VgrpF_ref;
 nbk_func_ener   nbnxn_kernel_ElecQSTab_VdwLJPsw_VgrpF_ref;
@@ -103,6 +118,15 @@ p_nbk_func_noener nbnxn_kernel_noener_ref[coulktNR][vdwktNR_ref] =
         nbnxn_kernel_ElecRF_VdwLJPsw_F_ref,
         nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_ref,
         nbnxn_kernel_ElecRF_VdwLJEwCombLB_F_ref
+    },
+    {
+        nbnxn_kernel_ElecGauss_VdwLJ_F_ref,
+        nbnxn_kernel_ElecGauss_VdwLJ_F_ref,
+        nbnxn_kernel_ElecGauss_VdwLJ_F_ref,
+        nbnxn_kernel_ElecGauss_VdwLJFsw_F_ref,
+        nbnxn_kernel_ElecGauss_VdwLJPsw_F_ref,
+        nbnxn_kernel_ElecGauss_VdwLJEwCombGeom_F_ref,
+        nbnxn_kernel_ElecGauss_VdwLJEwCombLB_F_ref
     },
     {
         nbnxn_kernel_ElecQSTab_VdwLJ_F_ref,
@@ -145,6 +169,15 @@ p_nbk_func_ener nbnxn_kernel_ener_ref[coulktNR][vdwktNR_ref] =
         nbnxn_kernel_ElecRF_VdwLJEwCombLB_VF_ref
     },
     {
+        nbnxn_kernel_ElecGauss_VdwLJ_VF_ref,
+        nbnxn_kernel_ElecGauss_VdwLJ_VF_ref,
+        nbnxn_kernel_ElecGauss_VdwLJ_VF_ref,
+        nbnxn_kernel_ElecGauss_VdwLJFsw_VF_ref,
+        nbnxn_kernel_ElecGauss_VdwLJPsw_VF_ref,
+        nbnxn_kernel_ElecGauss_VdwLJEwCombGeom_VF_ref,
+        nbnxn_kernel_ElecGauss_VdwLJEwCombLB_VF_ref
+    },
+    {
         nbnxn_kernel_ElecQSTab_VdwLJ_VF_ref,
         nbnxn_kernel_ElecQSTab_VdwLJ_VF_ref,
         nbnxn_kernel_ElecQSTab_VdwLJ_VF_ref,
@@ -183,6 +216,15 @@ p_nbk_func_ener nbnxn_kernel_energrp_ref[coulktNR][vdwktNR_ref] =
         nbnxn_kernel_ElecRF_VdwLJPsw_VgrpF_ref,
         nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VgrpF_ref,
         nbnxn_kernel_ElecRF_VdwLJEwCombLB_VgrpF_ref
+    },
+    {
+        nbnxn_kernel_ElecGauss_VdwLJ_VgrpF_ref,
+        nbnxn_kernel_ElecGauss_VdwLJ_VgrpF_ref,
+        nbnxn_kernel_ElecGauss_VdwLJ_VgrpF_ref,
+        nbnxn_kernel_ElecGauss_VdwLJFsw_VgrpF_ref,
+        nbnxn_kernel_ElecGauss_VdwLJPsw_VgrpF_ref,
+        nbnxn_kernel_ElecGauss_VdwLJEwCombGeom_VgrpF_ref,
+        nbnxn_kernel_ElecGauss_VdwLJEwCombLB_VgrpF_ref
     },
     {
         nbnxn_kernel_ElecQSTab_VdwLJ_VgrpF_ref,

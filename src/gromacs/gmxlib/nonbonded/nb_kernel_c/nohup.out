@@ -1,0 +1,2 @@
+make_nb_kernel_c.py:# To maximize performance, each combination of interactions in GROMACS
+nb_kernel_template_c.pre:            /*         ## We always calculate rinv/rinvsq above to enable pipelineing in compilers (performance tested on x86) */

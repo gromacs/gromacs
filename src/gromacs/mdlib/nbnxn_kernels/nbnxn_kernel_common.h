@@ -83,7 +83,7 @@ typedef nbk_func_noener *p_nbk_func_noener;
 /*! \brief Kinds of electrostatic treatments in SIMD Verlet kernels
  */
 enum {
-    coulktRF, coulktTAB, coulktTAB_TWIN, coulktEWALD, coulktEWALD_TWIN, coulktNR
+    coulktRF, coulktGAUSS, coulktTAB, coulktTAB_TWIN, coulktEWALD, coulktEWALD_TWIN, coulktNR
 };
 
 /*! \brief Kinds of Van der Waals treatments in SIMD Verlet kernels

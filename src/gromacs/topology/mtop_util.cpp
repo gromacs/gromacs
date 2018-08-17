@@ -857,6 +857,15 @@ static void gen_local_top(const gmx_mtop_t *mtop,
     {
         top->atomtypes.atomnumber = nullptr;
     }
+    if (mtop->atomtypes.zeta)
+    {
+        snew(top->atomtypes.zeta, top->atomtypes.nr);
+        std::copy(mtop->atomtypes.zeta, mtop->atomtypes.zeta + top->atomtypes.nr, top->atomtypes.zeta);
+    }
+    else                          
+    {
+       top->atomtypes.zeta = nullptr;
+    }
 
     ffp = &mtop->ffparams;
 
