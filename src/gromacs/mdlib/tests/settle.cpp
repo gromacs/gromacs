@@ -91,7 +91,8 @@ class SettleTest : public ::testing::TestWithParam<SettleTestParameters>
 
         SettleTest() :
             updatedPositions_(std::begin(c_waterPositions), std::end(c_waterPositions)),
-            velocities_(updatedPositions_.size(), { 0, 0, 0 })
+            velocities_(updatedPositions_.size(), { 0, 0, 0 }
+                        )
         {
             set_pbc(&pbcNone_, epbcNONE, g_box);
             set_pbc(&pbcXYZ_, epbcXYZ, g_box);

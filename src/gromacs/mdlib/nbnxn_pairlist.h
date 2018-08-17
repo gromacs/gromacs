@@ -281,29 +281,32 @@ enum {
 typedef struct nbnxn_atomdata_t { //NOLINT(clang-analyzer-optin.performance.Padding)
     nbnxn_alloc_t           *alloc;
     nbnxn_free_t            *free;
-    int                      ntype;           /* The number of different atom types                 */
-    real                    *nbfp;            /* Lennard-Jones 6*C6 and 12*C12 params, size ntype^2*2 */
-    int                      comb_rule;       /* Combination rule, see enum above                   */
-    real                    *nbfp_comb;       /* LJ parameter per atom type, size ntype*2           */
-    real                    *nbfp_aligned;    /* As nbfp, but with an alignment (stride) suitable
-                                               * for the present SIMD architectures
-                                               */
-    int                      natoms;          /* Number of atoms                                    */
-    int                      natoms_local;    /* Number of local atoms                           */
-    int                     *type;            /* Atom types                                         */
-    real                    *lj_comb;         /* LJ parameters per atom for combining for pairs     */
-    int                      XFormat;         /* The format of x (and q), enum                      */
-    int                      FFormat;         /* The format of f, enum                              */
-    real                    *q;               /* Charges, can be NULL if incorporated in x          */
-    int                      na_c;            /* The number of atoms per cluster                    */
-    int                      nenergrp;        /* The number of energy groups                        */
-    int                      neg_2log;        /* Log2 of nenergrp                                   */
-    int                     *energrp;         /* The energy groups per cluster, can be NULL         */
-    gmx_bool                 bDynamicBox;     /* Do we need to update shift_vec every step?    */
-    rvec                    *shift_vec;       /* Shift vectors, copied from t_forcerec              */
-    int                      xstride;         /* stride for a coordinate in x (usually 3 or 4)      */
-    int                      fstride;         /* stride for a coordinate in f (usually 3 or 4)      */
-    real                    *x;               /* x and possibly q, size natoms*xstride              */
+    int                      ntype;        /* The number of different atom types                 */
+    real                    *nbfp;         /* Lennard-Jones 6*C6 and 12*C12 params, size ntype^2*2 */
+    real                    *zeta_matrix;  /* Screening constant matrix for distributed
+                                                      charges. Size of the matrix is ntype x ntype.
+                                                      If the variable is a nullptr no zetas are used. */
+    int                      comb_rule;    /* Combination rule, see enum above                   */
+    real                    *nbfp_comb;    /* LJ parameter per atom type, size ntype*2           */
+    real                    *nbfp_aligned; /* As nbfp, but with an alignment (stride) suitable
+                                            * for the present SIMD architectures
+                                            */
+    int                      natoms;       /* Number of atoms                                    */
+    int                      natoms_local; /* Number of local atoms                           */
+    int                     *type;         /* Atom types                                         */
+    real                    *lj_comb;      /* LJ parameters per atom for combining for pairs     */
+    int                      XFormat;      /* The format of x (and q), enum                      */
+    int                      FFormat;      /* The format of f, enum                              */
+    real                    *q;            /* Charges, can be NULL if incorporated in x          */
+    int                      na_c;         /* The number of atoms per cluster                    */
+    int                      nenergrp;     /* The number of energy groups                        */
+    int                      neg_2log;     /* Log2 of nenergrp                                   */
+    int                     *energrp;      /* The energy groups per cluster, can be NULL         */
+    gmx_bool                 bDynamicBox;  /* Do we need to update shift_vec every step?    */
+    rvec                    *shift_vec;    /* Shift vectors, copied from t_forcerec              */
+    int                      xstride;      /* stride for a coordinate in x (usually 3 or 4)      */
+    int                      fstride;      /* stride for a coordinate in f (usually 3 or 4)      */
+    real                    *x;            /* x and possibly q, size natoms*xstride              */
 
     /* j-atom minus i-atom index for generating self and Newton exclusions
      * cluster-cluster pairs of the diagonal, for 4xn and 2xnn kernels.

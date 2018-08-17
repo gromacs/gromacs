@@ -998,6 +998,16 @@ static void copyAtomtypesFromMtop(const gmx_mtop_t &mtop,
     {
         atomtypes->atomnumber = nullptr;
     }
+    if (mtop.atomtypes.zeta)
+    {
+        snew(atomtypes->zeta, mtop.atomtypes.nr);
+        std::copy(mtop.atomtypes.zeta, mtop.atomtypes.zeta + mtop.atomtypes.nr, atomtypes->zeta);
+    }
+    else
+    {
+        atomtypes->zeta = nullptr;
+    }
+
 }
 
 /*! \brief Copy cgs from mtop.

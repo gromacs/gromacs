@@ -120,6 +120,7 @@ enum tpxv {
     tpxv_GenericParamsForElectricField,                      /**< Introduced KeyValueTree and moved electric field parameters */
     tpxv_AcceleratedWeightHistogram,                         /**< sampling with accelerated weight histogram method (AWH) */
     tpxv_RemoveImplicitSolvation,                            /**< removed support for implicit solvation */
+    tpxv_DistributedChargeScreeningConstant,                 /**< New atomtype property in top files */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -2313,6 +2314,7 @@ static void do_atomtypes(t_fileio *fio, t_atomtypes *atomtypes, gmx_bool bRead,
     if (bRead)
     {
         snew(atomtypes->atomnumber, j);
+        snew(atomtypes->zeta, j);
     }
     if (bRead && file_version < tpxv_RemoveImplicitSolvation)
     {
@@ -2328,6 +2330,10 @@ static void do_atomtypes(t_fileio *fio, t_atomtypes *atomtypes, gmx_bool bRead,
         std::vector<real> dummy(atomtypes->nr, 0);
         gmx_fio_ndo_real(fio, dummy.data(), dummy.size());
         gmx_fio_ndo_real(fio, dummy.data(), dummy.size());
+    }
+    if (file_version >=  tpxv_DistributedChargeScreeningConstant)
+    {
+        gmx_fio_ndo_real(fio, atomtypes->zeta, j);
     }
 }
 
