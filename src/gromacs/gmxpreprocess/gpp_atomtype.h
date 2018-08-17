@@ -60,6 +60,7 @@ real get_atomtype_massA(int nt, gpp_atomtype_t at);
 real get_atomtype_massB(int nt, gpp_atomtype_t at);
 real get_atomtype_qA(int nt, gpp_atomtype_t at);
 real get_atomtype_qB(int nt, gpp_atomtype_t at);
+real get_atomtype_zeta(int nt, gpp_atomtype_t at);
 int get_atomtype_ptype(int nt, gpp_atomtype_t at);
 int get_atomtype_batype(int nt, const gpp_atomtype* at);
 int get_atomtype_atomnumber(int nt, gpp_atomtype_t at);
@@ -77,13 +78,17 @@ void done_atomtype(gpp_atomtype_t at);
 
 int set_atomtype(int nt, gpp_atomtype_t at, struct t_symtab *tab,
                  t_atom *a, const char *name, t_param *nb,
-                 int bondatomtype, int atomnumber);
+                 int bondatomtype, int atomnumber, real zeta);
 /* Set the values of an existing atom type nt. Returns nt on success or
    NOTSET on error. */
 
+int set_atomtype_zeta(int i, gpp_atomtype_t ga, real zeta);
+/* Set the zeta of an existing atom type i. Returns i on success or
+ *    NOTSET on error. */
+
 int add_atomtype(gpp_atomtype_t at, struct t_symtab *tab,
                  t_atom *a, const char *name, t_param *nb,
-                 int bondatomtype, int atomnumber);
+                 int bondatomtype, int atomnumber, real zeta);
 /* Add a complete new atom type to an existing atomtype structure. Returns
    the number of the atom type. */
 
