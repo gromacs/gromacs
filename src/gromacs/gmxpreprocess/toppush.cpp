@@ -237,6 +237,7 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
     char       type[STRLEN], btype[STRLEN], ptype[STRLEN];
     double     m, q;
     double     c[MAXFORCEPARAM];
+    double     zeta;
     char       tmpfield[12][100]; /* Max 12 fields of width 100 */
     char       errbuf[STRLEN];
     t_atom    *atom;
@@ -307,6 +308,7 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
 
     /* optional fields */
     atomnr    = -1;
+    zeta      = 0;
 
     switch (nb_funct)
     {
@@ -498,14 +500,14 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
         sprintf(errbuf, "Overriding atomtype %s", type);
         warning(wi, errbuf);
         if ((nr = set_atomtype(nr, at, symtab, atom, type, param, batype_nr,
-                               atomnr)) == NOTSET)
+                               atomnr, zeta)) == NOTSET)
         {
             sprintf(errbuf, "Replacing atomtype %s failed", type);
             warning_error_and_exit(wi, errbuf, FARGS);
         }
     }
     else if ((add_atomtype(at, symtab, atom, type, param,
-                           batype_nr, atomnr)) == NOTSET)
+                           batype_nr, atomnr, zeta)) == NOTSET)
     {
         sprintf(errbuf, "Adding atomtype %s failed", type);
         warning_error_and_exit(wi, errbuf, FARGS);
@@ -517,6 +519,39 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
     }
     sfree(atom);
     sfree(param);
+}
+
+void push_distributed_charges(gpp_atomtype_t at, char *line, warninp_t wi)
+{
+    char   atype[STRLEN], errbuf[STRLEN];
+    int    ftype;
+    double zeta;
+    if (sscanf(line, "%s%d", atype, &ftype) != 2)
+    {
+        too_few(wi);
+        return;
+    }
+    switch (ftype)
+    {
+        case 1:
+            if (sscanf(line, "%*s%*s%lf", &zeta) == 1)
+            {
+                if (NOTSET == set_atomtype_zeta(get_atomtype_type(atype, at), at, zeta))
+                {
+                    sprintf(errbuf, "Unknown atomtype %s", atype);
+                    warning_error(wi, errbuf);
+                }
+            }
+            else
+            {
+                too_few(wi);
+                break;
+            }
+            break;
+        default:
+            sprintf(errbuf, "Unknown %s type %d", dir2str(d_distributed_charges), ftype);
+            warning_error(wi, errbuf);
+    }
 }
 
 //! Return whether the contents of \c a and \c b are the same, considering also reversed order.
@@ -2558,7 +2593,7 @@ int add_atomtype_decoupled(t_symtab *symtab, gpp_atomtype_t at,
         param.c[i] = 0.0;
     }
 
-    nr = add_atomtype(at, symtab, &atom, "decoupled", &param, -1, 0);
+    nr = add_atomtype(at, symtab, &atom, "decoupled", &param, -1, 0, 0);
 
     /* Add space in the non-bonded parameters matrix */
     realloc_nb_params(at, nbparam, pair);
