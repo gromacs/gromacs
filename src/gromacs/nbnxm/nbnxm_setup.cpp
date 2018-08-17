@@ -58,6 +58,7 @@
 #include "gromacs/nbnxm/pairlist_tuning.h"
 #include "gromacs/nbnxm/pairlistset.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
 
@@ -400,7 +401,7 @@ void init_nb_verlet(const gmx::MDLogger     &mdlog,
                         nbv->nbat,
                         nbv->kernelSetup().kernelType,
                         enbnxninitcombrule,
-                        fr->ntype, fr->nbfp,
+                        fr->ntype, fr->nbfp, mtop->atomtypes,
                         mimimumNumEnergyGroupNonbonded,
                         nbv->pairlistIsSimple() ? gmx_omp_nthreads_get(emntNonbonded) : 1);
 

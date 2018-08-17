@@ -643,7 +643,9 @@ static char **read_topol(const char *infile, const char *outfile,
                             push_at(symtab, atype, batype, pline, nb_funct,
                                     &nbparam, bGenPairs ? &pair : nullptr, wi);
                             break;
-
+                        case Directive::d_distributed_charges:
+                            push_distributed_charges(atype, pline, wi);
+                            break;
                         case Directive::d_bondtypes:
                             push_bt(d, plist, 2, nullptr, batype, pline, wi);
                             break;

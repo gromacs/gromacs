@@ -39,6 +39,7 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -84,6 +85,7 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
                          Nbnxm::KernelType kernelType,
                          int enbnxninitcombrule,
                          int ntype, const real *nbfp,
+                         const t_atomtypes &atomtypes,
                          int n_energygroups,
                          int nout);
 
