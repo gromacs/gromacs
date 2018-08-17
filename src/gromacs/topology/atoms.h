@@ -131,6 +131,7 @@ typedef struct t_atoms
 typedef struct t_atomtypes
 {
     int           nr;           /* number of atomtypes                          */
+    real         *zeta;         /* Inverse width for distributed charges        */
     int          *atomnumber;   /* Atomic number, used for QM/MM                */
 } t_atomtypes;
 
