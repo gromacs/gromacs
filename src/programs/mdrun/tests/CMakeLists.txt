@@ -50,6 +50,7 @@ gmx_add_gtest_executable(
     ${exename}
     # files with code for tests
     compressed_x_output.cpp
+    distributedcharges.cpp
     grompp.cpp
     initialconstraints.cpp
     interactiveMD.cpp
