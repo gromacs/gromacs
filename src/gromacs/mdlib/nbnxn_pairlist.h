@@ -380,6 +380,8 @@ struct nbnxn_atomdata_t
         int                   comb_rule;
         // LJ parameters per atom type, size numTypes*2
         gmx::HostVector<real> nbfp_comb;
+        // Zeta matrix for distributed charges, size numTypes**2
+        gmx::HostVector<real> zeta_matrix;
         // As nbfp, but with a stride for the present SIMD architecture
         AlignedVector<real>   nbfp_aligned;
         // Atom types per atom
