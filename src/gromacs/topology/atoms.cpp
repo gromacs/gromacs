@@ -75,6 +75,7 @@ void init_atomtypes(t_atomtypes *at)
 {
     at->nr         = 0;
     at->atomnumber = nullptr;
+    at->zeta       = nullptr;
 }
 
 void done_atom(t_atoms *at)
@@ -98,6 +99,7 @@ void done_atomtypes(t_atomtypes *atype)
 {
     atype->nr = 0;
     sfree(atype->atomnumber);
+    sfree(atype->zeta);
 }
 
 void add_t_atoms(t_atoms *atoms, int natom_extra, int nres_extra)
@@ -329,8 +331,8 @@ void pr_atomtypes(FILE *fp, int indent, const char *title, const t_atomtypes *at
         {
             pr_indent(fp, indent);
             fprintf(fp,
-                    "atomtype[%3d]={atomnumber=%4d}\n",
-                    bShowNumbers ? i : -1, atomtypes->atomnumber[i]);
+                    "atomtype[%3d]={atomnumber=%4d, zeta=%12.5e}\n",
+                    bShowNumbers ? i : -1, atomtypes->atomnumber[i], atomtypes->zeta[i]);
         }
     }
 }

@@ -115,7 +115,7 @@ void nbnxn_realloc_void(void **ptr,
 /* Reallocate the nbnxn_atomdata_t for a size of n atoms */
 void nbnxn_atomdata_realloc(nbnxn_atomdata_t *nbat, int n)
 {
-    GMX_ASSERT(nbat->nalloc >= nbat->natoms, "We should have at least as many elelements allocated as there are set");
+    GMX_ASSERT(nbat->nalloc >= nbat->natoms, "We should have at least as many elements allocated as there are set");
 
     int t;
 
@@ -490,6 +490,7 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
                          int nb_kernel_type,
                          int enbnxninitcombrule,
                          int ntype, const real *nbfp,
+                         const real *zeta_matrix,
                          int n_energygroups,
                          int nout,
                          nbnxn_alloc_t *alloc,
@@ -608,7 +609,16 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
         fprintf(debug, "Combination rules: geometric %s Lorentz-Berthelot %s\n",
                 gmx::boolToString(bCombGeom), gmx::boolToString(bCombLB));
     }
-
+    /* Now copy the zeta_matrix */
+    if (zeta_matrix)
+    {
+        nbat->alloc(reinterpret_cast<void **>(&nbat->zeta_matrix),
+                    nbat->ntype*nbat->ntype*sizeof(*nbat->zeta_matrix));
+        for (int i = 0; i < nbat->ntype*nbat->ntype; i++)
+        {
+            nbat->zeta_matrix[i] = zeta_matrix[i];
+        }
+    }
     simple = nbnxn_kernel_pairlist_simple(nb_kernel_type);
 
     switch (enbnxninitcombrule)
