@@ -87,6 +87,19 @@ void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop);
 
 class AtomIterator;
 
+
+/* Check mtop for gaussian charges */
+bool gmx_mtop_gaussiancharges(const gmx_mtop_t *mtop);
+
+/* Abstract type for atom loop over all atoms */
+typedef struct gmx_mtop_atomloop_all *gmx_mtop_atomloop_all_t;
+
+/* Initialize an atom loop over all atoms in the system.
+ * The order of the atoms will be as in the state struct.
+ * Only use this when you really need to loop over all atoms,
+ * i.e. when you use groups which might differ per molecule,
+ * otherwise use gmx_mtop_atomloop_block.
+ */
 //! Proxy object returned from AtomIterator
 class AtomProxy
 {

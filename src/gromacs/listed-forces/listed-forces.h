@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -118,7 +118,7 @@ void calc_listed(const t_commrec *cr,
                  gmx_enerdata_t *enerd, t_nrnb *nrnb, const real *lambda,
                  const t_mdatoms *md,
                  struct t_fcdata *fcd, int *ddgatindex,
-                 int force_flags);
+                 int force_flags, bool usingGaussianCharges);
 
 /*! \brief As calc_listed(), but only determines the potential energy
  * for the perturbed interactions.
@@ -131,7 +131,8 @@ void calc_listed_lambda(const t_idef *idef,
                         gmx_grppairener_t *grpp, real *epot, t_nrnb *nrnb,
                         const real *lambda,
                         const t_mdatoms *md,
-                        struct t_fcdata *fcd, int *global_atom_index);
+                        struct t_fcdata *fcd, int *global_atom_index,
+                        bool usingGaussianCharges);
 
 /*! \brief Do all aspects of energy and force calculations for mdrun
  * on the set of listed interactions */
@@ -155,6 +156,7 @@ do_force_listed(struct gmx_wallcycle           *wcycle,
                 const t_mdatoms                *md,
                 struct t_fcdata                *fcd,
                 int                            *global_atom_index,
-                int                             flags);
+                int                             flags,
+                bool                            usingGaussianCharges);
 
 #endif
