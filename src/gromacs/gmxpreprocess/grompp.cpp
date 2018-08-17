@@ -1984,6 +1984,45 @@ int gmx_grompp(int argc, char *argv[])
     }
 
     ntype = get_atomtype_ntypes(atype);
+
+    /* Check input compatibility if using gaussian distributed charges */
+    bool allZero = true;
+    for (int i = 0; i < ntype; i++)
+    {
+        if (sys.atomtypes.zeta[i] > 0)
+        {
+            allZero = false;
+            break;
+        }
+    }
+    if (!allZero)
+    {
+        if (!(EEL_PME(ir->coulombtype)) && !(ir->coulombtype == eelEWALD))
+        {
+            gmx_fatal(FARGS, "Combination of %s and gaussian distributed charges is not supported.\n"
+                      "Change coulombtype to PME or Ewald or remove the distributed_charges section\n"
+                      "from the topology file.", eel_names[ir->coulombtype]);
+        }
+        if (ir->cutoff_scheme != ecutsVERLET)
+        {
+            gmx_fatal(FARGS, "Combination of %s and gaussian distributed charges is not supported.\n"
+                      "Change cutoff-scheme to Verlet or remove the distributed_charges section\n"
+                      "from the topology file.", ecutscheme_names[ir->cutoff_scheme]);
+        }
+        if (getenv("GMX_DISABLE_SIMD_KERNELS") == nullptr)
+        {
+            warning(wi, "The topology file contains a distributed_charges section.\n"
+                    "Disabling the usage of any SIMD-specific kernel routines,\n"
+                    "will only use the slow plain C kernels.");
+        }
+        if (getenv("GMX_EMULATE_GPU") != nullptr)
+        {
+            gmx_fatal(FARGS, "Found environment variable GMX_EMULATE_GPU.\n"
+                      "The topology file contains a distributed_charges section.\n"
+                      "Combination of distributed charges and GPU is not supported.");
+        }
+    }
+
     convert_params(ntype, plist, mi, intermolecular_interactions,
                    comb, reppow, fudgeQQ, &sys);
 
