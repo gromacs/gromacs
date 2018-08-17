@@ -158,7 +158,11 @@ nbnxn_kernel_cpu(const nbnxn_pairlist_set_t     &pairlistSet,
 {
 
     int                      coulkt;
-    if (EEL_RF(ic.eeltype) || ic.eeltype == eelCUT)
+    if (!nbat->params().zeta_matrix.empty())
+    {
+        coulkt = coulktGAUSS;
+    }
+    else if (EEL_RF(ic.eeltype) || ic.eeltype == eelCUT)
     {
         coulkt = coulktRF;
     }

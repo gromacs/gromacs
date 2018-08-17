@@ -123,6 +123,7 @@ enum tpxv {
     tpxv_PullPrevStepCOMAsReference,                         /**< Enabled using the COM of the pull group of the last frame as reference for PBC */
     tpxv_MimicQMMM,                                          /**< Inroduced support for MiMiC QM/MM interface */
     tpxv_PullAverage,                                        /**< Added possibility to output average pull force and position */
+    tpxv_DistributedChargeScreeningConstant,                 /**< New atomtype property in top files */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -2335,6 +2336,7 @@ static void do_atomtypes(t_fileio *fio, t_atomtypes *atomtypes, gmx_bool bRead,
     if (bRead)
     {
         snew(atomtypes->atomnumber, j);
+        snew(atomtypes->zeta, j);
     }
     if (bRead && file_version < tpxv_RemoveImplicitSolvation)
     {
@@ -2350,6 +2352,10 @@ static void do_atomtypes(t_fileio *fio, t_atomtypes *atomtypes, gmx_bool bRead,
         std::vector<real> dummy(atomtypes->nr, 0);
         gmx_fio_ndo_real(fio, dummy.data(), dummy.size());
         gmx_fio_ndo_real(fio, dummy.data(), dummy.size());
+    }
+    if (file_version >=  tpxv_DistributedChargeScreeningConstant)
+    {
+        gmx_fio_ndo_real(fio, atomtypes->zeta, j);
     }
 }
 

@@ -175,6 +175,23 @@ const MdpFileValues mdpFileValueDatabase_g
                          1, 2
                      } }
     },
+    {
+        "nacl_gauss", { { {
+                              "niter", "20"
+                          },
+                          {
+                              "emtol", "1e-3"
+                          },
+                          {
+                              "coulombtype", "PME"
+                          },
+                          {
+                              "nstcalcenergy", "1"
+                          } },
+                        {
+                            1
+                        } }
+    },
     // Scaled water for NMA
     {
         "scaled-water", { { },
@@ -283,6 +300,8 @@ MdpFieldValues prepareDefaultMdpFieldValues(const char *simulationName)
     mdpFieldValues.insert(MdpField("rcoulomb", "0.7"));
     mdpFieldValues.insert(MdpField("rvdw", "0.7"));
     mdpFieldValues.insert(MdpField("nstcalcenergy", "100"));
+    mdpFieldValues.insert(MdpField("coulombtype", "cut-off"));
+    mdpFieldValues.insert(MdpField("vdwtype", "cut-off"));
 
     return mdpFieldValues;
 }
@@ -346,6 +365,7 @@ prepareMdpFileContents(const MdpFieldValues &mdpFieldValues)
     return formatString(R"(rcoulomb                = %s
                            rvdw                    = %s
                            rlist                   = -1
+                           coulombtype             = %s
                            bd-fric                 = 1000
                            verlet-buffer-tolerance = 0.000001
                            nsteps                  = %s
@@ -373,6 +393,7 @@ prepareMdpFileContents(const MdpFieldValues &mdpFieldValues)
                            %s)",
                         mdpFieldValues.at("rcoulomb").c_str(),
                         mdpFieldValues.at("rvdw").c_str(),
+                        mdpFieldValues.at("coulombtype").c_str(),
                         mdpFieldValues.at("nsteps").c_str(),
                         mdpFieldValues.at("integrator").c_str(),
                         mdpFieldValues.at("tcoupl").c_str(),

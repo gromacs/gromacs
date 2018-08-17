@@ -58,6 +58,7 @@
 #include "gromacs/nbnxm/pairlist_tuning.h"
 #include "gromacs/nbnxm/pairlistset.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
 
@@ -431,7 +432,7 @@ init_nb_verlet(const gmx::MDLogger     &mdlog,
                         nbat.get(),
                         kernelSetup.kernelType,
                         enbnxninitcombrule,
-                        fr->ntype, fr->nbfp,
+                        fr->ntype, fr->nbfp, mtop->atomtypes,
                         mimimumNumEnergyGroupNonbonded,
                         (useGpu || emulateGpu) ? 1 : gmx_omp_nthreads_get(emntNonbonded));
 

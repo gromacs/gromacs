@@ -69,6 +69,8 @@ void push_at (struct t_symtab *symtab, gpp_atomtype *at,
               t_nbparam ***nbparam, t_nbparam ***pair,
               warninp *wi);
 
+void push_distributed_charges(gpp_atomtype *at, char *line, warninp *wi);
+
 void push_bt(Directive d, gmx::ArrayRef<InteractionTypeParameters> bt, int nral,
              gpp_atomtype *at, gpp_bond_atomtype *bat, char *line,
              warninp *wi);
