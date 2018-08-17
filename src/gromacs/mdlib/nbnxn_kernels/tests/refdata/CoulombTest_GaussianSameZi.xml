@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Potential">
+    <Int Name="Length">9</Int>
+    <Real>-7753.4814453125</Real>
+    <Real>-7734.5458984375</Real>
+    <Real>-7703.17236328125</Real>
+    <Real>-7659.63232421875</Real>
+    <Real>-7604.30419921875</Real>
+    <Real>-7537.66162109375</Real>
+    <Real>-7460.2626953125</Real>
+    <Real>-7372.75390625</Real>
+    <Real>-7275.84130859375</Real>
+  </Sequence>
+  <Sequence Name="Force">
+    <Int Name="Length">9</Int>
+    <Real>12651.3125</Real>
+    <Real>25192.025390625</Real>
+    <Real>37511.53515625</Real>
+    <Real>49504.91015625</Real>
+    <Real>61072.1640625</Real>
+    <Real>72120.5703125</Real>
+    <Real>82566.1796875</Real>
+    <Real>92335.2421875</Real>
+    <Real>101364.40625</Real>
+  </Sequence>
+</ReferenceData>

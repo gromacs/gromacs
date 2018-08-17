@@ -104,7 +104,7 @@ void writeParameterInformation(TextWriter *writer, const t_inputrec &ir, bool wr
     writer->writeLine(formatString("The %s algorithm was used for electrostatic interactions.",
                                    EELTYPE(ir.coulombtype)));
     writer->writeLine(formatString("with a cut-off of %g nm.", ir.rcoulomb));
-    if (ir.coulombtype == eelPME)
+    if (ir.coulombtype == eelPME || ir.coulombtype == eelPMEG)
     {
         writer->writeLine(formatString("A reciprocal grid of %d x %d x %d cells was used with %dth order B-spline interpolation.", ir.nkx, ir.nky, ir.nkz, ir.pme_order));
     }

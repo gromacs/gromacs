@@ -1170,7 +1170,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
         else if (ir->cutoff_scheme == ecutsGROUP && ir->coulomb_modifier == eintmodNONE)
         {
-            if (ir->coulombtype == eelPME || ir->coulombtype == eelP3M_AD)
+            if (ir->coulombtype == eelPME || ir->coulombtype == eelPMEG || ir->coulombtype == eelP3M_AD)
             {
                 sprintf(err_buf,
                         "With coulombtype = %s (without modifier), rcoulomb must be equal to rlist.\n"
