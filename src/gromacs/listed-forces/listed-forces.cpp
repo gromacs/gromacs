@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -505,8 +505,8 @@ calc_one_bond(int thread,
            to its own subtimer, but first wallcycle needs to be
            extended to support calling from multiple threads. */
         do_pairs(ftype, nbn, iatoms+nb0, idef->iparams, x, f, fshift,
-                 pbc, g, lambda, dvdl, md, fr,
-                 computeForcesOnly, grpp, global_atom_index);
+                 pbc, g, lambda, dvdl, md, fr, computeForcesOnly,
+                 grpp, global_atom_index);
         v = 0;
     }
 

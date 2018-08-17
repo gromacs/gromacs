@@ -37,6 +37,7 @@
 #ifndef GMX_MDLIB_FORCEREC_H
 #define GMX_MDLIB_FORCEREC_H
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/vsite.h"
@@ -173,5 +174,14 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr,
 
 void free_gpu_resources(t_forcerec                          *fr,
                         const gmx::PhysicalNodeCommunicator &physicalNodeCommunicator);
+/*! \brief Generate the zeta matrix for all atom types
+ *
+ * \param[in]  ntype       Number of atom types
+ * \param[in]  zeta        Atomic charge screening factor
+ * \param[out] zeta_matrix The zeta values per atomtype pair
+ */
+void make_zeta_matrix(int                    ntype,
+                      const real            *zeta,
+                      gmx::HostVector<real> *zeta_matrix);
 
 #endif

@@ -128,7 +128,7 @@ static void gen_pairs(t_params *nbs, t_params *pairs, real fudge, int comb)
             }
 
             pairs->param[i].c[j]      = scaling*nbs->param[i].c[j];
-            /* NOTE: this should be cleat to the compiler, but some gcc 5.2 versions
+            /* NOTE: this should be clear to the compiler, but some gcc 5.2 versions
              *  issue false positive warnings for the pairs->param.c[] indexing below.
              */
             assert(2*nrfp <= MAXFORCEPARAM);
@@ -644,7 +644,9 @@ static char **read_topol(const char *infile, const char *outfile,
                             push_at(symtab, atype, batype, pline, nb_funct,
                                     &nbparam, bGenPairs ? &pair : nullptr, wi);
                             break;
-
+                        case Directive::d_distributed_charges:
+                            push_distributed_charges(atype, pline, wi);
+                            break;
                         case Directive::d_bondtypes:
                             push_bt(d, plist, 2, nullptr, batype, pline, wi);
                             break;
