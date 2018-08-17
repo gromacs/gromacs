@@ -343,7 +343,7 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
                 atoms->atom[i].qB = alpha;
                 atoms->atom[i].m  = atoms->atom[i].mB = mm;
                 k                 = add_atomtype(atype, tab, &(atoms->atom[i]), type, param,
-                                                 atoms->atom[i].type, atomnr);
+                                                 atoms->atom[i].type, atomnr, 0);
             }
             atoms->atom[i].type  = k;
             atoms->atom[i].typeB = k;
