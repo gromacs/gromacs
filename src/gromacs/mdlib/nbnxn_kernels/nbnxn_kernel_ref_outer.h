@@ -55,6 +55,9 @@
 #ifdef CALC_COUL_RF
 #define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel ## _ElecRF ## ljt ## feg ## _ref
 #endif
+#ifdef CALC_COUL_GAUSS
+#define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel ## _ElecGauss ## ljt ## feg ## _ref
+#endif
 #ifdef CALC_COUL_TAB
 #ifndef VDW_CUTOFF_CHECK
 #define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel ## _ElecQSTab ## ljt ## feg ## _ref
@@ -104,144 +107,85 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 #endif
 )
 {
-    const nbnxn_ci_t   *nbln;
-    const nbnxn_cj_t   *l_cj;
-    const int          *type;
-    const real         *q;
-    const real         *shiftvec;
-    const real         *x;
-    const real         *nbfp;
-    real                rcut2;
-#ifdef VDW_CUTOFF_CHECK
-    real                rvdw2;
-#endif
-    int                 ntype2;
-    real                facel;
-    int                 n, ci, ci_sh;
-    int                 ish, ishf;
-    gmx_bool            do_LJ, half_LJ, do_coul;
-    int                 cjind0, cjind1, cjind;
-
-    real                xi[UNROLLI*XI_STRIDE];
-    real                fi[UNROLLI*FI_STRIDE];
-    real                qi[UNROLLI];
-
-#ifdef CALC_ENERGIES
-#ifndef ENERGY_GROUPS
-
-    real       Vvdw_ci, Vc_ci;
-#else
-    int        egp_mask;
-    int        egp_sh_i[UNROLLI];
-#endif
-#endif
-#ifdef LJ_POT_SWITCH
-    real       swV3, swV4, swV5;
-    real       swF2, swF3, swF4;
-#endif
-#ifdef LJ_EWALD
-    real        lje_coeff2, lje_coeff6_6;
-#ifdef CALC_ENERGIES
-    real        lje_vc;
-#endif
-    const real *ljc;
-#endif
-
-#ifdef CALC_COUL_RF
-    real       k_rf2;
-#ifdef CALC_ENERGIES
-    real       k_rf, c_rf;
-#endif
-#endif
-#ifdef CALC_COUL_TAB
-#ifdef CALC_ENERGIES
-    real       halfsp;
-#endif
-#if !GMX_DOUBLE
-    const real            *tab_coul_FDV0;
-#else
-    const real            *tab_coul_F;
-    const real gmx_unused *tab_coul_V;
-#endif
-#endif
 
 #ifdef COUNT_PAIRS
     int npair = 0;
 #endif
 
 #ifdef LJ_POT_SWITCH
-    swV3 = ic->vdw_switch.c3;
-    swV4 = ic->vdw_switch.c4;
-    swV5 = ic->vdw_switch.c5;
-    swF2 = 3*ic->vdw_switch.c3;
-    swF3 = 4*ic->vdw_switch.c4;
-    swF4 = 5*ic->vdw_switch.c5;
+    real swV3 = ic->vdw_switch.c3;
+    real swV4 = ic->vdw_switch.c4;
+    real swV5 = ic->vdw_switch.c5;
+    real swF2 = 3*ic->vdw_switch.c3;
+    real swF3 = 4*ic->vdw_switch.c4;
+    real swF4 = 5*ic->vdw_switch.c5;
 #endif
 
 #ifdef LJ_EWALD
-    lje_coeff2   = ic->ewaldcoeff_lj*ic->ewaldcoeff_lj;
-    lje_coeff6_6 = lje_coeff2*lje_coeff2*lje_coeff2/6.0;
+    real lje_coeff2   = ic->ewaldcoeff_lj*ic->ewaldcoeff_lj;
+    real lje_coeff6_6 = lje_coeff2*lje_coeff2*lje_coeff2/6.0;
 #ifdef CALC_ENERGIES
-    lje_vc       = ic->sh_lj_ewald;
+    real lje_vc       = ic->sh_lj_ewald;
 #endif
 
-    ljc          = nbat->nbfp_comb;
+    const real *ljc          = nbat->nbfp_comb;
 #endif
 
 #ifdef CALC_COUL_RF
-    k_rf2 = 2*ic->k_rf;
+    real k_rf2 = 2*ic->k_rf;
 #ifdef CALC_ENERGIES
-    k_rf = ic->k_rf;
-    c_rf = ic->c_rf;
+    real k_rf = ic->k_rf;
+    real c_rf = ic->c_rf;
 #endif
 #endif
 #ifdef CALC_COUL_TAB
 #ifdef CALC_ENERGIES
-    halfsp = 0.5/ic->tabq_scale;
+    real halfsp = 0.5/ic->tabq_scale;
 #endif
 
 #if !GMX_DOUBLE
-    tab_coul_FDV0 = ic->tabq_coul_FDV0;
+    const real            *tab_coul_FDV0 = ic->tabq_coul_FDV0;
 #else
-    tab_coul_F    = ic->tabq_coul_F;
-    tab_coul_V    = ic->tabq_coul_V;
+    const real            *tab_coul_F  = ic->tabq_coul_F;
+    const real gmx_unused *tab_coul_V  = ic->tabq_coul_V;
 #endif
 #endif
 
 #ifdef ENERGY_GROUPS
-    egp_mask = (1<<nbat->neg_2log) - 1;
+    int egp_mask = (1<<nbat->neg_2log) - 1;
 #endif
 
-
-    rcut2               = ic->rcoulomb*ic->rcoulomb;
+    real rcut2               = ic->rcoulomb*ic->rcoulomb;
 #ifdef VDW_CUTOFF_CHECK
-    rvdw2               = ic->rvdw*ic->rvdw;
+    real rvdw2               = ic->rvdw*ic->rvdw;
 #endif
+#if (defined(CALC_ENERGIES) && defined(LJ_EWALD)) || defined(CALC_COUL_GAUSS)
+    int               ntype              = nbat->ntype;
+#endif
+    int               ntype2             = nbat->ntype*2;
+    const real       *nbfp               = nbat->nbfp;
+    const real       *q                  = nbat->q;
+    const int        *type               = nbat->type;
+    real              facel              = ic->epsfac;
+    const real       *shiftvec           = shift_vec[0];
+    const real       *x                  = nbat->x;
 
-    ntype2              = nbat->ntype*2;
-    nbfp                = nbat->nbfp;
-    q                   = nbat->q;
-    type                = nbat->type;
-    facel               = ic->epsfac;
-    shiftvec            = shift_vec[0];
-    x                   = nbat->x;
+    const nbnxn_cj_t *l_cj = nbl->cj;
 
-    l_cj = nbl->cj;
-
-    for (n = 0; n < nbl->nci; n++)
+    for (int n = 0; n < nbl->nci; n++)
     {
-        int i, d;
+        int               i, d;
 
-        nbln = &nbl->ci[n];
+        const nbnxn_ci_t *nbln = &nbl->ci[n];
 
-        ish              = (nbln->shift & NBNXN_CI_SHIFT);
+        int               ish              = (nbln->shift & NBNXN_CI_SHIFT);
         /* x, f and fshift are assumed to be stored with stride 3 */
-        ishf             = ish*DIM;
-        cjind0           = nbln->cj_ind_start;
-        cjind1           = nbln->cj_ind_end;
+        int               ishf             = ish*DIM;
+        int               cjind0           = nbln->cj_ind_start;
+        int               cjind1           = nbln->cj_ind_end;
         /* Currently only works super-cells equal to sub-cells */
-        ci               = nbln->ci;
-        ci_sh            = (ish == CENTRAL ? ci : -1);
+        int               ci               = nbln->ci;
+        int               ci_sh            = (ish == CENTRAL ? ci : -1);
 
         /* We have 5 LJ/C combinations, but use only three inner loops,
          * as the other combinations are unlikely and/or not much faster:
@@ -249,9 +193,9 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
          * inner LJ + C      for full-LJ + C
          * inner LJ          for full-LJ + no-C / half-LJ + no-C
          */
-        do_LJ   = ((nbln->shift & NBNXN_CI_DO_LJ(0)) != 0);
-        do_coul = ((nbln->shift & NBNXN_CI_DO_COUL(0)) != 0);
-        half_LJ = (((nbln->shift & NBNXN_CI_HALF_LJ(0)) != 0) || !do_LJ) && do_coul;
+        gmx_bool do_LJ   = ((nbln->shift & NBNXN_CI_DO_LJ(0)) != 0);
+        gmx_bool do_coul = ((nbln->shift & NBNXN_CI_DO_COUL(0)) != 0);
+        gmx_bool half_LJ = (((nbln->shift & NBNXN_CI_HALF_LJ(0)) != 0) || !do_LJ) && do_coul;
 #ifdef CALC_ENERGIES
 
 #ifdef LJ_EWALD
@@ -261,15 +205,20 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 #endif
 
 #ifndef ENERGY_GROUPS
-        Vvdw_ci = 0;
-        Vc_ci   = 0;
+        real Vvdw_ci = 0;
+        real Vc_ci   = 0;
 #else
+        int  egp_sh_i[UNROLLI];
         for (i = 0; i < UNROLLI; i++)
         {
             egp_sh_i[i] = ((nbat->energrp[ci]>>(i*nbat->neg_2log)) & egp_mask)*nbat->nenergrp;
         }
 #endif
 #endif
+
+        real xi[UNROLLI*XI_STRIDE];
+        real fi[UNROLLI*FI_STRIDE];
+        real qi[UNROLLI];
 
         for (i = 0; i < UNROLLI; i++)
         {
@@ -285,7 +234,7 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 #ifdef CALC_ENERGIES
         if (do_self)
         {
-            real Vc_sub_self;
+            real Vc_sub_self = 0;
 
 #ifdef CALC_COUL_RF
             Vc_sub_self = 0.5*c_rf;
@@ -297,7 +246,9 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
             Vc_sub_self = 0.5*tab_coul_FDV0[2];
 #endif
 #endif
-
+#ifdef CALC_COUL_GAUSS
+            Vc_sub_self = ic->ewaldcoeff_q/sqrt(M_PI);
+#endif
             if (l_cj[nbln->cj_ind_start].cj == ci_sh)
             {
                 for (i = 0; i < UNROLLI; i++)
@@ -313,14 +264,14 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 
 #ifdef LJ_EWALD
                     /* LJ Ewald self interaction */
-                    Vvdw[egp_ind] += 0.5*nbat->nbfp[nbat->type[ci*UNROLLI+i]*(nbat->ntype + 1)*2]/6*lje_coeff6_6;
+                    Vvdw[egp_ind] += 0.5*nbat->nbfp[nbat->type[ci*UNROLLI+i]*(ntype + 1)*2]/6*lje_coeff6_6;
 #endif
                 }
             }
         }
 #endif  /* CALC_ENERGIES */
 
-        cjind = cjind0;
+        int cjind = cjind0;
         while (cjind < cjind1 && nbl->cj[cjind].excl != 0xffff)
         {
 #define CHECK_EXCLS
