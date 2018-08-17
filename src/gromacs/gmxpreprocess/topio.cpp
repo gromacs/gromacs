@@ -690,6 +690,10 @@ static char **read_topol(const char *infile, const char *outfile,
                                     &nbparam, bGenPairs ? &pair : nullptr, wi);
                             break;
 
+                        case d_distributed_charges:
+                            push_distributed_charges(atype, pline, wi);
+                            break;
+
                         case d_bondtypes:
                             push_bt(d, plist, 2, nullptr, batype, pline, wi);
                             break;

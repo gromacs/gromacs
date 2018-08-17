@@ -150,4 +150,11 @@ void forcerec_set_excl_load(t_forcerec           *fr,
  */
 void update_forcerec(t_forcerec *fr, matrix box);
 
+/*! \brief Generate the zeta matrix
+ *
+ * param[in] ntype  number of atom types
+ * param[in] *zeta  charge screening factor
+ */
+real *make_zeta_matrix(int ntype, real *zeta);
+
 #endif

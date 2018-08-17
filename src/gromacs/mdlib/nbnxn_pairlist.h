@@ -277,6 +277,9 @@ typedef struct nbnxn_atomdata_t {
     nbnxn_free_t            *free;
     int                      ntype;           /* The number of different atom types                 */
     real                    *nbfp;            /* Lennard-Jones 6*C6 and 12*C12 params, size ntype^2*2 */
+    real 		    *zeta_matrix;     /* Screening constant matrix for distributed
+                                                 charges. Size of the matrix is ntype x ntype.
+                                                 If the variable is a nullptr no zetas are used. */
     int                      comb_rule;       /* Combination rule, see enum above                   */
     real                    *nbfp_comb;       /* LJ parameter per atom type, size ntype*2           */
     real                    *nbfp_aligned;    /* As nbfp, but with an alignment (stride) suitable
