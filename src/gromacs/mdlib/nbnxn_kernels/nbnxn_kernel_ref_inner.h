@@ -55,12 +55,18 @@
     for (i = 0; i < UNROLLI; i++)
     {
         int ai;
-        int type_i_off;
+        int type_i_offset_lj;
         int j;
 
         ai = ci*UNROLLI + i;
 
-        type_i_off = type[ai]*ntype2;
+#if defined CALC_COULOMB && defined CALC_COUL_GAUSS
+        /* Since nbat->ntype is incremented by one,
+         * we need to take (ntype-1) to get the
+         * original index in the zeta_matrix. */
+        int type_i_offset_coul = type[ai]*(nbat->params().numTypes-1);
+#endif
+        type_i_offset_lj = type[ai]*ntype2;
 
         for (j = 0; j < UNROLLJ; j++)
         {
@@ -150,8 +156,8 @@
             if (i < UNROLLI/2)
 #endif
             {
-                c6      = nbfp[type_i_off+type[aj]*2  ];
-                c12     = nbfp[type_i_off+type[aj]*2+1];
+                c6      = nbfp[type_i_offset_lj+type[aj]*2  ];
+                c12     = nbfp[type_i_offset_lj+type[aj]*2+1];
 
 #if defined LJ_CUT || defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
                 rinvsix = interact*rinvsq*rinvsq*rinvsq;
@@ -300,6 +306,30 @@
 #ifdef CALC_ENERGIES
             vcoul  = qq*(interact*rinv + k_rf*rsq - c_rf);
             /* 4 flops for RF energy */
+#endif
+#endif
+
+#ifdef CALC_COUL_GAUSS
+            real screening_factor;
+            const real kappa      = ic->ewaldcoeff_q;
+            real zeta             = nbat->params().zeta_matrix[type_i_offset_coul+type[aj]];
+            real erf_zeta         = std::erf(zeta*rsq*rinv);
+            real erf_kappa        = std::erf(kappa*rsq*rinv);
+            real exp_zeta         = std::exp(-zeta*zeta*rsq);
+            real exp_kappa        = std::exp(-kappa*kappa*rsq);
+            /* zeta will be zero for two point charges */
+            if (zeta > 0)
+            {
+                screening_factor = interact*erf_zeta-erf_kappa;
+            }
+            else
+            {
+                screening_factor = interact-erf_kappa;
+            }
+            fcoul = qq*rinvsq*rinv*(screening_factor-2.0*rsq*rinv/std::sqrt(M_PI)*
+                                    (interact*zeta*exp_zeta-kappa*exp_kappa));
+#ifdef CALC_ENERGIES
+            vcoul = qq*rinv*screening_factor;
 #endif
 #endif
 
