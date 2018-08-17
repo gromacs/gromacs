@@ -222,7 +222,7 @@ static void tpx2params(FILE *fp, const t_inputrec *ir)
     fprintf(fp, "The %s algorithm was used for electrostatic interactions.\n",
             EELTYPE(ir->coulombtype));
     fprintf(fp, "with a cut-off of %g nm.\n", ir->rcoulomb);
-    if (ir->coulombtype == eelPME)
+    if (ir->coulombtype == eelPME || ir->coulombtype == eelPMEG)
     {
         fprintf(fp, "A reciprocal grid of %d x %d x %d cells was used with %dth order B-spline interpolation.\n", ir->nkx, ir->nky, ir->nkz, ir->pme_order);
     }
