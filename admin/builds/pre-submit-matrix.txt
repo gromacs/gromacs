@@ -71,6 +71,20 @@ msvc-2017 openmp release-with-assert
 # Test on CentOS (because cmake-3.9.6 is available there)
 icc-18 no-thread-mpi double openmp mkl cmake-3.9.6 simd=none release
 
+# Test newest icc at the time of release
+# Test icc without SIMD in double precision in release mode with debug info
+# Test MKL
+# Test without any MPI
+# Test on CentOS (because cmake-3.9.6 is available there)
+icc-18 no-thread-mpi double openmp mkl cmake-3.9.6 simd=none release-with-debug-info
+
+# Test newest icc at the time of release
+# Test icc without SIMD in double precision in reference mode
+# Test MKL
+# Test without any MPI
+# Test on CentOS (because cmake-3.9.6 is available there)
+icc-18 no-thread-mpi double openmp mkl cmake-3.9.6 simd=none reference
+
 # Test NVIDIA OpenCL
 # Test external clFFT (for build speed)
 # Test MPI + OpenCL
