@@ -334,8 +334,8 @@ void pr_atomtypes(FILE *fp, int indent, const char *title, const t_atomtypes *at
         {
             pr_indent(fp, indent);
             fprintf(fp,
-                    "atomtype[%3d]={atomnumber=%4d}\n",
-                    bShowNumbers ? i : -1, atomtypes->atomnumber[i]);
+                    "atomtype[%3d]={atomnumber=%4d, zeta=%12.5e}\n",
+                    bShowNumbers ? i : -1, atomtypes->atomnumber[i], atomtypes->zeta[i]);
         }
     }
 }
