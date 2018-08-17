@@ -84,6 +84,7 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
                          Nbnxm::KernelType kernelType,
                          int enbnxninitcombrule,
                          int ntype, const real *nbfp,
+                         const real *zeta,
                          int n_energygroups,
                          int nout);
 

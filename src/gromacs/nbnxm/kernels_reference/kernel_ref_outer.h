@@ -57,6 +57,9 @@ static_assert(UNROLLI == c_nbnxnCpuIClusterSize, "UNROLLI should match the i-clu
 #ifdef CALC_COUL_RF
 #define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel ## _ElecRF ## ljt ## feg ## _ref
 #endif
+#ifdef CALC_COUL_GAUSS
+#define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel ## _ElecGauss ## ljt ## feg ## _ref
+#endif
 #ifdef CALC_COUL_TAB
 #ifndef VDW_CUTOFF_CHECK
 #define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel ## _ElecQSTab ## ljt ## feg ## _ref
@@ -292,7 +295,9 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
             Vc_sub_self = 0.5*tab_coul_FDV0[2];
 #endif
 #endif
-
+#ifdef CALC_COUL_GAUSS
+            Vc_sub_self = ic->ewaldcoeff_q/sqrt(M_PI);
+#endif
             if (l_cj[ciEntry.cj_ind_start].cj == ci_sh)
             {
                 for (i = 0; i < UNROLLI; i++)

@@ -162,6 +162,10 @@ nbnxn_kernel_cpu(const nbnxn_pairlist_set_t     &pairlistSet,
     {
         coulkt = coulktRF;
     }
+    else if (!nbat->params().zeta_matrix.empty())
+    {
+        coulkt = coulktGAUSS;
+    }
     else
     {
         if (kernelSetup.ewaldExclusionType == Nbnxm::EwaldExclusionType::Table)

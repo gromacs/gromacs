@@ -52,6 +52,8 @@
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/nblist.h"
+#include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -96,7 +98,7 @@ warning_rlimit(const rvec *x, int ai, int aj, int * global_atom_index, real r, r
 /*! \brief Compute the energy and force for a single pair interaction */
 static real
 evaluate_single(real r2, real tabscale, const real *vftab, real tableStride,
-                real qq, real c6, real c12, real *velec, real *vvdw)
+                real qq, real c6, real c12, real *velec, real *vvdw, real zeta)
 {
     real       rinv, r, rtab, eps, eps2, Y, F, Geps, Heps2, Fp, VVe, FFe, VVd, FFd, VVr, FFr, fscal;
     int        ntab;
@@ -110,13 +112,27 @@ evaluate_single(real r2, real tabscale, const real *vftab, real tableStride,
     eps2             = eps*eps;
     ntab             = static_cast<int>(tableStride*ntab);
     /* Electrostatics */
-    Y                = vftab[ntab];
-    F                = vftab[ntab+1];
-    Geps             = eps*vftab[ntab+2];
-    Heps2            = eps2*vftab[ntab+3];
-    Fp               = F+Geps+Heps2;
-    VVe              = Y+eps*Fp;
-    FFe              = Fp+Geps+2.0*Heps2;
+    if (zeta > 0)
+    {
+        /* Use the analytical form for Gaussian charges, since the potential is atomtype dependent */
+        real rinv2     = rinv*rinv;
+        real gauss_erf = std::erf(zeta*r);
+        real gauss_exp = zeta*std::exp(-zeta*zeta*r2)*2.0/std::sqrt(M_PI);
+        VVe            = gauss_erf*rinv;
+        // Not efficient but needed for precision
+        FFe            = -(gauss_erf*rinv2+gauss_exp*rinv)/tabscale;
+    }
+    else
+    {
+        /* Use the tables for point charges */
+        Y                = vftab[ntab];
+        F                = vftab[ntab+1];
+        Geps             = eps*vftab[ntab+2];
+        Heps2            = eps2*vftab[ntab+3];
+        Fp               = F+Geps+Heps2;
+        VVe              = Y+eps*Fp;
+        FFe              = Fp+Geps+2.0*Heps2;
+    }
     /* Dispersion */
     Y                = vftab[ntab+4];
     F                = vftab[ntab+5];
@@ -501,9 +517,12 @@ do_pairs_general(int ftype, int nbonds,
         }
         else
         {
-            /* Evaluate tabulated interaction without free energy */
-            fscal            = evaluate_single(r2, fr->pairsTable->scale, fr->pairsTable->data, fr->pairsTable->stride,
-                                               qq, c6, c12, &velec, &vvdw);
+            /* Evaluate interaction without free energy */
+            real zeta = fr->nbv->nbat->params().zeta(md->typeA[ai], md->typeA[aj]);
+            fscal     = evaluate_single(r2, fr->pairsTable->scale,
+                                        fr->pairsTable->data,
+                                        fr->pairsTable->stride,
+                                        qq, c6, c12, &velec, &vvdw, zeta);
         }
 
         energygrp_elec[gid]  += velec;
@@ -541,7 +560,8 @@ do_pairs_simple(int nbonds,
                 const rvec x[], rvec4 f[],
                 const pbc_type pbc,
                 const t_mdatoms *md,
-                const real scale_factor)
+                const real scale_factor,
+                const nonbonded_verlet_t gmx_unused *nbv)
 {
     const int nfa1 = 1 + 2;
 
@@ -617,8 +637,21 @@ do_pairs_simple(int nbonds,
         T rinv6 = rinv2*rinv2*rinv2;
 
         /* Calculate the Coulomb force * r */
-        T cfr   = ef*qq*rinv;
+        T cfr;
 
+#if !GMX_SIMD
+        real gauss_erf = 1;
+        real gauss_exp = 0;
+        real zeta      = nbv->nbat->params().zeta(md->typeA[ai[0]], md->typeA[aj[0]]);
+        if (zeta > 0)
+        {
+            gauss_erf = std::erf(zeta*rsq*rinv);
+            gauss_exp = zeta*std::exp(-zeta*zeta*rsq)*2/std::sqrt(M_PI);
+        }
+        cfr = ef*qq*(gauss_erf*rinv-gauss_exp);
+#else
+        cfr = ef*qq*rinv;
+#endif
         /* Calculate the LJ force * r and add it to the Coulomb part */
         T fr    = gmx::fma(fms(c12, rinv6, c6), rinv6, cfr);
 
@@ -649,8 +682,8 @@ do_pairs(int ftype, int nbonds,
          gmx_grppairener_t *grppener,
          int *global_atom_index)
 {
-    if (ftype == F_LJ14 &&
-        fr->ic->vdwtype != evdwUSER && !EEL_USER(fr->ic->eeltype) &&
+
+    if (ftype == F_LJ14 && fr->ic->vdwtype != evdwUSER && !EEL_USER(fr->ic->eeltype) &&
         computeForcesOnly)
     {
         /* We use a fast code-path for plain LJ 1-4 without FEP.
@@ -668,7 +701,8 @@ do_pairs(int ftype, int nbonds,
         do_pairs_simple<SimdReal, GMX_SIMD_REAL_WIDTH,
                         const real *>(nbonds, iatoms, iparams,
                                       x, f, pbc_simd,
-                                      md, fr->ic->epsfac*fr->fudgeQQ);
+                                      md, fr->ic->epsfac*fr->fudgeQQ,
+                                      fr->nbv);
 #else
         /* This construct is needed because pbc_dx_aiuc doesn't accept pbc=NULL */
         t_pbc        pbc_no;
@@ -683,11 +717,11 @@ do_pairs(int ftype, int nbonds,
             set_pbc(&pbc_no, epbcNONE, nullptr);
             pbc_nonnull   = &pbc_no;
         }
-
         do_pairs_simple<real, 1,
                         const t_pbc *>(nbonds, iatoms, iparams,
                                        x, f, pbc_nonnull,
-                                       md, fr->ic->epsfac*fr->fudgeQQ);
+                                       md, fr->ic->epsfac*fr->fudgeQQ,
+                                       fr->nbv);
 #endif
     }
     else

@@ -413,6 +413,7 @@ nbnxn_atomdata_t::Params::Params(gmx::PinningPolicy pinningPolicy) :
     numTypes(0),
     nbfp({}, {pinningPolicy}),
     nbfp_comb({}, {pinningPolicy}),
+    zeta_matrix({}, {pinningPolicy}),
     type({}, {pinningPolicy}),
     lj_comb({}, {pinningPolicy}),
     q({}, {pinningPolicy}),
@@ -421,6 +422,52 @@ nbnxn_atomdata_t::Params::Params(gmx::PinningPolicy pinningPolicy) :
     energrp({}, {pinningPolicy})
 {
 }
+
+void nbnxn_atomdata_t::Params::fillZetaMatrix(const real *zeta)
+{
+    // numTypes is one larger than the number of atomtypes
+    int   nZetaType = numTypes-1;
+    bool  allZero   = true;
+    if (nullptr != zeta)
+    {
+        for (int i = 0; i < nZetaType && allZero; i++)
+        {
+            if (zeta[i] > 0)
+            {
+                allZero = false;
+            }
+            else if (zeta[i] < 0)
+            {
+                GMX_RELEASE_ASSERT(zeta[i] >= 0, "For distributed charges, the distribution constants cannot be negative.");
+            }
+        }
+    }
+    if (!allZero)
+    {
+        zeta_matrix.resize(nZetaType*nZetaType, 0.0);
+        for (int i = 0; i < nZetaType; i++)
+        {
+            for (int j = 0; j < nZetaType; j++)
+            {
+                /* A zeta value of zero represents a point charge */
+                if (zeta[i] == 0)
+                {
+                    zeta_matrix[i*nZetaType+j] = zeta[j];
+                }
+                else if (zeta[j] == 0)
+                {
+                    zeta_matrix[i*nZetaType+j] = zeta[i];
+                }
+                else
+                {
+                    zeta_matrix[i*nZetaType+j] = zeta[i]*zeta[j]/std::sqrt(gmx::square(zeta[i]) +
+                                                                           gmx::square(zeta[j]));
+                }
+            }
+        }
+    }
+}
+
 
 nbnxn_atomdata_t::nbnxn_atomdata_t(gmx::PinningPolicy pinningPolicy) :
     params_(pinningPolicy),
@@ -440,6 +487,7 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger &mdlog,
                                        const Nbnxm::KernelType kernelType,
                                        int enbnxninitcombrule,
                                        int ntype, const real *nbfp,
+                                       const real *zeta,
                                        int n_energygroups)
 {
     real     c6, c12, tol;
@@ -453,6 +501,7 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger &mdlog,
     params->numTypes = ntype + 1;
     params->nbfp.resize(params->numTypes*params->numTypes*2);
     params->nbfp_comb.resize(params->numTypes*2);
+    params->fillZetaMatrix(zeta);
 
     /* A tolerance of 1e-5 seems reasonable for (possibly hand-typed)
      * force-field floating point parameters.
@@ -617,11 +666,12 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
                          const Nbnxm::KernelType kernelType,
                          int enbnxninitcombrule,
                          int ntype, const real *nbfp,
+                         const real *zeta,
                          int n_energygroups,
                          int nout)
 {
     nbnxn_atomdata_params_init(mdlog, &nbat->paramsDeprecated(), kernelType,
-                               enbnxninitcombrule, ntype, nbfp, n_energygroups);
+                               enbnxninitcombrule, ntype, nbfp, zeta, n_energygroups);
 
     const bool simple = Nbnxm::kernelTypeUsesSimplePairlist(kernelType);
     const bool bSIMD  = Nbnxm::kernelTypeIsSimd(kernelType);

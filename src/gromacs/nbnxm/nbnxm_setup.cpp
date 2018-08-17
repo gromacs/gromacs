@@ -400,7 +400,7 @@ void init_nb_verlet(const gmx::MDLogger     &mdlog,
                         nbv->nbat,
                         nbv->kernelSetup().kernelType,
                         enbnxninitcombrule,
-                        fr->ntype, fr->nbfp,
+                        fr->ntype, fr->nbfp, nbv->nbat->params().zeta_matrix.data(),
                         mimimumNumEnergyGroupNonbonded,
                         nbv->pairlistIsSimple() ? gmx_omp_nthreads_get(emntNonbonded) : 1);
 
