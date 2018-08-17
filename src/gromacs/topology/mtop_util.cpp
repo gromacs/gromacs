@@ -216,6 +216,19 @@ void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop)
     }
 }
 
+gmx_bool gmx_mtop_gaussiancharges(const gmx_mtop_t *mtop)
+{
+    int ntype = mtop->ffparams.atnr;
+    for (int i = 0; i < ntype; i++)
+    {
+        if (mtop->atomtypes.zeta[i] > 0)
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
 typedef struct gmx_mtop_atomloop_all
 {
     const gmx_mtop_t *mtop;
@@ -1001,6 +1014,16 @@ static void copyAtomtypesFromMtop(const gmx_mtop_t &mtop,
     {
         atomtypes->atomnumber = nullptr;
     }
+    if (mtop.atomtypes.zeta)
+    {
+        snew(atomtypes->zeta, mtop.atomtypes.nr);
+        std::copy(mtop.atomtypes.zeta, mtop.atomtypes.zeta + mtop.atomtypes.nr, atomtypes->zeta);
+    }
+    else
+    {
+        atomtypes->zeta = nullptr;
+    }
+
 }
 
 /*! \brief Copy cgs from mtop.

@@ -121,7 +121,7 @@ void calc_listed(const t_commrec *cr,
                  gmx_enerdata_t *enerd, t_nrnb *nrnb, const real *lambda,
                  const t_mdatoms *md,
                  struct t_fcdata *fcd, int *ddgatindex,
-                 int force_flags);
+                 int force_flags, bool usingGaussianCharges);
 
 /*! \brief As calc_listed(), but only determines the potential energy
  * for the perturbed interactions.
@@ -134,7 +134,8 @@ void calc_listed_lambda(const t_idef *idef,
                         gmx_grppairener_t *grpp, real *epot, t_nrnb *nrnb,
                         const real *lambda,
                         const t_mdatoms *md,
-                        struct t_fcdata *fcd, int *global_atom_index);
+                        struct t_fcdata *fcd, int *global_atom_index,
+                        bool usingGaussianCharges);
 
 /*! \brief Do all aspects of energy and force calculations for mdrun
  * on the set of listed interactions */
@@ -158,7 +159,8 @@ do_force_listed(struct gmx_wallcycle           *wcycle,
                 const t_mdatoms                *md,
                 struct t_fcdata                *fcd,
                 int                            *global_atom_index,
-                int                             flags);
+                int                             flags,
+                bool                            usingGaussianCharges);
 
 /*! \brief Initializes the GPU bonded setup */
 CUDA_FUNC_QUALIFIER
