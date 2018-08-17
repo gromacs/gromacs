@@ -576,7 +576,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
         {
             if (fplog)
             {
-                fprintf(fplog, "\nNOTE: there all shells that are connected to particles outside thier own charge group, will not predict shells positions during the run\n\n");
+                fprintf(fplog, "\nNOTE: there are shells that are connected to particles outside their own charge group, will not predict shells positions during the run\n\n");
             }
             /* Prediction improves performance, so we should implement either:
              * 1. communication for the atoms needed for prediction

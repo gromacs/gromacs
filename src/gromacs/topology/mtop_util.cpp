@@ -217,6 +217,30 @@ void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop)
     }
 }
 
+gmx_bool gmx_mtop_gaussiancharges(const gmx_mtop_t *mtop)
+{
+    int ntype = mtop->ffparams.atnr;
+    for (int i = 0; i < ntype; i++)
+    {
+        if (mtop->atomtypes.zeta[i] > 0)
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+typedef struct gmx_mtop_atomloop_all
+{
+    const gmx_mtop_t *mtop;
+    size_t            mblock;
+    const t_atoms    *atoms;
+    int               mol;
+    int               maxresnr;
+    int               at_local;
+    int               at_global;
+} t_gmx_mtop_atomloop_all;
+
 SystemAtomIterator::SystemAtomIterator(const gmx_mtop_t &mtop)
     : mtop_(&mtop), mblock_(0),
       atoms_(&mtop.moltype[mtop.molblock[0].type].atoms),

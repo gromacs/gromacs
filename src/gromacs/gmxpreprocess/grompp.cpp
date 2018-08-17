@@ -406,6 +406,31 @@ static void check_shells_inputrec(gmx_mtop_t *mtop,
     }
 }
 
+static void check_perturbed_gaussian(gmx_mtop_t *mtop)
+{
+    /* If an atom has a distributed charge, make sure that it
+     * is not perturbed (since this is not yet implemented) */
+    for (const gmx_molblock_t &molb : mtop->molblock)
+    {
+        const t_atoms *atoms = &mtop->moltype[molb.type].atoms;
+        for (int m = 0; m < molb.nmol; m++)
+        {
+            for (int j = 0; j < atoms->nr; j++)
+            {
+                if (PERTURBED(atoms->atom[j]))
+                {
+                    const int type  = atoms->atom[j].type;
+                    const int typeB = atoms->atom[j].typeB;
+                    if (mtop->atomtypes.zeta[type] > 0 || mtop->atomtypes.zeta[typeB] > 0)
+                    {
+                        gmx_fatal(FARGS, "Particles with a distributed charge cannot be perturbed in this version.\n");
+                    }
+                }
+            }
+        }
+    }
+}
+
 /* TODO Decide whether this function can be consolidated with
  * gmx_mtop_ftype_count */
 static int nint_ftype(gmx_mtop_t *mtop, t_molinfo *mi, int ftype)
@@ -1958,7 +1983,6 @@ int gmx_grompp(int argc, char *argv[])
     if (bRenum)
     {
         renum_atype(plist, &sys, ir->wall_atomtype, atype, bVerbose);
-        get_atomtype_ntypes(atype);
     }
 
     if (ir->implicit_solvent)
@@ -1980,6 +2004,53 @@ int gmx_grompp(int argc, char *argv[])
     }
 
     ntype = get_atomtype_ntypes(atype);
+
+    /* Check input compatibility if using gaussian distributed charges */
+    bool       usingGaussianCharges = false;
+    const real ewaldcoeff_q         = calc_ewaldcoeff_q(ir->rcoulomb, ir->ewald_rtol);
+    const real ewaldcoeff_q_sq2     = ewaldcoeff_q/std::sqrt(2);
+    for (int i = 0; i < ntype; i++)
+    {
+        if (sys.atomtypes.zeta[i] > 0)
+        {
+            usingGaussianCharges = true;
+            if (sys.atomtypes.zeta[i] < ewaldcoeff_q_sq2)
+            {
+                gmx_fatal(FARGS, "The distributed charges are not\n"
+                          "sufficiently screened at the cut-off distance.\n"
+                          "Adjust the cut-off or the distribution constants.");
+            }
+        }
+        else if (sys.atomtypes.zeta[i] < 0)
+        {
+            gmx_fatal(FARGS, "The distribution constants cannot be negative.");
+        }
+    }
+    if (usingGaussianCharges)
+    {
+
+        check_perturbed_gaussian(&sys);
+
+        if (!(EEL_PME(ir->coulombtype)) && !(ir->coulombtype == eelEWALD))
+        {
+            gmx_fatal(FARGS, "Combination of %s and gaussian distributed charges is not supported.\n"
+                      "Change coulombtype to PME or Ewald or remove the distributed_charges section\n"
+                      "from the topology file.", eel_names[ir->coulombtype]);
+        }
+        if (ir->cutoff_scheme != ecutsVERLET)
+        {
+            gmx_fatal(FARGS, "Combination of %s and gaussian distributed charges is not supported.\n"
+                      "Change cutoff-scheme to Verlet or remove the distributed_charges section\n"
+                      "from the topology file.", ecutscheme_names[ir->cutoff_scheme]);
+        }
+        if (getenv("GMX_EMULATE_GPU") != nullptr)
+        {
+            gmx_fatal(FARGS, "Found environment variable GMX_EMULATE_GPU.\n"
+                      "The topology file contains a distributed_charges section.\n"
+                      "Combination of distributed charges and GPU is not supported.");
+        }
+    }
+
     convert_params(ntype, plist, mi, intermolecular_interactions,
                    comb, reppow, fudgeQQ, &sys);
 

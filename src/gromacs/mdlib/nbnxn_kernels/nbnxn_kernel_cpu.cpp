@@ -137,6 +137,10 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
     {
         coulkt = coulktRF;
     }
+    else if (nbat->params().zeta_matrix.size() > 0)
+    {
+        coulkt = coulktGAUSS;
+    }
     else
     {
         if (nbvg->ewald_excl == ewaldexclTable)
