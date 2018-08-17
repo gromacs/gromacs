@@ -60,9 +60,7 @@ void dd_redistribute_cg(FILE             *fplog,
                         t_state          *state,
                         PaddedRVecVector *f,
                         t_forcerec       *fr,
-                        gmx_bool          bCompact,
                         t_nrnb           *nrnb,
-                        int              *ncg_stay_home,
                         int              *ncg_moved);
 
 #endif
