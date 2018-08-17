@@ -1984,6 +1984,51 @@ int gmx_grompp(int argc, char *argv[])
     }
 
     ntype = get_atomtype_ntypes(atype);
+
+    /* Check input compatibility if using gaussian distributed charges */
+    bool       usingGaussianCharges = false;
+    const real ewaldcoeff_q         = calc_ewaldcoeff_q(ir->rcoulomb, ir->ewald_rtol);
+    const real ewaldcoeff_q_sq2     = ewaldcoeff_q/std::sqrt(2);
+    for (int i = 0; i < ntype; i++)
+    {
+        if (sys.atomtypes.zeta[i] > 0)
+        {
+            usingGaussianCharges = true;
+            if (sys.atomtypes.zeta[i] < ewaldcoeff_q_sq2)
+            {
+                auto message = gmx::formatString("The distributed charges are not\n"
+                               "sufficiently screened at the cut-off distance.\n"
+                               "Adjust the cut-off or the distribution constants.");
+                GMX_THROW(gmx::InconsistentInputError(message));   
+            }
+        }
+        else if (sys.atomtypes.zeta[i] < 0)
+        {
+            GMX_THROW(gmx::InvalidInputError("The distribution constants cannot be negative."));
+        }
+    }
+    if (usingGaussianCharges)
+    {
+        if (!(EEL_PME(ir->coulombtype)) && !(ir->coulombtype == eelEWALD))
+        {
+            gmx_fatal(FARGS, "Combination of %s and gaussian distributed charges is not supported.\n"
+                      "Change coulombtype to PME or Ewald or remove the distributed_charges section\n"
+                      "from the topology file.", eel_names[ir->coulombtype]);
+        }
+        if (ir->cutoff_scheme != ecutsVERLET)
+        {
+            gmx_fatal(FARGS, "Combination of %s and gaussian distributed charges is not supported.\n"
+                      "Change cutoff-scheme to Verlet or remove the distributed_charges section\n"
+                      "from the topology file.", ecutscheme_names[ir->cutoff_scheme]);
+        }
+        if (getenv("GMX_EMULATE_GPU") != nullptr)
+        {
+            gmx_fatal(FARGS, "Found environment variable GMX_EMULATE_GPU.\n"
+                      "The topology file contains a distributed_charges section.\n"
+                      "Combination of distributed charges and GPU is not supported.");
+        }
+    }
+
     convert_params(ntype, plist, mi, intermolecular_interactions,
                    comb, reppow, fudgeQQ, &sys);
 
