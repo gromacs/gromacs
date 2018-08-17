@@ -217,6 +217,19 @@ void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop)
     }
 }
 
+gmx_bool gmx_mtop_gaussiancharges(const gmx_mtop_t *mtop)
+{
+    int ntype = mtop->ffparams.atnr;
+    for (int i = 0; i < ntype; i++)
+    {
+        if (mtop->atomtypes.zeta[i] > 0)
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
 AtomIterator::AtomIterator(const gmx_mtop_t &mtop, int globalAtomNumber)
     : mtop_(&mtop), mblock_(0),
       atoms_(&mtop.moltype[mtop.molblock[0].type].atoms),
@@ -676,6 +689,22 @@ t_atoms gmx_mtop_global_atoms(const gmx_mtop_t *mtop)
     }
 
     return atoms;
+}
+
+t_atomtypes gmx_mtop_atomtypes(const gmx_mtop_t *mtop)
+{
+    t_atomtypes         atomtypes;
+
+    init_atomtypes(&atomtypes);
+    atomtypes.nr = mtop->atomtypes.nr;
+    snew(atomtypes.atomnumber, atomtypes.nr);
+    snew(atomtypes.zeta, atomtypes.nr);
+    for (int i = 0; i < atomtypes.nr; i++)
+    {
+        atomtypes.atomnumber[i] = mtop->atomtypes.atomnumber[i];
+        atomtypes.zeta[i]       = mtop->atomtypes.zeta[i];
+    }
+    return atomtypes;
 }
 
 /*
@@ -1206,6 +1235,7 @@ static void gen_t_topology(const gmx_mtop_t &mtop,
 
     top->name                        = mtop.name;
     top->atoms                       = gmx_mtop_global_atoms(&mtop);
+    top->atomtypes                   = gmx_mtop_atomtypes(&mtop);
     top->mols                        = gmx_mtop_molecules_t_block(mtop);
     top->bIntermolecularInteractions = mtop.bIntermolecularInteractions;
     top->symtab                      = mtop.symtab;
