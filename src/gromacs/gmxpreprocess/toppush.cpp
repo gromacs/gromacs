@@ -238,7 +238,7 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
     int        nr, i, nfields, j, pt, nfp0 = -1;
     int        batype_nr, nread;
     char       type[STRLEN], btype[STRLEN], ptype[STRLEN];
-    double     m, q;
+    double     m, q, zeta;
     double     c[MAXFORCEPARAM];
     char       tmpfield[12][100]; /* Max 12 fields of width 100 */
     t_atom    *atom;
@@ -309,6 +309,7 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
 
     /* optional fields */
     atomnr    = -1;
+    zeta      = 0;
 
     switch (nb_funct)
     {
@@ -500,14 +501,14 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
         auto message = gmx::formatString("Overriding atomtype %s", type);
         warning(wi, message);
         if ((nr = set_atomtype(nr, at, symtab, atom, type, param, batype_nr,
-                               atomnr)) == NOTSET)
+                               atomnr, zeta)) == NOTSET)
         {
             auto message = gmx::formatString("Replacing atomtype %s failed", type);
             warning_error_and_exit(wi, message, FARGS);
         }
     }
     else if ((add_atomtype(at, symtab, atom, type, param,
-                           batype_nr, atomnr)) == NOTSET)
+                           batype_nr, atomnr, zeta)) == NOTSET)
     {
         auto message = gmx::formatString("Adding atomtype %s failed", type);
         warning_error_and_exit(wi, message, FARGS);
@@ -519,6 +520,44 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
     }
     sfree(atom);
     sfree(param);
+}
+
+void push_distributed_charges(gpp_atomtype_t at, char *line, warninp_t wi)
+{
+    char   atype[STRLEN];
+    int    ftype;
+    double zeta;
+    if (sscanf(line, "%s%d", atype, &ftype) != 2)
+    {
+        too_few(wi);
+        return;
+    }
+    switch (ftype)
+    {
+        case 1:
+            if (sscanf(line, "%*s%*s%lf", &zeta) == 1)
+            {
+                if (NOTSET == set_atomtype_zeta(get_atomtype_type(atype, at), at, zeta))
+                {
+                    auto message = gmx::formatString("Unknown atomtype %s", atype);
+                    warning_error(wi, message);
+                }
+            }
+            else
+            {
+                too_few(wi);
+                break;
+            }
+            if (sscanf(line, "%*s%*s%*s%lf", &zeta) == 1)
+            {
+                auto message = gmx::formatString("Only one distribution constant is allowed per atom.");
+                warning_error(wi, message);
+            }
+            break;
+        default:
+            auto message = gmx::formatString("Unknown %s type %d", dir2str(d_distributed_charges), ftype);
+            warning_error(wi, message);
+    }
 }
 
 //! Return whether the contents of \c a and \c b are the same, considering also reversed order.
@@ -2451,7 +2490,7 @@ int add_atomtype_decoupled(t_symtab *symtab, gpp_atomtype_t at,
         param.c[i] = 0.0;
     }
 
-    nr = add_atomtype(at, symtab, &atom, "decoupled", &param, -1, 0);
+    nr = add_atomtype(at, symtab, &atom, "decoupled", &param, -1, 0, 0);
 
     /* Add space in the non-bonded parameters matrix */
     realloc_nb_params(at, nbparam, pair);
