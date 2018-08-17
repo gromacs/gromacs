@@ -1,0 +1,41 @@
+[ defaults ]
+; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ
+1               2               no             0.5     0.5
+
+[ atomtypes ]
+; name          btype   mass    charge   ptype     C    A
+   Clc          X      35.45300    +5.713    A      0.46544669 0.05707475
+   Cls          X      0.000       -6.713    S      0   0
+   Nac          X      22.9898     +4.007    A      0.28732780 0.05477248
+   Nas          X      0.000       -3.007    S      0   0
+
+[ distributed_charges ]
+; atom type zeta
+Nac  1 12.609
+Nas  1 12.609
+Clc  1 6.967
+Cls  1 6.967
+
+[ moleculetype ]
+; Name            nrexcl
+NaCl    3
+
+ [ atoms ]
+ ;   nr       type  resnr residue  atom   cgnr     charge       mass  typeB    chargeB      massB
+1     Nac      1     NAC     Nac     1     +4.007     22.98977
+2     Nas      1     NAC     Nas     2     -3.007     0.000
+3     Clc      1     NAC     Clc     3     +5.713     35.45300
+4     Cls      1     NAC     Cls     4     -6.713     0.000
+
+
+[ polarization ]
+; atom shell type alpha
+1   2   1   0.00018
+3   4   1   0.003500
+
+[ system ]
+NaCl
+
+[ molecules ]
+;name		mol
+NACL		1
