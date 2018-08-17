@@ -137,7 +137,7 @@ See also :numref:`Fig. %s <fig-coul>`, where
 
 The force derived from this potential is:
 
-.. math:: \mathbf{F}_i(\mathbf{r}_ij) = f \frac{q_i q_j}{{\varepsilon_r}{r_{ij}}^2}{\frac{{\mathbf{r}_{ij}}}{{r_{ij}}}}
+.. math:: \mathbf{F}_j(\mathbf{r}_ij) = f \frac{q_i q_j}{{\varepsilon_r}{r_{ij}}^2}{\frac{{\mathbf{r}_{ij}}}{{r_{ij}}}}
 
 A plain Coulomb interaction should only be used without cut-off or when
 all pairs fall within the cut-off, since there is an abrupt, large
@@ -233,6 +233,52 @@ limit of zero ionic strength (:math:`\kappa=0`) :eq:`eqns. %s <eqnkgrf>` and
 respectively.
 
 .. _modnbint:
+
+Gaussian charge distributions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In force fields used in MD simulations, it is common to 
+assign simple point charges to the atoms. By neglecting the
+spatial distribution of the electron density, such point-charge
+models may overestimate the interactions at short-range.
+Gaussian charge distributions were proposed by Chialvo and Cummings
+?| \ :ref:`180 <refChialvo98>` to provide a more realistic
+representation of the electrostatic interactions at short-range.
+
+A Gaussian charge distribution is given by
+
+.. math::
+
+   \rho_{i}({\mathbf{r}})=\frac{q_i}{(2\pi\sigma_i^2)^{3/2}}\exp\left(\frac{-\left{\vert}
+   \mathbf{r}-\mathbf{r}_i \right{\vert}^2}{2\sigma_i^2}\right),
+
+where :math:`\sigma_i` is the width of the distribution
+centered at position :math:`{\bf r}_{i}`. 
+The interaction energy between two Gaussian charges is then given by
+
+.. math::
+
+   V_g(r_{ij})=f \frac{q_i q_j}{{\varepsilon_r}r_{ij}}\mbox{erf}(\alpha_{ij}r_{ij}),
+
+where
+
+.. math::
+
+   \alpha_{ij}=\frac{\alpha_i \alpha_j}{\sqrt{\alpha_i^2+\alpha_j^2}}
+
+and the screening constants, :math:`\alpha_i`, are proportional to the inverse 
+distribution widths, :math:`\alpha_i=1/(2\sigma_i^2)^{1/2}`.
+As of |Gromacs| version 2019, it is possible to
+use Gaussian charges by providing the following entry in the
+.top file,
+
+::
+
+    [ distributed_charges ]
+    ; atomname   type   screeningconst
+
+where the distribution type should be set to 1. Any charged atom missing from the entry
+is assumed to be a point charge.
 
 Modified non-bonded interactions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -353,9 +399,23 @@ modified. Here the potential is switched to (nearly) zero at the
 cut-off, instead of the force. In this case the short range potential is
 given by:
 
-.. math:: V(r) = f \frac{\mbox{erfc}(\beta r_{ij})}{r_{ij}} q_i q_j,
+.. math:: V(r) = f \frac{q_i q_j}{r_{ij}}\mbox{erfc}(\beta r_{ij}),
 
 where :math:`\beta` is a parameter that determines the relative weight
 between the direct space sum and the reciprocal space sum and
-erfc\ :math:`(x)` is the complementary error function. For further
-details on long-range electrostatics, see sec. :ref:`lrelstat`.
+erfc\ :math:`(x)` is the complementary error function. 
+
+For Gaussian distributed charges, the Ewald sum is approximated in |Gromacs| using
+the method proposed by Kiss  *et al.*?| \ :ref:`180 <refKiss2014>`.
+The direct space sum in this case is given by
+
+.. math::
+
+   V(r) = f \frac{q_i q_j}{r_{ij}}\left[\mbox{erf}(\alpha_{ij} {r}_{ij})-\mbox{erf}(\beta r_{ij})\right],
+
+while preserving the regular expression for the reciprocal space sum. This is
+based on the assumption that the fall-off of the Gaussian function (as determined
+by \alpha_{ij} is much shorter than the switching distance between short-range and
+long-range forces. This assumption may break down if \alpha_{ij} << 1.
+
+For further details on long-range electrostatics, see sec. :ref:`lrelstat`.

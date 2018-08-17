@@ -344,8 +344,19 @@ namespace gmx
  * call to this function should have \c issueWarning true. */
 static bool gpuAccelerationOfNonbondedIsUseful(const MDLogger   &mdlog,
                                                const t_inputrec *ir,
+                                               bool              usingGaussianCharges,
                                                bool              issueWarning)
 {
+    if (usingGaussianCharges)
+    {
+        /* The GPU code does not support gaussian charges. */
+        if (issueWarning)
+        {
+            GMX_LOG(mdlog.warning).asParagraph()
+                .appendText("Distributed charges are not implemented for GPUs, falling back to the CPU.");
+        }
+        return false;
+    }
     if (ir->opts.ngener - ir->nwall > 1)
     {
         /* The GPU code does not support more than one energy group.
@@ -420,6 +431,7 @@ int Mdrunner::mdrunner()
     int                       nthreads_pme = 1;
     gmx_membed_t *            membed       = nullptr;
     gmx_hw_info_t            *hwinfo       = nullptr;
+    bool                      usingGaussianCharges;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -538,6 +550,25 @@ int Mdrunner::mdrunner()
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPR, filenames().size(), filenames().data()), inputrec, globalState.get(), &mtop);
 
+        /* Check if gaussian charges are used */
+        usingGaussianCharges = false;
+        unsigned int ntype = sizeof(mtop.atomtypes.zeta)/sizeof(mtop.atomtypes.zeta[0]);
+        for (unsigned int i = 0; i < ntype; i++)
+        {
+            if (mtop.atomtypes.zeta[i] > 0)
+            {
+                usingGaussianCharges = true;
+#ifdef _MSC_VER
+                _putenv("GMX_DISABLE_SIMD_KERNELS=1");
+                _putenv("GMX_EMULATE_GPU=");
+#else
+                setenv("GMX_DISABLE_SIMD_KERNELS", "1", 1);
+                unsetenv("GMX_EMULATE_GPU");
+#endif
+                break;
+            }
+        }
+
         /* In rerun, set velocities to zero if present */
         if (doRerun && ((globalState->flags & (1 << estV)) != 0))
         {
@@ -599,7 +630,7 @@ int Mdrunner::mdrunner()
             useGpuForNonbonded = decideWhetherToUseGpusForNonbondedWithThreadMpi
                     (nonbondedTarget, gpuIdsToUse, userGpuTaskAssignment, emulateGpuNonbonded,
                     inputrec->cutoff_scheme == ecutsVERLET,
-                    gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, GMX_THREAD_MPI),
+                    gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, usingGaussianCharges, GMX_THREAD_MPI),
                     hw_opt.nthreads_tmpi);
             auto canUseGpuForPme   = pme_gpu_supports_build(nullptr) && pme_gpu_supports_input(*inputrec, mtop, nullptr);
             useGpuForPme = decideWhetherToUseGpusForPmeWithThreadMpi
@@ -657,11 +688,11 @@ int Mdrunner::mdrunner()
         // It's possible that there are different numbers of GPUs on
         // different nodes, which is the user's responsibilty to
         // handle. If unsuitable, we will notice that during task
-        // assignment.
+        // assignment
         bool gpusWereDetected = hwinfo->ngpu_compatible_tot > 0;
         useGpuForNonbonded = decideWhetherToUseGpusForNonbonded(nonbondedTarget, userGpuTaskAssignment,
                                                                 emulateGpuNonbonded, inputrec->cutoff_scheme == ecutsVERLET,
-                                                                gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, !GMX_THREAD_MPI),
+                                                                gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, usingGaussianCharges, !GMX_THREAD_MPI),
                                                                 gpusWereDetected);
         auto canUseGpuForPme   = pme_gpu_supports_build(nullptr) && pme_gpu_supports_input(*inputrec, mtop, nullptr);
         useGpuForPme = decideWhetherToUseGpusForPme(useGpuForNonbonded, pmeTarget, userGpuTaskAssignment,

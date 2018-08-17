@@ -2542,3 +2542,30 @@ of simple systems*, (1994).
 
    </div>
 
+:sup:`180` A. A. Chialvo and P. T. Cummings, ?~@~\Simple transferable
+intermolecular potential for the molecular simulation of water over
+wide ranges of state conditions,?~@~] *Fluid Phase Equilib.*, **150** 73?~@~S81 (1998).
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
+   <div id="ref-Chialvo1998">
+
+.. _refChialvo98
+
+:sup:`181` P. T. Kiss, M. Sega, and A. Baranyai, ?~@~\Efficient handling of 
+gaussian charge distributions: An application to polarizable molecular models,
+?~@~] *J. Chem. Theory Comput.*, **10** 5513?~@~S5519 (2014).
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
+   <div id="ref-Kiss2014">
+
+.. _refKiss2014::
