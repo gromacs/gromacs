@@ -41,54 +41,26 @@
 #endif
 
 {
-    int cj;
-#ifdef ENERGY_GROUPS
-    int egp_cj;
-#endif
-    int i;
-
-    cj = l_cj[cjind].cj;
+    int cj = l_cj[cjind].cj;
 
 #ifdef ENERGY_GROUPS
-    egp_cj = nbat->energrp[cj];
+    int egp_cj = nbat->energrp[cj];
 #endif
-    for (i = 0; i < UNROLLI; i++)
+
+    for (int i = 0; i < UNROLLI; i++)
     {
-        int ai;
-        int type_i_off;
-        int j;
+        int ai = ci*UNROLLI + i;
+#if defined CALC_COULOMB && defined CALC_COUL_GAUSS
+        /* Since nbat->ntype is incremented by one,
+         * we need to take (ntype-1) to get the
+         * original index in the zeta_matrix. */
+        int type_i_offset_coul = type[ai]*(ntype-1);
+#endif
+        int type_i_offset_lj = type[ai]*ntype2;
 
-        ai = ci*UNROLLI + i;
-
-        type_i_off = type[ai]*ntype2;
-
-        for (j = 0; j < UNROLLJ; j++)
+        for (int j = 0; j < UNROLLJ; j++)
         {
-            int             aj;
-            real            dx, dy, dz;
-            real            rsq, rinv;
-            real            rinvsq, rinvsix;
-            real            c6, c12;
             real            FrLJ6 = 0, FrLJ12 = 0, frLJ = 0;
-            real            VLJ gmx_unused;
-#if defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
-            real            r, rsw;
-#endif
-
-#ifdef CALC_COULOMB
-            real qq;
-            real fcoul;
-#ifdef CALC_COUL_TAB
-            real rs, frac;
-            int  ri;
-            real fexcl;
-#endif
-#ifdef CALC_ENERGIES
-            real vcoul;
-#endif
-#endif
-            real fscal;
-            real fx, fy, fz;
 
             /* A multiply mask used to zero an interaction
              * when either the distance cutoff is exceeded, or
@@ -109,19 +81,19 @@
             skipmask = (cj == ci_sh && j <= i) ? 0.0 : 1.0;
 #endif
 #else
-#define interact 1.0
+#define interact 1
             skipmask = 1.0;
 #endif
 
-            VLJ = 0;
+            real gmx_unused VLJ = 0;
 
-            aj = cj*UNROLLJ + j;
+            int aj = cj*UNROLLJ + j;
 
-            dx  = xi[i*XI_STRIDE+XX] - x[aj*X_STRIDE+XX];
-            dy  = xi[i*XI_STRIDE+YY] - x[aj*X_STRIDE+YY];
-            dz  = xi[i*XI_STRIDE+ZZ] - x[aj*X_STRIDE+ZZ];
+            real dx  = xi[i*XI_STRIDE+XX] - x[aj*X_STRIDE+XX];
+            real dy  = xi[i*XI_STRIDE+YY] - x[aj*X_STRIDE+YY];
+            real dz  = xi[i*XI_STRIDE+ZZ] - x[aj*X_STRIDE+ZZ];
 
-            rsq = dx*dx + dy*dy + dz*dz;
+            real rsq = dx*dx + dy*dy + dz*dz;
 
             /* Prepare to enforce the cut-off. */
             skipmask = (rsq >= rcut2) ? 0 : skipmask;
@@ -135,7 +107,7 @@
             npair++;
 #endif
 
-            rinv = gmx::invsqrt(rsq);
+            real rinv = gmx::invsqrt(rsq);
             /* 5 flops for invsqrt */
 
             /* Partially enforce the cut-off (and perhaps
@@ -144,17 +116,17 @@
              * the Coulomb table during lookup. */
             rinv = rinv * skipmask;
 
-            rinvsq  = rinv*rinv;
+            real rinvsq  = rinv*rinv;
 
 #ifdef HALF_LJ
             if (i < UNROLLI/2)
 #endif
             {
-                c6      = nbfp[type_i_off+type[aj]*2  ];
-                c12     = nbfp[type_i_off+type[aj]*2+1];
+                real c6      = nbfp[type_i_offset_lj+type[aj]*2  ];
+                real c12     = nbfp[type_i_offset_lj+type[aj]*2+1];
 
 #if defined LJ_CUT || defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
-                rinvsix = interact*rinvsq*rinvsq*rinvsq;
+                real rinvsix = interact*rinvsq*rinvsq*rinvsq;
                 FrLJ6   = c6*rinvsix;
                 FrLJ12  = c12*rinvsix*rinvsix;
                 frLJ    = FrLJ12 - FrLJ6;
@@ -168,8 +140,8 @@
 
 #if defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
                 /* Force or potential switching from ic->rvdw_switch */
-                r       = rsq*rinv;
-                rsw     = r - ic->rvdw_switch;
+                real r       = rsq*rinv;
+                real rsw     = r - ic->rvdw_switch;
                 rsw     = (rsw >= 0.0 ? rsw : 0.0);
 #endif
 #ifdef LJ_FORCE_SWITCH
@@ -292,40 +264,64 @@
              * to the force and potential, and the easiest way
              * to do this is to zero the charges in
              * advance. */
-            qq = skipmask * qi[i] * q[aj];
+            real qq = skipmask * qi[i] * q[aj];
 
 #ifdef CALC_COUL_RF
-            fcoul  = qq*(interact*rinv*rinvsq - k_rf2);
+            real fcoul  = qq*(interact*rinv*rinvsq - k_rf2);
             /* 4 flops for RF force */
 #ifdef CALC_ENERGIES
-            vcoul  = qq*(interact*rinv + k_rf*rsq - c_rf);
+            real vcoul  = qq*(interact*rinv + k_rf*rsq - c_rf);
             /* 4 flops for RF energy */
 #endif
 #endif
 
+#ifdef CALC_COUL_GAUSS
+            real screening_factor;
+            const real kappa      = ic->ewaldcoeff_q;
+            real zeta             = nbat->zeta_matrix[type_i_offset_coul+type[aj]];
+            real erf_zeta         = std::erf(zeta*rsq*rinv);
+            real erf_kappa        = std::erf(kappa*rsq*rinv);
+            real exp_zeta         = std::exp(-zeta*zeta*rsq);
+            real exp_kappa        = std::exp(-kappa*kappa*rsq);
+            /* zeta will be zero for two point charges */
+            if (zeta > 0)
+            {
+                screening_factor = interact*erf_zeta-erf_kappa;
+            }
+            else
+            {
+                screening_factor = interact-erf_kappa;
+            }
+            real fcoul = qq*rinvsq*rinv*(screening_factor-2.0*rsq*rinv/std::sqrt(M_PI)*
+                                         (interact*zeta*exp_zeta-kappa*exp_kappa));
+#ifdef CALC_ENERGIES
+            real vcoul = qq*rinv*screening_factor;
+#endif
+#endif
+
 #ifdef CALC_COUL_TAB
-            rs     = rsq*rinv*ic->tabq_scale;
-            ri     = int(rs);
-            frac   = rs - ri;
+            real rs     = rsq*rinv*ic->tabq_scale;
+            int ri      = int(rs);
+            real frac   = rs - ri;
 #if !GMX_DOUBLE
             /* fexcl = F_i + frac * (F_(i+1)-F_i) */
-            fexcl  = tab_coul_FDV0[ri*4] + frac*tab_coul_FDV0[ri*4+1];
+            real fexcl  = tab_coul_FDV0[ri*4] + frac*tab_coul_FDV0[ri*4+1];
 #else
             /* fexcl = (1-frac) * F_i + frac * F_(i+1) */
-            fexcl  = (1 - frac)*tab_coul_F[ri] + frac*tab_coul_F[ri+1];
+            real fexcl  = (1 - frac)*tab_coul_F[ri] + frac*tab_coul_F[ri+1];
 #endif
-            fcoul  = interact*rinvsq - fexcl;
+            real fcoul  = interact*rinvsq - fexcl;
             /* 7 flops for float 1/r-table force */
 #ifdef CALC_ENERGIES
 #if !GMX_DOUBLE
-            vcoul  = qq*(interact*(rinv - ic->sh_ewald)
-                         -(tab_coul_FDV0[ri*4+2]
-                           -halfsp*frac*(tab_coul_FDV0[ri*4] + fexcl)));
+            real vcoul  = qq*(interact*(rinv - ic->sh_ewald)
+                              -(tab_coul_FDV0[ri*4+2]
+                                -halfsp*frac*(tab_coul_FDV0[ri*4] + fexcl)));
             /* 7 flops for float 1/r-table energy (8 with excls) */
 #else
-            vcoul  = qq*(interact*(rinv - ic->sh_ewald)
-                         -(tab_coul_V[ri]
-                           -halfsp*frac*(tab_coul_F[ri] + fexcl)));
+            real vcoul  = qq*(interact*(rinv - ic->sh_ewald)
+                              -(tab_coul_V[ri]
+                                -halfsp*frac*(tab_coul_F[ri] + fexcl)));
 #endif
 #endif
             fcoul *= qq*rinv;
@@ -340,6 +336,7 @@
 #endif
 #endif
 #endif
+            real fscal;
 
 #ifdef CALC_COULOMB
 #ifdef HALF_LJ
@@ -358,9 +355,9 @@
 #else
             fscal = frLJ*rinvsq;
 #endif
-            fx = fscal*dx;
-            fy = fscal*dy;
-            fz = fscal*dz;
+            real fx = fscal*dx;
+            real fy = fscal*dy;
+            real fz = fscal*dz;
 
             /* Increment i-atom force */
             fi[i*FI_STRIDE+XX] += fx;

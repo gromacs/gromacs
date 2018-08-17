@@ -384,7 +384,8 @@ calc_one_bond(int thread,
               const real *lambda, real *dvdl,
               const t_mdatoms *md, t_fcdata *fcd,
               gmx_bool bCalcEnerVir,
-              int *global_atom_index)
+              int *global_atom_index,
+              const bool usingGaussianCharges)
 {
 #if GMX_SIMD_HAVE_REAL
     bool bUseSIMD = fr->use_simd_kernels;
@@ -504,8 +505,8 @@ calc_one_bond(int thread,
            to its own subtimer, but first wallcycle needs to be
            extended to support calling from multiple threads. */
         do_pairs(ftype, nbn, iatoms+nb0, idef->iparams, x, f, fshift,
-                 pbc, g, lambda, dvdl, md, fr,
-                 computeForcesOnly, grpp, global_atom_index);
+                 pbc, g, lambda, dvdl, md, fr, computeForcesOnly,
+                 grpp, global_atom_index, usingGaussianCharges);
         v = 0;
     }
 
@@ -542,7 +543,8 @@ calcBondedForces(const t_idef     *idef,
                  const t_mdatoms  *md,
                  t_fcdata         *fcd,
                  gmx_bool          bCalcEnerVir,
-                 int              *global_atom_index)
+                 int              *global_atom_index,
+                 bool              usingGaussianCharges)
 {
     bonded_threading_t *bt = fr->bondedThreading;
 
@@ -587,7 +589,7 @@ calcBondedForces(const t_idef     *idef,
                                       ft, fshift, fr, pbc_null, g, grpp,
                                       nrnb, lambda, dvdlt,
                                       md, fcd, bCalcEnerVir,
-                                      global_atom_index);
+                                      global_atom_index, usingGaussianCharges);
                     epot[ftype] += v;
                 }
             }
@@ -611,7 +613,8 @@ void calc_listed(const t_commrec             *cr,
                  const real *lambda,
                  const t_mdatoms *md,
                  t_fcdata *fcd, int *global_atom_index,
-                 int force_flags)
+                 int force_flags,
+                 const bool usingGaussianCharges)
 {
     gmx_bool                   bCalcEnerVir;
     const  t_pbc              *pbc_null;
@@ -687,7 +690,7 @@ void calc_listed(const t_commrec             *cr,
            of lambda, which will be thrown away in the end */
         real dvdl[efptNR] = {0};
         calcBondedForces(idef, x, fr, pbc_null, g, enerd, nrnb, lambda, dvdl, md,
-                         fcd, bCalcEnerVir, global_atom_index);
+                         fcd, bCalcEnerVir, global_atom_index, usingGaussianCharges);
         wallcycle_sub_stop(wcycle, ewcsLISTED);
 
         wallcycle_sub_start(wcycle, ewcsLISTED_BUF_OPS);
@@ -722,7 +725,8 @@ void calc_listed_lambda(const t_idef *idef,
                         const real *lambda,
                         const t_mdatoms *md,
                         t_fcdata *fcd,
-                        int *global_atom_index)
+                        int *global_atom_index,
+                        const bool usingGaussianCharges)
 {
     real               v;
     real               dvdl_dum[efptNR] = {0};
@@ -771,7 +775,7 @@ void calc_listed_lambda(const t_idef *idef,
                                   x, f, fshift, fr, pbc_null, g,
                                   grpp, nrnb, lambda, dvdl_dum,
                                   md, fcd, TRUE,
-                                  global_atom_index);
+                                  global_atom_index, usingGaussianCharges);
                 epot[ftype] += v;
             }
         }
@@ -803,7 +807,8 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
                 const t_mdatoms             *md,
                 t_fcdata                    *fcd,
                 int                         *global_atom_index,
-                int                          flags)
+                int                          flags,
+                const bool                   usingGaussianCharges)
 {
     t_pbc pbc_full; /* Full PBC is needed for position restraints */
 
@@ -822,7 +827,7 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
                 forceForUseWithShiftForces, forceWithVirial,
                 fr, pbc, &pbc_full,
                 graph, enerd, nrnb, lambda, md, fcd,
-                global_atom_index, flags);
+                global_atom_index, flags, usingGaussianCharges);
 
     /* Check if we have to determine energy differences
      * at foreign lambda's.
@@ -848,7 +853,7 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
                     lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
                 }
                 calc_listed_lambda(idef, x, fr, pbc, graph, &(enerd->foreign_grpp), enerd->foreign_term, nrnb, lam_i, md,
-                                   fcd, global_atom_index);
+                                   fcd, global_atom_index, usingGaussianCharges);
                 sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
                 enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
             }
