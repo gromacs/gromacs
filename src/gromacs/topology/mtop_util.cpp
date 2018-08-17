@@ -217,6 +217,19 @@ void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop)
     }
 }
 
+gmx_bool gmx_mtop_gaussiancharges(const gmx_mtop_t *mtop)
+{
+    int ntype = mtop->ffparams.atnr;
+    for (int i = 0; i < ntype; i++)
+    {
+        if (mtop->atomtypes.zeta[i] > 0)
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
 AtomIterator::AtomIterator(const gmx_mtop_t &mtop, int globalAtomNumber)
     : mtop_(&mtop), mblock_(0),
       atoms_(&mtop.moltype[mtop.molblock[0].type].atoms),
@@ -1002,6 +1015,15 @@ static void copyAtomtypesFromMtop(const gmx_mtop_t &mtop,
     else
     {
         atomtypes->atomnumber = nullptr;
+    }
+    if (mtop.atomtypes.zeta)
+    {
+        snew(atomtypes->zeta, mtop.atomtypes.nr);
+        std::copy(mtop.atomtypes.atomnumber, mtop.atomtypes.atomnumber + mtop.atomtypes.nr, atomtypes->atomnumber);
+    }
+    else
+    {
+        atomtypes->zeta = nullptr;
     }
 }
 

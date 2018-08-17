@@ -357,8 +357,19 @@ namespace gmx
  * call to this function should have \c issueWarning true. */
 static bool gpuAccelerationOfNonbondedIsUseful(const MDLogger   &mdlog,
                                                const t_inputrec *ir,
+                                               gmx_bool          usingGaussianCharges,
                                                bool              issueWarning)
 {
+    if (usingGaussianCharges)
+    {
+        /* The GPU code does not support gaussian charges. */
+        if (issueWarning)
+        {
+            GMX_LOG(mdlog.warning).asParagraph()
+                .appendText("Distributed charges are not implemented for GPUs, falling back to the CPU.");
+        }
+        return false;
+    }
     if (ir->opts.ngener - ir->nwall > 1)
     {
         /* The GPU code does not support more than one energy group.
@@ -587,6 +598,9 @@ int Mdrunner::mdrunner()
         }
     }
 
+    /* Check if using gaussian charges */
+    gmx_bool usingGaussianCharges = gmx_mtop_gaussiancharges(&mtop);
+
     /* Check and update the hardware options for internal consistency */
     check_and_update_hw_opt_1(mdlog, &hw_opt, cr, domdecOptions.numPmeRanks);
 
@@ -619,7 +633,7 @@ int Mdrunner::mdrunner()
                     (nonbondedTarget, gpuIdsToUse, userGpuTaskAssignment, emulateGpuNonbonded,
                     canUseGpuForNonbonded,
                     inputrec->cutoff_scheme == ecutsVERLET,
-                    gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, GMX_THREAD_MPI),
+                    gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, usingGaussianCharges, GMX_THREAD_MPI),
                     hw_opt.nthreads_tmpi);
             auto canUseGpuForPme   = pme_gpu_supports_build(*hwinfo, nullptr) && pme_gpu_supports_input(*inputrec, mtop, nullptr);
             useGpuForPme = decideWhetherToUseGpusForPmeWithThreadMpi
@@ -690,7 +704,7 @@ int Mdrunner::mdrunner()
                                                                 emulateGpuNonbonded,
                                                                 canUseGpuForNonbonded,
                                                                 usingVerletScheme,
-                                                                gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, !GMX_THREAD_MPI),
+                                                                gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, usingGaussianCharges, !GMX_THREAD_MPI),
                                                                 gpusWereDetected);
         auto canUseGpuForPme   = pme_gpu_supports_build(*hwinfo, nullptr) && pme_gpu_supports_input(*inputrec, mtop, nullptr);
         useGpuForPme = decideWhetherToUseGpusForPme(useGpuForNonbonded, pmeTarget, userGpuTaskAssignment,
