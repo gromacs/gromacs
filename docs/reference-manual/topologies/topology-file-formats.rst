@@ -19,6 +19,8 @@ interactions can be converted to constraints by :ref:`grompp <gmx grompp>`.
 .. |VCR| replace:: V\ :math:`^{(cr)}`
 .. |WCR| replace:: W\ :math:`^{(cr)}`
 .. |CRO| replace:: :math:`^{(cr)}`
+.. |SC| replace:: :math:`^{(sc)}`
+.. |DCT| replace:: :math:`^{(dt)}`
 .. |TREF| replace:: :numref:`Table %s <tab-topfile2>`
 .. |AKJM| replace:: :math:`a~\mathrm{kJ~mol}^{-1}`
 .. |KJN6| replace:: :math:`\mathrm{kJ~mol}^{-1}~\mathrm{nm}^{-6}`
@@ -49,19 +51,22 @@ interactions can be converted to constraints by :ref:`grompp <gmx grompp>`.
         +-------------------+---------------------------+------------------------------------------------------------+
         |                   | ``bondtypes``             |  (see |TREF|, directive ``bonds``)                         |
         +                   +                           +                                                            +
+        |                   | ``constrainttypes``       |  (see |TREF|, directive ``constraints``)                   |
+        +                   +                           +                                                            +
         |                   | ``pairtypes``             |  (see |TREF|, directive ``pairs``)                         |
         +                   +                           +                                                            +
         |                   | ``angletypes``            |  (see |TREF|, directive ``angles``)                        |
         +                   +                           +                                                            +
         |                   | ``dihedraltypes``\ |STAR| |  (see |TREF|, directive ``dihedrals``)                     |
-        +                   +                           +                                                            +
-        |                   | ``constrainttypes``       |  (see |TREF|, directive ``constraints``)                   |
         +-------------------+---------------------------+-----+----+-------------------------------------------------+
         | LJ                | ``nonbond_params``        |  2  | 1  |  |VCR|  ; |WCR|                                 |
         +                   +                           +     +    +                                                 +
         | Buckingham        | ``nonbond_params``        |  2  | 2  |  |AKJM| ; |BNM|;                                |
         |                   |                           |     |    |  |C6LJ| (|KJN6|)                                |
         +-------------------+---------------------------+-----+----+-------------------------------------------------+
+        |                   | ``distributed_charges``   |            atom name; type (1) |DCT|;                      |
+        |                   |                           |            screening constant |SC|                         |
+        +-------------------+---------------------------+------------------------------------------------------------+
 
 .. table:: 
 
@@ -105,6 +110,8 @@ interactions can be converted to constraints by :ref:`grompp <gmx grompp>`.
     'F. E.' indicates which of the parameters can be interpolated in free energy calculations
     |CRO| the combination rule determines the type of LJ parameters, see 
     |STAR| for ``dihedraltypes`` one can specify 4 atoms or the inner (outer for improper) 2 atoms
+    |DCT| the only distribution type currently available is 1 for Gaussian charges 
+    |SC| the screening constant is a function of the inverse distribution width 
     |NREX| exclude neighbors :math:`n_{ex}` bonds away for non-bonded interactions
     For free energy calculations, type, :math:`q` and :math:`m`  or no parameters should be added
     for topology 'B' (:math:`\lambda = 1`) on the same line, after the normal parameters.

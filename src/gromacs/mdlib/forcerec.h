@@ -178,5 +178,11 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr,
 
 void free_gpu_resources(const t_forcerec                    *fr,
                         const gmx::PhysicalNodeCommunicator &physicalNodeCommunicator);
+/*! \brief Generate the zeta matrix
+ *
+ * param[in] ntype  number of atom types
+ * param[in] *zeta  charge screening factor
+ */
+real *make_zeta_matrix(int ntype, real *zeta);
 
 #endif
