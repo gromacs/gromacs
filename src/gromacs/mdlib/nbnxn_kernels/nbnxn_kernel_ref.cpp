@@ -44,6 +44,7 @@
 #include <algorithm>
 
 #include "gromacs/math/functions.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/nb_verlet.h"
@@ -78,6 +79,28 @@
 #undef LJ_EWALD
 #undef CALC_COUL_RF
 
+/* Analytical PME-G kernels */
+#define CALC_COUL_GAUSS
+#define LJ_CUT
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
+#undef LJ_CUT
+#define LJ_FORCE_SWITCH
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
+#undef LJ_FORCE_SWITCH
+#define LJ_POT_SWITCH
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
+#undef LJ_POT_SWITCH
+#define LJ_EWALD
+#define LJ_CUT
+#define LJ_EWALD_COMB_GEOM
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
+#undef LJ_EWALD_COMB_GEOM
+#define LJ_EWALD_COMB_LB
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
+#undef LJ_EWALD_COMB_LB
+#undef LJ_CUT
+#undef LJ_EWALD
+#undef CALC_COUL_GAUSS
 
 /* Tabulated exclusion interaction electrostatics kernels */
 #define CALC_COUL_TAB

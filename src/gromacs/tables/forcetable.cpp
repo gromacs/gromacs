@@ -1198,6 +1198,7 @@ static void set_table_type(int tabsel[], const interaction_const_t *ic, gmx_bool
             break;
         case eelEWALD:
         case eelPME:
+        case eelPMEG:
         case eelP3M_AD:
             tabsel[etiCOUL] = etabEwald;
             break;

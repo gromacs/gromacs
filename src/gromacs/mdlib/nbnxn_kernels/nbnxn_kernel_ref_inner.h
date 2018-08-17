@@ -78,6 +78,11 @@
 #ifdef CALC_COULOMB
             real qq;
             real fcoul;
+#ifdef CALC_COUL_GAUSS
+            real screening_factor;
+            real zeta;
+            real kappa;
+#endif
 #ifdef CALC_COUL_TAB
             real rs, frac;
             int  ri;
@@ -109,7 +114,7 @@
             skipmask = (cj == ci_sh && j <= i) ? 0.0 : 1.0;
 #endif
 #else
-#define interact 1.0
+#define interact 1
             skipmask = 1.0;
 #endif
 
@@ -300,6 +305,22 @@
 #ifdef CALC_ENERGIES
             vcoul  = qq*(interact*rinv + k_rf*rsq - c_rf);
             /* 4 flops for RF energy */
+#endif
+#endif
+
+#ifdef CALC_COUL_GAUSS
+            kappa            = ic->ewaldcoeff_q;
+            screening_factor = 1;
+            zeta             = 0;
+            if (nbat->zeta_matrix)
+            {
+                zeta             = nbat->zeta_matrix[ai*ntype+aj];
+                screening_factor = interact*std::erf(zeta*rsq*rinv)-std::erf(kappa*rsq*rinv);
+            }
+            fcoul = qq*rinvsq*rinv*(screening_factor-2.0*rsq*rinv/std::sqrt(M_PI)*
+                                    (interact*zeta*std::exp(-zeta*zeta*rsq)-kappa*std::exp(-kappa*kappa*rsq)));
+#ifdef CALC_ENERGIES
+            vcoul = qq*rinv*screening_factor;
 #endif
 #endif
 

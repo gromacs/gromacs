@@ -55,6 +55,9 @@
 #ifdef CALC_COUL_RF
 #define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel ## _ElecRF ## ljt ## feg ## _ref
 #endif
+#ifdef CALC_COUL_GAUSS
+#define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel ## _ElecGauss ## ljt ## feg ## _ref
+#endif
 #ifdef CALC_COUL_TAB
 #ifndef VDW_CUTOFF_CHECK
 #define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel ## _ElecQSTab ## ljt ## feg ## _ref
@@ -114,6 +117,9 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
     real                rcut2;
 #ifdef VDW_CUTOFF_CHECK
     real                rvdw2;
+#endif
+#if (defined(CALC_ENERGIES) && defined(LJ_EWALD)) || defined(CALC_COUL_GAUSS)
+    int                 ntype;
 #endif
     int                 ntype2;
     real                facel;
@@ -217,7 +223,9 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 #ifdef VDW_CUTOFF_CHECK
     rvdw2               = ic->rvdw*ic->rvdw;
 #endif
-
+#if (defined(CALC_ENERGIES) && defined(LJ_EWALD)) || defined(CALC_COUL_GAUSS)
+    ntype               = nbat->ntype;
+#endif
     ntype2              = nbat->ntype*2;
     nbfp                = nbat->nbfp;
     q                   = nbat->q;
@@ -285,7 +293,7 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 #ifdef CALC_ENERGIES
         if (do_self)
         {
-            real Vc_sub_self;
+            real Vc_sub_self = 0;
 
 #ifdef CALC_COUL_RF
             Vc_sub_self = 0.5*c_rf;
@@ -297,7 +305,9 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
             Vc_sub_self = 0.5*tab_coul_FDV0[2];
 #endif
 #endif
-
+#ifdef CALC_COUL_GAUSS
+            Vc_sub_self = ic->ewaldcoeff_q/sqrt(M_PI);
+#endif
             if (l_cj[nbln->cj_ind_start].cj == ci_sh)
             {
                 for (i = 0; i < UNROLLI; i++)
@@ -313,7 +323,7 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 
 #ifdef LJ_EWALD
                     /* LJ Ewald self interaction */
-                    Vvdw[egp_ind] += 0.5*nbat->nbfp[nbat->type[ci*UNROLLI+i]*(nbat->ntype + 1)*2]/6*lje_coeff6_6;
+                    Vvdw[egp_ind] += 0.5*nbat->nbfp[nbat->type[ci*UNROLLI+i]*(ntype + 1)*2]/6*lje_coeff6_6;
 #endif
                 }
             }

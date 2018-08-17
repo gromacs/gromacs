@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2012,2013,2014,2015,2018, by the GROMACS development team, led by
+# Copyright (c) 2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,18 +32,5 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB MDLIB_SOURCES nbnxn_kernels/simd_4xn/*.cpp nbnxn_kernels/simd_2xnn/*.cpp nbnxn_kernels/*.cpp *.cpp)
-
-if(GMX_USE_CUDA)
-    add_subdirectory(nbnxn_cuda)
-endif()
-if(GMX_USE_OPENCL)
-    add_subdirectory(nbnxn_ocl)
-    set(MDLIB_OPENCL_KERNELS ${MDLIB_OPENCL_KERNELS} PARENT_SCOPE)
-endif()
-
-set(MDLIB_SOURCES ${MDLIB_SOURCES} PARENT_SCOPE)
-if (BUILD_TESTING)
-    add_subdirectory(tests)
-    add_subdirectory(nbnxn_kernels/tests)
-endif()
+gmx_add_unit_test(NbnxnKernelRefUnitTest nbnxnkernelref-test
+                  calc_coul_gauss.cpp)
