@@ -2115,6 +2115,12 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
 
     nbv = new nonbonded_verlet_t();
 
+    if (gmx_mtop_gaussiancharges(mtop) && (getenv("GMX_EMULATE_GPU") != nullptr))
+    {
+        gmx_fatal(FARGS, "Found environment variable GMX_EMULATE_GPU.\n"
+                  "The topology file contains a distributed_charges section.\n"
+                  "Combination of distributed charges and GPU is not supported.");
+    }
     nbv->emulateGpu = ((getenv("GMX_EMULATE_GPU") != nullptr) ? EmulateGpuNonbonded::Yes : EmulateGpuNonbonded::No);
     nbv->bUseGPU    = deviceInfo != nullptr;
 
@@ -2190,6 +2196,7 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
     }
 
     nbv->nbat = new nbnxn_atomdata_t(nbv->bUseGPU ? gmx::PinningPolicy::PinnedIfSupported : gmx::PinningPolicy::CannotBePinned);
+
     int mimimumNumEnergyGroupNonbonded = ir->opts.ngener;
     if (ir->opts.ngener - ir->nwall == 1)
     {
@@ -2205,6 +2212,7 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
                         nbv->grp[0].kernel_type,
                         enbnxninitcombrule,
                         fr->ntype, fr->nbfp,
+                        mtop->atomtypes.zeta,
                         mimimumNumEnergyGroupNonbonded,
                         bSimpleList ? gmx_omp_nthreads_get(emntNonbonded) : 1);
 
@@ -2400,15 +2408,20 @@ void init_forcerec(FILE                             *fp,
         bNoSolvOpt         = TRUE;
     }
 
-    if ( (getenv("GMX_DISABLE_SIMD_KERNELS") != nullptr) || (getenv("GMX_NOOPTIMIZEDKERNELS") != nullptr) )
+    /* Check whether to turn off SIMD */
+    auto usingGaussianCharges = gmx_mtop_gaussiancharges(mtop);
+    if ( (getenv("GMX_DISABLE_SIMD_KERNELS") != nullptr) ||
+         (getenv("GMX_NOOPTIMIZEDKERNELS") != nullptr) ||
+         usingGaussianCharges)
     {
         fr->use_simd_kernels = FALSE;
         if (fp != nullptr)
         {
-            fprintf(fp,
-                    "\nFound environment variable GMX_DISABLE_SIMD_KERNELS.\n"
+            fprintf(fp, "\n%s\n"
                     "Disabling the usage of any SIMD-specific non-bonded & bonded kernel routines\n"
-                    "(e.g. SSE2/SSE4.1/AVX).\n\n");
+                    "(e.g. SSE2/SSE4.1/AVX).\n\n",
+                    usingGaussianCharges ? "Your topology contains Gaussian charges." :
+                    "Found environment variable GMX_DISABLE_SIMD_KERNELS.");
         }
     }
 
