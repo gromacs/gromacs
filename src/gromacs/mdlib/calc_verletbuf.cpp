@@ -140,7 +140,7 @@ VerletbufListSetup verletbufGetSafeListSetup(ListSetupType listType)
     {
         nbnxnKernelType = nbnxnk8x8x8_GPU;
     }
-    else if (GMX_SIMD && listType == ListSetupType::CpuSimdWhenSupported)
+    else if (GMX_SIMD && (getenv("GMX_DISABLE_SIMD_KERNELS") == nullptr) && listType == ListSetupType::CpuSimdWhenSupported)
     {
 #ifdef GMX_NBNXN_SIMD_2XNN
         /* We use the smallest cluster size to be on the safe side */

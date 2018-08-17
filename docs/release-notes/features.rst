@@ -36,3 +36,10 @@ reference atom, which can sometimes move a lot during the simulation.
 With this option the PBC reference atom is only used at initialization.
 This can be of use when using large pull groups or groups with potentially
 large relative movement of atoms.
+
+New topology entry for distributed charges
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Is it now possible to use distributed charges as an alternative to point charges,
+by providing a new entry with the distribution widths in the .top file. This new
+method has been implemented for the CPU kernels and for Gaussian distributions only.
+
