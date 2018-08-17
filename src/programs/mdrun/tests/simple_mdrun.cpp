@@ -83,6 +83,10 @@ std::unordered_map<std::string, FloatingPointTolerance> energyToleranceForSystem
      {
          "angles1",
          relativeToleranceAsFloatingPoint(1, 1e-4)
+     },
+     {
+         "nacl_gauss",
+         relativeToleranceAsFloatingPoint(1, 1e-4)
      }
  }};
 
@@ -92,6 +96,10 @@ std::unordered_map<std::string, FloatingPointTolerance> pressureToleranceForSyst
 {{
      {
          "angles1",
+         relativeToleranceAsFloatingPoint(1, 1e-4)
+     },
+     {
+         "nacl_gauss",
          relativeToleranceAsFloatingPoint(1, 1e-4)
      }
  }};
@@ -135,10 +143,10 @@ TEST_P(SimpleMdrunTest, WithinTolerances)
     mdpFieldValues["nsteps"]        = "50";
     mdpFieldValues["nstfout"]       = "4";
     mdpFieldValues["constraints"]   = "none";
-    mdpFieldValues["nstcalcenergy"] = "4";
-    mdpFieldValues.insert(MdpField("coulombtype", "Cut-off"));
-    mdpFieldValues.insert(MdpField("vdwtype", "Cut-off"));
-
+    if (mdpFieldValues["nstcalcenergy"] == "100")
+    {
+        mdpFieldValues["nstcalcenergy"] = "4";
+    }
     // Prepare the .tpr file
     {
         CommandLine caller;
@@ -191,8 +199,9 @@ TEST_P(SimpleMdrunTest, WithinTolerances)
 
 //! Containers of systems to test.
 //! \{
-std::vector<std::string> systemsToTest_g = { "angles1" };
-std::vector<std::string> md_g            = { "md", "md-vv" };
+std::vector<std::string> systemsToTest_g  = { "angles1" };
+std::vector<std::string> systemsDistPol_g = { "nacl_gauss" };
+std::vector<std::string> md_g             = { "md", "md-vv" };
 //! \}
 
 // The time for OpenCL kernel compilation means these tests might time
@@ -202,6 +211,7 @@ std::vector<std::string> md_g            = { "md", "md-vv" };
 // such configurations.
 #if GMX_DOUBLE
 INSTANTIATE_TEST_CASE_P(Angles1, SimpleMdrunTest, ::testing::Combine(::testing::ValuesIn(systemsToTest_g), ::testing::ValuesIn(md_g)));
+INSTANTIATE_TEST_CASE_P(DistributedPolarizable, SimpleMdrunTest, ::testing::Combine(::testing::ValuesIn(systemsDistPol_g), ::testing::ValuesIn(md_g)));
 #endif
 } // namespace
 } // namespace test

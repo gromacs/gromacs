@@ -779,6 +779,11 @@ static void bc_molblock(const t_commrec *cr, gmx_molblock_t *molb)
 static void bc_atomtypes(const t_commrec *cr, t_atomtypes *atomtypes)
 {
     block_bc(cr, atomtypes->nr);
+
+    snew_bc(cr, atomtypes->zeta, atomtypes->nr);
+    nblock_bc(cr, atomtypes->nr, atomtypes->zeta);
+    snew_bc(cr, atomtypes->atomnumber, atomtypes->nr);
+    nblock_bc(cr, atomtypes->nr, atomtypes->atomnumber);
 }
 
 /*! \brief Broadcasts ir and mtop from the master to all nodes in
