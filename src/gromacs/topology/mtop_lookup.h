@@ -80,7 +80,7 @@ mtopGetMolblockIndex(const gmx_mtop_t *mtop,
     GMX_ASSERT(moleculeBlock != nullptr, "molBlock can not be NULL");
     GMX_ASSERT(*moleculeBlock >= 0 && *moleculeBlock < static_cast<int>(mtop->moleculeBlockIndices.size()), "The starting molecule block index for the search should be within range and moleculeBlockIndices should not be empty");
 
-    /* Search the molecue block index using bisection */
+    /* Search the molecule block index using bisection */
     int molBlock0 = -1;
     int molBlock1 = mtop->molblock.size();
 
