@@ -60,6 +60,8 @@ void push_at (struct t_symtab *symtab, gpp_atomtype_t at,
               t_nbparam ***nbparam, t_nbparam ***pair,
               warninp_t wi);
 
+void push_distributed_charges(gpp_atomtype_t at, char *line, warninp_t wi);
+
 void push_bt(directive d, t_params bt[], int nral,
              gpp_atomtype_t at, t_bond_atomtype bat, char *line,
              warninp_t wi);
