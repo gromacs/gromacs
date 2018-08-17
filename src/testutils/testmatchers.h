@@ -102,6 +102,17 @@ RealEq(const FloatingPointTolerance &tolerance);
 testing::Matcher < std::tuple < RVec, RVec>>
 RVecEq(const FloatingPointTolerance &tolerance);
 
+/*! \brief Make matcher for arrays of reals for use with GoogleMock that
+ * compare equal when \c tolerance is satisifed.
+ *
+ * Used like
+ *
+ *   EXPECT_THAT(testArrayOfReals, Pointwise(ArrayOfRealsEq<N>(tolerance), referenceArrayOfReals));
+ */
+template <size_t N>
+testing::Matcher < std::tuple < std::array<real, N>, std::array<real, N>>>
+ArrayOfRealsEq(const FloatingPointTolerance &tolerance);
+
 } // namespace
 } // namespace
 
