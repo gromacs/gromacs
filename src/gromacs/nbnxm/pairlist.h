@@ -43,6 +43,7 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/nblist.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/defaultinitializationallocator.h"
@@ -389,6 +390,8 @@ struct nbnxn_atomdata_t
         int                   comb_rule;
         // LJ parameters per atom type, size numTypes*2
         gmx::HostVector<real> nbfp_comb;
+        // Zeta matrix for distributed charges, size (numTypes-1)**2
+        gmx::HostVector<real> zeta_matrix;
         // As nbfp, but with a stride for the present SIMD architecture
         AlignedVector<real>   nbfp_aligned;
         // Atom types per atom
@@ -403,6 +406,28 @@ struct nbnxn_atomdata_t
         int                   neg_2log;
         // The energy groups, one int entry per cluster, only set when needed
         gmx::HostVector<int>  energrp;
+
+        /*! \brief Fill the zeta matrix
+         *
+         * \param[in] atomtypes Atom type structure containing distribution widths zeta
+         */
+        void fillZetaMatrix(const t_atomtypes &atomtypes);
+        /*! \brief Get zeta value
+         * \param[in] itype Type for atom i
+         * \param[in] jtype Type for atom j
+         * \return zeta for the combination
+         */
+        real zeta(int itype, int jtype) const
+        {
+            if (zeta_matrix.empty())
+            {
+                return 0.0;
+            }
+            else
+            {
+                return zeta_matrix[itype*(numTypes-1)+jtype];
+            }
+        }
     };
 
     // Diagonal and topology exclusion helper data for all SIMD kernels

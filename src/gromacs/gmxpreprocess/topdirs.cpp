@@ -60,6 +60,7 @@ static gmx::EnumerationArray<Directive, const char *> directive_names
             "angletypes",
             "dihedraltypes",
             "nonbond_params",
+            "distributed_charges",
             "implicit_genborn_params",
             "implicit_surface_params",
             "cmaptypes",
@@ -345,6 +346,7 @@ void DS_Init(DirStack **DS)
     {
         set_nec(&(necessary[Directive::d_defaults]), Directive::d_none);
         set_nec(&(necessary[Directive::d_atomtypes]), Directive::d_defaults, Directive::d_none);
+        set_nec(&(necessary[Directive::d_distributed_charges]), Directive::d_atomtypes, Directive::d_none);
         set_nec(&(necessary[Directive::d_bondtypes]), Directive::d_atomtypes, Directive::d_none);
         set_nec(&(necessary[Directive::d_constrainttypes]), Directive::d_atomtypes, Directive::d_none);
         set_nec(&(necessary[Directive::d_pairtypes]), Directive::d_atomtypes, Directive::d_none);
