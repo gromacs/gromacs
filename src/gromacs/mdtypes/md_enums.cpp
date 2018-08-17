@@ -81,7 +81,7 @@ const char *eel_names[eelNR+1] = {
     "PME", "Ewald", "P3M-AD", "Poisson", "Switch", "Shift", "User",
     "Generalized-Born (unused)", "Reaction-Field-nec", "Encad-shift",
     "PME-User", "PME-Switch", "PME-User-Switch",
-    "Reaction-Field-zero", nullptr
+    "Reaction-Field-zero", "PME-G", nullptr
 };
 
 const char *eewg_names[eewgNR+1] = {
