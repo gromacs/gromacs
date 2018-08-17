@@ -1874,6 +1874,50 @@ gmx_bool uses_simple_tables(int                 cutoff_scheme,
     return bUsesSimpleTables;
 }
 
+real *make_zeta_matrix(int ntype, const real *zeta)
+{
+    bool  allZero     = true;
+    for (int i = 0; i < ntype && allZero; i++)
+    {
+
+        if (zeta[i] > 0)
+        {
+            allZero = false;
+        }
+        else if (zeta[i] < 0)
+        {
+            GMX_THROW(gmx::InvalidInputError("The distribution constants cannot be negative."));
+        }
+    }
+    real *zeta_matrix = nullptr;
+    if (!allZero)
+    {
+        int ntype2 = ntype+1;
+        snew(zeta_matrix, ntype2*ntype2);
+        for (int i = 0; i < ntype; i++)
+        {
+            for (int j = 0; j < ntype; j++)
+            {
+                /* A zeta value of zero represents a point charge */
+                if (zeta[i] == 0)
+                {
+                    zeta_matrix[i*ntype+j] = zeta[j];
+                }
+                else if (zeta[j] == 0)
+                {
+                    zeta_matrix[i*ntype+j] = zeta[i];
+                }
+                else
+                {
+                    zeta_matrix[i*ntype+j] = zeta[i]*zeta[j]/std::sqrt(gmx::square(zeta[i]) +
+                                                                       gmx::square(zeta[j]));
+                }
+            }
+        }
+    }
+    return zeta_matrix;
+}
+
 static void init_ewald_f_table(interaction_const_t *ic,
                                real                 rtab)
 {
@@ -2156,6 +2200,14 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
 
     nbv = new nonbonded_verlet_t();
 
+    gmx_bool usingGaussianCharges = gmx_mtop_gaussiancharges(mtop);
+
+    if (usingGaussianCharges && (getenv("GMX_EMULATE_GPU") != nullptr))
+    {
+        gmx_fatal(FARGS, "Found environment variable GMX_EMULATE_GPU.\n"
+                  "The topology file contains a distributed_charges section.\n"
+                  "Combination of distributed charges and GPU is not supported.");
+    }
     nbv->emulateGpu = ((getenv("GMX_EMULATE_GPU") != nullptr) ? EmulateGpuNonbonded::Yes : EmulateGpuNonbonded::No);
     nbv->bUseGPU    = deviceInfo != nullptr;
 
@@ -2234,8 +2286,10 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
         enbnxninitcombrule = enbnxninitcombruleNONE;
     }
 
+    /* Generate matrix of zeta using combination rules */
+    real *zeta_matrix = make_zeta_matrix(fr->ntype, mtop->atomtypes.zeta);
     snew(nbv->nbat, 1);
-    int mimimumNumEnergyGroupNonbonded = ir->opts.ngener;
+    int   mimimumNumEnergyGroupNonbonded = ir->opts.ngener;
     if (ir->opts.ngener - ir->nwall == 1)
     {
         /* We have only one non-wall energy group, we do not need energy group
@@ -2250,10 +2304,14 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
                         nbv->grp[0].kernel_type,
                         enbnxninitcombrule,
                         fr->ntype, fr->nbfp,
+                        zeta_matrix,
                         mimimumNumEnergyGroupNonbonded,
                         bSimpleList ? gmx_omp_nthreads_get(emntNonbonded) : 1,
                         nb_alloc, nb_free);
-
+    if (zeta_matrix)
+    {
+        sfree(zeta_matrix);
+    }
     if (nbv->bUseGPU)
     {
         /* init the NxN GPU data; the last argument tells whether we'll have
@@ -2446,7 +2504,10 @@ void init_forcerec(FILE                             *fp,
         bNoSolvOpt         = TRUE;
     }
 
-    if ( (getenv("GMX_DISABLE_SIMD_KERNELS") != nullptr) || (getenv("GMX_NOOPTIMIZEDKERNELS") != nullptr) )
+    /* Check if using gaussian charges */
+    gmx_bool usingGaussianCharges = gmx_mtop_gaussiancharges(mtop);
+
+    if ( (getenv("GMX_DISABLE_SIMD_KERNELS") != nullptr) || (getenv("GMX_NOOPTIMIZEDKERNELS") != nullptr) || usingGaussianCharges)
     {
         fr->use_simd_kernels = FALSE;
         if (fp != nullptr)
