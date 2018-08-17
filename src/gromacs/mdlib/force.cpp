@@ -58,6 +58,7 @@
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/forcerec-threading.h"
 #include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/rf_util.h"
@@ -334,13 +335,22 @@ void do_force_lowlevel(t_forcerec           *fr,
                    TRUE, box);
     }
 
+    /* Check if we have Gaussian charges */
+    bool usingGaussianCharges = false;
+    if (ir->cutoff_scheme == ecutsVERLET)
+    {
+        if (fr->nbv->nbat->params().zeta_matrix.size() > 0)
+        {
+            usingGaussianCharges = true;
+        }
+    }
+
     do_force_listed(wcycle, box, ir->fepvals, cr, ms,
                     idef, x, hist,
                     forceForUseWithShiftForces, forceWithVirial,
                     fr, &pbc, graph, enerd, nrnb, lambda, md, fcd,
                     DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr,
-                    flags);
-
+                    flags, usingGaussianCharges);
 
     *cycles_pme = 0;
 

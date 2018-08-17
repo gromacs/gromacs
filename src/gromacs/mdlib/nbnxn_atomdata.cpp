@@ -537,7 +537,6 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger &mdlog,
         fprintf(debug, "Combination rules: geometric %s Lorentz-Berthelot %s\n",
                 gmx::boolToString(bCombGeom), gmx::boolToString(bCombLB));
     }
-
     simple = nbnxn_kernel_pairlist_simple(nb_kernel_type);
 
     switch (enbnxninitcombrule)
@@ -623,7 +622,8 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
                          int nout)
 {
     nbnxn_atomdata_params_init(mdlog, &nbat->paramsDeprecated(), nb_kernel_type,
-                               enbnxninitcombrule, ntype, nbfp, n_energygroups);
+                               enbnxninitcombrule, ntype, nbfp, 
+                               n_energygroups);
 
     const gmx_bool simple = nbnxn_kernel_pairlist_simple(nb_kernel_type);
     const gmx_bool bSIMD  = (nb_kernel_type == nbnxnk4xN_SIMD_4xN ||
