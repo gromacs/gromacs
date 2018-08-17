@@ -65,3 +65,9 @@ Normally the pull module writes instantaneous output of positions and forces, ho
 now it can write the average of these values over the period since the last output.
 This works correctly even if a checkpoint restart intervened. This is enabled using the
 new options ``pull-fout-average`` and ``pull-xout-average``.
+
+New topology entry for distributed charges
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Is it now possible to use distributed charges as an alternative to point charges,
+by providing a new entry with the distribution widths in the .top file. This new
+method has been implemented for the CPU kernels and for Gaussian distributions only.

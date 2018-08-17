@@ -86,6 +86,9 @@ int gmx_mtop_nres(const gmx_mtop_t *mtop);
 /* Removes the charge groups, i.e. makes single atom charge groups, in mtop */
 void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop);
 
+/* Check mtop for gaussian charges */
+gmx_bool gmx_mtop_gaussiancharges(const gmx_mtop_t *mtop);
+
 /* Abstract type for atom loop over all atoms */
 typedef struct gmx_mtop_atomloop_all *gmx_mtop_atomloop_all_t;
 
