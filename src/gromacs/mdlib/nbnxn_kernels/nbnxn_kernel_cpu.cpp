@@ -148,6 +148,10 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
     {
         coulkt = coulktRF;
     }
+    else if (nbat->zeta_matrix)
+    {
+        coulkt = coulktGAUSS;
+    }
     else
     {
         if (nbvg->ewald_excl == ewaldexclTable)
