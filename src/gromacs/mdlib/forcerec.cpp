@@ -1878,6 +1878,39 @@ gmx_bool uses_simple_tables(int                 cutoff_scheme,
     return bUsesSimpleTables;
 }
 
+real *make_zeta_matrix(int ntype, real *zeta)
+{
+    bool  allZero     = true;
+    for (int i = 0; i < ntype && allZero; i++)
+    {
+        if (zeta[i] > 0)
+        {
+            allZero = false;
+        }
+    }
+    real *zeta_matrix = nullptr;
+    if (!allZero)
+    {
+        snew(zeta_matrix, ntype*ntype);
+        for (int i = 0; i < ntype; i++)
+        {
+            for (int j = 0; j < ntype; j++)
+            {
+                if (zeta[i] == 0 || zeta[j] == 0)
+                {
+                    zeta_matrix[i*ntype+j] = 0;
+                }
+                else
+                {
+                    zeta_matrix[i*ntype+j] = zeta[i]*zeta[j]/std::sqrt(gmx::square(zeta[i]) +
+                                                                       gmx::square(zeta[j]));
+                }
+            }
+        }
+    }
+    return zeta_matrix;
+}
+
 static void init_ewald_f_table(interaction_const_t *ic,
                                real                 rtab)
 {
@@ -2239,8 +2272,10 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
         enbnxninitcombrule = enbnxninitcombruleNONE;
     }
 
+    /* Generate matrix of zeta using combination rules */
+    real *zeta_matrix = make_zeta_matrix(fr->ntype, mtop->atomtypes.zeta);
     snew(nbv->nbat, 1);
-    int mimimumNumEnergyGroupNonbonded = ir->opts.ngener;
+    int   mimimumNumEnergyGroupNonbonded = ir->opts.ngener;
     if (ir->opts.ngener - ir->nwall == 1)
     {
         /* We have only one non-wall energy group, we do not need energy group
@@ -2255,10 +2290,10 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
                         nbv->grp[0].kernel_type,
                         enbnxninitcombrule,
                         fr->ntype, fr->nbfp,
+                        zeta_matrix,
                         mimimumNumEnergyGroupNonbonded,
                         bSimpleList ? gmx_omp_nthreads_get(emntNonbonded) : 1,
                         nb_alloc, nb_free);
-
     if (nbv->bUseGPU)
     {
         /* init the NxN GPU data; the last argument tells whether we'll have
@@ -2619,6 +2654,7 @@ void init_forcerec(FILE                             *fp,
             break;
 
         case eelPME:
+        case eelPMEG:
         case eelP3M_AD:
         case eelEWALD:
             fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_EWALD;
@@ -2668,6 +2704,7 @@ void init_forcerec(FILE                             *fp,
         fr->bcoultab   = !(ic->eeltype == eelCUT ||
                            ic->eeltype == eelEWALD ||
                            ic->eeltype == eelPME ||
+                           ic->eeltype == eelPMEG ||
                            ic->eeltype == eelP3M_AD ||
                            ic->eeltype == eelRF ||
                            ic->eeltype == eelRF_ZERO);

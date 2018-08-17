@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -902,7 +902,7 @@ static void make_benchmark_tprs(
 
     /* Check if rcoulomb == rlist, which is necessary for plain PME. */
     if (  (ir->cutoff_scheme != ecutsVERLET) &&
-          (eelPME == ir->coulombtype) && !(ir->rcoulomb == ir->rlist))
+          (eelPME == ir->coulombtype || eelPMEG == ir->coulombtype) && !(ir->rcoulomb == ir->rlist))
     {
         gmx_fatal(FARGS, "%s requires rcoulomb (%f) to be equal to rlist (%f).",
                   EELTYPE(eelPME), ir->rcoulomb, ir->rlist);
@@ -1035,7 +1035,7 @@ static void make_benchmark_tprs(
                         &ir->nkx, &ir->nky, &ir->nkz);
 
             /* Adjust other radii since various conditions need to be fulfilled */
-            if (eelPME == ir->coulombtype)
+            if (eelPME == ir->coulombtype || eelPMEG == ir->coulombtype)
             {
                 /* plain PME, rcoulomb must be equal to rlist TODO only in the group scheme? */
                 ir->rlist = ir->rcoulomb;

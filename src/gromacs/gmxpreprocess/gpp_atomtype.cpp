@@ -59,6 +59,7 @@ typedef struct gpp_atomtype {
     char          ***atomname;     /* Names of the atomtypes		*/
     t_param         *nb;           /* Nonbonded force default params	*/
     int             *bondatomtype; /* The bond_atomtype for each atomtype  */
+    real            *zeta;         /* Inverse width for distributed charges*/
     int             *atomnumber;   /* Atomic number, used for QM/MM        */
 } t_gpp_atomtype;
 
@@ -163,6 +164,16 @@ int get_atomtype_atomnumber(int nt, gpp_atomtype_t ga)
     return ga->atomnumber[nt];
 }
 
+real get_atomtype_zeta(int nt, gpp_atomtype_t ga)
+{
+    if ((nt < 0) || (nt >= ga->nr))
+    {
+        return NOTSET;
+    }
+
+    return ga->zeta[nt];
+}
+
 real get_atomtype_nbparam(int nt, int param, gpp_atomtype_t ga)
 {
     if ((nt < 0) || (nt >= ga->nr))
@@ -188,13 +199,25 @@ gpp_atomtype_t init_atomtype(void)
     ga->nb           = nullptr;
     ga->bondatomtype = nullptr;
     ga->atomnumber   = nullptr;
+    ga->zeta         = nullptr;
 
     return ga;
 }
 
+int set_atomtype_zeta(int i, gpp_atomtype_t ga, real zeta)
+{
+    if ( (i < 0) || (i >= ga->nr))
+    {
+        return NOTSET;
+    }
+    ga->zeta[i] = zeta;
+
+    return i;
+}
+
 int set_atomtype(int nt, gpp_atomtype_t ga, t_symtab *tab,
                  t_atom *a, const char *name, t_param *nb,
-                 int bondatomtype, int atomnumber)
+                 int bondatomtype, int atomnumber, real zeta)
 {
     if ((nt < 0) || (nt >= ga->nr))
     {
@@ -206,13 +229,14 @@ int set_atomtype(int nt, gpp_atomtype_t ga, t_symtab *tab,
     ga->nb[nt]           = *nb;
     ga->bondatomtype[nt] = bondatomtype;
     ga->atomnumber[nt]   = atomnumber;
+    ga->zeta[nt]         = zeta;
 
     return nt;
 }
 
 int add_atomtype(gpp_atomtype_t ga, t_symtab *tab,
                  t_atom *a, const char *name, t_param *nb,
-                 int bondatomtype, int atomnumber)
+                 int bondatomtype, int atomnumber, real zeta)
 {
     int i;
 
@@ -235,8 +259,9 @@ int add_atomtype(gpp_atomtype_t ga, t_symtab *tab,
         srenew(ga->nb, ga->nr);
         srenew(ga->bondatomtype, ga->nr);
         srenew(ga->atomnumber, ga->nr);
+        srenew(ga->zeta, ga->nr);
 
-        return set_atomtype(ga->nr-1, ga, tab, a, name, nb, bondatomtype, atomnumber);
+        return set_atomtype(ga->nr-1, ga, tab, a, name, nb, bondatomtype, atomnumber, zeta);
     }
     else
     {
@@ -269,6 +294,7 @@ void done_atomtype(gpp_atomtype_t ga)
     sfree(ga->atomname);
     sfree(ga->nb);
     sfree(ga->bondatomtype);
+    sfree(ga->zeta);
     sfree(ga->atomnumber);
     ga->nr = 0;
     sfree(ga);
@@ -304,10 +330,11 @@ static int search_atomtypes(gpp_atomtype_t ga, int *n, int typelist[],
                 bFound = (param[ntype*typelist[i]+j].c[k] == param[ntype*thistype+j].c[k]);
             }
 
-            /* Check atomnumber */
+            /* Check atomnumber, zeta */
             tli    = typelist[i];
             bFound = bFound &&
-                (get_atomtype_atomnumber(tli, ga) == get_atomtype_atomnumber(thistype, ga));
+                (get_atomtype_atomnumber(tli, ga) == get_atomtype_atomnumber(thistype, ga)) &&
+                (get_atomtype_zeta(tli, ga) == get_atomtype_zeta(thistype, ga));
         }
         if (bFound)
         {
@@ -341,6 +368,7 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
     t_atoms    *atoms;
     t_param    *nbsnew;
     int        *typelist;
+    real       *new_zeta;
     int        *new_atomnumber;
     char     ***new_atomname;
 
@@ -399,6 +427,7 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
     }
 
     snew(new_atomnumber, nat);
+    snew(new_zeta, nat);
     snew(new_atomname, nat);
 
     /* We now have a list of unique atomtypes in typelist */
@@ -426,6 +455,7 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
             }
         }
         new_atomnumber[i] = get_atomtype_atomnumber(mi, ga);
+        new_zeta[i]       = get_atomtype_zeta(mi, ga);
         new_atomname[i]   = ga->atomname[mi];
     }
 
@@ -440,10 +470,12 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
     mtop->ffparams.atnr = nat;
 
     sfree(ga->atomnumber);
+    sfree(ga->zeta);
     /* Dangling atomname pointers ? */
     sfree(ga->atomname);
 
     ga->atomnumber = new_atomnumber;
+    ga->zeta       = new_zeta;
     ga->atomname   = new_atomname;
 
     ga->nr = nat;
@@ -460,9 +492,11 @@ void copy_atomtype_atomtypes(gpp_atomtype_t ga, t_atomtypes *atomtypes)
     ntype         = get_atomtype_ntypes(ga);
     atomtypes->nr = ntype;
     snew(atomtypes->atomnumber, ntype);
+    snew(atomtypes->zeta, ntype);
 
     for (i = 0; i < ntype; i++)
     {
         atomtypes->atomnumber[i] = ga->atomnumber[i];
+        atomtypes->zeta[i]       = ga->zeta[i];
     }
 }

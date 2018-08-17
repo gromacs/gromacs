@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,7 +66,7 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
                              nbnxn_alloc_t *alloc,
                              nbnxn_free_t  *free);
 
-/* Make a apir-list with radius rlist, store it in nbl.
+/* Make a pair-list with radius rlist, store it in nbl.
  * The parameter min_ci_balanced sets the minimum required
  * number or roughly equally sized ci blocks in nbl.
  * When set >0 ci lists will be chopped up when the estimate

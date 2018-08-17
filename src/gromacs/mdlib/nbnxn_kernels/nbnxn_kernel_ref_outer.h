@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,9 @@
 
 #ifdef CALC_COUL_RF
 #define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel ## _ElecRF ## ljt ## feg ## _ref
+#endif
+#ifdef CALC_COUL_GAUSS
+#define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel ## _ElecGauss ## ljt ## feg ## _ref
 #endif
 #ifdef CALC_COUL_TAB
 #ifndef VDW_CUTOFF_CHECK
@@ -114,6 +117,9 @@ NBK_FUNC_NAME(_VgrpF)
     real                rcut2;
 #ifdef VDW_CUTOFF_CHECK
     real                rvdw2;
+#endif
+#if (defined(CALC_ENERGIES) && defined(LJ_EWALD)) || defined(CALC_COUL_GAUSS)
+    int                 ntype;
 #endif
     int                 ntype2;
     real                facel;
@@ -217,7 +223,9 @@ NBK_FUNC_NAME(_VgrpF)
 #ifdef VDW_CUTOFF_CHECK
     rvdw2               = ic->rvdw*ic->rvdw;
 #endif
-
+#if (defined(CALC_ENERGIES) && defined(LJ_EWALD)) || defined(CALC_COUL_GAUSS)
+    ntype               = nbat->ntype;
+#endif
     ntype2              = nbat->ntype*2;
     nbfp                = nbat->nbfp;
     q                   = nbat->q;
@@ -285,7 +293,7 @@ NBK_FUNC_NAME(_VgrpF)
 #ifdef CALC_ENERGIES
         if (do_self)
         {
-            real Vc_sub_self;
+            real Vc_sub_self = 0;
 
 #ifdef CALC_COUL_RF
             Vc_sub_self = 0.5*c_rf;
@@ -313,7 +321,7 @@ NBK_FUNC_NAME(_VgrpF)
 
 #ifdef LJ_EWALD
                     /* LJ Ewald self interaction */
-                    Vvdw[egp_ind] += 0.5*nbat->nbfp[nbat->type[ci*UNROLLI+i]*(nbat->ntype + 1)*2]/6*lje_coeff6_6;
+                    Vvdw[egp_ind] += 0.5*nbat->nbfp[nbat->type[ci*UNROLLI+i]*(ntype + 1)*2]/6*lje_coeff6_6;
 #endif
                 }
             }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,6 +79,28 @@
 #undef LJ_EWALD
 #undef CALC_COUL_RF
 
+/* Analytical PME-G kernels */
+#define CALC_COUL_GAUSS
+#define LJ_CUT
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
+#undef LJ_CUT
+#define LJ_FORCE_SWITCH
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
+#undef LJ_FORCE_SWITCH
+#define LJ_POT_SWITCH
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
+#undef LJ_POT_SWITCH
+#define LJ_EWALD
+#define LJ_CUT
+#define LJ_EWALD_COMB_GEOM
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
+#undef LJ_EWALD_COMB_GEOM
+#define LJ_EWALD_COMB_LB
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
+#undef LJ_EWALD_COMB_LB
+#undef LJ_CUT
+#undef LJ_EWALD
+#undef CALC_COUL_GAUSS
 
 /* Tabulated exclusion interaction electrostatics kernels */
 #define CALC_COUL_TAB
