@@ -72,8 +72,7 @@
 static int compact_and_copy_vec_at(int ncg, const int *move,
                                    const gmx::RangePartitioning &atomGroups,
                                    int nvec, int vec,
-                                   rvec *src, gmx_domdec_comm_t *comm,
-                                   gmx_bool bCompact)
+                                   rvec *src, gmx_domdec_comm_t *comm)
 {
     int home_pos       = 0;
     int pos_vec[DIM*2] = { 0 };
@@ -81,19 +80,9 @@ static int compact_and_copy_vec_at(int ncg, const int *move,
     for (int g = 0; g < ncg; g++)
     {
         const auto atomGroup = atomGroups.block(g);
+        /* Skip moved atoms */
         int        m         = move[g];
-        if (m == -1)
-        {
-            if (bCompact)
-            {
-                /* Compact the home array in place */
-                for (int i : atomGroup)
-                {
-                    copy_rvec(src[i], src[home_pos++]);
-                }
-            }
-        }
-        else
+        if (m >= 0)
         {
             /* Copy to the communication buffer */
             int numAtoms  = atomGroup.size();
@@ -104,10 +93,8 @@ static int compact_and_copy_vec_at(int ncg, const int *move,
             }
             pos_vec[m] += (nvec - vec - 1)*numAtoms;
         }
-        if (!bCompact)
-        {
-            home_pos += atomGroup.size();
-        }
+
+        home_pos += atomGroup.size();
     }
 
     return home_pos;
@@ -115,91 +102,25 @@ static int compact_and_copy_vec_at(int ncg, const int *move,
 
 static int compact_and_copy_vec_cg(int ncg, const int *move,
                                    const gmx::RangePartitioning &atomGroups,
-                                   int nvec, rvec *src, gmx_domdec_comm_t *comm,
-                                   gmx_bool bCompact)
+                                   int nvec, rvec *src, gmx_domdec_comm_t *comm)
 {
-    int home_pos       = 0;
     int pos_vec[DIM*2] = { 0 };
 
     for (int g = 0; g < ncg; g++)
     {
         const auto atomGroup = atomGroups.block(g);
+        /* Skip moved atoms */
         int        m         = move[g];
-        if (m == -1)
-        {
-            if (bCompact)
-            {
-                /* Compact the home array in place */
-                copy_rvec(src[g], src[home_pos++]);
-            }
-        }
-        else
+        if (m >= 0)
         {
             /* Copy to the communication buffer */
             copy_rvec(src[g], comm->cgcm_state[m][pos_vec[m]]);
             pos_vec[m] += 1 + atomGroup.size()*nvec;
         }
     }
-    if (!bCompact)
-    {
-        home_pos = ncg;
-    }
 
-    return home_pos;
+    return ncg;
 }
-
-static int compact_ind(int                     numAtomGroups,
-                       const int              *move,
-                       gmx::ArrayRef<int>      globalAtomGroupIndices,
-                       gmx::RangePartitioning *atomGroups,
-                       gmx::ArrayRef<int>      globalAtomIndices,
-                       gmx_ga2la_t            *ga2la,
-                       char                   *bLocalCG,
-                       int                    *cginfo)
-{
-    atomGroups->clear();
-    int home_pos = 0;
-    int nat      = 0;
-    for (int g = 0; g < numAtomGroups; g++)
-    {
-        if (move[g] == -1)
-        {
-            /* Compact the home arrays in place.
-             * Anything that can be done here avoids access to global arrays.
-             */
-            atomGroups->appendBlock(nat);
-            for (int a : atomGroups->block(g))
-            {
-                const int a_gl         = globalAtomIndices[a];
-                globalAtomIndices[nat] = a_gl;
-                /* The cell number stays 0, so we don't need to set it */
-                ga2la_change_la(ga2la, a_gl, nat);
-                nat++;
-            }
-            globalAtomGroupIndices[home_pos] = globalAtomGroupIndices[g];
-            cginfo[home_pos]                 = cginfo[g];
-            /* The charge group remains local, so bLocalCG does not change */
-            home_pos++;
-        }
-        else
-        {
-            /* Clear the global indices */
-            for (int a : atomGroups->block(g))
-            {
-                ga2la_del(ga2la, globalAtomIndices[a]);
-            }
-            if (bLocalCG)
-            {
-                bLocalCG[globalAtomGroupIndices[g]] = FALSE;
-            }
-        }
-    }
-
-    GMX_ASSERT(atomGroups->numBlocks() == home_pos, "The atom group data and atomGroups should be consistent");
-
-    return home_pos;
-}
-
 static void clear_and_mark_ind(int                           numAtomGroups,
                                const int                    *move,
                                gmx::ArrayRef<const int>      globalAtomGroupIndices,
@@ -514,7 +435,6 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
                         gmx_domdec_t *dd, ivec tric_dir,
                         t_state *state, PaddedRVecVector *f,
                         t_forcerec *fr,
-                        gmx_bool bCompact,
                         t_nrnb *nrnb,
                         int *ncg_stay_home,
                         int *ncg_moved)
@@ -669,7 +589,7 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
              */
             home_pos_cg =
                 compact_and_copy_vec_cg(dd->ncg_home, move, dd->atomGrouping(),
-                                        nvec, cg_cm, comm, bCompact);
+                                        nvec, cg_cm, comm);
             break;
         case ecutsVERLET:
             /* Without charge groups we send the moved atom coordinates
@@ -678,11 +598,7 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
              */
             home_pos_cg =
                 compact_and_copy_vec_cg(dd->ncg_home, move, dd->atomGrouping(),
-                                        nvec, as_rvec_array(state->x.data()), comm, FALSE);
-            if (bCompact)
-            {
-                home_pos_cg -= *ncg_moved;
-            }
+                                        nvec, as_rvec_array(state->x.data()), comm);
             break;
         default:
             gmx_incons("unimplemented");
@@ -692,44 +608,34 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
     int home_pos_at =
         compact_and_copy_vec_at(dd->ncg_home, move, dd->atomGrouping(),
                                 nvec, vec++, as_rvec_array(state->x.data()),
-                                comm, bCompact);
+                                comm);
     if (bV)
     {
         compact_and_copy_vec_at(dd->ncg_home, move, dd->atomGrouping(),
                                 nvec, vec++, as_rvec_array(state->v.data()),
-                                comm, bCompact);
+                                comm);
     }
     if (bCGP)
     {
         compact_and_copy_vec_at(dd->ncg_home, move, dd->atomGrouping(),
                                 nvec, vec++, as_rvec_array(state->cg_p.data()),
-                                comm, bCompact);
+                                comm);
     }
 
-    if (bCompact)
+    int *moved;
+    if (fr->cutoff_scheme == ecutsVERLET)
     {
-        compact_ind(dd->ncg_home, move,
-                    dd->globalAtomGroupIndices, &dd->atomGrouping_, dd->globalAtomIndices,
-                    dd->ga2la, comm->bLocalCG,
-                    fr->cginfo);
+        moved = getMovedBuffer(comm, 0, dd->ncg_home);
     }
     else
     {
-        int *moved;
-        if (fr->cutoff_scheme == ecutsVERLET)
-        {
-            moved = getMovedBuffer(comm, 0, dd->ncg_home);
-        }
-        else
-        {
-            moved = fr->ns->grid->cell_index;
-        }
-
-        clear_and_mark_ind(dd->ncg_home, move,
-                           dd->globalAtomGroupIndices, dd->atomGrouping(), dd->globalAtomIndices,
-                           dd->ga2la, comm->bLocalCG,
-                           moved);
+        moved = fr->ns->grid->cell_index;
     }
+
+    clear_and_mark_ind(dd->ncg_home, move,
+                       dd->globalAtomGroupIndices, dd->atomGrouping(), dd->globalAtomIndices,
+                       dd->ga2la, comm->bLocalCG,
+                       moved);
 
     /* Now we can remove the excess global atom-group indices from the list */
     dd->globalAtomGroupIndices.resize(home_pos_cg);
@@ -963,7 +869,7 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
         }
     }
 
-    /* With sorting (!bCompact) the indices are now only partially up to date
+    /* Note that the indices are now only partially up to date
      * and ncg_home and nat_home are not the real count, since there are
      * "holes" in the arrays for the charge groups that moved to neighbors.
      */
@@ -983,7 +889,7 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
     dd->ncg_home = home_pos_cg;
     comm->atomRanges.setEnd(DDAtomRanges::Type::Home, home_pos_at);
 
-    if (fr->cutoff_scheme == ecutsGROUP && !bCompact)
+    if (fr->cutoff_scheme == ecutsGROUP)
     {
         /* We overallocated before, we need to set the right size here */
         dd_resize_state(state, f, comm->atomRanges.numHomeAtoms());
