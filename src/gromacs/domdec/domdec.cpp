@@ -6231,7 +6231,7 @@ void dd_partition_system(FILE                *fplog,
     rvec               cell_ns_x0, cell_ns_x1;
     int                ncgindex_set, ncg_home_old = -1, ncg_moved, nat_f_novirsum;
     gmx_bool           bBoxChanged, bNStGlobalComm, bDoDLB, bCheckWhetherToTurnDlbOn, bLogLoad;
-    gmx_bool           bRedist, bSortCG, bResortAll;
+    gmx_bool           bRedist, bResortAll;
     ivec               ncells_old = {0, 0, 0}, ncells_new = {0, 0, 0}, np;
     real               grid_density;
     char               sbuf[22];
@@ -6537,7 +6537,7 @@ void dd_partition_system(FILE                *fplog,
     }
 
     /* Check if we should sort the charge groups */
-    bSortCG = (bMasterState || bRedist);
+    const bool bSortCG = (bMasterState || bRedist);
 
     ncg_home_old = dd->ncg_home;
 
@@ -6551,9 +6551,12 @@ void dd_partition_system(FILE                *fplog,
     {
         wallcycle_sub_start(wcycle, ewcsDD_REDIST);
 
+        ncgindex_set = dd->ncg_home;
         dd_redistribute_cg(fplog, step, dd, ddbox.tric_dir,
                            state_local, f, fr,
-                           !bSortCG, nrnb, &ncgindex_set, &ncg_moved);
+                           nrnb, &ncg_moved);
+
+        GMX_RELEASE_ASSERT(bSortCG, "Sorting is required after redistribution");
 
         wallcycle_sub_stop(wcycle, ewcsDD_REDIST);
     }
