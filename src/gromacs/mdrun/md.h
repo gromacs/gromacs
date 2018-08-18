@@ -49,7 +49,11 @@
 namespace gmx
 {
 
-//! MD simulations
+/*! \internal MD simulations
+ * \brief Provide simulation functor for MD methods.
+ *
+ * \ingroup module_mdrun
+ */
 class MDIntegrator : public IIntegrator
 {
 
@@ -57,14 +61,14 @@ class MDIntegrator : public IIntegrator
         class Impl;
 
         std::unique_ptr<Impl> impl_;
-        
+
     public:
         ~MDIntegrator() override;
 
         void run() override;
 
         class Builder;
-        
+
         explicit MDIntegrator(std::unique_ptr<Impl> implementation);
 };
 

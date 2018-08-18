@@ -1939,9 +1939,39 @@ void gmx::MDIntegrator::Impl::run()
     sfree(top);
 }
 
+gmx::MDIntegrator::Impl::Impl(const IntegratorParamsContainer &container) :
+    fplog(container.fplog),
+    cr(container.cr),
+    ms(container.ms),
+    mdlog(container.mdlog),
+    nfile(container.nfile),
+    fnm(container.fnm),
+    oenv(container.oenv),
+    mdrunOptions(container.mdrunOptions),
+    vsite(container.vsite),
+    constr(container.constr),
+    enforcedRotation(container.enforcedRotation),
+    deform(container.deform),
+    outputProvider(container.outputProvider),
+    inputrec(container.inputrec),
+    top_global(container.top_global),
+    fcd(container.fcd),
+    state_global(container.state_global),
+    observablesHistory(container.observablesHistory),
+    mdAtoms(container.mdAtoms),
+    nrnb(container.nrnb),
+    wcycle(container.wcycle),
+    fr(container.fr),
+    replExParams(container.replExParams),
+    membed(container.membed),
+    walltime_accounting(container.walltime_accounting)
+{}
+
+gmx::MDIntegrator::Impl::~Impl() = default;
+
 std::unique_ptr<gmx::IIntegrator> gmx::MDIntegrator::Builder::build()
 {
-    if(!integrator_)
+    if (!integrator_)
     {
         GMX_THROW(APIError("This builder requires setParams() to be called before build()."));
     }
@@ -1951,7 +1981,7 @@ std::unique_ptr<gmx::IIntegrator> gmx::MDIntegrator::Builder::build()
 }
 
 gmx::IntegratorBuilder::DataSentry gmx::MDIntegrator::Builder::setAggregateAdapter
-(std::unique_ptr<gmx::IntegratorAggregateAdapter> container)
+    (std::unique_ptr<gmx::IntegratorAggregateAdapter> container)
 {
     if (integrator_)
     {
@@ -1975,11 +2005,12 @@ void gmx::MDIntegrator::run()
 }
 
 gmx::MDIntegrator::MDIntegrator(std::unique_ptr<MDIntegrator::Impl> implementation) :
-    impl_{std::move(implementation)}
+    impl_ {std::move(implementation)}
 {
 
 }
 
-gmx::MDIntegrator::Builder::Builder() : integrator_{nullptr} {};
+gmx::MDIntegrator::Builder::Builder() : integrator_ {nullptr}
+{};
 
 gmx::MDIntegrator::Builder::~Builder() = default;
