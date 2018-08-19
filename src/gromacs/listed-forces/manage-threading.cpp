@@ -453,7 +453,6 @@ void setup_bonded_threading(bonded_threading_t *bt,
                 std::string flags = gmx::formatString("%lx", *mask);
 #else
                 std::string flags = gmx::formatAndJoin(*mask,
-                                                       *mask+BITMASK_ALEN,
                                                        "", gmx::StringFormatter("%x"));
 #endif
                 fprintf(debug, "block %d flags %s count %d\n",

@@ -61,16 +61,16 @@ namespace test
 /*! \cond internal */
 /*! \addtogroup module_simd */
 /*! \{ */
-constexpr real czero = 0.0;             //!< zero
-constexpr real c0    = 0.0 + 1.0/3.0;   //!< test constant
-constexpr real c1    = 1.0 + 5.0/7.0;   //!< test constant
-constexpr real c2    = 2.0 + 9.0/13.0;  //!< test constant
-constexpr real c3    = 3.0 + 17.0/19.0; //!< test constant
-constexpr real c4    = 4.0 + 23.0/29.0; //!< test constant
-constexpr real c5    = 5.0 + 31.0/37.0; //!< test constant
-constexpr real c6    = 6.0 + 41.0/43.0; //!< test constant
-constexpr real c7    = 7.0 + 47.0/53.0; //!< test constant
-constexpr real c8    = 8.0 + 59.0/61.0; //!< test constant
+constexpr real czero = 0.0;                //!< zero
+constexpr real c0    = 0.3333333333333333; //!< test constant 0.0 + 1.0/3.0
+constexpr real c1    = 1.7142857142857144; //!< test constant 1.0 + 5.0/7.0
+constexpr real c2    = 2.6923076923076925; //!< test constant 2.0 + 9.0/13.0
+constexpr real c3    = 3.8947368421052633; //!< test constant 3.0 + 17.0/19.0
+constexpr real c4    = 4.793103448275862;  //!< test constant 4.0 + 23.0/29.0
+constexpr real c5    = 5.837837837837838;  //!< test constant 5.0 + 31.0/37.0
+constexpr real c6    = 6.953488372093023;  //!< test constant 6.0 + 41.0/43.0
+constexpr real c7    = 7.886792452830189;  //!< test constant 7.0 + 47.0/53.0
+constexpr real c8    = 8.967213114754099;  //!< test constant 8.0 + 59.0/61.0
 
 /*! \} */
 /*! \endcond */
