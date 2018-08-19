@@ -106,3 +106,9 @@ endif()
 
 add_subdirectory(gromacs)
 add_subdirectory(programs)
+
+# Activate targets for new C++ API components and docs.
+option(GMXAPI "Experimental external interfaces" ON)
+if (GMXAPI)
+   add_subdirectory(api)
+endif()
