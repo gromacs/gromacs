@@ -137,7 +137,7 @@ class HostAllocationPolicy
         //! Constructor
         HostAllocationPolicy(PinningPolicy policy = PinningPolicy::CannotBePinned);
         /*! \brief Return the alignment size currently used by the active pinning policy. */
-        std::size_t alignment();
+        std::size_t alignment() const noexcept;
         /*! \brief Allocate and perhaps pin page-aligned memory suitable for
          * e.g. GPU transfers.
          *

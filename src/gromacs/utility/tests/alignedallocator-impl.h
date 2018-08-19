@@ -74,7 +74,7 @@ class AllocatorTest : public ::testing::Test
          * intended alignment. */
         std::size_t mask(const T &allocator)
         {
-            return allocator.getPolicy().alignment() - 1;
+            return allocator.alignment() - 1;
         }
 };
 
@@ -82,7 +82,7 @@ class AllocatorTest : public ::testing::Test
 
 TYPED_TEST(AllocatorTest, AllocatorAlignAllocatesWithAlignment) //NOLINT(misc-definitions-in-headers)
 {
-    using pointer = typename TypeParam::pointer;
+    using pointer = typename TypeParam::value_type*;
     TypeParam a;
     pointer   p = a.allocate(1000);
 
