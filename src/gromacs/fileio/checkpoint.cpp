@@ -696,7 +696,7 @@ static int doRvecVector(XDR *xd, StatePart part, int ecpt, int sflags,
     {
         // Use the rebind facility to change the value_type of the
         // allocator from RVec to real.
-        using realAllocator = typename AllocatorType::template rebind<real>::other;
+        using realAllocator = typename std::allocator_traits<AllocatorType>::template rebind_alloc<real>;
         return doVectorLow<real, realAllocator>(xd, part, ecpt, sflags, numReals, nullptr, nullptr, nullptr, list, CptElementType::real);
     }
 }

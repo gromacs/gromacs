@@ -99,32 +99,8 @@ class Allocator : public AllocationPolicy
 {
     public:
         // The standard library specification for a custom allocator
-        // requires these typedefs, with this capitalization/underscoring.
+        // requires this typedef, with this capitalization/underscoring.
         typedef T              value_type;      //!< Type of allocated elements
-        typedef T             &reference;       //!< Reference to allocated elements
-        typedef const T       &const_reference; //!< Constant reference to allocated elements
-        typedef T *            pointer;         //!< Pointer to allocated elements
-        typedef const T *      const_pointer;   //!< Constant pointer to allocated elements
-        typedef std::size_t    size_type;       //!< Integer type to use for size of objects
-        typedef std::ptrdiff_t difference_type; //!< Type to hold differences between pointers
-
-        // This typedef is required by GROMACS for testing and assertions
-        typedef AllocationPolicy allocation_policy; //!< Type of the AllocationPolicy
-
-        /*! \libinternal \brief Standard-required typedef to use allocator with different class.
-         *
-         *  \tparam U new class
-         *
-         *  This is used for things like std::list where the size of each link
-         *  is larger than the class stored in the link.
-         *
-         *  Required by the specification for an allocator.
-         */
-        template <class U>
-        struct rebind
-        {
-            typedef Allocator<U, AllocationPolicy> other; //!< Align class U with our alignment
-        };
 
         /*! \brief Constructor
          *
@@ -139,22 +115,6 @@ class Allocator : public AllocationPolicy
          */
         Allocator(const AllocationPolicy &p) : AllocationPolicy(p) {}
 
-        /*! \brief Return address of an object
-         *
-         *  \param r Reference to object of type T
-         *  \return Pointer to T memory
-         */
-        pointer
-        address(reference r) const { return &r; }
-
-        /*! \brief Return address of a const object
-         *
-         *  \param r Const reference to object of type T
-         *  \return Pointer to T memory
-         */
-        const_pointer
-        address(const_reference r) const { return &r; }
-
         /*! \brief Do the actual memory allocation
          *
          *  \param n    Number of elements of type T to allocate. n can be
@@ -166,7 +126,7 @@ class Allocator : public AllocationPolicy
          *
          *  \throws std::bad_alloc if the allocation fails.
          */
-        pointer
+        value_type*
         allocate(std::size_t n, typename std::allocator<void>::const_pointer gmx_unused hint = nullptr)
         {
             void *p = AllocationPolicy::malloc(n*sizeof(T));
@@ -177,7 +137,7 @@ class Allocator : public AllocationPolicy
             }
             else
             {
-                return static_cast<pointer>(p);
+                return static_cast<value_type*>(p);
             }
         }
 
@@ -187,49 +147,19 @@ class Allocator : public AllocationPolicy
          * \param n  number of objects previously passed to allocate()
          */
         void
-        deallocate(pointer p, std::size_t gmx_unused n)
+        deallocate(value_type* p, std::size_t gmx_unused n)
         {
             AllocationPolicy::free(p);
         }
-
-        //! Return the policy object for this allocator.
-        AllocationPolicy getPolicy() const
-        {
-            return *this;
-        }
-
-        /*! \brief Construct an object without allocating memory
-         *
-         * \tparam Args  Variable-length list of types for constructor args
-         * \param p      Adress of memory where to construct object
-         * \param args   Variable-length list of arguments to constructor
-         */
-        template<class ... Args>
-        void
-        construct(pointer p, Args && ... args) { ::new(p)T(std::forward<Args>(args) ...); }
-
-        /*! \brief Call the destructor of object without releasing memory
-         *
-         * \param p  Address of memory where to destroy object
-         */
-        void
-        destroy(pointer p) { p->~value_type(); }
-
-        /*! \brief Return largest number of objects that can be allocated
-         *
-         * This will be set such that the number of objects T multiplied by
-         * the size of each object is the largest value that can be represented
-         * by size_type.
-         */
-        std::size_t
-        max_size() const { return SIZE_MAX / sizeof(T); }
 
         /*! \brief Return true if two allocators are identical
          *
          * This is a member function of the left-hand-side allocator.
          * Always true for stateless polcies. Has to be defined in the policy for stateful policies.
+         * FUTURE: Can be removed with C++17 (is_always_equal)
          */
-        template<class T2, class A = AllocationPolicy, typename = typename std::enable_if<std::is_empty<A>::value>::type>
+        template<class T2, class A = AllocationPolicy,
+                 typename          = typename std::enable_if<std::is_empty<A>::value>::type>
         bool operator==(const Allocator<T2, AllocationPolicy> & /*unused*/) const { return true; }
 
         /*! \brief Return true if two allocators are different
@@ -238,8 +168,8 @@ class Allocator : public AllocationPolicy
          *
          * This is a member function of the left-hand-side allocator.
          */
-        bool
-        operator!=(const Allocator &rhs) const { return !(*this == rhs); }
+        template<class T2>
+        bool operator!=(const Allocator<T2, AllocationPolicy> &rhs) const { return !(*this == rhs); }
 };
 
 }      // namespace gmx
