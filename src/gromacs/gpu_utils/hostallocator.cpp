@@ -68,7 +68,7 @@ HostAllocationPolicy::HostAllocationPolicy(PinningPolicy pinningPolicy)
     }
 }
 
-std::size_t HostAllocationPolicy::alignment()
+std::size_t HostAllocationPolicy::alignment() const noexcept
 {
     return (pinningPolicy_ == PinningPolicy::CanBePinned ?
             PageAlignedAllocationPolicy::alignment() :
