@@ -116,7 +116,7 @@ void do_force(FILE                                     *log,
               const gmx_vsite_t                        *vsite,
               rvec                                      mu_tot,
               double                                    t,
-              const gmx_edsam                          *ed,
+              gmx_edsam                                *ed,
               int                                       flags,
               DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
               DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion);
