@@ -32,71 +32,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal
- * \brief Defines the dispatch function for the .mdp integrator field.
+/*! \internal \file
  *
- * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \brief Declares the loop for simulation reruns
+ *
+ * \author Pascal Merz <pascal.merz@colorado.edu>
  * \ingroup module_mdrun
  */
-#include "gmxpre.h"
+#ifndef GMX_MDRUN_RERUN_H
+#define GMX_MDRUN_RERUN_H
 
 #include "integrator.h"
-
-#include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/utility/exceptions.h"
 
 namespace gmx
 {
 
-//! \brief Run the correct integrator function.
-void Integrator::run(unsigned int ei, bool doRerun)
-{
-    switch (ei)
-    {
-        case eiMD:
-        case eiBD:
-        case eiSD1:
-        case eiVV:
-        case eiVVAK:
-            if (!EI_DYNAMICS(ei))
-            {
-                GMX_THROW(APIError("do_md integrator would be called for a non-dynamical integrator"));
-            }
-            if (doRerun)
-            {
-                do_rerun();
-            }
-            else
-            {
-                do_md();
-            }
-            break;
-        case eiSteep:
-            do_steep();
-            break;
-        case eiCG:
-            do_cg();
-            break;
-        case eiNM:
-            do_nm();
-            break;
-        case eiLBFGS:
-            do_lbfgs();
-            break;
-        case eiTPI:
-        case eiTPIC:
-            if (!EI_TPI(ei))
-            {
-                GMX_THROW(APIError("do_tpi integrator would be called for a non-TPI integrator"));
-            }
-            do_tpi();
-            break;
-        case eiSD2_REMOVED:
-            GMX_THROW(NotImplementedError("SD2 integrator has been removed"));
-        default:
-            GMX_THROW(APIError("Non existing integrator selected"));
-    }
-}
+//! MD simulations
+integrator_t do_rerun;
 
-}  // namespace gmx
+}      // namespace gmx
+
+#endif // GMX_MDRUN_RERUN_H
