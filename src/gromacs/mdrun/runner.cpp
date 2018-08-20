@@ -1327,7 +1327,7 @@ int Mdrunner::mdrunner()
             walltime_accounting,
             std::move(stopHandlerBuilder)
         };
-        integrator.run(inputrec->eI);
+        integrator.run(inputrec->eI, doRerun);
 
         if (inputrec->bPull)
         {
