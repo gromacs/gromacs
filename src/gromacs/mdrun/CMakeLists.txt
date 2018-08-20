@@ -36,6 +36,7 @@ gmx_add_libgromacs_sources(
     integrator.cpp
     md.cpp
     minimize.cpp
+    rerun.cpp
     runner.cpp
     tpi.cpp
     )

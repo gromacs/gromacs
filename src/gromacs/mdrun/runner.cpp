@@ -1322,7 +1322,7 @@ int Mdrunner::mdrunner()
             membed,
             walltime_accounting
         };
-        integrator.run(inputrec->eI);
+        integrator.run(inputrec->eI, doRerun);
 
         if (inputrec->bPull)
         {
