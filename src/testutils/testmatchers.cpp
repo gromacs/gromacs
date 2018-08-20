@@ -44,6 +44,7 @@
 
 #include "testmatchers.h"
 
+#include <array>
 #include <memory>
 
 #include <gmock/gmock.h>
@@ -172,5 +173,56 @@ RVecEq(const FloatingPointTolerance &tolerance)
     return testing::MakeMatcher(new RVecMatcher<real>(tolerance));
 }
 
-} // namespace
-} // namespace
+/*! \brief Implementation class for ArrayOfRealsMatcher matcher
+ *
+ * See ArrayOfRealsMatcher().
+ */
+template <typename FloatType, size_t N>
+class ArrayOfRealsMatcher :
+    public testing::MatcherInterface < std::tuple < std::array<FloatType, N>, std::array<FloatType, N>>>
+{
+    public:
+        //! Convenience type
+        using VectorType = std::array<FloatType, N>;
+        //! Constructor
+        ArrayOfRealsMatcher(const FloatingPointTolerance &tolerance)
+            : tolerance_(tolerance) {}
+        //! Compare the two elements of \c arg, return whether they are equal, and comment on \c listener when they are not.
+        virtual bool MatchAndExplain(std::tuple<VectorType, VectorType> arg,
+                                     testing::MatchResultListener* listener) const
+        {
+            const VectorType           &lhs = std::get<0>(arg);
+            const VectorType           &rhs = std::get<1>(arg);
+            FloatTypeMatcher<FloatType> floatTypeMatcher(tolerance_);
+            bool matches = true;
+            for (size_t d = 0; d < N; ++d)
+            {
+                auto floatTuple = std::make_tuple(lhs[d], rhs[d]);
+                matches = matches && floatTypeMatcher.MatchAndExplain(floatTuple, listener);
+            }
+            return matches;
+        }
+        //! Describe to a human what matching means.
+        virtual void DescribeTo(::std::ostream* os) const
+        {
+            *os << "matches all elements within tolerance";
+        }
+        //! Describe to a human what failing to match means.
+        virtual void DescribeNegationTo(::std::ostream* os) const
+        {
+            *os << "does not match all elements within tolerance";
+        }
+    private:
+        //! Tolerance used in matching
+        FloatingPointTolerance tolerance_;
+};
+
+template <size_t N>
+testing::Matcher < std::tuple < std::array<real, N>, std::array<real, N>>>
+ArrayOfRealsEq(const FloatingPointTolerance &tolerance)
+{
+    return testing::MakeMatcher(new ArrayOfRealsMatcher<real, N>(tolerance));
+}
+
+} // namespace test
+} // namespace gmx
