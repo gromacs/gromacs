@@ -52,6 +52,6 @@ constexpr const T &as_const(T &t) noexcept
 {
     return t;
 }
-}
-}
+} // namespace compat
+} // namespace gmx
 #endif
