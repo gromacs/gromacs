@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -92,6 +92,7 @@ void init_top(t_topology *top)
     init_block(&top->cgs);
     init_block(&top->mols);
     init_blocka(&top->excls);
+    init_idef(&top->idef);
     open_symtab(&top->symtab);
 }
 
@@ -173,15 +174,7 @@ void done_mtop(gmx_mtop_t *mtop)
 
 void done_top(t_topology *top)
 {
-    sfree(top->idef.functype);
-    sfree(top->idef.iparams);
-    for (int f = 0; f < F_NRE; ++f)
-    {
-        sfree(top->idef.il[f].iatoms);
-        top->idef.il[f].iatoms = nullptr;
-        top->idef.il[f].nalloc = 0;
-    }
-
+    done_idef(&(top->idef), FALSE);
     done_atom(&(top->atoms));
 
     /* For GB */
@@ -199,17 +192,12 @@ void done_top_mtop(t_topology *top, gmx_mtop_t *mtop)
     {
         if (top != nullptr)
         {
-            for (int f = 0; f < F_NRE; ++f)
-            {
-                sfree(top->idef.il[f].iatoms);
-                top->idef.il[f].iatoms = nullptr;
-                top->idef.il[f].nalloc = 0;
-            }
             done_atom(&top->atoms);
             done_block(&top->cgs);
             done_blocka(&top->excls);
             done_symtab(&top->symtab);
             open_symtab(&mtop->symtab);
+            done_idef(&(top->idef), TRUE);
         }
         done_mtop(mtop);
     }

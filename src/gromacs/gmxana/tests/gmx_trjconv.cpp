@@ -104,4 +104,33 @@ INSTANTIATE_TEST_CASE_P(NoFatalErrorWhenWritingFrom,
                         TrjconvWithIndexGroupSubset,
                             ::testing::ValuesIn(trajectoryFileNames));
 
+
+class TrjconvTrajectoryOnly : public gmx::test::CommandLineTestBase,
+                              public ::testing::WithParamInterface<const char *>
+{
+    public:
+        void runTest(const char *fileName)
+        {
+            auto &cmdline = commandLine();
+
+            setInputFile("-f", fileName);
+            setInputFile("-n", "spc2.ndx");
+            setOutputFile("-o", "spc-traj.tng", gmx::test::NoTextMatch());
+
+            gmx::test::StdioTestHelper stdioHelper(&fileManager());
+            stdioHelper.redirectStringToStdin("SecondWaterMolecule\n");
+
+            /* TODO Ideally, we would then check that the output file
+               has only 3 of the 6 atoms (which it does), but the
+               infrastructure for doing that automatically is still
+               being built. This would also fix the TODO below. */
+            ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
+        }
+};
+
+
+INSTANTIATE_TEST_CASE_P(NoFatalErrorWhenWritingFrom,
+                        TrjconvTrajectoryOnly,
+                            ::testing::ValuesIn(trajectoryFileNames));
+
 } // namespace
