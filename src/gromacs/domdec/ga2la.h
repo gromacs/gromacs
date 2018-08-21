@@ -168,8 +168,8 @@ class gmx_ga2la_t
     private:
         union Data
         {
-            std::vector<Entry> direct;
-            HashedMap<Entry>   hashed;
+            std::vector<Entry>    direct;
+            gmx::HashedMap<Entry> hashed;
             // constructor and destructor function in parent class
             Data()  {}
             ~Data() {}
