@@ -52,7 +52,10 @@
 
 #include "gromacs/compat/utility.h"
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/exceptions.h"
+
+namespace gmx
+{
 
 /*! \libinternal \brief Unordered key to value mapping
  *
@@ -84,7 +87,7 @@ class HashedMap
         {
         }
 
-        /*! \brief Inserts entry, key should not already be present (checked by assertion)
+        /*! \brief Inserts entry, key should not already be present (throws in debug build))
          *
          * \param[in] key    The key for the entry
          * \param[in] value  The value for the entry
@@ -92,7 +95,13 @@ class HashedMap
         void insert(int      key,
                     const T &value)
         {
-            GMX_ASSERT(key >= 0, "Only keys >= 0 are supported");
+            // Note: This is performance critical, so we only throw in debug mode
+#ifndef NDEBUG
+            if (key < 0)
+            {
+                GMX_THROW(InvalidInputError("Invalid key value"));
+            }
+#endif
 
             size_t ind = key % mod_;
 
@@ -102,11 +111,21 @@ class HashedMap
                  * If we find the matching key, return the value.
                  */
                 int ind_prev = ind;
-                GMX_ASSERT(table_[ind_prev].key != key, "The key to be inserted should not be present");
+#ifndef NDEBUG
+                if (table_[ind_prev].key == key)
+                {
+                    GMX_THROW(InvalidInputError("Attempt to insert duplicate key"));
+                }
+#endif
                 while (table_[ind_prev].next >= 0)
                 {
                     ind_prev = table_[ind_prev].next;
-                    GMX_ASSERT(table_[ind_prev].key != key, "The key to be inserted should not be present");
+#ifndef NDEBUG
+                    if (table_[ind_prev].key == key)
+                    {
+                        GMX_THROW(InvalidInputError("Attempt to insert duplicate key"));
+                    }
+#endif
                 }
                 /* Search for space in the array */
                 ind = startSpaceSearch_;
@@ -207,5 +226,7 @@ class HashedMap
         int                    mod_;              /**< The hash size */
         int                    startSpaceSearch_; /**< Index in lal at which to start looking for empty space */
 };
+
+} // namespace gmx
 
 #endif
