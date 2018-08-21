@@ -1,9 +1,9 @@
 GROMACS 2018.3 release notes
 ----------------------------
 
-This version was released on TODO, 2018. These release notes document
+This version was released on August 22, 2018. These release notes document
 the changes that have taken place in GROMACS since version 2018.2, to fix known
-issues. It also incorporates all fixes made in version TODO and
+issues. It also incorporates all fixes made in version 2016.5 and
 earlier, which you can find described in the :ref:`release-notes`.
 
 Fixes where mdrun could behave incorrectly
