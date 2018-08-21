@@ -34,7 +34,7 @@
  */
 #ifndef GMX_COMPAT_MAKE_UNIQUE_H
 #define GMX_COMPAT_MAKE_UNIQUE_H
-/*! \libinternal
+/*!
  * \defgroup module_compat C++ standard library compatibility helpers.
  * \brief Provide uniform interface to selected C++ standard library features.
  *
@@ -43,7 +43,7 @@
  * library implementations as appropriate.
  */
 
-/*! \libinternal
+/*!
  * \file
  * \brief Provides template gmx::compat::make_unique
  *
@@ -54,7 +54,7 @@
  *
  * \author M. Eric Irrgang <ericirrgang@gmail.com>
  * \ingroup module_compat
- * \inlibraryapi
+ * \inpublicapi
  */
 /*! \addtogroup module_compat
  * ### gmx::compat::make_unique

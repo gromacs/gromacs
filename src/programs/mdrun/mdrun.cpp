@@ -548,17 +548,5 @@ int gmx_mdrun(int argc, char *argv[])
 
     rc = runner->mdrunner();
 
-    /* Log file has to be closed in mdrunner if we are appending to it
-       (fplog not set here) */
-    if (fplog != nullptr)
-    {
-        gmx_log_close(fplog);
-    }
-
-    if (GMX_LIB_MPI)
-    {
-        done_commrec(cr);
-    }
-    done_multisim(ms);
     return rc;
 }
