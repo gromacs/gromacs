@@ -203,7 +203,7 @@ set(GMX_VERSION_SUFFIX "")
 # code being able to dynamically link with a version of libgromacs
 # that might not work.
 set(LIBRARY_SOVERSION_MAJOR 3)
-set(LIBRARY_SOVERSION_MINOR 3)
+set(LIBRARY_SOVERSION_MINOR 4)
 set(LIBRARY_VERSION ${LIBRARY_SOVERSION_MAJOR}.${LIBRARY_SOVERSION_MINOR}.0)
 
 #####################################################################
