@@ -93,6 +93,6 @@ gmx_ga2la_t::gmx_ga2la_t(int numAtomsTotal,
     }
     else
     {
-        new(&(data_.hashed))HashedMap<Entry>(baseTableSizeForHashTable(numAtomsLocal));
+        new(&(data_.hashed)) gmx::HashedMap<Entry>(baseTableSizeForHashTable(numAtomsLocal));
     }
 }
