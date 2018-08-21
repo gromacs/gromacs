@@ -341,7 +341,7 @@ void gmx::MDIntegrator::Impl::run()
     bool               shouldCheckNumberOfBondedInteractions = false;
     int                totalNumberOfBondedInteractions       = -1;
 
-    SimulationSignals  signals;
+    SimulationSignals &signals = *context_->simulationSignals();
     // Most global communication stages don't propagate mdrun
     // signals, and will use this object to achieve that.
     SimulationSignaller nullSignaller(nullptr, nullptr, nullptr, false, false);
