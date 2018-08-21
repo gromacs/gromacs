@@ -1,9 +1,9 @@
 GROMACS 2018.3 release notes
 ----------------------------
 
-This version was released on TODO, 2018. These release notes document
+This version was released on August 23, 2018. These release notes document
 the changes that have taken place in GROMACS since version 2018.2, to fix known
-issues. It also incorporates all fixes made in version TODO and
+issues. It also incorporates all fixes made in version 2016.5 and
 earlier, which you can find described in the :ref:`release-notes`.
 
 Fixes where mdrun could behave incorrectly
@@ -97,6 +97,20 @@ minimization and normal-mode analysis runs.
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed syntax error in make_gromos_rtp.py
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2557`
+
+Fix gmx solvate topology updating
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Removed hard coded solvent names to allow updates to topology based on
+solvent molecule information. Also allows updating with multiple solvent
+types.
+
+:issue:`1929`
 
 Fix bfactor output error caused by fix for :issue:`2511`
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
