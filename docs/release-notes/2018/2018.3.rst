@@ -1,9 +1,9 @@
 GROMACS 2018.3 release notes
 ----------------------------
 
-This version was released on TODO, 2018. These release notes document
+This version was released on August 23, 2018. These release notes document
 the changes that have taken place in GROMACS since version 2018.2, to fix known
-issues. It also incorporates all fixes made in version TODO and
+issues. It also incorporates all fixes made in version 2016.5 and
 earlier, which you can find described in the :ref:`release-notes`.
 
 Fixes where mdrun could behave incorrectly
@@ -98,6 +98,20 @@ minimization and normal-mode analysis runs.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed syntax error in make_gromos_rtp.py
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2557`
+
+Fix gmx solvate topology updating
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Removed hard coded solvent names to allow updates to topology based on
+solvent molecule information. Also allows updating with multiple solvent
+types.
+
+:issue:`1929`
+
 Fix bfactor output error caused by fix for :issue:`2511`
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 The fix for the PQR file output broke the output of bfactors from other tools.
@@ -120,11 +134,39 @@ the missing checks that prevents the failure.
 
 :issue:`2619`
 
+Fix enforced rotation energy output
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix nvcc host compiler check triggering
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2583`
+
+
+Report up to date hwloc version information
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2591`
+
+
+Disable single compilation unit with CUDA 9.0
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2561`
+
+
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Avoid aborting mdrun when GPU sanity check detects errors
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2415`
+
 
 Improve OpenCL kernel performance on AMD Vega GPUs
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
