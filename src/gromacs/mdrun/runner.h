@@ -169,6 +169,16 @@ class Mdrunner
         // Replace with cloneOnSpawnedThread to get a new ready-to-use Mdrunner on the new thread.
 //        void reinitializeOnSpawnedThread();
 
+        /*!
+         * \brief Get raw pointer to the simulation signals mediated by the runner.
+         *
+         * The array pointed to is guaranteed to exist, but the elements may not yet be
+         * initialized.
+         *
+         * \return pointer to array of Signal objects.
+         */
+        SimulationSignals* signals() const;
+
 
         /*! \brief Initializes a new Mdrunner from the master.
          *
@@ -212,6 +222,10 @@ class Mdrunner
         t_commrec                              *cr;
         //! Handle to multi-simulation handler.
         gmx_multisim_t                         *ms;
+
+        //! hold the signaling object since integrator_t is just a function.
+        //! Signals are always mutable.
+        mutable SimulationSignals               simulationSignals_;
 
         std::shared_ptr<restraint::Manager>     restraintManager_ {nullptr};
 };
