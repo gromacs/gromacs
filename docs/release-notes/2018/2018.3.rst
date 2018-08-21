@@ -61,6 +61,14 @@ Fixed segmentation fault in mdrun with QM/MM ONIOM scheme
 
 :issue:`2617`
 
+Correctly specified that PME on GPUs is only supported for dynamical integrators
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Previously PME on GPU support could run (but fail) for energy
+minimization and normal-mode analysis runs.
+
+:issue:`2578`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

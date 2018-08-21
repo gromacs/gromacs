@@ -816,6 +816,9 @@ Known limitations
 - Free energy calculations where charges are perturbed are not supported,
   because only single PME grids can be calculated.
 
+- Only dynamical integrators are supported (ie. leap-frog, Velocity Verlet,
+  stochastic dynamics)
+
 - LJ PME is not supported on GPUs.
 
 Assigning tasks to GPUs
