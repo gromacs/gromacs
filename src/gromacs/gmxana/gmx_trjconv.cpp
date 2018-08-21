@@ -928,6 +928,7 @@ int gmx_trjconv(int argc, char *argv[])
     }
 
     top_file = ftp2fn(efTPS, NFILE, fnm);
+    init_top(&top);
 
     /* Check command line */
     in_file = opt2fn("-f", NFILE, fnm);
