@@ -61,7 +61,8 @@ class MDModules::Impl : public IMDOutputProvider
     public:
 
         Impl()
-            : field_(createElectricFieldModule())
+            : field_(createElectricFieldModule()),
+              modules_ {}
         {
         }
 
@@ -86,6 +87,9 @@ class MDModules::Impl : public IMDOutputProvider
 
         std::unique_ptr<IMDModule>      field_;
         std::unique_ptr<ForceProviders> forceProviders_;
+
+        /// \brief List of registered MDModules
+        std::vector < std::shared_ptr < IMDModule>> modules_;
 };
 
 MDModules::MDModules() : impl_(new Impl)
@@ -142,7 +146,16 @@ ForceProviders *MDModules::initForceProviders()
                        "Force providers initialized multiple times");
     impl_->forceProviders_ = compat::make_unique<ForceProviders>();
     impl_->field_->initForceProviders(impl_->forceProviders_.get());
+    for (auto && module : impl_->modules_)
+    {
+        module->initForceProviders(impl_->forceProviders_.get());
+    }
     return impl_->forceProviders_.get();
+}
+
+void MDModules::add(std::shared_ptr<gmx::IMDModule> module)
+{
+    impl_->modules_.emplace_back(std::move(module));
 }
 
 } // namespace gmx

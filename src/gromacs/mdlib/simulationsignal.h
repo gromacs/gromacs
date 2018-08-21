@@ -34,7 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \file
  *
  * \brief This file declares functions for inter-rank signalling by mdrun
  *
@@ -70,7 +70,7 @@ namespace gmx
 template <typename T>
 class ArrayRef;
 
-/*! \internal
+/*!
  * \brief POD-style object used by mdrun ranks to set and
  * receive signals within and between simulations.
  *
@@ -100,7 +100,7 @@ class SimulationSignal
 //! Convenience typedef for the group of signals used.
 typedef std::array<SimulationSignal, eglsNR> SimulationSignals;
 
-/*! \internal
+/*!
  * \brief Object used by mdrun ranks to signal to each other at this step.
  *
  * This object has responsibility to read signal values from \c gs,

@@ -73,6 +73,7 @@
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdrun/integrator.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/group.h"
@@ -90,8 +91,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "integrator.h"
 
 //! Global max algorithm
 static void global_max(t_commrec *cr, int *n)
@@ -129,7 +128,7 @@ namespace gmx
 {
 
 void
-Integrator::do_tpi()
+IntegratorDispatcher::do_tpi()
 {
     gmx_localtop_t  *top;
     gmx_groups_t    *groups;

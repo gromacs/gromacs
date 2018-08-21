@@ -42,32 +42,48 @@
 #ifndef GMX_MDRUN_RUNNER_H
 #define GMX_MDRUN_RUNNER_H
 
+#include <cassert>
 #include <cstdio>
 
 #include <array>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <vector>
+
+#include <bitset>
 
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/main.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/repl_ex.h"
+#include "gromacs/mdlib/simulationsignal.h"
+#include "gromacs/mdtypes/imdmodule.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_output_env_t;
 struct ReplicaExchangeParameters;
 struct t_commrec;
+class PotentialContainer; // // defined in pulling/pullpotential.h
 
 namespace gmx
 {
 
-/*!
- * \brief Create the default set of MD filename options.
- *
- * \return Ownership of a new filename option container.
- */
-std::unique_ptr < std::array < t_filenm, 34>> makeDefaultMdFilenames();
+// Todo: move to forward declaration headers...
+class MDModules;
+
+namespace restraint
+{
+class Manager;
+}
+
+class IRestraintPotential; // defined in restraint/restraintpotential.h
 
 /*! \libinternal \brief Runner object for supporting setup and execution of mdrun.
  *
@@ -91,39 +107,13 @@ std::unique_ptr < std::array < t_filenm, 34>> makeDefaultMdFilenames();
  */
 class Mdrunner
 {
-    private:
-        //! Parallelism-related user options.
-        gmx_hw_opt_t             hw_opt;
-        //! Filenames and properties from command-line argument values.
-
-        std::unique_ptr < std::array < t_filenm, 34>> filenames {nullptr};
-
-        //! Output context for writing text files
-        gmx_output_env_t                *oenv = nullptr;
-        //! Ongoing collection of mdrun options
-        MdrunOptions                     mdrunOptions;
-        //! Options for the domain decomposition.
-        DomdecOptions                    domdecOptions;
-        //! Target short-range interations for "cpu", "gpu", or "auto". Default is "auto".
-        const char                      *nbpu_opt = nullptr;
-        //! Target long-range interactions for "cpu", "gpu", or "auto". Default is "auto".
-        const char                      *pme_opt = nullptr;
-        //! Target long-range interactions FFT/solve stages for "cpu", "gpu", or "auto". Default is "auto".
-        const char                      *pme_fft_opt = nullptr;
-        //! Command-line override for the duration of a neighbor list with the Verlet scheme.
-        int                              nstlist_cmdline = 0;
-        //! Parameters for replica-exchange simulations.
-        ReplicaExchangeParameters        replExParams;
-        //! Print a warning if any force is larger than this (in kJ/mol nm).
-        real                             pforce = -1;
-        //! Handle to file used for logging.
-        FILE                            *fplog;
-        //! Handle to communication data structure.
-        t_commrec                       *cr;
-        //! Handle to multi-simulation handler.
-        gmx_multisim_t                  *ms;
-
     public:
+        /*! \brief Number of filename argument values.
+         *
+         * Provided for compatibility with old C-style code accessing
+         * command-line arguments that are file names. */
+        constexpr static int nfile = 34;
+
         /*! \brief Builder class to manage object creation.
          *
          * This class is a member of gmx::Mdrunner to allow access to private
@@ -180,6 +170,16 @@ class Mdrunner
          * is not initialized until some time during this call...
          */
         int mdrunner();
+
+        /*!
+         * \brief Add a pulling potential to be evaluated during integration.
+         *
+         * \param puller GROMACS-provided or custom pulling potential
+         * \param name User-friendly plain-text name to uniquely identify the puller
+         */
+        void addPullPotential(std::shared_ptr<gmx::IRestraintPotential> puller,
+                              std::string                               name);
+
         //! Called when thread-MPI spawns threads.
         t_commrec *spawnThreads(int numThreadsToLaunch) const;
         /*! \brief Re-initializes the object after threads spawn.
@@ -196,7 +196,51 @@ class Mdrunner
          */
         std::unique_ptr<Mdrunner> cloneOnSpawnedThread() const;
 
+        // Replace with cloneOnSpawnedThread to get a new ready-to-use Mdrunner on the new thread.
+//        void reinitializeOnSpawnedThread();
+
+    private:
+        //! Parallelism-related user options.
+        gmx_hw_opt_t             hw_opt;
+
+        //! Filenames and properties from command-line argument values.
+
+        std::unique_ptr < std::array < t_filenm, nfile>> filenames {nullptr};
+
+        //! Output context for writing text files
+        gmx_output_env_t                       *oenv = nullptr;
+        //! Ongoing collection of mdrun options
+        MdrunOptions                            mdrunOptions;
+        //! Options for the domain decomposition.
+        DomdecOptions                           domdecOptions;
+        //! Target short-range interations for "cpu", "gpu", or "auto". Default is "auto".
+        const char                             *nbpu_opt = nullptr;
+        //! Target long-range interactions for "cpu", "gpu", or "auto". Default is "auto".
+        const char                             *pme_opt = nullptr;
+        //! Target long-range interactions FFT/solve stages for "cpu", "gpu", or "auto". Default is "auto".
+        const char                             *pme_fft_opt = nullptr;
+        //! Command-line override for the duration of a neighbor list with the Verlet scheme.
+        int                                     nstlist_cmdline = 0;
+        //! Parameters for replica-exchange simulations.
+        ReplicaExchangeParameters               replExParams;
+        //! Print a warning if any force is larger than this (in kJ/mol nm).
+        real                                    pforce = -1;
+        //! Handle to file used for logging.
+        FILE                                   *fplog {nullptr};
+        //! Handle to communication data structure.
+        t_commrec                              *cr;
+        //! Handle to multi-simulation handler.
+        gmx_multisim_t                         *ms;
+
+        std::shared_ptr<restraint::Manager>     restraintManager_ {nullptr};
 };
+
+/*!
+ * \brief Create the default set of MD filename options.
+ *
+ * \return Ownership of a new filename option container.
+ */
+std::unique_ptr < std::array < t_filenm, Mdrunner::nfile>> makeDefaultMdFilenames();
 
 /*! \libinternal
  * \brief Build a gmx::Mdrunner.

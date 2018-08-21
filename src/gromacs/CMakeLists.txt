@@ -107,6 +107,7 @@ add_subdirectory(onlinehelp)
 add_subdirectory(options)
 add_subdirectory(pbcutil)
 add_subdirectory(random)
+add_subdirectory(restraint)
 add_subdirectory(tables)
 add_subdirectory(taskassignment)
 add_subdirectory(timing)
@@ -248,6 +249,7 @@ endif()
 
 gmx_setup_tng_for_libgromacs()
 
+target_sources(libgromacs PRIVATE $<TARGET_OBJECTS:restraint>)
 target_link_libraries(libgromacs
                       PRIVATE
                       ${EXTRAE_LIBRARIES}
@@ -351,3 +353,5 @@ endif()
 if (BUILD_TESTING)
     add_subdirectory(compat/tests)
 endif()
+
+gmx_install_headers(compat/make_unique.h)
