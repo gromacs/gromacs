@@ -42,6 +42,11 @@ When this is not the case, grompp will issue a warning.
 
 :issue:`2397`
 
+Fixed segmentation fault in mdrun with QM/MM ONIOM scheme
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2617`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
