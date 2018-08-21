@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,7 @@
 
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
 static void pr_harm(FILE *fp, const t_iparams *iparams, const char *r, const char *kr)
@@ -439,4 +440,44 @@ void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef,
                      bShowParameters, idef->iparams);
         }
     }
+}
+
+void init_idef(t_idef *idef)
+{
+    idef->ntypes           = 0;
+    idef->atnr             = 0;
+    idef->functype         = nullptr;
+    idef->iparams          = nullptr;
+    idef->fudgeQQ          = 0.0;
+    idef->iparams_posres   = nullptr;
+    idef->iparams_fbposres = nullptr;
+    for (int f = 0; f < F_NRE; ++f)
+    {
+        idef->il[f].iatoms          = nullptr;
+        idef->il[f].nalloc          = 0;
+        idef->il[f].nr              = 0;
+        idef->il[f].nr_nonperturbed = 0;
+    }
+    idef->cmap_grid.cmapdata      = nullptr;
+    idef->iparams_posres_nalloc   = 0;
+    idef->iparams_fbposres_nalloc = 0;
+    idef->ilsort                  = 0;
+
+}
+
+void done_idef(t_idef *idef, gmx_bool fromMtop)
+{
+    if (!fromMtop)
+    {
+        sfree(idef->functype);
+        sfree(idef->iparams);
+        sfree(idef->cmap_grid.cmapdata);
+    }
+    sfree(idef->iparams_posres);
+    sfree(idef->iparams_fbposres);
+    for (int f = 0; f < F_NRE; ++f)
+    {
+        sfree(idef->il[f].iatoms);
+    }
+    init_idef(idef);
 }
