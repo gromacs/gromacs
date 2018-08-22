@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal
+/*! \file
  * \brief Declares the integrator interface for mdrun
  *
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
@@ -47,6 +47,7 @@
 #include <memory>
 
 #include "gromacs/compat/make_unique.h"
+#include "gromacs/mdrun/context.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -88,11 +89,13 @@ using IntegratorFunctionType = void();
  * Essentially an alias for `unsigned int`, used for enumerated integrator type,
  * until a named enum type is established universally. Has no default constructor,
  * which helps us catch errors with uninitialized members of other objects.
+ *
+ * \ingroup module_mdrun
  */
 class SimulationMethod
 {
     public:
-        //! Actual value of enumerated integrator type.
+        /*! \brief Actual value of enumerated integrator type. */
         unsigned int method_;
         /*!
          * \brief Initialize from conventional enumerated integrator type.
@@ -108,7 +111,7 @@ class SimulationMethod
         operator unsigned int () const { return method_; }
 };
 
-/*! \libinternal
+/*!
  * \brief Interface for MD integration and other MM methods.
  *
  * A std::unique_ptr<Integrator> serves as a handle to the object produced by
@@ -236,18 +239,24 @@ struct IntegratorParamsContainer
 class IntegratorAggregateAdapter : public IntegratorParamsContainer
 {
     public:
-        /*!
-         * \brief Construct IntegratorParamsContainer with deduced argument types.
-         *
-         * \tparam Args Sequence of types should match the members of IntegratorParamsContainer.
-         * \param args parameter sequence for aggregate initialization of IntegratorParamsContainer.
-         */
+/*!
+ * \brief Constructor templated for forwarding arguments.
+ *
+ * \tparam Args sequence of types should match the members of IntegratorParamsContainer.
+ * \param args sequence of values for aggregate initialization of IntegratorParamsContainer.
+ *
+ * Arguments to this constructor are forwarded to the underlying IntegratorParamsContainer
+ * to provide an aggregate initialization adapter. This allows IngtegratorAggregateAdapter
+ * to be used in non-forwarding contexts (such as emplace_back or make_unique) to access the
+ * aggregate initializer for IntegratorParamsContainer without specifying the full list of
+ * parameters anywhere other than the definition of IntegratorParamsContainer.
+ */
         template<class ... Args> IntegratorAggregateAdapter(Args && ... args) :
             IntegratorParamsContainer {std::forward<Args>(args) ...}
         {}
 };
 
-/*! \internal
+/*!
  * \brief Wrapper to implement IIntegrator in terms of IntegratorDispatcher.
  *
  * Allows functor objects to provide a run() callable for preconfigured objects
@@ -471,12 +480,28 @@ class IntegratorBuilder final
         DataSentry setParams(ArgsT && ... args);
 
         /*!
-         * \brief Get ownership of a new simulator.
+         * \brief Provide a simulation runtime context for the method's implementation.
+         *
+         * \param context handle to an execution context manager owned by the client code.
+         * \return reference to current builder
+         */
+        IntegratorBuilder &addContext(const md::Context &context);
+
+        /*!
+         * \brief Get ownership of a new Integrator object.
+         *
+         * \return handle to a new object implementing the configured integrator
          */
         std::unique_ptr<IIntegrator> build();
 
         /*!
          * \brief Factory to get a builder for a selected simulator.
+         *
+         * Factory function to create a new IntegratorBuilder object. The
+         * implementation of the builder returned is dependent on the type of
+         * simulation method specified. Required or available builder methods
+         * will be affected. Refer to documentation for the various simulation
+         * methods or the classes derived from IntegratorBuilder::Base.
          *
          * \param integratorType simulation method for which to get a builder.
          * \return new builder instance with implementation specialized according to integratorType.
@@ -523,12 +548,30 @@ class IntegratorBuilder::Base
         virtual DataSentry setAggregateAdapter(std::unique_ptr<IntegratorAggregateAdapter> container);
 
         /*!
-         * \brief Implement build() for IntegratorBuilder.
+         * \brief Provide a context manager to the simulation method.
          *
-         * Actual implementation is provided by derived classes. There is no
-         * default behavior.
+         * Some simulation methods require external resources to be provided
+         * related to the execution environment and not already managed by some
+         * other module. For such methods (e.g. MD) a md::Context should be
+         * provided exactly once before build() is called. Methods that do not
+         * use a Context may accept, but ignore calls to addContext().
          *
-         * \return owning handle of a new simulation functor.
+         * \param context handle to Context owned by the client.
+         * \return reference to the current builder implementation.
+         */
+        virtual Base &addContext(const md::Context &context);
+
+        /*!
+         * \brief Build the Integrator product.
+         *
+         * \return Ownership of a new object providing the chosen simulation method.
+         *
+         * Implementation depends on the simulation method specified to IntegratorBuilder::create()
+         *
+         * Builders for different methods will require different builder methods
+         * to be called before build() can successfully produce an initialize object.
+         * After the call to build(), the builder is in an undefined state and should
+         * not be used again.
          */
         virtual std::unique_ptr<IIntegrator> build() = 0;
 
