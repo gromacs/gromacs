@@ -338,11 +338,11 @@ void gmx::MDIntegrator::Impl::run()
        code. So we do that alongside the first global energy reduction
        after a new DD is made. These variables handle whether the
        check happens, and the result it returns. */
-    bool              shouldCheckNumberOfBondedInteractions = false;
-    int               totalNumberOfBondedInteractions       = -1;
+    bool               shouldCheckNumberOfBondedInteractions = false;
+    int                totalNumberOfBondedInteractions       = -1;
 
-    SimulationSignals signals;
-    // Most global communnication stages don't propagate mdrun
+    SimulationSignals  signals;
+    // Most global communication stages don't propagate mdrun
     // signals, and will use this object to achieve that.
     SimulationSignaller nullSignaller(nullptr, nullptr, nullptr, false, false);
 
@@ -1971,11 +1971,20 @@ gmx::MDIntegrator::Impl::~Impl() = default;
 
 std::unique_ptr<gmx::IIntegrator> gmx::MDIntegrator::Builder::build()
 {
-    if (!integrator_)
+    if (!container_)
     {
         GMX_THROW(APIError("This builder requires setParams() to be called before build()."));
     }
-    auto integrator = gmx::compat::make_unique<gmx::MDIntegrator>(std::move(integrator_));
+    auto impl = gmx::compat::make_unique<gmx::MDIntegrator::Impl>(*container_);
+    if (!context_)
+    {
+        GMX_THROW(APIError("This builder requires a gmx::md::Context to be provided before build()."));
+    }
+    else
+    {
+        impl->context_ = std::move(context_);
+    }
+    auto integrator = gmx::compat::make_unique<gmx::MDIntegrator>(std::move(impl));
 
     return integrator;
 }
@@ -1983,13 +1992,13 @@ std::unique_ptr<gmx::IIntegrator> gmx::MDIntegrator::Builder::build()
 gmx::IntegratorBuilder::DataSentry gmx::MDIntegrator::Builder::setAggregateAdapter
     (std::unique_ptr<gmx::IntegratorAggregateAdapter> container)
 {
-    if (integrator_)
+    if (container_)
     {
         GMX_THROW(APIError("setParams has already been called on this builder."));
     }
     else
     {
-        integrator_ = gmx::compat::make_unique<gmx::MDIntegrator::Impl>(*container);
+        container_ = std::move(container);
     }
     // This is where we should set up interactions with parameter data lifetime, when DataSentry API has been
     // implemented.
@@ -2010,7 +2019,17 @@ gmx::MDIntegrator::MDIntegrator(std::unique_ptr<MDIntegrator::Impl> implementati
 
 }
 
-gmx::MDIntegrator::Builder::Builder() : integrator_ {nullptr}
-{};
+gmx::MDIntegrator::Builder::Builder() :
+    container_ {nullptr},
+context_ {
+    nullptr
+}
+{}
+
+gmx::IntegratorBuilder::Base &gmx::MDIntegrator::Builder::addContext(const gmx::md::Context &context)
+{
+    context_ = gmx::compat::make_unique<md::Context>(context);
+    return *this;
+};
 
 gmx::MDIntegrator::Builder::~Builder() = default;

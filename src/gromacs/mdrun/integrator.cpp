@@ -96,6 +96,14 @@ SimulationMethod IntegratorDispatcher::getMethod() const
     return method_;
 }
 
+IntegratorBuilder::Base &IntegratorBuilder::Base::addContext(const md::Context &context)
+{
+    (void)context;
+    // default behavior is to ignore the argument. Maybe a usage error should be
+    // thrown instead?
+    return *this;
+}
+
 IntegratorBuilder::DataSentry
 IntegratorBuilder::Base::setAggregateAdapter(std::unique_ptr<IntegratorAggregateAdapter> adapter)
 {
@@ -179,6 +187,15 @@ class IntegratorDispatcherBuilder : public IntegratorBuilder::Base
         std::unique_ptr<IntegratorAggregateAdapter> paramsContainer_ {nullptr};
 };
 
+IntegratorBuilder::IntegratorBuilder(std::unique_ptr<::gmx::IntegratorBuilder::Base> impl) :
+    impl_ {std::move(impl)}
+{
+    if (!impl_)
+    {
+        GMX_THROW(APIError("Builder should not be created with an uninitialized implementation object."));
+    }
+}
+
 IntegratorBuilder::~IntegratorBuilder() = default;
 
 IntegratorBuilder::IntegratorBuilder(IntegratorBuilder &&) noexcept = default;
@@ -189,16 +206,6 @@ std::unique_ptr<IIntegrator> IntegratorBuilder::build()
 {
     return impl_->build();
 }
-
-IntegratorBuilder::IntegratorBuilder(std::unique_ptr<::gmx::IntegratorBuilder::Base> impl) :
-    impl_ {std::move(impl)}
-{
-    if (!impl_)
-    {
-        GMX_THROW(APIError("Builder should not be created with an uninitialized implementation object."));
-    }
-}
-
 
 IntegratorBuilder IntegratorBuilder::create(const SimulationMethod &integratorType)
 {
@@ -229,6 +236,12 @@ IntegratorBuilder IntegratorBuilder::create(const SimulationMethod &integratorTy
 
     assert(builder.impl_);
     return builder;
+}
+
+IntegratorBuilder &IntegratorBuilder::addContext(const md::Context &context)
+{
+    impl_->addContext(context);
+    return *this;
 }
 
 IntegratorBuilder::DataSentry::~DataSentry() = default;
