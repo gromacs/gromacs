@@ -85,6 +85,15 @@ the option. Now it only outputs values that are requested to be processed.
 
 :issue:`2565`
 
+Fix trjconv when not providing structure file
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+trjconv would fail with a segmentation violation when running without any structure
+file due to incomplete initialization of the topology data structure. This fix adds
+the missing checks that prevents the failure.
+
+:issue:`2619`
+
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
