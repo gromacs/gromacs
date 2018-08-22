@@ -1322,6 +1322,8 @@ int Mdrunner::mdrunner()
                 replExParams,
                 membed,
                 walltime_accounting);
+        auto context = gmx::md::Context(*this);
+        builder.addContext(context);
         std::unique_ptr<IIntegrator> integrator = builder.build();
         integrator->run();
 
