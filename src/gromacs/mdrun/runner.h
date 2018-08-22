@@ -136,33 +136,13 @@ class Mdrunner
 
         ~Mdrunner();
 
-        /*!
-         * \brief Copy not allowed.
-         *
-         * An Mdrunner has unique resources and it is not clear whether any of
-         * one of those resources should be duplicated or shared unless the
-         * specific use case is known. Either build a fresh runner or use a
-         * helper function for clearly indicated behavior. API clarification may
-         * allow unambiguous initialization by copy in future versions.
-         *
-         * \{
-         */
+        // Copy requires special attention. Use clone methods.
         Mdrunner(const Mdrunner &)            = delete;
         Mdrunner &operator=(const Mdrunner &) = delete;
-        /* \} */
 
-        /*!
-         * \brief Move is not implemented.
-         *
-         * Move behavior of a runner object seems straight-forward, but it is not
-         * necessary and is untested in the current version, and so it is explicitly
-         * deleted to avoid ambiguity.
-         *
-         * \{
-         */
-        Mdrunner(Mdrunner &&) noexcept            = delete;
-        Mdrunner &operator=(Mdrunner &&) noexcept = delete;
-        /* \} */
+        // Allow move
+//        Mdrunner(Mdrunner &&) noexcept;
+//        Mdrunner &operator=(Mdrunner &&) noexcept;
 
         /*! \brief Driver routine, that calls the different simulation methods. */
         /*!
@@ -188,6 +168,7 @@ class Mdrunner
          * constructed ready to use? */
         // Replace with cloneOnSpawnedThread to get a new ready-to-use Mdrunner on the new thread.
 //        void reinitializeOnSpawnedThread();
+
 
         /*! \brief Initializes a new Mdrunner from the master.
          *

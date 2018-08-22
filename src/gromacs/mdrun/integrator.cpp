@@ -101,6 +101,14 @@ SimulationMethod IntegratorDispatcher::getMethod() const
     return method_;
 }
 
+IntegratorBuilder::Base &IntegratorBuilder::Base::addContext(const md::Context &context)
+{
+    (void)context;
+    // default behavior is to ignore the argument. Maybe a usage error should be
+    // thrown instead?
+    return *this;
+}
+
 IntegratorBuilder::DataSentry IntegratorBuilder::Base::setAggregateAdapter
     (std::unique_ptr<IntegratorAggregateAdapter> context)
 {
@@ -228,6 +236,12 @@ IntegratorBuilder IntegratorBuilder::create(const SimulationMethod &integratorTy
 
     assert(builder.impl_);
     return builder;
+}
+
+IntegratorBuilder &IntegratorBuilder::addContext(const md::Context &context)
+{
+    impl_->addContext(context);
+    return *this;
 }
 
 IntegratorBuilder::DataSentry::~DataSentry() = default;
