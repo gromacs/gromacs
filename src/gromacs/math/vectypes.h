@@ -37,6 +37,8 @@
 #ifndef GMX_MATH_VECTYPES_H
 #define GMX_MATH_VECTYPES_H
 
+#include <math.h> // since this file used from C source files TODO: replace with cmath
+
 #include "gromacs/utility/real.h"
 
 #define XX      0 /* Defines for indexing in */
@@ -84,8 +86,20 @@ class BasicVector
         //! Underlying raw C array type (rvec/dvec/ivec).
         typedef ValueType RawArray[DIM];
 
-        //! Constructs default (uninitialized) vector.
-        BasicVector() {}
+        // The code here assumes ValueType has been deduced as a data type like int
+        // and note a pointer like int*. If there is a use case for a 3-element array
+        // of pointers, the implementation will be different enough that the whole
+        // template class should have a separate partial specialization. We try to avoid
+        // accidental matching to pointers, but this assertion is a no-cost extra check.
+        static_assert(!std::is_pointer<ValueType>::value, "BasicVector value type must not be a pointer.");
+
+        //! Constructs default (initialized to 0,0,0) vector.
+        BasicVector()
+        {
+            x_[XX] = 0;
+            x_[YY] = 0;
+            x_[ZZ] = 0;
+        }
         //! Constructs a vector from given values.
         BasicVector(ValueType x, ValueType y, ValueType z)
         {
@@ -118,6 +132,137 @@ class BasicVector
         ValueType &operator[](int i) { return x_[i]; }
         //! Indexing operator to make the class work as the raw array.
         ValueType operator[](int i) const { return x_[i]; }
+        //! Allow inplace addition for BasicVector
+        BasicVector<ValueType> &operator+=(const BasicVector<ValueType> &right)
+        {
+            for (int i = 0; i < DIM; ++i)
+            {
+                this->x_[i] += right.x_[i];
+            }
+            return *this;
+        }
+        //! Allow inplace substraction for BasicVector
+        BasicVector<ValueType> &operator-=(const BasicVector<ValueType> &right)
+        {
+            for (int i = 0; i < DIM; ++i)
+            {
+                this->x_[i] -= right.x_[i];
+            }
+            return *this;
+        }
+        //! Allow vector addition
+        BasicVector<ValueType> operator+(const BasicVector<ValueType> &right) const
+        {
+            BasicVector<ValueType> temp;
+            for (int i = 0; i < DIM; ++i)
+            {
+                temp.x_[i] = this->x_[i] + right.x_[i];
+            }
+            return temp;
+        }
+        //! Allow vector substraction
+        BasicVector<ValueType> operator-(const BasicVector<ValueType> &right) const
+        {
+            BasicVector<ValueType> temp;
+            for (int i = 0; i < DIM; ++i)
+            {
+                temp.x_[i] = this->x_[i] - right.x_[i];
+            }
+            return temp;
+        }
+        //! Allow vector scalar multiplication (dot product)
+        ValueType dot(const BasicVector<ValueType> &right) const
+        {
+            ValueType temp = 0;
+            for (int i = 0; i < DIM; ++i)
+            {
+                temp += this->x_[i]*right.x_[i];
+            }
+            return temp;
+        }
+
+        //! Allow vector vector multiplication (cross product)
+        BasicVector<ValueType> cross(const BasicVector<ValueType> &right) const
+        {
+            BasicVector<ValueType> temp;
+            temp.x_[XX] = this->x_[YY]*right.x_[ZZ]-this->x_[ZZ]*right.x_[YY];
+            temp.x_[YY] = this->x_[ZZ]*right.x_[XX]-this->x_[XX]*right.x_[ZZ];
+            temp.x_[ZZ] = this->x_[XX]*right.x_[YY]-this->x_[YY]*right.x_[XX];
+            return temp;
+        }
+
+        //! Allow vector scaling (vector by scalar multiply)
+        BasicVector<ValueType> scale(const ValueType &right) const
+        {
+            BasicVector<ValueType> temp;
+            for (int i = 0; i < DIM; ++i)
+            {
+                temp.x_[i] = this->x_[i]*right;
+            }
+            return temp;
+        }
+
+        //! Return normalized to unit vector
+        BasicVector<ValueType> unitVector() const
+        {
+            ValueType              length;
+            BasicVector<ValueType> temp;
+            length = this->length();
+            for (int i = 0; i < DIM; ++i)
+            {
+                temp.x_[i] = this->x_[i]/length;
+            }
+            return temp;
+        }
+
+        //! Length^2 of vector
+        ValueType sqlength() const
+        {
+            ValueType temp = 0;
+            for (int i = 0; i < DIM; ++i)
+            {
+                temp += this->x_[i]*this->x_[i];
+            }
+            return temp;
+        }
+
+        //! Length of vector
+        ValueType length() const
+        {
+            ValueType temp = 0;
+            for (int i = 0; i < DIM; ++i)
+            {
+                temp += this->x_[i]*this->x_[i];
+            }
+            return sqrt(temp);
+        }
+
+        //! cast to RVec
+        BasicVector<real> toRVec() const
+        {
+            BasicVector<real> temp;
+            for (int i = 0; i < DIM; ++i)
+            {
+                temp[i] = static_cast<real>(this->x_[i]);
+            }
+            return temp;
+        }
+
+        //! cast to DVec
+        BasicVector<double> toDVec() const
+        {
+            BasicVector<double> temp;
+            for (int i = 0; i < DIM; ++i)
+            {
+                temp[i] = static_cast<double>(this->x_[i]);
+            }
+            return temp;
+        }
+
+        //! Converts to a raw C array where implicit conversion does not work.
+        RawArray &as_vec() { return x_; }
+        //! Converts to a raw C array where implicit conversion does not work.
+        const RawArray &as_vec() const { return x_; }
         //! Makes BasicVector usable in contexts where a raw C array is expected.
         operator RawArray &() { return x_; }
         //! Makes BasicVector usable in contexts where a raw C array is expected.
@@ -125,6 +270,62 @@ class BasicVector
     private:
         RawArray x_;
 };
+
+/*! \brief
+ * scale for gmx::BasicVector
+ */
+template <typename VectorType, typename ValueType> static inline
+VectorType scale(const VectorType &v, ValueType s)
+{
+    VectorType tmp;
+    tmp = v;
+    return tmp.scale(s);
+}
+
+/*! \brief
+ * unitv for gmx::BasicVector
+ */
+template <typename VectorType> static inline
+VectorType unitVector(const VectorType &v)
+{
+    return v.unitVector();
+}
+
+/*! \brief
+ * norm for gmx::BasicVector
+ */
+template <typename ValueType> static inline
+ValueType length(BasicVector<ValueType> v)
+{
+    return v.length();
+}
+
+/*! \brief
+ * norm2 for gmx::BasicVector
+ */
+template <typename ValueType> static inline
+ValueType sqlength(BasicVector<ValueType> v)
+{
+    return v.sqlength();
+}
+
+/*! \brief
+ * cross product for gmx::BasicVector
+ */
+template <typename VectorType> static inline
+VectorType cross(const VectorType &a, const VectorType &b)
+{
+    return a.cross(b);
+}
+
+/*! \brief
+ * dot product for gmx::BasicVector
+ */
+template <typename ValueType> static inline
+ValueType dot(BasicVector<ValueType> a, BasicVector<ValueType> b)
+{
+    return a.dot(b);
+}
 
 /*! \brief
  * Casts a gmx::BasicVector array into an equivalent raw C array.
@@ -148,6 +349,10 @@ as_vec_array(const BasicVector<ValueType> *x)
 
 //! Shorthand for C++ `rvec`-equivalent type.
 typedef BasicVector<real> RVec;
+//! Shorthand for C++ `dvec`-equivalent type.
+typedef BasicVector<double> DVec;
+//! Shorthand for C++ `ivec`-equivalent type.
+typedef BasicVector<int> IVec;
 //! Casts a gmx::RVec array into an `rvec` array.
 static inline rvec *as_rvec_array(RVec *x)
 {
@@ -158,6 +363,29 @@ static inline const rvec *as_rvec_array(const RVec *x)
 {
     return as_vec_array(x);
 }
+//! Casts a gmx::DVec array into an `Dvec` array.
+static inline dvec *as_dvec_array(DVec *x)
+{
+    return as_vec_array(x);
+}
+//! Casts a gmx::IVec array into an `ivec` array.
+static inline ivec *as_ivec_array(IVec *x)
+{
+    return as_vec_array(x);
+}
+
+
+//! Casts a gmx::DVec array into an `dvec` array.
+static inline const dvec *as_dvec_array(const DVec *x)
+{
+    return as_vec_array(x);
+}
+//! Casts a gmx::IVec array into an `ivec` array.
+static inline const ivec *as_ivec_array(const IVec *x)
+{
+    return as_vec_array(x);
+}
+
 
 //! Shorthand for C++ `ivec`-equivalent type.
 typedef BasicVector<int> IVec;
