@@ -612,6 +612,10 @@ static inline ::testing::AssertionResult assertEqualWithinTolerance(
     ASSERT_FLOAT_EQ_TOL(value1, value2, tolerance)
 #endif
 
+//! EXPECT_REAL_EQ_TOL with default tolerance
+#define EXPECT_REAL_EQ(value1, value2) EXPECT_REAL_EQ_TOL(value1, value2, ::gmx::test::defaultRealTolerance())
+//! ASSERT_REAL_EQ_TOL with default tolerance
+#define ASSERT_REAL_EQ(value1, value2) ASSERT_REAL_EQ_TOL(value1, value2, ::gmx::test::defaultRealTolerance())
 //! \}
 
 //! \cond internal
