@@ -44,13 +44,21 @@
 # src/testutils/TestMacros.cmake, which does not allow arbitrary argument
 # passing to add_test. Instead, use set_tests_properties().
 
+# Copy test files to test directory
+configure_file(data/topol.tpr topol.tpr COPYONLY)
+configure_file(data/water.tpr water.tpr COPYONLY)
+
+configure_file(testingconfiguration.in.cpp testingconfiguration.in.cpp)
+
+#
+# Test public interface.
+#
+
 gmx_add_gtest_executable(
     gmxapi-test
     test_version_helpers.cpp
     )
 
-target_include_directories(gmxapi-test PRIVATE
-                           ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(gmxapi-test Gromacs::gmxapi)
 
 # Unit tests for implementation details may require access to private headers.
@@ -61,6 +69,10 @@ gmx_register_gtest_test(GmxapiExternalInterfaceTests gmxapi-test INTEGRATION_TES
 set_tests_properties(GmxapiExternalInterfaceTests PROPERTIES
                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
+#
+# Test public interface with MPI.
+#
+
 gmx_add_gtest_executable(
     gmxapi-mpi-test MPI
     test_version_helpers.cpp
@@ -70,8 +82,9 @@ target_include_directories(gmxapi-mpi-test PRIVATE
                            ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(gmxapi-mpi-test Gromacs::gmxapi)
 
-# We don't yet have anything that can understand the ``-ntmpi`` command-line
-# option that will be passed to a THREAD_MPI version of a test that specifies MPI_RANKS
+# Tests that specify MPI_RANKS will be passed a ``-ntmpi`` command-line option
+# when GMX_THREAD_MPI is true, but the test executables in this directory do not
+# yet understand that command-line option.
 if(NOT GMX_THREAD_MPI)
     gmx_register_gtest_test(GmxapiMpiTests gmxapi-mpi-test MPI_RANKS 2 INTEGRATION_TEST)
 
