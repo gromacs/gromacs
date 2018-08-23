@@ -44,6 +44,12 @@
 # src/testutils/TestMacros.cmake, which does not allow arbitrary argument
 # passing to add_test. Instead, use set_tests_properties().
 
+# Copy test files to test directory
+configure_file(data/topol.tpr topol.tpr COPYONLY)
+configure_file(data/water.tpr water.tpr COPYONLY)
+
+configure_file(testingconfiguration.in.h testingconfiguration.h)
+
 #
 # Test public interface.
 #
