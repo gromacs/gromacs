@@ -112,6 +112,8 @@ class MDIntegrator::Impl
         //! Manages wall time accounting.
         gmx_walltime_accounting         *walltime_accounting;
 
+
+        std::unique_ptr<md::Context> context_ {nullptr};
 };
 
 }      // end namespace gmx

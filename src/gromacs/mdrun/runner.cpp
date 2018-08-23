@@ -94,6 +94,7 @@
 #include "gromacs/mdlib/repl_ex.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdrun/context.h"
 #include "gromacs/mdrun/integrator.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/mdmodules.h"
@@ -1423,6 +1424,8 @@ int Mdrunner::mdrunner()
                 replExParams,
                 membed,
                 walltime_accounting);
+        auto context = gmx::md::Context(*this);
+        builder.addContext(context);
         std::unique_ptr<IIntegrator> integrator = builder.build();
         integrator->run();
 

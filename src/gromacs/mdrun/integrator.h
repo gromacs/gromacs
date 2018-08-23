@@ -50,6 +50,7 @@
 #include <memory>
 
 #include "gromacs/compat/make_unique.h"
+#include "gromacs/mdrun/context.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -474,6 +475,14 @@ class IntegratorBuilder final
         DataSentry setParams(ArgsT && ... args);
 
         /*!
+         * \brief Provide a simulation runtime context for the method's implementation.
+         *
+         * \param context handle to an execution context manager owned by the client code.
+         * \return reference to current builder
+         */
+        IntegratorBuilder &addContext(const md::Context &context);
+
+        /*!
          * \brief Get ownership of a new Integrator object.
          *
          * \return handle to a new object implementing the configured integrator
@@ -524,6 +533,20 @@ class IntegratorBuilder::Base
          * \todo Return an RAII sentry object to check for parameter validity or changing scope.
          */
         virtual DataSentry setAggregateAdapter(std::unique_ptr<IntegratorAggregateAdapter> container);
+
+        /*!
+         * \brief Provide a context manager to the simulation method.
+         *
+         * Some simulation methods require external resources to be provided
+         * related to the execution environment and not already managed by some
+         * other module. For such methods (e.g. MD) a md::Context should be
+         * provided exactly once before build() is called. Methods that do not
+         * use a Context may accept, but ignore calls to addContext().
+         *
+         * \param context handle to Context owned by the client.
+         * \return reference to the current builder implementation.
+         */
+        virtual Base &addContext(const md::Context &context);
 
         /*!
          * \brief Build the Integrator product.

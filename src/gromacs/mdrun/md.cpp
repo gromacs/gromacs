@@ -1975,7 +1975,15 @@ std::unique_ptr<gmx::IIntegrator> gmx::MDIntegrator::Builder::build()
     {
         GMX_THROW(APIError("This builder requires setParams() to be called before build()."));
     }
-    auto impl       = gmx::compat::make_unique<gmx::MDIntegrator::Impl>(*container_);
+    auto impl = gmx::compat::make_unique<gmx::MDIntegrator::Impl>(*container_);
+    if (!context_)
+    {
+        GMX_THROW(APIError("This builder requires a gmx::md::Context to be provided before build()."));
+    }
+    else
+    {
+        impl->context_ = std::move(context_);
+    }
     auto integrator = gmx::compat::make_unique<gmx::MDIntegrator>(std::move(impl));
 
     return integrator;
@@ -2012,7 +2020,16 @@ gmx::MDIntegrator::MDIntegrator(std::unique_ptr<MDIntegrator::Impl> implementati
 }
 
 gmx::MDIntegrator::Builder::Builder() :
-    container_ {nullptr}
-{};
+    container_ {nullptr},
+context_ {
+    nullptr
+}
+{}
+
+gmx::IntegratorBuilder::Base &gmx::MDIntegrator::Builder::addContext(const gmx::md::Context &context)
+{
+    context_ = gmx::compat::make_unique<md::Context>(context);
+    return *this;
+};
 
 gmx::MDIntegrator::Builder::~Builder() = default;
