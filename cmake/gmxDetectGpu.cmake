@@ -70,7 +70,9 @@ endmacro()
 
 macro(gmx_detect_gpu)
 
-    if (NOT DEFINED GMX_DETECT_GPU_COUNT OR NOT DEFINED GMX_DETECT_GPU_INFO)
+    if (NOT DEFINED GMX_DETECT_GPU_AVAILABLE OR
+        NOT DEFINED GMX_DETECT_GPU_COUNT OR
+        NOT DEFINED GMX_DETECT_GPU_INFO)
 
         set(GMX_DETECT_GPU_COUNT 0)
         set(GMX_DETECT_GPU_INFO  "")
@@ -217,5 +219,5 @@ macro(gmx_detect_gpu)
             message(STATUS "Could not detect NVIDIA GPUs")
         endif()
 
-    endif (NOT DEFINED GMX_DETECT_GPU_COUNT OR NOT DEFINED GMX_DETECT_GPU_INFO)
+    endif()
 endmacro(gmx_detect_gpu)
