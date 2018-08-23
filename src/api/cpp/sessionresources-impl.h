@@ -32,9 +32,6 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-//
-// Created by Eric Irrgang on 7/10/18.
-//
 
 #ifndef GMXAPI_SESSION_RESOURCES_IMPL_H
 #define GMXAPI_SESSION_RESOURCES_IMPL_H
@@ -49,8 +46,11 @@
  * \ingroup gmxapi
  */
 
+#include "gmxapi/session/resources.h"
+
 #include <string>
 
+#include "gmxapi/md/mdsignals.h"
 #include "gmxapi/session.h"
 
 namespace gmxapi
@@ -107,6 +107,27 @@ class SessionResources final
          */
         const std::string name() const;
 
+        /*!
+         * \brief Get a Signal instance implementing the requested MD signal.
+         *
+         * The caller is responsible for ensuring that the session is still active.
+         * Unfortunately, there isn't really a way to do that right now. This needs improvemnt
+         * in a near future version.
+         *
+         * Also, this is an external interface that should avoid throwing exceptions for ABI compatibility.
+         *
+         * \param signal currently must be gmxapi::md::signals::STOP
+         * \return callable object.
+         *
+         * Example:
+         *
+         *     auto signal = sessionResources->getMdrunnerSignal(md::signals::STOP);
+         *     signal();
+         *
+         * \throws gmxapi::NotImplementedError if an implementation is not available for the requested signal.
+         * \throws gmxapi::ProtocolError if the Session or Signaller is not available.
+         */
+        Signal getMdrunnerSignal(md::signals signal);
     private:
         /*!
          * \brief pointer to the session owning these resources

@@ -44,11 +44,13 @@
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/init.h"
 
+
 #include "gmxapi/context.h"
 #include "gmxapi/exceptions.h"
 #include "gmxapi/status.h"
 #include "gmxapi/md/mdmodule.h"
 
+#include "mdsignals-impl.h"
 #include "sessionresources-impl.h"
 
 namespace gmxapi
@@ -90,6 +92,43 @@ class MpiContextManager
         MpiContextManager(MpiContextManager &&) noexcept            = default;
         MpiContextManager &operator=(MpiContextManager &&) noexcept = default;
 };
+
+/*!
+ * \brief Check if a an object can be considered "open".
+ *
+ * This should be generalized to an API idiom.
+ *
+ * \tparam T type that can be open or closed.
+ * \param object something that has a concept of "open" or "closed."
+ * \return true if open, false if closed, compiler error if non-sensical.
+ */
+template<class T>
+bool isOpen(const T &object);
+//{
+//    (void) object;
+//    static_assert(false, "Compiler could not find open/close concept for the given object.");
+//    return false;
+//}
+
+template<>
+bool isOpen<SessionImpl>(const SessionImpl &object)
+{
+    return object.isOpen();
+}
+
+template<>
+bool isOpen<Session>(const Session &object)
+{
+    return object.isOpen();
+}
+
+
+SignalManager::SignalManager(gmx::Mdrunner *runner) : runner_(runner)
+{
+
+}
+
+SignalManager::~SignalManager() = default;
 
 bool SessionImpl::isOpen() const noexcept
 {
@@ -149,12 +188,19 @@ mpiContextManager_ {
 },
 runner_ {
     std::move(runner)
+},
+signal_ {
+    gmx::compat::make_unique<SignalManager>(runner_.get())
 }
 {
     assert(status_ != nullptr);
     assert(context_ != nullptr);
     assert(mpiContextManager_ != nullptr);
     assert(runner_ != nullptr);
+    assert(signal_ != nullptr);
+    // For the libgromacs context, a session should explicitly reset global variables that could
+    // have been set in a previous simulation during the same process.
+    gmx_sighandler_reset();
 }
 
 Status SessionImpl::setRestraint(std::shared_ptr<gmxapi::MDModule> module)
@@ -233,6 +279,8 @@ gmxapi::SessionResources *SessionImpl::createResources(std::shared_ptr<gmxapi::M
         auto resourcesInstance = gmx::compat::make_unique<SessionResources>(this, name);
         resources_.emplace(std::make_pair(name, std::move(resourcesInstance)));
         resources = resources_.at(name).get();
+        // This should be more dynamic.
+        getSignalManager()->addSignaller(name);
         std::shared_ptr<gmx::IRestraintPotential> restraint {
             nullptr
         };
@@ -248,6 +296,18 @@ gmxapi::SessionResources *SessionImpl::createResources(std::shared_ptr<gmxapi::M
     }
     ;
     return resources;
+}
+
+SignalManager *SessionImpl::getSignalManager()
+{
+    SignalManager* ptr {
+        nullptr
+    };
+    if (isOpen())
+    {
+        ptr = signal_.get();
+    }
+    return ptr;
 }
 
 Session::Session(std::unique_ptr<SessionImpl> &&impl) noexcept :
@@ -348,7 +408,6 @@ name_ {
     std::move(name)
 }
 {
-    (void)sessionImpl_;
 }
 
 SessionResources::~SessionResources() = default;
@@ -356,6 +415,29 @@ SessionResources::~SessionResources() = default;
 const std::string SessionResources::name() const
 {
     return name_;
+}
+
+Signal SessionResources::getMdrunnerSignal(md::signals signal)
+{
+    //// while there is only one choice...
+//    if (signal == md::signals::STOP)
+//    {
+    if (signal != md::signals::STOP)
+    {
+        throw gmxapi::NotImplementedError("This signaller only handles stop signals.");
+    }
+    ;
+
+    // Get a signalling proxy for the caller.
+    auto signalManager = sessionImpl_->getSignalManager();
+    if (signalManager == nullptr)
+    {
+        throw gmxapi::ProtocolError("Client requested access to a signaller that is not available.");
+    }
+    ;
+    auto functor = signalManager->getSignal(name_, signal);
+
+    return functor;
 }
 
 } // end namespace gmxapi
