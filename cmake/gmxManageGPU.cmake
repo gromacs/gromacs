@@ -87,12 +87,6 @@ endif()
 #               fail if it is not available.
 # - ON , TRUE : Can't happen (GMX_GPU=ON can only be user-set at this point)
 if((GMX_GPU OR GMX_GPU_AUTO) AND NOT GMX_GPU_DETECTION_DONE)
-    if (EXISTS ${CUDA_TOOLKIT_ROOT_DIR})
-        set(CUDA_FOUND TRUE CACHE INTERNAL "Whether the CUDA toolkit was found" FORCE)
-    else()
-        set(CUDA_FOUND FALSE CACHE INTERNAL "Whether the CUDA toolkit was found" FORCE)
-    endif()
-
     # assemble warning/error message
     if (GMX_DETECT_GPU_AVAILABLE)
         set(_msg "${GMX_DETECT_GPU_COUNT} NVIDIA GPU(s) found in the system")
@@ -133,7 +127,7 @@ ${_msg}")
             message(STATUS "Enabling native GPU acceleration")
             set_property(CACHE GMX_GPU PROPERTY VALUE ON)
         endif()
-    endif() # NOT CUDA_FOUND
+    endif()
 endif()
 
 # Try to find NVML if a GPU accelerated binary should be build.
