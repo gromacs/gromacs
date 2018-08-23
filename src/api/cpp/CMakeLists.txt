@@ -50,6 +50,8 @@ add_subdirectory(include)
 configure_file(include/version.h.in include/gmxapi/version.h)
 
 add_library(gmxapi SHARED
+            md.cpp
+            mdmodule.cpp
             version.cpp)
 
 # Define public interface. Make sure targets linking against `gmxapi` in the build
@@ -71,7 +73,9 @@ target_include_directories(gmxapi PRIVATE
 # If any item begins in a generator expression it must evaluate to a full path,
 # so we can't just use something like $<TARGET_PROPERTIES:gmxapiPublicHeaders,SOURCES>.
 # Instead, we use a canonical list defined in the parent scope.
-install(FILES ${GMXAPI_PUBLIC_HEADERS}
+install(DIRECTORY include/gmxapi
+        DESTINATION include)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/gmxapi/version.h
         DESTINATION include/gmxapi)
 
 # Ref. https://cmake.org/Wiki/CMake_RPATH_handling
