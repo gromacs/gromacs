@@ -47,6 +47,8 @@ file(MAKE_DIRECTORY ${GMXAPI_DEVDOC_OUTPUT})
 get_target_property(GMXAPI_SOURCE_DIR gmxapi SOURCE_DIR)
 get_target_property(GMXAPI_BINARY_DIR gmxapi BINARY_DIR)
 
+string(REPLACE ";" " " GMXAPI_PUBLIC_BUILD_HEADERS "${GMXAPI_PUBLIC_BUILD_HEADERS}")
+
 # Use GMXAPI_PUBLIC_BUILD_HEADERS to populate source files.
 configure_file(Doxyfile.in Doxyfile @ONLY)
 

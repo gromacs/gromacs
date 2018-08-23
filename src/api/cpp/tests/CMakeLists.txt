@@ -46,6 +46,7 @@
 
 gmx_add_gtest_executable(
     gmxapi-test
+    status.cpp
     version.cpp
     )
 
@@ -63,6 +64,7 @@ set_tests_properties(GmxapiExternalInterfaceTests PROPERTIES
 
 gmx_add_gtest_executable(
     gmxapi-mpi-test MPI
+    status.cpp
     version.cpp
     )
 
