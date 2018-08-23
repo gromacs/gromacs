@@ -139,6 +139,44 @@ class MDModule;
 
  */
 
+/*!
+ * \brief Container for Molecular Dynamics simulation setup.
+ *
+ * Client code provides the specification for MD work through an object of this type and registers
+ * the object in the computing context when an execution session is launched. The contents of the
+ * MDWorkSpec are used to pass appropriate parameters to the MD runner.
+ *
+ * \ingroup gmxapi_md
+ */
+class MDWorkSpec
+{
+    public:
+        MDWorkSpec();
+        ~MDWorkSpec();
+
+        /*!
+         * \brief Grant shared ownership of a modular MD computation object
+         *
+         * \param module instance that can produce a IRestraintPotential at runtime.
+         */
+        void addModule(std::shared_ptr<gmxapi::MDModule> module);
+
+        /*!
+         * \brief Get a handle to the stored list of modules
+         *
+         * Future versions of MDWorkSpec will not directly hold and grant access to module instances.
+         * \return reference that is only valid for the life of this object.
+         */
+        std::vector < std::shared_ptr < gmxapi::MDModule>>&getModules();
+    private:
+        /// \cond internal
+        /// \brief Private implementation class
+        class Impl;
+        /// \brief Opaque pointer to implementation object.
+        std::unique_ptr<Impl> impl_;
+        /// \endcond
+};
+
 }      // end namespace gmxapi
 
 #endif // header guard

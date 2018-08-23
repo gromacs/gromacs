@@ -75,6 +75,24 @@ class MDModule
         virtual ~MDModule();
         virtual const char* name() { return "MDModule"; };
 
+        /*!
+         * \brief Allows module to provide a restraint implementation.
+         *
+         * To implement a restraint, override this function.
+         * \return shared ownership of a restraint implementation or nullptr if not implemented.
+         *
+         * With future maturation, this interface will presumably be revised to something
+         * more abstract, though I'm not sure what form that would take. We will probably
+         * still need to have a general set of possible module types defined with the API,
+         * in which case it does make sense to have clearly typed dispatching, and
+         * `bool hasRestraint = module->getRestraint() != nullptr;` might be the simplest thing.
+         *
+         * Implementing a restraint is explained in the GROMACS developer documentation,
+         * which is currently built separately from the GMXAPI documentation.
+         * Also, refer to the sample plugin in a repository hosted in the same
+         * place this git repository is found.
+         */
+        virtual std::shared_ptr<::gmx::IRestraintPotential> getRestraint();
 };
 
 

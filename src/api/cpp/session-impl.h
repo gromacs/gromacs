@@ -122,6 +122,8 @@ class SessionImpl
         static std::unique_ptr<SessionImpl> create(std::shared_ptr<ContextImpl>   context,
                                                    std::unique_ptr<gmx::Mdrunner> runner);
 
+        Status setRestraint(std::shared_ptr<gmxapi::MDModule> module);
+
         /*! \internal
          * \brief API implementation function to retrieve the current runner.
          *

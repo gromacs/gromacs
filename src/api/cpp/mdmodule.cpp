@@ -43,4 +43,9 @@ namespace gmxapi
 
 MDModule::~MDModule() = default;
 
+std::shared_ptr<::gmx::IRestraintPotential> MDModule::getRestraint()
+{
+    return nullptr;
+}
+
 } // end namespace gmxapi
