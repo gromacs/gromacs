@@ -288,6 +288,28 @@ void pull_calc_coms(const t_commrec *cr,
                     const rvec       x[],
                     rvec            *xp);
 
+/*! \brief Margin for checking PBC distances compared to half the box size in pullCheckPbcWithinGroups() */
+static constexpr real c_pullGroupPbcMargin = 0.9;
+
+/*! \brief Checks whether all groups that use a reference atom are within PBC restrictions
+ *
+ * Groups that use a reference atom for determining PBC should have all their
+ * atoms within half the box size from the PBC atom. The box size is used
+ * per dimension for rectangular boxes, but can be a combination of
+ * dimensions for triclinic boxes, depending on which dimensions are
+ * involved in the pull coordinates a group is involved in.
+ *
+ * Should be called without MPI parallelization and after pull_calc_coms()
+ * has been called at least once.
+ *
+ * \param[in] pull  The pull data structure
+ * \param[in] x     The coordinates
+ * \param[in] pbc   Information struct about periodicity
+ * \returns -1 when all groups obey PBC or the first group index that fails PBC
+ */
+int pullCheckPbcWithinGroups(const pull_t &pull,
+                             const rvec   *x,
+                             const t_pbc  &pbc);
 
 /*! \brief Returns if we have pull coordinates with potential pulling.
  *

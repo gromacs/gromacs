@@ -177,9 +177,9 @@ bool pme_gpu_supports_input(const t_inputrec *ir, std::string *error)
     {
         errorReasons.emplace_back("group cutoff scheme");
     }
-    if (EI_TPI(ir->eI))
+    if (!EI_DYNAMICS(ir->eI))
     {
-        errorReasons.emplace_back("test particle insertion");
+        errorReasons.push_back("not a dynamical integrator");
     }
     return addMessageIfNotSupported(errorReasons, error);
 }
