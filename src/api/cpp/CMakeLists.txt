@@ -53,6 +53,7 @@ configure_file(include/version.h.in include/gmxapi/version.h)
 # inspected or, for full paths in the build environment, the GMXAPI_PUBLIC_BUILD_HEADERS
 # variable. See below.
 set(_gmxapi_interface_headers
+    include/gmxapi/exceptions.h
     include/gmxapi/gromacsfwd.h
     include/gmxapi/status.h
     include/gmxapi/version.h)
