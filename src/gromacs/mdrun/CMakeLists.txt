@@ -33,12 +33,16 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_libgromacs_sources(
+    context.cpp
     integrator.cpp
     md.cpp
     minimize.cpp
     runner.cpp
     tpi.cpp
     )
+
+gmx_install_headers(integrator.h
+                    context.h)
 
 if (BUILD_TESTING)
 # TODO import this from src/programs/mdrun/tests
