@@ -311,6 +311,8 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
 
 static void reset_nblist(t_nblist *nl)
 {
+    GMX_RELEASE_ASSERT(nl, "Should only reset valid nblists");
+
     nl->nri       = -1;
     nl->nrj       = 0;
     if (nl->jindex)
@@ -323,7 +325,7 @@ static void reset_neighbor_lists(t_forcerec *fr)
 {
     int n, i;
 
-    if (fr->bQMMM)
+    if (fr->bQMMM && fr->qr->QMMMscheme != eQMMMschemeoniom)
     {
         /* only reset the short-range nblist */
         reset_nblist(fr->QMMMlist);

@@ -58,6 +58,7 @@ namespace
 
 using gmx::test::CommandLine;
 using gmx::test::ConfMatch;
+using gmx::test::ExactTextMatch;
 
 class SolvateTest : public gmx::test::CommandLineTestBase
 {
@@ -121,6 +122,26 @@ TEST_F(SolvateTest, shell_Works)
     };
     setInputFile("-cp", "spc-and-methanol.gro");
     commandLine().addOption("-shell", 1.0);
+
+    runTest(CommandLine(cmdline));
+}
+
+TEST_F(SolvateTest, update_Topology_Works)
+{
+    // use solvent box with 2 solvents, check that topology has been updated
+    const char *const cmdline[] = {
+        "solvate"
+    };
+    setInputFile("-cs", "mixed_solvent.gro");
+    setInputFile("-cp", "simple.gro");
+
+    // TODO: Consider adding a convenience method for this.
+    // Copies topology file to where it would be found as an output file, so the copied
+    // .top file is used as both input and output
+    std::string topFileName           = fileManager().getInputFilePath("simple.top");
+    std::string modifiableTopFileName = fileManager().getTemporaryFilePath("simple.top");
+    gmx_file_copy(topFileName.c_str(), modifiableTopFileName.c_str(), true);
+    setOutputFile("-p", "simple.top", ExactTextMatch());
 
     runTest(CommandLine(cmdline));
 }

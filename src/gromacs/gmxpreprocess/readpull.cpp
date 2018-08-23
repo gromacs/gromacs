@@ -496,7 +496,8 @@ void make_pull_coords(pull_params_t *pull)
 }
 
 pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
-                      rvec *x, matrix box, real lambda)
+                      rvec *x, matrix box, real lambda,
+                      warninp_t wi)
 {
     pull_params_t *pull;
     pull_t        *pull_work;
@@ -520,6 +521,19 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
     t_start = ir->init_t + ir->init_step*ir->delta_t;
 
     pull_calc_coms(nullptr, pull_work, md, &pbc, t_start, x, nullptr);
+
+    int groupThatFailsPbc = pullCheckPbcWithinGroups(*pull_work, x, pbc);
+    if (groupThatFailsPbc >= 0)
+    {
+        char buf[STRLEN];
+        sprintf(buf,
+                "Pull group %d has atoms at a distance larger than %g times half the box size from the PBC atom (%d). If atoms are or will more beyond half the box size from the PBC atom, the COM will be ill defined.",
+                groupThatFailsPbc,
+                c_pullGroupPbcMargin,
+                pull->group[groupThatFailsPbc].pbcatom);
+        set_warning_line(wi, nullptr, -1);
+        warning(wi, buf);
+    }
 
     fprintf(stderr, "Pull group  natoms  pbc atom  distance at start  reference at t=0\n");
     for (c = 0; c < pull->ncoord; c++)
