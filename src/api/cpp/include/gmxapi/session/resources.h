@@ -32,64 +32,32 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+//
+// Created by Eric Irrgang on 7/10/18.
+//
 
-#include "gmxpre.h"
+#ifndef GMXAPI_SESSION_RESOURCES_H
+#define GMXAPI_SESSION_RESOURCES_H
 
-#include "gromacs/restraint/manager.h"
+/*! \file
+ * \brief Define interface to Session Resources for running gmxapi operations.
+ */
 
-#include <gtest/gtest.h>
-
-namespace
+namespace gmxapi
 {
 
-class DummyRestraint : public gmx::IRestraintPotential
-{
-    public:
-        ~DummyRestraint() override = default;
+/*!
+ * \brief Handle to Session-provided resources.
+ *
+ * Session handle for workflow elements requiring resources provided through the Session.
+ *
+ * Provided during launch through gmx::IRestraintPotential::bindSession()
+ *
+ * No public interface yet. Use accompanying free functions.
+ * \see gmxapi::getMdrunnerSignal()
+ */
+class SessionResources;
 
-        gmx::PotentialPointData evaluate(gmx::Vector r1,
-                                         gmx::Vector r2,
-                                         double      t) override
-        {
-            (void) r1;
-            (void) r2;
-            (void) t;
-            return {};
-        }
+}      // end namespace gmxapi
 
-        void update(gmx::Vector v,
-                    gmx::Vector v0,
-                    double      t) override
-        { (void)v; (void)v0; (void)t; }
-
-        std::vector<unsigned long> sites() const override
-        {
-            return std::vector<unsigned long>();
-        }
-
-        void bindSession(gmxapi::SessionResources *session) override
-        {
-            (void)session;
-        }
-};
-
-TEST(RestraintManager, singleton)
-{
-    auto managerInstance = gmx::restraint::Manager::instance();
-    ASSERT_TRUE(managerInstance);
-}
-
-TEST(RestraintManager, restraintList)
-{
-    auto managerInstance = gmx::restraint::Manager::instance();
-    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "a");
-    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "b");
-    ASSERT_EQ(managerInstance->countRestraints(), 2);
-    managerInstance->clear();
-    ASSERT_EQ(managerInstance->countRestraints(), 0);
-    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "c");
-    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "d");
-    ASSERT_EQ(managerInstance->countRestraints(), 2);
-}
-
-} // end namespace
+#endif //GMXAPI_SESSION_RESOURCES_H
