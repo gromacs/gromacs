@@ -49,6 +49,7 @@
 #include "gmxapi/context.h"
 #include "gmxapi/md.h"
 #include "gmxapi/status.h"
+#include "gmxapi/session/resources.h"
 #include "gromacs/mdrun/runner.h"
 
 namespace gmxapi
@@ -131,6 +132,31 @@ class SessionImpl
          */
         gmx::Mdrunner* getRunner();
 
+        /*!
+         * \brief Get a handle to the resources for the named session operation.
+         *
+         * \param name unique name of element in workflow
+         * \return temporary access to the resources.
+         *
+         * If called on a non-const Session, creates the resource if it does not yet exist. If called on a const Session,
+         * returns nullptr if the resource does not exist.
+         */
+        gmxapi::SessionResources* getResources(const std::string &name) const noexcept;
+
+        /*!
+         * \brief Create SessionResources for a module and bind the module.
+         *
+         * Adds a new managed resources object to the Session for the uniquely named module.
+         * Allows the module to bind to the SignalManager and to the resources object.
+         *
+         * \param module
+         * \return non-owning pointer to created resources or nullptr for error.
+         *
+         * If the named module is already registered, calling createResources again is considered an
+         * error and nullptr is returned.
+         */
+        gmxapi::SessionResources* createResources(std::shared_ptr<gmxapi::MDModule> module) noexcept;
+
     private:
         /*!
          * \brief Private constructor for use by create()
@@ -140,6 +166,11 @@ class SessionImpl
          */
         SessionImpl(std::shared_ptr<ContextImpl>   context,
                     std::unique_ptr<gmx::Mdrunner> runner);
+
+        /*!
+         * \brief Manage session resources for named workflow elements.
+         */
+        std::map < std::string, std::unique_ptr < SessionResources>> resources_;
 
         /*!
          * \brief Current / most recent Status for the session.
