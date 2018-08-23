@@ -166,7 +166,8 @@ target_include_directories(gmxapi PRIVATE
 # Private / implementation headers in src/api/cpp
 target_sources(gmxapi PRIVATE
                session-impl.h
-               system-impl.h)
+               system-impl.h
+               workflow-impl.h)
 
 target_sources(
     gmxapi PRIVATE
@@ -177,6 +178,7 @@ target_sources(
     status.cpp
     system.cpp
     version.cpp
+    workflow.cpp
 )
 
 # Help development tools to understand how include paths will be resolved.

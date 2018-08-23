@@ -32,37 +32,66 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMXAPI_SYSTEM_IMPL_H
-#define GMXAPI_SYSTEM_IMPL_H
+//
+// Created by Eric Irrgang on 11/28/17.
+//
 
+#include <memory>
+
+#include "testingconfiguration.h"
+#include "workflow.h"
+#include "workflow-impl.h"
+#include "gmxapi/context.h"
+#include "gmxapi/md.h"
+#include "gmxapi/status.h"
 #include "gmxapi/system.h"
+#include <gtest/gtest.h>
 
-namespace gmxapi
+#include "gromacs/compat/make_unique.h"
+#include "gromacs/utility/arrayref.h"
+
+namespace
 {
 
-class Workflow;
+const auto filename = gmxapi::testing::sample_tprfilename;
 
-class System::Impl final
+// Create a work spec, then the implementation graph, then the container
+TEST(ApiWorkflowImpl, Build)
 {
-    public:
-        Impl();
-        ~Impl();
+    // Create work spec
+    auto node = gmx::compat::make_unique<gmxapi::MDNodeSpecification>(filename);
+    ASSERT_NE(node, nullptr);
 
-        Impl(Impl &&) noexcept            = default;
-        Impl &operator=(Impl &&) noexcept = default;
+    // Create key
+    std::string key {
+        "MD"
+    };
+    key.append(filename);
 
-        explicit Impl(std::unique_ptr<gmxapi::Workflow> &&workflow) noexcept;
+    // Create graph (workflow implementation object)
+    gmxapi::Workflow::Impl impl;
+    impl[key] = std::move(node);
+    ASSERT_EQ(impl.count(key), 1);
+    ASSERT_EQ(impl.size(), 1);
 
-        Status status() const;
+    // Create workflow container
+    gmxapi::Workflow work {
+        std::move(impl)
+    };
+}
 
-        std::shared_ptr<Session> launch(std::shared_ptr<Context> context);
+TEST(ApiWorkflow, Creation)
+{
+    // Create from create() method(s)
+    auto work = gmxapi::Workflow::create(filename);
+    ASSERT_NE(work, nullptr);
+}
 
-    private:
-        std::shared_ptr<Context>            context_;
-        std::shared_ptr<Workflow>           workflow_;
-        std::unique_ptr<Status>             status_;
-};
+TEST(ApiWorkflow, Accessors)
+{
+    auto work = gmxapi::Workflow::create(filename);
+//    work->addNode()
+//    work->getNode()
+}
 
-}      // end namespace gmxapi
-
-#endif // header guard
+} // end anonymous namespace

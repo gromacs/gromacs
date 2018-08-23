@@ -161,7 +161,7 @@ class Session
  * \brief Launch a workflow in the provided execution context.
  *
  * \param context Execution environment
- * \param filename Directed acyclic graph defining workflow and data flow.
+ * \param work Directed acyclic graph defining workflow and data flow.
  * \return non-unique ownership of the session or nullptr in failure.
  *
  * The provided context maintains a weak reference to the executing session, while
@@ -170,8 +170,7 @@ class Session
  * If session fails to launch (nullptr returned) examine the Status of the context
  * for details.
  */
-std::shared_ptr<Session> launchSession(Context   * context,
-                                       std::string filename);
+std::shared_ptr<Session> launchSession(Context* context, const Workflow &work) noexcept;
 
 
 }      // end namespace gmxapi

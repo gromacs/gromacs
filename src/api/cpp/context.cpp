@@ -49,6 +49,8 @@
 #include "gmxapi/version.h"
 
 #include "session-impl.h"
+#include "workflow.h"
+#include "workflow-impl.h"
 #include "gmxapi/context.h"
 #include "gmxapi/exceptions.h"
 #include "gmxapi/gmxapi.h"
@@ -122,12 +124,12 @@ class ContextImpl final : public std::enable_shared_from_this<ContextImpl>
         /*!
          * \brief Translate the workflow to the execution context and launch.
          *
-         * \param filename workflow graph
+         * \param work workflow graph
          * \return ownership of a new session
          *
          * \todo This probably makes more sense as a free function.
          */
-        std::shared_ptr<Session> launch(std::string filename);
+        std::shared_ptr<Session> launch(const Workflow &work);
 
         /*!
          * \brief Status of the last operation in the local context.
@@ -161,7 +163,7 @@ std::shared_ptr<const Status> ContextImpl::status() const noexcept
     return status_;
 }
 
-std::shared_ptr<Session> ContextImpl::launch(std::string filename)
+std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
 {
     // Assume failure until proven otherwise.
     assert(status_ != nullptr);
@@ -178,6 +180,13 @@ std::shared_ptr<Session> ContextImpl::launch(std::string filename)
     if (session_.expired())
     {
         // Check workflow spec, build graph for current context, launch and return new session.
+        // \todo This is specific to the session implementation...
+        auto        mdNode = work.getNode("MD");
+        std::string filename {};
+        if (mdNode != nullptr)
+        {
+            filename = mdNode->params();
+        }
         auto mdRunnerBuilder = gmx::compat::make_unique<gmx::MdrunnerBuilder>();
 
         /* As default behavior, automatically extend trajectories from the checkpoint file.
@@ -593,9 +602,9 @@ Context::Context() :
     assert(impl_ != nullptr);
 }
 
-std::shared_ptr<Session> Context::launch(std::string filename)
+std::shared_ptr<Session> Context::launch(const Workflow &work)
 {
-    return impl_->launch(filename);
+    return impl_->launch(work);
 }
 
 Context::Context(std::shared_ptr<ContextImpl> &&impl) :
