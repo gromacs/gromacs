@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012, by the GROMACS development team, led by
+# Copyright (c) 2012,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -70,7 +70,9 @@ endmacro()
 
 macro(gmx_detect_gpu)
 
-    if (NOT DEFINED GMX_DETECT_GPU_COUNT OR NOT DEFINED GMX_DETECT_GPU_INFO)
+    if (NOT DEFINED GMX_DETECT_GPU_AVAILABLE OR
+        NOT DEFINED GMX_DETECT_GPU_COUNT OR
+        NOT DEFINED GMX_DETECT_GPU_INFO)
 
         set(GMX_DETECT_GPU_COUNT 0)
         set(GMX_DETECT_GPU_INFO  "")
@@ -217,5 +219,5 @@ macro(gmx_detect_gpu)
             message(STATUS "Could not detect NVIDIA GPUs")
         endif()
 
-    endif (NOT DEFINED GMX_DETECT_GPU_COUNT OR NOT DEFINED GMX_DETECT_GPU_INFO)
+    endif()
 endmacro(gmx_detect_gpu)
