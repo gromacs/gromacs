@@ -147,7 +147,8 @@ void make_pull_coords(pull_params_t *pull);
 /* Process the pull coordinates after reading the pull groups */
 
 pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
-                      rvec *x, matrix box, real lambda);
+                      rvec *x, matrix box, real lambda,
+                      warninp_t wi);
 /* Prints the initial pull group distances in x.
  * If requested, adds the current distance to the initial reference location.
  * Returns the pull_t pull work struct. This should be passed to finish_pull()

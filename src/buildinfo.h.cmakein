@@ -90,6 +90,9 @@
 /** Location of GROMACS-specific data files */
 #define GMX_INSTALL_GMXDATADIR  "@GMX_INSTALL_GMXDATADIR@"
 
+/** HWLOC version information */
+#define HWLOC_VERSION "@HWLOC_VERSION@"
+
 /** CUDA compiler version information */
 #define CUDA_COMPILER_INFO "@CUDA_COMPILER_INFO@"
 

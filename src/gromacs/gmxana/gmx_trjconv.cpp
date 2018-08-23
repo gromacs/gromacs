@@ -872,7 +872,7 @@ int gmx_trjconv(int argc, char *argv[])
     real             *w_rls = nullptr;
     int               m, i, d, frame, outframe, natoms, nout, ncent, newstep = 0, model_nr;
 #define SKIP 10
-    t_topology        top;
+    t_topology       *top   = nullptr;
     gmx_conect        gc    = nullptr;
     int               ePBC  = -1;
     t_atoms          *atoms = nullptr, useatoms;
@@ -1096,13 +1096,14 @@ int gmx_trjconv(int argc, char *argv[])
 
         if (bTPS)
         {
-            read_tps_conf(top_file, &top, &ePBC, &xp, nullptr, top_box,
+            snew(top, 1);
+            read_tps_conf(top_file, top, &ePBC, &xp, nullptr, top_box,
                           bReset || bPBCcomRes);
-            std::strncpy(top_title, *top.name, 255);
+            std::strncpy(top_title, *top->name, 255);
             top_title[255] = '\0';
-            atoms          = &top.atoms;
+            atoms          = &top->atoms;
 
-            if (0 == top.mols.nr && (bCluster || bPBCcomMol))
+            if (0 == top->mols.nr && (bCluster || bPBCcomMol))
             {
                 gmx_fatal(FARGS, "Option -pbc %s requires a .tpr file for the -s option", pbc_opt[pbc_enum]);
             }
@@ -1125,11 +1126,11 @@ int gmx_trjconv(int argc, char *argv[])
 
             if (bCONECT)
             {
-                gc = gmx_conect_generate(&top);
+                gc = gmx_conect_generate(top);
             }
             if (bRmPBC)
             {
-                gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
+                gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
             }
         }
 
@@ -1222,7 +1223,7 @@ int gmx_trjconv(int argc, char *argv[])
                store original location (to put structure back) */
             if (bRmPBC)
             {
-                gmx_rmpbc(gpbc, top.atoms.nr, top_box, xp);
+                gmx_rmpbc(gpbc, top->atoms.nr, top_box, xp);
             }
             copy_rvec(xp[index[0]], x_shift);
             reset_x_ndim(nfitdim, ifit, ind_fit, atoms->nr, nullptr, xp, w_rls);
@@ -1532,7 +1533,7 @@ int gmx_trjconv(int argc, char *argv[])
                 }
                 else if (bCluster)
                 {
-                    calc_pbc_cluster(ecenter, ifit, &top, ePBC, fr.x, ind_fit, fr.box);
+                    calc_pbc_cluster(ecenter, ifit, top, ePBC, fr.x, ind_fit, fr.box);
                 }
 
                 if (bPFit)
@@ -1710,7 +1711,7 @@ int gmx_trjconv(int argc, char *argv[])
                         if (bPBCcomMol)
                         {
                             put_molecule_com_in_box(unitcell_enum, ecenter,
-                                                    &top.mols,
+                                                    &top->mols,
                                                     natoms, atoms->atom, ePBC, fr.box, fr.x);
                         }
                         /* Copy the input trxframe struct to the output trxframe struct */
@@ -1980,7 +1981,8 @@ int gmx_trjconv(int argc, char *argv[])
 
     if (bTPS)
     {
-        done_top(&top);
+        done_top(top);
+        sfree(top);
     }
     sfree(xp);
     sfree(xmem);

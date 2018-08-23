@@ -34,6 +34,8 @@
  */
 #include "gmxpre.h"
 
+#include <array>
+
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -274,16 +276,18 @@ TEST_F(SimdIntegerTest, orB)
 
 TEST_F(SimdIntegerTest, anyTrue)
 {
-    SimdIBool eq;
+    alignas(GMX_SIMD_ALIGNMENT) std::array<std::int32_t, GMX_SIMD_REAL_WIDTH> mem {};
 
-    /* See comment in floatingpoint.cpp. We should only check the first element here,
-     * since the SIMD width could be 1 as a special case.
-     */
-    eq = (iSimd_5_7_9 == setSimdIntFrom3I(5, 0, 0));
-    EXPECT_TRUE(anyTrue(eq));
+    // Test the false case
+    EXPECT_FALSE(anyTrue(setZero() < load<SimdInt32>(mem.data())));
 
-    eq = (iSimd_1_2_3 == iSimd_4_5_6);
-    EXPECT_FALSE(anyTrue(eq));
+    // Test each bit (these should all be true)
+    for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        mem.fill(0);
+        mem[i] = 1;
+        EXPECT_TRUE(anyTrue(setZero() < load<SimdInt32>(mem.data()))) << "Not detecting true in element " << i;
+    }
 }
 
 TEST_F(SimdIntegerTest, blend)
