@@ -53,6 +53,9 @@ configure_file(include/version.h.in include/gmxapi/version.h)
 # inspected or, for full paths in the build environment, the GMXAPI_PUBLIC_BUILD_HEADERS
 # variable. See below.
 set(_gmxapi_interface_headers
+    include/gmxapi/gmxapi.h
+    include/gmxapi/md.h
+    include/gmxapi/md/mdmodule.h
     include/gmxapi/version.h)
 
 ################################################################################
@@ -147,10 +150,13 @@ target_include_directories(gmxapi PRIVATE
 # and IDEs work better.
 
 # Private / implementation headers in src/api/cpp
-target_sources(gmxapi PRIVATE)
+target_sources(gmxapi PRIVATE
+               md-impl.h
+               )
 
 target_sources(
     gmxapi PRIVATE
+    mdmodule.cpp
     version.cpp
 )
 
