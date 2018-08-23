@@ -167,6 +167,7 @@ target_include_directories(gmxapi PRIVATE
 target_sources(gmxapi PRIVATE
                md-impl.h
                session-impl.h
+               sessionresources-impl.h
                system-impl.h
                workflow.h
                workflow-impl.h)
@@ -177,6 +178,7 @@ target_sources(
     gmxapi.cpp
     md.cpp
     mdmodule.cpp
+    outputstream.cpp
     session.cpp
     status.cpp
     system.cpp
