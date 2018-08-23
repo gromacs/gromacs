@@ -43,8 +43,6 @@
 
 #include "restraintmdmodule-impl.h"
 
-using gmx::compat::make_unique;
-
 gmx::RestraintForceProvider::RestraintForceProvider(std::shared_ptr<gmx::IRestraintPotential> restraint,
                                                     const std::vector<unsigned long int>     &sites) :
     restraint_ {std::move(restraint)}
@@ -184,12 +182,12 @@ gmx::RestraintMDModuleImpl::~RestraintMDModuleImpl() = default;
 
 gmx::RestraintMDModuleImpl::RestraintMDModuleImpl(std::shared_ptr<gmx::IRestraintPotential> restraint,
                                                   const std::vector<unsigned long int>     &sites) :
-    forceProvider_ {make_unique<RestraintForceProvider>(restraint, sites)},
+    forceProvider_ {::gmx::compat::make_unique<RestraintForceProvider>(restraint, sites)},
 outputProvider_ {
-    make_unique<RestraintOutputProvider>()
+    ::gmx::compat::make_unique<RestraintOutputProvider>()
 },
 optionProvider_ {
-    make_unique<RestraintOptionProvider>()
+    ::gmx::compat::make_unique<RestraintOptionProvider>()
 }
 {
     assert(forceProvider_ != nullptr);
@@ -216,11 +214,8 @@ void gmx::RestraintMDModuleImpl::initForceProviders(ForceProviders *forceProvide
     forceProviders->addForceProvider(forceProvider_.get());
 }
 
-
 // Needs to be defined after implementation type is complete in order to have unique_ptr member.
 gmx::RestraintMDModule::~RestraintMDModule() = default;
-
-
 
 gmx::IMdpOptionProvider *gmx::RestraintMDModule::mdpOptionProvider()
 {
@@ -244,7 +239,7 @@ std::unique_ptr<gmx::RestraintMDModule>
 gmx::RestraintMDModule::create(std::shared_ptr<gmx::IRestraintPotential> restraint,
                                const std::vector<unsigned long int>     &sites)
 {
-    auto implementation = make_unique<RestraintMDModuleImpl>(std::move(restraint), sites);
+    auto implementation = ::gmx::compat::make_unique<RestraintMDModuleImpl>(std::move(restraint), sites);
     std::unique_ptr<gmx::RestraintMDModule> newModule {
         new RestraintMDModule(std::move(implementation))
     };
