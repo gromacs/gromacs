@@ -45,6 +45,10 @@
  * \ingroup module_mdrun
  */
 
+// This header dependency can probably be removed with the acceptance of other
+// changes currently under review.
+#include "gromacs/mdlib/simulationsignal.h"
+
 namespace gmx
 {
 
@@ -90,6 +94,15 @@ class Context
          * \param runner non-owning pointer to the runner that owns the Context object.
          */
         explicit Context(const Mdrunner &runner);
+
+        /*!
+         * \brief Get a reference to the current array of signal flags.
+         *
+         * There is no guarantee that the flags have been initialized yet.
+         *
+         * \return pointer to signals array.
+         */
+        SimulationSignals * simulationSignals() const;
 
     private:
         const gmx::Mdrunner* runner_ {nullptr};

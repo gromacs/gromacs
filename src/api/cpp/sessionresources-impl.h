@@ -51,7 +51,7 @@
 
 #include <string>
 
-#include "gmxapi/session.h"
+#include "gmxapi/md/mdsignals.h"
 
 namespace gmxapi
 {
@@ -107,6 +107,27 @@ class SessionResources final
          */
         const std::string name() const;
 
+        /*!
+         * \brief Get a Signal instance implementing the requested MD signal.
+         *
+         * The caller is responsible for ensuring that the session is still active.
+         * Unfortunately, there isn't really a way to do that right now. This needs improvemnt
+         * in a near future version.
+         *
+         * Also, this is an external interface that should avoid throwing exceptions for ABI compatibility.
+         *
+         * \param signal currently must be gmxapi::md::signals::STOP
+         * \return callable object.
+         *
+         * Example:
+         *
+         *     auto signal = sessionResources->getMdrunnerSignal(md::signals::STOP);
+         *     signal();
+         *
+         * \throws gmxapi::NotImplementedError if an implementation is not available for the requested signal.
+         * \throws gmxapi::ProtocolError if the Session or Signaller is not available.
+         */
+        Signal getMdrunnerSignal(md::signals signal);
     private:
         /*!
          * \brief pointer to the session owning these resources

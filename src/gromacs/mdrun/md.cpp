@@ -338,11 +338,11 @@ void gmx::MDIntegrator::Impl::run()
        code. So we do that alongside the first global energy reduction
        after a new DD is made. These variables handle whether the
        check happens, and the result it returns. */
-    bool              shouldCheckNumberOfBondedInteractions = false;
-    int               totalNumberOfBondedInteractions       = -1;
+    bool               shouldCheckNumberOfBondedInteractions = false;
+    int                totalNumberOfBondedInteractions       = -1;
 
-    SimulationSignals signals;
-    // Most global communnication stages don't propagate mdrun
+    SimulationSignals &signals = *context_->simulationSignals();
+    // Most global communication stages don't propagate mdrun
     // signals, and will use this object to achieve that.
     SimulationSignaller nullSignaller(nullptr, nullptr, nullptr, false, false);
 
