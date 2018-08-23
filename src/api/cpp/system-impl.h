@@ -53,6 +53,7 @@ class System::Impl final
         Status status() const;
 
     private:
+        std::shared_ptr<Context>            context_;
         std::unique_ptr<Status>             status_;
         std::string                         filename_;
 };
