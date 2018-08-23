@@ -1584,6 +1584,16 @@ void Mdrunner::addPullPotential(std::shared_ptr<gmx::IRestraintPotential> puller
                                  std::move(name));
 }
 
+void Mdrunner::declareFinalStep()
+{
+    simulationSignals_[eglsSTOPCOND].sig = true;
+}
+
+SimulationSignals *Mdrunner::signals() const
+{
+    return &simulationSignals_;
+}
+
 class Mdrunner::BuilderImplementation
 {
     public:

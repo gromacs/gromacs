@@ -95,6 +95,15 @@ class Context
          */
         explicit Context(const Mdrunner &runner);
 
+        /*!
+         * \brief Get a reference to the current array of signal flags.
+         *
+         * There is no guarantee that the flags have been initialized yet.
+         *
+         * \return pointer to signals array.
+         */
+        SimulationSignals * simulationSignals() const;
+
     private:
         const gmx::Mdrunner* runner_ {nullptr};
 };
