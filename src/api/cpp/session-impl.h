@@ -55,6 +55,7 @@ namespace gmxapi
 // Forward declaration
 class MpiContextManager; // Locally defined in session.cpp
 class ContextImpl;       // locally defined in context.cpp
+class SignalManager;     // defined in mdsignals-impl.h
 
 /*!
  * \brief Implementation class for executing sessions.
@@ -154,6 +155,16 @@ class SessionImpl
          */
         gmxapi::SessionResources* createResources(std::shared_ptr<gmxapi::MDModule> module) noexcept;
 
+        /*!
+         * \brief Get a non-owning handle to the SignalManager for the active MD runner.
+         *
+         * Calling code is responsible for ensuring that the SessionImpl is kept alive and "open"
+         * while the returned SignalManager handle is in use.
+         *
+         * \return non-owning pointer if runner and signal manager are active, else nullptr.
+         */
+        SignalManager* getSignalManager();
+
     private:
         /*!
          * \brief Private constructor for use by create()
@@ -188,6 +199,8 @@ class SessionImpl
         std::unique_ptr<MpiContextManager> mpiContextManager_;
 
         std::unique_ptr<gmx::Mdrunner>     runner_;
+
+        std::unique_ptr<SignalManager>     signal_;
 
         std::map < std::string, std::weak_ptr < gmx::IRestraintPotential>> restraints_;
 };

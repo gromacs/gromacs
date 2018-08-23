@@ -166,6 +166,7 @@ target_include_directories(gmxapi PRIVATE
 # Private / implementation headers in src/api/cpp
 target_sources(gmxapi PRIVATE
                md-impl.h
+               mdsignals-impl.h
                session-impl.h
                sessionresources-impl.h
                system-impl.h
@@ -178,6 +179,7 @@ target_sources(
     gmxapi.cpp
     md.cpp
     mdmodule.cpp
+    mdsignals.cpp
     outputstream.cpp
     session.cpp
     status.cpp

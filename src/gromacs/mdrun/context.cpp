@@ -51,5 +51,11 @@ Context::Context(const Mdrunner &runner)
     runner_ = &runner;
 }
 
+SimulationSignals* Context::simulationSignals() const
+{
+    return runner_->signals();
+}
+
+
 } // end namespace md
 } // end namespace gmx
