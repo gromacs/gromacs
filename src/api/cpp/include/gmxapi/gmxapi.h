@@ -304,6 +304,53 @@ class Status;
  */
 static constexpr const char MDHolder_Name[] = "__GMXAPI_MDHolder_v1__";
 
+/*!
+ * \brief Minimal holder for exchanging MD specifications.
+ *
+ * The interface is minimal in the hopes of backwards and forwards compatibility
+ * across build systems. This type specification can be embedded in any client code
+ * so that arbitrary client code has a robust way to exchange data, each depending
+ * only on the gmxapi library and not on each other.
+ *
+ * Objects of this type are intended to serve as wrappers used briefly to establish
+ * shared ownership of a MDWorkSpec between binary objects.
+ *
+ * \todo Consider whether/how we might use a wrapper like this to enable a C API
+ *
+ * A sufficiently simple struct can be defined for maximum forward/backward compatibility
+ * and given a name that can be used to uniquely identify Python capsules or other data
+ * members that provide a pointer to such an object for a highly compatible interface.
+ *
+ * \ingroup gmxapi_md
+ */
+class MDHolder
+{
+// In order to create Python bindings, the type needs to be complete, but
+// the class members don't need to be defined.
+    public:
+        static constexpr const char* api_name = MDHolder_Name;
+
+        explicit MDHolder(std::string name);
+
+        /*!
+         * \brief Get client-provided name.
+         * \return Name as string.
+         */
+        std::string name() const;
+
+        /*! \brief Instance name.
+         */
+        std::string name_ {};
+
+    private:
+        /// \cond internal
+        /// \brief private implementation class
+        class Impl;
+        /// \brief opaque pointer to implementation
+        std::shared_ptr<Impl> impl_ {nullptr};
+        /// \endcond
+};
+
 }      // end namespace gmxapi
 
 #endif // header guard

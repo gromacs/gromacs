@@ -43,6 +43,7 @@
 #include "gmxapi/exceptions.h"
 #include "gmxapi/session.h"
 #include "gmxapi/status.h"
+#include "gmxapi/md/mdmodule.h"
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/utility/basenetwork.h"

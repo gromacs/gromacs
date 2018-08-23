@@ -34,6 +34,7 @@
  */
 #include <array>
 
+#include "md-impl.h"
 #include "system-impl.h"
 #include "workflow.h"
 #include "gmxapi/context.h"

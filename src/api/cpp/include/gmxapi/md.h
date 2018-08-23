@@ -69,6 +69,8 @@
 namespace gmxapi
 {
 
+class MDModule;
+
 /*! \addtogroup gmxapi_md
 
  # Extending MD with a custom restraint potential

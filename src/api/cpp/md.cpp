@@ -32,5 +32,32 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include <cassert>
 
+#include <iostream>
+#include <memory>
+
+#include "md-impl.h"
+#include "gmxapi/gmxapi.h"
 #include "gmxapi/md.h"
+#include "gmxapi/md/mdmodule.h"
+#include "gromacs/compat/make_unique.h"
+#include "gromacs/mdtypes/state.h"
+#include "gromacs/utility/keyvaluetree.h"
+
+namespace gmxapi
+{
+
+MDHolder::MDHolder(std::string name)
+{
+    name_ = name;
+    assert(impl_ != nullptr);
+}
+
+std::string MDHolder::name() const
+{
+    return name_;
+}
+
+
+} //end namespace gmxapi

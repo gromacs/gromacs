@@ -39,6 +39,7 @@
 #include "gmxapi/session.h"
 #include "gmxapi/status.h"
 #include "gmxapi/system.h"
+#include "gmxapi/md/mdmodule.h"
 #include <gtest/gtest.h>
 
 #include "gromacs/compat/make_unique.h"

@@ -33,66 +33,51 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 //
-// Created by Eric Irrgang on 11/28/17.
+// Created by Eric Irrgang on 11/9/17.
 //
+
+#ifndef GMXAPI_MDMODULE_H
+#define GMXAPI_MDMODULE_H
+/*! \file
+ * \brief Declare MDModule class for interacting with GROMACS library.
+ *
+ * \ingroup gmxapi_md
+ */
 
 #include <memory>
 
-#include "testingconfiguration.h"
-#include "workflow.h"
-#include "workflow-impl.h"
-#include "gmxapi/context.h"
-#include "gmxapi/md.h"
-#include "gmxapi/status.h"
-#include "gmxapi/system.h"
-#include "gmxapi/md/mdmodule.h"
-#include <gtest/gtest.h>
+#include "gmxapi/gromacsfwd.h"
 
-#include "gromacs/compat/make_unique.h"
-#include "gromacs/utility/arrayref.h"
-
-namespace
+namespace gmxapi
 {
 
-const auto filename = gmxapi::testing::sample_tprfilename;
-
-// Create a work spec, then the implementation graph, then the container
-TEST(ApiWorkflowImpl, Build)
+/*!
+ * \brief Base class for computational components of MD containers.
+ *
+ * Instances of this class and its descendents provide member functions that return
+ * GROMACS library objects that are not defined in this API, but which should be
+ * defined in the public part of the GROMACS library API. Forward declarations of the library
+ * classes are in gmxapi/gromacsfwd.h so that basic API clients only need to compile
+ * and link against the gmxapi target, but to extend the API requires GROMACS library
+ * headers and possibly linking against `libgromacs`. Refer to the GROMACS developer
+ * documentation for details.
+ *
+ * gmxapi::MDModule participates in the binding protocol described for gmxapi::IMDRunner.
+ *
+ * For portability, a shared_ptr to MDModule can be passed within the
+ * gmxapi::MDHolder wrapper declared in gmxapi.h
+ *
+ * \ingroup gmxapi_md
+ */
+class MDModule
 {
-    // Create work spec
-    auto node = gmx::compat::make_unique<gmxapi::MDNodeSpecification>(filename);
-    ASSERT_NE(node, nullptr);
+    public:
+        virtual ~MDModule();
+        virtual const char* name() { return "MDModule"; };
 
-    // Create key
-    std::string key {
-        "MD"
-    };
-    key.append(filename);
+};
 
-    // Create graph (workflow implementation object)
-    gmxapi::Workflow::Impl impl;
-    impl[key] = std::move(node);
-    ASSERT_EQ(impl.count(key), 1);
-    ASSERT_EQ(impl.size(), 1);
 
-    // Create workflow container
-    gmxapi::Workflow work {
-        std::move(impl)
-    };
-}
+}      // end namespace gmxapi
 
-TEST(ApiWorkflow, Creation)
-{
-    // Create from create() method(s)
-    auto work = gmxapi::Workflow::create(filename);
-    ASSERT_NE(work, nullptr);
-}
-
-TEST(ApiWorkflow, Accessors)
-{
-    auto work = gmxapi::Workflow::create(filename);
-//    work->addNode()
-//    work->getNode()
-}
-
-} // end anonymous namespace
+#endif //GMXAPI_MDMODULE_H

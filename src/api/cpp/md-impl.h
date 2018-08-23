@@ -32,67 +32,33 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-//
-// Created by Eric Irrgang on 11/28/17.
-//
+#ifndef GMXAPI_MD_IMPL_H
+#define GMXAPI_MD_IMPL_H
+/*! \file
+ * \brief Declarations for molecular dynamics API implementation details.
+ *
+ * \ingroup gmxapi
+ */
 
 #include <memory>
 
-#include "testingconfiguration.h"
-#include "workflow.h"
-#include "workflow-impl.h"
-#include "gmxapi/context.h"
+#include "gmxapi/gmxapi.h"
 #include "gmxapi/md.h"
-#include "gmxapi/status.h"
-#include "gmxapi/system.h"
-#include "gmxapi/md/mdmodule.h"
-#include <gtest/gtest.h>
 
-#include "gromacs/compat/make_unique.h"
-#include "gromacs/utility/arrayref.h"
-
-namespace
+namespace gmxapi
 {
 
-const auto filename = gmxapi::testing::sample_tprfilename;
-
-// Create a work spec, then the implementation graph, then the container
-TEST(ApiWorkflowImpl, Build)
+/*!
+ * \brief Implementation class to hide guts of MDHolder
+ *
+ * Holds the gmxapi interface for an object that can help instantiate the gmx::MdRunner
+ */
+class MDHolder::Impl
 {
-    // Create work spec
-    auto node = gmx::compat::make_unique<gmxapi::MDNodeSpecification>(filename);
-    ASSERT_NE(node, nullptr);
+    public:
 
-    // Create key
-    std::string key {
-        "MD"
-    };
-    key.append(filename);
+};
 
-    // Create graph (workflow implementation object)
-    gmxapi::Workflow::Impl impl;
-    impl[key] = std::move(node);
-    ASSERT_EQ(impl.count(key), 1);
-    ASSERT_EQ(impl.size(), 1);
+}      // namespace gmxapi
 
-    // Create workflow container
-    gmxapi::Workflow work {
-        std::move(impl)
-    };
-}
-
-TEST(ApiWorkflow, Creation)
-{
-    // Create from create() method(s)
-    auto work = gmxapi::Workflow::create(filename);
-    ASSERT_NE(work, nullptr);
-}
-
-TEST(ApiWorkflow, Accessors)
-{
-    auto work = gmxapi::Workflow::create(filename);
-//    work->addNode()
-//    work->getNode()
-}
-
-} // end anonymous namespace
+#endif // header guard
