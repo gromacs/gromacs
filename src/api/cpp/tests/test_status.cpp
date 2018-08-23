@@ -36,6 +36,7 @@
 // Created by Eric Irrgang on 7/31/17.
 //
 
+#include "gmxapi/gmxapi.h"
 #include "gmxapi/status.h"
 #include <gtest/gtest.h>
 

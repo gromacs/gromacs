@@ -54,6 +54,7 @@ configure_file(include/version.h.in include/gmxapi/version.h)
 # variable. See below.
 set(_gmxapi_interface_headers
     include/gmxapi/exceptions.h
+    include/gmxapi/gmxapi.h
     include/gmxapi/gromacsfwd.h
     include/gmxapi/status.h
     include/gmxapi/version.h)
@@ -163,6 +164,7 @@ target_sources(gmxapi PRIVATE)
 
 target_sources(
     gmxapi PRIVATE
+    gmxapi.cpp
     status.cpp
     version.cpp
 )
