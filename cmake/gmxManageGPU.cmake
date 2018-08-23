@@ -56,7 +56,7 @@ if(GMX_GPU_AUTO AND GMX_DOUBLE)
 endif()
 
 # detect GPUs in the build host machine
-if ((GMX_GPU OR GMX_GPU_AUTO) AND NOT GMX_GPU_DETECTION_DONE)
+if (GMX_GPU OR GMX_GPU_AUTO)
     include(gmxDetectGpu)
     gmx_detect_gpu()
 endif()
@@ -86,7 +86,7 @@ endif()
 # - ON , FALSE: The user requested GPU build and this requires CUDA, so we will
 #               fail if it is not available.
 # - ON , TRUE : Can't happen (GMX_GPU=ON can only be user-set at this point)
-if((GMX_GPU OR GMX_GPU_AUTO) AND NOT GMX_GPU_DETECTION_DONE)
+if(GMX_GPU OR GMX_GPU_AUTO)
     # assemble warning/error message
     if (GMX_DETECT_GPU_AVAILABLE)
         set(_msg "${GMX_DETECT_GPU_COUNT} NVIDIA GPU(s) found in the system")
@@ -117,7 +117,9 @@ ${_msg}")
             # Disable GPU acceleration in auto mode
             message(STATUS "No compatible CUDA toolkit found (v5.0+), disabling native GPU acceleration")
             set_property(CACHE GMX_GPU PROPERTY VALUE OFF)
-            set(CUDA_NOTFOUND_AUTO ON)
+            if (NOT ALREADY_ISSUED_CUDA_MESSAGE)
+                set(ISSUE_MESSAGE_WHEN_CUDA_NOT_FOUND ${GMX_GPU_DETECT_AVAILABLE})
+            endif()
         else()
             # the user requested CUDA, but it wasn't found
             message(FATAL_ERROR "${CUDA_NOTFOUND_MESSAGE}")

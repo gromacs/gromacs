@@ -901,12 +901,13 @@ endif()
 
 gmx_cpack_write_config()
 
-# Issue a warning if NVIDIA GPUs were detected, but CUDA was not found.
-# Don't bother the user after the first configure pass.
-if ((CUDA_NOTFOUND_AUTO AND GMX_DETECT_GPU_AVAILABLE) AND NOT GMX_GPU_DETECTION_DONE)
+# Issue a warning at the end of the cmake output if NVIDIA GPUs were
+# detected, but CUDA was not found. Set a cache variable, so that we
+# don't bother the user a second time.
+if (ISSUE_MESSAGE_WHEN_CUDA_NOT_FOUND)
     message(WARNING "${CUDA_NOTFOUND_MESSAGE}")
+    set(ALREADY_ISSUED_CUDA_MESSAGE TRUE CACHE INTERNAL "Whether GPU hint has already been made")
 endif()
-set(GMX_GPU_DETECTION_DONE TRUE CACHE INTERNAL "Whether GPU detection has already been done")
 
 #######################
 ## uninstall target
