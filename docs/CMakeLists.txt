@@ -321,6 +321,7 @@ if (SPHINX_FOUND)
         release-notes/removed-features.rst
         release-notes/portability.rst
         release-notes/miscellaneous.rst
+        release-notes/2018/2018.4.rst
         release-notes/2018/2018.3.rst
         release-notes/2018/2018.2.rst
         release-notes/2018/2018.1.rst

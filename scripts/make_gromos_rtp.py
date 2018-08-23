@@ -123,7 +123,7 @@ class Cin:
        for i in range(len(list)):
                 if list[i] == string:
                    return i
-       print >> sys.stderr "Could not find string",string,"in list of length",len(list)
+       print >> sys.stderr, "Could not find string", string, "in list of length", len(list)
        return -1
 
 #--------------------------#
