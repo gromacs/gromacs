@@ -52,6 +52,8 @@ class System::Impl final
 
         Status status() const;
 
+        std::shared_ptr<Session> launch(std::shared_ptr<Context> context);
+
     private:
         std::shared_ptr<Context>            context_;
         std::unique_ptr<Status>             status_;

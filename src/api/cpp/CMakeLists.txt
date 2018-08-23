@@ -58,6 +58,7 @@ set(_gmxapi_interface_headers
     include/gmxapi/gmxapi.h
     include/gmxapi/gromacsfwd.h
     include/gmxapi/md.h
+    include/gmxapi/session.h
     include/gmxapi/status.h
     include/gmxapi/system.h
     include/gmxapi/version.h)
@@ -164,6 +165,7 @@ target_include_directories(gmxapi PRIVATE
 
 # Private / implementation headers in src/api/cpp
 target_sources(gmxapi PRIVATE
+               session-impl.h
                system-impl.h)
 
 target_sources(
@@ -171,6 +173,7 @@ target_sources(
     context.cpp
     gmxapi.cpp
     md.cpp
+    session.cpp
     status.cpp
     system.cpp
     version.cpp

@@ -105,6 +105,7 @@ class System final
         ~System();
         /// \endcond
 
+        std::shared_ptr<Session> launch(std::shared_ptr<Context> context);
         /// \}
 
         /*!
