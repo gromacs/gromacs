@@ -32,68 +32,60 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-//
-// Created by Eric Irrgang on 11/28/17.
-//
-
 #include <memory>
 
 #include "testingconfiguration.h"
-#include "workflow.h"
-#include "workflow-impl.h"
 #include "gmxapi/context.h"
 #include "gmxapi/md.h"
+#include "gmxapi/session.h"
 #include "gmxapi/status.h"
 #include "gmxapi/system.h"
 #include "gmxapi/md/mdmodule.h"
 #include <gtest/gtest.h>
 
-#include "gromacs/compat/make_unique.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace
 {
 
-const auto filename = gmxapi::testing::sample_tprfilename;
+const auto                   filename = gmxapi::testing::sample_tprfilename;
 
-// Create a work spec, then the implementation graph, then the container
-TEST(ApiWorkflowImpl, Build)
+class NullRestraint : public gmx::IRestraintPotential
 {
-    // Create work spec
-    auto node = gmx::compat::make_unique<gmxapi::MDNodeSpecification>(filename);
-    ASSERT_NE(node, nullptr);
+    public:
+        gmx::PotentialPointData evaluate(gmx::Vector r1,
+                                         gmx::Vector r2,
+                                         double      t) override
+        {
+            (void)r1;
+            (void)r2;
+            (void)t;
+            return {};
+        }
 
-    // Create key
-    std::string key {
-        "MD"
-    };
-    key.append(filename);
+        std::vector<unsigned long> sites() const override
+        {
+            return {{0, 1}};
+        }
+};
 
-    // Create graph (workflow implementation object)
-    gmxapi::Workflow::Impl impl;
-    impl[key] = std::move(node);
-    ASSERT_EQ(impl.count(key), 1);
-    ASSERT_EQ(impl.size(), 1);
-
-    // Create workflow container
-    gmxapi::Workflow work {
-        std::move(impl)
-    };
-}
-
-TEST(ApiWorkflow, Creation)
+class SimpleApiModule : public gmxapi::MDModule
 {
-    // Create from create() method(s)
-    auto work = gmxapi::Workflow::create(filename);
-    ASSERT_NE(work, nullptr);
-}
+    public:
+        const char *name() override
+        {
+            return "SimpleApiModule";
+        }
 
-TEST(ApiWorkflow, Accessors)
-{
-    auto work = gmxapi::Workflow::create(filename);
-//    work->addNode()
-//    work->getNode()
-}
+        std::shared_ptr<gmx::IRestraintPotential> getRestraint() override
+        {
+            auto restraint = std::make_shared<NullRestraint>();
+            return restraint;
+        }
+};
+
 
 } // end anonymous namespace

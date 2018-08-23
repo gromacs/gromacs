@@ -49,6 +49,7 @@
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/imdoutputprovider.h"
 #include "gromacs/mdtypes/imdpoptionprovider.h"
+#include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/utility/arrayref.h"
 
 #include "testingconfiguration.h"

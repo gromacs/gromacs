@@ -32,68 +32,62 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-//
-// Created by Eric Irrgang on 11/28/17.
-//
+// Copyright 2017
+// Author: M. Eric Irrgang
 
-#include <memory>
+#include "gmxpre.h"
 
-#include "testingconfiguration.h"
-#include "workflow.h"
-#include "workflow-impl.h"
-#include "gmxapi/context.h"
-#include "gmxapi/md.h"
-#include "gmxapi/status.h"
-#include "gmxapi/system.h"
-#include "gmxapi/md/mdmodule.h"
+#include "gromacs/restraint/manager.h"
+
 #include <gtest/gtest.h>
-
-#include "gromacs/compat/make_unique.h"
-#include "gromacs/restraint/restraintpotential.h"
-#include "gromacs/utility/arrayref.h"
 
 namespace
 {
 
-const auto filename = gmxapi::testing::sample_tprfilename;
-
-// Create a work spec, then the implementation graph, then the container
-TEST(ApiWorkflowImpl, Build)
+class DummyRestraint : public gmx::IRestraintPotential
 {
-    // Create work spec
-    auto node = gmx::compat::make_unique<gmxapi::MDNodeSpecification>(filename);
-    ASSERT_NE(node, nullptr);
+    public:
+        ~DummyRestraint() override = default;
 
-    // Create key
-    std::string key {
-        "MD"
-    };
-    key.append(filename);
+        gmx::PotentialPointData evaluate(gmx::Vector r1,
+                                         gmx::Vector r2,
+                                         double      t) override
+        {
+            (void) r1;
+            (void) r2;
+            (void) t;
+            return {};
+        }
 
-    // Create graph (workflow implementation object)
-    gmxapi::Workflow::Impl impl;
-    impl[key] = std::move(node);
-    ASSERT_EQ(impl.count(key), 1);
-    ASSERT_EQ(impl.size(), 1);
+        void update(gmx::Vector v,
+                    gmx::Vector v0,
+                    double      t) override
+        { (void)v; (void)v0; (void)t; }
 
-    // Create workflow container
-    gmxapi::Workflow work {
-        std::move(impl)
-    };
+        std::vector<unsigned long> sites() const override
+        {
+            return std::vector<unsigned long>();
+        }
+
+};
+
+TEST(RestraintManager, singleton)
+{
+    auto managerInstance = gmx::restraint::Manager::instance();
+    ASSERT_TRUE(managerInstance.get() != nullptr);
 }
 
-TEST(ApiWorkflow, Creation)
+TEST(RestraintManager, restraintList)
 {
-    // Create from create() method(s)
-    auto work = gmxapi::Workflow::create(filename);
-    ASSERT_NE(work, nullptr);
+    auto managerInstance = gmx::restraint::Manager::instance();
+    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "a");
+    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "b");
+    ASSERT_EQ(managerInstance->countRestraints(), 2);
+    managerInstance->clear();
+    ASSERT_EQ(managerInstance->countRestraints(), 0);
+    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "c");
+    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "d");
+    ASSERT_EQ(managerInstance->countRestraints(), 2);
 }
 
-TEST(ApiWorkflow, Accessors)
-{
-    auto work = gmxapi::Workflow::create(filename);
-//    work->addNode()
-//    work->getNode()
 }
-
-} // end anonymous namespace

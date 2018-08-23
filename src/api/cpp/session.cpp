@@ -46,6 +46,7 @@
 #include "gmxapi/md/mdmodule.h"
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/mdlib/sighandler.h"
+#include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/init.h"
 
