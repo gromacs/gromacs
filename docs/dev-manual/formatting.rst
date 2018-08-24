@@ -7,9 +7,9 @@ The following list provides the general formatting/indentation rules for
 |Gromacs| code (C/C++):
 
 * Basic indentation is four spaces.
-* Keep lines at a reasonable length.  There is no hard limit, but use 80
-  characters as a guideline.  If you end up indenting very deeply,
-  consider splitting the code into functions.
+* Keep lines at a reasonable length. Keep every line at least below 120
+  characters.  If you end up indenting very deeply, consider splitting the code
+  into functions.
 * Do not use tabs, only spaces.  Most editors can be configured to generate
   spaces even when pressing tab.  Tabs (in particular when mixed with spaces)
   easily break indentation in contexts where settings are not exactly equal
