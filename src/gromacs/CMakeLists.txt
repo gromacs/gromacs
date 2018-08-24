@@ -132,6 +132,8 @@ if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(tools)
 endif()
 
+gmx_install_headers(compat/make_unique.h)
+
 get_property(PROPERTY_SOURCES GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
 list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${PROPERTY_SOURCES})
 
