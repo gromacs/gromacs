@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include <cstdlib>
 #include <cstring>
 
@@ -61,7 +63,40 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
-static int strip_dssp(char *dsspfile, int nres,
+#if GMX_NATIVE_WINDOWS
+    #define NULL_DEVICE  "nul"
+    #define popen  _popen
+    #define pclose _pclose
+#else
+    #define NULL_DEVICE  "/dev/null"
+#endif
+
+struct DsspInputStrings
+{
+    std::string dptr;
+    std::string pdbfile;
+    std::string tmpfile;
+};
+
+static const char* prepareToRedirectStdout(bool bVerbose)
+{
+    return bVerbose ? "" : "2>" NULL_DEVICE;
+}
+
+static void printDsspResult(char *dssp, const DsspInputStrings &strings,
+                            const std::string &redirectionString)
+{
+#if HAVE_PIPES || GMX_NATIVE_WINDOWS
+    sprintf(dssp, "%s -i %s %s",
+            strings.dptr.c_str(), strings.pdbfile.c_str(), redirectionString.c_str());
+#else
+    sprintf(dssp, "%s -i %s -o %s > %s %s",
+            strings.dptr.c_str(), strings.pdbfile.c_str(), strings.tmpfile.c_str(), NULL_DEVICE, redirectionString.c_str());
+#endif
+}
+
+
+static int strip_dssp(FILE *tapeout, int nres,
                       const gmx_bool bPhobres[], real t,
                       real *acc, FILE *fTArea,
                       t_matrix *mat, int average_area[],
@@ -69,7 +104,6 @@ static int strip_dssp(char *dsspfile, int nres,
 {
     static gmx_bool bFirst = TRUE;
     static char    *ssbuf;
-    FILE           *tapeout;
     static int      xsize, frame;
     char            buf[STRLEN+1];
     char            SSTP;
@@ -78,7 +112,6 @@ static int strip_dssp(char *dsspfile, int nres,
     real            iaccf, iaccb;
     t_xpmelmt       c;
 
-    tapeout = gmx_ffopen(dsspfile, "r");
 
     /* Skip header */
     do
@@ -183,7 +216,6 @@ static int strip_dssp(char *dsspfile, int nres,
     {
         fprintf(fTArea, "%10g  %10g  %10g\n", t, 0.01*iaccb, 0.01*iaccf);
     }
-    gmx_ffclose(tapeout);
 
     /* Return the number of lines found in the dssp file (i.e. number
      * of redidues plus chain separator lines).
@@ -193,21 +225,45 @@ static int strip_dssp(char *dsspfile, int nres,
 
 static gmx_bool *bPhobics(t_atoms *atoms)
 {
-    int         i, nb;
+    int         j, i, nb;
     char      **cb;
     gmx_bool   *bb;
+    int         n_surf;
+    char        surffn[] = "surface.dat";
+    char      **surf_res, **surf_lines;
 
 
     nb = get_lines("phbres.dat", &cb);
     snew(bb, atoms->nres);
 
-    for (i = 0; (i < atoms->nres); i++)
+    n_surf = get_lines(surffn, &surf_lines);
+    snew(surf_res, n_surf);
+    for (i = 0; (i < n_surf); i++)
     {
-        if (-1 != search_str(nb, cb, *atoms->resinfo[i].name) )
+        snew(surf_res[i], 5);
+        sscanf(surf_lines[i], "%s", surf_res[i]);
+    }
+
+
+    for (i = 0, j = 0; (i < atoms->nres); i++)
+    {
+        if (-1 != search_str(n_surf, surf_res, *atoms->resinfo[i].name) )
         {
-            bb[i] = TRUE;
+            bb[j++] = (-1 != search_str(nb, cb, *atoms->resinfo[i].name));
         }
     }
+
+    if (i != j)
+    {
+        fprintf(stderr, "Not all residues were recognized (%d from %d), the result may be inaccurate!\n", j, i);
+    }
+
+    for (i = 0; (i < n_surf); i++)
+    {
+        sfree(surf_res[i]);
+    }
+    sfree(surf_res);
+
     return bb;
 }
 
@@ -487,7 +543,7 @@ int gmx_do_dssp(int argc, char *argv[])
     };
 
     t_trxstatus       *status;
-    FILE              *tapein;
+    FILE              *tapein,  *tapeout;
     FILE              *ss, *acc, *fTArea, *tmpf;
     const char        *fnSCount, *fnArea, *fnTArea, *fnAArea;
     const char        *leg[] = { "Phobic", "Phylic" };
@@ -567,10 +623,7 @@ int gmx_do_dssp(int argc, char *argv[])
             gmx_fatal(FARGS, "Can not open tmp file %s", pdbfile);
         }
     }
-    else
-    {
-        fclose(tmpf);
-    }
+    fclose(tmpf);
 
     std::strcpy(tmpfile, "ddXXXXXX");
     gmx_tmpnam(tmpfile);
@@ -583,10 +636,7 @@ int gmx_do_dssp(int argc, char *argv[])
             gmx_fatal(FARGS, "Can not open tmp file %s", tmpfile);
         }
     }
-    else
-    {
-        fclose(tmpf);
-    }
+    fclose(tmpf);
 
     if ((dptr = getenv("DSSP")) == nullptr)
     {
@@ -597,6 +647,12 @@ int gmx_do_dssp(int argc, char *argv[])
         gmx_fatal(FARGS, "DSSP executable (%s) does not exist (use setenv DSSP)",
                   dptr);
     }
+    std::string      redirectionString;
+    redirectionString = prepareToRedirectStdout(bVerbose);
+    DsspInputStrings dsspStrings;
+    dsspStrings.dptr    = dptr;
+    dsspStrings.pdbfile = pdbfile;
+    dsspStrings.tmpfile = tmpfile;
     if (dsspVersion >= 2)
     {
         if (dsspVersion > 2)
@@ -604,14 +660,19 @@ int gmx_do_dssp(int argc, char *argv[])
             printf("\nWARNING: You use DSSP version %d, which is not explicitly\nsupported by do_dssp. Assuming version 2 syntax.\n\n", dsspVersion);
         }
 
-        sprintf(dssp, "%s -i %s -o %s > /dev/null %s",
-                dptr, pdbfile, tmpfile, bVerbose ? "" : "2> /dev/null");
+        printDsspResult(dssp, dsspStrings, redirectionString);
     }
     else
     {
-        sprintf(dssp, "%s %s %s %s > /dev/null %s",
-                dptr, bDoAccSurf ? "" : "-na", pdbfile, tmpfile, bVerbose ? "" : "2> /dev/null");
-
+        if (bDoAccSurf)
+        {
+            dsspStrings.dptr.clear();
+        }
+        else
+        {
+            dsspStrings.dptr = "-na";
+        }
+        printDsspResult(dssp, dsspStrings, redirectionString);
     }
     fprintf(stderr, "dssp cmd='%s'\n", dssp);
 
@@ -662,23 +723,33 @@ int gmx_do_dssp(int argc, char *argv[])
         tapein = gmx_ffopen(pdbfile, "w");
         write_pdbfile_indexed(tapein, nullptr, atoms, x, ePBC, box, ' ', -1, gnx, index, nullptr, TRUE, FALSE);
         gmx_ffclose(tapein);
-
-        if (0 != system(dssp))
-        {
-            gmx_fatal(FARGS, "Failed to execute command: %s\n"
-                      "Try specifying your dssp version with the -ver option.", dssp);
-        }
-
         /* strip_dssp returns the number of lines found in the dssp file, i.e.
          * the number of residues plus the separator lines */
 
+#if HAVE_PIPES || GMX_NATIVE_WINDOWS
+        if (nullptr == (tapeout = popen(dssp, "r")))
+#else
+        if (0 != system(dssp) || nullptr == (tapeout = gmx_ffopen(tmpfile, "r")))
+#endif
+        {
+            remove(pdbfile);
+            remove(tmpfile);
+            gmx_fatal(FARGS, "Failed to execute command: %s\n"
+                      "Try specifying your dssp version with the -ver option.", dssp);
+        }
         if (bDoAccSurf)
         {
             accr_ptr = accr[nframe];
         }
-
-        nres_plus_separators = strip_dssp(tmpfile, nres, bPhbres, t,
+        /* strip_dssp returns the number of lines found in the dssp file, i.e.
+         * the number of residues plus the separator lines */
+        nres_plus_separators = strip_dssp(tapeout, nres, bPhbres, t,
                                           accr_ptr, fTArea, &mat, average_area, oenv);
+#if HAVE_PIPES || GMX_NATIVE_WINDOWS
+        pclose(tapeout);
+#else
+        gmx_ffclose(tapeout);
+#endif
         remove(tmpfile);
         remove(pdbfile);
         nframe++;
