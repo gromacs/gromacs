@@ -257,7 +257,7 @@ void gmx_print_version_info(gmx::TextWriter *writer)
     writer->writeLine(formatString("SIMD instructions:  %s", GMX_SIMD_STRING));
     writer->writeLine(formatString("FFT library:        %s", getFftDescriptionString()));
     writer->writeLine(formatString("RDTSCP usage:       %s", HAVE_RDTSCP ? "enabled" : "disabled"));
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     writer->writeLine("TNG support:        enabled");
 #else
     writer->writeLine("TNG support:        disabled");
