@@ -54,6 +54,7 @@
 #include <vector>
 
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/domdec/collect.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/pme.h"
@@ -552,27 +553,36 @@ static void write_em_traj(FILE *fplog, const t_commrec *cr,
                                      &state->s, state_global, observablesHistory,
                                      state->f);
 
-    if (confout != nullptr && MASTER(cr))
+    if (confout != nullptr)
     {
-        GMX_RELEASE_ASSERT(bX, "The code below assumes that (with domain decomposition), x is collected to state_global in the call above.");
-        /* With domain decomposition the call above collected the state->s.x
-         * into state_global->x. Without DD we copy the local state pointer.
-         */
-        if (!DOMAINDECOMP(cr))
+        if (DOMAINDECOMP(cr))
         {
+            /* If bX=true, x was collected to state_global in the call above */
+            if (!bX)
+            {
+                gmx::ArrayRef<gmx::RVec> globalXRef = MASTER(cr) ? gmx::makeArrayRef(state_global->x) : gmx::EmptyArrayRef();
+                dd_collect_vec(cr->dd, &state->s, state->s.x, globalXRef);
+            }
+        }
+        else
+        {
+            /* Copy the local state pointer */
             state_global = &state->s;
         }
 
-        if (ir->ePBC != epbcNONE && !ir->bPeriodicMols && DOMAINDECOMP(cr))
+        if (MASTER(cr))
         {
-            /* Make molecules whole only for confout writing */
-            do_pbc_mtop(fplog, ir->ePBC, state->s.box, top_global,
-                        as_rvec_array(state_global->x.data()));
-        }
+            if (ir->ePBC != epbcNONE && !ir->bPeriodicMols && DOMAINDECOMP(cr))
+            {
+                /* Make molecules whole only for confout writing */
+                do_pbc_mtop(fplog, ir->ePBC, state->s.box, top_global,
+                            as_rvec_array(state_global->x.data()));
+            }
 
-        write_sto_conf_mtop(confout,
-                            *top_global->name, top_global,
-                            as_rvec_array(state_global->x.data()), nullptr, ir->ePBC, state->s.box);
+            write_sto_conf_mtop(confout,
+                                *top_global->name, top_global,
+                                as_rvec_array(state_global->x.data()), nullptr, ir->ePBC, state->s.box);
+        }
     }
 }
 
@@ -1088,8 +1098,20 @@ Integrator::do_cg()
 
     step = 0;
 
-    // Ensure the extra per-atom state array gets allocated
-    state_global->flags |= (1<<estCGP);
+    if (MASTER(cr))
+    {
+        // In CG, the state is extended with a search direction
+        state_global->flags |= (1<<estCGP);
+
+        // Ensure the extra per-atom state array gets allocated
+        state_change_natoms(state_global, state_global->natoms);
+
+        // Initialize the search direction to zero
+        for (RVec &cg_p : state_global->cg_p)
+        {
+            cg_p = { 0, 0, 0 };
+        }
+    }
 
     /* Create 4 states on the stack and extract pointers that we will swap */
     em_state_t  s0 {}, s1 {}, s2 {}, s3 {};
@@ -1253,7 +1275,7 @@ Integrator::do_cg()
             gmx_sumd(1, &minstep, cr);
         }
 
-        minstep = GMX_REAL_EPS/sqrt(minstep/(3*state_global->natoms));
+        minstep = GMX_REAL_EPS/sqrt(minstep/(3*top_global->natoms));
 
         if (stepsize < minstep)
         {
@@ -1578,7 +1600,7 @@ Integrator::do_cg()
         }
 
         /* Send energies and positions to the IMD client if bIMD is TRUE. */
-        if (do_IMD(inputrec->bIMD, step, cr, TRUE, state_global->box, as_rvec_array(state_global->x.data()), inputrec, 0, wcycle) && MASTER(cr))
+        if (MASTER(cr) && do_IMD(inputrec->bIMD, step, cr, TRUE, state_global->box, as_rvec_array(state_global->x.data()), inputrec, 0, wcycle))
         {
             IMD_send_positions(inputrec->imd);
         }
@@ -1639,6 +1661,9 @@ Integrator::do_cg()
      *
      * However, we should only do it if we did NOT already write this step
      * above (which we did if do_x or do_f was true).
+     */
+    /* Note that with 0 < nstfout != nstxout we can end up with two frames
+     * in the trajectory with the same step number.
      */
     do_x = !do_per_step(step, inputrec->nstxout);
     do_f = (inputrec->nstfout > 0 && !do_per_step(step, inputrec->nstfout));
