@@ -69,6 +69,20 @@ gmx_stop_cond_t gmx_get_stop_condition();
 /* set the stop condition upon receiving a remote one */
 void gmx_set_stop_condition(gmx_stop_cond_t recvd_stop_cond);
 
+/*!
+ * \brief Reinitializes the global stop condition.
+ *
+ * Resets any stop condition currently stored in global library state as read or
+ * written with gmx_get_stop_condition() and gmx_set_stop_condition(). Does not
+ * affect the result of gmx_got_usr_signal() gmx_get_signal_name() for
+ * previously terminated simulations.
+ *
+ * The reset is necessary between simulation segments performed in the same
+ * process and should be called only while simulation is idle, such as after
+ * a gmx::Mdrunner has finished its work and simulation results have been processed.
+ */
+void gmx_reset_stop_condition();
+
 /* get the signal name that lead to the current stop condition. */
 const char *gmx_get_signal_name();
 
