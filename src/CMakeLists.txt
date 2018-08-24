@@ -106,3 +106,14 @@ endif()
 
 add_subdirectory(gromacs)
 add_subdirectory(programs)
+
+# Activate targets for new C++ API components and docs.
+if (MSVC)
+    # GMXAPI has not been tested in MicroSoft environments.
+    option(GMXAPI "Experimental external interfaces" OFF)
+else()
+    option(GMXAPI "Experimental external interfaces" ON)
+endif()
+if (GMXAPI)
+   add_subdirectory(api)
+endif()
