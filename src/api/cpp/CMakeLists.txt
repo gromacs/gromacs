@@ -134,6 +134,15 @@ target_include_directories(gmxapi PUBLIC
     $<INSTALL_INTERFACE:include>
     )
 
+# Define private interface in build environment. (Not installed.)
+# Unit tests for implementation details can use this target.
+add_library(gmxapiImpl INTERFACE)
+target_include_directories(gmxapiImpl INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+                           )
+add_library(Gromacs::gmxapiImpl ALIAS gmxapiImpl)
+
 # Define implementation interface
 target_include_directories(gmxapi PRIVATE
                            ${CMAKE_CURRENT_SOURCE_DIR}
