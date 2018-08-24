@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@ extra_options = {
     'release-with-assert': Option.simple,
     'release-with-debug-info': Option.simple,
     'asan': Option.simple,
+    'tng' : Option.bool,
     'mkl': Option.simple,
     'fftpack': Option.simple,
     'double': Option.simple,
@@ -112,6 +113,8 @@ def do_build(context):
         cmake_opts['GMX_MPI'] = 'ON'
     if context.opts.openmp is False:
         cmake_opts['GMX_OPENMP'] = 'OFF'
+    if context.opts.tng is False:
+        cmake_opts['GMX_USE_TNG'] = 'OFF'
 
     if context.opts.mkl:
         cmake_opts['GMX_FFT_LIBRARY'] = 'mkl'
