@@ -40,7 +40,7 @@
 #ifndef GMX_MDRUN_TPI_H
 #define GMX_MDRUN_TPI_H
 
-#include "integrator.h"
+#include "gromacs/mdrun/integrator.h"
 
 namespace gmx
 {

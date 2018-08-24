@@ -94,6 +94,7 @@
 #include "gromacs/mdlib/repl_ex.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdrun/integrator.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
@@ -1219,6 +1220,7 @@ int Mdrunner::mdrunner()
         /* Initiate forcerecord */
         fr                 = mk_forcerec();
         fr->forceProviders = mdModules->initForceProviders();
+        // Threads have been launched and DD initialized
         init_forcerec(fplog, mdlog, fr, fcd,
                       inputrec, &mtop, cr, box,
                       opt2fn("-table", filenames->size(), filenames->data()),
@@ -1403,24 +1405,26 @@ int Mdrunner::mdrunner()
         }
 
         /* Now do whatever the user wants us to do (how flexible...) */
-        Integrator integrator {
-            fplog, cr, ms, mdlog, static_cast<int>(filenames->size()), filenames->data(),
-            oenv,
-            mdrunOptions,
-            vsite, constr.get(),
-            enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
-            deform.get(),
-            mdModules->outputProvider(),
-            inputrec, &mtop,
-            fcd,
-            globalState.get(),
-            &observablesHistory,
-            mdAtoms.get(), nrnb, wcycle, fr,
-            replExParams,
-            membed,
-            walltime_accounting
-        };
-        integrator.run(inputrec->eI);
+
+        IntegratorBuilder builder = IntegratorBuilder::create(SimulationMethod(inputrec->eI));
+        builder.setParams(
+                fplog, cr, ms, mdlog, static_cast<int>(filenames->size()), filenames->data(),
+                oenv,
+                mdrunOptions,
+                vsite, constr.get(),
+                enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
+                deform.get(),
+                mdModules->outputProvider(),
+                inputrec, &mtop,
+                fcd,
+                globalState.get(),
+                &observablesHistory,
+                mdAtoms.get(), nrnb, wcycle, fr,
+                replExParams,
+                membed,
+                walltime_accounting);
+        std::unique_ptr<IIntegrator> integrator = builder.build();
+        integrator->run();
 
         if (inputrec->bPull)
         {
@@ -1521,7 +1525,24 @@ int Mdrunner::mdrunner()
     return rc;
 }
 
-Mdrunner::~Mdrunner() = default;
+Mdrunner::~Mdrunner()
+{
+    if (MASTER(cr))
+    {
+        /* Log file has to be closed in mdrunner if we are appending to it
+           (fplog not set here) */
+        if (fplog != nullptr)
+        {
+            gmx_log_close(fplog);
+        }
+
+        if (GMX_LIB_MPI)
+        {
+            done_commrec(cr);
+        }
+        done_multisim(ms);
+    }
+};
 
 class Mdrunner::BuilderImplementation
 {
@@ -1680,9 +1701,10 @@ std::unique_ptr<Mdrunner> Mdrunner::BuilderImplementation::build(const char* nbp
     newRunner->oenv  = *outputEnvironment_.release();
     newRunner->fplog = *logFile_.release();
 
-    newRunner->nbpu_opt    = nbpu_opt;
-    newRunner->pme_opt     = pme_opt;
-    newRunner->pme_fft_opt = pme_fft_opt;
+    newRunner->nbpu_opt          = nbpu_opt;
+    newRunner->pme_opt           = pme_opt;
+    newRunner->pme_fft_opt       = pme_fft_opt;
+
     return newRunner;
 }
 
