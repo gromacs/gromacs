@@ -77,4 +77,11 @@ const char *gmx_get_signal_name();
    only returns TRUE once for a single signal. */
 gmx_bool gmx_got_usr_signal();
 
+/*!
+ * \brief Reinitializes the machinery maintained here.
+ *
+ * Resets any signals or stop conditions currently stored in global library state.
+ */
+void gmx_sighandler_reset();
+
 #endif
