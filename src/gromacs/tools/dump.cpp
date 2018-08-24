@@ -316,6 +316,8 @@ static void list_xtc(const char *fn)
     close_xtc(xd);
 }
 
+#if GMX_USE_TNG
+
 /*! \brief Callback used by list_tng_for_gmx_dump. */
 static void list_tng_inner(const char *fn,
                            gmx_bool    bFirstFrame,
@@ -348,9 +350,11 @@ static void list_tng_inner(const char *fn,
     pr_reals_of_dim(stdout, indent, block_name, values, n_atoms, n_values_per_frame);
 }
 
+#endif
+
 static void list_tng(const char gmx_unused *fn)
 {
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     gmx_tng_trajectory_t tng;
     int64_t              nframe = 0;
     int64_t              i, *block_ids = nullptr, step, ndatablocks;
