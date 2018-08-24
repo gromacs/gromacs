@@ -72,6 +72,13 @@ static volatile sig_atomic_t last_signal_name = 0;
 
 static volatile sig_atomic_t usr_condition = 0;
 
+void gmx_sighandler_reset()
+{
+    stop_condition   = gmx_stop_cond_none;
+    last_signal_name = 0;
+    usr_condition    = 0;
+}
+
 static void signal_handler(int n)
 {
     switch (n)
