@@ -60,6 +60,7 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdlib/main.h"
@@ -90,15 +91,6 @@ static bool is_multisim_option_set(int argc, const char *const argv[])
 
 //! Implements C-style main function for mdrun
 int gmx_mdrun(int argc, char *argv[])
-{
-    gmx::Mdrunner runner;
-    return runner.mainFunction(argc, argv);
-}
-
-namespace gmx
-{
-
-int Mdrunner::mainFunction(int argc, char *argv[])
 {
     const char   *desc[] = {
         "[THISMODULE] is the main computational chemistry engine",
@@ -215,8 +207,8 @@ int Mdrunner::mainFunction(int argc, char *argv[])
         "exceeds [TT]-maxh[tt]\\*0.99 hours. This option is particularly useful in",
         "combination with setting [TT]nsteps[tt] to -1 either in the mdp or using the",
         "similarly named command line option. This results in an infinite run,",
-        "terminated only when the time limit set by [TT]-maxh[tt] is reached (if any)",
-        "or upon receiving a signal.",
+        "terminated only when the time limit set by [TT]-maxh[tt] is reached (if any)"
+        "or upon receiving a signal."
         "[PAR]",
         "When [TT]mdrun[tt] receives a TERM or INT signal (e.g. when ctrl+C is",
         "pressed), it will stop at the next neighbor search step or at the",
@@ -239,10 +231,33 @@ int Mdrunner::mainFunction(int argc, char *argv[])
         "IMD remote can be turned on by [TT]-imdpull[tt].",
         "The port [TT]mdrun[tt] listens to can be altered by [TT]-imdport[tt].The",
         "file pointed to by [TT]-if[tt] contains atom indices and forces if IMD",
-        "pulling is used.",
+        "pulling is used."
         "[PAR]",
         "When [TT]mdrun[tt] is started with MPI, it does not run niced by default."
     };
+
+    // Ongoing collection of mdrun options
+    MdrunOptions                     mdrunOptions;
+    // Options for the domain decomposition.
+    DomdecOptions                    domdecOptions;
+    // Parallelism-related user options.
+    gmx_hw_opt_t                     hw_opt;
+    // Command-line override for the duration of a neighbor list with the Verlet scheme.
+    int                              nstlist_cmdline = 0;
+    // Parameters for replica-exchange simulations.
+    ReplicaExchangeParameters        replExParams;
+
+    // Filenames and properties from command-line argument values.
+    auto filenames = gmx::makeDefaultMdFilenames();
+
+    // Print a warning if any force is larger than this (in kJ/mol nm).
+    real                             pforce = -1;
+
+    // Output context for writing text files
+    gmx_output_env_t                *oenv = nullptr;
+
+    // Handle to file used for logging.
+    FILE                            *fplog;
 
     /* Command line options */
     rvec              realddxyz                                               = {0, 0, 0};
@@ -370,9 +385,9 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     };
     int               rc;
 
-    cr = init_commrec();
+    t_commrec       * cr = init_commrec();
 
-    unsigned long PCA_Flags = PCA_CAN_SET_DEFFNM;
+    unsigned long     PCA_Flags = PCA_CAN_SET_DEFFNM;
     // With -multidir, the working directory still needs to be
     // changed, so we can't check for the existence of files during
     // parsing.  It isn't useful to do any completion based on file
@@ -382,7 +397,8 @@ int Mdrunner::mainFunction(int argc, char *argv[])
         PCA_Flags |= PCA_DISABLE_INPUT_FILE_CHECKING;
     }
 
-    if (!parse_common_args(&argc, argv, PCA_Flags, nfile, fnm, asize(pa), pa,
+    if (!parse_common_args(&argc, argv, PCA_Flags,
+                           static_cast<int>(filenames->size()), filenames->data(), asize(pa), pa,
                            asize(desc), desc, 0, nullptr, &oenv))
     {
         sfree(cr);
@@ -431,7 +447,8 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     hw_opt.thread_affinity = nenum(thread_aff_opt_choices);
 
     // now check for a multi-simulation
-    gmx::ArrayRef<const std::string> multidir = opt2fnsIfOptionSet("-multidir", nfile, fnm);
+    gmx::ArrayRef<const std::string> multidir = opt2fnsIfOptionSet("-multidir",
+                                                                   static_cast<int>(filenames->size()), filenames->data());
 
     if (replExParams.exchangeInterval != 0 && multidir.size() < 2)
     {
@@ -443,7 +460,7 @@ int Mdrunner::mainFunction(int argc, char *argv[])
         gmx_fatal(FARGS, "Replica exchange number of exchanges needs to be positive");
     }
 
-    ms = init_multisystem(MPI_COMM_WORLD, multidir);
+    gmx_multisim_t* ms = init_multisystem(MPI_COMM_WORLD, multidir);
 
     /* Prepare the intra-simulation communication */
     // TODO consolidate this with init_commrec, after changing the
@@ -459,7 +476,8 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     }
 #endif
 
-    if (!opt2bSet("-cpi", nfile, fnm))
+    if (!opt2bSet("-cpi",
+                  static_cast<int>(filenames->size()), filenames->data()))
     {
         // If we are not starting from a checkpoint we never allow files to be appended
         // to, since that has caused a ton of strange behaviour and bugs in the past.
@@ -479,9 +497,15 @@ int Mdrunner::mainFunction(int argc, char *argv[])
 
     continuationOptions.appendFilesOptionSet = opt2parg_bSet("-append", asize(pa), pa);
 
-    handleRestart(cr, ms, bTryToAppendFiles, nfile, fnm, &continuationOptions.appendFiles, &continuationOptions.startedFromCheckpoint);
+    handleRestart(cr, ms, bTryToAppendFiles,
+                  static_cast<int>(filenames->size()),
+                  filenames->data(),
+                  &continuationOptions.appendFiles,
+                  &continuationOptions.startedFromCheckpoint);
 
-    mdrunOptions.rerun            = opt2bSet("-rerun", nfile, fnm);
+    mdrunOptions.rerun            = opt2bSet("-rerun",
+                                             static_cast<int>(filenames->size()),
+                                             filenames->data());
     mdrunOptions.ntompOptionIsSet = opt2parg_bSet("-ntomp", asize(pa), pa);
 
     /* We postpone opening the log file if we are appending, so we can
@@ -489,8 +513,12 @@ int Mdrunner::mainFunction(int argc, char *argv[])
        there instead.  */
     if (MASTER(cr) && !continuationOptions.appendFiles)
     {
-        gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr,
-                     continuationOptions.appendFiles, &fplog);
+        gmx_log_open(ftp2fn(efLOG,
+                            static_cast<int>(filenames->size()),
+                            filenames->data()),
+                     cr,
+                     continuationOptions.appendFiles,
+                     &fplog);
     }
     else
     {
@@ -503,12 +531,22 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     domdecOptions.numCells[YY] = static_cast<int>(realddxyz[YY] + 0.5);
     domdecOptions.numCells[ZZ] = static_cast<int>(realddxyz[ZZ] + 0.5);
 
-    nbpu_opt    = nbpu_opt_choices[0];
-    pme_opt     = pme_opt_choices[0];
-    pme_fft_opt = pme_fft_opt_choices[0];
+    gmx::MdrunnerBuilder builder;
+    builder.setExtraMdrunOptions(mdrunOptions,
+                                 pforce);
+    builder.setDomdec(domdecOptions);
+    builder.setHardwareOptions(hw_opt);
+    builder.setVerletList(nstlist_cmdline);
+    builder.setReplicaExchange(replExParams);
+    builder.setFilenames(std::move(filenames));
+    builder.setCommunications(&cr);
+    builder.addMultiSim(&ms);
+    builder.setOutputContext(&oenv, &fplog);
+    auto runner = builder.build(nbpu_opt_choices[0],
+                                pme_opt_choices[0],
+                                pme_fft_opt_choices[0]);
 
-
-    rc = mdrunner();
+    rc = runner->mdrunner();
 
     /* Log file has to be closed in mdrunner if we are appending to it
        (fplog not set here) */
@@ -524,5 +562,3 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     done_multisim(ms);
     return rc;
 }
-
-}  // namespace gmx
