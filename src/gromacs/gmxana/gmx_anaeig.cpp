@@ -848,7 +848,7 @@ static void components(const char *outfile, int natoms,
         }
         for (i = 0; i < natoms; i++)
         {
-            y[g][0][i] = norm(eigvec[v][i]);
+            y[g][0][i] = gmx::norm(eigvec[v][i]);
             for (s = 0; s < 3; s++)
             {
                 y[g][s+1][i] = eigvec[v][i][s];
@@ -902,7 +902,7 @@ static void rmsf(const char *outfile, int natoms, const real *sqrtm,
         snew(y[g], natoms);
         for (i = 0; i < natoms; i++)
         {
-            y[g][i] = std::sqrt(eigval[eignr[v]]*norm2(eigvec[v][i]))/sqrtm[i];
+            y[g][i] = std::sqrt(eigval[eignr[v]]*gmx::norm2(eigvec[v][i]))/sqrtm[i];
         }
     }
     write_xvgr_graphs(outfile, noutvec, 1, "RMS fluctuation (nm) ", nullptr,

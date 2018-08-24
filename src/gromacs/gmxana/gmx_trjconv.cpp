@@ -317,7 +317,7 @@ static void put_molecule_com_in_box(int unitcell_enum, int ecenter,
                 break;
         }
         rvec_sub(newCom, com, shift);
-        if (norm2(shift) > 0)
+        if (gmx::norm2(shift) > 0)
         {
             if (debug)
             {
@@ -374,7 +374,7 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
                     break;
             }
             rvec_sub(newCom, com, shift);
-            if (norm2(shift) != 0.0f)
+            if (gmx::norm2(shift) != 0.0f)
             {
                 if (debug)
                 {

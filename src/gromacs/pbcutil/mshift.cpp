@@ -761,7 +761,7 @@ static real maxEdgeLength(const t_graph g,
             int  nodeJ = g.edge[node][edge];
             rvec dx;
             pbc_dx(&pbc, x[g.at0 + node], x[g.at0 + nodeJ], dx);
-            maxEdgeLength2 = std::max(maxEdgeLength2, norm2(dx));
+            maxEdgeLength2 = std::max(maxEdgeLength2, gmx::norm2(dx));
         }
     }
 
@@ -880,10 +880,10 @@ void mk_mshift(FILE *log, t_graph *g, int ePBC,
 
         int            numPbcDimensions = ePBC2npbcdim(ePBC);
         GMX_RELEASE_ASSERT(numPbcDimensions > 0, "Expect PBC with graph");
-        real           minBoxSize = norm(box[XX]);
+        real           minBoxSize = gmx::norm(box[XX]);
         for (int d = 1; d < numPbcDimensions; d++)
         {
-            minBoxSize = std::min(minBoxSize, norm(box[d]));
+            minBoxSize = std::min(minBoxSize, gmx::norm(box[d]));
         }
         real maxDistance = maxEdgeLength(*g, ePBC, box, x);
         if (maxDistance >= c_relativeDistanceThreshold*minBoxSize)

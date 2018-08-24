@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -279,15 +279,15 @@ int gmx_helixorient(int argc, char *argv[])
             rvec_sub(r23[i], r34[i], diff24[i]);
             /* calculate helix axis */
             cprod(diff13[i], diff24[i], helixaxis[i]);
-            svmul(1.0/norm(helixaxis[i]), helixaxis[i], helixaxis[i]);
+            svmul(1.0/gmx::norm(helixaxis[i]), helixaxis[i], helixaxis[i]);
 
             tmp       = cos_angle(diff13[i], diff24[i]);
             twist[i]  = 180.0/M_PI * std::acos( tmp );
-            radius[i] = std::sqrt( norm(diff13[i])*norm(diff24[i]) ) / (2.0* (1.0-tmp) );
+            radius[i] = std::sqrt( gmx::norm(diff13[i])*gmx::norm(diff24[i]) ) / (2.0* (1.0-tmp) );
             rise[i]   = std::abs(iprod(r23[i], helixaxis[i]));
 
-            svmul(radius[i]/norm(diff13[i]), diff13[i], v1);
-            svmul(radius[i]/norm(diff24[i]), diff24[i], v2);
+            svmul(radius[i]/gmx::norm(diff13[i]), diff13[i], v1);
+            svmul(radius[i]/gmx::norm(diff24[i]), diff24[i], v2);
 
             rvec_sub(x_CA[i+1], v1, residueorigin[i+1]);
             rvec_sub(x_CA[i+2], v2, residueorigin[i+2]);
@@ -332,7 +332,7 @@ int gmx_helixorient(int argc, char *argv[])
         /* Normalize the axis */
         for (i = 0; i < iCA; i++)
         {
-            svmul(1.0/norm(residuehelixaxis[i]), residuehelixaxis[i], residuehelixaxis[i]);
+            svmul(1.0/gmx::norm(residuehelixaxis[i]), residuehelixaxis[i], residuehelixaxis[i]);
         }
 
         /* calculate vector from origin to residue CA */
@@ -357,7 +357,7 @@ int gmx_helixorient(int argc, char *argv[])
             else
             {
                 rvec_sub( bSC ? x_SC[i] : x_CA[i], residueorigin[i], residuevector[i]);
-                svmul(1.0/norm(residuevector[i]), residuevector[i], residuevector[i]);
+                svmul(1.0/gmx::norm(residuevector[i]), residuevector[i], residuevector[i]);
                 cprod(residuehelixaxis[i], residuevector[i], axis3[i]);
                 fprintf(fpaxis, "%15.12g %15.12g %15.12g       ", residuehelixaxis[i][0], residuehelixaxis[i][1], residuehelixaxis[i][2]);
                 fprintf(fpcenter, "%15.12g %15.12g %15.12g       ", residueorigin[i][0], residueorigin[i][1], residueorigin[i][2]);

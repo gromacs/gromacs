@@ -64,7 +64,7 @@ static void rot_conf(t_atoms *atoms, const rvec x[], const rvec v[], real trans,
     int      i, ai;
 
     rvec_sub(tail, head, arrow);
-    arrow_len = norm(arrow);
+    arrow_len = gmx::norm(arrow);
     if (debug)
     {
         fprintf(debug, "Arrow vector:   %10.4f  %10.4f  %10.4f\n",

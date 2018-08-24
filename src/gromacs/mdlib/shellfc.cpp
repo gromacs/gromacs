@@ -838,7 +838,7 @@ static real rms_force(const t_commrec *cr, gmx::ArrayRef<const gmx::RVec> force,
     for (int i = 0; i < ns; i++)
     {
         int shell  = s[i].shell;
-        buf[0]    += norm2(f[shell]);
+        buf[0]    += gmx::norm2(f[shell]);
     }
     int ntot = ns;
 
@@ -1154,7 +1154,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
 
         for (i = 0; i < end; i++)
         {
-            sf_dir += md->massT[i]*norm2(shfc->acc_dir[i]);
+            sf_dir += md->massT[i]*gmx::norm2(shfc->acc_dir[i]);
         }
     }
 
@@ -1262,7 +1262,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
 
             for (i = 0; i < end; i++)
             {
-                sf_dir += md->massT[i]*norm2(acc_dir[i]);
+                sf_dir += md->massT[i]*gmx::norm2(acc_dir[i]);
             }
         }
 

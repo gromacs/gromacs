@@ -465,7 +465,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
             rvec_sub(x[forceatoms[fa+1]], x[forceatoms[fa+2]], r_unrot);
         }
         mvmul(od->R, r_unrot, r);
-        r2   = norm2(r);
+        r2   = gmx::norm2(r);
         invr = gmx::invsqrt(r2);
         /* Calculate the prefactor for the D tensor, this includes the factor 3! */
         pfac = ip[type].orires.c*invr*invr*3;
@@ -674,7 +674,7 @@ real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             {
                 rvec_sub(x[ai], x[aj], r);
             }
-            r2    = norm2(r);
+            r2    = gmx::norm2(r);
             invr  = gmx::invsqrt(r2);
             invr2 = invr*invr;
             ex    = ip[type].orires.ex;

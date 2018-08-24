@@ -211,10 +211,10 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
         do_lmfit(ncorr, tcaf[k], sig, dt, nullptr, 0, ncorr*dt,
                  oenv, bDebugMode(), effnVAC, fitparms, 0, nullptr);
         eta = 1000*fitparms[1]*rho/
-            (4*fitparms[0]*PICO*norm2(kfac[k])/(NANO*NANO));
+            (4*fitparms[0]*PICO*gmx::norm2(kfac[k])/(NANO*NANO));
         fprintf(stdout, "k %6.3f  tau %6.3f  eta %8.5f 10^-3 kg/(m s)\n",
-                norm(kfac[k]), fitparms[0], eta);
-        fprintf(fp_vk, "%6.3f %g\n", norm(kfac[k]), eta);
+                gmx::norm(kfac[k]), fitparms[0], eta);
+        fprintf(fp_vk, "%6.3f %g\n", gmx::norm(kfac[k]), eta);
         for (i = 0; i < ncorr; i++)
         {
             fprintf(fp, "%g %g\n", i*dt, fit_function(effnVAC, fitparms, i*dt));
@@ -236,11 +236,11 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
             do_lmfit(ncorr, tcafc[k], sig, dt, nullptr, 0, ncorr*dt,
                      oenv, bDebugMode(), effnVAC, fitparms, 0, nullptr);
             eta = 1000*fitparms[1]*rho/
-                (4*fitparms[0]*PICO*norm2(kfac[kset_c[k]])/(NANO*NANO));
+                (4*fitparms[0]*PICO*gmx::norm2(kfac[kset_c[k]])/(NANO*NANO));
             fprintf(stdout,
                     "k %6.3f  tau %6.3f  Omega %6.3f  eta %8.5f 10^-3 kg/(m s)\n",
-                    norm(kfac[kset_c[k]]), fitparms[0], fitparms[1], eta);
-            fprintf(fp_vk, "%6.3f %g\n", norm(kfac[kset_c[k]]), eta);
+                    gmx::norm(kfac[kset_c[k]]), fitparms[0], fitparms[1], eta);
+            fprintf(fp_vk, "%6.3f %g\n", gmx::norm(kfac[kset_c[k]]), eta);
             for (i = 0; i < ncorr; i++)
             {
                 fprintf(fp_cub, "%g %g\n", i*dt, fit_function(effnVAC, fitparms, i*dt));

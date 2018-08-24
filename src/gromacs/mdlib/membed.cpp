@@ -560,7 +560,7 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
             at2 = rest_at->index[j];
             pbc_dx(pbc, r[at], r[at2], dr);
 
-            if (norm2(dr) < r_min_rad)
+            if (gmx::norm2(dr) < r_min_rad)
             {
                 mol_id = get_mol_id(at2, mtop, &type, &block);
                 bRM    = TRUE;
@@ -614,13 +614,13 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
             if (pos_ins->pieces > 1)
             {
                 /*minimum dr value*/
-                min_norm = norm2(dr);
+                min_norm = gmx::norm2(dr);
                 for (k = 1; k < pos_ins->pieces; k++)
                 {
                     pbc_dx(pbc, r[at], pos_ins->geom_cent[k], dr_tmp);
-                    if (norm2(dr_tmp) < min_norm)
+                    if (gmx::norm2(dr_tmp) < min_norm)
                     {
-                        min_norm = norm2(dr_tmp);
+                        min_norm = gmx::norm2(dr_tmp);
                         copy_rvec(dr_tmp, dr);
                     }
                 }

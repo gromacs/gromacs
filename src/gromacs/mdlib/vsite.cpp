@@ -377,7 +377,7 @@ static void constr_vsite4FDN(const rvec xi, const rvec xj, const rvec xk, const 
     cprod(rja, rjb, rm);
     /* 9 flops */
 
-    d = c*gmx::invsqrt(norm2(rm));
+    d = c*gmx::invsqrt(gmx::norm2(rm));
     /* 5+5+1 flops */
 
     x[XX] = xi[XX] + d*rm[XX];
@@ -1324,7 +1324,7 @@ static void spread_vsite4FDN(const t_iatom ia[], real a, real b, real c,
     cprod(rja, rjb, rm);
     /* 9 flops */
 
-    invrm = gmx::invsqrt(norm2(rm));
+    invrm = gmx::invsqrt(gmx::norm2(rm));
     denom = invrm*invrm;
     /* 5+5+2 flops */
 

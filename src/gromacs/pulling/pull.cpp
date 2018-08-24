@@ -796,7 +796,7 @@ static void get_pull_coord_dr(struct pull_t *pull,
         {
             vec[m] *= pcrd->params.dim[m];
         }
-        spatialData.vec_len = dnorm(vec);
+        spatialData.vec_len = gmx::norm(vec);
         for (m = 0; m < DIM; m++)
         {
             spatialData.vec[m] = vec[m]/spatialData.vec_len;
@@ -942,7 +942,7 @@ static void get_pull_coord_distance(struct pull_t *pull,
     {
         case epullgDIST:
             /* Pull along the vector between the com's */
-            spatialData.value = dnorm(spatialData.dr01);
+            spatialData.value = gmx::norm(spatialData.dr01);
             break;
         case epullgDIR:
         case epullgDIRPBC:
@@ -1110,7 +1110,7 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
             copy_dvec(spatialData.dr01, r_ij[c]);
         }
 
-        if (dnorm2(r_ij[c]) == 0)
+        if (gmx::norm2(r_ij[c]) == 0)
         {
             gmx_fatal(FARGS, "Distance for pull coordinate %lu is zero with constraint pulling, which is not allowed.", c + 1);
         }
@@ -1190,7 +1190,7 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
                     /* The position corrections dr due to the constraints */
                     dsvmul(-lambda*rm*pgrp1->invtm, r_ij[c], dr1);
                     dsvmul( lambda*rm*pgrp0->invtm, r_ij[c], dr0);
-                    dr_tot[c] += -lambda*dnorm(r_ij[c]);
+                    dr_tot[c] += -lambda*gmx::norm(r_ij[c]);
                     break;
                 case epullgDIR:
                 case epullgDIRPBC:
@@ -1231,7 +1231,7 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
                 fprintf(debug,
                         "Pull cur %8.5f %8.5f %8.5f j:%8.5f %8.5f %8.5f d: %8.5f\n",
                         rnew[g0][0], rnew[g0][1], rnew[g0][2],
-                        rnew[g1][0], rnew[g1][1], rnew[g1][2], dnorm(tmp));
+                        rnew[g1][0], rnew[g1][1], rnew[g1][2], gmx::norm(tmp));
                 fprintf(debug,
                         "Pull ref %8s %8s %8s   %8s %8s %8s d: %8.5f\n",
                         "", "", "", "", "", "", pcrd->value_ref);
@@ -1239,7 +1239,7 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
                         "Pull cor %8.5f %8.5f %8.5f j:%8.5f %8.5f %8.5f d: %8.5f\n",
                         dr0[0], dr0[1], dr0[2],
                         dr1[0], dr1[1], dr1[2],
-                        dnorm(tmp3));
+                        gmx::norm(tmp3));
             } /* END DEBUG */
 
             /* Update the COMs with dr */
@@ -1264,7 +1264,7 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
             {
                 case epullgDIST:
                     bConverged =
-                        fabs(dnorm(unc_ij) - coord.value_ref) < pull->params.constr_tol;
+                        fabs(gmx::norm(unc_ij) - coord.value_ref) < pull->params.constr_tol;
                     break;
                 case epullgDIR:
                 case epullgDIRPBC:
@@ -1288,7 +1288,7 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
                             "groups %d %d,"
                             "d_ref = %f, current d = %f\n",
                             coord.params.group[0], coord.params.group[1],
-                            coord.value_ref, dnorm(unc_ij));
+                            coord.value_ref, gmx::norm(unc_ij));
                 }
 
                 bConverged_all = FALSE;
@@ -1322,7 +1322,7 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
         /* get the final constraint displacement dr for group g */
         dvec_sub(rnew[g], pgrp->xp, dr);
 
-        if (dnorm2(dr) == 0)
+        if (gmx::norm2(dr) == 0)
         {
             /* No displacement, no update necessary */
             continue;
@@ -1374,7 +1374,7 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
 
             /* Add the pull contribution to the virial */
             /* We have already checked above that r_ij[c] != 0 */
-            f_invr = pcrd->scalarForce/dnorm(r_ij[c]);
+            f_invr = pcrd->scalarForce/gmx::norm(r_ij[c]);
 
             for (j = 0; j < DIM; j++)
             {
@@ -1502,8 +1502,8 @@ calculateVectorForces(const pull_coord_work_t &pcrd)
              */
             double a       = -gmx::invsqrt(1 - cos_theta2); /* comes from d/dx acos(x) */
             double b       = a*cos_theta;
-            double invdr01 = 1./dnorm(spatialData.dr01);
-            double invdr23 = 1./dnorm(spatialData.dr23);
+            double invdr01 = 1./gmx::norm(spatialData.dr01);
+            double invdr23 = 1./gmx::norm(spatialData.dr23);
             dvec   normalized_dr01, normalized_dr23;
             dsvmul(invdr01, spatialData.dr01, normalized_dr01);
             dsvmul(invdr23, spatialData.dr23, normalized_dr23);
@@ -1537,7 +1537,7 @@ calculateVectorForces(const pull_coord_work_t &pcrd)
             double invdr01;
             dvec   normalized_dr01;
 
-            invdr01 = 1./dnorm(spatialData.dr01);
+            invdr01 = 1./gmx::norm(spatialData.dr01);
             dsvmul(invdr01, spatialData.dr01, normalized_dr01);
             a       = -gmx::invsqrt(1 - cos_theta2); /* comes from d/dx acos(x) */
             b       = a*cos_theta;

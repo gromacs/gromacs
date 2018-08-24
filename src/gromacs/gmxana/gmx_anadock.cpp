@@ -247,7 +247,7 @@ static real rmsd_dist(t_pdbfile *pa, t_pdbfile *pb, gmx_bool bRMSD)
         {
             dx[i] /= pa->atoms.nr;
         }
-        rmsd = norm(dx);
+        rmsd = gmx::norm(dx);
     }
     return rmsd;
 }

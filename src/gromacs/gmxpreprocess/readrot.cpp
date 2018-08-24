@@ -113,9 +113,9 @@ extern char **read_rotparams(std::vector<t_inpfile> *inp, t_rot *rot,
         setStringEntry(inp, buf, s_vec, "1.0 0.0 0.0");
         string2dvec(s_vec, vec);
         /* Normalize the rotation vector */
-        if (dnorm(vec) != 0)
+        if (gmx::norm(vec) != 0)
         {
-            dsvmul(1.0/dnorm(vec), vec, vec);
+            dsvmul(1.0/gmx::norm(vec), vec, vec);
         }
         else
         {

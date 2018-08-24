@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -227,7 +227,7 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
                 center = (xAJ[d]+xAK[d]+xAL[d])/3.0;
                 dxc[d] = xAI[d]-center;
             }
-            center = norm(dxc);
+            center = gmx::norm(dxc);
             for (d = 0; (d < DIM); d++)
             {
                 xH1[d] = xAI[d]+dxc[d]*distH/center;
@@ -243,12 +243,12 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
             {
                 rBB[d] = xAI[d]-0.5*(xAJ[d]+xAK[d]);
             }
-            bb = norm(rBB);
+            bb = gmx::norm(rBB);
 
             rvec_sub(xAI, xAJ, rCC1);
             rvec_sub(xAI, xAK, rCC2);
             cprod(rCC1, rCC2, rNN);
-            nn = norm(rNN);
+            nn = gmx::norm(rNN);
 
             for (d = 0; (d < DIM); d++)
             {

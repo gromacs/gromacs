@@ -515,7 +515,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
             for (j = nfr; j >= 0; j--)
             {
                 rvec_sub(mtrans[nfr], mtrans[j], tmp);
-                dsp2[nfr-j]  += norm2(tmp);
+                dsp2[nfr-j]  += gmx::norm2(tmp);
                 xshfr[nfr-j] += 1.0;
             }
         }
@@ -595,9 +595,9 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
         mj2 += iprod(mtrans[nfr], mtrans[nfr]);
         md2 += iprod(mu[nfr], mu[nfr]);
 
-        fprintf(fmj, "%.3f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n", time[nfr], mtrans[nfr][XX], mtrans[nfr][YY], mtrans[nfr][ZZ], mj2/refr, norm(mja_tmp)/refr);
+        fprintf(fmj, "%.3f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n", time[nfr], mtrans[nfr][XX], mtrans[nfr][YY], mtrans[nfr][ZZ], mj2/refr, gmx::norm(mja_tmp)/refr);
         fprintf(fmd, "%.3f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n",    \
-                time[nfr], mu[nfr][XX], mu[nfr][YY], mu[nfr][ZZ], md2/refr, norm(mdvec)/refr);
+                time[nfr], mu[nfr][XX], mu[nfr][YY], mu[nfr][ZZ], md2/refr, gmx::norm(mdvec)/refr);
 
         nfr++;
 
@@ -631,8 +631,8 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
     svmul(1.0/refr, mdvec, mdvec);
     svmul(1.0/refr, mja_tmp, mja_tmp);
 
-    mdav2 = norm2(mdvec);
-    mj    = norm2(mja_tmp);
+    mdav2 = gmx::norm2(mdvec);
+    mj    = gmx::norm2(mja_tmp);
     mjdav = iprod(mdvec, mja_tmp);
 
 

@@ -69,7 +69,7 @@ static real calc_gyro(rvec x[], int gnx, int index[], t_atom atom[], real tm,
     if (bRot)
     {
         principal_comp(gnx, index, atom, x, trans, d);
-        Itot = norm(d);
+        Itot = gmx::norm(d);
         if (bMOI)
         {
             return Itot;

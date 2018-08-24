@@ -1274,7 +1274,7 @@ static void align_with_z(
     snew(rotated_str, natoms);
 
     /* Normalize the axis */
-    ooanorm = 1.0/norm(axis);
+    ooanorm = 1.0/gmx::norm(axis);
     svmul(ooanorm, axis, axis);
 
     /* Calculate the angle for the fitting procedure */
@@ -1549,7 +1549,7 @@ static real flex_fit_angle(gmx_enfrotgrp *erg)
             /* Put the center of the positions into the origin */
             rvec_sub(erg->xc[i], center, coord);
             /* Determine the scaling factor for the length: */
-            scal = erg->xc_ref_length[erg->xc_sortind[i]] / norm(coord);
+            scal = erg->xc_ref_length[erg->xc_sortind[i]] / gmx::norm(coord);
             /* Get position, multiply with the scaling factor and save  */
             svmul(scal, coord, erg->xc_norm[i]);
         }
@@ -1659,7 +1659,7 @@ static void flex_fit_angle_perslab(
                     rvec_dec(sd->ref[i], ref_center);
                     rvec_dec(sd->x[i], act_center);
                     /* Normalize x_i such that it gets the same length as ref_i */
-                    svmul( norm(sd->ref[i])/norm(sd->x[i]), sd->x[i], sd->x[i] );
+                    svmul( gmx::norm(sd->ref[i])/gmx::norm(sd->x[i]), sd->x[i], sd->x[i] );
                 }
                 /* We already subtracted the centers */
                 clear_rvec(ref_center);
@@ -1818,10 +1818,10 @@ static void flex2_precalc_inner_sum(const gmx_enfrotgrp *erg)
             mvmul(erg->rotmat, tmpvec2, rin);      /* rin = Omega.(yi0 - ycn)  */
 
             /* Calculate psi_i* and sin */
-            rvec_sub(xi, xcn, tmpvec2);                /* tmpvec2 = xi - xcn       */
-            cprod(erg->vec, tmpvec2, tmpvec);          /* tmpvec = v x (xi - xcn)  */
-            OOpsiistar = norm2(tmpvec)+erg->rotg->eps; /* OOpsii* = 1/psii* = |v x (xi-xcn)|^2 + eps */
-            OOpsii     = norm(tmpvec);                 /* OOpsii = 1 / psii = |v x (xi - xcn)| */
+            rvec_sub(xi, xcn, tmpvec2);                     /* tmpvec2 = xi - xcn       */
+            cprod(erg->vec, tmpvec2, tmpvec);               /* tmpvec = v x (xi - xcn)  */
+            OOpsiistar = gmx::norm2(tmpvec)+erg->rotg->eps; /* OOpsii* = 1/psii* = |v x (xi-xcn)|^2 + eps */
+            OOpsii     = gmx::norm(tmpvec);                 /* OOpsii = 1 / psii = |v x (xi - xcn)| */
 
             /*                           *         v x (xi - xcn)          */
             unitv(tmpvec, s_in);        /*  sin = ----------------         */
@@ -2023,15 +2023,15 @@ static real do_flex2_lowlevel(
              * However, since the atom is located directly on the pivot, this
              * slab's contribution to the force on that atom will be zero
              * anyway. Therefore, we directly move on to the next slab.       */
-            if (gmx_numzero(norm(tmpvec2))) /* 0 == norm(xj - xcn) */
+            if (gmx_numzero(gmx::norm(tmpvec2))) /* 0 == norm(xj - xcn) */
             {
                 continue;
             }
 
             /* Calculate sjn */
-            cprod(erg->vec, tmpvec2, tmpvec);          /* tmpvec = v x (xj - xcn)  */
+            cprod(erg->vec, tmpvec2, tmpvec);               /* tmpvec = v x (xj - xcn)  */
 
-            OOpsijstar = norm2(tmpvec)+erg->rotg->eps; /* OOpsij* = 1/psij* = |v x (xj-xcn)|^2 + eps */
+            OOpsijstar = gmx::norm2(tmpvec)+erg->rotg->eps; /* OOpsij* = 1/psij* = |v x (xj-xcn)|^2 + eps */
 
             numerator = gmx::square(iprod(tmpvec, rjn));
 
@@ -2056,7 +2056,7 @@ static real do_flex2_lowlevel(
             /* Now calculate the force on atom j */
             /*************************************/
 
-            OOpsij = norm(tmpvec);    /* OOpsij = 1 / psij = |v x (xj - xcn)| */
+            OOpsij = gmx::norm(tmpvec);    /* OOpsij = 1 / psij = |v x (xj - xcn)| */
 
             /*                              *         v x (xj - xcn)          */
             unitv(tmpvec, sjn);            /*  sjn = ----------------         */
@@ -2255,7 +2255,7 @@ static real do_flex_lowlevel(
              * However, since the atom is located directly on the pivot, this
              * slab's contribution to the force on that atom will be zero
              * anyway. Therefore, we directly move on to the next slab.       */
-            if (gmx_numzero(norm(yj0_ycn))) /* 0 == norm(yj0 - ycn) */
+            if (gmx_numzero(gmx::norm(yj0_ycn))) /* 0 == norm(yj0 - ycn) */
             {
                 continue;
             }
@@ -2607,7 +2607,7 @@ static void angle(const gmx_enfrotgrp *erg,
     }
 
     /* Also return the weight */
-    *weight = norm(xp);
+    *weight = gmx::norm(xp);
 }
 
 
@@ -2702,7 +2702,7 @@ static void do_fixed(
                 }
 
                 /* Add to the rotation potential for this angle: */
-                erg->PotAngleFit->V[ifit] += 0.5*k_wi*norm2(dr);
+                erg->PotAngleFit->V[ifit] += 0.5*k_wi*gmx::norm2(dr);
             }
         }
 
@@ -3004,7 +3004,7 @@ static void radial_motion2_precalc_inner_sum(const gmx_enfrotgrp *erg,
 
         cprod(erg->vec, xi_xc, v_xi_xc);             /* v_xi_xc = v x (xi-u)  */
 
-        fac = norm2(v_xi_xc);
+        fac = gmx::norm2(v_xi_xc);
         /*                                 *                      1           */
         psiistar = 1.0/(fac + erg->rotg->eps); /* psiistar = --------------------- */
         /*            |v x (xi-xc)|^2 + eps */
@@ -3115,7 +3115,7 @@ static void do_radial_motion2(
 
         cprod(erg->vec, xj_u, v_xj_u);              /* v_xj_u = v x (xj-u)   */
 
-        fac = norm2(v_xj_u);
+        fac = gmx::norm2(v_xj_u);
         /*                                      *                      1           */
         psijstar = 1.0/(fac + erg->rotg->eps); /*  psistar = --------------------  */
         /*                                      *            |v x (xj-u)|^2 + eps  */
@@ -3531,7 +3531,7 @@ static void init_rot_group(FILE *fplog, const t_commrec *cr,
             for (int i = 0; i < erg->rotg->nat; i++)
             {
                 rvec_sub(erg->rotg->x_ref[i], erg->xc_ref_center, coord);
-                erg->xc_ref_length[i] = norm(coord);
+                erg->xc_ref_length[i] = gmx::norm(coord);
             }
         }
     }

@@ -300,7 +300,7 @@ int gmx_trjorder(int argc, char *argv[])
                 sa = ind_sol[na*i];
                 pbc_dx(&pbc, xcom, xsol[i], dx);
                 order[i].i   = sa;
-                order[i].d2  = norm2(dx);
+                order[i].d2  = gmx::norm2(dx);
             }
         }
         else
@@ -311,7 +311,7 @@ int gmx_trjorder(int argc, char *argv[])
                 sa = ind_sol[na*i];
                 pbc_dx(&pbc, x[ind_ref[0]], xsol[i], dx);
                 order[i].i   = sa;
-                order[i].d2  = norm2(dx);
+                order[i].d2  = gmx::norm2(dx);
             }
             for (j = 1; (j < isize_ref); j++)
             {
@@ -319,7 +319,7 @@ int gmx_trjorder(int argc, char *argv[])
                 for (i = 0; (i < nwat); i++)
                 {
                     pbc_dx(&pbc, x[sr], xsol[i], dx);
-                    n2 = norm2(dx);
+                    n2 = gmx::norm2(dx);
                     if (n2 < order[i].d2)
                     {
                         order[i].d2  = n2;

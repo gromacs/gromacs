@@ -175,10 +175,10 @@ real max_cutoff2(int ePBC, const matrix box)
     /* Physical limitation of the cut-off
      * by half the length of the shortest box vector.
      */
-    min_hv2 = oneFourth * std::min(norm2(box[XX]), norm2(box[YY]));
+    min_hv2 = oneFourth * std::min(gmx::norm2(box[XX]), gmx::norm2(box[YY]));
     if (ePBC != epbcXY)
     {
-        min_hv2 = std::min(min_hv2, oneFourth * norm2(box[ZZ]));
+        min_hv2 = std::min(min_hv2, oneFourth * gmx::norm2(box[ZZ]));
     }
 
     /* Limitation to the smallest diagonal element due to optimizations:
@@ -671,11 +671,11 @@ void pbc_dx(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
                 }
             }
             /* dx is the distance in a rectangular box */
-            d2min = norm2(dx);
+            d2min = gmx::norm2(dx);
             if (d2min > pbc->max_cutoff2)
             {
                 copy_rvec(dx, dx_start);
-                d2min = norm2(dx);
+                d2min = gmx::norm2(dx);
                 /* Now try all possible shifts, when the distance is within max_cutoff
                  * it must be the shortest possible distance.
                  */
@@ -683,7 +683,7 @@ void pbc_dx(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
                 while ((d2min > pbc->max_cutoff2) && (i < pbc->ntric_vec))
                 {
                     rvec_add(dx_start, pbc->tric_vec[i], trial);
-                    d2trial = norm2(trial);
+                    d2trial = gmx::norm2(trial);
                     if (d2trial < d2min)
                     {
                         copy_rvec(trial, dx);
@@ -735,7 +735,7 @@ void pbc_dx(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
             if (d2min > pbc->max_cutoff2)
             {
                 copy_rvec(dx, dx_start);
-                d2min = norm2(dx);
+                d2min = gmx::norm2(dx);
                 /* Now try all possible shifts, when the distance is within max_cutoff
                  * it must be the shortest possible distance.
                  */
@@ -876,12 +876,12 @@ int pbc_dx_aiuc(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
                 }
             }
             /* dx is the distance in a rectangular box */
-            d2min = norm2(dx);
+            d2min = gmx::norm2(dx);
             if (d2min > pbc->max_cutoff2)
             {
                 copy_rvec(dx, dx_start);
                 copy_ivec(ishift, ishift_start);
-                d2min = norm2(dx);
+                d2min = gmx::norm2(dx);
                 /* Now try all possible shifts, when the distance is within max_cutoff
                  * it must be the shortest possible distance.
                  */
@@ -889,7 +889,7 @@ int pbc_dx_aiuc(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
                 while ((d2min > pbc->max_cutoff2) && (i < pbc->ntric_vec))
                 {
                     rvec_add(dx_start, pbc->tric_vec[i], trial);
-                    d2trial = norm2(trial);
+                    d2trial = gmx::norm2(trial);
                     if (d2trial < d2min)
                     {
                         copy_rvec(trial, dx);

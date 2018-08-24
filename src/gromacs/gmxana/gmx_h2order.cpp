@@ -170,12 +170,12 @@ static void calc_h2order(const char *fn, const int index[], int ngx, rvec **slDi
              */
 
             if (bMicel)
-            {                                                      /* this is for spherical interfaces */
-                rvec_sub(com, x0[index[3*i]], normal);             /* vector from Oxygen to COM */
-                slice = static_cast<int>(norm(normal)/(*slWidth)); /* spherical slice           */
+            {                                                           /* this is for spherical interfaces */
+                rvec_sub(com, x0[index[3*i]], normal);                  /* vector from Oxygen to COM */
+                slice = static_cast<int>(gmx::norm(normal)/(*slWidth)); /* spherical slice           */
 
-                sum[slice]   += iprod(dipole, normal) / (norm(dipole) * norm(normal));
-                frame[slice] += iprod(dipole, normal) / (norm(dipole) * norm(normal));
+                sum[slice]   += iprod(dipole, normal) / (gmx::norm(dipole) * gmx::norm(normal));
+                frame[slice] += iprod(dipole, normal) / (gmx::norm(dipole) * gmx::norm(normal));
                 count[slice]++;
 
             }
@@ -194,8 +194,8 @@ static void calc_h2order(const char *fn, const int index[], int ngx, rvec **slDi
                 {
                     rvec_add(dipole, dip[slice], dip[slice]);
                     /* Add dipole to total. mag[slice] is total dipole in axis direction */
-                    sum[slice]   += iprod(dipole, normal)/norm(dipole);
-                    frame[slice] += iprod(dipole, normal)/norm(dipole);
+                    sum[slice]   += iprod(dipole, normal)/gmx::norm(dipole);
+                    frame[slice] += iprod(dipole, normal)/gmx::norm(dipole);
                     /* increase count for that slice */
                     count[slice]++;
                 }

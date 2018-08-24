@@ -565,7 +565,7 @@ static void calc_order(const char *fn, const int *index, int *a, rvec **order,
                     /* Using convention for unsaturated carbons */
                     /* first get Sz, the vector from Cn to Cn+1 */
                     rvec_sub(x1[a[index[i+1]+j]], x1[a[index[i]+j]], dist);
-                    length = norm(dist);
+                    length = gmx::norm(dist);
                     check_length(length, a[index[i]+j], a[index[i+1]+j]);
                     svmul(1.0/length, dist, Sz);
 
@@ -585,7 +585,7 @@ static void calc_order(const char *fn, const int *index, int *a, rvec **order,
                 {
                     /* get vector dist(Cn-1,Cn+1) for tail atoms */
                     rvec_sub(x1[a[index[i+1]+j]], x1[a[index[i-1]+j]], dist);
-                    length = norm(dist); /* determine distance between two atoms */
+                    length = gmx::norm(dist); /* determine distance between two atoms */
                     check_length(length, a[index[i-1]+j], a[index[i+1]+j]);
 
                     svmul(1.0/length, dist, Sz);
@@ -597,11 +597,11 @@ static void calc_order(const char *fn, const int *index, int *a, rvec **order,
                 rvec_sub(x1[a[index[i+1]+j]], x1[a[index[i]+j]], tmp1);
                 rvec_sub(x1[a[index[i-1]+j]], x1[a[index[i]+j]], tmp2);
                 cprod(tmp1, tmp2, Sx);
-                svmul(1.0/norm(Sx), Sx, Sx);
+                svmul(1.0/gmx::norm(Sx), Sx, Sx);
 
                 /* now we can get Sy from the outer product of Sx and Sz   */
                 cprod(Sz, Sx, Sy);
-                svmul(1.0/norm(Sy), Sy, Sy);
+                svmul(1.0/gmx::norm(Sy), Sy, Sy);
 
                 /* the square of cosine of the angle between dist and the axis.
                    Using the innerproduct, but two of the three elements are zero
@@ -672,7 +672,7 @@ static void calc_order(const char *fn, const int *index, int *a, rvec **order,
                             pbc_dx(&pbc, x1[distidx[k]], x1[a[index[i]+j]], dvec);
                             /* at the moment, just remove dvec[axis] */
                             dvec[axis] = 0;
-                            tmpdist    = std::min(tmpdist, norm2(dvec));
+                            tmpdist    = std::min(tmpdist, gmx::norm2(dvec));
                         }
                         //fprintf(stderr, "Min dist %f; trace %f\n", tmpdist, trace(box));
                         (*distvals)[j][i] += std::sqrt(tmpdist);

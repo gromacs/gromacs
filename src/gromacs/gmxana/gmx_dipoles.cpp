@@ -233,7 +233,7 @@ static void do_gkr(t_gkrbin *gb, int ncos, int *ngrp, int *molindex[],
             {
                 /* Compute distance between molecules including PBC */
                 pbc_dx(&pbc, xcm[grp0][i], xcm[grp1][j], dx);
-                rr = norm(dx);
+                rr = gmx::norm(dx);
 
                 if (gb->bPhi)
                 {
@@ -259,8 +259,8 @@ static void do_gkr(t_gkrbin *gb, int ncos, int *ngrp, int *molindex[],
                 {
                     fprintf(debug ? debug : stderr,
                             "mu[%d] = %5.2f %5.2f %5.2f |mi| = %5.2f, mu[%d] = %5.2f %5.2f %5.2f |mj| = %5.2f rr = %5.2f cosa = %5.2f\n",
-                            gi, mu[gi][XX], mu[gi][YY], mu[gi][ZZ], norm(mu[gi]),
-                            gj, mu[gj][XX], mu[gj][YY], mu[gj][ZZ], norm(mu[gj]),
+                            gi, mu[gi][XX], mu[gi][YY], mu[gi][ZZ], gmx::norm(mu[gi]),
+                            gj, mu[gj][XX], mu[gj][YY], mu[gj][ZZ], gmx::norm(mu[gj]),
                             rr, cosa);
                 }
 
@@ -681,7 +681,7 @@ static void dump_slab_dipoles(const char *fn, int idim, int nslice,
     xvgr_legend(fp, DIM, leg_dim, oenv);
     for (i = 0; (i < nslice); i++)
     {
-        mutot = norm(slab_dipole[i])/nframes;
+        mutot = gmx::norm(slab_dipole[i])/nframes;
         fprintf(fp, "%10.3f  %10.3f  %10.3f  %10.3f  %10.3f\n",
                 ((i+0.5)*box[idim][idim])/nslice,
                 slab_dipole[i][XX]/nframes,
@@ -1087,8 +1087,8 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
                     ind1  = mols->index[molindex[n][i]+1];
 
                     mol_dip(ind0, ind1, x, atom, dipole[i]);
-                    gmx_stats_add_point(mulsq, 0, norm(dipole[i]), 0, 0);
-                    gmx_stats_add_point(muframelsq, 0, norm(dipole[i]), 0, 0);
+                    gmx_stats_add_point(mulsq, 0, gmx::norm(dipole[i]), 0, 0);
+                    gmx_stats_add_point(muframelsq, 0, gmx::norm(dipole[i]), 0, 0);
                     if (bSlab)
                     {
                         update_slab_dipoles(ind0, ind1, x,

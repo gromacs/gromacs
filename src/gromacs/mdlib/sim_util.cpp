@@ -344,7 +344,7 @@ static void print_large_forces(FILE            *fp,
     std::uintmax_t numNonFinite    = 0;
     for (int i = 0; i < md->homenr; i++)
     {
-        real force2    = norm2(f[i]);
+        real force2    = gmx::norm2(f[i]);
         bool nonFinite = !std::isfinite(force2);
         if (force2 >= force2Tolerance || nonFinite)
         {

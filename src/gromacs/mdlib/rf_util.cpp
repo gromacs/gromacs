@@ -141,7 +141,7 @@ real RF_excl_correction(const t_forcerec *fr,
                         {
                             rvec_sub(x[i], x[k], dx);
                         }
-                        ener += qqA*(ek*norm2(dx) - ec);
+                        ener += qqA*(ek*gmx::norm2(dx) - ec);
                         svmul(-2*qqA*ek, dx, df);
                         rvec_inc(f[i], df);
                         rvec_dec(f[k], df);
@@ -192,7 +192,7 @@ real RF_excl_correction(const t_forcerec *fr,
                         {
                             rvec_sub(x[i], x[k], dx);
                         }
-                        v     = ek*norm2(dx) - ec;
+                        v     = ek*gmx::norm2(dx) - ec;
                         ener += qqL*v;
                         svmul(-2*qqL*ek, dx, df);
                         rvec_inc(f[i], df);

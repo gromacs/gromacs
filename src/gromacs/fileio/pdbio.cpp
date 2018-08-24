@@ -129,7 +129,7 @@ void gmx_write_pdb_box(FILE *out, int ePBC, const matrix box)
         return;
     }
 
-    if (norm2(box[YY])*norm2(box[ZZ]) != 0)
+    if (gmx::norm2(box[YY])*gmx::norm2(box[ZZ]) != 0)
     {
         alpha = RAD2DEG*gmx_angle(box[YY], box[ZZ]);
     }
@@ -137,7 +137,7 @@ void gmx_write_pdb_box(FILE *out, int ePBC, const matrix box)
     {
         alpha = 90;
     }
-    if (norm2(box[XX])*norm2(box[ZZ]) != 0)
+    if (gmx::norm2(box[XX])*gmx::norm2(box[ZZ]) != 0)
     {
         beta  = RAD2DEG*gmx_angle(box[XX], box[ZZ]);
     }
@@ -145,7 +145,7 @@ void gmx_write_pdb_box(FILE *out, int ePBC, const matrix box)
     {
         beta  = 90;
     }
-    if (norm2(box[XX])*norm2(box[YY]) != 0)
+    if (gmx::norm2(box[XX])*gmx::norm2(box[YY]) != 0)
     {
         gamma = RAD2DEG*gmx_angle(box[XX], box[YY]);
     }
@@ -157,14 +157,14 @@ void gmx_write_pdb_box(FILE *out, int ePBC, const matrix box)
     if (ePBC != epbcSCREW)
     {
         fprintf(out, "CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f %-11s%4d\n",
-                10*norm(box[XX]), 10*norm(box[YY]), 10*norm(box[ZZ]),
+                10*gmx::norm(box[XX]), 10*gmx::norm(box[YY]), 10*gmx::norm(box[ZZ]),
                 alpha, beta, gamma, "P 1", 1);
     }
     else
     {
         /* Double the a-vector length and write the correct space group */
         fprintf(out, "CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f %-11s%4d\n",
-                20*norm(box[XX]), 10*norm(box[YY]), 10*norm(box[ZZ]),
+                20*gmx::norm(box[XX]), 10*gmx::norm(box[YY]), 10*gmx::norm(box[ZZ]),
                 alpha, beta, gamma, "P 21 1 1", 1);
 
     }
@@ -327,7 +327,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
     gmx_residuetype_init(&rt);
 
     fprintf(out, "TITLE     %s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
-    if (box && ( (norm2(box[XX]) != 0.0f) || (norm2(box[YY]) != 0.0f) || (norm2(box[ZZ]) != 0.0f) ) )
+    if (box && ( (gmx::norm2(box[XX]) != 0.0f) || (gmx::norm2(box[YY]) != 0.0f) || (gmx::norm2(box[ZZ]) != 0.0f) ) )
     {
         gmx_write_pdb_box(out, ePBC, box);
     }

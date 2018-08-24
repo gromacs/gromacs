@@ -117,7 +117,7 @@ static real calc_dist(t_pbc *pbc, rvec x[], const t_block *cgs, int icg, int jcg
         for (j = cgs->index[jcg]; (j < cgs->index[jcg+1]); j++)
         {
             pbc_dx(pbc, x[i], x[j], dx);
-            d2 = norm2(dx);
+            d2 = gmx::norm2(dx);
             if (d2 < mindist2)
             {
                 mindist2 = d2;

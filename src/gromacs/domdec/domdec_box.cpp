@@ -201,7 +201,7 @@ static void set_tric_dir(const ivec *dd_nc, gmx_ddbox_t *ddbox, const matrix box
             }
             ddbox->skew_fac[d] = 1.0/std::sqrt(inv_skew_fac2);
             /* Set the normal vector length to skew_fac */
-            dep = ddbox->skew_fac[d]/norm(normal[d]);
+            dep = ddbox->skew_fac[d]/gmx::norm(normal[d]);
             svmul(dep, normal[d], normal[d]);
 
             if (debug)

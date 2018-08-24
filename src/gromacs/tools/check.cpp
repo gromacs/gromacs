@@ -367,7 +367,7 @@ static void chk_bonds(t_idef *idef, int ePBC, rvec *x, matrix box, real tol)
                 if (b0 != 0)
                 {
                     pbc_dx(&pbc, x[ai], x[aj], dx);
-                    blen      = norm(dx);
+                    blen      = gmx::norm(dx);
                     deviation = gmx::square(blen-b0);
                     if (std::sqrt(deviation/gmx::square(b0)) > tol)
                     {

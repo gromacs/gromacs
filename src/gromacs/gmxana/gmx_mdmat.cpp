@@ -131,7 +131,7 @@ static void calc_mat(int nres, int natoms, const int rndx[],
         {
             resj = rndx[j];
             pbc_dx(&pbc, x[index[i]], x[index[j]], ddx);
-            r2 = norm2(ddx);
+            r2 = gmx::norm2(ddx);
             if (r2 < trunc2)
             {
                 nmat[resi][j]++;

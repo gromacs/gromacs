@@ -4078,7 +4078,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
         {
             for (m = 0; m < DIM; m++)
             {
-                if (AbsRef[m] && norm2(ir->compress[m]) > 0)
+                if (AbsRef[m] && gmx::norm2(ir->compress[m]) > 0)
                 {
                     warning(wi, "You are using pressure coupling with absolute position restraints, this will give artifacts. Use the refcoord_scaling option.");
                     break;

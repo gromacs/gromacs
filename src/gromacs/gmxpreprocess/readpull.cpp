@@ -185,7 +185,7 @@ static void init_pull_coord(t_pull_coord *pcrd, int coord_index_for_output,
     process_pull_dim(dim_buf, pcrd->dim, pcrd);
 
     string2dvec(origin_buf, origin);
-    if (pcrd->group[0] != 0 && dnorm(origin) > 0)
+    if (pcrd->group[0] != 0 && gmx::norm(origin) > 0)
     {
         gmx_fatal(FARGS, "The pull origin can only be set with an absolute reference");
     }
@@ -230,7 +230,7 @@ static void init_pull_coord(t_pull_coord *pcrd, int coord_index_for_output,
 
     if (pcrd->eGeom == epullgDIR || pcrd->eGeom == epullgCYL || pcrd->eGeom == epullgDIRPBC || pcrd->eGeom == epullgANGLEAXIS)
     {
-        if (dnorm2(vec) == 0)
+        if (gmx::norm2(vec) == 0)
         {
             gmx_fatal(FARGS, "With pull geometry %s the pull vector can not be 0,0,0",
                       epullg_names[pcrd->eGeom]);
@@ -244,11 +244,11 @@ static void init_pull_coord(t_pull_coord *pcrd, int coord_index_for_output,
         }
 
         /* Normalize the direction vector */
-        dsvmul(1/dnorm(vec), vec, vec);
+        dsvmul(1/gmx::norm(vec), vec, vec);
     }
     else /* This case is for are all the geometries where the pull vector is not used */
     {
-        if (dnorm2(vec) > 0)
+        if (gmx::norm2(vec) > 0)
         {
             sprintf(buf, "A pull vector is given (%g  %g  %g) but will not be used with geometry %s. If you really want to use this "
                     "vector, consider using geometry %s instead.",

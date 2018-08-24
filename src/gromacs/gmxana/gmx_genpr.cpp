@@ -214,7 +214,7 @@ int gmx_genpr(int argc, char *argv[])
             for (j = i+1; j < igrp; j++, k++)
             {
                 rvec_sub(x[ind_grp[i]], x[ind_grp[j]], dx);
-                d = norm(dx);
+                d = gmx::norm(dx);
                 if (bConstr)
                 {
                     fprintf(out, "%5d %5d %1d %10g\n", ind_grp[i]+1, ind_grp[j]+1, 2, d);

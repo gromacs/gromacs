@@ -355,40 +355,14 @@ static inline int iiprod(const ivec a, const ivec b)
     return (a[XX]*b[XX]+a[YY]*b[YY]+a[ZZ]*b[ZZ]);
 }
 
-static inline real norm2(const rvec a)
-{
-    return a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ];
-}
-
-static inline double dnorm2(const dvec a)
-{
-    return a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ];
-}
-
-/* WARNING:
- * As dnorm() uses sqrt() (which is slow) _only_ use it if you are sure you
- * don't need 1/dnorm(), otherwise use dnorm2()*dinvnorm(). */
-static inline double dnorm(const dvec a)
-{
-    return std::sqrt(diprod(a, a));
-}
-
-/* WARNING:
- * As norm() uses sqrt() (which is slow) _only_ use it if you are sure you
- * don't need 1/norm(), otherwise use norm2()*invnorm(). */
-static inline real norm(const rvec a)
-{
-    return std::sqrt(iprod(a, a));
-}
-
 static inline real invnorm(const rvec a)
 {
-    return gmx::invsqrt(norm2(a));
+    return gmx::invsqrt(gmx::norm2(a));
 }
 
 static inline real dinvnorm(const dvec a)
 {
-    return gmx::invsqrt(dnorm2(a));
+    return gmx::invsqrt(gmx::norm2(a));
 }
 
 /* WARNING:
@@ -464,7 +438,7 @@ static inline real gmx_angle(const rvec a, const rvec b)
 
     cprod(a, b, w);
 
-    wlen  = norm(w);
+    wlen  = gmx::norm(w);
     s     = iprod(a, b);
 
     return std::atan2(wlen, s);
@@ -477,7 +451,7 @@ static inline double gmx_angle_between_dvecs(const dvec a, const dvec b)
 
     dcprod(a, b, w);
 
-    wlen  = dnorm(w);
+    wlen  = gmx::norm(w);
     s     = diprod(a, b);
 
     return std::atan2(wlen, s);
@@ -623,7 +597,7 @@ static inline void unitv(const rvec src, rvec dest)
 {
     real linv;
 
-    linv     = gmx::invsqrt(norm2(src));
+    linv     = gmx::invsqrt(gmx::norm2(src));
     dest[XX] = linv*src[XX];
     dest[YY] = linv*src[YY];
     dest[ZZ] = linv*src[ZZ];
@@ -633,26 +607,5 @@ static inline real trace(const matrix m)
 {
     return (m[XX][XX]+m[YY][YY]+m[ZZ][ZZ]);
 }
-
-#ifdef __cplusplus
-namespace gmx
-{
-/*!
- * \brief Forward operations on C Array style vectors to C implementations.
- *
- * Since vec.h and vectypes.h independently declare `norm` and `norm2` in
- * different namespaces, code that includes both headers but does not specify
- * the namespace from which to use `norm` and `norm2` cannot properly resolve
- * overloads without the following helper templates.
- * \tparam T array element type (e.g. real, int, etc.)
- * \param v address of first vector element
- * \return magnitude or squared magnitude of vector
- * \{
- */
-template<typename T> T norm(T* v) {return ::norm(v); }
-template <typename T> T norm2(T* v) { return ::norm2(v); }
-}      // namespace gmx
-/*! \} */
-#endif // __cplusplus
 
 #endif

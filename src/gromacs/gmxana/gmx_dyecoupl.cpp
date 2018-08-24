@@ -303,7 +303,7 @@ int gmx_dyecoupl(int argc, char *argv[])
                 }
 
                 unitv(dist, distnorm);
-                R       = norm(dist);
+                R       = gmx::norm(dist);
                 kappa2  = iprod(donvec, accvec)- 3.* (iprod(donvec, distnorm) * iprod(distnorm, accvec));
                 kappa2 *= kappa2;
                 if (R0 > 0)

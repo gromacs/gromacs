@@ -254,7 +254,7 @@ void ewald_LRcorrection(int numAtomsLocal,
                                     }
                                 }
                             }
-                            dr2 = norm2(dx);
+                            dr2 = gmx::norm2(dx);
                             /* Distance between two excluded particles
                              * may be zero in the case of shells
                              */
@@ -424,7 +424,7 @@ void ewald_LRcorrection(int numAtomsLocal,
                                     }
                                 }
                             }
-                            dr2 = norm2(dx);
+                            dr2 = gmx::norm2(dx);
                             if (dr2 != 0)
                             {
                                 rinv    = gmx::invsqrt(dr2);

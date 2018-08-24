@@ -229,8 +229,11 @@ VectorType unitVector(const VectorType &v)
 /*! \brief
  * norm for gmx::BasicVector
  */
-template <typename ValueType> static inline
-ValueType norm(BasicVector<ValueType> v)
+static inline float norm(const BasicVector<float> &v)
+{
+    return v.norm();
+}
+static inline double norm(const BasicVector<double> &v)
 {
     return v.norm();
 }
@@ -238,8 +241,11 @@ ValueType norm(BasicVector<ValueType> v)
 /*! \brief
  * Square of the vector norm for gmx::BasicVector
  */
-template <typename ValueType> static inline
-ValueType norm2(BasicVector<ValueType> v)
+static inline float norm2(const BasicVector<float> &v)
+{
+    return v.norm2();
+}
+static inline double norm2(const BasicVector<double> &v)
 {
     return v.norm2();
 }

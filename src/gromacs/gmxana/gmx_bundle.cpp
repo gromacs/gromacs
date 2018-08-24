@@ -148,7 +148,7 @@ static void calc_axes(rvec x[], t_atom atom[], const int gnx[], int *index[],
         rvec_add(bun->end[0][i], bun->end[1][i], bun->mid[i]);
         svmul(0.5, bun->mid[i], bun->mid[i]);
         rvec_sub(bun->end[0][i], bun->end[1][i], bun->dir[i]);
-        bun->len[i] = norm(bun->dir[i]);
+        bun->len[i] = gmx::norm(bun->dir[i]);
         unitv(bun->dir[i], bun->dir[i]);
     }
 }
@@ -377,7 +377,7 @@ int gmx_bundle(int argc, char *argv[])
         for (i = 0; i < bun.n; i++)
         {
             fprintf(flen, " %6g", bun.len[i]);
-            fprintf(fdist, " %6g", norm(bun.mid[i]));
+            fprintf(fdist, " %6g", gmx::norm(bun.mid[i]));
             fprintf(fz, " %6g", bun.mid[i][ZZ]);
             fprintf(ftilt, " %6g", RAD2DEG*acos(bun.dir[i][ZZ]));
             comp = bun.mid[i][XX]*bun.dir[i][XX]+bun.mid[i][YY]*bun.dir[i][YY];

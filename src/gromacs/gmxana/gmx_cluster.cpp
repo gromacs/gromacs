@@ -297,7 +297,7 @@ static void calc_dist(int nind, rvec x[], real **d)
              * but the box is not stored for every frame.
              */
             rvec_sub(xi, x[j], dx);
-            d[i][j] = norm(dx);
+            d[i][j] = gmx::norm(dx);
         }
     }
 }

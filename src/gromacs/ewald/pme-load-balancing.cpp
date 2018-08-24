@@ -240,7 +240,7 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
     spm = 0;
     for (d = 0; d < DIM; d++)
     {
-        sp = norm(pme_lb->box_start[d])/pme_lb->setup[0].grid[d];
+        sp = gmx::norm(pme_lb->box_start[d])/pme_lb->setup[0].grid[d];
         if (sp > spm)
         {
             spm = sp;
@@ -402,7 +402,7 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t *pme_lb,
     set->grid_efficiency = 1;
     for (d = 0; d < DIM; d++)
     {
-        set->grid_efficiency *= (set->grid[d]*sp)/norm(pme_lb->box_start[d]);
+        set->grid_efficiency *= (set->grid[d]*sp)/gmx::norm(pme_lb->box_start[d]);
     }
     /* The Ewald coefficient is inversly proportional to the cut-off */
     set->ewaldcoeff_q =

@@ -280,7 +280,7 @@ static void get_f_norm_max(const t_commrec *cr,
     {
         for (i = start; i < end; i++)
         {
-            fam     = norm2(f[i]);
+            fam     = gmx::norm2(f[i]);
             fnorm2 += fam;
             if (fam > fmax2)
             {

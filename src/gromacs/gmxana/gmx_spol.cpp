@@ -296,7 +296,7 @@ int gmx_spol(int argc, char *argv[])
             for (i = 0; i < nrefgrp; i++)
             {
                 pbc_dx(&pbc, x[a0+srefat], bCom ? xref : x[index[0][i]], trial);
-                rtry2 = norm2(trial);
+                rtry2 = gmx::norm2(trial);
                 if (i == 0 || rtry2 < rdx2)
                 {
                     copy_rvec(trial, dx);
@@ -339,7 +339,7 @@ int gmx_spol(int argc, char *argv[])
                 unitv(dir, dir);
 
                 svmul(ENM2DEBYE, dip, dip);
-                dip2   = norm2(dip);
+                dip2   = gmx::norm2(dip);
                 sdip  += std::sqrt(dip2);
                 sdip2 += dip2;
                 for (d = 0; d < DIM; d++)

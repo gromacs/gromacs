@@ -72,10 +72,10 @@ static void periodic_dist(int ePBC,
     real sqr_box, r2min, r2max, r2;
     rvec shift[NSHIFT_MAX], d0, d;
 
-    sqr_box = std::min(norm2(box[XX]), norm2(box[YY]));
+    sqr_box = std::min(gmx::norm2(box[XX]), gmx::norm2(box[YY]));
     if (ePBC == epbcXYZ)
     {
-        sqr_box = std::min(sqr_box, norm2(box[ZZ]));
+        sqr_box = std::min(sqr_box, gmx::norm2(box[ZZ]));
         nsz     = 1;
     }
     else if (ePBC == epbcXY)
@@ -116,7 +116,7 @@ static void periodic_dist(int ePBC,
         for (j = i+1; j < n; j++)
         {
             rvec_sub(x[index[i]], x[index[j]], d0);
-            r2 = norm2(d0);
+            r2 = gmx::norm2(d0);
             if (r2 > r2max)
             {
                 r2max = r2;
@@ -124,7 +124,7 @@ static void periodic_dist(int ePBC,
             for (s = 0; s < nshift; s++)
             {
                 rvec_add(d0, shift[s], d);
-                r2 = norm2(d);
+                r2 = gmx::norm2(d);
                 if (r2 < r2min)
                 {
                     r2min      = r2;
@@ -196,7 +196,7 @@ static void periodic_mindist_plot(const char *trxfn, const char *outfn,
             fprintf(out, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         }
         fprintf(out, "\t%g\t%6.3f %6.3f %6.3f %6.3f %6.3f\n",
-                output_env_conv_time(oenv, t), rmin, rmax, norm(box[0]), norm(box[1]), norm(box[2]));
+                output_env_conv_time(oenv, t), rmin, rmax, gmx::norm(box[0]), gmx::norm(box[1]), gmx::norm(box[2]));
         bFirst = FALSE;
     }
     while (read_next_x(oenv, status, &t, x, box));

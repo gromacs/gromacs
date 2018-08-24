@@ -529,7 +529,7 @@ static real estimate_reciprocal(
                 }
                 svmul(nz, info->recipbox[ZZ], tmpvec);
                 rvec_add(gridpxy, tmpvec, gridp);
-                tmp    = norm2(gridp);
+                tmp    = gmx::norm2(gridp);
                 coeff  = std::exp(-1.0 * M_PI * M_PI * tmp / info->ewald_beta[0] / info->ewald_beta[0] );
                 coeff /= 2.0 * M_PI * info->volume * tmp;
                 coeff2 = tmp;
@@ -583,19 +583,19 @@ static real estimate_reciprocal(
                 tmp *= 4.0 * M_PI;
 
                 tmp1  = eps_poly4(nx, info->nkx[0], info->pme_order[0]);
-                tmp1 *= norm2(info->recipbox[XX]);
+                tmp1 *= gmx::norm2(info->recipbox[XX]);
                 tmp1 *= info->nkx[0] * info->nkx[0];
 
                 tmp += tmp1;
 
                 tmp1  = eps_poly4(ny, info->nky[0], info->pme_order[0]);
-                tmp1 *= norm2(info->recipbox[YY]);
+                tmp1 *= gmx::norm2(info->recipbox[YY]);
                 tmp1 *= info->nky[0] * info->nky[0];
 
                 tmp += tmp1;
 
                 tmp1  = eps_poly4(nz, info->nkz[0], info->pme_order[0]);
-                tmp1 *= norm2(info->recipbox[ZZ]);
+                tmp1 *= gmx::norm2(info->recipbox[ZZ]);
                 tmp1 *= info->nkz[0] * info->nkz[0];
 
                 tmp += tmp1;
@@ -707,7 +707,7 @@ static real estimate_reciprocal(
 
                     svmul(nz, info->recipbox[ZZ], tmpvec);
                     rvec_add(gridpxy, tmpvec, gridp);
-                    tmp      = norm2(gridp);
+                    tmp      = gmx::norm2(gridp);
                     coeff    = std::exp(-1.0 * M_PI * M_PI * tmp / info->ewald_beta[0] / info->ewald_beta[0] );
                     coeff   /= tmp;
                     e_rec3x += coeff*eps_self(nx, info->nkx[0], info->recipbox[XX], info->pme_order[0], x[ci]);
@@ -727,7 +727,7 @@ static real estimate_reciprocal(
         svmul(e_rec3z, info->recipbox[ZZ], tmpvec);
         rvec_inc(tmpvec2, tmpvec);
 
-        e_rec3 += q[ci]*q[ci]*q[ci]*q[ci]*norm2(tmpvec2) / ( xtot * M_PI * info->volume * M_PI * info->volume);
+        e_rec3 += q[ci]*q[ci]*q[ci]*q[ci]*gmx::norm2(tmpvec2) / ( xtot * M_PI * info->volume * M_PI * info->volume);
         if (MASTER(cr))
         {
             fprintf(stderr, "\rCalculating reciprocal error part 2 ... %3.0f%%",

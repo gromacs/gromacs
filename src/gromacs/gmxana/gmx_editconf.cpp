@@ -940,13 +940,13 @@ int gmx_editconf(int argc, char *argv[])
         }
         printf("    center      :%7.3f%7.3f%7.3f (nm)\n", gc[XX], gc[YY], gc[ZZ]);
         printf("    box vectors :%7.3f%7.3f%7.3f (nm)\n",
-               norm(box[XX]), norm(box[YY]), norm(box[ZZ]));
+               gmx::norm(box[XX]), gmx::norm(box[YY]), gmx::norm(box[ZZ]));
         printf("    box angles  :%7.2f%7.2f%7.2f (degrees)\n",
-               norm2(box[ZZ]) == 0 ? 0 :
+               gmx::norm2(box[ZZ]) == 0 ? 0 :
                RAD2DEG*gmx_angle(box[YY], box[ZZ]),
-               norm2(box[ZZ]) == 0 ? 0 :
+               gmx::norm2(box[ZZ]) == 0 ? 0 :
                RAD2DEG*gmx_angle(box[XX], box[ZZ]),
-               norm2(box[YY]) == 0 ? 0 :
+               gmx::norm2(box[YY]) == 0 ? 0 :
                RAD2DEG*gmx_angle(box[XX], box[YY]));
         printf("    box volume  :%7.2f               (nm^3)\n", det(box));
     }
@@ -1108,7 +1108,7 @@ int gmx_editconf(int argc, char *argv[])
         {
             for (i = 0; i < DIM; i++)
             {
-                newbox[i] = norm(box[i]);
+                newbox[i] = gmx::norm(box[i]);
             }
         }
         clear_mat(box);
@@ -1194,13 +1194,13 @@ int gmx_editconf(int argc, char *argv[])
     if (bOrient || bScale || bDist || bSetSize)
     {
         printf("new box vectors :%7.3f%7.3f%7.3f (nm)\n",
-               norm(box[XX]), norm(box[YY]), norm(box[ZZ]));
+               gmx::norm(box[XX]), gmx::norm(box[YY]), gmx::norm(box[ZZ]));
         printf("new box angles  :%7.2f%7.2f%7.2f (degrees)\n",
-               norm2(box[ZZ]) == 0 ? 0 :
+               gmx::norm2(box[ZZ]) == 0 ? 0 :
                RAD2DEG*gmx_angle(box[YY], box[ZZ]),
-               norm2(box[ZZ]) == 0 ? 0 :
+               gmx::norm2(box[ZZ]) == 0 ? 0 :
                RAD2DEG*gmx_angle(box[XX], box[ZZ]),
-               norm2(box[YY]) == 0 ? 0 :
+               gmx::norm2(box[YY]) == 0 ? 0 :
                RAD2DEG*gmx_angle(box[XX], box[YY]));
         printf("new box volume  :%7.2f               (nm^3)\n", det(box));
     }

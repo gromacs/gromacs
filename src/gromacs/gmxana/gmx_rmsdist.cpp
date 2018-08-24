@@ -77,7 +77,7 @@ static void calc_dist(int nind, const int index[], const rvec x[], int ePBC, mat
         for (j = i+1; (j < nind); j++)
         {
             pbc_dx(&pbc, xi, x[index[j]], dx);
-            temp2   = norm2(dx);
+            temp2   = gmx::norm2(dx);
             d[i][j] = std::sqrt(temp2);
         }
     }
@@ -101,7 +101,7 @@ static void calc_dist_tot(int nind, const int index[], rvec x[],
         for (j = i+1; (j < nind); j++)
         {
             pbc_dx(&pbc, xi, x[index[j]], dx);
-            temp2        = norm2(dx);
+            temp2        = gmx::norm2(dx);
             temp         = std::sqrt(temp2);
             d[i][j]      = temp;
             dtot[i][j]  += temp;

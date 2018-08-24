@@ -168,7 +168,7 @@ static void calc_ringh(rvec xattach, rvec xb, rvec xc, rvec xh)
     rvec_sub(xattach, xb, tab);
     rvec_sub(xattach, xc, tac);
     rvec_add(tab, tac, xh);
-    n = 0.1/norm(xh);
+    n = 0.1/gmx::norm(xh);
     svmul(n, xh, xh);
     rvec_inc(xh, xattach);
 }

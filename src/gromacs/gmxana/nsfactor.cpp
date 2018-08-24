@@ -226,7 +226,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
     rvec_add(box[XX], box[YY], dist);
     rvec_add(box[ZZ], dist, dist);
 
-    rmax = norm(dist);
+    rmax = gmx::norm(dist);
 
     pr->grn = static_cast<int>(std::floor(rmax/pr->binwidth)+1);
 

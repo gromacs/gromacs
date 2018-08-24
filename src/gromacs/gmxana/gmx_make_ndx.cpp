@@ -859,7 +859,7 @@ static int split_chain(const t_atoms *atoms, const rvec *x,
                     break;
                 }
             }
-            while (norm(vec) < 0.45);
+            while (gmx::norm(vec) < 0.45);
 
             end[nchain] = ca_end;
             while ((end[nchain]+1 < natoms) &&

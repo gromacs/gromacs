@@ -1127,7 +1127,7 @@ static real dd_dist2(t_pbc *pbc_null, rvec *cg_cm, const int *la2lc, int i, int 
         rvec_sub(cg_cm[la2lc[i]], cg_cm[la2lc[j]], dx);
     }
 
-    return norm2(dx);
+    return gmx::norm2(dx);
 }
 
 /*! \brief Append t_blocka block structures 1 to nsrc in src to *dest */
@@ -2585,7 +2585,7 @@ static void bonded_distance_intermol(const t_ilist *ilists_intermol,
 
                         pbc_dx(&pbc, x[atom_i], x[atom_j], dx);
 
-                        rij2 = norm2(dx);
+                        rij2 = gmx::norm2(dx);
 
                         update_max_bonded_distance(rij2, ftype,
                                                    atom_i, atom_j,

@@ -110,7 +110,7 @@ real ahx_len(int gnx, const int index[], rvec x[])
 
     rvec_sub(x[index[0]], x[index[gnx-1]], dx);
 
-    return norm(dx);
+    return gmx::norm(dx);
 }
 
 real radius(FILE *fp, int nca, const int ca_index[], rvec x[])
@@ -224,7 +224,7 @@ real dip(int nbb, int const bbind[], const rvec x[], const t_atom atom[])
             dipje[m] += x[ai][m]*q;
         }
     }
-    return norm(dipje);
+    return gmx::norm(dipje);
 }
 
 real rise(int gnx, const int index[], rvec x[])
@@ -495,19 +495,19 @@ void calc_hxprops(int nres, t_bb bb[], const rvec x[])
         {
             an = bb[i+3].N;
             rvec_sub(x[ao], x[an], dx);
-            bb[i].d3 = norm(dx);
+            bb[i].d3 = gmx::norm(dx);
         }
         if (i < nres-4)
         {
             an = bb[i+4].N;
             rvec_sub(x[ao], x[an], dx);
-            bb[i].d4 = norm(dx);
+            bb[i].d4 = gmx::norm(dx);
         }
         if (i < nres-5)
         {
             an = bb[i+5].N;
             rvec_sub(x[ao], x[an], dx);
-            bb[i].d5 = norm(dx);
+            bb[i].d5 = gmx::norm(dx);
         }
 
         bb[i].phi = RAD2DEG*

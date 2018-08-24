@@ -313,7 +313,7 @@ int gmx_sorient(int argc, char *argv[])
                 range_check(sa1, 0, natoms);
                 range_check(sa2, 0, natoms);
                 pbc_dx(&pbc, x[sa0], xref, dx);
-                r2  = norm2(dx);
+                r2  = gmx::norm2(dx);
                 if (r2 < rcut2)
                 {
                     r = std::sqrt(r2);

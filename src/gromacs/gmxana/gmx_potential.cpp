@@ -190,7 +190,7 @@ static void calc_potential(const char *fn, int **index, int gnx[],
                 {
                     rvec_add(x0[index[n][i]], xcm, x0[index[n][i]]);
                     /* only distance from origin counts, not sign */
-                    slice = static_cast<int>(norm(x0[index[n][i]])/(*slWidth));
+                    slice = static_cast<int>(gmx::norm(x0[index[n][i]])/(*slWidth));
 
                     /* this is a nice check for spherical groups but not for
                        all water in a cubic box since a lot will fall outside

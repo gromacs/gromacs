@@ -90,7 +90,7 @@ static void low_print_data(FILE *fp, real time, rvec x[], int n, const int *inde
         }
         if (bDim[DIM])
         {
-            fprintf(fp, sffmt, norm(x[ii]));
+            fprintf(fp, sffmt, gmx::norm(x[ii]));
         }
     }
     fprintf(fp, "\n");
@@ -355,7 +355,7 @@ static real ektrans(rvec v[], const real mass[], int isize, const int index[])
         mtot += mass[j];
     }
 
-    return dnorm2(mvcom)/(mtot*2);
+    return gmx::norm2(mvcom)/(mtot*2);
 }
 
 static real temp(rvec v[], const real mass[], int isize, const int index[])
@@ -367,7 +367,7 @@ static real temp(rvec v[], const real mass[], int isize, const int index[])
     for (i = 0; i < isize; i++)
     {
         j      = index[i];
-        ekin2 += mass[j]*norm2(v[j]);
+        ekin2 += mass[j]*gmx::norm2(v[j]);
     }
 
     return ekin2/(3*isize*BOLTZ);
@@ -537,7 +537,7 @@ static void update_histo(int gnx, const int index[], rvec v[],
         vnmax = 0;
         for (i = 0; (i < gnx); i++)
         {
-            vn    = norm(v[index[i]]);
+            vn    = gmx::norm(v[index[i]]);
             vnmax = std::max(vn, vnmax);
         }
         vnmax  *= 2;
@@ -546,7 +546,7 @@ static void update_histo(int gnx, const int index[], rvec v[],
     }
     for (i = 0; (i < gnx); i++)
     {
-        vn = norm(v[index[i]]);
+        vn = gmx::norm(v[index[i]]);
         in = static_cast<int>(vn/binwidth);
         if (in >= *nhisto)
         {

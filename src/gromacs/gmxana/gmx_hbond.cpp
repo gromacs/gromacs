@@ -1029,7 +1029,7 @@ static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
                     /* if we're inside the cube, check if we're inside the sphere */
                     if (bInShell)
                     {
-                        bInShell = norm2(dshell) < rshell2;
+                        bInShell = gmx::norm2(dshell) < rshell2;
                     }
                 }
                 DBB(i);

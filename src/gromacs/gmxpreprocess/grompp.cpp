@@ -1250,7 +1250,7 @@ static real calc_temp(const gmx_mtop_t *mtop,
     aloop = gmx_mtop_atomloop_all_init(mtop);
     while (gmx_mtop_atomloop_all_next(aloop, &a, &atom))
     {
-        sum_mv2 += atom->m*norm2(v[a]);
+        sum_mv2 += atom->m*gmx::norm2(v[a]);
     }
 
     double nrdf = 0;

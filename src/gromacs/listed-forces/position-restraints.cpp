@@ -247,7 +247,7 @@ real fbposres(int nbonds,
         {
             case efbposresSPHERE:
                 /* spherical flat-bottom posres */
-                dr2 = norm2(dx);
+                dr2 = gmx::norm2(dx);
                 if (dr2 > 0.0 &&
                     ( (dr2 > rfb2 && !bInvert ) || (dr2 < rfb2 && bInvert ) )
                     )
