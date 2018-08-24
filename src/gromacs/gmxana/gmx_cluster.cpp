@@ -651,14 +651,12 @@ static void dump_nnb (FILE *fp, const char *title, int n1, t_nnb *nnb)
 
 static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
 {
-    t_dist *row;
     t_nnb  *nnb;
     int     i, j, k, j1, maxval;
 
     /* Put all neighbors nearer than rmsdcut in the list */
     fprintf(stderr, "Making list of neighbors within cutoff ");
     snew(nnb, n1);
-    snew(row, n1);
     for (i = 0; (i < n1); i++)
     {
         maxval = 0;
@@ -685,7 +683,6 @@ static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
         }
     }
     fprintf(stderr, "%3d%%\n", 100);
-    sfree(row);
 
     /* sort neighbor list on number of neighbors, largest first */
     std::sort(nnb, nnb+n1, nrnb_comp);
@@ -753,7 +750,7 @@ static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
 }
 
 static rvec **read_whole_trj(const char *fn, int isize, const int index[], int skip,
-                             int *nframe, real **time, const gmx_output_env_t *oenv, gmx_bool bPBC, gmx_rmpbc_t gpbc)
+                             int *nframe, real **time,  matrix  **boxes, int **frameindexes, const gmx_output_env_t *oenv, gmx_bool bPBC, gmx_rmpbc_t gpbc)
 {
     rvec       **xx, *x;
     matrix       box;
@@ -780,6 +777,8 @@ static rvec **read_whole_trj(const char *fn, int isize, const int index[], int s
             max_nf += 10;
             srenew(xx, max_nf);
             srenew(*time, max_nf);
+            srenew(*boxes, max_nf);
+            srenew(*frameindexes, max_nf);
         }
         if ((i % skip) == 0)
         {
@@ -790,6 +789,8 @@ static rvec **read_whole_trj(const char *fn, int isize, const int index[], int s
                 copy_rvec(x[index[j]], xx[i0][j]);
             }
             (*time)[i0] = t;
+            memcpy (&(*boxes)[i0], &box, sizeof(box));
+            (*frameindexes)[i0] = nframes_read(status);
             i0++;
         }
         i++;
@@ -975,16 +976,18 @@ static void ana_trans(t_clusters *clust, int nf,
 static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
                              int natom, t_atoms *atoms, rvec *xtps,
                              real *mass, rvec **xx, real *time,
+                             matrix *boxes, int *frameindexes,
                              int ifsize, int *fitidx,
                              int iosize, int *outidx,
                              const char *trxfn, const char *sizefn,
                              const char *transfn, const char *ntransfn,
-                             const char *clustidfn, gmx_bool bAverage,
+                             const char *clustidfn, const char *clustndxfn, gmx_bool bAverage,
                              int write_ncl, int write_nst, real rmsmin,
                              gmx_bool bFit, FILE *log, t_rgb rlo, t_rgb rhi,
                              const gmx_output_env_t *oenv)
 {
     FILE        *size_fp = nullptr;
+    FILE        *ndxfn   = nullptr;
     char         buf[STRLEN], buf1[40], buf2[40], buf3[40], *trxsfn;
     t_trxstatus *trxout  = nullptr;
     t_trxstatus *trxsout = nullptr;
@@ -1081,6 +1084,11 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
             fprintf(size_fp, "@g%d type %s\n", 0, "bar");
         }
     }
+    if (clustndxfn && frameindexes)
+    {
+        ndxfn = gmx_ffopen(clustndxfn, "w");
+    }
+
     snew(structure, nf);
     fprintf(log, "\n%3s | %3s  %4s | %6s %4s | cluster members\n",
             "cl.", "#st", "rmsd", "middle", "rmsd");
@@ -1128,6 +1136,10 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
         if (sizefn)
         {
             fprintf(size_fp, "%8d %8d\n", cl, nstr);
+        }
+        if (ndxfn)
+        {
+            fprintf(ndxfn, "[Cluster_%04d]\n", cl);
         }
         clrmsd  = 0;
         midstr  = 0;
@@ -1184,6 +1196,10 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
             if ((i % 7 == 0) && i)
             {
                 sprintf(buf, "\n%3s | %3s  %4s | %6s %4s |", "", "", "", "", "");
+                if (ndxfn)
+                {
+                   fprintf(ndxfn, "\n");
+                }
             }
             else
             {
@@ -1191,8 +1207,16 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
             }
             i1 = structure[i];
             fprintf(log, "%s %6g", buf, time[i1]);
+            if (ndxfn)
+            {
+               fprintf(ndxfn, " %6d", frameindexes[i1]);
+            }
         }
         fprintf(log, "\n");
+        if (ndxfn)
+        {
+           fprintf(ndxfn, "\n");
+        }
 
         /* write structures to trajectory file(s) */
         if (trxfn)
@@ -1225,7 +1249,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
                     }
                     if (bWrite[i])
                     {
-                        write_trx(trxsout, iosize, outidx, atoms, i, time[structure[i]], zerobox,
+                        write_trx(trxsout, iosize, outidx, atoms, i, time[structure[i]], boxes[structure[i]],
                                   xx[structure[i]], nullptr, nullptr);
                     }
                 }
@@ -1254,7 +1278,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
             {
                 do_fit(natom, mass, xtps, xav);
             }
-            write_trx(trxout, iosize, outidx, atoms, cl, time[midstr], zerobox, xav, nullptr, nullptr);
+            write_trx(trxout, iosize, outidx, atoms, cl, time[midstr], boxes[midstr], xav, nullptr, nullptr);
         }
     }
     /* clean up */
@@ -1276,6 +1300,10 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     if (size_fp)
     {
         xvgrclose(size_fp);
+    }
+    if (ndxfn)
+    {
+       gmx_ffclose(ndxfn);
     }
 }
 
@@ -1389,6 +1417,7 @@ int gmx_cluster(int argc, char *argv[])
     int64_t            nrms = 0;
 
     matrix             box;
+    matrix            *boxes = nullptr;
     rvec              *xtps, *usextps, *x1, **xx = nullptr;
     const char        *fn, *trx_out_fn;
     t_clusters         clust;
@@ -1401,7 +1430,7 @@ int gmx_cluster(int argc, char *argv[])
     real              *eigenvectors;
 
     int                isize = 0, ifsize = 0, iosize = 0;
-    int               *index = nullptr, *fitidx = nullptr, *outidx = nullptr;
+    int               *index = nullptr, *fitidx = nullptr, *outidx = nullptr, *frameindexes = nullptr;
     char              *grpname;
     real               rmsd, **d1, **d2, *time = nullptr, time_invfac, *mass = nullptr;
     char               buf[STRLEN], buf1[80];
@@ -1490,7 +1519,8 @@ int gmx_cluster(int argc, char *argv[])
         { efXPM, "-tr",   "clust-trans", ffOPTWR},
         { efXVG, "-ntr",  "clust-trans", ffOPTWR},
         { efXVG, "-clid", "clust-id",   ffOPTWR},
-        { efTRX, "-cl",   "clusters.pdb", ffOPTWR }
+        { efTRX, "-cl",   "clusters.pdb", ffOPTWR },
+        { efNDX, "-clndx","clusters.ndx", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
@@ -1664,7 +1694,7 @@ int gmx_cluster(int argc, char *argv[])
         /* Loop over first coordinate file */
         fn = opt2fn("-f", NFILE, fnm);
 
-        xx = read_whole_trj(fn, isize, index, skip, &nf, &time, oenv, bPBC, gpbc);
+        xx = read_whole_trj(fn, isize, index, skip, &nf, &time, &boxes, &frameindexes, oenv, bPBC, gpbc);
         output_env_conv_times(oenv, nf, time);
         if (!bRMSdist || bAnalyze)
         {
@@ -1892,15 +1922,18 @@ int gmx_cluster(int argc, char *argv[])
             copy_rvec(xtps[index[i]], usextps[i]);
         }
         useatoms.nr = isize;
-        analyze_clusters(nf, &clust, rms->mat, isize, &useatoms, usextps, mass, xx, time,
+        analyze_clusters(nf, &clust, rms->mat, isize, &useatoms, usextps, mass, xx, time, boxes, frameindexes,
                          ifsize, fitidx, iosize, outidx,
                          bReadTraj ? trx_out_fn : nullptr,
                          opt2fn_null("-sz", NFILE, fnm),
                          opt2fn_null("-tr", NFILE, fnm),
                          opt2fn_null("-ntr", NFILE, fnm),
                          opt2fn_null("-clid", NFILE, fnm),
+                         opt2fn_null("-clndx", NFILE, fnm),
                          bAverage, write_ncl, write_nst, rmsmin, bFit, log,
                          rlo_bot, rhi_bot, oenv);
+        sfree(boxes);
+        sfree(frameindexes);
     }
     gmx_ffclose(log);
 
