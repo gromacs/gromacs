@@ -42,13 +42,60 @@
 #ifndef GMX_MDRUN_MD_H
 #define GMX_MDRUN_MD_H
 
+#include <memory>
+
 #include "gromacs/mdrun/integrator.h"
 
 namespace gmx
 {
 
-//! MD simulations
-integrator_t do_md;
+/*! \internal
+ * \brief Provide simulation functor for MD methods.
+ *
+ * \ingroup module_mdrun
+ */
+class MDIntegrator : public IIntegrator
+{
+
+    private:
+        class Impl;
+
+        std::unique_ptr<Impl> impl_;
+
+    public:
+        ~MDIntegrator() override;
+
+        /*!
+         * \brief Implement IIntegrator::run()
+         *
+         * Run the configured simulation.
+         */
+        void run() override;
+
+        class Builder;
+
+        /*!
+         * \brief Construct by wrapping the implementation object.
+         *
+         * \param implementation take ownership of the implementation object.
+         */
+        explicit MDIntegrator(std::unique_ptr<Impl> implementation);
+};
+
+class MDIntegrator::Builder : public IntegratorBuilder::Base
+{
+    public:
+        Builder();
+        ~Builder() override;
+
+        std::unique_ptr<IIntegrator> build() override;
+
+        IntegratorBuilder::DataSentry setAggregateAdapter(std::unique_ptr<IntegratorAggregateAdapter> dispatcher)
+        override;
+
+    private:
+        std::unique_ptr<MDIntegrator::Impl> integrator_;
+};
 
 }      // namespace gmx
 
