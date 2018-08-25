@@ -45,6 +45,7 @@
 
 #include "config.h"
 
+#include <cassert>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -98,6 +99,7 @@
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdrun/integrator.h"
 #include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -130,7 +132,6 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "integrator.h"
 #include "replicaexchange.h"
 
 #ifdef GMX_FAHCORE
@@ -253,7 +254,7 @@ static void prepareRerunState(const t_trxframe  &rerunFrame,
     }
 }
 
-void gmx::Integrator::do_md()
+void gmx::IntegratorDispatcher::do_md()
 {
     // TODO Historically, the EM and MD "integrators" used different
     // names for the t_inputrec *parameter, but these must have the
