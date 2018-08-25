@@ -42,7 +42,7 @@
 #ifndef GMX_MDRUN_MD_H
 #define GMX_MDRUN_MD_H
 
-#include "integrator.h"
+#include "gromacs/mdrun/integrator.h"
 
 namespace gmx
 {

@@ -95,6 +95,7 @@
 #include "gromacs/mdlib/repl_ex.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdrun/integrator.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -128,8 +129,6 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
-
-#include "integrator.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -1305,24 +1304,26 @@ int Mdrunner::mdrunner()
         }
 
         /* Now do whatever the user wants us to do (how flexible...) */
-        Integrator integrator {
-            fplog, cr, ms, mdlog, nfile, fnm,
-            oenv,
-            mdrunOptions,
-            vsite, constr.get(),
-            enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
-            deform.get(),
-            mdModules->outputProvider(),
-            inputrec, &mtop,
-            fcd,
-            globalState.get(),
-            &observablesHistory,
-            mdAtoms.get(), nrnb, wcycle, fr,
-            replExParams,
-            membed,
-            walltime_accounting
-        };
-        integrator.run(inputrec->eI);
+
+        IntegratorBuilder builder = IntegratorBuilder::create(SimulationMethod(inputrec->eI));
+        builder.setParams(
+                fplog, cr, ms, mdlog, nfile, fnm,
+                oenv,
+                mdrunOptions,
+                vsite, constr.get(),
+                enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
+                deform.get(),
+                mdModules->outputProvider(),
+                inputrec, &mtop,
+                fcd,
+                globalState.get(),
+                &observablesHistory,
+                mdAtoms.get(), nrnb, wcycle, fr,
+                replExParams,
+                membed,
+                walltime_accounting);
+        std::unique_ptr<IIntegrator> integrator = builder.build();
+        integrator->run();
 
         if (inputrec->bPull)
         {
