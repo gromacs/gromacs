@@ -32,92 +32,62 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-//
-// Created by Eric Irrgang on 11/14/17.
-//
+#ifndef GMXAPI_SYSTEM_IMPL_H
+#define GMXAPI_SYSTEM_IMPL_H
+
+/*! \file
+ * \brief Declare implementation details for gmxapi::System.
+ *
+ * \ingroup gmxapi
+ */
+
+#include <string>
+
 #include "gmxapi/status.h"
-#include "gromacs/compat/make_unique.h"
+#include "gmxapi/system.h"
 
 namespace gmxapi
 {
 
-/*! \cond internal
- * \brief Implementation class for Status objects.
+/*!
+ * \brief Private implementation for gmxapi::System
+ *
+ * \ingroup gmxapi
  */
-class Status::Impl
+class System::Impl final
 {
     public:
-        /*!
-         * \brief Default construct as unsuccessful status.
-         */
-        Impl() : success_ {false}
-        {};
+        /*! \cond */
+        ~Impl();
+
+        Impl(Impl &&) noexcept;
+        Impl &operator=(Impl &&) noexcept;
+        /*! \endcond */
 
         /*!
-         * \brief Construct with success for true input.
-         * \param success let Boolean true == success.
+         * \brief Initialize from a TPR file.
+         *
+         * \param filename Run input file defining the system to be simulated.
          */
-        explicit Impl(const bool &success) :
-            success_ {success}
-        {};
-
-        ~Impl() = default;
+        explicit Impl(std::string filename);
 
         /*!
-         * \brief Query success status
-         * \return true if successful
+         * \brief Get the status of the last operation.
+         *
+         * Force resolution of any pending operations and return the status to
+         * the client.
+         *
+         * \return success if the last operation on the system completed without problems.
          */
-        bool success() const
-        {
-            return success_;
-        };
+        Status status() const;
+
     private:
-        bool success_;
+        //! Cached Status object.
+        std::unique_ptr<Status>             status_;
+        //! TPR filename to load at run time.
+        std::string                         filename_;
 };
-/// \endcond
 
-Status::Status() :
-    impl_ {gmx::compat::make_unique<Status::Impl>()}
-{}
+}      // end namespace gmxapi
 
-Status::Status(const Status &status)
-{
-    impl_ = gmx::compat::make_unique<Impl>(status.success());
-}
-
-Status &Status::operator=(const Status &status)
-{
-    this->impl_ = gmx::compat::make_unique<Impl>(status.success());
-    return *this;
-}
-
-Status &Status::operator=(Status &&status) noexcept
-{
-    this->impl_ = std::move(status.impl_);
-    return *this;
-}
-
-Status &Status::operator=(bool success)
-{
-    this->impl_ = gmx::compat::make_unique<Impl>(success);
-    return *this;
-}
-
-Status::Status(Status &&status) noexcept
-{
-    this->impl_ = std::move(status.impl_);
-}
-
-Status::Status(bool success) :
-    impl_ {gmx::compat::make_unique<Status::Impl>(success)}
-{}
-
-bool Status::success() const
-{
-    return impl_->success();
-}
-
-// Destructor must be defined after Impl to use unique_ptr<Impl>
-Status::~Status() = default;
-
-} // end namespace gmxapi
+#endif // header guard

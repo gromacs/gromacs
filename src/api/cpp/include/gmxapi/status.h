@@ -50,6 +50,8 @@ namespace gmxapi
 {
 /*! \brief Container for results of API operations.
  *
+ * \ingroup gmxapi
+ *
  * \internal
  * I'm leaning towards saying this should not be derivable, but that it
  * may contain one or more additional objects, perhaps including exceptions
