@@ -43,6 +43,8 @@
  */
 #include "gmxpre.h"
 
+#include "md.h"
+
 #include "config.h"
 
 #include <cassert>
@@ -132,6 +134,8 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "md-impl.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -257,7 +261,7 @@ static void prepareRerunState(const t_trxframe  &rerunFrame,
     }
 }
 
-void gmx::IntegratorDispatcher::do_md()
+void gmx::MDIntegrator::Impl::run()
 {
     // TODO Historically, the EM and MD "integrators" used different
     // names for the t_inputrec *parameter, but these must have the
@@ -1934,3 +1938,52 @@ void gmx::IntegratorDispatcher::do_md()
     sfree(enerd);
     sfree(top);
 }
+
+std::unique_ptr<gmx::IIntegrator> gmx::MDIntegrator::Builder::build()
+{
+    if (!integrator_)
+    {
+        GMX_THROW(APIError("This builder requires setParams() to be called before build()."));
+    }
+    auto newIntegrator = gmx::compat::make_unique<gmx::MDIntegrator>(std::move(integrator_));
+    std::unique_ptr<gmx::IIntegrator> integrator {
+        std::move(newIntegrator)
+    };
+    return integrator;
+}
+
+gmx::IntegratorBuilder::DataSentry gmx::MDIntegrator::Builder::setAggregateAdapter
+    (std::unique_ptr<gmx::IntegratorAggregateAdapter> container)
+{
+    if (integrator_)
+    {
+        GMX_THROW(APIError("setParams has already been called on this builder."));
+    }
+    else
+    {
+        auto newIntegrator = gmx::compat::make_unique<gmx::MDIntegrator::Impl>(*container);
+        integrator_ = std::move(newIntegrator);
+    }
+    // This is where we should set up interactions with parameter data lifetime, when DataSentry API has been
+    // implemented.
+    return {};
+}
+
+gmx::MDIntegrator::~MDIntegrator() = default;
+
+void gmx::MDIntegrator::run()
+{
+    assert(impl_);
+    impl_->run();
+}
+
+gmx::MDIntegrator::MDIntegrator(std::unique_ptr<MDIntegrator::Impl> implementation) :
+    impl_ {std::move(implementation)}
+{
+
+}
+
+gmx::MDIntegrator::Builder::Builder() : integrator_ {nullptr}
+{};
+
+gmx::MDIntegrator::Builder::~Builder() = default;
