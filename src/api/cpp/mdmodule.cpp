@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,70 +32,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
- *
- * \brief Declares the integrator for normal molecular dynamics simulations
- *
- * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \ingroup module_mdrun
- */
-#ifndef GMX_MDRUN_MD_H
-#define GMX_MDRUN_MD_H
+//
+// Created by Eric Irrgang on 11/13/17.
+//
 
-#include <memory>
+#include "gmxapi/md/mdmodule.h"
 
-#include "gromacs/mdrun/integrator.h"
-
-namespace gmx
+namespace gmxapi
 {
 
-/*! \internal
- * \brief MD simulations
- *
- */
-class MDIntegrator : public IIntegrator
+MDModule::~MDModule() = default;
+
+std::shared_ptr<::gmx::IRestraintPotential> MDModule::getRestraint()
 {
+    return nullptr;
+}
 
-    private:
-        class Impl;
-
-        std::unique_ptr<Impl> impl_;
-
-    public:
-        ~MDIntegrator() override;
-
-        void run() override;
-
-        class Builder;
-
-        /*!
-         * \brief Private constructor for use by Builder.
-         *
-         * \param implementation implementation object with which to instantiate the integrator.
-         *
-         * Create a new integrator object by transfering ownership of a MDIntegrator::Impl.
-         */
-        explicit MDIntegrator(std::unique_ptr<Impl> implementation);
-};
-
-class MDIntegrator::Builder : public IntegratorBuilder::Base
-{
-    public:
-        Builder();
-        ~Builder() override;
-
-        Base &addContext(const md::Context &context) override;
-
-        std::unique_ptr<IIntegrator> build() override;
-
-        IntegratorBuilder::DataSentry setAggregateAdapter(std::unique_ptr<IntegratorAggregateAdapter> container)
-        override;
-
-    private:
-        std::unique_ptr<IntegratorAggregateAdapter> container_;
-        std::unique_ptr<md::Context>                context_;
-};
-
-}      // namespace gmx
-
-#endif // GMX_MDRUN_MD_H
+} // end namespace gmxapi

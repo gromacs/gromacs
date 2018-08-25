@@ -35,8 +35,8 @@
 //#include "atoms.h"
 
 #include "testingconfiguration.h"
-//#include "gmxapi/gmxapi.h"
-//#include "gmxapi/md.h"
+#include "gmxapi/gmxapi.h"
+#include "gmxapi/md.h"
 #include "gmxapi/system.h"
 #include <gtest/gtest.h>
 

@@ -32,9 +32,6 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-//
-// Created by Eric Irrgang on 12/1/17.
-//
 
 #ifndef GMXAPI_SESSION_IMPL_H
 #define GMXAPI_SESSION_IMPL_H
@@ -47,7 +44,7 @@
 #include <map>
 
 #include "gmxapi/context.h"
-//#include "gmxapi/md.h"
+#include "gmxapi/md.h"
 #include "gmxapi/status.h"
 #include "gromacs/mdrun/runner.h"
 
@@ -122,6 +119,8 @@ class SessionImpl
         static std::unique_ptr<SessionImpl> create(std::shared_ptr<ContextImpl>   context,
                                                    std::unique_ptr<gmx::Mdrunner> runner);
 
+        Status setRestraint(std::shared_ptr<gmxapi::MDModule> module);
+
         /*! \internal
          * \brief API implementation function to retrieve the current runner.
          *
@@ -158,6 +157,8 @@ class SessionImpl
         std::unique_ptr<MpiContextManager> mpiContextManager_;
 
         std::unique_ptr<gmx::Mdrunner>     runner_;
+
+        std::map < std::string, std::weak_ptr < gmx::IRestraintPotential>> restraints_;
 };
 
 }      //end namespace gmxapi

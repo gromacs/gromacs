@@ -94,6 +94,8 @@
 #include "gromacs/mdlib/repl_ex.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdrun/context.h"
+#include "gromacs/mdrun/integrator.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
@@ -172,7 +174,7 @@ static std::unique_ptr < std::array < t_filenm, 34>> cloneMdFilenames(const std:
     {
         // Copy the enumerated file type
         (*filenames)[i].ftp = source[i].ftp;
-        // Copy the pointers to the const char* "gmx mdrun" flags / parameter names
+        // Copy the pointers to the const char* CLI flags / parameter names
         (*filenames)[i].opt  = source[i].opt;
         (*filenames)[i].fn   = source[i].fn;
         (*filenames)[i].flag = source[i].flag;
@@ -1219,6 +1221,7 @@ int Mdrunner::mdrunner()
         /* Initiate forcerecord */
         fr                 = mk_forcerec();
         fr->forceProviders = mdModules->initForceProviders();
+        // Threads have been launched and DD initialized
         init_forcerec(fplog, mdlog, fr, fcd,
                       inputrec, &mtop, cr, box,
                       opt2fn("-table", filenames->size(), filenames->data()),
@@ -1403,24 +1406,28 @@ int Mdrunner::mdrunner()
         }
 
         /* Now do whatever the user wants us to do (how flexible...) */
-        Integrator integrator {
-            fplog, cr, ms, mdlog, static_cast<int>(filenames->size()), filenames->data(),
-            oenv,
-            mdrunOptions,
-            vsite, constr.get(),
-            enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
-            deform.get(),
-            mdModules->outputProvider(),
-            inputrec, &mtop,
-            fcd,
-            globalState.get(),
-            &observablesHistory,
-            mdAtoms.get(), nrnb, wcycle, fr,
-            replExParams,
-            membed,
-            walltime_accounting
-        };
-        integrator.run(inputrec->eI);
+
+        IntegratorBuilder builder = IntegratorBuilder::create(SimulationMethod(inputrec->eI));
+        builder.setParams(
+                fplog, cr, ms, mdlog, static_cast<int>(filenames->size()), filenames->data(),
+                oenv,
+                mdrunOptions,
+                vsite, constr.get(),
+                enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
+                deform.get(),
+                mdModules->outputProvider(),
+                inputrec, &mtop,
+                fcd,
+                globalState.get(),
+                &observablesHistory,
+                mdAtoms.get(), nrnb, wcycle, fr,
+                replExParams,
+                membed,
+                walltime_accounting);
+        auto context = gmx::md::Context(*this);
+        builder.addContext(context);
+        std::unique_ptr<IIntegrator> integrator = builder.build();
+        integrator->run();
 
         if (inputrec->bPull)
         {
@@ -1485,7 +1492,7 @@ int Mdrunner::mdrunner()
     if (MASTER(cr) && continuationOptions.appendFiles)
     {
         gmx_log_close(fplog);
-        fplog = nullptr; // This toggle is not thread-safe...
+        fplog = nullptr;
     }
 
     /* Reset FPEs (important for unit tests) by disabling them. Assumes no
@@ -1496,17 +1503,6 @@ int Mdrunner::mdrunner()
     }
 
     rc = static_cast<int>(gmx_get_stop_condition());
-
-    // If log file is open, try to flush it before we return control to the API
-    if (MASTER(cr) && fplog != nullptr)
-    {
-        // If fplog is already closed, but has not been set to nullptr, we
-        // expect errno to be set, but we don't care, so we will make sure to
-        // leave it in the same state we found it.
-        const auto tempErrno = errno;
-        fflush(fplog);
-        errno = tempErrno;
-    }
 
 #if GMX_THREAD_MPI
     /* we need to join all threads. The sub-threads join when they
@@ -1519,10 +1515,37 @@ int Mdrunner::mdrunner()
     }
 #endif
 
+    // If log file is open, try to flush it before we return control to the API
+    if (MASTER(cr) && fplog != nullptr)
+    {
+        // If fplog is already closed, but has not been set to nullptr, we expect errno to be set, but we don't care,
+        // so we will make sure to leave it in the same state we found it.
+        const auto tempErrno = errno;
+        fflush(fplog);
+        errno = tempErrno;
+    }
+
     return rc;
 }
 
-Mdrunner::~Mdrunner() = default;
+Mdrunner::~Mdrunner()
+{
+    if (MASTER(cr))
+    {
+        /* Log file has to be closed in mdrunner if we are appending to it
+           (fplog not set here) */
+        if (fplog != nullptr)
+        {
+            gmx_log_close(fplog);
+        }
+
+        if (GMX_LIB_MPI)
+        {
+            done_commrec(cr);
+        }
+        done_multisim(ms);
+    }
+};
 
 class Mdrunner::BuilderImplementation
 {
@@ -1681,9 +1704,10 @@ std::unique_ptr<Mdrunner> Mdrunner::BuilderImplementation::build(const char* nbp
     newRunner->oenv  = *outputEnvironment_.release();
     newRunner->fplog = *logFile_.release();
 
-    newRunner->nbpu_opt    = nbpu_opt;
-    newRunner->pme_opt     = pme_opt;
-    newRunner->pme_fft_opt = pme_fft_opt;
+    newRunner->nbpu_opt          = nbpu_opt;
+    newRunner->pme_opt           = pme_opt;
+    newRunner->pme_fft_opt       = pme_fft_opt;
+
     return newRunner;
 }
 

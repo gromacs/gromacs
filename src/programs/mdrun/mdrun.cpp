@@ -550,10 +550,9 @@ int gmx_mdrun(int argc, char *argv[])
 
     /* Log file has to be closed in mdrunner if we are appending to it
        (fplog not set here) */
-    if (fplog != nullptr) // This check is not thread-safe...
+    if (fplog != nullptr)
     {
         gmx_log_close(fplog);
-        fplog = nullptr;
     }
 
     if (GMX_LIB_MPI)

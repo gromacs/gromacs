@@ -35,15 +35,11 @@
 #ifndef GMXAPI_SYSTEM_IMPL_H
 #define GMXAPI_SYSTEM_IMPL_H
 
-#include <string>
-
-#include "gmxapi/status.h"
 #include "gmxapi/system.h"
 
 namespace gmxapi
 {
 
-class Context;
 class Workflow;
 
 class System::Impl final
@@ -61,9 +57,14 @@ class System::Impl final
 
         std::shared_ptr<Session> launch(std::shared_ptr<Context> context);
 
+        Status setRestraint(std::shared_ptr<gmxapi::MDModule> module);
+        std::shared_ptr<MDWorkSpec> getSpec();
+
     private:
         std::shared_ptr<Context>            context_;
         std::shared_ptr<Workflow>           workflow_;
+        // \todo merge Workflow and MDWorkSpec
+        std::shared_ptr<gmxapi::MDWorkSpec> spec_;
         std::unique_ptr<Status>             status_;
 };
 
