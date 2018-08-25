@@ -107,6 +107,7 @@ add_subdirectory(onlinehelp)
 add_subdirectory(options)
 add_subdirectory(pbcutil)
 add_subdirectory(random)
+add_subdirectory(restraint)
 add_subdirectory(tables)
 add_subdirectory(taskassignment)
 add_subdirectory(timing)
@@ -131,6 +132,8 @@ if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(energyanalysis)
     add_subdirectory(tools)
 endif()
+
+gmx_install_headers(compat/make_unique.h)
 
 get_property(PROPERTY_SOURCES GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
 list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${PROPERTY_SOURCES})
@@ -248,6 +251,7 @@ endif()
 
 gmx_setup_tng_for_libgromacs()
 
+target_sources(libgromacs PRIVATE $<TARGET_OBJECTS:restraint>)
 target_link_libraries(libgromacs
                       PRIVATE
                       ${EXTRAE_LIBRARIES}

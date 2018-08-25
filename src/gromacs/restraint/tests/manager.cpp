@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,71 +32,62 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
- *
- * \brief Declares the integrator for normal molecular dynamics simulations
- *
- * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \ingroup module_mdrun
- */
-#ifndef GMX_MDRUN_MD_H
-#define GMX_MDRUN_MD_H
+// Copyright 2017
+// Author: M. Eric Irrgang
 
-#include <memory>
+#include "gmxpre.h"
 
-#include "gromacs/mdrun/integrator.h"
+#include "gromacs/restraint/manager.h"
 
-namespace gmx
+#include <gtest/gtest.h>
+
+namespace
 {
 
-/*! \internal MD simulations
- * \brief Provide simulation functor for MD methods.
- *
- * \ingroup module_mdrun
- */
-class MDIntegrator : public IIntegrator
-{
-
-    private:
-        class Impl;
-
-        std::unique_ptr<Impl> impl_;
-
-    public:
-        ~MDIntegrator() override;
-
-        void run() override;
-
-        class Builder;
-
-        /*!
-         * \brief Private constructor for use by Builder.
-         *
-         * \param implementation implementation object with which to instantiate the integrator.
-         *
-         * Create a new integrator object by transfering ownership of a MDIntegrator::Impl.
-         */
-        explicit MDIntegrator(std::unique_ptr<Impl> implementation);
-};
-
-class MDIntegrator::Builder : public IntegratorBuilder::Base
+class DummyRestraint : public gmx::IRestraintPotential
 {
     public:
-        Builder();
-        ~Builder() override;
+        ~DummyRestraint() override = default;
 
-        Base &addContext(const md::Context &context) override;
+        gmx::PotentialPointData evaluate(gmx::Vector r1,
+                                         gmx::Vector r2,
+                                         double      t) override
+        {
+            (void) r1;
+            (void) r2;
+            (void) t;
+            return {};
+        }
 
-        std::unique_ptr<IIntegrator> build() override;
+        void update(gmx::Vector v,
+                    gmx::Vector v0,
+                    double      t) override
+        { (void)v; (void)v0; (void)t; }
 
-        IntegratorBuilder::DataSentry setAggregateAdapter(std::unique_ptr<IntegratorAggregateAdapter> container)
-        override;
+        std::vector<unsigned long> sites() const override
+        {
+            return std::vector<unsigned long>();
+        }
 
-    private:
-        std::unique_ptr<IntegratorAggregateAdapter> container_;
-        std::unique_ptr<md::Context>                context_;
 };
 
-}      // namespace gmx
+TEST(RestraintManager, singleton)
+{
+    auto managerInstance = gmx::restraint::Manager::instance();
+    ASSERT_TRUE(managerInstance.get() != nullptr);
+}
 
-#endif // GMX_MDRUN_MD_H
+TEST(RestraintManager, restraintList)
+{
+    auto managerInstance = gmx::restraint::Manager::instance();
+    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "a");
+    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "b");
+    ASSERT_EQ(managerInstance->countRestraints(), 2);
+    managerInstance->clear();
+    ASSERT_EQ(managerInstance->countRestraints(), 0);
+    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "c");
+    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "d");
+    ASSERT_EQ(managerInstance->countRestraints(), 2);
+}
+
+}

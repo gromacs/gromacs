@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2018, by the GROMACS development team, led by
+# Copyright (c) 2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,19 +32,21 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_add_libgromacs_sources(
-    context.cpp
-    integrator.cpp
-    md.cpp
-    minimize.cpp
-    runner.cpp
-    tpi.cpp
-    )
+add_library(restraint OBJECT
+            restraintpotential.h
+            vectortype.h
+            manager.cpp
+            manager.h
+            restraintmdmodule.h
+            restraintmdmodule.cpp
+            restraintmdmodule-impl.h)
+set_target_properties(restraint PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-gmx_install_headers(integrator.h
-                    context.h)
+set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} $<TARGET_OBJECTS:restraint> PARENT_SCOPE)
+
+gmx_install_headers(restraintpotential.h
+                    vectortype.h)
 
 if (BUILD_TESTING)
-# TODO import this from src/programs/mdrun/tests
-#    add_subdirectory(tests)
+    add_subdirectory(tests)
 endif()
