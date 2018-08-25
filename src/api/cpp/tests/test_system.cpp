@@ -47,6 +47,10 @@ const auto filename = gmxapi::testing::sample_tprfilename;
 
 TEST(ApiSystem, Construction)
 {
+    {   // Construction
+        auto system = gmxapi::System();
+    }   // Destruction
+
     auto system = gmxapi::fromTprFile(filename);
     ASSERT_TRUE(system != nullptr);
 }

@@ -80,6 +80,8 @@ class System final
          */
         class Impl;
 
+        /// A blank system object is possible, but not yet useful.
+        System();
         /// No copy.
         /*! The semantics of copying a System are ambiguous, so disallow implicit
          * copy. Some sort of prototype or clone idiom is probably useful, but

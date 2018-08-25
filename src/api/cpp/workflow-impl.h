@@ -32,41 +32,45 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMXAPI_SYSTEM_IMPL_H
-#define GMXAPI_SYSTEM_IMPL_H
+//
+// Created by Eric Irrgang on 11/29/17.
+//
 
-#include <string>
+#ifndef GROMACS_WORKFLOW_IMPL_H
+#define GROMACS_WORKFLOW_IMPL_H
 
-#include "gmxapi/status.h"
-#include "gmxapi/system.h"
+/*! \internal \file
+ * \brief Implementation details for Workflow infrastructure.
+ *
+ * \ingroup gmxapi
+ */
+
+#include "gmxapi/exceptions.h"
 
 namespace gmxapi
 {
 
-class Context;
-class Workflow;
-
-class System::Impl final
+class WorkflowKeyError : public BasicException<WorkflowKeyError>
 {
     public:
-        Impl();
-        ~Impl();
+        using BasicException::BasicException;
+};
 
-        Impl(Impl &&) noexcept            = default;
-        Impl &operator=(Impl &&) noexcept = default;
 
-        explicit Impl(std::unique_ptr<gmxapi::Workflow> &&workflow) noexcept;
+class MDNodeSpecification : public NodeSpecification
+{
+    public:
+        explicit MDNodeSpecification(std::string filename);
 
-        Status status() const;
+        std::unique_ptr<NodeSpecification> clone() override;
 
-        std::shared_ptr<Session> launch(std::shared_ptr<Context> context);
+        paramsType params() const noexcept override;
 
     private:
-        std::shared_ptr<Context>            context_;
-        std::shared_ptr<Workflow>           workflow_;
-        std::unique_ptr<Status>             status_;
+        std::string tprfilename_;
 };
+
 
 }      // end namespace gmxapi
 
-#endif // header guard
+#endif //GROMACS_WORKFLOW_IMPL_H
