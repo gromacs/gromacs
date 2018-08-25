@@ -32,41 +32,60 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-//#include "atoms.h"
+#include <memory>
 
 #include "testingconfiguration.h"
-#include "gmxapi/gmxapi.h"
+#include "gmxapi/context.h"
 #include "gmxapi/md.h"
+#include "gmxapi/session.h"
+#include "gmxapi/status.h"
 #include "gmxapi/system.h"
+#include "gmxapi/md/mdmodule.h"
 #include <gtest/gtest.h>
+
+#include "gromacs/math/vectypes.h"
+#include "gromacs/restraint/restraintpotential.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace
 {
 
-const auto filename = gmxapi::testing::sample_tprfilename;
+const auto                   filename = gmxapi::testing::sample_tprfilename;
 
-TEST(ApiSystem, Construction)
+class NullRestraint : public gmx::IRestraintPotential
 {
-    {   // Construction
-        auto system = gmxapi::System();
-    }   // Destruction
+    public:
+        gmx::PotentialPointData evaluate(gmx::Vector r1,
+                                         gmx::Vector r2,
+                                         double      t) override
+        {
+            (void)r1;
+            (void)r2;
+            (void)t;
+            return {};
+        }
 
-    auto system = gmxapi::fromTprFile(filename);
-    ASSERT_TRUE(system != nullptr);
-}
+        std::vector<unsigned long> sites() const override
+        {
+            return {{0, 1}};
+        }
+};
 
-TEST(ApiSystem, Accessors)
+class SimpleApiModule : public gmxapi::MDModule
 {
-    auto system = gmxapi::fromTprFile(filename);
-//    ASSERT_TRUE(system->md() != nullptr);
-//    ASSERT_NO_THROW(system->md()->info());
-//    ASSERT_STREQ("Generic MDEngine object", system->md()->info().c_str());
-//
-//    ASSERT_TRUE(system->runner() != nullptr);
+    public:
+        const char *name() override
+        {
+            return "SimpleApiModule";
+        }
 
-//    ASSERT_EQ(system->atoms()->x()->size(), 7);
-//    ASSERT_TRUE(system->atoms() != nullptr);
-//    ASSERT_TRUE(system->atoms()->x() != nullptr);
-}
+        std::shared_ptr<gmx::IRestraintPotential> getRestraint() override
+        {
+            auto restraint = std::make_shared<NullRestraint>();
+            return restraint;
+        }
+};
+
 
 } // end anonymous namespace

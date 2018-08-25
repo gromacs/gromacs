@@ -32,41 +32,42 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-//#include "atoms.h"
 
-#include "testingconfiguration.h"
-#include "gmxapi/gmxapi.h"
-#include "gmxapi/md.h"
-#include "gmxapi/system.h"
-#include <gtest/gtest.h>
+#ifndef GMXAPI_GROMACSFWD_H
+#define GMXAPI_GROMACSFWD_H
 
-namespace
+/*! \ingroup gmxapi
+ * \file
+ * \brief Provide forward declarations for symbols in the GROMACS public headers.
+ *
+ * Basic API clients only need to compile
+ * and link against the gmxapi target, but some gmxapi classes use opaque pointers to
+ * library classes that are forward-declared here.
+ *
+ * We don't want to include ::gmx headers if we don't have to, but we need to declare
+ * some things in the ::gmx namespace somewhere. These are forward declarations for
+ * opaque pointers in libgromacs for client code building against libgmxapi.
+ * Client code that is
+ * more entwined with libgromacs can include headers from there.
+ *
+ * For maximal compatibility with other libgmxapi clients (such as third-party
+ * Python modules), client code should use the wrappers and protocols in the
+ * gmxapi.h header. Note that there is a separate CMake target to build the full
+ * developer documentation for gmxapi.
+ *
+ * Refer to GMXAPI developer docs for the protocols that map gmxapi interfaces to
+ * GROMACS library interfaces.
+ * Refer to the GROMACS developer
+ * documentation for details on library interfaces forward-declared in this header.
+ *
+ * \todo It would be nice to include links to the documentation for these classes, too.
+ */
+
+namespace gmx
 {
 
-const auto filename = gmxapi::testing::sample_tprfilename;
+class IRestraintPotential;
 
-TEST(ApiSystem, Construction)
-{
-    {   // Construction
-        auto system = gmxapi::System();
-    }   // Destruction
+}      // end namespace gmx
 
-    auto system = gmxapi::fromTprFile(filename);
-    ASSERT_TRUE(system != nullptr);
-}
-
-TEST(ApiSystem, Accessors)
-{
-    auto system = gmxapi::fromTprFile(filename);
-//    ASSERT_TRUE(system->md() != nullptr);
-//    ASSERT_NO_THROW(system->md()->info());
-//    ASSERT_STREQ("Generic MDEngine object", system->md()->info().c_str());
-//
-//    ASSERT_TRUE(system->runner() != nullptr);
-
-//    ASSERT_EQ(system->atoms()->x()->size(), 7);
-//    ASSERT_TRUE(system->atoms() != nullptr);
-//    ASSERT_TRUE(system->atoms()->x() != nullptr);
-}
-
-} // end anonymous namespace
+#endif //GMXAPI_GROMACSFWD_H

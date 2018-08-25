@@ -242,6 +242,13 @@ class Mdrunner
         std::shared_ptr<restraint::Manager>     restraintManager_ {nullptr};
 };
 
+/*!
+ * \brief Create the default set of MD filename options.
+ *
+ * \return Ownership of a new filename option container.
+ */
+std::unique_ptr < std::array < t_filenm, Mdrunner::nfile>> makeDefaultMdFilenames();
+
 /*! \libinternal
  * \brief Build a gmx::Mdrunner.
  *

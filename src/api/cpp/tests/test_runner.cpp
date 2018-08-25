@@ -35,9 +35,11 @@
 #include <memory>
 
 #include "gmxapi/context.h"
+#include "gmxapi/md.h"
 #include "gmxapi/session.h"
 #include "gmxapi/status.h"
 #include "gmxapi/system.h"
+#include "gmxapi/md/mdmodule.h"
 #include <gtest/gtest.h>
 
 #include "gromacs/compat/make_unique.h"
@@ -47,6 +49,7 @@
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/imdoutputprovider.h"
 #include "gromacs/mdtypes/imdpoptionprovider.h"
+#include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/utility/arrayref.h"
 
 #include "testingconfiguration.h"

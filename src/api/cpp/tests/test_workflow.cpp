@@ -42,11 +42,14 @@
 #include "workflow.h"
 #include "workflow-impl.h"
 #include "gmxapi/context.h"
+#include "gmxapi/md.h"
 #include "gmxapi/status.h"
 #include "gmxapi/system.h"
+#include "gmxapi/md/mdmodule.h"
 #include <gtest/gtest.h>
 
 #include "gromacs/compat/make_unique.h"
+#include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/utility/arrayref.h"
 
 namespace

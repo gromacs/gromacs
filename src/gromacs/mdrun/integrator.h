@@ -33,7 +33,10 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \file
- * \brief Declares the integrator interface for mdrun
+ * \brief Declares the integrator interface for mdrun.
+ *
+ * These were previously implementation details, but are becoming part of a set
+ * of library-level interfaces as well as possibly extension interfaces.
  *
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \author Mark Abraham <mark.j.abraham@gmail.com>

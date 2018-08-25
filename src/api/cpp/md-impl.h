@@ -32,41 +32,37 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-//#include "atoms.h"
+#ifndef GMXAPI_MD_IMPL_H
+#define GMXAPI_MD_IMPL_H
+/*! \file
+ * \brief Declarations for molecular dynamics API implementation details.
+ *
+ * \ingroup gmxapi
+ */
 
-#include "testingconfiguration.h"
+#include <memory>
+
 #include "gmxapi/gmxapi.h"
 #include "gmxapi/md.h"
-#include "gmxapi/system.h"
-#include <gtest/gtest.h>
 
-namespace
+namespace gmxapi
 {
 
-const auto filename = gmxapi::testing::sample_tprfilename;
+class MDWorkSpec;
 
-TEST(ApiSystem, Construction)
+/*!
+ * \brief Implementation class to hide guts of MDHolder
+ *
+ * Holds the gmxapi interface for an object that can help instantiate the gmx::MdRunner
+ */
+class MDHolder::Impl
 {
-    {   // Construction
-        auto system = gmxapi::System();
-    }   // Destruction
+    public:
+        explicit Impl(std::shared_ptr<MDWorkSpec> &&spec);
 
-    auto system = gmxapi::fromTprFile(filename);
-    ASSERT_TRUE(system != nullptr);
-}
+        std::shared_ptr<MDWorkSpec> spec_ {nullptr};
+};
 
-TEST(ApiSystem, Accessors)
-{
-    auto system = gmxapi::fromTprFile(filename);
-//    ASSERT_TRUE(system->md() != nullptr);
-//    ASSERT_NO_THROW(system->md()->info());
-//    ASSERT_STREQ("Generic MDEngine object", system->md()->info().c_str());
-//
-//    ASSERT_TRUE(system->runner() != nullptr);
+}      // namespace gmxapi
 
-//    ASSERT_EQ(system->atoms()->x()->size(), 7);
-//    ASSERT_TRUE(system->atoms() != nullptr);
-//    ASSERT_TRUE(system->atoms()->x() != nullptr);
-}
-
-} // end anonymous namespace
+#endif // header guard

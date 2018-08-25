@@ -97,7 +97,6 @@
 #include "gromacs/mdrun/context.h"
 #include "gromacs/mdrun/integrator.h"
 #include "gromacs/mdrunutility/handlerestart.h"
-#include "gromacs/mdrun/integrator.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -1239,6 +1238,7 @@ int Mdrunner::mdrunner()
         /* Initiate forcerecord */
         fr                 = mk_forcerec();
         fr->forceProviders = mdModules->initForceProviders();
+        // Threads have been launched and DD initialized
         init_forcerec(fplog, mdlog, fr, fcd,
                       inputrec, &mtop, cr, box,
                       opt2fn("-table", filenames->size(), filenames->data()),

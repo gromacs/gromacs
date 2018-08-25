@@ -32,41 +32,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-//#include "atoms.h"
-
-#include "testingconfiguration.h"
-#include "gmxapi/gmxapi.h"
-#include "gmxapi/md.h"
-#include "gmxapi/system.h"
-#include <gtest/gtest.h>
-
-namespace
-{
-
-const auto filename = gmxapi::testing::sample_tprfilename;
-
-TEST(ApiSystem, Construction)
-{
-    {   // Construction
-        auto system = gmxapi::System();
-    }   // Destruction
-
-    auto system = gmxapi::fromTprFile(filename);
-    ASSERT_TRUE(system != nullptr);
-}
-
-TEST(ApiSystem, Accessors)
-{
-    auto system = gmxapi::fromTprFile(filename);
-//    ASSERT_TRUE(system->md() != nullptr);
-//    ASSERT_NO_THROW(system->md()->info());
-//    ASSERT_STREQ("Generic MDEngine object", system->md()->info().c_str());
 //
-//    ASSERT_TRUE(system->runner() != nullptr);
+// Created by Eric Irrgang on 11/13/17.
+//
 
-//    ASSERT_EQ(system->atoms()->x()->size(), 7);
-//    ASSERT_TRUE(system->atoms() != nullptr);
-//    ASSERT_TRUE(system->atoms()->x() != nullptr);
+#include "gmxapi/md/mdmodule.h"
+
+namespace gmxapi
+{
+
+MDModule::~MDModule() = default;
+
+std::shared_ptr<::gmx::IRestraintPotential> MDModule::getRestraint()
+{
+    return nullptr;
 }
 
-} // end anonymous namespace
+} // end namespace gmxapi

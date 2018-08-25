@@ -48,7 +48,8 @@
 #include <map>
 
 #include <forward_list>
-#include <string>
+
+#include "gmxapi/gmxapi.h"
 
 namespace gmxapi
 {

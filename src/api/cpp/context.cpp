@@ -53,7 +53,7 @@
 #include "workflow-impl.h"
 #include "gmxapi/context.h"
 #include "gmxapi/exceptions.h"
-//#include "gmxapi/gmxapi.h"
+#include "gmxapi/gmxapi.h"
 #include "gmxapi/session.h"
 #include "gmxapi/status.h"
 #include "gromacs/commandline/filenm.h"

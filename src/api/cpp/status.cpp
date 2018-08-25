@@ -35,6 +35,7 @@
 //
 // Created by Eric Irrgang on 11/14/17.
 //
+#include "gmxapi/gmxapi.h"
 #include "gmxapi/status.h"
 #include "gromacs/compat/make_unique.h"
 
