@@ -82,6 +82,7 @@
 #include "gromacs/mdlib/trajectory_writing.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdrun/integrator.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -97,8 +98,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "integrator.h"
 
 //! Utility structure for manipulating states during EM
 typedef struct {
@@ -1063,7 +1062,7 @@ namespace gmx
 {
 
 void
-Integrator::do_cg()
+IntegratorDispatcher::do_cg()
 {
     const char       *CG = "Polak-Ribiere Conjugate Gradients";
 
@@ -1667,7 +1666,7 @@ Integrator::do_cg()
 
 
 void
-Integrator::do_lbfgs()
+IntegratorDispatcher::do_lbfgs()
 {
     static const char *LBFGS = "Low-Memory BFGS Minimizer";
     em_state_t         ems;
@@ -2386,7 +2385,7 @@ Integrator::do_lbfgs()
 }
 
 void
-Integrator::do_steep()
+IntegratorDispatcher::do_steep()
 {
     const char       *SD = "Steepest Descents";
     gmx_localtop_t   *top;
@@ -2622,7 +2621,7 @@ Integrator::do_steep()
 }
 
 void
-Integrator::do_nm()
+IntegratorDispatcher::do_nm()
 {
     const char          *NM = "Normal Mode Analysis";
     gmx_mdoutf_t         outf;
