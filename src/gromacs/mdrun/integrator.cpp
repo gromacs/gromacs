@@ -48,6 +48,8 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/exceptions.h"
 
+#include "md.h"
+
 namespace gmx
 {
 
@@ -59,17 +61,6 @@ void IntegratorDispatcher::run()
     };
     switch (ei)
     {
-        case eiMD:
-        case eiBD:
-        case eiSD1:
-        case eiVV:
-        case eiVVAK:
-            if (!EI_DYNAMICS(ei))
-            {
-                GMX_THROW(APIError("do_md integrator would be called for a non-dynamical integrator"));
-            }
-            do_md();
-            break;
         case eiSteep:
             do_steep();
             break;
@@ -213,7 +204,23 @@ IntegratorBuilder IntegratorBuilder::create(const SimulationMethod &integratorTy
     // Dispatch creation of an appropriate builder for the integration method.
     // Initially, the factory is not extensible.
     std::unique_ptr<IntegratorBuilder::Base> builderImpl;
-    builderImpl = gmx::compat::make_unique<IntegratorDispatcherBuilder>(integratorType);
+    auto method = static_cast<decltype(eiMD)>(integratorType.method_);
+    switch (method)
+    {
+        case eiMD:
+        case eiBD:
+        case eiSD1:
+        case eiVV:
+        case eiVVAK:
+            if (!EI_DYNAMICS(method))
+            {
+                GMX_THROW(APIError("do_md integrator would be called for a non-dynamical integrator"));
+            }
+            builderImpl = gmx::compat::make_unique<gmx::MDIntegrator::Builder>();
+            break;
+        default:
+            builderImpl = gmx::compat::make_unique<IntegratorDispatcherBuilder>(integratorType);
+    }
 
     IntegratorBuilder builder {
         std::move(builderImpl)
