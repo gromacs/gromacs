@@ -299,8 +299,6 @@ struct IntegratorDispatcher : public IIntegrator, public IntegratorParamsContain
     method_ {method}
     {};
 
-    //! Implements the normal MD integrators.
-    IntegratorFunctionType           do_md;
     //! Implements steepest descent EM.
     IntegratorFunctionType           do_steep;
     //! Implements conjugate gradient energy minimization
