@@ -47,6 +47,7 @@ namespace gmxapi
 {
 
 // Forward declaration for a return type defined elsewhere.
+class Context;
 class Session;
 
 /// Container for molecular model and simulation parameters.
@@ -105,6 +106,7 @@ class System final
         ~System();
         /// \endcond
 
+        std::shared_ptr<Session> launch(std::shared_ptr<Context> context);
         /// \}
 
         /*!
