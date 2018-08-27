@@ -32,89 +32,62 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMXAPI_SYSTEM_IMPL_H
+#define GMXAPI_SYSTEM_IMPL_H
 
-#ifndef GMXAPI_STATUS_H
-#define GMXAPI_STATUS_H
 /*! \file
- * \brief Declare the base class for Status returned by API calls.
+ * \brief Declare implementation details for gmxapi::System.
  *
  * \ingroup gmxapi
  */
 
-#include <memory>
+#include <string>
+
+#include "gmxapi/status.h"
+#include "gmxapi/system.h"
 
 namespace gmxapi
 {
-/*! \brief Container for results of API operations.
+
+/*!
+ * \brief Private implementation for gmxapi::System
  *
  * \ingroup gmxapi
- *
- * \internal
- * I'm leaning towards saying this should not be derivable, but that it
- * may contain one or more additional objects, perhaps including exceptions
- * or chains of status / exceptions. Maybe it is a stack. Maybe all
- * API objects should have a Status member that can accumulate Status
- * objects of child objects/operations.
  */
-class Status final
+class System::Impl final
 {
     public:
-        /*!
-         * \brief Default constructor.
-         */
-        Status();
-        /*!
-         * \brief Copy constructor
-         * \param status
-         */
-        Status(const Status &status);
-        /*!
-         * \brief Move constructor.
-         * \param status
-         */
-        Status(Status && status) noexcept;
-        /*!
-         * \brief Copy assignment operator.
-         * \param status
-         * \return reference to lhs.
-         */
-        Status &operator=(const Status &status);
-        /*!
-         * \brief Move assignment operator.
-         * \param status
-         * \return reference to lhs
-         */
-        Status &operator=(Status &&status) noexcept;
-        /*!
-         * \brief Converting assignment operator.
-         * \param success
-         * \return reference to lhs
-         */
-        Status &operator=(bool success);
+        /*! \cond */
+        ~Impl();
+
+        Impl(Impl &&) noexcept;
+        Impl &operator=(Impl &&source) noexcept;
+        /*! \endcond */
 
         /*!
-         * \brief Converting constructor.
-         * \param success
+         * \brief Initialize from a TPR file.
+         *
+         * \param filename Run input file defining the system to be simulated.
          */
-        explicit Status(bool success);
+        explicit Impl(std::string filename);
 
         /*!
-         * \brief non-virtual destructor
+         * \brief Get the status of the last operation.
          *
-         * Do not inherit from this class.
-         */
-        ~Status();
-        /*
-         * \brief Check success status.
+         * Force resolution of any pending operations and return the status to
+         * the client.
          *
-         * \return true if the operation described was successful.
+         * \return success if the last operation on the system completed without problems.
          */
-        bool success() const;
+        Status status() const;
+
     private:
-        class Impl;
-        std::unique_ptr<Impl> impl_;
+        //! Cached Status object.
+        std::unique_ptr<Status>             status_;
+        //! TPR filename to load at run time.
+        std::string                         filename_;
 };
 
 }      // end namespace gmxapi
 
-#endif //GMXAPI_STATUS_H
+#endif // header guard
