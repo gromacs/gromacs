@@ -60,8 +60,8 @@ GROMACS_DIR=${GMXPREFIX}
 LD_LIBRARY_PATH=${GMXLDLIB}${LD_LIBRARY_PATH:+:}${LD_LIBRARY_PATH}
 PKG_CONFIG_PATH=${GMXLDLIB}/pkgconfig${PKG_CONFIG_PATH:+:}${PKG_CONFIG_PATH}
 PATH=${GMXBIN}${PATH:+:}${PATH}
-#debian/ubuntu needs a : at the end
-MANPATH=${GMXMAN}:${MANPATH}
+#debian/ubuntu needs a : at the end and a final : as well
+MANPATH=${GMXMAN}:${MANPATH}:
 
 # export should be separate, so /bin/sh understands it
 export GMXBIN GMXLDLIB GMXMAN GMXDATA LD_LIBRARY_PATH PATH MANPATH
