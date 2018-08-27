@@ -31,7 +31,6 @@ gcc-4.8 gpu cuda-7.0 cmake-3.8.1 mpi npme=1 nranks=2 openmp
 # Test SIMD implementation of pair search for GPU code-path
 gcc-7 gpu gpu_id=1 cuda-9.2 thread-mpi openmp cmake-3.6.1 release-with-assert simd=avx2_256
 
-# Test newest cmake at time of release
 # Test with ThreadSanitizer (compiled without OpenMP, even though
 #   this gcc was configured with --disable-linux-futex, because
 #   Redmine #1850 is unresolved, which causes more suspected
@@ -44,9 +43,10 @@ gcc-7 tsan no-openmp fftpack cmake-3.10.0
 # Test 128-bit SIMD in double precision (to cover SimdInt32 support better)
 gcc-7 double mpi simd=avx_128_fma
 
-# Test on MacOS (the gcc-6 and/or x11 flags implicitly steer jobs to the OSX slave)
+# Test newest cmake at time of release
+# Test on MacOS (the cmake flag implicitly steers the job to the OSX slave)
 # Test X11 build
-gcc-6 x11
+gcc-6 x11 cmake-3.12.1
 
 # Test oldest supported cmake
 # Test older clang
@@ -58,8 +58,10 @@ clang-3.4 double simd=avx_128_fma thread-mpi no-openmp fftpack cmake-3.4.3
 
 # Test newest clang at time of release
 # Test with AddressSanitizer (without OpenMP, see below)
+clang-6 no-openmp asan cmake-3.11.4
+
 # Test with clang-tidy (without OpenMP, cmake>=3.6)
-clang-6 no-openmp asan cmake-3.11.4 tidy
+clang-6 no-openmp cmake-3.12.1 tidy
 
 # Test oldest supported MSVC on Windows
 # Test newest supported MSVC on Windows
