@@ -11,7 +11,7 @@ include                  =
 define                   = 
 
 ; RUN CONTROL PARAMETERS
-integrator               = md
+integrator               = md-vv
 ; Start time and timestep in ps
 tinit                    = 0
 dt                       = 0.001
@@ -33,7 +33,11 @@ bd-fric                  = 0
 ld-seed                  = -1
 
 ; HYBRID MONTE CARLO OPTIONS
-hmc                      = no
+hmc                      = yes
+nsthmc                   = 100
+hmc-seed                 = -1
+hmc-ens-temp             = 300
+hmc-vel-temp             = 300
 
 ; ENERGY MINIMIZATION OPTIONS
 ; Force tolerance and initial step-size
@@ -319,6 +323,6 @@ userreal4                = 0
 ; sigma = 0 means no pulse, leaving the field to be a cosine function.
 electric-field-x         = 0 0 0 0
 electric-field-y         = 0 0 0 0
-electric-field-z         = 3.7 7.5 0 0
+electric-field-z         = 0 0 0 0
 </String>
 </ReferenceData>
