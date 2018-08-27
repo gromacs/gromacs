@@ -32,6 +32,9 @@ comm-grps                =
 bd-fric                  = 0
 ld-seed                  = -1
 
+; HYBRID MONTE CARLO OPTIONS
+hmc                      = no
+
 ; ENERGY MINIMIZATION OPTIONS
 ; Force tolerance and initial step-size
 emtol                    = 10

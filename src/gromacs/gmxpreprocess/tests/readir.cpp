@@ -209,5 +209,15 @@ TEST_F(GetIrTest, ImplicitSolventYesWorks)
     EXPECT_DEATH_IF_SUPPORTED(runTest(inputMdpFile), "Invalid enum");
 }
 
-}  // namespace test
-}  // namespace gmx
+TEST_F(GetIrTest, HybridMCMDYesWorks)
+{
+    const char *inputMdpFile[] = {
+        "integrator = md-vv",
+        "hmc = yes",
+        "hmc-ens-temp = 300"
+    };
+    runTest(joinStrings(inputMdpFile, "\n"));
+}
+
+} // namespace test
+} // namespace gmx
