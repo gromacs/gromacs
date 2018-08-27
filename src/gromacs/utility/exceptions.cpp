@@ -160,7 +160,7 @@ ErrorMessage
 ErrorMessage::prependContext(const std::string &context) const
 {
     ErrorMessage newMessage(context);
-    newMessage.child_.reset(new ErrorMessage(*this));
+    newMessage.child_ = std::make_shared<ErrorMessage>(*this);
     return newMessage;
 }
 
