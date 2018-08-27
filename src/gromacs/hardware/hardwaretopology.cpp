@@ -208,8 +208,8 @@ getHwLocDescendantsByType(const hwloc_topology_t topo, const hwloc_obj_t obj, co
     }
     // Go through children; if this object has no children obj->arity is 0,
     // and we'll return an empty vector.
-    hwloc_obj_t tempNode = NULL;
-    while ((tempNode = hwloc_get_next_child(topo, obj, tempNode)) != NULL)
+    hwloc_obj_t tempNode = nullptr;
+    while ((tempNode = hwloc_get_next_child(topo, obj, tempNode)) != nullptr)
     {
         std::vector<hwloc_obj_t> v2 = getHwLocDescendantsByType(topo, tempNode, type);
         v.insert(v.end(), v2.begin(), v2.end());
