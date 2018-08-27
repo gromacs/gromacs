@@ -99,13 +99,13 @@ class OutputFlags
         //! Should forces be written.
         ChangeSettingType                                  force_ = ChangeSettingType::efUnchanged;
         //! Should precision be changed.
-        ChangeFrameUnchangedYesType           precision_ = ChangeFrameUnchangedYesType::efUnchanged;
+        ChangeFrameUnchangedYesType                        precision_ = ChangeFrameUnchangedYesType::efUnchanged;
         //! Precision used in output file.
-        int                                   prec_ = 3;
+        int                                                prec_ = 3;
         //! Should frame start time be changed.
-        ChangeFrameTimeType                   frameTime_ = ChangeFrameTimeType::efUnchanged;
+        ChangeFrameTimeType                                frameTime_ = ChangeFrameTimeType::efUnchanged;
         //! Time for first frame to start.
-        double                                startTimeValue_ = 0;
+        double                                             startTimeValue_ = 0;
         //! Check if only start time will be changed.
         //! Time step to use between frames.
         double                                timeStepValue_  = 0;

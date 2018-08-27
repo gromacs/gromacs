@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
+# Copyright (c) 2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,46 +32,18 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB FILEIO_SOURCES *.cpp modules/*.cpp)
-
-if(GMX_USE_PLUGINS)
-  set(FILEIO_SOURCES ${FILEIO_SOURCES} ${CMAKE_SOURCE_DIR}/src/external/vmd_molfile/vmddlopen.c)
-else()
-  list(REMOVE_ITEM FILEIO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/vmdio.cpp)
-endif()
-
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${FILEIO_SOURCES} PARENT_SCOPE)
+file(GLOB COORDINATEDATA_SOURCES *.cpp frameconverters/*.cpp)
+set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${COORDINATEDATA_SOURCES} PARENT_SCOPE)
 
 gmx_install_headers(
-    confio.h
-    coordinateoutput.h
-    enxio.h
-    filetypes.h
-    gmxfio.h
-    matio.h
-    mtxio.h
-    oenv.h
-    pdbio.h
-    rgb.h
-    tpxio.h
-    trrio.h
-    trxio.h
-    xdr_datatype.h
-    xtcio.h
-    xvgr.h
-    modules/outputselector.h
-    modules/setatoms.h
-    modules/setbox.h
-    modules/setconnection.h
-    modules/setforces.h
-    modules/setprecision.h
-    modules/settime.h
-    modules/setvelocities.h
-    outputmanager.h
-    modulecallback.h
-    flags.h
+    frameconverters.h
+    frameconverters/frameconverter.h
+    frameconverters/register.h
+    frameconverters/setcenter.h
+    frameconverters/removejump.h
+    frameconverters/shiftcoord.h
     )
 
 if (BUILD_TESTING)
-     add_subdirectory(tests)
+# add_subdirectory(tests)
 endif()
