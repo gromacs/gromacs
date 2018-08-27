@@ -724,7 +724,7 @@ init_keyword_internal(gmx_ana_selmethod_t *method,
                                   "Unknown type for keyword selection"));
         }
         /* Initialize the selection element */
-        root.reset(new SelectionTreeElement(SEL_EXPRESSION, location));
+        root = std::make_shared<SelectionTreeElement>(SEL_EXPRESSION, location);
         _gmx_selelem_set_method(root, kwmethod, scanner);
         if (method->type == STR_VALUE)
         {
@@ -1013,8 +1013,8 @@ _gmx_sel_init_variable_ref(const gmx::SelectionTreeElementPointer &sel,
     }
     else
     {
-        ref.reset(new SelectionTreeElement(
-                          SEL_SUBEXPRREF, _gmx_sel_lexer_get_current_location(scanner)));
+        ref = std::make_shared<SelectionTreeElement>(
+                          SEL_SUBEXPRREF, _gmx_sel_lexer_get_current_location(scanner));
         _gmx_selelem_set_vtype(ref, sel->v.type);
         ref->setName(sel->name());
         ref->child = sel;
@@ -1113,10 +1113,10 @@ _gmx_sel_assign_variable(const char                             *name,
     {
         SelectionLocation location(_gmx_sel_lexer_get_current_location(scanner));
         /* Create the root element */
-        root.reset(new SelectionTreeElement(SEL_ROOT, location));
+        root = std::make_shared<SelectionTreeElement>(SEL_ROOT, location);
         root->setName(name);
         /* Create the subexpression element */
-        root->child.reset(new SelectionTreeElement(SEL_SUBEXPR, location));
+        root->child = std::make_shared<SelectionTreeElement>(SEL_SUBEXPR, location);
         root->child->setName(name);
         _gmx_selelem_set_vtype(root->child, expr->v.type);
         root->child->child  = expr;
