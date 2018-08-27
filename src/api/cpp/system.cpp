@@ -37,6 +37,7 @@
 #include <array>
 
 #include "system-impl.h"
+#include "gmxapi/context.h"
 #include "gmxapi/status.h"
 #include "gmxapi/system.h"
 #include "gromacs/utility.h"
@@ -99,7 +100,8 @@ Status System::Impl::status() const
 }
 
 System::Impl::Impl(std::string filename) :
-    status_
+    context_ {defaultContext()},
+status_
 {
     gmx::compat::make_unique<Status>(true)
 },
@@ -107,6 +109,7 @@ filename_ {
     filename
 }
 {
+    assert(context_ != nullptr);
     assert(status_ != nullptr);
 }
 
