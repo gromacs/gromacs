@@ -40,7 +40,7 @@ PATH=$tmppath
 tmppath=""
 for i in $MANPATH; do
   if test "$i" != "$GMXMAN"; then
-    tmppath="${tmppath}${tmppath:+:}${i}"
+    tmppath="${tmppath}${tmppath:+:}${i}:"
   fi
 done
 MANPATH=$tmppath

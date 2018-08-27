@@ -59,7 +59,7 @@ foreach i ( `echo $MANPATH | sed "s/:/ /g"` )
     if ("${tmppath}" == "") then
       set tmppath = "$i"
     else
-      set tmppath = "${tmppath}:$i"
+      set tmppath = "${tmppath}:$i:"
     endif
   endif
 end
