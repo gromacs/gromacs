@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  * \brief
- * Implements gmx::analysismodules::Convert.
+ * Implements gmx::analysismodules::NoJump.
  *
  * \author
  * \ingroup module_trajectoryanalysis
@@ -42,10 +42,11 @@
 
 #include "gmxpre.h"
 
-#include "convert.h"
+#include "nojump.h"
 
 #include <algorithm>
 
+#include "gromacs/coordinatedata.h"
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodule.h"
@@ -79,13 +80,13 @@ namespace
 {
 
 /*
- * Convert
+ * NoJump
  */
 
-class Convert : public TrajectoryAnalysisModule
+class NoJump : public TrajectoryAnalysisModule
 {
     public:
-        Convert();
+        NoJump();
 
         virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings);
@@ -103,15 +104,18 @@ class Convert : public TrajectoryAnalysisModule
         Selection                                          sel_;
         std::string                                        name_;
         CoordinateFileWriteFlags                           flags_;
+        RemoveJumpPointer                                  removeJump_;
+        RVec   referenceConf_;
+        matrix localBox_;
 };
 
-Convert::Convert()
+NoJump::NoJump()
 {
 }
 
 
 void
-Convert::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
+NoJump::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] converts trajectory files between different formats."
@@ -133,51 +137,57 @@ Convert::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *set
 }
 
 void
-Convert::optionsFinished(TrajectoryAnalysisSettings * /*settings*/)
+NoJump::optionsFinished(TrajectoryAnalysisSettings *settings)
 {
+    settings->setFlag(TrajectoryAnalysisSettings::efUseTopX);
     flags_.checkOptions();
 }
 
 
 void
-Convert::initAnalysis(const TrajectoryAnalysisSettings    & /*settings*/,
-                      const TopologyInformation          &top)
+NoJump::initAnalysis(const TrajectoryAnalysisSettings    & /*settings*/,
+                     const TopologyInformation          &top)
 {
     output_ = compat::make_unique<OutputManager>(name_, &sel_, top.mtop());
-
+    rvec *x = nullptr;
+    top.getTopologyConf(&x, localBox_);
+    referenceConf_ = *x;
+    removeJump_    = compat::make_unique<RemoveJump>(&referenceConf_, localBox_);
     flags_.registerModules(output_);
 }
 
 void
-Convert::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
-                      TrajectoryAnalysisModuleData * /*pdata*/)
+NoJump::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
+                     TrajectoryAnalysisModuleData * /*pdata*/)
 {
     // modify frame to write out correct number of coords
     // and actually write out
-    output_->prepareFrame(frnr, fr);
+    removeJump_->setFrame(fr);
+    removeJump_->convertFrame(fr);
+    output_->prepareFrame(frnr, removeJump_->getFrame());
 }
 
 void
-Convert::finishAnalysis(int /*nframes*/)
+NoJump::finishAnalysis(int /*nframes*/)
 {
 }
 
 
 
 void
-Convert::writeOutput()
+NoJump::writeOutput()
 {
 }
 
 }       // namespace
 
-const char ConvertInfo::name[]             = "convert";
-const char ConvertInfo::shortDescription[] =
-    "Converts between different trajectory types";
+const char NoJumpInfo::name[]             = "nojump";
+const char NoJumpInfo::shortDescription[] =
+    "Removes jumps over pbc boxes during trajectory";
 
-TrajectoryAnalysisModulePointer ConvertInfo::create()
+TrajectoryAnalysisModulePointer NoJumpInfo::create()
 {
-    return TrajectoryAnalysisModulePointer(new Convert);
+    return TrajectoryAnalysisModulePointer(new NoJump);
 }
 
 } // namespace analysismodules

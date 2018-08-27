@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  * \brief
- * Implements gmx::analysismodules::Convert.
+ * Implements gmx::analysismodules::Center.
  *
  * \author
  * \ingroup module_trajectoryanalysis
@@ -42,10 +42,11 @@
 
 #include "gmxpre.h"
 
-#include "convert.h"
+#include "center.h"
 
 #include <algorithm>
 
+#include "gromacs/coordinatedata.h"
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodule.h"
@@ -79,13 +80,13 @@ namespace
 {
 
 /*
- * Convert
+ * Center
  */
 
-class Convert : public TrajectoryAnalysisModule
+class Center : public TrajectoryAnalysisModule
 {
     public:
-        Convert();
+        Center();
 
         virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings);
@@ -99,32 +100,49 @@ class Convert : public TrajectoryAnalysisModule
         virtual void writeOutput();
 
     private:
-        OutputManagerPointer                               output_;
-        Selection                                          sel_;
+        OutputManagerPointer                  output_;
+        Selection                             sel_;
+        Selection  selCenter_;
+        Selection *selCenterPointer_ = nullptr;
+        bool       haveSelCenter_    = false;
         std::string                                        name_;
         CoordinateFileWriteFlags                           flags_;
+        CenteringType    centerFlag_;
+        SetCenterPointer setCenter_;
 };
 
-Convert::Convert()
+Center::Center()
 {
 }
 
 
 void
-Convert::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
+Center::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] converts trajectory files between different formats."
     };
 
-    options->addOption(SelectionOption("select").store(&sel_).dynamicMask()
-                           .required().description("Selection of atoms to write to the file"));
+    options->addOption(SelectionOption("select")
+                           .store(&sel_)
+                           .dynamicMask()
+                           .required()
+                           .description("Selection of atoms to write to the file"));
 
     options->addOption(FileNameOption("o").filetype(eftTrajectory).outputFile()
-                           .store(&name_).defaultBasename("trajout")
+                           .store(&name_)
+                           .defaultBasename("trajout")
                            .required()
                            .description("Output trajectory after conversion"));
-
+    options->addOption(SelectionOption("center")
+                           .store(&selCenter_)
+                           .dynamicMask()
+                           .storeIsSet(&haveSelCenter_)
+                           .description("Selection of atoms used for centering system, default is to use all atoms"));
+    options->addOption(EnumOption<CenteringType>("type")
+                           .enumValue(cCenterTypeEnum)
+                           .store(&centerFlag_)
+                           .description("How the system should be centered"));
     flags_.initFileOptions(options);
 
     settings->setHelpText(desc);
@@ -133,51 +151,61 @@ Convert::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *set
 }
 
 void
-Convert::optionsFinished(TrajectoryAnalysisSettings * /*settings*/)
+Center::optionsFinished(TrajectoryAnalysisSettings * /*settings*/)
 {
     flags_.checkOptions();
+    if (!haveSelCenter_)
+    {
+        selCenterPointer_ = &sel_;
+    }
+    else
+    {
+        selCenterPointer_ = &selCenter_;
+    }
 }
 
 
 void
-Convert::initAnalysis(const TrajectoryAnalysisSettings    & /*settings*/,
-                      const TopologyInformation          &top)
+Center::initAnalysis(const TrajectoryAnalysisSettings    & /*settings*/,
+                     const TopologyInformation          &top)
 {
-    output_ = compat::make_unique<OutputManager>(name_, &sel_, top.mtop());
-
+    output_    = compat::make_unique<OutputManager>(name_, &sel_, top.mtop());
+    setCenter_ = compat::make_unique<SetCenter>(selCenterPointer_, centerFlag_);
     flags_.registerModules(output_);
 }
 
 void
-Convert::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
-                      TrajectoryAnalysisModuleData * /*pdata*/)
+Center::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
+                     TrajectoryAnalysisModuleData * /*pdata*/)
 {
     // modify frame to write out correct number of coords
     // and actually write out
-    output_->prepareFrame(frnr, fr);
+    setCenter_->setFrame(fr);
+    setCenter_->convertFrame(fr);
+    output_->prepareFrame(frnr, setCenter_->getFrame());
 }
 
 void
-Convert::finishAnalysis(int /*nframes*/)
+Center::finishAnalysis(int /*nframes*/)
 {
 }
 
 
 
 void
-Convert::writeOutput()
+Center::writeOutput()
 {
 }
 
 }       // namespace
 
-const char ConvertInfo::name[]             = "convert";
-const char ConvertInfo::shortDescription[] =
-    "Converts between different trajectory types";
+const char CenterInfo::name[]             = "center";
+const char CenterInfo::shortDescription[] =
+    "Centers atom selection in box during trajectory";
 
-TrajectoryAnalysisModulePointer ConvertInfo::create()
+TrajectoryAnalysisModulePointer CenterInfo::create()
 {
-    return TrajectoryAnalysisModulePointer(new Convert);
+    return TrajectoryAnalysisModulePointer(new Center);
 }
 
 } // namespace analysismodules
