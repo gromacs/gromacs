@@ -203,8 +203,7 @@ IntegratorBuilder::IntegratorBuilder(std::unique_ptr<::gmx::IntegratorBuilder::B
 IntegratorBuilder IntegratorBuilder::create(const SimulationMethod &integratorType)
 {
     // Dispatch creation of an appropriate builder for the integration method.
-    // Initially, the factory is not extensible and only has one catch-all builder
-    // to dispatch to.
+    // Initially, the factory is not extensible.
     std::unique_ptr<IntegratorBuilder::Base> builderImpl;
     auto method = static_cast<decltype(eiMD)>(integratorType.method_);
     switch (method)
