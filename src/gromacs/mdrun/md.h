@@ -50,7 +50,7 @@ namespace gmx
 {
 
 /*! \internal
- * \brief MD simulations
+ * \brief Provide simulation functor for MD methods.
  *
  * \ingroup module_mdrun
  */

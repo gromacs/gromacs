@@ -1931,6 +1931,36 @@ void gmx::MDIntegrator::Impl::run()
     sfree(top);
 }
 
+gmx::MDIntegrator::Impl::Impl(const IntegratorParamsContainer &container) :
+    fplog(container.fplog),
+    cr(container.cr),
+    ms(container.ms),
+    mdlog(container.mdlog),
+    nfile(container.nfile),
+    fnm(container.fnm),
+    oenv(container.oenv),
+    mdrunOptions(container.mdrunOptions),
+    vsite(container.vsite),
+    constr(container.constr),
+    enforcedRotation(container.enforcedRotation),
+    deform(container.deform),
+    outputProvider(container.outputProvider),
+    inputrec(container.inputrec),
+    top_global(container.top_global),
+    fcd(container.fcd),
+    state_global(container.state_global),
+    observablesHistory(container.observablesHistory),
+    mdAtoms(container.mdAtoms),
+    nrnb(container.nrnb),
+    wcycle(container.wcycle),
+    fr(container.fr),
+    replExParams(container.replExParams),
+    membed(container.membed),
+    walltime_accounting(container.walltime_accounting)
+{}
+
+gmx::MDIntegrator::Impl::~Impl() = default;
+
 std::unique_ptr<gmx::IIntegrator> gmx::MDIntegrator::Builder::build()
 {
     if (!integrator_)
