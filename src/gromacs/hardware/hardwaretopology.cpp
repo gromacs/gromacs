@@ -175,7 +175,7 @@ parseCpuInfo(HardwareTopology::Machine *        machine,
 
 // Compatibility function for accessing hwloc_obj_t object memory with different API versions of hwloc
 std::size_t
-getHwLocObjectMemory(const hwloc_obj_t obj)
+getHwLocObjectMemory(hwloc_obj_t obj)
 {
 #if GMX_HWLOC_API_VERSION_IS_2XX
     return obj->total_memory;
@@ -196,7 +196,7 @@ getHwLocObjectMemory(const hwloc_obj_t obj)
  *          were found, the vector will be empty.
  */
 const std::vector<hwloc_obj_t>
-getHwLocDescendantsByType(const hwloc_topology_t topo, const hwloc_obj_t obj, const hwloc_obj_type_t type)
+getHwLocDescendantsByType(hwloc_topology_t topo, hwloc_obj_t obj, const hwloc_obj_type_t type)
 {
     GMX_RELEASE_ASSERT(obj, "NULL hwloc object provided to getHwLocDescendantsByType()");
 
@@ -229,7 +229,7 @@ int
 parseHwLocSocketsCoresThreads(hwloc_topology_t                   topo,
                               HardwareTopology::Machine *        machine)
 {
-    const hwloc_obj_t                      root         = hwloc_get_root_obj(topo);
+    hwloc_obj_t                            root         = hwloc_get_root_obj(topo);
     std::vector<hwloc_obj_t>               hwlocSockets = getHwLocDescendantsByType(topo, root, HWLOC_OBJ_PACKAGE);
 
     machine->logicalProcessorCount = hwloc_get_nbobjs_by_type(topo, HWLOC_OBJ_PU);
@@ -298,15 +298,13 @@ parseHwLocSocketsCoresThreads(hwloc_topology_t                   topo,
     }
 }
 
-/*! \brief Read cache information from hwloc topology
+/*! \brief Fill \c machine with cache information from hwloc topology
  *
  *  \param topo    hwloc topology handle that has been initialized and loaded
  *  \param machine Pointer to the machine structure in the HardwareTopology
- *                 class, where cache data will be filled.
- *
- *  \return If any cache data is found the return value is 0, otherwise non-zero.
+ *                 class, where cache data will be filled if found and valid.
  */
-int
+void
 parseHwLocCache(hwloc_topology_t                   topo,
                 HardwareTopology::Machine *        machine)
 {
@@ -332,11 +330,10 @@ parseHwLocCache(hwloc_topology_t                   topo,
             }
         }
     }
-    return machine->caches.empty();
 }
 
 
-/*! \brief Read numa information from hwloc topology
+/*! \brief Fill \c machine with numa information from hwloc topology
  *
  *  \param topo    hwloc topology handle that has been initialized and loaded
  *  \param machine Pointer to the machine structure in the HardwareTopology
@@ -351,14 +348,15 @@ parseHwLocCache(hwloc_topology_t                   topo,
  *  completed successfully before calling this one. If this is not the case,
  *  you will get an error return code.
  *
- *  \return If the data found makes sense (either in the numa node or the
- *          entire machine) the return value is 0, otherwise non-zero.
+ *  If the data found makes sense (either in the numa node or the
+ *  entire machine) the numa.nodes data structure in
+ *  HardwareTopology::Machine will be filled upon exit.
  */
-int
+void
 parseHwLocNuma(hwloc_topology_t                   topo,
                HardwareTopology::Machine *        machine)
 {
-    const hwloc_obj_t                  root           = hwloc_get_root_obj(topo);
+    hwloc_obj_t                        root           = hwloc_get_root_obj(topo);
     std::vector<hwloc_obj_t>           hwlocNumaNodes = getHwLocDescendantsByType(topo, root, HWLOC_OBJ_NUMANODE);
     bool                               topologyOk     = true;
 
@@ -524,31 +522,24 @@ parseHwLocNuma(hwloc_topology_t                   topo,
         }
     }
 #endif      // end if not GMX_HWLOC_API_VERSION_IS_2XX
-    if (topologyOk)
-    {
-        return 0;
-    }
-    else
+    if (!topologyOk)
     {
         machine->numa.nodes.clear();
-        return -1;
     }
-
 }
 
-/*! \brief Read PCI device information from hwloc topology
+/*! \brief Fill \c machine with PCI device information from hwloc topology
  *
  *  \param topo    hwloc topology handle that has been initialized and loaded
  *  \param machine Pointer to the machine structure in the HardwareTopology
- *                 class, where PCI device information will be filled.
- * *
- *  \return If any devices were found the return value is 0, otherwise non-zero.
+ *                 class, where PCI device information will be filled if found
+ *                 and valid.
  */
-int
+void
 parseHwLocDevices(hwloc_topology_t                   topo,
                   HardwareTopology::Machine *        machine)
 {
-    const hwloc_obj_t        root    = hwloc_get_root_obj(topo);
+    hwloc_obj_t              root    = hwloc_get_root_obj(topo);
     std::vector<hwloc_obj_t> pcidevs = getHwLocDescendantsByType(topo, root, HWLOC_OBJ_PCI_DEVICE);
 
     for (auto &p : pcidevs)
@@ -593,7 +584,6 @@ parseHwLocDevices(hwloc_topology_t                   topo,
                                         numaId
                                     } );
     }
-    return pcidevs.empty();
 }
 
 void
@@ -626,7 +616,7 @@ parseHwLoc(HardwareTopology::Machine *        machine,
     }
 
     // If we get here, we can get a valid root object for the topology
-    *isThisSystem = hwloc_topology_is_thissystem(topo);
+    *isThisSystem = bool(hwloc_topology_is_thissystem(topo));
 
     // Parse basic information about sockets, cores, and hardware threads
     if (parseHwLocSocketsCoresThreads(topo, machine) == 0)
@@ -640,7 +630,9 @@ parseHwLoc(HardwareTopology::Machine *        machine,
     }
 
     // Get information about cache and numa nodes
-    if (parseHwLocCache(topo, machine) == 0 && parseHwLocNuma(topo, machine) == 0)
+    parseHwLocCache(topo, machine);
+    parseHwLocNuma(topo, machine);
+    if (!machine->caches.empty() && !machine->numa.nodes.empty())
     {
         *supportLevel = HardwareTopology::SupportLevel::Full;
     }
@@ -651,7 +643,8 @@ parseHwLoc(HardwareTopology::Machine *        machine,
     }
 
     // PCI devices
-    if (parseHwLocDevices(topo, machine) == 0)
+    parseHwLocDevices(topo, machine);
+    if (!machine->devices.empty())
     {
         *supportLevel = HardwareTopology::SupportLevel::FullWithDevices;
     }
