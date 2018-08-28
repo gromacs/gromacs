@@ -90,6 +90,7 @@
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/repl_ex.h"
+#include "gromacs/mdlib/resethandler.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
@@ -138,48 +139,6 @@
 #endif
 
 using gmx::SimulationSignaller;
-
-//! Resets all the counters.
-static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
-                               int64_t step,
-                               gmx_wallcycle_t wcycle, t_nrnb *nrnb,
-                               gmx_walltime_accounting_t walltime_accounting,
-                               struct nonbonded_verlet_t *nbv,
-                               struct gmx_pme_t *pme)
-{
-    char sbuf[STEPSTRSIZE];
-
-    /* Reset all the counters related to performance over the run */
-    GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-            "step %s: resetting all time and cycle counters",
-            gmx_step_str(step, sbuf));
-
-    if (use_GPU(nbv))
-    {
-        nbnxn_gpu_reset_timings(nbv);
-    }
-
-    if (pme_gpu_task_enabled(pme))
-    {
-        pme_gpu_reset_timings(pme);
-    }
-
-    if (use_GPU(nbv) || pme_gpu_task_enabled(pme))
-    {
-        resetGpuProfiler();
-    }
-
-    wallcycle_stop(wcycle, ewcRUN);
-    wallcycle_reset_all(wcycle);
-    if (DOMAINDECOMP(cr))
-    {
-        reset_dd_statistics_counters(cr->dd);
-    }
-    init_nrnb(nrnb);
-    wallcycle_start(wcycle, ewcRUN);
-    walltime_accounting_reset_time(walltime_accounting, step);
-    print_date_and_time(fplog, cr->nodeid, "Restarted time", gmx_gettime());
-}
 
 /*! \brief Copy the state from \p rerunFrame to \p globalState and, if requested, construct vsites
  *
@@ -293,7 +252,6 @@ void gmx::Integrator::do_md()
     gmx_ekindata_t   *ekind;
     gmx_shellfc_t    *shellfc;
     gmx_bool          bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
-    gmx_bool          bResetCountersHalfMaxH = FALSE;
     gmx_bool          bTemp, bPres, bTrotter;
     real              dvdl_constr;
     rvec             *cbuf        = nullptr;
@@ -345,18 +303,6 @@ void gmx::Integrator::do_md()
         // interface.
         GMX_LOG(mdlog.info).asParagraph().
             appendText("The -noconfout functionality is deprecated, and may be removed in a future version.");
-    }
-    if (mdrunOptions.timingOptions.resetHalfway)
-    {
-        GMX_LOG(mdlog.info).asParagraph().
-            appendText("The -resethway functionality is deprecated, and may be removed in a future version.");
-        if (ir->nsteps > 0)
-        {
-            /* Signal to reset the counters half the simulation steps. */
-            wcycle_set_reset_counters(wcycle, ir->nsteps/2);
-        }
-        /* Signal to reset the counters halfway the simulation time. */
-        bResetCountersHalfMaxH = (mdrunOptions.maximumHoursToRun > 0);
     }
 
     /* md-vv uses averaged full step velocities for T-control
@@ -818,11 +764,9 @@ void gmx::Integrator::do_md()
         // the propagation of such signals must take place between
         // simulations, not just within simulations.
         // TODO: Make algorithm initializers set these flags.
-        simulationsShareState     = useReplicaExchange || usingEnsembleRestraints || awhUsesMultiSim;
-        bool resetCountersIsLocal = true;
+        simulationsShareState      = useReplicaExchange || usingEnsembleRestraints || awhUsesMultiSim;
         signals[eglsCHKPT]         = SimulationSignal(!simulationsShareState);
         signals[eglsSTOPCOND]      = SimulationSignal(!simulationsShareState);
-        signals[eglsRESETCOUNTERS] = SimulationSignal(resetCountersIsLocal);
 
         if (simulationsShareState)
         {
@@ -832,6 +776,11 @@ void gmx::Integrator::do_md()
             nstSignalComm = ((c_minimumInterSimulationSignallingInterval + nstglobalcomm - 1)/nstglobalcomm)*nstglobalcomm;
         }
     }
+
+    const bool resetCountersIsLocal = true;
+    auto       resetHandler         = ResetHandler(&signals[eglsRESETCOUNTERS], !resetCountersIsLocal,
+                                                   ir, cr, mdrunOptions, mdlog,
+                                                   wcycle, walltime_accounting);
 
     DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion   = (DOMAINDECOMP(cr) ? DdOpenBalanceRegionBeforeForceComputation::yes : DdOpenBalanceRegionBeforeForceComputation::no);
     DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion  = (DOMAINDECOMP(cr) ? DdCloseBalanceRegionAfterForceComputation::yes : DdCloseBalanceRegionAfterForceComputation::no);
@@ -1391,12 +1340,7 @@ void gmx::Integrator::do_md()
                     gmx_step_str(step, sbuf), mdrunOptions.maximumHoursToRun*0.99);
         }
 
-        if (bResetCountersHalfMaxH && MASTER(cr) &&
-            secondsSinceStart > mdrunOptions.maximumHoursToRun*60.0*60.0*0.495)
-        {
-            /* Set flag that will communicate the signal to all ranks in the simulation */
-            signals[eglsRESETCOUNTERS].sig = 1;
-        }
+        resetHandler.setSignal(&signals[eglsRESETCOUNTERS], walltime_accounting);
 
         /* In parallel we only have to check for checkpointing in steps
          * where we do global communication,
@@ -1822,41 +1766,10 @@ void gmx::Integrator::do_md()
             step_rel++;
         }
 
-        /* TODO make a counter-reset module */
-        /* If it is time to reset counters, set a flag that remains
-           true until counters actually get reset */
-        if (step_rel == wcycle_get_reset_counters(wcycle) ||
-            signals[eglsRESETCOUNTERS].set != 0)
-        {
-            if (pme_loadbal_is_active(pme_loadbal))
-            {
-                /* Do not permit counter reset while PME load
-                 * balancing is active. The only purpose for resetting
-                 * counters is to measure reliable performance data,
-                 * and that can't be done before balancing
-                 * completes.
-                 *
-                 * TODO consider fixing this by delaying the reset
-                 * until after load balancing completes,
-                 * e.g. https://gerrit.gromacs.org/#/c/4964/2 */
-                gmx_fatal(FARGS, "PME tuning was still active when attempting to "
-                          "reset mdrun counters at step %" PRId64 ". Try "
-                          "resetting counters later in the run, e.g. with gmx "
-                          "mdrun -resetstep.", step);
-            }
-            reset_all_counters(fplog, mdlog, cr, step, wcycle, nrnb, walltime_accounting,
-                               use_GPU(fr->nbv) ? fr->nbv : nullptr, fr->pmedata);
-            wcycle_set_reset_counters(wcycle, -1);
-            if (!thisRankHasDuty(cr, DUTY_PME))
-            {
-                /* Tell our PME node to reset its counters */
-                gmx_pme_send_resetcounters(cr, step);
-            }
-            /* If mdrun -maxh -resethway was active, it can only trigger once */
-            bResetCountersHalfMaxH = FALSE; /* TODO move this to where signals[eglsRESETCOUNTERS].sig is set */
-            /* Reset can only happen once, so clear the triggering flag. */
-            signals[eglsRESETCOUNTERS].set = 0;
-        }
+        resetHandler.resetCounters(
+                &signals[eglsRESETCOUNTERS], step, step_rel,
+                mdlog, fplog, cr, (use_GPU(fr->nbv) ? fr->nbv : nullptr),
+                nrnb, fr->pmedata, pme_loadbal, wcycle, walltime_accounting);
 
         /* If bIMD is TRUE, the master updates the IMD energy record and sends positions to VMD client */
         IMD_prep_energies_send_positions(ir->bIMD && MASTER(cr), bIMDstep, ir->imd, enerd, step, bCalcEner, wcycle);
@@ -1915,12 +1828,6 @@ void gmx::Integrator::do_md()
     IMD_finalize(ir->bIMD, ir->imd);
 
     walltime_accounting_set_nsteps_done(walltime_accounting, step);
-    if (step_rel >= wcycle_get_reset_counters(wcycle) &&
-        signals[eglsRESETCOUNTERS].set == 0 &&
-        !bResetCountersHalfMaxH)
-    {
-        walltime_accounting_set_valid_finish(walltime_accounting);
-    }
 
     destroy_enerdata(enerd);
     sfree(enerd);
