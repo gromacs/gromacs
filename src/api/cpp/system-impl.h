@@ -63,7 +63,7 @@ class System::Impl final
         ~Impl();
 
         Impl(Impl &&) noexcept;
-        Impl &operator=(Impl &&source) noexcept;
+        Impl &operator=(Impl &&) noexcept;
         /*! \endcond */
 
         /*!
@@ -82,6 +82,8 @@ class System::Impl final
          * \return success if the last operation on the system completed without problems.
          */
         Status status() const;
+
+        std::shared_ptr<Session> launch(std::shared_ptr<Context> context);
 
     private:
         std::shared_ptr<Context>            context_;

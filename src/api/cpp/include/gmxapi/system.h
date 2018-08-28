@@ -46,6 +46,10 @@
 namespace gmxapi
 {
 
+// Forward declaration for a return type defined elsewhere.
+class Context;
+class Session;
+
 /*!
  * \brief Deprecated: A wrapper for gmx::Mdrunner
  *
@@ -107,6 +111,8 @@ class System final
          */
         ~System();
         /*! \endcond */
+
+        std::shared_ptr<Session> launch(std::shared_ptr<Context> context);
 
         /*!
          * \brief Get the status of the last API call involving this system.
