@@ -33,21 +33,16 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "gmxpre.h"
+#include "gmxapi/md/mdmodule.h"
 
-#include "context.h"
-
-#include "runner.h"
-
-namespace gmx
-{
-namespace md
+namespace gmxapi
 {
 
-Context::Context(const Mdrunner &runner)
+MDModule::~MDModule() = default;
+
+std::shared_ptr<::gmx::IRestraintPotential> MDModule::getRestraint()
 {
-    runner_ = &runner;
+    return nullptr;
 }
 
-} // end namespace md
-} // end namespace gmx
+} // end namespace gmxapi

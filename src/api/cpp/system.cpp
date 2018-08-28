@@ -36,9 +36,8 @@
 
 #include <array>
 
-#include "workflow.h"
 #include "gmxapi/context.h"
-
+#include "gmxapi/md.h"
 #include "gmxapi/session.h"
 #include "gmxapi/status.h"
 #include "gmxapi/system.h"
@@ -48,6 +47,7 @@
 #include "gromacs/mdrun/runner.h"
 
 #include "system-impl.h"
+#include "workflow.h"
 
 namespace gmxapi
 {
@@ -69,6 +69,16 @@ System::System(std::unique_ptr<System::Impl> &&implementation) :
     impl_ {std::forward < std::unique_ptr < System::Impl>>(implementation)}
 {
     assert(impl_ != nullptr);
+}
+
+Status System::setRestraint(std::shared_ptr<gmxapi::MDModule> module)
+{
+    return impl_->setRestraint(std::move(module));
+}
+
+std::shared_ptr<MDWorkSpec> System::getSpec()
+{
+    return impl_->getSpec();
 }
 
 System::~System() = default;
@@ -128,12 +138,16 @@ System::Impl::Impl(std::unique_ptr<gmxapi::Workflow> &&workflow) noexcept :
 workflow_ {
     std::move(workflow)
 },
+spec_ {
+    std::make_shared<MDWorkSpec>()
+},
 status_ {
     gmx::compat::make_unique<Status>(true)
 }
 {
     assert(context_ != nullptr);
     assert(workflow_ != nullptr);
+    assert(spec_ != nullptr);
     assert(status_ != nullptr);
 }
 
@@ -146,6 +160,11 @@ std::shared_ptr<Session> System::Impl::launch(std::shared_ptr<Context> context)
     {
         session = context->launch(*workflow_);
         assert(session);
+
+        for (auto && module : spec_->getModules())
+        {
+            setSessionRestraint(session.get(), module);
+        }
     }
     else
     {
@@ -155,6 +174,18 @@ std::shared_ptr<Session> System::Impl::launch(std::shared_ptr<Context> context)
     }
 
     return session;
+}
+
+Status System::Impl::setRestraint(std::shared_ptr<gmxapi::MDModule> module)
+{
+    assert(spec_ != nullptr);
+    spec_->addModule(std::move(module));
+    return Status(true);
+}
+
+std::shared_ptr<MDWorkSpec> System::Impl::getSpec()
+{
+    return spec_;
 }
 
 } // end namespace gmxapi

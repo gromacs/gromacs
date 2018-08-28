@@ -39,6 +39,8 @@
 
 #include "gmxpre.h"
 
+#include "gmxapi/context.h"
+
 #include <cassert>
 #include <cstring>
 
@@ -51,7 +53,6 @@
 #include "session-impl.h"
 #include "workflow.h"
 #include "workflow-impl.h"
-#include "gmxapi/context.h"
 #include "gmxapi/exceptions.h"
 #include "gmxapi/session.h"
 #include "gmxapi/status.h"

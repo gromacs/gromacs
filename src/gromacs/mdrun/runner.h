@@ -70,7 +70,6 @@
 struct gmx_output_env_t;
 struct ReplicaExchangeParameters;
 struct t_commrec;
-class PotentialContainer; // // defined in pulling/pullpotential.h
 
 namespace gmx
 {
@@ -241,6 +240,13 @@ class Mdrunner
 
         std::shared_ptr<restraint::Manager>     restraintManager_ {nullptr};
 };
+
+/*!
+ * \brief Create the default set of MD filename options.
+ *
+ * \return Ownership of a new filename option container.
+ */
+std::unique_ptr < std::array < t_filenm, Mdrunner::nfile>> makeDefaultMdFilenames();
 
 /*! \libinternal
  * \brief Build a gmx::Mdrunner.

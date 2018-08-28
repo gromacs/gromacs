@@ -1240,6 +1240,7 @@ int Mdrunner::mdrunner()
         /* Initiate forcerecord */
         fr                 = mk_forcerec();
         fr->forceProviders = mdModules->initForceProviders();
+        // Threads have been launched and DD initialized
         init_forcerec(fplog, mdlog, fr, fcd,
                       inputrec, &mtop, cr, box,
                       opt2fn("-table", filenames->size(), filenames->data()),

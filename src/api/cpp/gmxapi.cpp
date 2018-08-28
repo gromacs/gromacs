@@ -32,22 +32,4 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#include "gmxpre.h"
-
-#include "context.h"
-
-#include "runner.h"
-
-namespace gmx
-{
-namespace md
-{
-
-Context::Context(const Mdrunner &runner)
-{
-    runner_ = &runner;
-}
-
-} // end namespace md
-} // end namespace gmx
+#include "gmxapi/gmxapi.h"

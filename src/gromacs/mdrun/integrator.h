@@ -107,7 +107,11 @@ class SimulationMethod
         explicit SimulationMethod(unsigned int t) : method_ {t}
         {}
 
-        //! Allow implicit coersion to conventional enumerated integrator type.
+        /*!
+         * \brief Conversion operator
+         *
+         * \return value with underlying enumeration type.
+         */
         operator unsigned int () const { return method_; }
 };
 
