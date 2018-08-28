@@ -1,0 +1,158 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2018, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \libinternal \file
+ * \brief
+ * Declares the checkpoint handler class.
+ *
+ * This class sets the signal to checkpoint based on the elapsed simulation time,
+ * and handles the signal if it is received. When handling the signal, it is deciding
+ * whether a checkpoint should be saved at the current step. This can be due to a
+ * received signal, or if the current simulation step is the last. This information can
+ * be queried via the doCheckpointThisStep() function.
+ *
+ * The approach is ready for a task-based design: The setter and handlers bind to data
+ * they need to access at run time during construction time via const references. This
+ * allows the task to run later without any inputs.
+ *
+ * The setting and handling is implemented in private functions. They are only called
+ * if a respective boolean is true. For the trivial case of no checkpointing (or no checkpoint
+ * signal setting on any other rank than master), the translation unit of the calling
+ * function is therefore never left. In the future, this will be achieved by adding
+ * (or not adding) handlers / setters to the task graph.
+ *
+ * \author Pascal Merz <pascal.merz@colorado.edu>
+ * \inlibraryapi
+ * \ingroup module_mdlib
+ */
+#ifndef GMX_MDLIB_CHECKPOINTHANDLER_H
+#define GMX_MDLIB_CHECKPOINTHANDLER_H
+
+#include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdlib/simulationsignal.h"
+#include "gromacs/timing/walltime_accounting.h"
+
+namespace gmx
+{
+/*! \libinternal
+ * \brief Class handling the checkpoint signal
+ *
+ * Master rank sets the checkpointing signal periodically
+ * All ranks receive checkpointing signal and set the respective flag
+ */
+class CheckpointHandler
+{
+    public:
+        /*! \brief CheckpointHandler constructor
+         *
+         * Needs a pointer to the signal which is reduced by compute_globals, and
+         * (const) references to data it needs to determine whether a signal needs to be
+         * set or handled. The latter allows the setSignal() and handleSignal() routines
+         * to run without additional arguments, making it easier to be ran in a
+         * task-based environment.
+         */
+        CheckpointHandler(
+            gmx::SimulationSignal     *sig,
+            bool                       needSync,
+            const t_inputrec          *ir,
+            const t_commrec           *cr,
+            const MdrunOptions        &mdrunOptions,
+            const gmx_bool            &bNS,
+            const gmx_bool            &bLastStep,
+            const int64_t             &step,
+            const gmx_bool            &bGStat,
+            gmx_walltime_accounting_t  walltime_accounting);
+
+        /*! \brief Decides whether a checkpointing signal needs to be set
+         *
+         * Checkpointing signal is set based on the elapsed run time and the checkpointing
+         * interval.
+         */
+        void setSignal()
+        {
+            if (doSet)
+            {
+                setSignalImpl();
+            }
+        }
+
+        /*! \brief Decides whether a checkpoint shall be written at this step
+         *
+         * Checkpointing is done if this is not the initial step, and
+         *   * a signal has been set and the current step is a neighborlist creation
+         *     step, or
+         *   * the current step is the last step and a the simulation is writing
+         *     configurations.
+         */
+        void handleSignal()
+        {
+            if (doHandle)
+            {
+                handleSignalImpl();
+            }
+        }
+
+        //! Whether a checkpoint should be written in the current step
+        bool doCheckpointThisStep()
+        {
+            return checkpointThisStep;
+        }
+
+    private:
+        void setSignalImpl();
+        void handleSignalImpl();
+
+        bool                      doSet              = false;
+        bool                      doHandle           = false;
+        bool                      checkpointThisStep = false;
+        int                       nchkpt             = 1;
+
+        SimulationSignal         *signal;
+
+        const bool                isParallel;
+        const bool                writeConfout;
+        const int                 nstlist;
+        const int64_t             init_step;
+        const real                cpt_period;
+
+        const gmx_bool           &bGStat;
+        const gmx_bool           &bNS;
+        const gmx_bool           &bLastStep;
+        const int64_t            &step;
+
+        gmx_walltime_accounting_t walltime_accounting;
+};
+}  // namespace gmx
+
+#endif // GMX_MDLIB_CHECKPOINTHANDLER_H
