@@ -351,7 +351,6 @@ if (SPHINX_FOUND)
         release-notes/2016/major/removed-features.rst
         release-notes/2016/major/miscellaneous.rst
         release-notes/older/index.rst
-        user-guide/index.rst
         user-guide/cmdline.rst
         user-guide/cutoff-schemes.rst
         user-guide/environment-variables.rst
