@@ -71,7 +71,6 @@ do_md_trajectory_writing(FILE                    *fplog,
                          t_mdebin                *mdebin,
                          gmx_ekindata_t          *ekind,
                          gmx::ArrayRef<gmx::RVec> f,
-                         int                     *nchkpt,
                          gmx_bool                 bCPT,
                          gmx_bool                 bRerunMD,
                          gmx_bool                 bLastStep,
@@ -164,10 +163,6 @@ do_md_trajectory_writing(FILE                    *fplog,
         }
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global,
                                          step, t, state, state_global, observablesHistory, f);
-        if (bCPT)
-        {
-            (*nchkpt)++;
-        }
         if (bLastStep && step_rel == ir->nsteps &&
             bDoConfOut && MASTER(cr) &&
             !bRerunMD)
