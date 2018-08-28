@@ -49,7 +49,7 @@ namespace gmxapi
 {
 
 class Status;
-
+class Workflow;
 class Session;
 using MDArgs = std::vector<std::string>;
 
@@ -125,14 +125,14 @@ class Context
         /*!
          * \brief Launch a workflow in the current context, if possible.
          *
-         * \param filename Configured workflow to instantiate.
+         * \param work Configured workflow to instantiate.
          * \return Ownership of a new session or nullptr if not possible.
          *
          * Context maintains a weak reference to the running session and a Status object
          * that can be examined if launch fails due to an invalid work specification or
          * incompatible resources.
          */
-        std::shared_ptr<Session> launch(std::string filename);
+        std::shared_ptr<Session> launch(const Workflow &work);
 
     private:
         /*!
