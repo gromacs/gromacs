@@ -207,6 +207,10 @@ if (GMX_USE_OPENCL)
     mark_as_advanced(GMX_EXTERNAL_CLFFT)
 
     # Default to using clFFT found on the system
+    # switch to quiet at the second run.
+    if (DEFINED clFFT_LIBRARY)
+        set (clFFT_FIND_QUIETLY TRUE)
+    endif()
     find_package(clFFT)
     if (NOT clFFT_FOUND)
         if (GMX_EXTERNAL_CLFFT)
