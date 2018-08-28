@@ -32,19 +32,11 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_add_libgromacs_sources(
-    context.cpp
-    integrator.cpp
-    md.cpp
-    minimize.cpp
-    runner.cpp
-    tpi.cpp
-    )
+#
+#add_executable(restraintpotential-test
+#               manager.cpp
+#               $<TARGET_OBJECTS:restraint>)
 
-gmx_install_headers(integrator.h
-                    context.h)
-
-if (BUILD_TESTING)
-# TODO import this from src/programs/mdrun/tests
-#    add_subdirectory(tests)
-endif()
+gmx_add_unit_test(RestraintTests restraintpotential-test
+                  manager.cpp
+                  $<TARGET_OBJECTS:restraint>)

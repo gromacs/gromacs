@@ -53,6 +53,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <algorithm>
+
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec.h"
@@ -94,6 +96,8 @@
 #include "gromacs/mdlib/repl_ex.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdrun/context.h"
+#include "gromacs/mdrun/integrator.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
@@ -106,6 +110,9 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
+#include "gromacs/restraint/manager.h"
+#include "gromacs/restraint/restraintmdmodule.h"
+#include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/swap/swapcoords.h"
 #include "gromacs/taskassignment/decidegpuusage.h"
 #include "gromacs/taskassignment/resourcedivision.h"
@@ -129,8 +136,6 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
-
-#include "integrator.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -245,6 +250,11 @@ std::unique_ptr<Mdrunner> Mdrunner::cloneOnSpawnedThread() const
     newRunner->replExParams    = replExParams;
     newRunner->pforce          = pforce;
     newRunner->ms              = ms; // non-owning pointer (does not need reinitialization?)
+
+    // All runners in the same process share a restraint manager because it is
+    // part of the interface to the client code, which is associated with the
+    // original thread.
+    newRunner->restraintManager_ = restraintManager_;
 
     // Copy original cr pointer before master thread can pass the thread barrier
     newRunner->cr  = reinitialize_commrec_for_this_thread(cr);
@@ -739,6 +749,17 @@ int Mdrunner::mdrunner()
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
+    // Build restraints.
+    auto pullers = restraintManager_->getSpec();
+    if (!pullers.empty())
+    {
+        for (auto && puller : pullers)
+        {
+            auto module = ::gmx::RestraintMDModule::create(puller,
+                                                           puller->sites());
+            mdModules->add(std::move(module));
+        }
+    }
     // TODO: Error handling
     mdModules->assignOptionsToModules(*inputrec->params, nullptr);
 
@@ -1403,24 +1424,28 @@ int Mdrunner::mdrunner()
         }
 
         /* Now do whatever the user wants us to do (how flexible...) */
-        Integrator integrator {
-            fplog, cr, ms, mdlog, static_cast<int>(filenames->size()), filenames->data(),
-            oenv,
-            mdrunOptions,
-            vsite, constr.get(),
-            enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
-            deform.get(),
-            mdModules->outputProvider(),
-            inputrec, &mtop,
-            fcd,
-            globalState.get(),
-            &observablesHistory,
-            mdAtoms.get(), nrnb, wcycle, fr,
-            replExParams,
-            membed,
-            walltime_accounting
-        };
-        integrator.run(inputrec->eI);
+
+        IntegratorBuilder builder = IntegratorBuilder::create(SimulationMethod(inputrec->eI));
+        builder.setParams(
+                fplog, cr, ms, mdlog, static_cast<int>(filenames->size()), filenames->data(),
+                oenv,
+                mdrunOptions,
+                vsite, constr.get(),
+                enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
+                deform.get(),
+                mdModules->outputProvider(),
+                inputrec, &mtop,
+                fcd,
+                globalState.get(),
+                &observablesHistory,
+                mdAtoms.get(), nrnb, wcycle, fr,
+                replExParams,
+                membed,
+                walltime_accounting);
+        auto context = gmx::md::Context(*this);
+        builder.addContext(context);
+        std::unique_ptr<IIntegrator> integrator = builder.build();
+        integrator->run();
 
         if (inputrec->bPull)
         {
@@ -1522,7 +1547,26 @@ int Mdrunner::mdrunner()
     return rc;
 }
 
-Mdrunner::~Mdrunner() = default;
+Mdrunner::~Mdrunner()
+{
+    // Clean up of the Manager singleton.
+    // This will end up getting called on every thread-MPI rank, which is okay, but unnecessary. There should probably
+    // be a simulation shutdown hook and this manager probably shouldn't be a singleton.
+    restraintManager_->clear();
+    assert(restraintManager_->countRestraints() == 0);
+};
+
+void Mdrunner::addPullPotential(std::shared_ptr<gmx::IRestraintPotential> puller,
+                                std::string                               name)
+{
+    assert(restraintManager_ != nullptr);
+//    std::cout << "Registering restraint named " << name << std::endl;
+
+    // When multiple restraints are used, it may be wasteful to register them separately.
+    // Maybe instead register a Restraint Manager as a force provider.
+    restraintManager_->addToSpec(std::move(puller),
+                                 std::move(name));
+}
 
 class Mdrunner::BuilderImplementation
 {
@@ -1681,9 +1725,10 @@ std::unique_ptr<Mdrunner> Mdrunner::BuilderImplementation::build(const char* nbp
     newRunner->oenv  = *outputEnvironment_.release();
     newRunner->fplog = *logFile_.release();
 
-    newRunner->nbpu_opt    = nbpu_opt;
-    newRunner->pme_opt     = pme_opt;
-    newRunner->pme_fft_opt = pme_fft_opt;
+    newRunner->nbpu_opt          = nbpu_opt;
+    newRunner->pme_opt           = pme_opt;
+    newRunner->pme_fft_opt       = pme_fft_opt;
+    newRunner->restraintManager_ = gmx::restraint::Manager::instance();
     return newRunner;
 }
 
