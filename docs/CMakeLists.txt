@@ -351,7 +351,10 @@ if (SPHINX_FOUND)
         release-notes/2016/major/removed-features.rst
         release-notes/2016/major/miscellaneous.rst
         release-notes/older/index.rst
-        user-guide/index.rst
+        # the entry for user-guide/index.rst should not appear here,
+        # as it will be included conditionally further down depending on
+        # if the documentation will be build with the full reference
+        # manual or without.
         user-guide/cmdline.rst
         user-guide/cutoff-schemes.rst
         user-guide/environment-variables.rst
