@@ -73,6 +73,7 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdlib/checkpointhandler.h"
 #include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/ebin.h"
@@ -271,7 +272,7 @@ void gmx::Integrator::do_md()
                       bFirstStep, bInitStep, bLastStep = FALSE;
     gmx_bool          bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
     gmx_bool          do_ene, do_log, do_verbose, bRerunWarnNoV = TRUE,
-                      bForceUpdate = FALSE, bCPT;
+                      bForceUpdate = FALSE;
     gmx_bool          bMasterState;
     int               force_flags, cglo_flags;
     tensor            force_vir, shake_vir, total_vir, tmp_vir, pres;
@@ -282,7 +283,6 @@ void gmx::Integrator::do_md()
     matrix            parrinellorahmanMu, M;
     t_trxframe        rerun_fr;
     gmx_repl_ex_t     repl_ex = nullptr;
-    int               nchkpt  = 1;
     gmx_localtop_t   *top;
     t_mdebin         *mdebin   = nullptr;
     gmx_enerdata_t   *enerd;
@@ -819,7 +819,6 @@ void gmx::Integrator::do_md()
         // TODO: Make algorithm initializers set these flags.
         simulationsShareState     = useReplicaExchange || usingEnsembleRestraints || awhUsesMultiSim;
         bool resetCountersIsLocal = true;
-        signals[eglsCHKPT]         = SimulationSignal(!simulationsShareState);
         signals[eglsSTOPCOND]      = SimulationSignal(!simulationsShareState);
         signals[eglsRESETCOUNTERS] = SimulationSignal(resetCountersIsLocal);
 
@@ -830,6 +829,16 @@ void gmx::Integrator::do_md()
             const int c_minimumInterSimulationSignallingInterval = 200;
             nstSignalComm = ((c_minimumInterSimulationSignallingInterval + nstglobalcomm - 1)/nstglobalcomm)*nstglobalcomm;
         }
+    }
+
+    std::unique_ptr<CheckpointHandler> checkpointHandler = nullptr;
+
+    if (!bRerunMD)
+    {
+        checkpointHandler = compat::make_unique<CheckpointHandler>(
+                    compat::make_not_null<SimulationSignal*>(&signals[eglsCHKPT]),
+                    simulationsShareState, ir->nstlist == 0, MASTER(cr),
+                    mdrunOptions.writeConfout, mdrunOptions.checkpointOptions.period);
     }
 
     DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion   = (DOMAINDECOMP(cr) ? DdOpenBalanceRegionBeforeForceComputation::yes : DdOpenBalanceRegionBeforeForceComputation::no);
@@ -1035,17 +1044,9 @@ void gmx::Integrator::do_md()
         }
         clear_mat(force_vir);
 
-        /* We write a checkpoint at this MD step when:
-         * either at an NS step when we signalled through gs,
-         * or at the last step (but not when we do not want confout),
-         * but never at the first step or with rerun.
-         */
-        bCPT = ((((signals[eglsCHKPT].set != 0) && (bNS || ir->nstlist == 0)) ||
-                 (bLastStep && mdrunOptions.writeConfout)) &&
-                step > ir->init_step && !bRerunMD);
-        if (bCPT)
+        if (!bRerunMD)
         {
-            signals[eglsCHKPT].set = 0;
+            checkpointHandler->decideIfCheckpointingThisStep(bNS, bFirstStep, bLastStep);
         }
 
         /* Determine the energy and pressure:
@@ -1115,7 +1116,7 @@ void gmx::Integrator::do_md()
                do_md_trajectory_writing (then containing update_awh_history).
                The checkpointing will in the future probably moved to the start of the md loop which will
                rid of this issue. */
-            if (awh && bCPT && MASTER(cr))
+            if (awh && !bRerunMD && checkpointHandler->isCheckpointingStep() && MASTER(cr))
             {
                 awh->updateHistory(state_global->awhHistory.get());
             }
@@ -1314,8 +1315,8 @@ void gmx::Integrator::do_md()
                                  ir, state, state_global, observablesHistory,
                                  top_global, fr,
                                  outf, mdebin, ekind, f,
-                                 &nchkpt,
-                                 bCPT, bRerunMD, bLastStep,
+                                 !bRerunMD && checkpointHandler->isCheckpointingStep(),
+                                 bRerunMD, bLastStep,
                                  mdrunOptions.writeConfout,
                                  bSumEkinhOld);
         /* Check if IMD step and do IMD communication, if bIMD is TRUE. */
@@ -1397,18 +1398,14 @@ void gmx::Integrator::do_md()
             signals[eglsRESETCOUNTERS].sig = 1;
         }
 
-        /* In parallel we only have to check for checkpointing in steps
-         * where we do global communication,
-         *  otherwise the other nodes don't know.
-         */
-        const real cpt_period = mdrunOptions.checkpointOptions.period;
-        if (MASTER(cr) && ((bGStat || !PAR(cr)) &&
-                           cpt_period >= 0 &&
-                           (cpt_period == 0 ||
-                            secondsSinceStart >= nchkpt*cpt_period*60.0)) &&
-            signals[eglsCHKPT].set == 0)
+        if ((bGStat || !PAR(cr)) && !bRerunMD)
         {
-            signals[eglsCHKPT].sig = 1;
+            /* In parallel we only have to check for checkpointing in steps
+             * where we do global communication,
+             *  otherwise the other nodes don't know.
+             */
+            checkpointHandler->setSignal(walltime_accounting);
+
         }
 
         /* #########   START SECOND UPDATE STEP ################# */
