@@ -109,7 +109,7 @@ typedef struct gmx_walltime_accounting {
 static double gmx_gettime_per_thread();
 
 // TODO In principle, all this should get protected by checks that
-// walltime_accounting is not null. In practice, that NULL condition
+// walltime_accounting is not nullptr. In practice, that nullptr condition
 // does not happen, and future refactoring will likely enforce it by
 // having the gmx_walltime_accounting_t object be owned by the runner
 // object. When these become member functions, existence will be
@@ -235,14 +235,14 @@ gmx_gettime()
     struct timeval t;
     double         seconds;
 
-    gettimeofday(&t, NULL);
+    gettimeofday(&t, nullptr);
     seconds = static_cast<double>(t.tv_sec) + 1e-6*t.tv_usec;
 
     return seconds;
 #else
     double  seconds;
 
-    seconds = time(NULL);
+    seconds = time(nullptr);
 
     return seconds;
 #endif

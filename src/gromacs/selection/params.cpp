@@ -581,7 +581,7 @@ add_child(const SelectionTreeElementPointer &root, gmx_ana_selparam_t *param,
     else
     {
         // TODO: Initialize such that it includes the parameter.
-        child.reset(new SelectionTreeElement(SEL_SUBEXPRREF, expr->location()));
+        child = std::make_shared<SelectionTreeElement>(SEL_SUBEXPRREF, expr->location());
         _gmx_selelem_set_vtype(child, expr->v.type);
         child->child  = expr;
     }

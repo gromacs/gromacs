@@ -222,7 +222,7 @@ class StringKeywordMatchItem
                                             "cannot match \"%s\"", str);
                     GMX_THROW(gmx::InvalidInputError(message));
                 }
-                regex_.reset(new gmx::Regex(str));
+                regex_ = std::make_shared<gmx::Regex>(str);
             }
         }
 
