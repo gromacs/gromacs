@@ -47,6 +47,7 @@
 #define GMX_MDLIB_MDRUN_H
 
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
 struct t_commrec;
