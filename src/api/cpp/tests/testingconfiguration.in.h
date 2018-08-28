@@ -55,7 +55,7 @@ static const std::vector<std::string> mdArgs {
     "-ntomp", "1"
 };
 
-} // end namespace gmxapi::testing
+} // end namespace testing
 
 } // end namespace gmxapi
 

@@ -49,6 +49,8 @@
 namespace gmxapi
 {
 
+class Context;
+
 /*!
  * \brief Private implementation for gmxapi::System
  *
@@ -82,6 +84,7 @@ class System::Impl final
         Status status() const;
 
     private:
+        std::shared_ptr<Context>            context_;
         //! Cached Status object.
         std::unique_ptr<Status>             status_;
         //! TPR filename to load at run time.

@@ -100,7 +100,7 @@ class System final
          *
          * \param implementation
          */
-        explicit System(std::unique_ptr<Impl> &&implementation);
+        explicit System(std::unique_ptr<Impl> implementation);
 
         /*! \cond internal
          *  Destructor defined later to allow unique_ptr members of partially-defined types.

@@ -36,6 +36,7 @@
 
 #include <array>
 
+#include "gmxapi/context.h"
 #include "gmxapi/status.h"
 #include "gmxapi/system.h"
 
@@ -65,7 +66,7 @@ Status System::status()
     return impl_->status();
 }
 
-System::System(std::unique_ptr<System::Impl> &&implementation) :
+System::System(std::unique_ptr<Impl> implementation) :
     impl_ {std::move(implementation)}
 {
     assert(impl_ != nullptr);
@@ -106,7 +107,8 @@ Status System::Impl::status() const
 }
 
 System::Impl::Impl(std::string filename) :
-    status_
+    context_ {defaultContext()},
+status_
 {
     gmx::compat::make_unique<Status>(true)
 },
@@ -114,6 +116,7 @@ filename_ {
     std::move(filename)
 }
 {
+    assert(context_ != nullptr);
     assert(status_ != nullptr);
 }
 
