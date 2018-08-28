@@ -32,70 +32,46 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMXAPI_SYSTEM_IMPL_H
-#define GMXAPI_SYSTEM_IMPL_H
 
-/*! \file
- * \brief Declare implementation details for gmxapi::System.
+#ifndef GROMACS_WORKFLOW_IMPL_H
+#define GROMACS_WORKFLOW_IMPL_H
+
+/*! \internal \file
+ * \brief Implementation details for Workflow infrastructure.
  *
  * \ingroup gmxapi
  */
 
-#include <string>
+#include <memory>
 
-#include "gmxapi/status.h"
-#include "gmxapi/system.h"
+#include "gmxapi/exceptions.h"
+
+#include "workflow.h"
 
 namespace gmxapi
 {
 
-class Context;
-class Workflow;
-
-/*!
- * \brief Private implementation for gmxapi::System
- *
- * \ingroup gmxapi
- */
-class System::Impl final
+class WorkflowKeyError : public BasicException<WorkflowKeyError>
 {
     public:
-        /*! \cond */
-        Impl();
-        ~Impl();
+        using BasicException::BasicException;
+};
 
-        Impl(Impl &&) noexcept            = default;
-        Impl &operator=(Impl &&) noexcept = default;
-        /*! \endcond */
 
-        /*!
-         * \brief Initialize from a work description.
-         *
-         * \param workflow Simulation work to perform.
-         */
-        explicit Impl(std::unique_ptr<gmxapi::Workflow> &&workflow) noexcept;
+class MDNodeSpecification : public NodeSpecification
+{
+    public:
+        explicit MDNodeSpecification(std::string filename);
 
-        /*!
-         * \brief Get the status of the last operation.
-         *
-         * Force resolution of any pending operations and return the status to
-         * the client.
-         *
-         * \return success if the last operation on the system completed without problems.
-         */
-        Status status() const;
+        std::unique_ptr<NodeSpecification> clone() override;
 
-        std::shared_ptr<Session> launch(std::shared_ptr<Context> context);
+        paramsType params() const noexcept override;
 
     private:
-        //! Execution context.
-        std::shared_ptr<Context>            context_;
-        //! Description of simulation work.
-        std::shared_ptr<Workflow>           workflow_;
-        //! Cached Status object.
-        std::unique_ptr<Status>             status_;
+        std::string tprfilename_;
 };
+
 
 }      // end namespace gmxapi
 
-#endif // header guard
+#endif //GROMACS_WORKFLOW_IMPL_H
