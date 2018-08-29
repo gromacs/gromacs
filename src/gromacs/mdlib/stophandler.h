@@ -1,0 +1,291 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2018, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \libinternal \file
+ * \brief Declares StopHandler, StopHandlerHelper, IStopCondition, StopConditionTime and StopConditionSignal
+ *
+ * These classes encapsulate the setting and handling of stop signals.
+ *
+ * StopHandler lives during the lifetime of do_md. It checks via registered stop
+ * conditions whether the simulation should be stopped at the next possible step or
+ * at the next possible neighbor-searching step. It communicates this via signal to
+ * all ranks and communicates this to do_md via stoppingThisStep().
+ *
+ * StopHandlerHelper is owned by the runner, and allows to register stop conditions
+ * at a higher level, outside of do_md. Within do_md, it is creating a StopHandler
+ * object by binding local data and passing a reference to the stop conditions.
+ *
+ * Any stop condition needs to implement the IStopCondition interface, requiering the
+ * definition of a single argument-less function, getSignal().
+ *
+ * Here, we are implementing two stop conditions: StopConditionTime sets a stop condition
+ * based on the elapsed time (only relevant if the -maxh flag was set), while
+ * StopConditionSignal sets stop conditions via signals received from the operating
+ * systems (SIGINT / SIGTERM).
+ *
+ * The approach is ready for a task-based design: The signal setters are only created if
+ * they are needed (e.g. only if a max time was defined, only if we're on master node,
+ * etc). The objects bind to data they need to access at run time during construction
+ * time via const references. This allows the task to run later without any arguments.
+ *
+ * \author Pascal Merz <pascal.merz@colorado.edu>
+ * \inlibraryapi
+ * \ingroup module_mdlib
+ */
+
+#ifndef GMX_MDLIB_STOPHANDLER_H
+#define GMX_MDLIB_STOPHANDLER_H
+
+#include <memory>
+#include <vector>
+
+#include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdlib/sighandler.h"
+#include "gromacs/mdlib/simulationsignal.h"
+#include "gromacs/timing/walltime_accounting.h"
+
+/*! \libinternal
+ * \brief Interface for stop conditions
+ *
+ * Classes implementing this interface can register with StopHandlerHelper to be called
+ * during run time and send stop signals.
+ */
+namespace gmx
+{
+class IStopCondition
+{
+    public:
+        virtual signed char getSignal() = 0;
+};
+
+/*! \libinternal
+ * \brief Class handling the stop signal
+ *
+ * Loops over the registered stop conditions and sets a signal if
+ * requested (currently only done by master rank).
+ * All ranks receive the stop signal and set the respective flag.
+ * The functions are implemented within this header file to avoid leaving
+ * the translation unit unnecessarily.
+ */
+class StopHandler
+{
+    public:
+        /*! \brief StopHandler constructor
+         *
+         * Needs a pointer to the signal to communicate signals among ranks, and
+         * (const) references to data it needs to determine whether a set signal needs
+         * to be set or handled. The latter allows the setting / handling routines to run without
+         * additional arguments, making it easier to be ran in a task-based environment.
+         */
+        StopHandler(
+            const std::vector < std::unique_ptr < IStopCondition>> &stopConditions,
+            SimulationSignal                                       *sig,
+            const t_inputrec                                       *ir,
+            const gmx_bool                                         &bNS,
+            bool                                                    needSync);
+
+        /*! \brief Decides whether a stop signal shall be sent
+         *
+         * Loops over the stopConditions stored earlier, sets any signal obtained.
+         * Returns as soon as a signal < 0 was obtained, or after checking all signal
+         * setters.
+         */
+        void setSignal()
+        {
+            for (auto &condition : stopConditions)
+            {
+                const signed char sig = condition->getSignal();
+                if (sig != 0)
+                {
+                    signal->sig = sig;
+                    if (sig < 0)
+                    {
+                        // < 0 means immediate stop - we don't want this to be overwritten
+                        // by a less urgent stop
+                        break;
+                    }
+                }
+            }
+        };
+
+        /*! \brief Decides whether the simulation shall be stopped at the next step
+         *
+         * The simulation is stopped at the next step if
+         *   * the signal for immediate stop was received, or
+         *   * the signal for stop at the next neighbor-searching step was received, and
+         *     the current step is a neighbor-searching step.
+         */
+        void handleSignal()
+        {
+            /* < 0 means stop at next step, > 0 means stop at next NS step */
+            if (signal->set < 0 ||
+                (signal->set > 0 && ( bNS || nstlist == 0)))
+            {
+                lastStep = true;
+            }
+        };
+
+        //! Whether the simulation should be stopped in the current step
+        bool stoppingThisStep()
+        {
+            return lastStep;
+        };
+
+    private:
+        const             std::vector < std::unique_ptr < IStopCondition>> &stopConditions;
+
+        bool              lastStep = false;
+        int               nstlist;
+
+        SimulationSignal *signal;
+
+        const gmx_bool   &bNS;
+};
+
+/*! \libinternal
+ * \brief Class setting the stop signal based on gmx_get_stop_condition()
+ *
+ * Master rank sets the stop signal if required (generally due to SIGINT).
+ */
+class StopConditionSignal : public IStopCondition
+{
+    public:
+        /*! \brief StopConditionSignal constructor
+         *
+         * Needs (const) references to data it needs to determine the setting of a signal.
+         * This allows the getSignal() routine to run without additional arguments, making
+         * it easier to be ran in a task-based environment.
+         */
+        StopConditionSignal(
+            const t_inputrec          *ir,
+            const MdrunOptions        &mdrunOptions,
+            int                        nstSignalComm,
+            FILE                      *fplog);
+
+        /*! \brief Decides whether a stopping signal needs to be set
+         *
+         * Stop signal is set based on the value of gmx_get_stop_condition(): Set signal for
+         * stop at the next neighbor-searching step at first SIGINT / SIGTERM, set signal
+         * for stop at the next step at second SIGINT / SIGTERM.
+         */
+        signed char getSignal() override;
+
+    private:
+        int                       handled_stop_condition = gmx_stop_cond_none;
+        const bool                reproducible;
+        const int                 nstSignalComm;
+        const int                 nstlist;
+
+        FILE                     *fplog;
+
+};
+
+/*! \libinternal
+ * \brief Class setting the stop signal based on maximal run time
+ *
+ * Master rank sets the stop signal if run time exceeds maximal run time.
+ */
+class StopConditionTime : public IStopCondition
+{
+    public:
+        /*! \brief StopSignalSetterTime constructor
+         *
+         * Needs (const) references to data it needs to determine the setting of a signal.
+         * This allows the getSignal() routine to run without additional arguments, making
+         * it easier to be ran in a task-based environment.
+         */
+        StopConditionTime(
+            const t_inputrec          *ir,
+            const MdrunOptions        &mdrunOptions,
+            FILE                      *fplog,
+            const gmx_bool            &bNS,
+            const int64_t             &step,
+            int                        nstSignalComm,
+            gmx_walltime_accounting_t  walltime_accounting);
+
+        /*! \brief Decides whether a stopping signal needs to be set
+         *
+         * Stop signal is set if run time is greater than 99% of maximal run time. Signal will
+         * trigger stopping of the simulation at the next neighbor-searching step.
+         */
+        signed char getSignal() override;
+
+    private:
+        bool signalSent = false;
+
+        const real                maximumHoursToRun;
+        const int                 nstlist;
+        const int                 nstSignalComm;
+
+        const gmx_bool           &bNS;
+        const int64_t            &step;
+
+        FILE                     *fplog;
+        gmx_walltime_accounting_t walltime_accounting;
+
+};
+
+/*! \libinternal
+ * \brief Class preparing the creation of a StopHandler
+ *
+ * An object of this helper class (owned by the runner) allows to register stop conditions
+ * outside of the actual simulation run via registerStopCondition(). It then builds a
+ * StopHandler object inside do_md, once it can bind to required local data.
+ */
+class StopHandlerHelper
+{
+    public:
+        //! Add stop condition
+        void registerStopCondition(std::unique_ptr<IStopCondition> stopCondition);
+
+        //! Create StopHandler
+        StopHandler getStopHandlerMD(
+            gmx::SimulationSignal    *sig,
+            bool                      needSync,
+            const t_inputrec         *ir,
+            const t_commrec          *cr,
+            const MdrunOptions       &mdrunOptions,
+            int                       nstSignalComm,
+            FILE                     *fplog,
+            const int64_t            &step,
+            const gmx_bool           &bNS,
+            gmx_walltime_accounting_t walltime_accounting);
+
+    private:
+        std::vector < std::unique_ptr < IStopCondition>> stopConditions;
+};
+
+}      // namespace gmx
+
+#endif //GMX_MDLIB_STOPHANDLER_H
