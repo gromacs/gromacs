@@ -174,37 +174,37 @@ void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t tng,
                                  const char          *name);
 
 /*! \brief Read the first/next TNG frame. */
-gmx_bool gmx_read_next_tng_frame(gmx_tng_trajectory_t        input,
-                                 struct t_trxframe          *fr,
-                                 int64_t                    *requestedIds,
-                                 int                         numRequestedIds);
+gmx_bool gmx_read_next_tng_frame(gmx_tng_trajectory_t              input,
+                                 struct t_trxframe                *fr,
+                                 const int64_t                    *requestedIds,
+                                 int                               numRequestedIds);
 
 /*! \brief Print the molecule system to stream */
 void gmx_print_tng_molecule_system(gmx_tng_trajectory_t input,
                                    FILE                *stream);
 
 /*! \brief Get a list of block IDs present in the next frame with data. */
-gmx_bool gmx_get_tng_data_block_types_of_next_frame(gmx_tng_trajectory_t input,
-                                                    int                  frame,
-                                                    int                  nRequestedIds,
-                                                    int64_t             *requestedIds,
-                                                    int64_t             *nextFrame,
-                                                    int64_t             *nBlocks,
-                                                    int64_t            **blockIds);
+gmx_bool gmx_get_tng_data_block_types_of_next_frame(gmx_tng_trajectory_t       input,
+                                                    int                        frame,
+                                                    int                        nRequestedIds,
+                                                    const int64_t             *requestedIds,
+                                                    const int64_t             *nextFrame,
+                                                    const int64_t             *nBlocks,
+                                                    int64_t                  **blockIds);
 
 /*! \brief Get data of the next frame with data from the data block
  * with the specified block ID. */
-gmx_bool gmx_get_tng_data_next_frame_of_block_type(gmx_tng_trajectory_t input,
-                                                   int64_t              blockId,
-                                                   real               **values,
-                                                   int64_t             *frameNumber,
-                                                   double              *frameTime,
-                                                   int64_t             *nValuesPerFrame,
-                                                   int64_t             *nAtoms,
-                                                   real                *prec,
-                                                   char                *name,
-                                                   int                  maxLen,
-                                                   gmx_bool            *bOK);
+gmx_bool gmx_get_tng_data_next_frame_of_block_type(gmx_tng_trajectory_t       input,
+                                                   int64_t                    blockId,
+                                                   real                     **values,
+                                                   const int64_t             *frameNumber,
+                                                   const double              *frameTime,
+                                                   const int64_t             *nValuesPerFrame,
+                                                   const int64_t             *nAtoms,
+                                                   const real                *prec,
+                                                   const char                *name,
+                                                   int                        maxLen,
+                                                   const gmx_bool            *bOK);
 
 /*! \brief Get the output interval of box size. */
 int gmx_tng_get_box_output_interval(gmx_tng_trajectory_t gmx_tng);

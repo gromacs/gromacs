@@ -82,14 +82,14 @@
  */
 struct gmx_tng_trajectory
 {
-    tng_trajectory_t tng;                  //!< Actual TNG handle (pointer)
-    bool             lastStepDataIsValid;  //!< True if lastStep has been set
-    std::int64_t     lastStep;             //!< Index/step used for last frame
-    bool             lastTimeDataIsValid;  //!< True if lastTime has been set
-    double           lastTime;             //!< Time of last frame (TNG unit is seconds)
-    bool             timePerFrameIsSet;    //!< True if we have set the time per frame
-    int              boxOutputInterval;    //!< Number of steps between the output of box size
-    int              lambdaOutputInterval; //!< Number of steps between the output of lambdas
+    gmx_tng_trajectory_t tng;                  //!< Actual TNG handle (pointer)
+    bool                 lastStepDataIsValid;  //!< True if lastStep has been set
+    std::int64_t         lastStep;             //!< Index/step used for last frame
+    bool                 lastTimeDataIsValid;  //!< True if lastTime has been set
+    double               lastTime;             //!< Time of last frame (TNG unit is seconds)
+    bool                 timePerFrameIsSet;    //!< True if we have set the time per frame
+    int                  boxOutputInterval;    //!< Number of steps between the output of box size
+    int                  lambdaOutputInterval; //!< Number of steps between the output of lambdas
 };
 
 static const char *modeToVerb(char mode)
@@ -1392,10 +1392,10 @@ void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t gmx_tng,
  * uncompressing them, then this implemenation should be reconsidered.
  * Ideally, gmx trjconv -f a.tng -o b.tng -b 10 -e 20 would be fast
  * and lose no information. */
-gmx_bool gmx_read_next_tng_frame(gmx_tng_trajectory_t        gmx_tng_input,
-                                 t_trxframe                 *fr,
-                                 int64_t                    *requestedIds,
-                                 int                         numRequestedIds)
+gmx_bool gmx_read_next_tng_frame(gmx_tng_trajectory_t              gmx_tng_input,
+                                 t_trxframe                       *fr,
+                                 const int64_t                    *requestedIds,
+                                 int                               numRequestedIds)
 {
 #if GMX_USE_TNG
     tng_trajectory_t        input = gmx_tng_input->tng;
@@ -1768,13 +1768,13 @@ void gmx_print_tng_molecule_system(gmx_tng_trajectory_t gmx_tng_input,
 #endif
 }
 
-gmx_bool gmx_get_tng_data_block_types_of_next_frame(gmx_tng_trajectory_t gmx_tng_input,
-                                                    int                  frame,
-                                                    int                  nRequestedIds,
-                                                    int64_t             *requestedIds,
-                                                    int64_t             *nextFrame,
-                                                    int64_t             *nBlocks,
-                                                    int64_t            **blockIds)
+gmx_bool gmx_get_tng_data_block_types_of_next_frame(gmx_tng_trajectory_t       gmx_tng_input,
+                                                    int                        frame,
+                                                    int                        nRequestedIds,
+                                                    const int64_t             *requestedIds,
+                                                    const int64_t             *nextFrame,
+                                                    const int64_t             *nBlocks,
+                                                    int64_t                  **blockIds)
 {
 #if GMX_USE_TNG
     tng_function_status stat;
@@ -1806,17 +1806,17 @@ gmx_bool gmx_get_tng_data_block_types_of_next_frame(gmx_tng_trajectory_t gmx_tng
 #endif
 }
 
-gmx_bool gmx_get_tng_data_next_frame_of_block_type(gmx_tng_trajectory_t gmx_tng_input,
-                                                   int64_t              blockId,
-                                                   real               **values,
-                                                   int64_t             *frameNumber,
-                                                   double              *frameTime,
-                                                   int64_t             *nValuesPerFrame,
-                                                   int64_t             *nAtoms,
-                                                   real                *prec,
-                                                   char                *name,
-                                                   int                  maxLen,
-                                                   gmx_bool            *bOK)
+gmx_bool gmx_get_tng_data_next_frame_of_block_type(gmx_tng_trajectory_t       gmx_tng_input,
+                                                   int64_t                    blockId,
+                                                   real                     **values,
+                                                   const int64_t             *frameNumber,
+                                                   const double              *frameTime,
+                                                   const int64_t             *nValuesPerFrame,
+                                                   const int64_t             *nAtoms,
+                                                   const real                *prec,
+                                                   const char                *name,
+                                                   int                        maxLen,
+                                                   const gmx_bool            *bOK)
 {
 #if GMX_USE_TNG
     tng_function_status stat;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,14 +68,14 @@ gmx_mm256_set_m128(__m128 hi, __m128 lo)
 #define GMX_MM256_HALFTRANSPOSE4_PS(ymm0, ymm1, ymm2, ymm3) {            \
         __m256 __tmp0, __tmp1, __tmp2, __tmp3;                               \
                                                                       \
-        __tmp0   = _mm256_unpacklo_ps((ymm0), (ymm1));                     \
-        __tmp1   = _mm256_unpacklo_ps((ymm2), (ymm3));                     \
-        __tmp2   = _mm256_unpackhi_ps((ymm0), (ymm1));                     \
-        __tmp3   = _mm256_unpackhi_ps((ymm2), (ymm3));                     \
-        ymm0     = _mm256_shuffle_ps(__tmp0, __tmp1, _MM_SHUFFLE(1, 0, 1, 0)); \
-        ymm1     = _mm256_shuffle_ps(__tmp0, __tmp1, _MM_SHUFFLE(3, 2, 3, 2)); \
-        ymm2     = _mm256_shuffle_ps(__tmp2, __tmp3, _MM_SHUFFLE(1, 0, 1, 0)); \
-        ymm3     = _mm256_shuffle_ps(__tmp2, __tmp3, _MM_SHUFFLE(3, 2, 3, 2)); \
+        __tmp0     = _mm256_unpacklo_ps((ymm0), (ymm1));                     \
+        __tmp1     = _mm256_unpacklo_ps((ymm2), (ymm3));                     \
+        __tmp2     = _mm256_unpackhi_ps((ymm0), (ymm1));                     \
+        __tmp3     = _mm256_unpackhi_ps((ymm2), (ymm3));                     \
+        (ymm0)     = _mm256_shuffle_ps(__tmp0, __tmp1, _MM_SHUFFLE(1, 0, 1, 0)); \
+        (ymm1)     = _mm256_shuffle_ps(__tmp0, __tmp1, _MM_SHUFFLE(3, 2, 3, 2)); \
+        (ymm2)     = _mm256_shuffle_ps(__tmp2, __tmp3, _MM_SHUFFLE(1, 0, 1, 0)); \
+        (ymm3)     = _mm256_shuffle_ps(__tmp2, __tmp3, _MM_SHUFFLE(3, 2, 3, 2)); \
 }
 
 

@@ -237,7 +237,7 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_VF_c
             vvdw6            = c6_00*rinvsix;
             br               = cexp2_00*r00;
             vvdwexp          = cexp1_00*exp(-br);
-            vvdw             = (vvdwexp-cexp1_00*exp(-cexp2_00*rvdw)) - (vvdw6 - c6_00*sh_vdw_invrcut6)*(1.0/6.0);
+            vvdw             = (vvdwexp-cexp1_00*expf(-cexp2_00*rvdw)) - (vvdw6 - c6_00*sh_vdw_invrcut6)*(1.0/6.0);
             fvdw             = (br*vvdwexp-vvdw6)*rinvsq00;
 
             /* Update potential sums from outer loop */
