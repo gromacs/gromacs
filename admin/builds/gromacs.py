@@ -55,7 +55,8 @@ extra_options = {
     'nranks': Option.string,
     'npme': Option.string,
     'gpu_id': Option.string,
-    'hwloc': Option.bool
+    'hwloc': Option.bool,
+    'tng': Option.bool
 }
 
 extra_projects = [Project.REGRESSIONTESTS]
@@ -127,6 +128,9 @@ def do_build(context):
 
     if context.opts.hwloc is False:
         cmake_opts['GMX_HWLOC'] = 'OFF'
+
+    if context.opts.tng is False:
+        cmake_opts['GMX_USE_TNG'] = 'OFF'
 
     if context.opts.x11:
         cmake_opts['GMX_X11'] = 'ON'
