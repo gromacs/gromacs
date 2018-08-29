@@ -28,7 +28,8 @@ gcc-7 mpi no-openmp fftpack mdrun-only
 icc-17 simd=avx_256 npme=1 nranks=2 no-openmp  double fftpack release
 
 # Test CUDA build on a slave with no CUDA devices
-gcc-4.9 gpu cuda-7.0 openmp release-with-assert
+# Test without TNG support
+gcc-4.9 gpu cuda-7.0 openmp no-tng release-with-assert
 
 # Test non-default GMX_PREFER_STATIC_LIBS behavior
 # TODO enable this
@@ -73,7 +74,7 @@ icc-18 msvc-2017 fftpack simd=avx2_256 release
 # Add SIMD + OpenMP + CUDA asan build
 # Add OpenMP + CUDA + device sharing TSAN build
 # Re-enable Phi build (FIXME: do we still care?)
-# Test without TNG support
+# Test without hwloc support
 # Test with NVML support
 # Test statically linked hwloc support (if/when it can work well)
 # Test 3D DD (2D is partially covered in regressiontests)
