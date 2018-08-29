@@ -19,6 +19,7 @@
 # Test oldest supported CUDA
 # Test oldest supported Ubuntu
 # Test MPI with CUDA
+# Test MPI with gcc
 # Test cmake version from before new FindCUDA support (in 3.8)
 # Test MPMD PME with library MPI
 # Test recent cmake (3.7+), to cover minor FindCUDA changes from 3.7.0
@@ -36,16 +37,17 @@ gcc-7 gpu gpu_id=1 cuda-9.2 thread-mpi openmp cmake-3.6.1 release-with-assert si
 #   Redmine #1850 is unresolved, which causes more suspected
 #   false positives than races detected)
 # Test fftpack fallback
+# Test newest gcc at time of release
 gcc-7 tsan no-openmp fftpack cmake-3.10.0
 
-# Test newest gcc at time of release
-# Test gcc in double precision
 # Test 128-bit SIMD in double precision (to cover SimdInt32 support better)
-gcc-7 double mpi simd=avx_128_fma
+clang-3.9 no-openmp double mpi simd=avx_128_fma
 
 # Test on MacOS (the gcc-6 and/or x11 flags implicitly steer jobs to the OSX slave)
 # Test X11 build
-gcc-6 x11
+# Test gcc in double precision
+# Test without TNG support
+gcc-6 double x11 no-tng
 
 # Test oldest supported cmake
 # Test older clang
@@ -53,7 +55,8 @@ gcc-6 x11
 # Test without OpenMP
 # Test thread-MPI
 # Test AVX_128_FMA SIMD + Double (Important for Simd4N=Simd4 and sizeof(SimdInt32)!=4*GMX_SIMD_REAL_WIDTH)
-clang-3.4 double simd=avx_128_fma thread-mpi no-openmp fftpack cmake-3.4.3
+# Test with TNG support
+clang-3.4 double simd=avx_128_fma thread-mpi no-openmp fftpack cmake-3.4.3 tng
 
 # Test newest clang at time of release
 # Test with AddressSanitizer (without OpenMP, see below)
@@ -72,14 +75,14 @@ msvc-2017 openmp release-with-assert
 # Test MKL
 # Test without any MPI
 # Test on CentOS (because cmake-3.9.6 is available there)
-icc-18 no-thread-mpi double openmp mkl cmake-3.9.6 simd=none release
+# Test hwloc support
+icc-18 no-thread-mpi double openmp mkl cmake-3.9.6 simd=none release hwloc
 
 # Test NVIDIA OpenCL
 # Test external clFFT (for build speed)
 # Test MPI + OpenCL
 # Test AVX2_256 SIMD
-# Test icc with SIMD in mixed precision in release mode
-icc-18 openmp opencl clFFT-2.14 cuda-7.5 mpi release simd=avx2_256
+gcc-6 openmp opencl clFFT-2.14 cuda-7.5 mpi simd=avx2_256
 
 # Test AMD OpenCL
 # Test external clFFT (for build speed)
@@ -88,9 +91,11 @@ gcc-5 openmp simd=avx_128_fma opencl clFFT-2.14 amdappsdk-3.0
 
 # TODO
 # Add OpenMP support to ASAN build (but libomp.so in clang-4 reports leaks, so might need a suitable build or suppression)
-# Test hwloc support
+# Test hwloc-2 support
 # Test newest supported LTS Ubuntu
 # Update gpu testing specifiers per https://redmine.gromacs.org/issues/2161
 # Resolve Redmine #1850 so that ThreadSanitizer can test our OpenMP code
-# Support icc 17
 # Test AVX-512 when hardware is available
+# Update to test gcc 8
+# Update to test clang 7
+# Update to test CUDA 10
