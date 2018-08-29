@@ -73,8 +73,6 @@ icc-18 msvc-2017 fftpack simd=avx2_256 release
 # TODO
 # Add SIMD + OpenMP + CUDA asan build
 # Add OpenMP + CUDA + device sharing TSAN build
-# Re-enable Phi build (FIXME: do we still care?)
-# Test without hwloc support
 # Test with NVML support
 # Test statically linked hwloc support (if/when it can work well)
 # Test 3D DD (2D is partially covered in regressiontests)
