@@ -206,10 +206,14 @@ gmx_bool gmx_get_tng_data_next_frame_of_block_type(gmx_tng_trajectory_t input,
                                                    int                  maxLen,
                                                    gmx_bool            *bOK);
 
-/*! \brief Get the output interval of box size. */
+/*! \brief Get the output interval of box size.
+ *
+ * \return The box output interval, or -1 when TNG support is not available. */
 int gmx_tng_get_box_output_interval(gmx_tng_trajectory_t gmx_tng);
 
-/*! \brief Get the output interval of lambda. */
+/*! \brief Get the output interval of lambda.
+ *
+ * \return The box output interval, or -1 when TNG support is not available. */
 int gmx_tng_get_lambda_output_interval(gmx_tng_trajectory_t gmx_tng);
 
 #endif /* GMX_FILEIO_TNGIO_H */

@@ -1925,6 +1925,7 @@ int gmx_tng_get_box_output_interval(gmx_tng_trajectory_t gmx_tng)
     return gmx_tng->boxOutputInterval;
 #else
     GMX_UNUSED_VALUE(gmx_tng);
+    return -1;
 #endif
 }
 
@@ -1934,5 +1935,6 @@ int gmx_tng_get_lambda_output_interval(gmx_tng_trajectory_t gmx_tng)
     return gmx_tng->lambdaOutputInterval;
 #else
     GMX_UNUSED_VALUE(gmx_tng);
+    return -1;
 #endif
 }
