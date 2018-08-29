@@ -114,7 +114,7 @@ void PmeTest::SetUpTestCase()
 void PmeTest::runTest(const RunModesList &runModes)
 {
     const std::string inputFile = "spc-and-methanol";
-    runner_.useTopGroAndNdxFromDatabase(inputFile.c_str());
+    runner_.useTopGroAndNdxFromDatabase(inputFile);
 
     // With single rank we can and will always test PP+PME as part of mdrun-test.
     // With multiple ranks we can additionally test a single PME-only rank within mdrun-mpi-test.
