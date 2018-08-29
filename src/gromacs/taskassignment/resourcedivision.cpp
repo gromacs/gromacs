@@ -574,7 +574,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
 
         count[0] = -nth_omp_min;
         count[1] =  nth_omp_max;
-        count[2] =  willUsePhysicalGpu;
+        count[2] =  int(willUsePhysicalGpu);
 
         MPI_Allreduce(count, count_max, 3, MPI_INT, MPI_MAX, cr->mpi_comm_mysim);
 
