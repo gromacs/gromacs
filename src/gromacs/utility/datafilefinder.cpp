@@ -104,7 +104,7 @@ DataFileFinder::~DataFileFinder()
 
 void DataFileFinder::setSearchPathFromEnv(const char *envVarName)
 {
-    if (!impl_.get())
+    if (!impl_)
     {
         impl_.reset(new Impl());
     }
