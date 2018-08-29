@@ -43,8 +43,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <cinttypes>
 #include <cmath>
 #include <cstdio>
@@ -96,6 +94,7 @@
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/simulationsignal.h"
+#include "gromacs/mdlib/stophandler.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/trajectory_writing.h"
 #include "gromacs/mdlib/update.h"
@@ -267,8 +266,6 @@ void gmx::Integrator::do_md()
     t_extmass         MassQ;
     int             **trotter_seq;
     char              sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
-    int               handled_stop_condition = gmx_stop_cond_none; /* compare to get_stop_condition*/
-
 
     /* PME load balancing data for GPU kernels */
     pme_load_balancing_t *pme_loadbal      = nullptr;
@@ -765,8 +762,6 @@ void gmx::Integrator::do_md()
         // TODO: Make algorithm initializers set these flags.
         simulationsShareState      = useReplicaExchange || usingEnsembleRestraints || awhUsesMultiSim;
 
-        signals[eglsSTOPCOND]      = SimulationSignal(!simulationsShareState);
-
         if (simulationsShareState)
         {
             // Inter-simulation signal communication does not need to happen
@@ -775,6 +770,11 @@ void gmx::Integrator::do_md()
             nstSignalComm = ((c_minimumInterSimulationSignallingInterval + nstglobalcomm - 1)/nstglobalcomm)*nstglobalcomm;
         }
     }
+
+    auto stopHandler = stopHandlerBuilder->getStopHandlerMD(
+                compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]), simulationsShareState,
+                MASTER(cr), ir->nstlist, mdrunOptions.reproducible, nstSignalComm,
+                mdrunOptions.maximumHoursToRun, ir->nstlist == 0, fplog, step, bNS, walltime_accounting);
 
     std::unique_ptr<CheckpointHandler> checkpointHandler = nullptr;
 
@@ -913,12 +913,7 @@ void gmx::Integrator::do_md()
             bNS = (bFirstStep || bNStList || bExchanged || bNeedRepartition);
         }
 
-        /* < 0 means stop at next step, > 0 means stop at next NS step */
-        if ( (signals[eglsSTOPCOND].set < 0) ||
-             ( (signals[eglsSTOPCOND].set > 0 ) && ( bNS || ir->nstlist == 0)))
-        {
-            bLastStep = TRUE;
-        }
+        bLastStep = bLastStep || stopHandler->stoppingAfterCurrentStep(bNS);
 
         /* do_log triggers energy and virial calculation. Because this leads
          * to different code paths, forces can be different. Thus for exact
@@ -1280,68 +1275,7 @@ void gmx::Integrator::do_md()
             copy_mat(state->fvir_prev, force_vir);
         }
 
-        double secondsSinceStart = walltime_accounting_get_time_since_start(walltime_accounting);
-
-        /* Check whether everything is still allright */
-        if ((static_cast<int>(gmx_get_stop_condition()) > handled_stop_condition)
-#if GMX_THREAD_MPI
-            && MASTER(cr)
-#endif
-            )
-        {
-            int nsteps_stop = -1;
-
-            /* this just makes signals[].sig compatible with the hack
-               of sending signals around by MPI_Reduce together with
-               other floats */
-            if ((gmx_get_stop_condition() == gmx_stop_cond_next_ns) ||
-                (mdrunOptions.reproducible &&
-                 gmx_get_stop_condition() == gmx_stop_cond_next))
-            {
-                /* We need at least two global communication steps to pass
-                 * around the signal. We stop at a pair-list creation step
-                 * to allow for exact continuation, when possible.
-                 */
-                signals[eglsSTOPCOND].sig = 1;
-                nsteps_stop               = std::max(ir->nstlist, 2*nstSignalComm);
-            }
-            else if (gmx_get_stop_condition() == gmx_stop_cond_next)
-            {
-                /* Stop directly after the next global communication step.
-                 * This breaks exact continuation.
-                 */
-                signals[eglsSTOPCOND].sig = -1;
-                nsteps_stop               = nstSignalComm + 1;
-            }
-            if (fplog)
-            {
-                fprintf(fplog,
-                        "\n\nReceived the %s signal, stopping within %d steps\n\n",
-                        gmx_get_signal_name(), nsteps_stop);
-                fflush(fplog);
-            }
-            fprintf(stderr,
-                    "\n\nReceived the %s signal, stopping within %d steps\n\n",
-                    gmx_get_signal_name(), nsteps_stop);
-            fflush(stderr);
-            handled_stop_condition = static_cast<int>(gmx_get_stop_condition());
-        }
-        else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
-                 (mdrunOptions.maximumHoursToRun > 0 &&
-                  secondsSinceStart > mdrunOptions.maximumHoursToRun*60.0*60.0*0.99) &&
-                 signals[eglsSTOPCOND].sig == 0 && signals[eglsSTOPCOND].set == 0)
-        {
-            /* Signal to terminate the run */
-            signals[eglsSTOPCOND].sig = 1;
-            if (fplog)
-            {
-                fprintf(fplog, "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",
-                        gmx_step_str(step, sbuf), mdrunOptions.maximumHoursToRun*0.99);
-            }
-            fprintf(stderr, "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",
-                    gmx_step_str(step, sbuf), mdrunOptions.maximumHoursToRun*0.99);
-        }
-
+        stopHandler->setSignal();
         resetHandler->setSignal(walltime_accounting);
 
         if ((bGStat || !PAR(cr)) && !bRerunMD)
