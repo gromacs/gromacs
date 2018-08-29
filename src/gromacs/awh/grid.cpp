@@ -201,7 +201,7 @@ double getDeviationFromPointAlongGridAxis(const Grid &grid,
     return getDeviationPeriodic(value, coordValue, grid.axis(dimIndex).period());
 }
 
-void linearArrayIndexToMultiDim(int indexLinear, int numDimensions, const awh_ivec numPointsDim, awh_ivec indexMulti)
+void linearArrayIndexToMultiDim(int indexLinear, int numDimensions, const awh_ivec  /*numPointsDim*/, awh_ivec indexMulti)
 {
     for (int d = 0; d < numDimensions; d++)
     {

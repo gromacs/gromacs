@@ -163,7 +163,7 @@ void initTestOptions(IOptionsContainer *options);
  */
 /* *INDENT-ON* */
 #define GMX_TEST_OPTIONS(name, options) \
-    class name : public ::gmx::test::TestOptionsProvider /*NOLINT(misc-macro-parentheses)*/ \
+    class name : public ::gmx::test::TestOptionsProvider /*NOLINT(misc-macro-parentheses,bugprone-macro-parentheses)*/ \
     { \
         public: \
             name() \
@@ -175,7 +175,7 @@ void initTestOptions(IOptionsContainer *options);
     \
     static name s_ ## name ## Instance; \
     \
-    void name::initOptions(::gmx::IOptionsContainer *options) //NOLINT(misc-macro-parentheses)
+    void name::initOptions(::gmx::IOptionsContainer *options) //NOLINT(misc-macro-parentheses,bugprone-macro-parentheses)
 
 }                                                             // namespace test
 }                                                             // namespace gmx
