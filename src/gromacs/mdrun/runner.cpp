@@ -94,6 +94,7 @@
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdlib/stophandler.h"
 #include "gromacs/mdrun/logging.h"
 #include "gromacs/mdrun/multisim.h"
 #include "gromacs/mdrunutility/mdmodules.h"
@@ -1304,6 +1305,9 @@ int Mdrunner::mdrunner()
                             fr->cginfo_mb);
         }
 
+        /* Create StopHandlerBuilder (could be moved earlier if needed - currently nobody register here */
+        auto stopHandlerBuilder = compat::make_unique<StopHandlerBuilder>();
+
         /* Now do whatever the user wants us to do (how flexible...) */
         Integrator integrator {
             fplog, cr, ms, mdlog, nfile, fnm,
@@ -1320,7 +1324,8 @@ int Mdrunner::mdrunner()
             mdAtoms.get(), nrnb, wcycle, fr,
             replExParams,
             membed,
-            walltime_accounting
+            walltime_accounting,
+            stopHandlerBuilder.get()
         };
         integrator.run(inputrec->eI);
 

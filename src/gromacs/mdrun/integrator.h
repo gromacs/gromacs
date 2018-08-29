@@ -75,6 +75,7 @@ class Constraints;
 class IMDOutputProvider;
 class MDLogger;
 class MDAtoms;
+class StopHandlerBuilder;
 
 //! Function type for integrator code.
 using IntegratorFunctionType = void();
@@ -156,6 +157,8 @@ struct Integrator
     gmx_membed_t                    *membed;
     //! Manages wall time accounting.
     gmx_walltime_accounting         *walltime_accounting;
+    //! Registers stop conditions
+    StopHandlerBuilder              *stopHandlerBuilder;
     //! Implements the normal MD integrators.
     IntegratorFunctionType           do_md;
     //! Implements steepest descent EM.
