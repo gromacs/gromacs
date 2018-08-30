@@ -150,11 +150,13 @@ addOutputAdapters(const OutputRequirements  &requirements,
 
     if (requirements.velocity != ChangeSettingType::efUnchanged)
     {
-        // add adapter here
+        output.addAdapter(
+                compat::make_unique<SetVelocities>(requirements.velocity));
     }
     if (requirements.force != ChangeSettingType::efUnchanged)
     {
-        // add adapter here
+        output.addAdapter(
+                compat::make_unique<SetForces>(requirements.force));
     }
     if (requirements.precision != ChangeFrameInfoType::efUnchanged)
     {
@@ -172,7 +174,8 @@ addOutputAdapters(const OutputRequirements  &requirements,
     }
     if (requirements.box != ChangeFrameInfoType::efUnchanged)
     {
-        // add adapter here
+        output.addAdapter(
+                compat::make_unique<SetBox>(requirements.newBox));
     }
     if (requirements.addDummyModule)
     {

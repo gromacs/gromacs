@@ -71,6 +71,31 @@ TEST_F(OutputSelectorDeathTest, RejectsBadSelection)
     prepareTest();
 }
 
+TEST_P(SetVelocitySupportedFiles, Works)
+{
+    prepareTest(GetParam());
+}
+
+TEST_P(SetVelocityUnSupportedFiles, Works)
+{
+    prepareTest(GetParam());
+}
+
+TEST_P(SetForceSupportedFiles, Works)
+{
+    prepareTest(GetParam());
+}
+
+TEST_P(SetForceUnSupportedFiles, Works)
+{
+    prepareTest(GetParam());
+}
+
+TEST_P(OutputTurnedOffSupportedFiles, Works)
+{
+    prepareTest(GetParam());
+}
+
 INSTANTIATE_TEST_CASE_P(ModuleSupported,
                         SetAtomsSupportedFiles, ::testing::ValuesIn(setAtomsSupported));
 
@@ -79,6 +104,21 @@ INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
 
 INSTANTIATE_TEST_CASE_P(ModuleSupported,
                         AnyOutputSupportedFiles, ::testing::ValuesIn(anySupported));
+
+INSTANTIATE_TEST_CASE_P(ModuleSupported,
+                        SetVelocitySupportedFiles, ::testing::ValuesIn(setVelocitySupported));
+
+INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
+                        SetVelocityUnSupportedFiles, ::testing::ValuesIn(setVelocityUnSupported));
+
+INSTANTIATE_TEST_CASE_P(ModuleSupported,
+                        SetForceSupportedFiles, ::testing::ValuesIn(setForceSupported));
+
+INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
+                        SetForceUnSupportedFiles, ::testing::ValuesIn(setForceUnSupported));
+
+INSTANTIATE_TEST_CASE_P(ModuleSupported,
+                        OutputTurnedOffSupportedFiles, ::testing::ValuesIn(anySupported));
 
 } // namespace test
 
