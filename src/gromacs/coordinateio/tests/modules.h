@@ -53,6 +53,9 @@
 
 #include "gromacs/coordinateio/modules/outputselector.h"
 #include "gromacs/coordinateio/modules/setatoms.h"
+#include "gromacs/coordinateio/modules/setbox.h"
+#include "gromacs/coordinateio/modules/setforces.h"
+#include "gromacs/coordinateio/modules/setvelocities.h"
 
 #include "gromacs/coordinateio/tests/coordinate_test.h"
 
@@ -107,11 +110,15 @@ class AnyOutputSupportedFiles : public ModuleTest,
             CoordinateOutputAdapters adapters;
             //! Local atoms
             Selection                sel;
+            //! Local box
+            matrix                   box;
+            clear_mat(box);
 
             addOptionForSelection(&sel, true);
             setSelectionOptionValues(getOption(), &sel, true);
 
             adapters.emplace_back(compat::make_unique<OutputSelector>(sel));
+            adapters.emplace_back(compat::make_unique<SetBox>(box));
 
             EXPECT_NO_THROW(runTest(filename, std::move(adapters)));
         }
@@ -135,6 +142,66 @@ class OutputSelectorDeathTest : public ModuleTest,
             ASSERT_DEATH_IF_SUPPORTED(
                     adapters.emplace_back(compat::make_unique<OutputSelector>(sel)),
                     "Need a valid selection out of simple atom indices");
+        }
+};
+
+/*!\libinternal \brief  Helper to test supported file names. */
+class SetVelocitySupportedFiles : public ModuleTest
+{
+    public:
+        void prepareTest(const char *filename)
+        {
+            //! Storage for frameadapters.
+            CoordinateOutputAdapters adapters;
+
+            adapters.emplace_back(compat::make_unique<SetVelocities>(ChangeSettingType::efUserNo));
+
+            EXPECT_NO_THROW(runTest(filename, std::move(adapters)));
+        }
+};
+
+/*!\libinternal \brief  Helper to test supported file names. */
+class SetVelocityUnSupportedFiles : public ModuleTest
+{
+    public:
+        void prepareTest(const char *filename)
+        {
+            //! Storage for frameadapters.
+            CoordinateOutputAdapters adapters;
+
+            adapters.emplace_back(compat::make_unique<SetVelocities>(ChangeSettingType::efUserNo));
+
+            EXPECT_ANY_THROW(runTest(filename, std::move(adapters)));
+        }
+};
+
+/*!\libinternal \brief  Helper to test supported file names. */
+class SetForceSupportedFiles : public ModuleTest
+{
+    public:
+        void prepareTest(const char *filename)
+        {
+            //! Storage for frameadapters.
+            CoordinateOutputAdapters adapters;
+
+            adapters.emplace_back(compat::make_unique<SetForces>(ChangeSettingType::efUserNo));
+
+            EXPECT_NO_THROW(runTest(filename, std::move(adapters)));
+        }
+};
+
+/*!\libinternal \brief  Helper to test supported file names. */
+class SetForceUnSupportedFiles : public ModuleTest
+{
+    public:
+        void prepareTest(const char *filename)
+        {
+            //! Storage for frameadapters.
+            CoordinateOutputAdapters adapters;
+
+            adapters.emplace_back(compat::make_unique<SetForces>(ChangeSettingType::efUserNo));
+
+            EXPECT_ANY_THROW(runTest(filename, std::move(adapters)));
         }
 };
 
@@ -165,6 +232,39 @@ const char *const anySupported[] = {
     "spc2-traj.pdb",
     "spc2-traj.g96"
 };
+
+//! Names here work for setVelocity module
+const char *const setVelocitySupported[] = {
+#if GMX_USE_TNG
+    "spc2-traj.tng",
+#endif
+    "spc2-traj.gro",
+    "spc2-traj.trr",
+};
+
+//! Names here don't work for setVelocity module
+const char *const setVelocityUnSupported[] = {
+    "spc2-traj.xtc",
+    "spc2-traj.pdb",
+    "spc2-traj.g96"
+};
+
+//! Names here work for setForce module
+const char *const setForceSupported[] = {
+#if GMX_USE_TNG
+    "spc2-traj.tng",
+#endif
+    "spc2-traj.trr",
+};
+
+//! Names here don't work for setForce module
+const char *const setForceUnSupported[] = {
+    "spc2-traj.xtc",
+    "spc2-traj.pdb",
+    "spc2-traj.gro",
+    "spc2-traj.g96"
+};
+
 
 } // namespace test
 

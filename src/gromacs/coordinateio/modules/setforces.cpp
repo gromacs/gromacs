@@ -35,7 +35,7 @@
 /*!\file
  * \internal
  * \brief
- * Tests for outputmanager
+ * Implements setforce class.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
  * \ingroup module_coordinateio
@@ -43,75 +43,35 @@
 
 #include "gmxpre.h"
 
-#include "modules.h"
+#include "setforces.h"
+
+#include <algorithm>
+
+#include "gromacs/utility/exceptions.h"
 
 namespace gmx
 {
 
-namespace test
+void
+SetForces::processFrame(const int /*framenumber*/, t_trxframe *input)
 {
-
-TEST_P(SetAtomsSupportedFiles, Works)
-{
-    prepareTest(GetParam());
+    switch (force_)
+    {
+        case (ChangeSettingType::efUserNo):
+            input->bF = false;
+            break;
+        case (ChangeSettingType::efUserPossible):
+            break;
+        case (ChangeSettingType::efUserYes):
+            if (!input->bF)
+            {
+                GMX_THROW(InconsistentInputError("Force output requested but current frame has no velocities"));
+            }
+            input->bF = true;
+            break;
+        default:
+            GMX_THROW(InconsistentInputError("Value for force flag is not supported"));
+    }
 }
-
-TEST_P(SetAtomsUnSupportedFiles, Works)
-{
-    prepareTest(GetParam());
-}
-
-TEST_P(AnyOutputSupportedFiles, Works)
-{
-    prepareTest(GetParam());
-}
-
-TEST_F(OutputSelectorDeathTest, RejectsBadSelection)
-{
-    prepareTest();
-}
-
-TEST_P(SetVelocitySupportedFiles, Works)
-{
-    prepareTest(GetParam());
-}
-
-TEST_P(SetVelocityUnSupportedFiles, Works)
-{
-    prepareTest(GetParam());
-}
-
-TEST_P(SetForceSupportedFiles, Works)
-{
-    prepareTest(GetParam());
-}
-
-TEST_P(SetForceUnSupportedFiles, Works)
-{
-    prepareTest(GetParam());
-}
-
-INSTANTIATE_TEST_CASE_P(ModuleSupported,
-                        SetAtomsSupportedFiles, ::testing::ValuesIn(setAtomsSupported));
-
-INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
-                        SetAtomsUnSupportedFiles, ::testing::ValuesIn(setAtomsUnSupported));
-
-INSTANTIATE_TEST_CASE_P(ModuleSupported,
-                        AnyOutputSupportedFiles, ::testing::ValuesIn(anySupported));
-
-INSTANTIATE_TEST_CASE_P(ModuleSupported,
-                        SetVelocitySupportedFiles, ::testing::ValuesIn(setVelocitySupported));
-
-INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
-                        SetVelocityUnSupportedFiles, ::testing::ValuesIn(setVelocityUnSupported));
-
-INSTANTIATE_TEST_CASE_P(ModuleSupported,
-                        SetForceSupportedFiles, ::testing::ValuesIn(setForceSupported));
-
-INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
-                        SetForceUnSupportedFiles, ::testing::ValuesIn(setForceUnSupported));
-
-} // namespace test
 
 } // namespace gmx
