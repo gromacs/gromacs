@@ -136,6 +136,20 @@ static void clearLocalAtoms(t_atoms *atoms)
     sfree(atoms);
 }
 
+//! Clean up local coordinate storage.
+static void clearLocalCoords(t_trxframe *input)
+{
+    sfree(input->x);
+    if (input->bV)
+    {
+        sfree(input->v);
+    }
+    if (input->bF)
+    {
+        sfree(input->f);
+    }
+}
+
 /*! \brief
  * Method to open TNG file.
  *
@@ -261,8 +275,11 @@ OutputManager::prepareFrame(const int framenumber, const t_trxframe &input)
             outputAdapter.module_->processFrame(framenumber, &local);
         }
         write_trxframe(outputFile_, &local, nullptr);
-        clearLocalAtoms(local.atoms);
-        clear_trxframe(&local, true);
+        if (local.bAtoms)
+        {
+            clearLocalAtoms(local.atoms);
+        }
+        clearLocalCoords(&local);
     }
     else
     {
