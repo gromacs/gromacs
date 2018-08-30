@@ -97,6 +97,7 @@ OutputManager::setFiletype()
             break;
         case (efXTC):
             moduleFlags_ |= (efCustomPrecision);
+            break;
         case (efG96):
             break;
         default:
