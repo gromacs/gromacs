@@ -43,8 +43,11 @@
  */
 #include "gmxpre.h"
 
+#include "md.h"
+
 #include "config.h"
 
+#include <cassert>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -99,6 +102,7 @@
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdrun/integrator.h"
 #include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -131,7 +135,7 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "integrator.h"
+#include "md-impl.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -253,7 +257,7 @@ static void prepareRerunState(const t_trxframe  &rerunFrame,
     }
 }
 
-void gmx::Integrator::do_md()
+void gmx::MDIntegrator::Impl::run()
 {
     // TODO Historically, the EM and MD "integrators" used different
     // names for the t_inputrec *parameter, but these must have the
@@ -1926,3 +1930,100 @@ void gmx::Integrator::do_md()
     sfree(enerd);
     sfree(top);
 }
+
+gmx::MDIntegrator::Impl::Impl(const IntegratorParamsContainer &container) :
+    fplog(container.fplog),
+    cr(container.cr),
+    ms(container.ms),
+    mdlog(container.mdlog),
+    nfile(container.nfile),
+    fnm(container.fnm),
+    oenv(container.oenv),
+    mdrunOptions(container.mdrunOptions),
+    vsite(container.vsite),
+    constr(container.constr),
+    enforcedRotation(container.enforcedRotation),
+    deform(container.deform),
+    outputProvider(container.outputProvider),
+    inputrec(container.inputrec),
+    top_global(container.top_global),
+    fcd(container.fcd),
+    state_global(container.state_global),
+    observablesHistory(container.observablesHistory),
+    mdAtoms(container.mdAtoms),
+    nrnb(container.nrnb),
+    wcycle(container.wcycle),
+    fr(container.fr),
+    replExParams(container.replExParams),
+    membed(container.membed),
+    walltime_accounting(container.walltime_accounting)
+{}
+
+gmx::MDIntegrator::Impl::~Impl() = default;
+
+std::unique_ptr<gmx::IIntegrator> gmx::MDIntegrator::Builder::build()
+{
+    if (!container_)
+    {
+        GMX_THROW(APIError("This builder requires setParams() to be called before build()."));
+    }
+    auto impl = gmx::compat::make_unique<gmx::MDIntegrator::Impl>(*container_);
+    if (!context_)
+    {
+        GMX_THROW(APIError("This builder requires a gmx::md::Context to be provided before build()."));
+    }
+    else
+    {
+        impl->context_ = std::move(context_);
+    }
+    auto newIntegrator = gmx::compat::make_unique<gmx::MDIntegrator>(std::move(impl));
+    std::unique_ptr<gmx::IIntegrator> integrator {
+        std::move(newIntegrator)
+    };
+    return integrator;
+}
+
+gmx::IntegratorBuilder::DataSentry gmx::MDIntegrator::Builder::setAggregateAdapter
+    (std::unique_ptr<gmx::IntegratorAggregateAdapter> container)
+{
+    if (container_)
+    {
+        GMX_THROW(APIError("setParams has already been called on this builder."));
+    }
+    else
+    {
+        container_ = std::move(container);
+    }
+    // This is where we should set up interactions with parameter data lifetime, when DataSentry API has been
+    // implemented.
+    return {};
+}
+
+gmx::MDIntegrator::~MDIntegrator() = default;
+
+void gmx::MDIntegrator::run()
+{
+    assert(impl_);
+    impl_->run();
+}
+
+gmx::MDIntegrator::MDIntegrator(std::unique_ptr<MDIntegrator::Impl> implementation) :
+    impl_ {std::move(implementation)}
+{
+
+}
+
+gmx::MDIntegrator::Builder::Builder() :
+    container_ {nullptr},
+context_ {
+    nullptr
+}
+{}
+
+gmx::IntegratorBuilder::Base &gmx::MDIntegrator::Builder::addContext(const gmx::md::Context &context)
+{
+    context_ = gmx::compat::make_unique<md::Context>(context);
+    return *this;
+};
+
+gmx::MDIntegrator::Builder::~Builder() = default;

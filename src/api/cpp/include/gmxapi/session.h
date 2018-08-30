@@ -163,6 +163,16 @@ class Session
 };
 
 /*!
+ * \brief Set a uniquely identifiable restraint instance on the MD simulator.
+ *
+ * \param session Session with an MD runner to attach a restraint to.
+ * \param module restraint module.
+ * \return success if restraint was attached successfully, else failure.
+ */
+Status setSessionRestraint(Session                          *session,
+                           std::shared_ptr<gmxapi::MDModule> module);
+
+/*!
  * \brief Launch a workflow in the provided execution context.
  *
  * \param context Execution environment
