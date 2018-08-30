@@ -145,6 +145,27 @@ class TrajectoryFrame
         BoxMatrix         box_;
 };
 
+//! Clean up coordinate storage.
+void clearCoordinates(t_trxframe *input);
+
+/*! \brief
+ * Create a deep copy of a t_trxframe \p input into \p copy
+ *
+ * When running the analysis tools and changing values with the
+ * outputadapters, a deep copy of the \p input coordinate frame has to be
+ * created first to ensure that the data is not changed if it is needed for other
+ * tools following with analysis later. Therefore, the data is passed
+ * to \p copy by performing a deep copy first.
+ *
+ * The method allocates new storage for coordinates of the x, v, and f arrays
+ * in the new coordinate frame. This means that those arrays need to be free'd
+ * after the frame has been processed and been written to disk.
+ *
+ * \param[in]     input Reference input coordinate frame.
+ * \param[in,out] copy  Pointer to new output frame that will receive the deep copy.
+ */
+void deepCopytTrxframe(const t_trxframe &input, t_trxframe *copy);
+
 } // namespace gmx
 
 #endif

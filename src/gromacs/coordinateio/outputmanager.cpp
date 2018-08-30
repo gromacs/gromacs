@@ -57,100 +57,6 @@ namespace gmx
 {
 
 /*! \brief
- * Create a deep copy of a t_trxframe \p input into \p copy
- *
- * When running the analysis tools and changing values with the
- * outputadapters, a deep copy of the \p input coordinate frame has to be
- * created first to ensure that the data is not changed if it is needed for other
- * tools following with analysis later. Therefore, the data is passed
- * to \p copy by performing a deep copy first.
- *
- * The method allocates new storage for coordinates of the x, v, and f arrays
- * in the new coordinate frame. This means that those arrays need to be free'd
- * after the frame has been processed and been written to disk.
- *
- * \param[in]     input Reference input coordinate frame.
- * \param[in,out] copy  Pointer to new output frame that will receive the deep copy.
- */
-static void deepCopy_t_trxframe(const t_trxframe &input, t_trxframe *copy)
-{
-    copy->not_ok    = input.not_ok;
-    copy->bStep     = input.bStep;
-    copy->bTime     = input.bTime;
-    copy->bLambda   = input.bLambda;
-    copy->bFepState = input.bFepState;
-    copy->bAtoms    = input.bAtoms;
-    copy->bPrec     = input.bPrec;
-    copy->bX        = input.bX;
-    copy->bV        = input.bV;
-    copy->bF        = input.bF;
-    copy->bBox      = input.bBox;
-    copy->bDouble   = input.bDouble;
-    copy->natoms    = input.natoms;
-    copy->step      = input.step;
-    copy->time      = input.time;
-    copy->lambda    = input.lambda;
-    copy->fep_state = input.fep_state;
-    if (input.bAtoms)
-    {
-        copy->atoms = copy_t_atoms(input.atoms);
-    }
-    copy->atoms     = input.atoms;
-    copy->prec      = input.prec;
-    if (copy->bX)
-    {
-        snew(copy->x, copy->natoms);
-    }
-    if (copy->bV)
-    {
-        snew(copy->v, copy->natoms);
-    }
-    if (copy->bF)
-    {
-        snew(copy->f, copy->natoms);
-    }
-    for (int i = 0; i < copy->natoms; i++)
-    {
-        if (copy->bX)
-        {
-            copy_rvec(input.x[i], copy->x[i]);
-        }
-        if (copy->bV)
-        {
-            copy_rvec(input.v[i], copy->v[i]);
-        }
-        if (copy->bF)
-        {
-            copy_rvec(input.f[i], copy->f[i]);
-        }
-    }
-    copy_mat(input.box, copy->box);
-    copy->bPBC   = input.bPBC;
-    copy->ePBC   = input.ePBC;
-}
-
-//! Clean up local storage of atom information.
-static void clearLocalAtoms(t_atoms *atoms)
-{
-    done_atom(atoms);
-    sfree(atoms);
-}
-
-//! Clean up local coordinate storage.
-static void clearLocalCoords(t_trxframe *input)
-{
-    sfree(input->x);
-    if (input->bV)
-    {
-        sfree(input->v);
-    }
-    if (input->bF)
-    {
-        sfree(input->f);
-    }
-}
-
-/*! \brief
  * Method to open TNG file.
  *
  * Only need extra method to open this kind of file as it may need access to
@@ -269,7 +175,7 @@ OutputManager::prepareFrame(const int framenumber, const t_trxframe &input)
     {
         t_trxframe local;
         clear_trxframe(&local, true);
-        deepCopy_t_trxframe(input, &local);
+        deepCopytTrxframe(input, &local);
         for (const auto &outputAdapter : outputAdapters_)
         {
             outputAdapter.module_->processFrame(framenumber, &local);
@@ -277,9 +183,9 @@ OutputManager::prepareFrame(const int framenumber, const t_trxframe &input)
         write_trxframe(outputFile_, &local, nullptr);
         if (local.bAtoms)
         {
-            clearLocalAtoms(local.atoms);
+            done_and_delete_atoms(local.atoms);
         }
-        clearLocalCoords(&local);
+        clearCoordinates(&local);
     }
     else
     {

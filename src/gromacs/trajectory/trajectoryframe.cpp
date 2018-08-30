@@ -40,6 +40,7 @@
 
 #include <algorithm>
 
+#include "gromacs/math/vec.h"
 #include "gromacs/math/veccompare.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/compare.h"
@@ -194,6 +195,76 @@ bool TrajectoryFrame::hasBox() const
 const BoxMatrix &TrajectoryFrame::box() const
 {
     return box_;
+}
+
+void deepCopytTrxframe(const t_trxframe &input, t_trxframe *copy)
+{
+    copy->not_ok    = input.not_ok;
+    copy->bStep     = input.bStep;
+    copy->bTime     = input.bTime;
+    copy->bLambda   = input.bLambda;
+    copy->bFepState = input.bFepState;
+    copy->bAtoms    = input.bAtoms;
+    copy->bPrec     = input.bPrec;
+    copy->bX        = input.bX;
+    copy->bV        = input.bV;
+    copy->bF        = input.bF;
+    copy->bBox      = input.bBox;
+    copy->bDouble   = input.bDouble;
+    copy->natoms    = input.natoms;
+    copy->step      = input.step;
+    copy->time      = input.time;
+    copy->lambda    = input.lambda;
+    copy->fep_state = input.fep_state;
+    if (input.bAtoms)
+    {
+        copy->atoms = copy_t_atoms(input.atoms);
+    }
+    copy->atoms     = input.atoms;
+    copy->prec      = input.prec;
+    if (copy->bX)
+    {
+        snew(copy->x, copy->natoms);
+    }
+    if (copy->bV)
+    {
+        snew(copy->v, copy->natoms);
+    }
+    if (copy->bF)
+    {
+        snew(copy->f, copy->natoms);
+    }
+    for (int i = 0; i < copy->natoms; i++)
+    {
+        if (copy->bX)
+        {
+            copy_rvec(input.x[i], copy->x[i]);
+        }
+        if (copy->bV)
+        {
+            copy_rvec(input.v[i], copy->v[i]);
+        }
+        if (copy->bF)
+        {
+            copy_rvec(input.f[i], copy->f[i]);
+        }
+    }
+    copy_mat(input.box, copy->box);
+    copy->bPBC   = input.bPBC;
+    copy->ePBC   = input.ePBC;
+}
+
+void clearCoordinates(t_trxframe *input)
+{
+    sfree(input->x);
+    if (input->bV)
+    {
+        sfree(input->v);
+    }
+    if (input->bF)
+    {
+        sfree(input->f);
+    }
 }
 
 } // namespace gmx

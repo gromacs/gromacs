@@ -115,14 +115,8 @@
 
 #include "gromacs/coordinateio/coordinateoutput.h"
 #include "gromacs/coordinateio/flags.h"
+#include "gromacs/coordinateio/modules.h"
 #include "gromacs/coordinateio/outputmanager.h"
 #include "gromacs/coordinateio/requirementflags.h"
-#include "gromacs/coordinateio/modules/outputselector.h"
-#include "gromacs/coordinateio/modules/setatoms.h"
-#include "gromacs/coordinateio/modules/setbox.h"
-#include "gromacs/coordinateio/modules/setforces.h"
-#include "gromacs/coordinateio/modules/setprecision.h"
-#include "gromacs/coordinateio/modules/settime.h"
-#include "gromacs/coordinateio/modules/setvelocities.h"
 
 #endif
