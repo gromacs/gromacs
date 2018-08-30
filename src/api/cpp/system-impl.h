@@ -83,6 +83,17 @@ class System::Impl final
          */
         Status status() const;
 
+        /*!
+         * \brief Launch the configured simulation.
+         *
+         * \param context Runtime execution context in which to run simulation.
+         * \return Ownership of a new simulation session.
+         *
+         * The session is returned as a shared pointer so that the Context can
+         * maintain a weak reference to it via std::weak_ptr.
+         */
+        std::shared_ptr<Session> launch(std::shared_ptr<Context> context);
+
     private:
         /*!
          * \brief Retain access to the state of the Context in which we were launched.

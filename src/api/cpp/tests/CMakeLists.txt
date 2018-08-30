@@ -56,13 +56,19 @@ configure_file(testingconfiguration.in.h testingconfiguration.h)
 
 gmx_add_gtest_executable(
     gmxapi-test
+    test_runner.cpp
     test_status.cpp
     test_system.cpp
     test_version_helpers.cpp
     )
 
+# In addition to the current source directory, tests may use headers configured
+# into the build directory, such as testingconfiguration.h, as private implementation
+# details.
 target_include_directories(gmxapi-test PRIVATE
                            ${CMAKE_CURRENT_BINARY_DIR})
+
+# Link against the gmxapi libraries and get access to its public (installed) headers.
 target_link_libraries(gmxapi-test Gromacs::gmxapi)
 
 # Unit tests for implementation details may require access to private headers.
@@ -79,13 +85,19 @@ set_tests_properties(GmxapiExternalInterfaceTests PROPERTIES
 
 gmx_add_gtest_executable(
     gmxapi-mpi-test MPI
+    test_runner.cpp
     test_status.cpp
     test_system.cpp
     test_version_helpers.cpp
     )
 
+# In addition to the current source directory, tests may use headers configured
+# into the build directory, such as testingconfiguration.h, as private implementation
+# details.
 target_include_directories(gmxapi-mpi-test PRIVATE
                            ${CMAKE_CURRENT_BINARY_DIR})
+
+# Link against the gmxapi libraries and get access to its public (installed) headers.
 target_link_libraries(gmxapi-mpi-test Gromacs::gmxapi)
 
 # Tests that specify MPI_RANKS will be passed a ``-ntmpi`` command-line option

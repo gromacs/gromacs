@@ -55,9 +55,9 @@ configure_file(include/version.h.in include/gmxapi/version.h)
 set(_gmxapi_interface_headers
     include/gmxapi/context.h
     include/gmxapi/exceptions.h
+    include/gmxapi/session.h
     include/gmxapi/status.h
     include/gmxapi/system.h
-    include/gmxapi/exceptions.h
     include/gmxapi/version.h)
 
 ################################################################################
@@ -139,6 +139,15 @@ target_include_directories(gmxapi PUBLIC
     $<INSTALL_INTERFACE:include>
     )
 
+# Define private interface in build environment. (Not installed.)
+# Unit tests for implementation details can use this target.
+add_library(gmxapiImpl INTERFACE)
+target_include_directories(gmxapiImpl INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+                           )
+add_library(Gromacs::gmxapiImpl ALIAS gmxapiImpl)
+
 # Define implementation interface
 target_include_directories(gmxapi PRIVATE
                            ${CMAKE_CURRENT_SOURCE_DIR}>/include
@@ -153,11 +162,13 @@ target_include_directories(gmxapi PRIVATE
 
 # Private / implementation headers in src/api/cpp
 target_sources(gmxapi PRIVATE
+               session-impl.h
                system-impl.h)
 
 target_sources(
     gmxapi PRIVATE
     context.cpp
+    session.cpp
     status.cpp
     system.cpp
     version.cpp
