@@ -54,6 +54,7 @@ configure_file(include/version.h.in include/gmxapi/version.h)
 # variable. See below.
 set(_gmxapi_interface_headers
     include/gmxapi/status.h
+    include/gmxapi/system.h
     include/gmxapi/version.h)
 
 ################################################################################
@@ -148,11 +149,13 @@ target_include_directories(gmxapi PRIVATE
 # and IDEs work better.
 
 # Private / implementation headers in src/api/cpp
-target_sources(gmxapi PRIVATE)
+target_sources(gmxapi PRIVATE
+               system-impl.h)
 
 target_sources(
     gmxapi PRIVATE
     status.cpp
+    system.cpp
     version.cpp
 )
 
