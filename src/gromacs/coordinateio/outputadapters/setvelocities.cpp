@@ -32,21 +32,45 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*!\file
+ * \internal
  * \brief
- * Public API convenience header for accessing outputadapters.
+ * Implements setvelocity class.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
- * \inpublicapi
  * \ingroup module_coordinateio
  */
-#ifndef GMX_COORDINATEIO_OUTPUTADAPTERS_H
-#define GMX_COORDINATEIO_OUTPUTADAPTERS_H
 
-#include "gromacs/coordinateio/outputadapters/outputselector.h"
-#include "gromacs/coordinateio/outputadapters/setatoms.h"
-#include "gromacs/coordinateio/outputadapters/setbox.h"
-#include "gromacs/coordinateio/outputadapters/setforces.h"
-#include "gromacs/coordinateio/outputadapters/setvelocities.h"
+#include "gmxpre.h"
 
-#endif
+#include "setvelocities.h"
+
+#include <algorithm>
+
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/smalloc.h"
+
+namespace gmx
+{
+
+void
+SetVelocities::processFrame(const int /*framenumber*/, t_trxframe *input)
+{
+    switch (velocity_)
+    {
+        case (ChangeSettingType::efUserNo):
+            input->bV = false;
+            input->v  = nullptr;
+            break;
+        case (ChangeSettingType::efUserYes):
+            if (!input->bV)
+            {
+                GMX_THROW(InconsistentInputError("Velocity output requested but current frame has now velocities"));
+            }
+            break;
+        default:
+            GMX_THROW(InconsistentInputError("Value for velocity flag is not supported"));
+    }
+}
+
+} // namespace gmx

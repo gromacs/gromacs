@@ -32,21 +32,45 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*!\file
+ * \internal
  * \brief
- * Public API convenience header for accessing outputadapters.
+ * Implements setforce class.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
- * \inpublicapi
  * \ingroup module_coordinateio
  */
-#ifndef GMX_COORDINATEIO_OUTPUTADAPTERS_H
-#define GMX_COORDINATEIO_OUTPUTADAPTERS_H
 
-#include "gromacs/coordinateio/outputadapters/outputselector.h"
-#include "gromacs/coordinateio/outputadapters/setatoms.h"
-#include "gromacs/coordinateio/outputadapters/setbox.h"
-#include "gromacs/coordinateio/outputadapters/setforces.h"
-#include "gromacs/coordinateio/outputadapters/setvelocities.h"
+#include "gmxpre.h"
 
-#endif
+#include "setforces.h"
+
+#include <algorithm>
+
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/smalloc.h"
+
+namespace gmx
+{
+
+void
+SetForces::processFrame(const int /*framenumber*/, t_trxframe *input)
+{
+    switch (force_)
+    {
+        case (ChangeSettingType::efUserNo):
+            input->bF = false;
+            input->f  = nullptr;
+            break;
+        case (ChangeSettingType::efUserYes):
+            if (!input->bF)
+            {
+                GMX_THROW(InconsistentInputError("Force output requested but current frame has no forces"));
+            }
+            break;
+        default:
+            GMX_THROW(InconsistentInputError("Value for force flag is not supported"));
+    }
+}
+
+} // namespace gmx

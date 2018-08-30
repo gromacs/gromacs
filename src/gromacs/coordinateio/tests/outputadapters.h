@@ -53,7 +53,9 @@
 
 #include "gromacs/coordinateio/outputadapters/outputselector.h"
 #include "gromacs/coordinateio/outputadapters/setatoms.h"
-#include "gromacs/math/vec.h"
+#include "gromacs/coordinateio/outputadapters/setbox.h"
+#include "gromacs/coordinateio/outputadapters/setforces.h"
+#include "gromacs/coordinateio/outputadapters/setvelocities.h"
 
 #include "gromacs/coordinateio/tests/coordinate_test.h"
 
@@ -122,6 +124,24 @@ class AnyOutputSupportedFiles : public ModuleTest,
         }
 };
 
+/*!\libinternal \brief  Helper to test supported output for turned of module options. */
+class OutputTurnedOffSupportedFiles : public ModuleTest
+{
+    public:
+        void prepareTest(const char *filename)
+        {
+            addTopology();
+            //! Storage for requirements.
+            OutputRequirements requirements;
+
+            requirements.atoms     = ChangeAtomsType::efUserNo;
+            requirements.velocity  = ChangeSettingType::efUserNo;
+            requirements.force     = ChangeSettingType::efUserNo;
+
+            EXPECT_NO_THROW(runTest(filename, requirements));
+        }
+};
+
 /*!\libinternal \brief  Helper to test that invalid selection is rejected */
 class OutputSelectorDeathTest : public ModuleTest,
                                 public ModuleSelection
@@ -140,6 +160,110 @@ class OutputSelectorDeathTest : public ModuleTest,
             ASSERT_DEATH_IF_SUPPORTED(
                     adapters.addAdapter(compat::make_unique<OutputSelector>(sel)),
                     "Need a valid selection out of simple atom indices");
+        }
+};
+
+/*!\libinternal \brief  Helper to test supported file names. */
+class SetVelocitySupportedFiles : public ModuleTest
+{
+    public:
+        void prepareTest(const char *filename)
+        {
+            addTopology();
+            //! Storage for requirements.
+            OutputRequirements requirements;
+
+            requirements.velocity = ChangeSettingType::efUserYes;
+
+            EXPECT_NO_THROW(runTest(filename, requirements));
+        }
+};
+
+/*!\libinternal \brief  Helper to test supported file names. */
+class SetVelocityUnSupportedFiles : public ModuleTest
+{
+    public:
+        void prepareTest(const char *filename)
+        {
+            //! Storage for requirements.
+            OutputRequirements requirements;
+
+            requirements.velocity = ChangeSettingType::efUserYes;
+
+            EXPECT_THROW(runTest(filename, requirements),
+                         InconsistentInputError);
+        }
+};
+
+/*!\libinternal \brief  Helper to test supported file names. */
+class SetForceSupportedFiles : public ModuleTest
+{
+    public:
+        void prepareTest(const char *filename)
+        {
+            addTopology();
+            //! Storage for requirements.
+            OutputRequirements requirements;
+
+            requirements.force = ChangeSettingType::efUserYes;
+
+            EXPECT_NO_THROW(runTest(filename, requirements));
+        }
+};
+
+/*!\libinternal \brief  Helper to test supported file names. */
+class SetForceUnSupportedFiles : public ModuleTest
+{
+    public:
+        void prepareTest(const char *filename)
+        {
+            //! Storage for requirements.
+            OutputRequirements requirements;
+
+            requirements.force = ChangeSettingType::efUserYes;
+
+            EXPECT_THROW(runTest(filename, requirements),
+                         InconsistentInputError);
+        }
+};
+
+/*!\libinternal \brief  Helper to test supported file names. */
+class SetPrecisionSupportedFiles : public ModuleTest
+{
+    public:
+        /*! \brief Set up the test case before running.
+         *
+         * \param[in] filename Name of the outptufile used to specify file type.
+         */
+        void prepareTest(const char *filename)
+        {
+            addTopology();
+            OutputRequirements requirements;
+
+            requirements.precision = ChangeFrameInfoType::efUserYes;
+            requirements.prec      = 5;
+
+            EXPECT_NO_THROW(runTest(filename, requirements));
+        }
+};
+
+/*!\libinternal \brief  Helper to test supported file names. */
+class SetPrecisionUnSupportedFiles : public ModuleTest
+{
+    public:
+        /*! \brief Set up the test case before running.
+         *
+         * \param[in] filename Name of the outptufile used to specify file type.
+         */
+        void prepareTest(const char *filename)
+        {
+            OutputRequirements requirements;
+
+            requirements.precision = ChangeFrameInfoType::efUserYes;
+            requirements.prec      = 5;
+
+            EXPECT_THROW(runTest(filename, requirements),
+                         InconsistentInputError);
         }
 };
 
@@ -173,6 +297,39 @@ const char *const anySupported[] = {
     "spc2-traj.xtc",
     "spc2-traj.g96"
 };
+
+//! Names here work for setVelocity module
+const char *const setVelocitySupported[] = {
+#if GMX_USE_TNG
+    "spc2-traj.tng",
+#endif
+    "spc2-traj.gro",
+    "spc2-traj.trr",
+};
+
+//! Names here don't work for setVelocity module
+const char *const setVelocityUnSupported[] = {
+    "spc2-traj.xtc",
+    "spc2-traj.pdb",
+    "spc2-traj.g96"
+};
+
+//! Names here work for setForce module
+const char *const setForceSupported[] = {
+#if GMX_USE_TNG
+    "spc2-traj.tng",
+#endif
+    "spc2-traj.trr",
+};
+
+//! Names here don't work for setForce module
+const char *const setForceUnSupported[] = {
+    "spc2-traj.xtc",
+    "spc2-traj.pdb",
+    "spc2-traj.gro",
+    "spc2-traj.g96"
+};
+
 
 } // namespace test
 
