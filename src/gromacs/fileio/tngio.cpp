@@ -1004,7 +1004,7 @@ void gmx_prepare_tng_writing(const char              *filename,
                              gmx_tng_trajectory_t    *gmx_tng_output,
                              int                      nAtoms,
                              const gmx_mtop_t        *mtop,
-                             const int               *index,
+                             const size_t            *index,
                              const char              *indexGroupName)
 {
 #if GMX_USE_TNG
@@ -1284,7 +1284,7 @@ real getDistanceScaleFactor(gmx_tng_trajectory_t in)
 
 void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t gmx_tng,
                                  const int            nind,
-                                 const int           *ind,
+                                 const size_t        *ind,
                                  const char          *name)
 {
 #if GMX_USE_TNG

@@ -653,8 +653,8 @@ int gmx_trjcat(int argc, char *argv[])
                 }
                 if (bIndex)
                 {
-                    trxout = trjtools_gmx_prepare_tng_writing(out_file, 'w', nullptr,
-                                                              inFilesEdited[0].c_str(), isize, nullptr, index, grpname);
+                    trxout = trjtools_gmx_prepare_tng_writing_old(out_file, 'w', nullptr,
+                                                                  inFilesEdited[0].c_str(), isize, nullptr, index, grpname);
                 }
                 else
                 {

@@ -148,7 +148,7 @@ void gmx_prepare_tng_writing(const char              *filename,
                              gmx_tng_trajectory_t    *out,
                              int                      nAtoms,
                              const struct gmx_mtop_t *mtop,
-                             const int               *index,
+                             const size_t            *index,
                              const char              *indexGroupName);
 
 /*! \brief Write a trxframe to a TNG file
@@ -170,7 +170,7 @@ void gmx_write_tng_from_trxframe(gmx_tng_trajectory_t    output,
  * selection group. */
 void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t tng,
                                  int                  nind,
-                                 const int           *ind,
+                                 const size_t        *ind,
                                  const char          *name);
 
 /*! \brief Read the first/next TNG frame. */

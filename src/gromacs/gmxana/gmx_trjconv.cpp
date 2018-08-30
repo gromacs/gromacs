@@ -1364,14 +1364,14 @@ int gmx_trjconv(int argc, char *argv[])
             switch (ftp)
             {
                 case efTNG:
-                    trxout = trjtools_gmx_prepare_tng_writing(out_file,
-                                                              filemode[0],
-                                                              trxin,
-                                                              nullptr,
-                                                              nout,
-                                                              mtop.get(),
-                                                              index,
-                                                              grpnm);
+                    trxout = trjtools_gmx_prepare_tng_writing_old(out_file,
+                                                                  filemode[0],
+                                                                  trxin,
+                                                                  nullptr,
+                                                                  nout,
+                                                                  mtop.get(),
+                                                                  index,
+                                                                  grpnm);
                     break;
                 case efXTC:
                 case efTRR:
