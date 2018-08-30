@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">convert-trj -select 'not resname = CO2'</String>
+  <OutputFiles Name="Files">
+    <File Name="-o"></File>
+  </OutputFiles>
+</ReferenceData>

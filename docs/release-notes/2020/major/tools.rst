@@ -24,3 +24,15 @@ are now all rejected with a descriptive message, which will help
 prevent some kinds of errors in constructing .mdp inputs. Note that an
 .mdp parameter name with a missing value is still accepted, and leads
 to the default behavior for that parameter.
+
+Added convert-trj
+"""""""""""""""""""""""""""""""""""""""
+A new tool :ref:`convert-trj <gmx convert-trj>` has been added to allow
+users to interchange trajectory formats without having to use legacy :ref:`gmx trjconv`.
+Supported actions include the generation of slimmed down output trajectories, as well
+as the replacement of particle information in individual frames with data from a structure file.
+The new tool allows the usage of command line selections, meaning it is no longer
+necessary to write :ref:`index <ndx>` files to select certain atoms.
+It is part of the drive to split up the :ref:`trjconv <gmx trjconv>` tool
+into smaller parts.
+
