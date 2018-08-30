@@ -32,19 +32,37 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*!\file
+ * \internal
  * \brief
- * Public API convenience header for accessing frameconverters.
+ * Implements gmx::Shiftcoord.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
- * \inpublicapi
  * \ingroup module_coordinatedata
  */
-#ifndef GMX_COORDINATEDATA_FRAMECONVERTERS_H
-#define GMX_COORDINATEDATA_FRAMECONVERTERS_H
 
-#include "gromacs/coordinatedata/frameconverters/frameconverter.h"
-#include "gromacs/coordinatedata/frameconverters/register.h"
-#include "gromacs/coordinatedata/frameconverters/shiftcoord.h"
+#include "gmxpre.h"
 
-#endif
+#include "shiftcoord.h"
+
+#include <algorithm>
+
+#include "gromacs/math/vec.h"
+
+namespace gmx
+{
+
+void
+ShiftCoord::convertFrame(const t_trxframe &input)
+{
+    /* Coordinates need to be changed individually for the selections provided to the tool,
+     * so that each FrameConverter can change only the subset of coordinates are changed.
+     */
+    int              natoms = input.natoms;
+    for (int i = 0; i < natoms; i++)
+    {
+        rvec_inc(coordinateFrame_.x[i], shift_);
+    }
+}
+
+} // namespace gmx
