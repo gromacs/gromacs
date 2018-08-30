@@ -93,7 +93,9 @@ class SetAtoms : public ICoordinateOutput
         {
         }
 
-        ~SetAtoms() override {}
+        ~SetAtoms() override
+        {
+        }
 
         /*! \brief
          * Change coordinate frame information for output.
