@@ -32,21 +32,59 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*!\file
+ * \internal
  * \brief
- * Public API convenience header for accessing frameconverters.
+ * Implements gmx::SetCenter.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
- * \inpublicapi
  * \ingroup module_coordinatedata
  */
-#ifndef GMX_COORDINATEDATA_FRAMECONVERTERS_H
-#define GMX_COORDINATEDATA_FRAMECONVERTERS_H
 
-#include "gromacs/coordinatedata/frameconverters/frameconverter.h"
-#include "gromacs/coordinatedata/frameconverters/register.h"
-#include "gromacs/coordinatedata/frameconverters/removejump.h"
-#include "gromacs/coordinatedata/frameconverters/setcenter.h"
-#include "gromacs/coordinatedata/frameconverters/shiftcoord.h"
+#include "gmxpre.h"
 
-#endif
+#include "setcenter.h"
+
+#include <algorithm>
+
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+
+namespace gmx
+{
+
+void
+SetCenter::convertFrame(const t_trxframe &input)
+{
+    RVec localBoxCenter;
+    calc_box_center(static_cast<int>(centerFlag_), input.box, localBoxCenter);
+    RVec cmax = input.x[center_->position(0).refId()];
+    RVec cmin = input.x[center_->position(0).refId()];
+    for (int i = 0; i < center_->atomCount(); i++)
+    {
+        int pos = center_->position(i).refId();
+        for (int m = 0; m < DIM; m++)
+        {
+            if (input.x[pos][m] < cmin[m])
+            {
+                cmin[m] = input.x[pos][m];
+            }
+            else if (input.x[pos][m] > cmax[m])
+            {
+                cmax[m] = input.x[pos][m];
+            }
+        }
+    }
+    RVec shift(0, 0, 0);
+    for (int m = 0; m < DIM; m++)
+    {
+        shift[m] = localBoxCenter[m] - (cmin[m]+cmax[m])*0.5;
+    }
+
+    for (int i = 0; i < input.natoms; i++)
+    {
+        rvec_inc(coordinateFrame_.x[i], shift);
+    }
+}
+
+} // namespace gmx
