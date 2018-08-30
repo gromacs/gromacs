@@ -127,6 +127,7 @@ if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(correlationfunctions)
     add_subdirectory(statistics)
     add_subdirectory(analysisdata)
+    add_subdirectory(coordinatedata)
     add_subdirectory(coordinateio)
     add_subdirectory(selection)
     add_subdirectory(trajectoryanalysis)
@@ -151,6 +152,7 @@ configure_file(version.h.cmakein version.h)
 gmx_install_headers(
     analysisdata.h
     commandline.h
+    coordinatedata.h
     coordinateio.h
     options.h
     random.h
