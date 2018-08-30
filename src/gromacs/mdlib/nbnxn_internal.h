@@ -148,13 +148,22 @@ typedef struct {
 } nbnxn_bb_t;
 
 
-/* A pair-search grid struct for one domain decomposition zone */
+/* A pair-search grid struct for one domain decomposition zone
+ *
+ * Note that when atom groups, instead of individual atoms, are assigned
+ * to grid cells, individual atoms can be geometrically outside the cell
+ * and grid that they have been assigned to (as determined by the center
+ * or geometry of the atom group they belong to).
+ */
 struct nbnxn_grid_t
 {
     rvec     c0;                   /* The lower corner of the (local) grid        */
     rvec     c1;                   /* The upper corner of the (local) grid        */
     rvec     size;                 /* c1 - c0                                     */
     real     atom_density;         /* The atom number density for the local grid  */
+    real     maxAtomGroupRadius;   /* The maximum distance an atom can be outside
+                                    * of a cell and outside of the grid
+                                    */
 
     gmx_bool bSimple;              /* Is this grid simple or super/sub            */
     int      na_c;                 /* Number of atoms per cluster                 */
