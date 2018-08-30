@@ -47,6 +47,7 @@ gmx_install_headers(
     modules/setvelocities.h
     outputmanager.h
     modulecallback.h
+    flags.h
     )
 
 if (BUILD_TESTING)
