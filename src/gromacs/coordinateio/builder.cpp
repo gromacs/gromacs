@@ -135,13 +135,14 @@ static unsigned long getSupportedOutputAdapters(int filetype, const gmx_mtop_t *
  *
  * \param[in] requirements Specifications for modules to add to OutputManager
  *                         through a new OutputAdapterContainer.
+ * \param[in] atoms        Local copy of atom information to use.
  * \param[in] sel          Selection to use for choosing atoms to write out.
  * \param[in] abilities    Specifications for what the output method can do.
  * \returns   New container for IoutputAdapter derived methods.
  */
 static OutputAdapterContainer
 addOutputAdapters(const OutputRequirements  &requirements,
-                  AtomsDataPtr                /* atoms */,
+                  AtomsDataPtr               atoms,
                   const Selection           &sel,
                   unsigned long              abilities)
 {
@@ -161,7 +162,9 @@ addOutputAdapters(const OutputRequirements  &requirements,
     }
     if (requirements.atoms != ChangeAtomsType::efUnchanged)
     {
-        // add adapter here
+        output.addAdapter(
+                compat::make_unique<SetAtoms>(requirements.atoms,
+                                              std::move(atoms)));
     }
     if (requirements.frameTime != ChangeFrameTimeType::efUnchanged)
     {
@@ -179,7 +182,8 @@ addOutputAdapters(const OutputRequirements  &requirements,
     }
     if (sel.isValid())
     {
-        // add adapter here
+        output.addAdapter(
+                compat::make_unique<OutputSelector>(sel));
     }
     return output;
 }

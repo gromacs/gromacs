@@ -35,5 +35,7 @@
 set(test_sources
     builder.cpp
     outputadaptercontainer.cpp
+    outputadapters.cpp
+    setatoms.cpp
     )
 gmx_add_unit_test(CoordinateIOTests coordinateio-test ${test_sources})

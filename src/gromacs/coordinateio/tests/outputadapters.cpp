@@ -32,18 +32,54 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*!\file
+ * \internal
  * \brief
- * Public API convenience header for accessing outputadapters.
+ * Tests for outputmanager
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
- * \inpublicapi
  * \ingroup module_coordinateio
  */
-#ifndef GMX_COORDINATEIO_OUTPUTADAPTERS_H
-#define GMX_COORDINATEIO_OUTPUTADAPTERS_H
 
-#include "gromacs/coordinateio/outputadapters/outputselector.h"
-#include "gromacs/coordinateio/outputadapters/setatoms.h"
+#include "gmxpre.h"
 
-#endif
+#include "outputadapters.h"
+
+namespace gmx
+{
+
+namespace test
+{
+
+TEST_P(SetAtomsSupportedFiles, Works)
+{
+    prepareTest(GetParam());
+}
+
+TEST_P(SetAtomsUnSupportedFiles, Works)
+{
+    prepareTest(GetParam());
+}
+
+TEST_P(AnyOutputSupportedFiles, Works)
+{
+    prepareTest(GetParam());
+}
+
+TEST_F(OutputSelectorDeathTest, RejectsBadSelection)
+{
+    prepareTest();
+}
+
+INSTANTIATE_TEST_CASE_P(ModuleSupported,
+                        SetAtomsSupportedFiles, ::testing::ValuesIn(setAtomsSupported));
+
+INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
+                        SetAtomsUnSupportedFiles, ::testing::ValuesIn(setAtomsUnSupported));
+
+INSTANTIATE_TEST_CASE_P(ModuleSupported,
+                        AnyOutputSupportedFiles, ::testing::ValuesIn(anySupported));
+
+} // namespace test
+
+} // namespace gmx
