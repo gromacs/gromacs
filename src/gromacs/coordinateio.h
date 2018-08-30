@@ -151,6 +151,7 @@
 #ifndef GMX_COORDINATEIO_H
 #define GMX_COORDINATEIO_H
 
+#include "gromacs/coordinateio/flags.h"
 #include "gromacs/coordinateio/ioutputadapter.h"
 #include "gromacs/coordinateio/outputmanager.h"
 #include "gromacs/coordinateio/requirementflags.h"
