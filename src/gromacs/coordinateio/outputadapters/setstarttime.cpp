@@ -32,24 +32,44 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*!\internal
+ * \file
  * \brief
- * Public API convenience header for accessing outputadapters.
+ * Implements setstarttime class.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
- * \inpublicapi
  * \ingroup module_coordinateio
  */
-#ifndef GMX_COORDINATEIO_OUTPUTADAPTERS_H
-#define GMX_COORDINATEIO_OUTPUTADAPTERS_H
 
-#include "gromacs/coordinateio/outputadapters/outputselector.h"
-#include "gromacs/coordinateio/outputadapters/setatoms.h"
-#include "gromacs/coordinateio/outputadapters/setbox.h"
-#include "gromacs/coordinateio/outputadapters/setforces.h"
-#include "gromacs/coordinateio/outputadapters/setprecision.h"
-#include "gromacs/coordinateio/outputadapters/setstarttime.h"
-#include "gromacs/coordinateio/outputadapters/settimestep.h"
-#include "gromacs/coordinateio/outputadapters/setvelocities.h"
+#include "gmxpre.h"
 
-#endif
+#include "setstarttime.h"
+
+#include <algorithm>
+
+#include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/exceptions.h"
+
+namespace gmx
+{
+
+void
+SetStartTime::processFrame(const int /* framenumber */, t_trxframe *input)
+{
+    if (!haveProcessedFirstFrame_)
+    {
+        setInitialTime(input->time);
+    }
+
+    input->time        = input->time + differenceToInitialTime_;
+    input->bTime       = true;
+}
+
+void
+SetStartTime::setInitialTime(real initialTimeFromFrame)
+{
+    differenceToInitialTime_ = startTime_ - initialTimeFromFrame;
+    haveProcessedFirstFrame_ = true;
+}
+
+} // namespace gmx

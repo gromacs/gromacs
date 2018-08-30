@@ -91,6 +91,16 @@ TEST_P(SetForceUnSupportedFiles, Works)
     prepareTest(GetParam());
 }
 
+TEST_P(SetPrecisionSupportedFiles, Works)
+{
+    prepareTest(GetParam());
+}
+
+TEST_P(SetPrecisionUnSupportedFiles, Works)
+{
+    prepareTest(GetParam());
+}
+
 TEST_P(NoOptionalOutput, Works)
 {
     prepareTest(GetParam());
@@ -118,8 +128,13 @@ INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
                         SetForceUnSupportedFiles, ::testing::ValuesIn(setForceUnSupported));
 
 INSTANTIATE_TEST_CASE_P(ModuleSupported,
-                        NoOptionalOutput, ::testing::ValuesIn(anySupported));
+                        SetPrecisionSupportedFiles, ::testing::ValuesIn(setPrecisionSupported));
 
+INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
+                        SetPrecisionUnSupportedFiles, ::testing::ValuesIn(setPrecisionUnSupported));
+
+INSTANTIATE_TEST_CASE_P(ModuleSupported,
+                        NoOptionalOutput, ::testing::ValuesIn(anySupported));
 } // namespace test
 
 } // namespace gmx

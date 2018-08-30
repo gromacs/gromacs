@@ -32,24 +32,81 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*!\internal
+ * \file
  * \brief
- * Public API convenience header for accessing outputadapters.
+ * Tests for gmx::SetTimeStep
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
- * \inpublicapi
  * \ingroup module_coordinateio
  */
-#ifndef GMX_COORDINATEIO_OUTPUTADAPTERS_H
-#define GMX_COORDINATEIO_OUTPUTADAPTERS_H
 
-#include "gromacs/coordinateio/outputadapters/outputselector.h"
-#include "gromacs/coordinateio/outputadapters/setatoms.h"
-#include "gromacs/coordinateio/outputadapters/setbox.h"
-#include "gromacs/coordinateio/outputadapters/setforces.h"
-#include "gromacs/coordinateio/outputadapters/setprecision.h"
-#include "gromacs/coordinateio/outputadapters/setstarttime.h"
+
+#include "gmxpre.h"
+
+#include <memory>
+
 #include "gromacs/coordinateio/outputadapters/settimestep.h"
-#include "gromacs/coordinateio/outputadapters/setvelocities.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 
-#endif
+#include "gromacs/coordinateio/tests/coordinate_test.h"
+
+namespace gmx
+{
+
+namespace test
+{
+
+/*!\brief
+ * Test fixture to prepare a setatoms object to pass data through.
+ */
+class SetTimeStepTest : public gmx::test::CommandLineTestBase
+{
+    public:
+        SetTimeStepTest()
+        {
+            clear_trxframe(frame(), true);
+        }
+        /*! \brief
+         * Get access to the method for changing frame time information.
+         *
+         * \param[in] timeStep User supplied time step to test.
+         */
+        SetTimeStep *setTimeStep(real timeStep)
+        {
+            if (!setTimeStep_)
+            {
+                setTimeStep_ = std::make_unique<SetTimeStep>(timeStep);
+            }
+            return setTimeStep_.get();
+        }
+        //! Get access to trajectoryframe to mess with.
+        t_trxframe *frame() { return &frame_; }
+
+    private:
+        //! Object to use for tests
+        SetTimeStepPointer     setTimeStep_;
+        //! Storage of trajectoryframe.
+        t_trxframe             frame_;
+};
+
+TEST_F(SetTimeStepTest, SetTimeStepWorks)
+{
+    frame()->time = 23;
+    // Set start time to nonsense to make sure it is ignored.
+    SetTimeStep *method = setTimeStep(7);
+    EXPECT_NO_THROW(method->processFrame(0, frame()));
+    EXPECT_EQ(frame()->time, 23);
+    // No matter what the next time in the frame is, ignore it.
+    frame()->time = 42;
+    EXPECT_NO_THROW(method->processFrame(1, frame()));
+    EXPECT_EQ(frame()->time, 30);
+    // And so on for more frames.
+    frame()->time = 0;
+    EXPECT_NO_THROW(method->processFrame(2, frame()));
+    EXPECT_EQ(frame()->time, 37);
+}
+
+} // namespace test
+
+} // namespace gmx

@@ -32,24 +32,43 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*!\file
+ * \internal
  * \brief
- * Public API convenience header for accessing outputadapters.
+ * Implements setprecision class.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
- * \inpublicapi
  * \ingroup module_coordinateio
  */
-#ifndef GMX_COORDINATEIO_OUTPUTADAPTERS_H
-#define GMX_COORDINATEIO_OUTPUTADAPTERS_H
 
-#include "gromacs/coordinateio/outputadapters/outputselector.h"
-#include "gromacs/coordinateio/outputadapters/setatoms.h"
-#include "gromacs/coordinateio/outputadapters/setbox.h"
-#include "gromacs/coordinateio/outputadapters/setforces.h"
-#include "gromacs/coordinateio/outputadapters/setprecision.h"
-#include "gromacs/coordinateio/outputadapters/setstarttime.h"
-#include "gromacs/coordinateio/outputadapters/settimestep.h"
-#include "gromacs/coordinateio/outputadapters/setvelocities.h"
+#include "gmxpre.h"
 
-#endif
+#include "setprecision.h"
+
+#include <cmath>
+
+#include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/exceptions.h"
+
+namespace gmx
+{
+
+void
+SetPrecision::checkAbilityDependencies(unsigned long abilities) const
+{
+    if ((abilities & convertFlag(moduleRequirements_)) == 0u)
+    {
+        std::string errorMessage = "Output file type does not support writing variable precision. "
+            "Only XTC and TNG support variable precision.";
+        GMX_THROW(InconsistentInputError(errorMessage.c_str()));
+    }
+}
+
+void
+SetPrecision::processFrame(const int /*framenumber*/, t_trxframe *input)
+{
+    input->prec  = std::pow(10, precision_);
+    input->bPrec = true;
+}
+
+} // namespace gmx

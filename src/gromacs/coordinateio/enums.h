@@ -111,18 +111,22 @@ enum class CoordinateFileFlags : unsigned long
     /*! \brief
      * Requires that output format supports writing time to the file.
      */
-    RequireNewFrameTime = 1<<6,
+    RequireNewFrameStartTime = 1<<6,
+    /*! \brief
+     * Requires that output format supports writing time to the file.
+     */
+    RequireNewFrameTimeStep = 1<<7,
     /*! \brief
      * Requires that output format supports writing box information.
      */
-    RequireNewBox = 1<<7,
+    RequireNewBox = 1<<8,
     /*! \brief
      * Requires output to support changes to selection of coordinates.
      *
      * Default for most methods, will need to be able to write coordinates to
      * output file or generate an error.
      */
-    RequireCoordinateSelection = 1<<8,
+    RequireCoordinateSelection = 1<<9,
     //! Needed for enumeration array.
     Count
 };

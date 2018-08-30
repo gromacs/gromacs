@@ -32,24 +32,48 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*!\internal
+ * \file
  * \brief
- * Public API convenience header for accessing outputadapters.
+ * Implements settimestep class.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
- * \inpublicapi
  * \ingroup module_coordinateio
  */
-#ifndef GMX_COORDINATEIO_OUTPUTADAPTERS_H
-#define GMX_COORDINATEIO_OUTPUTADAPTERS_H
 
-#include "gromacs/coordinateio/outputadapters/outputselector.h"
-#include "gromacs/coordinateio/outputadapters/setatoms.h"
-#include "gromacs/coordinateio/outputadapters/setbox.h"
-#include "gromacs/coordinateio/outputadapters/setforces.h"
-#include "gromacs/coordinateio/outputadapters/setprecision.h"
-#include "gromacs/coordinateio/outputadapters/setstarttime.h"
-#include "gromacs/coordinateio/outputadapters/settimestep.h"
-#include "gromacs/coordinateio/outputadapters/setvelocities.h"
+#include "gmxpre.h"
 
-#endif
+#include "settimestep.h"
+
+#include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/exceptions.h"
+
+namespace gmx
+{
+
+real
+SetTimeStep::calculateNewFrameTime(real currentInputFrameTime)
+{
+    real currentTime = 0.0;
+    if (!haveProcessedFirstFrame_)
+    {
+        currentTime              = currentInputFrameTime;
+        haveProcessedFirstFrame_ = true;
+    }
+    else
+    {
+        currentTime = previousFrameTime_ + timeStep_;
+    }
+    previousFrameTime_ = currentTime;
+
+    return currentTime;
+}
+
+void
+SetTimeStep::processFrame(const int /* framenumber */, t_trxframe *input)
+{
+    input->time  = calculateNewFrameTime(input->time);
+    input->bTime = true;
+}
+
+} // namespace gmx
