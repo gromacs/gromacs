@@ -90,14 +90,19 @@ class MpiContextManager
  * \tparam T type that can be open or closed.
  * \param object something that has a concept of "open" or "closed."
  * \return true if open, false if closed, compiler error if non-sensical.
+ *
+ * \internal
+ * If there were to be a default implementation of the primary template, it
+ * might look like this:
+ *
+ *    (void) object;
+ *    static_assert(false, "Compiler could not find open/close concept for the given object.");
+ *    return false;
+ *
  */
 template<class T>
 bool isOpen(const T &object);
-//{
-//    (void) object;
-//    static_assert(false, "Compiler could not find open/close concept for the given object.");
-//    return false;
-//}
+
 
 template<>
 bool isOpen<SessionImpl>(const SessionImpl &object)
@@ -257,10 +262,9 @@ SessionImpl *Session::getRaw() const noexcept
     return impl_.get();
 }
 
-std::shared_ptr<Session> launchSession(Context   * context,
-                                       std::string filename)
+std::shared_ptr<Session> launchSession(Context* context, const Workflow &work) noexcept
 {
-    auto session = context->launch(std::move(filename));
+    auto session = context->launch(work);
     return session;
 }
 
