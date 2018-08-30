@@ -50,6 +50,7 @@ namespace gmxapi
 {
 
 class Context;
+class Workflow;
 
 /*!
  * \brief Private implementation for gmxapi::System
@@ -60,6 +61,7 @@ class System::Impl final
 {
     public:
         /*! \cond */
+        Impl();
         ~Impl();
 
         Impl(Impl &&) noexcept;
@@ -67,11 +69,11 @@ class System::Impl final
         /*! \endcond */
 
         /*!
-         * \brief Initialize from a TPR file.
+         * \brief Initialize from a work description.
          *
-         * \param filename Run input file defining the system to be simulated.
+         * \param workflow Simulation work to perform.
          */
-        explicit Impl(std::string filename);
+        explicit Impl(std::unique_ptr<gmxapi::Workflow> &&workflow) noexcept;
 
         /*!
          * \brief Get the status of the last operation.
@@ -101,10 +103,10 @@ class System::Impl final
          * This connection can be mediated by a session resources object in the future.
          */
         std::shared_ptr<Context>            context_;
+        //! Description of simulation work.
+        std::shared_ptr<Workflow>           workflow_;
         //! Cached Status object.
         std::unique_ptr<Status>             status_;
-        //! TPR filename to load at run time.
-        std::string                         filename_;
 };
 
 }      // end namespace gmxapi

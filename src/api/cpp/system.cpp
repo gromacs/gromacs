@@ -36,14 +36,16 @@
 
 #include <array>
 
-#include "gmxapi/context.h"
-#include "gmxapi/session.h"
-#include "gmxapi/status.h"
-#include "gmxapi/system.h"
+#include "workflow.h"
 
 #include "gromacs/utility.h"
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/mdrun/runner.h"
+
+#include "gmxapi/context.h"
+#include "gmxapi/session.h"
+#include "gmxapi/status.h"
+#include "gmxapi/system.h"
 
 #include "system-impl.h"
 
@@ -58,7 +60,7 @@ System::Impl &System::Impl::operator=(System::Impl &&source) noexcept
 {
     context_.swap(source.context_);
     status_.swap(source.status_);
-    filename_ = source.filename_;
+    workflow_.swap(source.workflow_);
     return *this;
 }
 
@@ -90,9 +92,13 @@ std::unique_ptr<gmxapi::System> fromTprFile(std::string filename)
     // Confirm the file is readable and parseable and note unique identifying information
     // for when the work spec is used in a different environment.
 
+    // Create a new Workflow instance.
+    // \todo: error handling
+    auto workflow = Workflow::create(filename);
+
     // This may produce errors or throw exceptions in the future, but in 0.0.3 only memory allocation
     // errors are possible, and we do not have a plan for how to recover from them.
-    auto systemImpl = gmx::compat::make_unique<System::Impl>(filename);
+    auto systemImpl = gmx::compat::make_unique<System::Impl>(std::move(workflow));
     assert(systemImpl != nullptr);
     auto system = gmx::compat::make_unique<System>(std::move(systemImpl));
 
@@ -108,22 +114,36 @@ std::unique_ptr<gmxapi::System> fromTprFile(std::string filename)
     return system;
 }
 
+
+System::Impl::Impl() :
+    context_ {std::make_shared<Context>()},
+workflow_ {
+    nullptr
+},
+status_ {
+    gmx::compat::make_unique<Status>()
+}
+{
+    assert(context_ != nullptr);
+    assert(status_ != nullptr);
+}
+
 Status System::Impl::status() const
 {
     return *status_;
 }
 
-System::Impl::Impl(std::string filename) :
+System::Impl::Impl(std::unique_ptr<gmxapi::Workflow> &&workflow) noexcept :
     context_ {defaultContext()},
-status_
-{
-    gmx::compat::make_unique<Status>(true)
+workflow_ {
+    std::move(workflow)
 },
-filename_ {
-    std::move(filename)
+status_ {
+    gmx::compat::make_unique<Status>(true)
 }
 {
     assert(context_ != nullptr);
+    assert(workflow_ != nullptr);
     assert(status_ != nullptr);
 }
 
@@ -134,7 +154,7 @@ std::shared_ptr<Session> System::Impl::launch(std::shared_ptr<Context> context)
     };
     if (context != nullptr)
     {
-        session = context->launch(filename_);
+        session = context->launch(*workflow_);
         assert(session);
     }
     else
