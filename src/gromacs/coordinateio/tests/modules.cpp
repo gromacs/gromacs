@@ -86,6 +86,16 @@ TEST_P(SetForceUnSupportedFiles, Works)
     prepareTest(GetParam());
 }
 
+TEST_P(SetPrecisionSupportedFiles, Works)
+{
+    prepareTest(GetParam());
+}
+
+TEST_P(SetPrecisionUnSupportedFiles, Works)
+{
+    prepareTest(GetParam());
+}
+
 INSTANTIATE_TEST_CASE_P(ModuleSupported,
                         SetAtomsSupportedFiles, ::testing::ValuesIn(setAtomsSupported));
 
@@ -106,6 +116,12 @@ INSTANTIATE_TEST_CASE_P(ModuleSupported,
 
 INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
                         SetForceUnSupportedFiles, ::testing::ValuesIn(setForceUnSupported));
+
+INSTANTIATE_TEST_CASE_P(ModuleSupported,
+                        SetPrecisionSupportedFiles, ::testing::ValuesIn(setPrecisionSupported));
+
+INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
+                        SetPrecisionUnSupportedFiles, ::testing::ValuesIn(setPrecisionUnSupported));
 
 } // namespace test
 
