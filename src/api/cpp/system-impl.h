@@ -49,6 +49,8 @@
 namespace gmxapi
 {
 
+class Context;
+
 /*!
  * \brief Private implementation for gmxapi::System
  *
@@ -82,6 +84,12 @@ class System::Impl final
         Status status() const;
 
     private:
+        /*!
+         * \brief Retain access to the state of the Context in which we were launched.
+         *
+         * This connection can be mediated by a session resources object in the future.
+         */
+        std::shared_ptr<Context>            context_;
         //! Cached Status object.
         std::unique_ptr<Status>             status_;
         //! TPR filename to load at run time.

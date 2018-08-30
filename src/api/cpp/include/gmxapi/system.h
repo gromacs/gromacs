@@ -40,6 +40,7 @@
  * \ingroup gmxapi
  */
 #include <memory>
+#include <string>
 
 #include "gmxapi/status.h"
 
@@ -59,7 +60,9 @@ namespace gmxapi
  * As of gmxapi 0.0.6, a simulation is configured and launched as follows.
  *
  * 1. Caller gets a System handle with gmxapi::fromTprFile().
- * 2. Caller optionally attaches additional MD Modules with getSpec()->addModule(std::shared_ptr<gmxapi::MDModule> module). See gmxapi::MDHolder
+ * 2. Caller optionally attaches additional MD Modules with
+ *    getSpec()->addModule(std::shared_ptr<gmxapi::MDModule> module).
+ *    See gmxapi::MDHolder
  * 3. Caller gets a runnable object by passing a Context to System::launch()
  *
  * During launch() configured gmxapi::MDModules are attached to the simulator, which is

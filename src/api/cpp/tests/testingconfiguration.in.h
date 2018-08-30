@@ -32,9 +32,6 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-//
-// Created by Eric Irrgang on 10/26/17.
-//
 
 #ifndef GROMACS_TESTINGCONFIGURATION_H
 #define GROMACS_TESTINGCONFIGURATION_H
