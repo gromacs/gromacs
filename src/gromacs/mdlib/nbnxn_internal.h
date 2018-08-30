@@ -155,6 +155,7 @@ struct nbnxn_grid_t
     rvec     c1;                   /* The upper corner of the (local) grid        */
     rvec     size;                 /* c1 - c0                                     */
     real     atom_density;         /* The atom number density for the local grid  */
+    real     maxAtomGroupRadius;   /* Atom groups are put in cells, this is ths maximum distance an atom can be outside of the grid and the grid cell */
 
     gmx_bool bSimple;              /* Is this grid simple or super/sub            */
     int      na_c;                 /* Number of atoms per cluster                 */

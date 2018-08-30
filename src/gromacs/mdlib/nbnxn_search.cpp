@@ -353,26 +353,36 @@ static void init_buffer_flags(nbnxn_buffer_flags_t *flags,
     }
 }
 
+/* Returns cutoff^2 between a bounding box and a grid cell taking into account
+ * the maximum atom-group radius.
+ */
+static real cutoffSquaredBoundingBoxToGridCell(real                rlist,
+                                               const nbnxn_grid_t &grid)
+{
+    return gmx::square(rlist + grid.maxAtomGroupRadius);
+}
+
 /* Determines the cell range along one dimension that
  * the bounding box b0 - b1 sees.
  */
 template<int dim>
 static void get_cell_range(real b0, real b1,
                            const nbnxn_grid_t &gridj,
-                           real d2, real r2, int *cf, int *cl)
+                           real d2, real rlist, int *cf, int *cl)
 {
+    real bbToCellcutoff2 = cutoffSquaredBoundingBoxToGridCell(rlist, gridj);
     real distanceInCells = (b0 - gridj.c0[dim])*gridj.invCellSize[dim];
     *cf                  = std::max(static_cast<int>(distanceInCells), 0);
 
     while (*cf > 0 &&
-           d2 + gmx::square((b0 - gridj.c0[dim]) - (*cf - 1 + 1)*gridj.cellSize[dim]) < r2)
+           d2 + gmx::square((b0 - gridj.c0[dim]) - (*cf - 1 + 1)*gridj.cellSize[dim]) < bbToCellcutoff2)
     {
         (*cf)--;
     }
 
     *cl = std::min(static_cast<int>((b1 - gridj.c0[dim])*gridj.invCellSize[dim]), gridj.numCells[dim] - 1);
     while (*cl < gridj.numCells[dim] - 1 &&
-           d2 + gmx::square((*cl + 1)*gridj.cellSize[dim] - (b1 - gridj.c0[dim])) < r2)
+           d2 + gmx::square((*cl + 1)*gridj.cellSize[dim] - (b1 - gridj.c0[dim])) < bbToCellcutoff2)
     {
         (*cl)++;
     }
@@ -3292,8 +3302,9 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
         }
         else
         {
+            real cellToCellRlist = rlist + gridi->maxAtomGroupRadius + gridj->maxAtomGroupRadius;
             if (d == XX &&
-                box[XX][XX] - fabs(box[YY][XX]) - fabs(box[ZZ][XX]) < std::sqrt(rlist2))
+                box[XX][XX] - fabs(box[YY][XX]) - fabs(box[ZZ][XX]) < cellToCellRlist)
             {
                 shp[d] = 2;
             }
@@ -3363,7 +3374,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
             {
                 d2cx = gmx::square(gridj->c0[XX] - bx1);
 
-                if (d2cx >= rlist2)
+                if (d2cx >= cutoffSquaredBoundingBoxToGridCell(rlist, *gridj))
                 {
                     continue;
                 }
@@ -3424,7 +3435,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
 
                 get_cell_range<YY>(by0, by1,
                                    *gridj,
-                                   d2z_cx, rlist2,
+                                   d2z_cx, rlist,
                                    &cyf, &cyl);
 
                 if (cyf > cyl)
@@ -3466,7 +3477,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
 
                     get_cell_range<XX>(bx0, bx1,
                                        *gridj,
-                                       d2z_cy, rlist2,
+                                       d2z_cy, rlist,
                                        &cxf, &cxl);
 
                     if (cxf > cxl)
@@ -3554,7 +3565,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
                             {
                                 d2zxy += gmx::square(gridj->c0[YY] + (cy+1)*gridj->cellSize[YY] - by0);
                             }
-                            if (columnStart < columnEnd && d2zxy < rlist2)
+                            if (columnStart < columnEnd && d2zxy < cutoffSquaredBoundingBoxToGridCell(rlist, *gridj))
                             {
                                 /* To improve efficiency in the common case
                                  * of a homogeneous particle distribution,
