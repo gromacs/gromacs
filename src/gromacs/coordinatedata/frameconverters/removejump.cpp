@@ -32,20 +32,58 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*!\file
+ * \internal
  * \brief
- * Public API convenience header for accessing frameconverters.
+ * Implements gmx::RemoveJump.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
- * \inpublicapi
  * \ingroup module_coordinatedata
  */
-#ifndef GMX_COORDINATEDATA_FRAMECONVERTERS_H
-#define GMX_COORDINATEDATA_FRAMECONVERTERS_H
 
-#include "gromacs/coordinatedata/frameconverters/frameconverter.h"
-#include "gromacs/coordinatedata/frameconverters/register.h"
-#include "gromacs/coordinatedata/frameconverters/removejump.h"
-#include "gromacs/coordinatedata/frameconverters/shiftcoord.h"
+#include "gmxpre.h"
 
-#endif
+#include "removejump.h"
+
+#include <algorithm>
+
+#include "gromacs/math/vec.h"
+
+namespace gmx
+{
+
+void
+RemoveJump::convertFrame(const t_trxframe &input)
+{
+    int              natoms = input.natoms;
+    RVec             diagonal(0, 0, 0);
+    for (int d = 0; d < DIM; d++)
+    {
+        diagonal[d] = localBox_[d][d];
+    }
+    for (int i = 0; i < natoms; i++)
+    {
+        for (int m = DIM-1; m >= 0; m--)
+        {
+            if (diagonal[m] > 0)
+            {
+                while (input.x[i][m] - referenceCoord_[i][m] <= -diagonal[m])
+                {
+                    for (int d = 0; d <= m; d++)
+                    {
+                        coordinateFrame_.x[i][d] += localBox_[m][d];
+                    }
+                }
+                while (input.x[i][m] - referenceCoord_[i][m] > diagonal[m])
+                {
+                    for (int d = 0; d <= m; d++)
+                    {
+                        coordinateFrame_.x[i][d] -= localBox_[m][d];
+                    }
+                }
+            }
+        }
+    }
+}
+
+} // namespace gmx
