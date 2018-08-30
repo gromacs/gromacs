@@ -50,6 +50,7 @@
 #include "modules/convert.h"
 #include "modules/distance.h"
 #include "modules/freevolume.h"
+#include "modules/nojump.h"
 #include "modules/pairdist.h"
 #include "modules/rdf.h"
 #include "modules/sasa.h"
@@ -97,6 +98,7 @@ void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
     registerModule<FreeVolumeInfo>(manager, group);
     registerModule<PairDistanceInfo>(manager, group);
     registerModule<RdfInfo>(manager, group);
+    registerModule<NoJumpInfo>(manager, group);
     registerModule<SasaInfo>(manager, group);
     registerModule<SelectInfo>(manager, group);
     registerModule<TrajectoryInfo>(manager, group);
