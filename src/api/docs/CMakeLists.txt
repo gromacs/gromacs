@@ -40,6 +40,10 @@
 
 set(GMXAPI_USERDOC_OUTPUT ${CMAKE_BINARY_DIR}/docs/api-user)
 set(GMXAPI_DEVDOC_OUTPUT ${CMAKE_BINARY_DIR}/docs/api-dev)
+
+file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/../../../docs/api-user" GMXAPI_USERDOC_OUTPUT)
+file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/../../../docs/api-dev" GMXAPI_DEVDOC_OUTPUT)
+
 file(MAKE_DIRECTORY ${GMXAPI_USERDOC_OUTPUT})
 file(MAKE_DIRECTORY ${GMXAPI_DEVDOC_OUTPUT})
 
@@ -59,16 +63,16 @@ configure_file(Doxyfile-dev.in Doxyfile-dev @ONLY)
 ################################
 find_package(Doxygen)
 if (DOXYGEN_FOUND)
-	add_custom_target( gmxapi_cppdocs
-	    COMMAND ${DOXYGEN_EXECUTABLE} Doxyfile
-	    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-	    COMMENT "Generating API user documentation for ${GMXAPI_USERDOC_OUTPUT}"
-	    VERBATIM )
-	add_custom_target( gmxapi_cppdocs_dev
-	    COMMAND ${DOXYGEN_EXECUTABLE} Doxyfile-dev
-	    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-	    COMMENT "Generating API developer documentation for ${GMXAPI_DEVDOC_OUTPUT}"
-	    VERBATIM )
+    add_custom_target( gmxapi_cppdocs
+        COMMAND ${DOXYGEN_EXECUTABLE} Doxyfile
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Generating API user documentation for ${GMXAPI_USERDOC_OUTPUT}"
+        VERBATIM )
+    add_custom_target( gmxapi_cppdocs_dev
+        COMMAND ${DOXYGEN_EXECUTABLE} Doxyfile-dev
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Generating API developer documentation for ${GMXAPI_DEVDOC_OUTPUT}"
+        VERBATIM )
 else (DOXYGEN_FOUND)
     message("Doxygen need to be installed to generate the doxygen documentation")
 endif (DOXYGEN_FOUND)

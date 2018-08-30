@@ -37,6 +37,7 @@
 #include <array>
 
 #include "gmxapi/context.h"
+#include "gmxapi/session.h"
 #include "gmxapi/status.h"
 #include "gmxapi/system.h"
 
@@ -53,11 +54,11 @@ System::Impl::~Impl() = default;
 
 System::Impl::Impl(System::Impl &&) noexcept = default;
 
-System::Impl &System::Impl::operator=(System::Impl &&source) noexcept
+System::Impl &System::Impl::operator=(System::Impl &&source) noexcept = default;
+
+std::shared_ptr<Session> System::launch(std::shared_ptr<Context> context)
 {
-    filename_ = source.filename_;
-    status_.swap(source.status_);
-    return *this;
+    return impl_->launch(std::move(context));
 }
 
 Status System::status()
@@ -118,6 +119,26 @@ filename_ {
 {
     assert(context_ != nullptr);
     assert(status_ != nullptr);
+}
+
+std::shared_ptr<Session> System::Impl::launch(std::shared_ptr<Context> context)
+{
+    std::shared_ptr<Session> session {
+        nullptr
+    };
+    if (context != nullptr)
+    {
+        session = context->launch(filename_);
+        assert(session);
+    }
+    else
+    {
+        // we should log the error and return nullptr, but we have nowhere to set
+        // a status object, by the described behavior. Should both native context and
+        // provided context receive error status?
+    }
+
+    return session;
 }
 
 } // end namespace gmxapi
