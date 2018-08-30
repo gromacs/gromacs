@@ -91,7 +91,7 @@ createMinimalTrajectoryFrameWriter(const std::string         &filename,
                                        selection,
                                        filename,
                                        topology.hasTopology() ? topology.copyAtoms() : nullptr,
-                                       std::move(requirements));
+                                       requirements);
 }
 /*! \libinternal \brief
  * Helper class for tests that need an initialized selection.

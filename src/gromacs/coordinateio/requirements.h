@@ -34,7 +34,7 @@
  */
 /*!\file
  * \brief
- * Storage object for requirments to build outputmanager.
+ * Storage object for requirements to build coordinate file writer.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
  * \ingroup module_coordinateio
@@ -47,6 +47,7 @@
 
 #include "gromacs/coordinateio/enums.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/options/ioptionscontainer.h"
 
 namespace gmx
 {
@@ -54,7 +55,53 @@ namespace gmx
 /*!\brief
  * Container for the user input values that will be used by the builder
  * to determine which OutputAdapters should/could/will be registered
- * to the OutputManager.
+ * to the coordinate file writer.
+ */
+class OutputRequirementOptionDirector
+{
+    public:
+        /*! \brief
+         * Populate requirements from option interface.
+         *
+         * \param[in] options Pointer to global options framework.
+         */
+        void initOptions(IOptionsContainer *options);
+
+        /*! \brief
+         * Provide processed requirements to create on coordinate file writing method.
+         */
+        struct OutputRequirements process() const;
+
+    private:
+
+
+
+        //! Should velocities be written.
+        ChangeSettingType           velocity_          = ChangeSettingType::PreservedIfPresent;
+        //! Should forces be written.
+        ChangeSettingType           force_             = ChangeSettingType::PreservedIfPresent;
+        //! Precision used in output file.
+        int                         prec_              = 3;
+        //! If a new precision value has been set.
+        bool                        setNewPrecision_   = false;
+        //! Time for first frame to start.
+        real                        startTimeValue_    = 0;
+        //! Time step to use between frames.
+        real                        timeStepValue_     = 0;
+        //! If start time value has been assigned.
+        bool                        setNewStartTime_   = false;
+        //! If a new time step value has been assigned.
+        bool                        setNewTimeStep_    = false;
+        //! User supplied diagonal box vector.
+        std::vector<real>           newBoxVector_;
+        //! If a new box vector has been set.
+        bool                        setNewBox_         = false;
+        //! Should frame atom setting be changed.
+        ChangeAtomsType             atoms_             = ChangeAtomsType::PreservedIfPresent;
+};
+
+/*! \brief
+ * Finalized version of requirements after processing.
  */
 struct OutputRequirements {
     //! Should velocities be written.
@@ -65,22 +112,12 @@ struct OutputRequirements {
     ChangeFrameInfoType         precision          = ChangeFrameInfoType::PreservedIfPresent;
     //! Precision used in output file.
     int                         prec               = 3;
-    //! If a new precision value has been set.
-    bool                        setNewPrecision    = false;
     //! Should frame start time be changed.
     ChangeFrameTimeType         frameTime          = ChangeFrameTimeType::PreservedIfPresent;
     //! Time for first frame to start.
     real                        startTimeValue     = 0;
     //! Time step to use between frames.
     real                        timeStepValue      = 0;
-    //! If start time value has been assigned.
-    bool                        setNewStartTime    = false;
-    //! If a new time step value has been assigned.
-    bool                        setNewTimeStep     = false;
-    //! User supplied diagonal box vector.
-    std::vector<real>           newBoxVector;
-    //! If a new box vector has been set.
-    bool                        setNewBox          = false;
     //! Box vector converted to matrix format.
     matrix                      newBox             = {{0}};
     //! Should frame box be changed.

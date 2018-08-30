@@ -36,6 +36,7 @@ set(test_sources
     builder.cpp
     outputadaptercontainer.cpp
     outputadapters.cpp
+    requirements.cpp
     setatoms.cpp
     setbothtime.cpp
     setstarttime.cpp
