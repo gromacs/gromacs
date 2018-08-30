@@ -40,6 +40,9 @@ gmx_install_headers(
     coordinateoutput.h
     modules/outputselector.h
     modules/setatoms.h
+    modules/setbox.h
+    modules/setforces.h
+    modules/setvelocities.h
     outputmanager.h
     modulecallback.h
     )
