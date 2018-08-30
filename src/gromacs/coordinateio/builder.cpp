@@ -160,7 +160,8 @@ addOutputAdapters(const OutputRequirements  &requirements,
     }
     if (requirements.precision != ChangeFrameInfoType::efUnchanged)
     {
-        // add adapter here
+        output.addAdapter(
+                compat::make_unique<SetPrecision>(requirements.prec));
     }
     if (requirements.atoms != ChangeAtomsType::efUnchanged)
     {
@@ -170,7 +171,10 @@ addOutputAdapters(const OutputRequirements  &requirements,
     }
     if (requirements.frameTime != ChangeFrameTimeType::efUnchanged)
     {
-        // add adapter here
+        output.addAdapter(
+                compat::make_unique<SetTime>(requirements.startTimeValue,
+                                             requirements.timeStepValue,
+                                             requirements.frameTime));
     }
     if (requirements.box != ChangeFrameInfoType::efUnchanged)
     {

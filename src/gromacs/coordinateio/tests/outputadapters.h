@@ -55,6 +55,8 @@
 #include "gromacs/coordinateio/outputadapters/setatoms.h"
 #include "gromacs/coordinateio/outputadapters/setbox.h"
 #include "gromacs/coordinateio/outputadapters/setforces.h"
+#include "gromacs/coordinateio/outputadapters/setprecision.h"
+#include "gromacs/coordinateio/outputadapters/settime.h"
 #include "gromacs/coordinateio/outputadapters/setvelocities.h"
 
 #include "gromacs/coordinateio/tests/coordinate_test.h"
@@ -137,6 +139,8 @@ class OutputTurnedOffSupportedFiles : public ModuleTest
             requirements.atoms     = ChangeAtomsType::efUserNo;
             requirements.velocity  = ChangeSettingType::efUserNo;
             requirements.force     = ChangeSettingType::efUserNo;
+            requirements.precision = ChangeFrameInfoType::efUserYes;
+            requirements.prec      = 3;
 
             EXPECT_NO_THROW(runTest(filename, requirements));
         }
@@ -325,6 +329,22 @@ const char *const setForceSupported[] = {
 //! Names here don't work for setForce module
 const char *const setForceUnSupported[] = {
     "spc2-traj.xtc",
+    "spc2-traj.pdb",
+    "spc2-traj.gro",
+    "spc2-traj.g96"
+};
+
+//! Names here work for setPrecision module
+const char *const setPrecisionSupported[] = {
+#if GMX_USE_TNG
+    "spc2-traj.tng",
+#endif
+    "spc2-traj.xtc",
+};
+
+//! Names here don't work for setPrecision module
+const char *const setPrecisionUnSupported[] = {
+    "spc2-traj.trr",
     "spc2-traj.pdb",
     "spc2-traj.gro",
     "spc2-traj.g96"
