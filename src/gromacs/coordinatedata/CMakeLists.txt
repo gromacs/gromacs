@@ -39,6 +39,7 @@ gmx_install_headers(
     frameconverters.h
     frameconverters/frameconverter.h
     frameconverters/register.h
+    frameconverters/removejump.h
     frameconverters/shiftcoord.h
     )
 
