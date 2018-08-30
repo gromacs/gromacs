@@ -1435,6 +1435,8 @@ void nbnxn_put_on_grid(nbnxn_search_t    nbs,
 
     const int n = atomEnd - atomStart;
 
+    grid->maxAtomGroupRadius = 0;
+
     if (ddZone == 0)
     {
         nbs->ePBC = ePBC;
