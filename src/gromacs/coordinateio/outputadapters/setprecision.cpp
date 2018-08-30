@@ -32,23 +32,39 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*!\file
+ * \internal
  * \brief
- * Public API convenience header for accessing outputadapters.
+ * Implements setprecision class.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
- * \inpublicapi
  * \ingroup module_coordinateio
  */
-#ifndef GMX_COORDINATEIO_OUTPUTADAPTERS_H
-#define GMX_COORDINATEIO_OUTPUTADAPTERS_H
 
-#include "gromacs/coordinateio/outputadapters/outputselector.h"
-#include "gromacs/coordinateio/outputadapters/setatoms.h"
-#include "gromacs/coordinateio/outputadapters/setbox.h"
-#include "gromacs/coordinateio/outputadapters/setforces.h"
-#include "gromacs/coordinateio/outputadapters/setprecision.h"
-#include "gromacs/coordinateio/outputadapters/settime.h"
-#include "gromacs/coordinateio/outputadapters/setvelocities.h"
+#include "gmxpre.h"
 
-#endif
+#include "setprecision.h"
+
+#include <algorithm>
+
+namespace gmx
+{
+
+real
+SetPrecision::setFramePrecision(int ndec)
+{
+    real prec = 1;
+    for (int i = 0; i < ndec; i++)
+    {
+        prec *= 10;
+    }
+    return prec;
+}
+
+void
+SetPrecision::processFrame(const int /*framenumber*/, t_trxframe *input)
+{
+    input->prec = setFramePrecision(precision_);
+}
+
+} // namespace gmx
