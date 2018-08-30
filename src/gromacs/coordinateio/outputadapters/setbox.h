@@ -34,19 +34,76 @@
  */
 /*! \file
  * \brief
- * Public API convenience header for accessing outputadapters.
+ * Declares gmx::SetBox.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
  * \inpublicapi
  * \ingroup module_coordinateio
  */
-#ifndef GMX_COORDINATEIO_OUTPUTADAPTERS_H
-#define GMX_COORDINATEIO_OUTPUTADAPTERS_H
+#ifndef GMX_COORDINATEIO_SETBOX_H
+#define GMX_COORDINATEIO_SETBOX_H
 
-#include "gromacs/coordinateio/outputadapters/outputselector.h"
-#include "gromacs/coordinateio/outputadapters/setatoms.h"
-#include "gromacs/coordinateio/outputadapters/setbox.h"
-#include "gromacs/coordinateio/outputadapters/setforces.h"
-#include "gromacs/coordinateio/outputadapters/setvelocities.h"
+#include <memory>
+
+#include "gromacs/coordinateio/ioutputadapter.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/trajectory/trajectoryframe.h"
+
+namespace gmx
+{
+
+/*!\brief
+ * Allows changing box information when writing a coordinate file.
+ *
+ * \inpublicapi
+ * \ingroup module_coordinateio
+ */
+class SetBox : public IOutputAdapter
+{
+    public:
+        /*! \brief
+         * Construct SetBox object with a new user defined box.
+         */
+        explicit SetBox(const matrix box)
+        {
+            copy_mat(box, box_);
+        }
+        /*! \brief
+         *  Move constructor for SetBox.
+         */
+        SetBox(SetBox &&old) noexcept
+        {
+            copy_mat(old.box_, box_);
+        }
+
+        ~SetBox() override
+        {
+            clear_mat(box_);
+        }
+
+        /*! \brief
+         * Change coordinate frame information for output.
+         *
+         * In this case, box information is added to the \p t_trxframe object
+         * depending on the user input.
+         *
+         * \param[in] input Coordinate frame to be modified later.
+         */
+        void processFrame(int /*framenumner*/, t_trxframe *input) override
+        {
+            copy_mat(box_, input->box);
+        }
+
+        void checkAbilityDependencies(unsigned long /* abilities */) const override {}
+
+    private:
+        //! New box information from the user.
+        matrix                            box_;
+};
+
+//! Smart pointer to manage the object.
+using SetBoxPointer = std::unique_ptr<SetBox>;
+
+} // namespace gmx
 
 #endif

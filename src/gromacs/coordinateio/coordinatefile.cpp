@@ -149,11 +149,15 @@ addOutputAdapters(const OutputRequirements  &requirements,
      */
     if (requirements.velocity != ChangeSettingType::PreservedIfPresent)
     {
-        // add adapter here
+        output.addAdapter(
+                std::make_unique<SetVelocities>(requirements.velocity),
+                CoordinateFileFlags::RequireVelocityOutput);
     }
     if (requirements.force != ChangeSettingType::PreservedIfPresent)
     {
-        // add adapter here
+        output.addAdapter(
+                std::make_unique<SetForces>(requirements.force),
+                CoordinateFileFlags::RequireForceOutput);
     }
     if (requirements.precision != ChangeFrameInfoType::PreservedIfPresent)
     {
@@ -172,7 +176,9 @@ addOutputAdapters(const OutputRequirements  &requirements,
     }
     if (requirements.box != ChangeFrameInfoType::PreservedIfPresent)
     {
-        // add adapter here
+        output.addAdapter(
+                std::make_unique<SetBox>(requirements.newBox),
+                CoordinateFileFlags::RequireNewBox);
     }
     if (sel.isValid())
     {
