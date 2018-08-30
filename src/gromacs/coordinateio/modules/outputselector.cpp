@@ -125,7 +125,6 @@ OutputSelector::processFrame(const int /*framenumber*/, t_trxframe *input)
     rvec *vmem = nullptr;
     rvec *fmem = nullptr;
     snew(xmem, natoms);
-    // Free memory allocated before
     if (input->bV)
     {
         snew(vmem, natoms);

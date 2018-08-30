@@ -93,7 +93,13 @@ class SetAtoms : public ICoordinateOutput
         {
         }
 
-        ~SetAtoms() override {}
+        ~SetAtoms() override
+        {
+            if (haveLocalAtoms_)
+            {
+                done_atom(&atoms_);
+            }
+        }
 
         /*! \brief
          * Change coordinate frame information for output.
