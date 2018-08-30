@@ -36,6 +36,7 @@
 
 #include <array>
 
+#include "gmxapi/context.h"
 #include "gmxapi/status.h"
 #include "gmxapi/system.h"
 
@@ -106,7 +107,8 @@ Status System::Impl::status() const
 }
 
 System::Impl::Impl(std::string filename) :
-    status_
+    context_ {defaultContext()},
+status_
 {
     gmx::compat::make_unique<Status>(true)
 },
@@ -114,6 +116,7 @@ filename_ {
     std::move(filename)
 }
 {
+    assert(context_ != nullptr);
     assert(status_ != nullptr);
 }
 
