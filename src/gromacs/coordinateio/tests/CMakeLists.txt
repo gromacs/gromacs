@@ -34,6 +34,7 @@
 
 set(test_sources
     builder.cpp
+    flags.cpp
     outputadaptercontainer.cpp
     outputadapters.cpp
     setatoms.cpp

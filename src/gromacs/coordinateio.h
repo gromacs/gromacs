@@ -156,6 +156,7 @@
 
 #include "gromacs/coordinateio/builder.h"
 #include "gromacs/coordinateio/enums.h"
+#include "gromacs/coordinateio/flags.h"
 #include "gromacs/coordinateio/ioutputadapter.h"
 #include "gromacs/coordinateio/outputadaptercontainer.h"
 #include "gromacs/coordinateio/outputmanager.h"
