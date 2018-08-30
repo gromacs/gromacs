@@ -32,81 +32,77 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*!\file
- * \internal
+/*! \file
  * \brief
- * Tests for outputmanager
+ * Declares gmx::SetBox.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
+ * \inpublicapi
  * \ingroup module_coordinateio
  */
+#ifndef GMX_COORDINATEIO_SETBOX_H
+#define GMX_COORDINATEIO_SETBOX_H
 
-#include "gmxpre.h"
+#include <algorithm>
 
-#include "modules.h"
+#include "gromacs/coordinateio/coordinateoutput.h"
+#include "gromacs/math/vec.h"
 
 namespace gmx
 {
 
-namespace test
+/*!\brief
+ * SetBox class allows changing writing of velocities to file.
+ *
+ * This class allows the user to define if velocities should be written
+ * to the output coordinate file, and checks if they are available from the
+ * currently processed data.
+ *
+ * \inpublicapi
+ * \ingroup module_coordinateio
+ */
+class SetBox : public ICoordinateOutput
 {
+    public:
+        /*! \brief
+         * Construct SetBox object with choice for boolean value.
+         *
+         * Can be used to initialize SetBox from outside of trajectoryanalysis
+         * with the user specified option to write coordinate velocities or not.
+         */
+        explicit SetBox(const matrix box) : ICoordinateOutput(efAnyOutputSupported)
+        {
+            copy_mat(box, box_);
+        }
+        /*! \brief
+         *  Move constructor for SetBox.
+         */
+        SetBox(SetBox &&old) noexcept : ICoordinateOutput(old.moduleFlags_)
+        {
+            copy_mat(old.box_, box_);
+        }
 
-TEST_P(SetAtomsSupportedFiles, Works)
-{
-    prepareTest(GetParam());
-}
+        ~SetBox() {}
 
-TEST_P(SetAtomsUnSupportedFiles, Works)
-{
-    prepareTest(GetParam());
-}
+        /*! \brief
+         * Change coordinate frame information for output.
+         *
+         * In this case, box information is added to the \p t_trxframe object
+         * depending on the user input.
+         *
+         * \param[in] input Coordinate frame to be modified later.
+         */
+        virtual void processFrame(int /*framenumner*/, t_trxframe *input);
 
-TEST_P(AnyOutputSupportedFiles, Works)
-{
-    prepareTest(GetParam());
-}
+    private:
+        //! New box information from the user.
+        matrix                            box_;
+};
 
-TEST_P(SetVelocitySupportedFiles, Works)
-{
-    prepareTest(GetParam());
-}
-
-TEST_P(SetVelocityUnSupportedFiles, Works)
-{
-    prepareTest(GetParam());
-}
-
-TEST_P(SetForceSupportedFiles, Works)
-{
-    prepareTest(GetParam());
-}
-
-TEST_P(SetForceUnSupportedFiles, Works)
-{
-    prepareTest(GetParam());
-}
-
-INSTANTIATE_TEST_CASE_P(ModuleSupported,
-                        SetAtomsSupportedFiles, ::testing::ValuesIn(setAtomsSupported));
-
-INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
-                        SetAtomsUnSupportedFiles, ::testing::ValuesIn(setAtomsUnSupported));
-
-INSTANTIATE_TEST_CASE_P(ModuleSupported,
-                        AnyOutputSupportedFiles, ::testing::ValuesIn(anySupported));
-
-INSTANTIATE_TEST_CASE_P(ModuleSupported,
-                        SetVelocitySupportedFiles, ::testing::ValuesIn(setVelocitySupported));
-
-INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
-                        SetVelocityUnSupportedFiles, ::testing::ValuesIn(setVelocityUnSupported));
-
-INSTANTIATE_TEST_CASE_P(ModuleSupported,
-                        SetForceSupportedFiles, ::testing::ValuesIn(setForceSupported));
-
-INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
-                        SetForceUnSupportedFiles, ::testing::ValuesIn(setForceUnSupported));
-
-} // namespace test
+//! Smart pointer to manage the outputselector object.
+typedef std::unique_ptr<SetBox>
+    SetBoxPointer;
 
 } // namespace gmx
+
+#endif
