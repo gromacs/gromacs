@@ -122,7 +122,7 @@ enum class CoordinateFileFlags : unsigned long
      * Default for most methods, will need to be able to write coordinates to
      * output file or generate an error.
      */
-    RequireCoordianteSelection = 1<<8,
+    RequireCoordinateSelection = 1<<8,
     //! Needed for enumeration array.
     Count
 };

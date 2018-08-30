@@ -129,13 +129,14 @@ static unsigned long getSupportedOutputAdapters(int filetype)
  * methods attached to it.
  *
  * \param[in] requirements Specifications for modules to add.
+ * \param[in] atoms        Local copy of atom information to use.
  * \param[in] sel          Selection to use for choosing atoms to write out.
  * \param[in] abilities    Specifications for what the output method can do.
  * \returns   New container for IoutputAdapter derived methods.
  */
 static OutputAdapterContainer
 addOutputAdapters(const OutputRequirements  &requirements,
-                  AtomsDataPtr                /* atoms */,
+                  AtomsDataPtr               atoms,
                   const Selection           &sel,
                   unsigned long              abilities)
 {
@@ -160,7 +161,10 @@ addOutputAdapters(const OutputRequirements  &requirements,
     }
     if (requirements.atoms != ChangeAtomsType::PreservedIfPresent)
     {
-        // add adapter here
+        output.addAdapter(
+                std::make_unique<SetAtoms>(requirements.atoms,
+                                           std::move(atoms)),
+                CoordinateFileFlags::RequireAtomInformation);
     }
     if (requirements.frameTime != ChangeFrameTimeType::PreservedIfPresent)
     {
@@ -172,7 +176,9 @@ addOutputAdapters(const OutputRequirements  &requirements,
     }
     if (sel.isValid())
     {
-        // add adapter here
+        output.addAdapter(
+                std::make_unique<OutputSelector>(sel),
+                CoordinateFileFlags::RequireCoordinateSelection);
     }
     return output;
 }

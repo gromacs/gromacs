@@ -104,7 +104,7 @@ class ModuleSelection
             options_.addManager(&manager_);
             sc_.setReferencePosType("atom");
             sc_.setOutputPosType("atom");
-            top_.fillFromInputFile(TestFileManager::getInputFilePath("lysozyme.gro"));
+            top_.fillFromInputFile(TestFileManager::getInputFilePath("lysozyme.pdb"));
             sc_.setTopology(top_.mtop(), 0);
         }
 
