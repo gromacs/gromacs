@@ -32,83 +32,69 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*!\file
+ * \internal
  * \brief
- * Declares gmx::SetBox.
+ * Implements settime class.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
- * \inpublicapi
  * \ingroup module_coordinateio
  */
-#ifndef GMX_COORDINATEIO_SETBOX_H
-#define GMX_COORDINATEIO_SETBOX_H
+
+#include "gmxpre.h"
+
+#include "settime.h"
 
 #include <algorithm>
 
-#include "gromacs/coordinateio/coordinateoutput.h"
-#include "gromacs/math/vec.h"
+#include "gromacs/utility/exceptions.h"
 
 namespace gmx
 {
 
-/*!\brief
- * SetBox class allows changing writing of velocities to file.
- *
- * This class allows the user to define if velocities should be written
- * to the output coordinate file, and checks if they are available from the
- * currently processed data.
- *
- * \inpublicapi
- * \ingroup module_coordinateio
- */
-class SetBox : public ICoordinateOutput
+void
+SetTime::processFrame(const int framenumber, t_trxframe *input)
 {
-    public:
-        /*! \brief
-         * Construct SetBox object with choice for boolean value.
-         *
-         * Can be used to initialize SetBox from outside of trajectoryanalysis
-         * with the user specified option to write coordinate velocities or not.
-         */
-        explicit SetBox(const matrix box)
+    setTimeShift(input->time);
+
+    switch (frameTime_)
+    {
+        case (ChangeFrameTimeType::efTimeStep):
+            input->time = startTime_ + framenumber*timeShift_;
+            break;
+        case (ChangeFrameTimeType::efStartTime):
+            startTime_ += timeShift_;
+            input->time = startTime_;
+            break;
+        case (ChangeFrameTimeType::efUnchanged):
+            break;
+        default:
+            GMX_THROW(InconsistentInputError("Value for frameTime flag is not supported"));
+    }
+
+    input->bTime = true;
+}
+
+void
+SetTime::setTimeShift(real time)
+{
+    if (!bHaveSetTimeShift_)
+    {
+        if (frameTime_ == ChangeFrameTimeType::efTimeStep)
         {
-            copy_mat(box, box_);
+            timeShift_ = timeStep_;
         }
-        /*! \brief
-         *  Move constructor for SetBox.
-         */
-        SetBox(SetBox &&old) noexcept
+        else
         {
-            copy_mat(old.box_, box_);
+            if (frameTime_ != ChangeFrameTimeType::efStartTime)
+            {
+                startTime_ = time;
+            }
+            timeShift_ = startTime_ - time;
         }
+        bHaveSetTimeShift_ = true;
+    }
 
-        ~SetBox() override
-        {
-            clear_mat(box_);
-        }
 
-        /*! \brief
-         * Change coordinate frame information for output.
-         *
-         * In this case, box information is added to the \p t_trxframe object
-         * depending on the user input.
-         *
-         * \param[in] input Coordinate frame to be modified later.
-         */
-        void processFrame(int /*framenumner*/, t_trxframe *input) override;
-
-        //! Return local requirements.
-        unsigned long getModuleFlag() override { return efChangeBoxModule; }
-
-    private:
-        //! New box information from the user.
-        matrix                            box_;
-};
-
-//! Smart pointer to manage the outputselector object.
-typedef std::unique_ptr<SetBox>
-    SetBoxPointer;
-
+}
 } // namespace gmx
-
-#endif

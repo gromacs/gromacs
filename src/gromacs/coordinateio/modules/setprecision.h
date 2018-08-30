@@ -34,14 +34,14 @@
  */
 /*! \file
  * \brief
- * Declares gmx:SetVelocity.
+ * Declares gmx::SetPrecision.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
  * \inpublicapi
  * \ingroup module_coordinateio
  */
-#ifndef GMX_COORDINATEIO_SETVELOCITY_H
-#define GMX_COORDINATEIO_SETVELOCITY_H
+#ifndef GMX_FILEIO_SETPRECISION_H
+#define GMX_FILEIO_SETPRECISION_H
 
 #include <algorithm>
 
@@ -51,57 +51,67 @@ namespace gmx
 {
 
 /*!\brief
- * SetVelocities class allows changing writing of velocities to file.
+ * SetPrecision class allows changing file writing precision.
  *
- * This class allows the user to define if velocities should be written
- * to the output coordinate file, and checks if they are available from the
- * currently processed data.
+ * This class allows the user to define the precision for writing
+ * coordinate data to output files.
  *
  * \inpublicapi
  * \ingroup module_coordinateio
  *
  */
-class SetVelocities : public ICoordinateOutput
+class SetPrecision : public ICoordinateOutput
 {
     public:
         /*! \brief
-         * Construct SetVelocities object with choice for boolean value.
+         * Construct SetPrecision object with choice for boolean value.
          *
-         * Can be used to initialize SetVelocities from outside of trajectoryanalysis
+         * Can be used to initialize SetPrecision from outside of trajectoryanalysis
          * with the user specified option to write coordinate velocities or not.
          */
-        explicit SetVelocities(ChangeSettingType velocity) : velocity_(velocity)
+        explicit SetPrecision(int precision) : precision_(precision)
         {
         }
         /*! \brief
-         *  Move constructor for SetVelocities.
+         *  Move constructor for SetPrecision.
          */
-        SetVelocities(SetVelocities &&old) noexcept = default;
+        SetPrecision(SetPrecision &&old) noexcept = default;
 
-        ~SetVelocities() override {}
+        ~SetPrecision() override {}
 
         /*! \brief
          * Change coordinate frame information for output.
          *
-         * In this case, the correct flag for writing the velocities is applied
-         * to the output frame, depending on user selection and availability
-         * in the input data.
+         * In this case, the correct value for the coordinate precision
+         * is applied for file writing.
          *
          * \param[in] input Coordinate frame to be modified later.
          */
         void processFrame(int /*framenumber*/, t_trxframe *input) override;
 
         //! Return local requirements.
-        unsigned long getModuleFlag() override { return efChangeVelocityModule; }
+        unsigned long getModuleFlag() override { return efChangeOutputPrecisionModule; }
 
     private:
-        //! Flag to specify if velocities should be written.
-        ChangeSettingType                            velocity_;
+        /*! \brief
+         * Internal method to convert user provided precision value to internal value.
+         *
+         * The function converts the precision value passed as an integer to the
+         * internally stored value in real format. This is mostly a callback to the
+         * original implementation in trjconv to keep the chance of new bugs low
+         * and to preserve the input format that users would expect from the
+         * function argument used to create the class.
+         *
+         * \param[in] ndec User provided precision as interger.
+         */
+        real setFramePrecision(int ndec);
+        //! User specified changes to default precision.
+        int                             precision_;
 };
 
 //! Smart pointer to manage the outputselector object.
-typedef std::unique_ptr<SetVelocities>
-    SetVelocitiesPointer;
+typedef std::unique_ptr<SetPrecision>
+    SetPrecisionPointer;
 
 } // namespace gmx
 

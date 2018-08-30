@@ -70,8 +70,7 @@ class SetForces : public ICoordinateOutput
          * Can be used to initialize SetForces from outside of trajectoryanalysis
          * with the user specified option to write coordinate velocities or not.
          */
-        explicit SetForces(ChangeSettingType force) : force_(force),
-                                                      moduleRequirements_(efChangeForceModule)
+        explicit SetForces(ChangeSettingType force) : force_(force)
         {
         }
         /*! \brief
@@ -93,7 +92,7 @@ class SetForces : public ICoordinateOutput
         void processFrame(int /*framenumner*/, t_trxframe *input) override;
 
         //! Return local requirements.
-        unsigned long getModuleFlag() override { return moduleRequirements_; }
+        unsigned long getModuleFlag() override { return efChangeForceModule; }
 
     private:
         /*! \brief
@@ -102,8 +101,6 @@ class SetForces : public ICoordinateOutput
          * Internal storage for the user choice for writing coordinate forces.
          */
         ChangeSettingType                            force_;
-        //! Local requirements
-        unsigned long     moduleRequirements_;
 };
 
 //! Smart pointer to manage the outputselector object.

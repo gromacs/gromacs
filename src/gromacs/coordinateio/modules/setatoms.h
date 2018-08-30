@@ -76,8 +76,7 @@ class SetAtoms : public ICoordinateOutput
          */
         explicit SetAtoms(ChangeSettingType atomFlag, const t_atoms *inputAtoms) :
             atomFlag_(atomFlag),
-            haveLocalAtoms_(false),
-            moduleRequirements_(efChangeAtomInformationModule)
+            haveLocalAtoms_(false)
         {
             if (inputAtoms != nullptr)
             {
@@ -90,8 +89,7 @@ class SetAtoms : public ICoordinateOutput
          */
         SetAtoms(SetAtoms &&old) noexcept :
             atomFlag_(old.atomFlag_),
-            atoms_(old.atoms_),
-            moduleRequirements_(old.moduleRequirements_)
+            atoms_(old.atoms_)
         {
         }
 
@@ -108,7 +106,7 @@ class SetAtoms : public ICoordinateOutput
         void processFrame(int /*framenumber*/, t_trxframe *input) override;
 
         //! Return local requirements.
-        unsigned long getModuleFlag() override { return moduleRequirements_; }
+        unsigned long getModuleFlag() override { return efChangeAtomInformationModule; }
 
     private:
         //! Local function to check that we have a proper t_atoms struct available.
@@ -147,9 +145,6 @@ class SetAtoms : public ICoordinateOutput
          *  frameadapter module.
          */
         t_atoms           atoms_;
-        //! Local requirements
-        unsigned long     moduleRequirements_;
-
 };
 
 //! Smart pointer to manage the object.

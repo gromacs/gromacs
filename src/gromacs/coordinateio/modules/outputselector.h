@@ -73,8 +73,7 @@ class OutputSelector : public ICoordinateOutput
          * framework.
          */
         explicit OutputSelector(const Selection &sel) :
-            sel_(sel),
-            moduleRequirements_(efChangeCoordinateSelectionModule)
+            sel_(sel)
         {
             GMX_RELEASE_ASSERT(sel.isValid() && sel.hasOnlyAtoms(),
                                "Need a valid selection out of simple atom indices");
@@ -97,7 +96,7 @@ class OutputSelector : public ICoordinateOutput
         void processFrame(int /*framenumber*/, t_trxframe *input) override;
 
         //! Return local requirements.
-        unsigned long getModuleFlag() override { return moduleRequirements_; }
+        unsigned long getModuleFlag() override { return efChangeCoordinateSelectionModule; }
 
     private:
 
@@ -108,8 +107,6 @@ class OutputSelector : public ICoordinateOutput
          * to disk during processing.
          */
         const Selection                            &sel_;
-        //! Local requirements
-        unsigned long moduleRequirements_;
 };
 
 //! Smart pointer to manage the object.
