@@ -42,6 +42,8 @@ gmx_install_headers(
     modules/setatoms.h
     modules/setbox.h
     modules/setforces.h
+    modules/setprecision.h
+    modules/settime.h
     modules/setvelocities.h
     outputmanager.h
     modulecallback.h
