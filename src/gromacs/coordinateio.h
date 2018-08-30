@@ -120,6 +120,8 @@
 #include "gromacs/coordinateio/modules/setatoms.h"
 #include "gromacs/coordinateio/modules/setbox.h"
 #include "gromacs/coordinateio/modules/setforces.h"
+#include "gromacs/coordinateio/modules/setprecision.h"
+#include "gromacs/coordinateio/modules/settime.h"
 #include "gromacs/coordinateio/modules/setvelocities.h"
 
 #endif
