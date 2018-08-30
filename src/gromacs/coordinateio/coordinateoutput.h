@@ -134,12 +134,13 @@ enum class ChangeFrameTimeType
 {
     efUnchanged,
     efStartTime,
-    efTimeStep
+    efTimeStep,
+    efBothTime
 };
 
 //! Mapping for values from changing frame time.
 const char *const cChangeFrameTimeTypeEnum[] = {
-    "unchanged", "startime", "timestep"
+    "unchanged", "startime", "timestep", "both"
 };
 
 } // namespace gmx
