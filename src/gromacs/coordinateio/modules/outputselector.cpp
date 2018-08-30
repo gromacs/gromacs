@@ -33,72 +33,73 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*!\file
- * \libinternal
+ * \internal
  * \brief
- * Helper classes for outputmanager and coordinateio tests
+ * Implements outputselector class.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
- * \inlibraryapi
  * \ingroup module_coordinateio
  */
 
-#ifndef GMX_COORDINATEIO_TESTS_COORDINATEIO_H
-#define GMX_COORDINATEIO_TESTS_COORDINATEIO_H
+#include "gmxpre.h"
 
-#include <gtest/gtest.h>
+#include "outputselector.h"
 
-#include "gromacs/compat/make_unique.h"
-#include "gromacs/coordinateio/builder.h"
-#include "gromacs/coordinateio/coordinateoutput.h"
-#include "gromacs/coordinateio/outputmanager.h"
-#include "gromacs/utility/exceptions.h"
+#include <algorithm>
+
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "testutils/cmdlinetest.h"
-#include "testutils/testasserts.h"
 
 namespace gmx
 {
 
-namespace test
+void
+OutputSelector::processFrame(const int /*framenumber*/, t_trxframe *input)
 {
+    int              natoms = sel_.atomCount();
 
-class DummyOutputModule : public ICoordinateOutput
-{
-    public:
-        explicit DummyOutputModule(unsigned long flag) :
-            ICoordinateOutput(flag)
+    input->natoms = natoms;
+
+    rvec *xmem = nullptr;
+    rvec *vmem = nullptr;
+    rvec *fmem = nullptr;
+    snew(xmem, natoms);
+    // Free memory allocated before
+    if (input->bV)
+    {
+        snew(vmem, natoms);
+    }
+    if (input->bF)
+    {
+        snew(fmem, natoms);
+    }
+
+    for (int i = 0; i < natoms; i++)
+    {
+        int pos = sel_.position(i).refId();
+        copy_rvec(input->x[pos], xmem[i]);
+        if (input->bV)
         {
+            copy_rvec(input->v[pos], vmem[i]);
         }
-        DummyOutputModule(DummyOutputModule &&old) noexcept :
-            ICoordinateOutput(old.moduleFlags_)
-        {}
+        if (input->bF)
+        {
+            copy_rvec(input->f[pos], fmem[i]);
+        }
+    }
+    sfree(input->x);
+    input->x = xmem;
+    if (input->bV)
+    {
+        sfree(input->v);
+        input->v = vmem;
+    }
+    if (input->bF)
+    {
+        sfree(input->f);
+        input->f = fmem;
+    }
 
-        ~DummyOutputModule() {}
-
-        virtual void processFrame(int /*framenumber*/, t_trxframe * /*input*/)
-        {}
-};
-
-//! Convenience typedef for dummy module
-typedef std::unique_ptr<DummyOutputModule>
-    DummyOutputModulePointer;
-
-/*!\brief
- * Create minimal OutputManager using the provided builder.
- *
- * \param[in] filename Name of file to create OutputManager for.
- * \param[in] dummyTopology Pointer to input top or null.
- * \param[in] adapters Container for the outputadapters.
- * \throws InconsistentInputError When builder can not create the OutputManager.
- * \returns unique_ptr to new OutputManager object.
- */
-OutputManagerPointer createMinimalOutputManager(const std::string       &filename,
-                                                const gmx_mtop_t        *dummyTopology,
-                                                CoordinateOutputAdapters adapters);
-
-} // namespace test
+}
 
 } // namespace gmx
-
-#endif

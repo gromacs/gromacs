@@ -33,72 +33,61 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*!\file
- * \libinternal
+ * \internal
  * \brief
- * Helper classes for outputmanager and coordinateio tests
+ * Implements setatoms class.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
- * \inlibraryapi
  * \ingroup module_coordinateio
  */
 
-#ifndef GMX_COORDINATEIO_TESTS_COORDINATEIO_H
-#define GMX_COORDINATEIO_TESTS_COORDINATEIO_H
+#include "gmxpre.h"
 
-#include <gtest/gtest.h>
+#include "setatoms.h"
 
-#include "gromacs/compat/make_unique.h"
-#include "gromacs/coordinateio/builder.h"
-#include "gromacs/coordinateio/coordinateoutput.h"
-#include "gromacs/coordinateio/outputmanager.h"
+#include <algorithm>
+
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/smalloc.h"
-
-#include "testutils/cmdlinetest.h"
-#include "testutils/testasserts.h"
 
 namespace gmx
 {
 
-namespace test
+void
+SetAtoms::processFrame(const int /*framenumber*/, t_trxframe *input)
 {
-
-class DummyOutputModule : public ICoordinateOutput
-{
-    public:
-        explicit DummyOutputModule(unsigned long flag) :
-            ICoordinateOutput(flag)
-        {
-        }
-        DummyOutputModule(DummyOutputModule &&old) noexcept :
-            ICoordinateOutput(old.moduleFlags_)
-        {}
-
-        ~DummyOutputModule() {}
-
-        virtual void processFrame(int /*framenumber*/, t_trxframe * /*input*/)
-        {}
-};
-
-//! Convenience typedef for dummy module
-typedef std::unique_ptr<DummyOutputModule>
-    DummyOutputModulePointer;
-
-/*!\brief
- * Create minimal OutputManager using the provided builder.
- *
- * \param[in] filename Name of file to create OutputManager for.
- * \param[in] dummyTopology Pointer to input top or null.
- * \param[in] adapters Container for the outputadapters.
- * \throws InconsistentInputError When builder can not create the OutputManager.
- * \returns unique_ptr to new OutputManager object.
- */
-OutputManagerPointer createMinimalOutputManager(const std::string       &filename,
-                                                const gmx_mtop_t        *dummyTopology,
-                                                CoordinateOutputAdapters adapters);
-
-} // namespace test
+    switch (atomFlag_)
+    {
+        case (ChangeSettingType::efUserNo):
+            input->bAtoms = false;
+            input->atoms  = nullptr;
+            break;
+        case (ChangeSettingType::efUserPossible):
+            if (haveAtoms(*input))
+            {
+                input->bAtoms = true;
+                if (haveLocalAtoms())
+                {
+                    input->atoms = atoms();
+                }
+            }
+            else
+            {
+                input->bAtoms = false;
+            }
+            break;
+        case (ChangeSettingType::efUnchanged):
+            break;
+        case (ChangeSettingType::efUserYes):
+            if (!haveLocalAtoms())
+            {
+                GMX_THROW(InconsistentInputError("Requested to add atoms information to coordinate frame when it was not available"));
+            }
+            input->bAtoms = true;
+            input->atoms  = atoms();
+            break;
+        default:
+            GMX_THROW(InconsistentInputError("Value for atom flag not understood"));
+    }
+}
 
 } // namespace gmx
-
-#endif

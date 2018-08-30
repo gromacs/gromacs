@@ -98,11 +98,11 @@ static void addEmptyModuleToOutputManager(std::string   filename,
  * \throws InconsistentInputError When builder can not create the OutputManager.
  * \returns unique_ptr to new OutputManager object.
  */
-static OutputManagerPointer createMinimalOutputManager(const std::string &filename,
-                                                       const gmx_mtop_t  *dummyTopology)
+OutputManagerPointer createMinimalOutputManager(const std::string       &filename,
+                                                const gmx_mtop_t        *dummyTopology,
+                                                CoordinateOutputAdapters adapters)
 {
     Selection                dummySelection;
-    CoordinateOutputAdapters adapters;
 
     return createOutputManager(dummyTopology,
                                dummySelection,
@@ -120,11 +120,13 @@ class OutputManagerBuilderTest : public gmx::test::CommandLineTestBase,
         void runTest(const char *filename)
         {
             //! Pointer to new OutputManager object.
-            OutputManagerPointer output;
+            OutputManagerPointer     output;
             //! Dummy topology to use to create OutputManager.
-            gmx_mtop_t           dummyTopology;
-
-            EXPECT_NO_THROW(output = createMinimalOutputManager(filename, &dummyTopology));
+            gmx_mtop_t               dummyTopology;
+            CoordinateOutputAdapters adapters;
+            EXPECT_NO_THROW(output = createMinimalOutputManager(filename,
+                                                                &dummyTopology,
+                                                                std::move(adapters)));
         }
 };
 
@@ -153,9 +155,12 @@ TEST_P(OutputManagerBuilderTest, WorksWithAllFormats)
 
 TEST(OutputManagerTest, BuilderRejectsWrongFiletype)
 {
-    OutputManagerPointer output;
-    gmx_mtop_t           dummyTopology;
-    EXPECT_ANY_THROW(output = createMinimalOutputManager("test.xvg", &dummyTopology));
+    OutputManagerPointer     output;
+    gmx_mtop_t               dummyTopology;
+    CoordinateOutputAdapters adapters;
+    EXPECT_ANY_THROW(output = createMinimalOutputManager("test.xvg",
+                                                         &dummyTopology,
+                                                         std::move(adapters)));
     EXPECT_EQ(output.get(), nullptr);
 }
 
@@ -166,7 +171,10 @@ TEST(OutputManagerTest, BuilderFailsWhenNeedingTopology)
     std::vector<std::string> filenames     = {"test.pdb", "test.grp", "test.tng"};
     for (const auto &name : filenames)
     {
-        EXPECT_ANY_THROW(output = createMinimalOutputManager(name, dummyTopology));
+        CoordinateOutputAdapters adapters;
+        EXPECT_ANY_THROW(output = createMinimalOutputManager(name,
+                                                             dummyTopology,
+                                                             std::move(adapters)));
         EXPECT_EQ(output.get(), nullptr);
     }
 }
