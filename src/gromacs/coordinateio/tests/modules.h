@@ -58,118 +58,14 @@
 #include "gromacs/coordinateio/modules/setprecision.h"
 #include "gromacs/coordinateio/modules/settime.h"
 #include "gromacs/coordinateio/modules/setvelocities.h"
-#include "gromacs/options/options.h"
-#include "gromacs/options/optionsassigner.h"
-#include "gromacs/selection/selectioncollection.h"
-#include "gromacs/selection/selectionoption.h"
-#include "gromacs/selection/selectionoptionmanager.h"
-#include "gromacs/trajectoryanalysis/topologyinformation.h"
 
 #include "gromacs/coordinateio/tests/coordinate_test.h"
-#include "testutils/testfilemanager.h"
-
 
 namespace gmx
 {
 
 namespace test
 {
-
-
-/*! \libinternal \brief
- * Test fixture to test matching file types for modules.
- */
-class ModuleTest : public gmx::test::CommandLineTestBase,
-                   public ::testing::WithParamInterface<const char *>
-{
-    public:
-        /*! \brief
-         * Run the builder to create an OutputManager during tests.
-         *
-         * \param[in] filename Name for output file, to determine filetype during construction.
-         * \param[in] adapters Container of outputadapters to add to the OutputManager.
-         */
-        void runTest(const char *filename, CoordinateOutputAdapters adapters)
-        {
-            output_ = createMinimalOutputManager(filename,
-                                                 &dummyTopology_,
-                                                 std::move(adapters));
-        }
-        //! Pointer to new OutputManager object.
-        OutputManagerPointer output_;
-        //! Dummy topology to use to create OutputManager.
-        gmx_mtop_t           dummyTopology_;
-};
-
-/*! \libinternal \brief
- * Helper class for tests that need an initialized selection.
- */
-class ModuleSelection
-{
-    public:
-        ModuleSelection() : manager_(&sc_)
-        {
-            options_.addManager(&manager_);
-            sc_.setReferencePosType("atom");
-            sc_.setOutputPosType("atom");
-            top_.fillFromInputFile(TestFileManager::getInputFilePath("lysozyme.gro"));
-        }
-
-        /*! \brief
-         * Method to add a valid selection option to the Module, or an invalid
-         * one for testing.
-         *
-         * \param[in] mtop Topology to use.
-         * \param[in] sel Selection to add option to.
-         * \param[in] useValid Set if the added selection should be valid for the module.
-         */
-        void addOptionForSelection(gmx_mtop_t *mtop, Selection *sel, bool useValid);
-
-    private:
-        //! Local selection collection.
-        SelectionCollection    sc_;
-        //! Local selection manager.
-        SelectionOptionManager manager_;
-        //! Local options manager.
-        Options                options_;
-        //! Local topology information.
-        TopologyInformation    top_;
-
-};
-
-inline void
-ModuleSelection::addOptionForSelection(gmx_mtop_t *mtop, Selection *sel, bool useValid)
-{
-    mtop = top_.mtop();
-
-    sc_.setTopology(mtop, 0);
-
-    if (useValid)
-    {
-        options_.addOption(SelectionOption("sel").store(sel).onlyAtoms());
-    }
-    else
-    {
-        options_.addOption(SelectionOption("sel").store(sel).dynamicMask());
-    }
-
-    OptionsAssigner assigner(&options_);
-    assigner.start();
-    assigner.startOption("sel");
-    if (useValid)
-    {
-        assigner.appendValue("all");
-    }
-    else
-    {
-        assigner.appendValue("res_cog of all");
-    }
-    assigner.finishOption();
-    assigner.finish();
-
-    ASSERT_TRUE(sel->isValid());
-    EXPECT_NO_THROW(sc_.compile());
-}
 
 /*!\libinternal \brief  Helper to test supported file names. */
 class SetAtomsSupportedFiles : public ModuleTest
@@ -225,7 +121,9 @@ class AnyOutputSupportedFiles : public ModuleTest,
 
             clear_mat(box);
 
-            addOptionForSelection(&dummyTopology_, &sel, true);
+            addOptionForSelection(&sel, true);
+            setSelectionOptionValues(getOption(), &sel, true);
+            setSelectionMtop(&dummyTopology_);
 
             adapters.emplace_back(compat::make_unique<OutputSelector>(sel));
             adapters.emplace_back(compat::make_unique<SetBox>(box));
@@ -247,7 +145,8 @@ class OutputSelectorDeathTest : public ModuleTest,
             //! Local atoms
             Selection                sel;
 
-            addOptionForSelection(&dummyTopology_, &sel, false);
+            addOptionForSelection(&sel, false);
+            setSelectionOptionValues(getOption(), &sel, false);
 
             ASSERT_DEATH_IF_SUPPORTED(
                     adapters.emplace_back(compat::make_unique<OutputSelector>(sel)),
