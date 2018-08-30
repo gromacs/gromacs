@@ -38,6 +38,8 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${COORDINATEIO_SOURCES} PARENT_SCOP
 
 gmx_install_headers(
     coordinateoutput.h
+    modules/outputselector.h
+    modules/setatoms.h
     outputmanager.h
     modulecallback.h
     )
