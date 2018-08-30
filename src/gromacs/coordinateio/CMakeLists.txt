@@ -42,6 +42,8 @@ gmx_install_headers(
     outputadapters/setatoms.h
     outputadapters/setbox.h
     outputadapters/setforces.h
+    outputadapters/setprecision.h
+    outputadapters/settime.h
     outputadapters/setvelocities.h
     outputmanager.h
     requirementflags.h

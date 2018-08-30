@@ -55,6 +55,8 @@
 #include "gromacs/coordinateio/outputadapters/setatoms.h"
 #include "gromacs/coordinateio/outputadapters/setbox.h"
 #include "gromacs/coordinateio/outputadapters/setforces.h"
+#include "gromacs/coordinateio/outputadapters/setprecision.h"
+#include "gromacs/coordinateio/outputadapters/settime.h"
 #include "gromacs/coordinateio/outputadapters/setvelocities.h"
 
 #include "gromacs/coordinateio/tests/coordinate_test.h"
@@ -112,6 +114,11 @@ class AnyOutputSupportedFiles : public ModuleTest,
             Selection      sel;
             //! Local box
             matrix         box;
+            //! Value for startTime
+            real           startTime = 0;
+            //! Value for timeStep
+            real           timeStep = 1;
+
             clear_mat(box);
 
             addOptionForSelection(&sel, true);
@@ -119,6 +126,28 @@ class AnyOutputSupportedFiles : public ModuleTest,
 
             adapters.emplace_back(compat::make_unique<OutputSelector>(sel));
             adapters.emplace_back(compat::make_unique<SetBox>(box));
+            adapters.emplace_back(compat::make_unique<SetTime>(startTime, timeStep, ChangeFrameTimeType::efUnchanged));
+
+            EXPECT_NO_THROW(runTest(filename, std::move(adapters)));
+        }
+};
+
+/*!\libinternal \brief  Helper to test supported output for turned of module options. */
+class OutputTurnedOffSupportedFiles : public ModuleTest
+{
+    public:
+        void prepareTest(const char *filename)
+        {
+            //! Storage for frameadapters.
+            OutputAdapters adapters;
+
+            //! Local atoms
+            t_atoms       *atoms = nullptr;
+
+            adapters.emplace_back(compat::make_unique<SetAtoms>(ChangeSettingType::efUserNo, atoms));
+            adapters.emplace_back(compat::make_unique<SetVelocities>(ChangeSettingType::efUserNo));
+            adapters.emplace_back(compat::make_unique<SetForces>(ChangeSettingType::efUserNo));
+            adapters.emplace_back(compat::make_unique<SetPrecision>(3));
 
             EXPECT_NO_THROW(runTest(filename, std::move(adapters)));
         }
@@ -205,6 +234,40 @@ class SetForceUnSupportedFiles : public ModuleTest
         }
 };
 
+/*!\libinternal \brief  Helper to test supported file names. */
+class SetPrecisionSupportedFiles : public ModuleTest
+{
+    public:
+        void prepareTest(const char *filename)
+        {
+            //! Storage for frameadapters.
+            OutputAdapters adapters;
+            //! Value for new precision.
+            int            precision = 5;
+
+            adapters.emplace_back(compat::make_unique<SetPrecision>(precision));
+
+            EXPECT_NO_THROW(runTest(filename, std::move(adapters)));
+        }
+};
+
+/*!\libinternal \brief  Helper to test supported file names. */
+class SetPrecisionUnSupportedFiles : public ModuleTest
+{
+    public:
+        void prepareTest(const char *filename)
+        {
+            //! Storage for frameadapters.
+            OutputAdapters adapters;
+            //! Value for new precision.
+            int            precision = 5;
+
+            adapters.emplace_back(compat::make_unique<SetPrecision>(precision));
+
+            EXPECT_ANY_THROW(runTest(filename, std::move(adapters)));
+        }
+};
+
 //! Names here work for setAtoms module
 const char *const setAtomsSupported[] = {
 #if GMX_USE_TNG
@@ -260,6 +323,22 @@ const char *const setForceSupported[] = {
 //! Names here don't work for setForce module
 const char *const setForceUnSupported[] = {
     "spc2-traj.xtc",
+    "spc2-traj.pdb",
+    "spc2-traj.gro",
+    "spc2-traj.g96"
+};
+
+//! Names here work for setPrecision module
+const char *const setPrecisionSupported[] = {
+#if GMX_USE_TNG
+    "spc2-traj.tng",
+#endif
+    "spc2-traj.xtc",
+};
+
+//! Names here don't work for setPrecision module
+const char *const setPrecisionUnSupported[] = {
+    "spc2-traj.trr",
     "spc2-traj.pdb",
     "spc2-traj.gro",
     "spc2-traj.g96"

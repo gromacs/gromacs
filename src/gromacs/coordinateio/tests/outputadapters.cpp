@@ -91,6 +91,94 @@ TEST_P(SetForceUnSupportedFiles, Works)
     prepareTest(GetParam());
 }
 
+TEST_P(SetPrecisionSupportedFiles, Works)
+{
+    prepareTest(GetParam());
+}
+
+TEST_P(SetPrecisionUnSupportedFiles, Works)
+{
+    prepareTest(GetParam());
+}
+
+TEST_P(OutputTurnedOffSupportedFiles, Works)
+{
+    prepareTest(GetParam());
+}
+
+TEST(SetTime, UnchangedTimeWorks)
+{
+    SetTime    testTime(0, 1, ChangeFrameTimeType::efUnchanged);
+
+    t_trxframe testFrame;
+    clear_trxframe(&testFrame, true);
+    testFrame.time = 23;
+
+    testTime.processFrame(1, &testFrame);
+
+    EXPECT_EQ(23, testFrame.time);
+
+    testTime.processFrame(2, &testFrame);
+
+    EXPECT_EQ(23, testFrame.time);
+}
+
+TEST(SetTime, ChangeTimeStepWorks)
+{
+    SetTime    testTime(0, 1, ChangeFrameTimeType::efTimeStep);
+
+    t_trxframe testFrame;
+    clear_trxframe(&testFrame, true);
+    testFrame.time = 23;
+
+    testTime.processFrame(0, &testFrame);
+
+    EXPECT_EQ(23, testFrame.time);
+
+    testTime.processFrame(1, &testFrame);
+
+    EXPECT_EQ(24, testFrame.time);
+}
+
+TEST(SetTime, ChangeStartTimeWorks)
+{
+    SetTime    testTime(0, 1, ChangeFrameTimeType::efStartTime);
+
+    t_trxframe testFrame;
+    clear_trxframe(&testFrame, true);
+    testFrame.time = 23;
+
+    testTime.processFrame(0, &testFrame);
+
+    EXPECT_EQ(0, testFrame.time);
+
+    testFrame.time = 24;
+
+    testTime.processFrame(1, &testFrame);
+
+    EXPECT_EQ(1, testFrame.time);
+}
+
+TEST(SetTime, ChangeBothWorks)
+{
+    SetTime    testTime(0, 1, ChangeFrameTimeType::efBothTime);
+
+    t_trxframe testFrame;
+    clear_trxframe(&testFrame, true);
+    testFrame.time = 23;
+
+    testTime.processFrame(0, &testFrame);
+
+    EXPECT_EQ(0, testFrame.time);
+
+    testFrame.time = 26;
+
+    testTime.processFrame(1, &testFrame);
+
+    EXPECT_EQ(1, testFrame.time);
+}
+
+
 INSTANTIATE_TEST_CASE_P(ModuleSupported,
                         SetAtomsSupportedFiles, ::testing::ValuesIn(setAtomsSupported));
 
@@ -112,6 +200,14 @@ INSTANTIATE_TEST_CASE_P(ModuleSupported,
 INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
                         SetForceUnSupportedFiles, ::testing::ValuesIn(setForceUnSupported));
 
+INSTANTIATE_TEST_CASE_P(ModuleSupported,
+                        SetPrecisionSupportedFiles, ::testing::ValuesIn(setPrecisionSupported));
+
+INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
+                        SetPrecisionUnSupportedFiles, ::testing::ValuesIn(setPrecisionUnSupported));
+
+INSTANTIATE_TEST_CASE_P(ModuleSupported,
+                        OutputTurnedOffSupportedFiles, ::testing::ValuesIn(anySupported));
 } // namespace test
 
 } // namespace gmx

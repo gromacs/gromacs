@@ -158,6 +158,8 @@
 #include "gromacs/coordinateio/outputadapters/setatoms.h"
 #include "gromacs/coordinateio/outputadapters/setbox.h"
 #include "gromacs/coordinateio/outputadapters/setforces.h"
+#include "gromacs/coordinateio/outputadapters/setprecision.h"
+#include "gromacs/coordinateio/outputadapters/settime.h"
 #include "gromacs/coordinateio/outputadapters/setvelocities.h"
 
 #endif
