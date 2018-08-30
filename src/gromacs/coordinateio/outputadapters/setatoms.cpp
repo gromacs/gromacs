@@ -32,18 +32,61 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*!\file
+ * \internal
  * \brief
- * Public API convenience header for accessing outputadapters.
+ * Implements setatoms class.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
- * \inpublicapi
  * \ingroup module_coordinateio
  */
-#ifndef GMX_COORDINATEIO_OUTPUTADAPTERS_H
-#define GMX_COORDINATEIO_OUTPUTADAPTERS_H
 
-#include "gromacs/coordinateio/outputadapters/outputselector.h"
-#include "gromacs/coordinateio/outputadapters/setatoms.h"
+#include "gmxpre.h"
 
-#endif
+#include "setatoms.h"
+
+#include <algorithm>
+
+#include "gromacs/utility/exceptions.h"
+
+namespace gmx
+{
+
+void
+SetAtoms::processFrame(const int /*framenumber*/, t_trxframe *input)
+{
+    switch (atomFlag_)
+    {
+        case (ChangeAtomsType::efUserNo):
+            input->bAtoms = false;
+            input->atoms  = nullptr;
+            break;
+        case (ChangeAtomsType::efRequired):
+            if (!haveAtoms(*input))
+            {
+                GMX_THROW(InconsistentInputError("Atoms needed by output but not "
+                                                 "available in input frame or topology"));
+            }
+            input->bAtoms = true;
+            if (haveLocalAtoms())
+            {
+                input->atoms = atoms();
+            }
+            break;
+        case (ChangeAtomsType::efUnchanged):
+            break;
+        case (ChangeAtomsType::efUserYes):
+            if (!haveLocalAtoms())
+            {
+                GMX_THROW(InconsistentInputError("Requested to add atoms information "
+                                                 "to coordinate frame when it was not available"));
+            }
+            input->bAtoms = true;
+            input->atoms  = atoms();
+            break;
+        default:
+            GMX_THROW(InconsistentInputError("Value for atom flag not understood"));
+    }
+}
+
+} // namespace gmx

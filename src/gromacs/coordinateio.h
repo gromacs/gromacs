@@ -159,5 +159,7 @@
 #include "gromacs/coordinateio/ioutputadapter.h"
 #include "gromacs/coordinateio/outputadaptercontainer.h"
 #include "gromacs/coordinateio/outputmanager.h"
+#include "gromacs/coordinateio/outputadapters/outputselector.h"
+#include "gromacs/coordinateio/outputadapters/setatoms.h"
 
 #endif

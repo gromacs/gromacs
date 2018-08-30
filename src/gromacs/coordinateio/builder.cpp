@@ -141,7 +141,7 @@ static unsigned long getSupportedOutputAdapters(int filetype, const gmx_mtop_t *
  */
 static OutputAdapterContainer
 addOutputAdapters(const OutputRequirements  &requirements,
-                  AtomsDataPtr                /* atoms */,
+                  AtomsDataPtr               atoms,
                   const Selection           &sel,
                   unsigned long              abilities)
 {
@@ -161,7 +161,9 @@ addOutputAdapters(const OutputRequirements  &requirements,
     }
     if (requirements.atoms != ChangeAtomsType::efUnchanged)
     {
-        // add adapter here
+        output.addAdapter(
+                compat::make_unique<SetAtoms>(requirements.atoms,
+                                              std::move(atoms)));
     }
     if (requirements.frameTime != ChangeFrameTimeType::efUnchanged)
     {
@@ -179,7 +181,8 @@ addOutputAdapters(const OutputRequirements  &requirements,
     }
     if (sel.isValid())
     {
-        // add adapter here
+        output.addAdapter(
+                compat::make_unique<OutputSelector>(sel));
     }
     return output;
 }

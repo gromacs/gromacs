@@ -41,6 +41,8 @@ gmx_install_headers(
     ioutputadapter.h
     outputadaptercontainer.h
     outputadapters.h
+    outputadapters/outputselector.h
+    outputadapters/setatoms.h
     outputmanager.h
     requirements.h
     enums.h
