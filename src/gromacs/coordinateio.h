@@ -118,5 +118,8 @@
 #include "gromacs/coordinateio/requirementflags.h"
 #include "gromacs/coordinateio/modules/outputselector.h"
 #include "gromacs/coordinateio/modules/setatoms.h"
+#include "gromacs/coordinateio/modules/setbox.h"
+#include "gromacs/coordinateio/modules/setforces.h"
+#include "gromacs/coordinateio/modules/setvelocities.h"
 
 #endif

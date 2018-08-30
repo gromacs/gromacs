@@ -89,6 +89,7 @@ static unsigned long getFlagAndValidateSetting(int filetype, const gmx_mtop_t *m
 {
     unsigned long flag = 0;
     flag |= (efBaseOutputManager |
+             efChangeBoxModule |
              efChangeCoordinateSelectionModule |
              efChangeTimeModule);
     switch (filetype)

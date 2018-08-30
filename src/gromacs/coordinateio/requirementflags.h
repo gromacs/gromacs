@@ -124,6 +124,10 @@ enum
      */
     efChangeTimeModule = 1<<7,
     /*! \brief
+     * Requires that output format supports changing box information.
+     */
+    efChangeBoxModule = 1<<8,
+    /*! \brief
      * Dummy value for testing.
      *
      * Flag set to zero to allow adding of dummy module.
