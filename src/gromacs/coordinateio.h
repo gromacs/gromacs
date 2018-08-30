@@ -154,5 +154,7 @@
 #include "gromacs/coordinateio/coordinateoutput.h"
 #include "gromacs/coordinateio/outputmanager.h"
 #include "gromacs/coordinateio/requirementflags.h"
+#include "gromacs/coordinateio/modules/outputselector.h"
+#include "gromacs/coordinateio/modules/setatoms.h"
 
 #endif
