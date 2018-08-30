@@ -48,8 +48,15 @@ namespace testing
 // Todo: Need to set up a test fixture...
 static const std::string              sample_tprfilename = "${CMAKE_CURRENT_BINARY_DIR}/topol.tpr";
 
+/* to do: We need to handle tests on both many-CPU nodes and GPU nodes.
+ * If we don't set -ntomp to a low number, integration tests on Travis-CI fail
+ * with errors about the auto-detected OpenMP thread number being too big. But
+ * on a GPU node, such as a GROMACS Jenkins build node, setting `-ntomp` without
+ * also setting `-ntmpi` results in an error. Removing the following constant
+ * should be fine for now, but will need to be resolved at some point.
+ */
 static const std::vector<std::string> mdArgs {
-    "-ntomp", "1"
+//    "-ntomp", "1"
 };
 
 } // end namespace testing
