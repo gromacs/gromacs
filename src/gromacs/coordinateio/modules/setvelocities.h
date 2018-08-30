@@ -55,7 +55,6 @@ namespace gmx
  *
  * This class allows the user to define if velocities should be written
  * to the output coordinate file, and checks if they are available from the
- * currently processed data.
  *
  * \inpublicapi
  * \ingroup module_coordinateio

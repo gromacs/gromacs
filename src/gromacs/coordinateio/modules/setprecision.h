@@ -34,14 +34,14 @@
  */
 /*! \file
  * \brief
- * Declares gmx::SetForce.
+ * Declares gmx::SetPrecision.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
  * \inpublicapi
  * \ingroup module_coordinateio
  */
-#ifndef GMX_FILEIO_SETFORCE_H
-#define GMX_FILEIO_SETFORCE_H
+#ifndef GMX_FILEIO_SETPRECISION_H
+#define GMX_FILEIO_SETPRECISION_H
 
 #include <algorithm>
 
@@ -51,61 +51,68 @@ namespace gmx
 {
 
 /*!\brief
- * SetForces class allows changing writing of forces to file.
+ * SetPrecision class allows changing file writing precision.
  *
- * This class allows the user to define if forces should be written
- * to the output coordinate file, and checks if they are available from the
- * currently processed data.
+ * This class allows the user to define the precision for writing
+ * coordinate data to output files.
  *
  * \inpublicapi
  * \ingroup module_coordinateio
  *
  */
-class SetForces : public ICoordinateOutput
+class SetPrecision : public ICoordinateOutput
 {
     public:
         /*! \brief
-         * Construct SetForces object with choice for boolean value.
+         * Construct SetPrecision object with choice for boolean value.
          *
-         * Can be used to initialize SetForces from outside of trajectoryanalysis
+         * Can be used to initialize SetPrecision from outside of trajectoryanalysis
          * with the user specified option to write coordinate velocities or not.
          */
-        explicit SetForces(ChangeSettingType force) : ICoordinateOutput(efForceOutput),
-                                                      force_(force)
+        explicit SetPrecision(int precision) : ICoordinateOutput(efCustomPrecision),
+                                               precision_(precision)
         {
         }
         /*! \brief
-         *  Move constructor for SetForces.
+         *  Move constructor for SetPrecision.
          */
-        SetForces(SetForces &&old) noexcept : ICoordinateOutput(old.moduleFlags_), force_(old.force_)
+        SetPrecision(SetPrecision &&old) noexcept : ICoordinateOutput(old.moduleFlags_),
+                                                    precision_(old.precision_)
         {
         }
 
-        ~SetForces() {}
+        ~SetPrecision() {}
 
         /*! \brief
          * Change coordinate frame information for output.
          *
-         * In this case, the correct flag for writing the forces is applied
-         * to the output frame, depending on user selection and availability
-         * in the input data.
+         * In this case, the correct value for the coordinate precision
+         * is applied for file writing.
          *
          * \param[in] input Coordinate frame to be modified later.
          */
-        virtual void processFrame(int /*framenumner*/, t_trxframe *input);
+        virtual void processFrame(int /*framenumber*/, t_trxframe *input);
 
     private:
         /*! \brief
-         * Flag to specify if forces should be written.
+         * Internal method to convert user provided precision value to internal value.
          *
-         * Internal storage for the user choice for writing coordinate forces.
+         * The function converts the precision value passed as an integer to the
+         * internally stored value in real format. This is mostly a callback to the
+         * original implementation in trjconv to keep the chance of new bugs low
+         * and to preserve the input format that users would expect from the
+         * function argument used to create the class.
+         *
+         * \param[in] ndec User provided precision as interger.
          */
-        ChangeSettingType                            force_;
+        real setFramePrecision(int ndec);
+        //! User specified changes to default precision.
+        int                             precision_;
 };
 
 //! Smart pointer to manage the outputselector object.
-typedef std::unique_ptr<SetForces>
-    SetForcesPointer;
+typedef std::unique_ptr<SetPrecision>
+    SetPrecisionPointer;
 
 } // namespace gmx
 

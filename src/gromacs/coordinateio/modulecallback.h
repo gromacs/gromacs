@@ -118,6 +118,13 @@ class IModuleCallback
              * and otherwise create an error while writing.
              */
             efAtomOutput = 1<<5,
+            /*! \brief
+             * Requires that output format supports custom output precision.
+             *
+             * If set, the coordinate files will only be written if they support the writing
+             * of custom precision of the included data.
+             */
+            efCustomPrecision = 1<<6,
         };
 
         virtual ~IModuleCallback()

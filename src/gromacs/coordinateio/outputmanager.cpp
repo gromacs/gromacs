@@ -84,7 +84,7 @@ OutputManager::setFiletype()
     switch (filetype_)
     {
         case (efTNG):
-            moduleFlags_ |= (efForceOutput | efVelocityOutput | efAtomOutput);
+            moduleFlags_ |= (efForceOutput | efVelocityOutput | efAtomOutput | efCustomPrecision);
             break;
         case (efPDB):
             moduleFlags_ |= (efConnectionOutput | efAtomOutput);
@@ -93,9 +93,10 @@ OutputManager::setFiletype()
             moduleFlags_ |= (efAtomOutput | efVelocityOutput);
             break;
         case (efTRR):
-            moduleFlags_ |= (efForceOutput | efVelocityOutput);
+            moduleFlags_ |= (efForceOutput | efVelocityOutput | efCustomPrecision);
             break;
         case (efXTC):
+            moduleFlags_ |= (efCustomPrecision);
         case (efG96):
             break;
         default:

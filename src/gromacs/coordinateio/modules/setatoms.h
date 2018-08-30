@@ -81,15 +81,6 @@ class SetAtoms : public ICoordinateOutput
             init_atom(&atoms_);
         }
         /*! \brief
-         * Move constructor for SetAtoms.
-         */
-        SetAtoms &operator=(SetAtoms &&old) noexcept
-        {
-            atoms_    = old.atoms_;
-            atomFlag_ = old.atomFlag_;
-            return *this;
-        }
-        /*! \brief
          *  Move constructor for SetAtoms.
          */
         SetAtoms(SetAtoms &&old) noexcept :
