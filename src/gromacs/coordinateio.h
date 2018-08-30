@@ -77,6 +77,7 @@
 #define GMX_COORDINATEIO_H
 
 #include "gromacs/coordinateio/coordinateoutput.h"
+#include "gromacs/coordinateio/flags.h"
 #include "gromacs/coordinateio/modulecallback.h"
 #include "gromacs/coordinateio/outputmanager.h"
 #include "gromacs/coordinateio/modules/outputselector.h"
