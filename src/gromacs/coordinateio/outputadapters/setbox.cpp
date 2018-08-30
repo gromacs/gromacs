@@ -35,7 +35,7 @@
 /*!\file
  * \internal
  * \brief
- * Tests for outputmanager
+ * Implements setbox class.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
  * \ingroup module_coordinateio
@@ -43,75 +43,17 @@
 
 #include "gmxpre.h"
 
-#include "outputadapters.h"
+#include "setbox.h"
+
+#include <algorithm>
 
 namespace gmx
 {
 
-namespace test
+void
+SetBox::processFrame(const int /*framenumber*/, t_trxframe *input)
 {
-
-TEST_P(SetAtomsSupportedFiles, Works)
-{
-    prepareTest(GetParam());
+    copy_mat(box_, input->box);
 }
-
-TEST_P(SetAtomsUnSupportedFiles, Works)
-{
-    prepareTest(GetParam());
-}
-
-TEST_P(AnyOutputSupportedFiles, Works)
-{
-    prepareTest(GetParam());
-}
-
-TEST_F(OutputSelectorDeathTest, RejectsBadSelection)
-{
-    prepareTest();
-}
-
-TEST_P(SetVelocitySupportedFiles, Works)
-{
-    prepareTest(GetParam());
-}
-
-TEST_P(SetVelocityUnSupportedFiles, Works)
-{
-    prepareTest(GetParam());
-}
-
-TEST_P(SetForceSupportedFiles, Works)
-{
-    prepareTest(GetParam());
-}
-
-TEST_P(SetForceUnSupportedFiles, Works)
-{
-    prepareTest(GetParam());
-}
-
-INSTANTIATE_TEST_CASE_P(ModuleSupported,
-                        SetAtomsSupportedFiles, ::testing::ValuesIn(setAtomsSupported));
-
-INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
-                        SetAtomsUnSupportedFiles, ::testing::ValuesIn(setAtomsUnSupported));
-
-INSTANTIATE_TEST_CASE_P(ModuleSupported,
-                        AnyOutputSupportedFiles, ::testing::ValuesIn(anySupported));
-
-INSTANTIATE_TEST_CASE_P(ModuleSupported,
-                        SetVelocitySupportedFiles, ::testing::ValuesIn(setVelocitySupported));
-
-INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
-                        SetVelocityUnSupportedFiles, ::testing::ValuesIn(setVelocityUnSupported));
-
-INSTANTIATE_TEST_CASE_P(ModuleSupported,
-                        SetForceSupportedFiles, ::testing::ValuesIn(setForceSupported));
-
-INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
-                        SetForceUnSupportedFiles, ::testing::ValuesIn(setForceUnSupported));
-
-} // namespace test
 
 } // namespace gmx
