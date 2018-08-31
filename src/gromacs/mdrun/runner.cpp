@@ -53,6 +53,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <algorithm>
+
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec.h"
@@ -94,6 +96,7 @@
 #include "gromacs/mdlib/repl_ex.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdrun/integrator.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
@@ -129,8 +132,6 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
-
-#include "integrator.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -306,7 +307,7 @@ t_commrec *Mdrunner::spawnThreads(int numThreadsToLaunch) const
     threadMpiMdrunnerAccessBarrier();
 #else
     GMX_UNUSED_VALUE(mdrunner_start_fn);
-#endif  /* GMX_THREAD_MPI */
+#endif
 
     return reinitialize_commrec_for_this_thread(cr);
 }
@@ -1403,24 +1404,28 @@ int Mdrunner::mdrunner()
         }
 
         /* Now do whatever the user wants us to do (how flexible...) */
-        Integrator integrator {
-            fplog, cr, ms, mdlog, static_cast<int>(filenames->size()), filenames->data(),
-            oenv,
-            mdrunOptions,
-            vsite, constr.get(),
-            enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
-            deform.get(),
-            mdModules->outputProvider(),
-            inputrec, &mtop,
-            fcd,
-            globalState.get(),
-            &observablesHistory,
-            mdAtoms.get(), nrnb, wcycle, fr,
-            replExParams,
-            membed,
-            walltime_accounting
-        };
-        integrator.run(inputrec->eI);
+
+        IntegratorBuilder builder = IntegratorBuilder::create(SimulationMethod(inputrec->eI));
+        builder.setParams(
+                fplog, cr, ms, mdlog, static_cast<int>(filenames->size()), filenames->data(),
+                oenv,
+                mdrunOptions,
+                vsite, constr.get(),
+                enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
+                deform.get(),
+                mdModules->outputProvider(),
+                inputrec, &mtop,
+                fcd,
+                globalState.get(),
+                &observablesHistory,
+                mdAtoms.get(), nrnb, wcycle, fr,
+                replExParams,
+                membed,
+                walltime_accounting);
+        auto context = gmx::md::Context(*this);
+        builder.addContext(context);
+        std::unique_ptr<IIntegrator> integrator = builder.build();
+        integrator->run();
 
         if (inputrec->bPull)
         {
