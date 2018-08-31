@@ -132,7 +132,7 @@ void Manager::addToSpec(std::shared_ptr<gmx::IRestraintPotential> puller,
                         std::string                               name)
 {
     assert(impl_ != nullptr);
-    impl_->add(std::move(puller), name);
+    impl_->add(std::move(puller), std::move(name));
 }
 
 std::vector < std::shared_ptr < IRestraintPotential>> Manager::getSpec() const

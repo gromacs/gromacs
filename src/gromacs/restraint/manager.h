@@ -56,7 +56,6 @@ struct pull_t;
 
 namespace gmx
 {
-class LegacyPuller;
 
 /*! \libinternal
  * \brief Implementation details for MD restraints
@@ -67,7 +66,6 @@ namespace restraint
 {
 
 class ManagerImpl;
-class ICalculation;
 
 /*! \libinternal \ingroup module_restraint
  * \brief Manage the Restraint potentials available for Molecular Dynamics.

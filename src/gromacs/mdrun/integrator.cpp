@@ -45,6 +45,8 @@
 
 #include <cassert>
 
+#include <memory>
+
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/exceptions.h"
 
