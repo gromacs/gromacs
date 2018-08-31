@@ -55,11 +55,18 @@ function(gmx_add_sphinx_source_files)
     endif()
     foreach(_file ${ARG_FILES})
         set(_source ${ARG_FROM}/${_file})
-        set(_target ${_SPHINX_INPUT_ROOT}/${ARG_TO}${_file})
+        get_filename_component(_filepath ${_file} DIRECTORY)
+        get_filename_component(_filename ${_source} NAME)
+        set(_targetdir ${_SPHINX_INPUT_ROOT}/${ARG_TO}/${_filepath})
+        set(_target ${_targetdir}/${_filename})
+        add_custom_command(
+            OUTPUT ${_targetdir}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${_targetdir}
+            )
         add_custom_command(
             OUTPUT  ${_target}
             COMMAND ${CMAKE_COMMAND} -E copy ${_source} ${_target}
-            DEPENDS ${_source}
+            DEPENDS ${_source} ${_targetdir}
             COMMENT "Copying Sphinx input file ${ARG_PREFIX}${_file}"
             VERBATIM)
         list(APPEND _SPHINX_INPUT_FILES ${_target})
@@ -95,12 +102,19 @@ function(gmx_add_sphinx_image_conversion_files)
     endif()
     foreach(_file ${ARG_FILES})
         set(_source ${ARG_FROM}/${_file})
-        string(REGEX REPLACE "pdf" "png" _tmp ${_file})
-        set(_target ${_SPHINX_INPUT_ROOT}/${ARG_TO}${_tmp})
+        get_filename_component(_filepath ${_file} DIRECTORY)
+        get_filename_component(_filename ${_source} NAME)
+        string(REGEX REPLACE "pdf" "png" _tmp ${_filename})
+        set(_targetdir ${_SPHINX_INPUT_ROOT}/${ARG_TO}/${_filepath})
+        set(_target ${_targetdir}/${_tmp})
+        add_custom_command(
+            OUTPUT ${_targetdir}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${_targetdir}
+            )
         add_custom_command(
             OUTPUT  ${_target}
             COMMAND convert ${_source} -antialias -quality 03 -quiet -pointsize 12 -density 1200 -units PixelsPerInch  ${_target}
-            DEPENDS ${_source}
+            DEPENDS ${_source} ${_targetdir}
             COMMENT "Converting Sphinx input graphics file ${_file} to png"
             VERBATIM)
         list(APPEND _SPHINX_IMAGE_CONVERSION_FILES ${_target})
