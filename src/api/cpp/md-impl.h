@@ -32,60 +32,37 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMXAPI_MD_IMPL_H
+#define GMXAPI_MD_IMPL_H
+/*! \file
+ * \brief Declarations for molecular dynamics API implementation details.
+ *
+ * \ingroup gmxapi
+ */
 
-#include "gmxpre.h"
+#include <memory>
 
-#include "gromacs/restraint/manager.h"
+#include "gmxapi/gmxapi.h"
+#include "gmxapi/md.h"
 
-#include <gtest/gtest.h>
-
-namespace
+namespace gmxapi
 {
 
-class DummyRestraint : public gmx::IRestraintPotential
+class MDWorkSpec;
+
+/*!
+ * \brief Implementation class to hide guts of MDHolder
+ *
+ * Holds the gmxapi interface for an object that can help instantiate the gmx::MdRunner
+ */
+class MDHolder::Impl
 {
     public:
-        ~DummyRestraint() override = default;
+        explicit Impl(std::shared_ptr<MDWorkSpec> &&spec);
 
-        gmx::PotentialPointData evaluate(gmx::Vector r1,
-                                         gmx::Vector r2,
-                                         double      t) override
-        {
-            (void) r1;
-            (void) r2;
-            (void) t;
-            return {};
-        }
-
-        void update(gmx::Vector v,
-                    gmx::Vector v0,
-                    double      t) override
-        { (void)v; (void)v0; (void)t; }
-
-        std::vector<unsigned long> sites() const override
-        {
-            return std::vector<unsigned long>();
-        }
-
+        std::shared_ptr<MDWorkSpec> spec_ {nullptr};
 };
 
-TEST(RestraintManager, singleton)
-{
-    auto managerInstance = gmx::restraint::Manager::instance();
-    ASSERT_TRUE(managerInstance);
-}
+}      // namespace gmxapi
 
-TEST(RestraintManager, restraintList)
-{
-    auto managerInstance = gmx::restraint::Manager::instance();
-    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "a");
-    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "b");
-    ASSERT_EQ(managerInstance->countRestraints(), 2);
-    managerInstance->clear();
-    ASSERT_EQ(managerInstance->countRestraints(), 0);
-    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "c");
-    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "d");
-    ASSERT_EQ(managerInstance->countRestraints(), 2);
-}
-
-} // end namespace
+#endif // header guard

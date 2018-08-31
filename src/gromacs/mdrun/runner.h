@@ -85,13 +85,6 @@ class Manager;
 
 class IRestraintPotential; // defined in restraint/restraintpotential.h
 
-/*!
- * \brief Create the default set of MD filename options.
- *
- * \return Ownership of a new filename option container.
- */
-std::unique_ptr < std::array < t_filenm, 34>> makeDefaultMdFilenames();
-
 /*! \libinternal \brief Runner object for supporting setup and execution of mdrun.
  *
  * This class has responsibility for the lifetime of data structures
@@ -119,7 +112,7 @@ class Mdrunner
          *
          * Provided for compatibility with old C-style code accessing
          * command-line arguments that are file names. */
-        constexpr static int nfile = 34;
+        constexpr static const int nfile = 34;
 
         /*! \brief Builder class to manage object creation.
          *
@@ -238,6 +231,13 @@ class Mdrunner
 
         std::shared_ptr<restraint::Manager>     restraintManager_ {nullptr};
 };
+
+/*!
+ * \brief Create the default set of MD filename options.
+ *
+ * \return Ownership of a new filename option container.
+ */
+std::unique_ptr < std::array < t_filenm, Mdrunner::nfile>> makeDefaultMdFilenames();
 
 /*! \libinternal
  * \brief Build a gmx::Mdrunner.

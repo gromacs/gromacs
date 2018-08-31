@@ -33,59 +33,41 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "gmxpre.h"
+#ifndef GMXAPI_GROMACSFWD_H
+#define GMXAPI_GROMACSFWD_H
 
-#include "gromacs/restraint/manager.h"
+/*! \ingroup gmxapi
+ * \file
+ * \brief Provide forward declarations for symbols in the GROMACS public headers.
+ *
+ * Basic API clients only need to compile
+ * and link against the gmxapi target, but some gmxapi classes use opaque pointers to
+ * library classes that are forward-declared here.
+ *
+ * We don't want to include ::gmx headers if we don't have to, but we need to declare
+ * some things in the ::gmx namespace somewhere. These are forward declarations for
+ * opaque pointers in libgromacs for client code building against libgmxapi.
+ * Client code that is
+ * more entwined with libgromacs can include headers from there.
+ *
+ * For maximal compatibility with other libgmxapi clients (such as third-party
+ * Python modules), client code should use the wrappers and protocols in the
+ * gmxapi.h header. Note that there is a separate CMake target to build the full
+ * developer documentation for gmxapi.
+ *
+ * Refer to GMXAPI developer docs for the protocols that map gmxapi interfaces to
+ * GROMACS library interfaces.
+ * Refer to the GROMACS developer
+ * documentation for details on library interfaces forward-declared in this header.
+ *
+ * \todo It would be nice to include links to the documentation for these classes, too.
+ */
 
-#include <gtest/gtest.h>
-
-namespace
+namespace gmx
 {
 
-class DummyRestraint : public gmx::IRestraintPotential
-{
-    public:
-        ~DummyRestraint() override = default;
+class IRestraintPotential;
 
-        gmx::PotentialPointData evaluate(gmx::Vector r1,
-                                         gmx::Vector r2,
-                                         double      t) override
-        {
-            (void) r1;
-            (void) r2;
-            (void) t;
-            return {};
-        }
+}      // end namespace gmx
 
-        void update(gmx::Vector v,
-                    gmx::Vector v0,
-                    double      t) override
-        { (void)v; (void)v0; (void)t; }
-
-        std::vector<unsigned long> sites() const override
-        {
-            return std::vector<unsigned long>();
-        }
-
-};
-
-TEST(RestraintManager, singleton)
-{
-    auto managerInstance = gmx::restraint::Manager::instance();
-    ASSERT_TRUE(managerInstance);
-}
-
-TEST(RestraintManager, restraintList)
-{
-    auto managerInstance = gmx::restraint::Manager::instance();
-    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "a");
-    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "b");
-    ASSERT_EQ(managerInstance->countRestraints(), 2);
-    managerInstance->clear();
-    ASSERT_EQ(managerInstance->countRestraints(), 0);
-    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "c");
-    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "d");
-    ASSERT_EQ(managerInstance->countRestraints(), 2);
-}
-
-} // end namespace
+#endif //GMXAPI_GROMACSFWD_H

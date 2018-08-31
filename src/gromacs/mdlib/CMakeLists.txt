@@ -43,6 +43,9 @@ if(GMX_USE_OPENCL)
 endif()
 
 set(MDLIB_SOURCES ${MDLIB_SOURCES} PARENT_SCOPE)
+
+gmx_install_headers(simulationsignal.h)
+
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

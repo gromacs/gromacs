@@ -278,7 +278,9 @@ class RestraintOutputProvider final : public gmx::IMDOutputProvider
         /*!
          * \brief Implement IMDOutputProvider
          *
-         * Currently unused.
+         * Required to implement, but currently unused.
+         * FILE *fplog, int nfile, const t_filenm fnm[],
+                                bool bAppendFiles, const gmx_output_env_t *oenv
          */
         void finishOutput() override
         {

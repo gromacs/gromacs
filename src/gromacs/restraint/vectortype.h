@@ -348,7 +348,7 @@ std::ostream &operator<<(std::ostream &stream, const vec3<T> &vec)
     return stream;
 }
 
-}      // end namespace gmx::detail
+}      // end namespace detail
 }      // end namespace gmx
 
 #endif //GROMACS_VECTORTYPE_H

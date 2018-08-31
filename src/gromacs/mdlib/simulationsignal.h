@@ -46,7 +46,7 @@
  *
  * \author Berk Hess <hess@kth.se>
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \inlibraryapi
+ * \inpublicapi
  * \ingroup module_mdlib
  */
 #ifndef GMX_MDLIB_SIMULATIONSIGNAL_H
