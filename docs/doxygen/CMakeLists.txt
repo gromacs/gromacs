@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -139,6 +139,9 @@ if (DOXYGEN_FOUND)
                 list(APPEND _deps dep-graphs-dot)
             endif()
         endif()
+        if ("${ARGN}" STREQUAL "DEPXML")
+            list(APPEND _deps doxygen-xml)
+        endif()
         gmx_add_custom_output_target(${TARGET} OUTPUT STAMP ${_fast_arg}
             # Ensure the directory exists to avoid spurious warnings
             COMMAND ${CMAKE_COMMAND} -E make_directory ${DEPGRAPH_DIR}
@@ -191,10 +194,10 @@ if (DOXYGEN_FOUND)
     endif()
 
     # Create the actual targets to build the documentation.
-    add_doxygen_target(doxygen-full full "Generating full documentation with Doxygen" DEPGRAPHS)
-    add_doxygen_target(doxygen-lib  lib  "Generating library documentation with Doxygen" DEPGRAPHS)
-    add_doxygen_target(doxygen-user user "Generating public API documentation with Doxygen")
-    add_doxygen_target(doxygen-dev dev "Generating verbose developer docs with Doxygen" DEPGRAPHS)
+    add_doxygen_target(doxygen-full full "Generating full documentation with Doxygen" DEPGRAPHS DEPXML)
+    add_doxygen_target(doxygen-lib  lib  "Generating library documentation with Doxygen" DEPGRAPHS DEPXML)
+    add_doxygen_target(doxygen-user user "Generating public API documentation with Doxygen" DEPXML)
+    add_doxygen_target(doxygen-dev dev "Generating verbose developer docs with Doxygen" DEPGRAPHS DEPXML)
     # Convenience targets to build all the documentation flavors.
     add_custom_target(doxygen-all)
     add_custom_target(doxygen-all-fast)
