@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,19 +32,42 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \brief Declares the integrators for energy minimization and NMA
- *
- * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \ingroup module_mdrun
- */
-#ifndef GMX_MDRUN_MINIMIZE_H
-#define GMX_MDRUN_MINIMIZE_H
 
-#include "gromacs/mdrun/integrator.h"
+#ifndef GMXAPI_GROMACSFWD_H
+#define GMXAPI_GROMACSFWD_H
+
+/*! \ingroup gmxapi
+ * \file
+ * \brief Provide forward declarations for symbols in the GROMACS public headers.
+ *
+ * Basic API clients only need to compile
+ * and link against the gmxapi target, but some gmxapi classes use opaque pointers to
+ * library classes that are forward-declared here.
+ *
+ * We don't want to include ::gmx headers if we don't have to, but we need to declare
+ * some things in the ::gmx namespace somewhere. These are forward declarations for
+ * opaque pointers in libgromacs for client code building against libgmxapi.
+ * Client code that is
+ * more entwined with libgromacs can include headers from there.
+ *
+ * For maximal compatibility with other libgmxapi clients (such as third-party
+ * Python modules), client code should use the wrappers and protocols in the
+ * gmxapi.h header. Note that there is a separate CMake target to build the full
+ * developer documentation for gmxapi.
+ *
+ * Refer to GMXAPI developer docs for the protocols that map gmxapi interfaces to
+ * GROMACS library interfaces.
+ * Refer to the GROMACS developer
+ * documentation for details on library interfaces forward-declared in this header.
+ *
+ * \todo It would be nice to include links to the documentation for these classes, too.
+ */
 
 namespace gmx
 {
 
-}      // namespace gmx
+class IRestraintPotential;
 
-#endif // GMX_MDRUN_MINIMIZE_H
+}      // end namespace gmx
+
+#endif //GMXAPI_GROMACSFWD_H
