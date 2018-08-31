@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,19 +32,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \brief Declares the integrators for energy minimization and NMA
- *
- * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \ingroup module_mdrun
- */
-#ifndef GMX_MDRUN_MINIMIZE_H
-#define GMX_MDRUN_MINIMIZE_H
 
-#include "gromacs/mdrun/integrator.h"
+#include "gmxapi/md/mdmodule.h"
 
-namespace gmx
+namespace gmxapi
 {
 
-}      // namespace gmx
+MDModule::~MDModule() = default;
 
-#endif // GMX_MDRUN_MINIMIZE_H
+const char* MDModule::name() const
+{
+    return "MDModule";
+}
+
+std::shared_ptr<::gmx::IRestraintPotential> MDModule::getRestraint()
+{
+    return nullptr;
+}
+
+} // end namespace gmxapi

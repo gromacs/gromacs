@@ -55,6 +55,10 @@ configure_file(include/version.h.in include/gmxapi/version.h)
 set(_gmxapi_interface_headers
     include/gmxapi/context.h
     include/gmxapi/exceptions.h
+    include/gmxapi/gmxapi.h
+    include/gmxapi/gromacsfwd.h
+    include/gmxapi/md.h
+    include/gmxapi/md/mdmodule.h
     include/gmxapi/session.h
     include/gmxapi/status.h
     include/gmxapi/system.h
@@ -111,7 +115,9 @@ unset(_names)
 # If any item begins in a generator expression it must evaluate to a full path,
 # so we can't just use $<TARGET_PROPERTIES:gmxapiPublicHeaders,SOURCES>.
 # Also, GMXAPI_PUBLIC_BUILD_HEADERS is not in this scope, so use _gmxapi_public_build_headers
-install(FILES ${_gmxapi_public_build_headers}
+install(DIRECTORY include/gmxapi
+        DESTINATION include)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/gmxapi/version.h
         DESTINATION include/gmxapi)
 
 unset(_sources_list)
@@ -162,6 +168,7 @@ target_include_directories(gmxapi PRIVATE
 
 # Private / implementation headers in src/api/cpp
 target_sources(gmxapi PRIVATE
+               md-impl.h
                session-impl.h
                system-impl.h
                workflow.h
@@ -170,6 +177,9 @@ target_sources(gmxapi PRIVATE
 target_sources(
     gmxapi PRIVATE
     context.cpp
+    gmxapi.cpp
+    md.cpp
+    mdmodule.cpp
     session.cpp
     status.cpp
     system.cpp
