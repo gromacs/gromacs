@@ -63,7 +63,7 @@ def do_build(context):
     context.build_target(target='gmx', parallel=True,
             continue_on_failure=True)
 
-    context.build_target(target='manual', parallel=False,
+    context.build_target(target='manual', parallel=True,
             target_descr='PDF manual', continue_on_failure=True)
     logfile = os.path.join(context.workspace.build_dir, 'docs/manual/gromacs.log')
     if os.path.isfile(logfile):
@@ -77,9 +77,9 @@ def do_build(context):
     # separately causes many of the Doxygen targets to get built twice if run
     # from a tarball.
     if not release:
-        context.build_target(target='doxygen-all', parallel=False,
+        context.build_target(target='doxygen-all', parallel=True,
                 target_descr='Doxygen documentation', continue_on_failure=True)
-        context.build_target(target='check-source', parallel=False,
+        context.build_target(target='check-source', parallel=True,
                 failure_string='check-source failed to run', continue_on_failure=True)
         logs = []
         for target in ('check-source', 'doxygen-xml', 'doxygen-user',
@@ -93,10 +93,10 @@ def do_build(context):
         if context.failed:
             return
 
-    context.build_target(target='sphinx-input', parallel=False,
+    context.build_target(target='sphinx-input', parallel=True,
             failure_string='Generating Sphinx input failed',
             continue_on_failure=True)
-    context.build_target(target='sphinx-programs', parallel=False,
+    context.build_target(target='sphinx-programs', parallel=True,
             failure_string='Running gmx help -export rst failed',
             continue_on_failure=True)
     if context.failed:
@@ -110,7 +110,7 @@ def do_build(context):
             ))
     logs = []
     for target, log, descr in sphinx_targets:
-        context.build_target(target=target, parallel=False,
+        context.build_target(target=target, parallel=True,
                 failure_string='Sphinx: {0} generation failed'.format(descr),
                 continue_on_failure=True)
         logfile = os.path.join(context.workspace.build_dir,
@@ -122,7 +122,7 @@ def do_build(context):
     if context.failed:
         return
 
-    context.build_target(target='webpage', parallel=False)
+    context.build_target(target='webpage', parallel=True)
     if context.failed:
         return
 
