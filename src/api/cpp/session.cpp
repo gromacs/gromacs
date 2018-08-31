@@ -149,6 +149,29 @@ runner_ {
     assert(runner_ != nullptr);
 }
 
+Status SessionImpl::setRestraint(std::shared_ptr<gmxapi::MDModule> module)
+{
+    assert(runner_ != nullptr);
+    Status status {
+        false
+    };
+
+    if (module != nullptr)
+    {
+        const auto &name = module->name();
+        if (restraints_.find(name) == restraints_.end())
+        {
+            auto restraint = module->getRestraint();
+            if (restraint != nullptr)
+            {
+                restraints_.emplace(std::make_pair(name, restraint));
+                status = true;
+            }
+        }
+    }
+    return status;
+}
+
 gmx::Mdrunner *SessionImpl::getRunner()
 {
     gmx::Mdrunner * runner {
@@ -222,6 +245,21 @@ bool Session::isOpen() const noexcept
     assert(impl_ != nullptr);
     const auto result = impl_->isOpen();
     return result;
+}
+
+Status setSessionRestraint(Session                          *session,
+                           std::shared_ptr<gmxapi::MDModule> module)
+{
+    auto status = gmxapi::Status(false);
+
+    if (session != nullptr && module != nullptr)
+    {
+        auto sessionImpl = session->getRaw();
+
+        assert(sessionImpl);
+        status = sessionImpl->setRestraint(std::move(module));
+    }
+    return status;
 }
 
 SessionImpl *Session::getRaw() const noexcept

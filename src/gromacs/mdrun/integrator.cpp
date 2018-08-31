@@ -45,6 +45,8 @@
 
 #include <cassert>
 
+#include <memory>
+
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/exceptions.h"
 
@@ -188,6 +190,15 @@ class IntegratorDispatcherBuilder : public IntegratorBuilder::Base
         std::unique_ptr<IntegratorAggregateAdapter> paramsContainer_ {nullptr};
 };
 
+IntegratorBuilder::IntegratorBuilder(std::unique_ptr<::gmx::IntegratorBuilder::Base> impl) :
+    impl_ {std::move(impl)}
+{
+    if (!impl_)
+    {
+        GMX_THROW(APIError("Builder should not be created with an uninitialized implementation object."));
+    }
+}
+
 IntegratorBuilder::~IntegratorBuilder() = default;
 
 IntegratorBuilder::IntegratorBuilder(IntegratorBuilder &&) noexcept = default;
@@ -198,16 +209,6 @@ std::unique_ptr<IIntegrator> IntegratorBuilder::build()
 {
     return impl_->build();
 }
-
-IntegratorBuilder::IntegratorBuilder(std::unique_ptr<::gmx::IntegratorBuilder::Base> impl) :
-    impl_ {std::move(impl)}
-{
-    if (!impl_)
-    {
-        GMX_THROW(APIError("Builder should not be created with an uninitialized implementation object."));
-    }
-}
-
 
 IntegratorBuilder IntegratorBuilder::create(const SimulationMethod &integratorType)
 {

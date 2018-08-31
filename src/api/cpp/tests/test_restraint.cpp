@@ -32,63 +32,60 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include <memory>
 
-#include "gmxpre.h"
-
-#include "gromacs/restraint/manager.h"
-
+#include "testingconfiguration.h"
+#include "gmxapi/context.h"
+#include "gmxapi/md.h"
+#include "gmxapi/session.h"
+#include "gmxapi/status.h"
+#include "gmxapi/system.h"
+#include "gmxapi/md/mdmodule.h"
 #include <gtest/gtest.h>
+
+#include "gromacs/math/vectypes.h"
+#include "gromacs/restraint/restraintpotential.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace
 {
 
-class DummyRestraint : public gmx::IRestraintPotential
+const auto                   filename = gmxapi::testing::sample_tprfilename;
+
+class NullRestraint : public gmx::IRestraintPotential
 {
     public:
-        ~DummyRestraint() override = default;
-
         gmx::PotentialPointData evaluate(gmx::Vector r1,
                                          gmx::Vector r2,
                                          double      t) override
         {
-            (void) r1;
-            (void) r2;
-            (void) t;
+            (void)r1;
+            (void)r2;
+            (void)t;
             return {};
         }
 
-        void update(gmx::Vector v,
-                    gmx::Vector v0,
-                    double      t) override
-        { (void)v; (void)v0; (void)t; }
-
         std::vector<unsigned long> sites() const override
         {
-            return std::vector<unsigned long>();
+            return {{0, 1}};
         }
-
 };
 
-TEST(RestraintManager, singleton)
+class SimpleApiModule : public gmxapi::MDModule
 {
-    auto managerInstance = gmx::restraint::Manager::instance();
-    ASSERT_TRUE(managerInstance);
-}
+    public:
+        const char *name() const override
+        {
+            return "SimpleApiModule";
+        }
 
-// The singleton is supposed to have thread-safe initialization, but it is not
-// intended to be modified on more than one thread at once. I'm not sure whether
-// that is assured in the testing environment.
-//TEST(RestraintManager, restraintList)
-//{
-//    auto managerInstance = gmx::restraint::Manager::instance();
-//    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "a");
-//    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "b");
-//    ASSERT_EQ(managerInstance->countRestraints(), 2);
-//    managerInstance->clear();
-//    ASSERT_EQ(managerInstance->countRestraints(), 0);
-//    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "c");
-//    managerInstance->addToSpec(std::make_shared<DummyRestraint>(), "d");
-//    ASSERT_EQ(managerInstance->countRestraints(), 2);
-//}
+        std::shared_ptr<gmx::IRestraintPotential> getRestraint() override
+        {
+            auto restraint = std::make_shared<NullRestraint>();
+            return restraint;
+        }
+};
 
-} // end namespace
+
+} // end anonymous namespace

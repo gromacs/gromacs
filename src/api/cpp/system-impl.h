@@ -96,6 +96,9 @@ class System::Impl final
          */
         std::shared_ptr<Session> launch(std::shared_ptr<Context> context);
 
+        Status setRestraint(std::shared_ptr<gmxapi::MDModule> module);
+        std::shared_ptr<MDWorkSpec> getSpec();
+
     private:
         /*!
          * \brief Retain access to the state of the Context in which we were launched.
@@ -105,6 +108,8 @@ class System::Impl final
         std::shared_ptr<Context>            context_;
         //! Description of simulation work.
         std::shared_ptr<Workflow>           workflow_;
+        // \todo merge Workflow and MDWorkSpec
+        std::shared_ptr<gmxapi::MDWorkSpec> spec_;
         //! Cached Status object.
         std::unique_ptr<Status>             status_;
 };

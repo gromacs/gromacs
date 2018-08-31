@@ -1581,7 +1581,7 @@ class Mdrunner::BuilderImplementation
         bool setHardwareOptions(const gmx_hw_opt_t &options);
         bool setVerletList(int nstlist);
         bool setReplicaExchange(const ReplicaExchangeParameters &params);
-        bool setFilenames(std::unique_ptr< std::array<t_filenm, Mdrunner::nfile> > filenames);
+        bool setFilenames(std::unique_ptr< std::array<t_filenm, nfile> > filenames);
         bool setCommunications(t_commrec** communicator);
         bool addMultiSim(gmx_multisim_t** multisim);
         bool setOutputContext(gmx_output_env_t** outputEnvironment, FILE** logFile);
@@ -1595,15 +1595,15 @@ class Mdrunner::BuilderImplementation
         gmx_hw_opt_t              hardwareOptions_;
         ReplicaExchangeParameters replicaExchangeParameters_;
         int nstlist_;
-        std::unique_ptr< std::array< t_filenm, Mdrunner::nfile> > filenames_;
+        std::unique_ptr< std::array< t_filenm, nfile> > filenames_;
         //! Non-owning communicator handle.
-        std::unique_ptr<t_commrec*>        communicator_;
+        std::unique_ptr<t_commrec*>                     communicator_;
         //! Non-owning multisim communicator handle.
-        std::unique_ptr<gmx_multisim_t*>   multisim_;
+        std::unique_ptr<gmx_multisim_t*>                multisim_;
         //! Non-owning handle to output environment.
-        std::unique_ptr<gmx_output_env_t*> outputEnvironment_;
+        std::unique_ptr<gmx_output_env_t*>              outputEnvironment_;
         //! Non-owning handle to MD log file.
-        std::unique_ptr<FILE*>             logFile_;
+        std::unique_ptr<FILE*>                          logFile_;
         real forceWarningThreshold_;
 };
 
@@ -1681,7 +1681,7 @@ bool Mdrunner::BuilderImplementation::setReplicaExchange(const ReplicaExchangePa
 }
 
 bool Mdrunner::BuilderImplementation::setFilenames(
-        std::unique_ptr< std::array<t_filenm, Mdrunner::nfile> > filenames)
+        std::unique_ptr< std::array<t_filenm, nfile> > filenames)
 {
     filenames_ = std::move(filenames);
     return true;

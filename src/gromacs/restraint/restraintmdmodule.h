@@ -83,6 +83,11 @@ class RestraintMDModule final : public gmx::IMDModule
         create(std::shared_ptr<gmx::IRestraintPotential> restraint, const std::vector<unsigned long int> &sites);
 
         /*!
+         * \brief Constructor used by static create() method.
+         */
+        explicit RestraintMDModule(std::unique_ptr<RestraintMDModuleImpl> restraint);
+
+        /*!
          * \brief Implement IMDModule interface
          *
          * \return see gmx::IMDModule::outputProvider.
@@ -105,10 +110,6 @@ class RestraintMDModule final : public gmx::IMDModule
         void initForceProviders(ForceProviders *forceProviders) override;
 
     private:
-        /*!
-         * \brief Private constructor used by static create() method.
-         */
-        explicit RestraintMDModule(std::unique_ptr<RestraintMDModuleImpl> restraint);
         /*!
          * \brief Private implementation opaque pointer.
          */

@@ -278,7 +278,7 @@ class RestraintOutputProvider final : public gmx::IMDOutputProvider
         /*!
          * \brief Implement IMDOutputProvider
          *
-         * Currently unused.
+         * Required to implement, but currently unused.
          */
         void finishOutput() override
         {

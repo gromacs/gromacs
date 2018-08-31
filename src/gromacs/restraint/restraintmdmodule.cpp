@@ -37,6 +37,8 @@
 
 #include "restraintmdmodule.h"
 
+#include <memory>
+
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
@@ -238,18 +240,17 @@ void gmx::RestraintMDModule::initForceProviders(ForceProviders *forceProviders)
     impl_->initForceProviders(forceProviders);
 }
 
-std::unique_ptr<gmx::RestraintMDModule>
-gmx::RestraintMDModule::create(std::shared_ptr<gmx::IRestraintPotential> restraint, const std::vector<unsigned long int> &sites)
-{
-    auto implementation = ::gmx::compat::make_unique<RestraintMDModuleImpl>(std::move(restraint), sites);
-    std::unique_ptr<gmx::RestraintMDModule> newModule {
-        new RestraintMDModule(std::move(implementation))
-    };
-    return newModule;
-}
-
-// private constructor to implement static create() method.
+// constructor to implement static create() method.
 gmx::RestraintMDModule::RestraintMDModule(std::unique_ptr<RestraintMDModuleImpl> restraint) :
     impl_ {std::move(restraint)}
 {
+}
+
+std::unique_ptr<gmx::RestraintMDModule>
+gmx::RestraintMDModule::create(std::shared_ptr<gmx::IRestraintPotential> restraint,
+                               const std::vector<unsigned long int>     &sites)
+{
+    auto implementation = ::gmx::compat::make_unique<RestraintMDModuleImpl>(std::move(restraint), sites);
+    auto newModule      = ::gmx::compat::make_unique<RestraintMDModule>(std::move(implementation));
+    return newModule;
 }
