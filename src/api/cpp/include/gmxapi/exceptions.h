@@ -74,7 +74,7 @@ class Exception : public std::exception
         const char* what() const noexcept override
         {
             return "Gromacs API error";
-        };
+        }
 };
 
 /*!
@@ -106,11 +106,11 @@ class BasicException : public Exception
         std::string what_;
     public:
         BasicException() : BasicException{std::string()}
-        {};
+        {}
 
         explicit BasicException(std::string &&message) noexcept :
             what_ {std::move(message)}
-        {};
+        {}
 
         explicit BasicException(const char* message)
         {
