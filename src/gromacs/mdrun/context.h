@@ -36,6 +36,19 @@
 #ifndef GROMACS_CONTEXT_H
 #define GROMACS_CONTEXT_H
 
+/*! \file
+ * \brief Define a Context class to manage access to simuluation resources at
+ * run time.
+ *
+ * \author M. Eric Irrgang <ericirrgang@gmail.com>
+ *
+ * \ingroup module_mdrun
+ */
+
+// This header dependency can probably be removed with the acceptance of other
+// changes currently under review.
+#include "gromacs/mdlib/simulationsignal.h"
+
 namespace gmx
 {
 

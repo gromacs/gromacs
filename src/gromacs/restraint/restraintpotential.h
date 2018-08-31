@@ -209,15 +209,14 @@ class IRestraintPotential
          */
         virtual void update(gmx::Vector v,
                             gmx::Vector v0,
-                            double      t) { (void)v; (void)v0; (void)t; };
+                            double      t) { (void)v; (void)v0; (void)t; }
 
 
         /*!
          * \brief Find out what sites this restraint is configured to act on.
          * \return
          */
-        virtual
-        std::vector<unsigned long int> sites() const = 0;
+        virtual std::vector<unsigned long int> sites() const = 0;
 
 };
 
