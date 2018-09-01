@@ -120,7 +120,7 @@
 
 #define DD_NLOAD_MAX 9
 
-static const char *edlbs_names[edlbsNR] = { "off", "auto", "locked", "on", "on" };
+static const char *edlbs_names[edlbsNR] = { "off", "off", "off", "locked", "on", "on" };
 
 /* The size per charge group of the cggl_flag buffer in gmx_domdec_comm_t */
 #define DD_CGIBS 2

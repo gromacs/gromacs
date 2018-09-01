@@ -17,3 +17,8 @@ Fixes to improve portability
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Fixed an issue where the log file could sometimes report an incorrect
+initial dynamic load balancing state
+
+:issue:`2631`
