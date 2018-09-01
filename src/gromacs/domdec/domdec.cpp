@@ -130,7 +130,11 @@ struct gmx_domdec_master_t
 
 #define DD_NLOAD_MAX 9
 
+<< << <<< HEAD
 const char *edlbs_names[edlbsNR] = { "off", "auto", "locked", "on", "on" };
+== == == =
+    static const char *edlbs_names[edlbsNR] = { "off", "off", "off", "locked", "on", "on" };
+>> >> >>> 87b632a48 ... Fixed bug reporting initial DLB state
 
 /* The size per charge group of the cggl_flag buffer in gmx_domdec_comm_t */
 #define DD_CGIBS 2
