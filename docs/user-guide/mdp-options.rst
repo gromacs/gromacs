@@ -1104,7 +1104,7 @@ Pressure coupling
    .. mdp-value:: Berendsen
 
       Exponential relaxation pressure coupling with time constant
-      :mdp:`tau-p`. The box is scaled every timestep. It has been
+      :mdp:`tau-p`. The box is scaled every :mdp:`nstpcouple` steps. It has been
       argued that this does not yield a correct thermodynamic
       ensemble, but it is the most efficient way to scale a box at the
       beginning of a run.
