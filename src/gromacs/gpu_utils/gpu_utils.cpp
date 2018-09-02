@@ -41,8 +41,14 @@
 
 #include "gpu_utils.h"
 
-#include "gromacs/hardware/gpu_hw_info.h"
+#include "config.h"
 
+#include <cassert>
+
+#include "gromacs/hardware/gpu_hw_info.h"
+#include "gromacs/utility/smalloc.h"
+
+#if !GMX_GPU
 /*! \brief Set allocation functions used by the GPU host
  *
  * Since GPU support is not configured, there is no host memory to
@@ -55,15 +61,37 @@ void gpu_set_host_malloc_and_free(bool /*unused*/,
     *nb_free  = nullptr;
 }
 
-//! This function is documented in the header file
-std::vector<int> getCompatibleGpus(const gmx_gpu_info_t & /*gpu_info*/)
+int gpu_info_get_stat(const gmx_gpu_info_t & /*unused*/, int /*unused*/)
 {
-    // There can't be any compatible GPUs
-    return std::vector<int>();
+    return egpuNonexistent;
+}
+#endif
+
+void free_gpu_info(const gmx_gpu_info_t *gpu_info)
+{
+    sfree(static_cast<void*>(gpu_info->gpu_dev)); //circumvent is_pod check in sfree
 }
 
-const char *getGpuCompatibilityDescription(const gmx_gpu_info_t & /*gpu_info*/,
-                                           int                    /*index*/)
+std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info)
 {
-    return gpu_detect_res_str[egpuNonexistent];
+    // Possible minor over-allocation here, but not important for anything
+    std::vector<int> compatibleGpus;
+    compatibleGpus.reserve(gpu_info.n_dev);
+    for (int i = 0; i < gpu_info.n_dev; i++)
+    {
+        assert(gpu_info.gpu_dev);
+        if (gpu_info_get_stat(gpu_info, i) == egpuCompatible)
+        {
+            compatibleGpus.push_back(i);
+        }
+    }
+    return compatibleGpus;
+}
+
+const char *getGpuCompatibilityDescription(const gmx_gpu_info_t &gpu_info,
+                                           int                   index)
+{
+    return (index >= gpu_info.n_dev ?
+            gpu_detect_res_str[egpuNonexistent] :
+            gpu_detect_res_str[gpu_info_get_stat(gpu_info, index)]);
 }

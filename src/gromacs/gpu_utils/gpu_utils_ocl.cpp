@@ -100,7 +100,7 @@ runningOnCompatibleOSForAmd()
  * \returns             true if the GPU properties passed indicate a compatible
  *                      GPU, otherwise false.
  */
-static int is_gmx_supported_gpu_id(struct gmx_device_info_t *ocl_gpu_device)
+static int is_gmx_supported_gpu_id(gmx_device_info_t *ocl_gpu_device)
 {
     if ((getenv("GMX_OCL_DISABLE_COMPATIBILITY_CHECK")) != nullptr)
     {
@@ -347,43 +347,6 @@ void findGpus(gmx_gpu_info_t *gpu_info)
 }
 
 //! This function is documented in the header file
-void free_gpu_info(const gmx_gpu_info_t gmx_unused *gpu_info)
-{
-    if (gpu_info == nullptr)
-    {
-        return;
-    }
-
-    sfree(gpu_info->gpu_dev);
-}
-
-//! This function is documented in the header file
-std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info)
-{
-    // Possible minor over-allocation here, but not important for anything
-    std::vector<int> compatibleGpus;
-    compatibleGpus.reserve(gpu_info.n_dev);
-    for (int i = 0; i < gpu_info.n_dev; i++)
-    {
-        assert(gpu_info.gpu_dev);
-        if (gpu_info.gpu_dev[i].stat == egpuCompatible)
-        {
-            compatibleGpus.push_back(i);
-        }
-    }
-    return compatibleGpus;
-}
-
-//! This function is documented in the header file
-const char *getGpuCompatibilityDescription(const gmx_gpu_info_t &gpu_info,
-                                           int                   index)
-{
-    return (index >= gpu_info.n_dev ?
-            gpu_detect_res_str[egpuNonexistent] :
-            gpu_detect_res_str[gpu_info.gpu_dev[index].stat]);
-}
-
-//! This function is documented in the header file
 void get_gpu_device_info_string(char *s, const gmx_gpu_info_t &gpu_info, int index)
 {
     assert(s);
@@ -469,4 +432,9 @@ void gpu_set_host_malloc_and_free(bool               bUseGpuKernels,
         *nb_alloc = nullptr;
         *nb_free  = nullptr;
     }
+}
+
+int gpu_info_get_stat(const gmx_gpu_info_t &info, int index)
+{
+    return info.gpu_dev[index].stat;
 }
