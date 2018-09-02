@@ -136,8 +136,7 @@ const char *getGpuCompatibilityDescription(const gmx_gpu_info_t &GPU_FUNC_ARGUME
  *
  * \param[in]    gpu_info    pointer to structure holding GPU information
  */
-GPU_FUNC_QUALIFIER
-void free_gpu_info(const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info)) GPU_FUNC_TERM
+void free_gpu_info(const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info));
 
 /*! \brief Initializes the GPU described by \c deviceInfo.
  *
@@ -235,7 +234,8 @@ void gpu_set_host_malloc_and_free(bool               bUseGpuKernels,
                                   gmx_host_alloc_t **nb_alloc,
                                   gmx_host_free_t  **nb_free);
 
-
+//! Get status of device with specified index
+int gpu_info_get_stat(const gmx_gpu_info_t &info, int index);
 
 /*! \brief Starts the GPU profiler if mdrun is being profiled.
  *
