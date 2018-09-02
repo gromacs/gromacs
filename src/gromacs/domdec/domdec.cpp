@@ -120,7 +120,7 @@
 
 #define DD_NLOAD_MAX 9
 
-static const char *edlbs_names[edlbsNR] = { "off", "auto", "locked", "on", "on" };
+static const char *edlbs_names[int(DlbState::nr)] = { "off", "auto", "locked", "on", "on" };
 
 /* The size per charge group of the cggl_flag buffer in gmx_domdec_comm_t */
 #define DD_CGIBS 2
@@ -2338,25 +2338,25 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
 
         switch (dd->comm->dlbState)
         {
-            case edlbsOffUser:
+            case DlbState::offUser:
                 dlbStateStr = "DLB was off during the run per user request.";
                 break;
-            case edlbsOffForever:
+            case DlbState::offForever:
                 /* Currectly this can happen due to performance loss observed, cell size
                  * limitations or incompatibility with other settings observed during
                  * determineInitialDlbState(). */
                 dlbStateStr = "DLB got disabled because it was unsuitable to use.";
                 break;
-            case edlbsOffCanTurnOn:
+            case DlbState::offCanTurnOn:
                 dlbStateStr = "DLB was off during the run due to low measured imbalance.";
                 break;
-            case edlbsOffTemporarilyLocked:
+            case DlbState::offTemporarilyLocked:
                 dlbStateStr = "DLB was locked at the end of the run due to unfinished PP-PME balancing.";
                 break;
-            case edlbsOnCanTurnOff:
+            case DlbState::onCanTurnOff:
                 dlbStateStr = "DLB was turned on during the run due to measured imbalance.";
                 break;
-            case edlbsOnUser:
+            case DlbState::onUser:
                 dlbStateStr = "DLB was permanently on during the run per user request.";
                 break;
             default:
@@ -3344,23 +3344,23 @@ static real average_cellsize_min(gmx_domdec_t *dd, gmx_ddbox_t *ddbox)
 
 /*! \brief Depending on the DLB initial value return the DLB switched off state or issue an error.
  */
-static int forceDlbOffOrBail(int                cmdlineDlbState,
-                             const std::string &reasonStr,
-                             t_commrec         *cr,
-                             FILE              *fplog)
+static DlbState forceDlbOffOrBail(DlbState           cmdlineDlbState,
+                                  const std::string &reasonStr,
+                                  t_commrec         *cr,
+                                  FILE              *fplog)
 {
     std::string dlbNotSupportedErr  = "Dynamic load balancing requested, but ";
     std::string dlbDisableNote      = "NOTE: disabling dynamic load balancing as ";
 
-    if (cmdlineDlbState == edlbsOnUser)
+    if (cmdlineDlbState == DlbState::onUser)
     {
         gmx_fatal(FARGS, "%s", (dlbNotSupportedErr + reasonStr).c_str());
     }
-    else if (cmdlineDlbState == edlbsOffCanTurnOn)
+    else if (cmdlineDlbState == DlbState::offCanTurnOn)
     {
         dd_warning(cr, fplog, (dlbDisableNote + reasonStr + "\n").c_str());
     }
-    return edlbsOffForever;
+    return DlbState::offForever;
 }
 
 /*! \brief Return the dynamic load balancer's initial state based on initial conditions and user inputs.
@@ -3378,18 +3378,18 @@ static int forceDlbOffOrBail(int                cmdlineDlbState,
  * \param [in] ir          Pointer mdrun to input parameters.
  * \returns                DLB initial/startup state.
  */
-static int determineInitialDlbState(FILE *fplog, t_commrec *cr,
-                                    DlbOption dlbOption, gmx_bool bRecordLoad,
-                                    const MdrunOptions &mdrunOptions,
-                                    const t_inputrec *ir)
+static DlbState determineInitialDlbState(FILE *fplog, t_commrec *cr,
+                                         DlbOption dlbOption, gmx_bool bRecordLoad,
+                                         const MdrunOptions &mdrunOptions,
+                                         const t_inputrec *ir)
 {
-    int dlbState = edlbsOffCanTurnOn;
+    DlbState dlbState = DlbState::offCanTurnOn;
 
     switch (dlbOption)
     {
-        case DlbOption::turnOnWhenUseful: dlbState = edlbsOffCanTurnOn; break;
-        case DlbOption::no:               dlbState = edlbsOffUser;      break;
-        case DlbOption::yes:              dlbState = edlbsOnUser;       break;
+        case DlbOption::turnOnWhenUseful: dlbState = DlbState::offCanTurnOn; break;
+        case DlbOption::no:               dlbState = DlbState::offUser;      break;
+        case DlbOption::yes:              dlbState = DlbState::onUser;       break;
         default: gmx_incons("Invalid dlbOption enum value");
     }
 
@@ -3419,17 +3419,17 @@ static int determineInitialDlbState(FILE *fplog, t_commrec *cr,
         std::string reasonStr = "you started a reproducible run.";
         switch (dlbState)
         {
-            case edlbsOffUser:
+            case DlbState::offUser:
                 break;
-            case edlbsOffForever:
-                GMX_RELEASE_ASSERT(false, "edlbsOffForever is not a valid initial state");
+            case DlbState::offForever:
+                GMX_RELEASE_ASSERT(false, "DlbState::offForever is not a valid initial state");
                 break;
-            case edlbsOffCanTurnOn:
+            case DlbState::offCanTurnOn:
                 return forceDlbOffOrBail(dlbState, reasonStr, cr, fplog);
-            case edlbsOnCanTurnOff:
-                GMX_RELEASE_ASSERT(false, "edlbsOffCanTurnOff is not a valid initial state");
+            case DlbState::onCanTurnOff:
+                GMX_RELEASE_ASSERT(false, "DlbState::offCanTurnOff is not a valid initial state");
                 break;
-            case edlbsOnUser:
+            case DlbState::onUser:
                 return forceDlbOffOrBail(dlbState, reasonStr + " In load balanced runs binary reproducibility cannot be ensured.", cr, fplog);
             default:
                 gmx_fatal(FARGS, "Death horror: undefined case (%d) for load balancing choice", dlbState);
@@ -3538,7 +3538,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
     if (fplog)
     {
         fprintf(fplog, "Dynamic load balancing: %s\n",
-                edlbs_names[comm->dlbState]);
+                edlbs_names[int(comm->dlbState)]);
     }
     comm->bPMELoadBalDLBLimits = FALSE;
 
@@ -3760,7 +3760,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
             gmx_bool bC = (dd->bInterCGcons && rconstr > r_bonded_limit);
             sprintf(buf, "Change the number of ranks or mdrun option %s%s%s",
                     !bC ? "-rdd" : "-rcon",
-                    comm->dlbState != edlbsOffUser ? " or -dds" : "",
+                    comm->dlbState != DlbState::offUser ? " or -dds" : "",
                     bC ? " or your LINCS settings" : "");
 
             gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
@@ -3943,14 +3943,14 @@ static void turn_on_dlb(FILE *fplog, const t_commrec *cr, int64_t step)
                                      "Will no longer try dynamic load balancing.\n", step, dd_force_imb_perf_loss(dd)*100);
         dd_warning(cr, fplog, str.c_str());
 
-        comm->dlbState = edlbsOffForever;
+        comm->dlbState = DlbState::offForever;
         return;
     }
 
     char buf[STRLEN];
     sprintf(buf, "step %" PRId64 " Turning on dynamic load balancing, because the performance loss due to load imbalance is %.1f %%.\n", step, dd_force_imb_perf_loss(dd)*100);
     dd_warning(cr, fplog, buf);
-    comm->dlbState = edlbsOnCanTurnOff;
+    comm->dlbState = DlbState::onCanTurnOff;
 
     /* Store the non-DLB performance, so we can check if DLB actually
      * improves performance.
@@ -3994,18 +3994,18 @@ static void turn_off_dlb(FILE *fplog, const t_commrec *cr, int64_t step)
     char          buf[STRLEN];
     sprintf(buf, "step %" PRId64 " Turning off dynamic load balancing, because it is degrading performance.\n", step);
     dd_warning(cr, fplog, buf);
-    dd->comm->dlbState                     = edlbsOffCanTurnOn;
+    dd->comm->dlbState                     = DlbState::offCanTurnOn;
     dd->comm->haveTurnedOffDlb             = true;
     dd->comm->ddPartioningCountFirstDlbOff = dd->ddp_count;
 }
 
 static void turn_off_dlb_forever(FILE *fplog, const t_commrec *cr, int64_t step)
 {
-    GMX_RELEASE_ASSERT(cr->dd->comm->dlbState == edlbsOffCanTurnOn, "Can only turn off DLB forever when it was in the can-turn-on state");
+    GMX_RELEASE_ASSERT(cr->dd->comm->dlbState == DlbState::offCanTurnOn, "Can only turn off DLB forever when it was in the can-turn-on state");
     char buf[STRLEN];
     sprintf(buf, "step %" PRId64 " Will no longer try dynamic load balancing, as it degraded performance.\n", step);
     dd_warning(cr, fplog, buf);
-    cr->dd->comm->dlbState = edlbsOffForever;
+    cr->dd->comm->dlbState = DlbState::offForever;
 }
 
 static char *init_bLocalCG(const gmx_mtop_t *mtop)
@@ -4330,7 +4330,7 @@ static void set_ddgrid_parameters(FILE *fplog, gmx_domdec_t *dd, real dlb_scale,
     }
 
     print_dd_settings(fplog, dd, mtop, ir, isDlbOn(comm), dlb_scale, ddbox);
-    if (comm->dlbState == edlbsOffCanTurnOn)
+    if (comm->dlbState == DlbState::offCanTurnOn)
     {
         if (fplog)
         {
@@ -4573,7 +4573,7 @@ void set_dd_dlb_max_cutoff(t_commrec *cr, real cutoff)
  */
 static void dd_dlb_set_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd, gmx_bool bValue)
 {
-    if (dd->comm->dlbState == edlbsOffCanTurnOn)
+    if (dd->comm->dlbState == DlbState::offCanTurnOn)
     {
         dd->comm->bCheckWhetherToTurnDlbOn = bValue;
 
@@ -4592,7 +4592,7 @@ static void dd_dlb_set_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd, gmx
  */
 static gmx_bool dd_dlb_get_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd)
 {
-    if (dd->comm->dlbState != edlbsOffCanTurnOn)
+    if (dd->comm->dlbState != DlbState::offCanTurnOn)
     {
         return FALSE;
     }
@@ -4638,24 +4638,24 @@ gmx_bool dd_dlb_is_on(const gmx_domdec_t *dd)
 
 gmx_bool dd_dlb_is_locked(const gmx_domdec_t *dd)
 {
-    return (dd->comm->dlbState == edlbsOffTemporarilyLocked);
+    return (dd->comm->dlbState == DlbState::offTemporarilyLocked);
 }
 
 void dd_dlb_lock(gmx_domdec_t *dd)
 {
     /* We can only lock the DLB when it is set to auto, otherwise don't do anything */
-    if (dd->comm->dlbState == edlbsOffCanTurnOn)
+    if (dd->comm->dlbState == DlbState::offCanTurnOn)
     {
-        dd->comm->dlbState = edlbsOffTemporarilyLocked;
+        dd->comm->dlbState = DlbState::offTemporarilyLocked;
     }
 }
 
 void dd_dlb_unlock(gmx_domdec_t *dd)
 {
     /* We can only lock the DLB when it is set to auto, otherwise don't do anything */
-    if (dd->comm->dlbState == edlbsOffTemporarilyLocked)
+    if (dd->comm->dlbState == DlbState::offTemporarilyLocked)
     {
-        dd->comm->dlbState = edlbsOffCanTurnOn;
+        dd->comm->dlbState = DlbState::offCanTurnOn;
         dd_dlb_set_should_check_whether_to_turn_dlb_on(dd, TRUE);
     }
 }
@@ -6358,7 +6358,7 @@ void dd_partition_system(FILE                *fplog,
                         (1 - averageFactor)*comm->cyclesPerStepDlbExpAverage +
                         averageFactor*comm->cycl[ddCyclStep]/comm->cycl_n[ddCyclStep];
                 }
-                if (comm->dlbState == edlbsOnCanTurnOff &&
+                if (comm->dlbState == DlbState::onCanTurnOff &&
                     dd->comm->n_load_have % c_checkTurnDlbOffInterval == c_checkTurnDlbOffInterval - 1)
                 {
                     gmx_bool turnOffDlb;

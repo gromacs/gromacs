@@ -229,25 +229,26 @@ class DDAtomRanges
  *
  * Allowed DLB states and transitions
  * - intialization at startup:
- *                             -> edlbsOffUser ("-dlb no")
- *                             -> edlbsOnUser  ("-dlb yes")
- *                             -> edlbsOffCanTurnOn ("-dlb auto")
+ *                             -> offUser ("-dlb no")
+ *                             -> onUser  ("-dlb yes")
+ *                             -> offCanTurnOn ("-dlb auto")
  *
- * - in automatic mode (i.e. initial state edlbsOffCanTurnOn):
- *   edlbsOffCanTurnOn         -> edlbsOnCanTurnOff
- *   edlbsOffCanTurnOn         -> edlbsOffForever
- *   edlbsOffCanTurnOn         -> edlbsOffTemporarilyLocked
- *   edlbsOffTemporarilyLocked -> edlbsOffCanTurnOn
- *   edlbsOnCanTurnOff         -> edlbsOffCanTurnOn
+ * - in automatic mode (i.e. initial state offCanTurnOn):
+ *   offCanTurnOn         -> onCanTurnOff
+ *   offCanTurnOn         -> offForever
+ *   offCanTurnOn         -> offTemporarilyLocked
+ *   offTemporarilyLocked -> offCanTurnOn
+ *   onCanTurnOff         -> offCanTurnOn
  */
-enum {
-    edlbsOffUser,              /**< DLB is permanently off per user request */
-    edlbsOffForever,           /**< DLB is off due to a runtime condition (not supported or causes performance loss) and will never be turned on */
-    edlbsOffCanTurnOn,         /**< DLB is off and will turn on on imbalance */
-    edlbsOffTemporarilyLocked, /**< DLB is off and temporarily can't turn on */
-    edlbsOnCanTurnOff,         /**< DLB is on and can turn off when slow */
-    edlbsOnUser,               /**< DLB is permanently on per user request */
-    edlbsNR                    /**< The number of DLB states */
+enum class DlbState
+{
+    offUser,              /**< DLB is permanently off per user request */
+    offForever,           /**< DLB is off due to a runtime condition (not supported or causes performance loss) and will never be turned on */
+    offCanTurnOn,         /**< DLB is off and will turn on on imbalance */
+    offTemporarilyLocked, /**< DLB is off and temporarily can't turn on */
+    onCanTurnOff,         /**< DLB is on and can turn off when slow */
+    onUser,               /**< DLB is permanently on per user request */
+    nr                    /**< The number of DLB states */
 };
 
 /*! \brief The PME domain decomposition for one dimension */
@@ -418,8 +419,8 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     char     *bLocalCG;           /**< Local cg availability, TODO: remove when group scheme is removed */
 
     /* The DLB state, possible values are defined above */
-    int      dlbState;
-    /* With dlbState=edlbsOffCanTurnOn, should we check if to DLB on at the next DD? */
+    DlbState dlbState;
+    /* With dlbState=DlbState::offCanTurnOn, should we check if to DLB on at the next DD? */
     gmx_bool bCheckWhetherToTurnDlbOn;
     /* The first DD count since we are running without DLB */
     int      ddPartioningCountFirstDlbOff = 0;
