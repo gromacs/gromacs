@@ -112,7 +112,7 @@ bool canDetectGpus(std::string *GPU_FUNC_ARGUMENT(errorMessage)) GPU_FUNC_TERM_W
  *                         the call to canDetectGpus() should always prevent this occuring)
  */
 GPU_FUNC_QUALIFIER
-void findGpus(struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info)) GPU_FUNC_TERM
+void findGpus(gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info)) GPU_FUNC_TERM
 
 /*! \brief Return a container of the detected GPUs that are compatible.
  *
@@ -129,15 +129,14 @@ std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info);
  * \param[in]   index       index of GPU to ask about
  * \returns                 A null-terminated C string describing the compatibility status, useful for error messages.
  */
-const char *getGpuCompatibilityDescription(const gmx_gpu_info_t &GPU_FUNC_ARGUMENT(gpu_info),
-                                           int GPU_FUNC_ARGUMENT(index));
+const char *getGpuCompatibilityDescription(const gmx_gpu_info_t &gpu_info,
+                                           int                   index);
 
 /*! \brief Frees the gpu_dev and dev_use array fields of \p gpu_info.
  *
  * \param[in]    gpu_info    pointer to structure holding GPU information
  */
-GPU_FUNC_QUALIFIER
-void free_gpu_info(const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info)) GPU_FUNC_TERM
+void free_gpu_info(const gmx_gpu_info_t *gpu_info);
 
 /*! \brief Initializes the GPU described by \c deviceInfo.
  *
@@ -204,7 +203,7 @@ int get_current_cuda_gpu_device_id(void) CUDA_FUNC_TERM_WITH_RETURN(-1)
  */
 GPU_FUNC_QUALIFIER
 void get_gpu_device_info_string(char *GPU_FUNC_ARGUMENT(s),
-                                const struct gmx_gpu_info_t &GPU_FUNC_ARGUMENT(gpu_info),
+                                const gmx_gpu_info_t &GPU_FUNC_ARGUMENT(gpu_info),
                                 int GPU_FUNC_ARGUMENT(index)) GPU_FUNC_TERM
 
 /*! \brief Returns the size of the gpu_dev_info struct.
@@ -235,7 +234,8 @@ void gpu_set_host_malloc_and_free(bool               bUseGpuKernels,
                                   gmx_host_alloc_t **nb_alloc,
                                   gmx_host_free_t  **nb_free);
 
-
+//! Get status of device with specified index
+int gpu_info_get_stat(const gmx_gpu_info_t &info, int index);
 
 /*! \brief Starts the GPU profiler if mdrun is being profiled.
  *

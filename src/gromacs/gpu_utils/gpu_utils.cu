@@ -772,40 +772,6 @@ void findGpus(gmx_gpu_info_t *gpu_info)
     gpu_info->gpu_dev = devs;
 }
 
-std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info)
-{
-    // Possible minor over-allocation here, but not important for anything
-    std::vector<int> compatibleGpus;
-    compatibleGpus.reserve(gpu_info.n_dev);
-    for (int i = 0; i < gpu_info.n_dev; i++)
-    {
-        assert(gpu_info.gpu_dev);
-        if (gpu_info.gpu_dev[i].stat == egpuCompatible)
-        {
-            compatibleGpus.push_back(i);
-        }
-    }
-    return compatibleGpus;
-}
-
-const char *getGpuCompatibilityDescription(const gmx_gpu_info_t &gpu_info,
-                                           int                   index)
-{
-    return (index >= gpu_info.n_dev ?
-            gpu_detect_res_str[egpuNonexistent] :
-            gpu_detect_res_str[gpu_info.gpu_dev[index].stat]);
-}
-
-void free_gpu_info(const gmx_gpu_info_t *gpu_info)
-{
-    if (gpu_info == NULL)
-    {
-        return;
-    }
-
-    sfree(gpu_info->gpu_dev);
-}
-
 void get_gpu_device_info_string(char *s, const gmx_gpu_info_t &gpu_info, int index)
 {
     assert(s);
@@ -907,4 +873,9 @@ void resetGpuProfiler(void)
     {
         startGpuProfiler();
     }
+}
+
+int gpu_info_get_stat(const gmx_gpu_info_t &info, int index)
+{
+    return info.gpu_dev[index].stat;
 }
