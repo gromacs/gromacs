@@ -60,7 +60,12 @@ def do_build(context):
     cmake_opts.update(context.get_doc_cmake_options(
         doxygen_version='1.8.5', sphinx_version='1.6.1'))
     context.run_cmake(cmake_opts);
-    context.build_target(target='gmx', parallel=True,
+
+    context.build_target(target='sphinx-input', parallel=True,
+            failure_string='Generating Sphinx input failed',
+            continue_on_failure=True)
+    context.build_target(target='sphinx-programs', parallel=True,
+            failure_string='Running gmx help -export rst failed',
             continue_on_failure=True)
 
     context.build_target(target='manual', parallel=True,
@@ -93,12 +98,6 @@ def do_build(context):
         if context.failed:
             return
 
-    context.build_target(target='sphinx-input', parallel=True,
-            failure_string='Generating Sphinx input failed',
-            continue_on_failure=True)
-    context.build_target(target='sphinx-programs', parallel=True,
-            failure_string='Running gmx help -export rst failed',
-            continue_on_failure=True)
     if context.failed:
         return
 
