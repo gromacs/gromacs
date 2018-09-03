@@ -279,6 +279,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES
 endif()
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
    target_compile_options(libgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/analyze /analyze:stacksize 70000
+     /analyze:pluginEspXEngine.dll
      #Control flow warnings are disabled because the commond line output is insufficient. There is no tool
      #to convert the xml report to e.g. HTML and even in Visual Studio the viewer doesn't work with cmake support.
      /wd6001  #unitialized memory
