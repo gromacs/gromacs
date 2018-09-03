@@ -431,8 +431,10 @@ if (SPHINX_FOUND)
             index.rst
             flow.rst)
     endif()
-    gmx_add_sphinx_input_target(sphinx-input)
+    gmx_add_sphinx_input_target(sphinx-input-rst)
     gmx_add_sphinx_image_conversion_target(sphinx-image-conversion)
+    add_custom_target(sphinx-input)
+    add_dependencies(sphinx-input sphinx-input-rst sphinx-image-conversion)
     # Remove other rst files from the build tree, since they confuse Sphinx.
     # Skip generated files in onlinehelp/, and fragments.
     # The latter do not cause issues with obsolete files, as they
