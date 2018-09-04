@@ -463,7 +463,9 @@ void OptEEM::TuneEEM2PolData()
 {
     int      n = 0;
     char     zstr[STRLEN];
+    char     z_sig[STRLEN];
     char     buf[STRLEN];
+    char     buf_sig[STRLEN];
     Poldata &pd = poldata();
     auto    *ic = indexCount();
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
@@ -493,11 +495,12 @@ void OptEEM::TuneEEM2PolData()
                 zstr[0]  = '\0';
                 z_sig[0] = '\0';
                 auto nzeta   = ei->getNzeta();
+                double zeta  = 0;
+                double sigma = 0;
                 if (iChargeDistributionModel() == eqdAXps || 
                     iChargeDistributionModel() == eqdAXpg)
                 {                   
-                    double zeta  = ei->getZeta(0);
-                    double sigma = 0;
+                    zeta  = ei->getZeta(0);
                     for (auto i = 0; i < nzeta; i++)
                     {
                         if (i > 0)
