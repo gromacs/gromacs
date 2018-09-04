@@ -35,8 +35,8 @@
 # make an "object library" for code that we re-use for both kinds of tests
 add_library(mdrun_test_objlib OBJECT
     energyreader.cpp
-    mdruncomparison.cpp
     moduletest.cpp
+    simulationdatabase.cpp
     terminationhelper.cpp
     # PME tests
     pmetest.cpp

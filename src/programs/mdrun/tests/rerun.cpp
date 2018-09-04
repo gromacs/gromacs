@@ -65,6 +65,8 @@
 #include "energycomparison.h"
 #include "energyreader.h"
 #include "mdruncomparison.h"
+#include "moduletest.h"
+#include "simulationdatabase.h"
 #include "trajectorycomparison.h"
 #include "trajectoryreader.h"
 

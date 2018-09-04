@@ -34,19 +34,17 @@
  */
 /*! \internal \file
  * \brief
- * Implements declarations from in mdruncomparison.h.
+ * Implements declarations from in simulationdatabase.h
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun_integration_tests
  */
 #include "gmxpre.h"
 
-#include "mdruncomparison.h"
+#include "simulationdatabase.h"
 
 #include <map>
 #include <string>
-#include <utility>
-#include <vector>
 
 #include "gromacs/utility/stringutil.h"
 
