@@ -830,6 +830,10 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
                      impl_->defaultTolerance_));
 }
 
+TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const std::string &id)
+{
+    return checkCompound(type, id.c_str());
+}
 
 /*! \brief Throw a TestException if the caller tries to write particular refdata that can't work.
  *

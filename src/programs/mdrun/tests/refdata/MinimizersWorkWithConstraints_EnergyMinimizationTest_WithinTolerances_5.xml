@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Simulation Name="alanine_vsite_vacuo">
+    <Minimizer Name="cg">
+      <Energy Name="Potential">
+        <Real Name="Time 0.000000 Step 0 in frame 0">-133.03444555671706</Real>
+        <Real Name="Time 0.000000 Step 0 in frame 1">-147.76071249343909</Real>
+        <Real Name="Time 4.000000 Step 4 in frame 2">-169.41077894123521</Real>
+      </Energy>
+    </Minimizer>
+  </Simulation>
+</ReferenceData>

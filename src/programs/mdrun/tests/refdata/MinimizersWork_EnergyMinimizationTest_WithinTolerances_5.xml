@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Simulation Name="glycine_no_constraints_vacuo">
+    <Minimizer Name="l-bfgs">
+      <Energy Name="Potential">
+        <Real Name="Time 0.000000 Step 0 in frame 0">2195.7786482024485</Real>
+        <Real Name="Time 0.000000 Step 0 in frame 1">1848.1873657020258</Real>
+        <Real Name="Time 4.000000 Step 4 in frame 2">1847.227343785434</Real>
+      </Energy>
+    </Minimizer>
+  </Simulation>
+</ReferenceData>
