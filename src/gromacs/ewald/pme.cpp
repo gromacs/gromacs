@@ -102,6 +102,7 @@
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -155,7 +156,7 @@ bool pme_gpu_supports_build(std::string *error)
     return addMessageIfNotSupported(errorReasons, error);
 }
 
-bool pme_gpu_supports_input(const t_inputrec *ir, std::string *error)
+bool pme_gpu_supports_input(const t_inputrec *ir, const gmx_mtop_t *mtop, std::string *error)
 {
     std::list<std::string> errorReasons;
     if (!EEL_PME(ir->coulombtype))
@@ -168,7 +169,11 @@ bool pme_gpu_supports_input(const t_inputrec *ir, std::string *error)
     }
     if (ir->efep != efepNO)
     {
-        errorReasons.emplace_back("free energy calculations (multiple grids)");
+        /* If mtop is a nullptr assume that the charges might be perturbed */
+        if (mtop == nullptr || gmx_mtop_has_perturbed_charges(mtop))
+        {
+            errorReasons.emplace_back("free energy calculations with perturbed charges (multiple grids)");
+        }
     }
     if (EVDW_PME(ir->vdwtype))
     {
