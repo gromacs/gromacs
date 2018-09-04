@@ -75,9 +75,12 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "domdec_constraints.h"
 #include "domdec_internal.h"
@@ -163,31 +166,21 @@ static gmx_bool dd_check_ftype(int ftype, gmx_bool bBCheck,
             (bSettle && ftype == F_SETTLE));
 }
 
-/*! \brief Print a header on error messages */
-static void print_error_header(FILE *fplog, const char *moltypename, int nprint)
-{
-    fprintf(fplog, "\nMolecule type '%s'\n", moltypename);
-    fprintf(stderr, "\nMolecule type '%s'\n", moltypename);
-    fprintf(fplog,
-            "the first %d missing interactions, except for exclusions:\n",
-            nprint);
-    fprintf(stderr,
-            "the first %d missing interactions, except for exclusions:\n",
-            nprint);
-}
-
 /*! \brief Help print error output when interactions are missing */
-static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
-                                          const gmx_reverse_top_t *rt,
-                                          const char *moltypename,
-                                          const reverse_ilist_t *ril,
-                                          int a_start, int a_end,
-                                          int nat_mol, int nmol,
-                                          const t_idef *idef)
+static std::string
+print_missing_interactions_mb(t_commrec *cr,
+                              const gmx_reverse_top_t *rt,
+                              const char *moltypename,
+                              const reverse_ilist_t *ril,
+                              int a_start, int a_end,
+                              int nat_mol, int nmol,
+                              const t_idef *idef)
 {
-    int *assigned;
-    int  nril_mol = ril->index[nat_mol];
+    int                     *assigned;
+    int                      nril_mol = ril->index[nat_mol];
     snew(assigned, nmol*nril_mol);
+    gmx::StringOutputStream  stream;
+    gmx::TextWriter          log(&stream);
 
     gmx::ArrayRef<const int> gatindex = cr->dd->globalAtomIndices;
     for (int ftype = 0; ftype < F_NRE; ftype++)
@@ -266,35 +259,29 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
                 {
                     if (i == 0)
                     {
-                        print_error_header(fplog, moltypename, nprint);
+                        log.writeLineFormatted("Molecule type '%s'", moltypename);
+                        log.writeLineFormatted(
+                                "the first %d missing interactions, except for exclusions:", nprint);
                     }
-                    fprintf(fplog, "%20s atoms",
-                            interaction_function[ftype].longname);
-                    fprintf(stderr, "%20s atoms",
-                            interaction_function[ftype].longname);
+                    log.writeStringFormatted("%20s atoms",
+                                             interaction_function[ftype].longname);
                     int a;
                     for (a = 0; a < nral; a++)
                     {
-                        fprintf(fplog, "%5d", ril->il[j_mol+2+a]+1);
-                        fprintf(stderr, "%5d", ril->il[j_mol+2+a]+1);
+                        log.writeStringFormatted("%5d", ril->il[j_mol+2+a]+1);
                     }
                     while (a < 4)
                     {
-                        fprintf(fplog, "     ");
-                        fprintf(stderr, "     ");
+                        log.writeString("     ");
                         a++;
                     }
-                    fprintf(fplog, " global");
-                    fprintf(stderr, " global");
+                    log.writeString(" global");
                     for (a = 0; a < nral; a++)
                     {
-                        fprintf(fplog, "%6d",
-                                a_start+mol*nat_mol+ril->il[j_mol+2+a]+1);
-                        fprintf(stderr, "%6d",
-                                a_start+mol*nat_mol+ril->il[j_mol+2+a]+1);
+                        log.writeStringFormatted("%6d",
+                                                 a_start+mol*nat_mol+ril->il[j_mol+2+a]+1);
                     }
-                    fprintf(fplog, "\n");
-                    fprintf(stderr, "\n");
+                    log.ensureLineBreak();
                 }
                 i++;
                 if (i >= nprint)
@@ -307,12 +294,14 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
     }
 
     sfree(assigned);
+    return stream.toString();
 }
 
 /*! \brief Help print error output when interactions are missing */
-static void print_missing_interactions_atoms(FILE *fplog, t_commrec *cr,
-                                             const gmx_mtop_t *mtop,
-                                             const t_idef *idef)
+static void print_missing_interactions_atoms(const gmx::MDLogger &mdlog,
+                                             t_commrec           *cr,
+                                             const gmx_mtop_t    *mtop,
+                                             const t_idef        *idef)
 {
     const gmx_reverse_top_t *rt = cr->dd->reverse_top;
 
@@ -324,33 +313,31 @@ static void print_missing_interactions_atoms(FILE *fplog, t_commrec *cr,
         int                  a_start  = a_end;
         a_end                        = a_start + molb.nmol*moltype.atoms.nr;
 
-        print_missing_interactions_mb(fplog, cr, rt,
-                                      *(moltype.name),
-                                      &rt->ril_mt[molb.type],
-                                      a_start, a_end, moltype.atoms.nr,
-                                      molb.nmol,
-                                      idef);
+        GMX_LOG(mdlog.warning).appendText(
+                print_missing_interactions_mb(cr, rt,
+                                              *(moltype.name),
+                                              &rt->ril_mt[molb.type],
+                                              a_start, a_end, moltype.atoms.nr,
+                                              molb.nmol,
+                                              idef));
     }
 }
 
-void dd_print_missing_interactions(FILE *fplog, t_commrec *cr,
-                                   int local_count,
-                                   const gmx_mtop_t *top_global,
+void dd_print_missing_interactions(const gmx::MDLogger  &mdlog,
+                                   t_commrec            *cr,
+                                   int                   local_count,
+                                   const gmx_mtop_t     *top_global,
                                    const gmx_localtop_t *top_local,
-                                   const t_state *state_local)
+                                   const t_state        *state_local)
 {
     int             ndiff_tot, cl[F_NRE], n, ndiff, rest_global, rest_local;
     int             ftype, nral;
-    char            buf[STRLEN];
     gmx_domdec_t   *dd;
 
     dd = cr->dd;
 
-    if (fplog)
-    {
-        fprintf(fplog, "\nNot all bonded interactions have been properly assigned to the domain decomposition cells\n");
-        fflush(fplog);
-    }
+    GMX_LOG(mdlog.warning).appendText(
+            "Not all bonded interactions have been properly assigned to the domain decomposition cells");
 
     ndiff_tot = local_count - dd->nbonded_global;
 
@@ -364,11 +351,7 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr,
 
     if (DDMASTER(dd))
     {
-        if (fplog)
-        {
-            fprintf(fplog, "\nA list of missing interactions:\n");
-        }
-        fprintf(stderr, "\nA list of missing interactions:\n");
+        GMX_LOG(mdlog.warning).appendText("A list of missing interactions:");
         rest_global = dd->nbonded_global;
         rest_local  = local_count;
         for (ftype = 0; ftype < F_NRE; ftype++)
@@ -391,13 +374,9 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr,
                 ndiff = cl[ftype] - n;
                 if (ndiff != 0)
                 {
-                    sprintf(buf, "%20s of %6d missing %6d",
+                    GMX_LOG(mdlog.warning).appendTextFormatted(
+                            "%20s of %6d missing %6d",
                             interaction_function[ftype].longname, n, -ndiff);
-                    if (fplog)
-                    {
-                        fprintf(fplog, "%s\n", buf);
-                    }
-                    fprintf(stderr, "%s\n", buf);
                 }
                 rest_global -= n;
                 rest_local  -= cl[ftype];
@@ -407,17 +386,13 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr,
         ndiff = rest_local - rest_global;
         if (ndiff != 0)
         {
-            sprintf(buf, "%20s of %6d missing %6d", "exclusions",
+            GMX_LOG(mdlog.warning).appendTextFormatted(
+                    "%20s of %6d missing %6d", "exclusions",
                     rest_global, -ndiff);
-            if (fplog)
-            {
-                fprintf(fplog, "%s\n", buf);
-            }
-            fprintf(stderr, "%s\n", buf);
         }
     }
 
-    print_missing_interactions_atoms(fplog, cr, top_global, &top_local->idef);
+    print_missing_interactions_atoms(mdlog, cr, top_global, &top_local->idef);
     write_dd_pdb("dd_dump_err", 0, "dump", top_global, cr,
                  -1, as_rvec_array(state_local->x.data()), state_local->box);
 
@@ -2656,7 +2631,7 @@ static void get_cgcm_mol(const gmx_moltype_t *molt,
     calc_cgcm(nullptr, 0, molt->cgs.nr, &molt->cgs, xs, cg_cm);
 }
 
-void dd_bonded_cg_distance(FILE *fplog,
+void dd_bonded_cg_distance(const gmx::MDLogger &mdlog,
                            const gmx_mtop_t *mtop,
                            const t_inputrec *ir,
                            const rvec *x, const matrix box,
@@ -2741,21 +2716,20 @@ void dd_bonded_cg_distance(FILE *fplog,
     *r_2b = sqrt(bd_2b.r2);
     *r_mb = sqrt(bd_mb.r2);
 
-    if (fplog && (*r_2b > 0 || *r_mb > 0))
+    if (*r_2b > 0 || *r_mb > 0)
     {
-        fprintf(fplog,
-                "Initial maximum inter charge-group distances:\n");
+        GMX_LOG(mdlog.info).appendText("Initial maximum inter charge-group distances:");
         if (*r_2b > 0)
         {
-            fprintf(fplog,
-                    "    two-body bonded interactions: %5.3f nm, %s, atoms %d %d\n",
+            GMX_LOG(mdlog.info).appendTextFormatted(
+                    "    two-body bonded interactions: %5.3f nm, %s, atoms %d %d",
                     *r_2b, (bd_2b.ftype >= 0) ? interaction_function[bd_2b.ftype].longname : "Exclusion",
                     bd_2b.a1 + 1, bd_2b.a2 + 1);
         }
         if (*r_mb > 0)
         {
-            fprintf(fplog,
-                    "  multi-body bonded interactions: %5.3f nm, %s, atoms %d %d\n",
+            GMX_LOG(mdlog.info).appendTextFormatted(
+                    "  multi-body bonded interactions: %5.3f nm, %s, atoms %d %d",
                     *r_mb, interaction_function[bd_mb.ftype].longname,
                     bd_mb.a1 + 1, bd_mb.a2 + 1);
         }

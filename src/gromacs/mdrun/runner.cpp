@@ -822,7 +822,7 @@ int Mdrunner::mdrunner()
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
-        cr->dd = init_domain_decomposition(fplog, cr, domdecOptions, mdrunOptions,
+        cr->dd = init_domain_decomposition(mdlog, cr, domdecOptions, mdrunOptions,
                                            &mtop, inputrec,
                                            box, positionsFromStatePointer(globalState.get()),
                                            &atomSets);

@@ -36,8 +36,6 @@
 #ifndef GMX_MDLIB_CONSTRAINTRANGE_H
 #define GMX_MDLIB_CONSTRAINTRANGE_H
 
-#include <cstdio>
-
 #include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
@@ -46,9 +44,11 @@ struct t_inputrec;
 namespace gmx
 {
 
+class MDLogger;
+
 /*! \brief Returns an estimate of the maximum distance between atoms
  * required for LINCS. */
-real constr_r_max(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir);
+real constr_r_max(const MDLogger &mdlog, const gmx_mtop_t *mtop, const t_inputrec *ir);
 
 } // namespace
 
