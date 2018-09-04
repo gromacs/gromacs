@@ -54,6 +54,7 @@
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/logger.h"
 
 #include "atomdistribution.h"
 #include "cellsizes.h"
@@ -278,7 +279,7 @@ static void dd_distribute_state(gmx_domdec_t *dd,
 }
 
 static std::vector < std::vector < int>>
-getAtomGroupDistribution(FILE *fplog,
+getAtomGroupDistribution(const gmx::MDLogger &mdlog,
                          const matrix box, const gmx_ddbox_t &ddbox,
                          rvec pos[],
                          gmx_domdec_t *dd)
@@ -396,7 +397,6 @@ getAtomGroupDistribution(FILE *fplog,
         ma.domainGroups[domainIndex].numAtoms += cgindex[icg + 1] - cgindex[icg];
     }
 
-    if (fplog)
     {
         // Use double for the sums to avoid natoms^2 overflowing
         // (65537^2 > 2^32)
@@ -411,15 +411,16 @@ getAtomGroupDistribution(FILE *fplog,
         {
             int numAtoms  = ma.domainGroups[rank].numAtoms;
             nat_sum      += numAtoms;
-            // cast to double to avoid integer overflows when squaring
-            nat2_sum     += gmx::square(static_cast<double>(numAtoms));
+            // convert to double to avoid integer overflows when squaring
+            nat2_sum     += gmx::square(double(numAtoms));
             nat_min       = std::min(nat_min, numAtoms);
             nat_max       = std::max(nat_max, numAtoms);
         }
         nat_sum  /= dd->nnodes;
         nat2_sum /= dd->nnodes;
 
-        fprintf(fplog, "Atom distribution over %d domains: av %d stddev %d min %d max %d\n",
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "Atom distribution over %d domains: av %d stddev %d min %d max %d",
                 dd->nnodes,
                 nat_sum,
                 gmx::roundToInt(std::sqrt(nat2_sum - gmx::square(static_cast<double>(nat_sum)))),
@@ -429,7 +430,8 @@ getAtomGroupDistribution(FILE *fplog,
     return indices;
 }
 
-static void distributeAtomGroups(FILE *fplog, gmx_domdec_t *dd,
+static void distributeAtomGroups(const gmx::MDLogger &mdlog,
+                                 gmx_domdec_t *dd,
                                  const matrix box, const gmx_ddbox_t *ddbox,
                                  rvec pos[])
 {
@@ -448,7 +450,7 @@ static void distributeAtomGroups(FILE *fplog, gmx_domdec_t *dd,
             check_screw_box(box);
         }
 
-        groupIndices = getAtomGroupDistribution(fplog, box, *ddbox, pos, dd);
+        groupIndices = getAtomGroupDistribution(mdlog, box, *ddbox, pos, dd);
 
         for (int rank = 0; rank < dd->nnodes; rank++)
         {
@@ -516,7 +518,7 @@ static void distributeAtomGroups(FILE *fplog, gmx_domdec_t *dd,
     }
 }
 
-void distributeState(FILE                *fplog,
+void distributeState(const gmx::MDLogger &mdlog,
                      gmx_domdec_t        *dd,
                      t_state             *state_global,
                      const gmx_ddbox_t   &ddbox,
@@ -525,7 +527,7 @@ void distributeState(FILE                *fplog,
 {
     rvec *xGlobal = (DDMASTER(dd) ? as_rvec_array(state_global->x.data()) : nullptr);
 
-    distributeAtomGroups(fplog, dd,
+    distributeAtomGroups(mdlog, dd,
                          DDMASTER(dd) ? state_global->box : nullptr,
                          &ddbox, xGlobal);
 
