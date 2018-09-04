@@ -38,8 +38,10 @@ icc-18 double release
 # Test newest supported clang version
 clang-5 static double release cmake-3.6.1
 
-# Test with GPU support
-gcc-5 gpu cuda-8.0 release
+# Test with CUDA GPU support
+gcc-5 gpu=nvidia cuda-8.0 release
 
 # TODO items
 # Avoid specifying cmake versions just to move jobs away from bs_nix-amd
+# Add an OpenCL GPU build
+# Update to test gcc 8
