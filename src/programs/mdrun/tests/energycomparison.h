@@ -55,6 +55,8 @@ class EnergyFrame;
 namespace test
 {
 
+class TestReferenceChecker;
+
 //! Convenience type
 using EnergyTolerances = std::unordered_map<std::string, FloatingPointTolerance>;
 
@@ -67,6 +69,24 @@ using EnergyTolerances = std::unordered_map<std::string, FloatingPointTolerance>
 void compareEnergyFrames(const EnergyFrame      &reference,
                          const EnergyFrame      &test,
                          const EnergyTolerances &tolerances);
+
+/*! \brief Check a subset of the energies found in an energy file
+ * against reference data.
+ *
+ * Opens the energy file, loops over all frames, matching the
+ * indicated energies against refdata at the given tolerance.
+ *
+ * \param[in]  energyFilename   The name of an energy file.
+ * \param[in]  energiesToMatch  Set of energies to match at given tolerances.
+ * \param[in]  checker          Root checker for reference data.
+ *
+ * \todo This is quite similar to the functionality used in PmeTest,
+ * and we should consider reducing the duplication.
+ */
+void
+checkEnergiesAgainstReferenceData(const std::string      &energyFilename,
+                                  const EnergyTolerances &energiesToMatch,
+                                  TestReferenceChecker   *checker);
 
 }  // namespace test
 }  // namespace gmx
