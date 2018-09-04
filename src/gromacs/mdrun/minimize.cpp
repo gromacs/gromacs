@@ -1726,7 +1726,7 @@ Integrator::do_lbfgs()
 
     if (PAR(cr))
     {
-        gmx_fatal(FARGS, "Cannot do parallel L-BFGS Minimization - yet.\n");
+        gmx_fatal(FARGS, "L-BFGS minimization only supports a single rank");
     }
 
     if (nullptr != constr)

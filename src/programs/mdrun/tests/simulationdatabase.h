@@ -61,6 +61,7 @@ using MdpFieldValues = std::map<std::string, std::string>;
  *     - argon5832
  *     - spc5
  *     - spc216
+ *     - glycine_vacuo
  *     - alanine_vsite_vacuo
  *     - alanine_vsite_solvated
  *     - nonanol

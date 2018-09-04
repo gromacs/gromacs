@@ -107,11 +107,29 @@ MdpFileValues mdpFileValueDatabase_g
                                      "tau-p", "1000"
                                  } }
     },
-    // Capped alanine peptide in aqueous condensed phase, with virtual sites
+    // Capped alanine peptide in vacuo with virtual sites
     {
-        "alanine_vsite_solvated", { {
-                                        "constraints", "all-bonds"
-                                    } }
+        "alanine_vsite_vacuo", { {
+                                     "constraints", "all-bonds"
+                                 },
+                                 {
+                                     "compressibility", "5e-10"
+                                 },
+                                 {
+                                     "tau-p", "1000"
+                                 } }
+    },
+    // Zwitterionic glycine in vacuo
+    {
+        "glycine_vacuo", { {
+                               "constraints", "h-bonds"
+                           } }
+    },
+    // Zwitterionic glycine in vacuo, without constraints
+    {
+        "glycine_no_constraints_vacuo", { {
+                                              "constraints", "none"
+                                          } }
     },
     // Nonanol molecule in vacuo, topology suitable for testing FEP
     // on KE, angles, dihedral restraints, coulomb and vdw
