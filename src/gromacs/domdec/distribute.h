@@ -42,8 +42,6 @@
 #ifndef GMX_DOMDEC_DOMDEC_DISTRIBUTE_H
 #define GMX_DOMDEC_DOMDEC_DISTRIBUTE_H
 
-#include <cstdio>
-
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -52,8 +50,13 @@ struct gmx_domdec_t;
 struct t_block;
 class t_state;
 
+namespace gmx
+{
+class MDLogger;
+}
+
 /*! \brief Distributes the state from the master rank to all DD ranks */
-void distributeState(FILE                *fplog,
+void distributeState(const gmx::MDLogger &mdlog,
                      gmx_domdec_t        *dd,
                      t_state             *state_global,
                      const gmx_ddbox_t   &ddbox,

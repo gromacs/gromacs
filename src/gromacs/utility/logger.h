@@ -79,19 +79,19 @@ class ILogTarget
 class LogEntryWriter
 {
     public:
-        //! Appends given text to the log entry.
+        //! Appends given text as a line in the log entry.
         LogEntryWriter &appendText(const char *text)
         {
             entry_.text.append(text);
             return *this;
         }
-        //! Appends given text to the log entry.
+        //! Appends given text as a line in the log entry.
         LogEntryWriter &appendText(const std::string &text)
         {
             entry_.text.append(text);
             return *this;
         }
-        //! Appends given text to the log entry, with printf-style formatting.
+        //! Appends given text as a line in the log entry, with printf-style formatting.
         LogEntryWriter &appendTextFormatted(const char *fmt, ...);
         //! Writes the log entry with empty lines before and after.
         LogEntryWriter &asParagraph()

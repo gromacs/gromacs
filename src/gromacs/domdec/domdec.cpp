@@ -104,10 +104,13 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "atomdistribution.h"
 #include "cellsizes.h"
@@ -2487,40 +2490,42 @@ float dd_pme_f_ratio(gmx_domdec_t *dd)
     }
 }
 
-static void dd_print_load(FILE *fplog, gmx_domdec_t *dd, int64_t step)
+static std::string
+dd_print_load(gmx_domdec_t *dd,
+              int64_t       step)
 {
-    int  flags, d;
-    char buf[22];
+    gmx::StringOutputStream stream;
+    gmx::TextWriter         log(&stream);
 
-    flags = dd_load_flags(dd);
+    int                     flags = dd_load_flags(dd);
     if (flags)
     {
-        fprintf(fplog,
-                "DD  load balancing is limited by minimum cell size in dimension");
-        for (d = 0; d < dd->ndim; d++)
+        log.writeString("DD  load balancing is limited by minimum cell size in dimension");
+        for (int d = 0; d < dd->ndim; d++)
         {
             if (flags & (1<<d))
             {
-                fprintf(fplog, " %c", dim2char(dd->dim[d]));
+                log.writeStringFormatted(" %c", dim2char(dd->dim[d]));
             }
         }
-        fprintf(fplog, "\n");
+        log.ensureLineBreak();
     }
-    fprintf(fplog, "DD  step %s", gmx_step_str(step, buf));
+    log.writeString("DD  step %s" + gmx::toString(step));
     if (isDlbOn(dd->comm))
     {
-        fprintf(fplog, "  vol min/aver %5.3f%c",
-                dd_vol_min(dd), flags ? '!' : ' ');
+        log.writeStringFormatted("  vol min/aver %5.3f%c",
+                                 dd_vol_min(dd), flags ? '!' : ' ');
     }
     if (dd->nnodes > 1)
     {
-        fprintf(fplog, " load imb.: force %4.1f%%", dd_f_imbal(dd)*100);
+        log.writeStringFormatted(" load imb.: force %4.1f%%", dd_f_imbal(dd)*100);
     }
     if (dd->comm->cycl_n[ddCyclPME])
     {
-        fprintf(fplog, "  pme mesh/force %5.3f", dd_pme_f_ratio(dd));
+        log.writeStringFormatted("  pme mesh/force %5.3f", dd_pme_f_ratio(dd));
     }
-    fprintf(fplog, "\n\n");
+    log.ensureLineBreak();
+    return stream.toString();
 }
 
 static void dd_print_load_verbose(gmx_domdec_t *dd)
@@ -2815,7 +2820,7 @@ static void setup_neighbor_relations(gmx_domdec_t *dd)
     }
 }
 
-static void make_pp_communicator(FILE                 *fplog,
+static void make_pp_communicator(const gmx::MDLogger  &mdlog,
                                  gmx_domdec_t         *dd,
                                  t_commrec gmx_unused *cr,
                                  bool gmx_unused       reorder)
@@ -2831,11 +2836,9 @@ static void make_pp_communicator(FILE                 *fplog,
     if (comm->bCartesianPP)
     {
         /* Set up cartesian communication for the particle-particle part */
-        if (fplog)
-        {
-            fprintf(fplog, "Will use a Cartesian communicator: %d x %d x %d\n",
-                    dd->nc[XX], dd->nc[YY], dd->nc[ZZ]);
-        }
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "Will use a Cartesian communicator: %d x %d x %d",
+                dd->nc[XX], dd->nc[YY], dd->nc[ZZ]);
 
         for (int i = 0; i < DIM; i++)
         {
@@ -2925,12 +2928,9 @@ static void make_pp_communicator(FILE                 *fplog,
     }
 #endif
 
-    if (fplog)
-    {
-        fprintf(fplog,
-                "Domain decomposition rank %d, coordinates %d %d %d\n\n",
-                dd->rank, dd->ci[XX], dd->ci[YY], dd->ci[ZZ]);
-    }
+    GMX_LOG(mdlog.info).appendTextFormatted(
+            "Domain decomposition rank %d, coordinates %d %d %d\n",
+            dd->rank, dd->ci[XX], dd->ci[YY], dd->ci[ZZ]);
     if (debug)
     {
         fprintf(debug,
@@ -2965,7 +2965,8 @@ static void receive_ddindex2simnodeid(gmx_domdec_t         *dd,
 #endif
 }
 
-static void split_communicator(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
+static void split_communicator(const gmx::MDLogger &mdlog,
+                               t_commrec *cr, gmx_domdec_t *dd,
                                DdRankOrder gmx_unused rankOrder,
                                bool gmx_unused reorder)
 {
@@ -3007,11 +3008,12 @@ static void split_communicator(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
             comm->ntot[comm->cartpmedim]
                 += (cr->npmenodes*dd->nc[comm->cartpmedim])/dd->nnodes;
         }
-        else if (fplog)
+        else
         {
-            fprintf(fplog, "Number of PME-only ranks (%d) is not a multiple of nx*ny (%d*%d) or nx*nz (%d*%d)\n", cr->npmenodes, dd->nc[XX], dd->nc[YY], dd->nc[XX], dd->nc[ZZ]);
-            fprintf(fplog,
-                    "Will not use a Cartesian communicator for PP <-> PME\n\n");
+            GMX_LOG(mdlog.info).appendTextFormatted(
+                    "Number of PME-only ranks (%d) is not a multiple of nx*ny (%d*%d) or nx*nz (%d*%d)",
+                    cr->npmenodes, dd->nc[XX], dd->nc[YY], dd->nc[XX], dd->nc[ZZ]);
+            GMX_LOG(mdlog.info).appendText("Will not use a Cartesian communicator for PP <-> PME\n");
         }
     }
 
@@ -3021,10 +3023,9 @@ static void split_communicator(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
         int  rank;
         ivec periods;
 
-        if (fplog)
-        {
-            fprintf(fplog, "Will use a Cartesian communicator for PP <-> PME: %d x %d x %d\n", comm->ntot[XX], comm->ntot[YY], comm->ntot[ZZ]);
-        }
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "Will use a Cartesian communicator for PP <-> PME: %d x %d x %d",
+                comm->ntot[XX], comm->ntot[YY], comm->ntot[ZZ]);
 
         for (i = 0; i < DIM; i++)
         {
@@ -3046,11 +3047,9 @@ static void split_communicator(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
 
         MPI_Cart_coords(cr->mpi_comm_mysim, cr->sim_nodeid, DIM, dd->ci);
 
-        if (fplog)
-        {
-            fprintf(fplog, "Cartesian rank %d, coordinates %d %d %d\n\n",
-                    cr->sim_nodeid, dd->ci[XX], dd->ci[YY], dd->ci[ZZ]);
-        }
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "Cartesian rank %d, coordinates %d %d %d\n",
+                cr->sim_nodeid, dd->ci[XX], dd->ci[YY], dd->ci[ZZ]);
 
         if (dd->ci[comm->cartpmedim] < dd->nc[comm->cartpmedim])
         {
@@ -3074,17 +3073,11 @@ static void split_communicator(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
         switch (rankOrder)
         {
             case DdRankOrder::pp_pme:
-                if (fplog)
-                {
-                    fprintf(fplog, "Order of the ranks: PP first, PME last\n");
-                }
+                GMX_LOG(mdlog.info).appendText("Order of the ranks: PP first, PME last");
                 break;
             case DdRankOrder::interleave:
                 /* Interleave the PP-only and PME-only ranks */
-                if (fplog)
-                {
-                    fprintf(fplog, "Interleaving PP and PME ranks\n");
-                }
+                GMX_LOG(mdlog.info).appendText("Interleaving PP and PME ranks");
                 comm->pmenodes = dd_interleaved_pme_ranks(dd);
                 break;
             case DdRankOrder::cartesian:
@@ -3111,15 +3104,14 @@ static void split_communicator(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
 #endif
     }
 
-    if (fplog)
-    {
-        fprintf(fplog, "This rank does only %s work.\n\n",
-                thisRankHasDuty(cr, DUTY_PP) ? "particle-particle" : "PME-mesh");
-    }
+    GMX_LOG(mdlog.info).appendTextFormatted(
+            "This rank does only %s work.\n",
+            thisRankHasDuty(cr, DUTY_PP) ? "particle-particle" : "PME-mesh");
 }
 
 /*! \brief Generates the MPI communicators for domain decomposition */
-static void make_dd_communicators(FILE *fplog, t_commrec *cr,
+static void make_dd_communicators(const gmx::MDLogger &mdlog,
+                                  t_commrec *cr,
                                   gmx_domdec_t *dd, DdRankOrder ddRankOrder)
 {
     gmx_domdec_comm_t *comm;
@@ -3141,7 +3133,7 @@ static void make_dd_communicators(FILE *fplog, t_commrec *cr,
     if (cr->npmenodes > 0)
     {
         /* Split the communicator into a PP and PME part */
-        split_communicator(fplog, cr, dd, ddRankOrder, CartReorder);
+        split_communicator(mdlog, cr, dd, ddRankOrder, CartReorder);
         if (comm->bCartesianPP_PME)
         {
             /* We (possibly) reordered the nodes in split_communicator,
@@ -3162,7 +3154,7 @@ static void make_dd_communicators(FILE *fplog, t_commrec *cr,
     if (thisRankHasDuty(cr, DUTY_PP))
     {
         /* Copy or make a new PP communicator */
-        make_pp_communicator(fplog, dd, cr, CartReorder);
+        make_pp_communicator(mdlog, dd, cr, CartReorder);
     }
     else
     {
@@ -3193,7 +3185,8 @@ static void make_dd_communicators(FILE *fplog, t_commrec *cr,
     }
 }
 
-static real *get_slb_frac(FILE *fplog, const char *dir, int nc, const char *size_string)
+static real *get_slb_frac(const gmx::MDLogger &mdlog,
+                          const char *dir, int nc, const char *size_string)
 {
     real  *slb_frac, tot;
     int    i, n;
@@ -3202,11 +3195,8 @@ static real *get_slb_frac(FILE *fplog, const char *dir, int nc, const char *size
     slb_frac = nullptr;
     if (nc > 1 && size_string != nullptr)
     {
-        if (fplog)
-        {
-            fprintf(fplog, "Using static load balancing for the %s direction\n",
-                    dir);
-        }
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "Using static load balancing for the %s direction", dir);
         snew(slb_frac, nc);
         tot = 0;
         for (i = 0; i < nc; i++)
@@ -3222,22 +3212,13 @@ static real *get_slb_frac(FILE *fplog, const char *dir, int nc, const char *size
             tot         += slb_frac[i];
         }
         /* Normalize */
-        if (fplog)
-        {
-            fprintf(fplog, "Relative cell sizes:");
-        }
+        std::string relativeCellSizes = "Relative cell sizes:";
         for (i = 0; i < nc; i++)
         {
-            slb_frac[i] /= tot;
-            if (fplog)
-            {
-                fprintf(fplog, " %5.3f", slb_frac[i]);
-            }
+            slb_frac[i]       /= tot;
+            relativeCellSizes += gmx::formatString(" %5.3f", slb_frac[i]);
         }
-        if (fplog)
-        {
-            fprintf(fplog, "\n");
-        }
+        GMX_LOG(mdlog.info).appendText(relativeCellSizes);
     }
 
     return slb_frac;
@@ -3266,7 +3247,8 @@ static int multi_body_bondeds_count(const gmx_mtop_t *mtop)
     return n;
 }
 
-static int dd_getenv(FILE *fplog, const char *env_var, int def)
+static int dd_getenv(const gmx::MDLogger &mdlog,
+                     const char *env_var, int def)
 {
     char *val;
     int   nst;
@@ -3279,30 +3261,17 @@ static int dd_getenv(FILE *fplog, const char *env_var, int def)
         {
             nst = 1;
         }
-        if (fplog)
-        {
-            fprintf(fplog, "Found env.var. %s = %s, using value %d\n",
-                    env_var, val, nst);
-        }
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "Found env.var. %s = %s, using value %d",
+                env_var, val, nst);
     }
 
     return nst;
 }
 
-static void dd_warning(const t_commrec *cr, FILE *fplog, const char *warn_string)
-{
-    if (MASTER(cr))
-    {
-        fprintf(stderr, "\n%s\n", warn_string);
-    }
-    if (fplog)
-    {
-        fprintf(fplog, "\n%s\n", warn_string);
-    }
-}
-
-static void check_dd_restrictions(t_commrec *cr, const gmx_domdec_t *dd,
-                                  const t_inputrec *ir, FILE *fplog)
+static void check_dd_restrictions(const gmx_domdec_t  *dd,
+                                  const t_inputrec    *ir,
+                                  const gmx::MDLogger &mdlog)
 {
     if (ir->ePBC == epbcSCREW &&
         (dd->nc[XX] == 1 || dd->nc[YY] > 1 || dd->nc[ZZ] > 1))
@@ -3322,7 +3291,7 @@ static void check_dd_restrictions(t_commrec *cr, const gmx_domdec_t *dd,
 
     if (ir->comm_mode == ecmANGULAR && ir->ePBC != epbcNONE)
     {
-        dd_warning(cr, fplog, "comm-mode angular will give incorrect results when the comm group partially crosses a periodic boundary");
+        GMX_LOG(mdlog.warning).appendText("comm-mode angular will give incorrect results when the comm group partially crosses a periodic boundary");
     }
 }
 
@@ -3344,10 +3313,9 @@ static real average_cellsize_min(gmx_domdec_t *dd, gmx_ddbox_t *ddbox)
 
 /*! \brief Depending on the DLB initial value return the DLB switched off state or issue an error.
  */
-static DlbState forceDlbOffOrBail(DlbState           cmdlineDlbState,
-                                  const std::string &reasonStr,
-                                  t_commrec         *cr,
-                                  FILE              *fplog)
+static DlbState forceDlbOffOrBail(DlbState             cmdlineDlbState,
+                                  const std::string   &reasonStr,
+                                  const gmx::MDLogger &mdlog)
 {
     std::string dlbNotSupportedErr  = "Dynamic load balancing requested, but ";
     std::string dlbDisableNote      = "NOTE: disabling dynamic load balancing as ";
@@ -3358,7 +3326,7 @@ static DlbState forceDlbOffOrBail(DlbState           cmdlineDlbState,
     }
     else if (cmdlineDlbState == DlbState::offCanTurnOn)
     {
-        dd_warning(cr, fplog, (dlbDisableNote + reasonStr + "\n").c_str());
+        GMX_LOG(mdlog.info).appendText(dlbDisableNote + reasonStr);
     }
     return DlbState::offForever;
 }
@@ -3370,15 +3338,14 @@ static DlbState forceDlbOffOrBail(DlbState           cmdlineDlbState,
  * state with other run parameters and settings. As a result, the initial state
  * may be altered or an error may be thrown if incompatibility of options is detected.
  *
- * \param [in] fplog       Pointer to mdrun log file.
- * \param [in] cr          Pointer to MPI communication object.
+ * \param [in] mdlog       Logger.
  * \param [in] dlbOption   Enum value for the DLB option.
  * \param [in] bRecordLoad True if the load balancer is recording load information.
  * \param [in] mdrunOptions  Options for mdrun.
  * \param [in] ir          Pointer mdrun to input parameters.
  * \returns                DLB initial/startup state.
  */
-static DlbState determineInitialDlbState(FILE *fplog, t_commrec *cr,
+static DlbState determineInitialDlbState(const gmx::MDLogger &mdlog,
                                          DlbOption dlbOption, gmx_bool bRecordLoad,
                                          const MdrunOptions &mdrunOptions,
                                          const t_inputrec *ir)
@@ -3397,21 +3364,21 @@ static DlbState determineInitialDlbState(FILE *fplog, t_commrec *cr,
     if (mdrunOptions.rerun)
     {
         std::string reasonStr = "it is not supported in reruns.";
-        return forceDlbOffOrBail(dlbState, reasonStr, cr, fplog);
+        return forceDlbOffOrBail(dlbState, reasonStr, mdlog);
     }
 
     /* Unsupported integrators */
     if (!EI_DYNAMICS(ir->eI))
     {
         auto reasonStr = gmx::formatString("it is only supported with dynamics, not with integrator '%s'.", EI(ir->eI));
-        return forceDlbOffOrBail(dlbState, reasonStr, cr, fplog);
+        return forceDlbOffOrBail(dlbState, reasonStr, mdlog);
     }
 
     /* Without cycle counters we can't time work to balance on */
     if (!bRecordLoad)
     {
         std::string reasonStr = "cycle counters unsupported or not enabled in the operating system kernel.";
-        return forceDlbOffOrBail(dlbState, reasonStr, cr, fplog);
+        return forceDlbOffOrBail(dlbState, reasonStr, mdlog);
     }
 
     if (mdrunOptions.reproducible)
@@ -3425,12 +3392,12 @@ static DlbState determineInitialDlbState(FILE *fplog, t_commrec *cr,
                 GMX_RELEASE_ASSERT(false, "DlbState::offForever is not a valid initial state");
                 break;
             case DlbState::offCanTurnOn:
-                return forceDlbOffOrBail(dlbState, reasonStr, cr, fplog);
+                return forceDlbOffOrBail(dlbState, reasonStr, mdlog);
             case DlbState::onCanTurnOff:
                 GMX_RELEASE_ASSERT(false, "DlbState::offCanTurnOff is not a valid initial state");
                 break;
             case DlbState::onUser:
-                return forceDlbOffOrBail(dlbState, reasonStr + " In load balanced runs binary reproducibility cannot be ensured.", cr, fplog);
+                return forceDlbOffOrBail(dlbState, reasonStr + " In load balanced runs binary reproducibility cannot be ensured.", mdlog);
             default:
                 gmx_fatal(FARGS, "Death horror: undefined case (%d) for load balancing choice", dlbState);
         }
@@ -3439,16 +3406,13 @@ static DlbState determineInitialDlbState(FILE *fplog, t_commrec *cr,
     return dlbState;
 }
 
-static void set_dd_dim(FILE *fplog, gmx_domdec_t *dd)
+static void set_dd_dim(const gmx::MDLogger &mdlog, gmx_domdec_t *dd)
 {
     dd->ndim = 0;
     if (getenv("GMX_DD_ORDER_ZYX") != nullptr)
     {
         /* Decomposition order z,y,x */
-        if (fplog)
-        {
-            fprintf(fplog, "Using domain decomposition order z, y, x\n");
-        }
+        GMX_LOG(mdlog.info).appendText("Using domain decomposition order z, y, x");
         for (int dim = DIM-1; dim >= 0; dim--)
         {
             if (dd->nc[dim] > 1)
@@ -3505,7 +3469,8 @@ static gmx_domdec_comm_t *init_dd_comm()
 }
 
 /*! \brief Set the cell size and interaction limits, as well as the DD grid */
-static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
+static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
+                                   t_commrec *cr, gmx_domdec_t *dd,
                                    const DomdecOptions &options,
                                    const MdrunOptions &mdrunOptions,
                                    const gmx_mtop_t *mtop,
@@ -3528,18 +3493,16 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
     /* Initialize to GPU share count to 0, might change later */
     comm->nrank_gpu_shared = 0;
 
-    comm->dlbState         = determineInitialDlbState(fplog, cr, options.dlbOption, comm->bRecordLoad, mdrunOptions, ir);
+    comm->dlbState         = determineInitialDlbState(mdlog, options.dlbOption, comm->bRecordLoad, mdrunOptions, ir);
     dd_dlb_set_should_check_whether_to_turn_dlb_on(dd, TRUE);
     /* To consider turning DLB on after 2*nstlist steps we need to check
      * at partitioning count 3. Thus we need to increase the first count by 2.
      */
     comm->ddPartioningCountFirstDlbOff += 2;
 
-    if (fplog)
-    {
-        fprintf(fplog, "Dynamic load balancing: %s\n",
-                edlbs_names[int(comm->dlbState)]);
-    }
+    GMX_LOG(mdlog.info).appendTextFormatted(
+            "Dynamic load balancing: %s", edlbs_names[int(comm->dlbState)]);
+
     comm->bPMELoadBalDLBLimits = FALSE;
 
     /* Allocate the charge group/atom sorting struct */
@@ -3589,12 +3552,10 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
     constexpr real c_chanceThatAtomMovesBeyondDomain = 1e-12;
     const real     limitForAtomDisplacement          =
         minCellSizeForAtomDisplacement(*mtop, *ir, c_chanceThatAtomMovesBeyondDomain);
-    if (fplog)
-    {
-        fprintf(fplog,
-                "Minimum cell size due to atom displacement: %.3f nm\n",
-                limitForAtomDisplacement);
-    }
+    GMX_LOG(mdlog.info).appendTextFormatted(
+            "Minimum cell size due to atom displacement: %.3f nm",
+            limitForAtomDisplacement);
+
     comm->cellsize_limit = std::max(comm->cellsize_limit,
                                     limitForAtomDisplacement);
 
@@ -3625,7 +3586,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
         else if (ir->bPeriodicMols)
         {
             /* Can not easily determine the required cut-off */
-            dd_warning(cr, fplog, "NOTE: Periodic molecules are present in this system. Because of this, the domain decomposition algorithm cannot easily determine the minimum cell size that it requires for treating bonded interactions. Instead, domain decomposition will assume that half the non-bonded cut-off will be a suitable lower bound.\n");
+            GMX_LOG(mdlog.warning).appendText("NOTE: Periodic molecules are present in this system. Because of this, the domain decomposition algorithm cannot easily determine the minimum cell size that it requires for treating bonded interactions. Instead, domain decomposition will assume that half the non-bonded cut-off will be a suitable lower bound.");
             comm->cutoff_mbody = comm->cutoff/2;
             r_bonded_limit     = comm->cutoff_mbody;
         }
@@ -3635,7 +3596,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
 
             if (MASTER(cr))
             {
-                dd_bonded_cg_distance(fplog, mtop, ir, as_rvec_array(xGlobal.data()), box,
+                dd_bonded_cg_distance(mdlog, mtop, ir, as_rvec_array(xGlobal.data()), box,
                                       options.checkBondedInteractions,
                                       &r_2b, &r_mb);
             }
@@ -3670,12 +3631,10 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
                 comm->cutoff       = std::max(comm->cutoff, comm->cutoff_mbody);
             }
         }
-        if (fplog)
-        {
-            fprintf(fplog,
-                    "Minimum cell size due to bonded interactions: %.3f nm\n",
-                    r_bonded_limit);
-        }
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "Minimum cell size due to bonded interactions: %.3f nm",
+                r_bonded_limit);
+
         comm->cellsize_limit = std::max(comm->cellsize_limit, r_bonded_limit);
     }
 
@@ -3683,26 +3642,23 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
     if (dd->bInterCGcons && options.constraintCommunicationRange <= 0)
     {
         /* There is a cell size limit due to the constraints (P-LINCS) */
-        rconstr = gmx::constr_r_max(fplog, mtop, ir);
-        if (fplog)
+        rconstr = gmx::constr_r_max(mdlog, mtop, ir);
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "Estimated maximum distance required for P-LINCS: %.3f nm",
+                rconstr);
+        if (rconstr > comm->cellsize_limit)
         {
-            fprintf(fplog,
-                    "Estimated maximum distance required for P-LINCS: %.3f nm\n",
-                    rconstr);
-            if (rconstr > comm->cellsize_limit)
-            {
-                fprintf(fplog, "This distance will limit the DD cell size, you can override this with -rcon\n");
-            }
+            GMX_LOG(mdlog.info).appendText("This distance will limit the DD cell size, you can override this with -rcon");
         }
     }
-    else if (options.constraintCommunicationRange > 0 && fplog)
+    else if (options.constraintCommunicationRange > 0)
     {
         /* Here we do not check for dd->bInterCGcons,
          * because one can also set a cell size limit for virtual sites only
          * and at this point we don't know yet if there are intercg v-sites.
          */
-        fprintf(fplog,
-                "User supplied maximum distance required for P-LINCS: %.3f nm\n",
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "User supplied maximum distance required for P-LINCS: %.3f nm",
                 options.constraintCommunicationRange);
         rconstr = options.constraintCommunicationRange;
     }
@@ -3713,7 +3669,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
     if (options.numCells[XX] > 0)
     {
         copy_ivec(options.numCells, dd->nc);
-        set_dd_dim(fplog, dd);
+        set_dd_dim(mdlog, dd);
         set_ddbox_cr(cr, &dd->nc, ir, box, xGlobal, ddbox);
 
         if (options.numPmeRanks >= 0)
@@ -3732,10 +3688,6 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
         real acs = average_cellsize_min(dd, ddbox);
         if (acs < comm->cellsize_limit)
         {
-            if (fplog)
-            {
-                fprintf(fplog, "ERROR: The initial cell size (%f) is smaller than the cell size limit (%f)\n", acs, comm->cellsize_limit);
-            }
             gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
                                  "The initial cell size (%f) is smaller than the cell size limit (%f), change options -dd, -rdd or -rcon, see the log file for details",
                                  acs, comm->cellsize_limit);
@@ -3747,7 +3699,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
 
         /* We need to choose the optimal DD grid and possibly PME nodes */
         real limit =
-            dd_choose_grid(fplog, cr, dd, ir, mtop, box, ddbox,
+            dd_choose_grid(mdlog, cr, dd, ir, mtop, box, ddbox,
                            options.numPmeRanks,
                            !isDlbDisabled(comm),
                            options.dlbScaling,
@@ -3769,15 +3721,12 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
                                  "Look in the log file for details on the domain decomposition",
                                  cr->nnodes-cr->npmenodes, limit, buf);
         }
-        set_dd_dim(fplog, dd);
+        set_dd_dim(mdlog, dd);
     }
 
-    if (fplog)
-    {
-        fprintf(fplog,
-                "Domain decomposition grid %d x %d x %d, separate PME ranks %d\n",
-                dd->nc[XX], dd->nc[YY], dd->nc[ZZ], cr->npmenodes);
-    }
+    GMX_LOG(mdlog.info).appendTextFormatted(
+            "Domain decomposition grid %d x %d x %d, separate PME ranks %d",
+            dd->nc[XX], dd->nc[YY], dd->nc[ZZ], cr->npmenodes);
 
     dd->nnodes = dd->nc[XX]*dd->nc[YY]*dd->nc[ZZ];
     if (cr->nnodes - dd->nnodes != cr->npmenodes)
@@ -3835,11 +3784,9 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
                 comm->npmenodes_y = 1;
             }
         }
-        if (fplog)
-        {
-            fprintf(fplog, "PME domain decomposition: %d x %d x %d\n",
-                    comm->npmenodes_x, comm->npmenodes_y, 1);
-        }
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "PME domain decomposition: %d x %d x %d",
+                comm->npmenodes_x, comm->npmenodes_y, 1);
     }
     else
     {
@@ -3851,9 +3798,9 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
     snew(comm->slb_frac, DIM);
     if (isDlbDisabled(comm))
     {
-        comm->slb_frac[XX] = get_slb_frac(fplog, "x", dd->nc[XX], options.cellSizeX);
-        comm->slb_frac[YY] = get_slb_frac(fplog, "y", dd->nc[YY], options.cellSizeY);
-        comm->slb_frac[ZZ] = get_slb_frac(fplog, "z", dd->nc[ZZ], options.cellSizeZ);
+        comm->slb_frac[XX] = get_slb_frac(mdlog, "x", dd->nc[XX], options.cellSizeX);
+        comm->slb_frac[YY] = get_slb_frac(mdlog, "y", dd->nc[YY], options.cellSizeY);
+        comm->slb_frac[ZZ] = get_slb_frac(mdlog, "z", dd->nc[ZZ], options.cellSizeZ);
     }
 
     if (comm->bInterCGBondeds && comm->cutoff_mbody == 0)
@@ -3904,10 +3851,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
                 gmx::boolToString(comm->bBondComm), comm->cellsize_limit);
     }
 
-    if (MASTER(cr))
-    {
-        check_dd_restrictions(cr, dd, ir, fplog);
-    }
+    check_dd_restrictions(dd, ir, mdlog);
 }
 
 static void set_dlb_limits(gmx_domdec_t *dd)
@@ -3924,9 +3868,10 @@ static void set_dlb_limits(gmx_domdec_t *dd)
 }
 
 
-static void turn_on_dlb(FILE *fplog, const t_commrec *cr, int64_t step)
+static void turn_on_dlb(const gmx::MDLogger &mdlog,
+                        gmx_domdec_t        *dd,
+                        int64_t              step)
 {
-    gmx_domdec_t      *dd           = cr->dd;
     gmx_domdec_comm_t *comm         = dd->comm;
 
     real               cellsize_min = comm->cellsize_min[dd->dim[0]];
@@ -3938,18 +3883,19 @@ static void turn_on_dlb(FILE *fplog, const t_commrec *cr, int64_t step)
     /* Turn off DLB if we're too close to the cell size limit. */
     if (cellsize_min < comm->cellsize_limit*1.05)
     {
-        auto str = gmx::formatString("step %" PRId64 " Measured %.1f %% performance loss due to load imbalance, "
-                                     "but the minimum cell size is smaller than 1.05 times the cell size limit."
-                                     "Will no longer try dynamic load balancing.\n", step, dd_force_imb_perf_loss(dd)*100);
-        dd_warning(cr, fplog, str.c_str());
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "step %s Measured %.1f %% performance loss due to load imbalance, "
+                "but the minimum cell size is smaller than 1.05 times the cell size limit. "
+                "Will no longer try dynamic load balancing.",
+                gmx::toString(step).c_str(), dd_force_imb_perf_loss(dd)*100);
 
         comm->dlbState = DlbState::offForever;
         return;
     }
 
-    char buf[STRLEN];
-    sprintf(buf, "step %" PRId64 " Turning on dynamic load balancing, because the performance loss due to load imbalance is %.1f %%.\n", step, dd_force_imb_perf_loss(dd)*100);
-    dd_warning(cr, fplog, buf);
+    GMX_LOG(mdlog.info).appendTextFormatted(
+            "step %s Turning on dynamic load balancing, because the performance loss due to load imbalance is %.1f %%.",
+            gmx::toString(step).c_str(), dd_force_imb_perf_loss(dd)*100);
     comm->dlbState = DlbState::onCanTurnOff;
 
     /* Store the non-DLB performance, so we can check if DLB actually
@@ -3987,25 +3933,25 @@ static void turn_on_dlb(FILE *fplog, const t_commrec *cr, int64_t step)
     }
 }
 
-static void turn_off_dlb(FILE *fplog, const t_commrec *cr, int64_t step)
+static void turn_off_dlb(const gmx::MDLogger &mdlog,
+                         gmx_domdec_t        *dd,
+                         int64_t              step)
 {
-    gmx_domdec_t *dd = cr->dd;
-
-    char          buf[STRLEN];
-    sprintf(buf, "step %" PRId64 " Turning off dynamic load balancing, because it is degrading performance.\n", step);
-    dd_warning(cr, fplog, buf);
+    GMX_LOG(mdlog.info).appendText(
+            "step " + gmx::toString(step) + " Turning off dynamic load balancing, because it is degrading performance.");
     dd->comm->dlbState                     = DlbState::offCanTurnOn;
     dd->comm->haveTurnedOffDlb             = true;
     dd->comm->ddPartioningCountFirstDlbOff = dd->ddp_count;
 }
 
-static void turn_off_dlb_forever(FILE *fplog, const t_commrec *cr, int64_t step)
+static void turn_off_dlb_forever(const gmx::MDLogger &mdlog,
+                                 gmx_domdec_t        *dd,
+                                 int64_t              step)
 {
-    GMX_RELEASE_ASSERT(cr->dd->comm->dlbState == DlbState::offCanTurnOn, "Can only turn off DLB forever when it was in the can-turn-on state");
-    char buf[STRLEN];
-    sprintf(buf, "step %" PRId64 " Will no longer try dynamic load balancing, as it degraded performance.\n", step);
-    dd_warning(cr, fplog, buf);
-    cr->dd->comm->dlbState = DlbState::offForever;
+    GMX_RELEASE_ASSERT(dd->comm->dlbState == DlbState::offCanTurnOn, "Can only turn off DLB forever when it was in the can-turn-on state");
+    GMX_LOG(mdlog.info).appendText(
+            "step " + gmx::toString(step) + " Will no longer try dynamic load balancing, as it degraded performance.");
+    dd->comm->dlbState = DlbState::offForever;
 }
 
 static char *init_bLocalCG(const gmx_mtop_t *mtop)
@@ -4053,7 +3999,8 @@ void dd_init_bondeds(FILE *fplog,
     }
 }
 
-static void print_dd_settings(FILE *fplog, gmx_domdec_t *dd,
+static void print_dd_settings(const gmx::MDLogger &mdlog,
+                              gmx_domdec_t *dd,
                               const gmx_mtop_t *mtop, const t_inputrec *ir,
                               gmx_bool bDynLoadBal, real dlb_scale,
                               const gmx_ddbox_t *ddbox)
@@ -4062,26 +4009,23 @@ static void print_dd_settings(FILE *fplog, gmx_domdec_t *dd,
     int                d;
     ivec               np;
     real               limit, shrink;
-    char               buf[64];
-
-    if (fplog == nullptr)
-    {
-        return;
-    }
 
     comm = dd->comm;
 
+    gmx::StringOutputStream stream;
+    gmx::TextWriter         log(&stream);
+
     if (bDynLoadBal)
     {
-        fprintf(fplog, "The maximum number of communication pulses is:");
+        log.writeString("The maximum number of communication pulses is:");
         for (d = 0; d < dd->ndim; d++)
         {
-            fprintf(fplog, " %c %d", dim2char(dd->dim[d]), comm->cd[d].np_dlb);
+            log.writeStringFormatted(" %c %d", dim2char(dd->dim[d]), comm->cd[d].np_dlb);
         }
-        fprintf(fplog, "\n");
-        fprintf(fplog, "The minimum size for domain decomposition cells is %.3f nm\n", comm->cellsize_limit);
-        fprintf(fplog, "The requested allowed shrink of DD cells (option -dds) is: %.2f\n", dlb_scale);
-        fprintf(fplog, "The allowed shrink of domain decomposition cells is:");
+        log.ensureLineBreak();
+        log.writeLineFormatted("The minimum size for domain decomposition cells is %.3f nm", comm->cellsize_limit);
+        log.writeLineFormatted("The requested allowed shrink of DD cells (option -dds) is: %.2f", dlb_scale);
+        log.writeString("The allowed shrink of domain decomposition cells is:");
         for (d = 0; d < DIM; d++)
         {
             if (dd->nc[d] > 1)
@@ -4096,30 +4040,31 @@ static void print_dd_settings(FILE *fplog, gmx_domdec_t *dd,
                         comm->cellsize_min_dlb[d]/
                         (ddbox->box_size[d]*ddbox->skew_fac[d]/dd->nc[d]);
                 }
-                fprintf(fplog, " %c %.2f", dim2char(d), shrink);
+                log.writeStringFormatted(" %c %.2f", dim2char(d), shrink);
             }
         }
-        fprintf(fplog, "\n");
+        log.ensureLineBreak();
+        log.writeLine();
     }
     else
     {
         set_dd_cell_sizes_slb(dd, ddbox, setcellsizeslbPULSE_ONLY, np);
-        fprintf(fplog, "The initial number of communication pulses is:");
+        log.writeString("The initial number of communication pulses is:");
         for (d = 0; d < dd->ndim; d++)
         {
-            fprintf(fplog, " %c %d", dim2char(dd->dim[d]), np[dd->dim[d]]);
+            log.writeStringFormatted(" %c %d", dim2char(dd->dim[d]), np[dd->dim[d]]);
         }
-        fprintf(fplog, "\n");
-        fprintf(fplog, "The initial domain decomposition cell size is:");
+        log.ensureLineBreak();
+        log.writeLine("The initial domain decomposition cell size is:");
         for (d = 0; d < DIM; d++)
         {
             if (dd->nc[d] > 1)
             {
-                fprintf(fplog, " %c %.2f nm",
-                        dim2char(d), dd->comm->cellsize_min[d]);
+                log.writeStringFormatted(" %c %.2f nm",
+                                         dim2char(d), dd->comm->cellsize_min[d]);
             }
         }
-        fprintf(fplog, "\n\n");
+        log.ensureLineBreak();
     }
 
     gmx_bool bInterCGVsites = count_intercg_vsites(mtop) != 0;
@@ -4128,9 +4073,8 @@ static void print_dd_settings(FILE *fplog, gmx_domdec_t *dd,
         bInterCGVsites ||
         dd->bInterCGcons || dd->bInterCGsettles)
     {
-        fprintf(fplog, "The maximum allowed distance for charge groups involved in interactions is:\n");
-        fprintf(fplog, "%40s  %-7s %6.3f nm\n",
-                "non-bonded interactions", "", comm->cutoff);
+        log.writeLine("The maximum allowed distance for charge groups involved in interactions is:");
+        log.writeLineFormatted("%40s  %-7s %6.3f nm", "non-bonded interactions", "", comm->cutoff);
 
         if (bDynLoadBal)
         {
@@ -4140,7 +4084,7 @@ static void print_dd_settings(FILE *fplog, gmx_domdec_t *dd,
         {
             if (dynamic_dd_box(ddbox, ir))
             {
-                fprintf(fplog, "(the following are initial values, they could change due to box deformation)\n");
+                log.writeLine("(the following are initial values, they could change due to box deformation)");
             }
             limit = dd->comm->cellsize_min[XX];
             for (d = 1; d < DIM; d++)
@@ -4151,35 +4095,35 @@ static void print_dd_settings(FILE *fplog, gmx_domdec_t *dd,
 
         if (comm->bInterCGBondeds)
         {
-            fprintf(fplog, "%40s  %-7s %6.3f nm\n",
-                    "two-body bonded interactions", "(-rdd)",
-                    std::max(comm->cutoff, comm->cutoff_mbody));
-            fprintf(fplog, "%40s  %-7s %6.3f nm\n",
-                    "multi-body bonded interactions", "(-rdd)",
-                    (comm->bBondComm || isDlbOn(dd->comm)) ? comm->cutoff_mbody : std::min(comm->cutoff, limit));
+            log.writeLineFormatted("%40s  %-7s %6.3f nm",
+                                   "two-body bonded interactions", "(-rdd)",
+                                   std::max(comm->cutoff, comm->cutoff_mbody));
+            log.writeLineFormatted("%40s  %-7s %6.3f nm",
+                                   "multi-body bonded interactions", "(-rdd)",
+                                   (comm->bBondComm || isDlbOn(dd->comm)) ? comm->cutoff_mbody : std::min(comm->cutoff, limit));
         }
         if (bInterCGVsites)
         {
-            fprintf(fplog, "%40s  %-7s %6.3f nm\n",
-                    "virtual site constructions", "(-rcon)", limit);
+            log.writeLineFormatted("%40s  %-7s %6.3f nm",
+                                   "virtual site constructions", "(-rcon)", limit);
         }
         if (dd->bInterCGcons || dd->bInterCGsettles)
         {
-            sprintf(buf, "atoms separated by up to %d constraints",
-                    1+ir->nProjOrder);
-            fprintf(fplog, "%40s  %-7s %6.3f nm\n",
-                    buf, "(-rcon)", limit);
+            std::string separation = gmx::formatString("atoms separated by up to %d constraints",
+                                                       1+ir->nProjOrder);
+            log.writeLineFormatted("%40s  %-7s %6.3f nm\n",
+                                   separation.c_str(), "(-rcon)", limit);
         }
-        fprintf(fplog, "\n");
+        log.ensureLineBreak();
     }
-
-    fflush(fplog);
+    GMX_LOG(mdlog.info).asParagraph().appendText(stream.toString());
 }
 
-static void set_cell_limits_dlb(gmx_domdec_t      *dd,
-                                real               dlb_scale,
-                                const t_inputrec  *ir,
-                                const gmx_ddbox_t *ddbox)
+static void set_cell_limits_dlb(const gmx::MDLogger &mdlog,
+                                gmx_domdec_t        *dd,
+                                real                 dlb_scale,
+                                const t_inputrec    *ir,
+                                const gmx_ddbox_t   *ddbox)
 {
     gmx_domdec_comm_t *comm;
     int                d, dim, npulse, npulse_d_max, npulse_d;
@@ -4230,7 +4174,7 @@ static void set_cell_limits_dlb(gmx_domdec_t      *dd,
     }
 
     /* This env var can override npulse */
-    d = dd_getenv(debug, "GMX_DD_NPULSE", 0);
+    d = dd_getenv(mdlog, "GMX_DD_NPULSE", 0);
     if (d > 0)
     {
         npulse = d;
@@ -4292,7 +4236,8 @@ gmx_bool dd_bonded_molpbc(const gmx_domdec_t *dd, int ePBC)
 }
 
 /*! \brief Sets grid size limits and PP-PME setup, prints settings to log */
-static void set_ddgrid_parameters(FILE *fplog, gmx_domdec_t *dd, real dlb_scale,
+static void set_ddgrid_parameters(const gmx::MDLogger &mdlog,
+                                  gmx_domdec_t *dd, real dlb_scale,
                                   const gmx_mtop_t *mtop, const t_inputrec *ir,
                                   const gmx_ddbox_t *ddbox)
 {
@@ -4326,17 +4271,15 @@ static void set_ddgrid_parameters(FILE *fplog, gmx_domdec_t *dd, real dlb_scale,
     }
     if (!isDlbDisabled(comm))
     {
-        set_cell_limits_dlb(dd, dlb_scale, ir, ddbox);
+        set_cell_limits_dlb(mdlog, dd, dlb_scale, ir, ddbox);
     }
 
-    print_dd_settings(fplog, dd, mtop, ir, isDlbOn(comm), dlb_scale, ddbox);
+    print_dd_settings(mdlog, dd, mtop, ir, isDlbOn(comm), dlb_scale, ddbox);
     if (comm->dlbState == DlbState::offCanTurnOn)
     {
-        if (fplog)
-        {
-            fprintf(fplog, "When dynamic load balancing gets turned on, these settings will change to:\n");
-        }
-        print_dd_settings(fplog, dd, mtop, ir, TRUE, dlb_scale, ddbox);
+        GMX_LOG(mdlog.info).appendText(
+                "When dynamic load balancing gets turned on, these settings will change to:");
+        print_dd_settings(mdlog, dd, mtop, ir, TRUE, dlb_scale, ddbox);
     }
 
     if (ir->ePBC == epbcNONE)
@@ -4359,29 +4302,27 @@ static void set_ddgrid_parameters(FILE *fplog, gmx_domdec_t *dd, real dlb_scale,
 }
 
 /*! \brief Set some important DD parameters that can be modified by env.vars */
-static void set_dd_envvar_options(FILE *fplog, gmx_domdec_t *dd, int rank_mysim)
+static void set_dd_envvar_options(const gmx::MDLogger &mdlog,
+                                  gmx_domdec_t *dd, int rank_mysim)
 {
     gmx_domdec_comm_t *comm = dd->comm;
 
-    dd->bSendRecv2      = (dd_getenv(fplog, "GMX_DD_USE_SENDRECV2", 0) != 0);
-    comm->dlb_scale_lim = dd_getenv(fplog, "GMX_DLB_MAX_BOX_SCALING", 10);
-    comm->eFlop         = dd_getenv(fplog, "GMX_DLB_BASED_ON_FLOPS", 0);
-    int recload         = dd_getenv(fplog, "GMX_DD_RECORD_LOAD", 1);
-    comm->nstDDDump     = dd_getenv(fplog, "GMX_DD_NST_DUMP", 0);
-    comm->nstDDDumpGrid = dd_getenv(fplog, "GMX_DD_NST_DUMP_GRID", 0);
-    comm->DD_debug      = dd_getenv(fplog, "GMX_DD_DEBUG", 0);
+    dd->bSendRecv2      = (dd_getenv(mdlog, "GMX_DD_USE_SENDRECV2", 0) != 0);
+    comm->dlb_scale_lim = dd_getenv(mdlog, "GMX_DLB_MAX_BOX_SCALING", 10);
+    comm->eFlop         = dd_getenv(mdlog, "GMX_DLB_BASED_ON_FLOPS", 0);
+    int recload         = dd_getenv(mdlog, "GMX_DD_RECORD_LOAD", 1);
+    comm->nstDDDump     = dd_getenv(mdlog, "GMX_DD_NST_DUMP", 0);
+    comm->nstDDDumpGrid = dd_getenv(mdlog, "GMX_DD_NST_DUMP_GRID", 0);
+    comm->DD_debug      = dd_getenv(mdlog, "GMX_DD_DEBUG", 0);
 
-    if (dd->bSendRecv2 && fplog)
+    if (dd->bSendRecv2)
     {
-        fprintf(fplog, "Will use two sequential MPI_Sendrecv calls instead of two simultaneous non-blocking MPI_Irecv and MPI_Isend pairs for constraint and vsite communication\n");
+        GMX_LOG(mdlog.info).appendText("Will use two sequential MPI_Sendrecv calls instead of two simultaneous non-blocking MPI_Irecv and MPI_Isend pairs for constraint and vsite communication");
     }
 
     if (comm->eFlop)
     {
-        if (fplog)
-        {
-            fprintf(fplog, "Will load balance based on FLOP count\n");
-        }
+        GMX_LOG(mdlog.info).appendText("Will load balance based on FLOP count");
         if (comm->eFlop > 1)
         {
             srand(1 + rank_mysim);
@@ -4410,22 +4351,20 @@ DomdecOptions::DomdecOptions() :
     clear_ivec(numCells);
 }
 
-gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
-                                        const DomdecOptions &options,
-                                        const MdrunOptions &mdrunOptions,
-                                        const gmx_mtop_t *mtop,
-                                        const t_inputrec *ir,
-                                        const matrix box,
+gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
+                                        t_commrec                     *cr,
+                                        const DomdecOptions           &options,
+                                        const MdrunOptions            &mdrunOptions,
+                                        const gmx_mtop_t              *mtop,
+                                        const t_inputrec              *ir,
+                                        const matrix                   box,
                                         gmx::ArrayRef<const gmx::RVec> xGlobal,
-                                        gmx::LocalAtomSetManager *atomSets)
+                                        gmx::LocalAtomSetManager      *atomSets)
 {
     gmx_domdec_t      *dd;
 
-    if (fplog)
-    {
-        fprintf(fplog,
-                "\nInitializing Domain Decomposition on %d ranks\n", cr->nnodes);
-    }
+    GMX_LOG(mdlog.info).appendTextFormatted(
+            "Initializing Domain Decomposition on %d ranks", cr->nnodes);
 
     dd = new gmx_domdec_t;
 
@@ -4435,19 +4374,19 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
     dd->comm->partition_step = INT_MIN;
     dd->ddp_count            = 0;
 
-    set_dd_envvar_options(fplog, dd, cr->nodeid);
+    set_dd_envvar_options(mdlog, dd, cr->nodeid);
 
     gmx_ddbox_t ddbox = {0};
-    set_dd_limits_and_grid(fplog, cr, dd, options, mdrunOptions,
+    set_dd_limits_and_grid(mdlog, cr, dd, options, mdrunOptions,
                            mtop, ir,
                            box, xGlobal,
                            &ddbox);
 
-    make_dd_communicators(fplog, cr, dd, options.rankOrder);
+    make_dd_communicators(mdlog, cr, dd, options.rankOrder);
 
     if (thisRankHasDuty(cr, DUTY_PP))
     {
-        set_ddgrid_parameters(fplog, dd, options.dlbScaling, mtop, ir, &ddbox);
+        set_ddgrid_parameters(mdlog, dd, options.dlbScaling, mtop, ir, &ddbox);
 
         setup_neighbor_relations(dd);
     }
@@ -6229,7 +6168,9 @@ void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog)
     }
 }
 
+// TODO Remove fplog when group scheme and charge groups are gone
 void dd_partition_system(FILE                *fplog,
+                         const gmx::MDLogger &mdlog,
                          int64_t              step,
                          const t_commrec     *cr,
                          gmx_bool             bMasterState,
@@ -6339,7 +6280,7 @@ void dd_partition_system(FILE                *fplog,
             {
                 if (bLogLoad)
                 {
-                    dd_print_load(fplog, dd, step-1);
+                    GMX_LOG(mdlog.info).asParagraph().appendText(dd_print_load(dd, step-1));
                 }
                 if (bVerbose)
                 {
@@ -6378,7 +6319,7 @@ void dd_partition_system(FILE                *fplog,
                         /* To turn off DLB, we need to redistribute the atoms */
                         dd_collect_state(dd, state_local, state_global);
                         bMasterState = TRUE;
-                        turn_off_dlb(fplog, cr, step);
+                        turn_off_dlb(mdlog, dd, step);
                     }
                 }
             }
@@ -6448,11 +6389,11 @@ void dd_partition_system(FILE                *fplog,
                 dd_bcast(dd, sizeof(bools), &bools);
                 if (bools.turnOffDlbForever)
                 {
-                    turn_off_dlb_forever(fplog, cr, step);
+                    turn_off_dlb_forever(mdlog, dd, step);
                 }
                 else if (bools.turnOnDlb)
                 {
-                    turn_on_dlb(fplog, cr, step);
+                    turn_on_dlb(mdlog, dd, step);
                     bDoDLB = TRUE;
                 }
             }
@@ -6476,7 +6417,7 @@ void dd_partition_system(FILE                *fplog,
                   true, xGlobal,
                   &ddbox);
 
-        distributeState(fplog, dd, state_global, ddbox, state_local, f);
+        distributeState(mdlog, dd, state_global, ddbox, state_local, f);
 
         dd_make_local_cgs(dd, &top_local->cgs);
 
@@ -6882,7 +6823,7 @@ void dd_partition_system(FILE                *fplog,
 }
 
 /*! \brief Check whether bonded interactions are missing, if appropriate */
-void checkNumberOfBondedInteractions(FILE                 *fplog,
+void checkNumberOfBondedInteractions(const gmx::MDLogger  &mdlog,
                                      t_commrec            *cr,
                                      int                   totalNumberOfBondedInteractions,
                                      const gmx_mtop_t     *top_global,
@@ -6894,7 +6835,7 @@ void checkNumberOfBondedInteractions(FILE                 *fplog,
     {
         if (totalNumberOfBondedInteractions != cr->dd->nbonded_global)
         {
-            dd_print_missing_interactions(fplog, cr, totalNumberOfBondedInteractions, top_global, top_local, state); // Does not return
+            dd_print_missing_interactions(mdlog, cr, totalNumberOfBondedInteractions, top_global, top_local, state); // Does not return
         }
         *shouldCheckNumberOfBondedInteractions = false;
     }

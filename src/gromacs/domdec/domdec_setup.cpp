@@ -61,6 +61,8 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/logger.h"
+#include "gromacs/utility/stringutil.h"
 
 /*! \brief Margin for setting up the DD grid */
 #define DD_GRID_MARGIN_PRES_SCALE 1.05
@@ -171,7 +173,8 @@ static gmx_bool fits_pp_pme_perf(int ntot, int npme, float ratio)
 }
 
 /*! \brief Make a guess for the number of PME ranks to use. */
-static int guess_npme(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir,
+static int guess_npme(const gmx::MDLogger &mdlog,
+                      const gmx_mtop_t *mtop, const t_inputrec *ir,
                       const matrix box,
                       int nrank_tot)
 {
@@ -180,10 +183,8 @@ static int guess_npme(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir,
 
     ratio = pme_load_estimate(mtop, ir, box);
 
-    if (fplog)
-    {
-        fprintf(fplog, "Guess for relative PME load: %.2f\n", ratio);
-    }
+    GMX_LOG(mdlog.info).appendTextFormatted(
+            "Guess for relative PME load: %.2f", ratio);
 
     /* We assume the optimal rank ratio is close to the load ratio.
      * The communication load is neglected,
@@ -241,17 +242,11 @@ static int guess_npme(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir,
     }
     else
     {
-        if (fplog)
-        {
-            fprintf(fplog,
-                    "Will use %d particle-particle and %d PME only ranks\n"
-                    "This is a guess, check the performance at the end of the log file\n",
-                    nrank_tot - npme, npme);
-        }
-        fprintf(stderr, "\n"
-                "Will use %d particle-particle and %d PME only ranks\n"
-                "This is a guess, check the performance at the end of the log file\n",
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "Will use %d particle-particle and %d PME only ranks",
                 nrank_tot - npme, npme);
+        GMX_LOG(mdlog.info).appendText(
+                "This is a guess, check the performance at the end of the log file");
     }
 
     return npme;
@@ -606,7 +601,7 @@ static void assign_factors(const gmx_domdec_t *dd,
 }
 
 /*! \brief Determine the optimal distribution of DD cells for the simulation system and number of MPI ranks */
-static real optimize_ncells(FILE *fplog,
+static real optimize_ncells(const gmx::MDLogger &mdlog,
                             int nnodes_tot, int npme_only,
                             gmx_bool bDynLoadBal, real dlb_scale,
                             const gmx_mtop_t *mtop,
@@ -659,33 +654,32 @@ static real optimize_ncells(FILE *fplog,
         {
             gmx_fatal(FARGS, "The value for option -dds should be smaller than 1");
         }
-        if (fplog)
-        {
-            fprintf(fplog, "Scaling the initial minimum size with 1/%g (option -dds) = %g\n", dlb_scale, 1/dlb_scale);
-        }
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "Scaling the initial minimum size with 1/%g (option -dds) = %g",
+                dlb_scale, 1/dlb_scale);
         limit /= dlb_scale;
     }
     else if (ir->epc != epcNO)
     {
-        if (fplog)
-        {
-            fprintf(fplog, "To account for pressure scaling, scaling the initial minimum size with %g\n", DD_GRID_MARGIN_PRES_SCALE);
-            limit *= DD_GRID_MARGIN_PRES_SCALE;
-        }
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "To account for pressure scaling, scaling the initial minimum size with %g",
+                DD_GRID_MARGIN_PRES_SCALE);
+        limit *= DD_GRID_MARGIN_PRES_SCALE;
     }
 
-    if (fplog)
-    {
-        fprintf(fplog, "Optimizing the DD grid for %d cells with a minimum initial size of %.3f nm\n", npp, limit);
+    GMX_LOG(mdlog.info).appendTextFormatted(
+            "Optimizing the DD grid for %d cells with a minimum initial size of %.3f nm",
+            npp, limit);
 
-        if (inhomogeneous_z(ir))
-        {
-            fprintf(fplog, "Ewald_geometry=%s: assuming inhomogeneous particle distribution in z, will not decompose in z.\n", eewg_names[ir->ewald_geometry]);
-        }
+    if (inhomogeneous_z(ir))
+    {
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "Ewald_geometry=%s: assuming inhomogeneous particle distribution in z, will not decompose in z.",
+                eewg_names[ir->ewald_geometry]);
 
         if (limit > 0)
         {
-            fprintf(fplog, "The maximum allowed number of cells is:");
+            std::string maximumCells = "The maximum allowed number of cells is:";
             for (d = 0; d < DIM; d++)
             {
                 nmax = static_cast<int>(ddbox->box_size[d]*ddbox->skew_fac[d]/limit);
@@ -697,9 +691,9 @@ static real optimize_ncells(FILE *fplog,
                 {
                     nmax = 1;
                 }
-                fprintf(fplog, " %c %d", 'X' + d, nmax);
+                maximumCells += gmx::formatString(" %c %d", 'X' + d, nmax);
             }
-            fprintf(fplog, "\n");
+            GMX_LOG(mdlog.info).appendText(maximumCells);
         }
     }
 
@@ -723,7 +717,7 @@ static real optimize_ncells(FILE *fplog,
     return limit;
 }
 
-real dd_choose_grid(FILE *fplog,
+real dd_choose_grid(const gmx::MDLogger &mdlog,
                     t_commrec *cr, gmx_domdec_t *dd,
                     const t_inputrec *ir,
                     const gmx_mtop_t *mtop,
@@ -780,35 +774,30 @@ real dd_choose_grid(FILE *fplog,
                 if (cr->nnodes <= 18)
                 {
                     cr->npmenodes = 0;
-                    if (fplog)
-                    {
-                        fprintf(fplog, "Using %d separate PME ranks, as there are too few total\n ranks for efficient splitting\n", cr->npmenodes);
-                    }
+                    GMX_LOG(mdlog.info).appendTextFormatted(
+                            "Using %d separate PME ranks, as there are too few total ranks for efficient splitting",
+                            cr->npmenodes);
                 }
                 else
                 {
-                    cr->npmenodes = guess_npme(fplog, mtop, ir, box, cr->nnodes);
-                    if (fplog)
-                    {
-                        fprintf(fplog, "Using %d separate PME ranks, as guessed by mdrun\n", cr->npmenodes);
-                    }
+                    cr->npmenodes = guess_npme(mdlog, mtop, ir, box, cr->nnodes);
+                    GMX_LOG(mdlog.info).appendTextFormatted(
+                            "Using %d separate PME ranks, as guessed by mdrun", cr->npmenodes);
                 }
             }
             else
             {
                 /* We checked above that nPmeRanks is a valid number */
                 cr->npmenodes = nPmeRanks;
-                if (fplog)
-                {
-                    fprintf(fplog, "Using %d separate PME ranks\n", cr->npmenodes);
-                    // TODO: there was a ", per user request" note here, but it's not correct anymore,
-                    // as with GPUs decision about nPmeRanks can be made in runner() as well.
-                    // Consider a single spot for setting nPmeRanks.
-                }
+                GMX_LOG(mdlog.info).appendTextFormatted(
+                        "Using %d separate PME ranks", cr->npmenodes);
+                // TODO: there was a ", per user request" note here, but it's not correct anymore,
+                // as with GPUs decision about nPmeRanks can be made in runner() as well.
+                // Consider a single spot for setting nPmeRanks.
             }
         }
 
-        limit = optimize_ncells(fplog, cr->nnodes, cr->npmenodes,
+        limit = optimize_ncells(mdlog, cr->nnodes, cr->npmenodes,
                                 bDynLoadBal, dlb_scale,
                                 mtop, box, ddbox, ir, dd,
                                 cellsize_limit, cutoff_dd,

@@ -343,7 +343,9 @@ static void get_state_f_norm_max(const t_commrec *cr,
 }
 
 //! Initialize the energy minimization
-static void init_em(FILE *fplog, const char *title,
+static void init_em(FILE *fplog,
+                    const gmx::MDLogger &mdlog,
+                    const char *title,
                     const t_commrec *cr,
                     const gmx_multisim_t *ms,
                     gmx::IMDOutputProvider *outputProvider,
@@ -412,7 +414,7 @@ static void init_em(FILE *fplog, const char *title,
         dd_init_local_state(cr->dd, state_global, &ems->s);
 
         /* Distribute the charge groups over the nodes from the master node */
-        dd_partition_system(fplog, ir->init_step, cr, TRUE, 1,
+        dd_partition_system(fplog, mdlog, ir->init_step, cr, TRUE, 1,
                             state_global, top_global, ir,
                             &ems->s, &ems->f, mdAtoms, *top,
                             fr, vsite, constr,
@@ -728,7 +730,9 @@ static bool do_em_step(const t_commrec *cr,
 }
 
 //! Prepare EM for using domain decomposition parallellization
-static void em_dd_partition_system(FILE *fplog, int step, const t_commrec *cr,
+static void em_dd_partition_system(FILE *fplog,
+                                   const gmx::MDLogger &mdlog,
+                                   int step, const t_commrec *cr,
                                    gmx_mtop_t *top_global, t_inputrec *ir,
                                    em_state_t *ems, gmx_localtop_t *top,
                                    gmx::MDAtoms *mdAtoms, t_forcerec *fr,
@@ -736,7 +740,7 @@ static void em_dd_partition_system(FILE *fplog, int step, const t_commrec *cr,
                                    t_nrnb *nrnb, gmx_wallcycle_t wcycle)
 {
     /* Repartition the domain decomposition */
-    dd_partition_system(fplog, step, cr, FALSE, 1,
+    dd_partition_system(fplog, mdlog, step, cr, FALSE, 1,
                         nullptr, top_global, ir,
                         &ems->s, &ems->f,
                         mdAtoms, top, fr, vsite, constr,
@@ -781,8 +785,10 @@ class EnergyEvaluator
         void run(em_state_t *ems, rvec mu_tot,
                  tensor vir, tensor pres,
                  int64_t count, gmx_bool bFirst);
-        //! Handles logging.
+        //! Handles logging (deprecated).
         FILE                 *fplog;
+        //! Handles logging.
+        const gmx::MDLogger  &mdlog;
         //! Handles communication.
         const t_commrec      *cr;
         //! Coordinates multi-simulations.
@@ -854,7 +860,7 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
     if (DOMAINDECOMP(cr) && bNS)
     {
         /* Repartition the domain decomposition */
-        em_dd_partition_system(fplog, count, cr, top_global, inputrec,
+        em_dd_partition_system(fplog, mdlog, count, cr, top_global, inputrec,
                                ems, top, mdAtoms, fr, vsite, constr,
                                nrnb, wcycle);
     }
@@ -1121,7 +1127,7 @@ Integrator::do_cg()
     em_state_t *s_c   = &s3;
 
     /* Init em and store the local state in s_min */
-    init_em(fplog, CG, cr, ms, outputProvider, inputrec, mdrunOptions,
+    init_em(fplog, mdlog, CG, cr, ms, outputProvider, inputrec, mdrunOptions,
             state_global, top_global, s_min, &top,
             nrnb, mu_tot, fr, &enerd, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr,
@@ -1143,7 +1149,7 @@ Integrator::do_cg()
     }
 
     EnergyEvaluator energyEvaluator {
-        fplog, cr, ms,
+        fplog, mdlog, cr, ms,
         top_global, top,
         inputrec, nrnb, wcycle, gstat,
         vsite, constr, fcd, graph,
@@ -1314,7 +1320,7 @@ Integrator::do_cg()
 
         if (DOMAINDECOMP(cr) && s_min->s.ddp_count < cr->dd->ddp_count)
         {
-            em_dd_partition_system(fplog, step, cr, top_global, inputrec,
+            em_dd_partition_system(fplog, mdlog, step, cr, top_global, inputrec,
                                    s_min, top, mdAtoms, fr, vsite, constr,
                                    nrnb, wcycle);
         }
@@ -1419,7 +1425,7 @@ Integrator::do_cg()
                 if (DOMAINDECOMP(cr) && s_min->s.ddp_count != cr->dd->ddp_count)
                 {
                     /* Reload the old state */
-                    em_dd_partition_system(fplog, -1, cr, top_global, inputrec,
+                    em_dd_partition_system(fplog, mdlog, -1, cr, top_global, inputrec,
                                            s_min, top, mdAtoms, fr, vsite, constr,
                                            nrnb, wcycle);
                 }
@@ -1752,7 +1758,7 @@ Integrator::do_lbfgs()
     neval = 0;
 
     /* Init em */
-    init_em(fplog, LBFGS, cr, ms, outputProvider, inputrec, mdrunOptions,
+    init_em(fplog, mdlog, LBFGS, cr, ms, outputProvider, inputrec, mdrunOptions,
             state_global, top_global, &ems, &top,
             nrnb, mu_tot, fr, &enerd, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr,
@@ -1815,7 +1821,7 @@ Integrator::do_lbfgs()
      */
     neval++;
     EnergyEvaluator energyEvaluator {
-        fplog, cr, ms,
+        fplog, mdlog, cr, ms,
         top_global, top,
         inputrec, nrnb, wcycle, gstat,
         vsite, constr, fcd, graph,
@@ -2436,7 +2442,7 @@ Integrator::do_steep()
     em_state_t *s_try = &s1;
 
     /* Init em and store the local state in s_try */
-    init_em(fplog, SD, cr, ms, outputProvider, inputrec, mdrunOptions,
+    init_em(fplog, mdlog, SD, cr, ms, outputProvider, inputrec, mdrunOptions,
             state_global, top_global, s_try, &top,
             nrnb, mu_tot, fr, &enerd, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr,
@@ -2464,7 +2470,7 @@ Integrator::do_steep()
         sp_header(fplog, SD, inputrec->em_tol, nsteps);
     }
     EnergyEvaluator energyEvaluator {
-        fplog, cr, ms,
+        fplog, mdlog, cr, ms,
         top_global, top,
         inputrec, nrnb, wcycle, gstat,
         vsite, constr, fcd, graph,
@@ -2580,7 +2586,7 @@ Integrator::do_steep()
             if (DOMAINDECOMP(cr) && s_min->s.ddp_count != cr->dd->ddp_count)
             {
                 /* Reload the old state */
-                em_dd_partition_system(fplog, count, cr, top_global, inputrec,
+                em_dd_partition_system(fplog, mdlog, count, cr, top_global, inputrec,
                                        s_min, top, mdAtoms, fr, vsite, constr,
                                        nrnb, wcycle);
             }
@@ -2681,7 +2687,7 @@ Integrator::do_nm()
     em_state_t     state_work {};
 
     /* Init em and store the local state in state_minimum */
-    init_em(fplog, NM, cr, ms, outputProvider, inputrec, mdrunOptions,
+    init_em(fplog, mdlog, NM, cr, ms, outputProvider, inputrec, mdrunOptions,
             state_global, top_global, &state_work, &top,
             nrnb, mu_tot, fr, &enerd, &graph, mdAtoms, &gstat,
             vsite, constr, &shellfc,
@@ -2760,7 +2766,7 @@ Integrator::do_nm()
     /* Make evaluate_energy do a single node force calculation */
     cr->nnodes = 1;
     EnergyEvaluator energyEvaluator {
-        fplog, cr, ms,
+        fplog, mdlog, cr, ms,
         top_global, top,
         inputrec, nrnb, wcycle, gstat,
         vsite, constr, fcd, graph,

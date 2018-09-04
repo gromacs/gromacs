@@ -49,6 +49,7 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -222,7 +223,7 @@ static real constr_r_max_moltype(const gmx_moltype_t *molt,
     return rmax;
 }
 
-real constr_r_max(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir)
+real constr_r_max(const MDLogger &mdlog, const gmx_mtop_t *mtop, const t_inputrec *ir)
 {
     real rmax = 0;
     for (const gmx_moltype_t &molt : mtop->moltype)
@@ -232,10 +233,9 @@ real constr_r_max(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir)
                                              mtop->ffparams.iparams, ir));
     }
 
-    if (fplog)
-    {
-        fprintf(fplog, "Maximum distance for %d constraints, at 120 deg. angles, all-trans: %.3f nm\n", 1+ir->nProjOrder, rmax);
-    }
+    GMX_LOG(mdlog.info).appendTextFormatted(
+            "Maximum distance for %d constraints, at 120 deg. angles, all-trans: %.3f nm",
+            1+ir->nProjOrder, rmax);
 
     return rmax;
 }
