@@ -423,18 +423,15 @@ void OptEEM::polData2TuneEEM()
             if (bFitZeta_)
             {
                 auto nzeta = ei->getNzeta();
-                for (int k = 0; k < nzeta; k++)
+                auto zeta  = ei->getZeta(nzeta-1);
+                if (0 != zeta)
                 {
-                    auto zeta = ei->getZeta(k);
-                    if (0 != zeta)
-                    {
-                        param_.push_back(std::move(zeta));
-                    }
-                    else
-                    {
-                        gmx_fatal(FARGS, "Zeta is zero for atom %s in model %s\n",
-                                  ai->name().c_str(), getEemtypeName(iChargeDistributionModel()));
-                    }
+                    param_.push_back(std::move(zeta));
+                }
+                else
+                {
+                    gmx_fatal(FARGS, "Zeta is zero for atom %s in model %s\n",
+                              ai->name().c_str(), getEemtypeName(iChargeDistributionModel()));
                 }
             }
             if (bFitAlpha_)
@@ -493,16 +490,45 @@ void OptEEM::TuneEEM2PolData()
             }
             if (bFitZeta_)
             {
-                zstr[0] = '\0';
-                auto nzeta = ei->getNzeta();
-                for (auto zz = 0; zz < nzeta; zz++)
-                {
-                    auto zeta = param_[n++];
-                    sprintf(buf, "%g ", zeta);
-                    strcat(zstr, buf);
+                zstr[0]  = '\0';
+                z_sig[0] = '\0';
+                auto nzeta   = ei->getNzeta();
+                if (iChargeDistributionModel() == eqdAXps || 
+                    iChargeDistributionModel() == eqdAXpg)
+                {                   
+                    double zeta  = ei->getZeta(0);
+                    double sigma = 0;
+                    for (auto i = 0; i < nzeta; i++)
+                    {
+                        if (i > 0)
+                        {
+                            zeta   = param_[n];
+                            sigma  = psigma_[n++];
+                        }
+                        sprintf(buf, "%g ", zeta);
+                        sprintf(buf_sig, "%g ", sigma);
+                        strcat(zstr, buf);
+                        strcat(z_sig, buf_sig);
+                    }
+                    ei->setRowZetaQ(rowstr, zstr, qstr);
+                    ei->setZetastr(zstr);
+                    ei->setZeta_sigma(z_sig);
                 }
-                ei->setRowZetaQ(rowstr, zstr, qstr);
-                ei->setZetastr(zstr);
+                else
+                {
+                    for (auto i = 0; i < nzeta; i++)
+                    {
+                        zeta   = param_[n];
+                        sigma  = psigma_[n++];
+                        sprintf(buf, "%g ", zeta);
+                        sprintf(buf_sig, "%g ", sigma);
+                        strcat(zstr, buf);
+                        strcat(z_sig, buf_sig);
+                    }
+                    ei->setRowZetaQ(rowstr, zstr, qstr);
+                    ei->setZetastr(zstr);
+                    ei->setZeta_sigma(z_sig);                    
+                }
             }
             if (bFitAlpha_)
             {

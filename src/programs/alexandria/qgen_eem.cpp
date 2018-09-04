@@ -68,7 +68,7 @@ void QgenEem::setInfo(const Poldata            &pd,
     hardnessFactor_            = 1;
     if (haveShell)
     {
-        hardnessFactor_ = 4;
+        hardnessFactor_ = 1;
     }
     chieq_                     = 0;
     Jcs_                       = 0;
