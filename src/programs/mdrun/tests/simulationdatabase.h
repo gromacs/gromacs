@@ -63,7 +63,9 @@ using MdpFieldValues = std::map<std::string, std::string>;
  *     - spc216
  *     - alanine_vsite_vacuo
  *     - alanine_vsite_solvated
- *     - nonanol
+ *     - glycine_vacuo
+ *     - glycine_no_constraints_vacuo
+ *     - nonanol_vacuo
  *
  * Some of these systems are pretty minimal, because having
  * few atoms means few interactions, highly reproducible

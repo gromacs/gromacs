@@ -44,9 +44,19 @@
 
 #include "energycomparison.h"
 
-#include "gromacs/trajectory/energyframe.h"
+#include <gtest/gtest.h>
+#include <gtest/gtest-spi.h>
 
+#include "gromacs/trajectory/energyframe.h"
+#include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/stringutil.h"
+
+#include "testutils/refdata.h"
 #include "testutils/testasserts.h"
+
+#include "energyreader.h"
+#include "moduletest.h"
 
 namespace gmx
 {
@@ -72,6 +82,56 @@ void compareEnergyFrames(const EnergyFrame      &reference,
         {
             ADD_FAILURE() << "Could not find energy component from reference frame in test frame";
         }
+    }
+}
+
+void
+checkEnergiesAgainstReferenceData(const std::string      &energyFilename,
+                                  const EnergyTolerances &energiesToMatch,
+                                  TestReferenceChecker   *checker)
+{
+    const bool thisRankChecks = (gmx_node_rank() == 0);
+
+    if (thisRankChecks)
+    {
+        auto namesOfEnergiesToMatch = getKeys(energiesToMatch);
+        auto energyReader           = openEnergyFileToReadFields(energyFilename,
+                                                                 namesOfEnergiesToMatch);
+
+        std::unordered_map<std::string, TestReferenceChecker> checkers;
+        for (const auto &energyToMatch : energiesToMatch)
+        {
+            const auto &energyName = energyToMatch.first;
+            checkers[energyName] = checker->checkCompound("Energy", energyName.c_str());
+            const auto &energyTolerance = energyToMatch.second;
+            checkers[energyName].setDefaultTolerance(energyTolerance);
+        }
+
+        // We can't assume that frame names based purely on frame
+        // contents are unique. For example, CG can write multiple
+        // frames with the same step number. But we need a unique
+        // identifier so we match the intended reference data, so we
+        // keep track of the number of the frame read from the file.
+        int frameNumber = 0;
+        while (energyReader->readNextFrame())
+        {
+            const EnergyFrame &frame     = energyReader->frame();
+            const std::string  frameName = frame.frameName() + " in frame " + toString(frameNumber);
+
+            for (const auto &energyToMatch : energiesToMatch)
+            {
+                const std::string &energyName  = energyToMatch.first;
+                const real         energyValue = frame.at(energyName);
+
+                SCOPED_TRACE("Comparing " +  energyName + " in " + frameName);
+                checkers[energyName].checkReal(energyValue, frameName.c_str());
+            }
+            ++frameNumber;
+        }
+    }
+    else
+    {
+        EXPECT_NONFATAL_FAILURE(checker->checkUnusedEntries(), ""); // skip checks on other ranks
     }
 }
 
