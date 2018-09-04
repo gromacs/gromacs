@@ -41,68 +41,15 @@
 #define GMX_MDRUN_TESTS_MDRUNCOMPARISON_H
 
 #include <functional>
-#include <map>
-#include <string>
-#include <utility>
-#include <vector>
+#include <memory>
 
 #include <gtest/gtest.h>
-
-#include "testutils/cmdlinetest.h"
-
-#include "moduletest.h"
 
 namespace gmx
 {
 
 namespace test
 {
-
-//! Helper typedef
-using MdpFieldValues = std::map<std::string, std::string>;
-
-/*! \brief Set up values for an .mdp file that permits a highly
- * reproducible simulation.
- *
- * An internal database of several kinds of simulation useful for such
- * comparisons is available, whose \c simulationName keys are
- *     - argon12
- *     - argon5832
- *     - spc5
- *     - spc216
- *     - alanine_vsite_vacuo
- *     - alanine_vsite_solvated
- *     - nonanol
- *
- * Some of these systems are pretty minimal, because having
- * few atoms means few interactions, highly reproducible
- * forces, and allows tests to focus on the correctness of the
- * implementation of high-level mdrun features. The boxes are
- * of a reasonable size so that domain decomposition is
- * possible. The pressure-coupling parameters are isotropic,
- * and set up so that there will not be dramatic collapse of
- * volume over the handful of MD steps that will be run. A
- * single temperature-coupling group is used.
- *
- * \param[in]    simulationName   The name of the simulation, which indexes the database
- * \param[in]    integrator       The integrator to use
- * \param[in]    tcoupl           The temperature-coupling algorithm to use
- * \param[in]    pcoupl           The pressure-coupling algorithm to use
- * \return                        Mdp file values
- *
- * \throws  std::bad_alloc     if out of memory
- *          std::out_of_range  if \c simulationName is not in the database */
-MdpFieldValues
-prepareMdpFieldValues(const char *simulationName,
-                      const char *integrator,
-                      const char *tcoupl,
-                      const char *pcoupl);
-
-/*! \brief Make a string containing an .mdp file from the \c mdpFieldValues.
- *
- * \throws  std::bad_alloc     if out of memory */
-std::string
-prepareMdpFileContents(const MdpFieldValues &mdpFieldValues);
 
 /*! \internal
  * \brief Manages returning a pair of frames from two
