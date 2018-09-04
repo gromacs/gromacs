@@ -450,7 +450,7 @@ void gmx::Integrator::do_md()
         dd_init_local_state(cr->dd, state_global, state);
 
         /* Distribute the charge groups over the nodes from the master node */
-        dd_partition_system(fplog, ir->init_step, cr, TRUE, 1,
+        dd_partition_system(fplog, mdlog, ir->init_step, cr, TRUE, 1,
                             state_global, top_global, ir,
                             state, &f, mdAtoms, top, fr,
                             vsite, constr,
@@ -631,7 +631,7 @@ void gmx::Integrator::do_md()
                         &totalNumberOfBondedInteractions, &bSumEkinhOld, cglo_flags_iteration
                         | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
     }
-    checkNumberOfBondedInteractions(fplog, cr, totalNumberOfBondedInteractions,
+    checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
                                     top_global, top, state,
                                     &shouldCheckNumberOfBondedInteractions);
     if (ir->eI == eiVVAK)
@@ -995,7 +995,7 @@ void gmx::Integrator::do_md()
             if (DOMAINDECOMP(cr))
             {
                 /* Repartition the domain decomposition */
-                dd_partition_system(fplog, step, cr,
+                dd_partition_system(fplog, mdlog, step, cr,
                                     bMasterState, nstglobalcomm,
                                     state_global, top_global, ir,
                                     state, &f, mdAtoms, top, fr,
@@ -1028,7 +1028,7 @@ void gmx::Integrator::do_md()
                             constr, &nullSignaller, state->box,
                             &totalNumberOfBondedInteractions, &bSumEkinhOld,
                             CGLO_GSTAT | CGLO_TEMPERATURE | CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS);
-            checkNumberOfBondedInteractions(fplog, cr, totalNumberOfBondedInteractions,
+            checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
                                             top_global, top, state,
                                             &shouldCheckNumberOfBondedInteractions);
         }
@@ -1217,7 +1217,7 @@ void gmx::Integrator::do_md()
                    time step kinetic energy for the pressure (always true now, since we want accurate statistics).
                    b) If we are using EkinAveEkin for the kinetic energy for the temperature control, we still feed in
                    EkinAveVel because it's needed for the pressure */
-                checkNumberOfBondedInteractions(fplog, cr, totalNumberOfBondedInteractions,
+                checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
                                                 top_global, top, state,
                                                 &shouldCheckNumberOfBondedInteractions);
                 wallcycle_start(wcycle, ewcUPDATE);
@@ -1607,7 +1607,7 @@ void gmx::Integrator::do_md()
                                 | CGLO_CONSTRAINT
                                 | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0)
                                 );
-                checkNumberOfBondedInteractions(fplog, cr, totalNumberOfBondedInteractions,
+                checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
                                                 top_global, top, state,
                                                 &shouldCheckNumberOfBondedInteractions);
             }
@@ -1759,7 +1759,7 @@ void gmx::Integrator::do_md()
 
         if ( (bExchanged || bNeedRepartition) && DOMAINDECOMP(cr) )
         {
-            dd_partition_system(fplog, step, cr, TRUE, 1,
+            dd_partition_system(fplog, mdlog, step, cr, TRUE, 1,
                                 state_global, top_global, ir,
                                 state, &f, mdAtoms, top, fr,
                                 vsite, constr,

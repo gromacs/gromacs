@@ -89,6 +89,7 @@ namespace gmx
 {
 class Constraints;
 class MDAtoms;
+class MDLogger;
 class LocalAtomSetManager;
 } // namespace
 
@@ -205,7 +206,7 @@ struct DomdecOptions
 
 /*! \brief Initialized the domain decomposition, chooses the DD grid and PME ranks, return the DD struct */
 gmx_domdec_t *
-init_domain_decomposition(FILE                           *fplog,
+init_domain_decomposition(const gmx::MDLogger            &mdlog,
                           t_commrec                      *cr,
                           const DomdecOptions            &options,
                           const MdrunOptions             &mdrunOptions,
@@ -318,6 +319,7 @@ void dd_atom_sum_real(struct gmx_domdec_t *dd, real v[]);
  * When f!=NULL, *f will be reallocated to the size of state_local.
  */
 void dd_partition_system(FILE                *fplog,
+                         const gmx::MDLogger &mdlog,
                          int64_t              step,
                          const t_commrec     *cr,
                          gmx_bool             bMasterState,
@@ -344,7 +346,7 @@ void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog)
 
 /*! \brief Check whether bonded interactions are missing, if appropriate
  *
- * \param[in]    fplog                                  Log file pointer
+ * \param[in]    mdlog                                  Logger
  * \param[in]    cr                                     Communication object
  * \param[in]    totalNumberOfBondedInteractions        Result of the global reduction over the number of bonds treated in each domain
  * \param[in]    top_global                             Global topology for the error message
@@ -352,7 +354,7 @@ void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog)
  * \param[in]    state                                  Global state for the error message
  * \param[in,out] shouldCheckNumberOfBondedInteractions Whether we should do the check. Always set to false.
  */
-void checkNumberOfBondedInteractions(FILE                 *fplog,
+void checkNumberOfBondedInteractions(const gmx::MDLogger  &mdlog,
                                      t_commrec            *cr,
                                      int                   totalNumberOfBondedInteractions,
                                      const gmx_mtop_t     *top_global,
@@ -389,11 +391,12 @@ gmx::ArrayRef<const int> dd_constraints_nlocalatoms(const gmx_domdec_t *dd);
 
 /*! \brief Print error output when interactions are missing */
 [[ noreturn ]]
-void dd_print_missing_interactions(FILE *fplog, struct t_commrec *cr,
-                                   int local_count,
-                                   const gmx_mtop_t *top_global,
+void dd_print_missing_interactions(const gmx::MDLogger  &mdlog,
+                                   t_commrec            *cr,
+                                   int                   local_count,
+                                   const gmx_mtop_t     *top_global,
                                    const gmx_localtop_t *top_local,
-                                   const t_state *state_local);
+                                   const t_state        *state_local);
 
 /*! \brief Generate and store the reverse topology */
 void dd_make_reverse_top(FILE *fplog,
@@ -429,7 +432,8 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
                                   cginfo_mb_t *cginfo_mb);
 
 /*! \brief Calculate the maximum distance involved in 2-body and multi-body bonded interactions */
-void dd_bonded_cg_distance(FILE *fplog, const gmx_mtop_t *mtop,
+void dd_bonded_cg_distance(const gmx::MDLogger &mdlog,
+                           const gmx_mtop_t *mtop,
                            const t_inputrec *ir,
                            const rvec *x, const matrix box,
                            gmx_bool bBCheck,
@@ -455,7 +459,7 @@ real comm_box_frac(const ivec dd_nc, real cutoff, const gmx_ddbox_t *ddbox);
  *
  * On the master node returns the actual cellsize limit used.
  */
-real dd_choose_grid(FILE *fplog,
+real dd_choose_grid(const gmx::MDLogger &mdlog,
                     t_commrec *cr, gmx_domdec_t *dd,
                     const t_inputrec *ir,
                     const gmx_mtop_t *mtop,
