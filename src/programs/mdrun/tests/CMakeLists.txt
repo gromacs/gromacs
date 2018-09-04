@@ -35,6 +35,7 @@
 # make an "object library" for code that we re-use for both kinds of tests
 add_library(mdrun_test_objlib OBJECT
     energyreader.cpp
+    energycomparison.cpp
     moduletest.cpp
     simulationdatabase.cpp
     terminationhelper.cpp
@@ -49,10 +50,10 @@ gmx_add_gtest_executable(
     ${exename}
     # files with code for tests
     compressed_x_output.cpp
-    energycomparison.cpp
     grompp.cpp
     initialconstraints.cpp
     interactiveMD.cpp
+    minimize.cpp
     rerun.cpp
     swapcoords.cpp
     tabulated_bonded_interactions.cpp
@@ -75,6 +76,7 @@ gmx_add_gtest_executable(
     ${exename} MPI
     # files with code for tests
     domain_decomposition.cpp
+    minimize.cpp
     multisim.cpp
     multisimtest.cpp
     replicaexchange.cpp
