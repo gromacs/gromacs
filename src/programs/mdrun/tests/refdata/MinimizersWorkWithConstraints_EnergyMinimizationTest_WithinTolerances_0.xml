@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Simulation Name="spc5">
+    <Minimizer Name="steep">
+      <Energy Name="Potential">
+        <Real Name="Time 0.000000 Step 0 in frame 0">-9.6231425679441998</Real>
+        <Real Name="Time 1.000000 Step 1 in frame 1">-16.824484254501229</Real>
+        <Real Name="Time 2.000000 Step 2 in frame 2">-27.187878502925926</Real>
+        <Real Name="Time 3.000000 Step 3 in frame 3">-37.906539302378249</Real>
+        <Real Name="Time 4.000000 Step 4 in frame 4">-47.991046443359224</Real>
+      </Energy>
+    </Minimizer>
+  </Simulation>
+</ReferenceData>
