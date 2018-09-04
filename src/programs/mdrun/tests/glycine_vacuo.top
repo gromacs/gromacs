@@ -1,0 +1,12 @@
+; Include forcefield parameters
+#include "charmm27.ff/forcefield.itp"
+
+#include "glycine_vacuo.itp"
+
+[ system ]
+; Name
+Glycine
+
+[ molecules ]
+; Compound        #mols
+Glycine           1
