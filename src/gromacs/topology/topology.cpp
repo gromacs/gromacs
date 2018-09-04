@@ -251,6 +251,25 @@ bool gmx_mtop_has_charges(const gmx_mtop_t *mtop)
     return mtop->moltype.empty() || mtop->moltype[0].atoms.haveCharge;
 }
 
+bool gmx_mtop_has_perturbed_charges(const gmx_mtop_t &mtop)
+{
+    for (const gmx_moltype_t &moltype : mtop.moltype)
+    {
+        const t_atoms &atoms = moltype.atoms;
+        if (atoms.haveBState)
+        {
+            for (int a = 0; a < atoms.nr; a++)
+            {
+                if (atoms.atom[a].q != atoms.atom[a].qB)
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 bool gmx_mtop_has_atomtypes(const gmx_mtop_t *mtop)
 {
     if (mtop == nullptr)
