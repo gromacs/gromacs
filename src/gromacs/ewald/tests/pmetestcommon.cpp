@@ -57,6 +57,7 @@
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
@@ -71,7 +72,8 @@ namespace test
 
 bool pmeSupportsInputForMode(const t_inputrec *inputRec, CodePath mode)
 {
-    bool implemented;
+    bool       implemented;
+    gmt_mtop_t mtop;
     switch (mode)
     {
         case CodePath::CPU:
@@ -80,7 +82,7 @@ bool pmeSupportsInputForMode(const t_inputrec *inputRec, CodePath mode)
 
         case CodePath::CUDA:
             implemented = (pme_gpu_supports_build(nullptr) &&
-                           pme_gpu_supports_input(inputRec, nullptr));
+                           pme_gpu_supports_input(inputRec, mtop, nullptr));
             break;
 
         default:

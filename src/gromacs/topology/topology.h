@@ -181,6 +181,7 @@ void done_top_mtop(t_topology *top, gmx_mtop_t *mtop);
 
 bool gmx_mtop_has_masses(const gmx_mtop_t *mtop);
 bool gmx_mtop_has_charges(const gmx_mtop_t *mtop);
+bool gmx_mtop_has_perturbed_charges(const gmx_mtop_t &mtop);
 bool gmx_mtop_has_atomtypes(const gmx_mtop_t *mtop);
 bool gmx_mtop_has_pdbinfo(const gmx_mtop_t *mtop);
 
