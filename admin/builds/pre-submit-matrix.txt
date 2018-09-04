@@ -23,14 +23,14 @@
 # Test cmake version from before new FindCUDA support (in 3.8)
 # Test MPMD PME with library MPI
 # Test recent cmake (3.7+), to cover minor FindCUDA changes from 3.7.0
-gcc-4.8 gpu cuda-7.0 cmake-3.8.1 mpi npme=1 nranks=2 openmp
+gcc-4.8 gpuhw=nvidia cuda-7.0 cmake-3.8.1 mpi npme=1 nranks=2 openmp
 
 # Test non-default use of mdrun -gpu_id
 # Test newest gcc supported by newest CUDA at time of release
 # Test thread-MPI with CUDA
 # Test older cmake version (< 3.7)
 # Test SIMD implementation of pair search for GPU code-path
-gcc-7 gpu gpu_id=1 cuda-9.2 thread-mpi openmp cmake-3.6.1 release-with-assert simd=avx2_256
+gcc-7 gpuhw=nvidia gpu_id=1 cuda-9.2 thread-mpi openmp cmake-3.6.1 release-with-assert simd=avx2_256
 
 # Test with ThreadSanitizer (compiled without OpenMP, even though
 #   this gcc was configured with --disable-linux-futex, because
@@ -80,18 +80,17 @@ icc-18 no-thread-mpi double openmp mkl cmake-3.9.6 simd=none release hwloc
 # Test external clFFT (for build speed)
 # Test MPI + OpenCL
 # Test AVX2_256 SIMD
-gcc-6 openmp opencl clFFT-2.14 cuda-7.5 mpi simd=avx2_256
+gcc-6 openmp gpuhw=nvidia opencl-1.2 clFFT-2.14 mpi simd=avx2_256
 
 # Test AMD OpenCL
 # Test external clFFT (for build speed)
 # Test AVX_128_FMA SIMD
-gcc-5 openmp simd=avx_128_fma opencl clFFT-2.14 amdappsdk-3.0
+gcc-5 openmp simd=avx_128_fma gpuhw=amd opencl-1.2 clFFT-2.14 amdappsdk-3.0
 
 # TODO
 # Add OpenMP support to ASAN build (but libomp.so in clang-4 reports leaks, so might need a suitable build or suppression)
 # Test hwloc-2 support
 # Test newest supported LTS Ubuntu
-# Update gpu testing specifiers per https://redmine.gromacs.org/issues/2161
 # Resolve Redmine #1850 so that ThreadSanitizer can test our OpenMP code
 # Test AVX-512 when hardware is available
 # Update to test gcc 8
