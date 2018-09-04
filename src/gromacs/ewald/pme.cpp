@@ -102,6 +102,7 @@
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -155,30 +156,33 @@ bool pme_gpu_supports_build(std::string *error)
     return addMessageIfNotSupported(errorReasons, error);
 }
 
-bool pme_gpu_supports_input(const t_inputrec *ir, std::string *error)
+bool pme_gpu_supports_input(const t_inputrec &ir, const gmx_mtop_t &mtop, std::string *error)
 {
     std::list<std::string> errorReasons;
-    if (!EEL_PME(ir->coulombtype))
+    if (!EEL_PME(ir.coulombtype))
     {
         errorReasons.emplace_back("systems that do not use PME for electrostatics");
     }
-    if (ir->pme_order != 4)
+    if (ir.pme_order != 4)
     {
         errorReasons.emplace_back("interpolation orders other than 4");
     }
-    if (ir->efep != efepNO)
+    if (ir.efep != efepNO)
     {
-        errorReasons.emplace_back("free energy calculations (multiple grids)");
+        if (gmx_mtop_has_perturbed_charges(mtop))
+        {
+            errorReasons.emplace_back("free energy calculations with perturbed charges (multiple grids)");
+        }
     }
-    if (EVDW_PME(ir->vdwtype))
+    if (EVDW_PME(ir.vdwtype))
     {
         errorReasons.emplace_back("Lennard-Jones PME");
     }
-    if (ir->cutoff_scheme == ecutsGROUP)
+    if (ir.cutoff_scheme == ecutsGROUP)
     {
         errorReasons.emplace_back("group cutoff scheme");
     }
-    if (EI_TPI(ir->eI))
+    if (EI_TPI(ir.eI))
     {
         errorReasons.emplace_back("test particle insertion");
     }
