@@ -127,7 +127,7 @@ extern void communicate_group_positions(const t_commrec *cr, rvec *xcoll, ivec *
                                         ivec *extra_shifts, gmx_bool bNS,
                                         const rvec *x_loc, int nr, int nr_loc,
                                         const int *anrs_loc, const int *coll_ind, rvec *xcoll_old,
-                                        matrix box);
+                                        const matrix box);
 
 /*! \brief Calculates the center of the positions x locally.
  *

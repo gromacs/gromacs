@@ -738,9 +738,9 @@ real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
     /* Approx. 80*nfa/3 flops */
 }
 
-void update_orires_history(t_fcdata *fcd, history_t *hist)
+void update_orires_history(const t_fcdata *fcd, history_t *hist)
 {
-    t_oriresdata *od = &(fcd->orires);
+    const t_oriresdata *od = &(fcd->orires);
 
     if (od->edt != 0)
     {

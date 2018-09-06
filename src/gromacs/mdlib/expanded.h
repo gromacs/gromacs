@@ -50,16 +50,17 @@ struct t_mdatoms;
 struct t_simtemp;
 class t_state;
 
-void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit);
+void init_npt_masses(const t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit);
 
-void init_expanded_ensemble(gmx_bool bStateFromCP, t_inputrec *ir, df_history_t *dfhist);
+void init_expanded_ensemble(gmx_bool bStateFromCP, const t_inputrec *ir, df_history_t *dfhist);
 
-int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
+int ExpandedEnsembleDynamics(FILE *log, const t_inputrec *ir, const gmx_enerdata_t *enerd,
                              t_state *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
                              int64_t step,
-                             rvec *v, t_mdatoms *mdatoms);
+                             rvec *v, const t_mdatoms *mdatoms);
 
-void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, t_simtemp *simtemp, df_history_t *dfhist,
+void PrintFreeEnergyInfoToFile(FILE *outfile, const t_lambda *fep, const t_expanded *expand,
+                               const t_simtemp *simtemp, const df_history_t *dfhist,
                                int fep_state, int frequency, int64_t step);
 
 #endif

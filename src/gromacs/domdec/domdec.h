@@ -422,7 +422,7 @@ gmx_localtop_t *dd_init_local_top(const gmx_mtop_t *top_global);
 
 /*! \brief Construct local state */
 void dd_init_local_state(struct gmx_domdec_t *dd,
-                         t_state *state_global, t_state *local_state);
+                         const t_state *state_global, t_state *local_state);
 
 /*! \brief Generate a list of links between charge groups that are linked by bonded interactions */
 t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,

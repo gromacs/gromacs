@@ -68,7 +68,7 @@ typedef struct gmx_global_stat
     int   *itc1;
 } t_gmx_global_stat;
 
-gmx_global_stat_t global_stat_init(t_inputrec *ir)
+gmx_global_stat_t global_stat_init(const t_inputrec *ir)
 {
     gmx_global_stat_t gs;
 
@@ -135,11 +135,11 @@ static int filter_enerdterm(const real *afrom, gmx_bool bToBuffer, real *ato,
     return to;
 }
 
-void global_stat(gmx_global_stat_t gs,
+void global_stat(const gmx_global_stat *gs,
                  const t_commrec *cr, gmx_enerdata_t *enerd,
                  tensor fvir, tensor svir, rvec mu_tot,
-                 t_inputrec *inputrec,
-                 gmx_ekindata_t *ekind, gmx::Constraints *constr,
+                 const t_inputrec *inputrec,
+                 gmx_ekindata_t *ekind, const gmx::Constraints *constr,
                  t_vcm *vcm,
                  int nsig, real *sig,
                  int *totalNumberOfBondedInteractions,

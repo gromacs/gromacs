@@ -69,9 +69,9 @@ static void init_grptcstat(int ngtc, t_grp_tcstat tcstat[])
     }
 }
 
-static void init_grpstat(gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
+static void init_grpstat(const gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
 {
-    gmx_groups_t           *groups;
+    const gmx_groups_t     *groups;
     gmx_mtop_atomloop_all_t aloop;
     int                     i, grp;
     const t_atom           *atom;
@@ -95,7 +95,7 @@ static void init_grpstat(gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
     }
 }
 
-void init_ekindata(FILE gmx_unused *log, gmx_mtop_t *mtop, t_grpopts *opts,
+void init_ekindata(FILE gmx_unused *log, const gmx_mtop_t *mtop, const t_grpopts *opts,
                    gmx_ekindata_t *ekind)
 {
     int i;
@@ -155,7 +155,7 @@ void init_ekindata(FILE gmx_unused *log, gmx_mtop_t *mtop, t_grpopts *opts,
     init_grpstat(mtop, opts->ngacc, ekind->grpstat);
 }
 
-void accumulate_u(t_commrec *cr, t_grpopts *opts, gmx_ekindata_t *ekind)
+void accumulate_u(const t_commrec *cr, const t_grpopts *opts, gmx_ekindata_t *ekind)
 {
     /* This routine will only be called when it's necessary */
     t_bin *rb;
@@ -177,7 +177,7 @@ void accumulate_u(t_commrec *cr, t_grpopts *opts, gmx_ekindata_t *ekind)
 }
 
 void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
-                     t_grpopts *opts, rvec v[], t_mdatoms *md, real lambda)
+                     const t_grpopts *opts, const rvec v[], const t_mdatoms *md, real lambda)
 {
     int  d, g, n;
     real mv;
@@ -220,7 +220,7 @@ void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
     }
 }
 
-real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
+real sum_ekin(const t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
               gmx_bool bEkinAveVel, gmx_bool bScaleEkin)
 {
     int           i, j, m, ngtc;
