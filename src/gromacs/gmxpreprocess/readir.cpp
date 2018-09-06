@@ -80,6 +80,7 @@
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringcompare.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
@@ -1345,50 +1346,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     }
 }
 
-/* count the number of text elemets separated by whitespace in a string.
-    str = the input string
-    maxptr = the maximum number of allowed elements
-    ptr = the output array of pointers to the first character of each element
-    returns: the number of elements. */
-int str_nelem(const char *str, int maxptr, char *ptr[])
-{
-    int   np = 0;
-    char *copy0, *copy;
-
-    copy0 = gmx_strdup(str);
-    copy  = copy0;
-    ltrim(copy);
-    while (*copy != '\0')
-    {
-        if (np >= maxptr)
-        {
-            gmx_fatal(FARGS, "Too many groups on line: '%s' (max is %d)",
-                      str, maxptr);
-        }
-        if (ptr)
-        {
-            ptr[np] = copy;
-        }
-        np++;
-        while ((*copy != '\0') && !isspace(*copy))
-        {
-            copy++;
-        }
-        if (*copy != '\0')
-        {
-            *copy = '\0';
-            copy++;
-        }
-        ltrim(copy);
-    }
-    if (ptr == nullptr)
-    {
-        sfree(copy0);
-    }
-
-    return np;
-}
-
 /* interpret a number of doubles from a string and put them in an array,
    after allocating space for them.
    str = the input string
@@ -1396,24 +1353,23 @@ int str_nelem(const char *str, int maxptr, char *ptr[])
    r = the output array of doubles. */
 static void parse_n_real(char *str, int *n, real **r, warninp_t wi)
 {
-    char *ptr[MAXPTR];
-    char *endptr;
-    int   i;
-    char  warn_buf[STRLEN];
-
-    *n = str_nelem(str, MAXPTR, ptr);
+    auto values = gmx::splitString(str);
+    *n = values.size();
 
     snew(*r, *n);
-    for (i = 0; i < *n; i++)
+    for (int i = 0; i < *n; i++)
     {
-        (*r)[i] = strtod(ptr[i], &endptr);
-        if (*endptr != 0)
+        try
         {
-            sprintf(warn_buf, "Invalid value %s in string in mdp file. Expected a real number.", ptr[i]);
-            warning_error(wi, warn_buf);
+            (*r)[i] = gmx::fromString<real>(values[i]);
+        }
+        catch (gmx::GromacsException &)
+        {
+            warning_error(wi, "Invalid value " + values[i] + " in string in mdp file. Expected a real number.");
         }
     }
 }
+
 
 static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN], char weights[STRLEN], warninp_t wi)
 {
@@ -1588,14 +1544,87 @@ static void do_simtemp_params(t_inputrec *ir)
     GetSimTemps(ir->fepvals->n_lambda, ir->simtempvals, ir->fepvals->all_lambda[efptTEMPERATURE]);
 }
 
+static void
+convertYesNos(warninp_t /*wi*/, gmx::ArrayRef<const std::string> inputs, const char * /*name*/, gmx_bool *outputs)
+{
+    int i = 0;
+    for (const auto &input : inputs)
+    {
+        outputs[i] = (gmx_strncasecmp(input.c_str(), "Y", 1) == 0);
+        ++i;
+    }
+}
+
+template <typename T> void
+convertInts(warninp_t wi, gmx::ArrayRef<const std::string> inputs, const char *name, T *outputs)
+{
+    int i = 0;
+    for (const auto &input : inputs)
+    {
+        try
+        {
+            outputs[i] = gmx::fromStdString<T>(input);
+        }
+        catch (gmx::GromacsException &)
+        {
+            auto message = gmx::formatString("Invalid value for mdp option %s. %s should only consist of integers separated by spaces.",
+                                             name, name);
+            warning_error(wi, message);
+        }
+        ++i;
+    }
+}
+
+static void
+convertReals(warninp_t wi, gmx::ArrayRef<const std::string> inputs, const char *name, real *outputs)
+{
+    int i = 0;
+    for (const auto &input : inputs)
+    {
+        try
+        {
+            outputs[i] = gmx::fromString<real>(input);
+        }
+        catch (gmx::GromacsException &)
+        {
+            auto message = gmx::formatString("Invalid value for mdp option %s. %s should only consist of real numbers separated by spaces.",
+                                             name, name);
+            warning_error(wi, message);
+        }
+        ++i;
+    }
+}
+
+static void
+convertRvecs(warninp_t wi, gmx::ArrayRef<const std::string> inputs, const char *name, rvec *outputs)
+{
+    int i = 0, d = 0;
+    for (const auto &input : inputs)
+    {
+        try
+        {
+            outputs[i][d] = gmx::fromString<real>(input);
+        }
+        catch (gmx::GromacsException &)
+        {
+            auto message = gmx::formatString("Invalid value for mdp option %s. %s should only consist of real numbers separated by spaces.",
+                                             name, name);
+            warning_error(wi, message);
+        }
+        ++d;
+        if (d == DIM)
+        {
+            d = 0;
+            ++i;
+        }
+    }
+}
+
 static void do_wall_params(t_inputrec *ir,
                            char *wall_atomtype, char *wall_density,
-                           t_gromppopts *opts)
+                           t_gromppopts *opts,
+                           warninp_t wi)
 {
-    int    nstr, i;
-    char  *names[MAXPTR];
-    double dbl;
-
     opts->wall_atomtype[0] = nullptr;
     opts->wall_atomtype[1] = nullptr;
 
@@ -1606,35 +1635,31 @@ static void do_wall_params(t_inputrec *ir,
 
     if (ir->nwall > 0)
     {
-        nstr = str_nelem(wall_atomtype, MAXPTR, names);
-        if (nstr != ir->nwall)
+        auto wallAtomTypes = gmx::splitString(wall_atomtype);
+        if (wallAtomTypes.size() != size_t(ir->nwall))
         {
-            gmx_fatal(FARGS, "Expected %d elements for wall_atomtype, found %d",
-                      ir->nwall, nstr);
+            gmx_fatal(FARGS, "Expected %d elements for wall_atomtype, found %zu",
+                      ir->nwall, wallAtomTypes.size());
         }
-        for (i = 0; i < ir->nwall; i++)
+        for (int i = 0; i < ir->nwall; i++)
         {
-            opts->wall_atomtype[i] = gmx_strdup(names[i]);
+            opts->wall_atomtype[i] = gmx_strdup(wallAtomTypes[i].c_str());
         }
 
         if (ir->wall_type == ewt93 || ir->wall_type == ewt104)
         {
-            nstr = str_nelem(wall_density, MAXPTR, names);
-            if (nstr != ir->nwall)
+            auto wallDensity = gmx::splitString(wall_density);
+            if (wallDensity.size() != size_t(ir->nwall))
             {
-                gmx_fatal(FARGS, "Expected %d elements for wall-density, found %d", ir->nwall, nstr);
+                gmx_fatal(FARGS, "Expected %d elements for wall-density, found %zu", ir->nwall, wallDensity.size());
             }
-            for (i = 0; i < ir->nwall; i++)
+            convertReals(wi, wallDensity, "wall-density", ir->wall_density);
+            for (int i = 0; i < ir->nwall; i++)
             {
-                if (sscanf(names[i], "%lf", &dbl) != 1)
+                if (ir->wall_density[i] <= 0)
                 {
-                    gmx_fatal(FARGS, "Could not parse wall-density value from string '%s'", names[i]);
+                    gmx_fatal(FARGS, "wall-density[%d] = %f\n", i, ir->wall_density[i]);
                 }
-                if (dbl <= 0)
-                {
-                    gmx_fatal(FARGS, "wall-density[%d] = %f\n", i, dbl);
-                }
-                ir->wall_density[i] = dbl;
             }
         }
     }
@@ -2469,11 +2494,11 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     /* WALL PARAMETERS */
 
-    do_wall_params(ir, is->wall_atomtype, is->wall_density, opts);
+    do_wall_params(ir, is->wall_atomtype, is->wall_density, opts, wi);
 
     /* ORIENTATION RESTRAINT PARAMETERS */
 
-    if (opts->bOrire && str_nelem(is->orirefitgrp, MAXPTR, nullptr) != 1)
+    if (opts->bOrire && gmx::splitString(is->orirefitgrp).size() != 1)
     {
         warning_error(wi, "ERROR: Need one orientation restraint fit group\n");
     }
@@ -2594,7 +2619,8 @@ int search_string(const char *s, int ng, char *gn[])
               s);
 }
 
-static bool do_numbering(int natoms, gmx_groups_t *groups, int ng, char *ptrs[],
+static bool do_numbering(int natoms, gmx_groups_t *groups,
+                         gmx::ArrayRef<std::string> groupsFromMdpFile,
                          t_blocka *block, char *gnames[],
                          int gtype, int restnm,
                          int grptp, bool bVerbose,
@@ -2602,7 +2628,7 @@ static bool do_numbering(int natoms, gmx_groups_t *groups, int ng, char *ptrs[],
 {
     unsigned short *cbuf;
     t_grps         *grps = &(groups->grps[gtype]);
-    int             i, j, gid, aj, ognr, ntot = 0;
+    int             j, gid, aj, ognr, ntot = 0;
     const char     *title;
     bool            bRest;
     char            warn_buf[STRLEN];
@@ -2611,16 +2637,16 @@ static bool do_numbering(int natoms, gmx_groups_t *groups, int ng, char *ptrs[],
 
     snew(cbuf, natoms);
     /* Mark all id's as not set */
-    for (i = 0; (i < natoms); i++)
+    for (int i = 0; (i < natoms); i++)
     {
         cbuf[i] = NOGID;
     }
 
-    snew(grps->nm_ind, ng+1); /* +1 for possible rest group */
-    for (i = 0; (i < ng); i++)
+    snew(grps->nm_ind, groupsFromMdpFile.size()+1); /* +1 for possible rest group */
+    for (int i = 0; i != groupsFromMdpFile.size(); ++i)
     {
         /* Lookup the group name in the block structure */
-        gid = search_string(ptrs[i], block->nr, gnames);
+        gid = search_string(groupsFromMdpFile[i].c_str(), block->nr, gnames);
         if ((grptp != egrptpONE) || (i == 0))
         {
             grps->nm_ind[grps->nr++] = gid;
@@ -3011,43 +3037,42 @@ static bool do_egp_flag(t_inputrec *ir, gmx_groups_t *groups,
      * The real maximum is the number of names that fit in a string: STRLEN/2.
      */
 #define EGP_MAX (STRLEN/2)
-    int      nelem, i, j, k, nr;
-    char    *names[EGP_MAX];
+    int      j, k, nr;
     char  ***gnames;
     bool     bSet;
 
     gnames = groups->grpname;
 
-    nelem = str_nelem(val, EGP_MAX, names);
-    if (nelem % 2 != 0)
+    auto names = gmx::splitString(val);
+    if (names.size() % 2 != 0)
     {
         gmx_fatal(FARGS, "The number of groups for %s is odd", option);
     }
     nr   = groups->grps[egcENER].nr;
     bSet = FALSE;
-    for (i = 0; i < nelem/2; i++)
+    for (size_t i = 0; i < names.size() / 2; i++)
     {
         j = 0;
         while ((j < nr) &&
-               gmx_strcasecmp(names[2*i], *(gnames[groups->grps[egcENER].nm_ind[j]])))
+               gmx_strcasecmp(names[2*i].c_str(), *(gnames[groups->grps[egcENER].nm_ind[j]])))
         {
             j++;
         }
         if (j == nr)
         {
             gmx_fatal(FARGS, "%s in %s is not an energy group\n",
-                      names[2*i], option);
+                      names[2*i].c_str(), option);
         }
         k = 0;
         while ((k < nr) &&
-               gmx_strcasecmp(names[2*i+1], *(gnames[groups->grps[egcENER].nm_ind[k]])))
+               gmx_strcasecmp(names[2*i+1].c_str(), *(gnames[groups->grps[egcENER].nm_ind[k]])))
         {
             k++;
         }
         if (k == nr)
         {
             gmx_fatal(FARGS, "%s in %s is not an energy group\n",
-                      names[2*i+1], option);
+                      names[2*i+1].c_str(), option);
         }
         if ((j < nr) && (k < nr))
         {
@@ -3122,7 +3147,6 @@ static void make_IMD_group(t_IMD *IMDgroup, char *IMDgname, t_blocka *grps, char
     }
 }
 
-
 void do_index(const char* mdparin, const char *ndx,
               gmx_mtop_t *mtop,
               bool bVerbose,
@@ -3135,16 +3159,12 @@ void do_index(const char* mdparin, const char *ndx,
     t_symtab     *symtab;
     t_atoms       atoms_all;
     char          warnbuf[STRLEN], **gnames;
-    int           nr, ntcg, ntau_t, nref_t, nacc, nofg, nSA, nSA_points, nSA_time, nSA_temp;
+    int           nr;
     real          tau_min;
     int           nstcmin;
-    int           nacg, nfreeze, nfrdim, nenergy, nvcm, nuser;
-    char         *ptr1[MAXPTR], *ptr2[MAXPTR], *ptr3[MAXPTR];
     int           i, j, k, restnm;
     bool          bExcl, bTable, bAnneal, bRest;
-    int           nQMmethod, nQMbasis, nQMg;
     char          warn_buf[STRLEN];
-    char*         endptr;
 
     if (bVerbose)
     {
@@ -3182,17 +3202,21 @@ void do_index(const char* mdparin, const char *ndx,
 
     set_warning_line(wi, mdparin, -1);
 
-    ntau_t = str_nelem(is->tau_t, MAXPTR, ptr1);
-    nref_t = str_nelem(is->ref_t, MAXPTR, ptr2);
-    ntcg   = str_nelem(is->tcgrps, MAXPTR, ptr3);
-    if ((ntau_t != ntcg) || (nref_t != ntcg))
+    auto temperatureCouplingTauValues       = gmx::splitString(is->tau_t);
+    auto temperatureCouplingReferenceValues = gmx::splitString(is->ref_t);
+    auto temperatureCouplingGroupNames      = gmx::splitString(is->tcgrps);
+    if (temperatureCouplingTauValues.size() != temperatureCouplingGroupNames.size() ||
+        temperatureCouplingReferenceValues.size() != temperatureCouplingGroupNames.size())
     {
-        gmx_fatal(FARGS, "Invalid T coupling input: %d groups, %d ref-t values and "
-                  "%d tau-t values", ntcg, nref_t, ntau_t);
+        gmx_fatal(FARGS, "Invalid T coupling input: %zu groups, %zu ref-t values and "
+                  "%zu tau-t values",
+                  temperatureCouplingGroupNames.size(),
+                  temperatureCouplingReferenceValues.size(),
+                  temperatureCouplingTauValues.size());
     }
 
     const bool useReferenceTemperature = integratorHasReferenceTemperature(ir);
-    do_numbering(natoms, groups, ntcg, ptr3, grps, gnames, egcTC,
+    do_numbering(natoms, groups, temperatureCouplingGroupNames, grps, gnames, egcTC,
                  restnm, useReferenceTemperature ? egrptpALL : egrptpALL_GENREST, bVerbose, wi);
     nr            = groups->grps[egcTC].nr;
     ir->opts.ngtc = nr;
@@ -3206,19 +3230,15 @@ void do_index(const char* mdparin, const char *ndx,
 
     if (useReferenceTemperature)
     {
-        if (nr != nref_t)
+        if (size_t(nr) != temperatureCouplingReferenceValues.size())
         {
             gmx_fatal(FARGS, "Not enough ref-t and tau-t values!");
         }
 
         tau_min = 1e20;
+        convertReals(wi, temperatureCouplingTauValues, "tau-t", ir->opts.tau_t);
         for (i = 0; (i < nr); i++)
         {
-            ir->opts.tau_t[i] = strtod(ptr1[i], &endptr);
-            if (*endptr != 0)
-            {
-                warning_error(wi, "Invalid value for mdp option tau-t. tau-t should only consist of real numbers separated by spaces.");
-            }
             if ((ir->eI == eiBD) && ir->opts.tau_t[i] <= 0)
             {
                 sprintf(warn_buf, "With integrator %s tau-t should be larger than 0", ei_names[ir->eI]);
@@ -3288,13 +3308,9 @@ void do_index(const char* mdparin, const char *ndx,
                 warning(wi, warn_buf);
             }
         }
+        convertReals(wi, temperatureCouplingReferenceValues, "ref-t", ir->opts.ref_t);
         for (i = 0; (i < nr); i++)
         {
-            ir->opts.ref_t[i] = strtod(ptr2[i], &endptr);
-            if (*endptr != 0)
-            {
-                warning_error(wi, "Invalid value for mdp option ref-t. ref-t should only consist of real numbers separated by spaces.");
-            }
             if (ir->opts.ref_t[i] < 0)
             {
                 gmx_fatal(FARGS, "ref-t for group %d negative", i);
@@ -3309,14 +3325,17 @@ void do_index(const char* mdparin, const char *ndx,
     }
 
     /* Simulated annealing for each group. There are nr groups */
-    nSA = str_nelem(is->anneal, MAXPTR, ptr1);
-    if (nSA == 1 && (ptr1[0][0] == 'n' || ptr1[0][0] == 'N'))
+    auto simulatedAnnealingGroupNames = gmx::splitString(is->anneal);
+    if (simulatedAnnealingGroupNames.size() == 1 &&
+        gmx_strncasecmp(simulatedAnnealingGroupNames[0].c_str(), "N", 1) == 0)
     {
-        nSA = 0;
+        simulatedAnnealingGroupNames.resize(0);
     }
-    if (nSA > 0 && nSA != nr)
+    if (!simulatedAnnealingGroupNames.empty() &&
+        simulatedAnnealingGroupNames.size() != size_t(nr))
     {
-        gmx_fatal(FARGS, "Not enough annealing values: %d (for %d groups)\n", nSA, nr);
+        gmx_fatal(FARGS, "Not enough annealing values: %zu (for %d groups)\n",
+                  simulatedAnnealingGroupNames.size(), nr);
     }
     else
     {
@@ -3331,21 +3350,21 @@ void do_index(const char* mdparin, const char *ndx,
             ir->opts.anneal_time[i]    = nullptr;
             ir->opts.anneal_temp[i]    = nullptr;
         }
-        if (nSA > 0)
+        if (!simulatedAnnealingGroupNames.empty())
         {
             bAnneal = FALSE;
             for (i = 0; i < nr; i++)
             {
-                if (ptr1[i][0] == 'n' || ptr1[i][0] == 'N')
+                if (gmx_strncasecmp(simulatedAnnealingGroupNames[i].c_str(), "N", 1) == 0)
                 {
                     ir->opts.annealing[i] = eannNO;
                 }
-                else if (ptr1[i][0] == 's' || ptr1[i][0] == 'S')
+                else if (gmx_strncasecmp(simulatedAnnealingGroupNames[i].c_str(), "S", 1) == 0)
                 {
                     ir->opts.annealing[i] = eannSINGLE;
                     bAnneal               = TRUE;
                 }
-                else if (ptr1[i][0] == 'p' || ptr1[i][0] == 'P')
+                else if (gmx_strncasecmp(simulatedAnnealingGroupNames[i].c_str(), "P", 1) == 0)
                 {
                     ir->opts.annealing[i] = eannPERIODIC;
                     bAnneal               = TRUE;
@@ -3354,18 +3373,15 @@ void do_index(const char* mdparin, const char *ndx,
             if (bAnneal)
             {
                 /* Read the other fields too */
-                nSA_points = str_nelem(is->anneal_npoints, MAXPTR, ptr1);
-                if (nSA_points != nSA)
+                auto simulatedAnnealingPoints = gmx::splitString(is->anneal_npoints);
+                if (simulatedAnnealingPoints.size() != simulatedAnnealingGroupNames.size())
                 {
-                    gmx_fatal(FARGS, "Found %d annealing-npoints values for %d groups\n", nSA_points, nSA);
+                    gmx_fatal(FARGS, "Found %zu annealing-npoints values for %zu groups\n",
+                              simulatedAnnealingPoints.size(), simulatedAnnealingGroupNames.size());
                 }
+                convertInts(wi, simulatedAnnealingPoints, "annealing points", ir->opts.anneal_npoints);
                 for (k = 0, i = 0; i < nr; i++)
                 {
-                    ir->opts.anneal_npoints[i] = strtol(ptr1[i], &endptr, 10);
-                    if (*endptr != 0)
-                    {
-                        warning_error(wi, "Invalid value for mdp option annealing-npoints. annealing should only consist of integers separated by spaces.");
-                    }
                     if (ir->opts.anneal_npoints[i] == 1)
                     {
                         gmx_fatal(FARGS, "Please specify at least a start and an end point for annealing\n");
@@ -3375,32 +3391,25 @@ void do_index(const char* mdparin, const char *ndx,
                     k += ir->opts.anneal_npoints[i];
                 }
 
-                nSA_time = str_nelem(is->anneal_time, MAXPTR, ptr1);
-                if (nSA_time != k)
+                auto simulatedAnnealingTimes = gmx::splitString(is->anneal_time);
+                if (simulatedAnnealingTimes.size() != size_t(k))
                 {
-                    gmx_fatal(FARGS, "Found %d annealing-time values, wanted %d\n", nSA_time, k);
+                    gmx_fatal(FARGS, "Found %zu annealing-time values, wanted %d\n",
+                              simulatedAnnealingTimes.size(), k);
                 }
-                nSA_temp = str_nelem(is->anneal_temp, MAXPTR, ptr2);
-                if (nSA_temp != k)
+                auto simulatedAnnealingTemperatures = gmx::splitString(is->anneal_temp);
+                if (simulatedAnnealingTemperatures.size() != size_t(k))
                 {
-                    gmx_fatal(FARGS, "Found %d annealing-temp values, wanted %d\n", nSA_temp, k);
+                    gmx_fatal(FARGS, "Found %zu annealing-temp values, wanted %d\n",
+                              simulatedAnnealingTemperatures.size(), k);
                 }
 
+                convertReals(wi, simulatedAnnealingTimes, "anneal-time", ir->opts.anneal_time[i]);
+                convertReals(wi, simulatedAnnealingTemperatures, "anneal-temp", ir->opts.anneal_temp[i]);
                 for (i = 0, k = 0; i < nr; i++)
                 {
-
                     for (j = 0; j < ir->opts.anneal_npoints[i]; j++)
                     {
-                        ir->opts.anneal_time[i][j] = strtod(ptr1[k], &endptr);
-                        if (*endptr != 0)
-                        {
-                            warning_error(wi, "Invalid value for mdp option anneal-time. anneal-time should only consist of real numbers separated by spaces.");
-                        }
-                        ir->opts.anneal_temp[i][j] = strtod(ptr2[k], &endptr);
-                        if (*endptr != 0)
-                        {
-                            warning_error(wi, "Invalid value for anneal-temp. anneal-temp should only consist of real numbers separated by spaces.");
-                        }
                         if (j == 0)
                         {
                             if (ir->opts.anneal_time[i][0] > (ir->init_t+GMX_REAL_EPS))
@@ -3483,61 +3492,44 @@ void do_index(const char* mdparin, const char *ndx,
         make_IMD_group(ir->imd, is->imd_grp, grps, gnames);
     }
 
-    nacc = str_nelem(is->acc, MAXPTR, ptr1);
-    nacg = str_nelem(is->accgrps, MAXPTR, ptr2);
-    if (nacg*DIM != nacc)
+    auto accelerations          = gmx::splitString(is->acc);
+    auto accelerationGroupNames = gmx::splitString(is->accgrps);
+    if (accelerationGroupNames.size() * DIM != accelerations.size())
     {
         gmx_fatal(FARGS, "Invalid Acceleration input: %d groups and %d acc. values",
-                  nacg, nacc);
+                  accelerationGroupNames.size(), accelerations.size());
     }
-    do_numbering(natoms, groups, nacg, ptr2, grps, gnames, egcACC,
+    do_numbering(natoms, groups, accelerationGroupNames, grps, gnames, egcACC,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
     nr = groups->grps[egcACC].nr;
     snew(ir->opts.acc, nr);
     ir->opts.ngacc = nr;
 
-    for (i = k = 0; (i < nacg); i++)
-    {
-        for (j = 0; (j < DIM); j++, k++)
-        {
-            ir->opts.acc[i][j] = strtod(ptr1[k], &endptr);
-            if (*endptr != 0)
-            {
-                warning_error(wi, "Invalid value for mdp option accelerate. accelerate should only consist of real numbers separated by spaces.");
-            }
-        }
-    }
-    for (; (i < nr); i++)
-    {
-        for (j = 0; (j < DIM); j++)
-        {
-            ir->opts.acc[i][j] = 0;
-        }
-    }
+    convertRvecs(wi, accelerations, "anneal-time", ir->opts.acc);
 
-    nfrdim  = str_nelem(is->frdim, MAXPTR, ptr1);
-    nfreeze = str_nelem(is->freeze, MAXPTR, ptr2);
-    if (nfrdim != DIM*nfreeze)
+    auto freezeDims       = gmx::splitString(is->frdim);
+    auto freezeGroupNames = gmx::splitString(is->freeze);
+    if (freezeDims.size() != DIM * freezeGroupNames.size())
     {
         gmx_fatal(FARGS, "Invalid Freezing input: %d groups and %d freeze values",
-                  nfreeze, nfrdim);
+                  freezeGroupNames.size(), freezeDims.size());
     }
-    do_numbering(natoms, groups, nfreeze, ptr2, grps, gnames, egcFREEZE,
+    do_numbering(natoms, groups, freezeGroupNames, grps, gnames, egcFREEZE,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
     nr             = groups->grps[egcFREEZE].nr;
     ir->opts.ngfrz = nr;
     snew(ir->opts.nFreeze, nr);
-    for (i = k = 0; (i < nfreeze); i++)
+    for (i = k = 0; (size_t(i) < freezeGroupNames.size()); i++)
     {
         for (j = 0; (j < DIM); j++, k++)
         {
-            ir->opts.nFreeze[i][j] = static_cast<int>(gmx_strncasecmp(ptr1[k], "Y", 1) == 0);
+            ir->opts.nFreeze[i][j] = static_cast<int>(gmx_strncasecmp(freezeDims[k].c_str(), "Y", 1) == 0);
             if (!ir->opts.nFreeze[i][j])
             {
-                if (gmx_strncasecmp(ptr1[k], "N", 1) != 0)
+                if (gmx_strncasecmp(freezeDims[k].c_str(), "N", 1) != 0)
                 {
                     sprintf(warnbuf, "Please use Y(ES) or N(O) for freezedim only "
-                            "(not %s)", ptr1[k]);
+                            "(not %s)", freezeDims[k].c_str());
                     warning(wi, warn_buf);
                 }
             }
@@ -3551,15 +3543,15 @@ void do_index(const char* mdparin, const char *ndx,
         }
     }
 
-    nenergy = str_nelem(is->energy, MAXPTR, ptr1);
-    do_numbering(natoms, groups, nenergy, ptr1, grps, gnames, egcENER,
+    auto energyGroupNames = gmx::splitString(is->energy);
+    do_numbering(natoms, groups, energyGroupNames, grps, gnames, egcENER,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
     add_wall_energrps(groups, ir->nwall, symtab);
     ir->opts.ngener = groups->grps[egcENER].nr;
-    nvcm            = str_nelem(is->vcm, MAXPTR, ptr1);
+    auto vcmGroupNames = gmx::splitString(is->vcm);
     bRest           =
-        do_numbering(natoms, groups, nvcm, ptr1, grps, gnames, egcVCM,
-                     restnm, nvcm == 0 ? egrptpALL_GENREST : egrptpPART, bVerbose, wi);
+        do_numbering(natoms, groups, vcmGroupNames, grps, gnames, egcVCM,
+                     restnm, vcmGroupNames.empty() ? egrptpALL_GENREST : egrptpPART, bVerbose, wi);
     if (bRest)
     {
         warning(wi, "Some atoms are not part of any center of mass motion removal group.\n"
@@ -3570,33 +3562,35 @@ void do_index(const char* mdparin, const char *ndx,
     /* Now we have filled the freeze struct, so we can calculate NRDF */
     calc_nrdf(mtop, ir, gnames);
 
-    nuser = str_nelem(is->user1, MAXPTR, ptr1);
-    do_numbering(natoms, groups, nuser, ptr1, grps, gnames, egcUser1,
+    auto user1GroupNames = gmx::splitString(is->user1);
+    do_numbering(natoms, groups, user1GroupNames, grps, gnames, egcUser1,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
-    nuser = str_nelem(is->user2, MAXPTR, ptr1);
-    do_numbering(natoms, groups, nuser, ptr1, grps, gnames, egcUser2,
+    auto user2GroupNames = gmx::splitString(is->user2);
+    do_numbering(natoms, groups, user2GroupNames, grps, gnames, egcUser2,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
-    nuser = str_nelem(is->x_compressed_groups, MAXPTR, ptr1);
-    do_numbering(natoms, groups, nuser, ptr1, grps, gnames, egcCompressedX,
+    auto compressedXGroupNames = gmx::splitString(is->x_compressed_groups);
+    do_numbering(natoms, groups, compressedXGroupNames, grps, gnames, egcCompressedX,
                  restnm, egrptpONE, bVerbose, wi);
-    nofg = str_nelem(is->orirefitgrp, MAXPTR, ptr1);
-    do_numbering(natoms, groups, nofg, ptr1, grps, gnames, egcORFIT,
+    auto orirefFitGroupNames = gmx::splitString(is->orirefitgrp);
+    do_numbering(natoms, groups, orirefFitGroupNames, grps, gnames, egcORFIT,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
 
     /* QMMM input processing */
-    nQMg          = str_nelem(is->QMMM, MAXPTR, ptr1);
-    nQMmethod     = str_nelem(is->QMmethod, MAXPTR, ptr2);
-    nQMbasis      = str_nelem(is->QMbasis, MAXPTR, ptr3);
-    if ((nQMmethod != nQMg) || (nQMbasis != nQMg))
+    auto qmGroupNames = gmx::splitString(is->QMMM);
+    auto qmMethods    = gmx::splitString(is->QMmethod);
+    auto qmBasisSets  = gmx::splitString(is->QMbasis);
+    if (qmMethods.size() != qmGroupNames.size() ||
+        qmBasisSets.size() != qmGroupNames.size())
     {
-        gmx_fatal(FARGS, "Invalid QMMM input: %d groups %d basissets"
-                  " and %d methods\n", nQMg, nQMbasis, nQMmethod);
+        gmx_fatal(FARGS, "Invalid QMMM input: %zu groups %zu basissets"
+                  " and %zu methods\n", qmGroupNames.size(),
+                  qmBasisSets.size(), qmMethods.size());
     }
     /* group rest, if any, is always MM! */
-    do_numbering(natoms, groups, nQMg, ptr1, grps, gnames, egcQMMM,
+    do_numbering(natoms, groups, qmGroupNames, grps, gnames, egcQMMM,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
-    nr            = nQMg; /*atoms->grps[egcQMMM].nr;*/
-    ir->opts.ngQM = nQMg;
+    nr            = qmGroupNames.size(); /*atoms->grps[egcQMMM].nr;*/
+    ir->opts.ngQM = qmGroupNames.size();
     snew(ir->opts.QMmethod, nr);
     snew(ir->opts.QMbasis, nr);
     for (i = 0; i < nr; i++)
@@ -3604,77 +3598,39 @@ void do_index(const char* mdparin, const char *ndx,
         /* input consists of strings: RHF CASSCF PM3 .. These need to be
          * converted to the corresponding enum in names.c
          */
-        ir->opts.QMmethod[i] = search_QMstring(ptr2[i], eQMmethodNR,
+        ir->opts.QMmethod[i] = search_QMstring(qmMethods[i].c_str(), eQMmethodNR,
                                                eQMmethod_names);
-        ir->opts.QMbasis[i]  = search_QMstring(ptr3[i], eQMbasisNR,
+        ir->opts.QMbasis[i]  = search_QMstring(qmBasisSets[i].c_str(), eQMbasisNR,
                                                eQMbasis_names);
 
     }
-    str_nelem(is->QMmult, MAXPTR, ptr1);
-    str_nelem(is->QMcharge, MAXPTR, ptr2);
-    str_nelem(is->bSH, MAXPTR, ptr3);
+    auto qmMultiplicities = gmx::splitString(is->QMmult);
+    auto qmCharges        = gmx::splitString(is->QMcharge);
+    auto qmbSH            = gmx::splitString(is->bSH);
     snew(ir->opts.QMmult, nr);
     snew(ir->opts.QMcharge, nr);
     snew(ir->opts.bSH, nr);
+    convertInts(wi, qmMultiplicities, "QMmult", ir->opts.QMmult);
+    convertInts(wi, qmCharges, "QMcharge", ir->opts.QMcharge);
+    convertYesNos(wi, qmbSH, "bSH", ir->opts.bSH);
 
-    for (i = 0; i < nr; i++)
-    {
-        ir->opts.QMmult[i]   = strtol(ptr1[i], &endptr, 10);
-        if (*endptr != 0)
-        {
-            warning_error(wi, "Invalid value for mdp option QMmult. QMmult should only consist of integers separated by spaces.");
-        }
-        ir->opts.QMcharge[i] = strtol(ptr2[i], &endptr, 10);
-        if (*endptr != 0)
-        {
-            warning_error(wi, "Invalid value for mdp option QMcharge. QMcharge should only consist of integers separated by spaces.");
-        }
-        ir->opts.bSH[i]      = (gmx_strncasecmp(ptr3[i], "Y", 1) == 0);
-    }
-
-    str_nelem(is->CASelectrons, MAXPTR, ptr1);
-    str_nelem(is->CASorbitals, MAXPTR, ptr2);
+    auto CASelectrons = gmx::splitString(is->CASelectrons);
+    auto CASorbitals  = gmx::splitString(is->CASorbitals);
     snew(ir->opts.CASelectrons, nr);
     snew(ir->opts.CASorbitals, nr);
-    for (i = 0; i < nr; i++)
-    {
-        ir->opts.CASelectrons[i] = strtol(ptr1[i], &endptr, 10);
-        if (*endptr != 0)
-        {
-            warning_error(wi, "Invalid value for mdp option CASelectrons. CASelectrons should only consist of integers separated by spaces.");
-        }
-        ir->opts.CASorbitals[i]  = strtol(ptr2[i], &endptr, 10);
-        if (*endptr != 0)
-        {
-            warning_error(wi, "Invalid value for mdp option CASorbitals. CASorbitals should only consist of integers separated by spaces.");
-        }
-    }
+    convertInts(wi, CASelectrons, "CASelectrons", ir->opts.CASelectrons);
+    convertInts(wi, CASorbitals, "CASOrbitals", ir->opts.CASorbitals);
 
-    str_nelem(is->SAon, MAXPTR, ptr1);
-    str_nelem(is->SAoff, MAXPTR, ptr2);
-    str_nelem(is->SAsteps, MAXPTR, ptr3);
+    auto SAon    = gmx::splitString(is->SAon);
+    auto SAoff   = gmx::splitString(is->SAoff);
+    auto SAsteps = gmx::splitString(is->SAsteps);
     snew(ir->opts.SAon, nr);
     snew(ir->opts.SAoff, nr);
     snew(ir->opts.SAsteps, nr);
+    convertInts(wi, SAon, "SAon", ir->opts.SAon);
+    convertInts(wi, SAoff, "SAoff", ir->opts.SAoff);
+    convertInts(wi, SAsteps, "SAsteps", ir->opts.SAsteps);
 
-    for (i = 0; i < nr; i++)
-    {
-        ir->opts.SAon[i]    = strtod(ptr1[i], &endptr);
-        if (*endptr != 0)
-        {
-            warning_error(wi, "Invalid value for mdp option SAon. SAon should only consist of real numbers separated by spaces.");
-        }
-        ir->opts.SAoff[i]   = strtod(ptr2[i], &endptr);
-        if (*endptr != 0)
-        {
-            warning_error(wi, "Invalid value for mdp option SAoff. SAoff should only consist of real numbers separated by spaces.");
-        }
-        ir->opts.SAsteps[i] = strtol(ptr3[i], &endptr, 10);
-        if (*endptr != 0)
-        {
-            warning_error(wi, "Invalid value for mdp option SAsteps. SAsteps should only consist of integers separated by spaces.");
-        }
-    }
     /* end of QMMM input */
 
     if (bVerbose)

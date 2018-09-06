@@ -611,6 +611,7 @@ int cpp_read_line(gmx_cpp_t *handlep, int n, char buf[])
         cpp_close_file(handlep);
         *handlep      = handle->parent;
         handle->child = nullptr;
+        sfree(handle);
         return cpp_read_line(handlep, n, buf);
     }
     else
@@ -740,10 +741,17 @@ int cpp_close_file(gmx_cpp_t *handlep)
     return eCPP_OK;
 }
 
-void cpp_done()
+void cpp_done(gmx_cpp_t handle)
 {
     done_includes();
     done_defines();
+
+    int status = cpp_close_file(&handle);
+    if (status != eCPP_OK)
+    {
+        gmx_fatal(FARGS, "%s", cpp_error(&handle, status));
+    }
+    sfree(handle);
 }
 
 /* Return a string containing the error message coresponding to status
