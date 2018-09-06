@@ -102,8 +102,8 @@ static void calc_x_times_f(int nxf, const rvec x[], const rvec f[],
     }
 }
 
-void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
-              bool bScrewPBC, matrix box)
+void calc_vir(int nxf, const rvec x[], const rvec f[], tensor vir,
+              bool bScrewPBC, const matrix box)
 {
     matrix x_times_f;
 
@@ -210,8 +210,8 @@ static void lo_fcv(int i0, int i1,
     upd_vir(vir[ZZ], dvzx, dvzy, dvzz);
 }
 
-void f_calc_vir(int i0, int i1, rvec x[], rvec f[], tensor vir,
-                t_graph *g, matrix box)
+void f_calc_vir(int i0, int i1, const rvec x[], const rvec f[], tensor vir,
+                const t_graph *g, const matrix box)
 {
     int start, end;
 

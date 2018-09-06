@@ -99,6 +99,6 @@ void print_orires_log(FILE *log, t_oriresdata *od);
 t_ifunc orires;
 
 //! Copies the new time averages that have been calculated in calc_orires_dev.
-void update_orires_history(t_fcdata *fcd, history_t *hist);
+void update_orires_history(const t_fcdata *fcd, history_t *hist);
 
 #endif

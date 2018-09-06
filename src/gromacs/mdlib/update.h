@@ -86,11 +86,11 @@ void set_deform_reference_box(gmx_update_t *upd,
                               int64_t step, matrix box);
 
 void update_tcouple(int64_t           step,
-                    t_inputrec       *inputrec,
+                    const t_inputrec *inputrec,
                     t_state          *state,
                     gmx_ekindata_t   *ekind,
-                    t_extmass        *MassQ,
-                    t_mdatoms        *md
+                    const t_extmass  *MassQ,
+                    const t_mdatoms  *md
                     );
 
 /* Update Parrinello-Rahman, to be called before the coordinate update */
@@ -119,22 +119,24 @@ void update_pcouple_after_coordinates(FILE             *fplog,
                                       t_nrnb           *nrnb,
                                       gmx_update_t     *upd);
 
-void update_coords(int64_t                        step,
-                   t_inputrec                    *inputrec, /* input record and box stuff	*/
-                   t_mdatoms                     *md,
-                   t_state                       *state,
-                   gmx::PaddedArrayRef<gmx::RVec> f, /* forces on home particles */
-                   t_fcdata                      *fcd,
-                   gmx_ekindata_t                *ekind,
-                   matrix                         M,
-                   gmx_update_t                  *upd,
-                   int                            bUpdatePart,
-                   const t_commrec               *cr, /* these shouldn't be here -- need to think about it */
-                   gmx::Constraints              *constr);
+void update_coords(int64_t                              step,
+                   const t_inputrec                    *inputrec, /* input record and box stuff	*/
+                   const t_mdatoms                     *md,
+                   t_state                             *state,
+                   gmx::PaddedArrayRef<gmx::RVec>       f, /* forces on home particles */
+                   const t_fcdata                      *fcd,
+                   const gmx_ekindata_t                *ekind,
+                   const matrix                         M,
+                   gmx_update_t                        *upd,
+                   int                                  bUpdatePart,
+                   const t_commrec                     *cr, /* these shouldn't be here -- need to think about it */
+                   const gmx::Constraints              *constr);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-extern gmx_bool update_randomize_velocities(t_inputrec *ir, int64_t step, const t_commrec *cr, t_mdatoms *md, t_state *state, gmx_update_t *upd, gmx::Constraints *constr);
+extern gmx_bool update_randomize_velocities(const t_inputrec *ir, int64_t step, const t_commrec *cr,
+                                            const t_mdatoms *md, t_state *state, const gmx_update_t *upd,
+                                            const gmx::Constraints *constr);
 
 void constrain_velocities(int64_t                        step,
                           real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
@@ -160,7 +162,7 @@ void constrain_coordinates(int64_t                        step,
 void update_sd_second_half(int64_t                        step,
                            real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
                            const t_inputrec              *inputrec,  /* input record and box stuff */
-                           t_mdatoms                     *md,
+                           const t_mdatoms               *md,
                            t_state                       *state,
                            const t_commrec               *cr,
                            t_nrnb                        *nrnb,
@@ -171,17 +173,17 @@ void update_sd_second_half(int64_t                        step,
                            bool                           do_ene);
 
 void finish_update(const t_inputrec              *inputrec,
-                   t_mdatoms                     *md,
+                   const t_mdatoms               *md,
                    t_state                       *state,
-                   t_graph                       *graph,
+                   const t_graph                 *graph,
                    t_nrnb                        *nrnb,
                    gmx_wallcycle_t                wcycle,
                    gmx_update_t                  *upd,
-                   gmx::Constraints              *constr);
+                   const gmx::Constraints        *constr);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-void calc_ke_part(t_state *state, t_grpopts *opts, t_mdatoms *md,
+void calc_ke_part(const t_state *state, const t_grpopts *opts, const t_mdatoms *md,
                   gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel);
 /*
  * Compute the partial kinetic energy for home particles;
@@ -204,7 +206,7 @@ void
 init_ekinstate(ekinstate_t *ekinstate, const t_inputrec *ir);
 
 void
-update_ekinstate(ekinstate_t *ekinstate, gmx_ekindata_t *ekind);
+update_ekinstate(ekinstate_t *ekinstate, const gmx_ekindata_t *ekind);
 
 /*! \brief Restores data from \p ekinstate to \p ekind, then broadcasts it
    to the rest of the simulation */
@@ -215,40 +217,42 @@ restore_ekinstate_from_state(const t_commrec *cr,
 void berendsen_tcoupl(const t_inputrec *ir, const gmx_ekindata_t *ekind, real dt,
                       std::vector<double> &therm_integral); //NOLINT(google-runtime-references)
 
-void andersen_tcoupl(t_inputrec *ir, int64_t step,
+void andersen_tcoupl(const t_inputrec *ir, int64_t step,
                      const t_commrec *cr, const t_mdatoms *md, t_state *state, real rate, const gmx_bool *randomize, const real *boltzfac);
 
-void nosehoover_tcoupl(t_grpopts *opts, gmx_ekindata_t *ekind, real dt,
-                       double xi[], double vxi[], t_extmass *MassQ);
+void nosehoover_tcoupl(const t_grpopts *opts, const gmx_ekindata_t *ekind, real dt,
+                       double xi[], double vxi[], const t_extmass *MassQ);
 
-void trotter_update(t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
-                    gmx_enerdata_t *enerd, t_state *state, tensor vir, t_mdatoms *md,
-                    t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno);
+void trotter_update(const t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
+                    const gmx_enerdata_t *enerd, t_state *state, const tensor vir, const t_mdatoms *md,
+                    const t_extmass *MassQ, const int * const *trotter_seqlist, int trotter_seqno);
 
-int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *Mass, gmx_bool bTrotter);
+int **init_npt_vars(const t_inputrec *ir, t_state *state, t_extmass *Mass, gmx_bool bTrotter);
 
 real NPT_energy(const t_inputrec *ir, const t_state *state, const t_extmass *MassQ);
 /* computes all the pressure/tempertature control energy terms to get a conserved energy */
 
+// TODO: This doesn't seem to be used or implemented anywhere
 void NBaroT_trotter(t_grpopts *opts, real dt,
                     double xi[], double vxi[], real *veta, t_extmass *MassQ);
 
-void vrescale_tcoupl(t_inputrec *ir, int64_t step,
+void vrescale_tcoupl(const t_inputrec *ir, int64_t step,
                      gmx_ekindata_t *ekind, real dt,
                      double therm_integral[]);
 /* Compute temperature scaling. For V-rescale it is done in update. */
 
-void rescale_velocities(gmx_ekindata_t *ekind, t_mdatoms *mdatoms,
+void rescale_velocities(const gmx_ekindata_t *ekind, const t_mdatoms *mdatoms,
                         int start, int end, rvec v[]);
 /* Rescale the velocities with the scaling factor in ekind */
 
+// TODO: This is the only function in update.h altering the inputrec
 void update_annealing_target_temp(t_inputrec *ir, real t, gmx_update_t *upd);
 /* Set reference temp for simulated annealing at time t*/
 
 real calc_temp(real ekin, real nrdf);
 /* Calculate the temperature */
 
-real calc_pres(int ePBC, int nwall, matrix box, tensor ekin, tensor vir,
+real calc_pres(int ePBC, int nwall, const matrix box, const tensor ekin, const tensor vir,
                tensor pres);
 /* Calculate the pressure tensor, returns the scalar pressure.
  * The unit of pressure is bar.
@@ -256,7 +260,7 @@ real calc_pres(int ePBC, int nwall, matrix box, tensor ekin, tensor vir,
 
 void parrinellorahman_pcoupl(FILE *fplog, int64_t step,
                              const t_inputrec *ir, real dt, const tensor pres,
-                             tensor box, tensor box_rel, tensor boxv,
+                             const tensor box, tensor box_rel, tensor boxv,
                              tensor M, matrix mu,
                              gmx_bool bFirstStep);
 
@@ -272,6 +276,7 @@ void berendsen_pscale(const t_inputrec *ir, const matrix mu,
                       rvec x[], const unsigned short cFREEZE[],
                       t_nrnb *nrnb);
 
+// TODO: This doesn't seem to be used or implemented anywhere
 void correct_ekin(FILE *log, int start, int end, rvec v[],
                   rvec vcm, real mass[], real tmass, tensor ekin);
 /* Correct ekin for vcm */

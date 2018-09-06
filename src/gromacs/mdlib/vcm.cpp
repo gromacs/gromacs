@@ -54,7 +54,7 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
-t_vcm *init_vcm(FILE *fp, gmx_groups_t *groups, const t_inputrec *ir)
+t_vcm *init_vcm(FILE *fp, const gmx_groups_t *groups, const t_inputrec *ir)
 {
     t_vcm *vcm;
     int    g;

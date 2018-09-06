@@ -84,16 +84,16 @@ void put_atoms_in_box_omp(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x
 
 
 /* ROUTINES from stat.c */
-gmx_global_stat_t global_stat_init(t_inputrec *ir);
+gmx_global_stat_t global_stat_init(const t_inputrec *ir);
 
 void global_stat_destroy(gmx_global_stat_t gs);
 
-void global_stat(gmx_global_stat_t gs,
+void global_stat(const gmx_global_stat *gs,
                  const t_commrec *cr, gmx_enerdata_t *enerd,
                  tensor fvir, tensor svir, rvec mu_tot,
-                 t_inputrec *inputrec,
+                 const t_inputrec *inputrec,
                  gmx_ekindata_t *ekind,
-                 gmx::Constraints *constr, t_vcm *vcm,
+                 const gmx::Constraints *constr, t_vcm *vcm,
                  int nsig, real *sig,
                  int *totalNumberOfBondedInteractions,
                  gmx_bool bSumEkinhOld, int flags);
@@ -105,7 +105,7 @@ bool do_per_step(int64_t step, int64_t nstep);
 /* ROUTINES from sim_util.c */
 
 void print_time(FILE *out, gmx_walltime_accounting_t walltime_accounting,
-                int64_t step, t_inputrec *ir, const t_commrec *cr);
+                int64_t step, const t_inputrec *ir, const t_commrec *cr);
 
 /*! \brief Print date, time, MPI rank and a description of this point
  * in time.
@@ -127,19 +127,19 @@ void finish_run(FILE *log, const gmx::MDLogger &mdlog, const t_commrec *cr,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
                 nonbonded_verlet_t *nbv,
-                gmx_pme_t *pme,
+                const gmx_pme_t *pme,
                 gmx_bool bWriteStat);
 
 void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr);
 
-void calc_dispcorr(t_inputrec *ir, t_forcerec *fr,
-                   matrix box, real lambda, tensor pres, tensor virial,
+void calc_dispcorr(const t_inputrec *ir, const t_forcerec *fr,
+                   const matrix box, real lambda, tensor pres, tensor virial,
                    real *prescorr, real *enercorr, real *dvdlcorr);
 
 void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, gmx::ArrayRef<real> lambda, double *lam0);
 
 void do_constrain_first(FILE *log, gmx::Constraints *constr,
-                        t_inputrec *inputrec, t_mdatoms *md,
+                        const t_inputrec *inputrec, const t_mdatoms *md,
                         t_state *state);
 
 void init_md(FILE *fplog,
