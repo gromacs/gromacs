@@ -86,6 +86,6 @@ void calc_disres_R_6(const t_commrec *cr,
 t_ifunc ta_disres;
 
 //! Copies the new time averages that have been calculated in calc_disres_R_6.
-void update_disres_history(t_fcdata *fcd, history_t *hist);
+void update_disres_history(const t_fcdata *fcd, history_t *hist);
 
 #endif

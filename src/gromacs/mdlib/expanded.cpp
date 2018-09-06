@@ -70,7 +70,7 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 
-static void init_df_history_weights(df_history_t *dfhist, t_expanded *expand, int nlim)
+static void init_df_history_weights(df_history_t *dfhist, const t_expanded *expand, int nlim)
 {
     int i;
     dfhist->wl_delta = expand->init_wl_delta;
@@ -83,7 +83,7 @@ static void init_df_history_weights(df_history_t *dfhist, t_expanded *expand, in
 
 /* Eventually should contain all the functions needed to initialize expanded ensemble
    before the md loop starts */
-void init_expanded_ensemble(gmx_bool bStateFromCP, t_inputrec *ir, df_history_t *dfhist)
+void init_expanded_ensemble(gmx_bool bStateFromCP, const t_inputrec *ir, df_history_t *dfhist)
 {
     if (!bStateFromCP)
     {
@@ -91,7 +91,7 @@ void init_expanded_ensemble(gmx_bool bStateFromCP, t_inputrec *ir, df_history_t 
     }
 }
 
-static void GenerateGibbsProbabilities(real *ene, double *p_k, double *pks, int minfep, int maxfep)
+static void GenerateGibbsProbabilities(const real *ene, double *p_k, double *pks, int minfep, int maxfep)
 {
 
     int  i;
@@ -226,7 +226,7 @@ static gmx_bool CheckHistogramRatios(int nhisto, const real *histo, real ratio)
     return bIfFlat;
 }
 
-static gmx_bool CheckIfDoneEquilibrating(int nlim, t_expanded *expand, df_history_t *dfhist, int64_t step)
+static gmx_bool CheckIfDoneEquilibrating(int nlim, const t_expanded *expand, const df_history_t *dfhist, int64_t step)
 {
 
     int      i, totalsamples;
@@ -335,7 +335,7 @@ static gmx_bool CheckIfDoneEquilibrating(int nlim, t_expanded *expand, df_histor
 }
 
 static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist,
-                              int fep_state, real *scaled_lamee, real *weighted_lamee, int64_t step)
+                              int fep_state, const real *scaled_lamee, const real *weighted_lamee, int64_t step)
 {
     gmx_bool  bSufficientSamples;
     int       i;
@@ -700,7 +700,8 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
     return FALSE;
 }
 
-static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, int fep_state, real *weighted_lamee, double *p_k,
+static int ChooseNewLambda(int nlim, const t_expanded *expand, df_history_t *dfhist, int fep_state,
+                           const real *weighted_lamee, double *p_k,
                            int64_t seed, int64_t step)
 {
     /* Choose new lambda value, and update transition matrix */
@@ -990,7 +991,8 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
 }
 
 /* print out the weights to the log, along with current state */
-void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, t_simtemp *simtemp, df_history_t *dfhist,
+void PrintFreeEnergyInfoToFile(FILE *outfile, const t_lambda *fep, const t_expanded *expand,
+                               const t_simtemp *simtemp, const df_history_t *dfhist,
                                int fep_state, int frequency, int64_t step)
 {
     int         nlim, i, ifep, jfep;
@@ -1157,10 +1159,10 @@ void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand,
     }
 }
 
-int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
+int ExpandedEnsembleDynamics(FILE *log, const t_inputrec *ir, const gmx_enerdata_t *enerd,
                              t_state *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
                              int64_t step,
-                             rvec *v, t_mdatoms *mdatoms)
+                             rvec *v, const t_mdatoms *mdatoms)
 /* Note that the state variable is only needed for simulated tempering, not
    Hamiltonian expanded ensemble.  May be able to remove it after integrator refactoring. */
 {

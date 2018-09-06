@@ -126,7 +126,7 @@ static const bool c_disableAlternatingWait = (getenv("GMX_DISABLE_ALTERNATING_GP
 void print_time(FILE                     *out,
                 gmx_walltime_accounting_t walltime_accounting,
                 int64_t                   step,
-                t_inputrec               *ir,
+                const t_inputrec         *ir,
                 const t_commrec          *cr)
 {
     time_t finish;
@@ -247,8 +247,8 @@ static void pme_gpu_reduce_outputs(gmx_wallcycle_t                 wcycle,
     wallcycle_stop(wcycle, ewcPME_GPU_F_REDUCTION);
 }
 
-static void calc_virial(int start, int homenr, rvec x[], rvec f[],
-                        tensor vir_part, t_graph *graph, matrix box,
+static void calc_virial(int start, int homenr, const rvec x[], const rvec f[],
+                        tensor vir_part, const t_graph *graph, const matrix box,
                         t_nrnb *nrnb, const t_forcerec *fr, int ePBC)
 {
     /* The short-range virial from surrounding boxes */
@@ -269,11 +269,11 @@ static void calc_virial(int start, int homenr, rvec x[], rvec f[],
 
 static void pull_potential_wrapper(const t_commrec *cr,
                                    const t_inputrec *ir,
-                                   matrix box, gmx::ArrayRef<const gmx::RVec> x,
+                                   const matrix box, gmx::ArrayRef<const gmx::RVec> x,
                                    gmx::ForceWithVirial *force,
                                    const t_mdatoms *mdatoms,
                                    gmx_enerdata_t *enerd,
-                                   real *lambda,
+                                   const real *lambda,
                                    double t,
                                    gmx_wallcycle_t wcycle)
 {
@@ -364,14 +364,14 @@ static void post_process_forces(const t_commrec           *cr,
                                 t_nrnb                    *nrnb,
                                 gmx_wallcycle_t            wcycle,
                                 const gmx_localtop_t      *top,
-                                matrix                     box,
-                                rvec                       x[],
+                                const matrix               box,
+                                const rvec                 x[],
                                 rvec                       f[],
                                 gmx::ForceWithVirial      *forceWithVirial,
                                 tensor                     vir_force,
                                 const t_mdatoms           *mdatoms,
-                                t_graph                   *graph,
-                                t_forcerec                *fr,
+                                const t_graph             *graph,
+                                const t_forcerec          *fr,
                                 const gmx_vsite_t         *vsite,
                                 int                        flags)
 {
@@ -415,8 +415,8 @@ static void post_process_forces(const t_commrec           *cr,
     }
 }
 
-static void do_nb_verlet(t_forcerec *fr,
-                         interaction_const_t *ic,
+static void do_nb_verlet(const t_forcerec *fr,
+                         const interaction_const_t *ic,
                          gmx_enerdata_t *enerd,
                          int flags, int ilocality,
                          int clearF,
@@ -2165,7 +2165,7 @@ void do_force(FILE                                     *fplog,
 
 
 void do_constrain_first(FILE *fplog, gmx::Constraints *constr,
-                        t_inputrec *ir, t_mdatoms *md,
+                        const t_inputrec *ir, const t_mdatoms *md,
                         t_state *state)
 {
     int             i, m, start, end;
@@ -2508,8 +2508,8 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
     }
 }
 
-void calc_dispcorr(t_inputrec *ir, t_forcerec *fr,
-                   matrix box, real lambda, tensor pres, tensor virial,
+void calc_dispcorr(const t_inputrec *ir, const t_forcerec *fr,
+                   const matrix box, real lambda, tensor pres, tensor virial,
                    real *prescorr, real *enercorr, real *dvdlcorr)
 {
     gmx_bool bCorrAll, bCorrPres;
@@ -2700,7 +2700,7 @@ void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, const t_commrec *cr,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
                 nonbonded_verlet_t *nbv,
-                gmx_pme_t *pme,
+                const gmx_pme_t *pme,
                 gmx_bool bWriteStat)
 {
     t_nrnb *nrnb_tot = nullptr;

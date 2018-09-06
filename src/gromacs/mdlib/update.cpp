@@ -672,7 +672,7 @@ static void do_update_md(int                         start,
 }
 
 static void do_update_vv_vel(int start, int nrend, real dt,
-                             rvec accel[], ivec nFreeze[], const real invmass[],
+                             const rvec accel[], const ivec nFreeze[], const real invmass[],
                              const unsigned short ptype[], const unsigned short cFREEZE[],
                              const unsigned short cACC[], rvec v[], const rvec f[],
                              gmx_bool bExtended, real veta, real alpha)
@@ -719,9 +719,9 @@ static void do_update_vv_vel(int start, int nrend, real dt,
 } /* do_update_vv_vel */
 
 static void do_update_vv_pos(int start, int nrend, real dt,
-                             ivec nFreeze[],
+                             const ivec nFreeze[],
                              const unsigned short ptype[], const unsigned short cFREEZE[],
-                             const rvec x[], rvec xprime[], rvec v[],
+                             const rvec x[], rvec xprime[], const rvec v[],
                              gmx_bool bExtended, real veta)
 {
     int    gf = 0;
@@ -901,7 +901,7 @@ template <SDUpdate updateType>
 static void
 doSDUpdateGeneral(gmx_stochd_t *sd,
                   int start, int nrend, real dt,
-                  rvec accel[], ivec nFreeze[],
+                  const rvec accel[], const ivec nFreeze[],
                   const real invmass[], const unsigned short ptype[],
                   const unsigned short cFREEZE[], const unsigned short cACC[],
                   const unsigned short cTC[],
@@ -994,7 +994,7 @@ doSDUpdateGeneral(gmx_stochd_t *sd,
 }
 
 static void do_update_bd(int start, int nrend, real dt,
-                         ivec nFreeze[],
+                         const ivec nFreeze[],
                          const real invmass[], const unsigned short ptype[],
                          const unsigned short cFREEZE[], const unsigned short cTC[],
                          const rvec x[], rvec xprime[], rvec v[],
@@ -1059,7 +1059,7 @@ static void do_update_bd(int start, int nrend, real dt,
     }
 }
 
-static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
+static void calc_ke_part_normal(const rvec v[], const t_grpopts *opts, const t_mdatoms *md,
                                 gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel)
 {
     int           g;
@@ -1175,8 +1175,8 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
     inc_nrnb(nrnb, eNR_EKIN, md->homenr);
 }
 
-static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
-                              t_grpopts *opts, t_mdatoms *md,
+static void calc_ke_part_visc(const matrix box, const rvec x[], const rvec v[],
+                              const t_grpopts *opts, const t_mdatoms *md,
                               gmx_ekindata_t *ekind,
                               t_nrnb *nrnb, gmx_bool bEkinAveVel)
 {
@@ -1248,7 +1248,7 @@ static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
     inc_nrnb(nrnb, eNR_EKIN, homenr);
 }
 
-void calc_ke_part(t_state *state, t_grpopts *opts, t_mdatoms *md,
+void calc_ke_part(const t_state *state, const t_grpopts *opts, const t_mdatoms *md,
                   gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel)
 {
     if (ekind->cosacc.cos_accel == 0)
@@ -1274,7 +1274,7 @@ extern void init_ekinstate(ekinstate_t *ekinstate, const t_inputrec *ir)
     ekinstate->mvcos   = 0;
 }
 
-void update_ekinstate(ekinstate_t *ekinstate, gmx_ekindata_t *ekind)
+void update_ekinstate(ekinstate_t *ekinstate, const gmx_ekindata_t *ekind)
 {
     int i;
 
@@ -1346,11 +1346,11 @@ void restore_ekinstate_from_state(const t_commrec *cr,
 }
 
 void update_tcouple(int64_t           step,
-                    t_inputrec       *inputrec,
+                    const t_inputrec *inputrec,
                     t_state          *state,
                     gmx_ekindata_t   *ekind,
-                    t_extmass        *MassQ,
-                    t_mdatoms        *md)
+                    const t_extmass  *MassQ,
+                    const t_mdatoms  *md)
 
 {
     bool doTemperatureCoupling = false;
@@ -1537,7 +1537,7 @@ void
 update_sd_second_half(int64_t                        step,
                       real                          *dvdlambda,   /* the contribution to be added to the bonded interactions */
                       const t_inputrec              *inputrec,    /* input record and box stuff	*/
-                      t_mdatoms                     *md,
+                      const t_mdatoms               *md,
                       t_state                       *state,
                       const t_commrec               *cr,
                       t_nrnb                        *nrnb,
@@ -1608,13 +1608,13 @@ update_sd_second_half(int64_t                        step,
 }
 
 void finish_update(const t_inputrec              *inputrec,  /* input record and box stuff	*/
-                   t_mdatoms                     *md,
+                   const t_mdatoms               *md,
                    t_state                       *state,
-                   t_graph                       *graph,
+                   const t_graph                 *graph,
                    t_nrnb                        *nrnb,
                    gmx_wallcycle_t                wcycle,
                    gmx_update_t                  *upd,
-                   gmx::Constraints              *constr)
+                   const gmx::Constraints        *constr)
 {
     int homenr = md->homenr;
 
@@ -1792,17 +1792,17 @@ void update_pcouple_after_coordinates(FILE             *fplog,
 }
 
 void update_coords(int64_t                        step,
-                   t_inputrec                    *inputrec, /* input record and box stuff	*/
-                   t_mdatoms                     *md,
+                   const t_inputrec              *inputrec, /* input record and box stuff	*/
+                   const t_mdatoms               *md,
                    t_state                       *state,
                    gmx::PaddedArrayRef<gmx::RVec> f,        /* forces on home particles */
-                   t_fcdata                      *fcd,
-                   gmx_ekindata_t                *ekind,
-                   matrix                         M,
+                   const t_fcdata                *fcd,
+                   const gmx_ekindata_t          *ekind,
+                   const matrix                   M,
                    gmx_update_t                  *upd,
                    int                            UpdatePart,
                    const t_commrec               *cr, /* these shouldn't be here -- need to think about it */
-                   gmx::Constraints              *constr)
+                   const gmx::Constraints        *constr)
 {
     gmx_bool bDoConstr = (nullptr != constr);
 
@@ -1937,8 +1937,9 @@ void update_coords(int64_t                        step,
 
 }
 
-extern gmx_bool update_randomize_velocities(t_inputrec *ir, int64_t step, const t_commrec *cr,
-                                            t_mdatoms *md, t_state *state, gmx_update_t *upd, gmx::Constraints *constr)
+extern gmx_bool update_randomize_velocities(const t_inputrec *ir, int64_t step, const t_commrec *cr,
+                                            const t_mdatoms *md, t_state *state, const gmx_update_t *upd,
+                                            const gmx::Constraints *constr)
 {
 
     real rate = (ir->delta_t)/ir->opts.tau_t[0];
