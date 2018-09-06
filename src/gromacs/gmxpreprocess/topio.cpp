@@ -471,7 +471,8 @@ static char **read_topol(const char *infile, const char *outfile,
     }
 
     /* open input file */
-    status = cpp_open_file(infile, &handle, cpp_opts(define, include, wi));
+    auto cpp_opts_return = cpp_opts(define, include, wi);
+    status = cpp_open_file(infile, &handle, cpp_opts_return);
     if (status != 0)
     {
         gmx_fatal(FARGS, "%s", cpp_error(&handle, status));
@@ -901,12 +902,8 @@ static char **read_topol(const char *infile, const char *outfile,
         }
     }
     while (!done);
-    status = cpp_close_file(&handle);
-    if (status != eCPP_OK)
-    {
-        gmx_fatal(FARGS, "%s", cpp_error(&handle, status));
-    }
-    cpp_done();
+    sfree(cpp_opts_return);
+    cpp_done(handle);
     if (out)
     {
         gmx_fio_fclose(out);

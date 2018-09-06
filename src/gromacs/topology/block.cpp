@@ -118,7 +118,7 @@ void stupid_fill_block(t_block *grp, int natom, gmx_bool bOneIndexGroup)
     if (bOneIndexGroup)
     {
         grp->nalloc_index = 2;
-        snew(grp->index, grp->nalloc_index);
+        srenew(grp->index, grp->nalloc_index);
         grp->index[0] = 0;
         grp->index[1] = natom;
         grp->nr       = 1;
@@ -126,8 +126,7 @@ void stupid_fill_block(t_block *grp, int natom, gmx_bool bOneIndexGroup)
     else
     {
         grp->nalloc_index = natom+1;
-        snew(grp->index, grp->nalloc_index);
-        snew(grp->index, natom+1);
+        srenew(grp->index, grp->nalloc_index);
         for (int i = 0; i <= natom; ++i)
         {
             grp->index[i] = i;
