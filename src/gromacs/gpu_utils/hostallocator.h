@@ -186,7 +186,6 @@ class HostAllocationPolicy
         //! Propagate for move
         using propagate_on_container_swap = std::true_type;
         //! Use default allocator for copy (same as construct+copy)
-        template<typename U = void>
         HostAllocationPolicy select_on_container_copy_construction() const
         {
             return {};
