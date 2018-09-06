@@ -2307,9 +2307,17 @@ int gmx_grompp(int argc, char *argv[])
     sfree(opts);
     done_plist(plist);
     sfree(plist);
+    for (int i = 0; i < nmi; i++)
+    {
+        // Some of the contents of molinfo have been stolen, so
+        // done_mi can't be called.
+        done_block(&mi[i].mols);
+        done_plist(mi[i].plist);
+    }
     sfree(mi);
     done_atomtype(atype);
     done_inputrec_strings();
+    output_env_done(oenv);
 
     return 0;
 }
