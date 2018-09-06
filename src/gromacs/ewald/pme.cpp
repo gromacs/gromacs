@@ -232,16 +232,7 @@ PmeRunMode pme_run_mode(const gmx_pme_t *pme)
 
 gmx::PinningPolicy pme_get_pinning_policy()
 {
-    // When the OpenCL implementation of HostAllocationPolicy
-    // implements an form of host-side pinning, amend this logic.
-    if (GMX_GPU == GMX_GPU_CUDA)
-    {
-        return gmx::PinningPolicy::CanBePinned;
-    }
-    else
-    {
-        return gmx::PinningPolicy::CannotBePinned;
-    }
+    return gmx::PinningPolicy::PinnedIfSupported;
 }
 
 /*! \brief Number of bytes in a cache line.
@@ -918,7 +909,7 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
                           pme->overlap[0].s2g1[pme->nodeid_major]-pme->overlap[0].s2g0[pme->nodeid_major+1],
                           pme->overlap[1].s2g1[pme->nodeid_minor]-pme->overlap[1].s2g0[pme->nodeid_minor+1]);
             /* This routine will allocate the grid data to fit the FFTs */
-            const auto allocateRealGridForGpu = (pme->runMode == PmeRunMode::Mixed) ? gmx::PinningPolicy::CanBePinned : gmx::PinningPolicy::CannotBePinned;
+            const auto allocateRealGridForGpu = (pme->runMode == PmeRunMode::Mixed) ? gmx::PinningPolicy::PinnedIfSupported : gmx::PinningPolicy::CannotBePinned;
             gmx_parallel_3dfft_init(&pme->pfft_setup[i], ndata,
                                     &pme->fftgrid[i], &pme->cfftgrid[i],
                                     pme->mpi_comm_d,

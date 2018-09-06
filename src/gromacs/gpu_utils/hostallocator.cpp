@@ -60,24 +60,18 @@ namespace gmx
 HostAllocationPolicy::HostAllocationPolicy(PinningPolicy pinningPolicy)
     : pinningPolicy_(pinningPolicy)
 {
-    if (GMX_GPU != GMX_GPU_CUDA)
-    {
-        GMX_RELEASE_ASSERT(pinningPolicy == PinningPolicy::CannotBePinned,
-                           "A suitable build of GROMACS (e.g. with CUDA) is required for a "
-                           "HostAllocationPolicy to be set to a mode that produces pinning.");
-    }
 }
 
 std::size_t HostAllocationPolicy::alignment()
 {
-    return (pinningPolicy_ == PinningPolicy::CanBePinned ?
+    return (pinningPolicy_ == PinningPolicy::PinnedIfSupported ?
             PageAlignedAllocationPolicy::alignment() :
             AlignedAllocationPolicy::alignment());
 }
 
 void *HostAllocationPolicy::malloc(std::size_t bytes) const noexcept
 {
-    if (pinningPolicy_ == PinningPolicy::CanBePinned)
+    if (pinningPolicy_ == PinningPolicy::PinnedIfSupported)
     {
         void *p = PageAlignedAllocationPolicy::malloc(bytes);
         pin(p, bytes);
@@ -97,7 +91,7 @@ void HostAllocationPolicy::free(void *buffer) const noexcept
         return;
     }
     unpin(buffer);
-    if (pinningPolicy_ == PinningPolicy::CanBePinned)
+    if (pinningPolicy_ == PinningPolicy::PinnedIfSupported)
     {
         PageAlignedAllocationPolicy::free(buffer);
     }

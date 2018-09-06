@@ -73,8 +73,8 @@ namespace gmx
 enum class PinningPolicy : int
 {
     CannotBePinned,     // Memory is not known to be suitable for pinning.
-    CanBePinned,        // Memory is suitable for efficient pinning, e.g. because it is
-                        // allocated to be page aligned, and will be pinned when non-empty.
+    PinnedIfSupported,  // Memory is suitable for efficient pinning, e.g. because it is
+                        // allocated to be page aligned, and will be pinned when supported.
 };
 
 //! Forward declaration of host allocation policy class.
@@ -118,7 +118,7 @@ using HostVector = std::vector<T, HostAllocator<T> >;
  * std::vector::get_allocator().getPolicy() to control whether the
  * allocation policy should activate its pinning mode. The policy
  * object can also be used to explicitly pin() and unpin() the buffer
- * when it is using PinningPolicy::CanBePinned. The policy object is
+ * when it is using PinningPolicy::PinnedIfSupported. The policy object is
  * returned by value (as required by the C++ standard for
  * get_allocator(), which copies a std::shared_ptr, so the policy
  * object should be retrieved sparingly, e.g. only upon resize of the

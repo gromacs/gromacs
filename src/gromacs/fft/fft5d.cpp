@@ -390,7 +390,8 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
     if (!(flags&FFT5D_NOMALLOC))
     {
         // only needed for PME GPU mixed mode
-        if (realGridAllocationPinningPolicy == gmx::PinningPolicy::CanBePinned)
+        if (realGridAllocationPinningPolicy == gmx::PinningPolicy::PinnedIfSupported &&
+            GMX_GPU == GMX_GPU_CUDA)
         {
             const std::size_t numBytes = lsize * sizeof(t_complex);
             lin = static_cast<t_complex *>(gmx::PageAlignedAllocationPolicy::malloc(numBytes));
@@ -1286,7 +1287,7 @@ void fft5d_destroy(fft5d_plan plan)
     if (!(plan->flags&FFT5D_NOMALLOC))
     {
         // only needed for PME GPU mixed mode
-        if (plan->pinningPolicy == gmx::PinningPolicy::CanBePinned &&
+        if (plan->pinningPolicy == gmx::PinningPolicy::PinnedIfSupported &&
             isHostMemoryPinned(plan->lin))
         {
             gmx::unpinBuffer(plan->lin);
