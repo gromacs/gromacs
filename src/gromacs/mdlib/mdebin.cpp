@@ -988,6 +988,7 @@ void upd_mdebin(t_mdebin               *md,
     }
     add_ebin(md->ebin, md->ivir, 9, vir[0], bSum);
     add_ebin(md->ebin, md->ipres, 9, pres[0], bSum);
+    // TODO Why unilaterally write a surface-tension term?
     tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*box[ZZ][ZZ];
     add_ebin(md->ebin, md->isurft, 1, &tmp, bSum);
     if (md->epc == epcPARRINELLORAHMAN || md->epc == epcMTTK)

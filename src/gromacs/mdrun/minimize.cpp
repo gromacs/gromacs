@@ -1158,8 +1158,9 @@ Integrator::do_cg()
     if (MASTER(cr))
     {
         /* Copy stuff to the energy bin for easy printing etc. */
+        matrix nullBox;
         upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(step),
-                   mdatoms->tmass, enerd, &s_min->s, inputrec->fepvals, inputrec->expandedvals, s_min->s.box,
+                   mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
                    nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
         print_ebin_header(fplog, step, step);
@@ -1580,8 +1581,9 @@ Integrator::do_cg()
                 fflush(stderr);
             }
             /* Store the new (lower) energies */
+            matrix nullBox;
             upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(step),
-                       mdatoms->tmass, enerd, &s_min->s, inputrec->fepvals, inputrec->expandedvals, s_min->s.box,
+                       mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
                        nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
             do_log = do_per_step(step, inputrec->nstlog);
@@ -1826,8 +1828,9 @@ Integrator::do_lbfgs()
     if (MASTER(cr))
     {
         /* Copy stuff to the energy bin for easy printing etc. */
+        matrix nullBox;
         upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(step),
-                   mdatoms->tmass, enerd, state_global, inputrec->fepvals, inputrec->expandedvals, state_global->box,
+                   mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
                    nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
         print_ebin_header(fplog, step, step);
@@ -2312,8 +2315,9 @@ Integrator::do_lbfgs()
                 fflush(stderr);
             }
             /* Store the new (lower) energies */
+            matrix nullBox;
             upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(step),
-                       mdatoms->tmass, enerd, state_global, inputrec->fepvals, inputrec->expandedvals, state_global->box,
+                       mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
                        nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
             do_log = do_per_step(step, inputrec->nstlog);
             do_ene = do_per_step(step, inputrec->nstenergy);
@@ -2528,9 +2532,10 @@ Integrator::do_steep()
             if ( (count == 0) || (s_try->epot < s_min->epot) )
             {
                 /* Store the new (lower) energies  */
+                matrix nullBox;
                 upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(count),
-                           mdatoms->tmass, enerd, &s_try->s, inputrec->fepvals, inputrec->expandedvals,
-                           s_try->s.box, nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
+                           mdatoms->tmass, enerd, nullptr, nullptr, nullptr,
+                           nullBox, nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
                 /* Prepare IMD energy record, if bIMD is TRUE. */
                 IMD_fill_energy_record(inputrec->bIMD, inputrec->imd, enerd, count, TRUE);
