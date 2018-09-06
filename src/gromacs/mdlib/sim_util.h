@@ -154,6 +154,7 @@ void init_md(FILE *fplog,
              int nfile, const t_filenm fnm[],
              gmx_mdoutf_t *outf, t_mdebin **mdebin,
              tensor force_vir, tensor shake_vir,
+             tensor total_vir, tensor pres,
              rvec mu_tot,
              gmx_bool *bSimAnn, t_vcm **vcm,
              gmx_wallcycle_t wcycle);
