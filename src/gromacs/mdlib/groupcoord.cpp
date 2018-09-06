@@ -101,12 +101,12 @@ dd_make_local_group_indices(const gmx_ga2la_t *ga2la,
 
 
 static void get_shifts_group(
-        int     npbcdim,
-        matrix  box,
-        rvec   *xcoll,     /* IN:  Collective set of positions [0..nr] */
-        int     nr,        /* IN:  Total number of atoms in the group */
-        rvec   *xcoll_old, /* IN:  Positions from the last time step [0...nr] */
-        ivec   *shifts)    /* OUT: Shifts for xcoll */
+        int           npbcdim,
+        const matrix  box,
+        rvec         *xcoll,     /* IN:  Collective set of positions [0..nr] */
+        int           nr,        /* IN:  Total number of atoms in the group */
+        rvec         *xcoll_old, /* IN:  Positions from the last time step [0...nr] */
+        ivec         *shifts)    /* OUT: Shifts for xcoll */
 {
     int  i, m, d;
     rvec dx;
@@ -151,10 +151,10 @@ static void get_shifts_group(
 
 
 static void shift_positions_group(
-        matrix  box,
-        rvec    x[],     /* The positions [0..nr] */
-        ivec   *is,      /* The shifts [0..nr] */
-        int     nr)      /* The number of positions and shifts */
+        const matrix  box,
+        rvec          x[],     /* The positions [0..nr] */
+        ivec         *is,      /* The shifts [0..nr] */
+        int           nr)      /* The number of positions and shifts */
 {
     int      i, tx, ty, tz;
 
@@ -205,7 +205,7 @@ extern void communicate_group_positions(
         const int       *coll_ind,     /* Collective index */
         rvec            *xcoll_old,    /* (optional) Positions from the last time step,
                                           used to make group whole */
-        matrix           box)          /* (optional) The box */
+        const matrix     box)          /* (optional) The box */
 {
     int i;
 

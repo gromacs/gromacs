@@ -102,8 +102,8 @@ static const char IMDstr[] = "IMD:";  /**< Tag output from the IMD module with t
  * \param nfile   Number of files.
  * \param fnm     Filename struct.
  */
-void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, t_state *state,
-                            gmx_mtop_t *sys, int nfile, const t_filenm fnm[]);
+void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, const t_state *state,
+                            const gmx_mtop_t *sys, int nfile, const t_filenm fnm[]);
 
 
 /*! \brief Make a selection of the home atoms for the IMD group.
@@ -119,7 +119,7 @@ void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, t_state *state,
  * \param dd      Structure containing domain decomposition data.
  * \param imd     The IMD group of atoms.
  */
-void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd);
+void dd_make_local_IMD_atoms(gmx_bool bIMD, const gmx_domdec_t *dd, t_IMD *imd);
 
 
 /*! \brief Initializes (or disables) IMD.
@@ -141,8 +141,8 @@ void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd);
  */
 void init_IMD(t_inputrec *ir, const t_commrec *cr,
               const gmx_multisim_t *ms,
-              gmx_mtop_t *top_global,
-              FILE *fplog, int defnstimd, rvec x[],
+              const gmx_mtop_t *top_global,
+              FILE *fplog, int defnstimd, const rvec x[],
               int nfile, const t_filenm fnm[], const gmx_output_env_t *oenv,
               const MdrunOptions &mdrunOptions);
 
@@ -165,7 +165,7 @@ void init_IMD(t_inputrec *ir, const t_commrec *cr,
  */
 gmx_bool do_IMD(gmx_bool bIMD, int64_t step, const t_commrec *cr,
                 gmx_bool bNS,
-                matrix box, rvec x[], t_inputrec *ir, double t,
+                const matrix box, const rvec x[], t_inputrec *ir, double t,
                 gmx_wallcycle *wcycle);
 
 
@@ -202,7 +202,7 @@ void IMD_apply_forces(gmx_bool bIMD, t_IMD *imd,
  * \param bHaveNewEnergies Only copy energies if we have done global summing of them before.
  *
  */
-void IMD_fill_energy_record(gmx_bool bIMD, t_IMD *imd, gmx_enerdata_t *enerd,
+void IMD_fill_energy_record(gmx_bool bIMD, t_IMD *imd, const gmx_enerdata_t *enerd,
                             int64_t step, gmx_bool bHaveNewEnergies);
 
 
@@ -225,7 +225,7 @@ void IMD_send_positions(t_IMD *imd);
  *
  */
 void IMD_prep_energies_send_positions(gmx_bool bIMD, gmx_bool bIMDstep,
-                                      t_IMD *imd, gmx_enerdata_t *enerd,
+                                      t_IMD *imd, const gmx_enerdata_t *enerd,
                                       int64_t step, gmx_bool bHaveNewEnergies,
                                       gmx_wallcycle *wcycle);
 

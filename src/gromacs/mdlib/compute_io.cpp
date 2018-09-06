@@ -58,7 +58,7 @@ static int div_nsteps(int nsteps, int nst)
     }
 }
 
-double compute_io(t_inputrec *ir, int natoms, gmx_groups_t *groups,
+double compute_io(const t_inputrec *ir, int natoms, const gmx_groups_t *groups,
                   int nrener, int nrepl)
 {
 

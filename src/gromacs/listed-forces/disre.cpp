@@ -621,9 +621,9 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
     return vtot;
 }
 
-void update_disres_history(t_fcdata *fcd, history_t *hist)
+void update_disres_history(const t_fcdata *fcd, history_t *hist)
 {
-    t_disresdata *dd;
+    const t_disresdata *dd;
     int           pair;
 
     dd = &(fcd->disres);

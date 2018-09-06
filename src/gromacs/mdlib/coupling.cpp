@@ -102,8 +102,8 @@ static const double* sy_const[] = {
    };*/
 
 /* these integration routines are only referenced inside this file */
-static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real dtfull,
-                        double xi[], double vxi[], double scalefac[], real *veta, t_extmass *MassQ, gmx_bool bEkinAveVel)
+static void NHC_trotter(const t_grpopts *opts, int nvar, const gmx_ekindata_t *ekind, real dtfull,
+                        double xi[], double vxi[], double scalefac[], real *veta, const t_extmass *MassQ, gmx_bool bEkinAveVel)
 
 {
     /* general routine for both barostat and thermostat nose hoover chains */
@@ -237,8 +237,8 @@ static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real d
     sfree(GQ);
 }
 
-static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
-                         gmx_ekindata_t *ekind, tensor vir, real pcorr, t_extmass *MassQ)
+static void boxv_trotter(const t_inputrec *ir, real *veta, real dt, const tensor box,
+                         const gmx_ekindata_t *ekind, const tensor vir, real pcorr, const t_extmass *MassQ)
 {
 
     real   pscal;
@@ -294,7 +294,7 @@ static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
  *
  */
 
-real calc_pres(int ePBC, int nwall, matrix box, tensor ekin, tensor vir,
+real calc_pres(int ePBC, int nwall, const matrix box, const tensor ekin, const tensor vir,
                tensor pres)
 {
     int  n, m;
@@ -364,7 +364,7 @@ static void calcParrinelloRahmanInvMass(const t_inputrec *ir, const matrix box,
 
 void parrinellorahman_pcoupl(FILE *fplog, int64_t step,
                              const t_inputrec *ir, real dt, const tensor pres,
-                             tensor box, tensor box_rel, tensor boxv,
+                             const tensor box, tensor box_rel, tensor boxv,
                              tensor M, matrix mu, gmx_bool bFirstStep)
 {
     /* This doesn't do any coordinate updating. It just
@@ -778,7 +778,7 @@ void berendsen_tcoupl(const t_inputrec *ir, const gmx_ekindata_t *ekind, real dt
     }
 }
 
-void andersen_tcoupl(t_inputrec *ir, int64_t step,
+void andersen_tcoupl(const t_inputrec *ir, int64_t step,
                      const t_commrec *cr, const t_mdatoms *md, t_state *state, real rate, const gmx_bool *randomize, const real *boltzfac)
 {
     const int                                 *gatindex = (DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
@@ -833,8 +833,8 @@ void andersen_tcoupl(t_inputrec *ir, int64_t step,
 }
 
 
-void nosehoover_tcoupl(t_grpopts *opts, gmx_ekindata_t *ekind, real dt,
-                       double xi[], double vxi[], t_extmass *MassQ)
+void nosehoover_tcoupl(const t_grpopts *opts, const gmx_ekindata_t *ekind, real dt,
+                       double xi[], double vxi[], const t_extmass *MassQ)
 {
     int   i;
     real  reft, oldvxi;
@@ -850,21 +850,21 @@ void nosehoover_tcoupl(t_grpopts *opts, gmx_ekindata_t *ekind, real dt,
     }
 }
 
-void trotter_update(t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
-                    gmx_enerdata_t *enerd, t_state *state,
-                    tensor vir, t_mdatoms *md,
-                    t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno)
+void trotter_update(const t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
+                    const gmx_enerdata_t *enerd, t_state *state,
+                    const tensor vir, const t_mdatoms *md,
+                    const t_extmass *MassQ, const int * const *trotter_seqlist, int trotter_seqno)
 {
 
-    int             n, i, d, ngtc, gc = 0, t;
-    t_grp_tcstat   *tcstat;
-    t_grpopts      *opts;
-    int64_t         step_eff;
-    real            dt;
-    double         *scalefac, dtc;
-    int            *trotter_seq;
-    rvec            sumv = {0, 0, 0};
-    gmx_bool        bCouple;
+    int              n, i, d, ngtc, gc = 0, t;
+    t_grp_tcstat    *tcstat;
+    const t_grpopts *opts;
+    int64_t          step_eff;
+    real             dt;
+    double          *scalefac, dtc;
+    const int       *trotter_seq;
+    rvec             sumv = {0, 0, 0};
+    gmx_bool         bCouple;
 
     if (trotter_seqno <= ettTSEQ2)
     {
@@ -970,11 +970,11 @@ void trotter_update(t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
 }
 
 
-extern void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit)
+extern void init_npt_masses(const t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit)
 {
-    int           n, i, j, d, ngtc, nh;
-    t_grpopts    *opts;
-    real          reft, kT, ndj, nd;
+    int              n, i, j, d, ngtc, nh;
+    const t_grpopts *opts;
+    real             reft, kT, ndj, nd;
 
     opts    = &(ir->opts); /* just for ease of referencing */
     ngtc    = ir->opts.ngtc;
@@ -1065,12 +1065,12 @@ extern void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gm
     }
 }
 
-int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bTrotter)
+int **init_npt_vars(const t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bTrotter)
 {
-    int           i, j, nnhpres, nh;
-    t_grpopts    *opts;
-    real          bmass, qmass, reft, kT;
-    int         **trotter_seq;
+    int              i, j, nnhpres, nh;
+    const t_grpopts *opts;
+    real             bmass, qmass, reft, kT;
+    int            **trotter_seq;
 
     opts    = &(ir->opts); /* just for ease of referencing */
     nnhpres = state->nnhpres;
@@ -1430,9 +1430,9 @@ real NPT_energy(const t_inputrec *ir, const t_state *state, const t_extmass *Mas
 }
 
 
-static real vrescale_sumnoises(real                            nn,
-                               gmx::ThreeFry2x64<>            *rng,
-                               gmx::NormalDistribution<real>  *normalDist)
+static real vrescale_sumnoises(real                           nn,
+                               gmx::ThreeFry2x64<>           *rng,
+                               gmx::NormalDistribution<real> *normalDist)
 {
 /*
  * Returns the sum of nn independent gaussian noises squared
@@ -1507,13 +1507,13 @@ static real vrescale_resamplekin(real kk, real sigma, real ndeg, real taut,
     return ekin_new;
 }
 
-void vrescale_tcoupl(t_inputrec *ir, int64_t step,
+void vrescale_tcoupl(const t_inputrec *ir, int64_t step,
                      gmx_ekindata_t *ekind, real dt,
                      double therm_integral[])
 {
-    t_grpopts *opts;
-    int        i;
-    real       Ek, Ek_ref1, Ek_ref, Ek_new;
+    const t_grpopts *opts;
+    int              i;
+    real             Ek, Ek_ref1, Ek_ref, Ek_new;
 
     opts = &ir->opts;
 
@@ -1562,7 +1562,7 @@ void vrescale_tcoupl(t_inputrec *ir, int64_t step,
     }
 }
 
-void rescale_velocities(gmx_ekindata_t *ekind, t_mdatoms *mdatoms,
+void rescale_velocities(const gmx_ekindata_t *ekind, const t_mdatoms *mdatoms,
                         int start, int end, rvec v[])
 {
     t_grp_acc      *gstat;
