@@ -95,7 +95,7 @@ TEST_F(PinnedMemoryCheckerTest, PinnedContainerIsRecognized)
     }
 
     HostVector<real> dummy(3, 1.5);
-    changePinningPolicy(&dummy, PinningPolicy::CanBePinned);
+    changePinningPolicy(&dummy, PinningPolicy::PinnedIfSupported);
     EXPECT_TRUE(isHostMemoryPinned(dummy.data()));
 }
 

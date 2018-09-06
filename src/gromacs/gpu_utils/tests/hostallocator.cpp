@@ -221,6 +221,71 @@ TYPED_TEST(HostAllocatorTest, FillInputAlsoWorksAfterCallingReserve)
     this->fillInput(&input);
 }
 
+TYPED_TEST(HostAllocatorTestNoMem, CreateVector)
+{
+    typename TestFixture::VectorType input1;
+    EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    typename TestFixture::VectorType input2({PinningPolicy::PinnedIfSupported});
+    EXPECT_TRUE (input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+}
+
+TYPED_TEST(HostAllocatorTestNoMem, MoveAssignment)
+{
+    typename TestFixture::VectorType input1({PinningPolicy::PinnedIfSupported});
+    input1 = typename TestFixture::VectorType();
+    EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+
+    typename TestFixture::VectorType input2;
+    input2 = typename TestFixture::VectorType({PinningPolicy::PinnedIfSupported});
+    EXPECT_TRUE (input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+}
+
+TYPED_TEST(HostAllocatorTestNoMem, MoveConstruction)
+{
+    typename TestFixture::VectorType input1;
+    typename TestFixture::VectorType input2(std::move(input1));
+    EXPECT_FALSE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+
+    typename TestFixture::VectorType input3({PinningPolicy::PinnedIfSupported});
+    typename TestFixture::VectorType input4(std::move(input3));
+    EXPECT_TRUE(input4.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+}
+
+TYPED_TEST(HostAllocatorTestNoMem, CopyAssignment)
+{
+    typename TestFixture::VectorType input1;
+    typename TestFixture::VectorType input2({PinningPolicy::PinnedIfSupported});
+    input1 = input2;
+    EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    EXPECT_TRUE (input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    input2 = input1;
+    EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    EXPECT_TRUE (input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+}
+
+TYPED_TEST(HostAllocatorTestNoMem, CopyConstruction)
+{
+    typename TestFixture::VectorType input1;
+    typename TestFixture::VectorType input2(input1); //NOLINT(performance-unnecessary-copy-initialization)
+    EXPECT_FALSE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+
+    typename TestFixture::VectorType input3({PinningPolicy::PinnedIfSupported});
+    typename TestFixture::VectorType input4(input3); //NOLINT(performance-unnecessary-copy-initialization)
+    EXPECT_FALSE(input4.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+}
+
+TYPED_TEST(HostAllocatorTestNoMem, Swap)
+{
+    typename TestFixture::VectorType input1;
+    typename TestFixture::VectorType input2({PinningPolicy::PinnedIfSupported});
+    swap(input1, input2);
+    EXPECT_TRUE (input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    EXPECT_FALSE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    swap(input2, input1);
+    EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    EXPECT_TRUE (input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+}
+
 #if GMX_GPU == GMX_GPU_CUDA
 
 // Policy suitable for pinning is only supported for a CUDA build
@@ -233,10 +298,10 @@ TYPED_TEST(HostAllocatorTest, TransfersWithPinningWorkWithCuda)
     }
 
     typename TestFixture::VectorType input;
-    changePinningPolicy(&input, PinningPolicy::CanBePinned);
+    changePinningPolicy(&input, PinningPolicy::PinnedIfSupported);
     this->fillInput(&input);
     typename TestFixture::VectorType output;
-    changePinningPolicy(&output, PinningPolicy::CanBePinned);
+    changePinningPolicy(&output, PinningPolicy::PinnedIfSupported);
     output.resize(input.size());
 
     this->runTest(input, output);
@@ -250,71 +315,6 @@ bool isPinned(const VectorType &v)
     return isHostMemoryPinned(data);
 }
 
-TYPED_TEST(HostAllocatorTestNoMem, CreateVector)
-{
-    typename TestFixture::VectorType input1;
-    EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::CanBePinned);
-    typename TestFixture::VectorType input2({PinningPolicy::CanBePinned});
-    EXPECT_TRUE (input2.get_allocator().pinningPolicy() == PinningPolicy::CanBePinned);
-}
-
-TYPED_TEST(HostAllocatorTestNoMem, MoveAssignment)
-{
-    typename TestFixture::VectorType input1({PinningPolicy::CanBePinned});
-    input1 = typename TestFixture::VectorType();
-    EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::CanBePinned);
-
-    typename TestFixture::VectorType input2;
-    input2 = typename TestFixture::VectorType({PinningPolicy::CanBePinned});
-    EXPECT_TRUE (input2.get_allocator().pinningPolicy() == PinningPolicy::CanBePinned);
-}
-
-TYPED_TEST(HostAllocatorTestNoMem, MoveConstruction)
-{
-    typename TestFixture::VectorType input1;
-    typename TestFixture::VectorType input2(std::move(input1));
-    EXPECT_FALSE(input2.get_allocator().pinningPolicy() == PinningPolicy::CanBePinned);
-
-    typename TestFixture::VectorType input3({PinningPolicy::CanBePinned});
-    typename TestFixture::VectorType input4(std::move(input3));
-    EXPECT_TRUE(input4.get_allocator().pinningPolicy() == PinningPolicy::CanBePinned);
-}
-
-TYPED_TEST(HostAllocatorTestNoMem, CopyAssignment)
-{
-    typename TestFixture::VectorType input1;
-    typename TestFixture::VectorType input2({PinningPolicy::CanBePinned});
-    input1 = input2;
-    EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::CanBePinned);
-    EXPECT_TRUE (input2.get_allocator().pinningPolicy() == PinningPolicy::CanBePinned);
-    input2 = input1;
-    EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::CanBePinned);
-    EXPECT_TRUE (input2.get_allocator().pinningPolicy() == PinningPolicy::CanBePinned);
-}
-
-TYPED_TEST(HostAllocatorTestNoMem, CopyConstruction)
-{
-    typename TestFixture::VectorType input1;
-    typename TestFixture::VectorType input2(input1);
-    EXPECT_FALSE(input2.get_allocator().pinningPolicy() == PinningPolicy::CanBePinned);
-
-    typename TestFixture::VectorType input3({PinningPolicy::CanBePinned});
-    typename TestFixture::VectorType input4(input3);
-    EXPECT_FALSE(input4.get_allocator().pinningPolicy() == PinningPolicy::CanBePinned);
-}
-
-TYPED_TEST(HostAllocatorTestNoMem, Swap)
-{
-    typename TestFixture::VectorType input1;
-    typename TestFixture::VectorType input2({PinningPolicy::CanBePinned});
-    swap(input1, input2);
-    EXPECT_TRUE (input1.get_allocator().pinningPolicy() == PinningPolicy::CanBePinned);
-    EXPECT_FALSE(input2.get_allocator().pinningPolicy() == PinningPolicy::CanBePinned);
-    swap(input2, input1);
-    EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::CanBePinned);
-    EXPECT_TRUE (input2.get_allocator().pinningPolicy() == PinningPolicy::CanBePinned);
-}
-
 TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkWithCuda)
 {
     if (!this->haveValidGpus())
@@ -323,8 +323,8 @@ TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkWithCuda)
     }
 
     typename TestFixture::VectorType input;
-    changePinningPolicy(&input, PinningPolicy::CanBePinned);
-    EXPECT_TRUE(input.get_allocator().pinningPolicy() == PinningPolicy::CanBePinned);
+    changePinningPolicy(&input, PinningPolicy::PinnedIfSupported);
+    EXPECT_TRUE(input.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
     EXPECT_FALSE(isPinned(input));
 
     // Unpin before allocation is fine, but does nothing.
@@ -364,10 +364,10 @@ TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkWithCuda)
     // time for the contents to be able to be copied.
     EXPECT_NE(oldInputData, input.data());
 
-    // Switching policy to CanBePinned must pin the buffer (via
+    // Switching policy to PinnedIfSupported must pin the buffer (via
     // realloc and copy).
     oldInputData = input.data();
-    changePinningPolicy(&input, PinningPolicy::CanBePinned);
+    changePinningPolicy(&input, PinningPolicy::PinnedIfSupported);
     EXPECT_TRUE(isPinned(input));
     // These cannot be equal as both had to be allocated at the same
     // time for the contents to be able to be copied.
@@ -375,13 +375,6 @@ TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkWithCuda)
 }
 
 #else
-
-TYPED_TEST(HostAllocatorTest, ChangingPinningPolicyRequiresCuda)
-{
-    typename TestFixture::VectorType input;
-    EXPECT_DEATH_IF_SUPPORTED(changePinningPolicy(&input, PinningPolicy::CanBePinned),
-                              ".*A suitable build of GROMACS.* is required.*");
-}
 
 TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkEvenWithoutCuda)
 {
