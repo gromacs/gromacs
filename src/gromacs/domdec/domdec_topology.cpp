@@ -2228,7 +2228,7 @@ gmx_localtop_t *dd_init_local_top(const gmx_mtop_t *top_global)
 }
 
 void dd_init_local_state(gmx_domdec_t *dd,
-                         t_state *state_global, t_state *state_local)
+                         const t_state *state_global, t_state *state_local)
 {
     int buf[NITEM_DD_INIT_LOCAL_STATE];
 

@@ -76,7 +76,7 @@ typedef struct {
     t_vcm_thread *thread_vcm;  /* Temporary data per thread and group */
 } t_vcm;
 
-t_vcm *init_vcm(FILE *fp, gmx_groups_t *groups, const t_inputrec *ir);
+t_vcm *init_vcm(FILE *fp, const gmx_groups_t *groups, const t_inputrec *ir);
 
 /* Do a per group center of mass things */
 void calc_vcm_grp(int start, int homenr, t_mdatoms *md,

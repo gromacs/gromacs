@@ -40,12 +40,12 @@
 struct t_graph;
 struct t_pbc;
 
-void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
-              bool bScrewPBC, matrix box);
+void calc_vir(int nxf, const rvec x[], const rvec f[], tensor vir,
+              bool bScrewPBC, const matrix box);
 /* Calculate virial for nxf atoms, and add it to vir */
 
-void f_calc_vir(int i0, int i1, rvec x[], rvec f[], tensor vir,
-                t_graph *g, rvec shift_vec[]);
+void f_calc_vir(int i0, int i1, const rvec x[], const rvec f[], tensor vir,
+                const t_graph *g, const rvec shift_vec[]);
 /* Calculate virial taking periodicity into account */
 
 #endif

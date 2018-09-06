@@ -401,8 +401,8 @@ static int imd_recv_mdcomm(IMDSocket *socket, int32_t nforces, int32_t *forcendx
 #endif
 
 /* GROMACS specific functions for the IMD implementation */
-void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, t_state *state,
-                            gmx_mtop_t *sys, int nfile, const t_filenm fnm[])
+void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, const t_state *state,
+                            const gmx_mtop_t *sys, int nfile, const t_filenm fnm[])
 {
     t_atoms IMDatoms;
 
@@ -416,9 +416,9 @@ void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, t_state *state,
 }
 
 
-void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd)
+void dd_make_local_IMD_atoms(gmx_bool bIMD, const gmx_domdec_t *dd, t_IMD *imd)
 {
-    gmx_ga2la_t       *ga2la;
+    const gmx_ga2la_t *ga2la;
     t_gmx_IMD_setup   *IMDsetup;
 
     if (bIMD)
@@ -1044,7 +1044,7 @@ void IMD_finalize(gmx_bool bIMD, t_IMD *imd)
 
 #ifdef GMX_IMD
 /*! \brief Creates the molecule start-end position array of molecules in the IMD group. */
-static void init_imd_prepare_mols_in_imdgroup(t_gmx_IMD_setup *IMDsetup, gmx_mtop_t *top_global)
+static void init_imd_prepare_mols_in_imdgroup(t_gmx_IMD_setup *IMDsetup, const gmx_mtop_t *top_global)
 {
     int      i, ii;
     t_block  lmols;
@@ -1094,7 +1094,7 @@ static void init_imd_prepare_mols_in_imdgroup(t_gmx_IMD_setup *IMDsetup, gmx_mto
 
 /*! \brief Copied and modified from groupcoord.c shift_positions_group(). */
 static void shift_positions(
-        matrix       box,
+        const matrix box,
         rvec         x[], /* The positions [0..nr] */
         const ivec   is,  /* The shift [0..nr] */
         int          nr)  /* The number of positions */
@@ -1132,7 +1132,7 @@ static void shift_positions(
 
 
 /*! \brief Removes shifts of molecules diffused outside of the box. */
-static void imd_remove_molshifts(t_gmx_IMD_setup *IMDsetup, matrix box)
+static void imd_remove_molshifts(t_gmx_IMD_setup *IMDsetup, const matrix box)
 {
     int     i, ii, molsize;
     ivec    largest, smallest, shift;
@@ -1225,7 +1225,7 @@ static void imd_remove_molshifts(t_gmx_IMD_setup *IMDsetup, matrix box)
 
 
 /*! \brief Initialize arrays used to assemble the positions from the other nodes. */
-static void init_imd_prepare_for_x_assembly(const t_commrec *cr, rvec x[], t_gmx_IMD_setup *IMDsetup)
+static void init_imd_prepare_for_x_assembly(const t_commrec *cr, const rvec x[], t_gmx_IMD_setup *IMDsetup)
 {
     int i, ii;
 
@@ -1285,10 +1285,10 @@ static void imd_check_integrator_parallel(t_inputrec *ir, const t_commrec *cr)
 void init_IMD(t_inputrec             *ir,
               const t_commrec        *cr,
               const gmx_multisim_t   *ms,
-              gmx_mtop_t             *top_global,
+              const gmx_mtop_t       *top_global,
               FILE                   *fplog,
               int                     defnstimd,
-              rvec                    x[],
+              const rvec              x[],
               int                     nfile,
               const t_filenm          fnm[],
               const gmx_output_env_t *oenv,
@@ -1478,8 +1478,8 @@ gmx_bool do_IMD(gmx_bool         bIMD,
                 int64_t          step,
                 const t_commrec *cr,
                 gmx_bool         bNS,
-                matrix           box,
-                rvec             x[],
+                const matrix     box,
+                const rvec       x[],
                 t_inputrec      *ir,
                 double           t,
                 gmx_wallcycle   *wcycle)
@@ -1559,7 +1559,7 @@ gmx_bool do_IMD(gmx_bool         bIMD,
 }
 
 
-void IMD_fill_energy_record(gmx_bool bIMD, t_IMD *imd, gmx_enerdata_t *enerd,
+void IMD_fill_energy_record(gmx_bool bIMD, t_IMD *imd, const gmx_enerdata_t *enerd,
                             int64_t step, gmx_bool bHaveNewEnergies)
 {
     IMDEnergyBlock *ene;
@@ -1628,7 +1628,7 @@ void IMD_send_positions(t_IMD *imd)
 
 
 void IMD_prep_energies_send_positions(gmx_bool bIMD, gmx_bool bIMDstep,
-                                      t_IMD *imd, gmx_enerdata_t *enerd,
+                                      t_IMD *imd, const gmx_enerdata_t *enerd,
                                       int64_t step, gmx_bool bHaveNewEnergies,
                                       gmx_wallcycle *wcycle)
 {
