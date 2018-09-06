@@ -2899,7 +2899,8 @@ void init_md(FILE *fplog,
              gmx::BoxDeformation *deform,
              int nfile, const t_filenm fnm[],
              gmx_mdoutf_t *outf, t_mdebin **mdebin,
-             tensor force_vir, tensor shake_vir, rvec mu_tot,
+             tensor force_vir, tensor shake_vir,
+             tensor total_vir, tensor pres, rvec mu_tot,
              gmx_bool *bSimAnn, t_vcm **vcm,
              gmx_wallcycle_t wcycle)
 {
@@ -2978,4 +2979,6 @@ void init_md(FILE *fplog,
     clear_mat(force_vir);
     clear_mat(shake_vir);
     clear_rvec(mu_tot);
+    clear_mat(total_vir);
+    clear_mat(pres);
 }

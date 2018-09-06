@@ -402,10 +402,8 @@ void gmx::Integrator::do_md()
             &t, &t0, state_global, lam0,
             nrnb, top_global, &upd, deform,
             nfile, fnm, &outf, &mdebin,
-            force_vir, shake_vir, mu_tot, &bSimAnn, &vcm, wcycle);
+            force_vir, shake_vir, total_vir, pres, mu_tot, &bSimAnn, &vcm, wcycle);
 
-    clear_mat(total_vir);
-    clear_mat(pres);
     /* Energy terms and groups */
     snew(enerd, 1);
     init_enerdata(top_global->groups.grps[egcENER].nr, ir->fepvals->n_lambda,
