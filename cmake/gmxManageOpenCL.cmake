@@ -38,7 +38,14 @@ endif()
 
 # for some reason FindOpenCL checks CUDA_PATH but not CUDA_HOME
 set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH};$ENV{CUDA_HOME})
-find_package(OpenCL)
+if (EXACT_OPENCL_VERSION)
+    if (EXACT_OPENCL_VERSION VERSION_LESS REQUIRED_OPENCL_MIN_VERSION)
+        message(FATAL_ERROR "Exact OpenCL version ${EXACT_OPENCL_VERSION} smaller than required minimum version ${REQUIRED_OPENCL_MIN_VERSION} requested")
+    endif()
+    find_package(OpenCL ${EXACT_OPENCL_VERSION} EXACT)
+else()
+    find_package(OpenCL ${REQUIRED_OPENCL_MIN_VERSION})
+endif()
 
 if (OpenCL_FOUND)
     if (OpenCL_VERSION_STRING VERSION_LESS REQUIRED_OPENCL_MIN_VERSION)
