@@ -673,8 +673,8 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
             {
                 a0 = cgs->index[cg];
                 a1 = cgs->index[cg+1];
-                if (ggrpnr(&mtop->groups, egcENER, a_offset+am+a0) !=
-                    ggrpnr(&mtop->groups, egcENER, a_offset   +a0))
+                if (getGroupType(&mtop->groups, egcENER, a_offset+am+a0) !=
+                    getGroupType(&mtop->groups, egcENER, a_offset   +a0))
                 {
                     bId = FALSE;
                 }
@@ -730,7 +730,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                 a1 = cgs->index[cg+1];
 
                 /* Store the energy group in cginfo */
-                gid = ggrpnr(&mtop->groups, egcENER, a_offset+am+a0);
+                gid = getGroupType(&mtop->groups, egcENER, a_offset+am+a0);
                 SET_CGINFO_GID(cginfo[cgm+cg], gid);
 
                 /* Check the intra/inter charge group exclusions */

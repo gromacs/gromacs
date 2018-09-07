@@ -630,18 +630,17 @@ void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, re
 void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
                 int natoms0, int natoms1)
 {
-    int  i, j;
     char buf[32];
 
     fprintf(fp, "comparing groups\n");
 
-    for (i = 0; i < egcNR; i++)
+    for (int i = 0; i < egcNR; i++)
     {
         sprintf(buf, "grps[%d].nr", i);
         cmp_int(fp, buf, -1, g0->grps[i].nr, g1->grps[i].nr);
         if (g0->grps[i].nr == g1->grps[i].nr)
         {
-            for (j = 0; j < g0->grps[i].nr; j++)
+            for (int j = 0; j < g0->grps[i].nr; j++)
             {
                 sprintf(buf, "grps[%d].name[%d]", i, j);
                 cmp_str(fp, buf, -1,
@@ -653,13 +652,18 @@ void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
         if (g0->ngrpnr[i] == g1->ngrpnr[i] && natoms0 == natoms1 &&
             (g0->grpnr[i] != nullptr || g1->grpnr[i] != nullptr))
         {
-            for (j = 0; j < natoms0; j++)
+            for (int j = 0; j < natoms0; j++)
             {
-                cmp_int(fp, gtypes[i], j, ggrpnr(g0, i, j), ggrpnr(g1, i, j));
+                cmp_int(fp, gtypes[i], j, getGroupType(g0, i, j), getGroupType(g1, i, j));
             }
         }
     }
     /* We have compared the names in the groups lists,
      * so we can skip the grpname list comparison.
      */
+}
+
+int getGroupType(const gmx_groups_t *group, int type, int atom)
+{
+    return (group->grpnr[type] ? group->grpnr[type][atom] : 0);
 }

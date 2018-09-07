@@ -2809,7 +2809,7 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
         nrdf2[i] = 0;
         if (atom->ptype == eptAtom || atom->ptype == eptNucleus)
         {
-            g = ggrpnr(groups, egcFREEZE, i);
+            g = getGroupType(groups, egcFREEZE, i);
             for (d = 0; d < DIM; d++)
             {
                 if (opts->nFreeze[g][d] == 0)
@@ -2817,11 +2817,11 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                     /* Add one DOF for particle i (counted as 2*1) */
                     nrdf2[i]                              += 2;
                     /* VCM group i has dim d as a DOF */
-                    dof_vcm[ggrpnr(groups, egcVCM, i)][d]  = 1;
+                    dof_vcm[getGroupType(groups, egcVCM, i)][d]  = 1;
                 }
             }
-            nrdf_tc [ggrpnr(groups, egcTC, i)]  += 0.5*nrdf2[i];
-            nrdf_vcm[ggrpnr(groups, egcVCM, i)] += 0.5*nrdf2[i];
+            nrdf_tc [getGroupType(groups, egcTC, i)]  += 0.5*nrdf2[i];
+            nrdf_vcm[getGroupType(groups, egcVCM, i)] += 0.5*nrdf2[i];
         }
     }
 
@@ -2871,10 +2871,10 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                         jmin       = std::min(jmin, nrdf2[aj]);
                         nrdf2[ai] -= imin;
                         nrdf2[aj] -= jmin;
-                        nrdf_tc [ggrpnr(groups, egcTC, ai)]  -= 0.5*imin;
-                        nrdf_tc [ggrpnr(groups, egcTC, aj)]  -= 0.5*jmin;
-                        nrdf_vcm[ggrpnr(groups, egcVCM, ai)] -= 0.5*imin;
-                        nrdf_vcm[ggrpnr(groups, egcVCM, aj)] -= 0.5*jmin;
+                        nrdf_tc [getGroupType(groups, egcTC, ai)]  -= 0.5*imin;
+                        nrdf_tc [getGroupType(groups, egcTC, aj)]  -= 0.5*jmin;
+                        nrdf_vcm[getGroupType(groups, egcVCM, ai)] -= 0.5*imin;
+                        nrdf_vcm[getGroupType(groups, egcVCM, aj)] -= 0.5*jmin;
                     }
                     ia += interaction_function[ftype].nratoms+1;
                     i  += interaction_function[ftype].nratoms+1;
@@ -2889,8 +2889,8 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                     ai         = as + ia[1+j];
                     imin       = std::min(2, nrdf2[ai]);
                     nrdf2[ai] -= imin;
-                    nrdf_tc [ggrpnr(groups, egcTC, ai)]  -= 0.5*imin;
-                    nrdf_vcm[ggrpnr(groups, egcVCM, ai)] -= 0.5*imin;
+                    nrdf_tc [getGroupType(groups, egcTC, ai)]  -= 0.5*imin;
+                    nrdf_vcm[getGroupType(groups, egcVCM, ai)] -= 0.5*imin;
                 }
                 ia += 4;
                 i  += 4;
@@ -2928,11 +2928,11 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                 {
                     /* Subtract 1/2 dof from each group */
                     ai = pgrp->ind[0];
-                    nrdf_tc [ggrpnr(groups, egcTC, ai)]  -= 0.5*imin;
-                    nrdf_vcm[ggrpnr(groups, egcVCM, ai)] -= 0.5*imin;
-                    if (nrdf_tc[ggrpnr(groups, egcTC, ai)] < 0)
+                    nrdf_tc [getGroupType(groups, egcTC, ai)]  -= 0.5*imin;
+                    nrdf_vcm[getGroupType(groups, egcVCM, ai)] -= 0.5*imin;
+                    if (nrdf_tc[getGroupType(groups, egcTC, ai)] < 0)
                     {
-                        gmx_fatal(FARGS, "Center of mass pulling constraints caused the number of degrees of freedom for temperature coupling group %s to be negative", gnames[groups->grps[egcTC].nm_ind[ggrpnr(groups, egcTC, ai)]]);
+                        gmx_fatal(FARGS, "Center of mass pulling constraints caused the number of degrees of freedom for temperature coupling group %s to be negative", gnames[groups->grps[egcTC].nm_ind[getGroupType(groups, egcTC, ai)]]);
                     }
                 }
                 else
@@ -2988,9 +2988,9 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
             na_tot = 0;
             for (ai = 0; ai < natoms; ai++)
             {
-                if (ggrpnr(groups, egcTC, ai) == i)
+                if (getGroupType(groups, egcTC, ai) == i)
                 {
-                    na_vcm[ggrpnr(groups, egcVCM, ai)]++;
+                    na_vcm[getGroupType(groups, egcVCM, ai)]++;
                     na_tot++;
                 }
             }
@@ -4117,7 +4117,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
         const t_atom *atom;
         while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
         {
-            mgrp[ggrpnr(&sys->groups, egcACC, i)] += atom->m;
+            mgrp[getGroupType(&sys->groups, egcACC, i)] += atom->m;
         }
         mt = 0.0;
         for (i = 0; (i < sys->groups.grps[egcACC].nr); i++)

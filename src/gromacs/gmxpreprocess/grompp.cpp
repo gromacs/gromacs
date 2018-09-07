@@ -179,10 +179,10 @@ static void check_eg_vs_cg(gmx_mtop_t *mtop)
             {
                 /* Get the energy group of the first atom in this charge group */
                 firstj  = astart + molt->cgs.index[cg];
-                firsteg = ggrpnr(&mtop->groups, egcENER, firstj);
+                firsteg = getGroupType(&mtop->groups, egcENER, firstj);
                 for (j = molt->cgs.index[cg]+1; j < molt->cgs.index[cg+1]; j++)
                 {
-                    eg = ggrpnr(&mtop->groups, egcENER, astart+j);
+                    eg = getGroupType(&mtop->groups, egcENER, astart+j);
                     if (eg != firsteg)
                     {
                         gmx_fatal(FARGS, "atoms %d and %d in charge group %d of molecule type '%s' are in different energy groups",
