@@ -235,12 +235,12 @@ void OptEEM::setEEM()
 
 void OptEEM::calcDeviation()
 {
-    int    i      = 0;
-    int    j      = 0;
+    int    i         = 0;
+    int    j         = 0;
     int    maxiter   = 100;
-    int    iter   = 0;
-    double qtot   = 0;
-    double EemRms = 0;
+    int    iter      = 0;
+    double qtot      = 0;
+    double EemRms    = 0;
     bool   converged = false;
     std::vector<double> qq;
     
@@ -423,7 +423,7 @@ void OptEEM::polData2TuneEEM()
             if (bFitZeta_)
             {
                 auto nzeta = ei->getNzeta();
-                auto zeta  = ei->getZeta(nzeta-1);
+                auto zeta  = ei->getZeta(nzeta-1); // We only optimize zeta for shell.
                 if (0 != zeta)
                 {
                     param_.push_back(std::move(zeta));
@@ -446,8 +446,7 @@ void OptEEM::polData2TuneEEM()
                     }
                     else
                     {
-                        gmx_fatal(FARGS, "Polarizability is zero for atom %s\n",
-                                  ai->name().c_str());
+                        gmx_fatal(FARGS, "Polarizability is zero for atom %s\n", ai->name().c_str());
                     }
                 }
             }
@@ -460,27 +459,25 @@ void OptEEM::polData2TuneEEM()
 }
 
 void OptEEM::TuneEEM2PolData()
-{
-    int      n = 0;
+{   
     char     zstr[STRLEN];
     char     z_sig[STRLEN];
     char     buf[STRLEN];
     char     buf_sig[STRLEN];
-    Poldata &pd = poldata();
-    auto    *ic = indexCount();
+    
+    int      n     = 0;
+    double   zeta  = 0;
+    double   sigma = 0;
+    
+    auto    &pd    = poldata();
+    auto    *ic    = indexCount();
+    
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {
         if (!ai->isConst())
         {
-            auto        ei     = pd.findEem(iChargeDistributionModel(), ai->name());
-            std::string qstr   = ei->getQstr();
-            std::string rowstr = ei->getRowstr();
-
-            if (qstr.size() == 0 || rowstr.size() == 0)
-            {
-                gmx_fatal(FARGS, "No qstr/rowstr for atom %s in %d model\n",
-                          ai->name().c_str(), iChargeDistributionModel());
-            }
+            auto ei = pd.findEem(iChargeDistributionModel(), ai->name());
+            GMX_RELEASE_ASSERT(ei != pd.EndEemprops(), "Cannot find eemprops");
 
             ei->setJ0(param_[n]);
             ei->setJ0_sigma(psigma_[n++]);
@@ -489,23 +486,24 @@ void OptEEM::TuneEEM2PolData()
             {
                 ei->setChi0(param_[n]);
                 ei->setChi0_sigma(psigma_[n++]);
-            }
+            }            
             if (bFitZeta_)
             {
-                zstr[0]  = '\0';
-                z_sig[0] = '\0';
-                auto nzeta   = ei->getNzeta();
-                double zeta  = 0;
-                double sigma = 0;
+                zstr[0]            = '\0';
+                z_sig[0]           = '\0';
+                std::string qstr   = ei->getQstr();
+                std::string rowstr = ei->getRowstr();
                 if (iChargeDistributionModel() == eqdAXps || 
                     iChargeDistributionModel() == eqdAXpg)
                 {                   
-                    zeta  = ei->getZeta(0);
-                    for (auto i = 0; i < nzeta; i++)
+                    for (auto i = 0; i < ei->getNzeta(); i++)
                     {
+                        /*We optimize zeta for the shell, only.*/
+                        zeta  = ei->getZeta(i); //core
+                        sigma = 0;
                         if (i > 0)
                         {
-                            zeta   = param_[n];
+                            zeta   = param_[n]; // shell
                             sigma  = psigma_[n++];
                         }
                         sprintf(buf, "%g ", zeta);
@@ -513,13 +511,10 @@ void OptEEM::TuneEEM2PolData()
                         strcat(zstr, buf);
                         strcat(z_sig, buf_sig);
                     }
-                    ei->setRowZetaQ(rowstr, zstr, qstr);
-                    ei->setZetastr(zstr);
-                    ei->setZeta_sigma(z_sig);
                 }
                 else
                 {
-                    for (auto i = 0; i < nzeta; i++)
+                    for (auto i = 0; i < ei->getNzeta(); i++)
                     {
                         zeta   = param_[n];
                         sigma  = psigma_[n++];
@@ -527,12 +522,12 @@ void OptEEM::TuneEEM2PolData()
                         sprintf(buf_sig, "%g ", sigma);
                         strcat(zstr, buf);
                         strcat(z_sig, buf_sig);
-                    }
-                    ei->setRowZetaQ(rowstr, zstr, qstr);
-                    ei->setZetastr(zstr);
-                    ei->setZeta_sigma(z_sig);                    
+                    }                   
                 }
-            }
+                ei->setRowZetaQ(rowstr, zstr, qstr);
+                ei->setZetastr(zstr);
+                ei->setZeta_sigma(z_sig); 
+            }            
             if (bFitAlpha_)
             {
                 std::string ptype;
@@ -543,8 +538,7 @@ void OptEEM::TuneEEM2PolData()
                 }
                 else
                 {
-                    gmx_fatal(FARGS, "No Ptype for atom type %s\n",
-                              ai->name().c_str());
+                    gmx_fatal(FARGS, "No Ptype for atom type %s\n", ai->name().c_str());
                 }
             }
         }
@@ -581,7 +575,7 @@ void OptEEM::InitOpt(real  factor)
 double OptEEM::calcPenalty(AtomIndexIterator ai)
 {
     double         penalty = 0;
-    const Poldata &pd      = poldata();
+    const auto    &pd      = poldata();
     
     auto ei      = pd.findEem(iChargeDistributionModel(), ai->name());
     auto ai_elem = pd.ztype2elem(ei->getName());
@@ -667,7 +661,7 @@ double OptEEM::objFunction(const double v[])
             if (bFitZeta_)
             {
                 auto nzeta = poldata().getNzeta(iChargeDistributionModel(), ai->name());
-                for (auto zz = 0; zz < nzeta; zz++)
+                for (auto zz = 0; zz < (nzeta-1); zz++)
                 {
                     auto zeta = param_[n++];
                     bound += l2_regularizer(zeta, zetaMin(), zetaMax());
