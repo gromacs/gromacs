@@ -75,7 +75,14 @@ if(GMX_GPU OR GMX_GPU_AUTO)
         set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE STRING "Use the static version of the CUDA runtime library if available")
     endif()
 
-    find_package(CUDA ${REQUIRED_CUDA_VERSION} ${FIND_CUDA_QUIETLY})
+    if (EXACT_CUDA_VERSION)
+        if (EXACT_CUDA_VERSION VERSION_LESS REQUIRED_CUDA_VERSION)
+            message(FATAL_ERROR "Exact CUDA version ${EXACT_CUDA_VERSION} smaller than required CUDA version ${REQUIRED_CUDA_VERSION} requested")
+        endif()
+        find_package(CUDA ${EXACT_CUDA_VERSION} ${FIND_CUDA_QUIETLY} EXACT)
+    else()
+        find_package(CUDA ${REQUIRED_CUDA_VERSION} ${FIND_CUDA_QUIETLY})
+    endif()
 endif()
 
 # Depending on the current vale of GMX_GPU and GMX_GPU_AUTO:
