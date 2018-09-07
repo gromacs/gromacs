@@ -47,14 +47,19 @@
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/symtab.h"
 
-enum {
+//! Enum class for group types
+enum GroupTypes
+{
     egcTC,    egcENER,   egcACC, egcFREEZE,
     egcUser1, egcUser2,  egcVCM, egcCompressedX,
     egcORFIT, egcQMMM,
     egcNR
 };
 /* Names corresponding to groups */
-extern const char *gtypes[egcNR+1];
+const char *const gtypes[] = {
+    "T-Coupling", "Energy Mon.", "Acceleration", "Freeze",
+    "User1", "User2", "VCM", "Compressed X", "Or. Res. Fit", "QMMM", nullptr
+};
 
 /*! \brief Molecules type data: atoms, interactions and exclusions */
 struct gmx_moltype_t
@@ -107,11 +112,18 @@ typedef struct gmx_groups_t
     unsigned char    *grpnr[egcNR]; /* Group numbers or NULL                */
 } gmx_groups_t;
 
-/* This macro gives the group number of group type egc for atom i.
- * This macro is useful, since the grpnr pointers are NULL
- * for group types that have all entries 0.
+/*! \brief
+ * Returns group number of an input group for a given atom.
+ *
+ * The function replaces the previous macro with the same functionality.
+ * It returns the group \p type for \p atom in \p group, or 0 if the
+ * entries for all atoms in the group are 0.
+ *
+ * \param[in] group Group to check.
+ * \param[in] type  Type of group to check.
+ * \param[in] atom  Atom to check if it has an entry.
  */
-#define ggrpnr(groups, egc, i) ((groups)->grpnr[egc] ? (groups)->grpnr[egc][i] : 0)
+int getGroupType (const gmx_groups_t *group, int type, int atom);
 
 /* The global, complete system topology struct, based on molecule types.
  * This structure should contain no data that is O(natoms) in memory.

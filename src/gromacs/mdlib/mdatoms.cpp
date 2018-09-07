@@ -129,7 +129,7 @@ makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
     md->bVCMgrps = FALSE;
     for (int i = 0; i < mtop.natoms; i++)
     {
-        if (ggrpnr(&mtop.groups, egcVCM, i) > 0)
+        if (getGroupType(&mtop.groups, egcVCM, i) > 0)
         {
             md->bVCMgrps = TRUE;
         }
@@ -341,7 +341,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
 
             if (md->cFREEZE)
             {
-                md->cFREEZE[i] = ggrpnr(groups, egcFREEZE, ag);
+                md->cFREEZE[i] = getGroupType(groups, egcFREEZE, ag);
             }
             if (EI_ENERGY_MINIMIZATION(ir->eI))
             {
@@ -468,7 +468,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
             {
                 md->cTC[i]    = groups->grpnr[egcTC][ag];
             }
-            md->cENER[i]    = ggrpnr(groups, egcENER, ag);
+            md->cENER[i]    = getGroupType(groups, egcENER, ag);
             if (md->cACC)
             {
                 md->cACC[i]   = groups->grpnr[egcACC][ag];
@@ -479,7 +479,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
             }
             if (md->cORF)
             {
-                md->cORF[i]       = ggrpnr(groups, egcORFIT, ag);
+                md->cORF[i]       = getGroupType(groups, egcORFIT, ag);
             }
 
             if (md->cU1)
