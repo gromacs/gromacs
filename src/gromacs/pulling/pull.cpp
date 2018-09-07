@@ -1982,7 +1982,7 @@ static void init_pull_group_index(FILE *fplog, const t_commrec *cr,
             for (int d = 0; d < DIM; d++)
             {
                 if (pulldim_con[d] == 1 &&
-                    ir->opts.nFreeze[ggrpnr(groups, egcFREEZE, ii)][d])
+                    ir->opts.nFreeze[getGroupType(groups, egcFREEZE, ii)][d])
                 {
                     nfrozen++;
                 }

@@ -82,7 +82,7 @@ static void init_grpstat(gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
         aloop  = gmx_mtop_atomloop_all_init(mtop);
         while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
         {
-            grp = ggrpnr(groups, egcACC, i);
+            grp = getGroupType(groups, egcACC, i);
             if ((grp < 0) && (grp >= ngacc))
             {
                 gmx_incons("Input for acceleration groups wrong");
