@@ -204,7 +204,7 @@ void init_orires(FILE                 *fplog,
     od->nref = 0;
     for (int i = 0; i < mtop->natoms; i++)
     {
-        if (ggrpnr(&mtop->groups, egcORFIT, i) == 0)
+        if (getGroupType(&mtop->groups, egcORFIT, i) == 0)
         {
             od->nref++;
         }

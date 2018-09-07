@@ -440,7 +440,7 @@ void init_QMMMrec(const t_commrec  *cr,
                 qm_max += 1000;
                 srenew(qm_arr, qm_max);
             }
-            if (ggrpnr(groups, egcQMMM, i) == j)
+            if (getGroupType(groups, egcQMMM, i) == j)
             {
                 /* hack for tip4p */
                 qm_arr[qm_nr++] = i;
@@ -473,9 +473,9 @@ void init_QMMMrec(const t_commrec  *cr,
                     vsite = a_offset + iatoms[k+1]; /* the vsite         */
                     ai    = a_offset + iatoms[k+2]; /* constructing atom */
                     aj    = a_offset + iatoms[k+3]; /* constructing atom */
-                    if (ggrpnr(groups, egcQMMM, vsite) == ggrpnr(groups, egcQMMM, ai)
+                    if (getGroupType(groups, egcQMMM, vsite) == getGroupType(groups, egcQMMM, ai)
                         &&
-                        ggrpnr(groups, egcQMMM, vsite) == ggrpnr(groups, egcQMMM, aj))
+                        getGroupType(groups, egcQMMM, vsite) == getGroupType(groups, egcQMMM, aj))
                     {
                         /* this dummy link atom needs to be removed from the qm_arr
                          * before making the QMrec of this layer!

@@ -156,7 +156,7 @@ static void list_tpx(const char *fn,
         {
             for (j = 0; (j < egcNR); j++)
             {
-                gcount[j][ggrpnr(groups, j, i)]++;
+                gcount[j][getGroupType(groups, j, i)]++;
             }
         }
         printf("Group statistics\n");
