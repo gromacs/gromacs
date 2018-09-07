@@ -227,7 +227,7 @@ bool MyMol::IsSymmetric(real toler)
 void MyMol::findInPlaneAtoms(int ca, std::vector<int> &atoms)
 {
     int bca = 0;
-    /*First try to find the atom bound to ca.*/
+    /*First try to find the atom bound to the central atom (ca).*/
     for (auto bi = molProp()->BeginBond(); 
          bi < molProp()->EndBond(); bi++)
     {
@@ -501,6 +501,7 @@ void MyMol::MakeAngles(bool bPairs,
     }
     if (bPairs)
     {
+        /* Make 1-4 table */
         cp_plist(&plist[F_LJ14], F_LJ14, eitLJ14, plist_);
     }
     for (auto i = 0; i < F_NRE; i++)
@@ -757,6 +758,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     }
     if (immOK == imm)
     {
+        /*Calculate center of charge*/
         auto atntot = 0;
         for (auto i = 0; i < topology_->atoms.nr; i++)
         {
@@ -1350,6 +1352,7 @@ void MyMol::changeCoordinate(ExperimentIterator ei, gmx_bool bpolar)
 
     if (bpolar)
     {
+        /*This is ugly, needs to be fixed!*/
         for (auto eia = ei->BeginAtom(); eia < ei->EndAtom(); eia++)
         {
             unit = string2unit((char *)eia->getUnit().c_str());

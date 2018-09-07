@@ -150,11 +150,11 @@ class AtomNum
         /*! \brief
          * Atom name
          */
-        std::string _catom;
+        std::string catom_;
         /*! \brief
          * Atom number
          */
-        int         _cnumber;
+        int         cnumber_;
     public:
         //! Default constructor
         AtomNum() {};
@@ -178,27 +178,27 @@ class AtomNum
         /*! \brief
          * Return the name of the atom for this AtomNum
          */
-        const std::string &getAtom() const { return _catom; }
+        const std::string &getAtom() const { return catom_; }
 
         /*! \brief
          * Set the name of the atom for this AtomNum
          */
-        void SetAtom(std::string catom) { _catom = catom; }
+        void SetAtom(std::string catom) { catom_ = catom; }
 
         /*! \brief
          * Set the name of the atom for this AtomNum
          */
-        void SetAtom(const char *catom) { _catom.assign(catom); }
+        void SetAtom(const char *catom) { catom_.assign(catom); }
 
         /*! \brief
          * Return the number of atoms for this AtomNum
          */
-        int getNumber() const { return _cnumber; }
+        int getNumber() const { return cnumber_; }
 
         /*! \brief
          * Set the number of atoms for this AtomNum
          */
-        void SetNumber(int cnumber) { _cnumber = cnumber; }
+        void SetNumber(int cnumber) { cnumber_ = cnumber; }
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -234,11 +234,11 @@ class MolecularComposition
         /*! \brief
          * Composition name
          */
-        std::string          _compname;
+        std::string          compname_;
         /*! \brief
          * A vector of AtomNum object
          */
-        std::vector<AtomNum> _atomnum;
+        std::vector<AtomNum> atomnum_;
     public:
         //! Defult constructor
         MolecularComposition() {}
@@ -248,29 +248,29 @@ class MolecularComposition
          *
          * \param[in] compname  Name of the composition type
          */
-        MolecularComposition(const char *compname) { _compname.assign(compname); }
+        MolecularComposition(const char *compname) { compname_.assign(compname); }
 
         /*! \brief
          * Creates a new MolecularComposition object.
          *
          * \param[in] compname  Name of the composition type
          */
-        MolecularComposition(std::string compname) { _compname = compname; }
+        MolecularComposition(std::string compname) { compname_ = compname; }
 
         /*! \brief 
          * Return the composition name
          */
-        const std::string &getCompName() const { return _compname; }
+        const std::string &getCompName() const { return compname_; }
 
         /*! \brief
          * Set the composition name
          */
-        void SetCompName(std::string compname) { _compname = compname; }
+        void SetCompName(std::string compname) { compname_ = compname; }
 
         /*! \brief
          * Set the composition name
          */
-        void SetCompName(char *compname) { _compname.assign(compname); }
+        void SetCompName(char *compname) { compname_.assign(compname); }
 
         /*! \brief
          * Add an AtomNum object to the composition
@@ -318,12 +318,12 @@ class MolecularComposition
         /*! \brief
          * Return iterator to begin looping over AtomNum
          */
-        AtomNumIterator BeginAtomNum() { return _atomnum.begin(); }
+        AtomNumIterator BeginAtomNum() { return atomnum_.begin(); }
         
         /*! \brief
          * Return iterator to end looping over AtomNum
          */
-        AtomNumIterator EndAtomNum() { return _atomnum.end(); }
+        AtomNumIterator EndAtomNum() { return atomnum_.end(); }
 
         /*! \brief
          * Return iterator pointing to a specific atom or EndAtomNum if not found
@@ -551,7 +551,7 @@ class MolecularQuadrupole : public GenericProperty
 };
 //! Iterates over MolecularQuadrupole items
 using MolecularQuadrupoleIterator      = typename std::vector<MolecularQuadrupole>::iterator;
-using MolecularQuadrupoleConstIterator = typename std::vector<MolecularQuadrupole>::const_iterator;
+ using MolecularQuadrupoleConstIterator = typename std::vector<MolecularQuadrupole>::const_iterator;
 
 /*! \brief
  * Contains the elements of the molecular polarizability tensor
@@ -566,7 +566,7 @@ using MolecularQuadrupoleConstIterator = typename std::vector<MolecularQuadrupol
 class MolecularPolarizability : public GenericProperty
 {
     private:
-        double xx_, yy_, zz_, xy_, xz_, yz_, _average, _error;
+        double xx_, yy_, zz_, xy_, xz_, yz_, average_, error_;
     public:
         //! Default constructor
         MolecularPolarizability() {}
@@ -591,7 +591,7 @@ class MolecularPolarizability : public GenericProperty
         {
             *xx      = xx_; *yy = yy_; *zz = zz_;
             *xy      = xy_; *xz = xz_; *yz = yz_;
-            *average = _average; *error = _error;
+            *average = average_; *error = error_;
         }
 
         //! Return the XX component of the polarizability tensor
@@ -613,10 +613,10 @@ class MolecularPolarizability : public GenericProperty
         double getYZ() const { return yz_; }
 
         //! Return the average of the polarizability tensor
-        double getAverage() const { return _average; }
+        double getAverage() const { return average_; }
 
         //! Return the error in the polarizability tensor
-        double getError() const { return _error; }
+        double getError() const { return error_; }
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -653,7 +653,7 @@ using  MolecularPolarizabilityConstIterator = typename std::vector<MolecularPola
 class MolecularEnergy : public GenericProperty
 {
     private:
-        double _value, _error;
+        double _value, error_;
     public:
         //! Default constructor
         MolecularEnergy() {};
@@ -665,10 +665,10 @@ class MolecularEnergy : public GenericProperty
                         { Set(value, error); };
 
         //! Set the value and error for the energy
-        void Set(double value, double error) { _value = value; _error = error; };
+        void Set(double value, double error) { _value = value; error_ = error; };
 
         //! get the value and error for this energy
-        void get(double *value, double *error) const { *value = _value; *error = _error; };
+        void get(double *value, double *error) const { *value = _value; *error = error_; };
 
         //! Set the value for the energy
         void SetValue(double value) { _value = value; };
@@ -680,7 +680,7 @@ class MolecularEnergy : public GenericProperty
         void SetError(double error) { _value = error; };
 
         //! Return the error in the energy
-        double getError() const { return _error; };
+        double getError() const { return error_; };
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -714,7 +714,7 @@ class MolecularDipole : public GenericProperty
 {
     private:
         double _x, _y, _z;
-        double _aver, _error;
+        double _aver, error_;
     public:
         //! Default constructor
         MolecularDipole() {}
@@ -727,17 +727,17 @@ class MolecularDipole : public GenericProperty
 
         //! Set all properties related to this dipole
         void Set(double x, double y, double z, double aver, double error) 
-        { _x = x; _y = y; _z = z; _aver = aver; _error = error; };
+        { _x = x; _y = y; _z = z; _aver = aver; error_ = error; };
 
         //! Return all properties of this dipole
         void get(double *x, double *y, double *z, double *aver, double *error) const
-        { *x = _x; *y = _y; *z = _z; *aver = _aver; *error = _error; };
+        { *x = _x; *y = _y; *z = _z; *aver = _aver; *error = error_; };
 
         //! Return the average dipole value
         double getAver() const { return _aver; }
 
         //! Return the error in the average dipole
-        double getError() const { return _error; }
+        double getError() const { return error_; }
 
         //! Return the X component of the dipole
         double getX() const { return _x; }
@@ -875,7 +875,7 @@ using ElectrostaticPotentialConstIterator = typename std::vector<ElectrostaticPo
 class Bond
 {
     private:
-        int _ai, _aj, _bondorder;
+        int ai_, aj_, bondorder_;
     public:
         //! Default constructor
         Bond() {}
@@ -884,20 +884,20 @@ class Bond
         Bond(int ai, int aj, int bondorder) { Set(ai, aj, bondorder); }
 
         //! Sets the ids of the atoms and the bondorder
-        void Set(int ai, int aj, int bondorder) {_ai = ai; _aj = aj; _bondorder = bondorder; };
+        void Set(int ai, int aj, int bondorder) {ai_ = ai; aj_ = aj; bondorder_ = bondorder; };
 
         //! Returns the ids of the atoms and the bondorder
         void get(int *ai, int *aj, int *bondorder) const
-        { *ai = _ai; *aj = _aj; *bondorder = _bondorder; };
+        { *ai = ai_; *aj = aj_; *bondorder = bondorder_; };
 
         //! Returns the first atom id
-        int getAi() const { return _ai; }
+        int getAi() const { return ai_; }
 
         //! Returns the second atom id
-        int getAj() const { return _aj; }
+        int getAj() const { return aj_; }
 
         //! Returns the bondorder
-        int getBondOrder() const { return _bondorder; }
+        int getBondOrder() const { return bondorder_; }
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -933,7 +933,7 @@ using BondConstIterator = typename std::vector<Bond>::const_iterator;
 class AtomicCharge : public GenericProperty
 {
     private:
-        double _q;
+        double q_;
     public:
         //! Default constructor
         AtomicCharge() {}
@@ -943,10 +943,10 @@ class AtomicCharge : public GenericProperty
             : GenericProperty(type, unit, T, epGAS) { SetQ(q); };
 
         //! Set the charge to q
-        void SetQ(double q) { _q = q; };
+        void SetQ(double q) { q_ = q; };
 
         //! Return the charge
-        double getQ() const { return _q; }
+        double getQ() const { return q_; }
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -1275,17 +1275,17 @@ using  ExperimentConstIterator = typename std::vector<Experiment>::const_iterato
 class MolProp
 {
     private:
-        int                               _index;
-        double                            _mass;
-        int                               _charge, _multiplicity;
-        std::string                       _formula, _texform, _molname, _iupac, _cas, _cid, _inchi;
+        int                               index_;
+        double                            mass_;
+        int                               charge_, multiplicity_;
+        std::string                       formula_, texform_, molname_, iupac_, cas_, cid_, inchi_;
         std::vector<std::string>          category_;
-        std::vector<MolecularComposition> _mol_comp;
-        std::vector<Experiment>           _exper;
-        std::vector<Bond>                 _bond;
+        std::vector<MolecularComposition> mol_comp_;
+        std::vector<Experiment>           exper_;
+        std::vector<Bond>                 bond_;
     public:
         //! Construct a number MolProp object
-        MolProp() { _index = -1; _mass = 0; _charge = 0; _multiplicity = 0; }
+        MolProp() { index_ = -1; mass_ = 0; charge_ = 0; multiplicity_ = 0; }
 
         /*! \brief
          * Check the internal consistency of this object
@@ -1295,28 +1295,28 @@ class MolProp
         void CheckConsistency();
 
         //! Set the index number for sorting
-        void SetIndex(int index) { _index = index; }
+        void SetIndex(int index) { index_ = index; }
 
         //! Return the index number for sorting
-        int getIndex() const { return _index; }
+        int getIndex() const { return index_; }
 
         //! Set the molecular mass
-        void SetMass(double mass) { _mass = mass; }
+        void SetMass(double mass) { mass_ = mass; }
 
         //! Return the molecular mass
-        double getMass() const { return _mass; }
+        double getMass() const { return mass_; }
 
         //! Set the total charge of the molecule
-        void SetCharge(double charge) { _charge = charge; }
+        void SetCharge(double charge) { charge_ = charge; }
 
         //! Return the total charge of the molecule
-        int getCharge() const { return _charge; }
+        int getCharge() const { return charge_; }
 
         //! Set the multiplicity of the molecule
-        void SetMultiplicity(int multiplicity) { _multiplicity = multiplicity; }
+        void SetMultiplicity(int multiplicity) { multiplicity_ = multiplicity; }
 
         //! Return the multiplicity  of the molecule
-        int getMultiplicity() const { return _multiplicity; }
+        int getMultiplicity() const { return multiplicity_; }
 
         /*! \brief
          * Merge the content of another MolProp into this one
@@ -1331,13 +1331,13 @@ class MolProp
         void Dump(FILE *fp);
 
         //! Set the LaTeX formula
-        void SetTexFormula(const std::string &formula) { _texform.assign(formula); }
+        void SetTexFormula(const std::string &formula) { texform_.assign(formula); }
 
         //! Set the formula
-        void SetFormula(const std::string &formula) { _formula.assign(formula); }
+        void SetFormula(const std::string &formula) { formula_.assign(formula); }
 
         //! Return the formula
-        const std::string &formula() const { return _formula; }
+        const std::string &formula() const { return formula_; }
 
         //! Return the LaTeX formula
         const std::string &getTexFormula() const;
@@ -1353,59 +1353,59 @@ class MolProp
         bool GenerateFormula(gmx_atomprop_t ap);
 
         //! Set the molname
-        void SetMolname(const char *molname) { _molname.assign(molname); }
+        void SetMolname(const char *molname) { molname_.assign(molname); }
 
         //! Set the molname
-        void SetMolname(std::string molname) { _molname = molname; }
+        void SetMolname(std::string molname) { molname_ = molname; }
 
         //! Return the molname
-        const std::string &getMolname() const { return _molname; }
+        const std::string &getMolname() const { return molname_; }
 
         //! Set the IUPAC name
-        void SetIupac(const char *iupac) { _iupac.assign(iupac); }
+        void SetIupac(const char *iupac) { iupac_.assign(iupac); }
 
         //! Set the IUPAC name
-        void SetIupac(std::string iupac) { _iupac = iupac; }
+        void SetIupac(std::string iupac) { iupac_ = iupac; }
 
         //! Return IUPAC name or, if not found, the molname
         const std::string &getIupac() const
         {
-            if (_iupac.size() > 0)
+            if (iupac_.size() > 0)
             {
-                return _iupac;
+                return iupac_;
             }
             else
             {
-                return _molname;
+                return molname_;
             }
         }
 
         //! Set the CAS (Chemical Abstract Service) identifier, see http://www.cas.org/
-        void SetCas(const char *cas) { _cas.assign(cas); }
+        void SetCas(const char *cas) { cas_.assign(cas); }
 
         //! Set the CAS (Chemical Abstract Service) identifier, see http://www.cas.org/
-        void SetCas(std::string cas) { _cas.assign(cas); }
+        void SetCas(std::string cas) { cas_.assign(cas); }
 
         //! Return the CAS (Chemical Abstract Service) identifier, see http:://www.cas.org
-        const std::string &getCas() const { return _cas; }
+        const std::string &getCas() const { return cas_; }
 
         //! Set the CID (Chemspider identifier) see http:://www.chemspider.com
-        void SetCid(const char *cid) { _cid.assign(cid); }
+        void SetCid(const char *cid) { cid_.assign(cid); }
 
         //! Set the CID (Chemspider identifier) see http:://www.chemspider.com
-        void SetCid(std::string cid) { _cid = cid; }
+        void SetCid(std::string cid) { cid_ = cid; }
 
         //! Return the CID (Chemspider identifier) see http:://www.chemspider.com
-        const std::string &getCid() const { return _cid; }
+        const std::string &getCid() const { return cid_; }
 
         //! Set the IUPAC International Chemical Identifier (InChI) see http://www.iupac.org/home/publications/e-resources/inchi.html
-        void SetInchi(const char *inchi) { _inchi.assign(inchi); }
+        void SetInchi(const char *inchi) { inchi_.assign(inchi); }
 
         //! Set the IUPAC International Chemical Identifier (InChI) see http://www.iupac.org/home/publications/e-resources/inchi.html
-        void SetInchi(std::string inchi) { _inchi = inchi; }
+        void SetInchi(std::string inchi) { inchi_ = inchi; }
 
         //! Return the IUPAC International Chemical Identifier (InChI) see http://www.iupac.org/home/publications/e-resources/inchi.html
-        const std::string &getInchi() const { return _inchi; }
+        const std::string &getInchi() const { return inchi_; }
 
         //! Convenience function
         bool getPropRef(MolPropObservable mpo, iqmType iQM,
@@ -1454,25 +1454,25 @@ class MolProp
         void AddComposition(MolecularComposition mc);
 
         std::vector<MolecularComposition> &MolComp()
-        { return _mol_comp; }
+        { return mol_comp_; }
 
         const std::vector<MolecularComposition> &MolComp() const
-        { return _mol_comp; }
+        { return mol_comp_; }
 
         //! Begin Iterator over MolecularCompostion items
-        MolecularCompositionConstIterator BeginMolecularComposition() const { return _mol_comp.begin(); }
+        MolecularCompositionConstIterator BeginMolecularComposition() const { return mol_comp_.begin(); }
 
         //! End Iterator over MolecularCompostion items
-        MolecularCompositionConstIterator EndMolecularComposition() const { return _mol_comp.end(); }
+        MolecularCompositionConstIterator EndMolecularComposition() const { return mol_comp_.end(); }
 
         //! Begin Iterator over MolecularCompostion items
-        MolecularCompositionIterator BeginMolecularComposition() { return _mol_comp.begin(); }
+        MolecularCompositionIterator BeginMolecularComposition() { return mol_comp_.begin(); }
 
         //! End Iterator over MolecularCompostion items
-        MolecularCompositionIterator EndMolecularComposition()   { return _mol_comp.end(); }
+        MolecularCompositionIterator EndMolecularComposition()   { return mol_comp_.end(); }
 
         //! Last Iterator over MolecularCompostion items
-        MolecularComposition *LastMolecularComposition()   { return &(_mol_comp.back()); }
+        MolecularComposition *LastMolecularComposition()   { return &(mol_comp_.back()); }
 
         //! Search for particular MolecularCompostion item or return EndMolecularComposition if not found
         MolecularCompositionIterator SearchMolecularComposition(std::string str);
@@ -1493,38 +1493,38 @@ class MolProp
         bool BondExists(Bond b);
 
         //! Return the number of Bond elements
-        int NBond() const { return _bond.size(); }
+        int NBond() const { return bond_.size(); }
 
         //! Begin Iterator over Bond elements
-        BondIterator BeginBond() { return _bond.begin(); }
+        BondIterator BeginBond() { return bond_.begin(); }
 
         //! End Iterator over Bond elements
-        BondIterator EndBond() { return _bond.end(); }
+        BondIterator EndBond() { return bond_.end(); }
 
         //! Add an experiment
-        void AddExperiment(Experiment myexp) { _exper.push_back(myexp); }
+        void AddExperiment(Experiment myexp) { exper_.push_back(myexp); }
 
         void Stats()
         {
             printf("%s - %s - %d experiments\n",
-                   _molname.c_str(), _formula.c_str(),
-                   (int)_exper.size());
+                   molname_.c_str(), formula_.c_str(),
+                   (int)exper_.size());
         }
         //! Return the number of experiments
-        int NExperiment() const { return _exper.size(); }
+        int NExperiment() const { return exper_.size(); }
 
         //! Iterator Begin over experiments
-        ExperimentIterator BeginExperiment() { return _exper.begin(); }
+        ExperimentIterator BeginExperiment() { return exper_.begin(); }
 
         //! Iterator End over experiments
-        ExperimentIterator EndExperiment() { return _exper.end(); }
+        ExperimentIterator EndExperiment() { return exper_.end(); }
 
         //! Return pointer to the last inserted experiment or nullptr if the number of experiments is zero
         Experiment *LastExperiment()
         {
             if (NExperiment() > 0)
             {
-                return &(_exper.back());
+                return &(exper_.back());
             }
             else
             {

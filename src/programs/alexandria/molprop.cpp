@@ -268,9 +268,9 @@ CommunicationStatus Bond::Send(t_commrec *cr, int dest)
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_int(cr, dest, _ai);
-        gmx_send_int(cr, dest, _aj);
-        gmx_send_int(cr, dest, _bondorder);
+        gmx_send_int(cr, dest, ai_);
+        gmx_send_int(cr, dest, aj_);
+        gmx_send_int(cr, dest, bondorder_);
     }
     else if (nullptr != debug)
     {
@@ -287,9 +287,9 @@ CommunicationStatus Bond::Receive(t_commrec *cr, int src)
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        _ai        = gmx_recv_int(cr, src);
-        _aj        = gmx_recv_int(cr, src);
-        _bondorder = gmx_recv_int(cr, src);
+        ai_        = gmx_recv_int(cr, src);
+        aj_        = gmx_recv_int(cr, src);
+        bondorder_ = gmx_recv_int(cr, src);
     }
     else if (nullptr != debug)
     {
@@ -306,12 +306,12 @@ CommunicationStatus AtomNum::Send(t_commrec *cr, int dest)
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, &_catom);
-        gmx_send_int(cr, dest, _cnumber);
+        gmx_send_str(cr, dest, &catom_);
+        gmx_send_int(cr, dest, cnumber_);
         if (nullptr != debug)
         {
             fprintf(debug, "Sent AtomNum %s %d, status %s\n",
-                    _catom.c_str(), _cnumber, cs_name(cs));
+                    catom_.c_str(), cnumber_, cs_name(cs));
             fflush(debug);
         }
     }
@@ -325,12 +325,12 @@ CommunicationStatus AtomNum::Receive(t_commrec *cr, int src)
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        gmx_recv_str(cr, src, &_catom);
-        _cnumber = gmx_recv_int(cr, src);
+        gmx_recv_str(cr, src, &catom_);
+        cnumber_ = gmx_recv_int(cr, src);
         if (nullptr != debug)
         {
             fprintf(debug, "Received AtomNum %s %d, status %s\n",
-                    _catom.c_str(), _cnumber, cs_name(cs));
+                    catom_.c_str(), cnumber_, cs_name(cs));
             fflush(debug);
         }
     }
@@ -342,7 +342,7 @@ void MolecularComposition::AddAtom(AtomNum an)
     AtomNumIterator mci = SearchAtom(an.getAtom());
     if (mci == EndAtomNum())
     {
-        _atomnum.push_back(an);
+        atomnum_.push_back(an);
     }
     else
     {
@@ -356,7 +356,7 @@ void MolecularComposition::DeleteAtom(std::string catom)
 
     if ((ani = SearchAtom(catom)) != EndAtomNum())
     {
-        _atomnum.erase(ani);
+        atomnum_.erase(ani);
     }
 }
 
@@ -422,8 +422,8 @@ CommunicationStatus MolecularComposition::Send(t_commrec *cr, int dest)
     CommunicationStatus cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_int(cr, dest, _atomnum.size());
-        gmx_send_str(cr, dest, &_compname);
+        gmx_send_int(cr, dest, atomnum_.size());
+        gmx_send_str(cr, dest, &compname_);
         for (auto ani = BeginAtomNum(); (CS_OK == cs) && (ani < EndAtomNum()); ani++)
         {
             cs = ani->Send(cr, dest);
@@ -431,7 +431,7 @@ CommunicationStatus MolecularComposition::Send(t_commrec *cr, int dest)
         if (nullptr != debug)
         {
             fprintf(debug, "Sent MolecularComposition %s, status %s\n",
-                    _compname.c_str(), cs_name(cs));
+                    compname_.c_str(), cs_name(cs));
             fflush(debug);
         }
     }
@@ -445,7 +445,7 @@ CommunicationStatus MolecularComposition::Receive(t_commrec *cr, int src)
     if (CS_OK == cs)
     {
         Natomnum = gmx_recv_int(cr, src); 
-        gmx_recv_str(cr, src, &_compname);      
+        gmx_recv_str(cr, src, &compname_);      
         CommunicationStatus cs2;
         for(int n = 0; n < Natomnum; n++)
         {
@@ -459,7 +459,7 @@ CommunicationStatus MolecularComposition::Receive(t_commrec *cr, int src)
         if (nullptr != debug)
         {
             fprintf(debug, "Received MolecularComposition %s, status %s\n",
-                    _compname.c_str(), cs_name(cs));
+                    compname_.c_str(), cs_name(cs));
             fflush(debug);
         }
     }
@@ -524,7 +524,7 @@ CommunicationStatus AtomicCharge::Receive(t_commrec *cr, int src)
     }
     if (CS_OK == cs)
     {
-        _q = gmx_recv_double(cr, src);
+        q_ = gmx_recv_double(cr, src);
     }
     else if (nullptr != debug)
     {
@@ -546,7 +546,7 @@ CommunicationStatus AtomicCharge::Send(t_commrec *cr, int dest)
     }
     if (CS_OK == cs)
     {
-        gmx_send_double(cr, dest, _q);
+        gmx_send_double(cr, dest, q_);
     }
     else if (nullptr != debug)
     {
@@ -571,7 +571,7 @@ CommunicationStatus MolecularDipole::Send(t_commrec *cr, int dest)
         gmx_send_double(cr, dest, _y);
         gmx_send_double(cr, dest, _z);
         gmx_send_double(cr, dest, _aver);
-        gmx_send_double(cr, dest, _error);
+        gmx_send_double(cr, dest, error_);
     }
     else if (nullptr != debug)
     {
@@ -596,7 +596,7 @@ CommunicationStatus MolecularDipole::Receive(t_commrec *cr, int src)
         _y     = gmx_recv_double(cr, src);
         _z     = gmx_recv_double(cr, src);
         _aver  = gmx_recv_double(cr, src);
-        _error = gmx_recv_double(cr, src);
+        error_ = gmx_recv_double(cr, src);
     }
     else if (nullptr != debug)
     {
@@ -664,16 +664,16 @@ void MolecularPolarizability::Set(double xx, double yy, double zz,
 {
     xx_      = xx; yy_ = yy; zz_ = zz;
     xy_      = xy; xz_ = xz; yz_ = yz;
-    _average = average; _error = error;
-    if (_average == 0)
+    average_ = average; error_ = error;
+    if (average_ == 0)
     {
         // Compute average as the 1/3 the trace of the diagonal
-        _average = (xx_ + yy_ + zz_)/3.0;
+        average_ = (xx_ + yy_ + zz_)/3.0;
     }
     else if ((xx_ == 0) && (yy_ == 0) && (zz_ == 0))
     {
         // Estimate tensor as the 1/3 the trace of the diagonal
-        xx_ = yy_ = zz_ = _average;
+        xx_ = yy_ = zz_ = average_;
     }
 }
 
@@ -694,8 +694,8 @@ CommunicationStatus MolecularPolarizability::Send(t_commrec *cr, int dest)
         gmx_send_double(cr, dest, xy_);
         gmx_send_double(cr, dest, xz_);
         gmx_send_double(cr, dest, yz_);
-        gmx_send_double(cr, dest, _average);
-        gmx_send_double(cr, dest, _error);
+        gmx_send_double(cr, dest, average_);
+        gmx_send_double(cr, dest, error_);
     }
     else if (nullptr != debug)
     {
@@ -722,8 +722,8 @@ CommunicationStatus MolecularPolarizability::Receive(t_commrec *cr, int src)
         xy_      = gmx_recv_double(cr, src);
         xz_      = gmx_recv_double(cr, src);
         yz_      = gmx_recv_double(cr, src);
-        _average = gmx_recv_double(cr, src);
-        _error   = gmx_recv_double(cr, src);
+        average_ = gmx_recv_double(cr, src);
+        error_   = gmx_recv_double(cr, src);
     }
     else if (nullptr != debug)
     {
@@ -745,7 +745,7 @@ CommunicationStatus MolecularEnergy::Receive(t_commrec *cr, int src)
     if (CS_OK == cs)
     {
         _value = gmx_recv_double(cr, src);
-        _error = gmx_recv_double(cr, src);
+        error_ = gmx_recv_double(cr, src);
     }
     else if (nullptr != debug)
     {
@@ -767,7 +767,7 @@ CommunicationStatus MolecularEnergy::Send(t_commrec *cr, int dest)
     if (CS_OK == cs)
     {
         gmx_send_double(cr, dest, _value);
-        gmx_send_double(cr, dest, _error);
+        gmx_send_double(cr, dest, error_);
     }
     else if (nullptr != debug)
     {
@@ -1208,9 +1208,9 @@ CommunicationStatus Experiment::Send(t_commrec *cr, int dest)
 
 int MolProp::NAtom()
 {
-    if (_mol_comp.size() > 0)
+    if (mol_comp_.size() > 0)
     {
-        int nat = _mol_comp[0].CountAtoms();
+        int nat = mol_comp_[0].CountAtoms();
         return nat;
     }
     return 0;
@@ -1232,7 +1232,7 @@ void MolProp::AddBond(Bond b)
     }
     if (!bFound)
     {
-        _bond.push_back(b);
+        bond_.push_back(b);
     }
     else if ((nullptr != debug) && (bi->getBondOrder() != b.getBondOrder()))
     {
@@ -1259,7 +1259,7 @@ bool MolProp::SearchCategory(const std::string &catname) const
 
 void MolProp::DeleteComposition(const std::string &compname)
 {
-    std::remove_if(_mol_comp.begin(), _mol_comp.end(),
+    std::remove_if(mol_comp_.begin(), mol_comp_.end(),
                    [compname](MolecularComposition mc)
         {
             return (compname.compare(mc.getCompName()) == 0);
@@ -1271,7 +1271,7 @@ void MolProp::AddComposition(MolecularComposition mc)
     MolecularCompositionIterator mci = SearchMolecularComposition(mc.getCompName());
     if (mci == EndMolecularComposition())
     {
-        _mol_comp.push_back(mc);
+        mol_comp_.push_back(mc);
     }
 }
 
@@ -1416,7 +1416,7 @@ int MolProp::Merge(std::vector<MolProp>::iterator src)
 
 MolecularCompositionIterator MolProp::SearchMolecularComposition(std::string str)
 {
-    return std::find_if(_mol_comp.begin(), _mol_comp.end(),
+    return std::find_if(mol_comp_.begin(), mol_comp_.end(),
                         [str](MolecularComposition const &mc)
         {
             return (str.compare(mc.getCompName()) == 0);
@@ -1462,7 +1462,7 @@ bool MolProp::GenerateComposition(const Poldata &pd)
     MolecularComposition mci_miller(cs.searchCS(iCmiller)->name());
 
     // Why was this again?
-    _mol_comp.clear();
+    mol_comp_.clear();
 
     int natoms = 0;
     for (ci = BeginExperiment(); (mci_alexandria.CountAtoms() <= 0) && (ci < EndExperiment()); ci++)
@@ -1523,7 +1523,7 @@ bool MolProp::GenerateComposition(const Poldata &pd)
     return false;
 }
 
-static void add_element_to_formula(const char *elem, int number, char *formula, char *texform)
+static void add_element_toformula_(const char *elem, int number, char *formula, char *texform)
 {
     if (number > 0)
     {
@@ -1570,13 +1570,13 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
             }
         }
     }
-    add_element_to_formula("C", ncomp[6], myform, texform);
-    add_element_to_formula("H", ncomp[1], myform, texform);
+    add_element_toformula_("C", ncomp[6], myform, texform);
+    add_element_toformula_("H", ncomp[1], myform, texform);
     ncomp[6] = ncomp[1] = 0;
 
     for (int j = 109; (j >= 1); j--)
     {
-        add_element_to_formula(gmx_atomprop_element(ap, j), ncomp[j], myform, texform);
+        add_element_toformula_(gmx_atomprop_element(ap, j), ncomp[j], myform, texform);
     }
     std::string mform = formula();
     if (strlen(myform) > 0)
@@ -1854,19 +1854,19 @@ CommunicationStatus MolProp::Send(t_commrec *cr, int dest)
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_double(cr, dest, _mass);
-        gmx_send_int(cr, dest, _charge);
-        gmx_send_int(cr, dest, _multiplicity);
-        gmx_send_str(cr, dest, &_formula);
-        gmx_send_str(cr, dest, &_molname);
-        gmx_send_str(cr, dest, &_iupac);
-        gmx_send_str(cr, dest, &_cas);
-        gmx_send_str(cr, dest, &_cid);
-        gmx_send_str(cr, dest, &_inchi);
-        gmx_send_int(cr, dest, _bond.size());
-        gmx_send_int(cr, dest, _mol_comp.size());
+        gmx_send_double(cr, dest, mass_);
+        gmx_send_int(cr, dest, charge_);
+        gmx_send_int(cr, dest, multiplicity_);
+        gmx_send_str(cr, dest, &formula_);
+        gmx_send_str(cr, dest, &molname_);
+        gmx_send_str(cr, dest, &iupac_);
+        gmx_send_str(cr, dest, &cas_);
+        gmx_send_str(cr, dest, &cid_);
+        gmx_send_str(cr, dest, &inchi_);
+        gmx_send_int(cr, dest, bond_.size());
+        gmx_send_int(cr, dest, mol_comp_.size());
         gmx_send_int(cr, dest, category_.size());
-        gmx_send_int(cr, dest, _exper.size());
+        gmx_send_int(cr, dest, exper_.size());
 
         /* Send Bonds */
         for (bi = BeginBond(); (CS_OK == cs) && (bi < EndBond()); bi++)
@@ -1922,15 +1922,15 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
     if (CS_OK == cs)
     {
         //! Receive mass and more
-        _mass         = gmx_recv_double(cr, src);
-        _charge       = gmx_recv_int(cr, src);
-        _multiplicity = gmx_recv_int(cr, src);
-        gmx_recv_str(cr, src, &_formula);
-        gmx_recv_str(cr, src, &_molname);
-        gmx_recv_str(cr, src, &_iupac);
-        gmx_recv_str(cr, src, &_cas);
-        gmx_recv_str(cr, src, &_cid);
-        gmx_recv_str(cr, src, &_inchi);
+        mass_         = gmx_recv_double(cr, src);
+        charge_       = gmx_recv_int(cr, src);
+        multiplicity_ = gmx_recv_int(cr, src);
+        gmx_recv_str(cr, src, &formula_);
+        gmx_recv_str(cr, src, &molname_);
+        gmx_recv_str(cr, src, &iupac_);
+        gmx_recv_str(cr, src, &cas_);
+        gmx_recv_str(cr, src, &cid_);
+        gmx_recv_str(cr, src, &inchi_);
         Nbond     = gmx_recv_int(cr, src);
         Nmol_comp = gmx_recv_int(cr, src);
         Ncategory = gmx_recv_int(cr, src);
@@ -2011,13 +2011,13 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
 
 const std::string &MolProp::getTexFormula() const
 {
-    if (_texform.size() > 0)
+    if (texform_.size() > 0)
     {
-        return _texform;
+        return texform_;
     }
     else
     {
-        return _formula;
+        return formula_;
     }
 }
 

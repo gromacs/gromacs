@@ -342,13 +342,13 @@ void print_electric_props(FILE                           *fp,
                     }
                 }
             }
-
+            
             mol.Qgresp_.updateAtomCharges(&mol.topology_->atoms);
             mol.Qgresp_.calcPot();
             fprintf(fp,   "ESP rms: %g (Hartree/e) %s\n", mol.espRms(), (mol.espRms() > 7e-3) ? "XXX" : "");
             auto nEsp     = mol.Qgresp_.nEsp();
             auto EspPoint = mol.Qgresp_.espPoint();
-            if (mol.espRms() < 7e-3) // dont add outlier to statistics
+            if (mol.espRms() < 7e-3) // do not add outlier to statistics
             {
                 for (size_t i = 0; i < nEsp; i++)
                 {
