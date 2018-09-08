@@ -1956,7 +1956,7 @@ extern gmx_bool update_randomize_velocities(t_inputrec *ir, int64_t step, const 
 
     /* proceed with andersen if 1) it's fixed probability per
        particle andersen or 2) it's massive andersen and it's tau_t/dt */
-    if ((ir->etc == etcANDERSEN) || do_per_step(step, static_cast<int>(1.0/rate + 0.5)))
+    if ((ir->etc == etcANDERSEN) || do_per_step(step, roundToInt(1.0/rate)))
     {
         andersen_tcoupl(ir, step, cr, md, state, rate,
                         upd->sd->randomize_group, upd->sd->boltzfac);

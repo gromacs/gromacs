@@ -58,16 +58,7 @@
 
 static int round_check(real r, int limit, int ftype, const char *name)
 {
-    int i;
-
-    if (r >= 0)
-    {
-        i = static_cast<int>(r + 0.5);
-    }
-    else
-    {
-        i = static_cast<int>(r - 0.5);
-    }
+    const int i = gmx::roundToInt(r);
 
     if (r-i > 0.01 || r-i < -0.01)
     {

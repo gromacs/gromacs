@@ -107,9 +107,9 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
     }
 
     ncorr = (nframes+1)/2;
-    if (ncorr > static_cast<int>(5*wt/dt+0.5))
+    if (ncorr > gmx::roundToInt(5*wt/dt))
     {
-        ncorr = static_cast<int>(5*wt/dt+0.5)+1;
+        ncorr = gmx::roundToInt(5*wt/dt)+1;
     }
     snew(tcaf, nk);
     for (k = 0; k < nk; k++)

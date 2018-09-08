@@ -759,10 +759,10 @@ static void distribute_dd_cell_sizes_dlb(gmx_domdec_t *dd,
         relative_to_absolute_cell_bounds(dd, ddbox, d1);
     }
     /* Convert the communicated shift from float to int */
-    comm.ddpme[0].maxshift = static_cast<int>(cellFracRow[pos++] + 0.5);
+    comm.ddpme[0].maxshift = gmx::roundToInt(cellFracRow[pos++]);
     if (d >= 1)
     {
-        comm.ddpme[1].maxshift = static_cast<int>(cellFracRow[pos++] + 0.5);
+        comm.ddpme[1].maxshift = gmx::roundToInt(cellFracRow[pos++]);
     }
 }
 

@@ -52,6 +52,7 @@
 
 #include <algorithm>
 
+#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/utility/cstringutil.h"
@@ -497,9 +498,8 @@ static int pointDistanceAlongAxis(const GridAxis &axis, double x, double x0)
         double period = axis.period();
         double dx     = getDeviationPeriodic(x, x0, period);
 
-        /* Transform the distance into a point distance.
-           Shift by +0.5 so we can use floor or integer casting below to get the integer index */
-        distance = static_cast<int>(floor(dx/axis.spacing() + 0.5));
+        /* Transform the distance into a point distance by rounding. */
+        distance = gmx::roundToInt(dx/axis.spacing());
 
         /* If periodic, shift the point distance to be in [0, period) */
         distance = indexWithinPeriod(distance, axis.numPointsInPeriod());

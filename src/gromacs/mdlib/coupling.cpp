@@ -1448,7 +1448,7 @@ static real vrescale_sumnoises(real                            nn,
         int  nn_int, i;
         real gauss;
 
-        nn_int = static_cast<int>(nn + 0.5);
+        nn_int = gmx::roundToInt(nn);
 
         if (nn - nn_int < -ndeg_tol || nn - nn_int > ndeg_tol)
         {

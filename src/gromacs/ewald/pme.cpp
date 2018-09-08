@@ -803,7 +803,7 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
                     "      PME grid_x (%d) and grid_y (%d) should be divisible by #PME_ranks_x (%d)\n"
                     "      and PME grid_y (%d) and grid_z (%d) should be divisible by #PME_ranks_y (%d)\n"
                     "\n",
-                    static_cast<int>((imbal-1)*100 + 0.5),
+                    gmx::roundToInt((imbal-1)*100),
                     pme->nkx, pme->nky, pme->nnodes_major,
                     pme->nky, pme->nkz, pme->nnodes_minor);
         }

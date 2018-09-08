@@ -57,6 +57,7 @@
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/awh-params.h"
@@ -222,7 +223,7 @@ static int64_t countSamples(const std::vector<PointState> &pointState)
         numSamples += point.weightSumTot();
     }
 
-    return static_cast<int64_t>(numSamples + 0.5);
+    return gmx::roundToInt64(numSamples);
 }
 
 /*! \brief

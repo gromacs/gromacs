@@ -1120,7 +1120,7 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
                     mu_ave += mu_mol;                         /* calc. the average mu */
 
                     /* Update the dipole distribution */
-                    ibin = static_cast<int>(ndipbin*mu_mol/mu_max + 0.5);
+                    ibin = gmx::roundToInt(ndipbin*mu_mol/mu_max);
                     if (ibin < ndipbin)
                     {
                         dipole_bin[ibin]++;

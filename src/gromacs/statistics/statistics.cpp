@@ -48,7 +48,7 @@
 
 static int gmx_dnint(double x)
 {
-    return static_cast<int>(x+0.5);
+    return gmx::roundToInt(x);
 }
 
 typedef struct gmx_stats {

@@ -547,7 +547,7 @@ static void write_noe(FILE *fp, int gnr, t_noe **noe, t_noe_gr *noe_gr, real rma
                         "%4d %4d %4s %4s%3d %4d %4d %4s %4s%3d %5s %5s %8d %2d %2s %s\n",
                         gri.ianr+1, gri.anr+1, gri.aname, gri.rname, gri.rnr+1,
                         grj.ianr+1, grj.anr+1, grj.aname, grj.rname, grj.rnr+1,
-                        b3, b6, static_cast<int>(noe[i][j].i_6+0.5), grj.rnr-gri.rnr, buf,
+                        b3, b6, gmx::roundToInt(noe[i][j].i_6), grj.rnr-gri.rnr, buf,
                         noe2scale(r3, r6, rmax));
             }
         }

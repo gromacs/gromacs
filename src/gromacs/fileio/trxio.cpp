@@ -226,7 +226,7 @@ int prec2ndec(real prec)
         gmx_fatal(FARGS, "DEATH HORROR prec (%g) <= 0 in prec2ndec", prec);
     }
 
-    return static_cast<int>(log(prec)/log(10.0)+0.5);
+    return gmx::roundToInt(log(prec)/log(10.0));
 }
 
 real ndec2prec(int ndec)

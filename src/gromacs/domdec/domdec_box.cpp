@@ -103,7 +103,7 @@ static void calc_pos_av_stddev(int n, const rvec *x,
             s1[d] = receiveBuffer[d];
             s2[d] = receiveBuffer[DIM + d];
         }
-        n = static_cast<int>(receiveBuffer[6] + 0.5);
+        n = gmx::roundToInt(receiveBuffer[6]);
     }
 #else  // GMX_MPI
     GMX_UNUSED_VALUE(mpiCommunicator);

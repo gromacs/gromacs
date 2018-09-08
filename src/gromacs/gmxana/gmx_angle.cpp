@@ -229,7 +229,7 @@ int gmx_g_angle(int argc, char *argv[])
     }
 
     /* Calculate bin size */
-    maxangstat = static_cast<int>(maxang/binwidth+0.5);
+    maxangstat = gmx::roundToInt(maxang/binwidth);
     binwidth   = maxang/maxangstat;
 
     rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
