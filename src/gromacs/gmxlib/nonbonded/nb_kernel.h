@@ -44,9 +44,6 @@
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 #if 0
 } /* fixes auto-indentation problems */
 #endif
@@ -95,8 +92,8 @@ typedef void
     nb_kernel_t (t_nblist *                nlist,
                  rvec *                    x,
                  rvec *                    f,
-                 const struct t_forcerec * fr,
-                 const t_mdatoms *         mdatoms,
+                 struct t_forcerec       * fr,
+                 t_mdatoms       *         mdatoms,
                  nb_kernel_data_t *        kernel_data,
                  t_nrnb *                  nrnb);
 
@@ -183,9 +180,5 @@ nb_kernel_list_findkernel(FILE *              log,
                           const char *        vf);
 
 
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _nb_kernel_h_ */

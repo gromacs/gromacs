@@ -44,10 +44,6 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifndef M_PI
 #define M_PI        3.14159265358979323846
 #endif
@@ -185,9 +181,5 @@ int gmx_fedisableexcept();
  * \return 0 if either is 0, the normal max of the two otherwise.
  */
 real max_cutoff(real cutoff1, real cutoff2);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

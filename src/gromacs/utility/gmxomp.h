@@ -68,11 +68,6 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 /*! \addtogroup module_utility
  * \{
  */
@@ -151,9 +146,5 @@ static inline void gmx_pause()
 }
 
 /*! \} */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
