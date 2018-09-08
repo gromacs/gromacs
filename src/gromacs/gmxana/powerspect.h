@@ -43,20 +43,11 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 extern void powerspectavg(real ***interface, int t, int xbins, int ybins,
                           gmx::ArrayRef<const std::string> outfiles);
 
 extern void powerspectavg_intf(t_interf ***if1, t_interf ***if2, int t,
                                int xbins, int ybins,
                                gmx::ArrayRef<const std::string> outfiles);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

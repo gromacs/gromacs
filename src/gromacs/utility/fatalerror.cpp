@@ -87,7 +87,7 @@ void gmx_init_debug(const int dbglevel, const char *dbgfile)
     }
 }
 
-gmx_bool bDebugMode(void)
+gmx_bool bDebugMode()
 {
     return bDebug;
 }

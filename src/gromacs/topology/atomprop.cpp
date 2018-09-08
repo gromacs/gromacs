@@ -278,7 +278,7 @@ static void set_prop(gmx_atomprop_t aps, int eprop)
     }
 }
 
-gmx_atomprop_t gmx_atomprop_init(void)
+gmx_atomprop_t gmx_atomprop_init()
 {
     gmx_atomprop *aps;
 

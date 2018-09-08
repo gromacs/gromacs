@@ -41,10 +41,6 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct t_atoms;
 struct t_blocka;
 
@@ -113,9 +109,5 @@ void analyse(const t_atoms *atoms, struct t_blocka *gb, char ***gn,
  */
 int find_group(const char *s, int ngrps, char **grpname);
 
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

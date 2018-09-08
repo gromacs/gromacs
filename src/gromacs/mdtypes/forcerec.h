@@ -58,10 +58,6 @@ struct t_nblist;
 struct t_nblists;
 struct t_QMMMrec;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* macros for the cginfo data in forcerec
  *
  * Since the tpx format support max 256 energy groups, we do the same here.
@@ -334,9 +330,5 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
 #define BHAMC(nbfp, ntp, ai, aj)  (nbfp)[3*((ntp)*(ai)+(aj))]
 #define BHAMA(nbfp, ntp, ai, aj)  (nbfp)[3*((ntp)*(ai)+(aj))+1]
 #define BHAMB(nbfp, ntp, ai, aj)  (nbfp)[3*((ntp)*(ai)+(aj))+2]
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

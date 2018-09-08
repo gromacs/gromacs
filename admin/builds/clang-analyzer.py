@@ -46,7 +46,8 @@ def do_build(context):
             'GMX_OPENMP': 'OFF',
             'GMX_SIMD': 'None',
             'GMX_USE_RDTSCP': 'OFF',
-            'GMX_FFT_LIBRARY': 'fftpack'
+            'GMX_FFT_LIBRARY': 'fftpack',
+            'GMX_CLANG_ANALYZER' : 'ON'
         }
 
     context.run_cmake(cmake_opts)
