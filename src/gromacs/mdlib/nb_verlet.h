@@ -112,10 +112,6 @@ enum class EmulateGpuNonbonded : bool
     Yes
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 
 /*! \brief Nonbonded NxN kernel types: plain C, CPU SIMD, GPU, GPU emulation */
 typedef enum
@@ -205,9 +201,5 @@ typedef struct nonbonded_verlet_t {
 /*! \brief Getter for bUseGPU */
 gmx_bool
 usingGpu(nonbonded_verlet_t *nbv);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* NB_VERLET_H */

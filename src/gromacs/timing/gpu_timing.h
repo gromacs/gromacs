@@ -43,10 +43,6 @@
 #ifndef GMX_TIMING_GPU_TIMING_H
 #define GMX_TIMING_GPU_TIMING_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*! \internal \brief GPU kernel time and call count. */
 struct gmx_kernel_timing_data_t
 {
@@ -93,9 +89,5 @@ struct gmx_wallclock_gpu_nbnxn_t
     double                   pl_h2d_t;         /**< pair search step host to device transfer time */
     int                      pl_h2d_c;         /**< pair search step  host to device transfer call count */
 };
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -49,10 +49,6 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*! \brief
  * Debug log file.
  *
@@ -80,7 +76,7 @@ extern gmx_bool gmx_debug_at;
 void gmx_init_debug(int dbglevel, const char *dbgfile);
 
 /** Returns TRUE when the program was started in debug mode */
-gmx_bool bDebugMode(void);
+gmx_bool bDebugMode();
 
 /** Sets the log file for printing error messages. */
 void
@@ -240,9 +236,5 @@ void _range_check(int n, int n_min, int n_max, const char *warn_str,
  * and should NOT end with a newline.
  */
 void gmx_warning(const char *fmt, ...);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

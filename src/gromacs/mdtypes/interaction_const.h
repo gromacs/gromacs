@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,10 +37,6 @@
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /* Used with force switching or a constant potential shift:
  * rsw       = max(r - r_switch, 0)
@@ -134,9 +130,5 @@ struct interaction_const_t
        single precision x86 SIMD for aligned loads */
     real *tabq_vdw_FDV0;
 };
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

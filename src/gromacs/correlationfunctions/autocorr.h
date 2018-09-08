@@ -55,10 +55,6 @@
 
 struct gmx_output_env_t;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*! \brief Normal correlation f(t)*f(t+dt) */
 #define eacNormal (1<<0)
 /*! \brief Cosine correlation cos(f(t)-f(t+dt)) */
@@ -96,14 +92,14 @@ t_pargs *add_acf_pargs(int *npargs, t_pargs *pa);
  * Works only AFTER do_auto_corr has been called!
  * \return the output length for the correlation function
  */
-int get_acfnout(void);
+int get_acfnout();
 
 /*! \brief
  * Returns the fitting function selected.
  * Works only AFTER do_auto_corr has been called!
  * \return the fit function type.
  */
-int get_acffitfn(void);
+int get_acffitfn();
 
 /*! \brief
  * Calls low_do_autocorr (see below). add_acf_pargs has to be called before this
@@ -181,9 +177,5 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv,
                      int nrestart, gmx_bool bAver, gmx_bool bNormalize,
                      gmx_bool bVerbose, real tbeginfit, real tendfit,
                      int nfitparm);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

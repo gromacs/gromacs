@@ -100,10 +100,6 @@ static inline int getOclPruneKernelJ4Concurrency(int vendorId)
 }
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*! \brief Electrostatic OpenCL kernel flavors.
  *
  *  Types of electrostatics implementations available in the OpenCL non-bonded
@@ -320,9 +316,5 @@ struct gmx_nbnxn_ocl_t
     cl_timers_t                      *timers;   /**< OpenCL event-based timers.                                 */
     struct gmx_wallclock_gpu_nbnxn_t *timings;  /**< Timing data. TODO: deprecate this and query timers for accumulated data instead */
 };
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif  /* NBNXN_OPENCL_TYPES_H */

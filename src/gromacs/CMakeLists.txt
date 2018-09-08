@@ -163,9 +163,9 @@ gmx_install_headers(
 # that contains the target that uses them.
 # TODO: Generate a header instead that can be included from baseversion.c.
 # That probably simplifies things somewhat.
-set(GENERATED_VERSION_FILE utility/baseversion-gen.c)
+set(GENERATED_VERSION_FILE utility/baseversion-gen.cpp)
 gmx_configure_version_file(
-    utility/baseversion-gen.c.cmakein ${GENERATED_VERSION_FILE}
+    utility/baseversion-gen.cpp.cmakein ${GENERATED_VERSION_FILE}
     REMOTE_HASH)
 list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE}
      $<TARGET_OBJECTS:libgromacs_external>
@@ -236,13 +236,25 @@ endif()
 # Recent versions of gcc and clang give warnings on scanner.cpp, which
 # is a generated source file. These are awkward to suppress inline, so
 # we do it in the compilation command (after testing that the compiler
-# supports the suppressions).
+# supports the suppressions). Same issue exists for nonbonded kernels
+# so we supress them for all generated files.
 include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag(-Wno-unused HAS_NO_UNUSED)
+check_cxx_compiler_flag("-Wno-unused -Wno-unused-parameter" HAS_NO_UNUSED)
+check_cxx_compiler_flag(-Wno-missing-declarations HAS_NO_MISSING_DECL)
+check_cxx_compiler_flag(-Wno-missing-prototypes HAS_NO_MISSING_PROTO)
+check_cxx_compiler_flag(/wd4101 HAS_NO_MSVC_UNUSED)
 if (HAS_NO_UNUSED)
-    set(_scanner_cpp_compiler_flags "${_scanner_cpp_compiler_flags} -Wno-unused-parameter -Wno-unused-function")
+    target_compile_options(libgromacs_generated PRIVATE "-Wno-unused;-Wno-unused-parameter")
 endif()
-set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_scanner_cpp_compiler_flags}")
+if (HAS_NO_MISSING_DECL)
+    target_compile_options(libgromacs_generated PRIVATE "-Wno-missing-declarations")
+endif()
+if (HAS_NO_MISSING_PROTO)
+    target_compile_options(libgromacs_generated PRIVATE "-Wno-missing-prototypes")
+endif()
+if (HAS_NO_MSVC_UNUSED)
+    target_compile_options(libgromacs_generated PRIVATE "/wd4101")
+endif()
 
 if(SIMD_AVX_512_CXX_SUPPORTED AND NOT ("${GMX_SIMD_ACTIVE}" STREQUAL "AVX_512_KNL"))
     # Since we might be overriding -march=core-avx2, add a flag so we don't warn for this specific file.

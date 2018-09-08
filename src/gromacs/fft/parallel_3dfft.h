@@ -45,10 +45,6 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct gmx_parallel_3dfft *
     gmx_parallel_3dfft_t;
 
@@ -131,9 +127,5 @@ gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
  */
 int
 gmx_parallel_3dfft_destroy(gmx_parallel_3dfft_t    pfft_setup);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
