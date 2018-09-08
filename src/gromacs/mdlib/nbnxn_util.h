@@ -44,10 +44,6 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/fatalerror.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 
 /* Returns the base-2 log of n.
  * Generates a fatal error when n is not an integer power of 2.
@@ -124,9 +120,5 @@ static inline int nbnxn_kernel_to_cluster_j_size(int nb_kernel_type)
     return cj_size;
 }
 
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

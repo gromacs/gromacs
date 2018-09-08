@@ -37,11 +37,6 @@
 
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 void rangeArray(int *ar, int size);
 
 void insertionSort(real *ar, int *perm, int start, int end, int direction);
@@ -53,9 +48,5 @@ int start_binsearch(real *array, int *perm, int low, int high,
 
 int LinearSearch(const double *array, int startindx, int stopindx,
                  double key, int *count, int direction);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

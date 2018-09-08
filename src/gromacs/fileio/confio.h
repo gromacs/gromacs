@@ -43,10 +43,6 @@
 /* For reading coordinate files it is assumed that enough memory
  * has been allocated beforehand.
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct gmx_mtop_t;
 struct t_atoms;
 struct t_symtab;
@@ -127,9 +123,5 @@ void readConfAndAtoms(const char *infile,
 gmx_bool read_tps_conf(const char *infile, struct t_topology *top,
                        int *ePBC, rvec **x, rvec **v, matrix box,
                        gmx_bool requireMasses);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -47,13 +47,6 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
-}
-#endif
-
 /** Continuation character. */
 #define CONTINUE    '\\'
 /** Standard size for char* string buffers. */
@@ -185,9 +178,5 @@ int64_t str_to_int64_t(const char *str, char **endptr);
  * be sure to call gmx_step_str with different buffers.
  */
 char *gmx_step_str(int64_t i, char *buf);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

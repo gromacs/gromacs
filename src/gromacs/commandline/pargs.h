@@ -52,11 +52,6 @@
 
 struct gmx_output_env_t;
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 /*! \addtogroup module_commandline
  * \{
  */
@@ -262,9 +257,5 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                            gmx_output_env_t **oenv);
 
 /*! \} */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

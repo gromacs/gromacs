@@ -58,7 +58,7 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
-int gmx_omp_get_max_threads(void)
+int gmx_omp_get_max_threads()
 {
 #if GMX_OPENMP
     return omp_get_max_threads();
@@ -67,7 +67,7 @@ int gmx_omp_get_max_threads(void)
 #endif
 }
 
-int gmx_omp_get_num_procs(void)
+int gmx_omp_get_num_procs()
 {
 #if GMX_OPENMP
     return omp_get_num_procs();
@@ -76,7 +76,7 @@ int gmx_omp_get_num_procs(void)
 #endif
 }
 
-int gmx_omp_get_thread_num(void)
+int gmx_omp_get_thread_num()
 {
 #if GMX_OPENMP
     return omp_get_thread_num();

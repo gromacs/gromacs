@@ -70,7 +70,9 @@
 #include "gromacs/utility/smalloc.h"
 
 /* Different default (c) and SIMD instructions interaction-specific kernels */
+#if !GMX_CLANG_ANALYZER
 #include "gromacs/gmxlib/nonbonded/nb_kernel_c/nb_kernel_c.h"
+#endif
 
 #if GMX_SIMD_X86_SSE2 && !GMX_DOUBLE
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_sse2_single/nb_kernel_sse2_single.h"
@@ -116,7 +118,9 @@ gmx_nonbonded_setup(t_forcerec *   fr,
         if (!bGenericKernelOnly)
         {
             /* Add the generic kernels to the structure stored statically in nb_kernel.c */
+#if !GMX_CLANG_ANALYZER
             nb_kernel_list_add_kernels(kernellist_c, kernellist_c_size);
+#endif
 
             if (!(fr != nullptr && !fr->use_simd_kernels))
             {
@@ -420,7 +424,8 @@ void do_nonbonded(const t_forcerec  *fr,
                     /* Neighborlists whose kernelptr==NULL will always be empty */
                     if (kernelptr != nullptr)
                     {
-                        (*kernelptr)(&(nlist[i]), x, f, fr, mdatoms, &kernel_data, nrnb);
+                        (*kernelptr)(&(nlist[i]), x, f, const_cast<t_forcerec*>(fr),
+                                     const_cast<t_mdatoms*>(mdatoms), &kernel_data, nrnb);
                     }
                     else
                     {

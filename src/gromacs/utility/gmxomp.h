@@ -68,11 +68,6 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 /*! \addtogroup module_utility
  * \{
  */
@@ -84,21 +79,21 @@ extern "C"
  *
  * Acts as a wrapper for omp_get_max_threads().
  */
-int gmx_omp_get_max_threads(void);
+int gmx_omp_get_max_threads();
 
 /*! \brief
  * Returns the number of processors available when the function is called.
  *
  * Acts as a wrapper around omp_get_num_procs().
  */
-int gmx_omp_get_num_procs(void);
+int gmx_omp_get_num_procs();
 
 /*! \brief
  * Returns the thread number of the thread executing within its thread team.
  *
  * Acts as a wrapper for omp_get_thread_num().
  */
-int gmx_omp_get_thread_num(void);
+int gmx_omp_get_thread_num();
 
 /*! \brief
  * Sets the number of threads in subsequent parallel regions, unless overridden
@@ -151,9 +146,5 @@ static inline void gmx_pause()
 }
 
 /*! \} */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

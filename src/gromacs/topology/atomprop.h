@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,10 +40,6 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* Abstract type for the atom property database */
 typedef struct gmx_atomprop *gmx_atomprop_t;
 
@@ -52,7 +48,7 @@ enum {
     epropNR
 };
 
-gmx_atomprop_t gmx_atomprop_init(void);
+gmx_atomprop_t gmx_atomprop_init();
 /* Initializes and returns the atom properties struct */
 
 void gmx_atomprop_destroy(gmx_atomprop_t aps);
@@ -70,9 +66,5 @@ gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
  * The first time this function is called for this property
  * the database will be read.
  */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
