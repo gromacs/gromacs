@@ -499,9 +499,9 @@ int Mdrunner::mainFunction(int argc, char *argv[])
 
     domdecOptions.rankOrder    = static_cast<DdRankOrder>(nenum(ddrank_opt_choices));
     domdecOptions.dlbOption    = static_cast<DlbOption>(nenum(dddlb_opt_choices));
-    domdecOptions.numCells[XX] = static_cast<int>(realddxyz[XX] + 0.5);
-    domdecOptions.numCells[YY] = static_cast<int>(realddxyz[YY] + 0.5);
-    domdecOptions.numCells[ZZ] = static_cast<int>(realddxyz[ZZ] + 0.5);
+    domdecOptions.numCells[XX] = roundToInt(realddxyz[XX]);
+    domdecOptions.numCells[YY] = roundToInt(realddxyz[YY]);
+    domdecOptions.numCells[ZZ] = roundToInt(realddxyz[ZZ]);
 
     nbpu_opt    = nbpu_opt_choices[0];
     pme_opt     = pme_opt_choices[0];

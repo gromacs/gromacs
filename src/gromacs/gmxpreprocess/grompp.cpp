@@ -2061,7 +2061,7 @@ int gmx_grompp(int argc, char *argv[])
                 else
                 {
                     sprintf(warn_buf, "NVE simulation with an initial temperature of zero: will use a Verlet buffer of %d%%. Check your energy drift!",
-                            static_cast<int>(verlet_buffer_ratio_NVE_T0*100 + 0.5));
+                            gmx::roundToInt(verlet_buffer_ratio_NVE_T0*100));
                     warning_note(wi, warn_buf);
                 }
             }
@@ -2099,8 +2099,8 @@ int gmx_grompp(int argc, char *argv[])
                     {
                         sprintf(warn_buf, "You are using a Verlet buffer tolerance of %g kJ/mol/ps for an NVE simulation of length %g ps, which can give a final drift of %d%%. For conserving energy to %d%% when using constraints, you might need to set verlet-buffer-tolerance to %.1e.",
                                 ir->verletbuf_tol, ir->nsteps*ir->delta_t,
-                                static_cast<int>(ir->verletbuf_tol/totalEnergyDriftPerAtomPerPicosecond*100 + 0.5),
-                                static_cast<int>(100*driftTolerance + 0.5),
+                                gmx::roundToInt(ir->verletbuf_tol/totalEnergyDriftPerAtomPerPicosecond*100),
+                                gmx::roundToInt(100*driftTolerance),
                                 driftTolerance*totalEnergyDriftPerAtomPerPicosecond);
                         warning_note(wi, warn_buf);
                     }

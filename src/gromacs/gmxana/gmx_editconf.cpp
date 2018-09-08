@@ -381,9 +381,9 @@ static void visualize_box(FILE *out, int a0, int r0, matrix box, const rvec grid
     a0++;
     r0++;
 
-    nx   = static_cast<int>(gridsize[XX] + 0.5);
-    ny   = static_cast<int>(gridsize[YY] + 0.5);
-    nz   = static_cast<int>(gridsize[ZZ] + 0.5);
+    nx   = gmx::roundToInt(gridsize[XX]);
+    ny   = gmx::roundToInt(gridsize[YY]);
+    nz   = gmx::roundToInt(gridsize[ZZ]);
     nbox = nx * ny * nz;
     if (TRICLINIC(box))
     {

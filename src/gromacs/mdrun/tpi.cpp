@@ -734,9 +734,8 @@ Integrator::do_tpi()
             }
             else
             {
-                i = static_cast<int>((bU_logV_bin_limit
-                                      - (beta*epot - logV + refvolshift))*invbinw
-                                     + 0.5);
+                i = gmx::roundToInt((bU_logV_bin_limit
+                                     - (beta*epot - logV + refvolshift))*invbinw);
                 if (i < 0)
                 {
                     i = 0;
@@ -848,7 +847,7 @@ Integrator::do_tpi()
             bUlogV = -i/invbinw + bU_logV_bin_limit - refvolshift + log(V_all/frame);
             fprintf(fp_tpi, "%6.2f %10d %12.5e\n",
                     bUlogV,
-                    static_cast<int>(bin[i]+0.5),
+                    roundToInt(bin[i]),
                     bin[i]*exp(-bUlogV)*V_all/VembU_all);
         }
         xvgrclose(fp_tpi);

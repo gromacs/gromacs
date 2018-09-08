@@ -176,9 +176,9 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
     k_factor[YY] = 2 * M_PI / box[YY][YY];
     k_factor[ZZ] = 2 * M_PI / box[ZZ][ZZ];
 
-    maxkx = static_cast<int>(end_q / k_factor[XX] + 0.5);
-    maxky = static_cast<int>(end_q / k_factor[YY] + 0.5);
-    maxkz = static_cast<int>(end_q / k_factor[ZZ] + 0.5);
+    maxkx = gmx::roundToInt(end_q / k_factor[XX]);
+    maxky = gmx::roundToInt(end_q / k_factor[YY]);
+    maxkz = gmx::roundToInt(end_q / k_factor[ZZ]);
 
     snew (counter, sf->n_angles);
 
@@ -205,7 +205,7 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
                     krr = std::sqrt (gmx::square(kx) + gmx::square(ky) + gmx::square(kz));
                     if (krr >= start_q && krr <= end_q)
                     {
-                        kr = static_cast<int>(krr/sf->ref_k + 0.5);
+                        kr = gmx::roundToInt(krr/sf->ref_k);
                         if (kr < sf->n_angles)
                         {
                             counter[kr]++; /* will be used for the copmutation
@@ -241,7 +241,7 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
                 kz = k * k_factor[ZZ]; krr = std::sqrt (gmx::square(kx) + gmx::square(ky)
                                                         + gmx::square(kz)); if (krr >= start_q && krr <= end_q)
                 {
-                    kr = static_cast<int>(krr / sf->ref_k + 0.5);
+                    kr = gmx::roundToInt(krr / sf->ref_k);
                     if (kr < sf->n_angles && counter[kr] != 0)
                     {
                         sf->F[group][kr] +=
@@ -505,7 +505,7 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
 
     sf->ref_k = (2.0 * M_PI) / (r_tmp);
     /* ref_k will be the reference momentum unit */
-    sf->n_angles = static_cast<int>(end_q / sf->ref_k + 0.5);
+    sf->n_angles = gmx::roundToInt(end_q / sf->ref_k);
 
     snew (sf->F, ng);
     for (i = 0; i < ng; i++)

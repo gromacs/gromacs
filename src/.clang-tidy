@@ -1,5 +1,5 @@
 Checks:  clang-diagnostic-*,clang-analyzer-*,-clang-analyzer-security.insecureAPI.strcpy,
-         bugprone-*,misc-*,readability-*,performance-*,mpi-*,-misc-incorrect-roundings,
+         bugprone-*,misc-*,readability-*,performance-*,mpi-*,
          -readability-inconsistent-declaration-parameter-name,
          -readability-function-size,-readability-else-after-return,
          modernize-use-nullptr,modernize-use-emplace,

@@ -2773,7 +2773,7 @@ static void get_nsubpair_target(const nbnxn_search   *nbs,
      * (and we can't chop up j-groups) so we use a minimum target size of 36.
      */
     *nsubpair_target  = std::max(nsubpair_target_min,
-                                 static_cast<int>(nsp_est/min_ci_balanced + 0.5));
+                                 roundToInt(nsp_est/min_ci_balanced));
     *nsubpair_tot_est = static_cast<int>(nsp_est);
 
     if (debug)

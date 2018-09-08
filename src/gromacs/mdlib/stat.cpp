@@ -371,7 +371,7 @@ void global_stat(gmx_global_stat_t gs,
     if (checkNumberOfBondedInteractions)
     {
         extract_bind(rb, inb, 1, &nb);
-        *totalNumberOfBondedInteractions = static_cast<int>(nb+0.5);
+        *totalNumberOfBondedInteractions = gmx::roundToInt(nb);
     }
 
     if (nsig > 0)

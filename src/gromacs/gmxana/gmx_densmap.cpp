@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -241,17 +241,17 @@ int gmx_densmap(int argc, char *argv[])
     {
         if (n1 == 0)
         {
-            n1 = static_cast<int>(box[c1][c1]/bin + 0.5);
+            n1 = gmx::roundToInt(box[c1][c1]/bin);
         }
         if (n2 == 0)
         {
-            n2 = static_cast<int>(box[c2][c2]/bin + 0.5);
+            n2 = gmx::roundToInt(box[c2][c2]/bin);
         }
     }
     else
     {
-        n1      = static_cast<int>(2*amax/bin + 0.5);
-        nradial = static_cast<int>(rmax/bin + 0.5);
+        n1      = gmx::roundToInt(2*amax/bin);
+        nradial = gmx::roundToInt(rmax/bin);
         invspa  = n1/(2*amax);
         invspz  = nradial/rmax;
         if (bMirror)

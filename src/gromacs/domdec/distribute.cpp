@@ -422,7 +422,7 @@ getAtomGroupDistribution(FILE *fplog,
         fprintf(fplog, "Atom distribution over %d domains: av %d stddev %d min %d max %d\n",
                 dd->nnodes,
                 nat_sum,
-                static_cast<int>(std::sqrt(nat2_sum - gmx::square(static_cast<double>(nat_sum)) + 0.5)),
+                gmx::roundToInt(std::sqrt(nat2_sum - gmx::square(static_cast<double>(nat_sum)))),
                 nat_min, nat_max);
     }
 

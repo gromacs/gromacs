@@ -4012,7 +4012,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
         {
             for (i = 0; i < ir->opts.ngtc; i++)
             {
-                int nsteps = static_cast<int>(ir->opts.tau_t[i]/ir->delta_t + 0.5);
+                int nsteps = gmx::roundToInt(ir->opts.tau_t[i]/ir->delta_t);
                 sprintf(err_buf, "tau_t/delta_t for group %d for temperature control method %s must be a multiple of nstcomm (%d), as velocities of atoms in coupled groups are randomized every time step. The input tau_t (%8.3f) leads to %d steps per randomization", i, etcoupl_names[ir->etc], ir->nstcomm, ir->opts.tau_t[i], nsteps);
                 CHECK(nsteps % ir->nstcomm != 0);
             }

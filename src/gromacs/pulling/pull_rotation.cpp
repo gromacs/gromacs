@@ -1703,7 +1703,6 @@ static inline void shift_single_coord(const matrix box, rvec x, const ivec is)
 
 /* Determine the 'home' slab of this atom which is the
  * slab with the highest Gaussian weight of all */
-#define round(a) int((a)+0.5)
 static inline int get_homeslab(
         rvec       curr_x,   /* The position for which the home slab shall be determined */
         const rvec rotvec,   /* The rotation vector */
@@ -1716,7 +1715,7 @@ static inline int get_homeslab(
      * slab with index 0) is */
     dist = iprod(rotvec, curr_x);
 
-    return round(dist / slabdist);
+    return gmx::roundToInt(dist / slabdist);
 }
 
 

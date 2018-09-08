@@ -273,7 +273,7 @@ compare(int natoms, int n1, rvec **eigvec1, int n2, rvec **eigvec2,
     if (neig1 != n || neig2 != n)
     {
         fprintf(stdout, "this is %d%% and %d%% of the total trace\n",
-                static_cast<int>(100*sum1/trace1+0.5), static_cast<int>(100*sum2/trace2+0.5));
+                gmx::roundToInt(100*sum1/trace1), gmx::roundToInt(100*sum2/trace2));
     }
     fprintf(stdout, "Square root of the traces: %g and %g\n",
             std::sqrt(sum1), std::sqrt(sum2));
