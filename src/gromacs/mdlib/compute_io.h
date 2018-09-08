@@ -41,16 +41,8 @@
 struct gmx_groups_t;
 struct t_inputrec;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 double compute_io(const t_inputrec *ir, int natoms, const gmx_groups_t *groups,
                   int nrener, int nrepl);
 /* Return total output to be written from this simulation. */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

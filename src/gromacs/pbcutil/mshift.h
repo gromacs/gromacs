@@ -42,10 +42,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct t_idef;
 struct t_ilist;
 
@@ -121,9 +117,5 @@ void unshift_x(const t_graph *g, const matrix box, rvec x[], const rvec x_s[]);
 
 void unshift_self(const t_graph *g, const matrix box, rvec x[]);
 /* Id, but in place */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -77,10 +77,6 @@ static const int c_numClPerSupercl = c_nbnxnGpuNumClusterPerSupercluster;
 /*! \brief cluster size = number of atoms per cluster. */
 static const int c_clSize          = c_nbnxnGpuClusterSize;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*! \brief Electrostatic CUDA kernel flavors.
  *
  *  Types of electrostatics implementations available in the CUDA non-bonded
@@ -240,9 +236,5 @@ struct gmx_nbnxn_cuda_t
     cu_timers_t               *timers;    /**< CUDA event-based timers.                             */
     gmx_wallclock_gpu_nbnxn_t *timings;   /**< Timing data. TODO: deprecate this and query timers for accumulated data instead */
 };
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif  /* NBNXN_CUDA_TYPES_H */

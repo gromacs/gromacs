@@ -380,6 +380,9 @@
 /* Define if we have lmfit support */
 #cmakedefine01 HAVE_LMFIT
 
+/* Build using clang analyzer */
+#cmakedefine01 GMX_CLANG_ANALYZER
+
 /*! \endcond */
 
 #endif
