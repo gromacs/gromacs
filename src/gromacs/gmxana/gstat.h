@@ -40,10 +40,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/topology/index.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct gmx_output_env_t;
 struct gmx_residuetype_t;
 
@@ -255,9 +251,5 @@ void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
                   real fit_start, real temp);
 
 void compute_derivative(int nn, const real x[], const real y[], real dydx[]);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

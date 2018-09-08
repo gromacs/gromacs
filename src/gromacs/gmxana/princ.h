@@ -44,10 +44,6 @@
 struct t_atom;
 struct t_atoms;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void rotate_atoms(int gnx, const int index[], rvec x[], matrix trans);
 /* Rotate all atoms in index using matrix trans */
 
@@ -77,9 +73,5 @@ real sub_xcm(rvec x[], int gnx, const int *index, const t_atom atom[], rvec xcm,
 
 void add_xcm(rvec x[], int gnx, const int *index, rvec xcm);
 /* Increment all atoms in index with xcm */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,10 +48,6 @@
 
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*! \brief
  * Integrate the equispaced data in c[] from 0 to n using trapezium rule.
  * If fit != NULL the fit is written as well.
@@ -80,9 +76,5 @@ real print_and_integrate(FILE *fp, int n, real dt, const real c[], const real *f
  */
 real evaluate_integral(int n, const real x[], const real y[], const real dy[], real aver_start,
                        real *stddev);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

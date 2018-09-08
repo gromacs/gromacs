@@ -420,7 +420,8 @@ void do_nonbonded(const t_forcerec  *fr,
                     /* Neighborlists whose kernelptr==NULL will always be empty */
                     if (kernelptr != nullptr)
                     {
-                        (*kernelptr)(&(nlist[i]), x, f, fr, mdatoms, &kernel_data, nrnb);
+                        (*kernelptr)(&(nlist[i]), x, f, const_cast<t_forcerec*>(fr),
+                                     const_cast<t_mdatoms*>(mdatoms), &kernel_data, nrnb);
                     }
                     else
                     {
