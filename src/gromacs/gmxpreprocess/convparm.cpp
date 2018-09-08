@@ -62,7 +62,7 @@ static int round_check(real r, int limit, int ftype, const char *name)
 
     if (r >= 0)
     {
-        i = static_cast<int>(r + 0.5);
+        i = gmx::roundToInt(r);
     }
     else
     {

@@ -255,8 +255,8 @@ int gmx_sorient(int argc, char *argv[])
     rcut2 = gmx::square(rcut);
 
     invbw = 1/binwidth;
-    nbin1 = 1+static_cast<int>(2*invbw + 0.5);
-    nbin2 = 1+static_cast<int>(invbw + 0.5);
+    nbin1 = 1+gmx::roundToInt(2*invbw);
+    nbin2 = 1+gmx::roundToInt(invbw);
 
     invrbw = 1/rbinw;
 

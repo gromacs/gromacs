@@ -51,6 +51,7 @@
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datastorage.h"
 #include "gromacs/analysisdata/framelocaldata.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -140,7 +141,7 @@ AnalysisHistogramSettings::AnalysisHistogramSettings(
             binWidth_  = settings.binWidth_;
             firstEdge_ = binWidth_ * std::floor(settings.min_ / binWidth_);
             lastEdge_  = binWidth_ * std::ceil(settings.max_ / binWidth_);
-            binCount_  = static_cast<int>((lastEdge_ - firstEdge_) / binWidth_ + 0.5);
+            binCount_  = gmx::roundToInt((lastEdge_ - firstEdge_) / binWidth_);
         }
         else
         {
@@ -165,7 +166,7 @@ AnalysisHistogramSettings::AnalysisHistogramSettings(
             else
             {
                 binWidth_ = settings.binWidth_;
-                binCount_ = static_cast<int>((lastEdge_ - firstEdge_) / binWidth_ + 0.5);
+                binCount_ = gmx::roundToInt((lastEdge_ - firstEdge_) / binWidth_);
                 if (settings.bIntegerBins_)
                 {
                     firstEdge_ -= 0.5 * binWidth_;

@@ -659,7 +659,7 @@ static void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
 
         sscanf(ptr, fmtlf, &time); /* printf("Time %f\n",time); */
         /* Round time to fs */
-        time = 1.0/1000*( static_cast<int64_t> (time*1000+0.5) );
+        time = 1.0/1000*( gmx::roundToInt64(time*1000) );
 
         /* get time step of pdo file */
         if (count == 0)
@@ -671,7 +671,7 @@ static void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
             dt = time-time0;
             if (opt->dt > 0.0)
             {
-                dstep = static_cast<int>(opt->dt/dt+0.5);
+                dstep = gmx::roundToInt(opt->dt/dt);
                 if (dstep == 0)
                 {
                     dstep = 1;
@@ -799,7 +799,7 @@ static void enforceEqualWeights(t_UmbrellaWindow * window, int nWindows)
             {
                 window[j].Histo[k][i] *= ratio;
             }
-            window[j].N[k] = static_cast<int>(ratio*window[j].N[k] + 0.5);
+            window[j].N[k] = gmx::roundToInt(ratio*window[j].N[k]);
         }
     }
 }
@@ -2352,7 +2352,7 @@ static void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
     for (i = 0; i < nt; i++)
     {
         /* Do you want that time frame? */
-        t = 1.0/1000*( static_cast<int64_t> ((y[0][i]*1000) + 0.5)); /* round time to fs */
+        t = 1.0/1000*( gmx::roundToInt64((y[0][i]*1000))); /* round time to fs */
 
         /* get time step of pdo file and get dstep from opt->dt */
         if (i == 0)
@@ -2364,7 +2364,7 @@ static void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
             dt = t-time0;
             if (opt->dt > 0.0)
             {
-                dstep = static_cast<int>(opt->dt/dt+0.5);
+                dstep = gmx::roundToInt(opt->dt/dt);
                 if (dstep == 0)
                 {
                     dstep = 1;
@@ -2719,7 +2719,7 @@ static void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwi
         snew(count, ncorr);
         dt = window[i].dt;
         snew(window[i].tau, window[i].nPull);
-        restart = static_cast<int>(opt->acTrestart/dt+0.5);
+        restart = gmx::roundToInt(opt->acTrestart/dt);
         if (restart == 0)
         {
             restart = 1;

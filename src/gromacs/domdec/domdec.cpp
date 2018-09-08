@@ -2223,7 +2223,7 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
                         pos++;
                         if (d < dd->ndim-1)
                         {
-                            load->flags = static_cast<int>(load->load[pos++] + 0.5);
+                            load->flags = gmx::roundToInt(load->load[pos++]);
                         }
                         if (d > 0)
                         {
@@ -2366,7 +2366,7 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
         msg += " " + dlbStateStr + "\n";
         msg += gmx::formatString(" Average load imbalance: %.1f%%.\n", imbalance*100);
         msg += gmx::formatString(" The balanceable part of the MD step is %d%%, load imbalance is computed from this.\n",
-                                 static_cast<int>(dd_force_load_fraction(dd)*100 + 0.5));
+                                 gmx::roundToInt(dd_force_load_fraction(dd)*100));
         msg += gmx::formatString(" Part of the total run time spent waiting due to load imbalance: %.1f%%.\n",
                                  lossFraction*100);
         fprintf(fplog, "%s", msg.c_str());
@@ -2532,7 +2532,7 @@ static void dd_print_load_verbose(gmx_domdec_t *dd)
     }
     if (dd->nnodes > 1)
     {
-        fprintf(stderr, "imb F %2d%% ", static_cast<int>(dd_f_imbal(dd)*100+0.5));
+        fprintf(stderr, "imb F %2d%% ", gmx::roundToInt(dd_f_imbal(dd)*100));
     }
     if (dd->comm->cycl_n[ddCyclPME])
     {

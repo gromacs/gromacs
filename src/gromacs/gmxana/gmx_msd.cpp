@@ -957,7 +957,7 @@ static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_
 
     if (beginfit == -1)
     {
-        i0       = static_cast<int>(0.1*(msd->nframes - 1) + 0.5);
+        i0       = gmx::roundToInt(0.1*(msd->nframes - 1));
         beginfit = msd->time[i0];
     }
     else
@@ -970,7 +970,7 @@ static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_
 
     if (endfit == -1)
     {
-        i1     = static_cast<int>(0.9*(msd->nframes - 1) + 0.5) + 1;
+        i1     = gmx::roundToInt(0.9*(msd->nframes - 1)) + 1;
         endfit = msd->time[i1-1];
     }
     else

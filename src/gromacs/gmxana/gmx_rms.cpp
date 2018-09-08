@@ -845,7 +845,7 @@ int gmx_rms(int argc, char *argv[])
             if (bDeltaLog)
             {
                 delta_scalex = 8.0/std::log(2.0);
-                delta_xsize  = static_cast<int>(std::log(tel_mat/2.)*delta_scalex+0.5)+1;
+                delta_xsize  = gmx::roundToInt(std::log(tel_mat/2.)*delta_scalex)+1;
             }
             else
             {
@@ -1035,9 +1035,9 @@ int gmx_rms(int argc, char *argv[])
                         {
                             if (bDeltaLog)
                             {
-                                mx = static_cast<int>(std::log(static_cast<real>(mx))*delta_scalex+0.5);
+                                mx = gmx::roundToInt(std::log(static_cast<real>(mx))*delta_scalex);
                             }
-                            my             = static_cast<int>(rmsd_mat[i][j]*delta_scaley*del_lev+0.5);
+                            my             = gmx::roundToInt(rmsd_mat[i][j]*delta_scaley*del_lev);
                             delta_tot[mx] += 1.0;
                             if ((rmsd_mat[i][j] >= 0) && (rmsd_mat[i][j] <= delta_maxy))
                             {

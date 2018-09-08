@@ -848,7 +848,7 @@ static real rms_force(const t_commrec *cr, gmx::ArrayRef<const gmx::RVec> force,
         buf[2] = *sf_dir;
         buf[3] = *Epot;
         gmx_sumd(4, buf, cr);
-        ntot    = static_cast<int>(buf[1] + 0.5);
+        ntot    = gmx::roundToInt(buf[1]);
         *sf_dir = buf[2];
         *Epot   = buf[3];
     }

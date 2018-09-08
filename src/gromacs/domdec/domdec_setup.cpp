@@ -143,8 +143,8 @@ static gmx_bool fits_pp_pme_perf(int ntot, int npme, float ratio)
     std::vector<int> mdiv;
     factorize(ntot - npme, &div, &mdiv);
 
-    int npp_root3  = static_cast<int>(std::cbrt(ntot - npme) + 0.5);
-    int npme_root2 = static_cast<int>(std::sqrt(static_cast<double>(npme)) + 0.5);
+    int npp_root3  = gmx::roundToInt(std::cbrt(ntot - npme));
+    int npme_root2 = gmx::roundToInt(std::sqrt(static_cast<double>(npme)));
 
     /* The check below gives a reasonable division:
      * factor 5 allowed at 5 or more PP ranks,
@@ -237,7 +237,7 @@ static int guess_npme(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir,
     {
         gmx_fatal(FARGS, "Could not find an appropriate number of separate PME ranks. i.e. >= %5f*#ranks (%d) and <= #ranks/2 (%d) and reasonable performance wise (grid_x=%d, grid_y=%d).\n"
                   "Use the -npme option of mdrun or change the number of ranks or the PME grid dimensions, see the manual for details.",
-                  ratio, static_cast<int>(0.95*ratio*nrank_tot + 0.5), nrank_tot/2, ir->nkx, ir->nky);
+                  ratio, gmx::roundToInt(0.95*ratio*nrank_tot), nrank_tot/2, ir->nkx, ir->nky);
     }
     else
     {

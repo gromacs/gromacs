@@ -313,7 +313,7 @@ static void get_f_norm_max(const t_commrec *cr,
             if (sum[2*i] > fmax2)
             {
                 fmax2 = sum[2*i];
-                a_max = static_cast<int>(sum[2*i+1] + 0.5);
+                a_max = gmx::roundToInt(sum[2*i+1]);
             }
         }
         sfree(sum);

@@ -961,7 +961,7 @@ void read_ang_dih(const char *trj_fn,
             }
 
             /* Update the distribution histogram */
-            angind = static_cast<int>((angle*maxangstat)/pifac + 0.5);
+            angind = gmx::roundToInt((angle*maxangstat)/pifac);
             if (angind == maxangstat)
             {
                 angind = 0;

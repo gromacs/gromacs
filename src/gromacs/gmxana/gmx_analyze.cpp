@@ -271,7 +271,7 @@ static void histogram(const char *distfile, real binwidth, int n, int nset, real
     }
     maxval += binwidth;
 
-    nbin = static_cast<int>(((maxval - minval)/binwidth + 0.5) + 1);
+    nbin = gmx::roundToInt(((maxval - minval)/binwidth) + 1);
     fprintf(stderr, "Making distributions with %d bins\n", nbin);
     snew(histo, nbin);
     fp = xvgropen(distfile, "Distribution", "", "", oenv);
@@ -283,7 +283,7 @@ static void histogram(const char *distfile, real binwidth, int n, int nset, real
         }
         for (i = 0; i < n; i++)
         {
-            histo[static_cast<int>((val[s][i] - minval)/binwidth + 0.5)]++;
+            histo[gmx::roundToInt((val[s][i] - minval)/binwidth)]++;
         }
         for (i = 0; i < nbin; i++)
         {
@@ -334,9 +334,9 @@ static void average(const char *avfile, int avbar_opt,
         {
             snew(tmp, nset);
             fprintf(fp, "@TYPE xydydy\n");
-            edge = static_cast<int>(nset*0.05+0.5);
+            edge = gmx::roundToInt(nset*0.05);
             fprintf(stdout, "Errorbars: discarding %d points on both sides: %d%%"
-                    " interval\n", edge, static_cast<int>(100.*(nset-2*edge)/nset+0.5));
+                    " interval\n", edge, gmx::roundToInt(100.*(nset-2*edge)/nset));
         }
         else
         {

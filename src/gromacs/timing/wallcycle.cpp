@@ -45,6 +45,7 @@
 #include <array>
 #include <vector>
 
+#include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/gpu_timing.h"
@@ -575,14 +576,14 @@ WallcycleCounts wallcycle_sum(const t_commrec *cr, gmx_wallcycle_t wc)
                       cr->mpi_comm_mysim);
         for (i = 0; i < ewcNR; i++)
         {
-            wcc[i].n = static_cast<int>(buf[i] + 0.5);
+            wcc[i].n = gmx::roundToInt(buf[i]);
         }
         wc->haveInvalidCount = (buf[nsum] > 0);
         if (wc->wcsc)
         {
             for (i = 0; i < ewcsNR; i++)
             {
-                wc->wcsc[i].n = static_cast<int>(buf[ewcNR+i] + 0.5);
+                wc->wcsc[i].n = gmx::roundToInt(buf[ewcNR+i]);
             }
         }
 
@@ -1054,7 +1055,7 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
             GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                     "NOTE: %d %% of the run time was spent in pair search,\n"
                     "      you might want to increase nstlist (this has no effect on accuracy)\n",
-                    static_cast<int>(100*cyc_sum[ewcNS]/tot+0.5));
+                    gmx::roundToInt(100*cyc_sum[ewcNS]/tot));
         }
         else
         {
@@ -1062,8 +1063,8 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
                     "NOTE: %d %% of the run time was spent in domain decomposition,\n"
                     "      %d %% of the run time was spent in pair search,\n"
                     "      you might want to increase nstlist (this has no effect on accuracy)\n",
-                    static_cast<int>(100*cyc_sum[ewcDOMDEC]/tot+0.5),
-                    static_cast<int>(100*cyc_sum[ewcNS]/tot+0.5));
+                    gmx::roundToInt(100*cyc_sum[ewcDOMDEC]/tot),
+                    gmx::roundToInt(100*cyc_sum[ewcNS]/tot));
         }
     }
 
@@ -1072,7 +1073,7 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
         GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                 "NOTE: %d %% of the run time was spent communicating energies,\n"
                 "      you might want to use the -gcom option of mdrun\n",
-                static_cast<int>(100*cyc_sum[ewcMoveE]/tot+0.5));
+                gmx::roundToInt(100*cyc_sum[ewcMoveE]/tot));
     }
 }
 
