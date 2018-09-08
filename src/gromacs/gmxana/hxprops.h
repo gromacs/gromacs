@@ -48,11 +48,6 @@
 struct t_atom;
 struct t_resinfo;
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 #define PHI_AHX (-55.0)
 #define PSI_AHX (-45.0)
 /* Canonical values of the helix phi/psi angles */
@@ -121,9 +116,5 @@ extern void do_start_end(int nres, t_bb bb[], int *nbb,
 extern void calc_hxprops(int nres, t_bb bb[], const rvec x[]);
 
 extern void pr_bb(FILE *fp, int nres, t_bb bb[]);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

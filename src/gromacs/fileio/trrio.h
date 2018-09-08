@@ -67,10 +67,6 @@
  *
  **************************************************************/
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct t_fileio;
 
 /* This struct describes the order and the  */
@@ -138,10 +134,6 @@ void gmx_trr_read_single_frame(const char *fn, int64_t *step, real *t, real *lam
 void gmx_trr_write_single_frame(const char *fn, int64_t step, real t, real lambda,
                                 const rvec *box, int natoms, const rvec *x, const rvec *v, const rvec *f);
 /* Write a single trr frame to file fn, which is closed afterwards */
-
-#ifdef __cplusplus
-}
-#endif
 
 
 #endif

@@ -39,19 +39,10 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 extern gmx_bool convolution(int dataSize, real* in, int kernelSize,
                             const real* kernel);
 extern gmx_bool periodic_convolution(int dsize, real *in, int ksize,
                                      const real* kernel);
 extern void gausskernel(real *out, int size, real var);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

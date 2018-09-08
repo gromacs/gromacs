@@ -45,10 +45,6 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct gmx_atomprop;
 struct t_atoms;
 struct t_symtab;
@@ -156,14 +152,10 @@ void gmx_conect_add(gmx_conect conect, int ai, int aj);
 gmx_conect gmx_conect_generate(const t_topology *top);
 /* Generate a conect structure from a topology */
 
-gmx_conect gmx_conect_init(void);
+gmx_conect gmx_conect_init();
 /* Initiate data structure */
 
 void gmx_conect_done(gmx_conect gc);
 /* Free memory */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif  /* GMX_FILEIO_PDBIO_H */

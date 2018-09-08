@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,10 +46,6 @@
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/mdlib/nbnxn_gpu_types.h"
 #include "gromacs/mdtypes/interaction_const.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct nonbonded_verlet_group_t;
 struct nbnxn_pairlist_t;
@@ -119,9 +115,5 @@ int nbnxn_gpu_min_ci_balanced(gmx_nbnxn_gpu_t gmx_unused *nb) GPU_FUNC_TERM_WITH
 /** Returns if analytical Ewald GPU kernels are used. */
 GPU_FUNC_QUALIFIER
 gmx_bool nbnxn_gpu_is_kernel_ewald_analytical(const gmx_nbnxn_gpu_t gmx_unused *nb) GPU_FUNC_TERM_WITH_RETURN(FALSE)
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

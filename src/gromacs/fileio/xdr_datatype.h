@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,11 +37,6 @@
 #ifndef GMX_FILEIO_XDR_DATATYPE_H
 #define GMX_FILEIO_XDR_DATATYPE_H
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 /* the xdr data types; note that there is no data type 'real' because
    here we deal with the types as they are actually written to disk.  */
 typedef enum
@@ -56,9 +51,5 @@ typedef enum
 
 /* names corresponding to the xdr_datatype enum */
 extern const char *xdr_datatype_names[];
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

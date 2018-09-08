@@ -792,7 +792,7 @@ void do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *title
                     acf.fitfn);
 }
 
-int get_acfnout(void)
+int get_acfnout()
 {
     if (!bACFinit)
     {
@@ -802,7 +802,7 @@ int get_acfnout(void)
     return acf.nout;
 }
 
-int get_acffitfn(void)
+int get_acffitfn()
 {
     if (!bACFinit)
     {
