@@ -59,6 +59,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
+namespace gmx
+{
+
 #define TIME_EXPLICIT 0
 #define TIME_CONTINUE 1
 #define TIME_LAST     2
@@ -805,3 +808,5 @@ int gmx_eneconv(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

@@ -58,6 +58,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void calc_com_pbc(int nrefat, const t_topology *top, rvec x[], t_pbc *pbc,
                          const int index[], rvec xref, int ePBC)
 {
@@ -392,3 +395,5 @@ int gmx_spol(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

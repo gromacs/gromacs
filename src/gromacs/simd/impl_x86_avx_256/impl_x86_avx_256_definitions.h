@@ -36,6 +36,9 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX_256_DEFINITIONS_H
 #define GMX_SIMD_IMPL_X86_AVX_256_DEFINITIONS_H
 
+namespace gmx
+{
+
 // Capability definitions for 256-bit AVX
 #define GMX_SIMD                                1
 #define GMX_SIMD_HAVE_FLOAT                     1
@@ -80,5 +83,7 @@
 #define GMX_SIMD_ALIGNMENT                     32 // Bytes (8*single or 4*double)
 #define GMX_SIMD_RSQRT_BITS                    11
 #define GMX_SIMD_RCP_BITS                      11
+
+}      // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX_256_DEFINITIONS_H

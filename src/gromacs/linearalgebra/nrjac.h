@@ -39,6 +39,9 @@
 
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 void jacobi(double **a, int n, double d[], double **v, int *nrot);
 /*
  * real   **omega = input matrix a[0..n-1][0..n-1] must be symmetric
@@ -57,5 +60,7 @@ int m_inv_gen(real *m, int n, real *minv);
  * For zero eigenvalues 1/eigenvalue is set to zero for the inverse matrix.
  * Returns the number of zero eigenvalues.
  */
+
+} // namespace gmx
 
 #endif

@@ -95,6 +95,9 @@
 #include "pme-internal.h"
 #include "pme-pp-communication.h"
 
+namespace gmx
+{
+
 //! Contains information about the PP ranks that partner this PME rank.
 struct PpRanks
 {
@@ -560,7 +563,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
     init_nrnb(mynrnb);
 
     count = 0;
-    do /****** this is a quasi-loop over time steps! */
+    do  /****** this is a quasi-loop over time steps! */
     {
         /* The reason for having a loop here is PME grid tuning/switching */
         do
@@ -659,10 +662,12 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
                                     dvdlambda_q, dvdlambda_lj, cycles);
 
         count++;
-    } /***** end of quasi-loop, we stop with the break above */
+    }   /***** end of quasi-loop, we stop with the break above */
     while (TRUE);
 
     walltime_accounting_end_time(walltime_accounting);
 
     return 0;
 }
+
+} //namespace gmx

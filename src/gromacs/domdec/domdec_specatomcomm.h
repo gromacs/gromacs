@@ -49,13 +49,12 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
-struct gmx_domdec_t;
-struct t_commrec;
-
 namespace gmx
 {
+
+struct gmx_domdec_t;
+struct t_commrec;
 template <typename T> class HashedMap;
-} // namespace
 
 /*! \internal \brief The communication setup along a single dimension */
 struct gmx_specatsend_t
@@ -119,5 +118,7 @@ int setup_specat_communication(gmx_domdec_t               *dd,
                                int                         vbuf_fac,
                                const char                 *specat_type,
                                const char                 *add_err);
+
+} // namespace gmx
 
 #endif

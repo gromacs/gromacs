@@ -59,6 +59,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 #if HAVE_LMFIT
 
 typedef struct {
@@ -206,3 +209,5 @@ bool lmfit_exp(int          nfit,
 #endif
     return true;
 }
+
+} //namespace gmx

@@ -43,6 +43,9 @@
 #include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 
+namespace gmx
+{
+
 /* this *MUST* correspond to array in pdb2top.c */
 enum {
     ehisA, ehisB, ehisH, ehis1, ehisNR
@@ -121,5 +124,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 /* Create a topology ! */
 
 void print_sums(t_atoms *atoms, bool bSystem);
+
+} // namespace gmx
 
 #endif

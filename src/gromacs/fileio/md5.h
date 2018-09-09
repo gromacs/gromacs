@@ -87,6 +87,9 @@
 #ifndef GMX_md5_INCLUDED
 #  define GMX_md5_INCLUDED
 
+namespace gmx
+{
+
 /*
  * This package supports both compile-time and run-time determination of CPU
  * byte order.  If ARCH_IS_BIG_ENDIAN is defined as 0, the code will be
@@ -115,5 +118,7 @@ void gmx_md5_append(md5_state_t *pms, const md5_byte_t *data, int nbytes);
 
 /* Finish the message and return the digest. */
 void gmx_md5_finish(md5_state_t *pms, md5_byte_t digest[16]);
+
+} // namespace gmx
 
 #endif

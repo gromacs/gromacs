@@ -62,6 +62,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 
 static void periodic_dist(int ePBC,
                           matrix box, rvec x[], int n, const int index[],
@@ -821,3 +824,5 @@ int gmx_mindist(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

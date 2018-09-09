@@ -38,6 +38,9 @@
 
 #include <altivec.h>
 
+namespace gmx
+{
+
 #if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
 // According to G++ documentation, when using altivec in C++ we
 // must undefine vector & bool macros after including altivec.h
@@ -92,5 +95,7 @@
 #define GMX_SIMD_ALIGNMENT                     16 // Bytes (4*single)
 #define GMX_SIMD_RSQRT_BITS                    14
 #define GMX_SIMD_RCP_BITS                      14
+
+}      // namespace gmx
 
 #endif // GMX_SIMD_IMPLEMENTATION_IBM_VMX_DEFINITIONS_H

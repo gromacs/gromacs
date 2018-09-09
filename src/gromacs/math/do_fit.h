@@ -41,6 +41,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 real calc_similar_ind(gmx_bool bRho, int nind, const int *index, const real mass[],
                       rvec x[], rvec xp[]);
 /* Returns RMSD or Rho (depending on bRho) over all atoms in index */
@@ -97,5 +100,7 @@ void reset_x(int ncm, const int *ind_cm,
              int nreset, const int *ind_reset,
              rvec x[], const real mass[]);
 /* Calls reset_x with ndim=3, thus resetting all dimesions */
+
+} // namespace gmx
 
 #endif

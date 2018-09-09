@@ -39,6 +39,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 /* NOTE: the terminology is:
    incoming signals (provided by the operating system, or transmitted from
    other nodes) lead to stop conditions. These stop conditions should be
@@ -76,5 +79,7 @@ const char *gmx_get_signal_name();
    The condition is reset once a TRUE value is returned, so this function
    only returns TRUE once for a single signal. */
 gmx_bool gmx_got_usr_signal();
+
+} // namespace gmx
 
 #endif

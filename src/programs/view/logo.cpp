@@ -49,6 +49,9 @@
 #include "Xstuff.h"
 #include "xutil.h"
 
+namespace gmx
+{
+
 typedef struct {
     int            x, y, rad;
     unsigned long *col;
@@ -249,3 +252,4 @@ void done_logo(t_x11 *x11, t_logo *logo)
 {
     x11->UnRegisterCallback(x11, logo->wd.self);
 }
+} // namespace gmx

@@ -42,6 +42,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /** Index for the fourth dimension for `vec4`. */
 #define WW 3
 
@@ -79,5 +82,7 @@ void gmx_mat4_init_translation(real tx, real ty, real tz, mat4 A);
 void gmx_mat4_print(FILE *fp, const char *s, mat4 A);
 
 void gmx_vec4_print(FILE *fp, const char *s, vec4 a);
+
+} // namespace gmx
 
 #endif

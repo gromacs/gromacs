@@ -56,6 +56,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 
+namespace gmx
+{
+
 struct gmx_domdec_t;
 struct gmx_enfrot;
 struct gmx_mtop_t;
@@ -66,9 +69,6 @@ struct t_filenm;
 struct t_inputrec;
 struct t_rot;
 class t_state;
-
-namespace gmx
-{
 class LocalAtomSetManager;
 class EnforcedRotation
 {
@@ -86,8 +86,6 @@ class EnforcedRotation
 
         PrivateImplPointer<Impl> impl_;
 };
-
-}  // namespace gmx
 
 /*! \brief Initializes the enforced rotation groups.
  *
@@ -157,5 +155,6 @@ void do_rotation(const t_commrec  *cr,
 real add_rot_forces(gmx_enfrot *er,
                     rvec f[], const t_commrec *cr, int64_t step, real t);
 
+}  // namespace gmx
 
 #endif

@@ -62,6 +62,9 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 
+namespace gmx
+{
+
 /*! \brief Margin for setting up the DD grid */
 #define DD_GRID_MARGIN_PRES_SCALE 1.05
 
@@ -832,3 +835,5 @@ real dd_choose_grid(FILE *fplog,
 
     return limit;
 }
+
+} //namespace gmx

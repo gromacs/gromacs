@@ -53,6 +53,9 @@
 #include "manager.h"
 #include "xutil.h"
 
+namespace gmx
+{
+
 #define MSIZE 4
 
 static bool MWCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
@@ -622,3 +625,5 @@ void draw_mol(t_x11 *x11, t_manager *man)
 
     XSetForeground(x11->disp, x11->gc, x11->fg);
 }
+
+} //namespace gmx

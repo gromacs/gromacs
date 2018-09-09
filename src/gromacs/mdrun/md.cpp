@@ -137,6 +137,9 @@
 #include "corewrap.h"
 #endif
 
+namespace gmx
+{
+
 using gmx::SimulationSignaller;
 
 //! Resets all the counters.
@@ -1926,3 +1929,5 @@ void gmx::Integrator::do_md()
     sfree(enerd);
     sfree(top);
 }
+
+} //namespace gmx

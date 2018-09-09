@@ -40,6 +40,9 @@
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /** Calculate eigenvalues/vectors a matrix stored in linear memory (not sparse).
  *
  *  This routine uses lapack to diagonalize a matrix efficiently, and
@@ -86,5 +89,7 @@ sparse_eigensolver(gmx_sparsematrix_t *    A,
                    real *                  eigenvalues,
                    real *                  eigenvectors,
                    int                     maxiter);
+
+} // namespace gmx
 
 #endif

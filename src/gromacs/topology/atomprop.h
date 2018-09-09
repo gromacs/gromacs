@@ -40,6 +40,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /* Abstract type for the atom property database */
 typedef struct gmx_atomprop *gmx_atomprop_t;
 
@@ -66,5 +69,7 @@ gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
  * The first time this function is called for this property
  * the database will be read.
  */
+
+} // namespace gmx
 
 #endif

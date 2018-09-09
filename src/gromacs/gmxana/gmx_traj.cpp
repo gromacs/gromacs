@@ -65,6 +65,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void low_print_data(FILE *fp, real time, rvec x[], int n, const int *index,
                            const gmx_bool bDim[], const char *sffmt)
 {
@@ -1148,3 +1151,5 @@ int gmx_traj(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

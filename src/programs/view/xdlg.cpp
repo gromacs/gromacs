@@ -54,6 +54,8 @@
  * Helpful routines
  *
  ****************************/
+namespace gmx
+{
 t_dlgitem *FindItem(t_dlg *dlg, t_id id)
 {
     int i;
@@ -858,3 +860,4 @@ void SetDlgSize(t_dlg *dlg, int w, int h, bool bAutoPosition)
         XResizeWindow(dlg->x11->disp, dlg->win.self, w, h);
     }
 }
+} // namespace gmx

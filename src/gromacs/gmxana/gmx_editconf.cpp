@@ -66,6 +66,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
+namespace gmx
+{
+
 
 static real calc_mass(t_atoms *atoms, gmx_bool bGetMass, gmx_atomprop_t aps)
 {
@@ -1345,3 +1348,5 @@ int gmx_editconf(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

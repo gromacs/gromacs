@@ -60,6 +60,9 @@
 #include "gromacs/utility/keyvaluetreeserializer.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void bc_cstring(const t_commrec *cr, char **s)
 {
     int size = 0;
@@ -848,3 +851,5 @@ void init_parallel(t_commrec *cr, t_inputrec *inputrec,
 {
     bcast_ir_mtop(cr, inputrec, mtop);
 }
+
+} //namespace gmx

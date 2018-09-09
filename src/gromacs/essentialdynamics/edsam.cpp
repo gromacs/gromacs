@@ -76,6 +76,8 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
+namespace gmx
+{
 namespace
 {
 /*! \brief Identifies the type of ED: none, normal ED, flooding. */
@@ -188,8 +190,7 @@ struct t_edflood
     //! The current reference projection is the initialReferenceProjection + step * slope. Only with harmonic restraint.
     real    *referenceProjectionSlope = nullptr;
 };
-} // namespace
-
+}   // namespace
 
 /* This type is for the average, reference, target, and origin structure    */
 struct gmx_edx
@@ -294,8 +295,6 @@ struct t_ed_buffer
     struct t_do_radcon *            do_radcon;
 };
 
-namespace gmx
-{
 class EssentialDynamics::Impl
 {
     public:
@@ -311,7 +310,6 @@ gmx_edsam *EssentialDynamics::getLegacyED()
 {
     return &impl_->essentialDynamics_;
 }
-} // namespace gmx
 
 /* Function declarations */
 static void fit_to_reference(rvec *xcoll, rvec transvec, matrix rotmat, t_edpar *edi);
@@ -359,7 +357,7 @@ bool bNeedDoEdsam(const t_edpar &edi)
            || (edi.vecs.radacc.neig != 0)
            || (edi.vecs.radcon.neig != 0);
 }
-}  // namespace
+}   // namespace
 
 
 /* Multiple ED groups will be labeled with letters instead of numbers
@@ -465,7 +463,7 @@ void project_to_eigvectors(rvec *x, t_eigvec *vec, const t_edpar &edi)
         rvec_inc(x[i], edi.sav.x[i]);
     }
 }
-} // namespace
+}   // namespace
 
 /* Project vector x onto all edi->vecs (mon, linfix,...) */
 static void project(rvec      *x,     /* positions to project */
@@ -498,7 +496,7 @@ real calc_radius(const t_eigvec &vec)
 
     return rad = sqrt(rad);
 }
-}  // namespace
+}   // namespace
 
 struct t_do_edfit {
     double **omega;
@@ -750,7 +748,7 @@ void write_edo_flood(const t_edpar &edi, FILE *fp, real rmsd)
         fprintf(fp, EDcol_efmt, edi.flood.vecs.fproj[i]);
     }
 }
-} // namespace
+}   // namespace
 
 
 /* From flood.xproj compute the Vfl(x) at this point */
@@ -872,7 +870,7 @@ void flood_blowup(const t_edpar &edi, rvec *forces_cart)
     }
 }
 
-} // namespace
+}   // namespace
 
 
 /* Update the values of Efl, deltaF depending on tau and Vfl */
@@ -1503,7 +1501,7 @@ void read_edvec(FILE *in, int nrAtoms, t_eigvec *tvec)
         }
         tvec->ieig[i]  = numEigenVectors;
         tvec->stpsz[i] = stepSize;
-    }   /* end of loop over eigenvectors */
+    }       /* end of loop over eigenvectors */
 
     scan_edvec(in, nrAtoms, &tvec->vec, tvec->neig);
 }
@@ -1567,7 +1565,7 @@ bool readEdVecWithReferenceProjection(FILE *in, int nrAtoms, t_eigvec *tvec, rea
 
         tvec->ieig[i]  = numEigenVectors;
         tvec->stpsz[i] = stepSize;
-    }   /* end of loop over eigenvectors */
+    }       /* end of loop over eigenvectors */
 
     scan_edvec(in, nrAtoms, &tvec->vec, tvec->neig);
     return providesReference;
@@ -1582,7 +1580,7 @@ void setup_edvec(t_eigvec *tvec)
     snew(tvec->fproj, tvec->neig);
     snew(tvec->refproj, tvec->neig);
 }
-}  // namespace
+}   // namespace
 
 
 /* Check if the same atom indices are used for reference and average positions */
@@ -1832,7 +1830,7 @@ std::vector<t_edpar> read_edi_file(const char *fn, int nr_mdatoms)
 
     return essentialDynamicsParameters;
 }
-} // anonymous namespace
+}   // anonymous namespace
 
 
 struct t_fit_to_ref {
@@ -2038,7 +2036,7 @@ void do_linacc(rvec *xcoll, t_edpar *edi)
         edi->vecs.linacc.refproj[i] = proj + preFactor;
     }
 }
-} // namespace
+}   // namespace
 
 
 static void do_radfix(rvec *xcoll, t_edpar *edi)
@@ -2295,7 +2293,7 @@ void write_edo(const t_edpar &edi, FILE *fp, real rmsd)
         fprintf(fp, EDcol_ffmt, calc_radius(edi.vecs.radcon)); /* contracting radius */
     }
 }
-} // namespace
+}   // namespace
 
 
 /* Returns if any constraints are switched on */
@@ -2593,7 +2591,7 @@ static void write_edo_legend(gmx_edsam * ed, int nED, const gmx_output_env_t *oe
             }
 
             ++edi;
-        } /* End of flooding-related legend entries */
+        }   /* End of flooding-related legend entries */
     }
     n_flood = nsets;
 
@@ -2626,7 +2624,7 @@ static void write_edo_legend(gmx_edsam * ed, int nED, const gmx_output_env_t *oe
             }
         }
         ++edi;
-    } /* end of 'pure' essential dynamics legend entries */
+    }   /* end of 'pure' essential dynamics legend entries */
     n_edsam = nsets - n_flood;
 
     xvgr_legend(ed->edo, nsets, setname, oenv);
@@ -2908,7 +2906,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
         sfree(xfit);
         sfree(xstart);
 
-    } /* end of MASTER only section */
+    }   /* end of MASTER only section */
 
     if (PAR(cr))
     {
@@ -3160,11 +3158,13 @@ void do_edsam(const t_inputrec *ir,
                     copy_rvec(x_unsh, xs[edi.sav.anrs_loc[i]]);
                 }
             }
-        } /* END of if ( bNeedDoEdsam(edi) ) */
+        }   /* END of if ( bNeedDoEdsam(edi) ) */
 
         /* Prepare for the next ED group */
 
-    } /* END of loop over ED groups */
+    }   /* END of loop over ED groups */
 
     ed->bFirst = FALSE;
 }
+
+} // namespace gmx

@@ -135,7 +135,7 @@
             npair++;
 #endif
 
-            rinv = gmx::invsqrt(rsq);
+            rinv = invsqrt(rsq);
             /* 5 flops for invsqrt */
 
             /* Partially enforce the cut-off (and perhaps

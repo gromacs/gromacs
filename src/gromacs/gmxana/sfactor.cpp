@@ -60,6 +60,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
+namespace gmx
+{
+
 
 typedef struct gmx_structurefactors {
     int    nratoms;
@@ -729,3 +732,5 @@ extern real **compute_scattering_factor_table (gmx_structurefactors_t *gsf, stru
 
     return sf_table;
 }
+
+} //namespace gmx

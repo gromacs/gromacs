@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,9 @@
 #ifndef GMX_MDLIB_FORCE_FLAGS_H
 #define GMX_MDLIB_FORCE_FLAGS_H
 
+namespace gmx
+{
+
 /* Flags to tell the force calculation routines what (not) to do */
 
 /* The state has changed, always set unless TPI is used. */
@@ -60,5 +63,7 @@
 
 /* Normally one want all energy terms and forces */
 #define GMX_FORCE_ALLFORCES    (GMX_FORCE_LISTED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES)
+
+} // namespace gmx
 
 #endif

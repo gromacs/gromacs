@@ -54,6 +54,8 @@
 #include "testutils/testasserts.h"
 #include "testutils/testfileredirector.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -381,3 +383,4 @@ TEST_F(FileNameOptionManagerTest, DefaultNameOptionWorksWithoutInputChecking)
 }
 
 } // namespace
+} // namespace gmx

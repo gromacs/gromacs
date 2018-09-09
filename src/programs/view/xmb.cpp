@@ -52,6 +52,8 @@
 #include "xdlg.h"
 #include "xutil.h"
 
+namespace gmx
+{
 #define ID_BOX     -3
 #define ID_ICON    -2
 #define ID_TEXT    -1
@@ -224,3 +226,4 @@ t_dlg *MessageBox(t_x11 *x11, Window Parent, const char *title,
 
     return dlg;
 }
+} // namespace gmx

@@ -42,6 +42,9 @@
 
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 
+namespace gmx
+{
+
 struct gmx_mtop_t;
 
 typedef struct gpp_atomtype *gpp_atomtype_t;
@@ -96,5 +99,7 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
 
 void copy_atomtype_atomtypes(gpp_atomtype_t atype, t_atomtypes *atypes);
 /* Copy from one structure to another */
+
+} // namespace gmx
 
 #endif

@@ -42,6 +42,8 @@
 
 #include "threadaffinitytest.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -201,3 +203,4 @@ TEST_F(ThreadAffinityTest, HandlesPinningFailureWithOneThreadFailing)
 #endif
 
 } // namespace
+} // namespace gmx

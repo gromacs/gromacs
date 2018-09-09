@@ -365,6 +365,7 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
             else
             {
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_inner.h"
+
             }
         }
 

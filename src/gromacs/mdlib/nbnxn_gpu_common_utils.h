@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,9 @@
 
 #if GMX_GPU == GMX_GPU_OPENCL
 #include "nbnxn_ocl/nbnxn_ocl_types.h"
+
+namespace gmx
+{
 #endif
 
 /*! \brief An early return condition for empty NB GPU workloads
@@ -64,5 +67,7 @@ static inline bool canSkipWork(const gmx_nbnxn_gpu_t *nb, int iloc)
     assert(nb && nb->plist[iloc]);
     return (iloc == eintNonlocal) && (nb->plist[iloc]->nsci == 0);
 }
+
+} // namespace gmx
 
 #endif

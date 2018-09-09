@@ -43,6 +43,9 @@
 #ifndef GMX_UTILITY_BASEVERSION_H
 #define GMX_UTILITY_BASEVERSION_H
 
+namespace gmx
+{
+
 /*! \brief
  * Version string, containing the version, date, and abbreviated hash.
  *
@@ -95,5 +98,7 @@ void gmx_is_single_precision();
 
 /*! \brief Return a string describing what kind of GPU suport was configured in the build. */
 const char *getGpuImplementationString();
+
+} // namespace gmx
 
 #endif

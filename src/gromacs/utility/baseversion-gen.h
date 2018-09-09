@@ -42,6 +42,9 @@
 #ifndef GMX_UTILITY_BASEVERSION_GEN_H
 #define GMX_UTILITY_BASEVERSION_GEN_H
 
+namespace gmx
+{
+
 /*! \cond internal */
 //! \addtogroup module_utility
 //! \{
@@ -55,5 +58,7 @@ extern const char _gmx_central_base_hash[];
 
 //! \}
 //! \endcond
+
+} // namespace gmx
 
 #endif

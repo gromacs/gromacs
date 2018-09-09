@@ -47,6 +47,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* #define DEBUG_NNB */
 
 typedef struct {
@@ -452,3 +455,5 @@ void generate_excl (int nrexcl, int nratoms, t_params plist[], t_nextnb *nnb, t_
     sort_and_purge_nnb(nnb);
     nnb2excl (nnb, excl);
 }
+
+} //namespace gmx

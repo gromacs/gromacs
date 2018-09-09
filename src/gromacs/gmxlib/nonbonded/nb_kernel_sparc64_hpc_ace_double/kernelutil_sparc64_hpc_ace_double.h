@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,6 +53,9 @@
 #endif
 
 #include <emmintrin.h>
+
+namespace gmx
+{
 
 #ifdef SAVE_ISOC99_SOURCE
 #    define _ISOC99_SOURCE
@@ -968,5 +971,7 @@ gmx_fjsp_update_2pot_v2r8(_fjsp_v2r8 pot1, double * gmx_restrict ptrA,
     _fjsp_storel_v2r8(ptrB, _fjsp_add_v2r8(pot2, _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), ptrB)));
 }
 
+
+}      // namespace gmx
 
 #endif /* _kernelutil_sparc64_hpc_ace_double_h_ */

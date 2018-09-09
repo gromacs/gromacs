@@ -56,6 +56,9 @@
 
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_multisim_t;
 struct t_commrec;
 
@@ -63,9 +66,6 @@ struct t_commrec;
 enum {
     eglsCHKPT, eglsSTOPCOND, eglsRESETCOUNTERS, eglsNR
 };
-
-namespace gmx
-{
 
 template <typename T>
 class ArrayRef;

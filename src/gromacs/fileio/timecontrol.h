@@ -38,6 +38,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /* The code below is to facilitate controlled begin and end of
  * trajectory reading.
  */
@@ -50,5 +53,7 @@ gmx_bool bTimeSet(int tcontrol);
 real rTimeValue(int tcontrol);
 
 void setTimeValue(int tcontrol, real value);
+
+} // namespace gmx
 
 #endif

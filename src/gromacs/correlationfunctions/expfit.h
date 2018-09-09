@@ -47,6 +47,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_output_env_t;
 
 /*! \brief
@@ -144,5 +147,7 @@ real do_lmfit(int ndata, const real c1[], real sig[], real dt, const real *x0,
  */
 real fit_acf(int ncorr, int fitfn, const gmx_output_env_t *oenv, gmx_bool bVerbose,
              real tbeginfit, real tendfit, real dt, real c1[], real *fit);
+
+} // namespace gmx
 
 #endif

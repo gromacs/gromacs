@@ -52,6 +52,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+using namespace gmx;
+
 //! Alignment in bytes for all returned blocks.
 #define ALIGN_STEP 8
 

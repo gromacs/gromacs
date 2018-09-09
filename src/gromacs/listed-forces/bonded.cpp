@@ -74,7 +74,9 @@
 #include "listed-internal.h"
 #include "restcbt.h"
 
-using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
+namespace gmx
+{
+
 
 /*! \brief Mysterious CMAP coefficient matrix */
 const int cmap_coeff_matrix[] = {
@@ -458,7 +460,7 @@ real restraint_bonds(int nbonds,
             vbond       = 0.5*k*drh2;
             fbond       = -k*drh;
             *dvdlambda += 0.5*dk*drh2 - k*dlow*drh;
-        } /* 11 */
+        }   /* 11 */
         else if (dr <= up1)
         {
             vbond = 0;
@@ -471,7 +473,7 @@ real restraint_bonds(int nbonds,
             vbond       = 0.5*k*drh2;
             fbond       = -k*drh;
             *dvdlambda += 0.5*dk*drh2 - k*dup1*drh;
-        } /* 11	*/
+        }   /* 11	*/
         else
         {
             drh         = dr - up2;
@@ -3813,3 +3815,5 @@ real tab_dihs(int nbonds,
 }
 
 //! \endcond
+
+} //namespace gmx

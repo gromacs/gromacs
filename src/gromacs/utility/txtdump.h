@@ -49,6 +49,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 //! Line width for text dump output.
 #define LINE_WIDTH  80
 //! Right margin for text dump output.
@@ -86,5 +89,7 @@ void pr_double(FILE *fp, int indent, const char *title, double d);
 void pr_str(FILE *fp, int indent, const char *title, const char *s);
 //! Prints strings as a section; intended to be used for an array of names.
 void pr_strings(FILE *fp, int indent, const char *title, char ***nm, int n, gmx_bool bShowNumbers);
+
+} // namespace gmx
 
 #endif

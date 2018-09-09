@@ -42,6 +42,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct t_fileio;
 
 /* All functions return 1 if successful, 0 otherwise
@@ -75,5 +78,7 @@ int write_xtc(struct t_fileio *fio,
               int natoms, int64_t step, real time,
               const rvec *box, const rvec *x, real prec);
 /* Write a frame to xtc file */
+
+} // namespace gmx
 
 #endif

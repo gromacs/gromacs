@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,9 @@
 
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
+
+namespace gmx
+{
 
 class CorrelationDataSet
 {
@@ -107,5 +110,7 @@ class CorrelationDataSet
         //! This class should not be copyable or assignable
         GMX_DISALLOW_COPY_AND_ASSIGN(CorrelationDataSet);
 };
+
+} // namespace gmx
 
 #endif

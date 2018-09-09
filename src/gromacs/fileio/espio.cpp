@@ -51,6 +51,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static int get_espresso_word(FILE *fp, char word[])
 {
     int  ret, nc, i;
@@ -477,3 +480,5 @@ void write_espresso_conf_indexed(FILE *out, const char *title,
     }
     fprintf(out, "}\n");
 }
+
+} //namespace gmx

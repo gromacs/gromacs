@@ -42,6 +42,9 @@
 #include "x11.h"
 #include "xutil.h"
 
+namespace gmx
+{
+
 typedef enum {
     edlgBN, edlgRB, edlgGB, edlgCB, edlgPM, edlgST, edlgET, edlgNR
 } edlgitem;
@@ -154,4 +157,6 @@ extern t_dlgitem *CreateEditText(t_x11 *x11, const char *title,
 extern void SetDlgitemOpts(t_dlgitem *dlgitem, bool bUseMon,
                            char *set, char *get, char *help);
 
-#endif  /* _xdlgitem_h */
+}      // namespace gmx
+
+#endif /* _xdlgitem_h */

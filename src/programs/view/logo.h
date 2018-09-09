@@ -41,6 +41,9 @@
 #include "x11.h"
 #include "xutil.h"
 
+namespace gmx
+{
+
 typedef struct {
     XFontStruct *bigfont;
     XFontStruct *smallfont;
@@ -56,4 +59,5 @@ extern t_logo *init_logo(t_x11 *x11, Window parent, bool bQuitOnClick);
 
 extern void done_logo(t_x11 *x11, t_logo *logo);
 
-#endif  /* _logo_h */
+}      // namespace gmx
+#endif /* _logo_h */

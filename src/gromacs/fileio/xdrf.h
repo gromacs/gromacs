@@ -53,6 +53,9 @@
 #else
 #include <rpc/rpc.h>
 #include <rpc/xdr.h>
+
+namespace gmx
+{
 #endif
 
 /* Read or write reduced precision *float* coordinates */
@@ -85,5 +88,7 @@ float xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bO
 
 
 int xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK);
+
+} // namespace gmx
 
 #endif

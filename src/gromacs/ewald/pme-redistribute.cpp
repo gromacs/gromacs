@@ -52,6 +52,9 @@
 #include "pme-internal.h"
 #include "pme-simd.h"
 
+namespace gmx
+{
+
 static void pme_calc_pidx(int start, int end,
                           matrix recipbox, rvec x[],
                           pme_atomcomm_t *atc, int *count)
@@ -473,3 +476,5 @@ do_redist_pos_coeffs(struct gmx_pme_t *pme, const t_commrec *cr, int start, int 
         }
     }
 }
+
+} //namespace gmx

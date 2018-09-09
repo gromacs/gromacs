@@ -40,6 +40,9 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/topology/index.h"
 
+namespace gmx
+{
+
 struct gmx_output_env_t;
 struct gmx_residuetype_t;
 
@@ -251,5 +254,7 @@ void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
                   real fit_start, real temp);
 
 void compute_derivative(int nn, const real x[], const real y[], real dydx[]);
+
+} // namespace gmx
 
 #endif

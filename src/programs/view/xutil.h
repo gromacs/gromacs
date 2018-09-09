@@ -47,6 +47,9 @@
 #include "Xstuff.h"
 #include "x11.h"
 
+namespace gmx
+{
+
 #define OFFS_X          4
 #define OFFS_Y          4
 
@@ -100,4 +103,5 @@ extern bool GrabOK(FILE *out, int err);
  * and returns false otherwise.
  */
 
-#endif  /* _xutil_h */
+}      // namespace gmx
+#endif /* _xutil_h */

@@ -46,6 +46,9 @@
 
 #include "gromacs/utility/strconvert.h"
 
+namespace gmx
+{
+
 void cmp_int(FILE *fp, const char *s, int index, int i1, int i2)
 {
     if (i1 != i2)
@@ -198,3 +201,5 @@ cmp_double(FILE *fp, const char *s, int index, double i1, double i2, double ftol
         }
     }
 }
+
+} //namespace gmx

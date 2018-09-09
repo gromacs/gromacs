@@ -41,6 +41,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_output_env_t;
 
 typedef struct {
@@ -88,5 +91,7 @@ extern void low_rmsd_dist(const char *fn, real maxrms, int nn, real **mat,
 extern void rmsd_distribution(const char *fn, t_mat *m, const gmx_output_env_t *oenv);
 
 extern t_clustid *new_clustid(int n1);
+
+} // namespace gmx
 
 #endif

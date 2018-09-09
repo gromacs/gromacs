@@ -52,6 +52,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void rot_conf(t_atoms *atoms, const rvec x[], const rvec v[], real trans, real angle,
                      rvec head, rvec tail, int isize, const int index[],
                      rvec xout[], rvec vout[])
@@ -264,3 +267,5 @@ int gmx_dyndom(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

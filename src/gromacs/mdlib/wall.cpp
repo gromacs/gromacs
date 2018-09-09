@@ -58,6 +58,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 void make_wall_tables(FILE *fplog,
                       const t_inputrec *ir, const char *tabfn,
                       const gmx_groups_t *groups,
@@ -335,3 +338,5 @@ real do_walls(const t_inputrec &ir, const t_forcerec &fr,
 
     return dvdlambda;
 }
+
+} //namespace gmx

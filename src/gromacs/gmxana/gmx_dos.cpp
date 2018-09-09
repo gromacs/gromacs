@@ -62,6 +62,9 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 enum {
     VACF, MVACF, DOS, DOS_SOLID, DOS_DIFF, DOS_CP, DOS_S, DOS_A, DOS_E, DOS_NR
 };
@@ -602,3 +605,5 @@ int gmx_dos(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

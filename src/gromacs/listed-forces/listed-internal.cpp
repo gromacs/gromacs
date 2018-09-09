@@ -45,6 +45,9 @@
 
 #include <cstdlib>
 
+namespace gmx
+{
+
 int glatnr(const int *global_atom_index, int i)
 {
     int atnr;
@@ -60,3 +63,5 @@ int glatnr(const int *global_atom_index, int i)
 
     return atnr;
 }
+
+} //namespace gmx

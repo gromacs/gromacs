@@ -49,6 +49,9 @@
 
 #include "gmxfio-impl.h"
 
+namespace gmx
+{
+
 /* Enumerated for data types in files */
 enum {
     eioREAL, eioFLOAT, eioDOUBLE, eioINT, eioINT64,
@@ -673,9 +676,6 @@ gmx_bool gmx_fio_ndoe_string(t_fileio *fio, char *item[], int n,
     gmx_fio_unlock(fio);
     return ret;
 }
-
-namespace gmx
-{
 
 bool FileIOXdrSerializer::reading() const
 {

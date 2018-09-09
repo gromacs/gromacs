@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2014,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -85,19 +85,19 @@ typedef struct gmx_ana_selvalue_t
          *
          * Needs to be the first member to be able to use initialized arrays.
          */
-        void                   *ptr;
+        void                        *ptr;
         /** Integer value(s) (type \ref INT_VALUE). */
-        int                    *i;
+        int                         *i;
         /** Real value(s) (type \ref REAL_VALUE). */
-        real                   *r;
+        gmx::real                   *r;
         /** String value(s) (type \ref STR_VALUE). */
-        char                  **s;
+        char                       **s;
         /** Structure for the position value(s) (type \ref POS_VALUE). */
-        struct gmx_ana_pos_t   *p;
+        struct gmx_ana_pos_t        *p;
         /** Group value (type \ref GROUP_VALUE). */
-        struct gmx_ana_index_t *g;
+        struct gmx_ana_index_t      *g;
         /** Boolean value (only parameters of type \ref NO_VALUE); */
-        bool                   *b;
+        bool                        *b;
     }                           u;
     /*! \brief
      * Number of elements allocated for the value array.

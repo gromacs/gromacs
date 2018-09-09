@@ -54,6 +54,8 @@
 #include "selmethod.h"
 #include "selmethod-impl.h"
 
+using namespace gmx;
+
 /*! \internal
  * \brief
  * Data structure for the \p same selection method.

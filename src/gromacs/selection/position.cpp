@@ -50,6 +50,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+using namespace gmx;
+
 gmx_ana_pos_t::gmx_ana_pos_t()
 {
     x = nullptr;

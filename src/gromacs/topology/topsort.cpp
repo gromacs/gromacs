@@ -45,6 +45,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static gmx_bool ip_pert(int ftype, const t_iparams *ip)
 {
     gmx_bool bPert;
@@ -267,3 +270,5 @@ void gmx_sort_ilist_fe(t_idef *idef, const real *qA, const real *qB)
 
     idef->ilsort = ilsortFE_SORTED;
 }
+
+} //namespace gmx

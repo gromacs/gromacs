@@ -41,6 +41,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 struct gmx_output_env_t;
 struct t_topology;
 struct t_trxframe;
@@ -85,5 +88,7 @@ int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
 t_complex *** rc_tensor_allocation(int x, int y, int z);
 
 real **compute_scattering_factor_table (gmx_structurefactors_t *gsf, structure_factor_t * sft);
+
+} // namespace gmx
 
 #endif

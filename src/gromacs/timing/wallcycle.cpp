@@ -56,8 +56,6 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 
-static const bool useCycleSubcounters = GMX_CYCLE_SUBCOUNTERS;
-
 /* DEBUG_WCYCLE adds consistency checking for the counters.
  * It checks if you stop a counter different from the last
  * one that was opened and if you do nest too deep.
@@ -67,6 +65,10 @@ static const bool useCycleSubcounters = GMX_CYCLE_SUBCOUNTERS;
 #ifdef DEBUG_WCYCLE
 #include "gromacs/utility/fatalerror.h"
 #endif
+
+namespace gmx
+{
+static const bool useCycleSubcounters = GMX_CYCLE_SUBCOUNTERS;
 
 typedef struct
 {
@@ -1121,3 +1123,5 @@ void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs)
         wc->wcsc[ewcs].n++;
     }
 }
+
+} //namespace gmx

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,9 @@
 #include <math.h>
 
 #include <smmintrin.h>
+
+namespace gmx
+{
 
 #undef gmx_restrict
 #define gmx_restrict
@@ -728,5 +731,7 @@ sse41_inv_f(__m128 x)
 
     return _mm_mul_ps(lu, _mm_sub_ps(_mm_set1_ps(2.0f), _mm_mul_ps(lu, x)));
 }
+
+}      // namespace gmx
 
 #endif /* _kernelutil_x86_sse4_1_single_h_ */

@@ -37,6 +37,9 @@
 
 #include "pme-internal.h"
 
+namespace gmx
+{
+
 void
 pme_realloc_atomcomm_things(pme_atomcomm_t *atc);
 
@@ -48,5 +51,7 @@ dd_pmeredist_f(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
 void
 do_redist_pos_coeffs(struct gmx_pme_t *pme, const t_commrec *cr, int start, int homenr,
                      gmx_bool bFirst, rvec x[], real *data);
+
+} // namespace gmx
 
 #endif

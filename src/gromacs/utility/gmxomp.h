@@ -68,6 +68,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 /*! \addtogroup module_utility
  * \{
  */
@@ -146,5 +149,7 @@ static inline void gmx_pause()
 }
 
 /*! \} */
+
+} // namespace gmx
 
 #endif

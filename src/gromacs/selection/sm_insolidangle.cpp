@@ -137,6 +137,8 @@
 using std::min;
 using std::max;
 
+using namespace gmx;
+
 /*! \internal
  * \brief
  * Internal data structure for the \p insolidangle selection method.

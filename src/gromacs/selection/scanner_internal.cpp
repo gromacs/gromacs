@@ -74,6 +74,8 @@
 #include "selmethod.h"
 #include "symrec.h"
 
+using namespace gmx;
+
 /* These are defined as macros in the generated scanner_flex.h.
  * We undefine them here to have them as variable names in the subroutines.
  * There are other ways of doing this, but this is probably the easiest. */

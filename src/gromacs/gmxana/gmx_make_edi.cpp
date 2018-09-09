@@ -59,6 +59,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 typedef struct
 {
     real        deltaF0;
@@ -306,7 +309,7 @@ static int sscan_list(int *list[], const char *str, const char *listname)
     (*list)[nvecs] = 0;
     sfree(startpos);
     return nvecs;
-} /*sscan_list*/
+}   /*sscan_list*/
 
 static void write_eigvec(FILE* fp, int natoms, int eig_list[], rvec** eigvecs, int nvec, const char *grouptitle, real steps[])
 {
@@ -979,3 +982,5 @@ int gmx_make_edi(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

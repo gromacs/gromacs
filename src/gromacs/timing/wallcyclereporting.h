@@ -46,12 +46,10 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
-struct t_commrec;
-
 namespace gmx
 {
+struct t_commrec;
 class MDLogger;
-}
 
 typedef struct gmx_wallcycle *gmx_wallcycle_t;
 struct gmx_wallclock_gpu_nbnxn_t;
@@ -70,5 +68,7 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
                      const gmx_wallclock_gpu_nbnxn_t *gpu_nbnxn_t,
                      const gmx_wallclock_gpu_pme_t *gpu_pme_t);
 /* Print the cycle and time accounting */
+
+} // namespace gmx
 
 #endif

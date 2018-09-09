@@ -51,6 +51,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 t_ebin *mk_ebin()
 {
     t_ebin *eb;
@@ -281,3 +284,5 @@ void pr_ebin(FILE *fp, t_ebin *eb, int index, int nener, int nperline,
         gmx_fatal(FARGS, "Cannot write to logfile; maybe you are out of disk space?");
     }
 }
+
+} //namespace gmx

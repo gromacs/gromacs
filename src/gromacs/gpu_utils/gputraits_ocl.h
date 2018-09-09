@@ -44,6 +44,9 @@
 
 #include "gromacs/gpu_utils/gmxopencl.h"
 
+namespace gmx
+{
+
 //! \brief GPU command stream
 using CommandStream = cl_command_queue;
 //! \brief Single GPU call timing event
@@ -63,5 +66,7 @@ struct KernelLaunchConfig
     size_t        sharedMemorySize = 0;         //!< Shared memory size in bytes
     CommandStream stream           = nullptr;   //!< Stream to launch kernel in
 };
+
+} // namespace gmx
 
 #endif

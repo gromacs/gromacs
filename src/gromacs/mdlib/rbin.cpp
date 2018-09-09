@@ -43,6 +43,9 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 t_bin *mk_bin()
 {
     t_bin *b;
@@ -173,3 +176,5 @@ void extract_bind(t_bin *b, int index, int nr, double r[])
         r[i] = rbuf[i];
     }
 }
+
+} //namespace gmx

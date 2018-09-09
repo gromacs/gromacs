@@ -47,6 +47,9 @@
 #include "gromacs/mdlib/nbnxn_gpu_types.h"
 #include "gromacs/mdtypes/interaction_const.h"
 
+namespace gmx
+{
+
 struct nonbonded_verlet_group_t;
 struct nbnxn_pairlist_t;
 struct nbnxn_atomdata_t;
@@ -109,11 +112,13 @@ void nbnxn_gpu_reset_timings(struct nonbonded_verlet_t gmx_unused *nbv) GPU_FUNC
 
 /** Calculates the minimum size of proximity lists to improve SM load balance
  *  with GPU non-bonded kernels. */
-GPU_FUNC_QUALIFIER
+     GPU_FUNC_QUALIFIER
 int nbnxn_gpu_min_ci_balanced(gmx_nbnxn_gpu_t gmx_unused *nb) GPU_FUNC_TERM_WITH_RETURN(-1)
 
 /** Returns if analytical Ewald GPU kernels are used. */
 GPU_FUNC_QUALIFIER
 gmx_bool nbnxn_gpu_is_kernel_ewald_analytical(const gmx_nbnxn_gpu_t gmx_unused *nb) GPU_FUNC_TERM_WITH_RETURN(FALSE)
+
+} // namespace gmx
 
 #endif

@@ -46,6 +46,9 @@
 
 #include "kernelutil_sparc64_hpc_ace_double.h"
 
+namespace gmx
+{
+
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecCSTab_VdwNone_GeomW4W4_VF_sparc64_hpc_ace_double
  * Electrostatics interaction: CubicSplineTable
@@ -2166,3 +2169,5 @@ nb_kernel_ElecCSTab_VdwNone_GeomW4W4_F_sparc64_hpc_ace_double
 
     inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_W4W4_F,outeriter*18 + inneriter*378);
 }
+
+} //namespace gmx

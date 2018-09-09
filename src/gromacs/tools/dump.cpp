@@ -73,6 +73,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
+namespace gmx
+{
+
 static void list_tpx(const char *fn,
                      gmx_bool    bShowNumbers,
                      gmx_bool    bShowParameters,
@@ -678,3 +681,5 @@ int gmx_dump(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

@@ -51,6 +51,9 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /*! \brief Flag to select user tables for make_tables */
 #define GMX_MAKETABLES_FORCEUSER  (1<<0)
 /*! \brief Flag to only make 1,4 pair tables for make_tables */
@@ -149,4 +152,6 @@ bondedtable_t make_bonded_table(FILE *fplog, const char *fn, int angle);
 t_forcetable *makeDispersionCorrectionTable(FILE *fp, const interaction_const_t *ic,
                                             real rtab, const char *tabfn);
 
-#endif  /* GMX_TABLES_FORCETABLE_H */
+}      // namespace gmx
+
+#endif /* GMX_TABLES_FORCETABLE_H */

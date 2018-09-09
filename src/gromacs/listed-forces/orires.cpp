@@ -62,6 +62,9 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 // TODO This implementation of ensemble orientation restraints is nasty because
 // a user can't just do multi-sim with single-sim orientation restraints.
 
@@ -757,3 +760,5 @@ void update_orires_history(t_fcdata *fcd, history_t *hist)
         }
     }
 }
+
+} //namespace gmx

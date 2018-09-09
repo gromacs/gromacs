@@ -64,6 +64,9 @@
 
 #include "domdec_specatomcomm.h"
 
+namespace gmx
+{
+
 void dd_move_f_vsites(gmx_domdec_t *dd, rvec *f, rvec *fshift)
 {
     if (dd->vsite_comm)
@@ -188,3 +191,5 @@ void init_domdec_vsites(gmx_domdec_t *dd, int n_intercg_vsite)
 
     dd->vsite_comm = new gmx_domdec_specat_comm_t;
 }
+
+} //namespace gmx

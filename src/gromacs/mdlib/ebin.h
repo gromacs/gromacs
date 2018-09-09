@@ -43,6 +43,9 @@
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 /* This is a running averaging structure ('energy bin') for use during mdrun. */
 typedef struct {
     int             nener;
@@ -103,5 +106,7 @@ void reset_ebin_sums(t_ebin *eb);
  * us implement and rely on this special behaviour of -1. */
 void pr_ebin(FILE *fp, t_ebin *eb, int index, int nener, int nperline,
              int prmode, gmx_bool bPrHead);
+
+} // namespace gmx
 
 #endif

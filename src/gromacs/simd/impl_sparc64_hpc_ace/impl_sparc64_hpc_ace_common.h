@@ -36,6 +36,9 @@
 #ifndef GMX_SIMD_IMPL_SPARC64_HPC_ACE_COMMON_H
 #define GMX_SIMD_IMPL_SPARC64_HPC_ACE_COMMON_H
 
+namespace gmx
+{
+
 /* Capability definitions for Sparc64 HPC-ACE */
 /* HPC-ACE is actually double-only on the register level, but we also implement
  * a single-precision interface where we only offer single-precision accuracy
@@ -65,5 +68,7 @@
 /* No SIMD4 support in either single or double */
 #define GMX_SIMD_RSQRT_BITS                     10
 #define GMX_SIMD_RCP_BITS                        9
+
+}      // namespace gmx
 
 #endif /* GMX_SIMD_IMPL_SPARC64_HPC_ACE_COMMON_H */

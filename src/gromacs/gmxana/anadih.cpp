@@ -55,6 +55,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 void print_one(const gmx_output_env_t *oenv, const char *base, const char *name,
                const char *title, const char *ylabel, int nf, real time[],
                real data[])
@@ -255,12 +258,12 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
                 ntrans++;
             }
 #endif
-        } /* end j */
+        }   /* end j */
         for (k = 0; k < NROT; k++)
         {
             rot_occ[k][i] /= nframes;
         }
-    } /* end i */
+    }   /* end i */
     fprintf(stderr, "Total number of transitions: %10d\n", ntrans);
     if (ntrans > 0)
     {
@@ -1009,3 +1012,5 @@ void read_ang_dih(const char *trj_fn,
 
     *nframes = teller;
 }
+
+} //namespace gmx

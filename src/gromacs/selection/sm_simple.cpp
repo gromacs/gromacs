@@ -53,6 +53,8 @@
 #include "selmethod.h"
 #include "selmethod-impl.h"
 
+using namespace gmx;
+
 /** Evaluates the \p all selection keyword. */
 static void
 evaluate_all(const gmx::SelMethodEvalContext &context,
@@ -85,7 +87,7 @@ evaluate_resindex(const gmx::SelMethodEvalContext &context,
  * If molecule information is not found, also prints an error message.
  */
 static void
-check_molecules(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
+check_molecules(const gmx::gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Evaluates the \p molindex selection keyword. */
 static void
 evaluate_molindex(const gmx::SelMethodEvalContext &context,
@@ -107,7 +109,7 @@ evaluate_pdbatomname(const gmx::SelMethodEvalContext &context,
  * \param     data Not used.
  */
 static void
-check_atomtype(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
+check_atomtype(const gmx::gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Evaluates the \p atomtype selection keyword. */
 static void
 evaluate_atomtype(const gmx::SelMethodEvalContext &context,
@@ -133,7 +135,7 @@ evaluate_mass(const gmx::SelMethodEvalContext &context,
  * \param     data Not used.
  */
 static void
-check_charge(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
+check_charge(const gmx::gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Evaluates the \p charge selection keyword. */
 static void
 evaluate_charge(const gmx::SelMethodEvalContext &context,
@@ -150,7 +152,7 @@ evaluate_charge(const gmx::SelMethodEvalContext &context,
  * If PDB info is not found, also prints an error message.
  */
 static void
-check_pdbinfo(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
+check_pdbinfo(const gmx::gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Evaluates the \p altloc selection keyword. */
 static void
 evaluate_altloc(const gmx::SelMethodEvalContext &context,
@@ -598,7 +600,7 @@ evaluate_resindex(const gmx::SelMethodEvalContext &context,
 }
 
 static void
-check_molecules(const gmx_mtop_t *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
+check_molecules(const gmx::gmx_mtop_t *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
 {
     bool bOk;
 
@@ -672,7 +674,7 @@ evaluate_pdbatomname(const gmx::SelMethodEvalContext &context,
 }
 
 static void
-check_atomtype(const gmx_mtop_t *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
+check_atomtype(const gmx::gmx_mtop_t *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
 {
     if (!gmx_mtop_has_atomtypes(top))
     {
@@ -779,7 +781,7 @@ evaluate_mass(const gmx::SelMethodEvalContext &context,
 
 
 static void
-check_charge(const gmx_mtop_t *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
+check_charge(const gmx::gmx_mtop_t *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
 {
     if (!gmx_mtop_has_charges(top))
     {
@@ -806,7 +808,7 @@ evaluate_charge(const gmx::SelMethodEvalContext &context,
 }
 
 static void
-check_pdbinfo(const gmx_mtop_t *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
+check_pdbinfo(const gmx::gmx_mtop_t *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
 {
     if (!gmx_mtop_has_pdbinfo(top))
     {

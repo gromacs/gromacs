@@ -42,6 +42,9 @@
 
 #include "xdlgitem.h"
 
+namespace gmx
+{
+
 typedef struct {
     edlgitem edlg;
     bool     bDef;
@@ -85,4 +88,6 @@ void DumpFGrid(t_fgrid *fgrid);
 
 void ReadQuoteString(const char *infile, FILE *in, char *buf);
 
-#endif  /* _fgrid_h */
+}      // namespace gmx
+
+#endif /* _fgrid_h */

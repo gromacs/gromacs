@@ -47,6 +47,9 @@
 
 #include "gromacs/utility/gmxassert.h"
 
+namespace gmx
+{
+
 //! Debug GPU timers in debug builds only
 #if defined(NDEBUG)
 static const bool c_debugTimerState = false;
@@ -176,5 +179,7 @@ template <typename GpuRegionTimerImpl> class GpuRegionTimerWrapper
             return impl_.fetchNextEvent();
         }
 };
+
+} // namespace gmx
 
 #endif

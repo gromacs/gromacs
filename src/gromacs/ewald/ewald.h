@@ -70,6 +70,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
@@ -105,5 +108,7 @@ do_ewald(const t_inputrec *ir,
 real
 ewald_charge_correction(const t_commrec *cr, t_forcerec *fr, real lambda, matrix box,
                         real *dvdlambda, tensor vir);
+
+} // namespace gmx
 
 #endif

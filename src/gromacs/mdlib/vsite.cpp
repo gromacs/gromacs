@@ -65,6 +65,9 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* The strategy used here for assigning virtual sites to (thread-)tasks
  * is as follows:
  *
@@ -485,7 +488,7 @@ static void construct_vsites_thread(const gmx_vsite_t *vsite,
             continue;
         }
 
-        {   // TODO remove me
+        {       // TODO remove me
             int            nra = interaction_function[ftype].nratoms;
             int            inc = 1 + nra;
             int            nr  = ilist[ftype].nr;
@@ -1510,7 +1513,7 @@ static void spread_vsite_f_thread(const gmx_vsite_t *vsite,
             continue;
         }
 
-        {   // TODO remove me
+        {       // TODO remove me
             int            nra = interaction_function[ftype].nratoms;
             int            inc = 1 + nra;
             int            nr  = ilist[ftype].nr;
@@ -1897,7 +1900,7 @@ static int **get_vsite_pbc(const t_iparams *iparams, const t_ilist *ilist,
 
     for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
     {
-        {   // TODO remove me
+        {       // TODO remove me
             int            nral = NRAL(ftype);
             const t_ilist *il   = &ilist[ftype];
             const t_iatom *ia   = il->iatoms;
@@ -2348,7 +2351,7 @@ void split_vsites_over_threads(const t_ilist   *ilist,
         vsite_atom_range = -1;
         for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
         {
-            {   // TODO remove me
+            {       // TODO remove me
                 if (ftype != F_VSITEN)
                 {
                     int            nral1 = 1 + NRAL(ftype);
@@ -2613,3 +2616,5 @@ void set_vsite_top(gmx_vsite_t          *vsite,
                                   md, vsite);
     }
 }
+
+} //namespace gmx

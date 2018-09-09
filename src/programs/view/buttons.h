@@ -40,6 +40,8 @@
 
 #include "xutil.h"
 
+namespace gmx
+{
 enum {
     IDROTX, IDROTY, IDROTZ, IDTRANSX, IDTRANSY, IDTRANSZ, IDZOOM, IDBUTNR,
     IDREWIND, IDSTEP, IDFF, IDSTOP_ANI, IDNR,
@@ -76,4 +78,5 @@ extern void hide_but(t_x11 *x11, t_butbox *bbox);
 
 extern void done_bbox(t_x11 *x11, t_butbox *bbox);
 
+} // namespace gmx
 #endif

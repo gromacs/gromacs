@@ -50,6 +50,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void set_scale(t_3dview *view, real sx, real sy)
 {
     view->sc_x = sx;
@@ -228,3 +231,5 @@ t_3dview *init_view(matrix box)
 
     return view;
 }
+
+} //namespace gmx

@@ -48,6 +48,9 @@
 #include "x11.h"
 #include "xutil.h"
 
+namespace gmx
+{
+
 static bool ChildCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
 {
     t_child   *child;
@@ -258,3 +261,5 @@ int menu_height(t_menu *m)
 {
     return m->wd.height;
 }
+
+} //namespace gmx

@@ -41,6 +41,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /*Make range-array (Permutation identity) for sorting */
 void rangeArray(int *ar, int size)
 {
@@ -193,3 +196,5 @@ int LinearSearch (const double *array, int startindx, int stopindx,
 
     return -1;
 }
+
+} //namespace gmx

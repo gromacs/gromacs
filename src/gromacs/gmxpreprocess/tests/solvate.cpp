@@ -53,6 +53,8 @@
 #include "testutils/testfilemanager.h"
 #include "testutils/textblockmatchers.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -147,3 +149,4 @@ TEST_F(SolvateTest, update_Topology_Works)
 }
 
 } // namespace
+} // namespace gmx

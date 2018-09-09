@@ -49,6 +49,9 @@
 
 #include <memory>
 
+namespace gmx
+{
+
 struct PmeGpuProgramImpl;
 struct gmx_device_info_t;
 
@@ -75,5 +78,7 @@ using PmeGpuProgramHandle = const PmeGpuProgram *;
  * Factory function used to build persistent PME GPU program for the device at once.
  */
 PmeGpuProgramStorage buildPmeGpuProgram(const gmx_device_info_t * /*deviceInfo*/);
+
+} // namespace gmx
 
 #endif

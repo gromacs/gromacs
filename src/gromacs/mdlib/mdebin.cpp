@@ -69,6 +69,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static const char *conrmsd_nm[] = { "Constr. rmsd", "Constr.2 rmsd" };
 
 static const char *boxs_nm[] = { "Box-X", "Box-Y", "Box-Z" };
@@ -1590,3 +1593,5 @@ void restore_energyhistory_from_state(t_mdebin              * mdebin,
         mde_delta_h_coll_restore_energyhistory(mdebin->dhc, enerhist->deltaHForeignLambdas.get());
     }
 }
+
+} //namespace gmx

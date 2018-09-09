@@ -40,6 +40,9 @@
 
 #include "gromacs/mdlib/mdebin.h"
 
+namespace gmx
+{
+
 /* The functions & data structures here describe writing
    energy differences (or their histogram )for use with g_bar */
 
@@ -177,4 +180,6 @@ void mde_delta_h_coll_update_energyhistory(const t_mde_delta_h_coll *dhc,
 void mde_delta_h_coll_restore_energyhistory(t_mde_delta_h_coll      *dhc,
                                             const delta_h_history_t *deltaH);
 
-#endif  /* _mdebin_bar_h */
+}      // namespace gmx
+
+#endif /* _mdebin_bar_h */

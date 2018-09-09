@@ -75,6 +75,9 @@
 
 #include "listed-internal.h"
 
+namespace gmx
+{
+
 namespace
 {
 
@@ -401,7 +404,7 @@ calc_one_bond(int thread,
     return v;
 }
 
-} // namespace
+}   // namespace
 
 gmx_bool
 ftype_is_bonded_potential(int ftype)
@@ -740,3 +743,5 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
         }
     }
 }
+
+} // namespace gmx

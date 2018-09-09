@@ -102,6 +102,8 @@
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_sparc64_hpc_ace_double/nb_kernel_sparc64_hpc_ace_double.h"
 #endif
 
+namespace gmx
+{
 
 static tMPI_Thread_mutex_t nonbonded_setup_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 static gmx_bool            nonbonded_setup_done  = FALSE;
@@ -154,7 +156,7 @@ gmx_nonbonded_setup(t_forcerec *   fr,
 #if GMX_SIMD_SPARC64_HPC_ACE && GMX_DOUBLE
                 nb_kernel_list_add_kernels(kernellist_sparc64_hpc_ace_double, kernellist_sparc64_hpc_ace_double_size);
 #endif
-                ; /* empty statement to avoid a completely empty block */
+                ;   /* empty statement to avoid a completely empty block */
             }
         }
         /* Create a hash for faster lookups */
@@ -436,3 +438,5 @@ void do_nonbonded(const t_forcerec  *fr,
         }
     }
 }
+
+} //namespace gmx

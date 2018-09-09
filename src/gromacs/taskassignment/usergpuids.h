@@ -54,10 +54,9 @@
 
 #include "gromacs/utility/arrayref.h"
 
-struct gmx_gpu_info_t;
-
 namespace gmx
 {
+struct gmx_gpu_info_t;
 
 /*! \brief Parse a GPU ID string into a container describing the task types and associated device IDs.
  *

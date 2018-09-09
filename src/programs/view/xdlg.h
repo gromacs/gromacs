@@ -40,6 +40,8 @@
 
 #include "xdlgitem.h"
 
+namespace gmx
+{
 #define DLG_SHOW         (1<<0)
 #define DLG_HIDE         (1<<1)
 #define DLG_SHOWANDHIDE  (DLG_SHOW | DLG_HIDE)
@@ -165,4 +167,5 @@ void FreeDlgItem(t_dlg *dlg, t_id id);
 
 void FreeDlg(t_dlg *dlg);
 
-#endif  /* _xdlg_h */
+}      // namespace gmx
+#endif /* _xdlg_h */

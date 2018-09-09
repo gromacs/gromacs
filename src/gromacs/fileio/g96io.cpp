@@ -51,6 +51,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 #define CHAR_SHIFT 24
 
 static int read_g96_pos(char line[], t_symtab *symtab,
@@ -471,3 +474,5 @@ void write_g96_conf(FILE *out, const char *title, const t_trxframe *fr,
         fprintf(out, "END\n");
     }
 }
+
+} //namespace gmx

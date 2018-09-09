@@ -47,6 +47,9 @@
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 struct gmx_domdec_t;
 struct t_forcerec;
 struct t_nrnb;
@@ -62,5 +65,7 @@ void dd_redistribute_cg(FILE             *fplog,
                         t_forcerec       *fr,
                         t_nrnb           *nrnb,
                         int              *ncg_moved);
+
+} // namespace gmx
 
 #endif

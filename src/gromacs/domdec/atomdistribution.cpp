@@ -48,6 +48,9 @@
 
 #include "domdec_internal.h"
 
+namespace gmx
+{
+
 /*! \brief Returns the total number of rank, determined from the DD grid dimensions */
 static int numRanks(const ivec numCells)
 {
@@ -84,3 +87,5 @@ void get_commbuffer_counts(AtomDistribution  *ma,
         (*disps)[rank]  = (rank == 0 ? 0 : (*disps)[rank - 1] + (*counts)[rank - 1]);
     }
 }
+
+} //namespace gmx

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -306,12 +306,12 @@
 struct gmx_ana_index_t;
 struct gmx_ana_pos_t;
 struct gmx_ana_selcollection_t;
-struct gmx_mtop_t;
-struct t_pbc;
-struct t_trxframe;
 
 namespace gmx
 {
+struct gmx_mtop_t;
+struct t_pbc;
+struct t_trxframe;
 class PositionCalculationCollection;
 class SelectionParserSymbolTable;
 
@@ -501,7 +501,7 @@ typedef void  (*sel_posfunc)(gmx::PositionCalculationCollection *pcc, void *data
  * This function may be called multiple times for the same method if the
  * method takes parameters with \ref SPAR_ATOMVAL set.
  */
-typedef void  (*sel_initfunc)(const gmx_mtop_t *top, int npar,
+typedef void  (*sel_initfunc)(const gmx::gmx_mtop_t *top, int npar,
                               gmx_ana_selparam_t *param, void *data);
 /*! \brief
  * Initializes output data structure.
@@ -530,7 +530,7 @@ typedef void  (*sel_initfunc)(const gmx_mtop_t *top, int npar,
  * This function may be called multiple times for the same method if the
  * method takes parameters with \ref SPAR_ATOMVAL set.
  */
-typedef void  (*sel_outinitfunc)(const gmx_mtop_t *top, gmx_ana_selvalue_t *out,
+typedef void  (*sel_outinitfunc)(const gmx::gmx_mtop_t *top, gmx_ana_selvalue_t *out,
                                  void *data);
 /*! \brief
  * Frees the internal data.

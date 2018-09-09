@@ -41,6 +41,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_pme_t;
 
 /*! \brief
@@ -107,5 +110,7 @@ set_grid_alignment(int *pmegrid_nz, int pme_order);
 
 void
 reuse_pmegrids(const pmegrids_t *oldgrid, pmegrids_t *newgrid);
+
+} // namespace gmx
 
 #endif

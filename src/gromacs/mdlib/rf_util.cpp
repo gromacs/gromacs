@@ -54,6 +54,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/pleasecite.h"
 
+namespace gmx
+{
+
 real RF_excl_correction(const t_forcerec *fr,
                         const t_graph    *g,
                         const t_mdatoms  *mdatoms,
@@ -328,3 +331,5 @@ void init_generalized_rf(FILE *fplog,
     }
     fr->temp   = T/nrdf;
 }
+
+} //namespace gmx

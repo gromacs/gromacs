@@ -45,6 +45,9 @@
 
 #include "ga2la.h"
 
+namespace gmx
+{
+
 /*! \brief Returns whether to use a direct list only
  *
  * There are two methods implemented for finding the local atom number
@@ -82,3 +85,5 @@ gmx_ga2la_t::gmx_ga2la_t(int numAtomsTotal,
         new(&(data_.hashed)) gmx::HashedMap<Entry>(numAtomsLocal);
     }
 }
+
+} //namespace gmx

@@ -56,6 +56,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_edsam;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
@@ -69,9 +72,6 @@ struct t_mdatoms;
 struct t_nrnb;
 struct t_pbc;
 class t_state;
-
-namespace gmx
-{
 
 //! Describes supported flavours of constrained updates.
 enum class ConstraintVariable : int

@@ -59,6 +59,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 #define DIHEDRAL_WAS_SET_IN_RTP 0
 static bool was_dihedral_set_in_rtp(const t_param *dih)
 {
@@ -1145,3 +1148,5 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     sfree(improper);
     sfree(pai);
 }
+
+} //namespace gmx

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,9 @@
 #include <algorithm>
 
 #include "gromacs/utility/fatalerror.h"
+
+namespace gmx
+{
 
 /* The grid sizes below are based on timing of a 3D cubic grid in fftw
  * compiled with SSE using 4 threads in fft5d.c.
@@ -172,3 +175,5 @@ real calcFftGrid(FILE *fp,
 
     return max_spacing;
 }
+
+} //namespace gmx

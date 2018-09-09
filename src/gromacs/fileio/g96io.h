@@ -39,6 +39,9 @@
 
 #include <stdio.h>
 
+namespace gmx
+{
+
 
 struct t_symtab;
 struct t_trxframe;
@@ -61,5 +64,7 @@ int read_g96_conf(FILE *fp, const char *infile, char **name, struct t_trxframe *
 void write_g96_conf(FILE *out, const char *title, const t_trxframe *fr, int nindex, const int *index);
 /* write a Gromos96 coordinate file or trajectory frame *
  * index can be NULL                                    */
+
+} // namespace gmx
 
 #endif

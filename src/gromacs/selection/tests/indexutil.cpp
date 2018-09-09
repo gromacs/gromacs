@@ -55,6 +55,8 @@
 
 #include "toputils.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -590,3 +592,4 @@ TEST_F(IndexMapTest, HandlesMultipleRequests)
 }
 
 } // namespace
+} // namespace gmx

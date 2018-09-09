@@ -116,6 +116,9 @@
 #include "nbnxn_kernels/nbnxn_kernel_cpu.h"
 #include "nbnxn_kernels/nbnxn_kernel_prune.h"
 
+namespace gmx
+{
+
 // TODO: this environment variable allows us to verify before release
 // that on less common architectures the total cost of polling is not larger than
 // a blocking wait (so polling does not introduce overhead when the static
@@ -1171,7 +1174,7 @@ static void do_force_cutsVERLET(FILE *fplog,
                                  (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)) != 0,
                                  step, wcycle);
     }
-#endif /* GMX_MPI */
+#endif  /* GMX_MPI */
 
     if (useGpuPme)
     {
@@ -1860,7 +1863,7 @@ static void do_force_cutsGROUP(FILE *fplog,
                                  (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)) != 0,
                                  step, wcycle);
     }
-#endif /* GMX_MPI */
+#endif  /* GMX_MPI */
 
     /* Communicate coordinates and sum dipole if necessary */
     if (DOMAINDECOMP(cr))
@@ -2979,3 +2982,5 @@ void init_md(FILE *fplog,
     clear_mat(shake_vir);
     clear_rvec(mu_tot);
 }
+
+} //namespace gmx

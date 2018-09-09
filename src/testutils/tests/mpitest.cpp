@@ -50,6 +50,8 @@
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -80,3 +82,4 @@ TEST_F(MpiSelfTest, Runs)
 }
 
 } // namespace
+} // namespace gmx

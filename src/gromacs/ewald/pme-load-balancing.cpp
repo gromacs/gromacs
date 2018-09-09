@@ -78,6 +78,9 @@
 
 #include "pme-internal.h"
 
+namespace gmx
+{
+
 /*! \brief Parameters and settings for one PP-PME setup */
 struct pme_setup_t {
     real              rcut_coulomb;    /**< Coulomb cut-off                              */
@@ -1138,3 +1141,5 @@ void pme_loadbal_done(pme_load_balancing_t *pme_lb,
      * we need to first make pme.c free all data.
      */
 }
+
+} //namespace gmx

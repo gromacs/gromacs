@@ -48,6 +48,9 @@
 
 #include <cfenv>
 
+namespace gmx
+{
+
 //! Floating point exception set that we use and care about
 constexpr int c_FPexceptions = FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW;
 
@@ -171,3 +174,5 @@ real max_cutoff(real cutoff1, real cutoff2)
         return std::max(cutoff1, cutoff2);
     }
 }
+
+} //namespace gmx

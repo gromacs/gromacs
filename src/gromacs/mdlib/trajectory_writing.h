@@ -43,6 +43,9 @@
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/timing/wallcycle.h"
 
+namespace gmx
+{
+
 struct gmx_ekindata_t;
 struct gmx_mtop_t;
 struct ObservablesHistory;
@@ -80,5 +83,7 @@ do_md_trajectory_writing(FILE                     *fplog,
                          gmx_bool                  bSumEkinhOld
                          );
 
+
+} // namespace gmx
 
 #endif

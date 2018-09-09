@@ -83,6 +83,9 @@
 #include "domdec_internal.h"
 #include "domdec_vsite.h"
 
+namespace gmx
+{
+
 /*! \brief The number of integer item in the local state, used for broadcasting of the state */
 #define NITEM_DD_INIT_LOCAL_STATE 5
 
@@ -2761,3 +2764,5 @@ void dd_bonded_cg_distance(FILE *fplog,
         }
     }
 }
+
+} //namespace gmx

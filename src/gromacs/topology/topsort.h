@@ -38,6 +38,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_mtop_t;
 struct t_idef;
 
@@ -48,5 +51,7 @@ gmx_bool gmx_mtop_bondeds_free_energy(const struct gmx_mtop_t *mtop);
  * and set nr_nr_nonperturbed in ilist.
  */
 void gmx_sort_ilist_fe(struct t_idef *idef, const real *qA, const real *qB);
+
+} // namespace gmx
 
 #endif

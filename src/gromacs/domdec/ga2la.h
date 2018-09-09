@@ -53,6 +53,9 @@
 #include "gromacs/domdec/hashedmap.h"
 #include "gromacs/utility/gmxassert.h"
 
+namespace gmx
+{
+
 /*! \libinternal \brief Global to local atom mapping
  *
  * Used for efficient mapping from global atom indices to local atom indices
@@ -176,5 +179,7 @@ class gmx_ga2la_t
         } data_;
         const bool usingDirect_;
 };
+
+} // namespace gmx
 
 #endif

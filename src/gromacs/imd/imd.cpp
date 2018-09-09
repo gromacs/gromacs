@@ -85,6 +85,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /*! \brief How long shall we wait in seconds until we check for a connection again? */
 #define IMDLOOPWAIT 1
 
@@ -291,7 +294,7 @@ static int32_t imd_read_multiple(IMDSocket *socket, char *datptr, int32_t toread
         }
         leftcount -= countread;
         datptr    += countread;
-    } /* end while */
+    }   /* end while */
 
     /* return nr of bytes read */
     return toread - leftcount;
@@ -320,7 +323,7 @@ static int32_t imd_write_multiple(IMDSocket *socket, const char *datptr, int32_t
         }
         leftcount -= countwritten;
         datptr    += countwritten;
-    } /* end while */
+    }   /* end while */
 
     return towrite - leftcount;
 }
@@ -1336,7 +1339,7 @@ void init_IMD(t_inputrec             *ir,
             fprintf(stderr, "%s None of the -imd switches was used.\n"
                     "%s This run will not accept incoming IMD connections\n", IMDstr, IMDstr);
         }
-    } /* end master only */
+    }   /* end master only */
 
     /* Disable IMD if not all the needed functionality is there! */
 #if GMX_NATIVE_WINDOWS && !defined(GMX_HAVE_WINSOCK)
@@ -1700,3 +1703,5 @@ void IMD_apply_forces(gmx_bool bIMD, t_IMD *imd, const t_commrec *cr, rvec *f,
 #endif
     }
 }
+
+} //namespace gmx

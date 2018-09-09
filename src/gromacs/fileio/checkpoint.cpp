@@ -93,6 +93,9 @@
 #include "corewrap.h"
 #endif
 
+namespace gmx
+{
+
 #define CPT_MAGIC1 171817
 #define CPT_MAGIC2 171819
 #define CPTSTRLEN 1024
@@ -2026,7 +2029,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     {
         gmx_fatal( 3, __FILE__, __LINE__, "Checkpoint error on step %d\n", step );
     }
-#endif /* end GMX_FAHCORE block */
+#endif  /* end GMX_FAHCORE block */
 }
 
 static void check_int(FILE *fplog, const char *type, int p, int f, gmx_bool *mm)
@@ -2762,3 +2765,5 @@ read_checkpoint_simulation_part_and_filenames(t_fileio                         *
         gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
     }
 }
+
+} //namespace gmx

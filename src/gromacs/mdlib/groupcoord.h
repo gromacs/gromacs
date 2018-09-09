@@ -52,6 +52,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 class gmx_ga2la_t;
 struct t_commrec;
 
@@ -204,3 +207,5 @@ extern void translate_x(rvec x[], int nr, const rvec transvec);
  *
  */
 extern void rotate_x(rvec x[], int nr, matrix rmat);
+
+} // namespace gmx

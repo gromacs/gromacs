@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -131,12 +131,12 @@ struct gmx_ana_poscalc_t;
 
 struct gmx_ana_index_t;
 struct gmx_ana_pos_t;
-struct gmx_mtop_t;
-struct t_pbc;
-struct t_trxframe;
 
 namespace gmx
 {
+struct gmx_mtop_t;
+struct t_pbc;
+struct t_trxframe;
 
 /*! \internal
  * \brief
@@ -375,6 +375,6 @@ gmx_ana_poscalc_required_topology_info(gmx_ana_poscalc_t *pc);
 void
 gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc,
                        gmx_ana_pos_t *p, gmx_ana_index_t *g,
-                       t_trxframe *fr, const t_pbc *pbc);
+                       gmx::t_trxframe *fr, const gmx::t_pbc *pbc);
 
 #endif

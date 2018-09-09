@@ -51,14 +51,13 @@
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxassert.h"
 
+namespace gmx
+{
+
 struct gmx_enerdata_t;
 struct t_commrec;
 struct t_forcerec;
 struct t_mdatoms;
-
-namespace gmx
-{
-
 template <typename T>
 class ArrayRef;
 class ForceWithVirial;
@@ -169,8 +168,6 @@ class IForceProvider
         ~IForceProvider() {}
 };
 
-} // namespace gmx
-
 /*! \libinternal \brief
  * Evaluates forces from a collection of gmx::IForceProvider.
  *
@@ -204,5 +201,7 @@ struct ForceProviders
 
         gmx::PrivateImplPointer<Impl> impl_;
 };
+
+} // namespace gmx
 
 #endif

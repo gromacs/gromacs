@@ -48,6 +48,9 @@
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/utility/futil.h"
 
+namespace gmx
+{
+
 /* This is just for clarity - it can never be anything but 4! */
 #define XDR_INT_SIZE 4
 
@@ -1654,3 +1657,5 @@ xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 
     return frame;
 }
+
+} //namespace gmx

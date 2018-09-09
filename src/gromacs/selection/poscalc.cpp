@@ -79,6 +79,8 @@
 
 #include "centerofmass.h"
 
+using namespace gmx;
+
 namespace gmx
 {
 

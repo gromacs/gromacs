@@ -48,13 +48,12 @@
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
 
+namespace gmx
+{
 struct gmx_domdec_t;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_nrnb;
-
-namespace gmx
-{
 
 enum class ConstraintVariable : int;
 

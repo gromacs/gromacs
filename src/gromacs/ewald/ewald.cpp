@@ -69,6 +69,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 struct gmx_ewald_tab_t
 {
     int        nx, ny, nz, kmax;
@@ -361,3 +364,5 @@ real ewald_charge_correction(const t_commrec *cr, t_forcerec *fr, real lambda,
 
     return enercorr;
 }
+
+} //namespace gmx

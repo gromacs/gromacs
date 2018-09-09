@@ -59,6 +59,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static real calc_gyro(rvec x[], int gnx, int index[], t_atom atom[], real tm,
                       rvec gvec, rvec d, gmx_bool bQ, gmx_bool bRot, gmx_bool bMOI, matrix trans)
 {
@@ -397,3 +400,5 @@ int gmx_gyrate(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

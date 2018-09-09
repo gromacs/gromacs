@@ -58,11 +58,10 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
-struct t_blocka;
-struct t_pbc;
-
 namespace gmx
 {
+struct t_blocka;
+struct t_pbc;
 
 namespace internal
 {

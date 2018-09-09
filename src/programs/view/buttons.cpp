@@ -53,6 +53,9 @@
 #include "x11.h"
 #include "xutil.h"
 
+namespace gmx
+{
+
 static void move_bbox(t_x11 *x11, t_butbox *bbox)
 {
     int        x0, y0;
@@ -306,3 +309,5 @@ void done_bbox(t_x11 *x11, t_butbox *bbox)
     sfree(bbox->b);
     sfree(bbox);
 }
+
+} //namespace gmx
