@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,9 @@
 #ifndef GMX_PBCUTIL_ISHIFT_H
 #define GMX_PBCUTIL_ISHIFT_H
 
+namespace gmx
+{
+
 #define D_BOX_Z 1
 #define D_BOX_Y 1
 #define D_BOX_X 2
@@ -52,5 +55,7 @@
 #define IS2X(iv)      (((iv) % N_BOX_X) - D_BOX_X)
 #define IS2Y(iv)      ((((iv) / N_BOX_X) % N_BOX_Y) - D_BOX_Y)
 #define IS2Z(iv)      ((iv) / (N_BOX_X*N_BOX_Y) - D_BOX_Z)
+
+} // namespace gmx
 
 #endif

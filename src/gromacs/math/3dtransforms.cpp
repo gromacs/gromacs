@@ -44,6 +44,9 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 
+namespace gmx
+{
+
 #define N 4
 
 void gmx_mat4_copy(mat4 a, mat4 b)
@@ -174,3 +177,5 @@ void gmx_vec4_print(FILE *fp, const char *s, vec4 a)
         fprintf(fp, "\n");
     }
 }
+
+} //namespace gmx

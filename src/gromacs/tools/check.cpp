@@ -70,6 +70,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 typedef struct {
     int bStep;
     int bTime;
@@ -482,7 +485,8 @@ static void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tp
         old_t1 = fr.time;
         j++;
         new_natoms = fr.natoms;
-#define INC(s, n, f, l, item) if ((s).item != 0) { if ((n).item == 0) { first.item = fr.time; } last.item = fr.time; (n).item++; \
+#define INC(s, n, f, l, item) if ((s).item != 0) { if ((n).item == 0) { first.item = fr.time; \
+                                                   } last.item = fr.time; (n).item++; \
 }
         INC(fr, count, first, last, bStep);
         INC(fr, count, first, last, bTime);
@@ -969,3 +973,5 @@ int gmx_check(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

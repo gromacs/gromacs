@@ -51,6 +51,9 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 /************************************************************
  *
  *      S H I F T   U T I L I T I E S
@@ -1151,3 +1154,5 @@ void unshift_self(const t_graph *g, const matrix box, rvec x[])
     }
 }
 #undef GCHECK
+
+} //namespace gmx

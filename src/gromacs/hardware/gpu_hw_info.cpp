@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,9 @@
 
 #include "config.h"
 
+namespace gmx
+{
+
 /* Note that some of the following arrays must match the "GPU support
  * enumeration" in src/config.h.cmakein, so that GMX_GPU looks up an
  * array entry. */
@@ -49,3 +52,5 @@ const char * const gpu_detect_res_str[egpuNR] =
 {
     "compatible", "nonexistent", "incompatible", "insane"
 };
+
+} //namespace gmx

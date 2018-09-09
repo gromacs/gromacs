@@ -123,6 +123,9 @@ double MPI_Wtime()
 #endif
 #endif
 
+namespace gmx
+{
+
 static int vmax(const int* a, int s)
 {
     int i, max = 0;
@@ -1191,7 +1194,7 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
         /* ---------- END JOIN ------------ */
 
         /*if (debug) print_localdata(lin, "%d %d: transposed x-z\n", N1, M0, K, ZYX, coor);*/
-    }  /* for(s=0;s<2;s++) */
+    }   /* for(s=0;s<2;s++) */
 #ifdef NOGMX
     if (times != NULL && thread == 0)
     {
@@ -1276,13 +1279,13 @@ void fft5d_destroy(fft5d_plan plan)
     {
         FFTW(destroy_plan)(plan->mpip[s]);
     }
-#endif /* FFT5D_MPI_TRANSPOS */
+#endif  /* FFT5D_MPI_TRANSPOS */
     if (plan->p3d)
     {
         FFTW(destroy_plan)(plan->p3d);
     }
     FFTW_UNLOCK;
-#endif /* GMX_FFT_FFTW3 */
+#endif  /* GMX_FFT_FFTW3 */
 
     if (!(plan->flags&FFT5D_NOMALLOC))
     {
@@ -1439,3 +1442,5 @@ void fft5d_compare_data(const t_complex* lin, const t_complex* in, fft5d_plan pl
     }
 
 }
+
+} //namespace gmx

@@ -41,6 +41,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_groups_t;
 struct t_energy;
 struct t_enxframe;
@@ -203,5 +206,7 @@ void add_subblocks_enxblock(t_enxblock *eb, int n);
 void comp_enx(const char *fn1, const char *fn2, real ftol, real abstol,
               const char *lastener);
 /* Compare two binary energy files */
+
+} // namespace gmx
 
 #endif

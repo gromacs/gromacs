@@ -60,6 +60,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* The source code in this file should be thread-safe.
          Please keep it that way. */
 
@@ -1607,3 +1610,5 @@ void comp_enx(const char *fn1, const char *fn2, real ftol, real abstol, const ch
     free_enxframe(fr1);
     sfree(fr1);
 }
+
+} //namespace gmx

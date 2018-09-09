@@ -47,6 +47,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 #define BUFSIZE     128
 
 static int nFloatSize(gmx_trr_header_t *sh)
@@ -324,3 +327,5 @@ void gmx_trr_close(t_fileio *fio)
 {
     gmx_fio_close(fio);
 }
+
+} //namespace gmx

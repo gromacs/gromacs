@@ -70,9 +70,8 @@
 namespace gmx
 {
 class TextWriter;
-}
-
 struct gmx_mtop_t;
+}
 
 /** Stores a set of index groups. */
 struct gmx_ana_indexgrps_t;
@@ -140,7 +139,7 @@ struct gmx_ana_indexmap_t
      * A block structure that corresponds to the current index group.
      * \c mapb.nra and \c mapb.a correspond to the last mapped index group.
      */
-    t_blocka            mapb;
+    gmx::t_blocka            mapb;
 
     /*! \brief
      * Customizable ID numbers for the original blocks.
@@ -169,7 +168,7 @@ struct gmx_ana_indexmap_t
      * gmx_ana_indexmap_update() unless \p bMaskOnly was specified or the
      * index group is identical to the one provided to gmx_ana_indexmap_init().
      */
-    t_blocka            b;
+    gmx::t_blocka            b;
     /*! \brief
      * true if the current reference IDs are for the whole group (internal use only).
      *
@@ -186,7 +185,7 @@ struct gmx_ana_indexmap_t
 /*@{*/
 /** Reads index groups from a file or constructs them from topology. */
 void
-gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, gmx_mtop_t *top,
+gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, gmx::gmx_mtop_t *top,
                        const char *fnm);
 /** Frees memory allocated for index groups. */
 void
@@ -327,18 +326,18 @@ gmx_ana_index_partition(gmx_ana_index_t *dest1, gmx_ana_index_t *dest2,
 /*@{*/
 /** Partition a group based on topology information. */
 void
-gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
+gmx_ana_index_make_block(gmx::t_blocka *t, const gmx::gmx_mtop_t *top, gmx_ana_index_t *g,
                          e_index_t type, bool bComplete);
 /** Checks whether a group consists of full blocks. */
 bool
 gmx_ana_index_has_full_blocks(const gmx_ana_index_t *g, const gmx::RangePartitioning *b);
 /** Checks whether a group consists of full blocks. */
 bool
-gmx_ana_index_has_full_ablocks(gmx_ana_index_t *g, t_blocka *b);
+gmx_ana_index_has_full_ablocks(gmx_ana_index_t *g, gmx::t_blocka *b);
 /** Checks whether a group consists of full residues/molecules. */
 bool
 gmx_ana_index_has_complete_elems(gmx_ana_index_t *g, e_index_t type,
-                                 const gmx_mtop_t *top);
+                                 const gmx::gmx_mtop_t *top);
 
 /** Initializes an empty index group mapping. */
 void
@@ -349,7 +348,7 @@ gmx_ana_indexmap_reserve(gmx_ana_indexmap_t *m, int nr, int isize);
 /** Initializes an index group mapping. */
 void
 gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
-                      const gmx_mtop_t *top, e_index_t type);
+                      const gmx::gmx_mtop_t *top, e_index_t type);
 /*! \brief
  * Initializes `orgid` entries based on topology grouping.
  *
@@ -375,11 +374,11 @@ gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
  * Strong exception safety guarantee.
  */
 int
-gmx_ana_indexmap_init_orgid_group(gmx_ana_indexmap_t *m, const gmx_mtop_t *top,
+gmx_ana_indexmap_init_orgid_group(gmx_ana_indexmap_t *m, const gmx::gmx_mtop_t *top,
                                   e_index_t type);
 /** Sets an index group mapping to be static. */
 void
-gmx_ana_indexmap_set_static(gmx_ana_indexmap_t *m, t_blocka *b);
+gmx_ana_indexmap_set_static(gmx_ana_indexmap_t *m, gmx::t_blocka *b);
 /** Frees memory allocated for index group mapping. */
 void
 gmx_ana_indexmap_deinit(gmx_ana_indexmap_t *m);

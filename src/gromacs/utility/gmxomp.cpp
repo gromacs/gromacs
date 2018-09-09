@@ -58,6 +58,9 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 int gmx_omp_get_max_threads()
 {
 #if GMX_OPENMP
@@ -130,7 +133,7 @@ gmx_bool gmx_omp_check_thread_affinity(char **message)
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         shouldSetAffinity = false;
     }
-#endif /* __GNUC__ || __INTEL_COMPILER */
+#endif  /* __GNUC__ || __INTEL_COMPILER */
 
 #if defined(__INTEL_COMPILER)
     const char *const kmp_env         = getenv("KMP_AFFINITY");
@@ -160,3 +163,5 @@ gmx_bool gmx_omp_check_thread_affinity(char **message)
 #endif /* GMX_OPENMP */
     return shouldSetAffinity;
 }
+
+} //namespace gmx

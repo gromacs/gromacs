@@ -67,6 +67,8 @@
 
 #include "testutils/testasserts.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -145,3 +147,4 @@ TEST_F(ElectricFieldTest, Pulsed)
 }
 
 } // namespace
+} // namespace gmx

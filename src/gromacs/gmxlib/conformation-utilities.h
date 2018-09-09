@@ -41,6 +41,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 void rotate_conf(int natom, rvec *x, rvec *v, real alfa, real beta, real gamma);
 /*rotate() rotates a configuration alfa degrees around the x_axis and beta degrees around the y_axis, *v can be NULL */
 
@@ -50,5 +53,7 @@ void make_new_box(int natoms, rvec *x, matrix box, const rvec box_space,
  * space around it. If bCenter then coordinates will be centered in
  * the generated box
  */
+
+} // namespace gmx
 
 #endif

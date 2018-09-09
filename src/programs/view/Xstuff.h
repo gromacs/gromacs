@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,6 +51,9 @@
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 #include <X11/keysym.h>
+
+namespace gmx
+{
 
 #ifdef _acc_
 typedef unsigned char bmchar;
@@ -171,5 +174,7 @@ extern  void    XGetGeometry(Display *disp, Window w, Window *root,
                              int *x, int *y, unsigned int *width, unsigned int *height,
                              unsigned int *border_width, unsigned int *depth);
 #endif /* NEED_XSTUFF */
+
+}      // namespace gmx
 
 #endif /* _Xstuff_h */

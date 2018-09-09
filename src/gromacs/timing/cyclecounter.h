@@ -407,6 +407,8 @@ static gmx_cycles_t gmx_cycles_read(void)
 }
 #endif
 
+namespace gmx
+{
 
 /*! \brief Check if high-resolution cycle counters are available
  *
@@ -581,5 +583,7 @@ static bool gmx_cycles_have_counter(void)
  */
 double
 gmx_cycles_calibrate(double sampletime);
+
+} // namespace gmx
 
 #endif

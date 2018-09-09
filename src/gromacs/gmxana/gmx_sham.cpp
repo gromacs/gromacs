@@ -58,6 +58,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 
 static int index2(const int *ibox, int x, int y)
 {
@@ -1094,3 +1097,5 @@ int gmx_sham(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

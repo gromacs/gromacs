@@ -44,6 +44,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static inline
 void do_rotate(double **a, int i, int j, int k, int l, double tau, double s)
 {
@@ -239,3 +242,5 @@ int m_inv_gen(real *m, int n, real *minv)
 
     return nzero;
 }
+
+} //namespace gmx

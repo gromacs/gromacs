@@ -48,6 +48,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 /* Use bitflag ... */
 static bool IS_SET(const t_filenm &fileOption)
 {
@@ -263,3 +266,5 @@ int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix)
     }
     return 0;
 }
+
+} //namespace gmx

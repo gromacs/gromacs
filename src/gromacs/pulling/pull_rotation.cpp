@@ -77,6 +77,9 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static char const *RotStr = {"Enforced rotation:"};
 
 /* Set the minimum weight for the determination of the slab centers */
@@ -296,9 +299,6 @@ gmx_enfrot::~gmx_enfrot()
     }
 }
 
-namespace gmx
-{
-
 class EnforcedRotation::Impl
 {
     public:
@@ -315,8 +315,6 @@ gmx_enfrot *EnforcedRotation::getLegacyEnfrot()
 {
     return &impl_->enforcedRotation_;
 }
-
-}  // namespace gmx
 
 /* Activate output of forces for correctness checks */
 /* #define PRINT_FORCES */
@@ -702,7 +700,7 @@ static real get_slab_weight(int j, const gmx_enfrotgrp *erg,
         svmul(wgauss, curr_x, curr_x_weighted);
         rvec_add(*x_weighted_sum, curr_x_weighted, *x_weighted_sum);
         slabweight += wgauss;
-    }  /* END of loop over rotation group atoms */
+    }   /* END of loop over rotation group atoms */
 
     return slabweight;
 }
@@ -744,7 +742,7 @@ static void get_slab_centers(
         {
             copy_rvec(erg->slab_center[slabIndex], erg->slab_center_ref[slabIndex]);
         }
-    } /* END of loop over slabs */
+    }   /* END of loop over slabs */
 
     /* Output on the master */
     if ( (nullptr != out_slabs) && bOutStep)
@@ -1839,11 +1837,11 @@ static void flex2_precalc_inner_sum(const gmx_enfrotgrp *erg)
             svmul(wi*gaussian_xi*sin_rin, tmpvec, tmpvec2);
 
             rvec_inc(innersumvec, tmpvec2);
-        } /* now we have the inner sum, used both for sum2 and sum3 */
+        }   /* now we have the inner sum, used both for sum2 and sum3 */
 
         /* Save it to be used in do_flex2_lowlevel */
         copy_rvec(innersumvec, erg->slab_innersumvec[slabIndex]);
-    } /* END of loop over slabs */
+    }   /* END of loop over slabs */
 }
 
 
@@ -1903,8 +1901,8 @@ static void flex_precalc_inner_sum(const gmx_enfrotgrp *erg)
 
             /* Add this contribution to the inner sum: */
             rvec_add(innersumvec, tmpvec, innersumvec);
-        } /* now we have the inner sum vector S^n for this slab */
-          /* Save it to be used in do_flex_lowlevel */
+        }   /* now we have the inner sum vector S^n for this slab */
+            /* Save it to be used in do_flex_lowlevel */
         copy_rvec(innersumvec, erg->slab_innersumvec[slabIndex]);
     }
 }
@@ -2127,7 +2125,7 @@ static real do_flex2_lowlevel(
 
                 erg->slab_torque_v[slabIndex] += torque(erg->vec, slab_force, xj, xcn);
             }
-        } /* END of loop over slabs */
+        }   /* END of loop over slabs */
 
         /* Construct the four individual parts of the vector sum: */
         cprod(sum1vec_part, erg->vec, sum1vec);      /* sum1vec =   { } x v  */
@@ -2151,7 +2149,7 @@ static real do_flex2_lowlevel(
 
         PRINT_FORCE_J
 
-    } /* END of loop over local atoms */
+    }   /* END of loop over local atoms */
 
     return V;
 }
@@ -2338,7 +2336,7 @@ static real do_flex_lowlevel(
                 rvec_add(force_n1, force_n2, force_n);
                 erg->slab_torque_v[slabIndex] += torque(erg->vec, force_n, xj, xcn);
             }
-        } /* END of loop over slabs */
+        }   /* END of loop over slabs */
 
         /* Put both contributions together: */
         svmul(wj, sum_n1, sum_n1);
@@ -2354,7 +2352,7 @@ static real do_flex_lowlevel(
 
         PRINT_FORCE_J
 
-    } /* END of loop over local atoms */
+    }   /* END of loop over local atoms */
 
     return V;
 }
@@ -2403,7 +2401,7 @@ static void get_firstlast_atom_per_slab(const gmx_enfrotgrp *erg)
     do
     {
         /* Find the first atom that significantly contributes to this slab */
-        do /* move forward in position until a large enough beta is found */
+        do  /* move forward in position until a large enough beta is found */
         {
             beta = calc_beta(erg->xc[i], erg, n);
             i++;
@@ -2729,7 +2727,7 @@ static void do_fixed(
 
         PRINT_FORCE_J
 
-    } /* end of loop over local rotation group atoms */
+    }   /* end of loop over local rotation group atoms */
 }
 
 
@@ -2821,7 +2819,7 @@ static void do_radial_motion(
 
         PRINT_FORCE_J
 
-    } /* end of loop over local rotation group atoms */
+    }   /* end of loop over local rotation group atoms */
     erg->V = 0.5*erg->rotg->k*sum;
 }
 
@@ -2966,7 +2964,7 @@ static void do_radial_motion_pf(
 
         PRINT_FORCE_J
 
-    } /* end of loop over local rotation group atoms */
+    }   /* end of loop over local rotation group atoms */
     erg->V = 0.5*erg->rotg->k*V;
 }
 
@@ -3181,7 +3179,7 @@ static void do_radial_motion2(
 
         PRINT_FORCE_J
 
-    } /* end of loop over local rotation group atoms */
+    }   /* end of loop over local rotation group atoms */
     erg->V = 0.5*erg->rotg->k*Vpart;
 }
 
@@ -3836,7 +3834,7 @@ void do_rotation(const t_commrec       *cr,
             }
         }
 
-    } /* End of loop over rotation groups */
+    }   /* End of loop over rotation groups */
 
     /**************************************************************************/
     /* Done communicating, we can start to count cycles for the load balancing now ... */
@@ -3924,3 +3922,5 @@ void do_rotation(const t_commrec       *cr,
     }
 #endif
 }
+
+}  // namespace gmx

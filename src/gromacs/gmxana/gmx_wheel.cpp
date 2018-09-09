@@ -55,6 +55,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
+namespace gmx
+{
+
 static gmx_bool *bPhobics(int nres, char *resnm[])
 {
     int       i, nb;
@@ -291,3 +294,5 @@ int gmx_wheel(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

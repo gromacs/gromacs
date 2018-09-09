@@ -53,13 +53,12 @@
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/utility/basedefinitions.h"
 
-struct gmx_device_info_t;
-struct gmx_gpu_info_t;
-
 namespace gmx
 {
+
+struct gmx_device_info_t;
+struct gmx_gpu_info_t;
 class MDLogger;
-}
 
 //! Enum which is only used to describe transfer calls at the moment
 enum class GpuApiCallBehavior
@@ -278,4 +277,5 @@ void stopGpuProfiler(void) CUDA_FUNC_TERM
 CUDA_FUNC_QUALIFIER
 bool isHostMemoryPinned(const void *CUDA_FUNC_ARGUMENT(h_ptr)) CUDA_FUNC_TERM_WITH_RETURN(false)
 
+} // namespace gmx
 #endif

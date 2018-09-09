@@ -45,6 +45,9 @@
 
 #include "gromacs/utility/bitmask.h"
 
+namespace gmx
+{
+
 //! Implemenation of BITMASK_CLASSNAME
 #define BITMASK_CLASSNAME_(S) BitmaskTest ## S
 //! Returns name of Bitmask test fixture class
@@ -131,3 +134,5 @@ BITMASK_TEST_P(Union) //NOLINT(misc-definitions-in-headers)
     bitmask_union(&m1, m2);
     EXPECT_TRUE(bitmask_is_equal(m1, m2));
 }
+
+} // namespace gmx

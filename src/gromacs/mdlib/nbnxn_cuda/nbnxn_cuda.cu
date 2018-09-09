@@ -107,6 +107,8 @@
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_pruneonly.cu"
 #endif /* GMX_CUDA_NB_SINGLE_COMPILATION_UNIT */
 
+namespace gmx
+{
 
 /*! Nonbonded kernel function pointer type */
 typedef void (*nbnxn_cu_kfunc_ptr_t)(const cu_atomdata_t,
@@ -695,3 +697,5 @@ void nbnxn_cuda_set_cacheconfig(const gmx_device_info_t *devinfo)
         }
     }
 }
+
+} //namespace gmx

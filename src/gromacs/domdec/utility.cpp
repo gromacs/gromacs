@@ -50,6 +50,9 @@
 
 #include "domdec_internal.h"
 
+namespace gmx
+{
+
 char dim2char(int dim)
 {
     char c = '?';
@@ -148,3 +151,5 @@ void dd_check_alloc_ncg(t_forcerec       *fr,
         dd_resize_state(state, f, numChargeGroups);
     }
 }
+
+} //namespace gmx

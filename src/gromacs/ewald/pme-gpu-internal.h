@@ -52,17 +52,16 @@
 
 #include "pme-gpu-types-host.h"                     // for the inline functions accessing PmeGpu members
 
+namespace gmx
+{
+
 struct gmx_hw_info_t;
 struct gmx_gpu_opt_t;
 struct gmx_pme_t;                              // only used in pme_gpu_reinit
 struct gmx_wallclock_gpu_pme_t;
 struct pme_atomcomm_t;
 struct t_complex;
-
-namespace gmx
-{
 class MDLogger;
-}
 
 //! Type of spline data
 enum class PmeSplineDataType
@@ -666,5 +665,6 @@ GPU_FUNC_QUALIFIER void pme_gpu_reinit_atoms(PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu),
  */
 void pme_gpu_reinit_computation(const PmeGpu *pmeGpu);
 
+} // namespace gmx
 
 #endif

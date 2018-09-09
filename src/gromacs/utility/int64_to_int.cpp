@@ -40,6 +40,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 int int64_to_int(int64_t step, const char *warn)
 {
     int i;
@@ -56,3 +59,5 @@ int int64_to_int(int64_t step, const char *warn)
 
     return i;
 }
+
+} //namespace gmx

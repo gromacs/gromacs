@@ -41,6 +41,9 @@
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 
+namespace gmx
+{
+
 /* UTILITIES */
 
 int name2index(char *str, char ***typenames, int ntypes);
@@ -75,5 +78,7 @@ void print_bondeds(FILE *out, int natoms, directive d,
                    int ftype, int fsubtype, t_params plist[]);
 
 void print_excl(FILE *out, int natoms, t_excls excls[]);
+
+} // namespace gmx
 
 #endif

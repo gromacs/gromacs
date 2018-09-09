@@ -61,6 +61,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static real find_pdb_bfac(const t_atoms *atoms, t_resinfo *ri, char *atomnm)
 {
     char rresnm[8];
@@ -594,3 +597,5 @@ int gmx_rmsf(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

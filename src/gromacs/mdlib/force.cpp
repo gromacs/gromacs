@@ -77,6 +77,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 void ns(FILE               *fp,
         t_forcerec         *fr,
         matrix              box,
@@ -849,3 +852,5 @@ void reset_enerdata(gmx_enerdata_t *enerd)
     /* reset foreign energy data - separate function since we also call it elsewhere */
     reset_foreign_enerdata(enerd);
 }
+
+} //namespace gmx

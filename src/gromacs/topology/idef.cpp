@@ -44,6 +44,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/txtdump.h"
 
+namespace gmx
+{
+
 static void pr_harm(FILE *fp, const t_iparams *iparams, const char *r, const char *kr)
 {
     fprintf(fp, "%sA=%12.5e, %sA=%12.5e, %sB=%12.5e, %sB=%12.5e\n",
@@ -444,3 +447,5 @@ void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef,
         }
     }
 }
+
+} //namespace gmx

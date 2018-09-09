@@ -39,6 +39,9 @@
 
 #include "pme-simd.h"
 
+namespace gmx
+{
+
 struct pme_spline_work
 {
 #ifdef PME_SIMD4_SPREAD_GATHER
@@ -52,5 +55,7 @@ struct pme_spline_work
 pme_spline_work *make_pme_spline_work(int order);
 
 void destroy_pme_spline_work(pme_spline_work *work);
+
+} // namespace gmx
 
 #endif

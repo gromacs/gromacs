@@ -45,6 +45,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
+namespace gmx
+{
+
 void gmx::RangePartitioning::setAllBlocksSizeOne(int numBlocksToSet)
 {
     if (!allBlocksHaveSizeOne())
@@ -311,3 +314,5 @@ void pr_blocka(FILE *fp, int indent, const char *title, const t_blocka *block, g
         }
     }
 }
+
+} //namespace gmx

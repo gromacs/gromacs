@@ -48,6 +48,9 @@
 
 struct tMPI_Atomic;
 
+namespace gmx
+{
+
 /*! \cond INTERNAL */
 
 /*! \brief The setup for generating and pruning the nbnxn pair list.
@@ -322,5 +325,7 @@ typedef struct nbnxn_atomdata_t { //NOLINT(clang-analyzer-optin.performance.Padd
     gmx_bool                 bUseTreeReduce;          /* Use tree for force reduction */
     tMPI_Atomic             *syncStep;                /* Synchronization step for tree reduce */
 } nbnxn_atomdata_t;
+
+} // namespace gmx
 
 #endif

@@ -49,13 +49,13 @@
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/math/vectypes.h"
 
+namespace gmx
+{
+
 struct t_grpopts;
 struct t_inputrec;
 struct pull_params_t;
 struct pull_t;
-
-namespace gmx
-{
 struct AwhParams;
 
 /*! \brief Allocate, initialize and check the AWH parameters with values from the input file.

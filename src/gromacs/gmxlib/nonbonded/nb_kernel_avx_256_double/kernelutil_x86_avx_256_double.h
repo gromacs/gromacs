@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,9 @@
 #include "config.h"
 
 #include <immintrin.h>
+
+namespace gmx
+{
 
 #define gmx_mm_castsi128_ps(a) _mm_castsi128_ps(a)
 
@@ -1062,5 +1065,7 @@ avx256_exp_d(__m256d x)
     x         = _mm256_mul_pd(p, fexppart);
     return x;
 }
+
+}      // namespace gmx
 
 #endif /* _kernelutil_x86_avx_256_double_h_ */

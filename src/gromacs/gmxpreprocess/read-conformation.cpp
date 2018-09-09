@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/unique_cptr.h"
 
-using gmx::RVec;
+namespace gmx
+{
+
 
 std::vector<real>
 makeExclusionDistances(const t_atoms *a, gmx_atomprop_t aps,
@@ -118,3 +120,5 @@ void readConformation(const char *confin, t_topology *top,
     fprintf(stderr, "%s\nContaining %d atoms in %d residues\n",
             *top->name, top->atoms.nr, top->atoms.nres);
 }
+
+} //namespace gmx

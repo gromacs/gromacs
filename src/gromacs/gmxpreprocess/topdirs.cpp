@@ -45,6 +45,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* Must correspond to the directive enum in grompp-impl.h */
 static const char *directive_names[d_maxdir+1] = {
     "defaults",
@@ -475,3 +478,5 @@ int DS_Check_Order(DirStack *DS, directive d)
     }
     return FALSE;
 }
+
+} //namespace gmx

@@ -61,6 +61,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
+namespace gmx
+{
+
 static int strip_dssp(char *dsspfile, int nres,
                       const gmx_bool bPhobres[], real t,
                       real *acc, FILE *fTArea,
@@ -745,3 +748,5 @@ int gmx_do_dssp(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

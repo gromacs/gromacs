@@ -49,6 +49,9 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxomp.h"
 
+namespace gmx
+{
+
 int many_auto_correl(std::vector<std::vector<real> > *c)
 {
     size_t nfunc = (*c).size();
@@ -128,3 +131,5 @@ int many_auto_correl(std::vector<std::vector<real> > *c)
 
     return 0;
 }
+
+} //namespace gmx

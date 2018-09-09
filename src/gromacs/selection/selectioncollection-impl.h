@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,13 +57,13 @@
 #include "poscalc.h"
 #include "selelem.h"
 
-struct gmx_mtop_t;
 struct gmx_sel_mempool_t;
-struct t_pbc;
-struct t_trxframe;
 
 namespace gmx
 {
+struct gmx_mtop_t;
+struct t_pbc;
+struct t_trxframe;
 
 //! Smart pointer for managing an internal selection data object.
 typedef std::unique_ptr<internal::SelectionData> SelectionDataPointer;
@@ -100,7 +100,7 @@ struct gmx_ana_selcollection_t
     char                         **varstrs;
 
     /** Topology for the collection. */
-    const gmx_mtop_t                                  *top;
+    const gmx::gmx_mtop_t                             *top;
     /** Index group that contains all the atoms. */
     gmx_ana_index_t                                    gall;
     /** Memory pool used for selection evaluation. */

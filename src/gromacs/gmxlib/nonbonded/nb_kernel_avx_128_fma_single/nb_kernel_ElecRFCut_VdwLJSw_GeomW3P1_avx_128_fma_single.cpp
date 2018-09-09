@@ -46,6 +46,9 @@
 
 #include "kernelutil_x86_avx_128_fma_single.h"
 
+namespace gmx
+{
+
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_VF_avx_128_fma_single
  * Electrostatics interaction: ReactionField
@@ -1171,3 +1174,5 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_F_avx_128_fma_single
 
     inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW_W3_F,outeriter*18 + inneriter*131);
 }
+
+} //namespace gmx

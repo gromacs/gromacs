@@ -47,6 +47,9 @@
 
 #include "pme.cuh"
 
+namespace gmx
+{
+
 /*! \brief
  * PME complex grid solver kernel function.
  *
@@ -400,3 +403,5 @@ template __global__ void pme_solve_kernel<GridOrdering::YZX, true>(const PmeGpuC
 template __global__ void pme_solve_kernel<GridOrdering::YZX, false>(const PmeGpuCudaKernelParams);
 template __global__ void pme_solve_kernel<GridOrdering::XYZ, true>(const PmeGpuCudaKernelParams);
 template __global__ void pme_solve_kernel<GridOrdering::XYZ, false>(const PmeGpuCudaKernelParams);
+
+} //namespace gmx

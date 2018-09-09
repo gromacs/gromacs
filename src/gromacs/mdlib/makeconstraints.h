@@ -53,10 +53,9 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 
-struct gmx_mtop_t;
-
 namespace gmx
 {
+struct gmx_mtop_t;
 
 /*! \internal
  * \brief Support type to help implement makeConstraints().

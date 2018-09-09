@@ -64,6 +64,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /****************************************************************************/
 /* This program calculates the order parameter per atom for an interface or */
 /* bilayer, averaged over time.                                             */
@@ -226,7 +229,7 @@ static void find_nearest_neighbours(int ePBC,
         sgslice[sl_index] += sgmol[i];
         skslice[sl_index] += skmol[i];
         sl_count[sl_index]++;
-    } /* loop over entries in index file */
+    }   /* loop over entries in index file */
 
     *sgmean /= maxidx;
     *skmean /= maxidx;
@@ -678,7 +681,7 @@ static void calc_order(const char *fn, const int *index, int *a, rvec **order,
                         (*distvals)[j][i] += std::sqrt(tmpdist);
                     }
                 }
-            } /* end loop j, over all atoms in group */
+            }   /* end loop j, over all atoms in group */
 
             for (m = 0; m < DIM; m++)
             {
@@ -686,7 +689,7 @@ static void calc_order(const char *fn, const int *index, int *a, rvec **order,
             }
 
             if (!permolecule)
-            {   /*Skip following if doing per-molecule*/
+            {       /*Skip following if doing per-molecule*/
                 for (k = 0; k < nslices; k++)
                 {
                     if (slCount[k]) /* if no elements, nothing has to be added */
@@ -695,7 +698,7 @@ static void calc_order(const char *fn, const int *index, int *a, rvec **order,
                         slFrameorder[k]   = 0; slCount[k] = 0;
                     }
                 }
-            } /* end loop i, over all groups in indexfile */
+            }   /* end loop i, over all groups in indexfile */
         }
         nr_frames++;
 
@@ -1123,3 +1126,5 @@ int gmx_order(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

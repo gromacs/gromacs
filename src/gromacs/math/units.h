@@ -45,6 +45,9 @@
 
 #include "gromacs/math/utilities.h"
 
+namespace gmx
+{
+
 #define ANGSTROM         (1e-10)                           /* Old...	*/
 #define KILO             (1e3)                             /* Thousand	*/
 #define NANO             (1e-9)                            /* A Number	*/
@@ -157,5 +160,7 @@ extern int string2unit(char *string);
 
 /* Convert the unit to a string. Return NULL when unit is out of range. */
 extern const char *unit2string(int unit);
+
+} // namespace gmx
 
 #endif

@@ -45,6 +45,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 class energyhistory_t;
 struct gmx_file_position_t;
 struct ObservablesHistory;
@@ -119,5 +122,7 @@ void
 read_checkpoint_simulation_part_and_filenames(struct t_fileio                  *fp,
                                               int                              *simulation_part,
                                               std::vector<gmx_file_position_t> *outputfiles);
+
+} // namespace gmx
 
 #endif

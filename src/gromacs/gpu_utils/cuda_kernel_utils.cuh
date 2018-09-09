@@ -43,6 +43,9 @@
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 
+namespace gmx
+{
+
 /*! Load directly or using __ldg() when supported. */
 template<typename T>
 __device__ __forceinline__ T LDG(const T* ptr)
@@ -102,5 +105,7 @@ T fetchFromParamLookupTable(const T                  *d_ptr,
     return result;
 }
 
+
+}      // namespace gmx
 
 #endif /* GMX_GPU_UTILS_CUDA_KERNEL_UTILS_CUH */

@@ -88,6 +88,8 @@ extern int imdsock_winsockinit()
 #endif
 #endif
 
+namespace gmx
+{
 
 /*! \brief Simple error handling. */
 #if GMX_NATIVE_WINDOWS
@@ -365,3 +367,5 @@ extern int imdsock_tryread(IMDSocket *sock, int timeoutsec, int timeoutusec)
 
     return ret;
 }
+
+} //namespace gmx

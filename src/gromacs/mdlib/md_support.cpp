@@ -74,6 +74,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 
+namespace gmx
+{
+
 // TODO move this to multi-sim module
 bool multisim_int_all_are_equal(const gmx_multisim_t *ms,
                                 int64_t               value)
@@ -617,3 +620,5 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
         init_df_history(state->dfhist, ir->fepvals->n_lambda);
     }
 }
+
+} //namespace gmx

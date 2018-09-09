@@ -50,6 +50,9 @@
 #include "pme-gpu-internal.h"                    // for GridOrdering enum
 #include "pme-gpu-types-host.h"
 
+namespace gmx
+{
+
 //! PME CUDA kernels forward declarations. Kernels are documented in their respective files.
 template <
     const int order,
@@ -101,3 +104,5 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *)
 PmeGpuProgramImpl::~PmeGpuProgramImpl()
 {
 }
+
+} //namespace gmx

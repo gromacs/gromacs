@@ -49,12 +49,11 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/classhelpers.h"
 
-struct gmx_mtop_t;
-struct t_topology;
-
 namespace gmx
 {
 
+struct gmx_mtop_t;
+struct t_topology;
 class TopologyInformation;
 class TrajectoryAnalysisRunnerCommon;
 

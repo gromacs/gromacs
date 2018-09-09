@@ -46,6 +46,9 @@
 #include "simd_2xnn/nbnxn_kernel_simd_2xnn_prune.h"
 #include "simd_4xn/nbnxn_kernel_simd_4xn_prune.h"
 
+namespace gmx
+{
+
 
 void nbnxn_kernel_cpu_prune(nonbonded_verlet_group_t *nbvg,
                             const nbnxn_atomdata_t   *nbat,
@@ -78,3 +81,5 @@ void nbnxn_kernel_cpu_prune(nonbonded_verlet_group_t *nbvg,
         }
     }
 }
+
+} //namespace gmx

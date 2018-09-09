@@ -40,6 +40,9 @@
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/timing/wallcycle.h"
 
+namespace gmx
+{
+
 struct gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct gmx_global_stat;
@@ -52,13 +55,9 @@ struct t_lambda;
 struct t_nrnb;
 class t_state;
 struct t_trxframe;
-
-namespace gmx
-{
 class Constraints;
 class MDLogger;
 class SimulationSignaller;
-}
 
 /* Define a number of flags to better control the information
  * passed to compute_globals in md.c and global_stat.
@@ -128,5 +127,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
                      matrix box, int *totalNumberOfBondedInteractions,
                      gmx_bool *bSumEkinhOld, int flags);
 /* Compute global variables during integration */
+
+} // namespace gmx
 
 #endif

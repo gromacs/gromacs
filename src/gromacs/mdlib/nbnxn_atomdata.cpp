@@ -68,7 +68,9 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
-using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
+namespace gmx
+{
+
 
 /* Default nbnxn allocation routine, allocates NBNXN_MEM_ALIGN byte aligned */
 void nbnxn_alloc_aligned(void **ptr, size_t nbytes)
@@ -1375,7 +1377,7 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nb
                         /* guarantee that no later load happens before wait loop is finisehd */
                         tMPI_Atomic_memory_barrier();
                     }
-#else               /* TMPI_ATOMICS */
+#else                   /* TMPI_ATOMICS */
 #pragma omp barrier
 #endif
                 }
@@ -1597,3 +1599,5 @@ void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
         rvec_inc(fshift[s], sum);
     }
 }
+
+} //namespace gmx

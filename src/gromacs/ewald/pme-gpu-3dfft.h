@@ -60,6 +60,9 @@
 
 #include "gromacs/fft/fft.h"        // for the enum gmx_fft_direction
 
+namespace gmx
+{
+
 struct PmeGpu;
 
 /*! \internal \brief
@@ -100,5 +103,7 @@ class GpuParallel3dFft
 #endif
 
 };
+
+} // namespace gmx
 
 #endif

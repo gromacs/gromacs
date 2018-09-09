@@ -44,6 +44,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /* The source code in this file should be thread-safe.
          Please keep it that way. */
 
@@ -92,3 +95,5 @@ void setTimeValue(int tcontrol, real value)
     timecontrol[tcontrol].bSet = TRUE;
     tMPI_Thread_mutex_unlock(&tc_mutex);
 }
+
+} //namespace gmx

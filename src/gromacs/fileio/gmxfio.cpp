@@ -62,6 +62,9 @@
 
 #include "gmxfio-impl.h"
 
+namespace gmx
+{
+
 /* This is the new improved and thread safe version of gmxfio. */
 
 
@@ -785,3 +788,5 @@ int xtc_seek_time(t_fileio *fio, real time, int natoms, gmx_bool bSeekForwardOnl
 
     return ret;
 }
+
+} //namespace gmx

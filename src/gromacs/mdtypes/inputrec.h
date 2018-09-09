@@ -46,6 +46,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 #define EGP_EXCL  (1<<0)
 #define EGP_TABLE (1<<1)
 
@@ -56,12 +59,9 @@ struct pull_t;
 struct t_gmx_IMD;
 typedef struct t_swap *gmx_swapcoords_t;
 
-namespace gmx
-{
 class Awh;
 struct AwhParams;
 class KeyValueTreeObject;
-}
 
 struct t_grpopts
 {
@@ -694,5 +694,7 @@ int inputrec2nboundeddim(const t_inputrec *ir);
  * \return the number of degrees of freedom of the center of mass
  */
 int ndof_com(const t_inputrec *ir);
+
+}      // namespace gmx
 
 #endif /* GMX_MDTYPES_INPUTREC_H */

@@ -58,6 +58,9 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 struct gmx_domdec_zones_t;
 
 static real grid_atom_density(int        numAtoms,
@@ -471,7 +474,6 @@ gmx_unused static void calc_bounding_box_x_x4_halves(int na, const real *x,
                                                      nbnxn_bb_t *bb, nbnxn_bb_t *bbj)
 {
     // TODO: During SIMDv2 transition only some archs use namespace (remove when done)
-    using namespace gmx;
 
     calc_bounding_box_x_x4(std::min(na, 2), x, bbj);
 
@@ -551,7 +553,6 @@ static void calc_bounding_box_xxxx(int na, int stride, const real *x, float *bb)
 static void calc_bounding_box_simd4(int na, const float *x, nbnxn_bb_t *bb)
 {
     // TODO: During SIMDv2 transition only some archs use namespace (remove when done)
-    using namespace gmx;
 
     Simd4Float bb_0_S, bb_1_S;
     Simd4Float x_S;
@@ -593,7 +594,6 @@ static void combine_bounding_box_pairs(nbnxn_grid_t                    *grid,
                                        gmx::ArrayRef<const nbnxn_bb_t>  bb)
 {
     // TODO: During SIMDv2 transition only some archs use namespace (remove when done)
-    using namespace gmx;
 
     for (int i = 0; i < grid->numCells[XX]*grid->numCells[YY]; i++)
     {
@@ -1555,3 +1555,5 @@ void nbnxn_set_atomorder(nbnxn_search_t nbs)
         }
     }
 }
+
+} //namespace gmx

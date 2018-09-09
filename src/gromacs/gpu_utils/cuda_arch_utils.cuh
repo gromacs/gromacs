@@ -39,6 +39,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 /*! \file
  *  \brief CUDA arch dependent definitions.
  *
@@ -181,5 +184,7 @@ static const bool c_disableCudaTextures = DISABLE_CUDA_TEXTURES;
         #define GMX_CUDA_MAX_BLOCKS_PER_MP   0
         #define GMX_CUDA_MAX_THREADS_PER_MP  0
 #endif
+
+}      // namespace gmx
 
 #endif /* CUDA_ARCH_UTILS_CUH_ */

@@ -41,6 +41,9 @@
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/hackblock.h"
 
+namespace gmx
+{
+
 
 int read_ter_db(const char *ffdir, char ter,
                 t_hackblock **tbptr, gpp_atomtype_t atype);
@@ -53,5 +56,7 @@ t_hackblock **filter_ter(int nb, t_hackblock tb[],
 
 t_hackblock *choose_ter(int nb, t_hackblock **tb, const char *title);
 /* Interactively select one.. */
+
+} // namespace gmx
 
 #endif

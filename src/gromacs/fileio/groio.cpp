@@ -56,6 +56,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void get_coordnum_fp(FILE *in, char *title, int *natoms)
 {
     char line[STRLEN+1];
@@ -571,3 +574,5 @@ void write_conf_p(const char *outfile, const char *title,
     write_hconf_p(out, title, atoms, x, v, box);
     gmx_fio_fclose(out);
 }
+
+} //namespace gmx

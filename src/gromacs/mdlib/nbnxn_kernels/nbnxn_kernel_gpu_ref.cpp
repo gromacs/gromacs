@@ -54,6 +54,9 @@
 
 #include "nbnxn_kernel_common.h"
 
+namespace gmx
+{
+
 static const int c_numClPerSupercl = c_nbnxnGpuNumClusterPerSupercluster;
 static const int c_clSize          = c_nbnxnGpuClusterSize;
 
@@ -381,3 +384,5 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                 npair_tot/static_cast<double>(nhwu_pruned*gmx::exactDiv(nbl->na_ci, 2)*nbl->na_ci));
     }
 }
+
+} //namespace gmx

@@ -57,6 +57,8 @@
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -319,3 +321,4 @@ TEST_F(FFFTest3D, Real5_6_9)
 }
 
 } // namespace
+} // namespace gmx

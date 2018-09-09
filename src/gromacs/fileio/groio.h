@@ -42,6 +42,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 struct gmx_mtop_t;
 struct t_atoms;
 struct t_symtab;
@@ -72,5 +75,7 @@ void write_hconf_p(FILE *out, const char *title, const t_atoms *atoms,
 void write_conf_p(const char *outfile, const char *title,
                   const t_atoms *atoms,
                   const rvec *x, const rvec *v, const matrix box);
+
+} // namespace gmx
 
 #endif

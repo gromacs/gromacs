@@ -54,6 +54,9 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 t_vcm *init_vcm(FILE *fp, gmx_groups_t *groups, const t_inputrec *ir)
 {
     t_vcm *vcm;
@@ -559,3 +562,5 @@ void check_cm_grp(FILE *fp, t_vcm *vcm, t_inputrec *ir, real Temp_Max)
         }
     }
 }
+
+} //namespace gmx

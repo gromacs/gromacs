@@ -88,5 +88,4 @@ typedef void* MPI_Group;
 #endif
 #endif
 //! \endcond
-
 #endif

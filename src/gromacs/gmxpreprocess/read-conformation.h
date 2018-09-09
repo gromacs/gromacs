@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_atomprop;
 struct gmx_mtop_t;
 struct t_atoms;
@@ -66,5 +69,7 @@ void readConformation(const char *confin, gmx_mtop_t *top,
 void readConformation(const char *confin, t_topology *top,
                       std::vector<gmx::RVec> *x, std::vector<gmx::RVec> *v,
                       int *ePBC, matrix box, const char *statusTitle);
+
+} // namespace gmx
 
 #endif

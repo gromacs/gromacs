@@ -53,6 +53,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
+namespace gmx
+{
+
 void check_binwidth(real binwidth)
 {
     real smallest_bin = 0.1;
@@ -407,3 +410,5 @@ gmx_static_structurefactor_t *convert_histogram_to_intensity_curve (gmx_radial_d
 
     return sq;
 }
+
+} //namespace gmx

@@ -77,6 +77,9 @@
 #include "gromacs/utility/snprintf.h"
 #include "gromacs/utility/txtdump.h"
 
+namespace gmx
+{
+
 #define TPX_TAG_RELEASE  "release"
 
 /*! \brief Tag string for the file format written to run input files
@@ -3040,3 +3043,5 @@ void pr_tpxheader(FILE *fp, int indent, const char *title, const t_tpxheader *sh
         fprintf(fp, "lambda = %e\n", sh->lambda);
     }
 }
+
+} //namespace gmx

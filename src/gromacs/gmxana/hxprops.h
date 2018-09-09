@@ -45,6 +45,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct t_atom;
 struct t_resinfo;
 
@@ -116,5 +119,7 @@ extern void do_start_end(int nres, t_bb bb[], int *nbb,
 extern void calc_hxprops(int nres, t_bb bb[], const rvec x[]);
 
 extern void pr_bb(FILE *fp, int nres, t_bb bb[]);
+
+} // namespace gmx
 
 #endif

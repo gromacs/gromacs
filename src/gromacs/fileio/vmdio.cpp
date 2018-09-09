@@ -115,6 +115,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 
 typedef int (*initfunc)();
 typedef int (*regfunc)(void *, vmdplugin_register_cb);
@@ -451,3 +454,5 @@ int read_first_vmd_frame(const char *fn, gmx_vmdplugin_t **vmdpluginp, t_trxfram
     return 1;
 
 }
+
+} //namespace gmx

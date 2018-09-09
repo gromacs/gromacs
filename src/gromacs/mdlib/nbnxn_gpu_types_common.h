@@ -54,6 +54,9 @@
 #include "gromacs/gpu_utils/gpuregiontimer.cuh"
 #endif
 
+namespace gmx
+{
+
 /*! \internal
  * \brief GPU region timers used for timing GPU kernels and H2D/D2H transfers.
  *
@@ -98,5 +101,7 @@ struct gpu_plist
     int              rollingPruningNumParts; /**< the number of parts/steps over which one cyle of roling pruning takes places */
     int              rollingPruningPart;     /**< the next part to which the roling pruning needs to be applied */
 };
+
+} // namespace gmx
 
 #endif

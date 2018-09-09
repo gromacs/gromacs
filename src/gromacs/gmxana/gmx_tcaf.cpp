@@ -62,6 +62,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 #define NK  24
 #define NPK 4
 
@@ -495,3 +498,5 @@ int gmx_tcaf(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

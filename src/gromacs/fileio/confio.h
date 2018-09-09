@@ -40,6 +40,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 /* For reading coordinate files it is assumed that enough memory
  * has been allocated beforehand.
  */
@@ -123,5 +126,7 @@ void readConfAndAtoms(const char *infile,
 gmx_bool read_tps_conf(const char *infile, struct t_topology *top,
                        int *ePBC, rvec **x, rvec **v, matrix box,
                        gmx_bool requireMasses);
+
+} // namespace gmx
 
 #endif

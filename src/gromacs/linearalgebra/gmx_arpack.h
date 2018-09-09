@@ -51,6 +51,9 @@
 #define GMX_ARPACK_H
 
 #include "config.h"
+
+namespace gmx
+{
 /*! \brief Implicitly Restarted Arnoldi Iteration, double precision.
  *
  *  Reverse communication interface for the Implicitly Restarted Arnoldi
@@ -310,5 +313,7 @@ void
                               float *   workl,
                               int *     lworkl,
                               int *     info);
+
+} // namespace gmx
 
 #endif

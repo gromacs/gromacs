@@ -49,6 +49,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 
+namespace gmx
+{
+
 struct t_atom;
 
 // TODO All of the functions taking a const gmx_mtop * are deprecated
@@ -308,5 +311,7 @@ mtopGetAtomPdbInfo(const gmx_mtop_t  *mtop,
     GMX_ASSERT(moltype.atoms.havePdbInfo, "PDB information not present when requested");
     return moltype.atoms.pdbinfo[atomIndexInMolecule];
 }
+
+} // namespace gmx
 
 #endif

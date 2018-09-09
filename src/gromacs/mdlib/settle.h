@@ -46,14 +46,13 @@
 
 #include "gromacs/topology/idef.h"
 
+namespace gmx
+{
 struct gmx_cmap_t;
 struct gmx_mtop_t;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
-
-namespace gmx
-{
 
 enum class ConstraintVariable : int;
 

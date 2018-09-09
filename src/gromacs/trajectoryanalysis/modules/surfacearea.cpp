@@ -55,7 +55,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-using namespace gmx;
+namespace gmx
+{
 
 #define UNSP_ICO_DOD      9
 #define UNSP_ICO_ARC     10
@@ -722,9 +723,6 @@ nsc_dclm_pbc(const rvec *coords, const ArrayRef<const real> &radius, int nat,
         fprintf(debug, "area=%8.3f\n", area);
     }
 }
-
-namespace gmx
-{
 
 class SurfaceAreaCalculator::Impl
 {

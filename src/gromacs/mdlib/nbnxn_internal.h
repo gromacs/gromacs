@@ -48,6 +48,9 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_domdec_zones_t;
 
 
@@ -319,5 +322,7 @@ static inline void nbs_cycle_stop(nbnxn_cycle_t *cc)
     cc->count++;
 }
 
+
+} // namespace gmx
 
 #endif

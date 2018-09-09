@@ -61,6 +61,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 typedef struct gmx_global_stat
 {
     t_bin *rb;
@@ -391,3 +394,5 @@ bool do_per_step(int64_t step, int64_t nstep)
         return false;
     }
 }
+
+} //namespace gmx

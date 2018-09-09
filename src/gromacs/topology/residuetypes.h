@@ -37,6 +37,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 typedef struct gmx_residuetype_t gmx_residuetype_t;
 
 int
@@ -73,5 +76,7 @@ gmx_residuetype_get_index(gmx_residuetype_t *rt, const char *resnm);
 
 const char *
 gmx_residuetype_get_name(gmx_residuetype_t *rt, int index);
+
+} // namespace gmx
 
 #endif

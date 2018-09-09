@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,9 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
+
+namespace gmx
+{
 
 struct gmx_domdec_t;
 struct gmx_domdec_zones_t;
@@ -146,5 +149,7 @@ void ci2xyz(t_grid *grid, int i, int *x, int *y, int *z);
 void check_grid(t_grid *grid);
 
 void print_grid(FILE *log, t_grid *grid);
+
+} // namespace gmx
 
 #endif

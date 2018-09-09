@@ -43,6 +43,9 @@
 #include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 
+namespace gmx
+{
+
 typedef struct {
     int       nr;   /* The number of entries in the list            */
     int       nra2; /* The total number of entries in a			*/
@@ -132,5 +135,7 @@ void convert_moltype_couple(t_molinfo *mol, int atomtype_decouple,
 /* Setup mol such that the B-state has no interaction with the rest
  * of the system, but full interaction with itself.
  */
+
+} // namespace gmx
 
 #endif

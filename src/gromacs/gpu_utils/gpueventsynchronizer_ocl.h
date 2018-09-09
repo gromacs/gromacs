@@ -46,6 +46,9 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
+namespace gmx
+{
+
 /*! \libinternal \brief
  * A class which allows for CPU thread to mark and wait for certain GPU stream execution point.
  * The event can be put into the stream with markEvent() and then later waited on with waitForEvent().
@@ -116,5 +119,7 @@ class GpuEventSynchronizer
     private:
         cl_event event_;
 };
+
+} // namespace gmx
 
 #endif

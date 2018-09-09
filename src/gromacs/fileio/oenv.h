@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+
+namespace gmx
+{
 
 struct gmx_output_env_t;
 
@@ -111,10 +114,7 @@ xvg_format_t output_env_get_xvg_format(const gmx_output_env_t *oenv);
  */
 const char *output_env_get_program_display_name(const gmx_output_env_t *oenv);
 
-namespace gmx
-{
 class IProgramContext;
-} // namespace gmx
 
 void output_env_init(gmx_output_env_t **oenvp,
                      const gmx::IProgramContext &context,
@@ -130,5 +130,7 @@ void output_env_init(gmx_output_env_t **oenvp,
  */
 const gmx::IProgramContext &
 output_env_get_program_context(const gmx_output_env_t *oenv);
+
+} // namespace gmx
 
 #endif

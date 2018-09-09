@@ -75,6 +75,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 
+namespace gmx
+{
+
 #define max_hx 7
 typedef int t_hx[max_hx];
 #define NRHXTYPES max_hx
@@ -1040,7 +1043,7 @@ static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
                         pbc_in_gridbox(x[ad[i]], box);
 
                         for (m = DIM-1; m >= 0; m--)
-                        {   /* determine grid index of atom */
+                        {       /* determine grid index of atom */
                             grididx[m] = static_cast<int>(x[ad[i]][m]*invdelta[m]);
                             grididx[m] = (grididx[m]+ngrid[m]) % ngrid[m];
                         }
@@ -2776,11 +2779,11 @@ int gmx_hbond(int argc, char *argv[])
 #define __ADIST adist
 #define __RDIST rdist
 #define __HBDATA hb
-#else /* GMX_OPENMP ================================================== \
-       * Set up the OpenMP stuff,                                       |
-       * like the number of threads and such                            |
-       * Also start the parallel loop.                                  |
-       */
+#else   /* GMX_OPENMP ================================================== \
+         * Set up the OpenMP stuff,                                       |
+         * like the number of threads and such                            |
+         * Also start the parallel loop.                                  |
+         */
 #define __ADIST p_adist[threadNr]
 #define __RDIST p_rdist[threadNr]
 #define __HBDATA p_hb[threadNr]
@@ -2887,7 +2890,7 @@ int gmx_hbond(int argc, char *argv[])
                     }
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-            } /* omp single */
+            }   /* omp single */
 
             if (bOMP)
             {
@@ -3035,7 +3038,7 @@ int gmx_hbond(int argc, char *argv[])
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
                 }
-            } /* if (bSelected) {...} else */
+            }   /* if (bSelected) {...} else */
 
 
             /* Better wait for all threads to finnish using x[] before updating it. */
@@ -3142,7 +3145,7 @@ int gmx_hbond(int argc, char *argv[])
             sfree(p_adist[threadNr]);
             sfree(p_rdist[threadNr]);
         }
-    } /* End of parallel region */
+    }   /* End of parallel region */
     if (bOMP)
     {
         sfree(p_adist);
@@ -3438,3 +3441,5 @@ int gmx_hbond(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

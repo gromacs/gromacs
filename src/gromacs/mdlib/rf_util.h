@@ -40,6 +40,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_mtop_t;
 struct t_blocka;
 struct t_forcerec;
@@ -75,5 +78,7 @@ void init_generalized_rf(FILE *fplog,
                          t_forcerec *fr);
 /* Initialize the generalized reaction field parameters */
 
+
+} // namespace gmx
 
 #endif

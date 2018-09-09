@@ -61,6 +61,9 @@
 
 #include "gmx_lmcurve.h"
 
+namespace gmx
+{
+
 /*! \brief Number of parameters for each fitting function */
 static const int nfp_ffn[effnNR] = { 0, 1, 2, 3, 5, 7, 9, 2, 4, 3, 6 };
 
@@ -873,3 +876,5 @@ real fit_acf(int ncorr, int fitfn, const gmx_output_env_t *oenv, gmx_bool bVerbo
 
     return sumtot;
 }
+
+} //namespace gmx

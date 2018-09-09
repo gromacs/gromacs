@@ -52,6 +52,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 typedef struct gpp_atomtype {
     int              nr;           /* The number of atomtypes		*/
     t_atom          *atom;         /* Array of atoms			*/
@@ -451,3 +454,5 @@ void copy_atomtype_atomtypes(gpp_atomtype_t ga, t_atomtypes *atomtypes)
         atomtypes->atomnumber[i] = ga->atomnumber[i];
     }
 }
+
+} //namespace gmx

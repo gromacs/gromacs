@@ -57,6 +57,9 @@
 #include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/utility/gmxmpi.h"
 
+namespace gmx
+{
+
 /*! \brief Determines up to what local atom count a pull group gets processed single-threaded.
  *
  * We set this limit to 1 with debug to catch bugs.
@@ -240,5 +243,7 @@ struct pull_t
     /* */
     int                numExternalPotentialsStillToBeAppliedThisStep;
 };
+
+} // namespace gmx
 
 #endif

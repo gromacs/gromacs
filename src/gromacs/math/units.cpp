@@ -40,6 +40,9 @@
 
 #include "gromacs/utility/cstringutil.h"
 
+namespace gmx
+{
+
 double convert2gmx(double x, int unit)
 {
     switch (unit)
@@ -134,3 +137,5 @@ const char *unit2string(int unit)
 
     return nullptr;
 }
+
+} //namespace gmx

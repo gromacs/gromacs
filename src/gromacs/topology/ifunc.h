@@ -39,6 +39,9 @@
 
 #include "gromacs/topology/idef.h"
 
+namespace gmx
+{
+
 struct t_fcdata;
 struct t_graph;
 struct t_mdatoms;
@@ -123,5 +126,7 @@ typedef struct                // NOLINT (clang-analyzer-optin.performance.Paddin
 
 extern const t_interaction_function interaction_function[F_NRE];
 /* initialised interaction functions descriptor				*/
+
+} // namespace gmx
 
 #endif
