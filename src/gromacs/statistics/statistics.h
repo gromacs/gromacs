@@ -48,6 +48,9 @@
 
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 //! Abstract container type
 typedef struct gmx_stats *gmx_stats_t;
 
@@ -317,5 +320,7 @@ int lsq_y_ax_b_xdouble(int n, double x[], real y[],
 int lsq_y_ax_b_error(int n, real x[], real y[], real dy[],
                      real *a, real *b, real *da, real *db,
                      real *r, real *chi2);
+
+} // namespace gmx
 
 #endif

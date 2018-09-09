@@ -57,6 +57,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct ContinuationOptions;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
@@ -67,12 +70,8 @@ struct t_filenm;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
-
-namespace gmx
-{
 class ForceWithVirial;
 class LocalAtomSetManager;
-}
 
 /*! \brief Returns if the pull coordinate is an angle
  *
@@ -338,4 +337,6 @@ gmx_bool pull_have_constraint(const struct pull_t *pull);
 real max_pull_distance2(const pull_coord_work_t *pcrd,
                         const t_pbc             *pbc);
 
+} // namespace gmx
+ 
 #endif

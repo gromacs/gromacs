@@ -37,8 +37,13 @@
 #ifndef GMX_FILEIO_RGB_H
 #define GMX_FILEIO_RGB_H
 
+namespace gmx
+{
+
 typedef struct t_rgb {
     double r, g, b;
 } t_rgb;
+
+} // namespace gmx
 
 #endif

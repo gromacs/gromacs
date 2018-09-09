@@ -65,12 +65,12 @@
 #include "selelem.h"
 #include "selvalue.h"
 
+namespace gmx
+{
+
 struct gmx_ana_indexgrps_t;
 struct gmx_ana_selmethod_t;
 struct gmx_ana_selparam_t;
-
-namespace gmx
-{
 
 //! \cond internal
 /*! \internal \brief
@@ -424,8 +424,6 @@ class SelectionParserParameter
         SelectionParserValueListPointer values_;
 };
 
-} // namespace gmx
-
 /*! \brief
  * Handles exceptions caught within the Bison code.
  *
@@ -580,5 +578,7 @@ _gmx_sel_parse_params(const gmx::SelectionParserParameterList &params,
                       int nparam, struct gmx_ana_selparam_t *param,
                       const gmx::SelectionTreeElementPointer &root,
                       void *scanner);
+
+} // namespace gmx
 
 #endif

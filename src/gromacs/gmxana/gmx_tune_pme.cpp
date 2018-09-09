@@ -74,6 +74,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 /* Enum for situations that can occur during log file parsing, the
  * corresponding string entries can be found in do_the_tests() in
  * const char* ParseLog[] */
@@ -2582,3 +2585,5 @@ int gmx_tune_pme(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

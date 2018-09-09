@@ -38,6 +38,9 @@
 
 #include "selmethod.h"
 
+namespace gmx
+{
+
 /*
  * These global variables cannot be const because gmx_ana_selmethod_register()
  * modifies them to set some defaults. This is a small price to pay for the
@@ -95,5 +98,7 @@ extern gmx_ana_selmethod_t sm_merge;
 extern gmx_ana_selmethod_t sm_plus;
 /* From sm_permute.c */
 extern gmx_ana_selmethod_t sm_permute;
+
+} // namespace gmx
 
 #endif

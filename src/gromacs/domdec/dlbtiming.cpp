@@ -42,6 +42,9 @@
 
 #include "domdec_internal.h"
 
+namespace gmx
+{
+
 /*! \brief Struct for timing the region for dynamic load balancing */
 struct BalanceRegion
 {
@@ -170,3 +173,5 @@ void ddCloseBalanceRegionGpu(const gmx_domdec_t          *dd,
         reg->isOpen      = false;
     }
 }
+
+} //namespace gmx

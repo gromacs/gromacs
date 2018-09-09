@@ -43,6 +43,9 @@
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/topology/atoms.h"
 
+namespace gmx
+{
+
 typedef struct {
     char    *elem, *type;
     double   q, m;
@@ -64,5 +67,7 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
 /* Try to determine the atomtype (force field dependent) for the atoms
  * with help of the bond list
  */
+
+} // namespace gmx
 
 #endif

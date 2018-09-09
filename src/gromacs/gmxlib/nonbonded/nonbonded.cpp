@@ -102,6 +102,8 @@
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_sparc64_hpc_ace_double/nb_kernel_sparc64_hpc_ace_double.h"
 #endif
 
+namespace gmx
+{
 
 static tMPI_Thread_mutex_t nonbonded_setup_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 static gmx_bool            nonbonded_setup_done  = FALSE;
@@ -436,3 +438,5 @@ void do_nonbonded(const t_forcerec  *fr,
         }
     }
 }
+
+} //namespace gmx

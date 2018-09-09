@@ -53,6 +53,9 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/utility/gmxmpi.h"
 
+namespace gmx
+{
+
 
 /*! \brief Returns the MPI rank of the domain decomposition master rank */
 #define DDMASTERRANK(dd)   ((dd)->masterrank)
@@ -320,3 +323,5 @@ void dd_gatherv(const gmx_domdec_t gmx_unused *dd,
                 DDMASTERRANK(dd), dd->mpi_comm_all);
 #endif
 }
+
+} //namespace gmx

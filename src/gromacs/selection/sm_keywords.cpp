@@ -63,6 +63,9 @@
 #include "selelem.h"
 #include "selmethod.h"
 
+namespace gmx
+{
+
 /*! \brief
  * Allocates data for integer keyword evaluation.
  *
@@ -576,7 +579,6 @@ evaluate_keyword_real(const gmx::SelMethodEvalContext & /*context*/,
     }
 }
 
-
 /********************************************************************
  * STRING KEYWORD EVALUATION
  ********************************************************************/
@@ -588,6 +590,8 @@ init_data_kwstr(int /* npar */, gmx_ana_selparam_t * /* param */)
     data->matchType = gmx::eStringMatchType_Auto;
     return data;
 }
+
+} //namespace gmx
 
 /*!
  * \param[in,out] sel   Selection element to initialize.

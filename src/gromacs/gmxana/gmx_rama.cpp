@@ -50,6 +50,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 
 static void plot_rama(FILE *out, t_xrama *xr)
 {
@@ -118,3 +121,5 @@ int gmx_rama(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

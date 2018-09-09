@@ -43,6 +43,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_mtop_t;
 
 /*! \brief
@@ -66,5 +69,7 @@ void maxwell_speed(real tempi, unsigned int seed,
  * \param[out] v      Velocities
  */
 void stop_cm(FILE *log, int natoms, real mass[], rvec x[], rvec v[]);
+
+} // namespace gmx
 
 #endif

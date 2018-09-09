@@ -64,6 +64,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 
 enum {
     methSEL, methBISECT, methFUNCFIT, methNR
@@ -817,3 +820,5 @@ int gmx_densorder(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

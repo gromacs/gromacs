@@ -51,6 +51,9 @@
 #include "pme-gpu-program-impl.h"
 #include "pme-gpu-types-host.h"
 
+namespace gmx
+{
+
 PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *deviceInfo)
 {
     // Context creation (which should happen outside of this class: #2522
@@ -80,3 +83,5 @@ PmeGpuProgramImpl::~PmeGpuProgramImpl()
     // TODO: log releasing errors
     clReleaseContext(context);
 }
+
+} //namespace gmx

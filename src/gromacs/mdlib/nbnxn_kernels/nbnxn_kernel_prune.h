@@ -47,6 +47,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct nbnxn_atomdata_t;
 struct nonbonded_verlet_group_t;
 
@@ -60,3 +63,5 @@ void nbnxn_kernel_cpu_prune(nonbonded_verlet_group_t  *nbvg,
                             const nbnxn_atomdata_t    *nbat,
                             const rvec                *shift_vec,
                             real                       rlistInner);
+
+} // namespace gmx

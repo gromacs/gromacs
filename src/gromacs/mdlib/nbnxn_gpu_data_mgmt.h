@@ -47,6 +47,9 @@
 #include "gromacs/mdlib/nbnxn_gpu_types.h"
 #include "gromacs/mdtypes/interaction_const.h"
 
+namespace gmx
+{
+
 struct nonbonded_verlet_group_t;
 struct nbnxn_pairlist_t;
 struct nbnxn_atomdata_t;
@@ -115,5 +118,7 @@ int nbnxn_gpu_min_ci_balanced(gmx_nbnxn_gpu_t gmx_unused *nb) GPU_FUNC_TERM_WITH
 /** Returns if analytical Ewald GPU kernels are used. */
 GPU_FUNC_QUALIFIER
 gmx_bool nbnxn_gpu_is_kernel_ewald_analytical(const gmx_nbnxn_gpu_t gmx_unused *nb) GPU_FUNC_TERM_WITH_RETURN(FALSE)
+
+} // namespace gmx
 
 #endif

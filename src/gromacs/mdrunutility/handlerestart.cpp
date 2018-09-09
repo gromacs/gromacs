@@ -63,6 +63,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /*! \brief Search for \p fnm_cp in fnm and return true iff found
  *
  * \todo This could be implemented sanely with a for loop. */
@@ -307,3 +310,5 @@ handleRestart(t_commrec            *cr,
         }
     }
 }
+
+} //namespace gmx

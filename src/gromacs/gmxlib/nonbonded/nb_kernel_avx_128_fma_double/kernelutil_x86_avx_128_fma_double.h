@@ -46,6 +46,9 @@
 
 #include "config.h"
 
+namespace gmx
+{
+
 #define gmx_mm_castsi128_pd   _mm_castsi128_pd
 #define gmx_mm_extract_epi32  _mm_extract_epi32
 
@@ -826,5 +829,7 @@ avx128fma_exp_d(__m128d x)
     x         = _mm_mul_pd(p, fexppart);
     return x;
 }
+
+} // namespace gmx
 
 #endif /* _kernelutil_x86_avx_128_fma_double_h_ */

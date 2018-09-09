@@ -43,6 +43,9 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 real calc_ewaldcoeff_q(real rc, real rtol)
 {
     real beta = 5, low, high;
@@ -115,3 +118,5 @@ real calc_ewaldcoeff_lj(real rc, real rtol)
     }
     return beta;
 }
+
+} //namespace gmx

@@ -59,6 +59,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 typedef struct
 {
     real        deltaF0;
@@ -979,3 +982,5 @@ int gmx_make_edi(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

@@ -45,6 +45,9 @@
 #ifndef GMX_DOMDEC_DLBTIMING_H
 #define GMX_DOMDEC_DLBTIMING_H
 
+namespace gmx
+{
+
 struct BalanceRegion;
 struct gmx_domdec_t;
 
@@ -138,5 +141,7 @@ void ddCloseBalanceRegionCpu(const gmx_domdec_t *dd);
 void ddCloseBalanceRegionGpu(const gmx_domdec_t          *dd,
                              float                        waitCyclesGpuInCpuRegion,
                              DdBalanceRegionWaitedForGpu  waitedForGpu);
+
+} // namespace gmx
 
 #endif

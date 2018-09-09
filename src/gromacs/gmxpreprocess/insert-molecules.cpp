@@ -75,7 +75,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-using gmx::RVec;
+namespace gmx
+{
 
 /* enum for random rotations of inserted solutes */
 enum RotationType {
@@ -314,9 +315,6 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
         sfree(rpos);
     }
 }
-
-namespace gmx
-{
 
 namespace
 {

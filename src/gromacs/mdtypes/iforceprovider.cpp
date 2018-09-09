@@ -47,7 +47,8 @@
 
 #include "gromacs/utility/arrayref.h"
 
-using namespace gmx;
+namespace gmx
+{
 
 class ForceProviders::Impl
 {
@@ -82,3 +83,5 @@ void ForceProviders::calculateForces(const ForceProviderInput &forceProviderInpu
         provider->calculateForces(forceProviderInput, forceProviderOutput);
     }
 }
+
+} //namespace gmx

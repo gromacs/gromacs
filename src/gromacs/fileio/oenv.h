@@ -42,6 +42,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_output_env_t;
 
 /* output_env member functions */
@@ -111,10 +114,7 @@ xvg_format_t output_env_get_xvg_format(const gmx_output_env_t *oenv);
  */
 const char *output_env_get_program_display_name(const gmx_output_env_t *oenv);
 
-namespace gmx
-{
 class IProgramContext;
-} // namespace gmx
 
 void output_env_init(gmx_output_env_t **oenvp,
                      const gmx::IProgramContext &context,
@@ -130,5 +130,7 @@ void output_env_init(gmx_output_env_t **oenvp,
  */
 const gmx::IProgramContext &
 output_env_get_program_context(const gmx_output_env_t *oenv);
+
+} // namespace gmx
 
 #endif

@@ -50,5 +50,6 @@
 #define CALC_ENERGIES
 #define ENERGY_GROUPS
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_outer.h"
+
 #undef ENERGY_GROUPS
 #undef CALC_ENERGIES

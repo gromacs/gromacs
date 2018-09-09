@@ -103,6 +103,9 @@
 #include "gromacs/mdlib/nbnxn_gpu_types.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 
+namespace gmx
+{
+
 //! Help pass GPU-emulation parameters with type safety.
 enum class EmulateGpuNonbonded : bool
 {
@@ -201,5 +204,7 @@ typedef struct nonbonded_verlet_t {
 /*! \brief Getter for bUseGPU */
 gmx_bool
 usingGpu(nonbonded_verlet_t *nbv);
+
+} // namespace gmx
 
 #endif /* NB_VERLET_H */

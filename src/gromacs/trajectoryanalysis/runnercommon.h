@@ -44,11 +44,10 @@
 
 #include "gromacs/utility/classhelpers.h"
 
-struct t_trxframe;
-
 namespace gmx
 {
 
+struct t_trxframe;
 class IOptionsContainer;
 class ITopologyProvider;
 class SelectionCollection;

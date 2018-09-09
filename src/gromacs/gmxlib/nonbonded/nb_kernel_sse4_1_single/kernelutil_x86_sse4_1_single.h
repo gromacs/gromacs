@@ -41,6 +41,9 @@
 
 #include <smmintrin.h>
 
+namespace gmx
+{
+
 #undef gmx_restrict
 #define gmx_restrict
 
@@ -728,5 +731,7 @@ sse41_inv_f(__m128 x)
 
     return _mm_mul_ps(lu, _mm_sub_ps(_mm_set1_ps(2.0f), _mm_mul_ps(lu, x)));
 }
+
+} // namespace gmx
 
 #endif /* _kernelutil_x86_sse4_1_single_h_ */

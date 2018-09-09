@@ -48,6 +48,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /*! \internal
  * \brief
  * Contents of the FFTPACK fft datatype.
@@ -492,3 +495,5 @@ gmx_fft_destroy(gmx_fft_t      fft)
 void gmx_fft_cleanup()
 {
 }
+
+} //namespace gmx

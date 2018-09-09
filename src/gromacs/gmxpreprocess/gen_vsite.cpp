@@ -67,6 +67,9 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 #define MAXNAME 32
 #define OPENDIR     '[' /* starting sign for directive		*/
 #define CLOSEDIR    ']' /* ending sign for directive		*/
@@ -2208,3 +2211,5 @@ void do_h_mass(t_params *psb, int vsite_type[], t_atoms *at, real mHmult,
         }
     }
 }
+
+} //namespace gmx

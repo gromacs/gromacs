@@ -45,6 +45,9 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/txtdump.h"
 
+namespace gmx
+{
+
 void pr_ivec(FILE *fp, int indent, const char *title, const int vec[], int n, gmx_bool bShowNumbers)
 {
     int i;
@@ -266,3 +269,5 @@ void pr_rvecs_of_dim(FILE *fp, int indent, const char *title, const rvec vec[], 
         }
     }
 }
+
+} //namespace gmx

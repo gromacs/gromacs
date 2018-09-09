@@ -86,4 +86,9 @@
 #include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/commandline/pargs.h"
 
+namespace gmx
+{
+
+} // namespace gmx
+
 #endif

@@ -134,6 +134,9 @@
 #include "selmethod.h"
 #include "selmethod-impl.h"
 
+namespace gmx
+{
+
 using std::min;
 using std::max;
 
@@ -1012,3 +1015,5 @@ is_surface_covered(t_methoddata_insolidangle *surf, rvec x)
     }
     return false;
 }
+
+} //namespace gmx

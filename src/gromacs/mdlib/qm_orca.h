@@ -34,6 +34,9 @@
  */
 #include "gromacs/mdlib/qmmm.h"
 
+namespace gmx
+{
+
 #ifndef GMX_MDLIB_QM_ORCA_H
 #define GMX_MDLIB_QM_ORCA_H
 
@@ -43,5 +46,7 @@ init_orca(t_QMrec *qm);
 real
 call_orca(t_forcerec *fr, t_QMrec *qm,
           t_MMrec *mm, rvec f[], rvec fshift[]);
+
+} // namespace gmx
 
 #endif

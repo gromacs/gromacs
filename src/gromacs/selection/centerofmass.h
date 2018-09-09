@@ -76,6 +76,9 @@
 
 #include "gromacs/math/vectypes.h"
 
+namespace gmx
+{
+
 struct gmx_mtop_t;
 struct t_block;
 struct t_blocka;
@@ -179,5 +182,7 @@ gmx_calc_comg_blocka(const gmx_mtop_t *top, rvec x[], const t_blocka *block,
 void
 gmx_calc_comg_f_blocka(const gmx_mtop_t *top, rvec x[], const t_blocka *block,
                        bool bMass, rvec xout[]);
+
+} // namespace gmx
 
 #endif

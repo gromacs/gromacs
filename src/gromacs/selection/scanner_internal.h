@@ -50,7 +50,6 @@ namespace gmx
 {
 class SelectionParserSymbol;
 class TextWriter;
-}
 
 /* These need to be defined before including scanner_flex.h, because it
  * uses YY_EXTRA_TYPE. But we also need to include it before defining
@@ -130,6 +129,8 @@ typedef struct gmx_sel_lexer_t
     //! The current buffer for the scanner.
     YY_BUFFER_STATE                  buffer;
 } gmx_sel_lexer_t;
+
+}  // namespace gmx
 
 /* Because Flex defines yylval, yytext, and yyleng as macros,
  * and this file is included from scanner.l,

@@ -39,15 +39,15 @@
 
 #include "gromacs/math/vectypes.h"
 
+namespace gmx
+{
+
 /*! \brief Change box components to preserve the relative box shape
  *
  * Change box components to box[XX][XX]*box_rel to preserve the relative box shape
  */
 void do_box_rel(int ndim, const matrix deform, matrix box_rel,
                 matrix b, bool bInit);
-
-namespace gmx
-{
 
 /*! \brief
  * Returns whether two boxes are of equal size and shape (within reasonable

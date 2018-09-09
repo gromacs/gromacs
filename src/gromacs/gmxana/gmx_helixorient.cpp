@@ -55,6 +55,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 int gmx_helixorient(int argc, char *argv[])
 {
     const char       *desc[] = {
@@ -484,3 +487,5 @@ int gmx_helixorient(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

@@ -50,6 +50,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* Just a number to identify our file type */
 #define GMX_MTXIO_MAGIC_NUMBER  0x34ce8fd2
 
@@ -240,3 +243,5 @@ gmx_mtxio_read (const char *            filename,
     }
     gmx_fio_close(fio);
 }
+
+} //namespace gmx

@@ -43,6 +43,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 int *make_invblock(const t_block *block, int nr)
 {
     int      i, j;
@@ -102,3 +105,5 @@ int *make_invblocka(const t_blocka *block, int nr)
     }
     return invblock;
 }
+
+} //namespace gmx

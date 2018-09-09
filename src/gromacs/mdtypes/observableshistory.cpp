@@ -41,5 +41,10 @@
 #include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/swaphistory.h"
 
+namespace gmx
+{
+
 ObservablesHistory::ObservablesHistory()  = default;
 ObservablesHistory::~ObservablesHistory() = default;
+
+} //namespace gmx

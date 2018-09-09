@@ -50,6 +50,9 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static real pot(real x, real qq, real c6, real cn, int npow)
 {
     return cn*pow(x, -npow)-c6/gmx::power6(x)+qq*ONE_4PI_EPS0/x;
@@ -188,3 +191,5 @@ int gmx_sigeps(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

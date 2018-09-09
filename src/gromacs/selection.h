@@ -87,4 +87,9 @@
 #include "gromacs/selection/selectionoptionbehavior.h"
 #include "gromacs/selection/selectionoptionmanager.h"
 
+namespace gmx
+{
+
+} // namespace gmx
+
 #endif

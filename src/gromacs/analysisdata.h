@@ -215,4 +215,9 @@
 #include "gromacs/analysisdata/modules/lifetime.h"
 #include "gromacs/analysisdata/modules/plot.h"
 
+namespace gmx
+{
+
+} // namespace gmx
+
 #endif

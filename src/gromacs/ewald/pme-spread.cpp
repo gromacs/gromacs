@@ -57,6 +57,9 @@
 #include "pme-simd.h"
 #include "pme-spline-work.h"
 
+namespace gmx
+{
+
 /* TODO consider split of pme-spline from this file */
 
 static void calc_interpolation_idx(const gmx_pme_t *pme, const pme_atomcomm_t *atc,
@@ -1014,3 +1017,5 @@ void spread_on_grid(const gmx_pme_t *pme,
     }
 #endif
 }
+
+} //namespace gmx

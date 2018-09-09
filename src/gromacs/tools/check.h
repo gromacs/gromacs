@@ -35,11 +35,16 @@
 #ifndef GMX_TOOLS_CHECK_H
 #define GMX_TOOLS_CHECK_H
 
+namespace gmx
+{
+
 /*! \brief Implements gmx check
  *
  * \param[in] argc  argc value passed to main().
  * \param[in] argv  argv array passed to main().
  */
 int gmx_check(int argc, char *argv[]);
+
+} // namespace gmx
 
 #endif

@@ -44,6 +44,9 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/nblist.h"
 
+namespace gmx
+{
+
 void
 gmx_nb_generic_kernel(t_nblist *                nlist,
                       rvec *                    x,
@@ -53,5 +56,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                       nb_kernel_data_t *        kernel_data,
                       t_nrnb *                  nrnb);
 
+
+} // namespace gmx
 
 #endif

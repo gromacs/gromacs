@@ -44,4 +44,9 @@
 
 #include "gromacs/simd/impl_x86_avx_512/impl_x86_avx_512_util_double.h"
 
+namespace gmx
+{
+
+} // namespace gmx
+
 #endif // GMX_SIMD_IMPL_X86_AVX_512_KNL_UTIL_DOUBLE_H

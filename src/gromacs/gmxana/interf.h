@@ -38,6 +38,9 @@
 
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 typedef struct {
     real Z; /* Interface height-coordinate */
     real t; /* Interface thickness */
@@ -48,5 +51,7 @@ static inline void init_interf(t_interf *surf)
     surf->Z = 0;
     surf->t = 0;
 }
+
+} // namespace gmx
 
 #endif

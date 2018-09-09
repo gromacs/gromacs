@@ -42,6 +42,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 real calcFftGrid(FILE *fp,
                  const matrix box, real gridSpacing, int minGridPointsPerDim,
                  int *nx, int *ny, int *nz);
@@ -50,5 +53,7 @@ real calcFftGrid(FILE *fp,
  * and is >= minGridPointsPerDim.
  * Returns the maximum grid spacing.
  */
+
+} // namespace gmx
 
 #endif

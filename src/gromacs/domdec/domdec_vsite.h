@@ -44,6 +44,9 @@
 #ifndef GMX_DOMDEC_DOMDEC_VSITE_H
 #define GMX_DOMDEC_DOMDEC_VSITE_H
 
+namespace gmx
+{
+
 struct t_ilist;
 struct gmx_domdec_t;
 
@@ -56,5 +59,7 @@ int dd_make_local_vsites(struct gmx_domdec_t *dd, int at_start,
 
 /*! \brief Initializes the data structures for virtual site communication */
 void init_domdec_vsites(struct gmx_domdec_t *dd, int n_intercg_vsite);
+
+} // namespace gmx
 
 #endif

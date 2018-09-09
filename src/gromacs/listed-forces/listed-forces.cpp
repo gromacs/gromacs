@@ -75,6 +75,9 @@
 
 #include "listed-internal.h"
 
+namespace gmx
+{
+
 namespace
 {
 
@@ -740,3 +743,5 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
         }
     }
 }
+
+} // namespace gmx

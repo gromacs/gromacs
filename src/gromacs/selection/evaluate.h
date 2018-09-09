@@ -51,6 +51,9 @@
 
 #include "selelem.h"
 
+namespace gmx
+{
+
 struct gmx_ana_index_t;
 struct gmx_mtop_t;
 struct gmx_sel_mempool_t;
@@ -207,5 +210,7 @@ _gmx_sel_evaluate_or(gmx_sel_evaluate_t                     *data,
                      const gmx::SelectionTreeElementPointer &sel,
                      gmx_ana_index_t                        *g);
 /*@}*/
+
+} // namespace gmx
 
 #endif

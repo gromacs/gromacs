@@ -39,6 +39,9 @@
 
 #include <immintrin.h>
 
+namespace gmx
+{
+
 #define gmx_mm_castsi128_ps(a) _mm_castsi128_ps(a)
 
 static gmx_inline __m256 gmx_simdcall
@@ -1335,5 +1338,7 @@ avx256_pmecorrV_f(__m256 z2)
 
     return _mm256_mul_ps(polyVN0, polyVD0);
 }
+
+} // namespace gmx
 
 #endif /* _kernelutil_x86_avx_256_single_h_ */

@@ -42,6 +42,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_mtop_t;
 struct t_inputrec;
 struct gmx_tng_trajectory;
@@ -215,5 +218,7 @@ int gmx_tng_get_box_output_interval(gmx_tng_trajectory_t gmx_tng);
  *
  * \return The box output interval, or -1 when TNG support is not available. */
 int gmx_tng_get_lambda_output_interval(gmx_tng_trajectory_t gmx_tng);
+
+} // namespace gmx
 
 #endif /* GMX_FILEIO_TNGIO_H */

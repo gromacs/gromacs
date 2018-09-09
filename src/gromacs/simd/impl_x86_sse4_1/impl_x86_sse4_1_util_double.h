@@ -40,4 +40,9 @@
 
 #include "gromacs/simd/impl_x86_sse2/impl_x86_sse2_util_double.h"
 
+namespace gmx
+{
+
+} // namespace gmx
+
 #endif // GMX_SIMD_IMPL_X86_SSE4_1_UTIL_DOUBLE_H

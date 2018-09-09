@@ -79,6 +79,9 @@
 #include "gromacs/utility/strdb.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 #define RTP_MAXCHAR 5
 typedef struct {
     char gmx[RTP_MAXCHAR+2];
@@ -2338,3 +2341,5 @@ int gmx_pdb2gmx(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

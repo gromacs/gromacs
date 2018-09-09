@@ -47,6 +47,9 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 #define NDIM 4
 
 #ifdef DEBUG
@@ -317,3 +320,5 @@ void orient_princ(const t_atoms *atoms, int isize, const int *index,
         rvec_inc(x[i], xcm);
     }
 }
+
+} //namespace gmx

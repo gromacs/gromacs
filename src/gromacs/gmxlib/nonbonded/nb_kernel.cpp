@@ -43,6 +43,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 
 /* Static data structures to find kernels */
 static nb_kernel_info_t *   kernel_list           = nullptr;
@@ -180,3 +183,5 @@ nb_kernel_list_findkernel(FILE gmx_unused *   log,
     /* If we did not find any kernel the pointer will still be NULL */
     return (kernelinfo_ptr != nullptr) ? kernelinfo_ptr->kernelptr : nullptr;
 }
+
+} //namespace gmx

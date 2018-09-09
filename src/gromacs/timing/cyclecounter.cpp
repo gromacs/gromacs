@@ -48,6 +48,9 @@
 #include <windows.h>
 #endif
 
+namespace gmx
+{
+
 /*! \brief Calculate number of seconds per cycle tick on host
  *
  *  This routine runs a timer loop to calibrate the number of
@@ -142,3 +145,5 @@ gmx_cycles_calibrate(double sampletime)
     return -1;
 #endif
 }
+
+} //namespace gmx

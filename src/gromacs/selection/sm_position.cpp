@@ -53,6 +53,9 @@
 #include "selmethod.h"
 #include "selmethod-impl.h"
 
+namespace gmx
+{
+
 /*! \internal \brief
  * Data structure for position keyword evaluation.
  */
@@ -395,3 +398,5 @@ evaluate_pos(const gmx::SelMethodEvalContext &context,
 
     gmx_ana_poscalc_update(d->pc, out->u.p, &d->g, context.fr, context.pbc);
 }
+
+} //namespace gmx

@@ -38,6 +38,9 @@
 /* Include the SIMD macro file and then check for support */
 #include "gromacs/simd/simd.h"
 
+namespace gmx
+{
+
 /* Check if we have 4-wide SIMD macro support */
 #if GMX_SIMD4_HAVE_REAL
 /* Do PME spread and gather with 4-wide SIMD.
@@ -66,5 +69,7 @@
 #else
 #    define PME_4NSIMD_GATHER  0
 #endif
+
+} // namespace gmx
 
 #endif

@@ -61,6 +61,9 @@
 
 #include "impl_sparc64_hpc_ace_common.h"
 
+namespace gmx
+{
+
 /****************************************************
  *      DOUBLE PRECISION SIMD IMPLEMENTATION        *
  ****************************************************/
@@ -301,5 +304,7 @@ simdSetExponentD_sparc64_hpc_ace(SimdDouble x)
 
     return _fjsp_load_v2r8( (double *) &conv.simd);
 }
+
+} // namespace gmx
 
 #endif /* GMX_SIMD_IMPL_SPARC64_HPC_ACE_SIMD_DOUBLE_H */

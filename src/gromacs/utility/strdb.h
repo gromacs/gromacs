@@ -48,6 +48,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 /*! \brief
  * Reads a line of at most n characters from *fp to line.
  *
@@ -77,5 +80,7 @@ int get_lines(const char *db, char ***strings);
  * Returns -1 if not found.
  */
 int search_str(int nstr, char **str, char *key);
+
+} // namespace gmx
 
 #endif

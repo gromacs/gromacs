@@ -44,6 +44,9 @@
 #include "gromacs/fft/fft.h"
 #include "gromacs/utility/fatalerror.h"
 
+namespace gmx
+{
+
 
 /* For MKL version (<10.0), we should define MKL_LONG. */
 #ifndef MKL_LONG
@@ -637,3 +640,5 @@ void gmx_fft_cleanup()
 {
     mkl_free_buffers();
 }
+
+} //namespace gmx

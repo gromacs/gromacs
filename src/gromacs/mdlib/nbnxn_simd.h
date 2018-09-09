@@ -40,6 +40,9 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 #if GMX_SIMD
 /* The nbnxn SIMD 4xN and 2x(N+N) kernels can be added independently.
  * Currently the 2xNN SIMD kernels only make sense with:
@@ -58,5 +61,7 @@
 #endif
 
 #endif // GMX_SIMD
+
+} // namespace gmx
 
 #endif /* _nbnxn_simd_h */

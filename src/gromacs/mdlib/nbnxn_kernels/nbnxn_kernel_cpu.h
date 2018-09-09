@@ -47,6 +47,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct interaction_const_t;
 struct nbnxn_atomdata_t;
 struct nonbonded_verlet_group_t;
@@ -77,5 +80,7 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
                  real                      *fshift,
                  real                      *vCoulomb,
                  real                      *vVdw);
+
+} // namespace gmx
 
 #endif

@@ -55,6 +55,9 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/idef.h"
 
+namespace gmx
+{
+
 /* This function computes factors needed for restricted angle potential.
  * For explanations on formula used see file "restcbt.h" */
 
@@ -392,3 +395,5 @@ void compute_factors_cbtdihs(int type,  const t_iparams forceparams[],
 
 
 }
+
+} //namespace gmx

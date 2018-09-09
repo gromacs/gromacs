@@ -52,6 +52,9 @@
 
 #include "selvalue.h"
 
+namespace gmx
+{
+
 /*! \name Parameter flags
  * \anchor selparam_flags
  */
@@ -188,5 +191,7 @@ typedef struct gmx_ana_selparam_t
 /** Finds a parameter from an array by name. */
 gmx_ana_selparam_t *
 gmx_ana_selparam_find(const char *name, int nparam, gmx_ana_selparam_t *param);
+
+} // namespace gmx
 
 #endif

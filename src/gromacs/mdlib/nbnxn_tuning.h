@@ -54,8 +54,6 @@ namespace gmx
 {
 class CpuInfo;
 class MDLogger;
-}
-
 struct gmx_mtop_t;
 struct interaction_const_t;
 struct NbnxnListParameters;
@@ -98,4 +96,5 @@ void setupDynamicPairlistPruning(const gmx::MDLogger       &mdlog,
                                  const interaction_const_t *ic,
                                  NbnxnListParameters       *listParams);
 
+} // namespace gmx
 #endif /* NBNXN_TUNING_H */

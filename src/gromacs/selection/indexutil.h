@@ -70,7 +70,6 @@
 namespace gmx
 {
 class TextWriter;
-}
 
 struct gmx_mtop_t;
 
@@ -390,5 +389,7 @@ gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, bool bF
 void
 gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g, bool bMaskOnly);
 /*@}*/
+
+}  // namespace gmx
 
 #endif

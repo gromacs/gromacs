@@ -44,6 +44,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
                        rvec **xref, gmx_bool *bDMR,
                        rvec **xav, gmx_bool *bDMA,
@@ -202,3 +205,5 @@ void write_eigenvectors(const char *trrname, int natoms, const real mat[],
 
     sfree(x);
 }
+
+} //namespace gmx

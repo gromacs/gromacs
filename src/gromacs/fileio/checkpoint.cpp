@@ -93,6 +93,9 @@
 #include "corewrap.h"
 #endif
 
+namespace gmx
+{
+
 #define CPT_MAGIC1 171817
 #define CPT_MAGIC2 171819
 #define CPTSTRLEN 1024
@@ -2762,3 +2765,5 @@ read_checkpoint_simulation_part_and_filenames(t_fileio                         *
         gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
     }
 }
+
+} //namespace gmx

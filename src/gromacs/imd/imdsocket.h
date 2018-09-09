@@ -62,6 +62,9 @@
 #else
 #include <netinet/in.h>
 #include <sys/socket.h>
+
+namespace gmx
+{
 #define GMX_IMD
 #endif
 
@@ -201,5 +204,7 @@ int imdsock_destroy(IMDSocket *sock);
  *
  */
 int imdsock_tryread(IMDSocket *sock, int timeoutsec, int timeoutusec);
+
+} // namespace gmx
 
 #endif

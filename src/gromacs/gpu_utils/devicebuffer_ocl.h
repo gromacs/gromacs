@@ -49,6 +49,9 @@
 #include "gromacs/gpu_utils/gputraits_ocl.h"
 #include "gromacs/utility/gmxassert.h"
 
+namespace gmx
+{
+
 /*! \libinternal \brief
  * A minimal cl_mem wrapper that remembers its allocation type.
  * The only point is making template type deduction possible.
@@ -234,5 +237,7 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType> *buffer,
                                                   numWaitEvents, waitEvents, &commandEvent);
     GMX_RELEASE_ASSERT(clError == CL_SUCCESS, "Couldn't clear the device buffer");
 }
+
+} // namespace gmx
 
 #endif

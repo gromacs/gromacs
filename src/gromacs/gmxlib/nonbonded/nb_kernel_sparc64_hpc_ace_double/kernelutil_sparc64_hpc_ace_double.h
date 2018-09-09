@@ -54,6 +54,9 @@
 
 #include <emmintrin.h>
 
+namespace gmx
+{
+
 #ifdef SAVE_ISOC99_SOURCE
 #    define _ISOC99_SOURCE
 #    undef SAVE_ISOC99_SOURCE
@@ -968,5 +971,7 @@ gmx_fjsp_update_2pot_v2r8(_fjsp_v2r8 pot1, double * gmx_restrict ptrA,
     _fjsp_storel_v2r8(ptrB, _fjsp_add_v2r8(pot2, _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), ptrB)));
 }
 
+
+} // namespace gmx
 
 #endif /* _kernelutil_sparc64_hpc_ace_double_h_ */

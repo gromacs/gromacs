@@ -35,6 +35,11 @@
 #ifndef GMX_GMXPREPROCESS_PDB2GMX_H
 #define GMX_GMXPREPROCESS_PDB2GMX_H
 
+namespace gmx
+{
+
 int gmx_pdb2gmx(int argc, char *argv[]);
+
+} // namespace gmx
 
 #endif

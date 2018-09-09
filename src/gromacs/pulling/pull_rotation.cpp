@@ -77,6 +77,9 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static char const *RotStr = {"Enforced rotation:"};
 
 /* Set the minimum weight for the determination of the slab centers */
@@ -296,9 +299,6 @@ gmx_enfrot::~gmx_enfrot()
     }
 }
 
-namespace gmx
-{
-
 class EnforcedRotation::Impl
 {
     public:
@@ -315,8 +315,6 @@ gmx_enfrot *EnforcedRotation::getLegacyEnfrot()
 {
     return &impl_->enforcedRotation_;
 }
-
-}  // namespace gmx
 
 /* Activate output of forces for correctness checks */
 /* #define PRINT_FORCES */
@@ -3924,3 +3922,5 @@ void do_rotation(const t_commrec       *cr,
     }
 #endif
 }
+
+}  // namespace gmx

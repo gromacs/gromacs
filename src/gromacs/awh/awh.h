@@ -71,6 +71,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 struct gmx_multisim_t;
 struct gmx_wallcycle;
 struct pull_work_t;
@@ -80,10 +83,6 @@ struct t_commrec;
 struct t_enxframe;
 struct t_inputrec;
 struct t_mdatoms;
-
-namespace gmx
-{
-
 struct AwhHistory;
 struct AwhParams;
 class Bias;

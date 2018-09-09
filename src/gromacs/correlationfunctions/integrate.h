@@ -48,6 +48,9 @@
 
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /*! \brief
  * Integrate the equispaced data in c[] from 0 to n using trapezium rule.
  * If fit != NULL the fit is written as well.
@@ -76,5 +79,7 @@ real print_and_integrate(FILE *fp, int n, real dt, const real c[], const real *f
  */
 real evaluate_integral(int n, const real x[], const real y[], const real dy[], real aver_start,
                        real *stddev);
+
+} // namespace gmx
 
 #endif

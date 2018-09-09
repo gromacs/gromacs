@@ -42,6 +42,9 @@
 
 #include <smmintrin.h>
 
+namespace gmx
+{
+
 #define gmx_mm_extract_epi32(x, imm) _mm_extract_epi32((x), (imm))
 #define gmx_mm_castsi128_pd(a) _mm_castsi128_pd(a)
 
@@ -842,5 +845,7 @@ sse41_exp_d(__m128d x)
     x         = _mm_mul_pd(p, fexppart);
     return x;
 }
+
+} // namespace gmx
 
 #endif /* _kernelutil_x86_sse4_1_double_h_ */

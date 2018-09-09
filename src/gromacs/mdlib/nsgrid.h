@@ -42,6 +42,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_domdec_t;
 struct gmx_domdec_zones_t;
 struct gmx_ddbox_t;
@@ -146,5 +149,7 @@ void ci2xyz(t_grid *grid, int i, int *x, int *y, int *z);
 void check_grid(t_grid *grid);
 
 void print_grid(FILE *log, t_grid *grid);
+
+} // namespace gmx
 
 #endif

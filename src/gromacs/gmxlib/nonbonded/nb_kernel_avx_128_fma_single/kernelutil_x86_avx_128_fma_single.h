@@ -40,6 +40,9 @@
 #include <math.h>
 
 #include <immintrin.h>
+
+namespace gmx
+{
 #ifdef _MSC_VER
 #    include <intrin.h>
 #else
@@ -788,5 +791,7 @@ avx128fma_pmecorrV_f(__m128 z2)
 
     return _mm_mul_ps(polyVN0, polyVD0);
 }
+
+} // namespace gmx
 
 #endif /* _kernelutil_x86_avx_128_fma_single_h_ */

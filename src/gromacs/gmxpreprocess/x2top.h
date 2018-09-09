@@ -35,6 +35,11 @@
 #ifndef GMX_GMXPREPROCESS_X2TOP_H
 #define GMX_GMXPREPROCESS_X2TOP_H
 
+namespace gmx
+{
+
 int gmx_x2top(int argc, char *argv[]);
+
+} // namespace gmx
 
 #endif

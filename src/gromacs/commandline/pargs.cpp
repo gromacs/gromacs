@@ -65,6 +65,9 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
 
@@ -179,9 +182,6 @@ const char *opt2parg_enum(const char *option, int nparg, t_pargs pa[])
 /********************************************************************
  * parse_common_args()
  */
-
-namespace gmx
-{
 
 namespace
 {
@@ -444,8 +444,6 @@ void OptionsAdapter::copyValues()
 
 } // namespace
 
-} // namespace gmx
-
 gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                            int nfile, t_filenm fnm[], int npargs, t_pargs *pa,
                            int ndesc, const char **desc,
@@ -589,3 +587,5 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
+
+} // namespace gmx

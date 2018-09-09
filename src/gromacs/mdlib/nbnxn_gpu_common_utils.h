@@ -50,6 +50,9 @@
 
 #if GMX_GPU == GMX_GPU_OPENCL
 #include "nbnxn_ocl/nbnxn_ocl_types.h"
+
+namespace gmx
+{
 #endif
 
 /*! \brief An early return condition for empty NB GPU workloads
@@ -64,5 +67,7 @@ static inline bool canSkipWork(const gmx_nbnxn_gpu_t *nb, int iloc)
     assert(nb && nb->plist[iloc]);
     return (iloc == eintNonlocal) && (nb->plist[iloc]->nsci == 0);
 }
+
+} // namespace gmx
 
 #endif

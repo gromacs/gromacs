@@ -42,6 +42,9 @@
 
 #include "gromacs/gmxpreprocess/hackblock.h"
 
+namespace gmx
+{
+
 /* functions for the h-database */
 
 void read_ab(char *line, const char *fn, t_hack *ab);
@@ -60,5 +63,7 @@ int compaddh(const void *a, const void *b);
 
 t_hackblock *search_h_db(int nh, t_hackblock ah[], char *key);
 /* Search for an entry in the database */
+
+} // namespace gmx
 
 #endif

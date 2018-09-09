@@ -69,6 +69,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 struct gmx_enerdata_t;
 struct gmx_grppairener_t;
 struct gmx_multisim_t;
@@ -82,11 +85,7 @@ struct t_lambda;
 struct t_mdatoms;
 struct t_nrnb;
 class t_state;
-
-namespace gmx
-{
 class ForceWithVirial;
-}
 
 /*! \brief Return whether this is an interaction that actually
  * calculates a potential and works on multiple atoms (not e.g. a
@@ -153,4 +152,6 @@ do_force_listed(struct gmx_wallcycle           *wcycle,
                 int                            *global_atom_index,
                 int                             flags);
 
+} // namespace gmx
+ 
 #endif

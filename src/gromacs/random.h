@@ -113,4 +113,9 @@
 #include "gromacs/random/uniformintdistribution.h"
 #include "gromacs/random/uniformrealdistribution.h"
 
+namespace gmx
+{
+
+} // namespace gmx
+
 #endif

@@ -56,6 +56,9 @@
 
 #include "gromacs/utility/classhelpers.h"
 
+namespace gmx
+{
+
 /*! \name Flags for position calculation.
  * \anchor poscalc_flags
  */
@@ -134,9 +137,6 @@ struct gmx_ana_pos_t;
 struct gmx_mtop_t;
 struct t_pbc;
 struct t_trxframe;
-
-namespace gmx
-{
 
 /*! \internal
  * \brief
@@ -344,10 +344,8 @@ class PositionCalculationCollection
         /*! \brief
          * Needed to access the implementation class from the C code.
          */
-        friend struct ::gmx_ana_poscalc_t;
+        friend struct gmx_ana_poscalc_t;
 };
-
-} // namespace gmx
 
 /** Sets the flags for position calculation. */
 void
@@ -376,5 +374,7 @@ void
 gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc,
                        gmx_ana_pos_t *p, gmx_ana_index_t *g,
                        t_trxframe *fr, const t_pbc *pbc);
+
+} // namespace gmx
 
 #endif

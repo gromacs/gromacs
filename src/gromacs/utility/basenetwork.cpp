@@ -49,6 +49,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 
+namespace gmx
+{
+
 bool gmx_mpi_initialized()
 {
 #if !GMX_MPI
@@ -166,3 +169,5 @@ void gmx_abort(int errorno)
     std::abort();
 }
 #endif
+
+} //namespace gmx

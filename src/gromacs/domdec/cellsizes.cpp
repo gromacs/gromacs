@@ -57,6 +57,9 @@
 #include "domdec_internal.h"
 #include "utility.h"
 
+namespace gmx
+{
+
 static void set_pme_maxshift(gmx_domdec_t *dd, gmx_ddpme_t *ddpme,
                              gmx_bool bUniform, const gmx_ddbox_t *ddbox,
                              const real *cellFrac)
@@ -914,3 +917,5 @@ void set_dd_cell_sizes(gmx_domdec_t *dd,
         }
     }
 }
+
+} //namespace gmx

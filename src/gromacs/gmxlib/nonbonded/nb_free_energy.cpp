@@ -51,6 +51,9 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 
+namespace gmx
+{
+
 void
 gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                           rvec * gmx_restrict              xx,
@@ -938,3 +941,5 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 #pragma omp atomic
     inc_nrnb(nrnb, eNR_NBKERNEL_FREE_ENERGY, nlist->nri*12 + nlist->jindex[n]*150);
 }
+
+} //namespace gmx

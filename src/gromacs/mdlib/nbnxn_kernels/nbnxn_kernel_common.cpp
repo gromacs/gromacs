@@ -39,6 +39,9 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/gmxassert.h"
 
+namespace gmx
+{
+
 static void
 clear_f_all(const nbnxn_atomdata_t *nbat, real *f)
 {
@@ -127,3 +130,5 @@ reduce_energies_over_lists(const nbnxn_atomdata_t     *nbat,
         }
     }
 }
+
+} //namespace gmx

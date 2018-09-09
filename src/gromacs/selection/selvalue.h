@@ -47,6 +47,9 @@
 
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /** Defines the value type of a different selection objects. */
 typedef enum
 {
@@ -179,5 +182,7 @@ _gmx_selvalue_setstore(gmx_ana_selvalue_t *val, void *ptr);
  */
 void
 _gmx_selvalue_setstore_alloc(gmx_ana_selvalue_t *val, void *ptr, int nalloc);
+
+} // namespace gmx
 
 #endif

@@ -53,6 +53,9 @@
 #include "selmethod.h"
 #include "selmethod-impl.h"
 
+namespace gmx
+{
+
 /** Evaluates the \p all selection keyword. */
 static void
 evaluate_all(const gmx::SelMethodEvalContext &context,
@@ -933,3 +936,5 @@ evaluate_z(const gmx::SelMethodEvalContext & /*context*/,
     out->nr = pos->count();
     evaluate_coord(out->u.r, pos, ZZ);
 }
+
+} //namespace gmx

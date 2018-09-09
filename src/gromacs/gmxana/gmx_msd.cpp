@@ -59,6 +59,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 #define FACTOR  1000.0  /* Convert nm^2/ps to 10e-5 cm^2/s */
 /* NORMAL = total diffusion coefficient (default). X,Y,Z is diffusion
    coefficient in X,Y,Z direction. LATERAL is diffusion coefficient in
@@ -1208,3 +1211,5 @@ int gmx_msd(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

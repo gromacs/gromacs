@@ -56,6 +56,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void copy_atom(t_atoms *atoms1, int a1, t_atoms *atoms2, int a2)
 {
     atoms2->atom[a2] = atoms1->atom[a1];
@@ -670,3 +673,5 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
 
     return nnew;
 }
+
+} //namespace gmx

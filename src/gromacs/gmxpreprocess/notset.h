@@ -35,7 +35,12 @@
 #ifndef GMX_GMXPREPROCESS_NOTSET_H
 #define GMX_GMXPREPROCESS_NOTSET_H
 
+namespace gmx
+{
+
 // TODO: Remove this whole file and make a proper implementation of uninitialized vars.
 static const int NOTSET = -409203;
+
+} // namespace gmx
 
 #endif

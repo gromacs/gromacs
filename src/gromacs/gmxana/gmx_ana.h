@@ -38,6 +38,9 @@
 #ifndef _gmx_ana_h
 #define _gmx_ana_h
 
+namespace gmx
+{
+
 int
 gmx_anadock(int argc, char *argv[]);
 
@@ -274,6 +277,8 @@ gmx_sans(int argc, char *argv[]);
 
 int
 gmx_saxs(int argc, char *argv[]);
+
+} // namespace gmx
 
 #endif
 /* _gmx_ana_h */

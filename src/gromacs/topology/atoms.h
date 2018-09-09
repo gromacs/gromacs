@@ -42,6 +42,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct t_symtab;
 
 /* The particle type */
@@ -174,5 +177,7 @@ void cmp_atoms(FILE *fp, const t_atoms *a1, const t_atoms *a2, real ftol, real a
  * to stderr.
  */
 void atomsSetMassesBasedOnNames(t_atoms *atoms, gmx_bool printMissingMasses);
+
+} // namespace gmx
 
 #endif

@@ -79,6 +79,9 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 //! longest file names allowed in input files
 #define WHAM_MAXFILELEN 2048
 
@@ -3763,3 +3766,5 @@ int gmx_wham(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

@@ -36,6 +36,9 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX_512_DEFINITIONS_H
 #define GMX_SIMD_IMPL_X86_AVX_512_DEFINITIONS_H
 
+namespace gmx
+{
+
 // A couple of implementation notes:
 //
 // - We avoid using the reduce calls provided by the intel compiler, since they
@@ -96,5 +99,7 @@
 #define GMX_SIMD_ALIGNMENT                        64 // Bytes (16*single or 8*double)
 #define GMX_SIMD_RSQRT_BITS                       14
 #define GMX_SIMD_RCP_BITS                         14
+
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX_512_DEFINITIONS_H

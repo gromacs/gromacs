@@ -35,6 +35,11 @@
 #ifndef GMX_GMXPREPROCESS_GROMPP_H
 #define GMX_GMXPREPROCESS_GROMPP_H
 
+namespace gmx
+{
+
 int gmx_grompp(int argc, char *argv[]);
+
+} // namespace gmx
 
 #endif

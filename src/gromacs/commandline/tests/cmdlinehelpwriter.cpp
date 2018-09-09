@@ -99,7 +99,6 @@ void CommandLineHelpWriterTest::checkHelp(gmx::CommandLineHelpWriter *writer)
  */
 TEST_F(CommandLineHelpWriterTest, HandlesOptionTypes)
 {
-    using namespace gmx;
 
     Options options;
     options.addOption(BooleanOption("bool").description("Boolean option")
@@ -164,7 +163,6 @@ enum TestEnum {
  */
 TEST_F(CommandLineHelpWriterTest, HandlesDefaultValuesFromVariables)
 {
-    using namespace gmx;
 
     Options options;
 

@@ -39,6 +39,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 /* this enum should correspond to the array deffile in filetypes.cpp */
 enum GromacsFileType {
     efMDP,
@@ -91,5 +94,7 @@ gmx_bool ftp_is_xdr(int ftp);
 
 int fn2ftp(const char *fn);
 /* Return the filetype corrsponding to filename */
+
+} // namespace gmx
 
 #endif

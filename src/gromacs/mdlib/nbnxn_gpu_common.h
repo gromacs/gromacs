@@ -65,6 +65,9 @@
 
 #include "nbnxn_gpu_common_utils.h"
 
+namespace gmx
+{
+
 /*! \brief Check that atom locality values are valid for the GPU module.
  *
  *  In the GPU module atom locality "all" is not supported, the local and
@@ -370,5 +373,7 @@ void nbnxn_gpu_wait_finish_task(gmx_nbnxn_gpu_t *nb,
     nbnxn_gpu_try_finish_task(nb, flags, aloc, e_lj, e_el, fshift,
                               GpuTaskCompletion::Wait);
 }
+
+} // namespace gmx
 
 #endif

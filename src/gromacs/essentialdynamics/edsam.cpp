@@ -76,6 +76,8 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
+namespace gmx
+{
 namespace
 {
 /*! \brief Identifies the type of ED: none, normal ED, flooding. */
@@ -190,7 +192,6 @@ struct t_edflood
 };
 } // namespace
 
-
 /* This type is for the average, reference, target, and origin structure    */
 struct gmx_edx
 {
@@ -294,8 +295,6 @@ struct t_ed_buffer
     struct t_do_radcon *            do_radcon;
 };
 
-namespace gmx
-{
 class EssentialDynamics::Impl
 {
     public:
@@ -311,7 +310,6 @@ gmx_edsam *EssentialDynamics::getLegacyED()
 {
     return &impl_->essentialDynamics_;
 }
-} // namespace gmx
 
 /* Function declarations */
 static void fit_to_reference(rvec *xcoll, rvec transvec, matrix rotmat, t_edpar *edi);
@@ -3168,3 +3166,5 @@ void do_edsam(const t_inputrec *ir,
 
     ed->bFirst = FALSE;
 }
+
+} // namespace gmx

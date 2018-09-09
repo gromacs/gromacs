@@ -49,6 +49,9 @@
 #ifndef GMX_GPU_UTILS_GMXOPENCL_H
 #define GMX_GPU_UTILS_GMXOPENCL_H
 
+namespace gmx
+{
+
 /*! \brief Declare to OpenCL SDKs that we intend to use OpenCL API
    features that were deprecated in 1.2 or 2.0, so that they don't
    warn about it. */
@@ -62,5 +65,7 @@
 #  else
 #    include <CL/opencl.h>
 #  endif
+
+} // namespace gmx
 
 #endif

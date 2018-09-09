@@ -177,7 +177,7 @@ extern int _gmx_sel_yydebug;
 
 #include "parsetree.h"
 #include "selelem.h"
-
+using namespace gmx;
 #define YYLTYPE ::gmx::SelectionLocation
 
 #line 184 "parser.cpp" /* yacc.c:355  */

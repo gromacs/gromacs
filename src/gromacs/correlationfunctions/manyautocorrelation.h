@@ -49,6 +49,9 @@
 #include "gromacs/fft/fft.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /*! \brief
  * Perform many autocorrelation calculations.
  *
@@ -69,5 +72,7 @@
  * \throws gmx::InconsistentInputError if the input is inconsistent.
  */
 int many_auto_correl(std::vector<std::vector<real> > *c);
+
+} // namespace gmx
 
 #endif

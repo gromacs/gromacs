@@ -36,6 +36,9 @@
 #ifndef GMX_SIMD_IMPL_NONE_H
 #define GMX_SIMD_IMPL_NONE_H
 
+namespace gmx
+{
+
 /* No SIMD implementation - assign 0 to all defines */
 #define GMX_SIMD                            0
 #define GMX_SIMD_HAVE_FLOAT                 0
@@ -61,5 +64,7 @@
 #define GMX_SIMD_ALIGNMENT                  8 // 1*double
 #undef GMX_SIMD_RSQRT_BITS
 #undef GMX_SIMD_RCP_BITS
+
+} // namespace gmx
 
 #endif /* GMX_SIMD_IMPL_NONE_H */

@@ -40,6 +40,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 /*! \brief
  * Contains per-process and per-thread data about elapsed wall-clock
  * times and integration steps performed. */
@@ -116,5 +119,7 @@ walltime_accounting_get_valid_finish(const gmx_walltime_accounting* walltime_acc
  * Resolution is implementation-dependent, but typically nanoseconds
  * or microseconds. */
 double gmx_gettime();
+
+} // namespace gmx
 
 #endif  /* GMX_TIMING_WALLTIME_ACCOUNTING_H */

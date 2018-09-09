@@ -35,6 +35,11 @@
 #ifndef GMX_GMXPREPROCESS_SOLVATE_H
 #define GMX_GMXPREPROCESS_SOLVATE_H
 
+namespace gmx
+{
+
 int gmx_solvate(int argc, char *argv[]);
+
+} // namespace gmx
 
 #endif

@@ -40,6 +40,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 typedef unsigned long t_excl;
 
 /* The interactions contained in a (possibly merged) table
@@ -211,5 +214,7 @@ typedef struct gmx_ns_t {
     gmx_bool      nblist_initialized; /* has the nblist been initialized?  */
     int           dump_nl;            /* neighbour list dump level (from env. var. GMX_DUMP_NL)*/
 } gmx_ns_t;
+
+} // namespace gmx
 
 #endif /* GMX_MDTYPES_NBLIST_H */

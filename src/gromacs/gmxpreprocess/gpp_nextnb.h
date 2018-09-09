@@ -40,6 +40,9 @@
 
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 
+namespace gmx
+{
+
 typedef struct {
     int nr;     /* nr atoms (0 <= i < nr) (atoms->nr)	        */
     int nrex;   /* with nrex lists of neighbours		*/
@@ -76,5 +79,7 @@ void generate_excl (int nrexcl, int nratoms,
 /* Generate an exclusion block from bonds and constraints in
  * plist.
  */
+
+} // namespace gmx
 
 #endif

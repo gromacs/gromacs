@@ -85,6 +85,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /*! \brief How long shall we wait in seconds until we check for a connection again? */
 #define IMDLOOPWAIT 1
 
@@ -1700,3 +1703,5 @@ void IMD_apply_forces(gmx_bool bIMD, t_IMD *imd, const t_commrec *cr, rvec *f,
 #endif
     }
 }
+
+} //namespace gmx

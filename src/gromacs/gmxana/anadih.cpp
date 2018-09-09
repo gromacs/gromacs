@@ -55,6 +55,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 void print_one(const gmx_output_env_t *oenv, const char *base, const char *name,
                const char *title, const char *ylabel, int nf, real time[],
                real data[])
@@ -1009,3 +1012,5 @@ void read_ang_dih(const char *trj_fn,
 
     *nframes = teller;
 }
+
+} //namespace gmx

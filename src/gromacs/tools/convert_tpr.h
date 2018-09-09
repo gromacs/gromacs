@@ -35,11 +35,16 @@
 #ifndef GMX_TOOLS_CONVERT_TPR_H
 #define GMX_TOOLS_CONVERT_TPR_H
 
+namespace gmx
+{
+
 /*! \brief Implements gmx convert-tpr
  *
  * \param[in] argc  argc value passed to main().
  * \param[in] argv  argv array passed to main().
  */
 int gmx_convert_tpr(int argc, char *argv[]);
+
+} // namespace gmx
 
 #endif

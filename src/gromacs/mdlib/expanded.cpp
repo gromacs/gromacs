@@ -70,6 +70,9 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void init_df_history_weights(df_history_t *dfhist, t_expanded *expand, int nlim)
 {
     int i;
@@ -1386,3 +1389,5 @@ int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
 
     return lamnew;
 }
+
+} //namespace gmx

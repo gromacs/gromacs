@@ -48,12 +48,12 @@
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct t_atoms;
 struct t_resinfo;
 struct t_symtab;
-
-namespace gmx
-{
 
 class AtomsBuilder
 {

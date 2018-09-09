@@ -74,9 +74,8 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-using gmx::AwhParams;
-using gmx::AwhBiasParams;
-
+namespace gmx
+{
 namespace
 {
 
@@ -658,3 +657,5 @@ int gmx_awh(int argc, char *argv[])
 
     return 0;
 }
+
+} // namespace gmx

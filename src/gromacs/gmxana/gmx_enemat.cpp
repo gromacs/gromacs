@@ -60,6 +60,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
+namespace gmx
+{
+
 
 static int search_str2(int nstr, char **str, char *key)
 {
@@ -614,3 +617,5 @@ int gmx_enemat(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

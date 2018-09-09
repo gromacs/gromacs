@@ -47,6 +47,9 @@
 
 #include "gmx_lapack.h"
 
+namespace gmx
+{
+
 double **alloc_matrix(int n, int m)
 {
     double **ptr;
@@ -245,3 +248,5 @@ double multi_regression(FILE *fp, int nrow, double *y, int ncol,
 
     return chi2;
 }
+
+} //namespace gmx

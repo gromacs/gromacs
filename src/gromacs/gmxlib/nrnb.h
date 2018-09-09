@@ -42,6 +42,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 #define eNR_NBKERNEL_NONE (-1)
 
 enum
@@ -161,5 +164,7 @@ int cost_nrnb(int enr);
 
 const char *nrnb_str(int enr);
 /* Name of this component */
+
+} // namespace gmx
 
 #endif  /* GMX_GMXLIB_NRNB_H */

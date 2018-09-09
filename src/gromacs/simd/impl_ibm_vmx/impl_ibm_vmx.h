@@ -43,4 +43,9 @@
 #include "impl_ibm_vmx_simd_float.h"
 #include "impl_ibm_vmx_util_float.h"
 
+namespace gmx
+{
+
+} // namespace gmx
+
 #endif // GMX_SIMD_IMPLEMENTATION_IBM_VMX_H

@@ -52,6 +52,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 //! Alignment in bytes for all returned blocks.
 #define ALIGN_STEP 8
 
@@ -228,3 +231,5 @@ _gmx_sel_mempool_free_group(gmx_sel_mempool_t *mp, gmx_ana_index_t *g)
     _gmx_sel_mempool_free(mp, g->index);
     g->index = nullptr;
 }
+
+} //namespace gmx

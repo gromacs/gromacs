@@ -65,6 +65,9 @@
 
 struct gmx_wallcycle;
 
+namespace gmx
+{
+
 namespace
 {
 
@@ -479,3 +482,5 @@ void fbposres_wrapper(t_nrnb               *nrnb,
     enerd->term[F_FBPOSRES] += v;
     inc_nrnb(nrnb, eNR_FBPOSRES, gmx::exactDiv(idef->il[F_FBPOSRES].nr, 2));
 }
+
+} // namespace gmx

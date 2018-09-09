@@ -69,6 +69,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 /* we keep a linked list of all files opened through pipes (i.e.
    compressed or .gzipped files. This way we can distinguish between them
    without having to change the semantics of reading from/writing to files)
@@ -88,8 +91,6 @@ static gmx::Mutex pstack_mutex;
 
 using Lock = gmx::lock_guard<gmx::Mutex>;
 
-namespace gmx
-{
 namespace
 {
 //! Global library file finder; stores the object set with setLibraryFileFinder().
@@ -111,8 +112,6 @@ void setLibraryFileFinder(const DataFileFinder *finder)
 {
     g_libFileFinder = finder;
 }
-
-} // namespace gmx
 
 void gmx_disable_file_buffering()
 {
@@ -813,3 +812,5 @@ void gmx_getcwd(char *buffer, size_t size)
                   strerror(errno));
     }
 }
+
+} // namespace gmx

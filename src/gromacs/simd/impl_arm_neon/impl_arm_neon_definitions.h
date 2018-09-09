@@ -36,6 +36,9 @@
 #ifndef GMX_SIMD_IMPL_ARM_NEON_DEFINITIONS_H
 #define GMX_SIMD_IMPL_ARM_NEON_DEFINITIONS_H
 
+namespace gmx
+{
+
 #define GMX_SIMD                                1
 #define GMX_SIMD_HAVE_FLOAT                     1
 #define GMX_SIMD_HAVE_DOUBLE                    0
@@ -78,5 +81,7 @@
 #define GMX_SIMD_ALIGNMENT                     16 // Bytes (4*single)
 #define GMX_SIMD_RSQRT_BITS                     8
 #define GMX_SIMD_RCP_BITS                       8
+
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_ARM_NEON_DEFINITIONS_H

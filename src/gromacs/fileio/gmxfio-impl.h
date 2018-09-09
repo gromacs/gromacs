@@ -58,6 +58,9 @@
 
 #include "gromacs/fileio/xdrf.h"
 
+namespace gmx
+{
+
 struct t_fileio
 {
     FILE           *fp;                /* the file pointer */
@@ -81,5 +84,7 @@ struct t_fileio
 void gmx_fio_lock(t_fileio *fio);
 /** unlock the mutex associated with a fio  */
 void gmx_fio_unlock(t_fileio *fio);
+
+} // namespace gmx
 
 #endif

@@ -52,6 +52,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 /*! \brief Size of bitmask. Has to be 32 or multiple of 64. */
 #ifndef BITMASK_SIZE
 #define BITMASK_SIZE GMX_OPENMP_MAX_THREADS
@@ -195,5 +198,7 @@ inline static void bitmask_union(gmx_bitmask_t* a, gmx_bitmask_t b)
     }
 }
 #endif
+
+} // namespace gmx
 
 #endif

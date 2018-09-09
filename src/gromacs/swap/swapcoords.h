@@ -57,6 +57,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 struct gmx_domdec_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
@@ -68,11 +71,7 @@ struct t_inputrec;
 class t_state;
 struct t_swapcoords;
 struct ObservablesHistory;
-
-namespace gmx
-{
 class LocalAtomSetManager;
-}
 
 /*! \brief Initialize ion / water position swapping ("Computational Electrophysiology").
  *
@@ -136,5 +135,7 @@ gmx_bool do_swapcoords(
         matrix            box,
         gmx_bool          bVerbose,
         gmx_bool          bRerun);
+
+} // namespace gmx
 
 #endif

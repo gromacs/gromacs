@@ -60,6 +60,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
+namespace gmx
+{
+
 typedef struct {
     t_iatom  a[4];
     real     c;
@@ -1551,3 +1554,5 @@ void clean_vsite_bondeds(t_params *plist, int natoms, bool bRmVSiteBds)
     sfree(pindex);
     sfree(vsite_type);
 }
+
+} //namespace gmx

@@ -48,7 +48,9 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 
-using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
+namespace gmx
+{
+
 
 void set_pbc_simd(const t_pbc gmx_unused *pbc,
                   real gmx_unused        *pbc_simd)
@@ -83,3 +85,5 @@ void set_pbc_simd(const t_pbc gmx_unused *pbc,
     }
 #endif
 }
+
+} //namespace gmx

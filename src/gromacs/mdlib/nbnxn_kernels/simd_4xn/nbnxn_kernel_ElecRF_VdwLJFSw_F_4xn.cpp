@@ -60,6 +60,9 @@
 #include "gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_common.h"
 #endif /* GMX_NBNXN_SIMD_4XN */
 
+namespace gmx
+{
+
 #ifdef CALC_ENERGIES
 void
 nbnxn_kernel_ElecRF_VdwLJFSw_F_4xn(const nbnxn_pairlist_t    gmx_unused *nbl,
@@ -90,3 +93,5 @@ nbnxn_kernel_ElecRF_VdwLJFSw_F_4xn(const nbnxn_pairlist_t    gmx_unused *nbl,
  */
 }
 #endif /* GMX_NBNXN_SIMD_4XN */
+
+} // namespace gmx

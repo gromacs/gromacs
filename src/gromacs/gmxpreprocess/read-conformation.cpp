@@ -47,6 +47,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/unique_cptr.h"
 
+namespace gmx
+{
+
 using gmx::RVec;
 
 std::vector<real>
@@ -118,3 +121,5 @@ void readConformation(const char *confin, t_topology *top,
     fprintf(stderr, "%s\nContaining %d atoms in %d residues\n",
             *top->name, top->atoms.nr, top->atoms.nres);
 }
+
+} //namespace gmx

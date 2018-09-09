@@ -43,6 +43,9 @@
 
 #include "gromacs/utility/compare.h"
 
+namespace gmx
+{
+
 void cmp_rvec(FILE *fp, const char *s, int index, const rvec i1, const rvec i2, real ftol, real abstol)
 {
     if (!equal_real(i1[XX], i2[XX], ftol, abstol) ||
@@ -136,3 +139,5 @@ void cmp_rvecs(FILE *fp, const char *title, int n, const rvec x1[], const rvec x
         cmp_rvecs_rmstol(fp, title, n, x1, x2, ftol, abstol);
     }
 }
+
+} //namespace gmx

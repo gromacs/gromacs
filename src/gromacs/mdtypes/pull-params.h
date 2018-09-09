@@ -53,6 +53,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /*! \cond INTERNAL */
 
 /*! \brief Struct that defines a pull group */
@@ -101,5 +104,7 @@ typedef struct pull_params_t {
 } pull_params_t;
 
 /*! \endcond */
+
+} // namespace gmx
 
 #endif /* GMX_MDTYPES_PULL_PARAMS_H */

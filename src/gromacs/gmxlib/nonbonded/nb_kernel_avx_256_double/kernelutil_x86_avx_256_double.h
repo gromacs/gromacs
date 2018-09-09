@@ -39,6 +39,9 @@
 
 #include <immintrin.h>
 
+namespace gmx
+{
+
 #define gmx_mm_castsi128_ps(a) _mm_castsi128_ps(a)
 
 #define _GMX_MM_BLEND256D(b3, b2, b1, b0) (((b3) << 3) | ((b2) << 2) | ((b1) << 1) | ((b0)))
@@ -1062,5 +1065,7 @@ avx256_exp_d(__m256d x)
     x         = _mm256_mul_pd(p, fexppart);
     return x;
 }
+
+} // namespace gmx
 
 #endif /* _kernelutil_x86_avx_256_double_h_ */

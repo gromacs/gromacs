@@ -46,6 +46,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 typedef struct {
     char c1; /* should all be non-zero (and printable and not '"') */
     char c2; /*
@@ -182,5 +185,7 @@ void write_xpm(FILE *out, unsigned int flags,
 real **mk_matrix(int nx, int ny, gmx_bool b1D);
 
 void done_matrix(int nx, real ***m);
+
+} // namespace gmx
 
 #endif  /* GMX_FILEIO_MATIO_H */

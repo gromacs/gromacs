@@ -56,6 +56,9 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/timing/gpu_timing.h"
 
+namespace gmx
+{
+
 
 /*! \brief Macro definining default for the prune kernel's j4 processing concurrency.
  *
@@ -236,5 +239,7 @@ struct gmx_nbnxn_cuda_t
     cu_timers_t               *timers;    /**< CUDA event-based timers.                             */
     gmx_wallclock_gpu_nbnxn_t *timings;   /**< Timing data. TODO: deprecate this and query timers for accumulated data instead */
 };
+
+} // namespace gmx
 
 #endif  /* NBNXN_CUDA_TYPES_H */

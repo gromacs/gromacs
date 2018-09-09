@@ -57,6 +57,9 @@
 #include "scanner.h"
 #include "selelem.h"
 
+namespace gmx
+{
+
 //! Error handler needed by Bison.
 static void
 yyerror(YYLTYPE *location, yyscan_t scanner, char const *s)
@@ -221,5 +224,7 @@ void set_empty(ValueType * &dest)
         delete (sel); \
         YYERROR; \
     }
+
+} // namespace gmx
 
 #endif

@@ -59,6 +59,9 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 
+namespace gmx
+{
+
 //! Constant used to help minimize preprocessed code
 static const bool bGPUBinary     = GMX_GPU != GMX_GPU_NONE;
 
@@ -385,3 +388,5 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
     /* For RDTSCP we only check on our local node and skip the MPI reduction */
     check_use_of_rdtscp_on_this_cpu(mdlog, cpuInfo);
 }
+
+} //namespace gmx

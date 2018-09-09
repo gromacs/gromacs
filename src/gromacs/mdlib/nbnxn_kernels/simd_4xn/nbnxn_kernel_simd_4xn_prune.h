@@ -45,6 +45,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct nbnxn_atomdata_t;
 struct nbnxn_pairlist_t;
 
@@ -58,3 +61,5 @@ nbnxn_kernel_prune_4xn(nbnxn_pairlist_t *         nbl,
                        const nbnxn_atomdata_t *   nbat,
                        const rvec * gmx_restrict  shift_vec,
                        real                       rlistInner);
+
+} // namespace gmx

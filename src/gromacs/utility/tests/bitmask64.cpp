@@ -37,4 +37,9 @@
 #define BITMASK_SIZE 64
 #include "bitmask.h"
 
+namespace gmx
+{
+
 INSTANTIATE_TEST_CASE_P(BitmaskTest64_10_42, BitmaskTest64, ::testing::Values(10, 42));
+
+} //namespace gmx

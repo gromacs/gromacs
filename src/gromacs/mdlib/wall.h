@@ -49,7 +49,6 @@ struct t_nrnb;
 namespace gmx
 {
 class ForceWithVirial;
-}
 
 void make_wall_tables(FILE *fplog,
                       const t_inputrec *ir, const char *tabfn,
@@ -65,5 +64,7 @@ real do_walls(const t_inputrec      &ir,
               real                   lambda,
               real                   Vlj[],
               t_nrnb                *nrnb);
+
+} // namespace gmx
 
 #endif

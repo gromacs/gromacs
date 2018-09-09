@@ -57,6 +57,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 
 /* mopac interface routines */
 void
@@ -222,4 +225,5 @@ real call_mopac_SH(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
     free(qmcrd);
     return (QMener);
 } /* call_mopac_SH */
+} //namespace gmx
 #endif

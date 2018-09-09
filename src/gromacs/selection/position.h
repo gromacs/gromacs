@@ -44,6 +44,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/selection/indexutil.h"
 
+namespace gmx
+{
+
 /*! \brief
  * Stores a set of positions together with their origins.
  */
@@ -122,5 +125,7 @@ gmx_ana_pos_append_finish(gmx_ana_pos_t *pos);
 void
 /** Appends atoms from a position into a preallocated index group. */
 gmx_ana_pos_add_to_group(gmx_ana_index_t *g, gmx_ana_pos_t *src, int i);
+
+} // namespace gmx
 
 #endif

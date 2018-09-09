@@ -49,11 +49,10 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 
-class gmx_ga2la_t;
-
 namespace gmx
 {
 
+class gmx_ga2la_t;
 class LocalAtomSet;
 
 /*! \libinternal \brief

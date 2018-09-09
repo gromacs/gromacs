@@ -105,6 +105,9 @@
 
 #include "nbnxn_gpu_jit_support.h"
 
+namespace gmx
+{
+
 t_forcerec *mk_forcerec()
 {
     t_forcerec *fr;
@@ -3145,3 +3148,5 @@ void done_forcerec(t_forcerec *fr, int numMolBlocks, int numEnergyGroups)
     fr->bondedThreading = nullptr;
     sfree(fr);
 }
+
+} //namespace gmx

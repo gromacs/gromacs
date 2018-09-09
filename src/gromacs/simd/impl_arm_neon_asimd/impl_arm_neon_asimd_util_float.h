@@ -38,4 +38,9 @@
 
 #include "gromacs/simd/impl_arm_neon/impl_arm_neon_util_float.h"
 
+namespace gmx
+{
+
+} // namespace gmx
+
 #endif // GMX_SIMD_IMPL_ARM_NEON_ASIMD_UTIL_FLOAT_H

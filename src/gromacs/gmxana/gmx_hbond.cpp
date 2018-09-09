@@ -75,6 +75,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 
+namespace gmx
+{
+
 #define max_hx 7
 typedef int t_hx[max_hx];
 #define NRHXTYPES max_hx
@@ -3438,3 +3441,5 @@ int gmx_hbond(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

@@ -61,6 +61,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 
+namespace gmx
+{
+
 typedef struct {
     int ai, aj;
 } gmx_conection_t;
@@ -1194,3 +1197,5 @@ gmx_fprintf_pdb_atomline(FILE *            fp,
 
     return n;
 }
+
+} //namespace gmx

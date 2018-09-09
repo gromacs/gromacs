@@ -42,14 +42,14 @@
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct t_pbc;
 
 #define FLAG_DOTS       01
 #define FLAG_VOLUME     02
 #define FLAG_ATOM_AREA  04
-
-namespace gmx
-{
 
 /*! \internal
  * \brief

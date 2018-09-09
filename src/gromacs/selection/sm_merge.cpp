@@ -51,6 +51,9 @@
 #include "selmethod.h"
 #include "selmethod-impl.h"
 
+namespace gmx
+{
+
 /*! \internal \brief
  * Data structure for the merging selection modifiers.
  */
@@ -356,3 +359,5 @@ evaluate_plus(const gmx::SelMethodEvalContext & /*context*/,
     }
     gmx_ana_pos_append_finish(out->u.p);
 }
+
+} //namespace gmx

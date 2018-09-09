@@ -46,6 +46,9 @@
 
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /*! \brief
  * Return Legendre polynomial value Pm(x)
  * http://en.wikipedia.org/wiki/Legendre_polynomials
@@ -54,5 +57,7 @@
  * \return Pm(x)
  */
 real LegendreP(real x, unsigned int m);
+
+} // namespace gmx
 
 #endif

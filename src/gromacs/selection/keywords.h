@@ -47,6 +47,9 @@
 #include "parsetree.h"
 #include "selelem.h"
 
+namespace gmx
+{
+
 struct gmx_ana_selmethod_t;
 
 /** Selection method data for comparison expression evaluation. */
@@ -112,5 +115,7 @@ gmx::SelectionTreeElementPointer
 _gmx_sel_init_keyword_evaluator(struct gmx_ana_selmethod_t              *method,
                                 const gmx::SelectionTreeElementPointer  &child,
                                 void                                    *scanner);
+
+} // namespace gmx
 
 #endif

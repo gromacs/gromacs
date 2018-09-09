@@ -38,6 +38,9 @@
 
 #include "config.h"
 
+namespace gmx
+{
+
 /* Note that some of the following arrays must match the "GPU support
  * enumeration" in src/config.h.cmakein, so that GMX_GPU looks up an
  * array entry. */
@@ -49,3 +52,5 @@ const char * const gpu_detect_res_str[egpuNR] =
 {
     "compatible", "nonexistent", "incompatible", "insane"
 };
+
+} //namespace gmx

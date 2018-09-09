@@ -59,6 +59,9 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 
 struct t_graph;
 struct t_pbc;
@@ -170,5 +173,7 @@ void
                        int gmx_unused *global_atom_index);
 
 //! \endcond
+
+} // namespace gmx
 
 #endif

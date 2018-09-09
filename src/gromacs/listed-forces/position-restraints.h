@@ -64,7 +64,6 @@ struct t_pbc;
 namespace gmx
 {
 class ForceWithVirial;
-}
 
 /*! \brief Helper function that wraps calls to posres */
 void
@@ -98,5 +97,7 @@ void fbposres_wrapper(t_nrnb               *nrnb,
                       gmx_enerdata_t       *enerd,
                       const t_forcerec     *fr,
                       gmx::ForceWithVirial *forceWithVirial);
+
+} // namespace gmx
 
 #endif

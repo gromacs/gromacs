@@ -65,6 +65,9 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* The strategy used here for assigning virtual sites to (thread-)tasks
  * is as follows:
  *
@@ -2613,3 +2616,5 @@ void set_vsite_top(gmx_vsite_t          *vsite,
                                   md, vsite);
     }
 }
+
+} //namespace gmx

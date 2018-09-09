@@ -48,6 +48,9 @@
 
 #include "gromacs/utility/fatalerror.h"
 
+namespace gmx
+{
+
 real LegendreP(real x, unsigned int m)
 
 {
@@ -83,3 +86,5 @@ real LegendreP(real x, unsigned int m)
     }
     return (polynomial);
 }
+
+} //namespace gmx

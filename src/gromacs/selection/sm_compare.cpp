@@ -52,6 +52,9 @@
 #include "keywords.h"
 #include "selmethod.h"
 
+namespace gmx
+{
+
 /** Defines the comparison operator for comparison expressions. */
 typedef enum
 {
@@ -618,3 +621,5 @@ evaluate_compare(const gmx::SelMethodEvalContext & /*context*/,
         evaluate_compare_real(g, out, data);
     }
 }
+
+} //namespace gmx

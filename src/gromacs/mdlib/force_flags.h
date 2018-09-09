@@ -37,6 +37,9 @@
 #ifndef GMX_MDLIB_FORCE_FLAGS_H
 #define GMX_MDLIB_FORCE_FLAGS_H
 
+namespace gmx
+{
+
 /* Flags to tell the force calculation routines what (not) to do */
 
 /* The state has changed, always set unless TPI is used. */
@@ -60,5 +63,7 @@
 
 /* Normally one want all energy terms and forces */
 #define GMX_FORCE_ALLFORCES    (GMX_FORCE_LISTED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES)
+
+} // namespace gmx
 
 #endif

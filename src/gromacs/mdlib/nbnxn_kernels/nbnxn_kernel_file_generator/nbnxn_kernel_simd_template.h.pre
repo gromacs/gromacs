@@ -35,6 +35,9 @@
 
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_common.h"
 
+namespace gmx
+{{
+
 /* Declare all the different kernel functions.
  */
 {0}
@@ -45,11 +48,13 @@
  * The minor index of the array goes over both the LJ combination rules,
  * which is only supported by plain cut-off, and the LJ switch/PME functions.
  */
-p_nbk_func_noener nbnxn_kernel_noener_simd_{1}[coulktNR][vdwktNR] =
+static p_nbk_func_noener nbnxn_kernel_noener_simd_{1}[coulktNR][vdwktNR] =
 {2}
-p_nbk_func_ener nbnxn_kernel_ener_simd_{1}[coulktNR][vdwktNR] =
+static p_nbk_func_ener nbnxn_kernel_ener_simd_{1}[coulktNR][vdwktNR] =
 {3}
-p_nbk_func_ener nbnxn_kernel_energrp_simd_{1}[coulktNR][vdwktNR] =
+static p_nbk_func_ener nbnxn_kernel_energrp_simd_{1}[coulktNR][vdwktNR] =
 {4}
 
 #endif /* INCLUDE_KERNELFUNCTION_TABLES */
+
+}} // namespace gmx

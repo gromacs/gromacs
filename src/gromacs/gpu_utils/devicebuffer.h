@@ -53,6 +53,9 @@
 #include "gromacs/gpu_utils/devicebuffer.cuh"
 #elif GMX_GPU == GMX_GPU_OPENCL
 #include "gromacs/gpu_utils/devicebuffer_ocl.h"
+
+namespace gmx
+{
 #else
 #error "devicebuffer.h included on non-GPU build!"
 #endif
@@ -99,5 +102,7 @@ void reallocateDeviceBuffer(DeviceBuffer<ValueType> *buffer,
     /* size could have changed without actual reallocation */
     *currentNumValues = numValues;
 }
+
+} // namespace gmx
 
 #endif

@@ -55,6 +55,9 @@
 
 #include <memory>
 
+namespace gmx
+{
+
 class energyhistory_t;
 struct edsamhistory_t;
 struct swaphistory_t;
@@ -78,5 +81,7 @@ struct ObservablesHistory
     //! Default destructor
     ~ObservablesHistory();
 };
+
+} // namespace gmx
 
 #endif

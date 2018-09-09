@@ -50,8 +50,13 @@
 
 #include <stdio.h>
 
+namespace gmx
+{
+
 #if GMX_NATIVE_WINDOWS
 #define snprintf _snprintf
 #endif
+
+} // namespace gmx
 
 #endif

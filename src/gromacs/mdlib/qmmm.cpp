@@ -69,6 +69,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* declarations of the interfaces to the QM packages. The _SH indicate
  * the QM interfaces can be used for Surface Hopping simulations
  */
@@ -992,3 +995,5 @@ void update_QMMMrec(const t_commrec  * /*unused*/,
 #endif
 
 /* end of QMMM core routines */
+
+} //namespace gmx

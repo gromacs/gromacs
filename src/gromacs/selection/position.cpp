@@ -50,6 +50,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 gmx_ana_pos_t::gmx_ana_pos_t()
 {
     x = nullptr;
@@ -412,3 +415,5 @@ gmx_ana_pos_add_to_group(gmx_ana_index_t *g, gmx_ana_pos_t *src, int i)
         g->index[g->isize++] = src->m.mapb.a[k];
     }
 }
+
+} //namespace gmx

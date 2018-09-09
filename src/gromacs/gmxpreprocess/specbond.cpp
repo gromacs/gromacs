@@ -52,6 +52,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
+namespace gmx
+{
+
 bool yesno()
 {
     char c;
@@ -365,3 +368,5 @@ int mk_specbonds(t_atoms *pdba, rvec x[], bool bInteractive,
 
     return nbonds;
 }
+
+} //namespace gmx

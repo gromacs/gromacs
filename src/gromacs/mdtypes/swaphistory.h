@@ -43,6 +43,9 @@
 
 #include "gromacs/mdtypes/md_enums.h"
 
+namespace gmx
+{
+
 /* History of an ion type used in position swapping
  */
 typedef struct swapstateIons_t
@@ -86,5 +89,7 @@ typedef struct swaphistory_t
     swapstateIons_t *ionType;                 // History information for one ion type
 }
 swaphistory_t;
+
+} // namespace gmx
 
 #endif

@@ -47,6 +47,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 typedef struct t_mdatoms {
     //! Total mass in state A
     real                   tmassA;
@@ -133,5 +136,7 @@ typedef struct t_mdatoms {
     //! The lambda value used to create the contents of the struct
     real                   lambda;
 } t_mdatoms;
+
+} // namespace gmx
 
 #endif

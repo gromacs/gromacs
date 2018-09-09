@@ -78,6 +78,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 
+namespace gmx
+{
+
 static const char *SwS      = {"SWAP:"};                                           /**< For output that comes from the swap module */
 static const char *SwSEmpty = {"     "};                                           /**< Placeholder for multi-line output */
 static const char* CompStr[eCompNR] = {"A", "B" };                                 /**< Compartment name */
@@ -2105,3 +2108,5 @@ gmx_bool do_swapcoords(
 
     return bSwap;
 }
+
+} //namespace gmx

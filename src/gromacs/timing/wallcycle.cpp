@@ -68,6 +68,9 @@ static const bool useCycleSubcounters = GMX_CYCLE_SUBCOUNTERS;
 #include "gromacs/utility/fatalerror.h"
 #endif
 
+namespace gmx
+{
+
 typedef struct
 {
     int          n;
@@ -1121,3 +1124,5 @@ void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs)
         wc->wcsc[ewcs].n++;
     }
 }
+
+} //namespace gmx

@@ -123,6 +123,9 @@ double MPI_Wtime()
 #endif
 #endif
 
+namespace gmx
+{
+
 static int vmax(const int* a, int s)
 {
     int i, max = 0;
@@ -1439,3 +1442,5 @@ void fft5d_compare_data(const t_complex* lin, const t_complex* in, fft5d_plan pl
     }
 
 }
+
+} //namespace gmx

@@ -76,7 +76,7 @@ using gmx::SelectionTreeElementPointer;
 %code requires{
 #include "parsetree.h"
 #include "selelem.h"
-
+using namespace gmx;
 #define YYLTYPE ::gmx::SelectionLocation
 }
 

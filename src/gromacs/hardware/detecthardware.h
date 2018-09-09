@@ -35,11 +35,10 @@
 #ifndef GMX_HARDWARE_DETECTHARDWARE_H
 #define GMX_HARDWARE_DETECTHARDWARE_H
 
-struct gmx_gpu_info_t;
-struct gmx_hw_info_t;
-
 namespace gmx
 {
+struct gmx_gpu_info_t;
+struct gmx_hw_info_t;
 class MDLogger;
 class PhysicalNodeCommunicator;
 

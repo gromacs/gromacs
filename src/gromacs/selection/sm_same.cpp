@@ -54,6 +54,9 @@
 #include "selmethod.h"
 #include "selmethod-impl.h"
 
+namespace gmx
+{
+
 /*! \internal
  * \brief
  * Data structure for the \p same selection method.
@@ -542,3 +545,5 @@ evaluate_same_str(const gmx::SelMethodEvalContext & /*context*/,
         }
     }
 }
+
+} //namespace gmx

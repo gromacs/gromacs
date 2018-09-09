@@ -40,6 +40,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_atomprop;
 struct gmx_mtop_t;
 struct t_atoms;
@@ -66,5 +69,7 @@ void readConformation(const char *confin, gmx_mtop_t *top,
 void readConformation(const char *confin, t_topology *top,
                       std::vector<gmx::RVec> *x, std::vector<gmx::RVec> *v,
                       int *ePBC, matrix box, const char *statusTitle);
+
+} // namespace gmx
 
 #endif

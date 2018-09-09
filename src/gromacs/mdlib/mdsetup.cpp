@@ -54,6 +54,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* TODO: Add a routine that collects the initial setup of the algorithms.
  *
  * The final solution should be an MD algorithm base class with methods
@@ -66,8 +69,8 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
                                gmx_localtop_t    *top,
                                t_forcerec        *fr,
                                t_graph          **graph,
-                               gmx::MDAtoms      *mdAtoms,
-                               gmx::Constraints  *constr,
+                               MDAtoms      *mdAtoms,
+                               Constraints  *constr,
                                gmx_vsite_t       *vsite,
                                gmx_shellfc_t     *shellfc)
 {
@@ -158,3 +161,5 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
         constr->setConstraints(*top, *mdatoms);
     }
 }
+
+} //namespace gmx

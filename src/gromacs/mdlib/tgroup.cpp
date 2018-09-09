@@ -56,6 +56,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void init_grptcstat(int ngtc, t_grp_tcstat tcstat[])
 {
     int i;
@@ -309,3 +312,5 @@ real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
     }
     return T;
 }
+
+} //namespace gmx

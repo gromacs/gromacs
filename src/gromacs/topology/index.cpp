@@ -56,6 +56,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
+namespace gmx
+{
+
 static gmx_bool gmx_ask_yesno(gmx_bool bASK)
 {
     char c;
@@ -1076,3 +1079,5 @@ t_cluster_ndx *cluster_index(FILE *fplog, const char *ndx)
 
     return c;
 }
+
+} //namespace gmx

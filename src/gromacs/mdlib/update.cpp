@@ -82,7 +82,9 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
-using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
+namespace gmx
+{
+
 
 typedef struct {
     double em;
@@ -1964,3 +1966,5 @@ extern gmx_bool update_randomize_velocities(t_inputrec *ir, int64_t step, const 
     }
     return FALSE;
 }
+
+} //namespace gmx

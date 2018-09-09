@@ -36,6 +36,9 @@
 #ifndef GMX_SIMD_IMPL_X86_SSE4_1_DEFINITIONS_H
 #define GMX_SIMD_IMPL_X86_SSE4_1_DEFINITIONS_H
 
+namespace gmx
+{
+
 // Capability definitions for SSE4.1
 #define GMX_SIMD                                1
 #define GMX_SIMD_HAVE_FLOAT                     1
@@ -79,5 +82,7 @@
 #define GMX_SIMD_ALIGNMENT                     16 // Bytes (4*single or 2*double)
 #define GMX_SIMD_RSQRT_BITS                    11
 #define GMX_SIMD_RCP_BITS                      11
+
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_SSE4_1_DEFINITIONS_H

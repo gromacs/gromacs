@@ -53,6 +53,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /*! \brief Computes the Ewald splitting coefficient for Coulomb
  *
  * Returns a value of beta that satisfies rtol > erfc(beta * rc)
@@ -137,5 +140,7 @@ class EwaldBoxZScaler
             }
         }
 };
+
+} // namespace gmx
 
 #endif

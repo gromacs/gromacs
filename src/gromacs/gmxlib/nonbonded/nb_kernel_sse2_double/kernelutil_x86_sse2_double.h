@@ -42,6 +42,9 @@
 
 #include <emmintrin.h>
 
+namespace gmx
+{
+
 /* Normal sum of four ymm registers */
 #define gmx_mm_sum4_pd(t0, t1, t2, t3)  _mm_add_pd(_mm_add_pd(t0, t1), _mm_add_pd(t2, t3))
 #define gmx_mm_extract_epi32(x, imm) _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
@@ -864,5 +867,7 @@ sse2_exp_d(__m128d x)
     x         = _mm_mul_pd(p, fexppart);
     return x;
 }
+
+} // namespace gmx
 
 #endif /* _kernelutil_x86_sse2_double_h_ */

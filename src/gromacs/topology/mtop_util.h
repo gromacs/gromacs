@@ -45,6 +45,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 
+namespace gmx
+{
+
 struct gmx_localtop_t;
 struct t_atom;
 struct t_atoms;
@@ -272,5 +275,7 @@ convertAtomsToMtop(t_symtab    *symtab,
                    char       **name,
                    t_atoms     *atoms,
                    gmx_mtop_t  *mtop);
+
+} // namespace gmx
 
 #endif

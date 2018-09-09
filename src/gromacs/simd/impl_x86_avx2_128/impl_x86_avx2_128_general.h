@@ -38,4 +38,9 @@
 
 #include "gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_general.h"
 
+namespace gmx
+{
+
+} // namespace gmx
+
 #endif // GMX_SIMD_IMPL_X86_AVX2_128_GENERAL_H

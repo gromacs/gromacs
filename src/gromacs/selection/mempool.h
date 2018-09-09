@@ -49,6 +49,9 @@
 
 #include <cstddef>
 
+namespace gmx
+{
+
 struct gmx_ana_index_t;
 
 /** Opaque struct for memory pooling. */
@@ -78,5 +81,7 @@ _gmx_sel_mempool_alloc_group(gmx_sel_mempool_t *mp, struct gmx_ana_index_t *g,
 /** Convenience function for freeing an index group from a memory pool. */
 void
 _gmx_sel_mempool_free_group(gmx_sel_mempool_t *mp, struct gmx_ana_index_t *g);
+
+} // namespace gmx
 
 #endif

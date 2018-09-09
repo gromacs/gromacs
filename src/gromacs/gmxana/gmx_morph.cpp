@@ -51,6 +51,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static real dointerp(int n, rvec x1[], rvec x2[], rvec xx[],
                      int I, int N, real first, real last)
 {
@@ -202,3 +205,5 @@ int gmx_morph(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

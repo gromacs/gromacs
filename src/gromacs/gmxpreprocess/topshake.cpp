@@ -52,6 +52,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void copy_bond (t_params *pr, int to, int from)
 /* copies an entry in a bond list to another position.
  * does no allocing or freeing of memory
@@ -249,3 +252,5 @@ void make_shake (t_params plist[], t_atoms *atoms, int nshake)
         }
     }
 }
+
+} //namespace gmx

@@ -58,6 +58,9 @@
 
 #include "selvalue.h"
 
+namespace gmx
+{
+
 struct gmx_ana_poscalc_t;
 struct gmx_ana_selparam_t;
 struct gmx_ana_selmethod_t;
@@ -67,14 +70,11 @@ struct gmx_sel_mempool_t;
 
 struct t_compiler_data;
 
-namespace gmx
-{
 class SelectionTreeElement;
 struct SelectionTopologyProperties;
 
 //! Smart pointer type for selection tree element pointers.
 typedef std::shared_ptr<SelectionTreeElement> SelectionTreeElementPointer;
-} // namespace gmx
 
 /********************************************************************/
 /*! \name Enumerations for expression types
@@ -124,6 +124,8 @@ typedef enum
     ARITH_EXP           /**< Power (`^`) */
 } e_arithmetic_t;
 
+} // namespace gmx
+
 /** Returns a string representation of the type of a gmx::SelectionTreeElement. */
 extern const char *
 _gmx_selelem_type_str(const gmx::SelectionTreeElement &sel);
@@ -132,10 +134,12 @@ extern const char *
 _gmx_selelem_boolean_type_str(const gmx::SelectionTreeElement &sel);
 /** Returns a string representation of the type of a \c gmx_ana_selvalue_t. */
 extern const char *
-_gmx_sel_value_type_str(const gmx_ana_selvalue_t *val);
+_gmx_sel_value_type_str(const gmx::gmx_ana_selvalue_t *val);
 
 //!\}
 
+namespace gmx
+{
 
 /********************************************************************/
 /*! \name Selection expression flags
@@ -232,10 +236,6 @@ _gmx_sel_value_type_str(const gmx_ana_selvalue_t *val);
  */
 #define SEL_OUTINIT     (1<<13)
 //!\}
-
-
-namespace gmx
-{
 
 class ExceptionInitializer;
 
@@ -516,7 +516,7 @@ _gmx_sel_print_evalfunc_name(FILE *fp, gmx::sel_evalfunc evalfunc);
 /** Sets the value type of a gmx::SelectionTreeElement. */
 void
 _gmx_selelem_set_vtype(const gmx::SelectionTreeElementPointer &sel,
-                       e_selvalue_t                            vtype);
+                       gmx::e_selvalue_t                            vtype);
 
 /*! \brief
  * Frees the memory allocated for a selection method parameter.
@@ -524,7 +524,7 @@ _gmx_selelem_set_vtype(const gmx::SelectionTreeElementPointer &sel,
  * \param[in] param Parameter to free.
  */
 void
-_gmx_selelem_free_param(struct gmx_ana_selparam_t *param);
+_gmx_selelem_free_param(struct gmx::gmx_ana_selparam_t *param);
 /*! \brief
  * Frees the memory allocated for a selection method.
  *
@@ -532,7 +532,7 @@ _gmx_selelem_free_param(struct gmx_ana_selparam_t *param);
  * \param[in] mdata  Method data to free.
  */
 void
-_gmx_selelem_free_method(struct gmx_ana_selmethod_t *method, void *mdata);
+_gmx_selelem_free_method(struct gmx::gmx_ana_selmethod_t *method, void *mdata);
 
 /** Prints a human-readable version of a selection element subtree. */
 void
@@ -549,9 +549,7 @@ _gmx_selelem_print_compiler_info(FILE *fp, const gmx::SelectionTreeElement &sel,
 bool
 _gmx_selelem_can_estimate_cover(const gmx::SelectionTreeElement &sel);
 /** Returns the covered fraction of the selection for the current frame. */
-real
+gmx::real
 _gmx_selelem_estimate_coverfrac(const gmx::SelectionTreeElement &sel);
-
-//!\}
 
 #endif

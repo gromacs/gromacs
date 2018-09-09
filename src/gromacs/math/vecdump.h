@@ -42,6 +42,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 void pr_ivec(FILE *fp, int indent, const char *title, const int vec[], int n, gmx_bool bShowNumbers);
 void pr_ivec_block(FILE *fp, int indent, const char *title, const int vec[], int n, gmx_bool bShowNumbers);
 void pr_ivecs(FILE *fp, int indent, const char *title, const ivec vec[], int n, gmx_bool bShowNumbers);
@@ -52,5 +55,7 @@ void pr_fvec(FILE *fp, int indent, const char *title, const float vec[], int n, 
 void pr_dvec(FILE *fp, int indent, const char *title, const double vec[], int n, gmx_bool bShowNumbers);
 void pr_rvecs(FILE *fp, int indent, const char *title, const rvec vec[], int n);
 void pr_rvecs_len(FILE *fp, int indent, const char *title, const rvec vec[], int n);
+
+} // namespace gmx
 
 #endif

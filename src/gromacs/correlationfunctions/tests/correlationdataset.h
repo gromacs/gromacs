@@ -48,6 +48,9 @@
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 class CorrelationDataSet
 {
     double         ** tempValues_;
@@ -107,5 +110,7 @@ class CorrelationDataSet
         //! This class should not be copyable or assignable
         GMX_DISALLOW_COPY_AND_ASSIGN(CorrelationDataSet);
 };
+
+} // namespace gmx
 
 #endif

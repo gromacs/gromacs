@@ -41,6 +41,9 @@
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_mtop_t;
 
 void convert_params(int atnr, t_params nbtypes[],
@@ -48,5 +51,7 @@ void convert_params(int atnr, t_params nbtypes[],
                     t_molinfo *intermolecular_interactions,
                     int comb, double reppow, real fudgeQQ,
                     gmx_mtop_t *mtop);
+
+} // namespace gmx
 
 #endif

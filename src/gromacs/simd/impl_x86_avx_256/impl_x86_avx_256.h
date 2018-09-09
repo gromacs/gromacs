@@ -45,4 +45,9 @@
 #include "impl_x86_avx_256_util_double.h"
 #include "impl_x86_avx_256_util_float.h"
 
+namespace gmx
+{
+
+} // namespace gmx
+
 #endif // GMX_SIMD_IMPL_X86_AVX_256_H

@@ -83,6 +83,9 @@
 
 #include "pull_internal.h"
 
+namespace gmx
+{
+
 static int groupPbcFromParams(const t_pull_group &params)
 {
     if (params.nat <= 1)
@@ -2578,3 +2581,5 @@ gmx_bool pull_have_constraint(const struct pull_t *pull)
 {
     return pull->bConstraint;
 }
+
+} //namespace gmx

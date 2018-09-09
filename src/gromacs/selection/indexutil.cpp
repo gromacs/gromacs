@@ -61,6 +61,9 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
+namespace gmx
+{
+
 /********************************************************************
  * gmx_ana_indexgrps_t functions
  ********************************************************************/
@@ -1544,3 +1547,5 @@ gmx_ana_indexmap_deinit(gmx_ana_indexmap_t *m)
     }
     gmx_ana_indexmap_clear(m);
 }
+
+} //namespace gmx

@@ -48,6 +48,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 
+namespace gmx
+{
+
 /*! \internal
  * \brief Distribution of atom groups over the domain (only available on the master rank)
  */
@@ -84,5 +87,7 @@ struct AtomDistribution
 void get_commbuffer_counts(AtomDistribution  *ma,
                            int              **counts,
                            int              **disps);
+
+} // namespace gmx
 
 #endif

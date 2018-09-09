@@ -70,4 +70,9 @@
 // Higher-level utility functions for single precision SIMD
 #include "impl_reference_util_float.h"
 
+namespace gmx
+{
+
+} // namespace gmx
+
 #endif // GMX_SIMD_IMPL_REFERENCE_H

@@ -45,4 +45,9 @@
 #include "impl_arm_neon_asimd_util_double.h"
 #include "impl_arm_neon_asimd_util_float.h"
 
+namespace gmx
+{
+
+} // namespace gmx
+
 #endif // GMX_SIMD_IMPL_ARM_NEON_ASIMD_H

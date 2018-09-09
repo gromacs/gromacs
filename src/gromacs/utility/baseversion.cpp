@@ -40,6 +40,9 @@
 
 #include "baseversion-gen.h"
 
+namespace gmx
+{
+
 const char *gmx_version()
 {
     return _gmx_ver_string;
@@ -73,3 +76,5 @@ const char *getGpuImplementationString()
 {
     return gpuImplementationStrings[GMX_GPU];
 }
+
+} //namespace gmx

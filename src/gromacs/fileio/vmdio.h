@@ -39,6 +39,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 struct t_trxframe;
 
 struct gmx_vmdplugin_t
@@ -51,5 +54,7 @@ struct gmx_vmdplugin_t
 
 int read_first_vmd_frame(const char *fn, gmx_vmdplugin_t **vmdpluginp, t_trxframe *fr);
 gmx_bool read_next_vmd_frame(gmx_vmdplugin_t *vmdplugin, t_trxframe *fr);
+
+} // namespace gmx
 
 #endif

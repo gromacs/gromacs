@@ -53,6 +53,11 @@
 #include "impl_ibm_vsx_util_double.h"
 #include "impl_ibm_vsx_util_float.h"
 
+namespace gmx
+{
+
 #pragma GCC diagnostic pop
+
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPLEMENTATION_IBM_VSX_H

@@ -58,6 +58,9 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 int gmx_omp_get_max_threads()
 {
 #if GMX_OPENMP
@@ -160,3 +163,5 @@ gmx_bool gmx_omp_check_thread_affinity(char **message)
 #endif /* GMX_OPENMP */
     return shouldSetAffinity;
 }
+
+} //namespace gmx

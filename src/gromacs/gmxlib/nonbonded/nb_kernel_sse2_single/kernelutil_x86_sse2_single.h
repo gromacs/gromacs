@@ -43,6 +43,9 @@
 
 #include <emmintrin.h>
 
+namespace gmx
+{
+
 #define gmx_mm_castsi128_ps   _mm_castsi128_ps
 
 #define gmx_mm_extract_epi32(x, imm) _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
@@ -731,5 +734,7 @@ sse2_inv_f(__m128 x)
 
     return _mm_mul_ps(lu, _mm_sub_ps(_mm_set1_ps(2.0f), _mm_mul_ps(lu, x)));
 }
+
+} // namespace gmx
 
 #endif /* _kernelutil_x86_sse2_single_h_ */

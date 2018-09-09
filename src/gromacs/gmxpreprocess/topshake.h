@@ -40,6 +40,11 @@
 
 #include "gromacs/gmxpreprocess/topio.h"
 
+namespace gmx
+{
+
 void make_shake (t_params plist[], t_atoms *atoms, int nshake);
+
+} // namespace gmx
 
 #endif

@@ -101,6 +101,9 @@
 
 #include "integrator.h"
 
+namespace gmx
+{
+
 //! Utility structure for manipulating states during EM
 typedef struct {
     //! Copy of the global state
@@ -1068,9 +1071,6 @@ static real pr_beta(const t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms,
 
     return sum/gmx::square(s_min->fnorm);
 }
-
-namespace gmx
-{
 
 void
 Integrator::do_cg()

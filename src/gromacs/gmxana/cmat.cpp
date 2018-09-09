@@ -47,6 +47,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 t_mat *init_mat(int n1, gmx_bool b1D)
 {
     t_mat *m;
@@ -255,3 +258,5 @@ t_clustid *new_clustid(int n1)
     }
     return c;
 }
+
+} //namespace gmx

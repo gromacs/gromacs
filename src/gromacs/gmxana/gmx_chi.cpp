@@ -62,6 +62,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static gmx_bool bAllowed(real phi, real psi)
 {
     static const char *map[] = {
@@ -1596,3 +1599,5 @@ int gmx_chi(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

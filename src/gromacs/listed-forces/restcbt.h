@@ -53,6 +53,9 @@
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /*! \brief This function computes factors needed for restricted angle potentials.
  *
  * The restricted angle potential is used in coarse-grained simulations to avoid singularities
@@ -170,5 +173,7 @@ void compute_factors_cbtdihs(int type,  const t_iparams forceparams[],
                              rvec f_theta_ante_ai, rvec f_theta_ante_aj, rvec f_theta_ante_ak,
                              rvec f_theta_post_aj, rvec f_theta_post_ak, rvec f_theta_post_al,
                              real * v);
+
+} // namespace gmx
 
 #endif

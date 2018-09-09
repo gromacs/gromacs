@@ -47,6 +47,7 @@ FILE* debug;
 #include "gromacs/fft/fft.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/gmxcomplex.h"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxmpi.h"
 
 #if !GMX_MPI
@@ -64,20 +65,11 @@ double MPI_Wtime();
 #define FFTW(x) fftw_ ## x
 #endif
 
-#ifdef NOGMX
-struct fft5d_time_t {
-    double fft, local, mpi1, mpi2;
-};
-typedef struct fft5d_time_t *fft5d_time;
-#else
-#include "gromacs/timing/wallcycle.h"
-typedef gmx_wallcycle_t fft5d_time;
-#endif
-
 namespace gmx
 {
+
+typedef gmx_wallcycle_t fft5d_time;
 enum class PinningPolicy : int;
-} // namespace
 
 typedef enum fft5d_flags_t {
     FFT5D_ORDER_YZ    = 1,
@@ -128,5 +120,7 @@ void fft5d_local_size(fft5d_plan plan, int* N1, int* M0, int* K0, int* K1, int**
 void fft5d_destroy(fft5d_plan plan);
 fft5d_plan fft5d_plan_3d_cart(int N, int M, int K, MPI_Comm comm, int P0, int flags, t_complex** lin, t_complex** lin2, t_complex** lout2, t_complex** lout3, int nthreads);
 void fft5d_compare_data(const t_complex* lin, const t_complex* in, fft5d_plan plan, int bothLocal, int normarlize);
+
+} // namespace gmx
 
 #endif

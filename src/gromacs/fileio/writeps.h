@@ -43,6 +43,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /* TODO: These two enums are used also in xutil.h in src/programs/view/.
  * The Y position enum doesn't seem to be actually used in this header...
  */
@@ -119,5 +122,7 @@ void ps_setorigin(t_psdata ps);
 void ps_unsetorigin(t_psdata ps);
 
 void ps_comment(t_psdata ps, const char *s);
+
+} // namespace gmx
 
 #endif

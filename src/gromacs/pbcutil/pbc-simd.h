@@ -50,6 +50,9 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 
+namespace gmx
+{
+
 struct gmx_domdec_t;
 
 /*! \brief Set the SIMD PBC data from a normal t_pbc struct.
@@ -87,7 +90,6 @@ pbc_correct_dx_simd(gmx::SimdReal         *dx,
                     gmx::SimdReal         *dz,
                     const real            *pbc_simd)
 {
-    using namespace gmx;
     SimdReal shz, shy, shx;
 
     shz = round(*dz * load<SimdReal>(pbc_simd+0*GMX_SIMD_REAL_WIDTH)); // load inv_bzz
@@ -129,5 +131,7 @@ pbc_dx_aiuc(const real            *pbc_simd,
 }
 
 #endif /* GMX_SIMD_HAVE_REAL */
+
+} // namespace gmx
 
 #endif

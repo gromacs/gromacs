@@ -123,6 +123,9 @@
 #include "pme-spline-work.h"
 #include "pme-spread.h"
 
+namespace gmx
+{
+
 /*! \brief Help build a descriptive message in \c error if there are
  * \c errorReasons why PME on GPU is not supported.
  *
@@ -1851,3 +1854,5 @@ void gmx_pme_reinit_atoms(const gmx_pme_t *pme, const int nAtoms, const real *ch
     }
     // TODO: handle the CPU case here; handle the whole t_mdatoms
 }
+
+} //namespace gmx

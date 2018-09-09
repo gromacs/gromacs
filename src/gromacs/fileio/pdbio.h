@@ -45,6 +45,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_atomprop;
 struct t_atoms;
 struct t_symtab;
@@ -157,5 +160,7 @@ gmx_conect gmx_conect_init();
 
 void gmx_conect_done(gmx_conect gc);
 /* Free memory */
+
+} // namespace gmx
 
 #endif  /* GMX_FILEIO_PDBIO_H */

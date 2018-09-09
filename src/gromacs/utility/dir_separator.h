@@ -46,6 +46,9 @@
 
 #include "config.h"
 
+namespace gmx
+{
+
 /*! \def DIR_SEPARATOR
  * \brief
  * Directory separator on this OS.
@@ -65,5 +68,7 @@
 #else
 #define DIR_SEPARATOR '/'
 #endif
+
+} // namespace gmx
 
 #endif

@@ -55,6 +55,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int skip,
                      int gnx, int *index,
                      gmx_bool bMW, const t_topology *top, int ePBC, rvec *x_ref)
@@ -315,3 +318,5 @@ int gmx_rotmat(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

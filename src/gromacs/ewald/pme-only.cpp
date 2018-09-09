@@ -95,6 +95,9 @@
 #include "pme-internal.h"
 #include "pme-pp-communication.h"
 
+namespace gmx
+{
+
 //! Contains information about the PP ranks that partner this PME rank.
 struct PpRanks
 {
@@ -666,3 +669,5 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
 
     return 0;
 }
+
+} //namespace gmx

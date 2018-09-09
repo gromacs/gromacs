@@ -85,6 +85,9 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
+namespace gmx
+{
+
 #define MAXPTR 254
 #define NOGID  255
 
@@ -4366,3 +4369,5 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
         }
     }
 }
+
+} // namespace gmxx`

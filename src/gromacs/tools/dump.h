@@ -35,11 +35,16 @@
 #ifndef GMX_TOOLS_DUMP_H
 #define GMX_TOOLS_DUMP_H
 
+namespace gmx
+{
+
 /*! \brief Implements gmx dump
  *
  * \param[in] argc  argc value passed to main().
  * \param[in] argv  argv array passed to main().
  */
 int gmx_dump(int argc, char *argv[]);
+
+} // namespace gmx
 
 #endif

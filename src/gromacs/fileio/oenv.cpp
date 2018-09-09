@@ -43,6 +43,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 struct gmx_output_env_t
 {
     explicit gmx_output_env_t(const gmx::IProgramContext &context)
@@ -213,3 +216,5 @@ output_env_get_program_context(const gmx_output_env_t *oenv)
 {
     return oenv->programContext;
 }
+
+} //namespace gmx

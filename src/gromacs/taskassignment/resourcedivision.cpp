@@ -70,6 +70,8 @@
 #include "gromacs/utility/physicalnodecommunicator.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
 
 /* DISCLAIMER: All the atom count and thread numbers below are heuristic.
  * The real switching points will depend on the system simulation,
@@ -877,9 +879,6 @@ void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t         *hw_opt,
         print_hw_opt(debug, hw_opt);
     }
 }
-
-namespace gmx
-{
 
 void checkHardwareOversubscription(int                             numThreadsOnThisRank,
                                    int                             rank,

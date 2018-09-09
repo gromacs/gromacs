@@ -62,6 +62,9 @@
 #include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_common.h"
 #endif /* GMX_NBNXN_SIMD_2XNN */
 
+namespace gmx
+{
+
 #ifdef CALC_ENERGIES
 void
 nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_VgrpF_2xnn(const nbnxn_pairlist_t    gmx_unused *nbl,
@@ -92,3 +95,5 @@ nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_VgrpF_2xnn(const nbnxn_pairlist_t    gmx_
  */
 }
 #endif /* GMX_NBNXN_SIMD_2XNN */
+
+} // namespace gmx

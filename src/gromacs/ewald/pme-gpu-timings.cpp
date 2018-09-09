@@ -50,6 +50,9 @@
 #include "pme-gpu-types-host.h"
 #include "pme-gpu-types-host-impl.h"
 
+namespace gmx
+{
+
 /*! \brief
  * Tells if CUDA-based performance tracking is enabled for PME.
  *
@@ -147,3 +150,5 @@ void pme_gpu_reset_timings(const PmeGpu *pmeGpu)
         }
     }
 }
+
+} //namespace gmx

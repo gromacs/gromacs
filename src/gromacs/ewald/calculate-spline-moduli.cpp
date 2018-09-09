@@ -50,6 +50,9 @@
 
 #include "pme-internal.h"
 
+namespace gmx
+{
+
 static void make_dft_mod(real *mod,
                          const double *data, int splineOrder, int ndata)
 {
@@ -197,3 +200,5 @@ void make_p3m_bspline_moduli(splinevec bsp_mod,
     make_p3m_bspline_moduli_dim(bsp_mod[YY], ny, order);
     make_p3m_bspline_moduli_dim(bsp_mod[ZZ], nz, order);
 }
+
+} //namespace gmx

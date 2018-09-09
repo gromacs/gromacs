@@ -44,6 +44,9 @@
 #ifndef GMX_UTILITY_BASENETWORK_H
 #define GMX_UTILITY_BASENETWORK_H
 
+namespace gmx
+{
+
 /*! \brief
  * Returns whether MPI has been initialized.
  *
@@ -94,5 +97,7 @@ void gmx_broadcast_world(int size, void *buffer);
 
 /** Abort the parallel run */
 [[noreturn]] void gmx_abort(int errorno);
+
+} // namespace gmx
 
 #endif

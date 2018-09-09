@@ -60,6 +60,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void rd_nm2type_file(const std::string &filename, int *nnm, t_nm2type **nmp)
 {
     FILE         *fp;
@@ -361,3 +364,5 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
 
     return nresolved;
 }
+
+} //namespace gmx

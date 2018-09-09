@@ -46,8 +46,13 @@
 
 #include <cstdio>
 
+namespace gmx
+{
+
 //! Print a message asking to cite something
 void
 please_cite(FILE *fp, const char *key);
+
+} // namespace gmx
 
 #endif

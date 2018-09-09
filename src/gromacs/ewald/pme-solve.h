@@ -39,6 +39,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct pme_solve_work_t;
 struct gmx_pme_t;
 
@@ -77,5 +80,7 @@ int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid,
 int solve_pme_lj_yzx(const gmx_pme_t *pme, t_complex **grid, gmx_bool bLB,
                      real vol,
                      gmx_bool bEnerVir, int nthread, int thread);
+
+} // namespace gmx
 
 #endif

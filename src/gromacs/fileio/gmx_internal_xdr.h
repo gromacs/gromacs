@@ -42,6 +42,9 @@
 #include <cstdio>
 #include <cstdlib>
 
+namespace gmx
+{
+
 /*
  * This header file is ONLY used on windows systems, since these do
  * not include the XDR routines present on a unix machine. It will
@@ -250,5 +253,7 @@ void xdrstdio_create (XDR *__xdrs, FILE *__file, enum xdr_op __xop);
 
 /* free memory buffers for xdr */
 void xdr_free (xdrproc_t __proc, char *__objp);
+
+} // namespace gmx
 
 #endif /* GMX_FILEIO_GMX_SYSTEM_XDR_H */

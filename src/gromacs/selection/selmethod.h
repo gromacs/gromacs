@@ -303,15 +303,15 @@
 #include "selparam.h"
 #include "selvalue.h"
 
+namespace gmx
+{
+
 struct gmx_ana_index_t;
 struct gmx_ana_pos_t;
 struct gmx_ana_selcollection_t;
 struct gmx_mtop_t;
 struct t_pbc;
 struct t_trxframe;
-
-namespace gmx
-{
 class PositionCalculationCollection;
 class SelectionParserSymbolTable;
 
@@ -354,8 +354,6 @@ struct SelMethodEvalContext
      */
     const t_pbc      *pbc;
 };
-
-} // namespace gmx
 
 /*! \name Selection method flags
  * \anchor selmethod_flags
@@ -731,5 +729,7 @@ gmx_ana_selmethod_register_defaults(gmx::SelectionParserSymbolTable *symtab);
 /** Finds a parameter from a selection method by name. */
 gmx_ana_selparam_t *
 gmx_ana_selmethod_find_param(const char *name, gmx_ana_selmethod_t *method);
+
+} // namespace gmx
 
 #endif

@@ -62,6 +62,9 @@
 
 #include "nbnxn_ocl_types.h"
 
+namespace gmx
+{
+
 /*! \brief Stringifies the input argument
  */
 #define STRINGIFY_PARAM(c) #c
@@ -236,3 +239,5 @@ nbnxn_gpu_compile_kernels(gmx_nbnxn_ocl_t *nb)
 
     nb->dev_rundata->program = program;
 }
+
+} //namespace gmx

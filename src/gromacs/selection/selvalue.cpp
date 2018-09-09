@@ -48,6 +48,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 void
 _gmx_selvalue_clear(gmx_ana_selvalue_t *val)
 {
@@ -142,3 +145,5 @@ _gmx_selvalue_setstore_alloc(gmx_ana_selvalue_t *val, void *ptr, int nalloc)
     val->u.ptr  = ptr;
     val->nalloc = nalloc;
 }
+
+} //namespace gmx

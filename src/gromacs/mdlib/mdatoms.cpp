@@ -198,8 +198,6 @@ makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
     return mdAtoms;
 }
 
-}  // namespace gmx
-
 void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
               int nindex, const int *index,
               int homenr,
@@ -561,3 +559,6 @@ void update_mdatoms(t_mdatoms *md, real lambda)
 
     md->lambda = lambda;
 }
+
+}  // namespace gmx
+

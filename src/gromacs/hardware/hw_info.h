@@ -43,9 +43,9 @@
 
 namespace gmx
 {
+
 class CpuInfo;
 class HardwareTopology;
-} // namespace
 
 /* Hardware information structure with CPU and GPU information.
  * It is initialized by gmx_detect_hardware().
@@ -120,5 +120,7 @@ struct gmx_hw_opt_t
     //! Tells whether mdrun is free to choose the total number of threads (by choosing the number of OpenMP and/or thread-MPI threads).
     bool          totNumThreadsIsAuto;
 };
+
+} // namespace
 
 #endif

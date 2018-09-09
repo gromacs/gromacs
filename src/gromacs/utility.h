@@ -178,4 +178,9 @@
 #include "gromacs/utility/init.h"
 #include "gromacs/utility/programcontext.h"
 
+namespace gmx
+{
+
+} // namespace gmx
+
 #endif

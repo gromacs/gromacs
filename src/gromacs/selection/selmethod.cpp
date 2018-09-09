@@ -53,6 +53,9 @@
 #include "selmethod-impl.h"
 #include "symrec.h"
 
+namespace gmx
+{
+
 /*! \internal \brief
  * Helper structure for defining selection methods.
  */
@@ -660,3 +663,5 @@ gmx_ana_selmethod_find_param(const char *name, gmx_ana_selmethod_t *method)
 {
     return gmx_ana_selparam_find(name, method->nparams, method->param);
 }
+
+} //namespace gmx

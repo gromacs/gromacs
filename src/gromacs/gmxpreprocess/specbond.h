@@ -40,9 +40,14 @@
 
 #include "gromacs/gmxpreprocess/pdb2top.h"
 
+namespace gmx
+{
+
 int mk_specbonds(t_atoms *pdba, rvec x[], bool bInteractive,
                  t_ssbond **specbonds, bool bVerbose);
 
 bool yesno();
+
+} // namespace gmx
 
 #endif

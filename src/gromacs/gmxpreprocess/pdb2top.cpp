@@ -79,6 +79,9 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
+namespace gmx
+{
+
 /* this must correspond to enum in pdb2top.h */
 const char *hh[ehisNR]   = { "HISD", "HISE", "HISH", "HIS1" };
 
@@ -1674,3 +1677,5 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     }
     sfree(excls);
 }
+
+} //namespace gmx

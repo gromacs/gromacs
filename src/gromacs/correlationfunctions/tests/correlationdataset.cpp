@@ -52,6 +52,9 @@
 
 #include "testutils/testfilemanager.h"
 
+namespace gmx
+{
+
 CorrelationDataSet::CorrelationDataSet(const std::string &fileName)
 {
     std::string fileNm = gmx::test::TestFileManager::getInputFilePath(fileName.c_str());
@@ -85,3 +88,5 @@ real CorrelationDataSet::getValue(int set, int time) const
         return 0;
     }
 }
+
+} //namespace gmx

@@ -36,10 +36,12 @@
 #include "gmxpre.h"
 
 #include "nbnxn_kernel_ref_prune.h"
-
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/utility/gmxassert.h"
+
+namespace gmx
+{
 
 
 /* Prune a single nbnxn_pairlist_t entry with distance rlistInner */
@@ -136,3 +138,5 @@ nbnxn_kernel_prune_ref(nbnxn_pairlist_t *         nbl,
 
     nbl->nci = nciInner;
 }
+
+} //namespace gmx

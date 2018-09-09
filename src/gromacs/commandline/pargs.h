@@ -50,6 +50,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_output_env_t;
 
 /*! \addtogroup module_commandline
@@ -257,5 +260,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                            gmx_output_env_t **oenv);
 
 /*! \} */
+
+} // namespace gmx
 
 #endif

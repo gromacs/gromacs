@@ -46,6 +46,9 @@
 #include "gmx_arpack.h"
 #include "gmx_lapack.h"
 
+namespace gmx
+{
+
 void
 eigensolver(real *   a,
             int      n,
@@ -389,3 +392,5 @@ sparse_eigensolver(gmx_sparsematrix_t *    A,
     sfree(workl);
     sfree(select);
 }
+
+} //namespace gmx

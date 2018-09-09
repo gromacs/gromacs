@@ -44,6 +44,9 @@
 
 #include "gromacs/utility/fatalerror.h"
 
+namespace gmx
+{
+
 /* The grid sizes below are based on timing of a 3D cubic grid in fftw
  * compiled with SSE using 4 threads in fft5d.c.
  * A grid size is removed when a larger grid is faster.
@@ -172,3 +175,5 @@ real calcFftGrid(FILE *fp,
 
     return max_spacing;
 }
+
+} //namespace gmx

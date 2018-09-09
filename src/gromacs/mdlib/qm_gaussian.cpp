@@ -59,6 +59,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* TODO: this should be made thread-safe */
 
 /* Gaussian interface routines */
@@ -1023,4 +1026,5 @@ real call_gaussian_SH(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec f
 } /* call_gaussian_SH */
 
 /* end of gaussian sub routines */
+} //namespace gmx
 #endif

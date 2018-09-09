@@ -292,4 +292,9 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 
+namespace gmx
+{
+
+} // namespace gmx
+
 #endif

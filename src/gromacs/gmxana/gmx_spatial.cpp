@@ -52,6 +52,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static const double bohr = 0.529177249;  /* conversion factor to compensate for VMD plugin conversion... */
 
 int gmx_spatial(int argc, char *argv[])
@@ -455,3 +458,5 @@ int gmx_spatial(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

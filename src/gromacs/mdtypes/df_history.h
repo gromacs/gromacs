@@ -36,6 +36,9 @@
 #ifndef GMX_GMXLIB_DF_HISTORY_H
 #define GMX_GMXLIB_DF_HISTORY_H
 
+namespace gmx
+{
+
 struct df_history_t;
 
 void init_df_history(df_history_t *dfhist, int nlambda);
@@ -43,5 +46,7 @@ void init_df_history(df_history_t *dfhist, int nlambda);
 void done_df_history(df_history_t *dfhist);
 
 void copy_df_history(df_history_t * df_dest, df_history_t *df_source);
+
+} // namespace gmx
 
 #endif

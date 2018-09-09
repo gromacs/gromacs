@@ -48,6 +48,9 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /*! \brief
  * return the size witch the array should be after zero padding
  *
@@ -158,3 +161,5 @@ void many_cross_corr(int nFunc, int * nData, real ** f, real ** g, real ** corr)
     gmx_fft_cleanup();
 
 }
+
+} //namespace gmx

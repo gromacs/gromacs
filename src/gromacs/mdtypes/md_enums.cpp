@@ -38,6 +38,9 @@
 
 #include "md_enums.h"
 
+namespace gmx
+{
+
 const char *enum_name(int index, int max_index, const char *names[])
 {
     if (index < 0 || index >= max_index)
@@ -252,3 +255,5 @@ const char *gmx_nbkernel_vdw_names[GMX_NBKERNEL_VDW_NR+1] =
 {
     "None", "Lennard-Jones", "Buckingham", "Cubic-Spline-Table", "LJEwald", nullptr
 };
+
+} //namespace gmx

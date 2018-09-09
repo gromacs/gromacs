@@ -55,6 +55,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* ORCA interface routines */
 
 void init_orca(t_QMrec *qm)
@@ -386,3 +389,5 @@ real call_orca(t_forcerec *fr,
 } /* call_orca */
 
 /* end of orca sub routines */
+
+} //namespace gmx

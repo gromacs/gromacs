@@ -57,6 +57,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 typedef struct {
     char *name;
     char *def;
@@ -784,3 +787,5 @@ char *cpp_error(gmx_cpp_t *handlep, int status)
 
     return gmx_strdup(buf);
 }
+
+} //namespace gmx

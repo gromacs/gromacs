@@ -87,7 +87,6 @@ makeClusterListSimd2xnn(const nbnxn_grid_t *      gridj,
                         float                     rbb2,
                         int * gmx_restrict        numDistanceChecks)
 {
-    using namespace gmx;
     const real * gmx_restrict           x_ci_simd = nbl->work->x_ci_simd;
     const nbnxn_bb_t * gmx_restrict     bb_ci     = nbl->work->bb_ci;
 

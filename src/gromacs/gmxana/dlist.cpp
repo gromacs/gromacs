@@ -45,6 +45,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 t_dlist *mk_dlist(FILE *log,
                   const t_atoms *atoms, int *nlist,
                   gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bHChi,
@@ -451,3 +454,5 @@ int pr_trans(FILE *fp, int nl, t_dlist dl[], real dt, int Xi)
 
     return nz;
 }
+
+} //namespace gmx

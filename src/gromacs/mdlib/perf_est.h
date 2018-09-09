@@ -40,6 +40,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 struct gmx_mtop_t;
 struct t_inputrec;
 
@@ -57,5 +60,7 @@ float pme_load_estimate(const gmx_mtop_t *mtop, const t_inputrec *ir,
  * in the total force calculation.
  * This estimate is reasonable for recent Intel and AMD x86_64 CPUs.
  */
+
+} // namespace gmx
 
 #endif

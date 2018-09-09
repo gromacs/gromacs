@@ -52,6 +52,9 @@
 
 #if GMX_GPU == GMX_GPU_CUDA
 #include "gromacs/gpu_utils/gpuregiontimer.cuh"
+
+namespace gmx
+{
 #endif
 
 /*! \internal
@@ -98,5 +101,7 @@ struct gpu_plist
     int              rollingPruningNumParts; /**< the number of parts/steps over which one cyle of roling pruning takes places */
     int              rollingPruningPart;     /**< the next part to which the roling pruning needs to be applied */
 };
+
+} // namespace gmx
 
 #endif

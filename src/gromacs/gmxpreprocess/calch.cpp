@@ -47,6 +47,9 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 
+namespace gmx
+{
+
 #define xAI xa[0]
 #define xAJ xa[1]
 #define xAK xa[2]
@@ -299,3 +302,5 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
             gmx_fatal(FARGS, "Invalid argument (%d) for nht in routine genh\n", nht);
     } /* end switch */
 }
+
+} //namespace gmx

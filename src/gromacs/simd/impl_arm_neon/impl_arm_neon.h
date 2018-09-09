@@ -45,4 +45,9 @@
 // Arm/Neon cannot do double precision SIMD utilities
 #include "impl_arm_neon_util_float.h"
 
+namespace gmx
+{
+
+} // namespace gmx
+
 #endif // GMX_SIMD_IMPL_ARM_NEON_H

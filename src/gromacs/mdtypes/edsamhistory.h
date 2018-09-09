@@ -44,6 +44,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 /* Helper structure to be able to make essential dynamics / flooding group(s) whole
  *
  * If one uses essential dynamics or flooding on a group of atoms from
@@ -66,5 +69,7 @@ typedef struct edsamhistory_t
     rvec        **old_sav_p;    // Pointer to these positions
 }
 edsamhistory_t;
+
+} // namespace gmx
 
 #endif

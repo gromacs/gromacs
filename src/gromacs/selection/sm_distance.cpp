@@ -53,6 +53,9 @@
 #include "selmethod.h"
 #include "selmethod-impl.h"
 
+namespace gmx
+{
+
 /*! \internal
  * \brief
  * Data structure for distance-based selection method.
@@ -308,3 +311,5 @@ evaluate_within(const gmx::SelMethodEvalContext & /*context*/,
         }
     }
 }
+
+} //namespace gmx

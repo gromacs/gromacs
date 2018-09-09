@@ -61,6 +61,9 @@
 #include "selmethod.h"
 #include "selparam.h"
 
+namespace gmx
+{
+
 using namespace gmx;
 
 /*!
@@ -1191,3 +1194,5 @@ _gmx_sel_parse_params(const gmx::SelectionParserParameterList &pparams,
         GMX_THROW(InvalidInputError(errors));
     }
 }
+
+} //namespace gmx

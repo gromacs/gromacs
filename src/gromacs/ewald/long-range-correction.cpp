@@ -54,6 +54,9 @@
 
 #include "pme-internal.h"
 
+namespace gmx
+{
+
 /* There's nothing special to do here if just masses are perturbed,
  * but if either charge or type is perturbed then the implementation
  * requires that B states are defined for both charge and type, and
@@ -614,3 +617,5 @@ void ewald_LRcorrection(int numAtomsLocal,
         }
     }
 }
+
+} //namespace gmx

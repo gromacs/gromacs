@@ -54,6 +54,9 @@
 #include "gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_common.h"
 #endif /* {0} */
 
+namespace gmx
+{{
+
 #ifdef CALC_ENERGIES
 void
 {5}(const nbnxn_pairlist_t    gmx_unused *nbl,
@@ -84,3 +87,5 @@ void
  */
 }}
 #endif /* {0} */
+
+}} // namespace gmx

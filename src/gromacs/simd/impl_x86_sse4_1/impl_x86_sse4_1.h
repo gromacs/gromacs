@@ -45,4 +45,9 @@
 #include "impl_x86_sse4_1_util_double.h"
 #include "impl_x86_sse4_1_util_float.h"
 
+namespace gmx
+{
+
+} // namespace gmx
+
 #endif // GMX_SIMD_IMPL_X86_SSE4_1_H

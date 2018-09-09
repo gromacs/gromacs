@@ -50,6 +50,9 @@
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct interaction_const_t;
 
 /*! \brief Pair-interaction kernel type that also calculates energies.
@@ -120,5 +123,7 @@ reduce_energies_over_lists(const nbnxn_atomdata_t     *nbat,
                            int                         nlist,
                            real                       *Vvdw,
                            real                       *Vc);
+
+} // namespace gmx
 
 #endif

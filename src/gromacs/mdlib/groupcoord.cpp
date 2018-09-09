@@ -45,6 +45,9 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
 
@@ -416,3 +419,5 @@ extern void rotate_x(rvec x[], const int nr, matrix rmat)
         }
     }
 }
+
+} //namespace gmx

@@ -58,9 +58,6 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
-struct t_blocka;
-struct t_pbc;
-
 namespace gmx
 {
 
@@ -70,6 +67,8 @@ class AnalysisNeighborhoodSearchImpl;
 class AnalysisNeighborhoodPairSearchImpl;
 };
 
+struct t_blocka;
+struct t_pbc;
 class AnalysisNeighborhoodSearch;
 class AnalysisNeighborhoodPairSearch;
 

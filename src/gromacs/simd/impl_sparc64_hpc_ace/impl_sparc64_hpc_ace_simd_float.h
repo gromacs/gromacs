@@ -60,6 +60,9 @@
 
 #include "impl_sparc64_hpc_ace_common.h"
 
+namespace gmx
+{
+
 /* HPC-ACE is a bit strange; some instructions like
  * shifts only work on _integer_ versions of SIMD
  * registers, but there are no intrinsics to load
@@ -171,5 +174,7 @@ simdStoreF_sparc64_hpc_ace(float *m, SimdFloat x)
 }
 
 /* Note that some single precision defines refer to the double precision helpers */
+
+} // namespace gmx
 
 #endif /* GMX_SIMD_IMPL_SPARC64_HPC_ACE_SIMD_FLOAT_H */

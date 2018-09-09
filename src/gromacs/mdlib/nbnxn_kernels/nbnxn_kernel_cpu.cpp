@@ -57,6 +57,9 @@
 #endif
 #ifdef GMX_NBNXN_SIMD_4XN
 #include "gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn.h"
+
+namespace gmx
+{
 #endif
 #undef INCLUDE_FUNCTION_TABLES
 
@@ -409,3 +412,5 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
         reduce_energies_over_lists(nbat, nnbl, vVdw, vCoulomb);
     }
 }
+
+} //namespace gmx

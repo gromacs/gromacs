@@ -64,6 +64,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /****************************************************************************/
 /* This program calculates the order parameter per atom for an interface or */
 /* bilayer, averaged over time.                                             */
@@ -1123,3 +1126,5 @@ int gmx_order(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

@@ -45,6 +45,9 @@
 
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 gmx_sparsematrix_t *
 gmx_sparsematrix_init(int                    nrow)
 {
@@ -317,3 +320,5 @@ gmx_sparsematrix_vector_multiply(gmx_sparsematrix_t *    A,
         }
     }
 }
+
+} //namespace gmx

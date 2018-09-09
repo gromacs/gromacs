@@ -118,6 +118,9 @@
 #include "redistribute.h"
 #include "utility.h"
 
+namespace gmx
+{
+
 #define DD_NLOAD_MAX 9
 
 static const char *edlbs_names[int(DlbState::nr)] = { "off", "auto", "locked", "on", "on" };
@@ -6899,3 +6902,5 @@ void checkNumberOfBondedInteractions(FILE                 *fplog,
         *shouldCheckNumberOfBondedInteractions = false;
     }
 }
+
+} //namespace gmx

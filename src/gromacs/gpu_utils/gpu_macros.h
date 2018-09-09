@@ -39,6 +39,9 @@
 
 #include "gromacs/utility/basedefinitions.h" // for gmx_unused
 
+namespace gmx
+{
+
 /* These macros that let us define inlineable null implementations so
    that non-GPU Gromacs can run with no overhead without conditionality
    everywhere a GPU function is called. */
@@ -127,5 +130,7 @@
 #define OPENCL_FUNC_TERM_WITH_RETURN(arg) NULL_FUNC_TERM_WITH_RETURN(arg)
 
 #endif
+
+} // namespace gmx
 
 #endif

@@ -64,6 +64,8 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/unique_cptr.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -608,3 +610,5 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
     }
 #endif /* HAVE_SCHED_AFFINITY */
 }
+
+} // namespace gmx

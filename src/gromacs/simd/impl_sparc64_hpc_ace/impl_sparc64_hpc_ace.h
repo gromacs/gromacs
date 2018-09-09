@@ -38,6 +38,11 @@
 
 #include "impl_sparc64_hpc_ace_simd_double.h"
 #include "impl_sparc64_hpc_ace_simd_float.h"
+
+namespace gmx
+{
 /* No SIMD4 support, since both single & double are only 2-wide */
+
+} // namespace gmx
 
 #endif /* GMX_SIMD_IMPL_SPARC64_HPC_ACE_H */

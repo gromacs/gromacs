@@ -47,6 +47,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 /*! \brief Return a string from a list of strings
  *
  * If index if within 0 .. max_index-1 returns the corresponding string
@@ -637,5 +640,7 @@ enum gmx_nblist_interaction_type
 };
 //! String corresponding to interactions in neighborlist code
 extern const char *gmx_nblist_interaction_names[GMX_NBLIST_INTERACTION_NR+1];
+
+} // namespace gmx
 
 #endif /* GMX_MDTYPES_MD_ENUMS_H */

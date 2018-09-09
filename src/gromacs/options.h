@@ -163,4 +163,9 @@
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/options/options.h"
 
+namespace gmx
+{
+
+} // namespace gmx
+
 #endif

@@ -59,6 +59,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void find_tetra_order_grid(t_topology top, int ePBC,
                                   int natoms, matrix box,
                                   rvec x[], int maxidx, const int index[],
@@ -692,3 +695,5 @@ int gmx_hydorder(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

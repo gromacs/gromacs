@@ -116,6 +116,9 @@
 #include "nbnxn_kernels/nbnxn_kernel_cpu.h"
 #include "nbnxn_kernels/nbnxn_kernel_prune.h"
 
+namespace gmx
+{
+
 // TODO: this environment variable allows us to verify before release
 // that on less common architectures the total cost of polling is not larger than
 // a blocking wait (so polling does not introduce overhead when the static
@@ -2979,3 +2982,5 @@ void init_md(FILE *fplog,
     clear_mat(shake_vir);
     clear_rvec(mu_tot);
 }
+
+} //namespace gmx

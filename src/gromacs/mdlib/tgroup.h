@@ -43,6 +43,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_ekindata_t;
 struct gmx_mtop_t;
 struct t_commrec;
@@ -75,5 +78,7 @@ void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
 /* Do the update of group velocities (if bNEMD) and
  * (partial) group ekin.
  */
+
+} // namespace gmx
 
 #endif

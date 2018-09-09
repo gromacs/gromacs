@@ -40,11 +40,11 @@
 
 #include "gromacs/utility/real.h"
 
-struct gmx_mtop_t;
-struct t_inputrec;
-
 namespace gmx
 {
+
+struct gmx_mtop_t;
+struct t_inputrec;
 
 /*! \brief Returns an estimate of the maximum distance between atoms
  * required for LINCS. */

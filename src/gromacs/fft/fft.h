@@ -57,6 +57,9 @@
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /*! \brief Datatype for FFT setup
  *
  *  The gmx_fft_t type contains all the setup information, e.g. twiddle
@@ -407,5 +410,7 @@ gmx_fft_transpose_2d   (t_complex *       in_data,
  *  after all plans have been destroyed.
  */
 void gmx_fft_cleanup();
+
+} // namespace gmx
 
 #endif

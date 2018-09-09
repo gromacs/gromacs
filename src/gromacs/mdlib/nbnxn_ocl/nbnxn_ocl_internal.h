@@ -43,6 +43,9 @@
 
 #include "nbnxn_ocl_types.h"
 
+namespace gmx
+{
+
 #ifndef NBNXN_OCL_INTERNAL_H
 #define NBNXN_OCL_INTERNAL_H
 
@@ -52,5 +55,7 @@
  *  \returns           True if combination rules are used by the run
  */
 bool useLjCombRule(int vdwType);
+
+} // namespace gmx
 
 #endif /* NBNXN_OCL_INTERNAL_H */

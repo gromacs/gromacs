@@ -38,4 +38,9 @@
 
 #include "gromacs/simd/impl_x86_avx2_256/impl_x86_avx2_256_simd4_double.h"
 
+namespace gmx
+{
+
+} // namespace gmx
+
 #endif // GMX_SIMD_IMPL_X86_AVX2_128_SIMD4_DOUBLE_H

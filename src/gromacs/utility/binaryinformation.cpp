@@ -84,6 +84,9 @@
 
 #include "cuda_version_information.h"
 
+namespace gmx
+{
+
 namespace
 {
 
@@ -312,9 +315,6 @@ void gmx_print_version_info(gmx::TextWriter *writer)
 //! \endcond
 
 } // namespace
-
-namespace gmx
-{
 
 BinaryInformationSettings::BinaryInformationSettings()
     : bExtendedInfo_(false), bCopyright_(false),
