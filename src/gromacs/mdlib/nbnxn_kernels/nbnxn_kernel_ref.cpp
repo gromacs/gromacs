@@ -54,7 +54,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-
+namespace gmx
+{
 /* Analytical reaction-field kernels */
 #define CALC_COUL_RF
 #define LJ_CUT
@@ -118,8 +119,11 @@
 #undef LJ_EWALD_COMB_GEOM
 #define LJ_EWALD_COMB_LB
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_includes.h"
+
 #undef LJ_EWALD_COMB_LB
 #undef LJ_CUT
 #undef LJ_EWALD
 #undef VDW_CUTOFF_CHECK
 #undef CALC_COUL_TAB
+
+} //namespace gmx

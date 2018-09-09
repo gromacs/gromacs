@@ -43,6 +43,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_enerdata_t;
 struct gmx_multisim_t;
 struct t_commrec;
@@ -93,4 +96,6 @@ gmx_bool replica_exchange(FILE *fplog,
 void print_replica_exchange_statistics(FILE *fplog, gmx_repl_ex_t re);
 /* Should only be called on the master ranks */
 
-#endif  /* _repl_ex_h */
+}      // namespace gmx
+
+#endif /* _repl_ex_h */

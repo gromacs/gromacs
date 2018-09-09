@@ -42,6 +42,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 typedef real rvec5[5];
 
 /* Distance restraining stuff */
@@ -130,5 +133,7 @@ typedef struct t_fcdata {
     t_disresdata   disres;
     t_oriresdata   orires;
 } t_fcdata;
+
+} // namespace gmx
 
 #endif

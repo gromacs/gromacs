@@ -68,6 +68,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 #define NTROTTERPARTS 3
 
 /* Suzuki-Yoshida Constants, for n=3 and n=5, for symplectic integration  */
@@ -1683,3 +1686,5 @@ void update_annealing_target_temp(t_inputrec *ir, real t, gmx_update_t *upd)
 
     update_temperature_constants(upd, ir);
 }
+
+} //namespace gmx

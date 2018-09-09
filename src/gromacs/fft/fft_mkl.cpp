@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2003 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,9 @@
 
 #include "gromacs/fft/fft.h"
 #include "gromacs/utility/fatalerror.h"
+
+namespace gmx
+{
 
 
 /* For MKL version (<10.0), we should define MKL_LONG. */
@@ -637,3 +640,5 @@ void gmx_fft_cleanup()
 {
     mkl_free_buffers();
 }
+
+} //namespace gmx

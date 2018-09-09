@@ -72,6 +72,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 enum {
     euSel, euRect, euTric, euCompact, euNR
 };
@@ -1998,3 +2001,5 @@ int gmx_trjconv(int argc, char *argv[])
     output_env_done(oenv);
     return 0;
 }
+
+} //namespace gmx

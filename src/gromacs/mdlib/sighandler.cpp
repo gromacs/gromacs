@@ -45,6 +45,9 @@
 
 #include "gromacs/utility/fatalerror.h"
 
+namespace gmx
+{
+
 const char *gmx_stop_cond_name[] =
 {
     "None",
@@ -189,3 +192,5 @@ gmx_bool gmx_got_usr_signal()
     return FALSE;
 #endif
 }
+
+} //namespace gmx

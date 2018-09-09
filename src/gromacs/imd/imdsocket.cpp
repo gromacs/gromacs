@@ -85,6 +85,9 @@ extern int imdsock_winsockinit()
 
 #include <sys/select.h>
 #include <sys/time.h>
+
+namespace gmx
+{
 #endif
 #endif
 
@@ -365,3 +368,5 @@ extern int imdsock_tryread(IMDSocket *sock, int timeoutsec, int timeoutusec)
 
     return ret;
 }
+
+} //namespace gmx

@@ -51,6 +51,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct t_atoms;
 
 typedef struct t_trxframe      // NOLINT (clang-analyzer-optin.performance.Padding)
@@ -88,9 +91,6 @@ void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
                 gmx_bool bRMSD, real ftol, real abstol);
 
 void done_frame(t_trxframe *frame);
-
-namespace gmx
-{
 
 /*!\brief A 3x3 matrix data type useful for simulation boxes
  *

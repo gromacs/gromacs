@@ -65,7 +65,12 @@
 
 #include <stddef.h>
 
+#include <type_traits>
+
 #include "gromacs/utility/basedefinitions.h"
+
+namespace gmx
+{
 
 /*! \brief
  * \Gromacs wrapper for malloc().
@@ -177,8 +182,6 @@ void *save_calloc_aligned(const char *name, const char *file, int line,
  * This never fails.
  */
 void save_free_aligned(const char *name, const char *file, int line, void *ptr);
-
-#include <type_traits>
 
 /*! \cond internal */
 /*! \name Implementation templates for C++ memory allocation macros
@@ -380,5 +383,7 @@ constexpr T over_alloc_small(T n) { return OVER_ALLOC_FAC*n + 8000; }
 /** Over allocation for large data types: complex structs */
 template<typename T>
 constexpr T over_alloc_large(T n) { return OVER_ALLOC_FAC*n + 1000; }
+
+} // namespace gmx
 
 #endif

@@ -38,6 +38,9 @@
 
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 
+namespace gmx
+{
+
 struct gmx_domdec_zones_t;
 struct gmx_groups_t;
 struct t_blocka;
@@ -87,5 +90,7 @@ void nbnxn_make_pairlist(nbnxn_search_t        nbs,
  * \param[in,out] listSet  The list-set to prepare for dynamic pruning.
  */
 void nbnxnPrepareListForDynamicPruning(nbnxn_pairlist_set_t *listSet);
+
+} // namespace gmx
 
 #endif

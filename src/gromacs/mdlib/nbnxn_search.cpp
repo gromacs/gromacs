@@ -71,8 +71,8 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
-using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
-
+namespace gmx
+{
 
 /* We shift the i-particles backward for PBC.
  * This leads to more conditionals than shifting forward.
@@ -453,7 +453,6 @@ static float subc_bb_dist2_simd4(int                              si,
                                  gmx::ArrayRef<const nbnxn_bb_t>  bb_j_all)
 {
     // TODO: During SIMDv2 transition only some archs use namespace (remove when done)
-    using namespace gmx;
 
     Simd4Float bb_i_S0, bb_i_S1;
     Simd4Float bb_j_S0, bb_j_S1;
@@ -531,7 +530,6 @@ static void subc_bb_dist2_simd4_xxxx(const float *bb_j,
                                      float *d2)
 {
     // TODO: During SIMDv2 transition only some archs use namespace (remove when done)
-    using namespace gmx;
 
     Simd4Float xj_l, yj_l, zj_l;
     Simd4Float xj_h, yj_h, zj_h;
@@ -595,7 +593,7 @@ clusterpair_in_range(const nbnxn_list_work_t *work,
 
     return FALSE;
 
-#else /* !GMX_SIMD4_HAVE_REAL */
+#else   /* !GMX_SIMD4_HAVE_REAL */
 
     /* 4-wide SIMD version.
      * The coordinates x_i are stored as xxxxyyyy..., x_j is stored xyzxyz...
@@ -709,7 +707,7 @@ clusterpair_in_range(const nbnxn_list_work_t *work,
 
     return FALSE;
 
-#endif /* !GMX_SIMD4_HAVE_REAL */
+#endif  /* !GMX_SIMD4_HAVE_REAL */
 }
 
 /* Returns the j-cluster index for index cjIndex in a cj list */
@@ -1599,7 +1597,7 @@ setExclusionsForSimpleIentry(const nbnxn_search   *nbs,
 
     const int                iCluster = iEntry.ci;
 
-    gmx::ArrayRef<const int> cell = nbs->cell;
+    ArrayRef<const int>      cell = nbs->cell;
 
     /* Loop over the atoms in the i-cluster */
     for (int i = 0; i < nbl->na_sc; i++)
@@ -1724,7 +1722,7 @@ static void make_fep_list(const nbnxn_search     *nbs,
 
     ngid = nbat->nenergrp;
 
-    if (ngid*gridj->na_cj > gmx::index(sizeof(gid_cj)*8))
+    if (ngid*gridj->na_cj > index(sizeof(gid_cj)*8))
     {
         gmx_fatal(FARGS, "The Verlet scheme with %dx%d kernels and free-energy only supports up to %lu energy groups",
                   gridi->na_c, gridj->na_cj, (sizeof(gid_cj)*8)/gridj->na_cj);
@@ -2089,7 +2087,7 @@ setExclusionsForGpuIentry(const nbnxn_search   *nbs,
 
     const int                iSuperCluster = iEntry.sci;
 
-    gmx::ArrayRef<const int> cell = nbs->cell;
+    ArrayRef<const int>      cell = nbs->cell;
 
     /* Loop over the atoms in the i super-cluster */
     for (int i = 0; i < c_superClusterSize; i++)
@@ -2459,7 +2457,7 @@ static void clear_pairlist_fep(t_nblist *nl)
 }
 
 /* Sets a simple list i-cell bounding box, including PBC shift */
-static inline void set_icell_bb_simple(gmx::ArrayRef<const nbnxn_bb_t> bb,
+static inline void set_icell_bb_simple(ArrayRef<const nbnxn_bb_t> bb,
                                        int ci,
                                        real shx, real shy, real shz,
                                        nbnxn_bb_t *bb_ci)
@@ -2474,7 +2472,7 @@ static inline void set_icell_bb_simple(gmx::ArrayRef<const nbnxn_bb_t> bb,
 
 #if NBNXN_BBXXXX
 /* Sets a super-cell and sub cell bounding boxes, including PBC shift */
-static void set_icell_bbxxxx_supersub(gmx::ArrayRef<const float> bb,
+static void set_icell_bbxxxx_supersub(ArrayRef<const float> bb,
                                       int ci,
                                       real shx, real shy, real shz,
                                       float *bb_ci)
@@ -2496,7 +2494,7 @@ static void set_icell_bbxxxx_supersub(gmx::ArrayRef<const float> bb,
 #endif
 
 /* Sets a super-cell and sub cell bounding boxes, including PBC shift */
-gmx_unused static void set_icell_bb_supersub(gmx::ArrayRef<const nbnxn_bb_t> bb,
+gmx_unused static void set_icell_bb_supersub(ArrayRef<const nbnxn_bb_t> bb,
                                              int ci,
                                              real shx, real shy, real shz,
                                              nbnxn_bb_t *bb_ci)
@@ -2543,7 +2541,7 @@ static void icell_set_x_supersub(int ci,
         x_ci[i*DIM + ZZ] = x[(ia+i)*stride + ZZ] + shz;
     }
 
-#else /* !GMX_SIMD4_HAVE_REAL */
+#else   /* !GMX_SIMD4_HAVE_REAL */
 
     real * x_ci = work->x_ci_simd;
 
@@ -2562,7 +2560,7 @@ static void icell_set_x_supersub(int ci,
         }
     }
 
-#endif /* !GMX_SIMD4_HAVE_REAL */
+#endif  /* !GMX_SIMD4_HAVE_REAL */
 }
 
 static real minimum_subgrid_size_xy(const nbnxn_grid_t *grid)
@@ -2714,7 +2712,7 @@ static void get_nsubpair_target(const nbnxn_search   *nbs,
     real diagonal = std::sqrt(ls[XX]*ls[XX] + ls[YY]*ls[YY] + ls[ZZ]*ls[ZZ]);
 
     /* The formulas below are a heuristic estimate of the average nsj per si*/
-    r_eff_sup = rlist + nbnxn_rlist_inc_outside_fac*gmx::square((grid->na_c - 1.0)/grid->na_c)*0.5*diagonal;
+    r_eff_sup = rlist + nbnxn_rlist_inc_outside_fac*square((grid->na_c - 1.0)/grid->na_c)*0.5*diagonal;
 
     if (!nbs->DomDec || nbs->zones->n == 1)
     {
@@ -2723,7 +2721,7 @@ static void get_nsubpair_target(const nbnxn_search   *nbs,
     else
     {
         nsp_est_nl =
-            gmx::square(grid->atom_density/grid->na_c)*
+            square(grid->atom_density/grid->na_c)*
             nonlocal_vol2(nbs->zones, ls, r_eff_sup);
     }
 
@@ -2734,9 +2732,9 @@ static void get_nsubpair_target(const nbnxn_search   *nbs,
         /* 6/2 rectangular volume on the faces */
         vol_est += (ls[XX]*ls[YY] + ls[XX]*ls[ZZ] + ls[YY]*ls[ZZ])*r_eff_sup;
         /* 12/2 quarter pie slices on the edges */
-        vol_est += 2*(ls[XX] + ls[YY] + ls[ZZ])*0.25*M_PI*gmx::square(r_eff_sup);
+        vol_est += 2*(ls[XX] + ls[YY] + ls[ZZ])*0.25*M_PI*square(r_eff_sup);
         /* 4 octants of a sphere */
-        vol_est += 0.5*4.0/3.0*M_PI*gmx::power3(r_eff_sup);
+        vol_est += 0.5*4.0/3.0*M_PI*power3(r_eff_sup);
 
         /* Estimate the number of cluster pairs as the local number of
          * clusters times the volume they interact with times the density.
@@ -3303,10 +3301,10 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
             }
         }
     }
-    const bool bSimple = nbl->bSimple;
-    gmx::ArrayRef<const nbnxn_bb_t> bb_i;
+    const bool                 bSimple = nbl->bSimple;
+    ArrayRef<const nbnxn_bb_t> bb_i;
 #if NBNXN_BBXXXX
-    gmx::ArrayRef<const float>      pbb_i;
+    ArrayRef<const float>      pbb_i;
     if (bSimple)
     {
         bb_i  = gridi->bb;
@@ -3319,9 +3317,9 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
     /* We use the normal bounding box format for both grid types */
     bb_i  = gridi->bb;
 #endif
-    gmx::ArrayRef<const float> bbcz_i  = gridi->bbcz;
-    gmx::ArrayRef<const int>   flags_i = gridi->flags;
-    gmx::ArrayRef<const float> bbcz_j  = gridj->bbcz;
+    ArrayRef<const float>      bbcz_i  = gridi->bbcz;
+    ArrayRef<const int>        flags_i = gridi->flags;
+    ArrayRef<const float>      bbcz_j  = gridj->bbcz;
     int                        cell0_i = gridi->cell0;
 
     if (debug)
@@ -3361,7 +3359,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
             }
             if (bx1 < gridj->c0[XX])
             {
-                d2cx = gmx::square(gridj->c0[XX] - bx1);
+                d2cx = square(gridj->c0[XX] - bx1);
 
                 if (d2cx >= rlist2)
                 {
@@ -3386,11 +3384,11 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
             }
             else if (tz < 0)
             {
-                d2z = gmx::square(bz1);
+                d2z = square(bz1);
             }
             else
             {
-                d2z = gmx::square(bz0 - box[ZZ][ZZ]);
+                d2z = square(bz0 - box[ZZ][ZZ]);
             }
 
             d2z_cx = d2z + d2cx;
@@ -3435,11 +3433,11 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
                 d2z_cy = d2z;
                 if (by1 < gridj->c0[YY])
                 {
-                    d2z_cy += gmx::square(gridj->c0[YY] - by1);
+                    d2z_cy += square(gridj->c0[YY] - by1);
                 }
                 else if (by0 > gridj->c1[YY])
                 {
-                    d2z_cy += gmx::square(by0 - gridj->c1[YY]);
+                    d2z_cy += square(by0 - gridj->c1[YY]);
                 }
 
                 for (int tx = -shp[XX]; tx <= shp[XX]; tx++)
@@ -3518,11 +3516,11 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
                         d2zx = d2z;
                         if (gridj->c0[XX] + cx*gridj->cellSize[XX] > bx1)
                         {
-                            d2zx += gmx::square(gridj->c0[XX] + cx*gridj->cellSize[XX] - bx1);
+                            d2zx += square(gridj->c0[XX] + cx*gridj->cellSize[XX] - bx1);
                         }
                         else if (gridj->c0[XX] + (cx+1)*gridj->cellSize[XX] < bx0)
                         {
-                            d2zx += gmx::square(gridj->c0[XX] + (cx+1)*gridj->cellSize[XX] - bx0);
+                            d2zx += square(gridj->c0[XX] + (cx+1)*gridj->cellSize[XX] - bx0);
                         }
 
                         if (gridi == gridj &&
@@ -3548,11 +3546,11 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
                             d2zxy = d2zx;
                             if (gridj->c0[YY] + cy*gridj->cellSize[YY] > by1)
                             {
-                                d2zxy += gmx::square(gridj->c0[YY] + cy*gridj->cellSize[YY] - by1);
+                                d2zxy += square(gridj->c0[YY] + cy*gridj->cellSize[YY] - by1);
                             }
                             else if (gridj->c0[YY] + (cy+1)*gridj->cellSize[YY] < by0)
                             {
-                                d2zxy += gmx::square(gridj->c0[YY] + (cy+1)*gridj->cellSize[YY] - by0);
+                                d2zxy += square(gridj->c0[YY] + (cy+1)*gridj->cellSize[YY] - by0);
                             }
                             if (columnStart < columnEnd && d2zxy < rlist2)
                             {
@@ -3586,7 +3584,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
                                 int downTestCell = midCell;
                                 while (downTestCell >= columnStart &&
                                        (bbcz_j[downTestCell*NNBSBB_D + 1] >= bz0 ||
-                                        d2xy + gmx::square(bbcz_j[downTestCell*NNBSBB_D + 1] - bz0) < rlist2))
+                                        d2xy + square(bbcz_j[downTestCell*NNBSBB_D + 1] - bz0) < rlist2))
                                 {
                                     downTestCell--;
                                 }
@@ -3601,7 +3599,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
                                 int upTestCell = midCell + 1;
                                 while (upTestCell < columnEnd &&
                                        (bbcz_j[upTestCell*NNBSBB_D] <= bz1 ||
-                                        d2xy + gmx::square(bbcz_j[upTestCell*NNBSBB_D] - bz1) < rlist2))
+                                        d2xy + square(bbcz_j[upTestCell*NNBSBB_D] - bz1) < rlist2))
                                 {
                                     upTestCell++;
                                 }
@@ -3617,12 +3615,12 @@ static void nbnxn_make_pairlist_part(const nbnxn_search *nbs,
                                     lastCell  = -1;
                                     for (int k = columnStart; k < columnEnd; k++)
                                     {
-                                        if (d2xy + gmx::square(bbcz_j[k*NNBSBB_D + 1] - bz0) < rlist2 &&
+                                        if (d2xy + square(bbcz_j[k*NNBSBB_D + 1] - bz0) < rlist2 &&
                                             k < firstCell)
                                         {
                                             firstCell = k;
                                         }
-                                        if (d2xy + gmx::square(bbcz_j[k*NNBSBB_D] - bz1) < rlist2 &&
+                                        if (d2xy + square(bbcz_j[k*NNBSBB_D] - bz1) < rlist2 &&
                                             k > lastCell)
                                         {
                                             lastCell = k;
@@ -3926,7 +3924,7 @@ static void copySelectedListRange(const nbnxn_ci_t * gmx_restrict srcCi,
 static void rebalanceSimpleLists(int                                  numLists,
                                  nbnxn_pairlist_t * const * const     srcSet,
                                  nbnxn_pairlist_t                   **destSet,
-                                 gmx::ArrayRef<nbnxn_search_work_t>   searchWork)
+                                 ArrayRef<nbnxn_search_work_t>        searchWork)
 {
     int ncjTotal = 0;
     for (int s = 0; s < numLists; s++)
@@ -4168,10 +4166,10 @@ void nbnxn_make_pairlist(nbnxn_search         *nbs,
                 nbs->icell_set_x = icell_set_x_simple;
                 break;
         }
-#else   // GMX_SIMD
+#else       // GMX_SIMD
         /* MSVC 2013 complains about switch statements without case */
         nbs->icell_set_x = icell_set_x_simple;
-#endif  // GMX_SIMD
+#endif      // GMX_SIMD
     }
     else
     {
@@ -4444,3 +4442,5 @@ void nbnxnPrepareListForDynamicPruning(nbnxn_pairlist_set_t *listSet)
         list->nci              = -1;
     }
 }
+
+} //namespace gmx

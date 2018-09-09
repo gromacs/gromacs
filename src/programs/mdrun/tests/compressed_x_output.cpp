@@ -53,6 +53,8 @@
 
 #include "moduletest.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -104,3 +106,4 @@ INSTANTIATE_TEST_CASE_P(WithDifferentOutputGroupSettings, MdrunCompressedXOutput
                             ));
 
 } // namespace
+} // namespace gmx

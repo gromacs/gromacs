@@ -47,6 +47,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 gmx_bool get_a_line(FILE *fp, char line[], int n)
 {
     char *line0;
@@ -172,3 +175,5 @@ int get_lines(const char *db, char ***strings)
 
     return nstr;
 }
+
+} //namespace gmx

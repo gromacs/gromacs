@@ -46,6 +46,9 @@
 
 #include "kernelutil_x86_avx_128_fma_single.h"
 
+namespace gmx
+{
+
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecNone_VdwLJEw_GeomP1P1_VF_avx_128_fma_single
  * Electrostatics interaction: None
@@ -692,3 +695,5 @@ nb_kernel_ElecNone_VdwLJEw_GeomP1P1_F_avx_128_fma_single
 
     inc_nrnb(nrnb,eNR_NBKERNEL_VDW_F,outeriter*6 + inneriter*48);
 }
+
+} //namespace gmx

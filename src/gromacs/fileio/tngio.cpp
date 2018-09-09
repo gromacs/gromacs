@@ -65,6 +65,9 @@
 #include "gromacs/utility/sysinfo.h"
 #include "gromacs/utility/unique_cptr.h"
 
+namespace gmx
+{
+
 #if !GMX_USE_TNG
 using tng_trajectory_t = void *;
 #endif
@@ -1298,7 +1301,7 @@ real getDistanceScaleFactor(gmx_tng_trajectory_t in)
 }
 #endif
 
-} // namespace
+}   // namespace
 
 void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t gmx_tng,
                                  const int            nind,
@@ -1938,3 +1941,5 @@ int gmx_tng_get_lambda_output_interval(gmx_tng_trajectory_t gmx_tng)
     return -1;
 #endif
 }
+
+} // namespace gmx

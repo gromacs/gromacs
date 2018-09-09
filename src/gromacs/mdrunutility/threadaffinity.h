@@ -46,13 +46,12 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
-struct gmx_hw_opt_t;
-struct gmx_multisim_t;
-struct t_commrec;
-
 namespace gmx
 {
 
+struct gmx_hw_opt_t;
+struct gmx_multisim_t;
+struct t_commrec;
 class HardwareTopology;
 class MDLogger;
 class PhysicalNodeCommunicator;
@@ -66,8 +65,6 @@ class IThreadAffinityAccess
     protected:
         virtual ~IThreadAffinityAccess();
 };
-
-} // namespace gmx
 
 /*! \brief Communicates within physical nodes to discover the
  * distribution of threads over ranks. */
@@ -119,5 +116,7 @@ void
 gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog, const t_commrec *cr,
                               gmx_hw_opt_t *hw_opt, int ncpus,
                               gmx_bool bAfterOpenmpInit);
+
+} // namespace gmx
 
 #endif

@@ -79,6 +79,9 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 //! longest file names allowed in input files
 #define WHAM_MAXFILELEN 2048
 
@@ -2342,7 +2345,7 @@ static void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
         }
     }
     else
-    {   /* only determine min and max */
+    {       /* only determine min and max */
         minfound = 1e20;
         maxfound = -1e20;
         min      = max = bins = 0; /* Get rid of warnings */
@@ -2794,7 +2797,7 @@ static void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwi
             window[i].tau[ig] = tausteps*dt;
             window[i].g[ig]   = 1+2*tausteps;
             /* printf("win %d, group %d, estimated correlation time = %g ps\n",i,ig,window[i].tau[ig]); */
-        } /* ig loop */
+        }   /* ig loop */
         sfree(corr);
         sfree(count);
     }
@@ -3604,7 +3607,7 @@ int gmx_wham(int argc, char *argv[])
         read_tpr_pullxf_files(fninTpr, fninPull, nfiles, &header, window, &opt);
     }
     else
-    {   /* reading pdo files */
+    {       /* reading pdo files */
         if  (opt.fnCoordSel != nullptr)
         {
             gmx_fatal(FARGS, "Reading a -is file is not supported with PDO input files.\n"
@@ -3763,3 +3766,5 @@ int gmx_wham(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

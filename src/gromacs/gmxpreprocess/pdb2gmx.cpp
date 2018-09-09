@@ -79,6 +79,9 @@
 #include "gromacs/utility/strdb.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 #define RTP_MAXCHAR 5
 typedef struct {
     char gmx[RTP_MAXCHAR+2];
@@ -1588,7 +1591,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
         default:
             gmx_fatal(FARGS, "DEATH HORROR in $s (%s): vsitestr[0]='%d'",
                       __FILE__, __LINE__, vsitestr[0]);
-    } /* end switch */
+    }   /* end switch */
 
     /* Open the symbol table */
     open_symtab(&symtab);
@@ -2338,3 +2341,5 @@ int gmx_pdb2gmx(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

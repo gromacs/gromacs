@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,6 +60,9 @@
 #include <cstdint>
 
 #include "impl_sparc64_hpc_ace_common.h"
+
+namespace gmx
+{
 
 /****************************************************
  *      DOUBLE PRECISION SIMD IMPLEMENTATION        *
@@ -301,5 +304,7 @@ simdSetExponentD_sparc64_hpc_ace(SimdDouble x)
 
     return _fjsp_load_v2r8( (double *) &conv.simd);
 }
+
+}      // namespace gmx
 
 #endif /* GMX_SIMD_IMPL_SPARC64_HPC_ACE_SIMD_DOUBLE_H */

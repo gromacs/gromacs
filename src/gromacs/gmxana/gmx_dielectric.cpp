@@ -58,6 +58,9 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* Determines at which point in the array the fit should start */
 static int calc_nbegin(int nx, real x[], real tbegin)
 {
@@ -434,3 +437,5 @@ int gmx_dielectric(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

@@ -77,6 +77,9 @@
 #if GMX_THREAD_MPI
 #include "thread_mpi/mpi_bindings.h" /* IWYU pragma: export */
 #include "thread_mpi/tmpi.h"         /* IWYU pragma: export */
+
+namespace gmx
+{
 #else
 typedef void* MPI_Comm;
 typedef void* MPI_Request;
@@ -88,5 +91,7 @@ typedef void* MPI_Group;
 #endif
 #endif
 //! \endcond
+
+} // namespace gmx
 
 #endif

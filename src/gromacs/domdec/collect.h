@@ -46,6 +46,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 
+namespace gmx
+{
+
 struct gmx_domdec_t;
 class t_state;
 
@@ -59,5 +62,7 @@ void dd_collect_vec(gmx_domdec_t                   *dd,
 void dd_collect_state(gmx_domdec_t  *dd,
                       const t_state *localState,
                       t_state       *globalState);
+
+} // namespace gmx
 
 #endif

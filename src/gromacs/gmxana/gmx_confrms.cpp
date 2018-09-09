@@ -61,6 +61,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static const int NOTSET = -9368163;
 
 static void calc_rm_cm(int isize, const int index[], const t_atoms *atoms, rvec x[], rvec xcm)
@@ -839,3 +842,5 @@ int gmx_confrms(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

@@ -57,6 +57,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
 
@@ -277,3 +280,5 @@ void preserve_box_shape(const t_inputrec *ir, matrix box_rel, matrix box)
         do_box_rel(ndim, ir->deform, box_rel, box, false);
     }
 }
+
+} //namespace gmx

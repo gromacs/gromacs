@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,8 +54,6 @@ namespace gmx
 {
 class CpuInfo;
 class MDLogger;
-}
-
 struct gmx_mtop_t;
 struct interaction_const_t;
 struct NbnxnListParameters;
@@ -98,4 +96,5 @@ void setupDynamicPairlistPruning(const gmx::MDLogger       &mdlog,
                                  const interaction_const_t *ic,
                                  NbnxnListParameters       *listParams);
 
+}      // namespace gmx
 #endif /* NBNXN_TUNING_H */

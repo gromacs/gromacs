@@ -48,6 +48,9 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 typedef struct
 {
     real **    pvdwparam;
@@ -449,3 +452,5 @@ nb_kernel_allvsall(t_nblist gmx_unused *     nlist,
      */
     inc_nrnb(nrnb, eNR_NBKERNEL_ELEC_VDW_VF, (ni1-ni0)*12 + gmx::exactDiv(natoms*(natoms-1), 2)*19);
 }
+
+} //namespace gmx

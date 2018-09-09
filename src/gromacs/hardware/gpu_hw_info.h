@@ -37,6 +37,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 #if 0
 } /* fixes auto-indentation problems */
 #endif
@@ -65,5 +68,7 @@ struct gmx_gpu_info_t
     struct gmx_device_info_t *gpu_dev;          /* GPU devices detected in the system (per node) */
     int                       n_dev_compatible; /* number of compatible GPUs */
 };
+
+} // namespace gmx
 
 #endif

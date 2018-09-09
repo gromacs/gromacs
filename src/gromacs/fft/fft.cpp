@@ -48,6 +48,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /* This file contains common fft utility functions, but not
  * the actual transform implementations. Check the
  * files like fft_fftw3.c or fft_mkl.c for that.
@@ -364,3 +367,5 @@ int gmx_fft_transpose_2d(t_complex *          in_data,
 
     return 0;
 }
+
+} //namespace gmx

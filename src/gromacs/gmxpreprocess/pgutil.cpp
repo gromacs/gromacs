@@ -47,6 +47,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/snprintf.h"
 
+namespace gmx
+{
+
 #define BUFSIZE 1024
 static void atom_not_found(int fatal_errno, const char *file, int line,
                            const char *atomname, int resind,
@@ -177,3 +180,5 @@ void set_at(t_atom *at, real m, real q, int type, int resind)
     at->type   = type;
     at->resind = resind;
 }
+
+} //namespace gmx

@@ -43,6 +43,9 @@
 
 #include <cstdint>
 
+namespace gmx
+{
+
 #if !GMX_SIMD_HAVE_HSIMD_UTIL_REAL
 #error "Half-simd utility operations are required for the 2xNN kernels"
 #endif
@@ -71,7 +74,7 @@
  * a single SIMD register.
  */
 static inline void
-add_ener_grp_halves(gmx::SimdReal e_S, real *v0, real *v1, const int *offset_jj)
+add_ener_grp_halves(SimdReal e_S, real *v0, real *v1, const int *offset_jj)
 {
     for (int jj = 0; jj < (UNROLLJ/2); jj++)
     {
@@ -82,9 +85,9 @@ add_ener_grp_halves(gmx::SimdReal e_S, real *v0, real *v1, const int *offset_jj)
 #endif
 
 #if GMX_SIMD_HAVE_INT32_LOGICAL
-typedef gmx::SimdInt32    SimdBitMask;
+typedef SimdInt32    SimdBitMask;
 #else
-typedef gmx::SimdReal     SimdBitMask;
+typedef SimdReal     SimdBitMask;
 #endif
 
 
@@ -92,10 +95,9 @@ static inline void gmx_simdcall
 gmx_load_simd_2xnn_interactions(int                  excl,
                                 SimdBitMask          filter_S0,
                                 SimdBitMask          filter_S2,
-                                gmx::SimdBool       *interact_S0,
-                                gmx::SimdBool       *interact_S2)
+                                SimdBool            *interact_S0,
+                                SimdBool            *interact_S2)
 {
-    using namespace gmx;
 #if GMX_SIMD_HAVE_INT32_LOGICAL
     SimdInt32 mask_pr_S(excl);
     *interact_S0  = cvtIB2B( testBits( mask_pr_S & filter_S0 ) );
@@ -133,3 +135,5 @@ gmx_load_simd_2xnn_interactions(int                  excl,
 
 /* Assumes all LJ parameters are identical */
 /* #define FIX_LJ_C */
+
+} // namespace gmx

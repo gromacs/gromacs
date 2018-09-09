@@ -46,6 +46,9 @@
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /* Write a full or sparse matrix to a file.
  *
  * You should provide the filename, dimensions (nrow/ncol), and
@@ -77,5 +80,7 @@ gmx_mtxio_read (const char *            filename,
                 int *                   ncol,
                 real **                 full_matrix,
                 gmx_sparsematrix_t **   sparse_matrix);
+
+} // namespace gmx
 
 #endif

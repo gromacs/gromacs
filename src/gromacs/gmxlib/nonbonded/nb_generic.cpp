@@ -48,6 +48,9 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 
+namespace gmx
+{
+
 void
 gmx_nb_generic_kernel(t_nblist *                nlist,
                       rvec *                    xx,
@@ -336,7 +339,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                     velec            = (rsq < rcoulomb2) ? velec : 0.0;
                 }
                 vctot           += velec;
-            } /* End of coulomb interactions */
+            }   /* End of coulomb interactions */
 
 
             /* VdW interaction. ivdw==0 means no interaction */
@@ -457,7 +460,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                     vvdw             = (rsq < rvdw2) ? vvdw : 0.0;
                 }
                 vvdwtot         += vvdw;
-            } /* end VdW interactions */
+            }   /* end VdW interactions */
 
             fscal            = felec+fvdw;
 
@@ -488,3 +491,5 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
      */
     inc_nrnb(nrnb, eNR_NBKERNEL_GENERIC, nlist->nri*12 + nlist->jindex[n]*50);
 }
+
+} //namespace gmx

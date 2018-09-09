@@ -46,6 +46,9 @@
 
 #include "kernelutil_x86_sse2_single.h"
 
+namespace gmx
+{
+
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecEwSh_VdwLJSh_GeomP1P1_VF_sse2_single
  * Electrostatics interaction: Ewald
@@ -791,3 +794,5 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomP1P1_F_sse2_single
 
     inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW_F,outeriter*7 + inneriter*47);
 }
+
+} //namespace gmx

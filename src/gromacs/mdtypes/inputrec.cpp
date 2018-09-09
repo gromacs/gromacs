@@ -60,6 +60,9 @@
 #include "gromacs/utility/textwriter.h"
 #include "gromacs/utility/txtdump.h"
 
+namespace gmx
+{
+
 //! Macro to select a bool name
 #define EBOOL(e)       gmx::boolToString(e)
 
@@ -1524,3 +1527,5 @@ int ndof_com(const t_inputrec *ir)
 
     return n;
 }
+
+} //namespace gmx

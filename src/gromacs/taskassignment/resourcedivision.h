@@ -51,19 +51,18 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 struct gmx_hw_info_t;
 struct gmx_hw_opt_t;
 struct gmx_mtop_t;
 struct gmx_multisim_t;
 struct t_commrec;
 struct t_inputrec;
-
-namespace gmx
-{
 class HardwareTopology;
 class MDLogger;
 class PhysicalNodeCommunicator;
-}
 
 /*! \brief Return the number of threads to use for thread-MPI based on how many
  * were requested, which algorithms we're using,
@@ -118,9 +117,6 @@ void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t         *hw_opt,
                                              int                   numRanksOnThisNode,
                                              PmeRunMode            pmeRunMode,
                                              const gmx_mtop_t     &mtop);
-
-namespace gmx
-{
 
 /*! \brief Warns for oversubscribing the hardware threads, when that is the case
  */

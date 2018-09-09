@@ -49,6 +49,9 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/bitmask.h"
 
+namespace gmx
+{
+
 /* We reduce the force array in blocks of 32 atoms. This is large enough
  * to not cause overhead and 32*sizeof(rvec) is a multiple of the cache-line
  * size on all systems.
@@ -108,5 +111,7 @@ struct bonded_threading_t
  */
 int
 glatnr(const int *global_atom_index, int i);
+
+} // namespace gmx
 
 #endif

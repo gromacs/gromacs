@@ -60,6 +60,9 @@
 
 #include "pme-simd.h"
 
+namespace gmx
+{
+
 /* GMX_CACHE_SEP should be a multiple of the SIMD and SIMD4 register size
  * to preserve alignment.
  */
@@ -872,3 +875,5 @@ void reuse_pmegrids(const pmegrids_t *oldgrid, pmegrids_t *newgrid)
         }
     }
 }
+
+} //namespace gmx

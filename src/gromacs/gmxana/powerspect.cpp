@@ -44,6 +44,9 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void addtoavgenergy(t_complex *list, real *result, int size, int tsteps)
 {
     int i;
@@ -140,3 +143,5 @@ void powerspectavg_intf(t_interf ***if1, t_interf ***if2, int t, int xb, int yb,
     }
     powerspectavg(surf, t, xb, yb, outfiles);
 }
+
+} //namespace gmx

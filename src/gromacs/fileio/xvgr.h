@@ -45,6 +45,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_output_env_t;
 
 /***************************************************
@@ -192,4 +195,6 @@ real **read_xvg_time(const char *fn,
                      gmx_bool bTE, real te,
                      int nsets_in, int *nset, int *nval,
                      real *dt, real **t);
+} // namespace gmx
+
 #endif

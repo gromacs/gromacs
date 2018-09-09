@@ -54,6 +54,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* It's not nice to have size limits, but we should not spend more time
  * on this ancient tool, but instead use the new selection library.
  */
@@ -1646,3 +1649,5 @@ int gmx_make_ndx(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

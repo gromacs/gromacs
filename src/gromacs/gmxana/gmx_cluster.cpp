@@ -67,6 +67,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 /* print to two file pointers at once (i.e. stderr and log) */
 static inline
 void lo_ffprintf(FILE *fp1, FILE *fp2, const char *buf)
@@ -2013,3 +2016,5 @@ int gmx_cluster(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

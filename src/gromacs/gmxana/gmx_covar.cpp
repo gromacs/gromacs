@@ -60,6 +60,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
 
+namespace gmx
+{
+
 int gmx_covar(int argc, char *argv[])
 {
     const char       *desc[] = {
@@ -644,3 +647,5 @@ int gmx_covar(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

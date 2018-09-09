@@ -48,11 +48,10 @@
 #include "gromacs/options/ioptionsbehavior.h"
 #include "gromacs/utility/classhelpers.h"
 
-struct gmx_mtop_t;
-
 namespace gmx
 {
 
+struct gmx_mtop_t;
 class IOptionsContainer;
 class Options;
 class SelectionCollection;

@@ -65,6 +65,8 @@
 
 #include "toputils.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -1669,3 +1671,4 @@ TEST_F(SelectionCollectionDataTest, HandlesVariablesWithMixedEvaluationGroups2)
 
 
 } // namespace
+} // namespace gmx

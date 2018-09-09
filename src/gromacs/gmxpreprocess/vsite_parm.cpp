@@ -60,6 +60,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
+namespace gmx
+{
+
 typedef struct {
     t_iatom  a[4];
     real     c;
@@ -830,7 +833,7 @@ int set_vsites(bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
                                 plist[ftype].param[i].ai()+1,
                                 interaction_function[ftype].longname);
                         print_bad(debug, nrbond, bonds, nrang, angles, nridih, idihs);
-                    } /* debug */
+                    }   /* debug */
                     switch (ftype)
                     {
                         case F_VSITE3:
@@ -869,7 +872,7 @@ int set_vsites(bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
                                       interaction_function[ftype].longname,
                                       plist[ftype].param[i].ai()+1);
                             bERROR = TRUE;
-                    } /* switch */
+                    }   /* switch */
                     if (bERROR)
                     {
                         gmx_fatal(FARGS, "Automatic parameter generation not supported "
@@ -1551,3 +1554,5 @@ void clean_vsite_bondeds(t_params *plist, int natoms, bool bRmVSiteBds)
     sfree(pindex);
     sfree(vsite_type);
 }
+
+} //namespace gmx

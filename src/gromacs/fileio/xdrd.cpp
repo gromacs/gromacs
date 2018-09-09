@@ -41,6 +41,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 int xdr_real(XDR *xdrs, real *r)
 {
 #if GMX_DOUBLE
@@ -113,3 +116,5 @@ int xdr_int64(XDR *xdrs, int64_t *i)
 
     return ret;
 }
+
+} //namespace gmx

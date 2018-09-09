@@ -72,6 +72,9 @@
 
 #if GMX_USE_PLUGINS
 #include "gromacs/fileio/vmdio.h"
+
+namespace gmx
+{
 #endif
 
 /* defines for frame counter output */
@@ -1136,3 +1139,5 @@ t_topology *read_top(const char *fn, int *ePBC)
 
     return top;
 }
+
+} //namespace gmx

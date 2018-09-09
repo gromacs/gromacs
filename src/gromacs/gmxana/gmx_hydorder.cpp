@@ -59,6 +59,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void find_tetra_order_grid(t_topology top, int ePBC,
                                   int natoms, matrix box,
                                   rvec x[], int maxidx, const int index[],
@@ -114,7 +117,7 @@ static void find_tetra_order_grid(t_topology top, int ePBC,
     *skmean = 0.0;
     l       = 0;
     for (i = 0; (i < maxidx); i++)
-    {   /* loop over index file */
+    {       /* loop over index file */
         ix = index[i];
         for (j = 0; (j < maxidx); j++)
         {
@@ -213,7 +216,7 @@ static void find_tetra_order_grid(t_topology top, int ePBC,
         sggrid[slindex_x][slindex_y][slindex_z] += sgmol[i];
         skgrid[slindex_x][slindex_y][slindex_z] += skmol[i];
         (sl_count[slindex_x][slindex_y][slindex_z])++;
-    } /* loop over entries in index file */
+    }   /* loop over entries in index file */
 
     *sgmean /= maxidx;
     *skmean /= maxidx;
@@ -692,3 +695,5 @@ int gmx_hydorder(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

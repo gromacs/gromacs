@@ -50,7 +50,9 @@
 #include "pme-simd.h"
 #include "pme-spline-work.h"
 
-using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
+namespace gmx
+{
+
 
 /* Spline function. Goals: 1) Force compiler to instantiate function separately
    for each compile-time value of order and once more for any possible (runtime)
@@ -428,3 +430,5 @@ real gather_energy_bsplines(gmx_pme_t *pme, const real *grid,
 
     return energy;
 }
+
+} //namespace gmx

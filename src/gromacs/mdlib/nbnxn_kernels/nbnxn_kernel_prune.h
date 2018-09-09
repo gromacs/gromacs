@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct nbnxn_atomdata_t;
 struct nonbonded_verlet_group_t;
 
@@ -60,3 +63,5 @@ void nbnxn_kernel_cpu_prune(nonbonded_verlet_group_t  *nbvg,
                             const nbnxn_atomdata_t    *nbat,
                             const rvec                *shift_vec,
                             real                       rlistInner);
+
+} // namespace gmx

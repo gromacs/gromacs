@@ -54,6 +54,9 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static const char *etitles[] = { "E-docked", "Free Energy" };
 
 typedef struct {
@@ -389,3 +392,5 @@ int gmx_anadock(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

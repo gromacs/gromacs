@@ -52,6 +52,8 @@
 #include "keywords.h"
 #include "selmethod.h"
 
+using namespace gmx;
+
 /** Defines the comparison operator for comparison expressions. */
 typedef enum
 {

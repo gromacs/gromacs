@@ -48,6 +48,9 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
+namespace gmx
+{
+
 enum class GpuApiCallBehavior;
 
 /*! \brief OpenCL vendor IDs */
@@ -294,5 +297,7 @@ inline void launchGpuKernel(cl_kernel                 kernel,
         GMX_THROW(gmx::InternalError(errorMessage));
     }
 }
+
+} // namespace gmx
 
 #endif

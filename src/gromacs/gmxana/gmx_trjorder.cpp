@@ -56,6 +56,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 typedef struct {
     int     i;
     real    d2;
@@ -379,3 +382,5 @@ int gmx_trjorder(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

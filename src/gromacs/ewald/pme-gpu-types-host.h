@@ -59,6 +59,9 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
 
+namespace gmx
+{
+
 #if GMX_GPU != GMX_GPU_NONE
 struct PmeGpuSpecific;
 #else
@@ -218,5 +221,7 @@ struct PmeGpu
     /*! \brief The pointer to GPU-framework specific host-side data, such as CUDA streams and events. */
     std::shared_ptr<PmeGpuSpecific> archSpecific; /* FIXME: make it an unique_ptr */
 };
+
+} // namespace gmx
 
 #endif

@@ -46,6 +46,9 @@
 #include <cstdlib>
 #include <cstring>
 
+namespace gmx
+{
+
 
 /* NB - THIS FILE IS ONLY USED ON MICROSOFT WINDOWS, since that
  * system doesn't provide any standard XDR system libraries. It will
@@ -799,4 +802,7 @@ xdrstdio_create (XDR *xdrs, FILE *file, enum xdr_op op)
     xdrs->x_handy        = 0;
     xdrs->x_base         = nullptr;
 }
+
+}      //namespace gmx
+
 #endif /* GMX_INTERNAL_XDR */

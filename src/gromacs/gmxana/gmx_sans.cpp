@@ -59,6 +59,9 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 int gmx_sans(int argc, char *argv[])
 {
     const char          *desc[] = {
@@ -373,3 +376,5 @@ int gmx_sans(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

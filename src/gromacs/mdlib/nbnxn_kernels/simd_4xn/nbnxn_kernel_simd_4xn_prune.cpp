@@ -44,6 +44,9 @@
 #ifdef GMX_NBNXN_SIMD_4XN
 #define GMX_SIMD_J_UNROLL_SIZE 1
 #include "gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_common.h"
+
+namespace gmx
+{
 #endif
 
 /* Prune a single nbnxn_pairtlist_t entry with distance rlistInner */
@@ -54,7 +57,6 @@ nbnxn_kernel_prune_4xn(nbnxn_pairlist_t *         nbl,
                        real                       rlistInner)
 {
 #ifdef GMX_NBNXN_SIMD_4XN
-    using namespace gmx;
     const nbnxn_ci_t * gmx_restrict ciOuter  = nbl->ciOuter;
     nbnxn_ci_t       * gmx_restrict ciInner  = nbl->ci;
 
@@ -187,3 +189,5 @@ nbnxn_kernel_prune_4xn(nbnxn_pairlist_t *         nbl,
 
 #endif /* GMX_NBNXN_SIMD_4XN */
 }
+
+} //namespace gmx

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,9 @@
 #define GMX_MDLIB_SWAPHISTORY_H
 
 #include "gromacs/mdtypes/md_enums.h"
+
+namespace gmx
+{
 
 /* History of an ion type used in position swapping
  */
@@ -86,5 +89,7 @@ typedef struct swaphistory_t
     swapstateIons_t *ionType;                 // History information for one ion type
 }
 swaphistory_t;
+
+} // namespace gmx
 
 #endif

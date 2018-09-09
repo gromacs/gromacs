@@ -47,7 +47,9 @@
 
 #include "pme-simd.h"
 
-using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
+namespace gmx
+{
+
 
 pme_spline_work *make_pme_spline_work(int gmx_unused order)
 {
@@ -92,3 +94,5 @@ void destroy_pme_spline_work(pme_spline_work *work)
         gmx::AlignedAllocationPolicy::free(work);
     }
 }
+
+} //namespace gmx

@@ -102,6 +102,9 @@
 
 #include "md5.h"
 
+namespace gmx
+{
+
 #undef BYTE_ORDER   /* 1 = big-endian, -1 = little-endian, 0 = unknown */
 #ifdef ARCH_IS_BIG_ENDIAN
 #  define BYTE_ORDER (ARCH_IS_BIG_ENDIAN ? 1 : -1)
@@ -447,3 +450,5 @@ gmx_md5_finish(md5_state_t *pms, md5_byte_t digest[16])
         digest[i] = static_cast<md5_byte_t>(pms->abcd[i >> 2] >> ((i & 3) << 3));
     }
 }
+
+} //namespace gmx

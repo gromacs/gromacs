@@ -59,6 +59,8 @@
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -556,3 +558,4 @@ TEST_F(ParseCommonArgsTest, CanKeepUnknownArgs)
 }
 
 } // namespace
+} // namespace gmx

@@ -40,6 +40,9 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 void init_df_history(df_history_t *dfhist, int nlambda)
 {
     int i;
@@ -141,3 +144,5 @@ void done_df_history(df_history_t *dfhist)
     dfhist->nlambda  = 0;
     dfhist->wl_delta = 0;
 }
+
+} //namespace gmx

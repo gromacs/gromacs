@@ -49,6 +49,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 /*! \brief
  * Debug log file.
  *
@@ -236,5 +239,7 @@ void _range_check(int n, int n_min, int n_max, const char *warn_str,
  * and should NOT end with a newline.
  */
 void gmx_warning(const char *fmt, ...);
+
+} // namespace gmx
 
 #endif

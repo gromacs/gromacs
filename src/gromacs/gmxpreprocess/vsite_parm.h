@@ -41,6 +41,9 @@
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 
+namespace gmx
+{
+
 struct gmx_moltype_t;
 
 int set_vsites(bool bVerbose, t_atoms *atoms,  gpp_atomtype_t atype,
@@ -55,5 +58,7 @@ void set_vsites_ptype(bool bVerbose,  gmx_moltype_t *molt);
  * Throw away all obsolete bonds, angles and dihedrals.
  * Throw away all constraints. */
 void clean_vsite_bondeds(t_params *ps, int natoms, bool bRmVSiteBds);
+
+} // namespace gmx
 
 #endif

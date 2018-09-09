@@ -71,6 +71,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
+namespace gmx
+{
+
 static const int  NOTSET   = -23451;
 
 typedef struct {
@@ -2133,3 +2136,5 @@ int gmx_energy(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

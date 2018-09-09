@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,9 @@
 #include <stdio.h>
 
 #include <emmintrin.h>
+
+namespace gmx
+{
 
 /* Normal sum of four ymm registers */
 #define gmx_mm_sum4_pd(t0, t1, t2, t3)  _mm_add_pd(_mm_add_pd(t0, t1), _mm_add_pd(t2, t3))
@@ -864,5 +867,7 @@ sse2_exp_d(__m128d x)
     x         = _mm_mul_pd(p, fexppart);
     return x;
 }
+
+}      // namespace gmx
 
 #endif /* _kernelutil_x86_sse2_double_h_ */

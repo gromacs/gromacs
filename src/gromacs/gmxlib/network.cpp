@@ -54,6 +54,9 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
 
@@ -666,3 +669,5 @@ void gmx_fatal_collective(int f_errno, const char *file, int line,
     gmx_fatal_mpi_va(f_errno, file, line, bMaster, bFinalize, fmt, ap);
     va_end(ap);
 }
+
+} //namespace gmx

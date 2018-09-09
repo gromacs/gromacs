@@ -60,6 +60,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 
+namespace gmx
+{
+
 /* must correspond to char *avbar_opt[] declared in main() */
 enum {
     avbarSEL, avbarNONE, avbarSTDDEV, avbarERROR, avbar90, avbarNR
@@ -1334,3 +1337,5 @@ int gmx_analyze(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

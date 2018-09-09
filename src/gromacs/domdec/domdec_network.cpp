@@ -53,6 +53,9 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/utility/gmxmpi.h"
 
+namespace gmx
+{
+
 
 /*! \brief Returns the MPI rank of the domain decomposition master rank */
 #define DDMASTERRANK(dd)   ((dd)->masterrank)
@@ -102,7 +105,7 @@ ddSendrecv(const struct gmx_domdec_t *dd,
                      dd->mpi_comm_all,
                      &mpiStatus);
     }
-#else // GMX_MPI
+#else   // GMX_MPI
     GMX_UNUSED_VALUE(dd);
     GMX_UNUSED_VALUE(ddDimensionIndex);
     GMX_UNUSED_VALUE(direction);
@@ -110,7 +113,7 @@ ddSendrecv(const struct gmx_domdec_t *dd,
     GMX_UNUSED_VALUE(numElementsToSend);
     GMX_UNUSED_VALUE(receiveBuffer);
     GMX_UNUSED_VALUE(numElementsToReceive);
-#endif // GMX_MPI
+#endif  // GMX_MPI
 }
 
 //! Specialization of extern template for int
@@ -320,3 +323,5 @@ void dd_gatherv(const gmx_domdec_t gmx_unused *dd,
                 DDMASTERRANK(dd), dd->mpi_comm_all);
 #endif
 }
+
+} //namespace gmx

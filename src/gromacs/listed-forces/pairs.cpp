@@ -66,7 +66,9 @@
 
 #include "listed-internal.h"
 
-using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
+namespace gmx
+{
+
 
 /*! \brief Issue a warning if a listed interaction is beyond a table limit */
 static void
@@ -698,3 +700,5 @@ do_pairs(int ftype, int nbonds,
                          md, fr, grppener, global_atom_index);
     }
 }
+
+} //namespace gmx

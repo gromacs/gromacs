@@ -46,6 +46,9 @@
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 struct gmx_grppairener_t;
 struct t_forcerec;
 
@@ -83,5 +86,7 @@ do_nonbonded(const t_forcerec  *fr,
              int                nls,
              int                eNL,
              int                flags);
+
+} // namespace gmx
 
 #endif

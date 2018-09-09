@@ -67,6 +67,9 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 #define MAXNAME 32
 #define OPENDIR     '[' /* starting sign for directive		*/
 #define CLOSEDIR    ']' /* ending sign for directive		*/
@@ -1742,13 +1745,13 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                 default:
                     gmx_fatal(FARGS, "DEATH HORROR in do_vsites (%s:%d)",
                               __FILE__, __LINE__);
-            } /* switch whatres */
-              /* skip back to beginning of residue */
+            }   /* switch whatres */
+                /* skip back to beginning of residue */
             while (i > 0 && at->atom[i-1].resind == resind)
             {
                 i--;
             }
-        } /* if bVsiteAromatics & is protein */
+        }   /* if bVsiteAromatics & is protein */
 
         /* now process the rest of the hydrogens */
         /* only process hydrogen atoms which are not already set */
@@ -2208,3 +2211,5 @@ void do_h_mass(t_params *psb, int vsite_type[], t_atoms *at, real mHmult,
         }
     }
 }
+
+} //namespace gmx

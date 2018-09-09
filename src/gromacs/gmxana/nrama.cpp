@@ -50,6 +50,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static const char *pp_pat[] = { "C", "N", "CA", "C", "N" };
 #define NPP (sizeof(pp_pat)/sizeof(pp_pat[0]))
 
@@ -259,3 +262,5 @@ t_topology *init_rama(gmx_output_env_t *oenv, const char *infile,
 
     return top;
 }
+
+} //namespace gmx

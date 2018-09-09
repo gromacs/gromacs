@@ -65,6 +65,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 using gmx::RVec;
 
 typedef struct {
@@ -1027,3 +1030,5 @@ int gmx_solvate(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx
