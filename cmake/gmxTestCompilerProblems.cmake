@@ -53,13 +53,4 @@ macro(gmx_test_compiler_problems)
         message(WARNING "Currently tested PGI compiler versions (up to 15.7) generate binaries that do not pass all regression test, and the generated binaries are significantly slower than with GCC, ICC or Clang. For now we do not recommend PGI beyond development testing - make sure to run the regressiontests.")
     endif()
 
-    # Test that C bool and C++ bool size is the same
-    include(CheckTypeSize)
-    set(CMAKE_EXTRA_INCLUDE_FILES "stdbool.h")
-    CHECK_TYPE_SIZE("bool" C_BOOL_SIZE LANGUAGE "C")
-    set(CMAKE_EXTRA_INCLUDE_FILES "")
-    CHECK_TYPE_SIZE("bool" CXX_BOOL_SIZE LANGUAGE "CXX")
-    if(NOT C_BOOL_SIZE EQUAL CXX_BOOL_SIZE)
-       message(FATAL_ERROR "Size of bool of C and C++ compiler don't match. Make sure you use compatible C and C++ compilers. If both compilers are from the same vendor, please report the issue to redmine.gromacs.org.")
-    endif()
 endmacro(gmx_test_compiler_problems)

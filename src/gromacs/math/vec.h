@@ -634,7 +634,6 @@ static inline real trace(const matrix m)
     return (m[XX][XX]+m[YY][YY]+m[ZZ][ZZ]);
 }
 
-#ifdef __cplusplus
 namespace gmx
 {
 /*!
@@ -653,6 +652,5 @@ template<typename T> T norm(T* v) {return ::norm(v); }
 template <typename T> T norm2(T* v) { return ::norm2(v); }
 }      // namespace gmx
 /*! \} */
-#endif // __cplusplus
 
 #endif
