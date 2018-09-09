@@ -47,6 +47,8 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
 static const char *type[] = {
     "button", "radiobuttons", "groupbox", "checkbox",
     "pixmap", "statictext",   "edittext", "defbutton"
@@ -502,3 +504,4 @@ void DumpFGrid(t_fgrid *fgrid)
         DumpFSimple(fgrid->fsimple[i]);
     }
 }
+} // namespace gmx

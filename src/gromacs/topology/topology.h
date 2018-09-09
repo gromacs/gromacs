@@ -48,6 +48,9 @@
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/unique_cptr.h"
 
+namespace gmx
+{
+
 enum
 {
     egcTC,    egcENER,   egcACC, egcFREEZE,
@@ -206,5 +209,7 @@ void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
 
 //! Deleter for gmx_localtop_t, needed until it has a proper destructor.
 using ExpandedTopologyPtr = gmx::unique_cptr<gmx_localtop_t, done_and_sfree_localtop>;
+
+} // namespace gmx
 
 #endif

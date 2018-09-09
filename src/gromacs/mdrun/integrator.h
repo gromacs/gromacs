@@ -47,6 +47,8 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
 class energyhistory_t;
 struct gmx_enfrot;
 struct gmx_mtop_t;
@@ -66,9 +68,6 @@ struct t_filenm;
 struct t_inputrec;
 struct t_nrnb;
 class t_state;
-
-namespace gmx
-{
 
 class BoxDeformation;
 class Constraints;

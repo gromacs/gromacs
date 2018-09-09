@@ -55,6 +55,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
@@ -87,5 +90,7 @@ ewald_LRcorrection(int numAtomsLocal,
                    real *Vcorr_q, real *Vcorr_lj,
                    real lambda_q, real lambda_lj,
                    real *dvdlambda_q, real *dvdlambda_lj);
+
+} // namespace gmx
 
 #endif

@@ -63,6 +63,8 @@
 #include "selelem.h"
 #include "selmethod.h"
 
+using namespace gmx;
+
 /*! \brief
  * Allocates data for integer keyword evaluation.
  *

@@ -44,6 +44,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct ForceProviders;
 
 /* Abstract type for PME that is defined only in the routine that use them. */
@@ -324,5 +327,7 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
 #define BHAMC(nbfp, ntp, ai, aj)  (nbfp)[3*((ntp)*(ai)+(aj))]
 #define BHAMA(nbfp, ntp, ai, aj)  (nbfp)[3*((ntp)*(ai)+(aj))+1]
 #define BHAMB(nbfp, ntp, ai, aj)  (nbfp)[3*((ntp)*(ai)+(aj))+2]
+
+} // namespace gmx
 
 #endif

@@ -45,6 +45,9 @@
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/arrayref.h"
 
+namespace gmx
+{
+
 struct gmx_output_env_t;
 struct gmx_pme_t;
 struct gmx_update_t;
@@ -53,14 +56,10 @@ struct nonbonded_verlet_t;
 struct t_forcerec;
 struct t_mdatoms;
 struct t_nrnb;
-
-namespace gmx
-{
 class BoxDeformation;
 class Constraints;
 class IMDOutputProvider;
 class MDLogger;
-}
 
 typedef struct gmx_global_stat *gmx_global_stat_t;
 
@@ -161,5 +160,7 @@ void init_md(FILE *fplog,
 /* Routine in sim_util.c */
 
 gmx_bool use_GPU(const nonbonded_verlet_t *nbv);
+
+} // namespace gmx
 
 #endif

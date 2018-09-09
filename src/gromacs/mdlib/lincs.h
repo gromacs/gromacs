@@ -51,6 +51,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_mtop_t;
 struct gmx_multisim_t;
 struct t_blocka;
@@ -60,9 +63,6 @@ struct t_inputrec;
 struct t_mdatoms;
 struct t_nrnb;
 struct t_pbc;
-
-namespace gmx
-{
 
 enum class ConstraintVariable : int;
 

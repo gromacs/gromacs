@@ -52,6 +52,9 @@
 #include "pme-gpu-utils.h"
 #include "pme-grid.h"
 
+namespace gmx
+{
+
 /*
  * This define affects the spline calculation behaviour in the kernel.
  * 0: a single GPU thread handles a single dimension of a single particle (calculating and storing (order) spline values and derivatives).
@@ -475,3 +478,5 @@ __global__ void pme_spline_and_spread_kernel(const PmeGpuCudaKernelParams kernel
 template __global__ void pme_spline_and_spread_kernel<4, true, true, true, true>(const PmeGpuCudaKernelParams);
 template __global__ void pme_spline_and_spread_kernel<4, true, false, true, true>(const PmeGpuCudaKernelParams);
 template __global__ void pme_spline_and_spread_kernel<4, false, true, true, true>(const PmeGpuCudaKernelParams);
+
+} //namespace gmx

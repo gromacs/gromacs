@@ -46,6 +46,8 @@
 
 /*** Generic CUDA data operation wrappers ***/
 
+namespace gmx
+{
 // TODO: template on transferKind to avoid runtime conditionals
 int cu_copy_D2H(void *h_dest, void *d_src, size_t bytes,
                 GpuApiCallBehavior transferKind, cudaStream_t s = 0)
@@ -223,3 +225,5 @@ template void initParamLookupTable<float>(float * &, cudaTextureObject_t &, cons
 template void destroyParamLookupTable<float>(float *, cudaTextureObject_t, const gmx_device_info_t *);
 template void initParamLookupTable<int>(int * &, cudaTextureObject_t &, const int *, int, const gmx_device_info_t *);
 template void destroyParamLookupTable<int>(int *, cudaTextureObject_t, const gmx_device_info_t *);
+
+} // namespace gmx

@@ -46,6 +46,9 @@
 
 #include "kernelutil_x86_sse4_1_single.h"
 
+namespace gmx
+{
+
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecCoul_VdwNone_GeomW4P1_VF_sse4_1_single
  * Electrostatics interaction: Coulomb
@@ -932,3 +935,5 @@ nb_kernel_ElecCoul_VdwNone_GeomW4P1_F_sse4_1_single
 
     inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_W4_F,outeriter*18 + inneriter*81);
 }
+
+} //namespace gmx

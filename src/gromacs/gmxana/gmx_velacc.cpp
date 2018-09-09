@@ -61,6 +61,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void index_atom2mol(int *n, int *index, const t_block *mols)
 {
     int nat, i, nmol, mol, j;
@@ -374,3 +377,5 @@ int gmx_velacc(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

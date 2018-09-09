@@ -39,6 +39,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 
+namespace gmx
+{
+
 struct ewald_corr_thread_t {
     real              Vcorr_q;
     real              Vcorr_lj;
@@ -46,5 +49,7 @@ struct ewald_corr_thread_t {
     tensor            vir_q;
     tensor            vir_lj;
 };
+
+} // namespace gmx
 
 #endif

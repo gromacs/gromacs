@@ -44,6 +44,9 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 class energyhistory_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
@@ -52,11 +55,7 @@ struct ObservablesHistory;
 struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
-
-namespace gmx
-{
 class IMDOutputProvider;
-}
 
 typedef struct gmx_mdoutf *gmx_mdoutf_t;
 
@@ -141,5 +140,7 @@ int mdoutf_get_tng_compressed_lambda_output_interval(gmx_mdoutf_t of);
 #define MDOF_LAMBDA            (1<<7)
 #define MDOF_BOX_COMPRESSED    (1<<8)
 #define MDOF_LAMBDA_COMPRESSED (1<<9)
+
+} // namespace gmx
 
 #endif

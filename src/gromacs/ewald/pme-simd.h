@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,9 @@
 /* Include the SIMD macro file and then check for support */
 #include "gromacs/simd/simd.h"
 
+namespace gmx
+{
+
 /* Check if we have 4-wide SIMD macro support */
 #if GMX_SIMD4_HAVE_REAL
 /* Do PME spread and gather with 4-wide SIMD.
@@ -66,5 +69,7 @@
 #else
 #    define PME_4NSIMD_GATHER  0
 #endif
+
+} // namespace gmx
 
 #endif

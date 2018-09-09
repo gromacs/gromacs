@@ -39,6 +39,9 @@
 
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 
+namespace gmx
+{
+
 extern nb_kernel_t nb_kernel_ElecNone_VdwLJEw_GeomP1P1_VF_sparc64_hpc_ace_double;
 extern nb_kernel_t nb_kernel_ElecNone_VdwLJEw_GeomP1P1_F_sparc64_hpc_ace_double;
 extern nb_kernel_t nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_VF_sparc64_hpc_ace_double;
@@ -512,3 +515,5 @@ nb_kernel_info_t
 
 int
     kernellist_sparc64_hpc_ace_double_size = sizeof(kernellist_sparc64_hpc_ace_double)/sizeof(kernellist_sparc64_hpc_ace_double[0]);
+
+} //namespace gmx

@@ -50,6 +50,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_grppairener_t;
 struct t_forcerec;
 struct t_graph;
@@ -67,5 +70,7 @@ do_pairs(int ftype, int nbonds, const t_iatom iatoms[], const t_iparams iparams[
          const real *lambda, real *dvdl, const t_mdatoms *md, const t_forcerec *fr,
          gmx_bool computeForcesOnly, gmx_grppairener_t *grppener,
          int *global_atom_index);
+
+} // namespace gmx
 
 #endif

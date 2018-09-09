@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,9 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
+
+namespace gmx
+{
 
 #define xAI xa[0]
 #define xAJ xa[1]
@@ -159,7 +162,7 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
             sb[YY] = sa[ZZ]*sij[XX]-sa[XX]*sij[ZZ];
             sb[ZZ] = sa[XX]*sij[YY]-sa[YY]*sij[XX];
             break;
-    } /* end switch */
+    }   /* end switch */
 
     switch (nht)
     {
@@ -297,5 +300,7 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
         }
         default:
             gmx_fatal(FARGS, "Invalid argument (%d) for nht in routine genh\n", nht);
-    } /* end switch */
+    }   /* end switch */
 }
+
+} //namespace gmx

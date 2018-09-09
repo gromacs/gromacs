@@ -49,6 +49,9 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
 
+namespace gmx
+{
+
 struct gmx_ddbox_t;
 struct gmx_domdec_comm_t;
 struct gmx_domdec_t;
@@ -83,5 +86,7 @@ void set_dd_cell_sizes(gmx_domdec_t *dd,
                        const gmx_ddbox_t *ddbox, gmx_bool bDynamicBox,
                        gmx_bool bUniform, gmx_bool bDoDLB, int64_t step,
                        gmx_wallcycle_t wcycle);
+
+} // namespace gmx
 
 #endif

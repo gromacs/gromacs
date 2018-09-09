@@ -83,7 +83,6 @@ class EnumOptionStorage;
  * Example:
  * \code
    bool  bPBC;
-   using gmx::BooleanOption;
    options.addOption(BooleanOption("pbc").store(&bPBC));
  * \endcode
  *
@@ -111,7 +110,6 @@ class BooleanOption : public OptionTemplate<bool, BooleanOption>
  *
  * Examples:
  * \code
-   using gmx::IntegerOption;
    // Simple option
    int  rcut = 0;
    options.addOption(IntegerOption("rcut").store(&rcut));
@@ -277,7 +275,6 @@ class FloatOption : public OptionTemplate<float, FloatOption>
  *
  * Examples:
  * \code
-   using gmx::StringOption;
    // Simple option
    std::string  str;
    options.addOption(StringOption("str").store(&str));
@@ -482,7 +479,6 @@ createEnumOptionStorage(const AbstractOption &option,
  * Examples:
  * \code
    enum MyEnum { eAtom, eRes, eMol };
-   using gmx::EnumOption;
    const char * const  allowed[] = { "atom", "residue", "molecule" };
    MyEnum       value = eAtom; // default value
    options.addOption(EnumOption<MyEnum>("type").enumValue(allowed).store(&value));

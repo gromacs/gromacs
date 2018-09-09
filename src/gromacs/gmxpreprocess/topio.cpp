@@ -78,6 +78,9 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 #define OPENDIR     '[' /* starting sign for directive */
 #define CLOSEDIR    ']' /* ending sign for directive   */
 
@@ -1298,7 +1301,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, const unsigned char *gr
     free(bQMMM);
     free(link_arr);
     free(blink);
-} /* generate_qmexcl */
+}   /* generate_qmexcl */
 
 void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi)
 {
@@ -1391,3 +1394,5 @@ void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi)
                      "\n\n");
     }
 }
+
+} //namespace gmx

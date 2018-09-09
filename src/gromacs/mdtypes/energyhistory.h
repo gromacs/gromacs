@@ -54,6 +54,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 //! \cond INTERNAL
 
 //! \brief Energy history for delta_h histograms in between energy file frames
@@ -106,5 +109,7 @@ class energyhistory_t
 };
 
 //! \endcond
+
+} // namespace gmx
 
 #endif

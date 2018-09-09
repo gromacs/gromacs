@@ -54,6 +54,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 /* Number of control atoms for each 'add' type.
  *
  * There are 11 types of adding hydrogens, numbered from 1 thru
@@ -229,3 +232,5 @@ t_hackblock *search_h_db(int nh, t_hackblock ah[], char *key)
 
     return result;
 }
+
+} //namespace gmx

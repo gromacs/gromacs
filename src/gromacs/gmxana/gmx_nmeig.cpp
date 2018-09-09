@@ -68,6 +68,9 @@
 
 #include "thermochemistry.h"
 
+namespace gmx
+{
+
 static double cv_corr(double nu, double T)
 {
     double x  = PLANCK*nu/(BOLTZ*T);
@@ -798,3 +801,5 @@ int gmx_nmeig(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

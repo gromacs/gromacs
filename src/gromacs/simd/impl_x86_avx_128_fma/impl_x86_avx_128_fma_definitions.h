@@ -36,6 +36,9 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX_128_FMA_DEFINITIONS_H
 #define GMX_SIMD_IMPL_X86_AVX_128_FMA_DEFINITIONS_H
 
+namespace gmx
+{
+
 // Capability definitions for AVX-128-FMA
 #define GMX_SIMD                                1
 #define GMX_SIMD_HAVE_FLOAT                     1
@@ -84,4 +87,6 @@
 #define gmx_mm_maskload_ps(mem, mask)       _mm_maskload_ps((mem), (mask))
 #define gmx_mm_maskstore_ps(mem, mask, x)   _mm_maskstore_ps((mem), (mask), (x))
 
-#endif  // GMX_SIMD_IMPL_X86_AVX_128_FMA_DEFINITIONS_H
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_X86_AVX_128_FMA_DEFINITIONS_H

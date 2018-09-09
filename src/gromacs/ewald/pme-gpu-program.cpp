@@ -51,6 +51,9 @@
 
 #include "pme-gpu-program-impl.h"
 
+namespace gmx
+{
+
 PmeGpuProgram::PmeGpuProgram(const gmx_device_info_t *deviceInfo) :
     impl_(gmx::compat::make_unique<PmeGpuProgramImpl>(deviceInfo))
 {
@@ -67,3 +70,5 @@ PmeGpuProgramStorage buildPmeGpuProgram(const gmx_device_info_t *deviceInfo)
     }
     return gmx::compat::make_unique<PmeGpuProgram>(deviceInfo);
 }
+
+} //namespace gmx

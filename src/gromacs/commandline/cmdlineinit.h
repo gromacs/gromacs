@@ -178,8 +178,6 @@ int runCommandLineModule(int argc, char *argv[],
                          const char *name, const char *description,
                          std::function<std::unique_ptr<ICommandLineOptionsModule>()> factory);
 
-} // namespace gmx
-
 /*! \brief
  * Implements a main() method that runs a given C main function.
  *
@@ -213,5 +211,7 @@ int runCommandLineModule(int argc, char *argv[],
  * Does not throw.  All exceptions are caught and handled internally.
  */
 int gmx_run_cmain(int argc, char *argv[], int (*mainFunction)(int, char *[]));
+
+} // namespace gmx
 
 #endif

@@ -77,6 +77,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 typedef struct {
     int     nnucl;
     int     shell;               /* The shell id				*/
@@ -1357,3 +1360,5 @@ void done_shellfc(FILE *fplog, gmx_shellfc_t *shfc, int64_t numSteps)
 
     // TODO Deallocate memory in shfc
 }
+
+} //namespace gmx

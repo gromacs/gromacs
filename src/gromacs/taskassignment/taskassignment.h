@@ -52,12 +52,11 @@
 
 #include <vector>
 
+namespace gmx
+{
 struct gmx_hw_info_t;
 struct gmx_multisim_t;
 struct t_commrec;
-
-namespace gmx
-{
 
 class MDLogger;
 class PhysicalNodeCommunicator;

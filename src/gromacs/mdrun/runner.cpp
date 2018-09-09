@@ -215,8 +215,6 @@ t_commrec *Mdrunner::spawnThreads(int numThreadsToLaunch) const
     return reinitialize_commrec_for_this_thread(cr);
 }
 
-}  // namespace gmx
-
 /*! \brief Initialize variables for Verlet scheme simulation */
 static void prepare_verlet_scheme(FILE                           *fplog,
                                   t_commrec                      *cr,
@@ -307,9 +305,6 @@ static void override_nsteps_cmdline(const gmx::MDLogger &mdlog,
     }
     /* Do nothing if nsteps_cmdline == -2 */
 }
-
-namespace gmx
-{
 
 /*! \brief Return whether GPU acceleration of nonbondeds is supported with the given settings.
  *

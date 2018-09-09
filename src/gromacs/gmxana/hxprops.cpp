@@ -53,6 +53,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 real ellipticity(int nres, t_bb bb[])
 {
     typedef struct {
@@ -621,3 +624,5 @@ void pr_bb(FILE *fp, int nres, t_bb bb[])
     }
     fprintf(fp, "\n");
 }
+
+} //namespace gmx

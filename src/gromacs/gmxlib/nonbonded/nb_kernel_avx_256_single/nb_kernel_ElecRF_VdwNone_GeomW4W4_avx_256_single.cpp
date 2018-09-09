@@ -46,6 +46,9 @@
 
 #include "kernelutil_x86_avx_256_single.h"
 
+namespace gmx
+{
+
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecRF_VdwNone_GeomW4W4_VF_avx_256_single
  * Electrostatics interaction: ReactionField
@@ -1814,3 +1817,5 @@ nb_kernel_ElecRF_VdwNone_GeomW4W4_F_avx_256_single
 
     inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_W4W4_F,outeriter*18 + inneriter*243);
 }
+
+} //namespace gmx

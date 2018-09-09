@@ -47,6 +47,9 @@
 
 #include "domdec_internal.h"
 
+namespace gmx
+{
+
 /*! \brief Returns true if the DLB state indicates that the balancer is on. */
 static inline bool isDlbOn(const gmx_domdec_comm_t *comm)
 {
@@ -99,5 +102,7 @@ void dd_check_alloc_ncg(t_forcerec       *fr,
                         t_state          *state,
                         PaddedRVecVector *f,
                         int               numChargeGroups);
+
+} // namespace gmx
 
 #endif

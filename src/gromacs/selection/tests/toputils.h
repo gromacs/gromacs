@@ -45,12 +45,11 @@
 #include <memory>
 #include <vector>
 
+namespace gmx
+{
 struct gmx_mtop_t;
 struct t_atoms;
 struct t_trxframe;
-
-namespace gmx
-{
 
 template <typename T>
 class ArrayRef;

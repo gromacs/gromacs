@@ -184,8 +184,6 @@ class RangePartitioning
         std::vector<int> index_ = { 0 }; /**< The list of block begin/end indices */
 };
 
-}  // namespace gmx
-
 /* Deprecated, C-style version of RangePartitioning */
 typedef struct t_block
 {
@@ -240,5 +238,7 @@ void stupid_fill_blocka(t_blocka *grp, int natom);
 
 void pr_block(FILE *fp, int indent, const char *title, const t_block *block, gmx_bool bShowNumbers);
 void pr_blocka(FILE *fp, int indent, const char *title, const t_blocka *block, gmx_bool bShowNumbers);
+
+}  // namespace gmx
 
 #endif

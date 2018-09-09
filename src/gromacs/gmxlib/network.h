@@ -46,6 +46,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
 
+namespace gmx
+{
+
 struct gmx_multisim_t;
 struct t_commrec;
 struct t_filenm;
@@ -129,5 +132,7 @@ gmx_fatal_collective(int f_errno, const char *file, int line,
  * This is useful for handling errors in code that is executed identically
  * for all processes.
  */
+
+} // namespace gmx
 
 #endif

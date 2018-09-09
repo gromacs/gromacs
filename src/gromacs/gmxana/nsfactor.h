@@ -39,6 +39,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 struct t_topology;
 
 typedef struct gmx_neutron_atomic_structurefactors_t {
@@ -91,5 +94,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram  (gmx_sa
 
 gmx_static_structurefactor_t *convert_histogram_to_intensity_curve (gmx_radial_distribution_histogram_t *pr, double start_q, double end_q, double q_step);
 
+
+} // namespace gmx
 
 #endif

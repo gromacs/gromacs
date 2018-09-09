@@ -102,6 +102,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 
+namespace gmx
+{
+
 static int rm_interactions(int ifunc, int nrmols, t_molinfo mols[])
 {
     int  i, n;
@@ -2321,3 +2324,5 @@ int gmx_grompp(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

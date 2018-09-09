@@ -46,6 +46,9 @@
 
 #include "kernelutil_x86_sse4_1_single.h"
 
+namespace gmx
+{
+
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecCSTab_VdwNone_GeomW4W4_VF_sse4_1_single
  * Electrostatics interaction: CubicSplineTable
@@ -2308,3 +2311,5 @@ nb_kernel_ElecCSTab_VdwNone_GeomW4W4_F_sse4_1_single
 
     inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_W4W4_F,outeriter*18 + inneriter*360);
 }
+
+} //namespace gmx

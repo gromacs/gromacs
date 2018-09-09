@@ -43,6 +43,9 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 
+namespace gmx
+{
+
 enum
 {
     eftASC, eftXDR, eftTNG, eftGEN, eftNR
@@ -321,3 +324,5 @@ int fn2ftp(const char *fn)
 
     return i;
 }
+
+} //namespace gmx

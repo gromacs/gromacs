@@ -54,6 +54,9 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static int gmx_mtop_maxresnr(const gmx_mtop_t *mtop, int maxres_renum)
 {
     int maxresnr = 0;
@@ -1145,3 +1148,5 @@ void convertAtomsToMtop(t_symtab    *symtab,
 
     gmx_mtop_finalize(mtop);
 }
+
+} //namespace gmx

@@ -66,6 +66,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct cginfo_mb_t;
 struct gmx_domdec_t;
 struct gmx_ddbox_t;
@@ -85,13 +88,10 @@ struct t_nrnb;
 struct gmx_wallcycle;
 class t_state;
 
-namespace gmx
-{
 class Constraints;
 class MDAtoms;
 class MDLogger;
 class LocalAtomSetManager;
-} // namespace
 
 /*! \brief Returns the global topology atom number belonging to local atom index i.
  *
@@ -484,5 +484,7 @@ void set_ddbox_cr(const t_commrec *cr, const ivec *dd_nc,
                   const t_inputrec *ir, const matrix box,
                   gmx::ArrayRef<const gmx::RVec> x,
                   gmx_ddbox_t *ddbox);
+
+} // namespace gmx
 
 #endif

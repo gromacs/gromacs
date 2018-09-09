@@ -44,6 +44,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 class ekinstate_t;
 struct gmx_ekindata_t;
 struct gmx_enerdata_t;
@@ -58,12 +61,8 @@ class t_state;
 
 /* Abstract type for update */
 struct gmx_update_t;
-
-namespace gmx
-{
 class BoxDeformation;
 class Constraints;
-}
 
 /* Initialize the stochastic dynamics struct */
 gmx_update_t *init_update(const t_inputrec    *ir,
@@ -280,5 +279,7 @@ void berendsen_pscale(const t_inputrec *ir, const matrix mu,
 void correct_ekin(FILE *log, int start, int end, rvec v[],
                   rvec vcm, real mass[], real tmass, tensor ekin);
 /* Correct ekin for vcm */
+
+} // namespace gmx
 
 #endif

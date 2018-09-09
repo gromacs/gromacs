@@ -66,6 +66,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /*
  *    E X C L U S I O N   H A N D L I N G
  */
@@ -2366,3 +2369,5 @@ int search_neighbours(FILE               *log,
 
     return nsearch;
 }
+
+} //namespace gmx

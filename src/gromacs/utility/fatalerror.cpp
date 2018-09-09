@@ -62,6 +62,9 @@
 
 #include "errorformat.h"
 
+namespace gmx
+{
+
 static bool       bDebug         = false;
 static gmx::Mutex where_mutex;
 
@@ -275,3 +278,5 @@ void gmx_warning(const char *fmt, ...)
 
     fprintf(stderr, "\nWARNING: %s\n\n", msg);
 }
+
+} //namespace gmx

@@ -42,6 +42,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 typedef struct
     gmx_sparsematrix_entry
 {
@@ -191,5 +194,7 @@ gmx_sparsematrix_vector_multiply(gmx_sparsematrix_t *    A,
                                  real *                  x,
                                  real *                  y);
 
+
+} // namespace gmx
 
 #endif

@@ -43,6 +43,9 @@
 #include "gromacs/listed-forces/disre.h"
 #include "gromacs/listed-forces/orires.h"
 
+namespace gmx
+{
+
 #define  def_bonded(str, lstr, nra, nrpa, nrpb, ind, func) \
     {str, lstr, (nra), (nrpa), (nrpb), IF_BOND,                        (ind), (func)}
 
@@ -180,3 +183,5 @@ const t_interaction_function interaction_function[F_NRE] =
     def_nofc    ("DVR/DL",   "dVrestraint/dl"   ),
     def_nofc    ("DVT/DL",   "dVtemperature/dl" )
 };
+
+} //namespace gmx

@@ -39,6 +39,9 @@
 
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_atomprop;
 struct t_atoms;
 
@@ -52,4 +55,6 @@ std::vector<real>
 makeExclusionDistances(const t_atoms *a, gmx_atomprop *aps,
                        real defaultDistance, real scaleFactor);
 
+
+} // namespace gmx
 #endif

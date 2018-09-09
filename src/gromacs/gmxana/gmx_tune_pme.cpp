@@ -74,6 +74,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 /* Enum for situations that can occur during log file parsing, the
  * corresponding string entries can be found in do_the_tests() in
  * const char* ParseLog[] */
@@ -348,7 +351,7 @@ static int parse_logfile(const char *logfile, const char *errfile,
                 }
                 break;
         }
-    } /* while */
+    }   /* while */
 
     /* Close the log file */
     fclose(fp);
@@ -1060,7 +1063,7 @@ static void make_benchmark_tprs(
                     ir->rvdw = std::max(info->rvdw[0], ir->rlist);
                 }
             }
-        } /* end of "if (j != 0)" */
+        }   /* end of "if (j != 0)" */
 
         /* for j==0: Save the original settings
          * for j >0: Save modified radii and Fourier grids */
@@ -2582,3 +2585,5 @@ int gmx_tune_pme(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

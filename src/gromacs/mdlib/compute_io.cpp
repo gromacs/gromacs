@@ -46,6 +46,9 @@
 #include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/topology/topology.h"
 
+namespace gmx
+{
+
 static int div_nsteps(int nsteps, int nst)
 {
     if (nst > 0)
@@ -153,3 +156,5 @@ double compute_io(const t_inputrec *ir, int natoms, const gmx_groups_t *groups,
 
     return cio*nrepl/(1024*1024);
 }
+
+} //namespace gmx

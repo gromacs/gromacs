@@ -60,6 +60,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 struct gmx_multisim_t;
 struct t_commrec;
 struct t_filenm;
@@ -99,5 +102,7 @@ void handleRestart(t_commrec            *cr,
                    t_filenm              fnm[],
                    bool                 *bDoAppendFiles,
                    bool                 *bStartFromCpt);
+
+} // namespace gmx
 
 #endif

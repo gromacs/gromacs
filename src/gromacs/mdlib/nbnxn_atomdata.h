@@ -46,8 +46,6 @@
 namespace gmx
 {
 class MDLogger;
-}
-
 struct t_mdatoms;
 struct gmx_wallcycle;
 
@@ -127,4 +125,5 @@ void nbnxn_atomdata_add_nbat_f_to_f(nbnxn_search           *nbs,
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
                                               rvec                   *fshift);
 
+} // namespace gmx
 #endif

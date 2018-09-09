@@ -70,6 +70,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
+namespace gmx
+{
+
 static real       minthird = -1.0/3.0, minsixth = -1.0/6.0;
 
 static double mypow(double x, double y)
@@ -949,3 +952,5 @@ int gmx_nmr(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

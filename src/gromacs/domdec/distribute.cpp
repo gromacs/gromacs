@@ -61,6 +61,9 @@
 #include "domdec_internal.h"
 #include "utility.h"
 
+namespace gmx
+{
+
 static void distributeVecSendrecv(gmx_domdec_t                   *dd,
                                   gmx::ArrayRef<const gmx::RVec>  globalVec,
                                   gmx::ArrayRef<gmx::RVec>        localVec)
@@ -533,3 +536,5 @@ void distributeState(const gmx::MDLogger &mdlog,
 
     dd_distribute_state(dd, state_global, state_local, f);
 }
+
+} //namespace gmx

@@ -40,6 +40,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 struct df_history_t;
 struct gmx_enerdata_t;
 struct t_expanded;
@@ -62,5 +65,7 @@ int ExpandedEnsembleDynamics(FILE *log, const t_inputrec *ir, const gmx_enerdata
 void PrintFreeEnergyInfoToFile(FILE *outfile, const t_lambda *fep, const t_expanded *expand,
                                const t_simtemp *simtemp, const df_history_t *dfhist,
                                int fep_state, int frequency, int64_t step);
+
+} // namespace gmx
 
 #endif

@@ -53,14 +53,15 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/classhelpers.h"
 
-//! Forward declaration
-typedef struct gmx_rmpbc *gmx_rmpbc_t;
-
 namespace gmx
 {
 
+typedef struct gmx_rmpbc *gmx_rmpbc_t;
+
 template<typename T> class ArrayRef;
 
+struct gmx_mtop_t;
+struct t_topology;
 class TopologyInformation;
 class TrajectoryAnalysisRunnerCommon;
 

@@ -36,6 +36,9 @@
 #ifndef GMX_SIMD_IMPL_ARM_NEON_ASIMD_DEFINITIONS_H
 #define GMX_SIMD_IMPL_ARM_NEON_ASIMD_DEFINITIONS_H
 
+namespace gmx
+{
+
 // ARM (AArch64) NEON Advanced SIMD
 
 #define GMX_SIMD                                1
@@ -80,5 +83,7 @@
 #define GMX_SIMD_ALIGNMENT                     16 // Bytes (4*single or 2*double)
 #define GMX_SIMD_RSQRT_BITS                     8
 #define GMX_SIMD_RCP_BITS                       8
+
+}      // namespace gmx
 
 #endif // GMX_SIMD_IMPL_ARM_NEON_ASIMD_DEFINITIONS_H

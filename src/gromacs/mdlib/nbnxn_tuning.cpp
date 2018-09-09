@@ -71,6 +71,9 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 /*! \brief Returns if we can (heuristically) change nstlist and rlist
  *
  * \param [in] ir  The input parameter record
@@ -594,3 +597,5 @@ void setupDynamicPairlistPruning(const gmx::MDLogger       &mdlog,
 
     GMX_LOG(mdlog.info).asParagraph().appendText(mesg);
 }
+
+} //namespace gmx

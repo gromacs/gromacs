@@ -38,18 +38,18 @@
 
 #include "gromacs/utility/real.h"
 
-struct gmx_mtop_t;
-struct t_inputrec;
-
 namespace gmx
 {
 
+struct gmx_mtop_t;
+struct t_inputrec;
 class MDLogger;
+
 
 /*! \brief Returns an estimate of the maximum distance between atoms
  * required for LINCS. */
 real constr_r_max(const MDLogger &mdlog, const gmx_mtop_t *mtop, const t_inputrec *ir);
 
-} // namespace
+} // namespace gmx
 
 #endif

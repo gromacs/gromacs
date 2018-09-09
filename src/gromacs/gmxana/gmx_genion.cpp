@@ -60,6 +60,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void insert_ion(int nsa, const int *nwater,
                        gmx_bool bSet[], int repl[], int index[],
                        rvec x[], t_pbc *pbc,
@@ -555,3 +558,5 @@ int gmx_genion(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

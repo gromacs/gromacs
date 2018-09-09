@@ -58,6 +58,9 @@
 #ifndef NBNXN_CUDA_KERNEL_UTILS_CUH
 #define NBNXN_CUDA_KERNEL_UTILS_CUH
 
+namespace gmx
+{
+
 /*! \brief Log of the i and j cluster size.
  *  change this together with c_clSize !*/
 static const int          c_clSizeLog2  = 3;
@@ -228,7 +231,7 @@ float calculate_lj_ewald_c6grid(const cu_nbparam_t nbparam,
     return LDG(&nbparam.nbfp_comb[2*typei]) * LDG(&nbparam.nbfp_comb[2*typej]);
 #else
     return tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej);
-#endif /* DISABLE_CUDA_TEXTURES */
+#endif  /* DISABLE_CUDA_TEXTURES */
 }
 
 
@@ -312,7 +315,7 @@ float2 fetch_nbfp_comb_c6_c12(const cu_nbparam_t nbparam,
        fetch float2 here too just as above. */
     c6c12.x = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*type);
     c6c12.y = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*type + 1);
-#endif /* DISABLE_CUDA_TEXTURES */
+#endif  /* DISABLE_CUDA_TEXTURES */
 
     return c6c12;
 }
@@ -386,7 +389,7 @@ float2 fetch_coulomb_force_r(const cu_nbparam_t nbparam,
 #else
     d.x = tex1Dfetch<float>(nbparam.coulomb_tab_texobj, index);
     d.y = tex1Dfetch<float>(nbparam.coulomb_tab_texobj, index + 1);
-#endif // DISABLE_CUDA_TEXTURES
+#endif  // DISABLE_CUDA_TEXTURES
 
     return d;
 }
@@ -443,7 +446,7 @@ void fetch_nbfp_c6_c12(float               &c6,
        fetch float2 here too just as above. */
     c6  = tex1Dfetch<float>(nbparam.nbfp_texobj, 2*baseIndex);
     c12 = tex1Dfetch<float>(nbparam.nbfp_texobj, 2*baseIndex + 1);
-#endif // DISABLE_CUDA_TEXTURES
+#endif  // DISABLE_CUDA_TEXTURES
 }
 
 
@@ -740,4 +743,5 @@ void reduce_energy_warp_shfl(float E_lj, float E_el,
 }
 #endif /* GMX_PTX_ARCH */
 
+}      // namespace gmx
 #endif /* NBNXN_CUDA_KERNEL_UTILS_CUH */

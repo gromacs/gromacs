@@ -44,6 +44,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/datafilefinder.h"
 
+namespace gmx
+{
+
 /*! \brief
  * Enumerates forcefields in the data directories.
  */
@@ -80,5 +83,7 @@ FILE *fflib_open(const std::string &file);
  * "file" should contain the whole path to the force field library,
  * either absolute or relative to the current dir.
  */
+
+} // namespace gmx
 
 #endif

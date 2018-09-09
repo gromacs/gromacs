@@ -61,6 +61,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
+namespace gmx
+{
+
 
 static void calc_dist(int nind, const int index[], const rvec x[], int ePBC, matrix box,
                       real **d)
@@ -889,3 +892,5 @@ int gmx_rmsdist(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

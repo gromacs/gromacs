@@ -46,11 +46,10 @@
 
 #include <cstdio>
 
-struct gmx_output_env_t;
-struct t_filenm;
-
 namespace gmx
 {
+struct gmx_output_env_t;
+struct t_filenm;
 
 /*! \libinternal \brief
  * Interface for handling additional output files during a simulation.

@@ -43,6 +43,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_mtop_t;
 struct t_atoms;
 struct t_block;
@@ -114,5 +117,7 @@ gmx_bool fn2bTPX(const char *file);
 /* return if *file is one of the TPX file types */
 
 void pr_tpxheader(FILE *fp, int indent, const char *title, const t_tpxheader *sh);
+
+} // namespace gmx
 
 #endif

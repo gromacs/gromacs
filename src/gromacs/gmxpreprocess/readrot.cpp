@@ -50,6 +50,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static const char *RotStr = "Enforced rotation:";
 
 
@@ -324,3 +327,5 @@ extern void make_rotation_groups(t_rot *rot, char **rotgnames, t_blocka *grps, c
         }
     }
 }
+
+} //namespace gmx

@@ -69,6 +69,9 @@
 #include "pme-internal.h"
 #include "pme-pp-communication.h"
 
+namespace gmx
+{
+
 /*! \brief Block to wait for communication to PME ranks to complete
  *
  * This should be faster with a real non-blocking MPI implementation
@@ -413,3 +416,5 @@ void gmx_pme_receive_f(const t_commrec *cr,
 
     receive_virial_energy(cr, forceWithVirial, energy_q, energy_lj, dvdlambda_q, dvdlambda_lj, pme_cycles);
 }
+
+} //namespace gmx

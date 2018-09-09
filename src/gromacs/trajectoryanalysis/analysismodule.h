@@ -51,12 +51,11 @@
 #include "gromacs/selection/selection.h" // For gmx::SelectionList
 #include "gromacs/utility/classhelpers.h"
 
-struct t_pbc;
-struct t_trxframe;
-
 namespace gmx
 {
 
+struct t_pbc;
+struct t_trxframe;
 class AbstractAnalysisData;
 class AnalysisData;
 class AnalysisDataHandle;

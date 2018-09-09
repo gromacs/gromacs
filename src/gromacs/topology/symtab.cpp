@@ -49,6 +49,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
+namespace gmx
+{
+
 #define BUFSIZE         1024
 #define TABLESIZE       5
 
@@ -320,3 +323,5 @@ void pr_symtab(FILE *fp, int indent, const char *title, t_symtab *symtab)
         }
     }
 }
+
+} //namespace gmx

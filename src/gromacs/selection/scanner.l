@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -137,7 +137,7 @@ COMMENT    (#.*)
 {COMMENT}       break;
 {INTEGER}       { yylval->i   = strtol(yytext, NULL, 10);    ADD_TOKEN; return TOK_INT; }
 {REAL}          { yylval->r   = strtod(yytext, NULL);        ADD_TOKEN; return TOK_REAL; }
-{STRING}        { yylval->str = gmx_strndup(yytext+1, yyleng-2); ADD_TOKEN; return STR;  }
+{STRING}        { yylval->str = gmx::gmx_strndup(yytext+1, yyleng-2); ADD_TOKEN; return STR;  }
 
 \\\n            { _gmx_sel_lexer_add_token(yylloc, " ", 1, state); break; }
 ";"|\n          {
@@ -168,10 +168,10 @@ and|"&&"        { ADD_TOKEN; return AND; }
 or|"||"         { ADD_TOKEN; return OR; }
 xor             { ADD_TOKEN; return XOR; }
 not|"!"         { ADD_TOKEN; return NOT; }
-{CMPOP}         { yylval->str = gmx_strndup(yytext, yyleng); ADD_TOKEN; return CMP_OP; }
+{CMPOP}         { yylval->str = gmx::gmx_strndup(yytext, yyleng); ADD_TOKEN; return CMP_OP; }
 
 {IDENTIFIER}    { return _gmx_sel_lexer_process_identifier(yylval, yylloc, yytext, yyleng, state); }
 
 [[:space:]]+    { _gmx_sel_lexer_add_token(yylloc, " ", 1, state); break; }
-[_[:alnum:]]+   { yylval->str = gmx_strndup(yytext, yyleng); ADD_TOKEN; return STR; }
+[_[:alnum:]]+   { yylval->str = gmx::gmx_strndup(yytext, yyleng); ADD_TOKEN; return STR; }
 .               { ADD_TOKEN; return yytext[0]; }

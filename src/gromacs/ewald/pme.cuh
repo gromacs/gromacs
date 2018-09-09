@@ -53,6 +53,9 @@
 #include "pme-gpu-types-host.h"
 #include "pme-gpu-types-host-impl.h"
 
+namespace gmx
+{
+
 /*! \brief \internal
  * An inline CUDA function for checking the global atom data indices against the atom data array sizes.
  *
@@ -96,4 +99,5 @@ struct PmeGpuCudaKernelParams : PmeGpuKernelParamsBase
     cudaTextureObject_t gridlineIndicesTableTexture;
 };
 
+} // namespace gmx
 #endif

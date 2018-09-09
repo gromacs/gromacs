@@ -51,6 +51,9 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/gmxassert.h"
 
+namespace gmx
+{
+
 #define XXXX    0
 #define XXYY    1
 #define XXZZ    2
@@ -242,3 +245,5 @@ void f_calc_vir(int i0, int i1, const rvec x[], const rvec f[], tensor vir,
         calc_vir(i1-i0, x + i0, f + i0, vir, FALSE, box);
     }
 }
+
+} //namespace gmx

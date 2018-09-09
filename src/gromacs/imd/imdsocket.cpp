@@ -59,6 +59,19 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+#if !GMX_NATIVE_WINDOWS
+/* On UNIX, we can use nice errors from errno.h */
+#include <unistd.h>
+#ifdef GMX_IMD
+#include <ctime>
+
+#include <sys/select.h>
+#include <sys/time.h>
+#endif
+#endif
+
+namespace gmx
+{
 #if GMX_NATIVE_WINDOWS
 #ifdef GMX_HAVE_WINSOCK
 /*! \brief Define socklen type on Windows. */
@@ -77,17 +90,7 @@ extern int imdsock_winsockinit()
     return ret;
 }
 #endif
-#else
-/* On UNIX, we can use nice errors from errno.h */
-#include <unistd.h>
-#ifdef GMX_IMD
-#include <ctime>
-
-#include <sys/select.h>
-#include <sys/time.h>
 #endif
-#endif
-
 
 /*! \brief Simple error handling. */
 #if GMX_NATIVE_WINDOWS
@@ -365,3 +368,5 @@ extern int imdsock_tryread(IMDSocket *sock, int timeoutsec, int timeoutusec)
 
     return ret;
 }
+
+} //namespace gmx

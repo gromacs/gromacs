@@ -57,6 +57,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 typedef struct {
     char *name;
     char *def;
@@ -623,7 +626,7 @@ int cpp_read_line(gmx_cpp_t *handlep, int n, char buf[])
         }
         strcpy(handle->line, buf);
         handle->line_nr++;
-    } /* Now we've read a line! */
+    }   /* Now we've read a line! */
 
     /* Process directives if this line contains one */
     if (find_directive(buf, &dname, &dval))
@@ -784,3 +787,5 @@ char *cpp_error(gmx_cpp_t *handlep, int status)
 
     return gmx_strdup(buf);
 }
+
+} //namespace gmx

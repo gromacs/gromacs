@@ -44,6 +44,9 @@
 #include "../nb_kernel.h"
 #include "gromacs/gmxlib/nrnb.h"
 
+namespace gmx
+{
+
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecCSTab_VdwBham_GeomW3W3_VF_c
  * Electrostatics interaction: CubicSplineTable
@@ -1251,3 +1254,5 @@ nb_kernel_ElecCSTab_VdwBham_GeomW3W3_F_c
 
     inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW_W3W3_F,outeriter*30 + inneriter*369);
 }
+
+} //namespace gmx

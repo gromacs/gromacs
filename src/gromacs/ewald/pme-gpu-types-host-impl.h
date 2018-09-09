@@ -60,6 +60,9 @@
 
 #include "gromacs/timing/gpu_timing.h" // for gtPME_EVENT_COUNT
 
+namespace gmx
+{
+
 class GpuParallel3dFft;
 
 /*! \internal \brief
@@ -142,5 +145,7 @@ struct PmeGpuSpecific
     /*! \brief The kernelParams.grid.fourierGrid float (not float2!) element count (reserved) */
     int complexGridSizeAlloc;
 };
+
+} // namespace gmx
 
 #endif

@@ -74,6 +74,8 @@
 #ifndef __OPENCL_C_VERSION__
 #include "gromacs/gpu_utils/devicebuffer.h"
 #define HIDE_FROM_OPENCL_COMPILER(x) x
+namespace gmx
+{
 static_assert(sizeof(DeviceBuffer<float>) == 8, "DeviceBuffer is defined as an 8 byte stub for OpenCL C");
 static_assert(sizeof(DeviceBuffer<int>) == 8, "DeviceBuffer is defined as an 8 byte stub for OpenCL C");
 #else
@@ -217,5 +219,9 @@ struct PmeGpuKernelParamsBase
      */
     struct PmeGpuDynamicParams current;
 };
+
+#ifndef __OPENCL_C_VERSION__
+} // namespace gmx
+#endif
 
 #endif

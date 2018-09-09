@@ -51,6 +51,9 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 //! Convenience wrapper for gmx_bcast of a single value.
 template <typename T>
 void block_bc(const t_commrec *cr, T &data)
@@ -89,5 +92,7 @@ void nblock_abc(const t_commrec *cr, int numElements, std::vector<T> *v)
     }
     gmx_bcast(numElements*sizeof(T), v->data(), cr);
 }
+
+} // namespace gmx
 
 #endif

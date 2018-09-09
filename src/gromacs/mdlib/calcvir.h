@@ -37,6 +37,9 @@
 
 #include "gromacs/math/vectypes.h"
 
+namespace gmx
+{
+
 struct t_graph;
 struct t_pbc;
 
@@ -47,5 +50,7 @@ void calc_vir(int nxf, const rvec x[], const rvec f[], tensor vir,
 void f_calc_vir(int i0, int i1, const rvec x[], const rvec f[], tensor vir,
                 const t_graph *g, const rvec shift_vec[]);
 /* Calculate virial taking periodicity into account */
+
+} // namespace gmx
 
 #endif

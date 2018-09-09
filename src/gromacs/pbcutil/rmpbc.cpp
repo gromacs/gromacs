@@ -53,6 +53,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 typedef struct {
     int      natoms;
     t_graph *gr;
@@ -250,3 +253,5 @@ void rm_gropbc(const t_atoms *atoms, rvec x[], const matrix box)
         }
     }
 }
+
+} //namespace gmx

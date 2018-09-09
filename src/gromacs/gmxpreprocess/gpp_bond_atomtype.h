@@ -40,6 +40,9 @@
 
 #include <stdio.h>
 
+namespace gmx
+{
+
 typedef struct gpp_bondatomtype *t_bond_atomtype;
 
 int get_bond_atomtype_type(char *str, t_bond_atomtype at);
@@ -58,5 +61,7 @@ void done_bond_atomtype(t_bond_atomtype *at);
 void add_bond_atomtype(t_bond_atomtype at, struct t_symtab *tab,
                        char *name);
 /* Add a complete new atom type to an existing atomtype structure */
+
+} // namespace gmx
 
 #endif

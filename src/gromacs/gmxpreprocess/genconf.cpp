@@ -54,6 +54,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void rand_rot(int natoms, rvec x[], rvec v[], vec4 xrot[], vec4 vrot[],
                      gmx::DefaultRandomEngine * rng, const rvec max_rot)
 {
@@ -323,3 +326,5 @@ int gmx_genconf(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

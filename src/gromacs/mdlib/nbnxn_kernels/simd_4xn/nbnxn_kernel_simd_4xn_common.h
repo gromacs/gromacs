@@ -44,6 +44,9 @@
 
 #include "config.h"
 
+namespace gmx
+{
+
 #ifndef GMX_SIMD_J_UNROLL_SIZE
 #error "Need to define GMX_SIMD_J_UNROLL_SIZE before including the 4xn kernel common header file"
 #endif
@@ -73,7 +76,6 @@
 /* Add energy register to possibly multiple terms in the energy array */
 static inline void add_ener_grp(gmx::SimdReal e_S, real *v, const int *offset_jj)
 {
-    using namespace gmx;
     int jj;
 
     /* We need to balance the number of store operations with
@@ -108,7 +110,6 @@ gmx_load_simd_4xn_interactions(int                               excl,
                                gmx::SimdBool                    *interact_S2,
                                gmx::SimdBool                    *interact_S3)
 {
-    using namespace gmx;
 #if GMX_SIMD_HAVE_INT32_LOGICAL
     /* Load integer interaction mask */
     SimdInt32 mask_pr_S(excl);
@@ -159,3 +160,5 @@ gmx_load_simd_4xn_interactions(int                               excl,
 
 /* Assumes all LJ parameters are identical */
 /* #define FIX_LJ_C */
+
+} // namespace gmx

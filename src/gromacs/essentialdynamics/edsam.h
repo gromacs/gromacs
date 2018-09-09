@@ -54,6 +54,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 
+namespace gmx
+{
+
 /*! \brief Abstract type for essential dynamics
  *
  * The main type is defined only in edsam.cpp
@@ -67,9 +70,6 @@ struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
 class t_state;
-
-namespace gmx
-{
 class Constraints;
 class EssentialDynamics
 {
@@ -87,7 +87,6 @@ class EssentialDynamics
 
         PrivateImplPointer<Impl> impl_;
 };
-} // namespace gmx
 
 /*! \brief Applies essential dynamics constrains as defined in the .edi input file.
  *
@@ -159,5 +158,7 @@ void do_flood(const t_commrec  *cr,
               matrix            box,
               int64_t           step,
               gmx_bool          bNS);
+
+} // namespace gmx
 
 #endif

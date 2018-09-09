@@ -44,6 +44,9 @@
 #include "../nb_kernel.h"
 #include "gromacs/gmxlib/nrnb.h"
 
+namespace gmx
+{
+
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecRF_VdwNone_GeomP1P1_VF_c
  * Electrostatics interaction: ReactionField
@@ -373,3 +376,5 @@ nb_kernel_ElecRF_VdwNone_GeomP1P1_F_c
 
     inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_F,outeriter*13 + inneriter*27);
 }
+
+} //namespace gmx

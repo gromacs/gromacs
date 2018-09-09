@@ -41,7 +41,12 @@
 
 #include "gromacs/gmxana/hxprops.h"
 
+namespace gmx
+{
+
 real fit_ahx(int nres, t_bb bb[], int natoms, int nall, int allindex[],
              rvec x[], int nca, int caindex[], gmx_bool bFit);
+
+} // namespace gmx
 
 #endif

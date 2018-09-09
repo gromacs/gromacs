@@ -57,6 +57,9 @@ using Context = void *;
 using Context = void *;
 #endif
 
+namespace gmx
+{
+
 struct gmx_device_info_t;
 
 /*! \internal
@@ -141,5 +144,7 @@ struct PmeGpuProgramImpl
     ~PmeGpuProgramImpl();
     GMX_DISALLOW_COPY_AND_ASSIGN(PmeGpuProgramImpl);
 };
+
+} // namespace gmx
 
 #endif

@@ -61,6 +61,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 void write_sto_conf_indexed(const char *outfile, const char *title,
                             const t_atoms *atoms,
                             const rvec x[], const rvec *v, int ePBC, const matrix box,
@@ -455,3 +458,5 @@ gmx_bool read_tps_conf(const char *infile, t_topology *top, int *ePBC,
 
     return haveTopology;
 }
+
+} //namespace gmx

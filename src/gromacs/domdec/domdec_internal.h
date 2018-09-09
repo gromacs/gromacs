@@ -50,6 +50,9 @@
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/topology/block.h"
 
+namespace gmx
+{
+
 struct t_commrec;
 
 /*! \cond INTERNAL */
@@ -618,5 +621,7 @@ static constexpr double DD_CELL_MARGIN2      = 1.00005;
 static constexpr double DD_PRES_SCALE_MARGIN = 1.02;
 
 /*! \endcond */
+
+} // namespace gmx
 
 #endif

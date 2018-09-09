@@ -69,6 +69,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 /* we keep a linked list of all files opened through pipes (i.e.
    compressed or .gzipped files. This way we can distinguish between them
    without having to change the semantics of reading from/writing to files)
@@ -88,8 +91,6 @@ static gmx::Mutex pstack_mutex;
 
 using Lock = gmx::lock_guard<gmx::Mutex>;
 
-namespace gmx
-{
 namespace
 {
 //! Global library file finder; stores the object set with setLibraryFileFinder().
@@ -111,8 +112,6 @@ void setLibraryFileFinder(const DataFileFinder *finder)
 {
     g_libFileFinder = finder;
 }
-
-} // namespace gmx
 
 void gmx_disable_file_buffering()
 {
@@ -516,9 +515,6 @@ FILE *gmx_ffopen(const char *file, const char *mode)
 #endif
 }
 
-namespace gmx
-{
-
 std::string findLibraryFile(const std::string &filename, bool bAddCWD, bool bFatal)
 {
     std::string result;
@@ -556,8 +552,6 @@ FilePtr openLibraryFile(const char *filename, bool bAddCWD, bool bFatal)
 {
     return openLibraryFile(std::string(filename), bAddCWD, bFatal);
 }
-
-} // namespace gmx
 
 void gmx_tmpnam(char *buf)
 {
@@ -740,7 +734,7 @@ int gmx_fsync(FILE *fp)
 #ifdef GMX_FAHCORE
     /* the fahcore defines its own os-independent fsync */
     rc = fah_fsync(fp);
-#else /* GMX_FAHCORE */
+#else   /* GMX_FAHCORE */
     {
         int fn;
 
@@ -763,7 +757,7 @@ int gmx_fsync(FILE *fp)
 #endif
         }
     }
-#endif /* GMX_FAHCORE */
+#endif  /* GMX_FAHCORE */
 
     /* We check for these error codes this way because POSIX requires them
        to be defined, and using anything other than macros is unlikely: */
@@ -813,3 +807,5 @@ void gmx_getcwd(char *buffer, size_t size)
                   strerror(errno));
     }
 }
+
+} // namespace gmx

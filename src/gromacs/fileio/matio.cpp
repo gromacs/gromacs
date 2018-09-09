@@ -56,6 +56,9 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static const char mapper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+{}|;:',<.>/?";
 #define NMAP static_cast<long int>(strlen(mapper))
 
@@ -1172,3 +1175,5 @@ void write_xpm(FILE *out, unsigned int flags,
     write_xpm_axis(out, "y", (flags & MAT_SPATIAL_Y) != 0u, n_y, axis_y);
     write_xpm_data(out, n_x, n_y, mat, lo, hi, *nlevels);
 }
+
+} //namespace gmx

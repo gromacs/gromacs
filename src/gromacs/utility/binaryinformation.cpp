@@ -84,10 +84,12 @@
 
 #include "cuda_version_information.h"
 
+namespace gmx
+{
+
 namespace
 {
 
-using gmx::formatString;
 
 //! \cond Doxygen does not need to care about most of this stuff, and the macro usage is painful to document
 
@@ -311,10 +313,7 @@ void gmx_print_version_info(gmx::TextWriter *writer)
 
 //! \endcond
 
-} // namespace
-
-namespace gmx
-{
+}   // namespace
 
 BinaryInformationSettings::BinaryInformationSettings()
     : bExtendedInfo_(false), bCopyright_(false),

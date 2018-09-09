@@ -39,6 +39,9 @@
 
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 
+namespace gmx
+{
+
 extern nb_kernel_t nb_kernel_ElecNone_VdwLJEw_GeomP1P1_VF_c;
 extern nb_kernel_t nb_kernel_ElecNone_VdwLJEw_GeomP1P1_F_c;
 extern nb_kernel_t nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_VF_c;
@@ -684,3 +687,5 @@ nb_kernel_info_t
 
 int
     kernellist_c_size = sizeof(kernellist_c)/sizeof(kernellist_c[0]);
+
+} //namespace gmx

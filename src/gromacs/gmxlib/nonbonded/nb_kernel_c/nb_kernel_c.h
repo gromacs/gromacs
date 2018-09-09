@@ -37,10 +37,15 @@
 
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 
+namespace gmx
+{
+
 /* List of kernels for this architecture with metadata about them */
 extern nb_kernel_info_t kernellist_c[];
 
 /* Length of kernellist_c */
 extern int kernellist_c_size;
+
+} // namespace gmx
 
 #endif

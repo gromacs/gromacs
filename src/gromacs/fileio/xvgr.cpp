@@ -56,6 +56,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
 
+namespace gmx
+{
+
 gmx_bool output_env_get_print_xvgr_codes(const gmx_output_env_t *oenv)
 {
     int xvg_format;
@@ -959,3 +962,5 @@ real **read_xvg_time(const char *fn,
 
     return val;
 }
+
+} //namespace gmx

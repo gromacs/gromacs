@@ -46,6 +46,9 @@
 
 #include "kernelutil_x86_avx_128_fma_single.h"
 
+namespace gmx
+{
+
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecCSTab_VdwLJ_GeomP1P1_VF_avx_128_fma_single
  * Electrostatics interaction: CubicSplineTable
@@ -753,3 +756,5 @@ nb_kernel_ElecCSTab_VdwLJ_GeomP1P1_F_avx_128_fma_single
 
     inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW_F,outeriter*7 + inneriter*51);
 }
+
+} //namespace gmx

@@ -45,6 +45,9 @@
 
 #include "gromacs/utility/cstringutil.h"
 
+namespace gmx
+{
+
 int pr_indent(FILE *fp, int n)
 {
     int i;
@@ -205,3 +208,5 @@ void pr_strings(FILE *fp, int indent, const char *title, char ***nm, int n, gmx_
         }
     }
 }
+
+} //namespace gmx

@@ -61,6 +61,8 @@
 #include "testutils/stringtest.h"
 #include "testutils/testfilemanager.h"
 
+namespace gmx
+{
 // TODO: These should really appear somewhere centralized.
 /*! \brief
  * Google Test formatter for GromacsFileType values.
@@ -69,10 +71,8 @@ static void PrintTo(const GromacsFileType &ftp, std::ostream *os)
 {
     *os << "'" << ftp2ext(ftp) << "'";
 }
-
 namespace
 {
-
 class StructureIORoundtripTest : public gmx::test::StringTestBase,
                                  public ::testing::WithParamInterface<GromacsFileType>
 {
@@ -209,3 +209,4 @@ INSTANTIATE_TEST_CASE_P(WithDifferentFormats,
                             ::testing::Values(efGRO, efG96, efPDB, efESP));
 
 } // namespace
+} // namespace gmx

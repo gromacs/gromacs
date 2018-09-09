@@ -43,6 +43,9 @@
 #include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /* stuff for pdb2gmx */
 
 void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
@@ -53,5 +56,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 
 void do_h_mass(t_params *psb, int vsite_type[], t_atoms *at, real mHmult,
                bool bDeuterate);
+
+} // namespace gmx
 
 #endif

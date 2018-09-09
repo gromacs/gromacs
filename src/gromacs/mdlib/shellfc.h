@@ -44,6 +44,9 @@
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/timing/wallcycle.h"
 
+namespace gmx
+{
+
 struct gmx_enerdata_t;
 struct gmx_enfrot;
 struct gmx_groups_t;
@@ -55,11 +58,7 @@ struct t_fcdata;
 struct t_graph;
 struct t_inputrec;
 class t_state;
-
-namespace gmx
-{
 class Constraints;
-}
 
 /* Initialization function, also predicts the initial shell postions.
  */
@@ -105,5 +104,7 @@ void relax_shell_flexcon(FILE                                     *log,
 
 /* Print some final output */
 void done_shellfc(FILE *fplog, gmx_shellfc_t *shellfc, int64_t numSteps);
+
+} // namespace gmx
 
 #endif

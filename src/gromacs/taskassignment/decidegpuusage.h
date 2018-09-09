@@ -45,12 +45,11 @@
 
 #include <vector>
 
+namespace gmx
+{
 struct gmx_hw_info_t;
 
 enum class EmulateGpuNonbonded : bool;
-
-namespace gmx
-{
 
 //! Record where a compute task is targetted.
 enum class TaskTarget : int
