@@ -140,7 +140,6 @@ typedef float           real;
 
 #endif /* GMX_DOUBLE */
 
-#ifdef __cplusplus
 /*! \brief User defined literal for real numbers.
  *
  * Examples: 2._real, 2.5_real, .5_real. The number is always of type real.
@@ -153,6 +152,5 @@ typedef float           real;
  * See https://en.cppreference.com/w/cpp/language/user_literal for details on this lanuage feature.
  */
 constexpr real operator"" _real(long double x) { return real(x); }
-#endif
 
 #endif
