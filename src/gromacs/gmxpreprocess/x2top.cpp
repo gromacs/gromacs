@@ -66,6 +66,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 #define MARGIN_FAC 1.1
 
 static bool is_bond(int nnm, t_nm2type nmt[], char *ai, char *aj, real blen)
@@ -594,3 +597,5 @@ int gmx_x2top(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

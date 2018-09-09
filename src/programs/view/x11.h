@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,9 @@
 #include <stdio.h>
 
 #include "Xstuff.h"
+
+namespace gmx
+{
 
 /* These colours will be mapped to black on a monochrome screen */
 extern unsigned long BLACK, BLUE, GREEN, CYAN, RED, BROWN, GREY, DARKGREY;
@@ -131,4 +134,6 @@ t_x11 *GetX11(int *argc, char *argv[]);
 
 extern void GetNamedColor(t_x11 *x11, const char *name, unsigned long *col);
 
-#endif  /* _x11_h */
+}      // namespace gmx
+
+#endif /* _x11_h */

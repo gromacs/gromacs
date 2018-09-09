@@ -46,6 +46,9 @@
 #include "gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_common.h"
 #endif
 
+namespace gmx
+{
+
 /* Prune a single nbnxn_pairtlist_t entry with distance rlistInner */
 void
 nbnxn_kernel_prune_4xn(nbnxn_pairlist_t *         nbl,
@@ -54,7 +57,6 @@ nbnxn_kernel_prune_4xn(nbnxn_pairlist_t *         nbl,
                        real                       rlistInner)
 {
 #ifdef GMX_NBNXN_SIMD_4XN
-    using namespace gmx;
     const nbnxn_ci_t * gmx_restrict ciOuter  = nbl->ciOuter;
     nbnxn_ci_t       * gmx_restrict ciInner  = nbl->ci;
 
@@ -176,7 +178,7 @@ nbnxn_kernel_prune_4xn(nbnxn_pairlist_t *         nbl,
 
     nbl->nci = nciInner;
 
-#else  /* GMX_NBNXN_SIMD_4XN */
+#else   /* GMX_NBNXN_SIMD_4XN */
 
     GMX_RELEASE_ASSERT(false, "4xN kernel called without 4xN support");
 
@@ -185,5 +187,7 @@ nbnxn_kernel_prune_4xn(nbnxn_pairlist_t *         nbl,
     GMX_UNUSED_VALUE(shift_vec);
     GMX_UNUSED_VALUE(rlistInner);
 
-#endif /* GMX_NBNXN_SIMD_4XN */
+#endif  /* GMX_NBNXN_SIMD_4XN */
 }
+
+} //namespace gmx

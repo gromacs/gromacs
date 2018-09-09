@@ -52,10 +52,9 @@
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxassert.h"
 
-struct gmx_mtop_t;
-
 namespace gmx
 {
+struct gmx_mtop_t;
 
 class SelectionOptionStorage;
 class SelectionTreeElement;

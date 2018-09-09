@@ -69,6 +69,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* declarations of the interfaces to the QM packages. The _SH indicate
  * the QM interfaces can be used for Surface Hopping simulations
  */
@@ -200,7 +203,7 @@ static void init_QMroutine(const t_commrec gmx_unused *cr, t_QMrec gmx_unused *q
         gmx_fatal(FARGS, "Ab-initio calculation only supported with Gamess, Gaussian or ORCA.");
 #endif
     }
-} /* init_QMroutine */
+}   /* init_QMroutine */
 
 static void update_QMMM_coord(const rvec *x, const t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
 {
@@ -223,7 +226,7 @@ static void update_QMMM_coord(const rvec *x, const t_forcerec *fr, t_QMrec *qm, 
     {
         rvec_sub(x[mm->indexMM[i]], fr->shift_vec[mm->shiftMM[i]], mm->xMM[i]);
     }
-} /* update_QMMM_coord */
+}   /* update_QMMM_coord */
 
 /* end of QMMM subroutines */
 
@@ -234,14 +237,14 @@ static t_QMrec *mk_QMrec(void)
     t_QMrec *qm;
     snew(qm, 1);
     return qm;
-} /* mk_QMrec */
+}   /* mk_QMrec */
 
 static t_MMrec *mk_MMrec(void)
 {
     t_MMrec *mm;
     snew(mm, 1);
     return mm;
-} /* mk_MMrec */
+}   /* mk_MMrec */
 
 static void init_QMrec(int grpnr, t_QMrec *qm, int nr, const int *atomarray,
                        gmx_mtop_t *mtop, t_inputrec *ir)
@@ -289,7 +292,7 @@ static void init_QMrec(int grpnr, t_QMrec *qm, int nr, const int *atomarray,
     fprintf(stderr, "Layer %d\nnr of QM atoms %d\n", grpnr, nr);
     fprintf(stderr, "QMlevel: %s/%s\n\n",
             eQMmethod_names[qm->QMmethod], eQMbasis_names[qm->QMbasis]);
-} /* init_QMrec */
+}   /* init_QMrec */
 
 static t_QMrec *copy_QMrec(t_QMrec *qm)
 {
@@ -338,7 +341,7 @@ static t_QMrec *copy_QMrec(t_QMrec *qm)
 
     return(qmcopy);
 
-} /*copy_QMrec */
+}   /*copy_QMrec */
 
 t_QMMMrec *mk_QMMMrec(void)
 {
@@ -349,7 +352,7 @@ t_QMMMrec *mk_QMMMrec(void)
 
     return qr;
 
-} /* mk_QMMMrec */
+}   /* mk_QMMMrec */
 
 void init_QMMMrec(const t_commrec  *cr,
                   gmx_mtop_t       *mtop,
@@ -571,7 +574,7 @@ void init_QMMMrec(const t_commrec  *cr,
 #endif
         }
     }
-} /* init_QMMMrec */
+}   /* init_QMMMrec */
 
 void update_QMMMrec(const t_commrec  *cr,
                     const t_forcerec *fr,
@@ -838,7 +841,7 @@ void update_QMMMrec(const t_commrec  *cr,
             update_QMMM_coord(x, fr, qm, mm);
         }
     }
-} /* update_QMMM_rec */
+}   /* update_QMMM_rec */
 
 real calculate_QMMM(const t_commrec  *cr,
                     rvec              f[],
@@ -962,7 +965,7 @@ real calculate_QMMM(const t_commrec  *cr,
         free(fshift2);
     }
     return(QMener);
-} /* calculate_QMMM */
+}   /* calculate_QMMM */
 #else
 real calculate_QMMM(const t_commrec  * /*unused*/,
                     rvec             * /*unused*/,
@@ -992,3 +995,5 @@ void update_QMMMrec(const t_commrec  * /*unused*/,
 #endif
 
 /* end of QMMM core routines */
+
+} //namespace gmx

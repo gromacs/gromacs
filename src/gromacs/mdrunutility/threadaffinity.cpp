@@ -64,6 +64,8 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/unique_cptr.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -84,7 +86,7 @@ class DefaultThreadAffinityAccess : public gmx::IThreadAffinityAccess
 //! Global instance of DefaultThreadAffinityAccess
 DefaultThreadAffinityAccess g_defaultAffinityAccess;
 
-} // namespace
+}   // namespace
 
 gmx::IThreadAffinityAccess::~IThreadAffinityAccess()
 {
@@ -418,7 +420,7 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
 #if !defined(__APPLE__)
         GMX_LOG(mdlog.warning).asParagraph().appendText(
                 "NOTE: Cannot set thread affinities on the current platform.");
-#endif  /* __APPLE__ */
+#endif      /* __APPLE__ */
         return;
     }
 
@@ -542,7 +544,7 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
         }
         return;
     }
-#endif /* CPU_COUNT */
+#endif  /* CPU_COUNT */
 
     gmx_bool bAllSet = TRUE;
     for (int i = 0; (i < nthreads_hw_avail && i < CPU_SETSIZE); i++)
@@ -606,5 +608,7 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
             fprintf(debug, "Default affinity mask found\n");
         }
     }
-#endif /* HAVE_SCHED_AFFINITY */
+#endif  /* HAVE_SCHED_AFFINITY */
 }
+
+} // namespace gmx

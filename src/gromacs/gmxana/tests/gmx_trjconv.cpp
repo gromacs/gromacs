@@ -48,6 +48,8 @@
 #include "testutils/stdiohelper.h"
 #include "testutils/textblockmatchers.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -135,3 +137,4 @@ INSTANTIATE_TEST_CASE_P(NoFatalErrorWhenWritingFrom,
                         TrjconvWithoutTopologyFile,
                             ::testing::ValuesIn(trajectoryFileNames));
 } // namespace
+} // namespace gmx

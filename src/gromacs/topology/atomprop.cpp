@@ -53,6 +53,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
+namespace gmx
+{
+
 typedef struct {
     gmx_bool    bSet;
     int         nprop, maxprop;
@@ -426,3 +429,5 @@ int gmx_atomprop_atomnumber(gmx_atomprop_t aps, const char *elem)
     }
     return -1;
 }
+
+} //namespace gmx

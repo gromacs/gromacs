@@ -40,6 +40,9 @@
 
 #include "gromacs/fileio/pdbio.h"
 
+namespace gmx
+{
+
 struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct t_atoms;
@@ -229,5 +232,7 @@ struct t_topology *read_top(const char *fn, int *ePBC);
 /* Extract a topology data structure from a topology file.
  * If ePBC!=NULL *ePBC gives the pbc type.
  */
+
+} // namespace gmx
 
 #endif

@@ -42,6 +42,9 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_output_env_t;
 
 typedef struct {
@@ -78,4 +81,6 @@ t_topology *init_rama(gmx_output_env_t *oenv, const char *infile,
 
 gmx_bool new_data(t_xrama *xr);
 
-#endif  /* GMX_GMXANA_NRAMA_H */
+}      // namespace gmx
+
+#endif /* GMX_GMXANA_NRAMA_H */

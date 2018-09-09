@@ -79,6 +79,9 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
+namespace gmx
+{
+
 /* this must correspond to enum in pdb2top.h */
 const char *hh[ehisNR]   = { "HISD", "HISE", "HISH", "HIS1" };
 
@@ -1143,7 +1146,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                     {
                         /* oname != NULL */
                         if ( (*hb)[i].hack[j].nname == nullptr)
-                        {   /* we're deleting */
+                        {       /* we're deleting */
                             /* shift the rest */
                             (*restp)[i].natom--;
                             for (k = l; k < (*restp)[i].natom; k++)
@@ -1674,3 +1677,5 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     }
     sfree(excls);
 }
+
+} //namespace gmx

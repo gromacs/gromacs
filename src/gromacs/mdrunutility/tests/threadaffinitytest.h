@@ -48,10 +48,9 @@
 
 #include "testutils/loggertest.h"
 
-struct t_commrec;
-
 namespace gmx
 {
+struct t_commrec;
 
 class HardwareTopology;
 

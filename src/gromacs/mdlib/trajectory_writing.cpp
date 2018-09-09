@@ -53,6 +53,9 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 void
 do_md_trajectory_writing(FILE                    *fplog,
                          t_commrec               *cr,
@@ -213,3 +216,5 @@ do_md_trajectory_writing(FILE                    *fplog,
         wallcycle_stop(mdoutf_get_wcycle(outf), ewcTRAJ);
     }
 }
+
+} //namespace gmx

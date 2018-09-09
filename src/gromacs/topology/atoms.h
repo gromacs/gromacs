@@ -43,6 +43,9 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/unique_cptr.h"
 
+namespace gmx
+{
+
 struct t_symtab;
 
 /* The particle type */
@@ -180,5 +183,6 @@ void atomsSetMassesBasedOnNames(t_atoms *atoms, gmx_bool printMissingMasses);
 //! Deleter for t_atoms, needed until it has a proper destructor.
 using AtomsDataPtr = gmx::unique_cptr<t_atoms, done_and_delete_atoms>;
 
+} // namespace gmx
 
 #endif

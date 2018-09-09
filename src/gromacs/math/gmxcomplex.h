@@ -42,6 +42,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct t_complex{
     real re, im;
 };
@@ -129,5 +132,7 @@ static inline t_complex cdiv(t_complex teller, t_complex noemer)
 
 inline bool operator==(const t_complex &lhs, const t_complex &rhs){ return (lhs.re == rhs.re) && (lhs.im == rhs.im); }
 inline bool operator!=(const t_complex &lhs, const t_complex &rhs){ return !(lhs == rhs); }
+
+} // namespace gmx
 
 #endif

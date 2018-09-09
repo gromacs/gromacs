@@ -65,6 +65,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
+namespace gmx
+{
+
 /*! \brief Shortcut macro to select modes. */
 #define MODE(x) ((mode & (x)) == (x))
 
@@ -811,3 +814,5 @@ int get_acffitfn()
 
     return sffn2effn(s_ffn);
 }
+
+} //namespace gmx

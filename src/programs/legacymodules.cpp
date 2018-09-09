@@ -60,6 +60,8 @@
 #include "mdrun/mdrun_main.h"
 #include "view/view.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -164,7 +166,7 @@ void registerObsoleteTool(gmx::CommandLineModuleManager *manager,
     manager->addModule(std::move(module));
 }
 
-} // namespace
+}   // namespace
 
 void registerLegacyModules(gmx::CommandLineModuleManager *manager)
 {
@@ -540,3 +542,5 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModuleWithDescription("mdrun", "Find a potential energy minimum and calculate the Hessian");
     }
 }
+
+} // namespace gmx

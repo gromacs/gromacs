@@ -49,6 +49,9 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 struct gmx_mtop_t;
 struct gmx_multisim_t;
 class history_t;
@@ -87,5 +90,7 @@ t_ifunc ta_disres;
 
 //! Copies the new time averages that have been calculated in calc_disres_R_6.
 void update_disres_history(const t_fcdata *fcd, history_t *hist);
+
+} // namespace gmx
 
 #endif

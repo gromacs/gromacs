@@ -61,6 +61,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 const char *epbc_names[epbcNR+1] =
 {
     "xyz", "no", "xy", "screw", nullptr
@@ -1548,3 +1551,5 @@ void put_atoms_in_compact_unitcell(int ePBC, int ecenter, const matrix box,
         rvec_add(box_center, dx, x[i]);
     }
 }
+
+} //namespace gmx

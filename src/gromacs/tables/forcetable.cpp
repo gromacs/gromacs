@@ -55,6 +55,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* All the possible (implemented) table functions */
 enum {
     etabLJ6,
@@ -1517,3 +1520,5 @@ t_forcetable *makeDispersionCorrectionTable(FILE                      *fp,
 
     return dispersionCorrectionTable;
 }
+
+} //namespace gmx

@@ -44,6 +44,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_domdec_t;
 
 enum {
@@ -335,5 +338,7 @@ void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box,
 void put_atoms_in_compact_unitcell(int ePBC, int ecenter,
                                    const matrix box,
                                    gmx::ArrayRef<gmx::RVec> x);
+
+} // namespace gmx
 
 #endif

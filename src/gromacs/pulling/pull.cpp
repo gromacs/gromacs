@@ -83,6 +83,9 @@
 
 #include "pull_internal.h"
 
+namespace gmx
+{
+
 static int groupPbcFromParams(const t_pull_group &params)
 {
     if (params.nat <= 1)
@@ -1240,7 +1243,7 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
                         dr0[0], dr0[1], dr0[2],
                         dr1[0], dr1[1], dr1[2],
                         dnorm(tmp3));
-            } /* END DEBUG */
+            }   /* END DEBUG */
 
             /* Update the COMs with dr */
             dvec_inc(rnew[pcrd->params.group[1]], dr1);
@@ -2578,3 +2581,5 @@ gmx_bool pull_have_constraint(const struct pull_t *pull)
 {
     return pull->bConstraint;
 }
+
+} //namespace gmx

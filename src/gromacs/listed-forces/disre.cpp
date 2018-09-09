@@ -67,6 +67,9 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
                  t_inputrec *ir, const t_commrec *cr,
                  const gmx_multisim_t *ms,
@@ -639,3 +642,5 @@ void update_disres_history(const t_fcdata *fcd, history_t *hist)
         }
     }
 }
+
+} //namespace gmx

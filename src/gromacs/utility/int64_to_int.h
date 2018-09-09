@@ -46,6 +46,9 @@
 
 #include "gromacs/utility/futil.h"
 
+namespace gmx
+{
+
 /*! \brief Convert a int64_t value to int.
  *
  * \param[in] step The step number (or other int64)
@@ -56,5 +59,7 @@
  * \return the truncated step number.
  */
 int int64_to_int(int64_t step, const char *warn);
+
+} // namespace gmx
 
 #endif

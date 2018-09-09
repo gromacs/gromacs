@@ -45,15 +45,14 @@
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 struct gmx_ddbox_t;
 struct gmx_domdec_t;
 struct t_block;
 class t_state;
-
-namespace gmx
-{
 class MDLogger;
-}
 
 /*! \brief Distributes the state from the master rank to all DD ranks */
 void distributeState(const gmx::MDLogger &mdlog,
@@ -62,5 +61,7 @@ void distributeState(const gmx::MDLogger &mdlog,
                      const gmx_ddbox_t   &ddbox,
                      t_state             *state_local,
                      PaddedRVecVector    *f);
+
+} // namespace gmx
 
 #endif

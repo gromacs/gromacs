@@ -53,6 +53,9 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/txtdump.h"
 
+namespace gmx
+{
+
 const char *gtypes[egcNR+1] = {
     "T-Coupling", "Energy Mon.", "Acceleration", "Freeze",
     "User1", "User2", "VCM", "Compressed X", "Or. Res. Fit", "QMMM", nullptr
@@ -693,3 +696,5 @@ int getGroupType(const gmx_groups_t *group, int type, int atom)
 {
     return (group->grpnr[type] ? group->grpnr[type][atom] : 0);
 }
+
+} //namespace gmx

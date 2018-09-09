@@ -121,6 +121,9 @@
 #include "redistribute.h"
 #include "utility.h"
 
+namespace gmx
+{
+
 #define DD_NLOAD_MAX 9
 
 static const char *edlbs_names[int(DlbState::nr)] = { "off", "auto", "locked", "on", "on" };
@@ -5340,7 +5343,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                                            &work);
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-                } // END
+                }   // END
 
                 std::vector<int>       &atomGroups = comm->dth[0].atomGroupBuffer;
                 std::vector<gmx::RVec> &positions  = comm->dth[0].positionBuffer;
@@ -6853,3 +6856,5 @@ void checkNumberOfBondedInteractions(const gmx::MDLogger  &mdlog,
         *shouldCheckNumberOfBondedInteractions = false;
     }
 }
+
+} //namespace gmx

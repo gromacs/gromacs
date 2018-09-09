@@ -48,6 +48,9 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 
+namespace gmx
+{
+
 static const int   can_view_ftp[] = {
     0,
     efEPS,           efXPM,         efXVG,          efPDB
@@ -145,3 +148,5 @@ void view_all(const gmx_output_env_t *oenv, int nf, t_filenm fnm[])
         }
     }
 }
+
+} //namespace gmx

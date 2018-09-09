@@ -48,6 +48,8 @@
 #include "testutils/testfilemanager.h"
 #include "testutils/textblockmatchers.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -112,3 +114,4 @@ TEST_F(GenconfTest, nbox_rot_Works)
 }
 
 } // namespace
+} // namespace gmx

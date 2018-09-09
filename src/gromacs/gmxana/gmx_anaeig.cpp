@@ -69,6 +69,9 @@
 
 #include "thermochemistry.h"
 
+namespace gmx
+{
+
 static const char *proj_unit;
 
 static real tick_spacing(real range, int minticks)
@@ -1448,3 +1451,5 @@ int gmx_anaeig(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

@@ -66,11 +66,14 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 
+namespace gmx
+{
+
 namespace
 {
 //! Static return value for cases when a string value is not available.
 const char c_unknown[] = "unknown";
-} // namespace
+}   // namespace
 
 int gmx_gethostname(char *buf, size_t len)
 {
@@ -174,3 +177,4 @@ int gmx_set_nice(int level)
 #endif
     return -1;
 }
+} // namespace gmx

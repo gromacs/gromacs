@@ -47,6 +47,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
                 gmx_bool bRMSD, real ftol, real abstol)
 {
@@ -103,9 +106,6 @@ void done_frame(t_trxframe *frame)
     sfree(frame->v);
     sfree(frame->f);
 }
-
-namespace gmx
-{
 
 TrajectoryFrame::TrajectoryFrame(const t_trxframe &frame)
     : frame_(frame)

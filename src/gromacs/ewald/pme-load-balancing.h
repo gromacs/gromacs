@@ -50,15 +50,14 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/timing/wallcycle.h"
 
+namespace gmx
+{
+
 struct NbnxnListParameters;
 struct t_commrec;
 struct t_inputrec;
 class t_state;
-
-namespace gmx
-{
 class MDLogger;
-}
 
 /*! \brief Object to manage PME load balancing */
 struct pme_load_balancing_t;
@@ -110,5 +109,7 @@ void pme_loadbal_done(pme_load_balancing_t *pme_lb,
                       FILE                 *fplog,
                       const gmx::MDLogger  &mdlog,
                       gmx_bool              bNonBondedOnGPU);
+
+} // namespace gmx
 
 #endif

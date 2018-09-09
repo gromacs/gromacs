@@ -89,6 +89,9 @@
 #include "nbnxn_ocl_internal.h"
 #include "nbnxn_ocl_types.h"
 
+namespace gmx
+{
+
 
 /*! \brief Convenience constants */
 //@{
@@ -851,3 +854,5 @@ int nbnxn_gpu_pick_ewald_kernel_type(bool bTwinCut)
 
     return kernel_type;
 }
+
+} //namespace gmx

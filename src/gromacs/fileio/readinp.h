@@ -46,15 +46,15 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 struct warninp;
 typedef warninp *warninp_t;
 
-namespace gmx
-{
 class KeyValueTreeObject;
 class TextInputStream;
 class TextOutputStream;
-}
 
 /* !\brief Input file structure that is populated with entries read from a file.
  *
@@ -158,5 +158,7 @@ void printStringNewline(std::vector<t_inpfile> *inp, const char *line);
 void printStringNoNewline(std::vector<t_inpfile> *inp, const char *line);
 //! Replace for macro STYPE, checks for existing string entry and if possible replaces it
 void setStringEntry(std::vector<t_inpfile> *inp, const char *name, char *newName, const char *def);
+
+} // namespace gmx
 
 #endif

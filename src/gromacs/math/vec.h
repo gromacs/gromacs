@@ -105,6 +105,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 static inline void rvec_add(const rvec a, const rvec b, rvec c)
 {
     real x, y, z;
@@ -634,23 +637,6 @@ static inline real trace(const matrix m)
     return (m[XX][XX]+m[YY][YY]+m[ZZ][ZZ]);
 }
 
-namespace gmx
-{
-/*!
- * \brief Forward operations on C Array style vectors to C implementations.
- *
- * Since vec.h and vectypes.h independently declare `norm` and `norm2` in
- * different namespaces, code that includes both headers but does not specify
- * the namespace from which to use `norm` and `norm2` cannot properly resolve
- * overloads without the following helper templates.
- * \tparam T array element type (e.g. real, int, etc.)
- * \param v address of first vector element
- * \return magnitude or squared magnitude of vector
- * \{
- */
-template<typename T> T norm(T* v) {return ::norm(v); }
-template <typename T> T norm2(T* v) { return ::norm2(v); }
 }      // namespace gmx
-/*! \} */
 
 #endif

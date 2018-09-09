@@ -46,6 +46,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
 
+namespace gmx
+{
+
 struct gmx_multisim_t;
 struct t_commrec;
 struct t_filenm;
@@ -80,5 +83,7 @@ gmx_multisim_t *init_multisystem(MPI_Comm                         comm,
 
 //! Cleans up multi-system handler.
 void done_multisim(gmx_multisim_t *ms);
+
+} // namespace gmx
 
 #endif

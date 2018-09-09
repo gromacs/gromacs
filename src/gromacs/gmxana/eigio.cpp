@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,9 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+
+namespace gmx
+{
 
 void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
                        rvec **xref, gmx_bool *bDMR,
@@ -202,3 +205,5 @@ void write_eigenvectors(const char *trrname, int natoms, const real mat[],
 
     sfree(x);
 }
+
+} //namespace gmx

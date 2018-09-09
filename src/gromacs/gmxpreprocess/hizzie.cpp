@@ -55,6 +55,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static int in_strings(char *key, int nstr, const char **str)
 {
     int j;
@@ -325,3 +328,5 @@ void set_histp(t_atoms *pdba, rvec *x, real angle, real dist)
     sfree(acceptor);
     sfree(hbond);
 }
+
+} //namespace gmx

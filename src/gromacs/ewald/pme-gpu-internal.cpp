@@ -86,6 +86,9 @@
 #include "pme-grid.h"
 #include "pme-internal.h"
 
+namespace gmx
+{
+
 /*! \internal \brief
  * Wrapper for getting a pointer to the plain C++ part of the GPU kernel parameters structure.
  *
@@ -1187,3 +1190,5 @@ void pme_gpu_gather(PmeGpu                *pmeGpu,
 
     pme_gpu_copy_output_forces(pmeGpu);
 }
+
+} //namespace gmx

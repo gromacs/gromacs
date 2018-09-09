@@ -51,6 +51,9 @@
 #include "gromacs/gpu_utils/gputraits_ocl.h"
 #endif
 
+namespace gmx
+{
+
 struct PmeGpu;
 
 /*! \libinternal \brief
@@ -77,5 +80,7 @@ CommandEvent *pme_gpu_fetch_timing_event(const PmeGpu *pmeGpu, size_t PMEStageId
  * \param[in] PMEStageId     The PME GPU stage gtPME_ index from the enum in src/gromacs/timing/gpu_timing.h
  */
 void pme_gpu_stop_timing(const PmeGpu *pmeGpu, size_t PMEStageId);
+
+} // namespace gmx
 
 #endif

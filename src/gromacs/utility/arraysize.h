@@ -42,6 +42,9 @@
 #ifndef GMX_UTILITY_ARRAYSIZE_H
 #define GMX_UTILITY_ARRAYSIZE_H
 
+namespace gmx
+{
+
 /*! \brief
  * Calculates the number of elements in a static array at compile time.
  *
@@ -53,5 +56,7 @@ constexpr int asize(T(&/*unused*/)[N])
     static_assert(N >= 0, "Do negative size arrays exist?");
     return N;
 }
+
+} // namespace gmx
 
 #endif

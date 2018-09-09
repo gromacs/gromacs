@@ -37,6 +37,9 @@
 
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 
+namespace gmx
+{
+
 /* List of kernels for this architecture with metadata about them */
 extern nb_kernel_info_t
     kernellist_sse4_1_single[];
@@ -44,5 +47,7 @@ extern nb_kernel_info_t
 /* Length of kernellist_c */
 extern int
     kernellist_sse4_1_single_size;
+
+} // namespace gmx
 
 #endif

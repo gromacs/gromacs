@@ -42,6 +42,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_mtop_t;
 struct t_block;
 
@@ -65,5 +68,7 @@ void put_charge_groups_in_box (FILE *log, int cg0, int cg1,
 /* This routine puts charge groups in the periodic box, keeping them
  * together.
  */
+
+} // namespace gmx
 
 #endif

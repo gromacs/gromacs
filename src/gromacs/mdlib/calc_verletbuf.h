@@ -39,6 +39,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_mtop_t;
 struct t_inputrec;
 
@@ -145,5 +148,7 @@ void constrained_atom_sigma2(real                                 kT_fac,
                              const atom_nonbonded_kinetic_prop_t *prop,
                              real                                *sigma2_2d,
                              real                                *sigma2_3d);
+
+} // namespace gmx
 
 #endif

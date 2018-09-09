@@ -40,6 +40,9 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct t_commrec;
 
 typedef struct {
@@ -69,5 +72,7 @@ void extract_binr(t_bin *b, int index, int nr, real r[]);
 void extract_binr(t_bin *b, int index, gmx::ArrayRef<real> r);
 void extract_bind(t_bin *b, int index, int nr, double r[]);
 /* Extract values from the bin, starting from index (see add_bin) */
+
+} // namespace gmx
 
 #endif

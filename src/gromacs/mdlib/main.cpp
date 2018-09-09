@@ -64,6 +64,9 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 
+namespace gmx
+{
+
 /* The source code in this file should be thread-safe.
          Please keep it that way. */
 
@@ -329,3 +332,5 @@ void done_multisim(gmx_multisim_t *ms)
         delete ms;
     }
 }
+
+} //namespace gmx

@@ -49,6 +49,9 @@
 
 #include "gpuregiontimer.h"
 
+namespace gmx
+{
+
 /*! \libinternal \brief
  * This is a GPU region timing implementation for CUDA.
  * It provides methods for measuring the last timespan.
@@ -116,4 +119,5 @@ class GpuRegionTimerImpl
 //! Short-hand for external use
 using GpuRegionTimer = GpuRegionTimerWrapper<GpuRegionTimerImpl>;
 
+} // namespace gmx
 #endif

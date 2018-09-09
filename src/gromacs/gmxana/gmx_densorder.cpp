@@ -64,6 +64,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 
 enum {
     methSEL, methBISECT, methFUNCFIT, methNR
@@ -212,7 +215,7 @@ static void density_in_time (const char *fn, int **index, const int gnx[], real 
 
 
         for (j = 0; j < gnx[0]; j++)
-        {   /*Loop over all atoms in selected index*/
+        {       /*Loop over all atoms in selected index*/
             x = x0[index[0][j]][ax1];
             y = x0[index[0][j]][ax2];
             z = x0[index[0][j]][axis];
@@ -817,3 +820,5 @@ int gmx_densorder(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

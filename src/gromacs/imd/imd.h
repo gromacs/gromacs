@@ -73,6 +73,9 @@
 #define NOFLAGS 0
 #endif
 
+namespace gmx
+{
+
 struct gmx_domdec_t;
 struct gmx_enerdata_t;
 struct gmx_mtop_t;
@@ -237,5 +240,7 @@ void IMD_prep_energies_send_positions(gmx_bool bIMD, gmx_bool bIMDstep,
  * \param imd          The IMD data structure.
  */
 void IMD_finalize(gmx_bool bIMD, t_IMD *imd);
+
+} // namespace gmx
 
 #endif

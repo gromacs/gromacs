@@ -44,6 +44,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_groups_t;
 struct t_inputrec;
 struct t_mdatoms;
@@ -90,5 +93,7 @@ void do_stopcm_grp(const t_mdatoms &mdatoms,
                    rvec x[], rvec v[], const t_vcm &vcm);
 
 void check_cm_grp(FILE *fp, t_vcm *vcm, t_inputrec *ir, real Temp_Max);
+
+} // namespace gmx
 
 #endif

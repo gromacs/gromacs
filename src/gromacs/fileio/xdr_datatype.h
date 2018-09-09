@@ -37,6 +37,9 @@
 #ifndef GMX_FILEIO_XDR_DATATYPE_H
 #define GMX_FILEIO_XDR_DATATYPE_H
 
+namespace gmx
+{
+
 /* the xdr data types; note that there is no data type 'real' because
    here we deal with the types as they are actually written to disk.  */
 typedef enum
@@ -51,5 +54,7 @@ typedef enum
 
 /* names corresponding to the xdr_datatype enum */
 extern const char *xdr_datatype_names[];
+
+} // namespace gmx
 
 #endif

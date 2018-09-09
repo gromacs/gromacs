@@ -47,6 +47,9 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 
+namespace gmx
+{
+
 void
 gmx_nb_generic_cg_kernel(t_nblist *                nlist,
                          rvec *                    xx,
@@ -236,7 +239,7 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
                                 gmx_fatal(FARGS, "Death & horror! No generic coulomb interaction for ielec=%d.\n", ielec);
                         }
                         vctot            = vctot+vcoul;
-                    }  /* End of coulomb interactions */
+                    }   /* End of coulomb interactions */
 
 
                     /* VdW interaction. ivdw==0 means no interaction */
@@ -303,7 +306,7 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
                             default:
                                 gmx_fatal(FARGS, "Death & horror! No generic VdW interaction for ivdw=%d.\n", ivdw);
                         }
-                    }  /* end VdW interactions */
+                    }   /* end VdW interactions */
 
 
                     tx               = fscal*dx;
@@ -335,3 +338,5 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
      */
     inc_nrnb(nrnb, eNR_NBKERNEL_GENERIC_CG, nlist->nri*12 + nlist->jindex[n]*100);
 }
+
+} //namespace gmx

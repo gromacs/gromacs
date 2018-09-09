@@ -61,6 +61,8 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
+using namespace gmx;
+
 /********************************************************************
  * gmx_ana_indexgrps_t functions
  ********************************************************************/

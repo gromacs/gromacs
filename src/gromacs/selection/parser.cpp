@@ -229,7 +229,7 @@ union YYSTYPE
 #line 83 "parser.y" /* yacc.c:355  */
 
     int                         i;
-    real                        r;
+    gmx::real                        r;
     char                       *str;
     struct gmx_ana_selmethod_t *meth;
 

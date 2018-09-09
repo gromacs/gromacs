@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,9 +43,9 @@
 
 namespace gmx
 {
+
 class CpuInfo;
 class HardwareTopology;
-} // namespace
 
 /* Hardware information structure with CPU and GPU information.
  * It is initialized by gmx_detect_hardware().
@@ -120,5 +120,7 @@ struct gmx_hw_opt_t
     //! Tells whether mdrun is free to choose the total number of threads (by choosing the number of OpenMP and/or thread-MPI threads).
     bool          totNumThreadsIsAuto;
 };
+
+} // namespace gmx
 
 #endif

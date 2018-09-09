@@ -42,6 +42,9 @@
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/hackblock.h"
 
+namespace gmx
+{
+
 char *search_rtp(const char *key, int nrtp, t_restp rtp[]);
 /* Search for an entry in the rtp database, returns the rtp residue name.
  * A mismatch of one character is allowed, if there is only one nearly
@@ -64,5 +67,7 @@ void read_resall(const char *resdb, int *nrtp, t_restp **rtp,
 void print_resall(FILE *out, int nrtp, t_restp rtp[],
                   gpp_atomtype_t atype);
 /* write rtp database */
+
+} // namespace gmx
 
 #endif

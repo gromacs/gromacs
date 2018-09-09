@@ -46,6 +46,9 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 gmx_bool convolution(int dataSize, real *x, int kernelSize, const real* kernel)
 {
     int   i, j, k;
@@ -144,3 +147,5 @@ void gausskernel(real *out, int n, real var)
         out[i] /= tot;
     }
 }
+
+} //namespace gmx

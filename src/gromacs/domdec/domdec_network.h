@@ -51,6 +51,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 
+namespace gmx
+{
+
 struct gmx_domdec_t;
 
 /* \brief */
@@ -198,5 +201,7 @@ void
 dd_gatherv(const gmx_domdec_t *dd,
            int scount, const void *sbuf,
            int *rcounts, int *disps, void *rbuf);
+
+} // namespace gmx
 
 #endif

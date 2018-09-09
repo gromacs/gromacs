@@ -59,6 +59,9 @@
 
 #include "pull_internal.h"
 
+namespace gmx
+{
+
 #if GMX_MPI
 
 // Helper function to deduce MPI datatype from the type of data
@@ -929,3 +932,5 @@ int pullCheckPbcWithinGroups(const pull_t &pull,
 
     return -1;
 }
+
+} //namespace gmx

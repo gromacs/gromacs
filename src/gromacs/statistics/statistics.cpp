@@ -46,6 +46,9 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static int gmx_dnint(double x)
 {
     return gmx::roundToInt(x);
@@ -748,3 +751,5 @@ int lsq_y_ax_b_error(int n, real x[], real y[], real dy[],
 
     return ok;
 }
+
+} //namespace gmx

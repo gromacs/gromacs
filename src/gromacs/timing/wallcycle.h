@@ -44,6 +44,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 typedef struct gmx_wallcycle *gmx_wallcycle_t;
 struct t_commrec;
 static constexpr gmx_wallcycle* nullWallcycle = nullptr;
@@ -121,5 +124,7 @@ void wallcycle_sub_start_nocount(gmx_wallcycle_t wc, int ewcs);
 
 void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs);
 /* Stop the sub cycle count for ewcs */
+
+} // namespace gmx
 
 #endif

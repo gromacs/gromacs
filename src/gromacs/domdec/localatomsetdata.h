@@ -46,10 +46,10 @@
 
 #include "gromacs/utility/arrayref.h"
 
-class gmx_ga2la_t;
-
 namespace gmx
 {
+
+class gmx_ga2la_t;
 
 namespace internal
 {
@@ -97,8 +97,5 @@ class LocalAtomSetData
 } // namespace internal
 
 } // namespace gmx
-
-
-
 
 #endif

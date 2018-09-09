@@ -49,28 +49,28 @@
 #include <cinttypes>
 #include <cstddef>
 
+namespace gmx
+{
+
 //! Identical to bool
 typedef bool gmx_bool;
 
 #ifndef FALSE
-/** False value for ::gmx_bool. */
+/** False value for gmx_bool. */
 #  define FALSE   false
 #endif
 #ifndef TRUE
-/** True value for ::gmx_bool. */
+/** True value for gmx_bool. */
 #  define TRUE    true
 #endif
 /** Number of gmx_bool values. */
 #define BOOL_NR 2
 
-namespace gmx
-{
 /*! \brief Integer type for indexing into arrays or vectors
  *
  * Same as ptrdiff_t.
  */
 using index = std::ptrdiff_t;
-}
 
 /* ICC, GCC, MSVC, Pathscale, PGI, XLC support __restrict.
  * Any other compiler can be added here. */
@@ -152,8 +152,6 @@ using index = std::ptrdiff_t;
 #define DIAGNOSTIC_RESET
 #endif
 
-namespace gmx
-{
 namespace internal
 {
 /*! \cond internal */
@@ -168,7 +166,6 @@ static inline void ignoreValueHelper(const T & /*unused*/)
 }
 //! \endcond
 }   // namespace internal
-}   // namespace gmx
 
 /*! \brief
  * Macro to explicitly ignore a return value of a call.
@@ -185,5 +182,7 @@ static inline void ignoreValueHelper(const T & /*unused*/)
  */
 #define GMX_IGNORE_RETURN_VALUE(call) \
         ::gmx::internal::ignoreValueHelper(call)
+
+} //namespace gmx
 
 #endif

@@ -53,13 +53,12 @@
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/utility/basedefinitions.h"
 
-struct gmx_device_info_t;
-struct gmx_gpu_info_t;
-
 namespace gmx
 {
+
+struct gmx_device_info_t;
+struct gmx_gpu_info_t;
 class MDLogger;
-}
 
 //! Enum which is only used to describe transfer calls at the moment
 enum class GpuApiCallBehavior
@@ -143,14 +142,14 @@ void free_gpu_info(const gmx_gpu_info_t *gpu_info);
  * TODO Doxygen complains about these - probably a Doxygen bug, since
  * the patterns here are the same as elsewhere in this header.
  *
- *  param[in]    mdlog        log file to write to
+ * \param[in]    mdlog        log file to write to
  * \param[inout] deviceInfo   device info of the GPU to initialize
  *
  * Issues a fatal error for any critical errors that occur during
  * initialization.
  */
 GPU_FUNC_QUALIFIER
-void init_gpu(const gmx::MDLogger &GPU_FUNC_ARGUMENT(mdlog),
+void init_gpu(const MDLogger &GPU_FUNC_ARGUMENT(mdlog),
               gmx_device_info_t *GPU_FUNC_ARGUMENT(deviceInfo)) GPU_FUNC_TERM
 
 /*! \brief Frees up the CUDA GPU used by the active context at the time of calling.
@@ -278,4 +277,5 @@ void stopGpuProfiler(void) CUDA_FUNC_TERM
 CUDA_FUNC_QUALIFIER
 bool isHostMemoryPinned(const void *CUDA_FUNC_ARGUMENT(h_ptr)) CUDA_FUNC_TERM_WITH_RETURN(false)
 
+} // namespace gmx
 #endif

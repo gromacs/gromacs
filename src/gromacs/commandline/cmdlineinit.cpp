@@ -170,9 +170,9 @@ int runCommandLineModule(
             argc, argv, name, description, std::move(factory));
 }
 
-} // namespace gmx
-
 int gmx_run_cmain(int argc, char *argv[], int (*mainFunction)(int, char *[]))
 {
     return gmx::CommandLineModuleManager::runAsMainCMain(argc, argv, mainFunction);
 }
+
+} // namespace gmx

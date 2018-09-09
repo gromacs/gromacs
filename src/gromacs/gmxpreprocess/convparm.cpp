@@ -56,6 +56,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static int round_check(real r, int limit, int ftype, const char *name)
 {
     const int i = gmx::roundToInt(r);
@@ -627,3 +630,5 @@ void convert_params(int atnr, t_params nbtypes[],
 
     ffp->fudgeQQ = fudgeQQ;
 }
+
+} //namespace gmx

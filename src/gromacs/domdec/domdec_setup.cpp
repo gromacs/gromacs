@@ -64,6 +64,9 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 /*! \brief Margin for setting up the DD grid */
 #define DD_GRID_MARGIN_PRES_SCALE 1.05
 
@@ -821,3 +824,5 @@ real dd_choose_grid(const gmx::MDLogger &mdlog,
 
     return limit;
 }
+
+} //namespace gmx

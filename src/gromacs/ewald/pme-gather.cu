@@ -46,6 +46,9 @@
 #include "pme.cuh"
 #include "pme-gpu-utils.h"
 
+namespace gmx
+{
+
 /*! \brief
  * An inline CUDA function: unroll the dynamic index accesses to the constant grid sizes to avoid local memory operations.
  */
@@ -410,3 +413,5 @@ __global__ void pme_gather_kernel(const PmeGpuCudaKernelParams    kernelParams)
 //! Kernel instantiations
 template __global__ void pme_gather_kernel<4, true, true, true>(const PmeGpuCudaKernelParams);
 template __global__ void pme_gather_kernel<4, false, true, true>(const PmeGpuCudaKernelParams);
+
+} //namespace gmx

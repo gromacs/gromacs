@@ -40,6 +40,9 @@
 
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
+namespace gmx
+{
+
 
 std::vector<real>
 makeExclusionDistances(const t_atoms *a, gmx_atomprop_t aps,
@@ -68,3 +71,5 @@ makeExclusionDistances(const t_atoms *a, gmx_atomprop_t aps,
     }
     return exclusionDistances;
 }
+
+} //namespace gmx

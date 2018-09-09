@@ -54,6 +54,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
+namespace gmx
+{
+
 typedef struct {
     char *filebase;
     char *res;
@@ -255,3 +258,5 @@ void rename_atoms(const char* xlfile, const char *ffdir,
 
     done_xlatom(nxlate, xlatom);
 }
+
+} //namespace gmx

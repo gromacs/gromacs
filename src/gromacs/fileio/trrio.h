@@ -41,6 +41,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /**************************************************************
  *
  * These routines handle trr (trajectory) I/O, they read and
@@ -135,5 +138,7 @@ void gmx_trr_write_single_frame(const char *fn, int64_t step, real t, real lambd
                                 const rvec *box, int natoms, const rvec *x, const rvec *v, const rvec *f);
 /* Write a single trr frame to file fn, which is closed afterwards */
 
+
+} // namespace gmx
 
 #endif

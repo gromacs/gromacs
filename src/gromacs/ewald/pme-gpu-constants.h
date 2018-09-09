@@ -57,6 +57,9 @@
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh" // for warp_size
 #endif
 
+namespace gmx
+{
+
 /* General settings for PME GPU behaviour */
 
 /*! \brief
@@ -177,5 +180,7 @@ constexpr int c_gatherMaxThreadsPerBlock = c_gatherMaxWarpsPerBlock * warp_size;
 constexpr int c_gatherMinBlocksPerMP = (GMX_PTX_ARCH < 300) ? GMX_CUDA_MAX_BLOCKS_PER_MP : (GMX_CUDA_MAX_THREADS_PER_MP / c_gatherMaxThreadsPerBlock);
 
 #endif // GMX_GPU == GMX_GPU_CUDA
+
+}      // namespace gmx
 
 #endif

@@ -43,6 +43,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct t_enxblock;
 
 struct t_energy
@@ -71,9 +74,6 @@ struct t_enxframe
     t_enxblock     *block;        /* The blocks                                    */
     int             nblock_alloc; /* The number of blocks allocated                */
 };
-
-namespace gmx
-{
 
 /*! \internal
  * \brief Contains the content of an .edr frame read by an EnergyFrameReader

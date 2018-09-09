@@ -44,6 +44,9 @@
 #include "../nb_kernel.h"
 #include "gromacs/gmxlib/nrnb.h"
 
+namespace gmx
+{
+
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecCoul_VdwBham_GeomP1P1_VF_c
  * Electrostatics interaction: Coulomb
@@ -414,3 +417,5 @@ nb_kernel_ElecCoul_VdwBham_GeomP1P1_F_c
 
     inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW_F,outeriter*13 + inneriter*63);
 }
+
+} //namespace gmx

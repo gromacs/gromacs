@@ -56,6 +56,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /***********************************
  *         Grid Routines
  ***********************************/
@@ -891,3 +894,5 @@ void print_grid(FILE *log, t_grid *grid)
     }
     fflush(log);
 }
+
+} //namespace gmx

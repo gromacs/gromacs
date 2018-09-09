@@ -55,12 +55,12 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_output_env_t;
 struct ReplicaExchangeParameters;
 struct t_commrec;
-
-namespace gmx
-{
 
 /*! \libinternal \brief Runner object for supporting setup and execution of mdrun.
  *

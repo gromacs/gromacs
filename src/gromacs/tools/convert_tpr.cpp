@@ -62,6 +62,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 #define RANGECHK(i, n) if ((i) >= (n)) gmx_fatal(FARGS, "Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)", (i), (n))
 
 static gmx_bool *bKeepIt(int gnx, int natoms, int index[])
@@ -481,3 +484,5 @@ int gmx_convert_tpr(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

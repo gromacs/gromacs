@@ -53,6 +53,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fileptr.h"
 
+namespace gmx
+{
+
 /*! \def GMX_PATH_MAX
  * \brief
  * Maximum path length, if the OS provides one, otherwise a fixed constant.
@@ -137,9 +140,6 @@ gmx_off_t gmx_ftell(FILE *stream);
 /** OS-independent truncate(). */
 int gmx_truncate(const char *filename, gmx_off_t length);
 
-namespace gmx
-{
-
 /*! \brief
  * Finds full path for a library file.
  *
@@ -161,8 +161,6 @@ std::string findLibraryFile(const char *filename, bool bAddCWD = true, bool bFat
 FilePtr openLibraryFile(const std::string &filename, bool bAddCWD = true, bool bFatal = true);
 //! \copydoc openLibraryFile(const std::string &, bool, bool)
 FilePtr openLibraryFile(const char *filename, bool bAddCWD = true, bool bFatal = true);
-
-} // namespace gmx
 
 /*! \brief
  * Creates unique name for temp file (wrapper around mkstemp) and opens it.
@@ -211,9 +209,6 @@ void gmx_chdir(const char *directory);
  * Exits with a fatal error if the call fails.
  */
 void gmx_getcwd(char *buffer, size_t size);
-
-namespace gmx
-{
 
 class DataFileFinder;
 

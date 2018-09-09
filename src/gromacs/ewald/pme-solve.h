@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,9 @@
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+
+namespace gmx
+{
 
 struct pme_solve_work_t;
 struct gmx_pme_t;
@@ -77,5 +80,7 @@ int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid,
 int solve_pme_lj_yzx(const gmx_pme_t *pme, t_complex **grid, gmx_bool bLB,
                      real vol,
                      gmx_bool bEnerVir, int nthread, int thread);
+
+} // namespace gmx
 
 #endif

@@ -67,7 +67,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/unique_cptr.h"
 
-using gmx::RVec;
+namespace gmx
+{
+
 
 typedef struct {
     char *name;
@@ -1036,3 +1038,5 @@ int gmx_solvate(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

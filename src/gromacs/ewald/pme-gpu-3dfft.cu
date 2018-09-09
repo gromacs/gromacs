@@ -52,6 +52,9 @@
 #include "pme-gpu-types-host.h"
 #include "pme-gpu-types-host-impl.h"
 
+namespace gmx
+{
+
 static void handleCufftError(cufftResult_t status, const char *msg)
 {
     if (status != CUFFT_SUCCESS)
@@ -140,3 +143,5 @@ void GpuParallel3dFft::perform3dFft(gmx_fft_direction        dir,
         handleCufftError(result, "cuFFT C2R execution failure");
     }
 }
+
+} //namespace gmx

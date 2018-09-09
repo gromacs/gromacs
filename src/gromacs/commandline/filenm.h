@@ -51,6 +51,9 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 
 //! \addtogroup module_commandline
 //! \{
@@ -181,5 +184,7 @@ gmx_bool is_set(const t_filenm *fnm);
 int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix);
 
 //! \}
+
+} // namespace gmx
 
 #endif

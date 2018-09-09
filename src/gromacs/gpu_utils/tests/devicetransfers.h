@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,10 +53,9 @@
 
 #include "gromacs/utility/arrayref.h"
 
-struct gmx_gpu_info_t;
-
 namespace gmx
 {
+struct gmx_gpu_info_t;
 
 /*! \brief Helper function for GPU test code to be platform agnostic.
  *

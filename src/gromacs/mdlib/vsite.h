@@ -44,6 +44,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_localtop_t;
 struct gmx_mtop_t;
 struct t_commrec;
@@ -138,5 +141,7 @@ void set_vsite_top(gmx_vsite_t          *vsite,
 /* Set some vsite data for runs without domain decomposition.
  * Should be called once after init_vsite, before calling other routines.
  */
+
+} // namespace gmx
 
 #endif

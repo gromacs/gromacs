@@ -63,6 +63,8 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 
+namespace gmx
+{
 struct gmx_wallcycle;
 
 namespace
@@ -394,7 +396,7 @@ real posres(int nbonds,
     return vtot;
 }
 
-} // namespace
+}   // namespace
 
 void
 posres_wrapper(t_nrnb               *nrnb,
@@ -479,3 +481,5 @@ void fbposres_wrapper(t_nrnb               *nrnb,
     enerd->term[F_FBPOSRES] += v;
     inc_nrnb(nrnb, eNR_FBPOSRES, gmx::exactDiv(idef->il[F_FBPOSRES].nr, 2));
 }
+
+} // namespace gmx

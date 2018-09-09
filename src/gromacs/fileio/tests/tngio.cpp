@@ -51,6 +51,8 @@
 
 #include "testutils/testfilemanager.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -79,3 +81,4 @@ TEST_F(TngTest, CloseBeforeOpenIsNotFatal)
 }
 
 } // namespace
+} // namespace gmx

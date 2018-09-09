@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,9 @@
 #include "gromacs/pbcutil/ishift.h"
 
 #include "nbnxn_cuda_types.h"
+
+namespace gmx
+{
 
 /* Note that floating-point constants in CUDA code should be suffixed
  * with f (e.g. 0.5f), to stop the compiler producing intermediate
@@ -269,6 +272,8 @@ __global__ void nbnxn_kernel_prune_cuda(const cu_atomdata_t atdat,
     }
 }
 #endif /* FUNCTION_DECLARATION_ONLY */
+
+}      // namespace gmx
 
 #undef NTHREAD_Z
 #undef MIN_BLOCKS_PER_MP

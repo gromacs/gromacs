@@ -47,6 +47,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/mutex.h"
 
+namespace gmx
+{
+
 #if GMX_DOUBLE
 #define FFTWPREFIX(name) fftw_ ## name
 #else
@@ -586,3 +589,5 @@ void gmx_fft_cleanup()
 {
     FFTWPREFIX(cleanup)();
 }
+
+} //namespace gmx

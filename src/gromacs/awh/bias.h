@@ -66,13 +66,12 @@
 #include "dimparams.h"
 #include "grid.h"
 
-struct gmx_multisim_t;
-struct t_commrec;
-struct t_enxsubblock;
-
 namespace gmx
 {
 
+struct gmx_multisim_t;
+struct t_commrec;
+struct t_enxsubblock;
 struct AwhBiasHistory;
 struct AwhBiasParams;
 struct AwhHistory;

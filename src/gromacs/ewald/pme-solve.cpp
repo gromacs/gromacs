@@ -53,12 +53,14 @@
 
 #include "pme-internal.h"
 
+namespace gmx
+{
+
 #if GMX_SIMD_HAVE_REAL
 /* Turn on arbitrary width SIMD intrinsics for PME solve */
 #    define PME_SIMD_SOLVE
 #endif
 
-using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 struct pme_solve_work_t
 {
@@ -906,3 +908,5 @@ int solve_pme_lj_yzx(const gmx_pme_t *pme, t_complex **grid, gmx_bool bLB, real 
     /* Return the loop count */
     return local_ndata[YY]*local_ndata[XX];
 }
+
+} //namespace gmx

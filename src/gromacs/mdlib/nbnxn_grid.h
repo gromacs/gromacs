@@ -42,6 +42,9 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_domdec_zones_t;
 
 /* Put the atoms on the pair search grid.
@@ -88,5 +91,7 @@ gmx::ArrayRef<const int> nbnxn_get_atomorder(const nbnxn_search* nbs);
 
 /* Renumber the atom indices on the grid to consecutive order */
 void nbnxn_set_atomorder(nbnxn_search_t nbs);
+
+} // namespace gmx
 
 #endif

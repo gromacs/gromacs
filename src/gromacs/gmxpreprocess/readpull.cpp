@@ -58,6 +58,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 
 static void string2dvec(const char buf[], dvec nums)
 {
@@ -606,3 +609,5 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
 
     return pull_work;
 }
+
+} //namespace gmx

@@ -50,6 +50,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
+namespace gmx
+{
+
 const char *ptype_str[eptNR+1] = {
     "Atom", "Nucleus", "Shell", "Bond", "VSite", nullptr
 };
@@ -423,3 +426,5 @@ void atomsSetMassesBasedOnNames(t_atoms *atoms, gmx_bool printMissingMasses)
 
     gmx_atomprop_destroy(aps);
 }
+
+} //namespace gmx

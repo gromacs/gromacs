@@ -59,6 +59,9 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void dump_dih_trr(int nframes, int nangles, real **dih, const char *fn,
                          real *time)
 {
@@ -486,3 +489,5 @@ int gmx_g_angle(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

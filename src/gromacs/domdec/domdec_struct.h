@@ -56,6 +56,9 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 //! Max number of zones in domain decomposition
 #define DD_MAXZONE  8
 //! Max number of izones in domain decomposition
@@ -71,11 +74,8 @@ class gmx_ga2la_t;
 struct gmx_pme_comm_n_box_t;
 struct gmx_reverse_top_t;
 
-namespace gmx
-{
 template <typename T> class HashedMap;
 class LocalAtomSetManager;
-}
 
 typedef struct {
     int  j0;     /* j-zone start               */
@@ -218,5 +218,7 @@ struct gmx_domdec_t { //NOLINT(clang-analyzer-optin.performance.Padding)
     int   pme_recv_f_alloc = 0;
     rvec *pme_recv_f_buf   = nullptr;
 };
+
+} // namespace gmx
 
 #endif

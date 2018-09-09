@@ -61,6 +61,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
+namespace gmx
+{
+
 
 void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                       rvec *f, rvec *fshift)
@@ -611,3 +614,5 @@ int setup_specat_communication(gmx_domdec_t               *dd,
 
     return nat_tot_specat;
 }
+
+} //namespace gmx

@@ -63,6 +63,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 #define FUDGE 1.2
 #define DDD   2
 
@@ -1632,3 +1635,5 @@ int gmx_xpm2ps(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

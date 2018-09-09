@@ -46,6 +46,9 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 /*! \brief Compute zero point energy from an array of eigenvalues.
  *
  * This routine first converts the eigenvalues from a normal mode
@@ -152,5 +155,7 @@ double calcQuasiHarmonicEntropy(gmx::ArrayRef<const real> eigval,
                                 real                      temperature,
                                 gmx_bool                  linear,
                                 real                      scale_factor);
+
+} // namespace gmx
 
 #endif
