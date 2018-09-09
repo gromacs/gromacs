@@ -44,10 +44,6 @@
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/utility/real.h"
 
-#if 0
-} /* fixes auto-indentation problems */
-#endif
-
 /*! \def gmx_inline
  * \brief
  * Keyword to use in C code instead of C99 `inline`.
@@ -57,12 +53,7 @@
  * to indicate a function is inlined.
  * C++ code should use plain `inline`, as that is already in C++98.
  */
-#if !defined __cplusplus && defined _MSC_VER
-#define gmx_inline __inline
-#else
-/* C++ or C99 */
 #define gmx_inline inline
-#endif
 
 struct t_blocka;
 

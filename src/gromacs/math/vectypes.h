@@ -37,17 +37,9 @@
 #ifndef GMX_MATH_VECTYPES_H
 #define GMX_MATH_VECTYPES_H
 
-#ifdef __cplusplus
-
 #include <cmath>
 
 #include <type_traits>
-
-#else
-
-#include <math.h> // since this file used from C source files
-
-#endif
 
 #include "gromacs/utility/real.h"
 
@@ -65,8 +57,6 @@ typedef real    matrix[DIM][DIM];
 typedef real    tensor[DIM][DIM];
 
 typedef int     ivec[DIM];
-
-#ifdef __cplusplus
 
 namespace gmx
 {
@@ -331,7 +321,5 @@ static inline const ivec *as_ivec_array(const IVec *x)
 typedef BasicVector<int> IVec;
 
 }      // namespace gmx
-
-#endif // ifdef __cplusplus
 
 #endif // include guard

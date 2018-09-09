@@ -38,9 +38,7 @@
 #define GMX_MDTYPES_TYPES_FORCEREC_H
 
 #include "gromacs/math/vectypes.h"
-#ifdef __cplusplus
 #include "gromacs/math/paddedvector.h"
-#endif
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -247,12 +245,8 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
      */
     /* True when we have contributions that are directly added to the virial */
     gmx_bool          haveDirectVirialContributions;
-#ifdef __cplusplus
     /* TODO: Replace the pointer by an object once we got rid of C */
     std::vector<gmx::RVec>  *forceBufferForDirectVirialContributions;
-#else
-    void                    *forceBufferForDirectVirialContributions_dummy;
-#endif
 
     /* Data for PPPM/PME/Ewald */
     struct gmx_pme_t *pmedata;

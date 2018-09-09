@@ -46,12 +46,8 @@
 
 #include <stdint.h>
 
-#if defined __cplusplus
 #include <cinttypes>
 #include <cstddef>
-#else
-#include <stdbool.h>
-#endif
 
 //! Identical to bool
 typedef bool gmx_bool;
@@ -67,7 +63,6 @@ typedef bool gmx_bool;
 /** Number of gmx_bool values. */
 #define BOOL_NR 2
 
-#if defined __cplusplus
 namespace gmx
 {
 /*! \brief Integer type for indexing into arrays or vectors
@@ -76,7 +71,6 @@ namespace gmx
  */
 using index = std::ptrdiff_t;
 }
-#endif
 
 /* ICC, GCC, MSVC, Pathscale, PGI, XLC support __restrict.
  * Any other compiler can be added here. */
@@ -158,7 +152,6 @@ using index = std::ptrdiff_t;
 #define DIAGNOSTIC_RESET
 #endif
 
-#ifdef __cplusplus
 namespace gmx
 {
 namespace internal
@@ -192,6 +185,5 @@ static inline void ignoreValueHelper(const T & /*unused*/)
  */
 #define GMX_IGNORE_RETURN_VALUE(call) \
         ::gmx::internal::ignoreValueHelper(call)
-#endif
 
 #endif
