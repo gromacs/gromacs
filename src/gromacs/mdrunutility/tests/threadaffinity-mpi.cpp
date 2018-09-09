@@ -44,6 +44,8 @@
 
 #include "threadaffinitytest.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -240,3 +242,4 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, HandlesInvalidStrideOnNonMasterOnly
 }
 
 } // namespace
+} // namespace gmx

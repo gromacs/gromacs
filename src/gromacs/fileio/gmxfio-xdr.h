@@ -45,6 +45,9 @@
 #include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct t_fileio;
 
 void gmx_fio_setprecision(struct t_fileio *fio, gmx_bool bDouble);
@@ -134,9 +137,6 @@ gmx_bool gmx_fio_ndoe_string(struct t_fileio *fio, char *item[], int n,
 #define gmx_fio_ndo_rvec(fio, item, n)              gmx_fio_ndoe_rvec(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_ndo_ivec(fio, item, n)              gmx_fio_ndoe_ivec(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_ndo_string(fio, item, n)            gmx_fio_ndoe_string(fio, item, n, (#item), __FILE__, __LINE__)
-
-namespace gmx
-{
 
 class FileIOXdrSerializer : public ISerializer
 {

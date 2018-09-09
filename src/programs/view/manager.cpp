@@ -68,6 +68,9 @@
 #include "3dview.h"
 #include "nmol.h"
 
+namespace gmx
+{
+
 static void add_object(t_manager *man, eObject eO, int ai, int aj)
 {
     srenew(man->obj, ++man->nobj);
@@ -722,3 +725,5 @@ void do_filter(t_x11 *x11, t_manager *man, t_filter *filter)
 
     ExposeWin(x11->disp, man->wd.self);
 }
+
+} //namespace gmx

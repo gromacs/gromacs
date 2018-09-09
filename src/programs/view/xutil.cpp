@@ -46,6 +46,8 @@
 
 #include "Xstuff.h"
 
+namespace gmx
+{
 int CheckWin(Window win, const char *file, int line)
 {
     typedef struct {
@@ -327,3 +329,4 @@ bool GrabOK(FILE *out, int err)
     }
     return false;
 }
+} // namespace gmx

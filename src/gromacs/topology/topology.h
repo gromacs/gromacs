@@ -47,6 +47,9 @@
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/symtab.h"
 
+namespace gmx
+{
+
 enum {
     egcTC,    egcENER,   egcACC, egcFREEZE,
     egcUser1, egcUser2,  egcVCM, egcCompressedX,
@@ -193,5 +196,7 @@ void pr_top(FILE *fp, int indent, const char *title, const t_topology *top,
 void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, real abstol);
 void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
                 int natoms0, int natoms1);
+
+} // namespace gmx
 
 #endif

@@ -52,6 +52,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 int ocl_copy_H2D(cl_mem d_dest, void* h_src,
                  size_t offset, size_t bytes,
                  GpuApiCallBehavior transferKind,
@@ -273,3 +276,5 @@ std::string ocl_get_error_string(cl_int error)
                    std::to_string(static_cast<int32_t>(error));
     }
 }
+
+} //namespace gmx

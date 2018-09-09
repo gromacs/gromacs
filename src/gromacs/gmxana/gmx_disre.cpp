@@ -75,6 +75,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 typedef struct {
     int  n;
     real v;
@@ -932,3 +935,5 @@ int gmx_disre(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

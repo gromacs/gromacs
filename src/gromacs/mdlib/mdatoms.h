@@ -48,11 +48,11 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/unique_cptr.h"
 
-struct gmx_mtop_t;
-struct t_inputrec;
-
 namespace gmx
 {
+
+struct gmx_mtop_t;
+struct t_inputrec;
 
 /*! \libinternal
  * \brief Contains a C-style t_mdatoms while managing some of its
@@ -102,8 +102,6 @@ std::unique_ptr<MDAtoms>
 makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
             bool useGpuForPme);
 
-}  // namespace gmx
-
 void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
               int nindex, const int *index,
               int homenr,
@@ -121,5 +119,7 @@ void update_mdatoms(t_mdatoms *md, real lambda);
  * to the free-energy parameter lambda.
  * Sets md->lambda = lambda.
  */
+
+}  // namespace gmx
 
 #endif

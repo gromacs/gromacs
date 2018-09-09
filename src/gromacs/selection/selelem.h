@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -549,7 +549,7 @@ _gmx_selelem_print_compiler_info(FILE *fp, const gmx::SelectionTreeElement &sel,
 bool
 _gmx_selelem_can_estimate_cover(const gmx::SelectionTreeElement &sel);
 /** Returns the covered fraction of the selection for the current frame. */
-real
+gmx::real
 _gmx_selelem_estimate_coverfrac(const gmx::SelectionTreeElement &sel);
 
 //!\}

@@ -44,6 +44,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
+namespace gmx
+{
+
 static double eigval_to_frequency(double eigval)
 {
     double factor_gmx_to_omega2       = 1.0E21/(AVOGADRO*AMU);
@@ -211,3 +214,5 @@ double calcSchlitterEntropy(gmx::ArrayRef<const real> eigval,
     }
     return 0.5*RGAS*deter;
 }
+
+} //namespace gmx

@@ -52,6 +52,8 @@
 
 #include "testutils/testasserts.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -214,3 +216,4 @@ TEST(FileNameOptionTest, GivesErrorOnInvalidFileSuffix)
 }
 
 } // namespace
+} // namespace gmx

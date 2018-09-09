@@ -61,6 +61,9 @@
 
 #include "pme-gpu-types-host.h"
 
+namespace gmx
+{
+
 //! A repeat of typedef from parallel_3dfft.h
 typedef struct gmx_parallel_3dfft *gmx_parallel_3dfft_t;
 
@@ -367,5 +370,7 @@ void gmx_pme_send_switchgrid(const t_commrec *cr,
                              ivec             grid_size,
                              real             ewaldcoeff_q,
                              real             ewaldcoeff_lj);
+
+} // namespace gmx
 
 #endif

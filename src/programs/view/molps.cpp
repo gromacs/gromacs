@@ -50,6 +50,8 @@
 #include "nmol.h"
 #include "xutil.h"
 
+namespace gmx
+{
 #define MSIZE 4
 
 static void ps_draw_atom(t_psdata ps, int ai, iv2 vec2[], char **atomnm[])
@@ -277,3 +279,4 @@ void ps_draw_mol(t_psdata ps, t_manager *man)
         }
     }
 }
+} // namespace gmx

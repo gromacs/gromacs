@@ -82,7 +82,9 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
-using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
+namespace gmx
+{
+
 
 typedef struct {
     double em;
@@ -716,7 +718,7 @@ static void do_update_vv_vel(int start, int nrend, real dt,
             }
         }
     }
-} /* do_update_vv_vel */
+}   /* do_update_vv_vel */
 
 static void do_update_vv_pos(int start, int nrend, real dt,
                              ivec nFreeze[],
@@ -761,7 +763,7 @@ static void do_update_vv_pos(int start, int nrend, real dt,
             }
         }
     }
-} /* do_update_vv_pos */
+}   /* do_update_vv_pos */
 
 static gmx_stochd_t *init_stochd(const t_inputrec *ir)
 {
@@ -1964,3 +1966,5 @@ extern gmx_bool update_randomize_velocities(t_inputrec *ir, int64_t step, const 
     }
     return FALSE;
 }
+
+} //namespace gmx

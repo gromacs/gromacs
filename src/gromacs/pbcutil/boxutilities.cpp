@@ -48,6 +48,9 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 
+namespace gmx
+{
+
 void do_box_rel(int ndim, const matrix deform, matrix box_rel,
                 matrix b, bool bInit)
 {
@@ -75,9 +78,6 @@ void do_box_rel(int ndim, const matrix deform, matrix box_rel,
         }
     }
 }
-
-namespace gmx
-{
 
 namespace
 {

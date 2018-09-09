@@ -542,7 +542,7 @@ _gmx_sel_init_position(const gmx::SelectionTreeElementPointer &expr,
 
 /** Creates a gmx::SelectionTreeElement for a constant position. */
 gmx::SelectionTreeElementPointer
-_gmx_sel_init_const_position(real x, real y, real z, void *scanner);
+_gmx_sel_init_const_position(gmx::real x, gmx::real y, gmx::real z, void *scanner);
 /** Creates a gmx::SelectionTreeElement for a index group expression using group name. */
 gmx::SelectionTreeElementPointer
 _gmx_sel_init_group_by_name(const char *name, void *scanner);

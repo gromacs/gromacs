@@ -41,6 +41,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 typedef struct {
     real    Th;             /* Temperature at half step        */
     real    T;              /* Temperature at full step        */
@@ -84,5 +87,7 @@ typedef struct gmx_ekindata_t {
 } gmx_ekindata_t;
 
 #define GID(igid, jgid, gnr) (((igid) < (jgid)) ? ((igid)*(gnr)+(jgid)) : ((jgid)*(gnr)+(igid)))
+
+} // namespace gmx
 
 #endif

@@ -66,12 +66,11 @@
 #include "dimparams.h"
 #include "histogramsize.h"
 
-struct gmx_multisim_t;
-struct t_commrec;
-
 namespace gmx
 {
 
+struct gmx_multisim_t;
+struct t_commrec;
 struct AwhBiasHistory;
 struct AwhBiasParams;
 class BiasParams;

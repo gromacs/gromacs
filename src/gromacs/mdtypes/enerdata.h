@@ -39,6 +39,9 @@
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 enum {
     egCOULSR, egLJSR, egBHAMSR,
     egCOUL14, egLJ14, egNR
@@ -62,5 +65,7 @@ struct gmx_enerdata_t
     real                     foreign_term[F_NRE]; /* alternate array for storing foreign lambda energies */
     struct gmx_grppairener_t foreign_grpp;        /* alternate array for storing foreign lambda energies */
 };
+
+} // namespace gmx
 
 #endif

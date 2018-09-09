@@ -57,6 +57,9 @@
 #error "devicebuffer.h included on non-GPU build!"
 #endif
 
+namespace gmx
+{
+
 /*! \brief
  *  Reallocates the device-side buffer.
  *
@@ -99,5 +102,7 @@ void reallocateDeviceBuffer(DeviceBuffer<ValueType> *buffer,
     /* size could have changed without actual reallocation */
     *currentNumValues = numValues;
 }
+
+} // namespace gmx
 
 #endif

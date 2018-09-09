@@ -35,6 +35,9 @@
 
 #include "nbnxn_kernel_common.h"
 
+namespace gmx
+{
+
 /* Declare all the different kernel functions.
  */
 nbk_func_noener nbnxn_kernel_ElecRF_VdwLJ_F_ref;
@@ -214,3 +217,5 @@ static p_nbk_func_ener nbnxn_kernel_energrp_ref[coulktNR][vdwktNR_ref] =
 };
 
 #endif /* INCLUDE_KERNELFUNCTION_TABLES */
+
+}      // namespace gmx

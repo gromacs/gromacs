@@ -60,6 +60,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* information about scaling center */
 typedef struct {
     rvec      xmin;      /* smallest coordinates of all embedded molecules */
@@ -1335,3 +1338,5 @@ void free_membed(gmx_membed_t *membed)
 {
     sfree(membed);
 }
+
+} //namespace gmx

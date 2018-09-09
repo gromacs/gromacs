@@ -42,6 +42,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 struct gmx_groups_t;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
@@ -105,5 +108,7 @@ int read_nblist(FILE *in, FILE *out, int **mat, int natoms, gmx_bool bSymm);
 
 void reallocate_nblist(t_nblist *nl);
 /* List reallocation, only exported for Verlet scheme use with FEP */
+
+} // namespace gmx
 
 #endif

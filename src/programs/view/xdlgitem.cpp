@@ -50,6 +50,9 @@
 
 #include "Xstuff.h"
 
+namespace gmx
+{
+
 #define BUFSIZE 16
 
 static t_dlgitem *newitem(void)
@@ -767,3 +770,5 @@ void SetDlgitemOpts(t_dlgitem *dlgitem, bool bUseMon,
     std::printf("Help is: '%s'\n", dlgitem->help);
 #endif
 }
+
+} //namespace gmx

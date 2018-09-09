@@ -46,6 +46,9 @@
 
 #include "kernelutil_x86_avx_128_fma_double.h"
 
+namespace gmx
+{
+
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecCoul_VdwNone_GeomW3W3_VF_avx_128_fma_double
  * Electrostatics interaction: Coulomb
@@ -1472,3 +1475,5 @@ nb_kernel_ElecCoul_VdwNone_GeomW3W3_F_avx_128_fma_double
 
     inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_W3W3_F,outeriter*18 + inneriter*270);
 }
+
+} //namespace gmx

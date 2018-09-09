@@ -55,6 +55,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* ORCA interface routines */
 
 void init_orca(t_QMrec *qm)
@@ -184,7 +187,7 @@ static void write_orca_input(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
     fprintf(out, "\n");
 
     fclose(out);
-}  /* write_orca_input */
+}   /* write_orca_input */
 
 static real read_orca_output(rvec QMgrad[], rvec MMgrad[], t_forcerec *fr,
                              t_QMrec *qm, t_MMrec *mm)
@@ -383,6 +386,8 @@ real call_orca(t_forcerec *fr,
     step++;
     free(exe);
     return(QMener);
-} /* call_orca */
+}   /* call_orca */
 
 /* end of orca sub routines */
+
+} //namespace gmx

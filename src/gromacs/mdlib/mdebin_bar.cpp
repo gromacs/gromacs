@@ -53,6 +53,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* reset the delta_h list to prepare it for new values */
 static void mde_delta_h_reset(t_mde_delta_h *dh)
 {
@@ -766,3 +769,5 @@ void mde_delta_h_coll_restore_energyhistory(t_mde_delta_h_coll      *dhc,
         dhc->start_time_set = FALSE;
     }
 }
+
+} //namespace gmx

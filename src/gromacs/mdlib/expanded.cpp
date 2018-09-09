@@ -70,6 +70,9 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void init_df_history_weights(df_history_t *dfhist, t_expanded *expand, int nlim)
 {
     int i;
@@ -438,7 +441,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
         /* unpack the current lambdas -- we will only update 2 of these */
 
         for (i = 0; i < nlim-1; i++)
-        {   /* only through the second to last */
+        {       /* only through the second to last */
             lam_dg[i]       = dfhist->sum_dg[i+1] - dfhist->sum_dg[i];
             lam_variance[i] = gmx::square(dfhist->sum_variance[i+1]) - gmx::square(dfhist->sum_variance[i]);
         }
@@ -1386,3 +1389,5 @@ int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
 
     return lamnew;
 }
+
+} //namespace gmx

@@ -42,7 +42,10 @@
 
 #include "manager.h"
 
+namespace gmx
+{
 extern void ps_draw_mol(t_psdata ps, t_manager *man);
 /* Draw molecules to a postscript file */
 
-#endif  /* _molps_h */
+}      // namespace gmx
+#endif /* _molps_h */

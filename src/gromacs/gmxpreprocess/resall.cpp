@@ -56,6 +56,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
+namespace gmx
+{
+
 gpp_atomtype_t read_atype(const char *ffdir, t_symtab *tab)
 {
     FILE                    *in;
@@ -646,3 +649,5 @@ t_restp *get_restp(const char *rtpname, int nrtp, t_restp rtp[])
 
     return &rtp[i];
 }
+
+} //namespace gmx

@@ -51,6 +51,9 @@
 #include "dialogs.h"
 #include "xdlghi.h"
 
+namespace gmx
+{
+
 t_filter *init_filter(t_atoms *atoms, const char *fn, int natom_trx)
 {
     t_filter *f;
@@ -183,3 +186,5 @@ t_dlg *select_filter(t_x11 *x11, t_gmx *gmx)
 
     return dlg;
 }
+
+} //namespace gmx

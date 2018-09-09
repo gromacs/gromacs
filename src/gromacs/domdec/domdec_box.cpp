@@ -62,6 +62,9 @@
 
 #include "domdec_internal.h"
 
+namespace gmx
+{
+
 /*! \brief Calculates the average and standard deviation in 3D of n atoms */
 static void calc_pos_av_stddev(int n, const rvec *x,
                                rvec av, rvec stddev,
@@ -305,3 +308,5 @@ void set_ddbox_cr(const t_commrec *cr, const ivec *dd_nc,
 
     gmx_bcast(sizeof(gmx_ddbox_t), ddbox, cr);
 }
+
+} //namespace gmx

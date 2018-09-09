@@ -42,6 +42,9 @@
 #include "x11.h"
 #include "xutil.h"
 
+namespace gmx
+{
+
 extern t_molwin *init_mw(t_x11 *x11, Window Parent,
                          int x, int y, int width, int height,
                          unsigned long fg, unsigned long bg,
@@ -69,4 +72,5 @@ extern void set_box_type (t_x11 *x11, t_molwin *mw, int bt);
 
 extern void done_mw(t_x11 *x11, t_molwin *mw);
 
-#endif  /* _nmol_h */
+}      // namespace gmx
+#endif /* _nmol_h */

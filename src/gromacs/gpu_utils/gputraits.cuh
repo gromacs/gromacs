@@ -35,6 +35,9 @@
 #ifndef GMX_GPU_UTILS_GPUTRAITS_CUH
 #define GMX_GPU_UTILS_GPUTRAITS_CUH
 
+namespace gmx
+{
+
 /*! \libinternal \file
  *  \brief Declares the CUDA type traits.
  *  \author Aleksei Iupinov <a.yupinov@gmail.com>
@@ -61,5 +64,7 @@ struct KernelLaunchConfig
     size_t        sharedMemorySize = 0;         //!< Shared memory size in bytes
     CommandStream stream           = nullptr;   //!< Stream to launch kernel in
 };
+
+} // namespace gmx
 
 #endif

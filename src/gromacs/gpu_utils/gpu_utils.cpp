@@ -48,6 +48,9 @@
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 #if !GMX_GPU
 /*! \brief Set allocation functions used by the GPU host
  *
@@ -95,3 +98,5 @@ const char *getGpuCompatibilityDescription(const gmx_gpu_info_t &gpu_info,
             gpu_detect_res_str[egpuNonexistent] :
             gpu_detect_res_str[gpu_info_get_stat(gpu_info, index)]);
 }
+
+} //namespace gmx

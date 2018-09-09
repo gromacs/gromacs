@@ -43,6 +43,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /* check kernel/toppush.c when you change these numbers */
 #define MAXATOMLIST 6
 #define MAXFORCEPARAM   12
@@ -394,5 +397,7 @@ void pr_ffparams(FILE *fp, int indent, const char *title,
                  const gmx_ffparams_t *ffparams, gmx_bool bShowNumbers);
 void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef,
              gmx_bool bShowNumbers, gmx_bool bShowParameters);
+
+} // namespace gmx
 
 #endif

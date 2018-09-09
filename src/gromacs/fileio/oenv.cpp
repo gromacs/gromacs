@@ -43,6 +43,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 struct gmx_output_env_t
 {
     explicit gmx_output_env_t(const gmx::IProgramContext &context)
@@ -79,7 +82,7 @@ struct gmx_output_env_t
 
 /* read only time names */
 /* These must correspond to the time units type time_unit_t in oenv.h */
-static const real  timefactors[] =   { real(0),  real(1e3),  real(1), real(1e-3), real(1e-6), real(1e-9), real(1e-12), real(0) };
+static const real  timefactors[]    =   { real(0),  real(1e3),  real(1), real(1e-3), real(1e-6), real(1e-9), real(1e-12), real(0) };
 static const real  timeinvfactors[] = { real(0), real(1e-3),  real(1),  real(1e3),  real(1e6),  real(1e9),  real(1e12), real(0) };
 static const char *time_units_str[] = {
     nullptr, "fs", "ps", "ns", "us",
@@ -213,3 +216,5 @@ output_env_get_program_context(const gmx_output_env_t *oenv)
 {
     return oenv->programContext;
 }
+
+} //namespace gmx

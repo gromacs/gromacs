@@ -46,6 +46,9 @@
 
 #include "kernelutil_x86_sse2_double.h"
 
+namespace gmx
+{
+
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecCSTab_VdwCSTab_GeomW4P1_VF_sse2_double
  * Electrostatics interaction: CubicSplineTable
@@ -1361,3 +1364,5 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4P1_F_sse2_double
 
     inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW_W4_F,outeriter*24 + inneriter*168);
 }
+
+} //namespace gmx

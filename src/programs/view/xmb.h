@@ -43,6 +43,9 @@
 #include "xdlg.h"
 #include "xmb.h"
 
+namespace gmx
+{
+
 #define MB_OK              1
 #define MB_CANCEL          (1<<1)
 #define MB_OKCANCEL        (MB_OK | MB_CANCEL)
@@ -61,4 +64,5 @@ t_dlg *MessageBox(t_x11 *x11, Window Parent, const char *title,
                   int nlines, const char * const *lines, unsigned long Flags,
                   DlgCallback *cb, void *data);
 
-#endif  /* _xmb_h */
+}      // namespace gmx
+#endif /* _xmb_h */

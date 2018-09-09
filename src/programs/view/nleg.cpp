@@ -48,6 +48,9 @@
 
 #include "buttons.h"
 
+namespace gmx
+{
+
 typedef struct {
     const char    *tp;
     unsigned long *col;
@@ -187,3 +190,5 @@ void done_legw(t_x11 *x11, t_legendwin *lw)
     x11->UnRegisterCallback(x11, lw->wd.self);
     sfree(lw);
 }
+
+} //namespace gmx

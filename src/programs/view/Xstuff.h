@@ -52,6 +52,9 @@
 #include <X11/cursorfont.h>
 #include <X11/keysym.h>
 
+namespace gmx
+{
+
 #ifdef _acc_
 typedef unsigned char bmchar;
 #else
@@ -171,5 +174,7 @@ extern  void    XGetGeometry(Display *disp, Window w, Window *root,
                              int *x, int *y, unsigned int *width, unsigned int *height,
                              unsigned int *border_width, unsigned int *depth);
 #endif /* NEED_XSTUFF */
+
+}      // namespace gmx
 
 #endif /* _Xstuff_h */

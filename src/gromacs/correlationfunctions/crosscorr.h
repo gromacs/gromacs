@@ -46,6 +46,9 @@
 
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /*! \brief
  * fft cross correlation algorithm.
  * Computes corr = f (.) g
@@ -71,5 +74,7 @@ void cross_corr(int n, real f[], real g[], real corr[]);
  * \param[out] corr 2D array of the cross correlations
  */
 void many_cross_corr(int nFunc, int * nData, real ** f, real ** g, real ** corr);
+
+} // namespace gmx
 
 #endif

@@ -58,6 +58,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 #define EPS0 8.85419E-12
 #define ELC 1.60219E-19
 
@@ -500,3 +503,5 @@ int gmx_potential(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

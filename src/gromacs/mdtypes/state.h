@@ -66,12 +66,11 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-struct t_inputrec;
-
 namespace gmx
 {
+
+struct t_inputrec;
 struct AwhHistory;
-}
 
 /*
  * The t_state struct should contain all the (possibly) non-static
@@ -310,5 +309,7 @@ positionsFromStatePointer(const t_state *state)
         return gmx::EmptyArrayRef();
     }
 };
+
+} // namespace gmx
 
 #endif

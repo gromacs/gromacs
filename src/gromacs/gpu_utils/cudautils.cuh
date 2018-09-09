@@ -89,7 +89,6 @@ static inline void ensureNoPendingCudaError(const char *errorMessage)
 }
 
 }   // namespace
-}   // namespace
 
 enum class GpuApiCallBehavior;
 
@@ -360,4 +359,5 @@ void launchGpuKernel(void                                       (*kernel)(Args..
     }
 }
 
+}   // namespace gmx
 #endif

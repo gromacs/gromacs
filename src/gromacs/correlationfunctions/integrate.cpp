@@ -50,6 +50,9 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 
+namespace gmx
+{
+
 /*! \brief Integrate a function and printe the integral value. */
 real print_and_integrate(FILE *fp, int n, real dt, const real c[],
                          const real *fit, int nskip)
@@ -146,3 +149,5 @@ real evaluate_integral(int n, const real x[], const real y[],
 
     return sum;
 }
+
+} //namespace gmx

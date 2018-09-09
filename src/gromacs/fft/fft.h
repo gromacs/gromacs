@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2003 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,6 +56,9 @@
 
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/utility/real.h"
+
+namespace gmx
+{
 
 /*! \brief Datatype for FFT setup
  *
@@ -407,5 +410,7 @@ gmx_fft_transpose_2d   (t_complex *       in_data,
  *  after all plans have been destroyed.
  */
 void gmx_fft_cleanup();
+
+} // namespace gmx
 
 #endif

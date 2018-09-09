@@ -48,6 +48,9 @@
 
 #include "pme-gpu-constants.h"
 
+namespace gmx
+{
+
 //! A macro for inline GPU functions.
 #if GMX_GPU == GMX_GPU_CUDA
 #define INLINE_EVERYWHERE __host__ __device__ __forceinline__
@@ -101,5 +104,7 @@ int INLINE_EVERYWHERE getSplineParamIndex(int paramIndexBase, int dimIndex, int 
     assert((splineIndex >= 0) && (splineIndex < order));
     return (paramIndexBase + (splineIndex * DIM + dimIndex) * atomsPerWarp);
 }
+
+} // namespace gmx
 
 #endif

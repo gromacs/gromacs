@@ -49,6 +49,9 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 typedef struct {
     int    nx, ny;
     real   dx, dy;
@@ -257,3 +260,5 @@ void do_pp2shifts(FILE *fp, int nf, int nlist, t_dlist dlist[], real **dih)
     done_shifts(co_sd);
     done_shifts(ha_sd);
 }
+
+} //namespace gmx

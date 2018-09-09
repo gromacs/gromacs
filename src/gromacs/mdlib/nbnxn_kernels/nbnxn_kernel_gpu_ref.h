@@ -41,6 +41,9 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /* Reference (slow) kernel for nb n vs n GPU type pair lists */
 void
 nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
@@ -53,5 +56,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                      real  *                     fshift,
                      real  *                     Vc,
                      real  *                     Vvdw);
+
+} // namespace gmx
 
 #endif

@@ -45,6 +45,9 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_domdec_t;
 
 typedef struct {
@@ -191,5 +194,7 @@ static bool inline isMasterSimMasterRank(const gmx_multisim_t *ms,
 {
     return (SIMMASTER(cr) && isMasterSim(ms));
 }
+
+} // namespace gmx
 
 #endif

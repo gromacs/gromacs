@@ -49,6 +49,8 @@
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/utility/gmxassert.h"
 
+namespace gmx
+{
 //! \brief A device-side buffer of ValueTypes
 template<typename ValueType>
 using DeviceBuffer = ValueType *;
@@ -212,4 +214,5 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType> *buffer,
     GMX_RELEASE_ASSERT(stat == cudaSuccess, "Couldn't clear the device buffer");
 }
 
+} // namespace gmx
 #endif

@@ -42,6 +42,9 @@
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 void add_param(t_params *ps, int ai, int aj, const real *c, char *s);
 
 void add_imp_param(t_params *ps, int ai, int aj, int ak, int al,
@@ -67,5 +70,7 @@ void add_vsite4_atoms(t_params *ps, int ai, int aj, int ak, int al,
                       int am);
 
 int search_jtype(t_restp *rp, char *name, bool bFirstRes);
+
+} // namespace gmx
 
 #endif

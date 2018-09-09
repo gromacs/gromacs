@@ -56,6 +56,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 typedef struct {
     int  nlj, nqq;
     int *lj;
@@ -220,3 +223,5 @@ int gmx_lie(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

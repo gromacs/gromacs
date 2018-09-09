@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,9 @@
 #include <math.h>
 
 #include <immintrin.h>
+
+namespace gmx
+{
 #ifdef _MSC_VER
 #    include <intrin.h>
 #else
@@ -788,5 +791,7 @@ avx128fma_pmecorrV_f(__m128 z2)
 
     return _mm_mul_ps(polyVN0, polyVD0);
 }
+
+}      // namespace gmx
 
 #endif /* _kernelutil_x86_avx_128_fma_single_h_ */

@@ -51,6 +51,9 @@
 #include "fgrid.h"
 #include "xutil.h"
 
+namespace gmx
+{
+
 t_dlgitem **CreateRadioButtonGroup(t_x11 *x11, char *szTitle,
                                    t_id GroupID, int nrb, t_id rb[],
                                    int nSelect,
@@ -418,3 +421,5 @@ t_dlg *ReadDlg(t_x11 *x11, Window Parent, const char *title,
 
     return dlg;
 }
+
+} //namespace gmx

@@ -41,6 +41,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct t_atom;
 struct t_atoms;
 
@@ -65,5 +68,7 @@ search_res_atom(const char *type, int resind,
 
 void set_at(t_atom *at, real m, real q, int type, int resind);
 
+
+} // namespace gmx
 
 #endif

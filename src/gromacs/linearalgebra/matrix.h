@@ -39,6 +39,9 @@
 
 #include <stdio.h>
 
+namespace gmx
+{
+
 double **alloc_matrix(int n, int m);
 
 void free_matrix(double **a);
@@ -58,5 +61,7 @@ double multi_regression(FILE *fp, int ny, double *y,
  * sum_{j=0}^{ny-1} (y[j] - y'[j])^2
  * If fp is not NULL debug information will be written to it.
  */
+
+} // namespace gmx
 
 #endif

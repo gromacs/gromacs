@@ -40,6 +40,9 @@
 
 #include "popup.h"
 
+namespace gmx
+{
+
 typedef struct {
     t_windata    wd;
     int          nmenu;
@@ -86,4 +89,6 @@ extern int pd_width(t_pulldown *pd);
 extern int pd_height(t_pulldown *pd);
 /* Return the height of the window */
 
-#endif  /* _pulldown_h */
+}      // namespace gmx
+
+#endif /* _pulldown_h */

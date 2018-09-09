@@ -47,6 +47,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 typedef struct t_fileio t_fileio;
 
 /* NOTE ABOUT THREAD SAFETY:
@@ -173,5 +176,7 @@ int gmx_fio_get_file_md5(t_fileio *fio, gmx_off_t offset,
 
 int xtc_seek_time(t_fileio *fio, real time, int natoms, gmx_bool bSeekForwardOnly);
 
+
+} // namespace gmx
 
 #endif

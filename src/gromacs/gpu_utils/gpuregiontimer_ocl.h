@@ -51,6 +51,9 @@
 
 #include "gpuregiontimer.h"
 
+namespace gmx
+{
+
 /*! \libinternal \brief
  * The OpenCL implementation of the GPU code region timing.
  * With OpenCL, one has to use cl_event handle for each API call that has to be timed, and
@@ -139,5 +142,7 @@ class GpuRegionTimerImpl
 
 //! Short-hand for external use
 using GpuRegionTimer = GpuRegionTimerWrapper<GpuRegionTimerImpl>;
+
+} // namespace gmx
 
 #endif

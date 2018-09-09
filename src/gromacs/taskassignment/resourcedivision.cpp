@@ -70,6 +70,8 @@
 #include "gromacs/utility/physicalnodecommunicator.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
 
 /* DISCLAIMER: All the atom count and thread numbers below are heuristic.
  * The real switching points will depend on the system simulation,
@@ -333,7 +335,7 @@ class SingleRankChecker
         std::vector<std::string> reasons_;
 };
 
-} // namespace
+}   // namespace
 
 /* Get the number of MPI ranks to use for thread-MPI based on how many
  * were requested, which algorithms we're using,
@@ -623,8 +625,8 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
             }
         }
     }
-#else /* GMX_OPENMP && GMX_MPI */
-      /* No OpenMP and/or MPI: it doesn't make much sense to check */
+#else   /* GMX_OPENMP && GMX_MPI */
+        /* No OpenMP and/or MPI: it doesn't make much sense to check */
     GMX_UNUSED_VALUE(bNtOmpOptionSet);
     GMX_UNUSED_VALUE(willUsePhysicalGpu);
     GMX_UNUSED_VALUE(cr);
@@ -635,7 +637,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
     {
         GMX_LOG(mdlog.warning).asParagraph().appendText("NOTE: GROMACS was compiled without OpenMP and (thread-)MPI support, can only use a single CPU core");
     }
-#endif /* GMX_OPENMP && GMX_MPI */
+#endif  /* GMX_OPENMP && GMX_MPI */
 }
 
 
@@ -877,9 +879,6 @@ void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t         *hw_opt,
         print_hw_opt(debug, hw_opt);
     }
 }
-
-namespace gmx
-{
 
 void checkHardwareOversubscription(int                             numThreadsOnThisRank,
                                    int                             rank,

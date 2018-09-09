@@ -60,6 +60,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 
 #define FARAWAY 10000
 
@@ -401,3 +404,5 @@ int gmx_mdmat(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

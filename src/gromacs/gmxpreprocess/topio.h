@@ -43,6 +43,9 @@
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 
+namespace gmx
+{
+
 struct gmx_molblock_t;
 struct gmx_mtop_t;
 struct t_gromppopts;
@@ -73,5 +76,7 @@ char **do_top(bool                          bVerbose,
 
 /* This routine expects sys->molt[m].ilist to be of size F_NRE and ordered. */
 void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi);
+
+} // namespace gmx
 
 #endif

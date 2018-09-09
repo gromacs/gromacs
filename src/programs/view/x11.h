@@ -42,6 +42,9 @@
 
 #include "Xstuff.h"
 
+namespace gmx
+{
+
 /* These colours will be mapped to black on a monochrome screen */
 extern unsigned long BLACK, BLUE, GREEN, CYAN, RED, BROWN, GREY, DARKGREY;
 
@@ -131,4 +134,6 @@ t_x11 *GetX11(int *argc, char *argv[]);
 
 extern void GetNamedColor(t_x11 *x11, const char *name, unsigned long *col);
 
-#endif  /* _x11_h */
+}      // namespace gmx
+
+#endif /* _x11_h */

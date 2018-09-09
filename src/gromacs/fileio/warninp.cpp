@@ -46,6 +46,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 typedef struct warninp {
     gmx_bool    bAllowWarnings;
     int         nwarn_note;
@@ -258,3 +261,5 @@ void _incorrect_n_param(warninp_t wi, const char *fn, int line)
             fn, line);
     warning(wi, buf);
 }
+
+} //namespace gmx

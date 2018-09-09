@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2016, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,10 +52,14 @@
 #include "selelem.h"
 
 struct gmx_ana_index_t;
-struct gmx_mtop_t;
 struct gmx_sel_mempool_t;
+
+namespace gmx
+{
+struct gmx_mtop_t;
 struct t_pbc;
 struct t_trxframe;
+}
 
 /*! \internal \brief
  * Data structure for passing information required during evaluation.
@@ -63,15 +67,15 @@ struct t_trxframe;
 struct gmx_sel_evaluate_t
 {
     /** Memory pool for intermediate values. */
-    gmx_sel_mempool_t        *mp;
+    gmx_sel_mempool_t             *mp;
     /** Index group that contains all the atoms. */
-    gmx_ana_index_t          *gall;
+    gmx_ana_index_t               *gall;
     /** Topology information. */
-    const gmx_mtop_t         *top;
+    const gmx::gmx_mtop_t         *top;
     /** Current frame. */
-    t_trxframe               *fr;
+    gmx::t_trxframe               *fr;
     /** PBC data. */
-    t_pbc                    *pbc;
+    gmx::t_pbc                    *pbc;
 };
 
 /*! \name Utility functions
@@ -81,7 +85,7 @@ struct gmx_sel_evaluate_t
 void
 _gmx_sel_evaluate_init(gmx_sel_evaluate_t *data,
                        gmx_sel_mempool_t *mp, gmx_ana_index_t *gall,
-                       const gmx_mtop_t *top, t_trxframe *fr, t_pbc *pbc);
+                       const gmx::gmx_mtop_t *top, gmx::t_trxframe *fr, gmx::t_pbc *pbc);
 /** Evaluates the children of a general selection element. */
 void
 _gmx_sel_evaluate_children(gmx_sel_evaluate_t                     *data,

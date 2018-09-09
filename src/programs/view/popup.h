@@ -41,6 +41,8 @@
 #include "x11.h"
 #include "xutil.h"
 
+namespace gmx
+{
 typedef struct {
     Window      send_to;  /* Window to send messages to			*/
     int         nreturn;  /* Value returned when entry is selected  */
@@ -104,4 +106,5 @@ extern int menu_width(t_menu *m);
 extern int menu_height(t_menu *m);
 /* Return the height of the window */
 
-#endif  /* _popup_h */
+}      // namespace gmx
+#endif /* _popup_h */

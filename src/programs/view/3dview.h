@@ -42,6 +42,8 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
 typedef int  iv2[2];
 
 typedef struct {
@@ -82,4 +84,5 @@ void translate_view(t_3dview *view, int axis, gmx_bool bPositive);
 void reset_view(t_3dview *view);
 /* Reset the viewing to the initial view */
 
+} // namespace gmx
 #endif

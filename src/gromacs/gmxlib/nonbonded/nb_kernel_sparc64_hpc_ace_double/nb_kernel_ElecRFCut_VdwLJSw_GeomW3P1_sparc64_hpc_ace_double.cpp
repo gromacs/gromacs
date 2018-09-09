@@ -46,6 +46,9 @@
 
 #include "kernelutil_sparc64_hpc_ace_double.h"
 
+namespace gmx
+{
+
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_VF_sparc64_hpc_ace_double
  * Electrostatics interaction: ReactionField
@@ -1063,3 +1066,5 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_F_sparc64_hpc_ace_double
 
     inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW_W3_F,outeriter*18 + inneriter*133);
 }
+
+} //namespace gmx

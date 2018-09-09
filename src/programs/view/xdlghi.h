@@ -44,6 +44,9 @@
 #include "x11.h"
 #include "xdlg.h"
 
+namespace gmx
+{
+
 typedef struct {
     int         nitem;
     int         w, h;
@@ -76,4 +79,6 @@ extern t_dlg *ReadDlg(t_x11 *x11, Window Parent, const char *title,
                       DlgCallback *cb, void *data);
 /* Read a dialog box from a template file */
 
-#endif  /* _xdlghi_h */
+}      // namespace gmx
+
+#endif /* _xdlghi_h */

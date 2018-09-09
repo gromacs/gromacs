@@ -48,6 +48,9 @@
 #include "popup.h"
 #include "x11.h"
 
+namespace gmx
+{
+
 static bool PDCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
 {
     t_pulldown *pd;
@@ -187,3 +190,5 @@ int pd_height(t_pulldown *pd)
 
     return h;
 }
+
+} //namespace gmx

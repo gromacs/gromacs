@@ -60,6 +60,8 @@
 
 #include "toputils.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -492,3 +494,4 @@ TEST_F(PositionCalculationTest, HandlesOverlappingStaticCalculations)
 // TODO: Check for handling of more multiple calculation cases
 
 } // namespace
+} // namespace gmx

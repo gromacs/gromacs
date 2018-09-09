@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,5 +50,6 @@
 #define CALC_ENERGIES
 #define ENERGY_GROUPS
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_outer.h"
+
 #undef ENERGY_GROUPS
 #undef CALC_ENERGIES

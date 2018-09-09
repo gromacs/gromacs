@@ -45,6 +45,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void my_calc_xcm(int nbb, const int bbind[], rvec x[], rvec xcm)
 {
     int    i, m, ai;
@@ -165,3 +168,5 @@ real fit_ahx(int nres, t_bb bb[], int natoms, int nall, int allindex[],
     }
     return std::sqrt(trms/nca);
 }
+
+} //namespace gmx

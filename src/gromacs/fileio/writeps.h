@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,9 @@
 #include "gromacs/fileio/rgb.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+
+namespace gmx
+{
 
 /* TODO: These two enums are used also in xutil.h in src/programs/view/.
  * The Y position enum doesn't seem to be actually used in this header...
@@ -119,5 +122,7 @@ void ps_setorigin(t_psdata ps);
 void ps_unsetorigin(t_psdata ps);
 
 void ps_comment(t_psdata ps, const char *s);
+
+} // namespace gmx
 
 #endif

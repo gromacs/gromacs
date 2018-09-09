@@ -59,6 +59,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* TODO: this should be made thread-safe */
 
 /* Gaussian interface routines */
@@ -421,7 +424,7 @@ void write_gaussian_SH_input(int step, gmx_bool swap,
     }
     fprintf(out, "\n");
     fclose(out);
-}  /* write_gaussian_SH_input */
+}   /* write_gaussian_SH_input */
 
 void write_gaussian_input(int step, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
 {
@@ -570,7 +573,7 @@ void write_gaussian_input(int step, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
 
     fclose(out);
 
-}  /* write_gaussian_input */
+}   /* write_gaussian_input */
 
 real read_gaussian_output(rvec QMgrad[], rvec MMgrad[], t_QMrec *qm, t_MMrec *mm)
 {
@@ -913,7 +916,7 @@ real call_gaussian(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshi
     free(exe);
     return(QMener);
 
-} /* call_gaussian */
+}   /* call_gaussian */
 
 real call_gaussian_SH(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
 {
@@ -1020,7 +1023,8 @@ real call_gaussian_SH(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec f
     free(exe);
     return(QMener);
 
-} /* call_gaussian_SH */
+}   /* call_gaussian_SH */
 
 /* end of gaussian sub routines */
+} //namespace gmx
 #endif

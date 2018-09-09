@@ -57,6 +57,9 @@
 
 #include "frameaverager.h"
 
+namespace gmx
+{
+
 namespace
 {
 
@@ -68,10 +71,7 @@ bool isDefined(real value)
     return value != UNDEFINED;
 }
 
-} // namespace
-
-namespace gmx
-{
+}   // namespace
 
 /********************************************************************
  * AnalysisHistogramSettingsInitializer

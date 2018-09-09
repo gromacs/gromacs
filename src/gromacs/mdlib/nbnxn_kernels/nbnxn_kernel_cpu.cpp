@@ -60,6 +60,9 @@
 #endif
 #undef INCLUDE_FUNCTION_TABLES
 
+namespace gmx
+{
+
 /*! \brief Clears the energy group output buffers
  *
  * \param[in,out] out  nbnxn kernel output struct
@@ -409,3 +412,5 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
         reduce_energies_over_lists(nbat, nnbl, vVdw, vCoulomb);
     }
 }
+
+} //namespace gmx

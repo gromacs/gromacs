@@ -56,6 +56,9 @@
 #include "gromacs/utility/textreader.h"
 #include "gromacs/utility/textwriter.h"
 
+namespace gmx
+{
+
 std::vector<t_inpfile>
 read_inpfile(gmx::TextInputStream *stream, const char *fn,
              warninp_t wi)
@@ -539,3 +542,5 @@ setStringEntry(std::vector<t_inpfile> *inp, const char *name, char *newName, con
         std::strcpy(newName, found);
     }
 }
+
+} //namespace gmx

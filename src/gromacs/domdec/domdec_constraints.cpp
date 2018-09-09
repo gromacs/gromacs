@@ -71,6 +71,9 @@
 
 #include "domdec_specatomcomm.h"
 
+namespace gmx
+{
+
 /*! \brief Struct used during constraint setup with domain decomposition */
 struct gmx_domdec_constraints_t
 {
@@ -667,3 +670,5 @@ void init_domdec_constraints(gmx_domdec_t     *dd,
 
     dc->requestedGlobalAtomIndices.resize(dc->nthread);
 }
+
+} //namespace gmx

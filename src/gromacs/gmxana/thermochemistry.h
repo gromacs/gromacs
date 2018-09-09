@@ -46,6 +46,9 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 /*! \brief Compute heat capacity due to vibrational motion
  *
  * \param[in] eigval       The eigenvalues
@@ -140,5 +143,7 @@ double calcQuasiHarmonicEntropy(gmx::ArrayRef<const real> eigval,
                                 real                      temperature,
                                 gmx_bool                  linear,
                                 real                      scale_factor);
+
+} // namespace gmx
 
 #endif

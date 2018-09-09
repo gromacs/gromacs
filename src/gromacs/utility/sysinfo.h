@@ -48,6 +48,9 @@
 #include <stddef.h>
 #include <time.h>
 
+namespace gmx
+{
+
 /*! \addtogroup module_utility
  * \{
  */
@@ -113,5 +116,7 @@ void gmx_format_current_time(char *buf, size_t len);
 int gmx_set_nice(int level);
 
 /*! \} */
+
+} // namespace gmx
 
 #endif

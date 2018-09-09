@@ -65,6 +65,9 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* #define TAKETIME */
 /* #define DEBUG  */
 
@@ -1190,3 +1193,5 @@ int gmx_pme_error(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

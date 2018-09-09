@@ -38,6 +38,9 @@
 
 #include <math.h>
 
+namespace gmx
+{
+
 #define GMX_SIMD                                   1
 #define GMX_SIMD_HAVE_FLOAT                        1
 #define GMX_SIMD_HAVE_DOUBLE                       1
@@ -85,5 +88,7 @@
 #define GMX_SIMD_ALIGNMENT                        64 // Bytes (16*single or 8*double)
 #define GMX_SIMD_RSQRT_BITS                       28
 #define GMX_SIMD_RCP_BITS                         28
+
+}      // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX_512_KNL_DEFINITIONS_H

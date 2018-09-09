@@ -35,6 +35,9 @@
 #ifndef GMX_MDLIB_MDSETUP_H
 #define GMX_MDLIB_MDSETUP_H
 
+namespace gmx
+{
+
 struct bonded_threading_t;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
@@ -44,12 +47,8 @@ struct t_commrec;
 struct t_forcerec;
 struct t_graph;
 struct t_inputrec;
-
-namespace gmx
-{
 class Constraints;
 class MDAtoms;
-}
 
 /*! \brief Sets atom data for several MD algorithms
  *
@@ -75,9 +74,11 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
                                gmx_localtop_t    *top,
                                t_forcerec        *fr,
                                t_graph          **graph,
-                               gmx::MDAtoms      *mdAtoms,
-                               gmx::Constraints  *constr,
+                               MDAtoms           *mdAtoms,
+                               Constraints       *constr,
                                gmx_vsite_t       *vsite,
                                gmx_shellfc_t     *shellfc);
+
+} // namespace gmx
 
 #endif

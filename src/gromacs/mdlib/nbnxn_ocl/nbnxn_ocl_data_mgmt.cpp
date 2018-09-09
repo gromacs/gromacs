@@ -73,6 +73,9 @@
 #include "nbnxn_ocl_internal.h"
 #include "nbnxn_ocl_types.h"
 
+namespace gmx
+{
+
 /*! \brief This parameter should be determined heuristically from the
  * kernel execution times
  *
@@ -1157,3 +1160,5 @@ gmx_bool nbnxn_gpu_is_kernel_ewald_analytical(const gmx_nbnxn_ocl_t *nb)
     return ((nb->nbparam->eeltype == eelOclEWALD_ANA) ||
             (nb->nbparam->eeltype == eelOclEWALD_ANA_TWIN));
 }
+
+} //namespace gmx

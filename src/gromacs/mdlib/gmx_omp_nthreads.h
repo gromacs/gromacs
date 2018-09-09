@@ -40,12 +40,11 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
-struct t_commrec;
-
 namespace gmx
 {
+
+struct t_commrec;
 class MDLogger;
-}
 
 /** Enum values corresponding to multithreaded algorithmic modules. */
 typedef enum module_nth
@@ -119,5 +118,7 @@ void gmx_omp_nthreads_set(int mod, int nthreads);
  * command line. */
 void gmx_omp_nthreads_read_env(const gmx::MDLogger &mdlog,
                                int                 *nthreads_omp);
+
+} // namespace gmx
 
 #endif

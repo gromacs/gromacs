@@ -58,6 +58,8 @@
 #include "poscalc.h"
 #include "selmethod.h"
 
+using namespace gmx;
+
 /*!
  * \param[in] sel Selection for which the string is requested
  * \returns   Pointer to a string that corresponds to \p sel->type.

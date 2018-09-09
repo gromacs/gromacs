@@ -59,6 +59,9 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 struct gmx_mdoutf {
     t_fileio               *fp_trn;
     t_fileio               *fp_xtc;
@@ -507,3 +510,5 @@ int mdoutf_get_tng_compressed_lambda_output_interval(gmx_mdoutf_t of)
     }
     return 0;
 }
+
+} //namespace gmx

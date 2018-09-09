@@ -74,9 +74,8 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-using gmx::AwhParams;
-using gmx::AwhBiasParams;
-
+namespace gmx
+{
 namespace
 {
 
@@ -94,7 +93,7 @@ enum class EnergyUnit
     KT        //!< kT
 };
 
-} // namespace
+}   // namespace
 
 /*! \brief All meta-data that is shared for one output file type for one bias */
 class OutputFile
@@ -309,7 +308,7 @@ std::vector<std::string>makeLegend(const AwhBiasParams *awhBiasParams,
     return legend;
 }
 
-} // namespace
+}   // namespace
 
 OutputFile::OutputFile(const std::string &filename,
                        const std::string &baseTitle,
@@ -658,3 +657,5 @@ int gmx_awh(int argc, char *argv[])
 
     return 0;
 }
+
+} // namespace gmx

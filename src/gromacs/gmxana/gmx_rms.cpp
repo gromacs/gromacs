@@ -64,6 +64,9 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void norm_princ(const t_atoms *atoms, int isize, int *index, int natoms,
                        rvec *x)
 {
@@ -1232,3 +1235,5 @@ int gmx_rms(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

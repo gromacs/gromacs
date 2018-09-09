@@ -62,6 +62,9 @@
 #include "xdlghi.h"
 #include "xmb.h"
 
+namespace gmx
+{
+
 #define MBFLAGS /* MB_APPLMODAL | */ MB_DONTSHOW
 
 void write_gmx(t_x11 *x11, t_gmx *gmx, int mess)
@@ -461,3 +464,5 @@ void edit_file(const char *fn)
         std::exit(0);
     }
 }
+
+} //namespace gmx

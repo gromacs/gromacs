@@ -52,6 +52,9 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/programcontext.h"
 
+namespace gmx
+{
+
 /** Structure with the number of threads for each OpenMP multi-threaded
  *  algorithmic module in mdrun. */
 typedef struct
@@ -516,3 +519,5 @@ gmx_omp_nthreads_set(int mod, int nthreads)
 
     modth.nth[mod] = nthreads;
 }
+
+} //namespace gmx

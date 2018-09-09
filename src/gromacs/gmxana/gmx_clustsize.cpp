@@ -64,6 +64,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void clust_size(const char *ndx, const char *trx, const char *xpm,
                        const char *xpmw, const char *ncl, const char *acl,
                        const char *mcl, const char *histo, const char *tempf,
@@ -553,3 +556,5 @@ int gmx_clustsize(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

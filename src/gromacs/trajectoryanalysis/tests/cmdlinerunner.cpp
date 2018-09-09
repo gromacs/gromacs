@@ -59,6 +59,8 @@
 #include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -174,3 +176,4 @@ TEST_F(TrajectoryAnalysisCommandLineRunnerTest, FailsWithTrajectorySubsetWithout
 }
 
 } // namespace
+} // namespace gmx

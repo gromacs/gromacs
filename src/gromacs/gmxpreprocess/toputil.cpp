@@ -54,6 +54,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* UTILITIES */
 
 void set_p_string(t_param *p, const char *s)
@@ -548,3 +551,5 @@ void print_bondeds(FILE *out, int natoms, directive d,
     sfree(param);
     done_atomtype(atype);
 }
+
+} //namespace gmx

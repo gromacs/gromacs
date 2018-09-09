@@ -49,6 +49,9 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/topology/idef.h"
 
+namespace gmx
+{
+
 /*! \brief Divide the listed interactions over the threads
  *
  * Uses fr->nthreads for the number of threads, and sets up the
@@ -70,5 +73,7 @@ void tear_down_bonded_threading(bonded_threading_t *bt);
  */
 void init_bonded_threading(FILE *fplog, int nenergrp,
                            struct bonded_threading_t **bt_ptr);
+
+} // namespace gmx
 
 #endif
