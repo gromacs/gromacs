@@ -123,6 +123,9 @@
 #include "pme-spline-work.h"
 #include "pme-spread.h"
 
+namespace gmx
+{
+
 /*! \brief Help build a descriptive message in \c error if there are
  * \c errorReasons why PME on GPU is not supported.
  *
@@ -1428,7 +1431,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
             }
         }
         bFirst = FALSE;
-    } /* of grid_index-loop */
+    }   /* of grid_index-loop */
 
     /* For Lorentz-Berthelot combination rules in LJ-PME, we need to calculate
      * seven terms. */
@@ -1645,7 +1648,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                             copy_fftgrid_to_pmegrid(pme, fftgrid, grid, grid_index, pme->nthread, thread);
                         }
                         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-                    } /*#pragma omp parallel*/
+                    }   /*#pragma omp parallel*/
 
                     /* distribute local grid to all nodes */
 #if GMX_MPI
@@ -1851,3 +1854,5 @@ void gmx_pme_reinit_atoms(const gmx_pme_t *pme, const int nAtoms, const real *ch
     }
     // TODO: handle the CPU case here; handle the whole t_mdatoms
 }
+
+} //namespace gmx

@@ -46,6 +46,9 @@
 
 #include "kernelutil_x86_avx_256_single.h"
 
+namespace gmx
+{
+
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecCSTab_VdwNone_GeomW3W3_VF_avx_256_single
  * Electrostatics interaction: CubicSplineTable
@@ -2680,3 +2683,5 @@ nb_kernel_ElecCSTab_VdwNone_GeomW3W3_F_avx_256_single
 
     inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_W3W3_F,outeriter*18 + inneriter*360);
 }
+
+} //namespace gmx

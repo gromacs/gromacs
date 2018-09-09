@@ -39,6 +39,9 @@
 
 #include "gromacs/math/vectypes.h"
 
+namespace gmx
+{
+
 struct t_atoms;
 struct t_idef;
 struct t_trxframe;
@@ -68,5 +71,7 @@ void rm_gropbc(const t_atoms *atoms, rvec x[], const matrix box);
 /* Simple routine for use in analysis tools that just have a pdb or
  * similar file.
  */
+
+} // namespace gmx
 
 #endif

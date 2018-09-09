@@ -93,6 +93,9 @@
 
 #include "integrator.h"
 
+namespace gmx
+{
+
 //! Global max algorithm
 static void global_max(t_commrec *cr, int *n)
 {
@@ -124,9 +127,6 @@ static void realloc_bins(double **bin, int *nbin, int nbin_new)
         *nbin = nbin_new;
     }
 }
-
-namespace gmx
-{
 
 void
 Integrator::do_tpi()

@@ -44,6 +44,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct t_block;
 struct t_blocka;
 
@@ -165,5 +168,7 @@ typedef enum {
     d_invalid,
     d_none
 } directive;
+
+} // namespace gmx
 
 #endif

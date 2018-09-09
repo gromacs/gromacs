@@ -48,6 +48,9 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 typedef struct {
     const char *name;
     int         flop;
@@ -640,3 +643,5 @@ void pr_load(FILE *log, t_commrec *cr, t_nrnb nrnb[])
         fprintf(log, "\nTotal Scaling: %.0f%% of max performance\n\n", unb);
     }
 }
+
+} //namespace gmx

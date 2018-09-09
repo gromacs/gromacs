@@ -44,18 +44,17 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
 
+namespace gmx
+{
+
 struct gmx_device_info_t;
 struct gmx_hw_info_t;
 struct t_commrec;
 struct t_fcdata;
 struct t_filenm;
 struct t_inputrec;
-
-namespace gmx
-{
 class MDLogger;
 class PhysicalNodeCommunicator;
-}
 
 /*! \brief Create a new forcerec structure */
 t_forcerec *mk_forcerec();
@@ -178,5 +177,7 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr,
 
 void free_gpu_resources(const t_forcerec                    *fr,
                         const gmx::PhysicalNodeCommunicator &physicalNodeCommunicator);
+
+} // namespace gmx
 
 #endif

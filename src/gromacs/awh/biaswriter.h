@@ -53,11 +53,10 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
-struct gmx_multisim_t;
-struct t_enxsubblock;
-
 namespace gmx
 {
+struct gmx_multisim_t;
+struct t_enxsubblock;
 class Bias;
 
 /* TODO: the post-simulations AWH reader and this AWH writer are totally

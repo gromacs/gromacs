@@ -45,13 +45,11 @@
 
 #include "gromacs/utility/classhelpers.h"
 
-struct ForceProviders;
-
-struct t_inputrec;
-
 namespace gmx
 {
 
+struct ForceProviders;
+struct t_inputrec;
 class KeyValueTreeObjectBuilder;
 class KeyValueTreeObject;
 class IKeyValueTreeErrorHandler;

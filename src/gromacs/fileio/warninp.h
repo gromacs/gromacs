@@ -41,6 +41,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 /* Abstract type for warning bookkeeping */
 typedef struct warninp *warninp_t;
 
@@ -149,5 +152,7 @@ void
 _incorrect_n_param(warninp_t wi, const char *fn, int line);
 #define incorrect_n_param(wi) _incorrect_n_param(wi, __FILE__, __LINE__)
 /* Issue a warning stating 'Incorrect number of parameters' */
+
+} // namespace gmx
 
 #endif

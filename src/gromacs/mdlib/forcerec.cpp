@@ -105,6 +105,9 @@
 
 #include "nbnxn_gpu_jit_support.h"
 
+namespace gmx
+{
+
 t_forcerec *mk_forcerec()
 {
     t_forcerec *fr;
@@ -1621,7 +1624,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused    *ir,
             /* One 256-bit FMA per cycle makes 2xNN faster */
             *kernel_type = nbnxnk4xN_SIMD_2xNN;
         }
-#endif  /* GMX_NBNXN_SIMD_2XNN && GMX_NBNXN_SIMD_4XN */
+#endif      /* GMX_NBNXN_SIMD_2XNN && GMX_NBNXN_SIMD_4XN */
 
 
         if (getenv("GMX_NBNXN_SIMD_4XN") != nullptr)
@@ -1668,7 +1671,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused    *ir,
         }
 
     }
-#endif // GMX_SIMD
+#endif  // GMX_SIMD
 }
 
 
@@ -3145,3 +3148,5 @@ void done_forcerec(t_forcerec *fr, int numMolBlocks, int numEnergyGroups)
     fr->bondedThreading = nullptr;
     sfree(fr);
 }
+
+} //namespace gmx

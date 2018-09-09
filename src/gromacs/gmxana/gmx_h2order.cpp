@@ -54,6 +54,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /****************************************************************************/
 /* This program calculates the ordering of water molecules across a box, as */
 /* function of the z-coordinate. This implies averaging over slices and over*/
@@ -335,3 +338,5 @@ int gmx_h2order(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

@@ -45,6 +45,9 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 typedef struct {
     int              nr;       /* The number of atomtypes		*/
     char          ***atomname; /* Names of the atomtypes		*/
@@ -109,3 +112,5 @@ void done_bond_atomtype(t_bond_atomtype *at)
 
     *at = nullptr;
 }
+
+} //namespace gmx

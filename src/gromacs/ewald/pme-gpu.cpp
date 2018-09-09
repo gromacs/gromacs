@@ -59,6 +59,9 @@
 #include "pme-internal.h"
 #include "pme-solve.h"
 
+namespace gmx
+{
+
 void pme_gpu_reset_timings(const gmx_pme_t *pme)
 {
     if (pme_gpu_active(pme))
@@ -351,3 +354,5 @@ void pme_gpu_reinit_computation(const gmx_pme_t *pme,
     wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
     wallcycle_stop(wcycle, ewcLAUNCH_GPU);
 }
+
+} //namespace gmx

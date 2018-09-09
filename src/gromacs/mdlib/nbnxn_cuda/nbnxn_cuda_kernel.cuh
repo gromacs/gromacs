@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,9 @@
 #include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
 #include "gromacs/math/utilities.h"
 #include "gromacs/pbcutil/ishift.h"
+
+namespace gmx
+{
 /* Note that floating-point constants in CUDA code should be suffixed
  * with f (e.g. 0.5f), to stop the compiler producing intermediate
  * code that is in double precision.
@@ -213,10 +216,10 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     float  ewald_shift = nbparam.sh_ewald;
 #else
     float  c_rf        = nbparam.c_rf;
-#endif /* EL_EWALD_ANY */
+#endif  /* EL_EWALD_ANY */
     float *e_lj        = atdat.e_lj;
     float *e_el        = atdat.e_el;
-#endif /* CALC_ENERGIES */
+#endif  /* CALC_ENERGIES */
 
     /* thread/block/warp id-s */
     unsigned int tidxi  = threadIdx.x;
@@ -493,23 +496,23 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                                 /* We could mask inv_r2, but with Ewald
                                  * masking both inv_r6 and F_invr is faster */
                                 inv_r6  *= int_bit;
-#endif                          /* EXCLUSION_FORCES */
+#endif                              /* EXCLUSION_FORCES */
 
                                 F_invr  = inv_r6 * (c12 * inv_r6 - c6) * inv_r2;
 #if defined CALC_ENERGIES || defined LJ_POT_SWITCH
                                 E_lj_p  = int_bit * (c12 * (inv_r6 * inv_r6 + nbparam.repulsion_shift.cpot)*c_oneTwelveth -
                                                      c6 * (inv_r6 + nbparam.dispersion_shift.cpot)*c_oneSixth);
 #endif
-#else                           /* !LJ_COMB_LB || CALC_ENERGIES */
+#else                               /* !LJ_COMB_LB || CALC_ENERGIES */
                                 float sig_r  = sigma*inv_r;
                                 float sig_r2 = sig_r*sig_r;
                                 float sig_r6 = sig_r2*sig_r2*sig_r2;
 #ifdef EXCLUSION_FORCES
                                 sig_r6 *= int_bit;
-#endif                          /* EXCLUSION_FORCES */
+#endif                              /* EXCLUSION_FORCES */
 
                                 F_invr  = epsilon * sig_r6 * (sig_r6 - 1.0f) * inv_r2;
-#endif                          /* !LJ_COMB_LB || CALC_ENERGIES */
+#endif                              /* !LJ_COMB_LB || CALC_ENERGIES */
 
 #ifdef LJ_FORCE_SWITCH
 #ifdef CALC_ENERGIES
@@ -526,7 +529,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                                 calculate_lj_ewald_comb_geom_F_E(nbparam, typei, typej, r2, inv_r2, lje_coeff2, lje_coeff6_6, int_bit, &F_invr, &E_lj_p);
 #else
                                 calculate_lj_ewald_comb_geom_F(nbparam, typei, typej, r2, inv_r2, lje_coeff2, lje_coeff6_6, &F_invr);
-#endif                          /* CALC_ENERGIES */
+#endif                              /* CALC_ENERGIES */
 #elif defined LJ_EWALD_COMB_LB
                                 calculate_lj_ewald_comb_LB_F_E(nbparam, typei, typej, r2, inv_r2, lje_coeff2, lje_coeff6_6,
 #ifdef CALC_ENERGIES
@@ -555,7 +558,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #ifdef CALC_ENERGIES
                                 E_lj_p       *= vdw_in_range;
 #endif
-#endif                          /* VDW_CUTOFF_CHECK */
+#endif                              /* VDW_CUTOFF_CHECK */
 
 #ifdef CALC_ENERGIES
                                 E_lj    += E_lj_p;
@@ -577,7 +580,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #elif defined EL_EWALD_TAB
                                 F_invr  += qi * qj_f * (int_bit*inv_r2 -
                                                         interpolate_coulomb_force_r(nbparam, r2 * inv_r)) * inv_r;
-#endif                          /* EL_EWALD_ANA/TAB */
+#endif                              /* EL_EWALD_ANA/TAB */
 
 #ifdef CALC_ENERGIES
 #ifdef EL_CUTOFF
@@ -589,7 +592,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #ifdef EL_EWALD_ANY
                                 /* 1.0f - erff is faster than erfcf */
                                 E_el    += qi * qj_f * (inv_r * (int_bit - erff(r2 * inv_r * beta)) - int_bit * ewald_shift);
-#endif                          /* EL_EWALD_ANY */
+#endif                              /* EL_EWALD_ANY */
 #endif
                                 f_ij    = rv * F_invr;
 
@@ -648,6 +651,8 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
 }
 #endif /* FUNCTION_DECLARATION_ONLY */
+
+}      // namespace gmx
 
 #undef NTHREAD_Z
 #undef MIN_BLOCKS_PER_MP

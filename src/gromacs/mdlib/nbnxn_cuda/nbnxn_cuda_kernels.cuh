@@ -342,6 +342,7 @@
 #define LJ_POT_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_VdwLJPsw ## __VA_ARGS__
 #include FLAVOR_LEVEL_GENERATOR
+
 #undef LJ_POT_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 

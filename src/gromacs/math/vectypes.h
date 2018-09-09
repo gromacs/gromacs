@@ -43,6 +43,9 @@
 
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 #define XX      0 /* Defines for indexing in */
 #define YY      1 /* vectors                 */
 #define ZZ      2
@@ -57,9 +60,6 @@ typedef real    matrix[DIM][DIM];
 typedef real    tensor[DIM][DIM];
 
 typedef int     ivec[DIM];
-
-namespace gmx
-{
 
 /*! \brief
  * C++ class for 3D vectors.

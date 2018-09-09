@@ -298,6 +298,8 @@ using gmx::SelectionLocation;
 using gmx::SelectionTreeElement;
 using gmx::SelectionTreeElementPointer;
 
+using namespace gmx;
+
 /*! \internal \brief
  * Compiler flags.
  */

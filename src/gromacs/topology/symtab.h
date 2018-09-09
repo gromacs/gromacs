@@ -39,6 +39,9 @@
 
 #include <stdio.h>
 
+namespace gmx
+{
+
 typedef struct t_symbuf
 {
     int               bufsize;
@@ -119,5 +122,7 @@ void pr_symtab(FILE *fp, int indent, const char *title, t_symtab *symtab);
  * number of spaces the text should be indented. Title is used
  * to print a header text.
  */
+
+} // namespace gmx
 
 #endif

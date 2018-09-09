@@ -64,6 +64,9 @@
 
 #include "listed-internal.h"
 
+namespace gmx
+{
+
 /*! \brief struct for passing all data required for a function type */
 typedef struct {
     const t_ilist *il;    /**< pointer to t_ilist entry corresponding to ftype */
@@ -552,3 +555,5 @@ void init_bonded_threading(FILE *fplog, int nenergrp,
 
     *bt_ptr = bt;
 }
+
+} //namespace gmx

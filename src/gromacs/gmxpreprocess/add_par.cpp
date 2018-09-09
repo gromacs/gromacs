@@ -51,6 +51,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void clear_atom_list(int i0, int a[])
 {
     int i;
@@ -286,3 +289,5 @@ int search_jtype(t_restp *rtp, char *name, bool bNterm)
     }
     return jmax;
 }
+
+} //namespace gmx

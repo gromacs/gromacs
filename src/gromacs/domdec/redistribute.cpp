@@ -61,6 +61,9 @@
 #include "domdec_internal.h"
 #include "utility.h"
 
+namespace gmx
+{
+
 /* The size per charge group of the cggl_flag buffer in gmx_domdec_comm_t */
 #define DD_CGIBS 2
 
@@ -899,3 +902,5 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
 
     }
 }
+
+} //namespace gmx

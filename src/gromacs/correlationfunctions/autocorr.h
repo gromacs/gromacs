@@ -53,6 +53,9 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_output_env_t;
 
 /*! \brief Normal correlation f(t)*f(t+dt) */
@@ -177,5 +180,7 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv,
                      int nrestart, gmx_bool bAver, gmx_bool bNormalize,
                      gmx_bool bVerbose, real tbeginfit, real tendfit,
                      int nfitparm);
+
+} // namespace gmx
 
 #endif

@@ -256,6 +256,8 @@ using gmx::SelectionParserValue;
 using gmx::SelectionTreeElement;
 using gmx::SelectionTreeElementPointer;
 
+using namespace gmx;
+
 namespace
 {
 

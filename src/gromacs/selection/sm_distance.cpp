@@ -53,6 +53,8 @@
 #include "selmethod.h"
 #include "selmethod-impl.h"
 
+using namespace gmx;
+
 /*! \internal
  * \brief
  * Data structure for distance-based selection method.

@@ -53,6 +53,8 @@
 #include "selmethod-impl.h"
 #include "symrec.h"
 
+using namespace gmx;
+
 /*! \internal \brief
  * Helper structure for defining selection methods.
  */

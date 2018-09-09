@@ -53,6 +53,9 @@
 #include "pme-gpu-types.h"
 #include "pme-gpu-types-host-impl.h"
 
+namespace gmx
+{
+
 //! Throws the exception on clFFT error
 static void handleClfftError(clfftStatus status, const char *msg)
 {
@@ -170,3 +173,5 @@ void GpuParallel3dFft::perform3dFft(gmx_fft_direction  dir,
                                            waitEvents.size(), waitEvents.data(), timingEvent,
                                            inputGrids, outputGrids, tempBuffer), "clFFT execution failure");
 }
+
+} //namespace gmx

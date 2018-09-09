@@ -50,6 +50,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void low_mspeed(real tempi,
                        gmx_mtop_t *mtop, rvec v[], gmx::ThreeFry2x64<> * rng)
 {
@@ -203,3 +206,5 @@ void stop_cm(FILE gmx_unused *log, int natoms, real mass[], rvec x[], rvec v[])
     (void)calc_cm(log, natoms, mass, x, v, xcm, vcm, acm, L);
 #endif
 }
+
+} //namespace gmx

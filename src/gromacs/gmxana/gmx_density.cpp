@@ -60,6 +60,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 typedef struct {
     char *atomname;
     int   nr_el;
@@ -765,3 +768,5 @@ int gmx_density(int argc, char *argv[])
     do_view(oenv, opt2fn("-o", NFILE, fnm), "-nxy");  /* view xvgr file */
     return 0;
 }
+
+} //namespace gmx

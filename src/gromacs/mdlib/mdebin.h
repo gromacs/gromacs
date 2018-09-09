@@ -43,6 +43,9 @@
 #include "gromacs/mdlib/ebin.h"
 #include "gromacs/mdtypes/enerdata.h"
 
+namespace gmx
+{
+
 class energyhistory_t;
 struct gmx_ekindata_t;
 struct gmx_enerdata_t;
@@ -54,11 +57,8 @@ struct t_grpopts;
 struct t_lambda;
 class t_state;
 
-namespace gmx
-{
 class Awh;
 class Constraints;
-}
 
 extern const char *egrp_nm[egNR+1];
 
@@ -180,5 +180,7 @@ void update_energyhistory(energyhistory_t * enerhist, const t_mdebin * mdebin);
 /* Read the energyhistory_t data to a mdebin structure*/
 void restore_energyhistory_from_state(t_mdebin              * mdebin,
                                       const energyhistory_t * enerhist);
+
+} // namespace gmx
 
 #endif

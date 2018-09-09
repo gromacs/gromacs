@@ -50,6 +50,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 /*! \def GMX_PATH_MAX
  * \brief
  * Maximum path length, if the OS provides one, otherwise a fixed constant.
@@ -217,9 +220,6 @@ void gmx_chdir(const char *directory);
  * Exits with a fatal error if the call fails.
  */
 void gmx_getcwd(char *buffer, size_t size);
-
-namespace gmx
-{
 
 class DataFileFinder;
 

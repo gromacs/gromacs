@@ -46,6 +46,9 @@
 
 #include "kernelutil_x86_avx_256_double.h"
 
+namespace gmx
+{
+
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_VF_avx_256_double
  * Electrostatics interaction: Coulomb
@@ -2083,3 +2086,5 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_F_avx_256_double
 
     inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW_W4W4_F,outeriter*24 + inneriter*286);
 }
+
+} //namespace gmx

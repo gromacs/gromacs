@@ -55,6 +55,9 @@
 #include "gromacs/utility/real.h"
 
 /* kernel does #include "gromacs/math/utilities.h" */
+
+namespace gmx
+{
 /* Move the actual useful stuff here: */
 
 //! Define 1/sqrt(pi)
@@ -317,4 +320,6 @@ struct gmx_nbnxn_ocl_t
     struct gmx_wallclock_gpu_nbnxn_t *timings;  /**< Timing data. TODO: deprecate this and query timers for accumulated data instead */
 };
 
-#endif  /* NBNXN_OPENCL_TYPES_H */
+}      // namespace gmx
+
+#endif /* NBNXN_OPENCL_TYPES_H */

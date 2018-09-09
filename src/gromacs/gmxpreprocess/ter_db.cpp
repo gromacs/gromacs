@@ -56,6 +56,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
+namespace gmx
+{
+
 /* use bonded types definitions in hackblock.h */
 #define ekwRepl (ebtsNR+1)
 #define ekwAdd  (ebtsNR+2)
@@ -569,3 +572,5 @@ t_hackblock *choose_ter(int nb, t_hackblock **tb, const char *title)
 
     return tb[sel];
 }
+
+} //namespace gmx

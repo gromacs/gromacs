@@ -41,6 +41,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct gmx_membed_t;
 struct gmx_mtop_t;
 struct t_commrec;
@@ -56,5 +59,7 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
 void rescale_membed(int step_rel, gmx_membed_t *membed, rvec *x);
 
 void free_membed(gmx_membed_t *membed);
+
+} // namespace gmx
 
 #endif

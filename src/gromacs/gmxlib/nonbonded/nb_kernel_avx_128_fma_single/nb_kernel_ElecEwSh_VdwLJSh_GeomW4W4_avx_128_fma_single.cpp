@@ -46,6 +46,9 @@
 
 #include "kernelutil_x86_avx_128_fma_single.h"
 
+namespace gmx
+{
+
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecEwSh_VdwLJSh_GeomW4W4_VF_avx_128_fma_single
  * Electrostatics interaction: Ewald
@@ -2487,3 +2490,5 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4W4_F_avx_128_fma_single
 
     inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW_W4W4_F,outeriter*24 + inneriter*324);
 }
+
+} //namespace gmx

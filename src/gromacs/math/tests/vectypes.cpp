@@ -55,6 +55,8 @@
 
 #include "testutils/testasserts.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -401,3 +403,4 @@ TEST(RVecTest, MoveAssignmentWorks)
 }
 
 } // namespace
+} // namespace gmx

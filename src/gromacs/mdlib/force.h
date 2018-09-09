@@ -42,6 +42,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 
+namespace gmx
+{
+
 struct gmx_edsam;
 struct gmx_enerdata_t;
 struct gmx_enfrot;
@@ -62,13 +65,9 @@ struct t_inputrec;
 struct t_lambda;
 struct t_mdatoms;
 struct t_nrnb;
-
-namespace gmx
-{
 class Awh;
 class ForceWithVirial;
 class MDLogger;
-}
 
 void init_enerdata(int ngener, int n_lambda, gmx_enerdata_t *enerd);
 /* Intializes the energy storage struct */
@@ -164,5 +163,7 @@ void do_force_lowlevel(t_forcerec   *fr,
                        int          flags,
                        float        *cycles_pme);
 /* Call all the force routines */
+
+} // namespace gmx
 
 #endif

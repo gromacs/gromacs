@@ -105,6 +105,5 @@ using PaddedArrayRef = ArrayRef<T>;
 // TODO These are hacks to avoid littering gmx:: all over code that is
 // almost all destined to move into the gmx namespace at some point.
 // An alternative would be about 20 files with using statements.
-using gmx::PaddedRVecVector; //NOLINT(google-global-names-in-headers)
 
 #endif

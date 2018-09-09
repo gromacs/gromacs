@@ -48,6 +48,9 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 struct gmx_parallel_3dfft  {
     fft5d_plan p1, p2;
 };
@@ -195,3 +198,5 @@ gmx_parallel_3dfft_destroy(gmx_parallel_3dfft_t    pfft_setup)
     }
     return 0;
 }
+
+} //namespace gmx

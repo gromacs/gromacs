@@ -44,6 +44,9 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/nblist.h"
 
+namespace gmx
+{
+
 struct t_forcerec;
 
 void
@@ -54,5 +57,7 @@ void
                               const t_mdatoms * gmx_restrict   mdatoms,
                               nb_kernel_data_t * gmx_restrict  kernel_data,
                               t_nrnb * gmx_restrict            nrnb);
+
+} // namespace gmx
 
 #endif

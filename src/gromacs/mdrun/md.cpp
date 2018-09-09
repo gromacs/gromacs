@@ -137,7 +137,9 @@
 #include "corewrap.h"
 #endif
 
-using gmx::SimulationSignaller;
+namespace gmx
+{
+
 
 //! Resets all the counters.
 static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
@@ -1926,3 +1928,5 @@ void gmx::Integrator::do_md()
     sfree(enerd);
     sfree(top);
 }
+
+} //namespace gmx

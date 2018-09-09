@@ -72,6 +72,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 #define e2d(x) ENM2DEBYE*(x)
 #define EANG2CM  (E_CHARGE*1.0e-10)       /* e Angstrom to Coulomb meter */
 #define CM2D  (SPEED_OF_LIGHT*1.0e+24)    /* Coulomb meter to Debye */
@@ -1187,7 +1190,7 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
                                     ncolour, ind0, i);
                         }
                     }
-                } /* End loop of all molecules in frame */
+                }   /* End loop of all molecules in frame */
 
                 if (dip3d)
                 {
@@ -1706,3 +1709,5 @@ int gmx_dipoles(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

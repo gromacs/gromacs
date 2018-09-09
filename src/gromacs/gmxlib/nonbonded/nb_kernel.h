@@ -44,6 +44,9 @@
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /*! \def gmx_inline
  * \brief
  * Keyword to use in C code instead of C99 `inline`.
@@ -171,5 +174,7 @@ nb_kernel_list_findkernel(FILE *              log,
                           const char *        vf);
 
 
+
+}      // namespace gmx
 
 #endif /* _nb_kernel_h_ */

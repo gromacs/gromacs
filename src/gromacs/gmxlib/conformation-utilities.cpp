@@ -47,6 +47,9 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 
+namespace gmx
+{
+
 static void low_rotate_conf(int natom, rvec *x, real alfa, real beta, real gamma)
 {
     int  i;
@@ -123,3 +126,5 @@ void make_new_box(int natoms, rvec *x, matrix box, const rvec box_space,
         }
     }
 }
+
+} //namespace gmx

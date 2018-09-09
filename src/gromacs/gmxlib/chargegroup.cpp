@@ -46,6 +46,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 
 void calc_chargegroup_radii(const gmx_mtop_t *mtop, rvec *x,
                             real *rvdw1, real *rvdw2,
@@ -309,3 +312,5 @@ void put_charge_groups_in_box(FILE gmx_unused *fplog, int cg0, int cg1,
 #endif
     }
 }
+
+} //namespace gmx

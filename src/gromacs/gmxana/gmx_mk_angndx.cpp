@@ -50,6 +50,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static int calc_ntype(int nft, const int *ft, const t_idef *idef)
 {
     int  i, f, nf = 0;
@@ -324,3 +327,5 @@ int gmx_mk_angndx(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

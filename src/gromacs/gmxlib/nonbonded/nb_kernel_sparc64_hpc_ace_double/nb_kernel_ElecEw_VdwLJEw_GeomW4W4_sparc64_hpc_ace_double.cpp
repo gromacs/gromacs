@@ -46,6 +46,9 @@
 
 #include "kernelutil_sparc64_hpc_ace_double.h"
 
+namespace gmx
+{
+
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecEw_VdwLJEw_GeomW4W4_VF_sparc64_hpc_ace_double
  * Electrostatics interaction: Ewald
@@ -2242,3 +2245,5 @@ nb_kernel_ElecEw_VdwLJEw_GeomW4W4_F_sparc64_hpc_ace_double
 
     inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW_W4W4_F,outeriter*24 + inneriter*402);
 }
+
+} //namespace gmx

@@ -45,6 +45,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 ///@cond INTERNAL
 
 /*! \brief Allocates nbytes of page-locked memory. */
@@ -57,5 +60,7 @@ void pmalloc_wc(void **h_ptr, size_t nbytes);
 void pfree(void *h_ptr);
 
 ///@endcond
+
+} // namespace gmx
 
 #endif

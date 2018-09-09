@@ -52,6 +52,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 const char *fflib_forcefield_dir_ext()
 {
     return ".ff";
@@ -189,3 +192,5 @@ FILE *fflib_open(const std::string &file)
 
     return fp;
 }
+
+} //namespace gmx

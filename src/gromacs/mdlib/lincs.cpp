@@ -84,7 +84,6 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
-using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 namespace gmx
 {
@@ -683,7 +682,7 @@ static void do_lincsp(const rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
 
         for (n = blnr[b]; n < blnr[b+1]; n++)
         {
-            blcc[n] = blmf[n]*::iprod(r[b], r[blbnb[n]]);
+            blcc[n] = blmf[n]*iprod(r[b], r[blbnb[n]]);
         }   /* 6 nr flops */
     }
     /* Together: 23*ncons + 6*nrtot flops */
@@ -861,7 +860,7 @@ gmx_unused static void calc_dist_iter(
             rvec_sub(xp[bla[2*b]], xp[bla[2*b+1]], dx);
         }
         len2  = len*len;
-        dlen2 = 2*len2 - ::norm2(dx);
+        dlen2 = 2*len2 - norm2(dx);
         if (dlen2 < wfac*len2)
         {
             /* not race free - see detailed comment in caller */
@@ -1028,7 +1027,7 @@ static void do_lincs(const rvec *x, rvec *xp, matrix box, t_pbc *pbc,
             unitv(dx, r[b]);
 
             pbc_dx_aiuc(pbc, xp[bla[2*b]], xp[bla[2*b+1]], dx);
-            mvb     = blc[b]*(::iprod(r[b], dx) - bllen[b]);
+            mvb     = blc[b]*(iprod(r[b], dx) - bllen[b]);
             rhs1[b] = mvb;
             sol[b]  = mvb;
         }
@@ -1078,7 +1077,7 @@ static void do_lincs(const rvec *x, rvec *xp, matrix box, t_pbc *pbc,
     {
         for (n = blnr[b]; n < blnr[b+1]; n++)
         {
-            blcc[n] = blmf[n]*::iprod(r[b], r[blbnb[n]]);
+            blcc[n] = blmf[n]*iprod(r[b], r[blbnb[n]]);
         }
     }
     /* Together: 26*ncons + 6*nrtot flops */
@@ -2304,7 +2303,7 @@ static void lincs_warning(gmx_domdec_t *dd, const rvec *x, rvec *xprime, t_pbc *
         }
         d0     = norm(v0);
         d1     = norm(v1);
-        cosine = ::iprod(v0, v1)/(d0*d1);
+        cosine = iprod(v0, v1)/(d0*d1);
         if (cosine < wfac)
         {
             fprintf(stderr,
@@ -2360,7 +2359,7 @@ static void cconerr(const Lincs *lincsd,
             {
                 rvec_sub(x[bla[2*b]], x[bla[2*b+1]], dx);
             }
-            r2  = ::norm2(dx);
+            r2  = norm2(dx);
             len = r2*gmx::invsqrt(r2);
             d   = std::abs(len/bllen[b]-1);
             if (d > ma && (nlocat == nullptr || nlocat[b]))

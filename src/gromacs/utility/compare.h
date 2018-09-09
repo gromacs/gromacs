@@ -49,6 +49,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 //! Compares two real values for equality.
 gmx_bool equal_real(real i1, real i2, real ftol, real abstol);
 //! Compares two float values for equality.
@@ -82,5 +85,7 @@ void cmp_float(FILE *fp, const char *s, int index, float i1, float i2, float fto
 
 //! Compares two doubles and prints differences.
 void cmp_double(FILE *fp, const char *s, int index, double i1, double i2, double ftol, double abstol);
+
+} // namespace gmx
 
 #endif

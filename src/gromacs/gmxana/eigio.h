@@ -42,6 +42,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 enum {
     eWXR_NO, eWXR_YES, eWXR_NOFIT
 };
@@ -82,5 +85,7 @@ int read_eigval  (const char *          fn,
                   int                   nmax,
                   int                   eigvalnr[],
                   real                  eigval[]);
+
+} // namespace gmx
 
 #endif

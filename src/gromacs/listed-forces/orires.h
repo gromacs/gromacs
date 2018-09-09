@@ -48,6 +48,9 @@
 
 #include "gromacs/topology/ifunc.h"
 
+namespace gmx
+{
+
 struct gmx_mtop_t;
 struct gmx_multisim_t;
 class history_t;
@@ -100,5 +103,7 @@ t_ifunc orires;
 
 //! Copies the new time averages that have been calculated in calc_orires_dev.
 void update_orires_history(t_fcdata *fcd, history_t *hist);
+
+} // namespace gmx
 
 #endif

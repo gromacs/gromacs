@@ -85,6 +85,9 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
+namespace gmx
+{
+
 #define MAXPTR 254
 #define NOGID  255
 
@@ -1769,7 +1772,7 @@ class MdpErrorHandler : public gmx::IKeyValueTreeErrorHandler
         const gmx::IKeyValueTreeBackMapping *mapping_;
 };
 
-} // namespace
+}   // namespace
 
 void get_ir(const char *mdparin, const char *mdparout,
             gmx::MDModules *mdModules, t_inputrec *ir, t_gromppopts *opts,
@@ -2593,7 +2596,7 @@ static int search_QMstring(const char *s, int ng, const char *gn[])
     }
 
     gmx_fatal(FARGS, "this QM method or basisset (%s) is not implemented\n!", s);
-} /* search_QMstring */
+}   /* search_QMstring */
 
 /* We would like gn to be const as well, but C doesn't allow this */
 /* TODO this is utility functionality (search for the index of a
@@ -4366,3 +4369,5 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
         }
     }
 }
+
+}  // namespace gmx

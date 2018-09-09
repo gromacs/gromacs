@@ -50,6 +50,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 typedef struct {
     int atom, sid;
 } t_sid;
@@ -410,3 +413,5 @@ void gen_sblocks(FILE *fp, int at_start, int at_end,
         fprintf(debug, "Done gen_sblocks\n");
     }
 }
+
+} //namespace gmx

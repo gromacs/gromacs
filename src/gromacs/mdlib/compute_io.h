@@ -38,11 +38,16 @@
 #ifndef GMX_MDLIB_COMPUTE_IO_H
 #define GMX_MDLIB_COMPUTE_IO_H
 
+namespace gmx
+{
+
 struct gmx_groups_t;
 struct t_inputrec;
 
 double compute_io(t_inputrec *ir, int natoms, gmx_groups_t *groups,
                   int nrener, int nrepl);
 /* Return total output to be written from this simulation. */
+
+} // namespace gmx
 
 #endif

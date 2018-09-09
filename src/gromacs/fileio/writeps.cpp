@@ -45,6 +45,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 const char *fontnm[efontNR] = {
     "Times-Roman", "Times-Italic",     "Times-Bold",    "Times-BoldItalic",
     "Helvetica",  "Helvetica-Oblique", "Helvetica-Bold", "Helvetica-BoldOblique",
@@ -376,3 +379,5 @@ void ps_comment(t_psdata ps, const char *s)
 {
     fprintf(ps->fp, "%%%% %s\n", s);
 }
+
+} //namespace gmx

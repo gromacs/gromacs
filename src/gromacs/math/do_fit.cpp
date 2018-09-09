@@ -48,6 +48,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 real calc_similar_ind(gmx_bool bRho, int nind, const int *index, const real mass[],
                       rvec x[], rvec xp[])
 {
@@ -357,3 +360,5 @@ void reset_x(int ncm, const int *ind_cm,
 {
     reset_x_ndim(3, ncm, ind_cm, nreset, ind_reset, x, mass);
 }
+
+} //namespace gmx

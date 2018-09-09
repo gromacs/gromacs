@@ -60,6 +60,9 @@
 #include "gromacs/utility/gmxmpi.h"
 #endif
 
+namespace gmx
+{
+
 static gmx_bool            g_bOverAllocDD     = FALSE;
 static tMPI_Thread_mutex_t g_over_alloc_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
@@ -268,3 +271,5 @@ int over_alloc_dd(int n)
         return n;
     }
 }
+
+} //namespace gmx

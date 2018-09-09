@@ -41,6 +41,9 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/hackblock.h"
 
+namespace gmx
+{
+
 int add_h(t_atoms **pdbaptr, rvec *xptr[],
           int nah, t_hackblock ah[],
           int nterpairs,
@@ -59,5 +62,7 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
  * if bUpdate_pdba, hydrogens are added to *pdbaptr, else it is unchanged
  * return the New total number of atoms
  */
+
+} // namespace gmx
 
 #endif

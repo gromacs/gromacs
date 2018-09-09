@@ -41,6 +41,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 struct t_blocka;
 struct t_idef;
 
@@ -50,5 +53,7 @@ void gen_sblocks(FILE *fp, int at_start, int at_end,
 /* Generate shake blocks from the constraint list. Set bSettle to yes for shake
  * blocks including settles. You normally do not want this.
  */
+
+} // namespace gmx
 
 #endif

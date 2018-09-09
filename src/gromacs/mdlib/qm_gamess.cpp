@@ -58,6 +58,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
 
 /* QMMM sub routines */
 /* mopac interface routines */
@@ -278,4 +280,7 @@ real call_gamess(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
     QMener = energy*HARTREE2KJ*AVOGADRO;
     return(QMener);
 }
+
+} //namespace gmx
+
 #endif

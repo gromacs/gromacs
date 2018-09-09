@@ -45,10 +45,10 @@
 
 #include <gtest/gtest.h>
 
-struct gmx_gpu_info_t;
-
 namespace gmx
 {
+struct gmx_gpu_info_t;
+
 namespace test
 {
 

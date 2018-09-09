@@ -57,6 +57,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
+namespace gmx
+{
+
 /* The code in this file estimates a pairlist buffer length
  * given a target energy drift per atom per picosecond.
  * This is done by estimating the drift given a buffer length.
@@ -1288,3 +1291,5 @@ real minCellSizeForAtomDisplacement(const gmx_mtop_t &mtop,
 
     return cellSize;
 }
+
+} //namespace gmx

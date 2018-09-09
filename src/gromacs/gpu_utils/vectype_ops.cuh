@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,7 @@
 #ifndef VECTYPE_OPS_CUH
 #define VECTYPE_OPS_CUH
 
+//TODO: Shouldn't be declared outside of gmx namespace
 /**** float3 ****/
 __forceinline__ __host__ __device__ float3 make_float3(float s)
 {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,6 +61,9 @@
 #include "gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_common.h"
 #endif /* GMX_NBNXN_SIMD_4XN */
 
+namespace gmx
+{
+
 #ifdef CALC_ENERGIES
 void
 nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_F_4xn(const nbnxn_pairlist_t    gmx_unused *nbl,
@@ -91,3 +94,5 @@ nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_F_4xn(const nbnxn_pairlist_t    gmx_unuse
  */
 }
 #endif /* GMX_NBNXN_SIMD_4XN */
+
+}      // namespace gmx

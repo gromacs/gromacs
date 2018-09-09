@@ -42,6 +42,9 @@
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/topology/symtab.h"
 
+namespace gmx
+{
+
 /* Used for reading .rtp/.tdb */
 /* ebtsBONDS must be the first, new types can be added to the end */
 /* these *MUST* correspond to the arrays in hackblock.c */
@@ -172,5 +175,7 @@ void merge_t_hackblock(t_hackblock *s, t_hackblock *d);
 
 void dump_hb(FILE *out, int nres, t_hackblock hb[]);
 /* print out whole datastructure */
+
+} // namespace gmx
 
 #endif

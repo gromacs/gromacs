@@ -44,6 +44,9 @@
 #ifndef GMX_UTILITY_REAL_H
 #define GMX_UTILITY_REAL_H
 
+namespace gmx
+{
+
 /*! \brief Double precision accuracy */
 #define GMX_DOUBLE_EPS   2.2204460492503131e-16
 
@@ -152,5 +155,7 @@ typedef float           real;
  * See https://en.cppreference.com/w/cpp/language/user_literal for details on this lanuage feature.
  */
 constexpr real operator"" _real(long double x) { return real(x); }
+
+} // namespace gmx
 
 #endif

@@ -51,6 +51,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* TODO in future: convert gmx_walltime_accounting to a class,
  * resolve who should have responsibility for recording the number of
  * steps done, consider whether parts of finish_time, print_perf,
@@ -280,3 +283,5 @@ gmx_gettime_per_thread()
     return gmx_gettime();
 #endif
 }
+
+} //namespace gmx

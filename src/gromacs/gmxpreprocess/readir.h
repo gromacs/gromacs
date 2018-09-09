@@ -44,7 +44,6 @@
 namespace gmx
 {
 class MDModules;
-}
 
 struct gmx_groups_t;
 struct gmx_mtop_t;
@@ -164,5 +163,7 @@ void make_rotation_groups(t_rot *rot, char **rotgnames,
 
 void set_reference_positions(t_rot *rot, rvec *x, matrix box,
                              const char *fn, bool bSet, warninp_t wi);
+
+} // namespace gmx
 
 #endif

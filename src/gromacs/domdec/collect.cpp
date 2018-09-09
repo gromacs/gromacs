@@ -55,6 +55,9 @@
 #include "distribute.h"
 #include "domdec_internal.h"
 
+namespace gmx
+{
+
 static void dd_collect_cg(gmx_domdec_t  *dd,
                           const t_state *state_local)
 {
@@ -319,3 +322,5 @@ void dd_collect_state(gmx_domdec_t *dd,
         dd_collect_vec(dd, state_local, state_local->cg_p, globalCgpRef);
     }
 }
+
+} //namespace gmx

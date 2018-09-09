@@ -66,6 +66,9 @@
 #include "nbnxn_cuda.h"
 #include "nbnxn_cuda_types.h"
 
+namespace gmx
+{
+
 /* This is a heuristically determined parameter for the Fermi, Kepler
  * and Maxwell architectures for the minimum size of ci lists by multiplying
  * this constant with the # of multiprocessors on the current device.
@@ -849,3 +852,5 @@ gmx_bool nbnxn_gpu_is_kernel_ewald_analytical(const gmx_nbnxn_cuda_t *nb)
     return ((nb->nbparam->eeltype == eelCuEWALD_ANA) ||
             (nb->nbparam->eeltype == eelCuEWALD_ANA_TWIN));
 }
+
+} //namespace gmx

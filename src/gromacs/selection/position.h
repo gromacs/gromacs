@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,15 +59,15 @@ struct gmx_ana_pos_t
     /*! \brief
      * Array of positions.
      */
-    rvec               *x;
+    gmx::rvec               *x;
     /*! \brief
      * Velocities (can be NULL).
      */
-    rvec               *v;
+    gmx::rvec               *v;
     /*! \brief
      * Forces (can be NULL).
      */
-    rvec               *f;
+    gmx::rvec               *f;
     /*! \brief
      * Mapping of the current positions to the original group.
      *
@@ -95,7 +95,7 @@ gmx_ana_pos_reserve_for_append(gmx_ana_pos_t *pos, int n, int isize,
                                bool bVelocities, bool bForces);
 /** Initializes a \c gmx_ana_pos_t to represent a constant position. */
 void
-gmx_ana_pos_init_const(gmx_ana_pos_t *pos, const rvec x);
+gmx_ana_pos_init_const(gmx_ana_pos_t *pos, const gmx::rvec x);
 /** Copies the evaluated positions to a preallocated data structure. */
 void
 gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, bool bFirst);

@@ -53,6 +53,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 //! Comment sign to use.
 #define COMMENTSIGN ';'
 
@@ -518,3 +521,5 @@ char *gmx_step_str(int64_t i, char *buf)
     sprintf(buf, "%" PRId64, i);
     return buf;
 }
+
+} //namespace gmx

@@ -38,6 +38,9 @@
 #ifndef GMX_GMXPREPROCESS_GMXCPP_H
 #define GMX_GMXPREPROCESS_GMXCPP_H
 
+namespace gmx
+{
+
 typedef struct gmx_cpp *gmx_cpp_t;
 
 /* The possible return codes for these functions */
@@ -94,5 +97,7 @@ void cpp_done(gmx_cpp_t handle);
    NOT THREAD SAFE
  */
 char *cpp_error(gmx_cpp_t *handlep, int status);
+
+} // namespace gmx
 
 #endif

@@ -53,6 +53,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 typedef struct {
     char *ai, *aj;
     real  e_diss;
@@ -276,3 +279,5 @@ void convert_harmonics(int nrmols, t_molinfo mols[], gpp_atomtype_t atype)
     }
     sfree(t2m);
 }
+
+} //namespace gmx

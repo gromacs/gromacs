@@ -48,6 +48,9 @@
 
 #include "gromacs/timing/wallcycle.h"
 
+namespace gmx
+{
+
 struct gmx_mtop_t;
 struct t_commrec;
 struct t_inputrec;
@@ -192,5 +195,7 @@ void init_parallel(t_commrec *cr, t_inputrec *inputrec,
 // This is intended to be used with MPI parallelization without
 // domain decompostion (currently with NM and TPI).
 void broadcastStateWithoutDynamics(const t_commrec *cr, t_state *state);
+
+} // namespace gmx
 
 #endif

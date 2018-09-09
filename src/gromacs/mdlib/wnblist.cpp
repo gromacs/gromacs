@@ -55,6 +55,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void write_nblist(FILE *out, gmx_domdec_t *dd, t_nblist *nblist, int nDNL)
 {
     int                 i, nii, ii, j, zi, zj0, zj1, aj, zj, nj;
@@ -153,3 +156,5 @@ void dump_nblist(FILE *out, const t_commrec *cr, t_forcerec *fr, int nDNL)
     }
 
 }
+
+} //namespace gmx

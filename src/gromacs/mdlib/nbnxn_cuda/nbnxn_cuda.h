@@ -41,7 +41,12 @@
 
 #include "nbnxn_cuda_types.h"
 
+namespace gmx
+{
+
 //! Set up the cache configuration for the non-bonded kernels.
 void nbnxn_cuda_set_cacheconfig(const gmx_device_info_t *devinfo);
+
+} // namespace gmx
 
 #endif

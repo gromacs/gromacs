@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,9 @@
 
 #include "dialogs.h"
 #include "xdlghi.h"
+
+namespace gmx
+{
 
 t_filter *init_filter(t_atoms *atoms, const char *fn, int natom_trx)
 {
@@ -183,3 +186,5 @@ t_dlg *select_filter(t_x11 *x11, t_gmx *gmx)
 
     return dlg;
 }
+
+} //namespace gmx

@@ -57,6 +57,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 static void gyro_eigen(double **gyr, double *eig, double **eigv, int *ord)
 {
     int nrot, d;
@@ -532,3 +535,5 @@ int gmx_polystat(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

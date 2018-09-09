@@ -41,6 +41,9 @@
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 struct t_atom;
 struct t_atoms;
 
@@ -73,5 +76,7 @@ real sub_xcm(rvec x[], int gnx, const int *index, const t_atom atom[], rvec xcm,
 
 void add_xcm(rvec x[], int gnx, const int *index, rvec xcm);
 /* Increment all atoms in index with xcm */
+
+} // namespace gmx
 
 #endif

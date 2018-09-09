@@ -44,6 +44,9 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 typedef struct {
     const char *key;
     const char *author;
@@ -419,3 +422,5 @@ void please_cite(FILE *fp, const char *key)
     fprintf(fp, "-------- -------- --- Thank You --- -------- --------\n\n");
     fflush(fp);
 }
+
+} //namespace gmx

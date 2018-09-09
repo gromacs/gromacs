@@ -48,6 +48,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 #define XTC_MAGIC 1995
 
 
@@ -290,3 +293,5 @@ int read_next_xtc(t_fileio* fio,
 
     return static_cast<int>(*bOK);
 }
+
+} //namespace gmx

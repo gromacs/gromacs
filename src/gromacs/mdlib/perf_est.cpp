@@ -53,6 +53,9 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 
+namespace gmx
+{
+
 /* Computational cost of bonded, non-bonded and PME calculations.
  * This will be machine dependent.
  * The numbers are only used for estimating the relative cost of PME vs PP,
@@ -597,3 +600,5 @@ float pme_load_estimate(const gmx_mtop_t *mtop, const t_inputrec *ir,
 
     return ratio;
 }
+
+} //namespace gmx

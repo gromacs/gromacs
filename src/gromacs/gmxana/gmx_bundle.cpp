@@ -56,6 +56,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 #define MAX_ENDS 3
 
 typedef struct {
@@ -445,3 +448,5 @@ int gmx_bundle(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

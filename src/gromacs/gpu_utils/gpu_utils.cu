@@ -71,6 +71,8 @@
 #define HAVE_NVML_APPLICATION_CLOCKS 0
 #endif /* HAVE_NVML */
 
+namespace gmx
+{
 #if defined(CHECK_CUDA_ERRORS) && HAVE_NVML_APPLICATION_CLOCKS
 /*! Check for NVML error on the return status of a NVML API call. */
 #  define HANDLE_NVML_RET_ERR(status, msg) \
@@ -484,7 +486,7 @@ static gmx_bool init_gpu_application_clocks(
     cuda_dev->nvml_set_app_mem_clock  = max_mem_clock;
 
     return true;
-#endif /* HAVE_NVML */
+#endif  /* HAVE_NVML */
 }
 
 /*! \brief Resets application clocks if changed and cleans up NVML for the passed \gpu_dev.
@@ -496,7 +498,7 @@ static gmx_bool reset_gpu_application_clocks(const gmx_device_info_t gmx_unused 
 #if !HAVE_NVML_APPLICATION_CLOCKS
     GMX_UNUSED_VALUE(cuda_dev);
     return true;
-#else /* HAVE_NVML_APPLICATION_CLOCKS */
+#else   /* HAVE_NVML_APPLICATION_CLOCKS */
     nvmlReturn_t nvml_stat = NVML_SUCCESS;
     if (cuda_dev &&
         cuda_dev->nvml_is_restricted == NVML_FEATURE_DISABLED &&
@@ -518,7 +520,7 @@ static gmx_bool reset_gpu_application_clocks(const gmx_device_info_t gmx_unused 
     nvml_stat = nvmlShutdown();
     HANDLE_NVML_RET_ERR( nvml_stat, "nvmlShutdown failed" );
     return (nvml_stat == NVML_SUCCESS);
-#endif /* HAVE_NVML_APPLICATION_CLOCKS */
+#endif  /* HAVE_NVML_APPLICATION_CLOCKS */
 }
 
 void init_gpu(const gmx::MDLogger &mdlog,
@@ -879,3 +881,4 @@ int gpu_info_get_stat(const gmx_gpu_info_t &info, int index)
 {
     return info.gpu_dev[index].stat;
 }
+} // namespace gmx

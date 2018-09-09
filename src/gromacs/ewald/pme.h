@@ -57,6 +57,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 struct interaction_const_t;
 struct t_commrec;
 struct t_inputrec;
@@ -74,12 +77,9 @@ class PmeGpuProgram;
 //! Convenience name.
 using PmeGpuProgramHandle = const PmeGpuProgram *;
 
-namespace gmx
-{
 class ForceWithVirial;
 class MDLogger;
 enum class PinningPolicy : int;
-}
 
 enum {
     GMX_SUM_GRID_FORWARD, GMX_SUM_GRID_BACKWARD
@@ -424,5 +424,7 @@ GPU_FUNC_QUALIFIER bool pme_gpu_try_finish_task(const gmx_pme_t                *
  */
 GPU_FUNC_QUALIFIER void pme_gpu_reinit_computation(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme),
                                                    gmx_wallcycle   *GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM
+
+} // namespace gmx
 
 #endif

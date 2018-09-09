@@ -38,6 +38,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 /* Used with force switching or a constant potential shift:
  * rsw       = max(r - r_switch, 0)
  * force/p   = r^-(p+1) + c2*rsw^2 + c3*rsw^3
@@ -130,5 +133,7 @@ struct interaction_const_t
        single precision x86 SIMD for aligned loads */
     real *tabq_vdw_FDV0;
 };
+
+} // namespace gmx
 
 #endif

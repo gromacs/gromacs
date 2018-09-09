@@ -46,6 +46,9 @@
 
 #include "kernelutil_x86_sse4_1_single.h"
 
+namespace gmx
+{
+
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecRFCut_VdwCSTab_GeomW4P1_VF_sse4_1_single
  * Electrostatics interaction: ReactionField
@@ -1399,3 +1402,5 @@ nb_kernel_ElecRFCut_VdwCSTab_GeomW4P1_F_sse4_1_single
 
     inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW_W4_F,outeriter*24 + inneriter*139);
 }
+
+} //namespace gmx

@@ -59,6 +59,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 
+namespace gmx
+{
+
 
 /* Structure for the names of lambda vector components */
 typedef struct lambda_components_t
@@ -3920,3 +3923,5 @@ int gmx_bar(int argc, char *argv[])
 
     return 0;
 }
+
+} //namespace gmx

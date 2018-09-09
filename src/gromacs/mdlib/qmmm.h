@@ -42,6 +42,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/tgroup.h"
 
+namespace gmx
+{
+
 #define GMX_QMMM (GMX_QMMM_MOPAC || GMX_QMMM_GAMESS || GMX_QMMM_GAUSSIAN || GMX_QMMM_ORCA)
 
 struct gmx_localtop_t;
@@ -151,5 +154,7 @@ real calculate_QMMM(const t_commrec  *cr,
  * (listed in QMMMrec.QMpackage). The binary of the QM package is
  * called by system().
  */
+
+} // namespace gmx
 
 #endif

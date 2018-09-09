@@ -62,6 +62,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 /*! \brief Return true if executing on compatible OS for AMD OpenCL.
  *
  * This is assumed to be true for OS X version of at least 10.10.4 and
@@ -378,7 +381,7 @@ void get_gpu_device_info_string(char *s, const gmx_gpu_info_t &gpu_info, int ind
 }
 
 //! This function is documented in the header file
-void init_gpu(const gmx::MDLogger               & /*mdlog*/,
+void init_gpu(const MDLogger                    & /*mdlog*/,
               gmx_device_info_t                *deviceInfo)
 {
     assert(deviceInfo);
@@ -438,3 +441,5 @@ int gpu_info_get_stat(const gmx_gpu_info_t &info, int index)
 {
     return info.gpu_dev[index].stat;
 }
+
+} //namespace gmx

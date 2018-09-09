@@ -947,7 +947,7 @@ YY_RULE_SETUP
 case 4:
 YY_RULE_SETUP
 #line 140 "scanner.l"
-{ yylval->str = gmx_strndup(yytext+1, yyleng-2); ADD_TOKEN; return STR;  }
+{ yylval->str = gmx::gmx_strndup(yytext+1, yyleng-2); ADD_TOKEN; return STR;  }
 	YY_BREAK
 case 5:
 /* rule 5 can match eol */
@@ -1033,7 +1033,7 @@ YY_RULE_SETUP
 case 16:
 YY_RULE_SETUP
 #line 171 "scanner.l"
-{ yylval->str = gmx_strndup(yytext, yyleng); ADD_TOKEN; return CMP_OP; }
+{ yylval->str = gmx::gmx_strndup(yytext, yyleng); ADD_TOKEN; return CMP_OP; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
@@ -1049,7 +1049,7 @@ YY_RULE_SETUP
 case 19:
 YY_RULE_SETUP
 #line 176 "scanner.l"
-{ yylval->str = gmx_strndup(yytext, yyleng); ADD_TOKEN; return STR; }
+{ yylval->str = gmx::gmx_strndup(yytext, yyleng); ADD_TOKEN; return STR; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP

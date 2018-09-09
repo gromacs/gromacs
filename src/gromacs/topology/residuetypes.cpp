@@ -45,6 +45,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
+namespace gmx
+{
+
 const char gmx_residuetype_undefined[] = "Other";
 
 struct gmx_residuetype_t
@@ -262,3 +265,5 @@ gmx_residuetype_get_name(gmx_residuetype_t *rt, int index)
         return nullptr;
     }
 }
+
+} //namespace gmx

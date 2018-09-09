@@ -61,6 +61,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atype,
                        warninp_t wi)
 {
@@ -2761,3 +2764,5 @@ void convert_moltype_couple(t_molinfo *mol, int atomtype_decouple, real fudgeQQ,
     decouple_atoms(&mol->atoms, atomtype_decouple, couple_lam0, couple_lam1,
                    *mol->name, wi);
 }
+
+} //namespace gmx

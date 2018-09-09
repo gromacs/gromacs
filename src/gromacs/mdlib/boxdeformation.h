@@ -50,11 +50,10 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 
-struct t_commrec;
-struct t_inputrec;
-
 namespace gmx
 {
+struct t_commrec;
+struct t_inputrec;
 
 class BoxDeformation
 {

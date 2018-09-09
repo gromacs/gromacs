@@ -42,11 +42,16 @@
 #include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 
+namespace gmx
+{
+
 void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 
 void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
              t_params plist[], t_excls excls[], t_hackblock hb[],
              bool bAllowMissing);
+
+} // namespace gmx
 
 #endif
