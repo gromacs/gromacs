@@ -189,13 +189,11 @@ class RangePartitioning
 /* Deprecated, C-style version of RangePartitioning */
 typedef struct t_block
 {
-#ifdef __cplusplus
     int blockSize(int blockIndex) const
     {
         GMX_ASSERT(blockIndex < nr, "blockIndex should be in range");
         return index[blockIndex + 1] - index[blockIndex];
     }
-#endif                     // __cplusplus
 
     int      nr;           /* The number of blocks          */
     int     *index;        /* Array of indices (dim: nr+1)  */
