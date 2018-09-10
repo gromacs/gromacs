@@ -406,6 +406,8 @@ static void analyzeThermochemistry(FILE                      *fp,
                      calcRotationalInternalEnergy(linear, T) +
                      calcVibrationalInternalEnergy(eFreq, T, linear, scale_factor));
     fprintf(fp, "Internal energy       %g kJ/mol\n", Evib);
+    double ZPE    = calcZeroPointEnergy(eFreq, scale_factor);
+    fprintf(fp, "Zero-point energy     %g kJ/mol\n", ZPE);
 }
 
 

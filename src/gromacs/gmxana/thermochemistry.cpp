@@ -47,7 +47,22 @@
 static double eigval_to_frequency(double eigval)
 {
     double factor_gmx_to_omega2       = 1.0E21/(AVOGADRO*AMU);
-    return std::sqrt(eigval*factor_gmx_to_omega2);
+
+    return std::sqrt(std::max(0.0, eigval)*factor_gmx_to_omega2);
+}
+
+double calcZeroPointEnergy(gmx::ArrayRef<const real> eigval,
+                           real                      scale_factor)
+{
+    // Convert frequency (ps^-1) to energy (kJ/mol)
+    double factor = PLANCK*PICO/(2.0*M_PI);
+    double zpe    = 0;
+    for (auto &r : eigval)
+    {
+        double omega = eigval_to_frequency(r);
+        zpe         += 0.5*factor*scale_factor*omega;
+    }
+    return zpe;
 }
 
 double calcVibrationalInternalEnergy(gmx::ArrayRef<const real> eigval,
