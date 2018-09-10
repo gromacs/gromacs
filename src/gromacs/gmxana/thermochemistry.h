@@ -46,13 +46,25 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
+/*! \brief Compute zero point energy from an array of eigenvalues.
+ *
+ * This routine first converts the eigenvalues from a normal mode
+ * analysis to frequencies and then computes the zero point energy.
+ *
+ * \param[in] eigval       The eigenvalues
+ * \param[in] scale_factor Factor to scale frequencies by before computing cv
+ * \return The zero point energy (kJ/mol)
+ */
+double calcZeroPointEnergy(gmx::ArrayRef<const real> eigval,
+                           real                      scale_factor);
+
 /*! \brief Compute heat capacity due to vibrational motion
  *
  * \param[in] eigval       The eigenvalues
  * \param[in] temperature  Temperature (K)
  * \param[in] linear       TRUE if this is a linear molecule
  * \param[in] scale_factor Factor to scale frequencies by before computing cv
- * \return The heat capacity at constant volume
+ * \return The heat capacity at constant volume (J/mol K)
  */
 double calcVibrationalHeatCapacity(gmx::ArrayRef<const real> eigval,
                                    real                      temperature,
@@ -68,7 +80,7 @@ double calcVibrationalHeatCapacity(gmx::ArrayRef<const real> eigval,
  * \param[in] mass         Molecular mass (Dalton)
  * \param[in] temperature  Temperature (K)
  * \param[in] pressure     Pressure (bar) at which to compute
- * \returns The translational entropy
+ * \returns The translational entropy (J/mol K)
  */
 double calcTranslationalEntropy(real mass,
                                 real temperature,
@@ -85,7 +97,7 @@ double calcTranslationalEntropy(real mass,
  * \param[in] linear       TRUE if this is a linear molecule
  * \param[in] theta        The principal moments of inertia (unit of Energy)
  * \param[in] sigma_r      Symmetry factor, should be >= 1
- * \returns The rotational entropy
+ * \returns The rotational entropy (J/mol K)
  */
 double calcRotationalEntropy(real       temperature,
                              int        natom,
@@ -99,7 +111,7 @@ double calcRotationalEntropy(real       temperature,
  * \param[in] temperature  Temperature (K)
  * \param[in] linear       TRUE if this is a linear molecule
  * \param[in] scale_factor Factor to scale frequencies by before computing E
- * \return The internal energy
+ * \return The internal energy (J/mol K)
  */
 double calcVibrationalInternalEnergy(gmx::ArrayRef<const real> eigval,
                                      real                      temperature,
