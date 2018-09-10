@@ -10,3 +10,10 @@ generally be an integer can be used for troubleshooting issues in
 system or force field preparation. This printing is now done only once
 per residue, rather than for every atom.
 
+nmeig does thermochemistry
+---------------------------------------
+The nmeig tool that analyzes the Hessian matrix from a normal mode
+analysis now generates thermochemical properties like standard
+entropy, heat capacity at constant volume, internal thermal energy
+and zero-point energy. The analysis is based on the harmonic
+approximation that is the same as what is used in quantum chemistry.
