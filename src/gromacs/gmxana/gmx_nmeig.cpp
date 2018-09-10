@@ -406,6 +406,8 @@ static void analyzeThermochemistry(FILE                      *fp,
                      calcRotationalInternalEnergy(linear, T) +
                      calcVibrationalInternalEnergy(eFreq, T, linear, scale_factor));
     fprintf(fp, "Internal energy       %g kJ/mol\n", Evib);
+    double ZPE    = calcZeroPointEnergy(eFreq, scale_factor);
+    fprintf(fp, "Zero-point energy     %g kJ/mol\n", ZPE);
 }
 
 
@@ -439,7 +441,7 @@ int gmx_nmeig(int argc, char *argv[])
         "[TT]-qc[tt], the [TT]-begin[tt] and [TT]-end[tt] options will be set automatically as well.[PAR]",
         "Based on a harmonic analysis of the normal mode frequencies,",
         "thermochemical properties S0 (Standard Entropy),",
-        "Cv (Heat capacity at constant volume) and the internal energy can be",
+        "Cv (Heat capacity at constant volume), Zero-point energy and the internal energy are",
         "computed, much in the same manner as popular quantum chemistry",
         "programs."
     };
@@ -707,6 +709,7 @@ int gmx_nmeig(int argc, char *argv[])
     factor_gmx_to_omega2       = 1.0E21/(AVOGADRO*AMU);
     factor_omega_to_wavenumber = 1.0E-5/(2.0*M_PI*SPEED_OF_LIGHT);
 
+    value = 0;
     for (i = begin; (i <= end); i++)
     {
         value = eigenvalues[i-begin];
@@ -741,6 +744,12 @@ int gmx_nmeig(int argc, char *argv[])
         }
     }
     xvgrclose(out);
+    if (value >= maxspec)
+    {
+        printf("WARNING: high frequencies encountered (%g cm^-1).\n", value);
+        printf("Your calculations may be incorrect due to e.g. improper minimization of\n");
+        printf("your starting structure or due to issues in your topology.\n");
+    }
     if (nullptr != spec)
     {
         for (j = 0; (j < maxspec); j++)
