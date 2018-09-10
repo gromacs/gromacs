@@ -57,6 +57,7 @@
 
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/simulationsignal.h"
+#include "gromacs/mdrun/mdstate.h"
 #include "gromacs/timing/walltime_accounting.h"
 
 namespace gmx
@@ -73,11 +74,9 @@ class CheckpointHandler
         /*! \brief CheckpointHandler constructor
          */
         CheckpointHandler(
-            gmx::SimulationSignal     *signal,
-            bool                       needSync,
-            const t_inputrec          *ir,
-            const t_commrec           *cr,
-            const MdrunOptions        &mdrunOptions);
+            const Integrator *integrator,
+            MDState *mdState,
+            const SimulationSetup *setup);
 
         /*! \brief Decides whether a checkpointing signal needs to be set
          *
@@ -85,13 +84,13 @@ class CheckpointHandler
          * interval.
          */
         void setSignal(
-            SimulationSignal         *signal,
-            bool                      bGStat,
-            gmx_walltime_accounting_t walltime_accounting)
+            const Integrator *integrator,
+            MDState *mdState,
+            const SimulationSetup *setup)
         {
             if (doSet_)
             {
-                setSignalImpl_(signal, bGStat, walltime_accounting);
+                setSignalImpl_(integrator, mdState, setup);
             }
         }
 
@@ -104,30 +103,32 @@ class CheckpointHandler
          *     configurations.
          */
         bool doCheckpointThisStep(
-            SimulationSignal* signal,
-            bool bNS, bool bLastStep, int64_t step)
+                const Integrator *integrator,
+                MDState *mdState,
+                const SimulationSetup *setup)
         {
             /* We write a checkpoint at this MD step when:
              * either at an NS step when we signalled through gs,
              * or at the last step (but not when we do not want confout),
              * but never at the first step or with rerun.
              */
-            if (doCheckpointing_ && step != checkedStep_)
+            if (doCheckpointing_ && setup->step != checkedStep_)
             {
-                doCheckpointImpl_(signal, bNS, bLastStep, step);
+                doCheckpointImpl_(integrator, mdState, setup);
             }
             return checkpointThisStep_;
         }
 
     private:
         void setSignalImpl_(
-            SimulationSignal         *signal,
-            bool                      bGStat,
-            gmx_walltime_accounting_t walltime_accounting);
+            const Integrator *integrator,
+            MDState *mdState,
+            const SimulationSetup *setup);
 
         void doCheckpointImpl_(
-            SimulationSignal* signal,
-            bool bNS, bool bLastStep, int64_t step);
+            const Integrator *integrator,
+            MDState *mdState,
+            const SimulationSetup *setup);
 
         bool                      doSet_;
         bool                      doCheckpointing_;
