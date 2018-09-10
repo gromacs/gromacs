@@ -9,6 +9,17 @@ earlier, which you can find described in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Correct PME forces with free energy without perturbed charges/LJ
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With free-energies calculations with lambda not set to zero and no
+actual perturbed charges or atom types for Lennard-Jones, the Coulomb
+or LJ PME mesh forces would be scaled with lambda. Note that this bug
+did not affect the, usual, setup where charges or atom types are actually
+perturbed.
+
+:issue: `2640`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
