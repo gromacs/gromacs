@@ -50,30 +50,28 @@
 using namespace gmx;
 
 CheckpointHandler::CheckpointHandler(
-        gmx::SimulationSignal     *signal,
-        bool                       needSync,
-        const t_inputrec          *ir,
-        const t_commrec           *cr,
-        const MdrunOptions        &mdrunOptions) :
+        const Integrator *integrator,
+        MDState *mdState,
+        const SimulationSetup *setup) :
     doSet_(false),
     doCheckpointing_(false),
     checkpointThisStep_(false),
     nNextCheckpoint_(1),
     checkedStep_(-1),
-    isParallel_(PAR(cr)),
-    writeConfout_(bool(mdrunOptions.writeConfout)),
-    doNsEveryStep_(ir->nstlist == 0),
-    initialStep_(ir->init_step),
-    checkPointingPeriod_(mdrunOptions.checkpointOptions.period)
+    isParallel_(PAR(integrator->cr)),
+    writeConfout_(bool(integrator->mdrunOptions.writeConfout)),
+    doNsEveryStep_(integrator->inputrec->nstlist == 0),
+    initialStep_(integrator->inputrec->init_step),
+    checkPointingPeriod_(integrator->mdrunOptions.checkpointOptions.period)
 {
-    if (needSync)
+    if (setup->simulationsShareState)
     {
-        signal->isLocal = false;
+        mdState->signals.write()->at(eglsCHKPT).isLocal = false;
     }
 
-    if (!(mdrunOptions.rerun || mdrunOptions.checkpointOptions.period < 0))
+    if (!(integrator->mdrunOptions.rerun || integrator->mdrunOptions.checkpointOptions.period < 0))
     {
-        if (MASTER(cr))
+        if (MASTER(integrator->cr))
         {
             doSet_ = true;
         }
@@ -82,16 +80,17 @@ CheckpointHandler::CheckpointHandler(
 }
 
 void CheckpointHandler::setSignalImpl_(
-        SimulationSignal         *signal,
-        bool                      bGStat,
-        gmx_walltime_accounting_t walltime_accounting)
+        const Integrator *integrator,
+        MDState *mdState,
+        const SimulationSetup *setup)
 {
     /* In parallel we only have to check for checkpointing in steps
      * where we do global communication,
      *  otherwise the other nodes don't know.
      */
-    const double secondsSinceStart = walltime_accounting_get_time_since_start(walltime_accounting);
-    if ((bGStat || !isParallel_) &&
+    auto signal = &mdState->signals.write()->at(eglsCHKPT);
+    const double secondsSinceStart = walltime_accounting_get_time_since_start(integrator->walltime_accounting);
+    if ((setup->bGStat || !isParallel_) &&
         (checkPointingPeriod_ == 0 || secondsSinceStart >= nNextCheckpoint_ * checkPointingPeriod_ * 60.0) &&
         signal->set == 0)
     {
@@ -100,16 +99,18 @@ void CheckpointHandler::setSignalImpl_(
 }
 
 void CheckpointHandler::doCheckpointImpl_(
-        gmx::SimulationSignal *signal,
-        bool bNS, bool bLastStep, int64_t step)
+        const Integrator *integrator,
+        MDState *mdState,
+        const SimulationSetup *setup)
 {
-    checkpointThisStep_ = (((signal->set != 0 && (bNS || doNsEveryStep_)) ||
-                            (bLastStep && writeConfout_)) &&
-                           step > initialStep_);
+    auto signal = &mdState->signals.write()->at(eglsCHKPT);
+    checkpointThisStep_ = (((signal->set != 0 && (setup->bNS || doNsEveryStep_)) ||
+                            (setup->bLastStep && writeConfout_)) &&
+                           setup->step > initialStep_);
     if (checkpointThisStep_)
     {
         signal->set = 0;
         nNextCheckpoint_++;
     }
-    checkedStep_ = step;
+    checkedStep_ = setup->step;
 }

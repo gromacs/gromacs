@@ -100,6 +100,7 @@
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdrun/mdstate.h"
 #include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -221,589 +222,129 @@ void gmx::Integrator::do_md()
     // t_inputrec is being replaced by IMdpOptionsProvider, so this
     // will go away eventually.
     t_inputrec       *ir   = inputrec;
-    gmx_mdoutf       *outf = nullptr;
-    int64_t           step, step_rel;
-    double            t, t0, lam0[efptNR];
-    gmx_bool          bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
-    gmx_bool          bNS, bNStList, bSimAnn, bStopCM,
-                      bFirstStep, bInitStep, bLastStep = FALSE;
-    gmx_bool          bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
-    gmx_bool          do_ene, do_log, do_verbose, bRerunWarnNoV = TRUE,
-                      bForceUpdate = FALSE;
-    gmx_bool          bMasterState;
-    int               force_flags, cglo_flags;
-    tensor            force_vir, shake_vir, total_vir, tmp_vir, pres;
-    int               i, m;
-    t_trxstatus      *status;
-    rvec              mu_tot;
-    t_vcm            *vcm;
-    matrix            parrinellorahmanMu, M;
-    t_trxframe        rerun_fr;
-    gmx_repl_ex_t     repl_ex = nullptr;
-    gmx_localtop_t   *top;
-    t_mdebin         *mdebin   = nullptr;
-    gmx_enerdata_t   *enerd;
-    PaddedRVecVector  f {};
-    gmx_global_stat_t gstat;
-    gmx_update_t     *upd   = nullptr;
-    t_graph          *graph = nullptr;
-    gmx_groups_t     *groups;
-    gmx_ekindata_t   *ekind;
-    gmx_shellfc_t    *shellfc;
-    gmx_bool          bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
-    gmx_bool          bTemp, bPres, bTrotter;
-    real              dvdl_constr;
-    rvec             *cbuf        = nullptr;
-    int               cbuf_nalloc = 0;
-    matrix            lastbox;
-    int               lamnew  = 0;
+
+    int               force_flags;  // local (no persistent data)
+    tensor            tmp_vir;  // tmp_vir is local
+    real              dvdl_constr;  // local to single step
+    rvec             *cbuf        = nullptr;  // local to single step
+    int               cbuf_nalloc = 0;  // local-ish - stores length of cbuf
+    matrix            lastbox;  // local to single step
+    int               lamnew  = 0;  // local to single step
     /* for FEP */
-    int               nstfep = 0;
     double            cycles;
     real              saved_conserved_quantity = 0;
     real              last_ekin                = 0;
-    t_extmass         MassQ;
-    int             **trotter_seq;
-    char              sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
-
-    /* PME load balancing data for GPU kernels */
-    pme_load_balancing_t *pme_loadbal      = nullptr;
-    gmx_bool              bPMETune         = FALSE;
-    gmx_bool              bPMETunePrinting = FALSE;
-
-    /* Interactive MD */
-    gmx_bool          bIMDstep = FALSE;
 
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
     int chkpt_ret;
 #endif
-    /* Domain decomposition could incorrectly miss a bonded
-       interaction, but checking for that requires a global
-       communication stage, which does not otherwise happen in DD
-       code. So we do that alongside the first global energy reduction
-       after a new DD is made. These variables handle whether the
-       check happens, and the result it returns. */
-    bool              shouldCheckNumberOfBondedInteractions = false;
-    int               totalNumberOfBondedInteractions       = -1;
-
-    SimulationSignals signals;
-    // Most global communnication stages don't propagate mdrun
-    // signals, and will use this object to achieve that.
-    SimulationSignaller nullSignaller(nullptr, nullptr, nullptr, false, false);
-
-    if (!mdrunOptions.writeConfout)
-    {
-        // This is on by default, and the main known use case for
-        // turning it off is for convenience in benchmarking, which is
-        // something that should not show up in the general user
-        // interface.
-        GMX_LOG(mdlog.info).asParagraph().
-            appendText("The -noconfout functionality is deprecated, and may be removed in a future version.");
-    }
-
-    /* md-vv uses averaged full step velocities for T-control
-       md-vv-avek uses averaged half step velocities for T-control (but full step ekin for P control)
-       md uses averaged half step kinetic energies to determine temperature unless defined otherwise by GMX_EKIN_AVE_VEL; */
-    bTrotter = (EI_VV(ir->eI) && (inputrecNptTrotter(ir) || inputrecNphTrotter(ir) || inputrecNvtTrotter(ir)));
-
-    const gmx_bool bRerunMD      = mdrunOptions.rerun;
-    int            nstglobalcomm = mdrunOptions.globalCommunicationInterval;
-
-    if (bRerunMD)
-    {
-        /* Since we don't know if the frames read are related in any way,
-         * rebuild the neighborlist at every step.
-         */
-        ir->nstlist       = 1;
-        ir->nstcalcenergy = 1;
-        nstglobalcomm     = 1;
-    }
-
-    nstglobalcomm   = check_nstglobalcomm(mdlog, nstglobalcomm, ir);
-    bGStatEveryStep = (nstglobalcomm == 1);
-
-    if (bRerunMD)
-    {
-        ir->nstxout_compressed = 0;
-    }
-    groups = &top_global->groups;
-
-    std::unique_ptr<EssentialDynamics> ed = nullptr;
-    if (opt2bSet("-ei", nfile, fnm) || observablesHistory->edsamHistory != nullptr)
-    {
-        /* Initialize essential dynamics sampling */
-        ed = init_edsam(opt2fn_null("-ei", nfile, fnm), opt2fn("-eo", nfile, fnm),
-                        top_global,
-                        ir, cr, constr,
-                        state_global, observablesHistory,
-                        oenv, mdrunOptions.continuationOptions.appendFiles);
-    }
-
-    /* Initial values */
-    init_md(fplog, cr, outputProvider, ir, oenv, mdrunOptions,
-            &t, &t0, state_global, lam0,
-            nrnb, top_global, &upd, deform,
-            nfile, fnm, &outf, &mdebin,
-            force_vir, shake_vir, total_vir, pres, mu_tot, &bSimAnn, &vcm, wcycle);
-
-    /* Energy terms and groups */
-    snew(enerd, 1);
-    init_enerdata(top_global->groups.grps[egcENER].nr, ir->fepvals->n_lambda,
-                  enerd);
-
-    /* Kinetic energy data */
-    snew(ekind, 1);
-    init_ekindata(fplog, top_global, &(ir->opts), ekind);
-    /* Copy the cos acceleration to the groups struct */
-    ekind->cosacc.cos_accel = ir->cos_accel;
-
-    gstat = global_stat_init(ir);
-
-    /* Check for polarizable models and flexible constraints */
-    shellfc = init_shell_flexcon(fplog,
-                                 top_global, constr ? constr->numFlexibleConstraints() : 0,
-                                 ir->nstcalcenergy, DOMAINDECOMP(cr));
-
-    {
-        double io = compute_io(ir, top_global->natoms, groups, mdebin->ebin->nener, 1);
-        if ((io > 2000) && MASTER(cr))
-        {
-            fprintf(stderr,
-                    "\nWARNING: This run will generate roughly %.0f Mb of data\n\n",
-                    io);
-        }
-    }
-
-    /* Set up interactive MD (IMD) */
-    init_IMD(ir, cr, ms, top_global, fplog, ir->nstcalcenergy,
-             MASTER(cr) ? as_rvec_array(state_global->x.data()) : nullptr,
-             nfile, fnm, oenv, mdrunOptions);
-
-    // Local state only becomes valid now.
-    std::unique_ptr<t_state> stateInstance;
-    t_state *                state;
-
-    if (DOMAINDECOMP(cr))
-    {
-        top = dd_init_local_top(top_global);
-
-        stateInstance = compat::make_unique<t_state>();
-        state         = stateInstance.get();
-        dd_init_local_state(cr->dd, state_global, state);
-
-        /* Distribute the charge groups over the nodes from the master node */
-        dd_partition_system(fplog, ir->init_step, cr, TRUE, 1,
-                            state_global, top_global, ir,
-                            state, &f, mdAtoms, top, fr,
-                            vsite, constr,
-                            nrnb, nullptr, FALSE);
-        shouldCheckNumberOfBondedInteractions = true;
-        update_realloc(upd, state->natoms);
-    }
-    else
-    {
-        state_change_natoms(state_global, state_global->natoms);
-        /* We need to allocate one element extra, since we might use
-         * (unaligned) 4-wide SIMD loads to access rvec entries.
-         */
-        f.resize(gmx::paddedRVecVectorSize(state_global->natoms));
-        /* Copy the pointer to the global state */
-        state = state_global;
-
-        snew(top, 1);
-        mdAlgorithmsSetupAtomData(cr, ir, top_global, top, fr,
-                                  &graph, mdAtoms, constr, vsite, shellfc);
-
-        update_realloc(upd, state->natoms);
-    }
-
-    auto mdatoms = mdAtoms->mdatoms();
-
-    // NOTE: The global state is no longer used at this point.
-    // But state_global is still used as temporary storage space for writing
-    // the global state to file and potentially for replica exchange.
-    // (Global topology should persist.)
-
-    update_mdatoms(mdatoms, state->lambda[efptMASS]);
-
-    const ContinuationOptions &continuationOptions    = mdrunOptions.continuationOptions;
-    bool                       startingFromCheckpoint = continuationOptions.startedFromCheckpoint;
-
-    if (ir->bExpanded)
-    {
-        init_expanded_ensemble(startingFromCheckpoint, ir, state->dfhist);
-    }
-
-    if (MASTER(cr))
-    {
-        if (startingFromCheckpoint)
-        {
-            /* Update mdebin with energy history if appending to output files */
-            if (continuationOptions.appendFiles)
-            {
-                restore_energyhistory_from_state(mdebin, observablesHistory->energyHistory.get());
-            }
-            else if (observablesHistory->energyHistory != nullptr)
-            {
-                /* We might have read an energy history from checkpoint.
-                 * As we are not appending, we want to restart the statistics.
-                 * Free the allocated memory and reset the counts.
-                 */
-                observablesHistory->energyHistory = {};
-            }
-        }
-        if (observablesHistory->energyHistory == nullptr)
-        {
-            observablesHistory->energyHistory = compat::make_unique<energyhistory_t>();
-        }
-        /* Set the initial energy history in state by updating once */
-        update_energyhistory(observablesHistory->energyHistory.get(), mdebin);
-    }
-
-    // TODO: Remove this by converting AWH into a ForceProvider
-    auto awh = prepareAwhModule(fplog, *ir, state_global, cr, ms, startingFromCheckpoint,
-                                shellfc != nullptr,
-                                opt2fn("-awh", nfile, fnm), ir->pull_work);
-
-    const bool useReplicaExchange = (replExParams.exchangeInterval > 0);
-    if (useReplicaExchange && MASTER(cr))
-    {
-        repl_ex = init_replica_exchange(fplog, ms, top_global->natoms, ir,
-                                        replExParams);
-    }
-    /* PME tuning is only supported in the Verlet scheme, with PME for
-     * Coulomb. It is not supported with only LJ PME, or for
-     * reruns. */
-    bPMETune = (mdrunOptions.tunePme && EEL_PME(fr->ic->eeltype) && !bRerunMD &&
-                !mdrunOptions.reproducible && ir->cutoff_scheme != ecutsGROUP);
-    if (bPMETune)
-    {
-        pme_loadbal_init(&pme_loadbal, cr, mdlog, ir, state->box,
-                         fr->ic, fr->nbv->listParams.get(), fr->pmedata, use_GPU(fr->nbv),
-                         &bPMETunePrinting);
-    }
-
-    if (!ir->bContinuation && !bRerunMD)
-    {
-        if (state->flags & (1 << estV))
-        {
-            /* Set the velocities of vsites, shells and frozen atoms to zero */
-            for (i = 0; i < mdatoms->homenr; i++)
-            {
-                if (mdatoms->ptype[i] == eptVSite ||
-                    mdatoms->ptype[i] == eptShell)
-                {
-                    clear_rvec(state->v[i]);
-                }
-                else if (mdatoms->cFREEZE)
-                {
-                    for (m = 0; m < DIM; m++)
-                    {
-                        if (ir->opts.nFreeze[mdatoms->cFREEZE[i]][m])
-                        {
-                            state->v[i][m] = 0;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (constr)
-        {
-            /* Constrain the initial coordinates and velocities */
-            do_constrain_first(fplog, constr, ir, mdatoms, state);
-        }
-        if (vsite)
-        {
-            /* Construct the virtual sites for the initial configuration */
-            construct_vsites(vsite, as_rvec_array(state->x.data()), ir->delta_t, nullptr,
-                             top->idef.iparams, top->idef.il,
-                             fr->ePBC, fr->bMolPBC, cr, state->box);
-        }
-    }
-
-    if (ir->efep != efepNO)
-    {
-        /* Set free energy calculation frequency as the greatest common
-         * denominator of nstdhdl and repl_ex_nst. */
-        nstfep = ir->fepvals->nstdhdl;
-        if (ir->bExpanded)
-        {
-            nstfep = gmx_greatest_common_divisor(ir->expandedvals->nstexpanded, nstfep);
-        }
-        if (useReplicaExchange)
-        {
-            nstfep = gmx_greatest_common_divisor(replExParams.exchangeInterval, nstfep);
-        }
-    }
-
-    /* Be REALLY careful about what flags you set here. You CANNOT assume
-     * this is the first step, since we might be restarting from a checkpoint,
-     * and in that case we should not do any modifications to the state.
-     */
-    bStopCM = (ir->comm_mode != ecmNO && !ir->bContinuation);
-
-    if (continuationOptions.haveReadEkin)
-    {
-        restore_ekinstate_from_state(cr, ekind, &state_global->ekinstate);
-    }
-
-    cglo_flags = (CGLO_INITIALIZATION | CGLO_TEMPERATURE | CGLO_GSTAT
-                  | (EI_VV(ir->eI) ? CGLO_PRESSURE : 0)
-                  | (EI_VV(ir->eI) ? CGLO_CONSTRAINT : 0)
-                  | (continuationOptions.haveReadEkin ? CGLO_READEKIN : 0));
-
-    bSumEkinhOld = FALSE;
-    /* To minimize communication, compute_globals computes the COM velocity
-     * and the kinetic energy for the velocities without COM motion removed.
-     * Thus to get the kinetic energy without the COM contribution, we need
-     * to call compute_globals twice.
-     */
-    for (int cgloIteration = 0; cgloIteration < (bStopCM ? 2 : 1); cgloIteration++)
-    {
-        int cglo_flags_iteration = cglo_flags;
-        if (bStopCM && cgloIteration == 0)
-        {
-            cglo_flags_iteration |= CGLO_STOPCM;
-            cglo_flags_iteration &= ~CGLO_TEMPERATURE;
-        }
-        compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
-                        nullptr, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                        constr, &nullSignaller, state->box,
-                        &totalNumberOfBondedInteractions, &bSumEkinhOld, cglo_flags_iteration
-                        | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
-    }
-    checkNumberOfBondedInteractions(fplog, cr, totalNumberOfBondedInteractions,
-                                    top_global, top, state,
-                                    &shouldCheckNumberOfBondedInteractions);
-    if (ir->eI == eiVVAK)
-    {
-        /* a second call to get the half step temperature initialized as well */
-        /* we do the same call as above, but turn the pressure off -- internally to
-           compute_globals, this is recognized as a velocity verlet half-step
-           kinetic energy calculation.  This minimized excess variables, but
-           perhaps loses some logic?*/
-
-        compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
-                        nullptr, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                        constr, &nullSignaller, state->box,
-                        nullptr, &bSumEkinhOld,
-                        cglo_flags & ~CGLO_PRESSURE);
-    }
-
-    /* Calculate the initial half step temperature, and save the ekinh_old */
-    if (!continuationOptions.startedFromCheckpoint)
-    {
-        for (i = 0; (i < ir->opts.ngtc); i++)
-        {
-            copy_mat(ekind->tcstat[i].ekinh, ekind->tcstat[i].ekinh_old);
-        }
-    }
-
-    /* need to make an initiation call to get the Trotter variables set, as well as other constants for non-trotter
-       temperature control */
-    trotter_seq = init_npt_vars(ir, state, &MassQ, bTrotter);
-
-    if (MASTER(cr))
-    {
-        if (!ir->bContinuation)
-        {
-            if (constr && ir->eConstrAlg == econtLINCS)
-            {
-                fprintf(fplog,
-                        "RMS relative constraint deviation after constraining: %.2e\n",
-                        constr->rmsd());
-            }
-            if (EI_STATE_VELOCITY(ir->eI))
-            {
-                real temp = enerd->term[F_TEMP];
-                if (ir->eI != eiVV)
-                {
-                    /* Result of Ekin averaged over velocities of -half
-                     * and +half step, while we only have -half step here.
-                     */
-                    temp *= 2;
-                }
-                fprintf(fplog, "Initial temperature: %g K\n", temp);
-            }
-        }
-
-        if (bRerunMD)
-        {
-            fprintf(stderr, "starting md rerun '%s', reading coordinates from"
-                    " input trajectory '%s'\n\n",
-                    *(top_global->name), opt2fn("-rerun", nfile, fnm));
-            if (mdrunOptions.verbose)
-            {
-                fprintf(stderr, "Calculated time to finish depends on nsteps from "
-                        "run input file,\nwhich may not correspond to the time "
-                        "needed to process input trajectory.\n\n");
-            }
-        }
-        else
-        {
-            char tbuf[20];
-            fprintf(stderr, "starting mdrun '%s'\n",
-                    *(top_global->name));
-            if (ir->nsteps >= 0)
-            {
-                sprintf(tbuf, "%8.1f", (ir->init_step+ir->nsteps)*ir->delta_t);
-            }
-            else
-            {
-                sprintf(tbuf, "%s", "infinite");
-            }
-            if (ir->init_step > 0)
-            {
-                fprintf(stderr, "%s steps, %s ps (continuing from step %s, %8.1f ps).\n",
-                        gmx_step_str(ir->init_step+ir->nsteps, sbuf), tbuf,
-                        gmx_step_str(ir->init_step, sbuf2),
-                        ir->init_step*ir->delta_t);
-            }
-            else
-            {
-                fprintf(stderr, "%s steps, %s ps.\n",
-                        gmx_step_str(ir->nsteps, sbuf), tbuf);
-            }
-        }
-        fprintf(fplog, "\n");
-    }
-
-    walltime_accounting_start_time(walltime_accounting);
-    wallcycle_start(wcycle, ewcRUN);
-    print_start(fplog, cr, walltime_accounting, "mdrun");
-
-    /* safest point to do file checkpointing is here.  More general point would be immediately before integrator call */
-#ifdef GMX_FAHCORE
-    chkpt_ret = fcCheckPointParallel( cr->nodeid,
-                                      NULL, 0);
-    if (chkpt_ret == 0)
-    {
-        gmx_fatal( 3, __FILE__, __LINE__, "Checkpoint error on step %d\n", 0 );
-    }
-#endif
-
-    /***********************************************************
-     *
-     *             Loop over MD steps
-     *
-     ************************************************************/
-
-    /* if rerunMD then read coordinates and velocities from input trajectory */
-    if (bRerunMD)
-    {
-        if (getenv("GMX_FORCE_UPDATE"))
-        {
-            bForceUpdate = TRUE;
-        }
-
-        rerun_fr.natoms = 0;
-        if (MASTER(cr))
-        {
-            bLastStep = !read_first_frame(oenv, &status,
-                                          opt2fn("-rerun", nfile, fnm),
-                                          &rerun_fr, TRX_NEED_X | TRX_READ_V);
-            if (rerun_fr.natoms != top_global->natoms)
-            {
-                gmx_fatal(FARGS,
-                          "Number of atoms in trajectory (%d) does not match the "
-                          "run input file (%d)\n",
-                          rerun_fr.natoms, top_global->natoms);
-            }
-            if (ir->ePBC != epbcNONE)
-            {
-                if (!rerun_fr.bBox)
-                {
-                    gmx_fatal(FARGS, "Rerun trajectory frame step %ld time %f does not contain a box, while pbc is used", rerun_fr.step, rerun_fr.time);
-                }
-                if (max_cutoff2(ir->ePBC, rerun_fr.box) < gmx::square(fr->rlist))
-                {
-                    gmx_fatal(FARGS, "Rerun trajectory frame step %ld time %f has too small box dimensions", rerun_fr.step, rerun_fr.time);
-                }
-            }
-        }
-
-        if (PAR(cr))
-        {
-            rerun_parallel_comm(cr, &rerun_fr, &bLastStep);
-        }
-
-        if (ir->ePBC != epbcNONE)
-        {
-            /* Set the shift vectors.
-             * Necessary here when have a static box different from the tpr box.
-             */
-            calc_shifts(rerun_fr.box, fr->shift_vec);
-        }
-    }
-
-    bFirstStep       = TRUE;
-    /* Skip the first Nose-Hoover integration when we get the state from tpx */
-    bInitStep        = !startingFromCheckpoint || EI_VV(ir->eI);
-    bSumEkinhOld     = FALSE;
-    bExchanged       = FALSE;
-    bNeedRepartition = FALSE;
-
-    bool simulationsShareState = false;
-    int  nstSignalComm         = nstglobalcomm;
-    {
-        // TODO This implementation of ensemble orientation restraints is nasty because
-        // a user can't just do multi-sim with single-sim orientation restraints.
-        bool usingEnsembleRestraints = (fcd->disres.nsystems > 1) || ((ms != nullptr) && (fcd->orires.nr != 0));
-        bool awhUsesMultiSim         = (ir->bDoAwh && ir->awhParams->shareBiasMultisim && (ms != nullptr));
-
-        // Replica exchange, ensemble restraints and AWH need all
-        // simulations to remain synchronized, so they need
-        // checkpoints and stop conditions to act on the same step, so
-        // the propagation of such signals must take place between
-        // simulations, not just within simulations.
-        // TODO: Make algorithm initializers set these flags.
-        simulationsShareState     = useReplicaExchange || usingEnsembleRestraints || awhUsesMultiSim;
-
-        if (simulationsShareState)
-        {
-            // Inter-simulation signal communication does not need to happen
-            // often, so we use a minimum of 200 steps to reduce overhead.
-            const int c_minimumInterSimulationSignallingInterval = 200;
-            nstSignalComm = ((c_minimumInterSimulationSignallingInterval + nstglobalcomm - 1)/nstglobalcomm)*nstglobalcomm;
-        }
-    }
-
-    auto checkpointHandler = compat::make_unique<CheckpointHandler>(
-            &signals[eglsCHKPT], simulationsShareState, ir, cr, mdrunOptions);
-
-    const bool resetCountersIsLocal = true;
-    auto       resetHandler         = compat::make_unique<ResetHandler>(
-            &signals[eglsRESETCOUNTERS], !resetCountersIsLocal,
-            ir, cr, mdrunOptions, mdlog, wcycle, walltime_accounting);
-
-    auto stopHandler = stopHandlerHelper->getStopHandlerMD(
-            &signals[eglsSTOPCOND], simulationsShareState, ir, cr,
-            mdrunOptions, nstSignalComm, fplog, step, bNS, walltime_accounting);
 
     DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion   = (DOMAINDECOMP(cr) ? DdOpenBalanceRegionBeforeForceComputation::yes : DdOpenBalanceRegionBeforeForceComputation::no);
     DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion  = (DOMAINDECOMP(cr) ? DdCloseBalanceRegionAfterForceComputation::yes : DdCloseBalanceRegionAfterForceComputation::no);
 
-    step     = ir->init_step;
-    step_rel = 0;
+    // Most global communnication stages don't propagate mdrun
+    // signals, and will use this object to achieve that.
+    SimulationSignaller nullSignaller(nullptr, nullptr, nullptr, false, false);
 
-    // TODO extract this to new multi-simulation module
-    if (MASTER(cr) && isMultiSim(ms) && !useReplicaExchange)
-    {
-        if (!multisim_int_all_are_equal(ms, ir->nsteps))
-        {
-            GMX_LOG(mdlog.warning).appendText(
-                    "Note: The number of steps is not consistent across multi simulations,\n"
-                    "but we are proceeding anyway!");
-        }
-        if (!multisim_int_all_are_equal(ms, ir->init_step))
-        {
-            GMX_LOG(mdlog.warning).appendText(
-                    "Note: The initial step is not consistent across multi simulations,\n"
-                    "but we are proceeding anyway!");
-        }
-    }
+    auto simulationSetup = std::make_shared<SimulationSetup>(this);
+
+    auto mdState = std::make_shared<MDState>();
+    mdState->init(this, simulationSetup);
+
+    // bool
+    auto &bGStatEveryStep = simulationSetup->bGStatEveryStep;
+    auto &bGStat = simulationSetup->bGStat;
+    auto &bCalcVir = simulationSetup->bCalcVir;
+    auto &bCalcEnerStep = simulationSetup->bCalcEnerStep;
+    auto &bCalcEner = simulationSetup->bCalcEner;
+    auto &bNS = simulationSetup->bNS;
+    auto &bNStList = simulationSetup->bNStList;
+    auto &bSimAnn = simulationSetup->bSimAnn;
+    auto &bStopCM = simulationSetup->bStopCM;
+    auto &bFirstStep = simulationSetup->bFirstStep;
+    auto &bInitStep = simulationSetup->bInitStep;
+    auto &bLastStep = simulationSetup->bLastStep;
+    auto &bDoDHDL = simulationSetup->bDoDHDL;
+    auto &bDoFEP = simulationSetup->bDoFEP;
+    auto &bDoExpanded = simulationSetup->bDoExpanded;
+    auto &do_ene = simulationSetup->do_ene;
+    auto &do_log = simulationSetup->do_log;
+    auto &do_verbose = simulationSetup->do_verbose;
+    auto &bRerunWarnNoV = simulationSetup->bRerunWarnNoV;
+    auto &bForceUpdate = simulationSetup->bForceUpdate;
+    auto &bMasterState = simulationSetup->bMasterState;
+    auto &bSumEkinhOld = simulationSetup->bSumEkinhOld;
+    auto &bDoReplEx = simulationSetup->bDoReplEx;
+    auto &bExchanged = simulationSetup->bExchanged;
+    auto &bNeedRepartition = simulationSetup->bNeedRepartition;
+    auto &bTemp = simulationSetup->bTemp;
+    auto &bPres = simulationSetup->bPres;
+    auto &bTrotter = simulationSetup->bTrotter;
+    auto &bPMETune = simulationSetup->bPMETune;
+    auto &bPMETunePrinting = simulationSetup->bPMETunePrinting;
+    auto &bIMDstep = simulationSetup->bIMDstep;
+    auto &bRerunMD = simulationSetup->bRerunMD;
+    auto &startingFromCheckpoint = simulationSetup->startingFromCheckpoint;
+    auto &useReplicaExchange = simulationSetup->useReplicaExchange;
+    auto &simulationsShareState = simulationSetup->simulationsShareState;
+    auto &resetCountersIsLocal = simulationSetup->resetCountersIsLocal;
+
+    // int
+    auto &nstfep = simulationSetup->nstfep;
+    auto &nstglobalcomm = simulationSetup->nstglobalcomm;
+    auto &nstSignalComm = simulationSetup->nstSignalComm;
+
+    // int64_t
+    auto &step = simulationSetup->step;
+    auto &step_rel = simulationSetup->step_rel;
+
+
+    auto outf = mdState->outf.write().get();
+    auto &t = *(mdState->t.write().get());
+    auto &t0 = *(mdState->t0.write().get());
+    auto lam0 = mdState->lam0;
+    auto force_vir = mdState->force_vir;
+    auto shake_vir = mdState->shake_vir;
+    auto total_vir = mdState->total_vir;
+    auto pres = mdState->pres;
+    auto status = mdState->status;
+    auto mu_tot = mdState->mu_tot;
+    auto vcm = mdState->vcm.write().get();
+    auto parrinellorahmanMu = mdState->parrinellorahmanMu;
+    auto M = mdState->M;
+    auto &rerun_fr = mdState->rerun_fr;
+    auto repl_ex = mdState->repl_ex.write().get();
+    auto top = mdState->top.write().get();
+    auto mdebin = mdState->mdebin.write().get();
+    auto enerd = mdState->enerd.write().get();
+    auto &f = mdState->f;
+    auto gstat = mdState->gstat.write().get();
+    auto upd = mdState->upd.write().get();
+    auto graph = mdState->graph.write().get();
+    auto groups = mdState->groups.write().get();
+    auto ekind = mdState->ekind.write().get();
+    auto shellfc = mdState->shellfc.write().get();
+    auto &MassQ = *(mdState->MassQ.write().get());
+    auto trotter_seq = mdState->trotter_seq;
+    auto pme_loadbal = mdState->pme_loadbal.write().get();
+    auto ed = mdState->ed.write().get();
+    auto state = mdState->state.write().get();
+    auto mdatoms = mdState->mdatoms.write().get();
+    auto awh = mdState->awh.write();
+    auto &shouldCheckNumberOfBondedInteractions = mdState->shouldCheckNumberOfBondedInteractions;
+    auto &totalNumberOfBondedInteractions = mdState->totalNumberOfBondedInteractions;
+
+    auto &signals = *(mdState->signals.write());
+
+    auto checkpointHandler = compat::make_unique<CheckpointHandler>(
+            &signals[eglsCHKPT], simulationsShareState, ir, cr, mdrunOptions);
+    auto resetHandler      = compat::make_unique<ResetHandler>(
+            &signals[eglsRESETCOUNTERS], !resetCountersIsLocal,
+            ir, cr, mdrunOptions, mdlog, wcycle, walltime_accounting);
+    auto stopHandler       = stopHandlerHelper->getStopHandlerMD(
+            &signals[eglsSTOPCOND], simulationsShareState, ir, cr,
+            mdrunOptions, nstSignalComm, fplog, step, bNS, walltime_accounting);
 
     /* and stop now if we should */
     bLastStep = (bLastStep || (ir->nsteps >= 0 && step_rel > ir->nsteps));
