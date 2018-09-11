@@ -40,8 +40,12 @@ gmx_add_libgromacs_sources(
     multisim.cpp
     replicaexchange.cpp
     runner.cpp
+    simulationcontext.cpp
     tpi.cpp
     )
+
+gmx_install_headers(simulationcontext-fwd.h
+                    mdfilenames.h)
 
 if (BUILD_TESTING)
 # TODO import this from src/programs/mdrun/tests

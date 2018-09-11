@@ -46,11 +46,12 @@
 
 #include <array>
 
-#include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdrun/mdfilenames.h"
+#include "gromacs/mdrun/simulationcontext-fwd.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -80,102 +81,245 @@ namespace gmx
  * without needing to re-initialize these components (as currently
  * happens always for the master rank, and differently for the spawned
  * ranks with thread-MPI).
+ *
+ * \ingroup module_mdrun
  */
 class Mdrunner
 {
     public:
-        /*! \brief Defaulted constructor.
+        /*! \brief Builder class to manage object creation.
+         *
+         * This class is a member of gmx::Mdrunner to allow access to private
+         * gmx::Mdrunner members.
+         *
+         * It is non-trivial to establish an initialized gmx::Mdrunner invariant,
+         * so objects can be obtained by clients using a Builder, a move, or a
+         * clone() operation. Clients cannot default initialize or copy
+         * gmx::Mdrunner.
+         */
+        class BuilderImplementation;
+
+        /*! \brief Constructor.
          *
          * Note that when member variables are not present in the constructor
          * member initialization list (which is true for the default constructor),
          * then they are initialized with any default member initializer specified
          * when they were declared, or default initialized. */
         Mdrunner() = default;
-        //! Start running mdrun by calling its C-style main function.
-        int mainFunction(int argc, char *argv[]);
+
+        ~Mdrunner();
+
+        /*!
+         * \brief Copy not allowed.
+         *
+         * An Mdrunner has unique resources and it is not clear whether any of
+         * one of those resources should be duplicated or shared unless the
+         * specific use case is known. Either build a fresh runner or use a
+         * helper function for clearly indicated behavior. API clarification may
+         * allow unambiguous initialization by copy in future versions.
+         *
+         * \{
+         */
+        Mdrunner(const Mdrunner &)            = delete;
+        Mdrunner &operator=(const Mdrunner &) = delete;
+        /* \} */
+
+        /*!
+         * \brief Move is not implemented.
+         *
+         * Move behavior of a runner object seems straight-forward, but it is not
+         * necessary and is untested in the current version, and so it is explicitly
+         * deleted to avoid ambiguity.
+         *
+         * \{
+         */
+        Mdrunner(Mdrunner &&) noexcept            = delete;
+        Mdrunner &operator=(Mdrunner &&) noexcept = delete;
+        /* \} */
+
         /*! \brief Driver routine, that calls the different simulation methods. */
+        /*!
+         * Currently, thread-MPI does not spawn threads until during mdrunner() and parallelism
+         * is not initialized until some time during this call...
+         */
         int mdrunner();
         //! Called when thread-MPI spawns threads.
         t_commrec *spawnThreads(int numThreadsToLaunch) const;
-        /*! \brief Re-initializes the object after threads spawn.
+
+        /*! \brief Initializes a new Mdrunner from the master.
          *
-         * \todo Can this be refactored so that the Mdrunner on a spawned thread is
-         * constructed ready to use? */
-        void reinitializeOnSpawnedThread();
+         * Run in a new thread from a const pointer to the master.
+         * \returns New Mdrunner instance suitable for running in additional threads.
+         */
+        std::unique_ptr<Mdrunner> cloneOnSpawnedThread() const;
 
     private:
         //! Parallelism-related user options.
         gmx_hw_opt_t             hw_opt;
+
         //! Filenames and properties from command-line argument values.
-        std::array<t_filenm, 34> filenames =
-        {{{ efTPR, nullptr,     nullptr,     ffREAD },
-          { efTRN, "-o",        nullptr,     ffWRITE },
-          { efCOMPRESSED, "-x", nullptr,     ffOPTWR },
-          { efCPT, "-cpi",      nullptr,     ffOPTRD | ffALLOW_MISSING },
-          { efCPT, "-cpo",      nullptr,     ffOPTWR },
-          { efSTO, "-c",        "confout",   ffWRITE },
-          { efEDR, "-e",        "ener",      ffWRITE },
-          { efLOG, "-g",        "md",        ffWRITE },
-          { efXVG, "-dhdl",     "dhdl",      ffOPTWR },
-          { efXVG, "-field",    "field",     ffOPTWR },
-          { efXVG, "-table",    "table",     ffOPTRD },
-          { efXVG, "-tablep",   "tablep",    ffOPTRD },
-          { efXVG, "-tableb",   "table",     ffOPTRDMULT },
-          { efTRX, "-rerun",    "rerun",     ffOPTRD },
-          { efXVG, "-tpi",      "tpi",       ffOPTWR },
-          { efXVG, "-tpid",     "tpidist",   ffOPTWR },
-          { efEDI, "-ei",       "sam",       ffOPTRD },
-          { efXVG, "-eo",       "edsam",     ffOPTWR },
-          { efXVG, "-devout",   "deviatie",  ffOPTWR },
-          { efXVG, "-runav",    "runaver",   ffOPTWR },
-          { efXVG, "-px",       "pullx",     ffOPTWR },
-          { efXVG, "-pf",       "pullf",     ffOPTWR },
-          { efXVG, "-ro",       "rotation",  ffOPTWR },
-          { efLOG, "-ra",       "rotangles", ffOPTWR },
-          { efLOG, "-rs",       "rotslabs",  ffOPTWR },
-          { efLOG, "-rt",       "rottorque", ffOPTWR },
-          { efMTX, "-mtx",      "nm",        ffOPTWR },
-          { efRND, "-multidir", nullptr,     ffOPTRDMULT},
-          { efXVG, "-awh",      "awhinit",   ffOPTRD },
-          { efDAT, "-membed",   "membed",    ffOPTRD },
-          { efTOP, "-mp",       "membed",    ffOPTRD },
-          { efNDX, "-mn",       "membed",    ffOPTRD },
-          { efXVG, "-if",       "imdforces", ffOPTWR },
-          { efXVG, "-swap",     "swapions",  ffOPTWR }}};
-        /*! \brief Filename arguments.
-         *
-         * Provided for compatibility with old C-style code accessing
-         * command-line arguments that are file names. */
-        t_filenm *fnm = filenames.data();
-        /*! \brief Number of filename argument values.
-         *
-         * Provided for compatibility with old C-style code accessing
-         * command-line arguments that are file names. */
-        int nfile = filenames.size();
+        MdFilenames filenames;
+
         //! Output context for writing text files
-        gmx_output_env_t                *oenv = nullptr;
+        gmx_output_env_t                       *oenv = nullptr;
         //! Ongoing collection of mdrun options
-        MdrunOptions                     mdrunOptions;
+        MdrunOptions                            mdrunOptions;
         //! Options for the domain decomposition.
-        DomdecOptions                    domdecOptions;
+        DomdecOptions                           domdecOptions;
         //! Target short-range interations for "cpu", "gpu", or "auto". Default is "auto".
-        const char                      *nbpu_opt = nullptr;
+        const char                             *nbpu_opt = nullptr;
         //! Target long-range interactions for "cpu", "gpu", or "auto". Default is "auto".
-        const char                      *pme_opt = nullptr;
+        const char                             *pme_opt = nullptr;
         //! Target long-range interactions FFT/solve stages for "cpu", "gpu", or "auto". Default is "auto".
-        const char                      *pme_fft_opt = nullptr;
+        const char                             *pme_fft_opt = nullptr;
         //! Command-line override for the duration of a neighbor list with the Verlet scheme.
-        int                              nstlist_cmdline = 0;
+        int                                     nstlist_cmdline = 0;
         //! Parameters for replica-exchange simulations.
-        ReplicaExchangeParameters        replExParams;
+        ReplicaExchangeParameters               replExParams;
         //! Print a warning if any force is larger than this (in kJ/mol nm).
-        real                             pforce = -1;
+        real                                    pforce = -1;
         //! Handle to file used for logging.
-        FILE                            *fplog;
+        FILE                                   *fplog {nullptr};
         //! Handle to communication data structure.
-        t_commrec                       *cr;
+        t_commrec                              *cr;
         //! Handle to multi-simulation handler.
-        gmx_multisim_t                  *ms;
+        gmx_multisim_t                         *ms;
+};
+
+/*! \libinternal
+ * \brief Build a gmx::Mdrunner.
+ *
+ * Client code (such as `gmx mdrun`) uses this builder to get an initialized Mdrunner.
+ *
+ * A builder allows the library to ensure that client code cannot obtain an
+ * uninitialized or partially initialized runner by refusing to build() if the
+ * client has not provided sufficient or self-consistent direction. Director
+ * code can be implemented for different user interfaces, encapsulating any
+ * run-time functionality that does not belong in the library MD code, such
+ * as command-line option processing or interfacing to external libraries.
+ *
+ * \ingroup module_mdrun
+ *
+ * \internal
+ *
+ * The initial Builder implementation is neither extensible at run time nor
+ * at compile time. Future implementations should evolve to compose the runner,
+ * rather than just consolidating the parameters for initialization, but there
+ * is not yet a firm design for how flexibly module code will be coupled to
+ * the builder and how much of the client interface will be in this Builder
+ * versus Builders provided by the various modules.
+ *
+ * As the modules are more clearly encapsulated, these `set` methods should be
+ * replaced with `add` methods to attach objects for different modules,
+ * and each module can provide its own builder and user interface helpers to
+ * the Director code. The runner and client code will also have to be updated
+ * as appropriate default behavior is clarified for (a) default behavior of
+ * client when user does not provide input, (b) default behavior of builder
+ * when client does not provide input, and (c) default behavior of runner
+ * when builder does not provide input.
+ */
+class MdrunnerBuilder final
+{
+    public:
+        /*!
+         * \brief Constructor requires a handle to a SimulationContext to share.
+         */
+        explicit MdrunnerBuilder(std::shared_ptr<SimulationContext> context);
+
+        //! \cond
+        MdrunnerBuilder() = delete;
+        MdrunnerBuilder(const MdrunnerBuilder&)             = delete;
+        MdrunnerBuilder &operator=(const MdrunnerBuilder &) = delete;
+        //! \endcond
+
+        /*! \brief Allow transfer of ownership with move semantics.
+         *
+         * \param builder source object to transfer.
+         *
+         * \{
+         */
+        MdrunnerBuilder(MdrunnerBuilder && builder) noexcept;
+        MdrunnerBuilder &operator=(MdrunnerBuilder &&builder) noexcept;
+        //! \}
+
+        /*!
+         * \brief Get ownership of an initialized gmx::Mdrunner.
+         *
+         * After build() is called, the Builder object should not be used
+         * again. More clearly defined behavior requires updates to data
+         * ownership of input arguments and Mdrunner members.
+         *
+         * \return ownership of a new Mdrunner.
+         *
+         * A managed pointer is returned because the runner produced may need to
+         * be shared. Future abstraction may replace the unique_ptr handle with
+         * a less generic API handle object.
+         */
+        std::unique_ptr<Mdrunner> build();
+
+        /*!
+         * \brief Set up non-bonded short-range force calculations.
+         *
+         * \param nbpu_opt Target short-range interactions for "cpu", "gpu", or "auto".
+         */
+        MdrunnerBuilder &addNonBonded(const char* nbpu_opt);
+
+        /*!
+         * \brief Set up long-range electrostatics calculations.
+         *
+         * \param pme_opt Target long-range interactions for "cpu", "gpu", or "auto".
+         * \param pme_fft_opt Target long-range interactions FFT/solve stages for "cpu", "gpu", or "auto".
+         */
+        MdrunnerBuilder &addElectrostatics(const char* pme_opt,
+                                           const char* pme_fft_opt);
+
+        /*!
+         * \brief Provide access to the multisim communicator to use.
+         *
+         * \param multisim non-owning handle to multisim comm pointer.
+         * \return
+         */
+        MdrunnerBuilder &addMultiSim(gmx_multisim_t** multisim);
+
+        /*!
+         * \brief Set Mdrun options not owned by some other module.
+         *
+         * \param options structure to copy
+         * \param forceWarningThreshold Print a warning if any force is larger than this (in kJ/mol nm)
+         * \return
+         */
+        MdrunnerBuilder &addSimulationMethod(const MdrunOptions &options,
+                                             real                forceWarningThreshold);
+
+        /*!
+         * \brief Set the domain decomposition module.
+         *
+         * \param options options with which to construct domain decomposition.
+         * \return
+         */
+        MdrunnerBuilder &addDomainDecomposition(const DomdecOptions &options);
+
+        /*!
+         * \brief Set Verlet list manager.
+         *
+         * \param rebuildInterval override for the duration of a neighbor list with the Verlet scheme.
+         * \return
+         */
+        MdrunnerBuilder &addNeighborList(int rebuildInterval);
+
+        /*!
+         * \brief Set replica exchange manager.
+         *
+         * \param params parameters with which to set up replica exchange.
+         * \return
+         */
+        MdrunnerBuilder &addReplicaExchange(const ReplicaExchangeParameters &params);
+
+        ~MdrunnerBuilder();
+
+
+    private:
+        std::unique_ptr<Mdrunner::BuilderImplementation> impl_;
 };
 
 }      // namespace gmx

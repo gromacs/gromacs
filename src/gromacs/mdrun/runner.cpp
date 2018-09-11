@@ -96,6 +96,7 @@
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdrun/logging.h"
 #include "gromacs/mdrun/multisim.h"
+#include "gromacs/mdrun/simulationcontext.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -151,16 +152,35 @@ static void threadMpiMdrunnerAccessBarrier()
 #endif
 }
 
-void Mdrunner::reinitializeOnSpawnedThread()
+std::unique_ptr<Mdrunner> Mdrunner::cloneOnSpawnedThread() const
 {
+    auto newRunner = gmx::compat::make_unique<Mdrunner>();
+
+    // Copy members of master runner.
+    newRunner->hw_opt    = hw_opt;
+    newRunner->filenames = filenames;
+
+    newRunner->oenv            = oenv; // non-owning pointer
+    newRunner->mdrunOptions    = mdrunOptions;
+    newRunner->domdecOptions   = domdecOptions;
+    newRunner->nbpu_opt        = nbpu_opt;    // pointer to const C string
+    newRunner->pme_opt         = pme_opt;     // pointer to const C string
+    newRunner->pme_fft_opt     = pme_fft_opt; // pointer to const C string
+    newRunner->nstlist_cmdline = nstlist_cmdline;
+    newRunner->replExParams    = replExParams;
+    newRunner->pforce          = pforce;
+    newRunner->ms              = ms; // non-owning pointer (does not need reinitialization?)
+
+    // Copy original cr pointer before master thread can pass the thread barrier
+    newRunner->cr  = reinitialize_commrec_for_this_thread(cr);
     threadMpiMdrunnerAccessBarrier();
 
-    cr  = reinitialize_commrec_for_this_thread(cr);
-
-    GMX_RELEASE_ASSERT(!MASTER(cr), "reinitializeOnSpawnedThread should only be called on spawned threads");
+    GMX_RELEASE_ASSERT(!MASTER(newRunner->cr), "reinitializeOnSpawnedThread should only be called on spawned threads");
 
     // Only the master rank writes to the log file
-    fplog = nullptr;
+    newRunner->fplog = nullptr;
+
+    return newRunner;
 }
 
 /*! \brief The callback used for running on spawned threads.
@@ -177,9 +197,8 @@ static void mdrunner_start_fn(const void *arg)
         /* copy the arg list to make sure that it's thread-local. This
            doesn't copy pointed-to items, of course; fnm, cr and fplog
            are reset in the call below, all others should be const. */
-        gmx::Mdrunner mdrunner = *masterMdrunner;
-        mdrunner.reinitializeOnSpawnedThread();
-        mdrunner.mdrunner();
+        std::unique_ptr<gmx::Mdrunner> mdrunner = masterMdrunner->cloneOnSpawnedThread();
+        mdrunner->mdrunner();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
@@ -409,7 +428,7 @@ int Mdrunner::mdrunner()
         fplog = nullptr;
     }
 
-    bool doMembed = opt2bSet("-membed", nfile, fnm);
+    bool doMembed = opt2bSet("-membed", filenames().size(), filenames().data());
     bool doRerun  = mdrunOptions.rerun;
 
     // Handle task-assignment related user options.
@@ -511,7 +530,7 @@ int Mdrunner::mdrunner()
         globalState = compat::make_unique<t_state>();
 
         /* Read (nearly) all data required for the simulation */
-        read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, globalState.get(), &mtop);
+        read_tpx_state(ftp2fn(efTPR, filenames().size(), filenames().data()), inputrec, globalState.get(), &mtop);
 
         if (inputrec->cutoff_scheme != ecutsVERLET)
         {
@@ -768,7 +787,7 @@ int Mdrunner::mdrunner()
          */
         gmx_bool bReadEkin;
 
-        load_checkpoint(opt2fn_master("-cpi", nfile, fnm, cr), &fplog,
+        load_checkpoint(opt2fn_master("-cpi", filenames().size(), filenames().data(), cr), &fplog,
                         cr, domdecOptions.numCells,
                         inputrec, globalState.get(),
                         &bReadEkin, &observablesHistory,
@@ -784,7 +803,7 @@ int Mdrunner::mdrunner()
 
     if (SIMMASTER(cr) && continuationOptions.appendFiles)
     {
-        gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr,
+        gmx_log_open(ftp2fn(efLOG, filenames().size(), filenames().data()), cr,
                      continuationOptions.appendFiles, &fplog);
         logOwner = buildLogger(fplog, nullptr);
         mdlog    = logOwner.logger();
@@ -1109,7 +1128,9 @@ int Mdrunner::mdrunner()
         /* Note that membed cannot work in parallel because mtop is
          * changed here. Fix this if we ever want to make it run with
          * multiple ranks. */
-        membed = init_membed(fplog, nfile, fnm, &mtop, inputrec, globalState.get(), cr, &mdrunOptions.checkpointOptions.period);
+        membed = init_membed(fplog, filenames().size(), filenames().data(), &mtop, inputrec, globalState.get(), cr,
+                             &mdrunOptions
+                                 .checkpointOptions.period);
     }
 
     std::unique_ptr<MDAtoms>     mdAtoms;
@@ -1123,9 +1144,9 @@ int Mdrunner::mdrunner()
         fr->forceProviders = mdModules->initForceProviders();
         init_forcerec(fplog, mdlog, fr, fcd,
                       inputrec, &mtop, cr, box,
-                      opt2fn("-table", nfile, fnm),
-                      opt2fn("-tablep", nfile, fnm),
-                      opt2fns("-tableb", nfile, fnm),
+                      opt2fn("-table", filenames().size(), filenames().data()),
+                      opt2fn("-tablep", filenames().size(), filenames().data()),
+                      opt2fns("-tableb", filenames().size(), filenames().data()),
                       *hwinfo, nonbondedDeviceInfo,
                       FALSE,
                       pforce);
@@ -1265,7 +1286,7 @@ int Mdrunner::mdrunner()
             if (EI_DYNAMICS(inputrec->eI) && MASTER(cr))
             {
                 init_pull_output_files(inputrec->pull_work,
-                                       nfile, fnm, oenv,
+                                       filenames().size(), filenames().data(), oenv,
                                        continuationOptions);
             }
         }
@@ -1274,13 +1295,22 @@ int Mdrunner::mdrunner()
         if (inputrec->bRot)
         {
             /* Initialize enforced rotation code */
-            enforcedRotation = init_rot(fplog, inputrec, nfile, fnm, cr, &atomSets, globalState.get(), &mtop, oenv, mdrunOptions);
+            enforcedRotation = init_rot(fplog,
+                                        inputrec,
+                                        filenames().size(),
+                                        filenames().data(),
+                                        cr,
+                                        &atomSets,
+                                        globalState.get(),
+                                        &mtop,
+                                        oenv,
+                                        mdrunOptions);
         }
 
         if (inputrec->eSwapCoords != eswapNO)
         {
             /* Initialize ion swapping code */
-            init_swapcoords(fplog, inputrec, opt2fn_master("-swap", nfile, fnm, cr),
+            init_swapcoords(fplog, inputrec, opt2fn_master("-swap", filenames().size(), filenames().data(), cr),
                             &mtop, globalState.get(), &observablesHistory,
                             cr, &atomSets, oenv, mdrunOptions);
         }
@@ -1288,7 +1318,8 @@ int Mdrunner::mdrunner()
         /* Let makeConstraints know whether we have essential dynamics constraints.
          * TODO: inputrec should tell us whether we use an algorithm, not a file option or the checkpoint
          */
-        bool doEssentialDynamics = (opt2fn_null("-ei", nfile, fnm) != nullptr || observablesHistory.edsamHistory);
+        bool doEssentialDynamics = (opt2fn_null("-ei", filenames().size(), filenames().data()) != nullptr
+                                    || observablesHistory.edsamHistory);
         auto constr              = makeConstraints(mtop, *inputrec, doEssentialDynamics,
                                                    fplog, *mdAtoms->mdatoms(),
                                                    cr, *ms, nrnb, wcycle, fr->bMolPBC);
@@ -1306,7 +1337,7 @@ int Mdrunner::mdrunner()
 
         /* Now do whatever the user wants us to do (how flexible...) */
         Integrator integrator {
-            fplog, cr, ms, mdlog, nfile, fnm,
+            fplog, cr, ms, mdlog, static_cast<int>(filenames().size()), filenames().data(),
             oenv,
             mdrunOptions,
             vsite.get(), constr.get(),
@@ -1411,6 +1442,204 @@ int Mdrunner::mdrunner()
 #endif
 
     return rc;
+}
+
+Mdrunner::~Mdrunner() = default;
+
+class Mdrunner::BuilderImplementation
+{
+    public:
+        BuilderImplementation() = delete;
+        explicit BuilderImplementation(std::shared_ptr<SimulationContext> context);
+        ~BuilderImplementation();
+
+        bool setExtraMdrunOptions(const MdrunOptions &options,
+                                  real                forceWarningThreshold);
+        bool setDomdec(const DomdecOptions &options);
+
+        bool setVerletList(int nstlist);
+        bool setReplicaExchange(const ReplicaExchangeParameters &params);
+
+        bool addMultiSim(gmx_multisim_t** multisim);
+
+        std::unique_ptr<Mdrunner> build();
+
+
+        const char* nbpu_opt_ {nullptr};
+        const char* pme_opt_ {nullptr};
+        const char* pme_fft_opt_ {nullptr};
+    private:
+        MdrunOptions                          mdrunOptions_;
+        DomdecOptions                         domdecOptions_;
+        ReplicaExchangeParameters             replicaExchangeParameters_;
+        int         nstlist_;
+        //! Non-owning multisim communicator handle.
+        std::unique_ptr<gmx_multisim_t*>      multisim_;
+        real forceWarningThreshold_;
+
+        std::shared_ptr<SimulationContext> context_;
+
+};
+
+Mdrunner::BuilderImplementation::BuilderImplementation(std::shared_ptr<SimulationContext> context) :
+    nstlist_ {0},
+multisim_ {
+    gmx::compat::make_unique<gmx_multisim_t*>()
+},
+forceWarningThreshold_ {
+    -1
+},
+context_ {
+    std::move(context)
+}
+{
+
+}
+
+Mdrunner::BuilderImplementation::~BuilderImplementation()
+{
+
+}
+
+bool Mdrunner::BuilderImplementation::setExtraMdrunOptions(const MdrunOptions &options,
+                                                           real                forceWarningThreshold)
+{
+    bool success {
+        false
+    };
+    mdrunOptions_          = options;
+    forceWarningThreshold_ = forceWarningThreshold;
+    success                = true;
+    return success;
+}
+
+bool Mdrunner::BuilderImplementation::setDomdec(const DomdecOptions &options)
+{
+    bool success {
+        false
+    };
+    domdecOptions_ = options;
+    success        = true;
+    return success;
+}
+
+bool Mdrunner::BuilderImplementation::setVerletList(int nstlist)
+{
+    nstlist_ = nstlist;
+    return true;
+}
+
+bool Mdrunner::BuilderImplementation::setReplicaExchange(const ReplicaExchangeParameters &params)
+{
+    replicaExchangeParameters_ = params;
+    return true;
+}
+
+bool Mdrunner::BuilderImplementation::addMultiSim(gmx_multisim_t** multisim)
+{
+    multisim_.reset(multisim);
+    return true;
+}
+
+std::unique_ptr<Mdrunner> Mdrunner::BuilderImplementation::build()
+{
+    auto newRunner = gmx::compat::make_unique<Mdrunner>();
+    newRunner->mdrunOptions    = mdrunOptions_;
+    newRunner->domdecOptions   = domdecOptions_;
+    newRunner->hw_opt          = context_->hardwareOptions_;
+    newRunner->nstlist_cmdline = nstlist_;
+    newRunner->replExParams    = replicaExchangeParameters_;
+
+    newRunner->filenames = context_->filenames_;
+
+    newRunner->cr = *context_->communicator_;
+    newRunner->ms = *multisim_.release();
+
+    newRunner->oenv  = *context_->outputEnvironment_;
+    newRunner->fplog = *context_->logFile_;
+
+    newRunner->nbpu_opt    = nbpu_opt_;
+    newRunner->pme_opt     = pme_opt_;
+    newRunner->pme_fft_opt = pme_fft_opt_;
+    return newRunner;
+}
+
+MdrunnerBuilder::MdrunnerBuilder(std::shared_ptr<SimulationContext> context) :
+    impl_ {gmx::compat::make_unique<Mdrunner::BuilderImplementation>(std::move(context))}
+{
+}
+
+MdrunnerBuilder::~MdrunnerBuilder()
+{}
+
+MdrunnerBuilder &MdrunnerBuilder::addSimulationMethod(const MdrunOptions &options,
+                                                      real                forceWarningThreshold)
+{
+    bool success = impl_->setExtraMdrunOptions(options,
+                                               forceWarningThreshold);
+    if (!success)
+    {
+        GMX_THROW(APIError("For some reason, couldn't addSimulationMethod"));
+    }
+    return *this;
+}
+
+MdrunnerBuilder &MdrunnerBuilder::addDomainDecomposition(const DomdecOptions &options)
+{
+    bool success = impl_->setDomdec(options);
+    if (!success)
+    {
+        GMX_THROW(APIError("For some reason, couldn't addDomainDecomposition"));
+    }
+    return *this;
+}
+
+MdrunnerBuilder &MdrunnerBuilder::addNeighborList(int nstlist)
+{
+    impl_->setVerletList(nstlist);
+    return *this;
+}
+
+MdrunnerBuilder &MdrunnerBuilder::addReplicaExchange(const ReplicaExchangeParameters &params)
+{
+    impl_->setReplicaExchange(params);
+    return *this;
+}
+
+MdrunnerBuilder &MdrunnerBuilder::addMultiSim(gmx_multisim_t** multisim)
+{
+    impl_->addMultiSim(multisim);
+    return *this;
+}
+
+MdrunnerBuilder &MdrunnerBuilder::addNonBonded(const char* nbpu_opt)
+{
+    impl_->nbpu_opt_ = nbpu_opt;
+    return *this;
+}
+
+MdrunnerBuilder &MdrunnerBuilder::addElectrostatics(const char* pme_opt,
+                                                    const char* pme_fft_opt)
+{
+    impl_->pme_opt_     = pme_opt;
+    impl_->pme_fft_opt_ = pme_fft_opt;
+    return *this;
+}
+
+std::unique_ptr<Mdrunner> MdrunnerBuilder::build()
+{
+    return impl_->build();
+}
+
+MdrunnerBuilder::MdrunnerBuilder(MdrunnerBuilder &&builder) noexcept :
+    impl_ {std::move(builder.impl_)}
+{
+}
+
+MdrunnerBuilder &MdrunnerBuilder::operator=(MdrunnerBuilder &&builder) noexcept
+{
+    impl_ = std::move(builder.impl_);
+    return *this;
 }
 
 } // namespace gmx
