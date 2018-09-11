@@ -45,6 +45,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -243,9 +244,6 @@ gmx_bool is_set(const t_filenm *fnm)
 
 int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix)
 {
-    char  buf[STRLEN];
-    char *extpos;
-
     for (int i = 0; i < nfile; i++)
     {
         if (is_output(&fnm[i]) && fnm[i].ftp != efCPT)
@@ -254,10 +252,7 @@ int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix)
                for it, just in case... */
             for (std::string &filename : fnm[i].filenames)
             {
-                std::strncpy(buf, filename.c_str(), STRLEN - 1);
-                extpos   = strrchr(buf, '.');
-                *extpos  = '\0';
-                filename = gmx::formatString("%s%s.%s", buf, suffix, extpos + 1);
+                filename = gmx::Path::concatenateBeforeExtension(filename, suffix);
             }
         }
     }
