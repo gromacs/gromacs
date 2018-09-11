@@ -91,50 +91,63 @@
 
 struct reverse_ilist_t
 {
-    int  *index;              /* Index for each atom into il          */
-    int  *il;                 /* ftype|type|a0|...|an|ftype|...       */
-    int   numAtomsInMolecule; /* The number of atoms in this molecule */
+    std::vector<int> index;              /* Index for each atom into il          */
+    std::vector<int> il;                 /* ftype|type|a0|...|an|ftype|...       */
+    int              numAtomsInMolecule; /* The number of atoms in this molecule */
 };
 
-typedef struct {
+struct MolblockIndices
+{
     int  a_start;
     int  a_end;
     int  natoms_mol;
     int  type;
-} molblock_ind_t;
+};
 
 /*! \brief Struct for thread local work data for local topology generation */
-typedef struct {
+struct thread_work_t
+{
     t_idef     idef;             /**< Partial local topology */
     int      **vsite_pbc;        /**< vsite PBC structure */
     int       *vsite_pbc_nalloc; /**< Allocation sizes for vsite_pbc */
     int        nbonded;          /**< The number of bondeds in this struct */
     t_blocka   excl;             /**< List of exclusions */
     int        excl_count;       /**< The total exclusion count for \p excl */
-} thread_work_t;
+};
 
 /*! \brief Struct for the reverse topology: links bonded interactions to atomsx */
 struct gmx_reverse_top_t
 {
     //! @cond Doxygen_Suppress
-    gmx_bool         bExclRequired;               /**< Do we require all exclusions to be assigned? */
-    int              n_excl_at_max;               /**< The maximum number of exclusions one atom can have */
-    gmx_bool         bConstr;                     /**< Are there constraints in this revserse top?  */
-    gmx_bool         bSettle;                     /**< Are there settles in this revserse top?  */
-    gmx_bool         bBCheck;                     /**< All bonded interactions have to be assigned? */
-    gmx_bool         bInterCGInteractions;        /**< Are there bondeds/exclusions between charge-groups? */
-    reverse_ilist_t *ril_mt;                      /**< Reverse ilist for all moltypes      */
-    int              ril_mt_tot_size;             /**< The size of ril_mt[?].index summed over all entries */
-    int              ilsort;                      /**< The sorting state of bondeds for free energy */
-    molblock_ind_t  *mbi;                         /**< molblock to global atom index for quick lookup of molblocks on atom index */
-    int              nmolblock;                   /**< The number of molblocks, size of \p mbi */
+    //! \brief Do we require all exclusions to be assigned?
+    bool                         bExclRequired = false;
+    //! \brief The maximum number of exclusions one atom can have
+    int                          n_excl_at_max = 0;
+    //! \brief Are there constraints in this revserse top?
+    bool                         bConstr = false;
+    //! \brief Are there settles in this revserse top?
+    bool                         bSettle = false;
+    //! \brief All bonded interactions have to be assigned?
+    bool                         bBCheck = false;
+    //! \brief Are there bondeds/exclusions between charge-groups?
+    bool                         bInterCGInteractions = false;
+    //! \brief Reverse ilist for all moltypes
+    std::vector<reverse_ilist_t> ril_mt;
+    //! \brief The size of ril_mt[?].index summed over all entries
+    int                          ril_mt_tot_size = 0;
+    //! \brief The sorting state of bondeds for free energy
+    int                          ilsort = ilsortUNKNOWN;
+    //! \brief molblock to global atom index for quick lookup of molblocks on atom index
+    std::vector<MolblockIndices> mbi;
 
-    gmx_bool         bIntermolecularInteractions; /**< Do we have intermolecular interactions? */
-    reverse_ilist_t  ril_intermol;                /**< Intermolecular reverse ilist */
+    //! \brief Do we have intermolecular interactions?
+    bool             bIntermolecularInteractions = false;
+    //! \brief Intermolecular reverse ilist
+    reverse_ilist_t  ril_intermol;
 
     /* Work data structures for multi-threading */
-    int            nthread;           /**< The number of threads to be used */
-    thread_work_t *th_work;           /**< Thread work array for local topology generation */
+    //! \brief Thread work array for local topology generation
+    std::vector<thread_work_t> th_work;
     //! @endcond
 };
 
@@ -410,13 +423,14 @@ void dd_print_missing_interactions(const gmx::MDLogger  &mdlog,
 }
 
 /*! \brief Return global topology molecule information for global atom index \p i_gl */
-static void global_atomnr_to_moltype_ind(gmx_reverse_top_t *rt, int i_gl,
+static void global_atomnr_to_moltype_ind(const gmx_reverse_top_t *rt,
+                                         int i_gl,
                                          int *mb, int *mt, int *mol, int *i_mol)
 {
-    molblock_ind_t *mbi   = rt->mbi;
-    int             start = 0;
-    int             end   = rt->nmolblock; /* exclusive */
-    int             mid;
+    const MolblockIndices *mbi   = rt->mbi.data();
+    int                    start = 0;
+    int                    end   = rt->mbi.size(); /* exclusive */
+    int                    mid;
 
     /* binary search for molblock_ind */
     while (TRUE)
@@ -484,7 +498,8 @@ static int low_make_reverse_ilist(const t_ilist *il_mt, const t_atom *atom,
                                   int *count,
                                   gmx_bool bConstr, gmx_bool bSettle,
                                   gmx_bool bBCheck,
-                                  const int *r_index, int *r_il,
+                                  gmx::ArrayRef<const int> r_index,
+                                  gmx::ArrayRef<int>       r_il,
                                   gmx_bool bLinkToAllAtoms,
                                   gmx_bool bAssign)
 {
@@ -530,8 +545,8 @@ static int low_make_reverse_ilist(const t_ilist *il_mt, const t_atom *atom,
                     a = ia[1+link];
                     if (bAssign)
                     {
-                        assert(r_il); //with bAssign not allowed to be null
-                        assert(r_index);
+                        GMX_ASSERT(!r_il.empty(), "with bAssign not allowed to be empty");
+                        GMX_ASSERT(!r_index.empty(), "with bAssign not allowed to be empty");
                         r_il[r_index[a]+count[a]] =
                             (ftype == F_CONSTRNC ? F_CONSTR : ftype);
                         r_il[r_index[a]+count[a]+1] = ia[0];
@@ -599,17 +614,17 @@ static int make_reverse_ilist(const t_ilist *ilist,
     snew(count, nat_mt);
     low_make_reverse_ilist(ilist, atoms->atom, vsite_pbc,
                            count,
-                           bConstr, bSettle, bBCheck, nullptr, nullptr,
+                           bConstr, bSettle, bBCheck,
+                           gmx::EmptyArrayRef(), gmx::EmptyArrayRef(),
                            bLinkToAllAtoms, FALSE);
 
-    snew(ril_mt->index, nat_mt+1);
-    ril_mt->index[0] = 0;
+    ril_mt->index.push_back(0);
     for (i = 0; i < nat_mt; i++)
     {
-        ril_mt->index[i+1] = ril_mt->index[i] + count[i];
-        count[i]           = 0;
+        ril_mt->index.push_back(ril_mt->index[i] + count[i]);
+        count[i] = 0;
     }
-    snew(ril_mt->il, ril_mt->index[nat_mt]);
+    ril_mt->il.resize(ril_mt->index[nat_mt]);
 
     /* Store the interactions */
     nint_mt =
@@ -626,54 +641,44 @@ static int make_reverse_ilist(const t_ilist *ilist,
     return nint_mt;
 }
 
-/*! \brief Destroys a reverse_ilist_t struct */
-static void destroy_reverse_ilist(reverse_ilist_t *ril)
-{
-    sfree(ril->index);
-    sfree(ril->il);
-}
-
 /*! \brief Generate the reverse topology */
-static gmx_reverse_top_t *make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
-                                           const int * const * const * vsite_pbc_molt,
-                                           gmx_bool bConstr, gmx_bool bSettle,
-                                           gmx_bool bBCheck, int *nint)
+static gmx_reverse_top_t make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
+                                          const int * const * const * vsite_pbc_molt,
+                                          gmx_bool bConstr, gmx_bool bSettle,
+                                          gmx_bool bBCheck, int *nint)
 {
-    gmx_reverse_top_t *rt;
-    int               *nint_mt;
-    int                thread;
-
-    snew(rt, 1);
+    gmx_reverse_top_t  rt;
 
     /* Should we include constraints (for SHAKE) in rt? */
-    rt->bConstr = bConstr;
-    rt->bSettle = bSettle;
-    rt->bBCheck = bBCheck;
+    rt.bConstr = bConstr;
+    rt.bSettle = bSettle;
+    rt.bBCheck = bBCheck;
 
-    rt->bInterCGInteractions = mtop->bIntermolecularInteractions;
-    snew(nint_mt, mtop->moltype.size());
-    snew(rt->ril_mt, mtop->moltype.size());
-    rt->ril_mt_tot_size = 0;
+    rt.bInterCGInteractions = mtop->bIntermolecularInteractions;
+    rt.ril_mt.resize(mtop->moltype.size());
+    rt.ril_mt_tot_size = 0;
+    std::vector<int> nint_mt;
     for (size_t mt = 0; mt < mtop->moltype.size(); mt++)
     {
         const gmx_moltype_t &molt = mtop->moltype[mt];
         if (molt.cgs.nr > 1)
         {
-            rt->bInterCGInteractions = TRUE;
+            rt.bInterCGInteractions = true;
         }
 
         /* Make the atom to interaction list for this molecule type */
-        nint_mt[mt] =
+        int numberOfInteractions =
             make_reverse_ilist(molt.ilist, &molt.atoms,
                                vsite_pbc_molt ? vsite_pbc_molt[mt] : nullptr,
-                               rt->bConstr, rt->bSettle, rt->bBCheck, FALSE,
-                               &rt->ril_mt[mt]);
+                               rt.bConstr, rt.bSettle, rt.bBCheck, FALSE,
+                               &rt.ril_mt[mt]);
+        nint_mt.push_back(numberOfInteractions);
 
-        rt->ril_mt_tot_size += rt->ril_mt[mt].index[molt.atoms.nr];
+        rt.ril_mt_tot_size += rt.ril_mt[mt].index[molt.atoms.nr];
     }
     if (debug)
     {
-        fprintf(debug, "The total size of the atom to interaction index is %d integers\n", rt->ril_mt_tot_size);
+        fprintf(debug, "The total size of the atom to interaction index is %d integers\n", rt.ril_mt_tot_size);
     }
 
     *nint = 0;
@@ -681,16 +686,12 @@ static gmx_reverse_top_t *make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
     {
         *nint += molblock.nmol*nint_mt[molblock.type];
     }
-    sfree(nint_mt);
 
     /* Make an intermolecular reverse top, if necessary */
-    rt->bIntermolecularInteractions = mtop->bIntermolecularInteractions;
-    if (rt->bIntermolecularInteractions)
+    rt.bIntermolecularInteractions = mtop->bIntermolecularInteractions;
+    if (rt.bIntermolecularInteractions)
     {
         t_atoms atoms_global;
-
-        rt->ril_intermol.index = nullptr;
-        rt->ril_intermol.il    = nullptr;
 
         atoms_global.nr   = mtop->natoms;
         atoms_global.atom = nullptr; /* Only used with virtual sites */
@@ -698,42 +699,41 @@ static gmx_reverse_top_t *make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
         *nint +=
             make_reverse_ilist(mtop->intermolecular_ilist, &atoms_global,
                                nullptr,
-                               rt->bConstr, rt->bSettle, rt->bBCheck, FALSE,
-                               &rt->ril_intermol);
+                               rt.bConstr, rt.bSettle, rt.bBCheck, FALSE,
+                               &rt.ril_intermol);
     }
 
     if (bFE && gmx_mtop_bondeds_free_energy(mtop))
     {
-        rt->ilsort = ilsortFE_UNSORTED;
+        rt.ilsort = ilsortFE_UNSORTED;
     }
     else
     {
-        rt->ilsort = ilsortNO_FE;
+        rt.ilsort = ilsortNO_FE;
     }
 
     /* Make a molblock index for fast searching */
-    snew(rt->mbi, mtop->molblock.size());
-    rt->nmolblock = mtop->molblock.size();
     int i         = 0;
     for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
     {
         const gmx_molblock_t &molb           = mtop->molblock[mb];
-        int                   numAtomsPerMol = mtop->moltype[molb.type].atoms.nr;
-        rt->mbi[mb].a_start                  = i;
+        const int             numAtomsPerMol = mtop->moltype[molb.type].atoms.nr;
+        MolblockIndices       mbi;
+        mbi.a_start                          = i;
         i                                   += molb.nmol*numAtomsPerMol;
-        rt->mbi[mb].a_end                    = i;
-        rt->mbi[mb].natoms_mol               = numAtomsPerMol;
-        rt->mbi[mb].type                     = molb.type;
+        mbi.a_end                            = i;
+        mbi.natoms_mol                       = numAtomsPerMol;
+        mbi.type                             = molb.type;
+        rt.mbi.push_back(mbi);
     }
 
-    rt->nthread = gmx_omp_nthreads_get(emntDomdec);
-    snew(rt->th_work, rt->nthread);
+    rt.th_work.resize(gmx_omp_nthreads_get(emntDomdec));
     if (vsite_pbc_molt != nullptr)
     {
-        for (thread = 0; thread < rt->nthread; thread++)
+        for (thread_work_t &th_work : rt.th_work)
         {
-            snew(rt->th_work[thread].vsite_pbc, F_VSITEN-F_VSITE2+1);
-            snew(rt->th_work[thread].vsite_pbc_nalloc, F_VSITEN-F_VSITE2+1);
+            snew(th_work.vsite_pbc,        F_VSITEN - F_VSITE2 + 1);
+            snew(th_work.vsite_pbc_nalloc, F_VSITEN - F_VSITE2 + 1);
         }
     }
 
@@ -756,10 +756,12 @@ void dd_make_reverse_top(FILE *fplog,
      * the parallel version constraint algorithm(s).
      */
 
-    dd->reverse_top = make_reverse_top(mtop, ir->efep != efepNO,
-                                       vsite ? vsite->vsite_pbc_molt : nullptr,
-                                       !dd->bInterCGcons, !dd->bInterCGsettles,
-                                       bBCheck, &dd->nbonded_global);
+    dd->reverse_top  = new gmx_reverse_top_t;
+    *dd->reverse_top =
+        make_reverse_top(mtop, ir->efep != efepNO,
+                         vsite ? vsite->vsite_pbc_molt : nullptr,
+                         !dd->bInterCGcons, !dd->bInterCGsettles,
+                         bBCheck, &dd->nbonded_global);
 
     gmx_reverse_top_t *rt = dd->reverse_top;
 
@@ -981,7 +983,8 @@ static void add_fbposres(int mol, int a_mol, int numAtomsInMolecule,
 
 /*! \brief Store a virtual site interaction, complex because of PBC and recursion */
 static void add_vsite(const gmx_ga2la_t &ga2la,
-                      const int *index, const int *rtil,
+                      gmx::ArrayRef<const int> index,
+                      gmx::ArrayRef<const int> rtil,
                       int ftype, int nral,
                       gmx_bool bHomeA, int a, int a_gl, int a_mol,
                       const t_iatom *iatoms,
@@ -1059,7 +1062,8 @@ static void add_vsite(const gmx_ga2la_t &ga2la,
                         /* Add this vsite (recursion) */
                         add_vsite(ga2la, index, rtil, ftype_r, nral_r,
                                   FALSE, -1, a_gl+iatoms[k]-iatoms[1], iatoms[k],
-                                  rtil+j, idef, vsite_pbc, vsite_pbc_nalloc);
+                                  rtil.data() + j,
+                                  idef, vsite_pbc, vsite_pbc_nalloc);
                         j += 1 + nral_r + 2;
                     }
                     else
@@ -1106,15 +1110,14 @@ static real dd_dist2(t_pbc *pbc_null, rvec *cg_cm, const int *la2lc, int i, int 
 }
 
 /*! \brief Append t_blocka block structures 1 to nsrc in src to *dest */
-static void combine_blocka(t_blocka *dest, const thread_work_t *src, int nsrc)
+static void combine_blocka(t_blocka                           *dest,
+                           gmx::ArrayRef<const thread_work_t>  src)
 {
-    int ni, na, s, i;
-
-    ni = src[nsrc-1].excl.nr;
-    na = 0;
-    for (s = 0; s < nsrc; s++)
+    int ni = src.back().excl.nr;
+    int na = 0;
+    for (const thread_work_t &th_work : src)
     {
-        na += src[s].excl.nra;
+        na += th_work.excl.nra;
     }
     if (ni + 1 > dest->nalloc_index)
     {
@@ -1126,13 +1129,13 @@ static void combine_blocka(t_blocka *dest, const thread_work_t *src, int nsrc)
         dest->nalloc_a = over_alloc_large(dest->nra+na);
         srenew(dest->a, dest->nalloc_a);
     }
-    for (s = 1; s < nsrc; s++)
+    for (gmx::index s = 1; s < src.size(); s++)
     {
-        for (i = dest->nr+1; i < src[s].excl.nr+1; i++)
+        for (int i = dest->nr + 1; i < src[s].excl.nr + 1; i++)
         {
             dest->index[i] = dest->nra + src[s].excl.index[i];
         }
-        for (i = 0; i < src[s].excl.nra; i++)
+        for (int i = 0; i < src[s].excl.nra; i++)
         {
             dest->a[dest->nra+i] = src[s].excl.a[i];
         }
@@ -1144,17 +1147,16 @@ static void combine_blocka(t_blocka *dest, const thread_work_t *src, int nsrc)
 /*! \brief Append t_idef structures 1 to nsrc in src to *dest,
  * virtual sites need special attention, as pbc info differs per vsite.
  */
-static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
-                         gmx_vsite_t *vsite)
+static void combine_idef(t_idef                             *dest,
+                         gmx::ArrayRef<const thread_work_t>  src,
+                         gmx_vsite_t                        *vsite)
 {
     int ftype;
 
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
-        int n, s;
-
-        n = 0;
-        for (s = 1; s < nsrc; s++)
+        int n = 0;
+        for (gmx::index s = 1; s < src.size(); s++)
         {
             n += src[s].idef.il[ftype].nr;
         }
@@ -1188,7 +1190,7 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
                 }
             }
 
-            for (s = 1; s < nsrc; s++)
+            for (gmx::index s = 1; s < src.size(); s++)
             {
                 const t_ilist *ils;
                 int            i;
@@ -1224,12 +1226,12 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
                 }
 
                 /* Set nposres to the number of original position restraints in dest */
-                for (int s = 1; s < nsrc; s++)
+                for (gmx::index s = 1; s < src.size(); s++)
                 {
                     nposres -= src[s].idef.il[ftype].nr/2;
                 }
 
-                for (int s = 1; s < nsrc; s++)
+                for (gmx::index s = 1; s < src.size(); s++)
                 {
                     const t_iparams *iparams_src = (ftype == F_POSRES ? src[s].idef.iparams_posres : src[s].idef.iparams_fbposres);
 
@@ -1253,7 +1255,8 @@ static inline void
 check_assign_interactions_atom(int i, int i_gl,
                                int mol, int i_mol,
                                int numAtomsInMolecule,
-                               const int *index, const int *rtil,
+                               gmx::ArrayRef<const int> index,
+                               gmx::ArrayRef<const int> rtil,
                                gmx_bool bInterMolInteractions,
                                int ind_start, int ind_end,
                                const gmx_domdec_t *dd,
@@ -1277,12 +1280,11 @@ check_assign_interactions_atom(int i, int i_gl,
     while (j < ind_end)
     {
         int            ftype;
-        const t_iatom *iatoms;
         int            nral;
         t_iatom        tiatoms[1 + MAXATOMLIST];
 
         ftype  = rtil[j++];
-        iatoms = rtil + j;
+        gmx::ArrayRef<const t_iatom> iatoms = gmx::constArrayRefFromArray(rtil.data() + j, rtil.size() - j);
         nral   = NRAL(ftype);
         if (ftype == F_SETTLE)
         {
@@ -1311,7 +1313,7 @@ check_assign_interactions_atom(int i, int i_gl,
             {
                 add_vsite(*dd->ga2la, index, rtil, ftype, nral,
                           TRUE, i, i_gl, i_mol,
-                          iatoms, idef, vsite_pbc, vsite_pbc_nalloc);
+                          iatoms.data(), idef, vsite_pbc, vsite_pbc_nalloc);
             }
             j += 1 + nral + 2;
         }
@@ -1508,7 +1510,6 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
                              gmx::RangePartitioning::Block atomRange)
 {
     int                mb, mt, mol, i_mol;
-    int               *index, *rtil;
     gmx_bool           bBCheck;
     gmx_reverse_top_t *rt;
     int                nbonded_local;
@@ -1525,8 +1526,8 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
         const int i_gl = dd->globalAtomIndices[i];
         global_atomnr_to_moltype_ind(rt, i_gl, &mb, &mt, &mol, &i_mol);
         /* Check all intramolecular interactions assigned to this atom */
-        index = rt->ril_mt[mt].index;
-        rtil  = rt->ril_mt[mt].il;
+        gmx::ArrayRef<const int>       index = rt->ril_mt[mt].index;
+        gmx::ArrayRef<const t_iatom>   rtil  = rt->ril_mt[mt].il;
 
         check_assign_interactions_atom(i, i_gl, mol, i_mol,
                                        rt->ril_mt[mt].numAtomsInMolecule,
@@ -1823,7 +1824,7 @@ static void check_exclusions_alloc(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
 
     check_alloc_index(lexcls, nr);
 
-    for (int thread = 1; thread < dd->reverse_top->nthread; thread++)
+    for (size_t thread = 1; thread < dd->reverse_top->th_work.size(); thread++)
     {
         check_alloc_index(&dd->reverse_top->th_work[thread].excl, nr);
     }
@@ -1930,8 +1931,9 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
         cg0 = zones->cg_range[izone];
         cg1 = zones->cg_range[izone + 1];
 
-#pragma omp parallel for num_threads(rt->nthread) schedule(static)
-        for (thread = 0; thread < rt->nthread; thread++)
+        const int numThreads = rt->th_work.size();
+#pragma omp parallel for num_threads(numThreads) schedule(static)
+        for (thread = 0; thread < numThreads; thread++)
         {
             try
             {
@@ -1941,8 +1943,8 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                 int      *vsite_pbc_nalloc;
                 t_blocka *excl_t;
 
-                cg0t = cg0 + ((cg1 - cg0)* thread   )/rt->nthread;
-                cg1t = cg0 + ((cg1 - cg0)*(thread+1))/rt->nthread;
+                cg0t = cg0 + ((cg1 - cg0)* thread   )/numThreads;
+                cg1t = cg0 + ((cg1 - cg0)*(thread+1))/numThreads;
 
                 if (thread == 0)
                 {
@@ -2021,26 +2023,26 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
 
-        if (rt->nthread > 1)
+        if (rt->th_work.size() > 1)
         {
-            combine_idef(idef, rt->th_work, rt->nthread, vsite);
+            combine_idef(idef, rt->th_work, vsite);
         }
 
-        for (thread = 0; thread < rt->nthread; thread++)
+        for (const thread_work_t &th_work : rt->th_work)
         {
-            nbonded_local += rt->th_work[thread].nbonded;
+            nbonded_local += th_work.nbonded;
         }
 
         if (izone < nzone_excl)
         {
-            if (rt->nthread > 1)
+            if (rt->th_work.size() > 1)
             {
-                combine_blocka(lexcls, rt->th_work, rt->nthread);
+                combine_blocka(lexcls, rt->th_work);
             }
 
-            for (thread = 0; thread < rt->nthread; thread++)
+            for (const thread_work_t &th_work : rt->th_work)
             {
-                *excl_count += rt->th_work[thread].excl_count;
+                *excl_count += th_work.excl_count;
             }
         }
     }
@@ -2181,7 +2183,6 @@ void dd_sort_local_top(gmx_domdec_t *dd, const t_mdatoms *mdatoms,
 gmx_localtop_t *dd_init_local_top(const gmx_mtop_t *top_global)
 {
     gmx_localtop_t *top;
-    int             i;
 
     snew(top, 1);
 
@@ -2192,12 +2193,7 @@ gmx_localtop_t *dd_init_local_top(const gmx_mtop_t *top_global)
     top->idef.fudgeQQ   = top_global->ffparams.fudgeQQ;
     top->idef.cmap_grid = top_global->ffparams.cmap_grid;
 
-    for (i = 0; i < F_NRE; i++)
-    {
-        top->idef.il[i].iatoms = nullptr;
-        top->idef.il[i].nalloc = 0;
-    }
-    top->idef.ilsort   = ilsortUNKNOWN;
+    top->idef.ilsort    = ilsortUNKNOWN;
 
     return top;
 }
@@ -2271,7 +2267,6 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
                                   cginfo_mb_t *cginfo_mb)
 {
     gmx_bool            bExclRequired;
-    reverse_ilist_t     ril, ril_intermol;
     t_blocka           *link;
     cginfo_mb_t        *cgi_mb;
 
@@ -2282,6 +2277,7 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
 
     bExclRequired = dd->reverse_top->bExclRequired;
 
+    reverse_ilist_t ril_intermol;
     if (mtop->bIntermolecularInteractions)
     {
         if (ncg_mtop(mtop) < mtop->natoms)
@@ -2321,6 +2317,7 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
          * to all atoms, not only the first atom as in gmx_reverse_top.
          * The constraints are discarded here.
          */
+        reverse_ilist_t ril;
         make_reverse_ilist(molt.ilist, &molt.atoms,
                            nullptr, FALSE, FALSE, FALSE, TRUE, &ril);
 
@@ -2397,8 +2394,6 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
         }
         int nlink_mol = link->index[cg_offset] - link->index[cg_offset - cgs.nr];
 
-        destroy_reverse_ilist(&ril);
-
         if (debug)
         {
             fprintf(debug, "molecule type '%s' %d cgs has %d cg links through bonded interac.\n", *molt.name, cgs.nr, nlink_mol);
@@ -2430,11 +2425,6 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
                 cg_offset += cgs.nr;
             }
         }
-    }
-
-    if (mtop->bIntermolecularInteractions)
-    {
-        destroy_reverse_ilist(&ril_intermol);
     }
 
     if (debug)
