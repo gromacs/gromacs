@@ -43,6 +43,7 @@
 #include <algorithm>
 #include <vector>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/network.h"
@@ -63,7 +64,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
-#include "gromacs/utility/smalloc.h"
 
 /* The strategy used here for assigning virtual sites to (thread-)tasks
  * is as follows:
@@ -131,7 +131,8 @@ struct InterdependentTask
 };
 
 /*! \brief Vsite thread task data structure */
-struct VsiteThread {
+struct VsiteThread
+{
     //! Start of atom range of this task
     int                rangeStart;
     //! End of atom range of this task
@@ -158,16 +159,6 @@ struct VsiteThread {
         useInterdependentTask = false;
     }
 };
-
-
-/* The start and end values of for the vsite indices in the ftype enum.
- * The validity of these values is checked in init_vsite.
- * This is used to avoid loops over all ftypes just to get the vsite entries.
- * (We should replace the fixed ilist array by only the used entries.)
- */
-static const int c_ftypeVsiteStart = F_VSITE2;
-static const int c_ftypeVsiteEnd   = F_VSITEN + 1;
-
 
 /*! \brief Returns the sum of the vsite ilist sizes over all vsite types
  *
@@ -473,10 +464,10 @@ static void construct_vsites_thread(const gmx_vsite_t *vsite,
         inv_dt = 1.0;
     }
 
-    const PbcMode  pbcMode   = getPbcMode(pbc_null, vsite);
+    const PbcMode            pbcMode   = getPbcMode(pbc_null, vsite);
     /* We need another pbc pointer, as with charge groups we switch per vsite */
-    const t_pbc   *pbc_null2 = pbc_null;
-    const int     *vsite_pbc = nullptr;
+    const t_pbc             *pbc_null2 = pbc_null;
+    gmx::ArrayRef<const int> vsite_pbc;
 
     for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
     {
@@ -494,7 +485,7 @@ static void construct_vsites_thread(const gmx_vsite_t *vsite,
 
             if (pbcMode == PbcMode::chargeGroup)
             {
-                vsite_pbc = vsite->vsite_pbc_loc[ftype - c_ftypeVsiteStart];
+                vsite_pbc = (*vsite->vsite_pbc_loc)[ftype - c_ftypeVsiteStart];
             }
 
             for (int i = 0; i < nr; )
@@ -1496,10 +1487,10 @@ static void spread_vsite_f_thread(const gmx_vsite_t *vsite,
                                   t_iparams ip[], const t_ilist ilist[],
                                   const t_graph *g, const t_pbc *pbc_null)
 {
-    const PbcMode  pbcMode   = getPbcMode(pbc_null, vsite);
+    const PbcMode            pbcMode   = getPbcMode(pbc_null, vsite);
     /* We need another pbc pointer, as with charge groups we switch per vsite */
-    const t_pbc   *pbc_null2 = pbc_null;
-    const int     *vsite_pbc = nullptr;
+    const t_pbc             *pbc_null2 = pbc_null;
+    gmx::ArrayRef<const int> vsite_pbc;
 
     /* this loop goes backwards to be able to build *
      * higher type vsites from lower types         */
@@ -1523,12 +1514,15 @@ static void spread_vsite_f_thread(const gmx_vsite_t *vsite,
             }
             else if (pbcMode == PbcMode::chargeGroup)
             {
-                vsite_pbc = vsite->vsite_pbc_loc[ftype - c_ftypeVsiteStart];
+                if (vsite->vsite_pbc_loc)
+                {
+                    vsite_pbc = (*vsite->vsite_pbc_loc)[ftype - c_ftypeVsiteStart];
+                }
             }
 
             for (int i = 0; i < nr; )
             {
-                if (vsite_pbc != nullptr)
+                if (!vsite_pbc.empty())
                 {
                     if (vsite_pbc[i/(1 + nra)] > -2)
                     {
@@ -1686,7 +1680,7 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
             try
             {
                 int          thread = gmx_omp_get_thread_num();
-                VsiteThread *tData  = vsite->tData[thread];
+                VsiteThread &tData  = *vsite->tData[thread];
 
                 rvec        *fshift_t;
                 if (thread == 0 || fshift == nullptr)
@@ -1695,7 +1689,7 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                 }
                 else
                 {
-                    fshift_t = tData->fshift;
+                    fshift_t = tData.fshift;
 
                     for (int i = 0; i < SHIFTS; i++)
                     {
@@ -1704,16 +1698,16 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                 }
                 if (VirCorr)
                 {
-                    clear_mat(tData->dxdf);
+                    clear_mat(tData.dxdf);
                 }
 
-                if (tData->useInterdependentTask)
+                if (tData.useInterdependentTask)
                 {
                     /* Spread the vsites that spread outside our local range.
                      * This is done using a thread-local force buffer force.
                      * First we need to copy the input vsite forces to force.
                      */
-                    InterdependentTask *idTask = &tData->idTask;
+                    InterdependentTask *idTask = &tData.idTask;
 
                     /* Clear the buffer elements set by our task during
                      * the last call to spread_vsite_f.
@@ -1728,9 +1722,9 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                     }
                     spread_vsite_f_thread(vsite,
                                           x, as_rvec_array(idTask->force.data()), fshift_t,
-                                          VirCorr, tData->dxdf,
+                                          VirCorr, tData.dxdf,
                                           idef->iparams,
-                                          tData->idTask.ilist,
+                                          tData.idTask.ilist,
                                           g, pbc_null);
 
                     /* We need a barrier before reducing forces below
@@ -1761,18 +1755,18 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                     /* Clear the vsite forces, both in f and force */
                     for (int i = 0; i < nvsite; i++)
                     {
-                        int ind = tData->idTask.vsite[i];
+                        int ind = tData.idTask.vsite[i];
                         clear_rvec(f[ind]);
-                        clear_rvec(tData->idTask.force[ind]);
+                        clear_rvec(tData.idTask.force[ind]);
                     }
                 }
 
                 /* Spread the vsites that spread locally only */
                 spread_vsite_f_thread(vsite,
                                       x, f, fshift_t,
-                                      VirCorr, tData->dxdf,
+                                      VirCorr, tData.dxdf,
                                       idef->iparams,
-                                      tData->ilist,
+                                      tData.ilist,
                                       g, pbc_null);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -1873,9 +1867,10 @@ int count_intercg_vsites(const gmx_mtop_t *mtop)
     return n_intercg_vsite;
 }
 
-static int **get_vsite_pbc(const t_iparams *iparams, const t_ilist *ilist,
-                           const t_atom *atom, const t_mdatoms *md,
-                           const t_block &cgs)
+static VsitePbc
+get_vsite_pbc(const t_iparams *iparams, const t_ilist *ilist,
+              const t_atom *atom, const t_mdatoms *md,
+              const t_block &cgs)
 {
     /* Make an atom to charge group index */
     std::vector<int> a2cg = atom2cg(cgs);
@@ -1892,19 +1887,17 @@ static int **get_vsite_pbc(const t_iparams *iparams, const t_ilist *ilist,
         }
     }
 
-    int **vsite_pbc;
-    snew(vsite_pbc, F_VSITEN-F_VSITE2+1);
+    VsitePbc vsite_pbc;
 
     for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
     {
         {   // TODO remove me
-            int            nral = NRAL(ftype);
-            const t_ilist *il   = &ilist[ftype];
-            const t_iatom *ia   = il->iatoms;
-            int           *vsite_pbc_f;
+            int               nral = NRAL(ftype);
+            const t_ilist    *il   = &ilist[ftype];
+            const t_iatom    *ia   = il->iatoms;
 
-            snew(vsite_pbc[ftype-F_VSITE2], il->nr/(1 + nral));
-            vsite_pbc_f = vsite_pbc[ftype-F_VSITE2];
+            std::vector<int> &vsite_pbc_f = vsite_pbc[ftype - F_VSITE2];
+            vsite_pbc_f.resize(il->nr/(1 + nral));
 
             int i = 0;
             while (i < il->nr)
@@ -2010,10 +2003,13 @@ static int **get_vsite_pbc(const t_iparams *iparams, const t_ilist *ilist,
 }
 
 
-gmx_vsite_t *initVsite(const gmx_mtop_t &mtop,
-                       const t_commrec  *cr)
+std::unique_ptr<gmx_vsite_t>
+initVsite(const gmx_mtop_t &mtop,
+          const t_commrec  *cr)
 {
     GMX_RELEASE_ASSERT(cr != nullptr, "We need a valid commrec");
+
+    std::unique_ptr<gmx_vsite_t> vsite;
 
     /* check if there are vsites */
     int nvsite = 0;
@@ -2033,10 +2029,10 @@ gmx_vsite_t *initVsite(const gmx_mtop_t &mtop,
 
     if (nvsite == 0)
     {
-        return nullptr;
+        return vsite;
     }
 
-    gmx_vsite_t *vsite = new(gmx_vsite_t);
+    vsite = gmx::compat::make_unique<gmx_vsite_t>();
 
     vsite->n_intercg_vsite   = count_intercg_vsites(&mtop);
 
@@ -2055,8 +2051,7 @@ gmx_vsite_t *initVsite(const gmx_mtop_t &mtop,
         vsite->n_intercg_vsite > 0 &&
         DOMAINDECOMP(cr))
     {
-        vsite->nvsite_pbc_molt = mtop.moltype.size();
-        snew(vsite->vsite_pbc_molt, vsite->nvsite_pbc_molt);
+        vsite->vsite_pbc_molt.resize(mtop.moltype.size());
         for (size_t mt = 0; mt < mtop.moltype.size(); mt++)
         {
             const gmx_moltype_t &molt = mtop.moltype[mt];
@@ -2066,13 +2061,7 @@ gmx_vsite_t *initVsite(const gmx_mtop_t &mtop,
                                                       molt.cgs);
         }
 
-        snew(vsite->vsite_pbc_loc_nalloc, c_ftypeVsiteEnd - c_ftypeVsiteStart);
-        snew(vsite->vsite_pbc_loc,        c_ftypeVsiteEnd - c_ftypeVsiteStart);
-    }
-    else
-    {
-        vsite->vsite_pbc_molt = nullptr;
-        vsite->vsite_pbc_loc  = nullptr;
+        vsite->vsite_pbc_loc = gmx::compat::make_unique<VsitePbc>();
     }
 
     vsite->nthreads = gmx_omp_nthreads_get(emntVSITE);
@@ -2080,30 +2069,35 @@ gmx_vsite_t *initVsite(const gmx_mtop_t &mtop,
     if (vsite->nthreads > 1)
     {
         /* We need one extra thread data structure for the overlap vsites */
-        snew(vsite->tData, vsite->nthreads + 1);
+        vsite->tData.resize(vsite->nthreads + 1);
 #pragma omp parallel for num_threads(vsite->nthreads) schedule(static)
         for (int thread = 0; thread < vsite->nthreads; thread++)
         {
             try
             {
-                vsite->tData[thread] = new VsiteThread;
+                vsite->tData[thread] = gmx::compat::make_unique<VsiteThread>();
 
-                InterdependentTask *idTask = &vsite->tData[thread]->idTask;
-                idTask->nuse               = 0;
-                idTask->atomIndex.resize(vsite->nthreads);
+                InterdependentTask &idTask = vsite->tData[thread]->idTask;
+                idTask.nuse                = 0;
+                idTask.atomIndex.resize(vsite->nthreads);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
         if (vsite->nthreads > 1)
         {
-            vsite->tData[vsite->nthreads] = new VsiteThread;
+            vsite->tData[vsite->nthreads] = gmx::compat::make_unique<VsiteThread>();
         }
     }
 
-    vsite->taskIndex       = nullptr;
-    vsite->taskIndexNalloc = 0;
-
     return vsite;
+}
+
+gmx_vsite_t::gmx_vsite_t()
+{
+}
+
+gmx_vsite_t::~gmx_vsite_t()
+{
 }
 
 static inline void flagAtom(InterdependentTask *idTask, int atom,
@@ -2135,7 +2129,7 @@ static void assignVsitesToThread(VsiteThread           *tData,
                                  int                    thread,
                                  int                    nthread,
                                  int                    natperthread,
-                                 int                   *taskIndex,
+                                 gmx::ArrayRef<int>     taskIndex,
                                  const t_ilist         *ilist,
                                  const t_iparams       *ip,
                                  const unsigned short  *ptype)
@@ -2276,11 +2270,11 @@ static void assignVsitesToThread(VsiteThread           *tData,
 }
 
 /*! \brief Assign all vsites with taskIndex[]==task to task tData */
-static void assignVsitesToSingleTask(VsiteThread     *tData,
-                                     int              task,
-                                     const int       *taskIndex,
-                                     const t_ilist   *ilist,
-                                     const t_iparams *ip)
+static void assignVsitesToSingleTask(VsiteThread              *tData,
+                                     int                       task,
+                                     gmx::ArrayRef<const int>  taskIndex,
+                                     const t_ilist            *ilist,
+                                     const t_iparams          *ip)
 {
     for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
     {
@@ -2407,17 +2401,13 @@ void split_vsites_over_threads(const t_ilist   *ilist,
     /* To simplify the vsite assignment, we make an index which tells us
      * to which task particles, both non-vsites and vsites, are assigned.
      */
-    if (mdatoms->nr > vsite->taskIndexNalloc)
-    {
-        vsite->taskIndexNalloc = over_alloc_large(mdatoms->nr);
-        srenew(vsite->taskIndex, vsite->taskIndexNalloc);
-    }
+    vsite->taskIndex.resize(mdatoms->nr);
 
     /* Initialize the task index array. Here we assign the non-vsite
      * particles to task=thread, so we easily figure out if vsites
      * depend on local and/or non-local particles in assignVsitesToThread.
      */
-    int *taskIndex = vsite->taskIndex;
+    gmx::ArrayRef<int> taskIndex = vsite->taskIndex;
     {
         int  thread = 0;
         for (int i = 0; i < mdatoms->nr; i++)
@@ -2444,31 +2434,31 @@ void split_vsites_over_threads(const t_ilist   *ilist,
         try
         {
             int          thread = gmx_omp_get_thread_num();
-            VsiteThread *tData  = vsite->tData[thread];
+            VsiteThread &tData  = *vsite->tData[thread];
 
             /* Clear the buffer use flags that were set before */
-            if (tData->useInterdependentTask)
+            if (tData.useInterdependentTask)
             {
-                InterdependentTask *idTask = &tData->idTask;
+                InterdependentTask &idTask = tData.idTask;
 
                 /* To avoid an extra OpenMP barrier in spread_vsite_f,
                  * we clear the force buffer at the next step,
                  * so we need to do it here as well.
                  */
-                clearTaskForceBufferUsedElements(idTask);
+                clearTaskForceBufferUsedElements(&idTask);
 
-                idTask->vsite.resize(0);
+                idTask.vsite.resize(0);
                 for (int t = 0; t < vsite->nthreads; t++)
                 {
-                    AtomIndex *atomIndex = &idTask->atomIndex[t];
-                    int        natom     = atomIndex->atom.size();
+                    AtomIndex &atomIndex = idTask.atomIndex[t];
+                    int        natom     = atomIndex.atom.size();
                     for (int i = 0; i < natom; i++)
                     {
-                        idTask->use[atomIndex->atom[i]] = false;
+                        idTask.use[atomIndex.atom[i]] = false;
                     }
-                    atomIndex->atom.resize(0);
+                    atomIndex.atom.resize(0);
                 }
-                idTask->nuse = 0;
+                idTask.nuse = 0;
             }
 
             /* To avoid large f_buf allocations of #threads*vsite_atom_range
@@ -2477,40 +2467,40 @@ void split_vsites_over_threads(const t_ilist   *ilist,
              * vsites will end up in the separate task.
              * Note that useTask2 should be the same for all threads.
              */
-            tData->useInterdependentTask = (vsite_atom_range <= 200000);
-            if (tData->useInterdependentTask)
+            tData.useInterdependentTask = (vsite_atom_range <= 200000);
+            if (tData.useInterdependentTask)
             {
                 size_t              natoms_use_in_vsites = vsite_atom_range;
-                InterdependentTask *idTask               = &tData->idTask;
+                InterdependentTask &idTask               = tData.idTask;
                 /* To avoid resizing and re-clearing every nstlist steps,
                  * we never down size the force buffer.
                  */
-                if (natoms_use_in_vsites > idTask->force.size() ||
-                    natoms_use_in_vsites > idTask->use.size())
+                if (natoms_use_in_vsites > idTask.force.size() ||
+                    natoms_use_in_vsites > idTask.use.size())
                 {
-                    idTask->force.resize(natoms_use_in_vsites, { 0, 0, 0 });
-                    idTask->use.resize(natoms_use_in_vsites, false);
+                    idTask.force.resize(natoms_use_in_vsites, { 0, 0, 0 });
+                    idTask.use.resize(natoms_use_in_vsites, false);
                 }
             }
 
             /* Assign all vsites that can execute independently on threads */
-            tData->rangeStart     =  thread     *natperthread;
+            tData.rangeStart     =  thread     *natperthread;
             if (thread < vsite->nthreads - 1)
             {
-                tData->rangeEnd   = (thread + 1)*natperthread;
+                tData.rangeEnd   = (thread + 1)*natperthread;
             }
             else
             {
                 /* The last thread should cover up to the end of the range */
-                tData->rangeEnd   = mdatoms->nr;
+                tData.rangeEnd   = mdatoms->nr;
             }
-            assignVsitesToThread(tData,
+            assignVsitesToThread(&tData,
                                  thread, vsite->nthreads,
                                  natperthread,
                                  taskIndex,
                                  ilist, ip, mdatoms->ptype);
 
-            if (tData->useInterdependentTask)
+            if (tData.useInterdependentTask)
             {
                 /* In the worst case, all tasks write to force ranges of
                  * all other tasks, leading to #tasks^2 scaling (this is only
@@ -2519,24 +2509,24 @@ void split_vsites_over_threads(const t_ilist   *ilist,
                  * scaling at high thread counts we therefore construct
                  * an index to only loop over the actually affected tasks.
                  */
-                InterdependentTask *idTask = &tData->idTask;
+                InterdependentTask &idTask = tData.idTask;
 
                 /* Ensure assignVsitesToThread finished on other threads */
 #pragma omp barrier
 
-                idTask->spreadTask.resize(0);
-                idTask->reduceTask.resize(0);
+                idTask.spreadTask.resize(0);
+                idTask.reduceTask.resize(0);
                 for (int t = 0; t < vsite->nthreads; t++)
                 {
                     /* Do we write to the force buffer of task t? */
-                    if (!idTask->atomIndex[t].atom.empty())
+                    if (!idTask.atomIndex[t].atom.empty())
                     {
-                        idTask->spreadTask.push_back(t);
+                        idTask.spreadTask.push_back(t);
                     }
                     /* Does task t write to our force buffer? */
                     if (!vsite->tData[t]->idTask.atomIndex[thread].atom.empty())
                     {
-                        idTask->reduceTask.push_back(t);
+                        idTask.reduceTask.push_back(t);
                     }
                 }
             }
@@ -2546,7 +2536,7 @@ void split_vsites_over_threads(const t_ilist   *ilist,
     /* Assign all remaining vsites, that will have taskIndex[]=2*vsite->nthreads,
      * to a single task that will not run in parallel with other tasks.
      */
-    assignVsitesToSingleTask(vsite->tData[vsite->nthreads],
+    assignVsitesToSingleTask(vsite->tData[vsite->nthreads].get(),
                              2*vsite->nthreads,
                              taskIndex,
                              ilist, ip);
@@ -2597,9 +2587,10 @@ void set_vsite_top(gmx_vsite_t          *vsite,
 {
     if (vsite->n_intercg_vsite > 0 && vsite->bHaveChargeGroups)
     {
-        vsite->vsite_pbc_loc = get_vsite_pbc(top->idef.iparams,
-                                             top->idef.il, nullptr, md,
-                                             top->cgs);
+        vsite->vsite_pbc_loc  = gmx::compat::make_unique<VsitePbc>();
+        *vsite->vsite_pbc_loc = get_vsite_pbc(top->idef.iparams,
+                                              top->idef.il, nullptr, md,
+                                              top->cgs);
     }
 
     if (vsite->nthreads > 1)
