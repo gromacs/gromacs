@@ -49,6 +49,8 @@
 namespace gmxapi
 {
 
+class Context;
+
 /*!
  * \brief Private implementation for gmxapi::System
  *
@@ -71,7 +73,19 @@ class System::Impl final
          */
         explicit Impl(std::string filename);
 
+        /*!
+         * \brief Launch the configured simulation.
+         *
+         * \param context Runtime execution context in which to run simulation.
+         * \return Ownership of a new simulation session.
+         *
+         * The session is returned as a shared pointer so that the Context can
+         * maintain a weak reference to it via std::weak_ptr.
+         */
+        std::shared_ptr<Session> launch(std::shared_ptr<Context> context);
+
     private:
+
         //! TPR filename to load at run time.
         std::string                         filename_;
 };
