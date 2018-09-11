@@ -80,6 +80,13 @@ gmx_add_gtest_executable(
     testingconfiguration.cpp
     version.cpp
     )
+if(NOT GMX_USE_OPENCL)
+    # GPU resources may not be properly reinitialized between simulations in
+    # the same process.
+    # TODO: include this with the other test sources once the issue is resolved
+    # Ref https://redmine.gromacs.org/issues/2689
+    target_sources(gmxapi-test PRIVATE runner.cpp)
+endid()
 add_dependencies(gmxapi-test spc_and_methanol_tpr)
 
 target_include_directories(gmxapi-test PRIVATE
@@ -104,6 +111,13 @@ gmx_add_gtest_executable(
     testingconfiguration.cpp
     version.cpp
     )
+if(NOT GMX_USE_OPENCL)
+    # GPU resources may not be properly reinitialized between simulations in
+    # the same process.
+    # TODO: include this with the other test sources once the issue is resolved
+    # Ref https://redmine.gromacs.org/issues/2689
+    target_sources(gmxapi-test PRIVATE runner.cpp)
+endid()
 add_dependencies(gmxapi-mpi-test spc_and_methanol_tpr)
 
 target_include_directories(gmxapi-mpi-test PRIVATE
