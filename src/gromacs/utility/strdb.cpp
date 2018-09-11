@@ -163,12 +163,6 @@ static int fget_lines(FILE *in, const char *db, char ***strings)
 
 int get_lines(const char *db, char ***strings)
 {
-    FILE *in;
-    int   nstr;
-
-    in   = libopen(db);
-    nstr = fget_lines(in, db, strings);
-    gmx_ffclose(in);
-
-    return nstr;
+    gmx::FilePtr in = gmx::openLibraryFile(db);
+    return fget_lines(in.get(), db, strings);
 }

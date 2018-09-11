@@ -130,7 +130,7 @@ void DataFileFinder::setSearchPathFromEnv(const char *envVarName)
     }
 }
 
-FILE *DataFileFinder::openFile(const DataFileOptions &options) const
+FilePtr DataFileFinder::openFile(const DataFileOptions &options) const
 {
     // TODO: There is a small race here, since there is some time between
     // the exists() calls and actually opening the file.  It would be better

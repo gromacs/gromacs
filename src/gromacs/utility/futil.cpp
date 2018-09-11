@@ -516,48 +516,48 @@ FILE *gmx_ffopen(const char *file, const char *mode)
 #endif
 }
 
-
-char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal)
+namespace gmx
 {
+
+std::string findLibraryFile(const std::string &filename, bool bAddCWD, bool bFatal)
+{
+    std::string result;
     try
     {
-        const gmx::DataFileFinder &finder = gmx::getLibraryFileFinder();
-        std::string                result =
-            finder.findFile(gmx::DataFileOptions(file)
-                                .includeCurrentDir(bAddCWD)
-                                .throwIfNotFound(bFatal));
-        if (!result.empty())
-        {
-            return gmx_strdup(result.c_str());
-        }
+        const DataFileFinder &finder = getLibraryFileFinder();
+        result = finder.findFile(DataFileOptions(filename)
+                                     .includeCurrentDir(bAddCWD)
+                                     .throwIfNotFound(bFatal));
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    return nullptr;
+    return result;
 }
 
-FILE *low_libopen(const char *file, gmx_bool bFatal)
+std::string findLibraryFile(const char *filename, bool bAddCWD, bool bFatal)
 {
+    return findLibraryFile(std::string(filename), bAddCWD, bFatal);
+}
+
+FilePtr openLibraryFile(const std::string &filename, bool bAddCWD, bool bFatal)
+{
+    FilePtr fp;
     try
     {
-        const gmx::DataFileFinder &finder = gmx::getLibraryFileFinder();
-        FILE *fp =
-            finder.openFile(gmx::DataFileOptions(file)
-                                .includeCurrentDir(true)
-                                .throwIfNotFound(bFatal));
-        return fp;
+        const DataFileFinder &finder = getLibraryFileFinder();
+        fp = finder.openFile(DataFileOptions(filename)
+                                 .includeCurrentDir(bAddCWD)
+                                 .throwIfNotFound(bFatal));
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    return fp;
 }
 
-char *gmxlibfn(const char *file)
+FilePtr openLibraryFile(const char *filename, bool bAddCWD, bool bFatal)
 {
-    return low_gmxlibfn(file, TRUE, TRUE);
+    return openLibraryFile(std::string(filename), bAddCWD, bFatal);
 }
 
-FILE *libopen(const char *file)
-{
-    return low_libopen(file, TRUE);
-}
+} // namespace gmx
 
 void gmx_tmpnam(char *buf)
 {

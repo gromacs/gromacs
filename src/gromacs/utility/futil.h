@@ -45,10 +45,13 @@
 #ifndef GMX_UTILITY_FUTIL_H
 #define GMX_UTILITY_FUTIL_H
 
-#include <limits.h>
-#include <stdio.h>
+#include <climits>
+#include <cstdio>
+
+#include <string>
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/fileptr.h"
 
 /*! \def GMX_PATH_MAX
  * \brief
@@ -134,41 +137,32 @@ gmx_off_t gmx_ftell(FILE *stream);
 /** OS-independent truncate(). */
 int gmx_truncate(const char *filename, gmx_off_t length);
 
+namespace gmx
+{
+
 /*! \brief
  * Finds full path for a library file.
  *
- * Searches first in the current directory, and then in the configured library
- * directories.
- * Fatal error results if the file is not found in any location.
- * The caller is responsible of freeing the returned string.
+ * Searches in the configured library directories for \c filename. If
+ * \c bAddCWD is true, searches first in the current directory. Fatal
+ * error results if the file is not found in any location and \c
+ * bFatal is true.
  */
-char *gmxlibfn(const char *file);
+std::string findLibraryFile(const std::string &filename, bool bAddCWD = true, bool bFatal = true);
+//! \copydoc findLibraryFile(const std::string &, bool, bool)
+std::string findLibraryFile(const char *filename, bool bAddCWD = true, bool bFatal = true);
 
 /*! \brief
- * Opens a library file for reading.
+ * Opens a library file for reading in an RAII-style `FILE` handle.
  *
- * Works as gmxlibfn(), except that it opens the file and returns a file
- * handle.
+ * Works as findLibraryFile(), except that it opens the file and
+ * returns a file handle.
  */
-FILE *libopen(const char *file);
+FilePtr openLibraryFile(const std::string &filename, bool bAddCWD = true, bool bFatal = true);
+//! \copydoc openLibraryFile(const std::string &, bool, bool)
+FilePtr openLibraryFile(const char *filename, bool bAddCWD = true, bool bFatal = true);
 
-/*! \brief
- * More flexible gmxlibfn().
- *
- * Works as gmxlibfn(), but provides control whether the current working
- * directory is searched or not, and whether a missing file is a fatal error or
- * not.
- */
-char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal);
-
-/*! \brief
- * Alternative for libopen() that optionally does not exit.
- *
- * Works as libopen(), but provides control whether a missing file is a fatal
- * error or not.
- */
-FILE *low_libopen(const char *file, gmx_bool bFatal);
-
+} // namespace gmx
 
 /*! \brief
  * Creates unique name for temp file (wrapper around mkstemp) and opens it.
@@ -251,7 +245,7 @@ const DataFileFinder &getLibraryFileFinder();
  * The provided object must remain valid until the global instance is changed
  * by another call to setLibraryFileFinder().
  *
- * The global instance is used by gmxlibfn() and libopen().
+ * The global instance is used by findLibraryFile() and openLibraryFile().
  *
  * This method is not thread-safe.  See setProgramContext(); the same
  * constraints apply here as well.

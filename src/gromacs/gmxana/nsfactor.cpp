@@ -95,7 +95,6 @@ void normalize_probability(int n, double *a)
 gmx_neutron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const char *datfn)
 {
     /* read nsfactor.dat */
-    FILE    *fp;
     char     line[STRLEN];
     int      nralloc = 10;
     int      n, p;
@@ -104,7 +103,7 @@ gmx_neutron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const ch
     double   slength;
     gmx_neutron_atomic_structurefactors_t   *gnsf;
 
-    fp      = libopen(datfn);
+    gmx::FilePtr fp = gmx::openLibraryFile(datfn);
     line_no = 0;
     /* allocate memory for structure */
     snew(gnsf, nralloc);
@@ -115,7 +114,7 @@ gmx_neutron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const ch
 
     gnsf->nratoms = line_no;
 
-    while (get_a_line(fp, line, STRLEN))
+    while (get_a_line(fp.get(), line, STRLEN))
     {
         i = line_no;
         if (sscanf(line, "%s %d %d %lf", atomnm, &p, &n, &slength) == 4)
@@ -145,8 +144,6 @@ gmx_neutron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const ch
     srenew(gnsf->p, gnsf->nratoms);
     srenew(gnsf->n, gnsf->nratoms);
     srenew(gnsf->slength, gnsf->nratoms);
-
-    fclose(fp);
 
     return gnsf;
 }

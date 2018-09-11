@@ -160,32 +160,13 @@ std::vector<gmx::DataFileInfo> fflib_enumerate_forcefields()
 
 bool fflib_fexist(const std::string &file)
 {
-    char *file_fullpath;
-
-    file_fullpath = low_gmxlibfn(file.c_str(), TRUE, FALSE);
-
-    if (file_fullpath == nullptr)
-    {
-        return FALSE;
-    }
-    else
-    {
-        sfree(file_fullpath);
-
-        return TRUE;
-    }
+    return !gmx::findLibraryFile(file, true, false).empty();
 }
 
 
 FILE *fflib_open(const std::string &file)
 {
-    char *file_fullpath;
-    FILE *fp;
-
-    file_fullpath = gmxlibfn(file.c_str());
-    fprintf(stderr, "Opening force field file %s\n", file_fullpath);
-    fp = gmx_ffopen(file_fullpath, "r");
-    sfree(file_fullpath);
-
-    return fp;
+    std::string fileFullPath = gmx::findLibraryFile(file);
+    fprintf(stderr, "Opening force field file %s\n", fileFullPath.c_str());
+    return gmx_ffopen(fileFullPath.c_str(), "r");
 }
