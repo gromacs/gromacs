@@ -182,7 +182,7 @@ Mdrunner Mdrunner::cloneOnSpawnedThread() const
     GMX_RELEASE_ASSERT(!MASTER(newRunner.cr), "reinitializeOnSpawnedThread should only be called on spawned threads");
 
     // Only the master rank writes to the log file
-    newRunner.fplog = nullptr;
+    *newRunner.fplog = nullptr;
 
     return newRunner;
 }
@@ -429,7 +429,7 @@ int Mdrunner::mdrunner()
 
     if (mdrunOptions.continuationOptions.appendFiles)
     {
-        fplog = nullptr;
+        *fplog = nullptr;
     }
 
     bool doMembed = opt2bSet("-membed", filenames().size(), filenames().data());
@@ -471,7 +471,7 @@ int Mdrunner::mdrunner()
 
     // Here we assume that SIMMASTER(cr) does not change even after the
     // threads are started.
-    gmx::LoggerOwner logOwner(buildLogger(fplog, cr));
+    gmx::LoggerOwner logOwner(buildLogger(*fplog, cr));
     gmx::MDLogger    mdlog(logOwner.logger());
 
     // TODO The thread-MPI master rank makes a working
@@ -485,7 +485,7 @@ int Mdrunner::mdrunner()
     PhysicalNodeCommunicator physicalNodeComm(MPI_COMM_WORLD, gmx_physicalnode_id_hash());
     hwinfo = gmx_detect_hardware(mdlog, physicalNodeComm);
 
-    gmx_print_detected_hardware(fplog, cr, ms, mdlog, hwinfo);
+    gmx_print_detected_hardware(*fplog, cr, ms, mdlog, hwinfo);
 
     std::vector<int> gpuIdsToUse;
     auto             compatibleGpus = getCompatibleGpus(hwinfo->gpu_info);
@@ -514,16 +514,16 @@ int Mdrunner::mdrunner()
         }
     }
 
-    if (fplog != nullptr)
+    if (*fplog != nullptr)
     {
         /* Print references after all software/hardware printing */
-        please_cite(fplog, "Abraham2015");
-        please_cite(fplog, "Pall2015");
-        please_cite(fplog, "Pronk2013");
-        please_cite(fplog, "Hess2008b");
-        please_cite(fplog, "Spoel2005a");
-        please_cite(fplog, "Lindahl2001a");
-        please_cite(fplog, "Berendsen95a");
+        please_cite(*fplog, "Abraham2015");
+        please_cite(*fplog, "Pall2015");
+        please_cite(*fplog, "Pronk2013");
+        please_cite(*fplog, "Hess2008b");
+        please_cite(*fplog, "Spoel2005a");
+        please_cite(*fplog, "Lindahl2001a");
+        please_cite(*fplog, "Berendsen95a");
     }
 
     std::unique_ptr<t_state> globalState;
@@ -684,10 +684,10 @@ int Mdrunner::mdrunner()
     // TODO: Error handling
     mdModules->assignOptionsToModules(*inputrec->params, nullptr);
 
-    if (fplog != nullptr)
+    if (*fplog != nullptr)
     {
-        pr_inputrec(fplog, 0, "Input Parameters", inputrec, FALSE);
-        fprintf(fplog, "\n");
+        pr_inputrec(*fplog, 0, "Input Parameters", inputrec, FALSE);
+        fprintf(*fplog, "\n");
     }
 
     if (SIMMASTER(cr))
@@ -734,7 +734,7 @@ int Mdrunner::mdrunner()
         gmx_fatal(FARGS, "The .mdp file specified an energy mininization or normal mode algorithm, and these are not compatible with mdrun -rerun");
     }
 
-    if (can_use_allvsall(inputrec, TRUE, cr, fplog) && DOMAINDECOMP(cr))
+    if (can_use_allvsall(inputrec, TRUE, cr, *fplog) && DOMAINDECOMP(cr))
     {
         gmx_fatal(FARGS, "All-vs-all loops do not work with domain decomposition, use a single MPI rank");
     }
@@ -788,9 +788,9 @@ int Mdrunner::mdrunner()
     snew(fcd, 1);
 
     /* This needs to be called before read_checkpoint to extend the state */
-    init_disres(fplog, &mtop, inputrec, cr, ms, fcd, globalState.get(), replExParams.exchangeInterval > 0);
+    init_disres(*fplog, &mtop, inputrec, cr, ms, fcd, globalState.get(), replExParams.exchangeInterval > 0);
 
-    init_orires(fplog, &mtop, inputrec, cr, ms, globalState.get(), &(fcd->orires));
+    init_orires(*fplog, &mtop, inputrec, cr, ms, globalState.get(), &(fcd->orires));
 
     auto                 deform = prepareBoxDeformation(globalState->box, cr, *inputrec);
 
@@ -805,7 +805,7 @@ int Mdrunner::mdrunner()
          */
         gmx_bool bReadEkin;
 
-        load_checkpoint(opt2fn_master("-cpi", filenames().size(), filenames().data(), cr), &fplog,
+        load_checkpoint(opt2fn_master("-cpi", filenames().size(), filenames().data(), cr), fplog.get(),
                         cr, domdecOptions.numCells,
                         inputrec, globalState.get(),
                         &bReadEkin, &observablesHistory,
@@ -821,8 +821,8 @@ int Mdrunner::mdrunner()
 
     if (SIMMASTER(cr) && continuationOptions.appendFiles)
     {
-        gmx_log_append(cr->nodeid, cr->nnodes, fplog);
-        logOwner = buildLogger(fplog, nullptr);
+        gmx_log_append(cr->nodeid, cr->nnodes, *fplog);
+        logOwner = buildLogger(*fplog, nullptr);
         mdlog    = logOwner.logger();
     }
 
@@ -848,7 +848,7 @@ int Mdrunner::mdrunner()
     /* Update rlist and nstlist. */
     if (inputrec->cutoff_scheme == ecutsVERLET)
     {
-        prepare_verlet_scheme(fplog, cr, inputrec, nstlist_cmdline, &mtop, box,
+        prepare_verlet_scheme(*fplog, cr, inputrec, nstlist_cmdline, &mtop, box,
                               useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes), *hwinfo->cpuInfo);
     }
 
@@ -881,7 +881,7 @@ int Mdrunner::mdrunner()
         /* After possible communicator splitting in make_dd_communicators.
          * we can set up the intra/inter node communication.
          */
-        gmx_setup_nodecomm(fplog, cr);
+        gmx_setup_nodecomm(*fplog, cr);
     }
 
 #if GMX_MPI
@@ -1124,7 +1124,7 @@ int Mdrunner::mdrunner()
         GMX_LOG(mdlog.info).asParagraph().
             appendText("The -resetstep functionality is deprecated, and may be removed in a future version.");
     }
-    wcycle = wallcycle_init(fplog, mdrunOptions.timingOptions.resetStep, cr);
+    wcycle = wallcycle_init(*fplog, mdrunOptions.timingOptions.resetStep, cr);
 
     if (PAR(cr))
     {
@@ -1145,7 +1145,7 @@ int Mdrunner::mdrunner()
         /* Note that membed cannot work in parallel because mtop is
          * changed here. Fix this if we ever want to make it run with
          * multiple ranks. */
-        membed = init_membed(fplog, filenames().size(), filenames().data(), &mtop, inputrec, globalState.get(), cr,
+        membed = init_membed(*fplog, filenames().size(), filenames().data(), &mtop, inputrec, globalState.get(), cr,
                              &mdrunOptions
                                  .checkpointOptions.period);
     }
@@ -1159,7 +1159,7 @@ int Mdrunner::mdrunner()
         /* Initiate forcerecord */
         fr                 = mk_forcerec();
         fr->forceProviders = mdModules->initForceProviders();
-        init_forcerec(fplog, mdlog, fr, fcd,
+        init_forcerec(*fplog, mdlog, fr, fcd,
                       inputrec, &mtop, cr, box,
                       opt2fn("-table", filenames().size(), filenames().data()),
                       opt2fn("-tablep", filenames().size(), filenames().data()),
@@ -1182,7 +1182,7 @@ int Mdrunner::mdrunner()
          * mdAtoms is not filled with atom data,
          * as this can not be done now with domain decomposition.
          */
-        mdAtoms = makeMDAtoms(fplog, mtop, *inputrec, thisRankHasPmeGpuTask);
+        mdAtoms = makeMDAtoms(*fplog, mtop, *inputrec, thisRankHasPmeGpuTask);
         if (globalState && thisRankHasPmeGpuTask)
         {
             // The pinning of coordinates in the global state object works, because we only use
@@ -1207,7 +1207,7 @@ int Mdrunner::mdrunner()
             /* Make molecules whole at start of run */
             if (fr->ePBC != epbcNONE)
             {
-                do_pbc_first_mtop(fplog, inputrec->ePBC, box, &mtop, globalState->x.rvec_array());
+                do_pbc_first_mtop(*fplog, inputrec->ePBC, box, &mtop, globalState->x.rvec_array());
             }
             if (vsite)
             {
@@ -1297,7 +1297,7 @@ int Mdrunner::mdrunner()
         {
             /* Initialize pull code */
             inputrec->pull_work =
-                init_pull(fplog, inputrec->pull, inputrec,
+                init_pull(*fplog, inputrec->pull, inputrec,
                           &mtop, cr, &atomSets, inputrec->fepvals->init_lambda);
             if (EI_DYNAMICS(inputrec->eI) && MASTER(cr))
             {
@@ -1311,7 +1311,7 @@ int Mdrunner::mdrunner()
         if (inputrec->bRot)
         {
             /* Initialize enforced rotation code */
-            enforcedRotation = init_rot(fplog,
+            enforcedRotation = init_rot(*fplog,
                                         inputrec,
                                         filenames().size(),
                                         filenames().data(),
@@ -1326,7 +1326,7 @@ int Mdrunner::mdrunner()
         if (inputrec->eSwapCoords != eswapNO)
         {
             /* Initialize ion swapping code */
-            init_swapcoords(fplog, inputrec, opt2fn_master("-swap", filenames().size(), filenames().data(), cr),
+            init_swapcoords(*fplog, inputrec, opt2fn_master("-swap", filenames().size(), filenames().data(), cr),
                             &mtop, globalState.get(), &observablesHistory,
                             cr, &atomSets, oenv, mdrunOptions);
         }
@@ -1337,7 +1337,7 @@ int Mdrunner::mdrunner()
         bool doEssentialDynamics = (opt2fn_null("-ei", filenames().size(), filenames().data()) != nullptr
                                     || observablesHistory.edsamHistory);
         auto constr              = makeConstraints(mtop, *inputrec, doEssentialDynamics,
-                                                   fplog, *mdAtoms->mdatoms(),
+                                                   *fplog, *mdAtoms->mdatoms(),
                                                    cr, *ms, nrnb, wcycle, fr->bMolPBC);
 
         if (DOMAINDECOMP(cr))
@@ -1346,7 +1346,7 @@ int Mdrunner::mdrunner()
             /* This call is not included in init_domain_decomposition mainly
              * because fr->cginfo_mb is set later.
              */
-            dd_init_bondeds(fplog, cr->dd, &mtop, vsite.get(), inputrec,
+            dd_init_bondeds(*fplog, cr->dd, &mtop, vsite.get(), inputrec,
                             domdecOptions.checkBondedInteractions,
                             fr->cginfo_mb);
         }
@@ -1356,7 +1356,7 @@ int Mdrunner::mdrunner()
 
         /* Now do whatever the user wants us to do (how flexible...) */
         Integrator integrator {
-            fplog, cr, ms, mdlog, static_cast<int>(filenames().size()), filenames().data(),
+            *fplog, cr, ms, mdlog, static_cast<int>(filenames().size()), filenames().data(),
             oenv,
             mdrunOptions,
             vsite.get(), constr.get(),
@@ -1394,7 +1394,7 @@ int Mdrunner::mdrunner()
     /* Finish up, write some stuff
      * if rerunMD, don't write last frame again
      */
-    finish_run(fplog, mdlog, cr,
+    finish_run(*fplog, mdlog, cr,
                inputrec, nrnb, wcycle, walltime_accounting,
                fr ? fr->nbv : nullptr,
                pmedata,
@@ -1430,15 +1430,15 @@ int Mdrunner::mdrunner()
     gmx_hardware_info_free();
 
     /* Does what it says */
-    print_date_and_time(fplog, cr->nodeid, "Finished mdrun", gmx_gettime());
+    print_date_and_time(*fplog, cr->nodeid, "Finished mdrun", gmx_gettime());
     walltime_accounting_destroy(walltime_accounting);
     sfree(nrnb);
 
     /* Close logfile already here if we were appending to it */
     if (MASTER(cr) && continuationOptions.appendFiles)
     {
-        gmx_log_close(fplog);
-        fplog = nullptr;
+        gmx_log_close(*fplog);
+        *fplog = nullptr;
     }
 
     /* Reset FPEs (important for unit tests) by disabling them. Assumes no
@@ -1499,7 +1499,7 @@ class Mdrunner::BuilderImplementation
 
         void addOutputEnvironment(gmx_output_env_t* outputEnvironment);
 
-        void addLogFile(FILE** logFileHandle);
+        void addLogFile(std::shared_ptr<FILE*> logFileHandle);
 
         Mdrunner build();
 
@@ -1558,7 +1558,7 @@ class Mdrunner::BuilderImplementation
          * nullptr to check whether the filehandle has been closed, so the object
          * we are pointing to is actually the `FILE*`, not the `FILE`.
          */
-        FILE**                logFile_ = nullptr;
+        std::shared_ptr<FILE*>                logFile_ = nullptr;
 };
 
 Mdrunner::BuilderImplementation::BuilderImplementation(SimulationContext* context) :
@@ -1662,7 +1662,7 @@ Mdrunner Mdrunner::BuilderImplementation::build()
     {
         // We do not check whether the pointed-to pointer is nullptr. nullptr is a valid
         // value for Mdrunner::fplog.
-        newRunner.fplog = *logFile_;
+        newRunner.fplog = logFile_;
     }
     else
     {
@@ -1718,10 +1718,10 @@ void Mdrunner::BuilderImplementation::addOutputEnvironment(gmx_output_env_t* out
     outputEnvironment_ = outputEnvironment;
 }
 
-void Mdrunner::BuilderImplementation::addLogFile(FILE** logFileHandle)
+void Mdrunner::BuilderImplementation::addLogFile(std::shared_ptr<FILE*> logFileHandle)
 {
     assert(logFileHandle);
-    logFile_ = logFileHandle;
+    logFile_ = std::move(logFileHandle);
 }
 
 MdrunnerBuilder::MdrunnerBuilder(compat::not_null<SimulationContext*> context) :
@@ -1808,9 +1808,9 @@ MdrunnerBuilder &MdrunnerBuilder::addOutputEnvironment(gmx_output_env_t* outputE
     return *this;
 }
 
-MdrunnerBuilder &MdrunnerBuilder::addLogFile(FILE** logFileHandle)
+MdrunnerBuilder &MdrunnerBuilder::addLogFile(std::shared_ptr<FILE*> logFileHandle)
 {
-    impl_->addLogFile(logFileHandle);
+    impl_->addLogFile(std::move(logFileHandle));
     return *this;
 }
 

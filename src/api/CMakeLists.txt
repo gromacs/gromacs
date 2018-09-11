@@ -62,6 +62,7 @@ set(GMXAPI_PUBLIC_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/gmxapi.h
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/md.h
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/md/mdmodule.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/session.h
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/status.h
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include/gmxapi/system.h
     ${CMAKE_CURRENT_BINARY_DIR}/cpp/include/gmxapi/version.h)
