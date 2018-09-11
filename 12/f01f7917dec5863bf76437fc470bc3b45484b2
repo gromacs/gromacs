@@ -1,0 +1,8 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+2: Paul Bauer <paul.bauer.q@gmail.com>
+Code-Review+2: Magnus Lundborg <magnus.lundborg@scilifelab.se>
+Submitted-by: Magnus Lundborg <magnus.lundborg@scilifelab.se>
+Submitted-at: Tue, 11 Sep 2018 15:04:35 +0200
+Reviewed-on: https://gerrit.gromacs.org/8333
+Project: gromacs
+Branch: refs/heads/release-2018
