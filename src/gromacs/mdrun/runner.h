@@ -220,8 +220,8 @@ class Mdrunner
         //! Print a warning if any force is larger than this (in kJ/mol nm).
         real                                    pforce = -1;
 
-        //! \brief Non-owning handle to file used for logging.
-        FILE                                   *fplog = nullptr;
+        //! \brief Shared ownership of a handle to file used for logging.
+        FILE** logFileHandle_ = nullptr;
 
         //! \brief Non-owning handle to communication data structure.
         t_commrec                              *cr = nullptr;
@@ -475,7 +475,7 @@ class MdrunnerBuilder final
          *
          * Required.
          *
-         * \param logFileHandle Non-owning handle to file used for logging.
+         * \param logFileHandle Shared ownership of handle to file used for logging.
          * \internal
          * \todo This method becomes unnecessary with resolution of http://redmine.gromacs.org/issues/2651
          */

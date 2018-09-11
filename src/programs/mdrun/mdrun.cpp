@@ -58,6 +58,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <memory>
+
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec.h"
@@ -258,10 +260,6 @@ int gmx_mdrun(int argc, char *argv[])
     // Output context for writing text files
     // \todo Clarify initialization, ownership, and lifetime.
     gmx_output_env_t                *oenv = nullptr;
-
-    // Handle to file used for logging.
-    // \todo Move to RAII filehandle management; open and close in one place.
-    FILE                            *fplog;
 
     /* Command line options */
     rvec              realddxyz                                               = {0, 0, 0};
@@ -520,18 +518,23 @@ int gmx_mdrun(int argc, char *argv[])
     /* We postpone opening the log file if we are appending, so we can
        first truncate the old log file and append to the correct position
        there instead.  */
-    if (MASTER(cr) && !continuationOptions.appendFiles)
+    // Handle to file used for logging.
+    // \todo Move to RAII filehandle management; open and close in one place.
+    std::unique_ptr<FILE*> fplog = nullptr;
     {
-        gmx_log_open(ftp2fn(efLOG,
-                            static_cast<int>(filenames().size()),
-                            filenames().data()),
-                     cr->nodeid, cr->nnodes,
-                     &fplog);
+        FILE* fh = nullptr;
+        if (MASTER(cr) && !continuationOptions.appendFiles)
+        {
+            gmx_log_open(ftp2fn(efLOG,
+                                static_cast<int>(filenames().size()),
+                                filenames().data()),
+                         cr->nodeid, cr->nnodes,
+                         &fh);
+        }
+        fplog = compat::make_unique<FILE*>(fh);
     }
-    else
-    {
-        fplog = nullptr;
-    }
+
+    GMX_ASSERT(fplog, "fplog should be managing an object by now.");
 
     domdecOptions.rankOrder    = static_cast<DdRankOrder>(nenum(ddrank_opt_choices));
     domdecOptions.dlbOption    = static_cast<DlbOption>(nenum(dddlb_opt_choices));
@@ -585,16 +588,16 @@ int gmx_mdrun(int argc, char *argv[])
     // Log file opening and closing could be managed entirely within Mdrunner::mdrunner(), or a file-like
     // object could be owned by the client (such a via SimulationContext) and the handle lent to the
     // Mdrunner, but currently fplog can be opened or closed in multiple places.
-    builder.addLogFile(&fplog);
+    builder.addLogFile(fplog.get());
     auto runner = builder.build();
 
     rc = runner.mdrunner();
 
     /* Log file has to be closed in mdrunner if we are appending to it
        (fplog not set here) */
-    if (fplog != nullptr)
+    if (*fplog != nullptr)
     {
-        gmx_log_close(fplog);
+        gmx_log_close(*fplog);
     }
 
     if (GMX_LIB_MPI)

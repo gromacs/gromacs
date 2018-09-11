@@ -182,7 +182,8 @@ Mdrunner Mdrunner::cloneOnSpawnedThread() const
     GMX_RELEASE_ASSERT(!MASTER(newRunner.cr), "reinitializeOnSpawnedThread should only be called on spawned threads");
 
     // Only the master rank writes to the log file
-    newRunner.fplog = nullptr;
+    newRunner.logFileHandle_ = new FILE*;
+    // This is leaked because Mdrunner does not know whose job it is to delete logFileHandle_.
 
     return newRunner;
 }
@@ -427,6 +428,8 @@ int Mdrunner::mdrunner()
     t_inputrec                     *inputrec = &inputrecInstance;
     gmx_mtop_t                      mtop;
 
+    GMX_ASSERT(logFileHandle_, "logFileHandle_ needs to point to a real pointer object.");
+    auto &fplog = *logFileHandle_;
     if (mdrunOptions.continuationOptions.appendFiles)
     {
         fplog = nullptr;
@@ -1662,7 +1665,7 @@ Mdrunner Mdrunner::BuilderImplementation::build()
     {
         // We do not check whether the pointed-to pointer is nullptr. nullptr is a valid
         // value for Mdrunner::fplog.
-        newRunner.fplog = *logFile_;
+        newRunner.logFileHandle_ = logFile_;
     }
     else
     {
@@ -1720,7 +1723,7 @@ void Mdrunner::BuilderImplementation::addOutputEnvironment(gmx_output_env_t* out
 
 void Mdrunner::BuilderImplementation::addLogFile(FILE** logFileHandle)
 {
-    assert(logFileHandle);
+    GMX_ASSERT(logFileHandle, "addLogFile requires a non-null pointer (to a possibly null pointer...)");
     logFile_ = logFileHandle;
 }
 
