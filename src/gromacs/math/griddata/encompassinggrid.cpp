@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,39 +32,38 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
- * \brief
- * Defines an enumeration type for specifying file types for options.
- *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inpublicapi
- * \ingroup module_options
- */
-#ifndef GMX_OPTIONS_OPTIONFILETYPE_HPP
-#define GMX_OPTIONS_OPTIONFILETYPE_HPP
 
+#include "gmxpre.h"
+
+#include "encompassinggrid.h"
 namespace gmx
 {
 
-/*! \brief
- * Purpose of file(s) provided through an option.
- *
- * \ingroup module_options
- */
-enum OptionFileType {
-    eftUnknown,
-    eftTopology,
-    eftTrajectory,
-    eftEnergy,
-    eftPDB,
-    eftIndex,
-    eftPlot,
-    eftGenericData,
-    eftCCP4,
-    eftXPLOR,
-    eftOptionFileType_NR
-};
+GridWithTranslation<DIM> encompassingGridFromCoordinates(const std::vector<RVec> &coordinates, real spacing, real margin)
+{
+    RVec realSpaceExtend = {0., 0., 0.};
+    RVec translation;
 
-} // namespace gmx
+    // find the extend of input coordinates
+    for (int i = XX; i <= ZZ; i++)
+    {
+        auto compareIthComponent = [i](RVec a, RVec b) {
+                return a[i] < b[i];
+            };
+        auto minMaxX             =
+            minmax_element(coordinates.begin(), coordinates.end(), compareIthComponent);
+        realSpaceExtend[i] =
+            2 * margin + (*minMaxX.second)[i] - (*minMaxX.first)[i];
+        translation[i] = -margin + (*minMaxX.first)[i];
+    }
 
-#endif
+    bounds<DIM> extend {
+        (int)ceil(realSpaceExtend[XX] / spacing), (int)ceil(realSpaceExtend[YY] / spacing), (int)ceil(realSpaceExtend[ZZ] / spacing)
+    };
+
+    CanonicalVectorBasis<DIM>          cell(Grid<DIM>::NdVector({{extend[XX] * spacing, extend[YY] * spacing, extend[ZZ] * spacing}}));
+    GridWithTranslation<DIM>::NdVector gridTranslation({{roundf(translation[XX] / spacing) * spacing, roundf(translation[YY] / spacing) * spacing, roundf(translation[ZZ] / spacing) * spacing}});
+
+    return GridWithTranslation<DIM>( cell, extend, gridTranslation);
+}
+}

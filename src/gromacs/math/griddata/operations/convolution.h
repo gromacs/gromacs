@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,39 +32,36 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*!  \file
  * \brief
- * Defines an enumeration type for specifying file types for options.
+ * Defines volume data containers.
  *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \author Christian Blau <cblau@gwdg.de>
  * \inpublicapi
- * \ingroup module_options
  */
-#ifndef GMX_OPTIONS_OPTIONFILETYPE_HPP
-#define GMX_OPTIONS_OPTIONFILETYPE_HPP
+#ifndef GMX_MATH_CONVOLUTION_H
+#define GMX_MATH_CONVOLUTION_H
+
+#include "gromacs/math/griddata/griddata.h"
+#include "gromacs/math/gmxcomplex.h"
+#include <array>
 
 namespace gmx
 {
 
-/*! \brief
- * Purpose of file(s) provided through an option.
- *
- * \ingroup module_options
- */
-enum OptionFileType {
-    eftUnknown,
-    eftTopology,
-    eftTrajectory,
-    eftEnergy,
-    eftPDB,
-    eftIndex,
-    eftPlot,
-    eftGenericData,
-    eftCCP4,
-    eftXPLOR,
-    eftOptionFileType_NR
+class GaussConvolution
+{
+    public:
+        GaussConvolution(const GridDataReal3D &input);
+        std::unique_ptr < GridDataReal3D> convolute(real sigma);
+        GaussConvolution &pad(const CanonicalVectorBasis<DIM>::NdVector &paddingFactor);
+
+    private:
+        const GridDataReal3D                         &input_;
+        std::unique_ptr < GridDataReal3D>             padded_input_;
+        std::unique_ptr < GridDataComplex3D>          fourierTransform_;
 };
 
-} // namespace gmx
+}      // gmx
 
-#endif
+#endif /* end of include guard: GMX_MATH_CONVOLUTION_H */

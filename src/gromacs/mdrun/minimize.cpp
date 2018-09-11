@@ -344,7 +344,6 @@ static void get_state_f_norm_max(const t_commrec *cr,
 //! Initialize the energy minimization
 static void init_em(FILE *fplog, const char *title,
                     const t_commrec *cr,
-                    const gmx_multisim_t *ms,
                     gmx::IMDOutputProvider *outputProvider,
                     t_inputrec *ir,
                     const MdrunOptions &mdrunOptions,
@@ -1095,7 +1094,7 @@ Integrator::do_cg()
     em_state_t *s_c   = &s3;
 
     /* Init em and store the local state in s_min */
-    init_em(fplog, CG, cr, ms, outputProvider, inputrec, mdrunOptions,
+    init_em(fplog, CG, cr, outputProvider, inputrec, mdrunOptions,
             state_global, top_global, s_min, &top,
             nrnb, mu_tot, fr, &enerd, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr,
@@ -1723,7 +1722,7 @@ Integrator::do_lbfgs()
     neval = 0;
 
     /* Init em */
-    init_em(fplog, LBFGS, cr, ms, outputProvider, inputrec, mdrunOptions,
+    init_em(fplog, LBFGS, cr, outputProvider, inputrec, mdrunOptions,
             state_global, top_global, &ems, &top,
             nrnb, mu_tot, fr, &enerd, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr,
@@ -2413,7 +2412,7 @@ Integrator::do_steep()
     em_state_t *s_try = &s1;
 
     /* Init em and store the local state in s_try */
-    init_em(fplog, SD, cr, ms, outputProvider, inputrec, mdrunOptions,
+    init_em(fplog, SD, cr, outputProvider, inputrec, mdrunOptions,
             state_global, top_global, s_try, &top,
             nrnb, mu_tot, fr, &enerd, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr,
@@ -2658,7 +2657,7 @@ Integrator::do_nm()
     em_state_t     state_work {};
 
     /* Init em and store the local state in state_minimum */
-    init_em(fplog, NM, cr, ms, outputProvider, inputrec, mdrunOptions,
+    init_em(fplog, NM, cr, outputProvider, inputrec, mdrunOptions,
             state_global, top_global, &state_work, &top,
             nrnb, mu_tot, fr, &enerd, &graph, mdAtoms, &gstat,
             vsite, constr, &shellfc,
