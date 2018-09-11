@@ -141,7 +141,6 @@ void rename_atoms(const char* xlfile, const char *ffdir,
                   bool bResname, gmx_residuetype_t *rt, bool bReorderNum,
                   bool bVerbose)
 {
-    FILE         *fp;
     int           nxlate, a, i, resind;
     t_xlate_atom *xlatom;
     char          c, *rnm, atombuf[32], *ptr0, *ptr1;
@@ -152,16 +151,15 @@ void rename_atoms(const char* xlfile, const char *ffdir,
     xlatom = nullptr;
     if (xlfile != nullptr)
     {
-        fp = libopen(xlfile);
-        get_xlatoms(xlfile, fp, &nxlate, &xlatom);
-        fclose(fp);
+        gmx::FilePtr fp = gmx::openLibraryFile(xlfile);
+        get_xlatoms(xlfile, fp.get(), &nxlate, &xlatom);
     }
     else
     {
         std::vector<std::string> fns = fflib_search_file_end(ffdir, ".arn", FALSE);
         for (const auto &filename : fns)
         {
-            fp = fflib_open(filename);
+            FILE * fp = fflib_open(filename);
             get_xlatoms(filename, fp, &nxlate, &xlatom);
             gmx_ffclose(fp);
         }

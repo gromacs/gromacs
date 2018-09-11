@@ -213,7 +213,6 @@ static void add_prop(aprop_t *ap, gmx_residuetype_t *restype,
 static void read_prop(gmx_atomprop_t aps, int eprop, double factor)
 {
     gmx_atomprop *ap2 = static_cast<gmx_atomprop*>(aps);
-    FILE         *fp;
     char          line[STRLEN], resnm[32], atomnm[32];
     double        pp;
     int           line_no;
@@ -221,9 +220,9 @@ static void read_prop(gmx_atomprop_t aps, int eprop, double factor)
 
     ap = &ap2->prop[eprop];
 
-    fp      = libopen(ap->db);
+    gmx::FilePtr fp = gmx::openLibraryFile(ap->db);
     line_no = 0;
-    while (get_a_line(fp, line, STRLEN))
+    while (get_a_line(fp.get(), line, STRLEN))
     {
         line_no++;
         if (sscanf(line, "%31s %31s %20lf", resnm, atomnm, &pp) == 3)
@@ -237,10 +236,6 @@ static void read_prop(gmx_atomprop_t aps, int eprop, double factor)
                     ap->db, line_no);
         }
     }
-
-    /* for libraries we can use the low-level close routines */
-    gmx_ffclose(fp);
-
     ap->bSet = TRUE;
 }
 

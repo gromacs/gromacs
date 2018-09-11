@@ -573,10 +573,9 @@ static void set_forces(FILE *fp, int angle,
     spline_forces(end-start, h, v+start, TRUE, end == nx, f+start);
 }
 
-static void read_tables(FILE *fp, const char *fn,
+static void read_tables(FILE *fp, const char *filename,
                         int ntab, int angle, t_tabledata td[])
 {
-    char    *libfn;
     char     buf[STRLEN];
     double **yy = nullptr, start, end, dx0, dx1, ssd, vm, vp, f, numf;
     int      k, i, nx, nx0 = 0, ny, nny, ns;
@@ -584,12 +583,12 @@ static void read_tables(FILE *fp, const char *fn,
     double   tabscale;
 
     nny   = 2*ntab+1;
-    libfn = gmxlibfn(fn);
-    nx    = read_xvg(libfn, &yy, &ny);
+    std::string libfn = gmx::findLibraryFile(filename);
+    nx    = read_xvg(libfn.c_str(), &yy, &ny);
     if (ny != nny)
     {
         gmx_fatal(FARGS, "Trying to read file %s, but nr columns = %d, should be %d",
-                  libfn, ny, nny);
+                  libfn.c_str(), ny, nny);
     }
     if (angle == 0)
     {
@@ -597,7 +596,7 @@ static void read_tables(FILE *fp, const char *fn,
         {
             gmx_fatal(FARGS,
                       "The first distance in file %s is %f nm instead of %f nm",
-                      libfn, yy[0][0], 0.0);
+                      libfn.c_str(), yy[0][0], 0.0);
         }
     }
     else
@@ -614,7 +613,7 @@ static void read_tables(FILE *fp, const char *fn,
         if (yy[0][0] != start || yy[0][nx-1] != end)
         {
             gmx_fatal(FARGS, "The angles in file %s should go from %f to %f instead of %f to %f\n",
-                      libfn, start, end, yy[0][0], yy[0][nx-1]);
+                      libfn.c_str(), start, end, yy[0][0], yy[0][nx-1]);
         }
     }
 
@@ -622,7 +621,7 @@ static void read_tables(FILE *fp, const char *fn,
 
     if (fp)
     {
-        fprintf(fp, "Read user tables from %s with %d data points.\n", libfn, nx);
+        fprintf(fp, "Read user tables from %s with %d data points.\n", libfn.c_str(), nx);
         if (angle == 0)
         {
             fprintf(fp, "Tabscale = %g points/nm\n", tabscale);
@@ -643,7 +642,7 @@ static void read_tables(FILE *fp, const char *fn,
                 /* Check for 1% deviation in spacing */
                 if (fabs(dx1 - dx0) >= 0.005*(fabs(dx0) + fabs(dx1)))
                 {
-                    gmx_fatal(FARGS, "In table file '%s' the x values are not equally spaced: %f %f %f", fn, yy[0][i-2], yy[0][i-1], yy[0][i]);
+                    gmx_fatal(FARGS, "In table file '%s' the x values are not equally spaced: %f %f %f", filename, yy[0][i-2], yy[0][i-1], yy[0][i]);
                 }
             }
             if (yy[1+k*2][i] != 0)
@@ -658,7 +657,7 @@ static void read_tables(FILE *fp, const char *fn,
                     yy[1+k*2][i] < -0.01*GMX_REAL_MAX)
                 {
                     gmx_fatal(FARGS, "Out of range potential value %g in file '%s'",
-                              yy[1+k*2][i], fn);
+                              yy[1+k*2][i], filename);
                 }
             }
             if (yy[1+k*2+1][i] != 0)
@@ -673,7 +672,7 @@ static void read_tables(FILE *fp, const char *fn,
                     yy[1+k*2+1][i] < -0.01*GMX_REAL_MAX)
                 {
                     gmx_fatal(FARGS, "Out of range force value %g in file '%s'",
-                              yy[1+k*2+1][i], fn);
+                              yy[1+k*2+1][i], filename);
                 }
             }
         }
@@ -710,7 +709,7 @@ static void read_tables(FILE *fp, const char *fn,
                 ssd /= ns;
                 sprintf(buf, "For the %d non-zero entries for table %d in %s the forces deviate on average %" PRId64
                         "%% from minus the numerical derivative of the potential\n",
-                        ns, k, libfn, gmx::roundToInt64(100*ssd));
+                        ns, k, libfn.c_str(), gmx::roundToInt64(100*ssd));
                 if (debug)
                 {
                     fprintf(debug, "%s", buf);
@@ -728,7 +727,7 @@ static void read_tables(FILE *fp, const char *fn,
     }
     if (bAllZero && fp)
     {
-        fprintf(fp, "\nNOTE: All elements in table %s are zero\n\n", libfn);
+        fprintf(fp, "\nNOTE: All elements in table %s are zero\n\n", libfn.c_str());
     }
 
     for (k = 0; (k < ntab); k++)
@@ -746,7 +745,6 @@ static void read_tables(FILE *fp, const char *fn,
         sfree(yy[i]);
     }
     sfree(yy);
-    sfree(libfn);
 }
 
 static void done_tabledata(t_tabledata *td)

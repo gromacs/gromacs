@@ -60,7 +60,6 @@ typedef struct {
 
 static t_2morse *read_dissociation_energies(int *n2morse)
 {
-    FILE       *fp;
     char        ai[32], aj[32];
     double      e_diss;
     const char *fn     = "edissoc.dat";
@@ -69,11 +68,11 @@ static t_2morse *read_dissociation_energies(int *n2morse)
     int         nread;
 
     /* Open the file with dissociation energies */
-    fp = libopen(fn);
+    gmx::FilePtr fp = gmx::openLibraryFile(fn);
     do
     {
         /* Try and read two atom names and an energy term from it */
-        nread = fscanf(fp, "%s%s%lf", ai, aj, &e_diss);
+        nread = fscanf(fp.get(), "%s%s%lf", ai, aj, &e_diss);
         if (nread == 3)
         {
             /* If we got three terms, it probably was OK, no further checking */
@@ -93,7 +92,6 @@ static t_2morse *read_dissociation_energies(int *n2morse)
         /* If we did not read three items, quit reading */
     }
     while (nread == 3);
-    gmx_ffclose(fp);
 
     /* Set the return values */
     *n2morse = n2m;

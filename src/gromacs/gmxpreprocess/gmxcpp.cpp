@@ -300,7 +300,7 @@ int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
         /* If still not found, check the Gromacs library search path. */
         if (!cpp->fn)
         {
-            cpp->fn = low_gmxlibfn(filenm, FALSE, FALSE);
+            cpp->fn = gmx_strdup(gmx::findLibraryFile(filenm, false, false).c_str());
         }
     }
     if (!cpp->fn)

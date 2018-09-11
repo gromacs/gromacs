@@ -189,9 +189,9 @@ StandardInputStream &StandardInputStream::instance()
  */
 
 // static
-FILE *TextInputFile::openRawHandle(const char *filename)
+FilePtr TextInputFile::openRawHandle(const char *filename)
 {
-    FILE *fp = fopen(filename, "r");
+    FilePtr fp(fopen(filename, "r"));
     if (fp == nullptr)
     {
         GMX_THROW_WITH_ERRNO(
@@ -202,7 +202,7 @@ FILE *TextInputFile::openRawHandle(const char *filename)
 }
 
 // static
-FILE *TextInputFile::openRawHandle(const std::string &filename)
+FilePtr TextInputFile::openRawHandle(const std::string &filename)
 {
     return openRawHandle(filename.c_str());
 }

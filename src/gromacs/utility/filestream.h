@@ -48,6 +48,7 @@
 #include <string>
 
 #include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/fileptr.h"
 #include "gromacs/utility/textstream.h"
 
 namespace gmx
@@ -104,7 +105,7 @@ class TextInputFile : public TextInputStream
 {
     public:
         /*! \brief
-         * Opens a file and returns a `FILE` handle.
+         * Opens a file and returns an RAII-style `FILE` handle.
          *
          * \param[in] filename  Path of the file to open.
          * \throws    FileIOError on any I/O error.
@@ -112,9 +113,9 @@ class TextInputFile : public TextInputStream
          * Instead of returning `NULL` on errors, throws an exception with
          * additional details (including the file name and `errno`).
          */
-        static FILE *openRawHandle(const char *filename);
+        static FilePtr openRawHandle(const char *filename);
         //! \copydoc openRawHandle(const char *)
-        static FILE *openRawHandle(const std::string &filename);
+        static FilePtr openRawHandle(const std::string &filename);
 
         /*! \brief
          * Opens a text file as a stream.

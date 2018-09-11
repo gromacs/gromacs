@@ -53,6 +53,7 @@ gmx_install_headers(
     exceptions.h
     fatalerror.h
     flags.h
+    fileptr.h
     futil.h
     gmxassert.h
     init.h
