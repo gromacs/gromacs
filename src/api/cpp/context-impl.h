@@ -45,6 +45,7 @@
 #include <string>
 
 #include "gmxapi/context.h"
+#include "gmxapi/session.h"
 
 namespace gmxapi
 {
@@ -103,6 +104,22 @@ class ContextImpl final : public std::enable_shared_from_this<ContextImpl>
         ContextImpl(ContextImpl &&)            = delete;
         ContextImpl &operator=(ContextImpl &&) = delete;
         //! \}
+
+        /*!
+         * \brief Translate the workflow to the execution context and launch.
+         *
+         * \param filename work input file
+         * \return ownership of a new session
+         *
+         * \todo This probably makes more sense as a free function, but we need to determine access policies.
+         *
+         * Session is returned with shared_ptr ownership so that Context
+         * can hold a weak_ptr and because Session Resources handles
+         * are still evolving.
+         * \todo Hide lifetime management and ownership from handle object.
+         * We can achieve the necessary aspects of this shared_ptr at a lower level of implementation.
+         */
+        std::shared_ptr<Session> launch(const std::string &filename);
 
         /*!
          * \brief Retain the ability to find a launched session while it exists.
