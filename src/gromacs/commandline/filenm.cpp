@@ -243,9 +243,6 @@ gmx_bool is_set(const t_filenm *fnm)
 
 int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix)
 {
-    char  buf[STRLEN];
-    char *extpos;
-
     for (int i = 0; i < nfile; i++)
     {
         if (is_output(&fnm[i]) && fnm[i].ftp != efCPT)
@@ -254,10 +251,20 @@ int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix)
                for it, just in case... */
             for (std::string &filename : fnm[i].filenames)
             {
-                std::strncpy(buf, filename.c_str(), STRLEN - 1);
-                extpos   = strrchr(buf, '.');
-                *extpos  = '\0';
-                filename = gmx::formatString("%s%s.%s", buf, suffix, extpos + 1);
+                auto dotPosition = filename.find_last_of('.');
+                if (dotPosition == std::string::npos)
+                {
+                    // GROMACS output files should always have a file type suffix,
+                    // but even if not, we can still append the new suffix.
+                    filename += suffix;
+                }
+                else
+                {
+                    std::string extension = filename.substr(dotPosition);
+                    filename.replace(dotPosition,
+                                     std::string::npos,
+                                     std::string(suffix) + extension);
+                }
             }
         }
     }
