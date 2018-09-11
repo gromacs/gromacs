@@ -164,7 +164,6 @@ static void read_vsite_database(const char *ddbname,
      * case the second field should just be the word planar.
      */
 
-    FILE        *ddb;
     char         dirstr[STRLEN];
     char         pline[STRLEN];
     int          i, n, k, nvsite, ntop, curdir;
@@ -173,7 +172,7 @@ static void read_vsite_database(const char *ddbname,
     char        *ch;
     char         s1[MAXNAME], s2[MAXNAME], s3[MAXNAME], s4[MAXNAME];
 
-    ddb = libopen(ddbname);
+    gmx::FilePtr ddb = gmx::openLibraryFile(ddbname);
 
     nvsite        = *nvsiteconf;
     vsiteconflist = *pvsiteconflist;
@@ -185,7 +184,7 @@ static void read_vsite_database(const char *ddbname,
     snew(vsiteconflist, 1);
     snew(vsitetoplist, 1);
 
-    while (fgets2(pline, STRLEN-2, ddb) != nullptr)
+    while (fgets2(pline, STRLEN-2, ddb.get()) != nullptr)
     {
         strip_comment(pline);
         trim(pline);
@@ -321,8 +320,6 @@ static void read_vsite_database(const char *ddbname,
     *pvsitetoplist  = vsitetoplist;
     *nvsiteconf     = nvsite;
     *nvsitetop      = ntop;
-
-    gmx_ffclose(ddb);
 }
 
 static int nitrogen_is_planar(t_vsiteconf vsiteconflist[], int nvsiteconf, char atomtype[])

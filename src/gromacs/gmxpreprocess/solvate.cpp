@@ -65,6 +65,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/unique_cptr.h"
 
 using gmx::RVec;
 
@@ -637,7 +638,7 @@ static void removeExtraSolventMolecules(t_atoms *atoms, std::vector<RVec> *x,
     remover.removeMarkedAtoms(atoms);
 }
 
-static void add_solv(const char *fn,
+static void add_solv(const char *filename,
                      const gmx::TopologyInformation &topInfo,
                      t_atoms *atoms,
                      std::vector<RVec> *x, std::vector<RVec> *v,
@@ -645,9 +646,8 @@ static void add_solv(const char *fn,
                      real defaultDistance, real scaleFactor,
                      real rshell, int max_sol)
 {
-    char                    *filename = gmxlibfn(fn);
     gmx::TopologyInformation topInfoSolvent;
-    topInfoSolvent.fillFromInputFile(filename);
+    topInfoSolvent.fillFromInputFile(gmx::findLibraryFile(filename));
     auto                     atomsSolvent = topInfoSolvent.copyAtoms();
     std::vector<RVec>        xSolvent, vSolvent;
     matrix                   boxSolvent = {{ 0 }};
@@ -671,7 +671,6 @@ static void add_solv(const char *fn,
     {
         gmx_fatal(FARGS, "No solvent in %s, please check your input\n", filename);
     }
-    sfree(filename);
     fprintf(stderr, "\n");
 
     /* initialise distance arrays for solvent configuration */

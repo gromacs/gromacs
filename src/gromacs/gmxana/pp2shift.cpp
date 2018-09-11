@@ -150,14 +150,13 @@ static void dump_sd(const char *fn, t_shiftdata *sd)
 
 static t_shiftdata *read_shifts(const char *fn)
 {
-    FILE        *fp;
     double       xx;
     int          i, j, nx, ny;
     t_shiftdata *sd;
 
     snew(sd, 1);
-    fp = libopen(fn);
-    if (2 != fscanf(fp, "%d%d", &nx, &ny))
+    gmx::FilePtr fp = gmx::openLibraryFile(fn);
+    if (2 != fscanf(fp.get(), "%d%d", &nx, &ny))
     {
         gmx_fatal(FARGS, "Error reading from file %s", fn);
     }
@@ -178,7 +177,7 @@ static t_shiftdata *read_shifts(const char *fn)
             }
             else
             {
-                if (1 != fscanf(fp, "%lf", &xx))
+                if (1 != fscanf(fp.get(), "%lf", &xx))
                 {
                     gmx_fatal(FARGS, "Error reading from file %s", fn);
                 }
@@ -187,7 +186,6 @@ static t_shiftdata *read_shifts(const char *fn)
         }
         sd->data[i][j] = sd->data[i][0];
     }
-    gmx_ffclose(fp);
 
     if (bDebugMode())
     {

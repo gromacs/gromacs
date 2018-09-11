@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,9 +49,13 @@
 #include <vector>
 
 #include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/unique_cptr.h"
 
 namespace gmx
 {
+
+//! Simple guard which calls fclose. See unique_cptr for details.
+using FilePtr = unique_cptr<FILE>;
 
 class DataFileFinder;
 
@@ -95,7 +99,7 @@ class DataFileOptions
         {
         }
 
-        //! Sets whether to search in the current (working) directory.
+        //! Sets whether to search first in the current (working) directory.
         DataFileOptions &includeCurrentDir(bool bInclude)
         {
             bCurrentDir_ = bInclude;
@@ -195,7 +199,7 @@ class DataFileFinder
         void setSearchPathFromEnv(const char *envVarName);
 
         /*! \brief
-         * Opens a data file if found.
+         * Opens a data file (if found) in an RAII-style `FILE` handle.
          *
          * \param[in] options  Identifies the file to be searched for.
          * \returns The opened file handle, or `NULL` if the file could not be
@@ -210,7 +214,7 @@ class DataFileFinder
          *
          * See findFile() for more details.
          */
-        FILE *openFile(const DataFileOptions &options) const;
+        FilePtr openFile(const DataFileOptions &options) const;
         /*! \brief
          * Finds a full path to a data file if found.
          *

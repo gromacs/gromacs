@@ -124,10 +124,11 @@ static void get_params(const char *mpin, const char *mpout, t_psrec *psr)
 
     wi = init_warning(FALSE, 0);
 
-    if (mpin != nullptr)
+    std::string libmpin = gmx::findLibraryFile(mpin);
+    if (!libmpin.empty())
     {
-        gmx::TextInputFile stream(mpin);
-        inp = read_inpfile(&stream, mpin, wi);
+        gmx::TextInputFile stream(libmpin);
+        inp = read_inpfile(&stream, libmpin.c_str(), wi);
     }
     else
     {
@@ -788,7 +789,6 @@ static void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
                    real size, real boxx, real boxy, const char *m2p, const char *m2pout,
                    int mapoffset)
 {
-    const char   *libm2p;
     char         *legend;
     t_psdata      out;
     t_psrec       psrec, *psr;
@@ -800,11 +800,9 @@ static void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
     t_mapping    *map1  = nullptr, *map2 = nullptr, *leg_map;
     gmx_bool      bMap1, bNextMap1, bDiscrete;
 
-    /* memory leak: */
-    libm2p = m2p ? gmxlibfn(m2p) : m2p;
     try
     {
-        get_params(libm2p, m2pout, &psrec);
+        get_params(m2p, m2pout, &psrec);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
