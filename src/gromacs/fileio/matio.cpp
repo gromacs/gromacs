@@ -156,14 +156,8 @@ int getcmap(FILE *in, const char *fn, t_mapping **map)
 
 int readcmap(const char *fn, t_mapping **map)
 {
-    FILE      *in;
-    int        n;
-
-    in = libopen(fn);
-    n  = getcmap(in, fn, map);
-    gmx_ffclose(in);
-
-    return n;
+    gmx::FilePtr in = gmx::openLibraryFile(fn);
+    return getcmap(in.get(), fn, map);
 }
 
 void printcmap(FILE *out, int n, t_mapping map[])

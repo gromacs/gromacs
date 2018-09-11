@@ -264,7 +264,6 @@ extern gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn)
 
     /* Read the database for the structure factor of the different atoms */
 
-    FILE                 *fp;
     char                  line[STRLEN];
     gmx_structurefactors *gsf;
     double                a1, a2, a3, a4, b1, b2, b3, b4, c;
@@ -273,7 +272,7 @@ extern gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn)
     int                   nralloc = 10;
     int                   line_no;
     char                  atomn[32];
-    fp      = libopen(datfn);
+    gmx::FilePtr          fp = gmx::openLibraryFile(datfn);
     line_no = 0;
     snew(gsf, 1);
 
@@ -284,7 +283,7 @@ extern gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn)
     snew(gsf->p, nralloc);
     gsf->n       = nullptr;
     gsf->nratoms = line_no;
-    while (get_a_line(fp, line, STRLEN))
+    while (get_a_line(fp.get(), line, STRLEN))
     {
         i = line_no;
         if (sscanf(line, "%s %d %lf %lf %lf %lf %lf %lf %lf %lf %lf",
@@ -327,8 +326,6 @@ extern gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn)
     srenew(gsf->b, gsf->nratoms);
     srenew(gsf->c, gsf->nratoms);
     srenew(gsf->p, gsf->nratoms);
-
-    fclose(fp);
 
     return static_cast<gmx_structurefactors_t *>(gsf);
 

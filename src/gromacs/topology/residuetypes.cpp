@@ -57,7 +57,6 @@ struct gmx_residuetype_t
 int
 gmx_residuetype_init(gmx_residuetype_t **prt)
 {
-    FILE                 *  db;
     char                    line[STRLEN];
     char                    resname[STRLEN], restype[STRLEN], dum[STRLEN];
     gmx_residuetype_t      *rt;
@@ -69,9 +68,9 @@ gmx_residuetype_init(gmx_residuetype_t **prt)
     rt->resname  = nullptr;
     rt->restype  = nullptr;
 
-    db = libopen("residuetypes.dat");
+    gmx::FilePtr db = gmx::openLibraryFile("residuetypes.dat");
 
-    while (get_a_line(db, line, STRLEN))
+    while (get_a_line(db.get(), line, STRLEN))
     {
         strip_comment(line);
         trim(line);
@@ -84,8 +83,6 @@ gmx_residuetype_init(gmx_residuetype_t **prt)
             gmx_residuetype_add(rt, resname, restype);
         }
     }
-
-    fclose(db);
 
     return 0;
 }
