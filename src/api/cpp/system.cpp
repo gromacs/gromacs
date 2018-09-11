@@ -43,6 +43,10 @@
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/mdrun/runner.h"
 
+#include "gmxapi/context.h"
+#include "gmxapi/session.h"
+#include "gmxapi/status.h"
+
 #include "system-impl.h"
 
 namespace gmxapi
@@ -61,7 +65,14 @@ System::Impl &System::Impl::operator=(System::Impl &&source) noexcept
     }
     return *this;
 }
+//! \endcond
 
+std::shared_ptr<Session> System::launch(std::shared_ptr<Context> context)
+{
+    return impl_->launch(std::move(context));
+}
+
+//! \cond
 System::System(std::unique_ptr<Impl> implementation) :
     impl_ {std::move(implementation)}
 {
@@ -102,8 +113,25 @@ System fromTprFile(std::string filename)
 }
 
 System::Impl::Impl(std::string filename) :
-    filename_ {std::move(filename)}
+    filename_(std::move(filename))
 {
+}
+
+std::shared_ptr<Session> System::Impl::launch(std::shared_ptr<Context> context)
+{
+    std::shared_ptr<Session> session = nullptr;
+    if (context != nullptr)
+    {
+        session = context->launch(filename_);
+        assert(session);
+    }
+    else
+    {
+        // we should log the error and return nullptr, but we have nowhere to set
+        // a status object, by the described behavior.
+    }
+
+    return session;
 }
 
 } // end namespace gmxapi
