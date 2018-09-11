@@ -54,6 +54,7 @@ add_library(gmxapi SHARED
             exceptions.cpp
             md.cpp
             mdmodule.cpp
+            session.cpp
             status.cpp
             system.cpp
             version.cpp)
