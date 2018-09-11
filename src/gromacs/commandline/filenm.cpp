@@ -255,7 +255,10 @@ int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix)
             for (std::string &filename : fnm[i].filenames)
             {
                 std::strncpy(buf, filename.c_str(), STRLEN - 1);
-                extpos   = strrchr(buf, '.');
+                // Just in case filename.length() >= (STRLEN - 1)...
+                buf[STRLEN - 1] = '\0';
+                extpos          = strrchr(buf, '.');
+                GMX_RELEASE_ASSERT(extpos != nullptr, "File name does not contain '.' delimiter");
                 *extpos  = '\0';
                 filename = gmx::formatString("%s%s.%s", buf, suffix, extpos + 1);
             }
