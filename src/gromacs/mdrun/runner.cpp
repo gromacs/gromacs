@@ -386,7 +386,6 @@ int Mdrunner::mdrunner()
     t_fcdata                 *fcd              = nullptr;
     real                      ewaldcoeff_q     = 0;
     real                      ewaldcoeff_lj    = 0;
-    gmx_vsite_t              *vsite            = nullptr;
     int                       nChargePerturbed = -1, nTypePerturbed = 0;
     gmx_wallcycle_t           wcycle;
     gmx_walltime_accounting_t walltime_accounting = nullptr;
@@ -1113,7 +1112,8 @@ int Mdrunner::mdrunner()
         membed = init_membed(fplog, nfile, fnm, &mtop, inputrec, globalState.get(), cr, &mdrunOptions.checkpointOptions.period);
     }
 
-    std::unique_ptr<MDAtoms> mdAtoms;
+    std::unique_ptr<MDAtoms>     mdAtoms;
+    std::unique_ptr<gmx_vsite_t> vsite;
 
     snew(nrnb, 1);
     if (thisRankHasDuty(cr, DUTY_PP))
@@ -1299,7 +1299,7 @@ int Mdrunner::mdrunner()
             /* This call is not included in init_domain_decomposition mainly
              * because fr->cginfo_mb is set later.
              */
-            dd_init_bondeds(fplog, cr->dd, &mtop, vsite, inputrec,
+            dd_init_bondeds(fplog, cr->dd, &mtop, vsite.get(), inputrec,
                             domdecOptions.checkBondedInteractions,
                             fr->cginfo_mb);
         }
@@ -1309,7 +1309,7 @@ int Mdrunner::mdrunner()
             fplog, cr, ms, mdlog, nfile, fnm,
             oenv,
             mdrunOptions,
-            vsite, constr.get(),
+            vsite.get(), constr.get(),
             enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
             deform.get(),
             mdModules->outputProvider(),

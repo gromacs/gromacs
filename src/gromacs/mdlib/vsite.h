@@ -37,6 +37,8 @@
 #ifndef GMX_MDLIB_VSITE_H
 #define GMX_MDLIB_VSITE_H
 
+#include <memory>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/topology/idef.h"
@@ -52,21 +54,37 @@ struct t_ilist;
 struct t_mdatoms;
 struct t_nrnb;
 struct gmx_wallcycle;
+struct VsiteThread;
 
-typedef struct gmx_vsite_t {
-    gmx_bool             bHaveChargeGroups;    /* Do we have charge groups?               */
-    int                  n_intercg_vsite;      /* The number of inter charge group vsites */
-    int                  nvsite_pbc_molt;      /* The array size of vsite_pbc_molt        */
-    int               ***vsite_pbc_molt;       /* The pbc atoms for intercg vsites        */
-    int                **vsite_pbc_loc;        /* The local pbc atoms                     */
-    int                 *vsite_pbc_loc_nalloc; /* Sizes of vsite_pbc_loc                  */
-    int                  nthreads;             /* Number of threads used for vsites       */
-    struct VsiteThread **tData;                /* Thread local vsites and work structs    */
-    int                 *taskIndex;            /* Work array                              */
-    int                  taskIndexNalloc;      /* Size of taskIndex                       */
-    bool                 useDomdec;            /* Tells whether we use domain decomposition with more than 1 DD rank */
+/* The start and end values of for the vsite indices in the ftype enum.
+ * The validity of these values is checked in init_vsite.
+ * This is used to avoid loops over all ftypes just to get the vsite entries.
+ * (We should replace the fixed ilist array by only the used entries.)
+ */
+static constexpr int c_ftypeVsiteStart = F_VSITE2;
+static constexpr int c_ftypeVsiteEnd   = F_VSITEN + 1;
 
-} gmx_vsite_t;
+/* Type for storing PBC atom information for all vsite types in the system */
+typedef std::array<std::vector<int>, c_ftypeVsiteEnd - c_ftypeVsiteStart> VsitePbc;
+
+/* Data for handling vsites, needed with OpenMP threading or with charge-groups and PBC */
+struct gmx_vsite_t
+{
+    /* Constructor */
+    gmx_vsite_t();
+
+    /* Destructor */
+    ~gmx_vsite_t();
+
+    gmx_bool                  bHaveChargeGroups;         /* Do we have charge groups?               */
+    int                       n_intercg_vsite;           /* The number of inter charge group vsites */
+    std::vector<VsitePbc>     vsite_pbc_molt;            /* The pbc atoms for intercg vsites        */
+    std::unique_ptr<VsitePbc> vsite_pbc_loc;             /* The local pbc atoms                     */
+    int                       nthreads;                  /* Number of threads used for vsites       */
+    std::vector < std::unique_ptr < VsiteThread>> tData; /* Thread local vsites and work structs    */
+    std::vector<int>          taskIndex;                 /* Work array                              */
+    bool                      useDomdec;                 /* Tells whether we use domain decomposition with more than 1 DD rank */
+};
 
 /*! \brief Create positions of vsite atoms based for the local system
  *
@@ -121,8 +139,9 @@ int count_intercg_vsites(const gmx_mtop_t *mtop);
  * \param[in] cr    The communication record
  * \returns A valid vsite struct or nullptr when there are no virtual sites
  */
-gmx_vsite_t *initVsite(const gmx_mtop_t &mtop,
-                       const t_commrec  *cr);
+std::unique_ptr<gmx_vsite_t>
+initVsite(const gmx_mtop_t &mtop,
+          const t_commrec  *cr);
 
 void split_vsites_over_threads(const t_ilist   *ilist,
                                const t_iparams *ip,
