@@ -83,9 +83,9 @@ class GpuRegionTimerImpl
         GpuRegionTimerImpl(GpuRegionTimerImpl &&)            = delete;
 
         /*! \brief Should be called before the region start. */
-        inline void openTimingRegion(CommandStream){}
+        inline void openTimingRegion(CommandStream /*unused*/){}
         /*! \brief Should be called after the region end. */
-        inline void closeTimingRegion(CommandStream){}
+        inline void closeTimingRegion(CommandStream /*unused*/){}
         /*! \brief Returns the last measured region timespan (in milliseconds) and calls reset(). */
         inline double getLastRangeTime()
         {

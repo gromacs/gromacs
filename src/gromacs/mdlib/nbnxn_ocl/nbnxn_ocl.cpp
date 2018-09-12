@@ -119,7 +119,7 @@ static inline void validate_global_work_size(const KernelLaunchConfig &config, i
        https://www.khronos.org/registry/cl/sdk/1.0/docs/man/xhtml/clEnqueueNDRangeKernel.html
      */
     device_size_t_size_bits = dinfo->adress_bits;
-    host_size_t_size_bits   = (cl_uint)(sizeof(size_t) * 8);
+    host_size_t_size_bits   = static_cast<cl_uint>(sizeof(size_t) * 8);
 
     /* If sizeof(host size_t) <= sizeof(device size_t)
             => global_work_size components will always be valid
@@ -131,7 +131,7 @@ static inline void validate_global_work_size(const KernelLaunchConfig &config, i
     {
         size_t device_limit;
 
-        device_limit = (((size_t)1) << device_size_t_size_bits) - 1;
+        device_limit = (1ull << device_size_t_size_bits) - 1;
 
         for (int i = 0; i < work_dim; i++)
         {
@@ -393,9 +393,9 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
     cl_timers_t         *t       = nb->timers;
     cl_command_queue     stream  = nb->stream[iloc];
 
-    bool                 bCalcEner   = flags & GMX_FORCE_ENERGY;
+    bool                 bCalcEner   = (flags & GMX_FORCE_ENERGY) != 0;
     int                  bCalcFshift = flags & GMX_FORCE_VIRIAL;
-    bool                 bDoTime     = nb->bDoTime;
+    bool                 bDoTime     = (nb->bDoTime) != 0;
 
     cl_nbparam_params_t  nbparams_params;
 
@@ -508,10 +508,10 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
 
     if (debug)
     {
-        fprintf(debug, "Non-bonded GPU launch configuration:\n\tLocal work size: %dx%dx%d\n\t"
-                "Global work size : %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n",
-                (int)(config.blockSize[0]), (int)(config.blockSize[1]), (int)(config.blockSize[2]),
-                (int)(config.blockSize[0] * config.gridSize[0]), (int)(config.blockSize[1] * config.gridSize[1]), plist->nsci*c_numClPerSupercl,
+        fprintf(debug, "Non-bonded GPU launch configuration:\n\tLocal work size: %zux%zux%zu\n\t"
+                "Global work size : %zux%zu\n\t#Super-clusters/clusters: %d/%d (%d)\n",
+                config.blockSize[0], config.blockSize[1], config.blockSize[2],
+                config.blockSize[0] * config.gridSize[0], config.blockSize[1] * config.gridSize[1], plist->nsci*c_numClPerSupercl,
                 c_numClPerSupercl, plist->na_c);
     }
 
@@ -581,7 +581,7 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t       *nb,
     cl_plist_t          *plist   = nb->plist[iloc];
     cl_timers_t         *t       = nb->timers;
     cl_command_queue     stream  = nb->stream[iloc];
-    bool                 bDoTime = nb->bDoTime;
+    bool                 bDoTime = nb->bDoTime == CL_TRUE;
 
     if (plist->haveFreshList)
     {
@@ -658,11 +658,11 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t       *nb,
 
     if (debug)
     {
-        fprintf(debug, "Pruning GPU kernel launch configuration:\n\tLocal work size: %dx%dx%d\n\t"
-                "\tGlobal work size: %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n"
+        fprintf(debug, "Pruning GPU kernel launch configuration:\n\tLocal work size: %zux%zux%zu\n\t"
+                "\tGlobal work size: %zux%zu\n\t#Super-clusters/clusters: %d/%d (%d)\n"
                 "\tShMem: %zu\n",
-                (int)(config.blockSize[0]), (int)(config.blockSize[1]), (int)(config.blockSize[2]),
-                (int)(config.blockSize[0] * config.gridSize[0]), (int)(config.blockSize[1] * config.gridSize[1]), plist->nsci*c_numClPerSupercl,
+                config.blockSize[0], config.blockSize[1], config.blockSize[2],
+                config.blockSize[0] * config.gridSize[0], config.blockSize[1] * config.gridSize[1], plist->nsci*c_numClPerSupercl,
                 c_numClPerSupercl, plist->na_c, config.sharedMemorySize);
     }
 
@@ -711,10 +711,10 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
 
     cl_atomdata_t   *adat    = nb->atdat;
     cl_timers_t     *t       = nb->timers;
-    bool             bDoTime = nb->bDoTime;
+    bool             bDoTime = nb->bDoTime == CL_TRUE;
     cl_command_queue stream  = nb->stream[iloc];
 
-    bool             bCalcEner   = flags & GMX_FORCE_ENERGY;
+    bool             bCalcEner   = (flags & GMX_FORCE_ENERGY) != 0;
     int              bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
 
@@ -729,11 +729,11 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
            test case, overall simulation performance was higher with
            the API calls, but this has not been tested on AMD OpenCL,
            so could be worth considering in future. */
-        nb->bNonLocalStreamActive = false;
+        nb->bNonLocalStreamActive = CL_FALSE;
         return;
     }
 
-    getGpuAtomRange(adat, aloc, adat_begin, adat_len);
+    getGpuAtomRange(adat, aloc, &adat_begin, &adat_len);
 
     /* beginning of timed D2H section */
     if (bDoTime)
@@ -764,7 +764,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
     {
         cl_error = clEnqueueMarkerWithWaitList(stream, 0, nullptr, &(nb->nonlocal_done));
         assert(CL_SUCCESS == cl_error);
-        nb->bNonLocalStreamActive = true;
+        nb->bNonLocalStreamActive = CL_TRUE;
     }
 
     /* only transfer energies in the local stream */
@@ -819,7 +819,7 @@ int nbnxn_gpu_pick_ewald_kernel_type(bool bTwinCut)
      *
      */
     //if ((dev_info->prop.major >= 3 || bForceAnalyticalEwald) && !bForceTabulatedEwald)
-    if ((1                         || bForceAnalyticalEwald) && !bForceTabulatedEwald)
+    if (!bForceTabulatedEwald)
     {
         bUseAnalyticalEwald = true;
 

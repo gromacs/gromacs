@@ -105,9 +105,9 @@ GPU_FUNC_QUALIFIER void pme_gpu_synchronize(const PmeGpu *GPU_FUNC_ARGUMENT(pmeG
 /*! \libinternal \brief
  * Allocates the fixed size energy and virial buffer both on GPU and CPU.
  *
- * \param[in] pmeGpu            The PME GPU structure.
+ * \param[in,out] pmeGpu            The PME GPU structure.
  */
-void pme_gpu_alloc_energy_virial(const PmeGpu *pmeGpu);
+void pme_gpu_alloc_energy_virial(PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Frees the energy and virial memory both on GPU and CPU.
@@ -127,9 +127,9 @@ void pme_gpu_clear_energy_virial(const PmeGpu *pmeGpu);
 /*! \libinternal \brief
  * Reallocates and copies the pre-computed B-spline values to the GPU.
  *
- * \param[in] pmeGpu             The PME GPU structure.
+ * \param[in,out] pmeGpu             The PME GPU structure.
  */
-void pme_gpu_realloc_and_copy_bspline_values(const PmeGpu *pmeGpu);
+void pme_gpu_realloc_and_copy_bspline_values(PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Frees the pre-computed B-spline values on the GPU (and the transfer CPU buffers).
@@ -226,9 +226,9 @@ void pme_gpu_free_coefficients(const PmeGpu *pmeGpu);
 /*! \libinternal \brief
  * Reallocates the buffers on the GPU and the host for the atoms spline data.
  *
- * \param[in] pmeGpu            The PME GPU structure.
+ * \param[in,out] pmeGpu            The PME GPU structure.
  */
-void pme_gpu_realloc_spline_data(const PmeGpu *pmeGpu);
+void pme_gpu_realloc_spline_data(PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Frees the buffers on the GPU for the atoms spline data.
@@ -240,9 +240,9 @@ void pme_gpu_free_spline_data(const PmeGpu *pmeGpu);
 /*! \libinternal \brief
  * Reallocates the buffers on the GPU and the host for the particle gridline indices.
  *
- * \param[in] pmeGpu            The PME GPU structure.
+ * \param[in,out] pmeGpu            The PME GPU structure.
  */
-void pme_gpu_realloc_grid_indices(const PmeGpu *pmeGpu);
+void pme_gpu_realloc_grid_indices(PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Frees the buffer on the GPU for the particle gridline indices.
@@ -654,7 +654,7 @@ GPU_FUNC_QUALIFIER void pme_gpu_destroy(PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu)) GPU_F
  * Should be called before the pme_gpu_set_io_ranges.
  */
 GPU_FUNC_QUALIFIER void pme_gpu_reinit_atoms(PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu),
-                                             const int         GPU_FUNC_ARGUMENT(nAtoms),
+                                             int         GPU_FUNC_ARGUMENT(nAtoms),
                                              const real       *GPU_FUNC_ARGUMENT(charges)) GPU_FUNC_TERM
 
 /*! \brief \libinternal

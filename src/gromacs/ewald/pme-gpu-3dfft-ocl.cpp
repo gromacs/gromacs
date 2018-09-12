@@ -69,7 +69,7 @@ GpuParallel3dFft::GpuParallel3dFft(const PmeGpu *pmeGpu)
     std::array<size_t, DIM> realGridSize, realGridSizePadded, complexGridSizePadded;
 
     GMX_RELEASE_ASSERT(!pme_gpu_uses_dd(pmeGpu), "FFT decomposition not implemented");
-    PmeGpuKernelParamsBase *kernelParamsPtr = (PmeGpuKernelParamsBase *)pmeGpu->kernelParams.get();
+    PmeGpuKernelParamsBase *kernelParamsPtr = pmeGpu->kernelParams.get();
     for (int i = 0; i < DIM; i++)
     {
         realGridSize[i]          = kernelParamsPtr->grid.realGridSize[i];
@@ -152,18 +152,14 @@ void GpuParallel3dFft::perform3dFft(gmx_fft_direction  dir,
             inputGrids  = &realGrid_;
             outputGrids = &complexGrid_;
             break;
-
-            break;
         case GMX_FFT_COMPLEX_TO_REAL:
             plan        = planC2R_;
             direction   = CLFFT_BACKWARD;
             inputGrids  = &complexGrid_;
             outputGrids = &realGrid_;
             break;
-
         default:
             GMX_THROW(gmx::NotImplementedError("The chosen 3D-FFT case is not implemented on GPUs"));
-            break;
     }
     handleClfftError(clfftEnqueueTransform(plan, direction,
                                            commandStreams_.size(), commandStreams_.data(),

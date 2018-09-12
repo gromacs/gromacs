@@ -98,7 +98,7 @@ compileProgram(FILE              *fplog,
                cl_device_id       deviceId,
                ocl_vendor_id_t    deviceVendorId);
 
-} // namespace
-} // namespace
+}  // namespace ocl
+}  // namespace gmx
 
 #endif

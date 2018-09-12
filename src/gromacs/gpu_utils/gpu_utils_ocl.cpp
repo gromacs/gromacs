@@ -191,7 +191,7 @@ void findGpus(gmx_gpu_info_t *gpu_info)
         req_dev_type = CL_DEVICE_TYPE_CPU;
     }
 
-    while (1)
+    while (true)
     {
         cl_int status = clGetPlatformIDs(0, nullptr, &ocl_platform_count);
         if (CL_SUCCESS != status)
@@ -413,7 +413,7 @@ gmx_device_info_t *getDeviceInfo(const gmx_gpu_info_t &gpu_info,
 }
 
 //! This function is documented in the header file
-size_t sizeof_gpu_dev_info(void)
+size_t sizeof_gpu_dev_info()
 {
     return sizeof(gmx_device_info_t);
 }

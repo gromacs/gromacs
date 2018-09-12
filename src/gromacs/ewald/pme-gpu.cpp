@@ -190,8 +190,8 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t      *pme,
                                        gmx_wallcycle  *wcycle)
 {
     PmeGpu            *pmeGpu                 = pme->gpu;
-    const bool         computeEnergyAndVirial = pmeGpu->settings.currentFlags & GMX_PME_CALC_ENER_VIR;
-    const bool         performBackFFT         = pmeGpu->settings.currentFlags & (GMX_PME_CALC_F | GMX_PME_CALC_POT);
+    const bool         computeEnergyAndVirial = (pmeGpu->settings.currentFlags & GMX_PME_CALC_ENER_VIR) != 0;
+    const bool         performBackFFT         = (pmeGpu->settings.currentFlags & (GMX_PME_CALC_F | GMX_PME_CALC_POT)) != 0;
     const unsigned int gridIndex              = 0;
     t_complex         *cfftgrid               = pme->cfftgrid[gridIndex];
 
@@ -274,7 +274,7 @@ static void pme_gpu_get_staged_results(const gmx_pme_t                *pme,
                                        matrix                          virial,
                                        real                           *energy)
 {
-    const bool haveComputedEnergyAndVirial = pme->gpu->settings.currentFlags & GMX_PME_CALC_ENER_VIR;
+    const bool haveComputedEnergyAndVirial = (pme->gpu->settings.currentFlags & GMX_PME_CALC_ENER_VIR) != 0;
     *forces = pme_gpu_get_forces(pme->gpu);
 
     if (haveComputedEnergyAndVirial)

@@ -223,7 +223,7 @@ if (GMX_USE_OPENCL)
         target_sources(libgromacs PRIVATE
             $<TARGET_OBJECTS:clFFT>
         )
-        target_include_directories(libgromacs PRIVATE ${_clFFT_dir}/include)
+        target_include_directories(libgromacs SYSTEM PRIVATE ${_clFFT_dir}/include)
         # Use the magic variable for how to link any library needed for
         # dlopen, etc.  which is -ldl where needed, and empty otherwise
         # (e.g. Windows, BSD, Mac).
