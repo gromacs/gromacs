@@ -1073,23 +1073,176 @@ static t_block gmx_mtop_molecules_t_block(const gmx_mtop_t &mtop)
     return mols;
 }
 
+static void gen_t_topology(const gmx_mtop_t *mtop,
+                           bool              freeEnergyInteractionsAtEnd,
+                           bool              bMergeConstr,
+                           t_topology       *top)
+{
+    int                     srcnr, destnr, ftype, natoms, nposre_old, nfbposre_old;
+    const gmx_ffparams_t   *ffp;
+    t_idef                 *idef;
+    real                   *qA, *qB;
+    gmx_mtop_atomloop_all_t aloop;
+    int                     ag;
+
+    /* no copying of pointers possible now */
+
+    top->atomtypes.nr = mtop->atomtypes.nr;
+    if (mtop->atomtypes.atomnumber)
+    {
+        snew(top->atomtypes.atomnumber, top->atomtypes.nr);
+        std::copy(mtop->atomtypes.atomnumber, mtop->atomtypes.atomnumber + top->atomtypes.nr, top->atomtypes.atomnumber);
+    }
+    else
+    {
+        top->atomtypes.atomnumber = nullptr;
+    }
+
+    ffp = &mtop->ffparams;
+
+    idef                          = &top->idef;
+    idef->ntypes                  = ffp->ntypes;
+    idef->atnr                    = ffp->atnr;
+    /* we can no longer copy the pointers to the mtop members,
+     * because they will become invalid as soon as mtop gets free'd.
+     * We also need to make sure to only operate on valid data!
+     */
+
+    if (ffp->functype)
+    {
+        snew(idef->functype, ffp->ntypes);
+        std::copy(ffp->functype, ffp->functype + ffp->ntypes, idef->functype);
+    }
+    else
+    {
+        idef->functype = nullptr;
+    }
+    if (ffp->iparams)
+    {
+        snew(idef->iparams, ffp->ntypes);
+        std::copy(ffp->iparams, ffp->iparams + ffp->ntypes, idef->iparams);
+    }
+    else
+    {
+        idef->iparams = nullptr;
+    }
+    idef->iparams_posres          = nullptr;
+    idef->iparams_posres_nalloc   = 0;
+    idef->iparams_fbposres        = nullptr;
+    idef->iparams_fbposres_nalloc = 0;
+    idef->fudgeQQ                 = ffp->fudgeQQ;
+    idef->cmap_grid.ngrid         = ffp->cmap_grid.ngrid;
+    idef->cmap_grid.grid_spacing  = ffp->cmap_grid.grid_spacing;
+    if (ffp->cmap_grid.cmapdata)
+    {
+        snew(idef->cmap_grid.cmapdata, ffp->cmap_grid.ngrid);
+        std::copy(ffp->cmap_grid.cmapdata, ffp->cmap_grid.cmapdata + ffp->cmap_grid.ngrid, idef->cmap_grid.cmapdata);
+    }
+    else
+    {
+        idef->cmap_grid.cmapdata = nullptr;
+    }
+    idef->ilsort                  = ilsortUNKNOWN;
+
+    init_block(&top->cgs);
+    init_blocka(&top->excls);
+    for (ftype = 0; ftype < F_NRE; ftype++)
+    {
+        idef->il[ftype].nr     = 0;
+        idef->il[ftype].nalloc = 0;
+        idef->il[ftype].iatoms = nullptr;
+    }
+
+    natoms = 0;
+    for (const gmx_molblock_t &molb : mtop->molblock)
+    {
+        const gmx_moltype_t &molt = mtop->moltype[molb.type];
+
+        srcnr  = molt.atoms.nr;
+        destnr = natoms;
+
+        blockcat(&top->cgs, &molt.cgs, molb.nmol);
+
+        blockacat(&top->excls, &molt.excls, molb.nmol, destnr, srcnr);
+
+        nposre_old   = idef->il[F_POSRES].nr;
+        nfbposre_old = idef->il[F_FBPOSRES].nr;
+        for (ftype = 0; ftype < F_NRE; ftype++)
+        {
+            if (bMergeConstr &&
+                ftype == F_CONSTR && molt.ilist[F_CONSTRNC].nr > 0)
+            {
+                /* Merge all constrains into one ilist.
+                 * This simplifies the constraint code.
+                 */
+                for (int mol = 0; mol < molb.nmol; mol++)
+                {
+                    ilistcat(ftype, &idef->il[F_CONSTR], &molt.ilist[F_CONSTR],
+                             1, destnr + mol*srcnr, srcnr);
+                    ilistcat(ftype, &idef->il[F_CONSTR], &molt.ilist[F_CONSTRNC],
+                             1, destnr + mol*srcnr, srcnr);
+                }
+            }
+            else if (!(bMergeConstr && ftype == F_CONSTRNC))
+            {
+                ilistcat(ftype, &idef->il[ftype], &molt.ilist[ftype],
+                         molb.nmol, destnr, srcnr);
+            }
+        }
+        if (idef->il[F_POSRES].nr > nposre_old)
+        {
+            /* Executing this line line stops gmxdump -sys working
+             * correctly. I'm not aware there's an elegant fix. */
+            set_posres_params(idef, &molb, nposre_old/2, natoms);
+        }
+        if (idef->il[F_FBPOSRES].nr > nfbposre_old)
+        {
+            set_fbposres_params(idef, &molb, nfbposre_old/2, natoms);
+        }
+
+        natoms += molb.nmol*srcnr;
+    }
+
+    if (mtop->bIntermolecularInteractions)
+    {
+        for (ftype = 0; ftype < F_NRE; ftype++)
+        {
+            ilistcat(ftype, &idef->il[ftype], &mtop->intermolecular_ilist[ftype],
+                     1, 0, mtop->natoms);
+        }
+    }
+
+    if (freeEnergyInteractionsAtEnd && gmx_mtop_bondeds_free_energy(mtop))
+    {
+        snew(qA, mtop->natoms);
+        snew(qB, mtop->natoms);
+        aloop = gmx_mtop_atomloop_all_init(mtop);
+        const t_atom *atom;
+        while (gmx_mtop_atomloop_all_next(aloop, &ag, &atom))
+        {
+            qA[ag] = atom->q;
+            qB[ag] = atom->qB;
+        }
+        gmx_sort_ilist_fe(&top->idef, qA, qB);
+        sfree(qA);
+        sfree(qB);
+    }
+    else
+    {
+        top->idef.ilsort = ilsortNO_FE;
+    }
+    top->name                        = mtop->name;
+    top->atoms                       = gmx_mtop_global_atoms(mtop);
+    top->mols                        = gmx_mtop_molecules_t_block(*mtop);
+    top->bIntermolecularInteractions = mtop->bIntermolecularInteractions;
+    top->symtab                      = mtop->symtab;
+}
+
 t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop, bool freeMTop)
 {
-    gmx_localtop_t ltop;
     t_topology     top;
 
-    gen_local_top(mtop, false, FALSE, &ltop);
-    ltop.idef.ilsort = ilsortUNKNOWN;
-
-    top.name                        = mtop->name;
-    top.idef                        = ltop.idef;
-    top.atomtypes                   = ltop.atomtypes;
-    top.cgs                         = ltop.cgs;
-    top.excls                       = ltop.excls;
-    top.atoms                       = gmx_mtop_global_atoms(mtop);
-    top.mols                        = gmx_mtop_molecules_t_block(*mtop);
-    top.bIntermolecularInteractions = mtop->bIntermolecularInteractions;
-    top.symtab                      = mtop->symtab;
+    gen_t_topology(mtop, false, true, &top);
 
     if (freeMTop)
     {
@@ -1098,7 +1251,6 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop, bool freeMTop)
         mtop->symtab.symbuf     = nullptr;
         mtop->symtab.nr         = 0;
     }
-
     return top;
 }
 
