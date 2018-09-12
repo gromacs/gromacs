@@ -844,34 +844,22 @@ static void set_fbposres_params(t_idef *idef, const gmx_molblock_t *molb,
     }
 }
 
-static void gen_local_top(const gmx_mtop_t *mtop,
-                          bool              freeEnergyInteractionsAtEnd,
-                          bool              bMergeConstr,
-                          gmx_localtop_t   *top)
+/*! \brief Copy idef structure from mtop.
+ *
+ * Makes a deep copy of an idef data structure from a gmx_mtop_t.
+ * Used to initialize legacy topology types.
+ *
+ * \param[in] mtop Reference to input mtop.
+ * \param[in] idef Pointer to idef to populate.
+ * \param[in] mergeConstr Decide if constraints will be merged.
+ * \param[in] freeEnergyInteractionsAtEnd Decide if free energy stuff should
+ *              be added at the end.
+ */
+static void copyIdefFromMtop(const gmx_mtop_t &mtop, t_idef *idef,
+                             bool freeEnergyInteractionsAtEnd, bool mergeConstr)
 {
-    int                     srcnr, destnr, ftype, natoms, nposre_old, nfbposre_old;
-    const gmx_ffparams_t   *ffp;
-    t_idef                 *idef;
-    real                   *qA, *qB;
-    gmx_mtop_atomloop_all_t aloop;
-    int                     ag;
+    const gmx_ffparams_t   *ffp = &mtop.ffparams;
 
-    /* no copying of pointers possible now */
-
-    top->atomtypes.nr = mtop->atomtypes.nr;
-    if (mtop->atomtypes.atomnumber)
-    {
-        snew(top->atomtypes.atomnumber, top->atomtypes.nr);
-        std::copy(mtop->atomtypes.atomnumber, mtop->atomtypes.atomnumber + top->atomtypes.nr, top->atomtypes.atomnumber);
-    }
-    else
-    {
-        top->atomtypes.atomnumber = nullptr;
-    }
-
-    ffp = &mtop->ffparams;
-
-    idef                          = &top->idef;
     idef->ntypes                  = ffp->ntypes;
     idef->atnr                    = ffp->atnr;
     /* we can no longer copy the pointers to the mtop members,
@@ -915,32 +903,26 @@ static void gen_local_top(const gmx_mtop_t *mtop,
     }
     idef->ilsort                  = ilsortUNKNOWN;
 
-    init_block(&top->cgs);
-    init_blocka(&top->excls);
-    for (ftype = 0; ftype < F_NRE; ftype++)
+    for (int ftype = 0; ftype < F_NRE; ftype++)
     {
         idef->il[ftype].nr     = 0;
         idef->il[ftype].nalloc = 0;
         idef->il[ftype].iatoms = nullptr;
     }
 
-    natoms = 0;
-    for (const gmx_molblock_t &molb : mtop->molblock)
+    int natoms = 0;
+    for (const gmx_molblock_t &molb : mtop.molblock)
     {
-        const gmx_moltype_t &molt = mtop->moltype[molb.type];
+        const gmx_moltype_t &molt = mtop.moltype[molb.type];
 
-        srcnr  = molt.atoms.nr;
-        destnr = natoms;
+        int                  srcnr  = molt.atoms.nr;
+        int                  destnr = natoms;
 
-        blockcat(&top->cgs, &molt.cgs, molb.nmol);
-
-        blockacat(&top->excls, &molt.excls, molb.nmol, destnr, srcnr);
-
-        nposre_old   = idef->il[F_POSRES].nr;
-        nfbposre_old = idef->il[F_FBPOSRES].nr;
-        for (ftype = 0; ftype < F_NRE; ftype++)
+        int                  nposre_old   = idef->il[F_POSRES].nr;
+        int                  nfbposre_old = idef->il[F_FBPOSRES].nr;
+        for (int ftype = 0; ftype < F_NRE; ftype++)
         {
-            if (bMergeConstr &&
+            if (mergeConstr &&
                 ftype == F_CONSTR && molt.ilist[F_CONSTRNC].nr > 0)
             {
                 /* Merge all constrains into one ilist.
@@ -954,7 +936,7 @@ static void gen_local_top(const gmx_mtop_t *mtop,
                              1, destnr + mol*srcnr, srcnr);
                 }
             }
-            else if (!(bMergeConstr && ftype == F_CONSTRNC))
+            else if (!(mergeConstr && ftype == F_CONSTRNC))
             {
                 ilistcat(ftype, &idef->il[ftype], &molt.ilist[ftype],
                          molb.nmol, destnr, srcnr);
@@ -974,34 +956,110 @@ static void gen_local_top(const gmx_mtop_t *mtop,
         natoms += molb.nmol*srcnr;
     }
 
-    if (mtop->bIntermolecularInteractions)
+    if (mtop.bIntermolecularInteractions)
     {
-        for (ftype = 0; ftype < F_NRE; ftype++)
+        for (int ftype = 0; ftype < F_NRE; ftype++)
         {
-            ilistcat(ftype, &idef->il[ftype], &mtop->intermolecular_ilist[ftype],
-                     1, 0, mtop->natoms);
+            ilistcat(ftype, &idef->il[ftype], &mtop.intermolecular_ilist[ftype],
+                     1, 0, mtop.natoms);
         }
     }
 
-    if (freeEnergyInteractionsAtEnd && gmx_mtop_bondeds_free_energy(mtop))
+    if (freeEnergyInteractionsAtEnd && gmx_mtop_bondeds_free_energy(&mtop))
     {
-        snew(qA, mtop->natoms);
-        snew(qB, mtop->natoms);
-        aloop = gmx_mtop_atomloop_all_init(mtop);
-        const t_atom *atom;
+        std::vector<real> qA, qB;
+        qA.resize(mtop.natoms);
+        qB.resize(mtop.natoms);
+        gmx_mtop_atomloop_all_t aloop = gmx_mtop_atomloop_all_init(&mtop);
+        const t_atom           *atom;
+        int                     ag = 0;
         while (gmx_mtop_atomloop_all_next(aloop, &ag, &atom))
         {
             qA[ag] = atom->q;
             qB[ag] = atom->qB;
         }
-        gmx_sort_ilist_fe(&top->idef, qA, qB);
-        sfree(qA);
-        sfree(qB);
+        gmx_sort_ilist_fe(idef, qA.data(), qB.data());
     }
     else
     {
-        top->idef.ilsort = ilsortNO_FE;
+        idef->ilsort = ilsortNO_FE;
     }
+}
+
+/*! \brief Copy atomtypes from mtop
+ *
+ * Makes a deep copy of t_atomtypes from gmx_mtop_t.
+ * Used to initialize legacy topology types.
+ *
+ * \param[in] mtop Reference to input mtop.
+ * \param[in] atomtypes Pointer to atomtypes to populate.
+ */
+static void copyAtomtypesFromMtop(const gmx_mtop_t &mtop, t_atomtypes *atomtypes)
+{
+    atomtypes->nr = mtop.atomtypes.nr;
+    if (mtop.atomtypes.atomnumber)
+    {
+        snew(atomtypes->atomnumber, mtop.atomtypes.nr);
+        std::copy(mtop.atomtypes.atomnumber, mtop.atomtypes.atomnumber + mtop.atomtypes.nr, atomtypes->atomnumber);
+    }
+    else
+    {
+        atomtypes->atomnumber = nullptr;
+    }
+}
+
+/*! \brief Copy cgs from mtop.
+ *
+ * Makes a deep copy of cgs(t_block) from gmx_mtop_t.
+ * Used to initialize legacy topology types.
+ *
+ * \param[in] mtop Reference to input mtop.
+ * \param[in] cgs  Pointer to final cgs data structure.
+ */
+static void copyCgsFromMtop(const gmx_mtop_t &mtop, t_block *cgs)
+{
+    init_block(cgs);
+    for (const gmx_molblock_t &molb : mtop.molblock)
+    {
+        const gmx_moltype_t &molt = mtop.moltype[molb.type];
+        blockcat(cgs, &molt.cgs, molb.nmol);
+    }
+}
+
+/*! \brief Copy excls from mtop.
+ *
+ * Makes a deep copy of excls(t_blocka) from gmx_mtop_t.
+ * Used to initialize legacy topology types.
+ *
+ * \param[in] mtop  Reference to input mtop.
+ * \param[in] excls Pointer to final excls data structure.
+ */
+static void copyExclsFromMtop(const gmx_mtop_t &mtop, t_blocka *excls)
+{
+    init_blocka(excls);
+    int natoms = 0;
+    for (const gmx_molblock_t &molb : mtop.molblock)
+    {
+        const gmx_moltype_t &molt = mtop.moltype[molb.type];
+
+        int                  srcnr  = molt.atoms.nr;
+        int                  destnr = natoms;
+
+        blockacat(excls, &molt.excls, molb.nmol, destnr, srcnr);
+
+        natoms += molb.nmol*srcnr;
+    }
+}
+
+static void gen_local_top(const gmx_mtop_t &mtop,
+                          bool              freeEnergyInteractionsAtEnd,
+                          bool              bMergeConstr,
+                          gmx_localtop_t   *top)
+{
+    copyAtomtypesFromMtop(mtop, &top->atomtypes);
+    copyIdefFromMtop(mtop, &top->idef, freeEnergyInteractionsAtEnd, bMergeConstr);
+    copyCgsFromMtop(mtop, &top->cgs);
+    copyExclsFromMtop(mtop, &top->excls);
 }
 
 gmx_localtop_t *
@@ -1012,7 +1070,7 @@ gmx_mtop_generate_local_top(const gmx_mtop_t *mtop,
 
     snew(top, 1);
 
-    gen_local_top(mtop, freeEnergyInteractionsAtEnd, true, top);
+    gen_local_top(*mtop, freeEnergyInteractionsAtEnd, true, top);
 
     return top;
 }
@@ -1073,23 +1131,28 @@ static t_block gmx_mtop_molecules_t_block(const gmx_mtop_t &mtop)
     return mols;
 }
 
+static void gen_t_topology(const gmx_mtop_t &mtop,
+                           bool              freeEnergyInteractionsAtEnd,
+                           bool              bMergeConstr,
+                           t_topology       *top)
+{
+    copyAtomtypesFromMtop(mtop, &top->atomtypes);
+    copyIdefFromMtop(mtop, &top->idef, freeEnergyInteractionsAtEnd, bMergeConstr);
+    copyCgsFromMtop(mtop, &top->cgs);
+    copyExclsFromMtop(mtop, &top->excls);
+
+    top->name                        = mtop.name;
+    top->atoms                       = gmx_mtop_global_atoms(&mtop);
+    top->mols                        = gmx_mtop_molecules_t_block(mtop);
+    top->bIntermolecularInteractions = mtop.bIntermolecularInteractions;
+    top->symtab                      = mtop.symtab;
+}
+
 t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop, bool freeMTop)
 {
-    gmx_localtop_t ltop;
     t_topology     top;
 
-    gen_local_top(mtop, false, FALSE, &ltop);
-    ltop.idef.ilsort = ilsortUNKNOWN;
-
-    top.name                        = mtop->name;
-    top.idef                        = ltop.idef;
-    top.atomtypes                   = ltop.atomtypes;
-    top.cgs                         = ltop.cgs;
-    top.excls                       = ltop.excls;
-    top.atoms                       = gmx_mtop_global_atoms(mtop);
-    top.mols                        = gmx_mtop_molecules_t_block(*mtop);
-    top.bIntermolecularInteractions = mtop->bIntermolecularInteractions;
-    top.symtab                      = mtop->symtab;
+    gen_t_topology(*mtop, false, false, &top);
 
     if (freeMTop)
     {
@@ -1098,7 +1161,6 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop, bool freeMTop)
         mtop->symtab.symbuf     = nullptr;
         mtop->symtab.nr         = 0;
     }
-
     return top;
 }
 
