@@ -1385,36 +1385,34 @@ static void set_lincs_matrix(Lincs *li, real *invmass, real lambda)
 }
 
 //! Finds all triangles of atoms that share constraints to a central atom.
-static int count_triangle_constraints(const t_ilist  *ilist,
-                                      const t_blocka &at2con)
+static int count_triangle_constraints(const InteractionList *ilist,
+                                      const t_blocka        &at2con)
 {
     int      ncon1, ncon_tot;
-    int      c0, a00, a01, n1, c1, a10, a11, ac1, n2, c2, a20, a21;
+    int      c0, n1, c1, ac1, n2, c2;
     int      ncon_triangle;
-    bool     bTriangle;
-    t_iatom *ia1, *ia2, *iap;
 
-    ncon1    = ilist[F_CONSTR].nr/3;
-    ncon_tot = ncon1 + ilist[F_CONSTRNC].nr/3;
+    ncon1    = ilist[F_CONSTR].size()/3;
+    ncon_tot = ncon1 + ilist[F_CONSTRNC].size()/3;
 
-    ia1 = ilist[F_CONSTR].iatoms;
-    ia2 = ilist[F_CONSTRNC].iatoms;
+    gmx::ArrayRef<const int> ia1 = ilist[F_CONSTR].iatoms;
+    gmx::ArrayRef<const int> ia2 = ilist[F_CONSTRNC].iatoms;
 
     ncon_triangle = 0;
     for (c0 = 0; c0 < ncon_tot; c0++)
     {
-        bTriangle = FALSE;
-        iap       = constr_iatomptr(ncon1, ia1, ia2, c0);
-        a00       = iap[1];
-        a01       = iap[2];
+        bool       bTriangle = FALSE;
+        const int *iap       = constr_iatomptr(ia1, ia2, c0);
+        const int  a00       = iap[1];
+        const int  a01       = iap[2];
         for (n1 = at2con.index[a01]; n1 < at2con.index[a01+1]; n1++)
         {
             c1 = at2con.a[n1];
             if (c1 != c0)
             {
-                iap = constr_iatomptr(ncon1, ia1, ia2, c1);
-                a10 = iap[1];
-                a11 = iap[2];
+                const int *iap = constr_iatomptr(ia1, ia2, c1);
+                const int  a10 = iap[1];
+                const int  a11 = iap[2];
                 if (a10 == a01)
                 {
                     ac1 = a11;
@@ -1428,9 +1426,9 @@ static int count_triangle_constraints(const t_ilist  *ilist,
                     c2 = at2con.a[n2];
                     if (c2 != c0 && c2 != c1)
                     {
-                        iap = constr_iatomptr(ncon1, ia1, ia2, c2);
-                        a20 = iap[1];
-                        a21 = iap[2];
+                        const int *iap = constr_iatomptr(ia1, ia2, c2);
+                        const int  a20 = iap[1];
+                        const int  a21 = iap[2];
                         if (a20 == a00 || a21 == a00)
                         {
                             bTriangle = TRUE;
@@ -1449,26 +1447,24 @@ static int count_triangle_constraints(const t_ilist  *ilist,
 }
 
 //! Finds sequences of sequential constraints.
-static bool more_than_two_sequential_constraints(const t_ilist  *ilist,
-                                                 const t_blocka &at2con)
+static bool more_than_two_sequential_constraints(const InteractionList *ilist,
+                                                 const t_blocka        &at2con)
 {
-    t_iatom  *ia1, *ia2, *iap;
     int       ncon1, ncon_tot, c;
-    int       a1, a2;
     bool      bMoreThanTwoSequentialConstraints;
 
-    ncon1    = ilist[F_CONSTR].nr/3;
-    ncon_tot = ncon1 + ilist[F_CONSTRNC].nr/3;
+    ncon1    = ilist[F_CONSTR].size()/3;
+    ncon_tot = ncon1 + ilist[F_CONSTRNC].size()/3;
 
-    ia1 = ilist[F_CONSTR].iatoms;
-    ia2 = ilist[F_CONSTRNC].iatoms;
+    gmx::ArrayRef<const int> ia1 = ilist[F_CONSTR].iatoms;
+    gmx::ArrayRef<const int> ia2 = ilist[F_CONSTRNC].iatoms;
 
     bMoreThanTwoSequentialConstraints = FALSE;
     for (c = 0; c < ncon_tot && !bMoreThanTwoSequentialConstraints; c++)
     {
-        iap = constr_iatomptr(ncon1, ia1, ia2, c);
-        a1  = iap[1];
-        a2  = iap[2];
+        const int *iap = constr_iatomptr(ia1, ia2, c);
+        const int  a1  = iap[1];
+        const int  a2  = iap[2];
         /* Check if this constraint has constraints connected at both atoms */
         if (at2con.index[a1+1] - at2con.index[a1] > 1 &&
             at2con.index[a2+1] - at2con.index[a2] > 1)

@@ -308,7 +308,7 @@ void broadcastStateWithoutDynamics(const t_commrec *cr, t_state *state)
     }
 }
 
-static void bc_ilists(const t_commrec *cr, t_ilist *ilist)
+static void bc_ilists(const t_commrec *cr, InteractionList *ilist)
 {
     int ftype;
 
@@ -317,11 +317,12 @@ static void bc_ilists(const t_commrec *cr, t_ilist *ilist)
     {
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
-            if (ilist[ftype].nr > 0)
+            if (ilist[ftype].size() > 0)
             {
                 block_bc(cr, ftype);
-                block_bc(cr, ilist[ftype].nr);
-                nblock_bc(cr, ilist[ftype].nr, ilist[ftype].iatoms);
+                int nr = ilist[ftype].size();
+                block_bc(cr, nr);
+                nblock_bc(cr, nr, ilist[ftype].iatoms.data());
             }
         }
         ftype = -1;
@@ -331,16 +332,17 @@ static void bc_ilists(const t_commrec *cr, t_ilist *ilist)
     {
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
-            ilist[ftype].nr = 0;
+            ilist[ftype].iatoms.clear();
         }
         do
         {
             block_bc(cr, ftype);
             if (ftype >= 0)
             {
-                block_bc(cr, ilist[ftype].nr);
-                snew_bc(cr, ilist[ftype].iatoms, ilist[ftype].nr);
-                nblock_bc(cr, ilist[ftype].nr, ilist[ftype].iatoms);
+                int nr;
+                block_bc(cr, nr);
+                ilist[ftype].iatoms.resize(nr);
+                nblock_bc(cr, nr, ilist[ftype].iatoms.data());
             }
         }
         while (ftype >= 0);
@@ -816,7 +818,7 @@ void bcast_ir_mtop(const t_commrec *cr, t_inputrec *inputrec, gmx_mtop_t *mtop)
     block_bc(cr, mtop->bIntermolecularInteractions);
     if (mtop->bIntermolecularInteractions)
     {
-        snew_bc(cr, mtop->intermolecular_ilist, F_NRE);
+        mtop->intermolecular_ilist = new InteractionList[F_NRE];
         bc_ilists(cr, mtop->intermolecular_ilist);
     }
 

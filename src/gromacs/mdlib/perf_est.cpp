@@ -246,7 +246,7 @@ void count_bonded_distances(const gmx_mtop_t *mtop, const t_inputrec *ir,
                         nd_c    = NRAL(ftype) - 1;
                         break;
                 }
-                nbonds      = molb.nmol*molt->ilist[ftype].nr/(1 + NRAL(ftype));
+                nbonds      = molb.nmol*molt->ilist[ftype].size()/(1 + NRAL(ftype));
                 ndtot_c    += nbonds*nd_c;
                 ndtot_simd += nbonds*nd_simd;
             }
