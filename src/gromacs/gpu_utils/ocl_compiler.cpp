@@ -75,7 +75,7 @@ namespace ocl
  *
  *  Currently caching is disabled by default unless the env var override
  *  is used until we resolve concurrency issues. */
-static bool useBuildCache = getenv("GMX_OCL_GENCACHE"); // (NULL == getenv("GMX_OCL_NOGENCACHE"));
+static bool useBuildCache = getenv("GMX_OCL_GENCACHE") != nullptr;
 
 /*! \brief Handles writing the OpenCL JIT compilation log to \c fplog.
  *
@@ -257,7 +257,7 @@ size_t getWarpSize(cl_context context, cl_device_id deviceId)
 {
     cl_int      cl_error;
     const char *warpSizeKernel = "__kernel void test(__global int* test){test[get_local_id(0)] = 0;}";
-    cl_program  program        = clCreateProgramWithSource(context, 1, (const char**)&warpSizeKernel, nullptr, &cl_error);
+    cl_program  program        = clCreateProgramWithSource(context, 1, &warpSizeKernel, nullptr, &cl_error);
     if (cl_error != CL_SUCCESS)
     {
         GMX_THROW(InternalError("Could not create OpenCL program to determine warp size, error was " + ocl_get_error_string(cl_error)));
@@ -374,7 +374,7 @@ removeExtraSpaces(std::string *str)
 {
     GMX_RELEASE_ASSERT(str != nullptr, "A pointer to an actual string must be provided");
     std::string::iterator newEnd =
-        std::unique( str->begin(), str->end(), [ = ](char a, char b){ return isspace(a) && (a == b); } );
+        std::unique( str->begin(), str->end(), [ = ](char a, char b){ return isspace(a) != 0 && (a == b); } );
     str->erase(newEnd, str->end());
 }
 
@@ -551,5 +551,5 @@ compileProgram(FILE              *fplog,
     return program;
 }
 
-} // namespace
-} // namespace
+} // namespace ocl
+} // namespace gmx

@@ -54,6 +54,7 @@
 #include <list>
 #include <string>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/ewald/ewald-utils.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/invertmatrix.h"
@@ -117,11 +118,11 @@ void pme_gpu_synchronize(const PmeGpu *pmeGpu)
     gpuStreamSynchronize(pmeGpu->archSpecific->pmeStream);
 }
 
-void pme_gpu_alloc_energy_virial(const PmeGpu *pmeGpu)
+void pme_gpu_alloc_energy_virial(PmeGpu *pmeGpu)
 {
     const size_t energyAndVirialSize = c_virialAndEnergyCount * sizeof(float);
     allocateDeviceBuffer(&pmeGpu->kernelParams->constants.d_virialAndEnergy, c_virialAndEnergyCount, pmeGpu->archSpecific->context);
-    pmalloc((void **)&pmeGpu->staging.h_virialAndEnergy, energyAndVirialSize);
+    pmalloc(reinterpret_cast<void **>(&pmeGpu->staging.h_virialAndEnergy), energyAndVirialSize);
 }
 
 void pme_gpu_free_energy_virial(PmeGpu *pmeGpu)
@@ -137,14 +138,14 @@ void pme_gpu_clear_energy_virial(const PmeGpu *pmeGpu)
                            c_virialAndEnergyCount, pmeGpu->archSpecific->pmeStream);
 }
 
-void pme_gpu_realloc_and_copy_bspline_values(const PmeGpu *pmeGpu)
+void pme_gpu_realloc_and_copy_bspline_values(PmeGpu *pmeGpu)
 {
     const int splineValuesOffset[DIM] = {
         0,
         pmeGpu->kernelParams->grid.realGridSize[XX],
         pmeGpu->kernelParams->grid.realGridSize[XX] + pmeGpu->kernelParams->grid.realGridSize[YY]
     };
-    memcpy((void *)&pmeGpu->kernelParams->grid.splineValuesOffset, &splineValuesOffset, sizeof(splineValuesOffset));
+    memcpy(&pmeGpu->kernelParams->grid.splineValuesOffset, &splineValuesOffset, sizeof(splineValuesOffset));
 
     const int newSplineValuesSize = pmeGpu->kernelParams->grid.realGridSize[XX] +
         pmeGpu->kernelParams->grid.realGridSize[YY] +
@@ -156,7 +157,7 @@ void pme_gpu_realloc_and_copy_bspline_values(const PmeGpu *pmeGpu)
     {
         /* Reallocate the host buffer */
         pfree(pmeGpu->staging.h_splineModuli);
-        pmalloc((void **)&pmeGpu->staging.h_splineModuli, newSplineValuesSize * sizeof(float));
+        pmalloc(reinterpret_cast<void **>(&pmeGpu->staging.h_splineModuli), newSplineValuesSize * sizeof(float));
     }
     for (int i = 0; i < DIM; i++)
     {
@@ -271,7 +272,7 @@ void pme_gpu_free_coefficients(const PmeGpu *pmeGpu)
     freeDeviceBuffer(&pmeGpu->kernelParams->atoms.d_coefficients);
 }
 
-void pme_gpu_realloc_spline_data(const PmeGpu *pmeGpu)
+void pme_gpu_realloc_spline_data(PmeGpu *pmeGpu)
 {
     const int    order             = pmeGpu->common->pme_order;
     const int    alignment         = pme_gpu_get_atoms_per_warp(pmeGpu);
@@ -290,9 +291,9 @@ void pme_gpu_realloc_spline_data(const PmeGpu *pmeGpu)
     if (shouldRealloc)
     {
         pfree(pmeGpu->staging.h_theta);
-        pmalloc((void **)&pmeGpu->staging.h_theta, newSplineDataSize * sizeof(float));
+        pmalloc(reinterpret_cast<void **>(&pmeGpu->staging.h_theta), newSplineDataSize * sizeof(float));
         pfree(pmeGpu->staging.h_dtheta);
-        pmalloc((void **)&pmeGpu->staging.h_dtheta, newSplineDataSize * sizeof(float));
+        pmalloc(reinterpret_cast<void **>(&pmeGpu->staging.h_dtheta), newSplineDataSize * sizeof(float));
     }
 }
 
@@ -305,14 +306,14 @@ void pme_gpu_free_spline_data(const PmeGpu *pmeGpu)
     pfree(pmeGpu->staging.h_dtheta);
 }
 
-void pme_gpu_realloc_grid_indices(const PmeGpu *pmeGpu)
+void pme_gpu_realloc_grid_indices(PmeGpu *pmeGpu)
 {
     const size_t newIndicesSize = DIM * pmeGpu->nAtomsAlloc;
     GMX_ASSERT(newIndicesSize > 0, "Bad number of atoms in PME GPU");
     reallocateDeviceBuffer(&pmeGpu->kernelParams->atoms.d_gridlineIndices, newIndicesSize,
                            &pmeGpu->archSpecific->gridlineIndicesSize, &pmeGpu->archSpecific->gridlineIndicesSizeAlloc, pmeGpu->archSpecific->context);
     pfree(pmeGpu->staging.h_gridlineIndices);
-    pmalloc((void **)&pmeGpu->staging.h_gridlineIndices, newIndicesSize * sizeof(int));
+    pmalloc(reinterpret_cast<void **>(&pmeGpu->staging.h_gridlineIndices), newIndicesSize * sizeof(int));
 }
 
 void pme_gpu_free_grid_indices(const PmeGpu *pmeGpu)
@@ -580,7 +581,7 @@ void pme_gpu_reinit_3dfft(const PmeGpu *pmeGpu)
         pmeGpu->archSpecific->fftSetup.resize(0);
         for (int i = 0; i < pmeGpu->common->ngrids; i++)
         {
-            pmeGpu->archSpecific->fftSetup.push_back(std::unique_ptr<GpuParallel3dFft>(new GpuParallel3dFft(pmeGpu)));
+            pmeGpu->archSpecific->fftSetup.push_back(gmx::compat::make_unique<GpuParallel3dFft>(pmeGpu));
         }
     }
 }
@@ -680,7 +681,7 @@ static void pme_gpu_reinit_grids(PmeGpu *pmeGpu)
     for (int i = 0; i < DIM; i++)
     {
         kernelParamsPtr->grid.realGridSize[i]       = pmeGpu->common->nk[i];
-        kernelParamsPtr->grid.realGridSizeFP[i]     = (float)kernelParamsPtr->grid.realGridSize[i];
+        kernelParamsPtr->grid.realGridSizeFP[i]     = static_cast<float>(kernelParamsPtr->grid.realGridSize[i]);
         kernelParamsPtr->grid.realGridSizePadded[i] = kernelParamsPtr->grid.realGridSize[i];
 
         // The complex grid currently uses no padding;
@@ -761,7 +762,7 @@ static void pme_gpu_init(gmx_pme_t          *pme,
     pme->gpu          = new PmeGpu();
     PmeGpu *pmeGpu = pme->gpu;
     changePinningPolicy(&pmeGpu->staging.h_forces, pme_get_pinning_policy());
-    pmeGpu->common = std::shared_ptr<PmeShared>(new PmeShared());
+    pmeGpu->common = std::make_shared<PmeShared>();
 
     /* These settings are set here for the whole run; dynamic ones are set in pme_gpu_reinit() */
     /* A convenience variable. */

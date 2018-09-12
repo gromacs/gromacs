@@ -61,7 +61,7 @@ class TypedClMemory
         cl_mem data_;
     public:
         //! \brief An assignment operator - the purpose is to make allocation/zeroing work
-        void operator=(cl_mem data){data_ = data; }
+        TypedClMemory &operator=(cl_mem data){data_ = data; return *this; }
         //! \brief Returns underlying cl_mem transparently
         operator cl_mem() {return data_; }
 };

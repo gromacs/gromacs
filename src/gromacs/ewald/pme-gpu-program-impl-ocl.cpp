@@ -58,7 +58,7 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *deviceInfo)
     cl_device_id          deviceId   = deviceInfo->ocl_gpu_id.ocl_device_id;
     cl_context_properties contextProperties[3];
     contextProperties[0] = CL_CONTEXT_PLATFORM;
-    contextProperties[1] = (cl_context_properties) platformId;
+    contextProperties[1] = reinterpret_cast<cl_context_properties>(platformId);
     contextProperties[2] = 0; /* Terminates the list of properties */
 
     cl_int  clError;

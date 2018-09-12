@@ -57,6 +57,8 @@
 
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/force_flags.h"
+#include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_gpu_types.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/gpu_timing.h"
@@ -117,8 +119,8 @@ static inline int gpuAtomToInteractionLocality(int atomLocality)
 template <typename AtomDataT>
 static inline void getGpuAtomRange(const AtomDataT *atomData,
                                    int              atomLocality,
-                                   int             &atomRangeBegin,
-                                   int             &atomRangeLen)
+                                   int             *atomRangeBegin,
+                                   int             *atomRangeLen)
 {
     assert(atomData);
     validateGpuAtomLocality(atomLocality);
@@ -126,13 +128,13 @@ static inline void getGpuAtomRange(const AtomDataT *atomData,
     /* calculate the atom data index range based on locality */
     if (LOCAL_A(atomLocality))
     {
-        atomRangeBegin  = 0;
-        atomRangeLen    = atomData->natoms_local;
+        *atomRangeBegin  = 0;
+        *atomRangeLen    = atomData->natoms_local;
     }
     else
     {
-        atomRangeBegin  = atomData->natoms_local;
-        atomRangeLen    = atomData->natoms - atomData->natoms_local;
+        *atomRangeBegin  = atomData->natoms_local;
+        *atomRangeLen    = atomData->natoms - atomData->natoms_local;
     }
 }
 
@@ -298,6 +300,8 @@ static inline void nbnxn_gpu_accumulate_timings(gmx_wallclock_gpu_nbnxn_t *timin
     }
 }
 
+//TODO: move into shared source file with gmx_compile_cpp_as_cuda
+//NOLINTNEXTLINE(misc-definitions-in-headers)
 bool nbnxn_gpu_try_finish_task(gmx_nbnxn_gpu_t  *nb,
                                int               flags,
                                int               aloc,
@@ -328,10 +332,11 @@ bool nbnxn_gpu_try_finish_task(gmx_nbnxn_gpu_t  *nb,
             gpuStreamSynchronize(nb->stream[iLocality]);
         }
 
-        bool calcEner   = flags & GMX_FORCE_ENERGY;
-        bool calcFshift = flags & GMX_FORCE_VIRIAL;
+        bool calcEner   = (flags & GMX_FORCE_ENERGY) != 0;
+        bool calcFshift = (flags & GMX_FORCE_VIRIAL) != 0;
 
-        nbnxn_gpu_accumulate_timings(nb->timings, nb->timers, nb->plist[iLocality], aloc, calcEner, nb->bDoTime);
+        nbnxn_gpu_accumulate_timings(nb->timings, nb->timers, nb->plist[iLocality], aloc, calcEner,
+                                     nb->bDoTime != 0);
 
         nbnxn_gpu_reduce_staged_outputs(nb->nbst, iLocality, calcEner, calcFshift, e_lj, e_el, fshift);
     }
@@ -360,6 +365,7 @@ bool nbnxn_gpu_try_finish_task(gmx_nbnxn_gpu_t  *nb,
  * \param[out] e_el Pointer to the electrostatics energy output to accumulate into
  * \param[out] fshift Pointer to the shift force buffer to accumulate into
  */
+//NOLINTNEXTLINE(misc-definitions-in-headers) TODO: move into source file
 void nbnxn_gpu_wait_finish_task(gmx_nbnxn_gpu_t *nb,
                                 int              flags,
                                 int              aloc,

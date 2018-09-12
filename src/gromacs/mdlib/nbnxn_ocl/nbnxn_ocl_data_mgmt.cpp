@@ -149,7 +149,7 @@ static void init_atomdata_first(cl_atomdata_t *ad, int ntypes, gmx_device_runtim
     // TODO: handle errors, check clCreateBuffer flags
     ad->shift_vec = clCreateBuffer(runData->context, CL_MEM_READ_WRITE, SHIFTS * ad->shift_vec_elem_size, nullptr, &cl_error);
     assert(cl_error == CL_SUCCESS);
-    ad->bShiftVecUploaded = false;
+    ad->bShiftVecUploaded = CL_FALSE;
 
     /* An element of the fshift device buffer has the same size as one element
        of the host side fshift buffer. */
@@ -233,7 +233,6 @@ map_interaction_types_to_gpu_kernel_flavors(const interaction_const_t *ic,
                         break;
                     default:
                         gmx_incons("The requested LJ combination rule is not implemented in the OpenCL GPU accelerated kernels!");
-                        break;
                 }
                 break;
             case eintmodFORCESWITCH:
@@ -244,7 +243,6 @@ map_interaction_types_to_gpu_kernel_flavors(const interaction_const_t *ic,
                 break;
             default:
                 gmx_incons("The requested VdW interaction modifier is not implemented in the GPU accelerated kernels!");
-                break;
         }
     }
     else if (ic->vdwtype == evdwPME)
@@ -500,7 +498,7 @@ nbnxn_gpu_create_context(gmx_device_runtime_data_t *runtimeData,
     device_id        = devInfo->ocl_gpu_id.ocl_device_id;
 
     context_properties[0] = CL_CONTEXT_PLATFORM;
-    context_properties[1] = (cl_context_properties) platform_id;
+    context_properties[1] = reinterpret_cast<cl_context_properties>(platform_id);
     context_properties[2] = 0; /* Terminates the list of properties */
 
     context = clCreateContext(context_properties, 1, &device_id, nullptr, nullptr, &cl_error);
@@ -510,7 +508,6 @@ nbnxn_gpu_create_context(gmx_device_runtime_data_t *runtimeData,
                   rank,
                   devInfo->device_name,
                   cl_error, ocl_get_error_string(cl_error).c_str());
-        return;
     }
 
     runtimeData->context = context;
@@ -640,7 +637,7 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
         snew(nb->plist[eintNonlocal], 1);
     }
 
-    nb->bUseTwoStreams = bLocalAndNonlocal;
+    nb->bUseTwoStreams = static_cast<cl_bool>(bLocalAndNonlocal);
 
     nb->timers = new cl_timers_t();
     snew(nb->timings, 1);
@@ -650,14 +647,14 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
     snew(nb->dev_rundata, 1);
 
     /* init nbst */
-    pmalloc((void**)&nb->nbst.e_lj, sizeof(*nb->nbst.e_lj));
-    pmalloc((void**)&nb->nbst.e_el, sizeof(*nb->nbst.e_el));
-    pmalloc((void**)&nb->nbst.fshift, SHIFTS * sizeof(*nb->nbst.fshift));
+    pmalloc(reinterpret_cast<void**>(&nb->nbst.e_lj), sizeof(*nb->nbst.e_lj));
+    pmalloc(reinterpret_cast<void**>(&nb->nbst.e_el), sizeof(*nb->nbst.e_el));
+    pmalloc(reinterpret_cast<void**>(&nb->nbst.fshift), SHIFTS * sizeof(*nb->nbst.fshift));
 
     init_plist(nb->plist[eintLocal]);
 
     /* OpenCL timing disabled if GMX_DISABLE_GPU_TIMING is defined. */
-    nb->bDoTime = (getenv("GMX_DISABLE_GPU_TIMING") == nullptr);
+    nb->bDoTime = static_cast<cl_bool>(getenv("GMX_DISABLE_GPU_TIMING") == nullptr);
 
     /* Create queues only after bDoTime has been initialized */
     if (nb->bDoTime)
@@ -679,7 +676,6 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
                   rank,
                   nb->dev_info->device_name,
                   cl_error);
-        return;
     }
 
     if (nb->bUseTwoStreams)
@@ -693,13 +689,12 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
                       rank,
                       nb->dev_info->device_name,
                       cl_error);
-            return;
         }
     }
 
     if (nb->bDoTime)
     {
-        init_timers(nb->timers, nb->bUseTwoStreams);
+        init_timers(nb->timers, nb->bUseTwoStreams == CL_TRUE);
         init_timings(nb->timings);
     }
 
@@ -796,7 +791,7 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_ocl_t        *nb,
     // Timing accumulation should happen only if there was work to do
     // because getLastRangeTime() gets skipped with empty lists later
     // which leads to the counter not being reset.
-    bool             bDoTime    = (nb->bDoTime && h_plist->nsci > 0);
+    bool             bDoTime    = ((nb->bDoTime == CL_TRUE) && h_plist->nsci > 0);
     cl_command_queue stream     = nb->stream[iloc];
     cl_plist_t      *d_plist    = nb->plist[iloc];
 
@@ -865,7 +860,7 @@ void nbnxn_gpu_upload_shiftvec(gmx_nbnxn_ocl_t        *nb,
     {
         ocl_copy_H2D_async(adat->shift_vec, nbatom->shift_vec, 0,
                            SHIFTS * adat->shift_vec_elem_size, ls, nullptr);
-        adat->bShiftVecUploaded = true;
+        adat->bShiftVecUploaded = CL_TRUE;
     }
 }
 
@@ -876,7 +871,7 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_ocl_t               *nb,
     cl_int           cl_error;
     int              nalloc, natoms;
     bool             realloced;
-    bool             bDoTime = nb->bDoTime;
+    bool             bDoTime = nb->bDoTime == CL_TRUE;
     cl_timers_t     *timers  = nb->timers;
     cl_atomdata_t   *d_atdat = nb->atdat;
     cl_command_queue ls      = nb->stream[eintLocal];
@@ -1035,16 +1030,16 @@ void nbnxn_gpu_free(gmx_nbnxn_ocl_t *nb)
 
     /* Free kernels */
     int kernel_count = sizeof(nb->kernel_ener_noprune_ptr) / sizeof(nb->kernel_ener_noprune_ptr[0][0]);
-    free_kernels((cl_kernel*)nb->kernel_ener_noprune_ptr, kernel_count);
+    free_kernels(nb->kernel_ener_noprune_ptr[0], kernel_count);
 
     kernel_count = sizeof(nb->kernel_ener_prune_ptr) / sizeof(nb->kernel_ener_prune_ptr[0][0]);
-    free_kernels((cl_kernel*)nb->kernel_ener_prune_ptr, kernel_count);
+    free_kernels(nb->kernel_ener_prune_ptr[0], kernel_count);
 
     kernel_count = sizeof(nb->kernel_noener_noprune_ptr) / sizeof(nb->kernel_noener_noprune_ptr[0][0]);
-    free_kernels((cl_kernel*)nb->kernel_noener_noprune_ptr, kernel_count);
+    free_kernels(nb->kernel_noener_noprune_ptr[0], kernel_count);
 
     kernel_count = sizeof(nb->kernel_noener_prune_ptr) / sizeof(nb->kernel_noener_prune_ptr[0][0]);
-    free_kernels((cl_kernel*)nb->kernel_noener_prune_ptr, kernel_count);
+    free_kernels(nb->kernel_noener_prune_ptr[0], kernel_count);
 
     free_kernel(&(nb->kernel_memset_f));
     free_kernel(&(nb->kernel_memset_f2));

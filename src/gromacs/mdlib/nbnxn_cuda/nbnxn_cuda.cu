@@ -610,7 +610,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
         return;
     }
 
-    getGpuAtomRange(adat, aloc, adat_begin, adat_len);
+    getGpuAtomRange(adat, aloc, &adat_begin, &adat_len);
 
     /* beginning of timed D2H section */
     if (bDoTime)

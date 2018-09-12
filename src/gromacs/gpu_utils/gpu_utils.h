@@ -213,7 +213,7 @@ void get_gpu_device_info_string(char *GPU_FUNC_ARGUMENT(s),
  * \returns                 size in bytes of gpu_dev_info
  */
 GPU_FUNC_QUALIFIER
-size_t sizeof_gpu_dev_info(void) GPU_FUNC_TERM_WITH_RETURN(0)
+size_t sizeof_gpu_dev_info() GPU_FUNC_TERM_WITH_RETURN(0)
 
 /*! \brief Returns a pointer *ptr to page-locked memory of size nbytes.
  *

@@ -179,5 +179,5 @@ writeBinaryToCache(cl_program program, const std::string &filename)
     fwrite(binary, 1, fileSize, f.get());
 }
 
-} // namespace
-} // namespace
+} // namespace ocl
+} // namespace gmx
