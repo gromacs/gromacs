@@ -83,7 +83,6 @@ void init_ns(FILE *fplog, const t_commrec *cr,
              gmx_ns_t *ns, t_forcerec *fr,
              const gmx_mtop_t *mtop);
 
-//! Destructor.
 void done_ns(gmx_ns_t *ns, int numEnergyGroups);
 
 int search_neighbours(FILE               *log,

@@ -76,7 +76,6 @@ typedef std::tuple<IVec, int, ModuliType> BSplineModuliInputParameters;
 class PmeBSplineModuliTest : public ::testing::TestWithParam<BSplineModuliInputParameters>
 {
     public:
-        //! Default constructor
         PmeBSplineModuliTest() = default;
         //! The whole logic being tested is contained here
         void runTest()

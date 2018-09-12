@@ -277,7 +277,6 @@ struct gmx_ddzone_t
 /*! \brief The number of reals in gmx_ddzone_t */
 constexpr int c_ddzoneNumReals = 7;
 
-/*! \brief Forward declaration */
 template<typename T> class DDBufferAccess;
 
 /*! \brief Temporary storage container that minimizes (re)allocation and clearing
@@ -342,7 +341,6 @@ class DDBufferAccess
             buffer = ddBuffer_.acquire(numElements);
         }
 
-        /*! \brief Destructor */
         ~DDBufferAccess()
         {
             ddBuffer_.release();

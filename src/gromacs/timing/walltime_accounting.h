@@ -49,7 +49,6 @@ typedef struct gmx_walltime_accounting *gmx_walltime_accounting_t;
 gmx_walltime_accounting_t
 walltime_accounting_init(int numOpenMPThreads);
 
-//! Destructor
 void
 walltime_accounting_destroy(gmx_walltime_accounting_t walltime_accounting);
 

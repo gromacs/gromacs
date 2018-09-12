@@ -131,7 +131,6 @@ class Awh
             const std::string    &biasInitFilename,
             pull_t               *pull_work);
 
-        /*! \brief Destructor. */
         ~Awh();
 
         /*! \brief Peform an AWH update, to be called every MD step.

@@ -73,7 +73,6 @@ struct gmx_vsite_t
     /* Constructor */
     gmx_vsite_t();
 
-    /* Destructor */
     ~gmx_vsite_t();
 
     gmx_bool                  bHaveChargeGroups;         /* Do we have charge groups?               */

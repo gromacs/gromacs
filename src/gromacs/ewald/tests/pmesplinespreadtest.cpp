@@ -81,7 +81,6 @@ typedef std::tuple<Matrix3x3, int, IVec, CoordinatesVector, ChargesVector> Splin
 class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadInputParameters>
 {
     public:
-        //! Default constructor
         PmeSplineAndSpreadTest() = default;
         //! The test
         void runTest()

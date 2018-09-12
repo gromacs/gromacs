@@ -64,7 +64,6 @@ struct gmx_moltype_t
     /*! \brief Constructor */
     gmx_moltype_t();
 
-    /*! \brief Destructor */
     ~gmx_moltype_t();
 
     /*! \brief Deleted copy assignment operator to avoid (not) freeing pointers */
@@ -132,7 +131,6 @@ struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
     /* Constructor */
     gmx_mtop_t();
 
-    /* Destructor */
     ~gmx_mtop_t();
 
     char                      **name; /* Name of the topology                 */

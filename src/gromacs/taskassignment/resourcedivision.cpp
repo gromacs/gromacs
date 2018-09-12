@@ -303,7 +303,6 @@ namespace
 class SingleRankChecker
 {
     public:
-        //! Constructor
         SingleRankChecker() : value_(false) {}
         /*! \brief Call this function for each possible condition
             under which a single rank is required, along with a string

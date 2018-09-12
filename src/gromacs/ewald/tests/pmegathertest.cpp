@@ -335,7 +335,6 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
         static InputDataByAtomCount s_inputAtomDataSets_;
 
     public:
-        //! Default constructor
         PmeGatherTest()  = default;
         //! Sets the input atom data references once
         static void SetUpTestCase()

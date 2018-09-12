@@ -143,7 +143,6 @@ class SettleTest : public ::testing::TestWithParam<SettleTestParameters>
         //! PBC option to test
         t_pbc             pbcXYZ_;
 
-        //! Constructor
         SettleTest() :
             updatedPositions_(std::begin(g_positions), std::end(g_positions)),
             velocities_(updatedPositions_.size(), 0)

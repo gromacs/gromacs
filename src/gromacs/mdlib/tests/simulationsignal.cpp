@@ -65,7 +65,6 @@ TEST(NullSignalTest, NullSignallerWorks)
 class SignalTest : public ::testing::Test
 {
     public:
-        //! Constructor
         SignalTest() : signals_ {}
         {
             signals_[0].sig = 1;
