@@ -51,9 +51,10 @@
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
-#include "gromacs/mdlib/repl_ex.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+
+#include "replicaexchange.h"
 
 struct gmx_output_env_t;
 struct ReplicaExchangeParameters;

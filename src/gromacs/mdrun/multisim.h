@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,49 +32,31 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_MDLIB_MAIN_H
-#define GMX_MDLIB_MAIN_H
-
-#include <cstdio>
+/*! \libinternal \file
+ *
+ * \brief Declares the multi-simulation support routines.
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \inlibraryapi
+ * \ingroup module_mdrun
+ */
+#ifndef GMX_MDRUN_MULTISIM_H
+#define GMX_MDRUN_MULTISIM_H
 
 #include <string>
-#include <vector>
 
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
 
 struct gmx_multisim_t;
-struct t_commrec;
-struct t_filenm;
 
-void gmx_log_open(const char *fn, const t_commrec *cr,
-                  gmx_bool bAppendFiles, FILE** /*fplog*/);
-/* Open the log file, if necessary (nprocs > 1) the logfile name is
- * communicated around the ring.
- */
-
-void gmx_log_close(FILE *fp);
-/* Close the log file */
-
-void check_multi_int(FILE *log, const gmx_multisim_t *ms,
-                     int val, const char *name,
-                     gmx_bool bQuiet);
-void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
-                       int64_t val, const char *name,
-                       gmx_bool bQuiet);
-/* Check if val is the same on all processors for a mdrun -multidir run
- * The string name is used to print to the log file and in a fatal error
- * if the val's don't match. If bQuiet is true and the check passes,
- * no output is written.
- */
-
+/*! \brief Initializes multi-simulations.
+ *
+ * Splits the communication into multidirs.size() separate
+ * simulations, if >1, and creates a communication structure between
+ * the master these simulations. */
 gmx_multisim_t *init_multisystem(MPI_Comm                         comm,
                                  gmx::ArrayRef<const std::string> multidirs);
-/* Splits the communication into multidirs.size() separate simulations, if >1,
- * and creates a communication structure between the master
- * these simulations.
- */
 
 //! Cleans up multi-system handler.
 void done_multisim(gmx_multisim_t *ms);

@@ -81,7 +81,6 @@
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/main.h"
 #include "gromacs/mdlib/makeconstraints.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
@@ -92,9 +91,10 @@
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/nbnxn_tuning.h"
 #include "gromacs/mdlib/qmmm.h"
-#include "gromacs/mdlib/repl_ex.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdrun/logging.h"
+#include "gromacs/mdrun/multisim.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -130,6 +130,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "integrator.h"
+#include "replicaexchange.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
