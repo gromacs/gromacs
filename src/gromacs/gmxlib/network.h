@@ -103,6 +103,18 @@ void gmx_sumf_sim(int nr, float r[], const struct gmx_multisim_t *ms);
 void gmx_sumd_sim(int nr, double r[], const struct gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of doubles */
 
+void check_multi_int(FILE *log, const gmx_multisim_t *ms,
+                     int val, const char *name,
+                     gmx_bool bQuiet);
+void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
+                       int64_t val, const char *name,
+                       gmx_bool bQuiet);
+/* Check if val is the same on all processors for a mdrun -multidir run
+ * The string name is used to print to the log file and in a fatal error
+ * if the val's don't match. If bQuiet is true and the check passes,
+ * no output is written.
+ */
+
 #if GMX_DOUBLE
 #define gmx_sum       gmx_sumd
 #define gmx_sum_sim   gmx_sumd_sim

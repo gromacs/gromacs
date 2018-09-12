@@ -35,9 +35,17 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+/*! \internal \file
+ *
+ * \brief Implements the replica exchange routines.
+ *
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_mdrun
+ */
 #include "gmxpre.h"
 
-#include "repl_ex.h"
+#include "replicaexchange.h"
 
 #include "config.h"
 
@@ -49,7 +57,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/main.h"
+#include "gromacs/mdrun/multisim.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -62,58 +70,89 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
+//! Helps cut off probability values.
+constexpr int c_probabilityCutoff = 100;
 
-#define PROBABILITYCUTOFF 100
 /* we don't bother evaluating if events are more rare than exp(-100) = 3.7x10^-44 */
 
-//! Rank in the multisimulaiton
+//! Rank in the multisimulation
 #define MSRANK(ms, nodeid)  (nodeid)
 
+//! Enum for replica exchange flavours
 enum {
     ereTEMP, ereLAMBDA, ereENDSINGLE, ereTL, ereNR
 };
+/*! \brief Strings describing replica exchange flavours.
+ *
+ *  end_single_marker merely notes the end of single variable replica
+ *  exchange. All types higher than it are multiple replica exchange
+ *  methods.
+ *
+ * Eventually, should add 'pressure', 'temperature and pressure',
+ *  'lambda_and_pressure', 'temperature_lambda_pressure'?; Let's wait
+ *  until we feel better about the pressure control methods giving
+ *  exact ensembles.  Right now, we assume constant pressure */
 static const char *erename[ereNR] = { "temperature", "lambda", "end_single_marker", "temperature and lambda"};
-/* end_single_marker merely notes the end of single variable replica exchange. All types higher than
-   it are multiple replica exchange methods */
-/* Eventually, should add 'pressure', 'temperature and pressure', 'lambda_and_pressure', 'temperature_lambda_pressure'?;
-   Let's wait until we feel better about the pressure control methods giving exact ensembles.  Right now, we assume constant pressure  */
 
-typedef struct gmx_repl_ex
+//! Working data for replica exchange.
+struct gmx_repl_ex
 {
-    int       repl;        /* replica ID */
-    int       nrepl;       /* total number of replica */
-    real      temp;        /* temperature */
-    int       type;        /* replica exchange type from ere enum */
-    real    **q;           /* quantity, e.g. temperature or lambda; first index is ere, second index is replica ID */
-    gmx_bool  bNPT;        /* use constant pressure and temperature */
-    real     *pres;        /* replica pressures */
-    int      *ind;         /* replica indices */
-    int      *allswaps;    /* used for keeping track of all the replica swaps */
-    int       nst;         /* replica exchange interval (number of steps) */
-    int       nex;         /* number of exchanges per interval */
-    int       seed;        /* random seed */
-    int       nattempt[2]; /* number of even and odd replica change attempts */
-    real     *prob_sum;    /* sum of probabilities */
-    int     **nmoves;      /* number of moves between replicas i and j */
-    int      *nexchange;   /* i-th element of the array is the number of exchanges between replica i-1 and i */
+    //! Replica ID
+    int       repl;
+    //! Total number of replica
+    int       nrepl;
+    //! Temperature
+    real      temp;
+    //! Replica exchange type from ere enum
+    int       type;
+    //! Quantity, e.g. temperature or lambda; first index is ere, second index is replica ID
+    real    **q;
+    //! Use constant pressure and temperature
+    gmx_bool  bNPT;
+    //! Replica pressures
+    real     *pres;
+    //! Replica indices
+    int      *ind;
+    //! Used for keeping track of all the replica swaps
+    int      *allswaps;
+    //! Replica exchange interval (number of steps)
+    int       nst;
+    //! Number of exchanges per interval
+    int       nex;
+    //! Random seed
+    int       seed;
+    //! Number of even and odd replica change attempts
+    int       nattempt[2];
+    //! Sum of probabilities
+    real     *prob_sum;
+    //! Number of moves between replicas i and j
+    int     **nmoves;
+    //! i-th element of the array is the number of exchanges between replica i-1 and i
+    int      *nexchange;
 
-    /* these are helper arrays for replica exchange; allocated here so they
-       don't have to be allocated each time */
+    /*! \brief Helper arrays for replica exchange; allocated here
+     * so they don't have to be allocated each time */
+    //! \{
     int      *destinations;
     int     **cyclic;
     int     **order;
     int      *tmpswap;
     gmx_bool *incycle;
     gmx_bool *bEx;
+    //! \}
 
-    /* helper arrays to hold the quantities that are exchanged */
+    //! Helper arrays to hold the quantities that are exchanged.
+    //! \{
     real  *prob;
     real  *Epot;
     real  *beta;
     real  *Vol;
     real **de;
+    //! \}
+};
 
-} t_gmx_repl_ex;
+// TODO We should add Doxygen here some time.
+//! \cond
 
 static gmx_bool repl_quantity(const gmx_multisim_t *ms,
                               struct gmx_repl_ex *re, int ere, real q)
@@ -946,7 +985,7 @@ test_for_replica_exchange(FILE                 *fplog,
             }
             else
             {
-                if (delta > PROBABILITYCUTOFF)
+                if (delta > c_probabilityCutoff)
                 {
                     prob[0] = 0;
                 }
@@ -995,7 +1034,7 @@ test_for_replica_exchange(FILE                 *fplog,
                 }
                 else
                 {
-                    if (delta > PROBABILITYCUTOFF)
+                    if (delta > c_probabilityCutoff)
                     {
                         prob[i] = 0;
                     }
@@ -1344,3 +1383,5 @@ void print_replica_exchange_statistics(FILE *fplog, struct gmx_repl_ex *re)
     /* print the transition matrix */
     print_transition_matrix(fplog, re->nrepl, re->nmoves, re->nattempt);
 }
+
+//! \endcond

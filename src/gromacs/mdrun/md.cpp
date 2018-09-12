@@ -89,7 +89,6 @@
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/ns.h"
-#include "gromacs/mdlib/repl_ex.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
@@ -132,6 +131,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "integrator.h"
+#include "replicaexchange.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"

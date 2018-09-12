@@ -34,9 +34,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef _repl_ex_h
-#define _repl_ex_h
+/*! \libinternal \file
+ *
+ * \brief Declares the routines for replica exchange.
+ *
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ *
+ * \ingroup module_mdrun
+ */
+#ifndef GMX_MDRUN_REPLICAEXCHANGE_H
+#define GMX_MDRUN_REPLICAEXCHANGE_H
 
 #include <cstdio>
 
@@ -49,7 +57,8 @@ struct t_commrec;
 struct t_inputrec;
 class t_state;
 
-/* The parameters for the replica exchange algorithm */
+/*! \libinternal
+ * \brief The parameters for the replica exchange algorithm. */
 struct ReplicaExchangeParameters
 {
     ReplicaExchangeParameters() :
@@ -59,22 +68,37 @@ struct ReplicaExchangeParameters
     {
     }
 
-    int exchangeInterval; /* Interval in steps at which to attempt exchanges, 0 means no replica exchange */
-    int numExchanges;     /* The number of exchanges to attempt at an exchange step */
-    int randomSeed;       /* The random seed, -1 means generate a seed */
+    //! Interval in steps at which to attempt exchanges, 0 means no replica exchange.
+    int exchangeInterval;
+    //! The number of exchanges to attempt at an exchange step.
+    int numExchanges;
+    //! The random seed, -1 means generate a seed.
+    int randomSeed;
 };
 
-/* Abstract type for replica exchange */
+//! Abstract type for replica exchange
 typedef struct gmx_repl_ex *gmx_repl_ex_t;
 
+/*! \brief Setup function.
+ *
+ * Should only be called on the master ranks */
 gmx_repl_ex_t
 init_replica_exchange(FILE                            *fplog,
                       const gmx_multisim_t            *ms,
                       int                              numAtomsInSystem,
                       const t_inputrec                *ir,
                       const ReplicaExchangeParameters &replExParams);
-/* Should only be called on the master ranks */
 
+/*! \brief Attempts replica exchange.
+ *
+ * Should be called on all ranks.  When running each replica in
+ * parallel, this routine collects the state on the master rank before
+ * exchange.  With domain decomposition, the global state after
+ * exchange is stored in state and still needs to be redistributed
+ * over the ranks.
+ *
+ * \returns TRUE if the state has been exchanged.
+ */
 gmx_bool replica_exchange(FILE *fplog,
                           const t_commrec *cr,
                           const gmx_multisim_t *ms,
@@ -82,15 +106,10 @@ gmx_bool replica_exchange(FILE *fplog,
                           t_state *state, const gmx_enerdata_t *enerd,
                           t_state *state_local,
                           int64_t step, real time);
-/* Attempts replica exchange, should be called on all ranks.
- * Returns TRUE if this state has been exchanged.
- * When running each replica in parallel,
- * this routine collects the state on the master rank before exchange.
- * With domain decomposition, the global state after exchange is stored
- * in state and still needs to be redistributed over the ranks.
- */
 
+/*! \brief Prints replica exchange statistics to the log file.
+ *
+ * Should only be called on the master ranks */
 void print_replica_exchange_statistics(FILE *fplog, gmx_repl_ex_t re);
-/* Should only be called on the master ranks */
 
-#endif  /* _repl_ex_h */
+#endif

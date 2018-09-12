@@ -639,6 +639,115 @@ void gmx_sumli_sim(int gmx_unused nr, int64_t gmx_unused r[], const gmx_multisim
 #endif
 }
 
+void check_multi_int(FILE *log, const gmx_multisim_t *ms, int val,
+                     const char *name,
+                     gmx_bool bQuiet)
+{
+    int     *ibuf, p;
+    gmx_bool bCompatible;
+
+    if (nullptr != log && !bQuiet)
+    {
+        fprintf(log, "Multi-checking %s ... ", name);
+    }
+
+    if (ms == nullptr)
+    {
+        gmx_fatal(FARGS,
+                  "check_multi_int called with a NULL communication pointer");
+    }
+
+    snew(ibuf, ms->nsim);
+    ibuf[ms->sim] = val;
+    gmx_sumi_sim(ms->nsim, ibuf, ms);
+
+    bCompatible = TRUE;
+    for (p = 1; p < ms->nsim; p++)
+    {
+        bCompatible = bCompatible && (ibuf[p-1] == ibuf[p]);
+    }
+
+    if (bCompatible)
+    {
+        if (nullptr != log && !bQuiet)
+        {
+            fprintf(log, "OK\n");
+        }
+    }
+    else
+    {
+        if (nullptr != log)
+        {
+            fprintf(log, "\n%s is not equal for all subsystems\n", name);
+            for (p = 0; p < ms->nsim; p++)
+            {
+                fprintf(log, "  subsystem %d: %d\n", p, ibuf[p]);
+            }
+        }
+        gmx_fatal(FARGS, "The %d subsystems are not compatible\n", ms->nsim);
+    }
+
+    sfree(ibuf);
+}
+
+void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
+                       int64_t val, const char *name,
+                       gmx_bool bQuiet)
+{
+    int64_t          *ibuf;
+    int               p;
+    gmx_bool          bCompatible;
+
+    if (nullptr != log && !bQuiet)
+    {
+        fprintf(log, "Multi-checking %s ... ", name);
+    }
+
+    if (ms == nullptr)
+    {
+        gmx_fatal(FARGS,
+                  "check_multi_int called with a NULL communication pointer");
+    }
+
+    snew(ibuf, ms->nsim);
+    ibuf[ms->sim] = val;
+    gmx_sumli_sim(ms->nsim, ibuf, ms);
+
+    bCompatible = TRUE;
+    for (p = 1; p < ms->nsim; p++)
+    {
+        bCompatible = bCompatible && (ibuf[p-1] == ibuf[p]);
+    }
+
+    if (bCompatible)
+    {
+        if (nullptr != log && !bQuiet)
+        {
+            fprintf(log, "OK\n");
+        }
+    }
+    else
+    {
+        // TODO Part of this error message would also be good to go to
+        // stderr (from one rank of one sim only)
+        if (nullptr != log)
+        {
+            fprintf(log, "\n%s is not equal for all subsystems\n", name);
+            for (p = 0; p < ms->nsim; p++)
+            {
+                char strbuf[255];
+                /* first make the format string */
+                snprintf(strbuf, 255, "  subsystem %%d: %s\n",
+                         "%" PRId64);
+                fprintf(log, strbuf, p, ibuf[p]);
+            }
+        }
+        gmx_fatal(FARGS, "The %d subsystems are not compatible\n", ms->nsim);
+    }
+
+    sfree(ibuf);
+}
+
 const char *opt2fn_master(const char *opt, int nfile, const t_filenm fnm[],
                           t_commrec *cr)
 {
