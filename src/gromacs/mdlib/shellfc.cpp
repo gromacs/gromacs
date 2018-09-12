@@ -312,7 +312,6 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     int                       aS, aN = 0; /* Shell and nucleus */
     int                       bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_ANHARM_POL, F_WATER_POL };
 #define NBT asize(bondtypes)
-    t_iatom                  *ia;
     gmx_mtop_atomloop_all_t   aloop;
     const gmx_ffparams_t     *ffparams;
 
@@ -406,8 +405,8 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
         {
             for (j = 0; (j < NBT); j++)
             {
-                ia = molt->ilist[bondtypes[j]].iatoms;
-                for (i = 0; (i < molt->ilist[bondtypes[j]].nr); )
+                const int *ia = molt->ilist[bondtypes[j]].iatoms.data();
+                for (i = 0; (i < molt->ilist[bondtypes[j]].size()); )
                 {
                     type  = ia[0];
                     ftype = ffparams->functype[type];

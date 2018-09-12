@@ -482,27 +482,22 @@ static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
     return type;
 }
 
-static void append_interaction(t_ilist *ilist,
+static void append_interaction(InteractionList *ilist,
                                int type, int nral, const int a[MAXATOMLIST])
 {
-    int i, where1;
-
-    where1     = ilist->nr;
-    ilist->nr += nral+1;
-
-    ilist->iatoms[where1++] = type;
-    for (i = 0; (i < nral); i++)
+    ilist->iatoms.push_back(type);
+    for (int i = 0; (i < nral); i++)
     {
-        ilist->iatoms[where1++] = a[i];
+        ilist->iatoms.push_back(a[i]);
     }
 }
 
 static void enter_function(t_params *p, t_functype ftype, int comb, real reppow,
-                           gmx_ffparams_t *ffparams, t_ilist *il,
+                           gmx_ffparams_t *ffparams, InteractionList *il,
                            int *maxtypes,
                            bool bNB, bool bAppend)
 {
-    int     k, type, nr, nral, delta, start;
+    int     k, type, nr, nral, start;
 
     start = ffparams->ntypes;
     nr    = p->nr;
@@ -521,8 +516,6 @@ static void enter_function(t_params *p, t_functype ftype, int comb, real reppow,
         {
             assert(il);
             nral  = NRAL(ftype);
-            delta = nr*(nral+1);
-            srenew(il->iatoms, il->nr+delta);
             append_interaction(il, type, nral, p->param[k].a);
         }
     }
@@ -558,8 +551,7 @@ void convert_params(int atnr, t_params nbtypes[],
         molt = &mtop->moltype[mt];
         for (i = 0; (i < F_NRE); i++)
         {
-            molt->ilist[i].nr     = 0;
-            molt->ilist[i].iatoms = nullptr;
+            molt->ilist[i].iatoms.clear();
 
             plist = mi[mt].plist;
 
@@ -579,12 +571,11 @@ void convert_params(int atnr, t_params nbtypes[],
     if (intermolecular_interactions != nullptr)
     {
         /* Process the intermolecular interaction list */
-        snew(mtop->intermolecular_ilist, F_NRE);
+        mtop->intermolecular_ilist = new InteractionList[F_NRE];
 
         for (i = 0; (i < F_NRE); i++)
         {
-            mtop->intermolecular_ilist[i].nr     = 0;
-            mtop->intermolecular_ilist[i].iatoms = nullptr;
+            mtop->intermolecular_ilist[i].iatoms.clear();
 
             plist = intermolecular_interactions->plist;
 
@@ -621,7 +612,7 @@ void convert_params(int atnr, t_params nbtypes[],
 
         if (!mtop->bIntermolecularInteractions)
         {
-            sfree(mtop->intermolecular_ilist);
+            delete[] mtop->intermolecular_ilist;
         }
     }
 

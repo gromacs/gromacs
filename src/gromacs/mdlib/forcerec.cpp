@@ -707,7 +707,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                 int nral;
 
                 nral = NRAL(ftype);
-                for (ia = 0; ia < molt->ilist[ftype].nr; ia += 1+nral)
+                for (ia = 0; ia < molt->ilist[ftype].size(); ia += 1+nral)
                 {
                     int a;
 
@@ -1371,8 +1371,7 @@ static void make_nbf_tables(FILE *fp,
 static void count_tables(int ftype1, int ftype2, const gmx_mtop_t *mtop,
                          int *ncount, int **count)
 {
-    const t_ilist       *il;
-    int                  ftype, stride, i, j, tabnr;
+    int                  ftype, i, j, tabnr;
 
     // Loop over all moleculetypes
     for (const gmx_moltype_t &molt : mtop->moltype)
@@ -1383,13 +1382,13 @@ static void count_tables(int ftype1, int ftype2, const gmx_mtop_t *mtop,
             // If the current interaction type is one of the types whose tables we're trying to count...
             if (ftype == ftype1 || ftype == ftype2)
             {
-                il     = &molt.ilist[ftype];
-                stride = 1 + NRAL(ftype);
+                const InteractionList &il     = molt.ilist[ftype];
+                const int              stride = 1 + NRAL(ftype);
                 // ... and there are actually some interactions for this type
-                for (i = 0; i < il->nr; i += stride)
+                for (i = 0; i < il.size(); i += stride)
                 {
                     // Find out which table index the user wanted
-                    tabnr = mtop->ffparams.iparams[il->iatoms[i]].tab.table;
+                    tabnr = mtop->ffparams.iparams[il.iatoms[i]].tab.table;
                     if (tabnr < 0)
                     {
                         gmx_fatal(FARGS, "A bonded table number is smaller than 0: %d\n", tabnr);

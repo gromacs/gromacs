@@ -58,24 +58,20 @@ namespace gmx
 
 //! Recursing function to help find all adjacent constraints.
 static void constr_recur(const t_blocka *at2con,
-                         const t_ilist *ilist, const t_iparams *iparams,
+                         const InteractionList *ilist, const t_iparams *iparams,
                          gmx_bool bTopB,
                          int at, int depth, int nc, int *path,
                          real r0, real r1, real *r2max,
                          int *count)
 {
-    int      ncon1;
-    t_iatom *ia1, *ia2;
     int      c, con, a1;
     gmx_bool bUse;
-    t_iatom *ia;
     real     len, rn0, rn1;
 
     (*count)++;
 
-    ncon1 = ilist[F_CONSTR].nr/3;
-    ia1   = ilist[F_CONSTR].iatoms;
-    ia2   = ilist[F_CONSTRNC].iatoms;
+    gmx::ArrayRef<const int> ia1 = ilist[F_CONSTR].iatoms;
+    gmx::ArrayRef<const int> ia2 = ilist[F_CONSTRNC].iatoms;
 
     /* Loop over all constraints connected to this atom */
     for (c = at2con->index[at]; c < at2con->index[at+1]; c++)
@@ -92,7 +88,7 @@ static void constr_recur(const t_blocka *at2con,
         }
         if (bUse)
         {
-            ia = constr_iatomptr(ncon1, ia1, ia2, con);
+            const int *ia = constr_iatomptr(ia1, ia2, con);
             /* Flexible constraints currently have length 0, which is incorrect */
             if (!bTopB)
             {
@@ -124,7 +120,7 @@ static void constr_recur(const t_blocka *at2con,
                     {
                         fprintf(debug, " %d %5.3f",
                                 path[a1],
-                                iparams[constr_iatomptr(ncon1, ia1, ia2, con)[0]].constr.dA);
+                                iparams[constr_iatomptr(ia1, ia2, con)[0]].constr.dA);
                     }
                     fprintf(debug, " %d %5.3f\n", con, len);
                 }
@@ -163,15 +159,15 @@ static real constr_r_max_moltype(const gmx_moltype_t *molt,
     t_blocka at2con;
     real     r0, r1, r2maxA, r2maxB, rmax, lam0, lam1;
 
-    if (molt->ilist[F_CONSTR].nr   == 0 &&
-        molt->ilist[F_CONSTRNC].nr == 0)
+    if (molt->ilist[F_CONSTR].size()   == 0 &&
+        molt->ilist[F_CONSTRNC].size() == 0)
     {
         return 0;
     }
 
     natoms = molt->atoms.nr;
 
-    at2con = make_at2con(natoms, molt->ilist, iparams,
+    at2con = make_at2con(*molt, iparams,
                          flexibleConstraintTreatment(EI_DYNAMICS(ir->eI)));
     snew(path, 1+ir->nProjOrder);
     for (at = 0; at < 1+ir->nProjOrder; at++)

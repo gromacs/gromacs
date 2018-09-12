@@ -54,6 +54,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -893,9 +894,6 @@ int set_vsites(bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
 void set_vsites_ptype(bool bVerbose, gmx_moltype_t *molt)
 {
     int      ftype, i;
-    int      nra, nrd;
-    t_ilist *il;
-    t_iatom *ia, avsite;
 
     if (bVerbose)
     {
@@ -903,12 +901,12 @@ void set_vsites_ptype(bool bVerbose, gmx_moltype_t *molt)
     }
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
-        il = &molt->ilist[ftype];
+        InteractionList *il = &molt->ilist[ftype];
         if (interaction_function[ftype].flags & IF_VSITE)
         {
-            nra    = interaction_function[ftype].nratoms;
-            nrd    = il->nr;
-            ia     = il->iatoms;
+            const int                nra = interaction_function[ftype].nratoms;
+            const int                nrd = il->size();
+            gmx::ArrayRef<const int> ia  = il->iatoms;
 
             if (debug && nrd)
             {
@@ -919,11 +917,10 @@ void set_vsites_ptype(bool bVerbose, gmx_moltype_t *molt)
             for (i = 0; (i < nrd); )
             {
                 /* The virtual site */
-                avsite = ia[1];
+                int avsite = ia[i + 1];
                 molt->atoms.atom[avsite].ptype = eptVSite;
 
                 i  += nra+1;
-                ia += nra+1;
             }
         }
     }

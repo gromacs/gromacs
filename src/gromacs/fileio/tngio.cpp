@@ -293,7 +293,6 @@ void gmx_tng_add_mtop(gmx_tng_trajectory_t  gmx_tng,
     int                j;
     std::vector<real>  atomCharges;
     std::vector<real>  atomMasses;
-    const t_ilist     *ilist;
     tng_bond_t         tngBond;
     char               datatype;
 
@@ -334,29 +333,23 @@ void gmx_tng_add_mtop(gmx_tng_trajectory_t  gmx_tng,
         {
             if (IS_CHEMBOND(i))
             {
-                ilist = &molType->ilist[i];
-                if (ilist)
+                const InteractionList &ilist = molType->ilist[i];
+                j = 1;
+                while (j < ilist.size())
                 {
-                    j = 1;
-                    while (j < ilist->nr)
-                    {
-                        tng_molecule_bond_add(tng, tngMol, ilist->iatoms[j], ilist->iatoms[j+1], &tngBond);
-                        j += 3;
-                    }
+                    tng_molecule_bond_add(tng, tngMol, ilist.iatoms[j], ilist.iatoms[j + 1], &tngBond);
+                    j += 3;
                 }
             }
         }
         /* Settle is described using three atoms */
-        ilist = &molType->ilist[F_SETTLE];
-        if (ilist)
+        const InteractionList &ilist = molType->ilist[F_SETTLE];
+        j = 1;
+        while (j < ilist.size())
         {
-            j = 1;
-            while (j < ilist->nr)
-            {
-                tng_molecule_bond_add(tng, tngMol, ilist->iatoms[j], ilist->iatoms[j+1], &tngBond);
-                tng_molecule_bond_add(tng, tngMol, ilist->iatoms[j], ilist->iatoms[j+2], &tngBond);
-                j += 4;
-            }
+            tng_molecule_bond_add(tng, tngMol, ilist.iatoms[j], ilist.iatoms[j + 1], &tngBond);
+            tng_molecule_bond_add(tng, tngMol, ilist.iatoms[j], ilist.iatoms[j + 2], &tngBond);
+            j += 4;
         }
         /* First copy atom charges and masses, first atom by atom and then copy the memory for the molecule instances.
          * FIXME: Atom B state data should also be written to TNG (v 2.0?) */
@@ -618,7 +611,6 @@ static void add_selection_groups(gmx_tng_trajectory_t  gmx_tng,
     const t_atoms           *atoms;
     const t_atom            *at;
     const t_resinfo         *resInfo;
-    const t_ilist           *ilist;
     int                      nameIndex;
     int                      atom_offset = 0;
     tng_molecule_t           mol, iterMol;
@@ -709,51 +701,41 @@ static void add_selection_groups(gmx_tng_trajectory_t  gmx_tng,
                 {
                     if (IS_CHEMBOND(k))
                     {
-                        ilist = &molType.ilist[k];
-                        if (ilist)
+                        const InteractionList &ilist = molType.ilist[k];
+                        for (int l = 1; l < ilist.size(); l += 3)
                         {
-                            int l = 1;
-                            while (l < ilist->nr)
+                            int atom1, atom2;
+                            atom1 = ilist.iatoms[l] + atom_offset;
+                            atom2 = ilist.iatoms[l + 1] + atom_offset;
+                            if (getGroupType(&mtop->groups, egcCompressedX, atom1) == 0 &&
+                                getGroupType(&mtop->groups, egcCompressedX, atom2) == 0)
                             {
-                                int atom1, atom2;
-                                atom1 = ilist->iatoms[l] + atom_offset;
-                                atom2 = ilist->iatoms[l+1] + atom_offset;
-                                if (getGroupType(&mtop->groups, egcCompressedX, atom1) == 0 &&
-                                    getGroupType(&mtop->groups, egcCompressedX, atom2) == 0)
-                                {
-                                    tng_molecule_bond_add(tng, mol, ilist->iatoms[l],
-                                                          ilist->iatoms[l+1], &tngBond);
-                                }
-                                l += 3;
+                                tng_molecule_bond_add(tng, mol, ilist.iatoms[l],
+                                                      ilist.iatoms[l + 1], &tngBond);
                             }
                         }
                     }
                 }
                 /* Settle is described using three atoms */
-                ilist = &molType.ilist[F_SETTLE];
-                if (ilist)
+                const InteractionList &ilist = molType.ilist[F_SETTLE];
+                for (int l = 1; l < ilist.size(); l += 4)
                 {
-                    int l = 1;
-                    while (l < ilist->nr)
+                    int atom1, atom2, atom3;
+                    atom1 = ilist.iatoms[l] + atom_offset;
+                    atom2 = ilist.iatoms[l + 1] + atom_offset;
+                    atom3 = ilist.iatoms[l + 2] + atom_offset;
+                    if (getGroupType(&mtop->groups, egcCompressedX, atom1) == 0)
                     {
-                        int atom1, atom2, atom3;
-                        atom1 = ilist->iatoms[l] + atom_offset;
-                        atom2 = ilist->iatoms[l+1] + atom_offset;
-                        atom3 = ilist->iatoms[l+2] + atom_offset;
-                        if (getGroupType(&mtop->groups, egcCompressedX, atom1) == 0)
+                        if (getGroupType(&mtop->groups, egcCompressedX, atom2) == 0)
                         {
-                            if (getGroupType(&mtop->groups, egcCompressedX, atom2) == 0)
-                            {
-                                tng_molecule_bond_add(tng, mol, atom1,
-                                                      atom2, &tngBond);
-                            }
-                            if (getGroupType(&mtop->groups, egcCompressedX, atom3) == 0)
-                            {
-                                tng_molecule_bond_add(tng, mol, atom1,
-                                                      atom3, &tngBond);
-                            }
+                            tng_molecule_bond_add(tng, mol, atom1,
+                                                  atom2, &tngBond);
                         }
-                        l += 4;
+                        if (getGroupType(&mtop->groups, egcCompressedX, atom3) == 0)
+                        {
+                            tng_molecule_bond_add(tng, mol, atom1,
+                                                  atom3, &tngBond);
+                        }
                     }
                 }
             }

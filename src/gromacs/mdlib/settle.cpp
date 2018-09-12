@@ -181,14 +181,14 @@ static void settleparam_init(settleparam_t *p,
 settledata *settle_init(const gmx_mtop_t &mtop)
 {
     /* Check that we have only one settle type */
-    int                   settle_type = -1;
-    gmx_mtop_ilistloop_t  iloop       = gmx_mtop_ilistloop_init(mtop);
-    const t_ilist        *ilist;
-    int                   nmol;
-    const int             nral1       = 1 + NRAL(F_SETTLE);
+    int                    settle_type = -1;
+    gmx_mtop_ilistloop_t   iloop       = gmx_mtop_ilistloop_init(mtop);
+    const InteractionList *ilist;
+    int                    nmol;
+    const int              nral1       = 1 + NRAL(F_SETTLE);
     while (gmx_mtop_ilistloop_next(iloop, &ilist, &nmol))
     {
-        for (int i = 0; i < ilist[F_SETTLE].nr; i += nral1)
+        for (int i = 0; i < ilist[F_SETTLE].size(); i += nral1)
         {
             if (settle_type == -1)
             {
