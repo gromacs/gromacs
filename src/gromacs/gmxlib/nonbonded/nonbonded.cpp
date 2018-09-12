@@ -98,10 +98,6 @@
 #if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && GMX_DOUBLE
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_256_double/nb_kernel_avx_256_double.h"
 #endif
-#if GMX_SIMD_SPARC64_HPC_ACE && GMX_DOUBLE
-#    include "gromacs/gmxlib/nonbonded/nb_kernel_sparc64_hpc_ace_double/nb_kernel_sparc64_hpc_ace_double.h"
-#endif
-
 
 static tMPI_Thread_mutex_t nonbonded_setup_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 static gmx_bool            nonbonded_setup_done  = FALSE;
@@ -150,9 +146,6 @@ gmx_nonbonded_setup(t_forcerec *   fr,
 #endif
 #if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && GMX_DOUBLE
                 nb_kernel_list_add_kernels(kernellist_avx_256_double, kernellist_avx_256_double_size);
-#endif
-#if GMX_SIMD_SPARC64_HPC_ACE && GMX_DOUBLE
-                nb_kernel_list_add_kernels(kernellist_sparc64_hpc_ace_double, kernellist_sparc64_hpc_ace_double_size);
 #endif
                 ; /* empty statement to avoid a completely empty block */
             }
@@ -215,10 +208,6 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
 #if GMX_SIMD_X86_SSE4_1 && GMX_DOUBLE
         /* No padding - see comment above */
         { "sse4_1_double", 1 },
-#endif
-#if GMX_SIMD_SPARC64_HPC_ACE && GMX_DOUBLE
-        /* No padding - see comment above */
-        { "sparc64_hpc_ace_double", 1 },
 #endif
         { "c", 1 },
     };
