@@ -36,8 +36,8 @@ gcc-4.9 gpu cuda-7.0 openmp no-tng release-with-assert
 # msvc-2017 double no-threadmpi no-prefer-static-libs release-with-assert
 
 # Test behaviour when dlopen is not present
-# TODO enable this
-# icc-18 no-dlopen no-threadmpi double mkl release-with-assert
+# Test with SSE2 + double
+icc-18 no-dlopen simd=sse2 no-threadmpi double mkl release-with-assert
 
 # Test SSE4.1 SIMD
 # Test single-rank GPU
