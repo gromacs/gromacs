@@ -3226,9 +3226,9 @@ static real *get_slb_frac(const gmx::MDLogger &mdlog,
 
 static int multi_body_bondeds_count(const gmx_mtop_t *mtop)
 {
-    int                  n, nmol, ftype;
-    gmx_mtop_ilistloop_t iloop;
-    const t_ilist       *il;
+    int                    n, nmol, ftype;
+    gmx_mtop_ilistloop_t   iloop;
+    const InteractionList *il;
 
     n     = 0;
     iloop = gmx_mtop_ilistloop_init(mtop);
@@ -3239,7 +3239,7 @@ static int multi_body_bondeds_count(const gmx_mtop_t *mtop)
             if ((interaction_function[ftype].flags & IF_BOND) &&
                 NRAL(ftype) >  2)
             {
-                n += nmol*il[ftype].nr/(1 + NRAL(ftype));
+                n += nmol*il[ftype].size()/(1 + NRAL(ftype));
             }
         }
     }

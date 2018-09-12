@@ -2641,9 +2641,7 @@ static void low_do_pbc_mtop(FILE *fplog, int ePBC, const matrix box,
         }
         else
         {
-            /* Pass NULL iso fplog to avoid graph prints for each molecule type */
-            mk_graph_ilist(nullptr, moltype.ilist,
-                           0, moltype.atoms.nr, FALSE, FALSE, graph);
+            mk_graph_moltype(moltype, graph);
 
             for (mol = 0; mol < molb.nmol; mol++)
             {

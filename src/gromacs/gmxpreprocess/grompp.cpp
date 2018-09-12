@@ -264,10 +264,10 @@ static void check_bonds_timestep(const gmx_mtop_t *mtop, double dt, warninp_t wi
     const gmx_moltype_t *w_moltype = nullptr;
     for (const gmx_moltype_t &moltype : mtop->moltype)
     {
-        const t_atom  *atom    = moltype.atoms.atom;
-        const t_ilist *ilist   = moltype.ilist;
-        const t_ilist *ilc     = &ilist[F_CONSTR];
-        const t_ilist *ils     = &ilist[F_SETTLE];
+        const t_atom          *atom  = moltype.atoms.atom;
+        const InteractionList *ilist = moltype.ilist;
+        const InteractionList *ilc   = &ilist[F_CONSTR];
+        const InteractionList *ils   = &ilist[F_SETTLE];
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
             if (!(ftype == F_BONDS || ftype == F_G96BONDS || ftype == F_HARMONIC))
@@ -275,8 +275,8 @@ static void check_bonds_timestep(const gmx_mtop_t *mtop, double dt, warninp_t wi
                 continue;
             }
 
-            const t_ilist *ilb = &ilist[ftype];
-            for (i = 0; i < ilb->nr; i += 3)
+            const InteractionList *ilb = &ilist[ftype];
+            for (i = 0; i < ilb->size(); i += 3)
             {
                 fc = ip[ilb->iatoms[i]].harmonic.krA;
                 re = ip[ilb->iatoms[i]].harmonic.rA;
@@ -305,7 +305,7 @@ static void check_bonds_timestep(const gmx_mtop_t *mtop, double dt, warninp_t wi
                 if (period2 < limit2)
                 {
                     bFound = false;
-                    for (j = 0; j < ilc->nr; j += 3)
+                    for (j = 0; j < ilc->size(); j += 3)
                     {
                         if ((ilc->iatoms[j+1] == a1 && ilc->iatoms[j+2] == a2) ||
                             (ilc->iatoms[j+1] == a2 && ilc->iatoms[j+2] == a1))
@@ -313,7 +313,7 @@ static void check_bonds_timestep(const gmx_mtop_t *mtop, double dt, warninp_t wi
                             bFound = true;
                         }
                     }
-                    for (j = 0; j < ils->nr; j += 4)
+                    for (j = 0; j < ils->size(); j += 4)
                     {
                         if ((a1 == ils->iatoms[j+1] || a1 == ils->iatoms[j+2] || a1 == ils->iatoms[j+3]) &&
                             (a2 == ils->iatoms[j+1] || a2 == ils->iatoms[j+2] || a2 == ils->iatoms[j+3]))
@@ -1318,10 +1318,10 @@ static void checkForUnboundAtoms(const gmx_moltype_t     *molt,
             (interaction_function[ftype].flags & IF_CONSTRAINT) ||
             ftype == F_SETTLE)
         {
-            const t_ilist *il   = &molt->ilist[ftype];
-            int            nral = NRAL(ftype);
+            const InteractionList *il   = &molt->ilist[ftype];
+            const int              nral = NRAL(ftype);
 
-            for (int i = 0; i < il->nr; i += 1 + nral)
+            for (int i = 0; i < il->size(); i += 1 + nral)
             {
                 for (int j = 0; j < nral; j++)
                 {
@@ -1377,7 +1377,8 @@ static bool haveDecoupledModeInMol(const gmx_moltype_t *molt,
                                    const t_iparams     *iparams,
                                    real                 massFactorThreshold)
 {
-    if (molt->ilist[F_CONSTR].nr == 0 && molt->ilist[F_CONSTRNC].nr == 0)
+    if (molt->ilist[F_CONSTR].size() == 0 &&
+        molt->ilist[F_CONSTRNC].size() == 0)
     {
         return false;
     }
@@ -1385,8 +1386,7 @@ static bool haveDecoupledModeInMol(const gmx_moltype_t *molt,
     const t_atom * atom = molt->atoms.atom;
 
     t_blocka       atomToConstraints =
-        gmx::make_at2con(molt->atoms.nr,
-                         molt->ilist, iparams,
+        gmx::make_at2con(*molt, iparams,
                          gmx::FlexibleConstraintTreatment::Exclude);
 
     bool           haveDecoupledMode = false;
@@ -1394,9 +1394,9 @@ static bool haveDecoupledModeInMol(const gmx_moltype_t *molt,
     {
         if (interaction_function[ftype].flags & IF_ATYPE)
         {
-            const int      nral = NRAL(ftype);
-            const t_ilist *il   = &molt->ilist[ftype];
-            for (int i = 0; i < il->nr; i += 1 + nral)
+            const int              nral = NRAL(ftype);
+            const InteractionList *il   = &molt->ilist[ftype];
+            for (int i = 0; i < il->size(); i += 1 + nral)
             {
                 /* Here we check for the mass difference between the atoms
                  * at both ends of the angle, that the atoms at the ends have
