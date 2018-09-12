@@ -241,10 +241,8 @@ enum {
 /* Thread-local work struct, contains part of nbnxn_grid_t */
 struct nbnxn_search_work_t
 {
-    /* Constructor */
     nbnxn_search_work_t();
 
-    /* Destructor */
     ~nbnxn_search_work_t();
 
     gmx_cache_protect_t       cp0;          /* Buffer to avoid cache polution */

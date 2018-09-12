@@ -58,9 +58,7 @@ class GpuTest : public ::testing::Test
         //! Information about GPUs that are present.
         gmx_gpu_info_t *gpuInfo_;
 
-        //! Constructor
         GpuTest();
-        //! Destructor
         ~GpuTest() override;
         //! Getter for convenience in testing
         bool haveValidGpus() const;

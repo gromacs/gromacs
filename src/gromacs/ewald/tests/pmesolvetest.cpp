@@ -72,7 +72,6 @@ typedef std::tuple<Matrix3x3, IVec, SparseComplexGridValuesInput, double, double
 class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
 {
     public:
-        //! Default constructor
         PmeSolveTest() = default;
 
         //! The test

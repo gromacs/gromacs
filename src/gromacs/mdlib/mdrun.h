@@ -78,7 +78,6 @@ struct ContinuationOptions
 //! \internal \brief Options for writing checkpoint files
 struct CheckpointOptions
 {
-    //! \brief Constructor
     CheckpointOptions() :
         keepAndNumberCheckpointFiles(FALSE),
         period(15)
@@ -110,7 +109,6 @@ struct TimingOptions
 //! \internal \brief Options for IMD
 struct ImdOptions
 {
-    //! Constructor
     ImdOptions() :
         port(8888),
         wait(FALSE),

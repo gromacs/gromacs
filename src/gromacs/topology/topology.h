@@ -61,10 +61,8 @@ extern const char *gtypes[egcNR+1];
 /*! \brief Molecules type data: atoms, interactions and exclusions */
 struct gmx_moltype_t
 {
-    /*! \brief Constructor */
     gmx_moltype_t();
 
-    /*! \brief Destructor */
     ~gmx_moltype_t();
 
     /*! \brief Deleted copy assignment operator to avoid (not) freeing pointers */
@@ -129,10 +127,8 @@ int getGroupType (const gmx_groups_t *group, int type, int atom);
  */
 struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
 {
-    /* Constructor */
     gmx_mtop_t();
 
-    /* Destructor */
     ~gmx_mtop_t();
 
     char                      **name; /* Name of the topology                 */

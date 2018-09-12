@@ -134,7 +134,6 @@ struct t_mde_delta_h_coll
 void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc,
                            const t_inputrec   *ir);
 
-//! Destructor
 void done_mde_delta_h_coll(t_mde_delta_h_coll *dhc);
 
 /* add a bunch of samples to the delta_h collection

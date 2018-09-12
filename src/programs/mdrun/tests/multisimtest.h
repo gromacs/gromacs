@@ -72,7 +72,6 @@ class MultiSimTest : public ::testing::Test,
                      public ::testing::WithParamInterface<const char *>
 {
     public:
-        //! Constructor
         MultiSimTest();
 
         /*! \brief Organize the .mdp file for this rank

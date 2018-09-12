@@ -111,7 +111,6 @@ extern const char *est_names[estNR];
 class history_t
 {
     public:
-        //! Constructor
         history_t();
 
         real  disre_initf;  //!< The scaling factor for initializing the time av.
@@ -187,7 +186,6 @@ typedef struct df_history_t
 class t_state
 {
     public:
-        //! Constructor
         t_state();
 
         // All things public

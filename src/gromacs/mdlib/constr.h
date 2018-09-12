@@ -114,7 +114,6 @@ class Constraints
          * constructor. */
         struct CreationHelper;
 
-        //! Destructor.
         ~Constraints();
 
         /*! \brief Returns the total number of flexible constraints in the system. */

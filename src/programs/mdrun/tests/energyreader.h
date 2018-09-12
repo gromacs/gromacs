@@ -93,7 +93,6 @@ std::vector<std::string> getKeys(const Map &m)
     return keys;
 }
 
-//! Forward declaration
 class EnergyFrameReader;
 //! Convenience smart pointer typedef
 typedef std::unique_ptr<EnergyFrameReader> EnergyFrameReaderPtr;
