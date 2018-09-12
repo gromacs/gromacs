@@ -395,4 +395,18 @@ void pr_ffparams(FILE *fp, int indent, const char *title,
 void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef,
              gmx_bool bShowNumbers, gmx_bool bShowParameters);
 
+/*! \brief
+ * Properly initialize idef struct.
+ *
+ * \param[in] idef Pointer to idef struct to initialize.
+ */
+void init_idef(t_idef *idef);
+
+/*! \brief
+ * Properly clean up idef struct.
+ *
+ * \param[in] idef Pointer to idef struct to clean up.
+ */
+void done_idef(t_idef *idef);
+
 #endif
