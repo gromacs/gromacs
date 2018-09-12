@@ -273,4 +273,48 @@ convertAtomsToMtop(t_symtab    *symtab,
                    t_atoms     *atoms,
                    gmx_mtop_t  *mtop);
 
+/*! \brief Copy idef structure from mtop.
+ *
+ * Makes a deep copy of an idef data structure from a gmx_mtop_t.
+ * Used to initialize legacy topology types.
+ *
+ * \param[in] mtop Pointer to input mtop.
+ * \param[in] idef Pointer to idef to populate.
+ * \param[in] mergeConstr Decide if constraints will be merged.
+ * \param[in] freeEnergyInteractionsAtEnd Decide if free energy stuff should
+ *              be added at the end.
+ */
+void copyIdefFromMtop(const gmx_mtop_t *mtop, t_idef *idef,
+                      bool freeEnergyInteractionsAtEnd, bool mergeConstr);
+
+/*! \brief Copy atomtypes from mtop
+ *
+ * Makes a deep copy of t_atomtypes from gmx_mtop_t.
+ * Used to initialize legacy topology types.
+ *
+ * \param[in] mtop Pointer to input mtop.
+ * \param[in] atomtypes Pointer to atomtypes to populate.
+ */
+void copyAtomtypesFromMtop(const gmx_mtop_t *mtop, t_atomtypes *atomtypes);
+
+/*! \brief Copy cgs from mtop.
+ *
+ * Makes a deep copy of cgs(t_block) from gmx_mtop_t.
+ * Used to initialize legacy topology types.
+ *
+ * \param[in] mtop Pointer to input mtop.
+ * \param[in] cgs  Pointer to final cgs data structure.
+ */
+void copyCgsFromMtop(const gmx_mtop_t *mtop, t_block *cgs);
+
+/*! \brief Copy excls from mtop.
+ *
+ * Makes a deep copy of excls(t_blocka) from gmx_mtop_t.
+ * Used to initialize legacy topology types.
+ *
+ * \param[in] mtop  Pointer to input mtop.
+ * \param[in] excls Pointer to final excls data structure.
+ */
+void copyExclsFromMtop(const gmx_mtop_t *mtop, t_blocka *excls);
+
 #endif
