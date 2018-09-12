@@ -165,7 +165,6 @@ class BiasTest : public ::testing::TestWithParam<BiasTestParameters>
         //! The awh Bias
         std::unique_ptr<Bias> bias_;
 
-        //! Constructor
         BiasTest() :
             coordinates_(std::begin(g_coords), std::end(g_coords))
         {

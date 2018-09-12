@@ -59,7 +59,6 @@
 namespace gmx
 {
 
-//! Forward declaration
 class TrajectoryFrame;
 
 namespace test

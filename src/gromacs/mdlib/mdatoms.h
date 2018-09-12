@@ -72,9 +72,7 @@ class MDAtoms
     HostVector<real>       chargeA_;
     public:
         // TODO make this private
-        //! Constructor.
         MDAtoms();
-        //! Destructor.
         ~MDAtoms();
         //! Getter.
         t_mdatoms *mdatoms()

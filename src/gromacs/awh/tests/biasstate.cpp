@@ -130,7 +130,6 @@ class BiasStateTest : public ::testing::TestWithParam<const char *>
     public:
         std::unique_ptr<BiasState> biasState_;  //!< The bias state
 
-        //! Constructor
         BiasStateTest()
         {
             AwhTestParameters       params        = getAwhTestParameters();

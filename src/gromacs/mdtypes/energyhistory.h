@@ -69,7 +69,6 @@ class delta_h_history_t
         //! Whether the lambda value is set. Here for backward-compatibility.
         gmx_bool                        start_lambda_set;
 
-        //! Constructor
         delta_h_history_t() :
             start_time(0),
             start_lambda(0),
@@ -94,7 +93,6 @@ class energyhistory_t
         //! History for energy difference for foreign lambdas (useful for BAR)
         std::unique_ptr<delta_h_history_t> deltaHForeignLambdas;
 
-        //! Constructor
         energyhistory_t() : nsteps(0),
                             nsum(0),
 

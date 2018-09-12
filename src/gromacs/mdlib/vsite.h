@@ -70,10 +70,8 @@ typedef std::array<std::vector<int>, c_ftypeVsiteEnd - c_ftypeVsiteStart> VsiteP
 /* Data for handling vsites, needed with OpenMP threading or with charge-groups and PBC */
 struct gmx_vsite_t
 {
-    /* Constructor */
     gmx_vsite_t();
 
-    /* Destructor */
     ~gmx_vsite_t();
 
     gmx_bool                  bHaveChargeGroups;         /* Do we have charge groups?               */

@@ -59,7 +59,6 @@ namespace gmx
 class ISerializer
 {
     public:
-        //! Destructor.
         virtual ~ISerializer() {}
         /*! \brief Returns whether the serializer is reading or
          * writing, because details like memory management vary

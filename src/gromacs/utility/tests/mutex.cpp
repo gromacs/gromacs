@@ -139,7 +139,6 @@ int updateSharedValueWithTryLock()
 class DifferentTasksTest : public ::testing::TestWithParam<TaskType>
 {
     public:
-        //! Constructor
         DifferentTasksTest()
         {
             g_sharedValue = 0;
