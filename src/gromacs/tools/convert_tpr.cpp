@@ -293,7 +293,12 @@ static void reduce_topology_x(int gnx, int index[],
     mtop->moltype[0].atoms = top.atoms;
     for (i = 0; i < F_NRE; i++)
     {
-        mtop->moltype[0].ilist[i] = top.idef.il[i];
+        InteractionList &ilist =  mtop->moltype[0].ilist[i];
+        ilist.iatoms.resize(top.idef.il[i].nr);
+        for (int j = 0; j < top.idef.il[i].nr; j++)
+        {
+            ilist.iatoms[j] = top.idef.il[i].iatoms[j];
+        }
     }
     mtop->moltype[0].atoms = top.atoms;
     mtop->moltype[0].cgs   = top.cgs;

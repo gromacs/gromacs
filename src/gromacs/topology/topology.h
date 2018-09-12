@@ -75,7 +75,7 @@ struct gmx_moltype_t
 
     char          **name;         /**< Name of the molecule type            */
     t_atoms         atoms;        /**< The atoms in this molecule           */
-    t_ilist         ilist[F_NRE]; /**< Interaction list with local indices  */
+    InteractionList ilist[F_NRE]; /**< Interaction list with local indices  */
     t_block         cgs;          /**< The charge groups                    */
     t_blocka        excls;        /**< The exclusions                       */
 };
@@ -141,7 +141,7 @@ struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
     std::vector<gmx_molblock_t> molblock;
     gmx_bool                    bIntermolecularInteractions; /* Are there intermolecular
                                                               * interactions?            */
-    t_ilist                    *intermolecular_ilist;        /* List of intermolecular interactions
+    InteractionList            *intermolecular_ilist;        /* List of intermolecular interactions
                                                               * using system wide atom indices,
                                                               * either NULL or size F_NRE           */
     int              natoms;

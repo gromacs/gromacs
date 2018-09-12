@@ -49,7 +49,7 @@ struct gmx_localtop_t;
 struct t_atom;
 struct t_atoms;
 struct t_block;
-struct t_ilist;
+struct InteractionList;
 struct t_symtab;
 
 // TODO All of the functions taking a const gmx_mtop * are deprecated
@@ -174,9 +174,9 @@ gmx_mtop_ilistloop_init(const gmx_mtop_t &mtop);
  * When at the end, destroys iloop and returns FALSE.
  */
 gmx_bool
-gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t iloop,
-                        const t_ilist **ilist_mol, int *nmol);
-
+gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t    iloop,
+                        const InteractionList **ilist_mol,
+                        int                    *nmol);
 
 /* Abstract type for ilist loop over all ilists of all molecules */
 typedef struct gmx_mtop_ilistloop_all *gmx_mtop_ilistloop_all_t;
@@ -196,8 +196,9 @@ gmx_mtop_ilistloop_all_init(const gmx_mtop_t *mtop);
  * When at the end, destroys iloop and returns FALSE.
  */
 gmx_bool
-gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
-                            const t_ilist **ilist_mol, int *atnr_offset);
+gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t   iloop,
+                            const InteractionList    **ilist_mol,
+                            int                       *atnr_offset);
 
 
 /* Returns the total number of interactions in the system of type ftype */

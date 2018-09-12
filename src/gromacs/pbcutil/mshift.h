@@ -42,8 +42,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
+struct InteractionList;
+struct gmx_moltype_t;
 struct t_idef;
-struct t_ilist;
 
 typedef enum {
     egcolWhite, egcolGrey, egcolBlack, egcolNR
@@ -89,11 +90,9 @@ t_graph *mk_graph(FILE *fplog,
  * If bSettle && bShakeOnly the settles are used too.
  */
 
-void mk_graph_ilist(FILE *fplog,
-                    const struct t_ilist *ilist, int at_start, int at_end,
-                    gmx_bool bShakeOnly, gmx_bool bSettle,
-                    t_graph *g);
-/* As mk_graph, but takes t_ilist iso t_idef and does not allocate g */
+void mk_graph_moltype(const gmx_moltype_t &moltype,
+                      t_graph             *g);
+/* As mk_graph, but takes gmx_moltype_t iso t_idef and does not allocate g */
 
 
 void done_graph(t_graph *g);

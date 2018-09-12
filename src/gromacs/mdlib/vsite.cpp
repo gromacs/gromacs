@@ -164,12 +164,13 @@ struct VsiteThread
  *
  * \param[in] ilist  The interaction list
  */
-static int vsiteIlistNrCount(const t_ilist *ilist)
+template <typename T>
+static int vsiteIlistNrCount(const T *ilist)
 {
     int nr = 0;
     for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
     {
-        nr += ilist[ftype].nr;
+        nr += ilist[ftype].size();
     }
 
     return nr;
@@ -769,9 +770,16 @@ void constructVsitesGlobal(const gmx_mtop_t         &mtop,
             int atomOffset = mtop.moleculeBlockIndices[mb].globalAtomStart;
             for (int mol = 0; mol < molb.nmol; mol++)
             {
+                t_ilist ilist[F_NRE];
+                for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
+                {
+                    ilist[ftype].nr     = molt.ilist[ftype].size();
+                    ilist[ftype].iatoms = const_cast<t_iatom *>(molt.ilist[ftype].iatoms.data());
+                }
+
                 construct_vsites(nullptr, as_rvec_array(x.data()) + atomOffset,
                                  0.0, nullptr,
-                                 mtop.ffparams.iparams, molt.ilist,
+                                 mtop.ffparams.iparams, ilist,
                                  epbcNONE, TRUE, nullptr, nullptr);
                 atomOffset += molt.atoms.nr;
             }
@@ -1846,15 +1854,14 @@ int count_intercg_vsites(const gmx_mtop_t *mtop)
         std::vector<int>     a2cg = atom2cg(molt.cgs);
         for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
         {
-            int            nral = NRAL(ftype);
-            const t_ilist &il   = molt.ilist[ftype];
-            const t_iatom *ia   = il.iatoms;
-            for (int i = 0; i < il.nr; i += 1 + nral)
+            const int              nral = NRAL(ftype);
+            const InteractionList &il   = molt.ilist[ftype];
+            for (int i = 0; i < il.size(); i += 1 + nral)
             {
-                int cg = a2cg[ia[1+i]];
+                int cg = a2cg[il.iatoms[1 + i]];
                 for (int a = 1; a < nral; a++)
                 {
-                    if (a2cg[ia[1+a]] != cg)
+                    if (a2cg[il.iatoms[1 + a]] != cg)
                     {
                         n_intercg_vsite += molb.nmol;
                         break;
@@ -1867,8 +1874,9 @@ int count_intercg_vsites(const gmx_mtop_t *mtop)
     return n_intercg_vsite;
 }
 
+template <typename T>
 static VsitePbc
-get_vsite_pbc(const t_iparams *iparams, const t_ilist *ilist,
+get_vsite_pbc(const t_iparams *iparams, const T *ilist,
               const t_atom *atom, const t_mdatoms *md,
               const t_block &cgs)
 {
@@ -1893,17 +1901,16 @@ get_vsite_pbc(const t_iparams *iparams, const t_ilist *ilist,
     {
         {   // TODO remove me
             int               nral = NRAL(ftype);
-            const t_ilist    *il   = &ilist[ftype];
-            const t_iatom    *ia   = il->iatoms;
+            const T          &il   = ilist[ftype];
 
             std::vector<int> &vsite_pbc_f = vsite_pbc[ftype - F_VSITE2];
-            vsite_pbc_f.resize(il->nr/(1 + nral));
+            vsite_pbc_f.resize(il.size()/(1 + nral));
 
             int i = 0;
-            while (i < il->nr)
+            while (i < il.size())
             {
                 int     vsi   = i/(1 + nral);
-                t_iatom vsite = ia[i+1];
+                t_iatom vsite = il.iatoms[i + 1];
                 int     cg_v  = a2cg[vsite];
                 /* A value of -2 signals that this vsite and its contructing
                  * atoms are all within the same cg, so no pbc is required.
@@ -1913,10 +1920,10 @@ get_vsite_pbc(const t_iparams *iparams, const t_ilist *ilist,
                 int nc3 = 0;
                 if (ftype == F_VSITEN)
                 {
-                    nc3 = 3*iparams[ia[i]].vsiten.n;
+                    nc3 = 3*iparams[il.iatoms[i]].vsiten.n;
                     for (int j = 0; j < nc3; j += 3)
                     {
-                        if (a2cg[ia[i+j+2]] != cg_v)
+                        if (a2cg[il.iatoms[i + j + 2]] != cg_v)
                         {
                             vsite_pbc_f[vsi] = -1;
                         }
@@ -1926,7 +1933,7 @@ get_vsite_pbc(const t_iparams *iparams, const t_ilist *ilist,
                 {
                     for (int a = 1; a < nral; a++)
                     {
-                        if (a2cg[ia[i+1+a]] != cg_v)
+                        if (a2cg[il.iatoms[i + 1 + a]] != cg_v)
                         {
                             vsite_pbc_f[vsi] = -1;
                         }
@@ -1953,7 +1960,7 @@ get_vsite_pbc(const t_iparams *iparams, const t_ilist *ilist,
                          */
                         vsite_pbc_f[vsi] = vsite;
                     }
-                    else if (cg_v != a2cg[ia[1+i+1]])
+                    else if (cg_v != a2cg[il.iatoms[1 + i + 1]])
                     {
                         /* This vsite has a different charge group index
                          * than it's first constructing atom

@@ -2760,7 +2760,6 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     const gmx_groups_t     *groups;
     pull_params_t          *pull;
     int                     natoms, ai, aj, i, j, d, g, imin, jmin;
-    t_iatom                *ia;
     int                    *nrdf2, *na_vcm, na_tot;
     double                 *nrdf_tc, *nrdf_vcm, nrdf_uc, *nrdf_vcm_sub;
     ivec                   *dof_vcm;
@@ -2834,8 +2833,8 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
         {
             for (ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
             {
-                ia = molt.ilist[ftype].iatoms;
-                for (i = 0; i < molt.ilist[ftype].nr; )
+                gmx::ArrayRef<const int> ia = molt.ilist[ftype].iatoms;
+                for (i = 0; i < molt.ilist[ftype].size(); )
                 {
                     /* Subtract degrees of freedom for the constraints,
                      * if the particles still have degrees of freedom left.
@@ -2844,12 +2843,12 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                      * contribute to the constraints the degrees of freedom do not
                      * change.
                      */
-                    ai = as + ia[1];
-                    aj = as + ia[2];
-                    if (((atom[ia[1]].ptype == eptNucleus) ||
-                         (atom[ia[1]].ptype == eptAtom)) &&
-                        ((atom[ia[2]].ptype == eptNucleus) ||
-                         (atom[ia[2]].ptype == eptAtom)))
+                    ai = as + ia[i + 1];
+                    aj = as + ia[i + 2];
+                    if (((atom[ia[i + 1]].ptype == eptNucleus) ||
+                         (atom[ia[i + 1]].ptype == eptAtom)) &&
+                        ((atom[ia[i + 2]].ptype == eptNucleus) ||
+                         (atom[ia[i + 2]].ptype == eptAtom)))
                     {
                         if (nrdf2[ai] > 0)
                         {
@@ -2876,23 +2875,21 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                         nrdf_vcm[getGroupType(groups, egcVCM, ai)] -= 0.5*imin;
                         nrdf_vcm[getGroupType(groups, egcVCM, aj)] -= 0.5*jmin;
                     }
-                    ia += interaction_function[ftype].nratoms+1;
                     i  += interaction_function[ftype].nratoms+1;
                 }
             }
-            ia = molt.ilist[F_SETTLE].iatoms;
-            for (i = 0; i < molt.ilist[F_SETTLE].nr; )
+            gmx::ArrayRef<const int> ia = molt.ilist[F_SETTLE].iatoms;
+            for (i = 0; i < molt.ilist[F_SETTLE].size(); )
             {
                 /* Subtract 1 dof from every atom in the SETTLE */
                 for (j = 0; j < 3; j++)
                 {
-                    ai         = as + ia[1+j];
+                    ai         = as + ia[i + 1 + j];
                     imin       = std::min(2, nrdf2[ai]);
                     nrdf2[ai] -= imin;
                     nrdf_tc [getGroupType(groups, egcTC, ai)]  -= 0.5*imin;
                     nrdf_vcm[getGroupType(groups, egcVCM, ai)] -= 0.5*imin;
                 }
-                ia += 4;
                 i  += 4;
             }
             as += molt.atoms.nr;
@@ -3721,11 +3718,11 @@ static bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
                                bool posres_only,
                                ivec AbsRef)
 {
-    int                  d, g, i;
-    gmx_mtop_ilistloop_t iloop;
-    const t_ilist       *ilist;
-    int                  nmol;
-    t_iparams           *pr;
+    int                    d, g, i;
+    gmx_mtop_ilistloop_t   iloop;
+    const InteractionList *ilist;
+    int                    nmol;
+    t_iparams             *pr;
 
     clear_ivec(AbsRef);
 
@@ -3756,7 +3753,7 @@ static bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
         if (nmol > 0 &&
             (AbsRef[XX] == 0 || AbsRef[YY] == 0 || AbsRef[ZZ] == 0))
         {
-            for (i = 0; i < ilist[F_POSRES].nr; i += 2)
+            for (i = 0; i < ilist[F_POSRES].size(); i += 2)
             {
                 pr = &sys->ffparams.iparams[ilist[F_POSRES].iatoms[i]];
                 for (d = 0; d < DIM; d++)
@@ -3767,7 +3764,7 @@ static bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
                     }
                 }
             }
-            for (i = 0; i < ilist[F_FBPOSRES].nr; i += 2)
+            for (i = 0; i < ilist[F_FBPOSRES].size(); i += 2)
             {
                 /* Check for flat-bottom posres */
                 pr = &sys->ffparams.iparams[ilist[F_FBPOSRES].iatoms[i]];
