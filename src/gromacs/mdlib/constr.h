@@ -58,6 +58,7 @@
 
 struct gmx_edsam;
 struct gmx_localtop_t;
+struct gmx_moltype_t;
 struct gmx_mtop_t;
 struct gmx_multisim_t;
 struct gmx_wallcycle;
@@ -177,7 +178,7 @@ class Constraints
         //! Getter for use by domain decomposition.
         const ArrayRef<const t_blocka> atom2constraints_moltype() const;
         //! Getter for use by domain decomposition.
-        int *const* atom2settle_moltype() const;
+        ArrayRef < const std::vector < int>> atom2settle_moltype() const;
 
         /*! \brief Return the data for reduction for determining
          * constraint RMS relative deviations, or an empty ArrayRef
@@ -229,6 +230,21 @@ flexibleConstraintTreatment(bool haveDynamicsIntegrator);
  * directly matching the order in F_CONSTR and higher indices matching
  * the order in F_CONSTRNC offset by the number of constraints in F_CONSTR.
  *
+ * \param[in]  moltype   The molecule data
+ * \param[in]  iparams   Interaction parameters, can be null when flexibleConstraintTreatment=Include
+ * \param[in]  flexibleConstraintTreatment  The flexible constraint treatment, see enum above
+ * \returns a block struct with all constraints for each atom
+ */
+t_blocka make_at2con(const gmx_moltype_t         &moltype,
+                     const t_iparams             *iparams,
+                     FlexibleConstraintTreatment  flexibleConstraintTreatment);
+
+/*! \brief Returns a block struct to go from atoms to constraints
+ *
+ * The block struct will contain constraint indices with lower indices
+ * directly matching the order in F_CONSTR and higher indices matching
+ * the order in F_CONSTRNC offset by the number of constraints in F_CONSTR.
+ *
  * \param[in]  numAtoms  The number of atoms to construct the list for
  * \param[in]  ilist     Interaction list, size F_NRE
  * \param[in]  iparams   Interaction parameters, can be null when flexibleConstraintTreatment=Include
@@ -247,10 +263,23 @@ const t_blocka *atom2constraints_moltype(const Constraints *constr);
 int countFlexibleConstraints(const t_ilist   *ilist,
                              const t_iparams *iparams);
 
-/*! \brief Macro for getting the constraint iatoms for a constraint number con
+/*! \brief Returns the constraint iatoms for a constraint number con
  * which comes from a list where F_CONSTR and F_CONSTRNC constraints
  * are concatenated. */
-#define constr_iatomptr(nconstr, iatom_constr, iatom_constrnc, con) ((con) < (nconstr) ? (iatom_constr)+(con)*3 : (iatom_constrnc)+((con)-(nconstr))*3)
+inline const int *
+constr_iatomptr(gmx::ArrayRef<const int> iatom_constr,
+                gmx::ArrayRef<const int> iatom_constrnc,
+                int                      con)
+{
+    if (con*3 < iatom_constr.size())
+    {
+        return iatom_constr.data() + con*3;
+    }
+    else
+    {
+        return iatom_constrnc.data() + con*3 - iatom_constr.size();
+    }
+};
 
 /*! \brief Returns whether there are inter charge group constraints */
 bool inter_charge_group_constraints(const gmx_mtop_t &mtop);

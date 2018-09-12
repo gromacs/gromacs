@@ -493,7 +493,8 @@ static void count_excls(const t_block *cgs, const t_blocka *excls,
 }
 
 /*! \brief Run the reverse ilist generation and store it in r_il when \p bAssign = TRUE */
-static int low_make_reverse_ilist(const t_ilist *il_mt, const t_atom *atom,
+static int low_make_reverse_ilist(const InteractionList *il_mt,
+                                  const t_atom *atom,
                                   gmx::ArrayRef < const std::vector < int>> vsitePbc,
                                   int *count,
                                   gmx_bool bConstr, gmx_bool bSettle,
@@ -503,12 +504,9 @@ static int low_make_reverse_ilist(const t_ilist *il_mt, const t_atom *atom,
                                   gmx_bool bLinkToAllAtoms,
                                   gmx_bool bAssign)
 {
-    int            ftype, nral, i, j, nlink, link;
-    const t_ilist *il;
-    const t_iatom *ia;
+    int            ftype, j, nlink, link;
     int            a;
     int            nint;
-    gmx_bool       bVSite;
 
     nint = 0;
     for (ftype = 0; ftype < F_NRE; ftype++)
@@ -517,12 +515,12 @@ static int low_make_reverse_ilist(const t_ilist *il_mt, const t_atom *atom,
             (bConstr && (ftype == F_CONSTR || ftype == F_CONSTRNC)) ||
             (bSettle && ftype == F_SETTLE))
         {
-            bVSite = ((interaction_function[ftype].flags & IF_VSITE) != 0u);
-            nral   = NRAL(ftype);
-            il     = &il_mt[ftype];
-            for (i = 0; i < il->nr; i += 1+nral)
+            const bool  bVSite = ((interaction_function[ftype].flags & IF_VSITE) != 0u);
+            const int   nral   = NRAL(ftype);
+            const auto &il     = il_mt[ftype];
+            for (int i = 0; i < il.size(); i += 1+nral)
             {
-                ia = il->iatoms + i;
+                const int* ia = il.iatoms.data() + i;
                 if (bLinkToAllAtoms)
                 {
                     if (bVSite)
@@ -599,7 +597,7 @@ static int low_make_reverse_ilist(const t_ilist *il_mt, const t_atom *atom,
 }
 
 /*! \brief Make the reverse ilist: a list of bonded interactions linked to atoms */
-static int make_reverse_ilist(const t_ilist *ilist,
+static int make_reverse_ilist(const InteractionList *ilist,
                               const t_atoms *atoms,
                               gmx::ArrayRef < const std::vector < int>> vsitePbc,
                               gmx_bool bConstr, gmx_bool bSettle,
@@ -700,8 +698,11 @@ static gmx_reverse_top_t make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
         atoms_global.nr   = mtop->natoms;
         atoms_global.atom = nullptr; /* Only used with virtual sites */
 
+        GMX_RELEASE_ASSERT(mtop->intermolecular_ilist.get(), "We should have an ilist when intermolecular interactions are on");
+
         *nint +=
-            make_reverse_ilist(mtop->intermolecular_ilist, &atoms_global,
+            make_reverse_ilist(mtop->intermolecular_ilist->data(),
+                               &atoms_global,
                                gmx::EmptyArrayRef(),
                                rt.bConstr, rt.bSettle, rt.bBCheck, FALSE,
                                &rt.ril_intermol);
@@ -2277,7 +2278,10 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
         atoms.nr   = mtop->natoms;
         atoms.atom = nullptr;
 
-        make_reverse_ilist(mtop->intermolecular_ilist, &atoms,
+        GMX_RELEASE_ASSERT(mtop->intermolecular_ilist.get(), "We should have an ilist when intermolecular interactions are on");
+
+        make_reverse_ilist(mtop->intermolecular_ilist->data(),
+                           &atoms,
                            gmx::EmptyArrayRef(),
                            FALSE, FALSE, FALSE, TRUE, &ril_intermol);
     }
@@ -2454,11 +2458,11 @@ static void bonded_cg_distance_mol(const gmx_moltype_t *molt,
     {
         if (dd_check_ftype(ftype, bBCheck, FALSE, FALSE))
         {
-            const t_ilist *il   = &molt->ilist[ftype];
+            const auto    *il   = &molt->ilist[ftype];
             int            nral = NRAL(ftype);
             if (nral > 1)
             {
-                for (int i = 0; i < il->nr; i += 1+nral)
+                for (int i = 0; i < il->size(); i += 1+nral)
                 {
                     for (int ai = 0; ai < nral; ai++)
                     {
@@ -2503,7 +2507,7 @@ static void bonded_cg_distance_mol(const gmx_moltype_t *molt,
 }
 
 /*! \brief Set the distance, function type and atom indices for the longest atom distance involved in intermolecular interactions for two-body and multi-body bonded interactions */
-static void bonded_distance_intermol(const t_ilist *ilists_intermol,
+static void bonded_distance_intermol(const InteractionList *ilists_intermol,
                                      gmx_bool bBCheck,
                                      const rvec *x, int ePBC, const matrix box,
                                      bonded_distance_t *bd_2b,
@@ -2517,13 +2521,13 @@ static void bonded_distance_intermol(const t_ilist *ilists_intermol,
     {
         if (dd_check_ftype(ftype, bBCheck, FALSE, FALSE))
         {
-            const t_ilist *il   = &ilists_intermol[ftype];
+            const auto    *il   = &ilists_intermol[ftype];
             int            nral = NRAL(ftype);
 
             /* No nral>1 check here, since intermol interactions always
              * have nral>=2 (and the code is also correct for nral=1).
              */
-            for (int i = 0; i < il->nr; i += 1+nral)
+            for (int i = 0; i < il->size(); i += 1+nral)
             {
                 for (int ai = 0; ai < nral; ai++)
                 {
@@ -2557,7 +2561,7 @@ static bool moltypeHasVsite(const gmx_moltype_t &molt)
     for (int i = 0; i < F_NRE; i++)
     {
         if ((interaction_function[i].flags & IF_VSITE) &&
-            molt.ilist[i].nr > 0)
+            molt.ilist[i].size() > 0)
         {
             hasVsite = true;
         }
@@ -2601,8 +2605,19 @@ static void get_cgcm_mol(const gmx_moltype_t *molt,
 
     if (moltypeHasVsite(*molt))
     {
+        /* Convert to old, deprecated format */
+        t_ilist ilist[F_NRE];
+        for (int ftype = 0; ftype < F_NRE; ftype++)
+        {
+            if (interaction_function[ftype].flags & IF_VSITE)
+            {
+                ilist[ftype].nr     = molt->ilist[ftype].size();
+                ilist[ftype].iatoms = const_cast<int *>(molt->ilist[ftype].iatoms.data());
+            }
+        }
+
         construct_vsites(nullptr, xs, 0.0, nullptr,
-                         ffparams->iparams, molt->ilist,
+                         ffparams->iparams, ilist,
                          epbcNONE, TRUE, nullptr, nullptr);
     }
 
@@ -2639,8 +2654,7 @@ void dd_bonded_cg_distance(const gmx::MDLogger &mdlog,
         {
             if (ir->ePBC != epbcNONE)
             {
-                mk_graph_ilist(nullptr, molt.ilist, 0, molt.atoms.nr, FALSE, FALSE,
-                               &graph);
+                mk_graph_moltype(molt, &graph);
             }
 
             std::vector<int> at2cg = make_at2cg(molt.cgs);
@@ -2685,7 +2699,9 @@ void dd_bonded_cg_distance(const gmx::MDLogger &mdlog,
             gmx_fatal(FARGS, "The combination of intermolecular interactions, charge groups and domain decomposition is not supported. Use cutoff-scheme=Verlet (which removes the charge groups) or run without domain decomposition.");
         }
 
-        bonded_distance_intermol(mtop->intermolecular_ilist,
+        GMX_RELEASE_ASSERT(mtop->intermolecular_ilist.get(), "We should have an ilist when intermolecular interactions are on");
+
+        bonded_distance_intermol(mtop->intermolecular_ilist->data(),
                                  bBCheck,
                                  x, ir->ePBC, box,
                                  &bd_2b, &bd_mb);

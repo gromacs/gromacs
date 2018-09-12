@@ -107,7 +107,7 @@ static size_t get_nharm_mt(const gmx_moltype_t *mt)
     for (i = 0; (i < asize(harm_func)); i++)
     {
         ft  = harm_func[i];
-        nh += mt->ilist[ft].nr/(interaction_function[ft].nratoms+1);
+        nh += mt->ilist[ft].size()/(interaction_function[ft].nratoms+1);
     }
     return nh;
 }

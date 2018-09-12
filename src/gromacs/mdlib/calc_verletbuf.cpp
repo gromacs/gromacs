@@ -226,7 +226,6 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
                              int                  *n_nonlin_vsite)
 {
     int            ft, i;
-    const t_ilist *il;
 
     *n_nonlin_vsite = 0;
 
@@ -235,9 +234,9 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
     {
         if (IS_VSITE(ft))
         {
-            il = &moltype->ilist[ft];
+            const InteractionList *il = &moltype->ilist[ft];
 
-            for (i = 0; i < il->nr; i += 1+NRAL(ft))
+            for (i = 0; i < il->size(); i += 1+NRAL(ft))
             {
                 const t_iparams *ip;
                 real             inv_mass, coeff, m_aj;
@@ -356,7 +355,6 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
     verletbuf_atomtype_t          *att;
     int                            natt;
     int                            ft, i, a1, a2, a3, a;
-    const t_ilist                 *il;
     const t_iparams               *ip;
     atom_nonbonded_kinetic_prop_t *prop;
     real                          *vsite_m;
@@ -385,9 +383,9 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
 
         for (ft = F_CONSTR; ft <= F_CONSTRNC; ft++)
         {
-            il = &moltype.ilist[ft];
+            const InteractionList *il = &moltype.ilist[ft];
 
-            for (i = 0; i < il->nr; i += 1+NRAL(ft))
+            for (i = 0; i < il->size(); i += 1+NRAL(ft))
             {
                 ip         = &mtop->ffparams.iparams[il->iatoms[i]];
                 a1         = il->iatoms[i+1];
@@ -407,9 +405,9 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
             }
         }
 
-        il = &moltype.ilist[F_SETTLE];
+        const InteractionList *il = &moltype.ilist[F_SETTLE];
 
-        for (i = 0; i < il->nr; i += 1+NRAL(F_SETTLE))
+        for (i = 0; i < il->size(); i += 1+NRAL(F_SETTLE))
         {
             ip         = &mtop->ffparams.iparams[il->iatoms[i]];
             a1         = il->iatoms[i+1];

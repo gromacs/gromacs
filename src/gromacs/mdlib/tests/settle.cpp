@@ -200,18 +200,14 @@ TEST_P(SettleTest, SatisfiesConstraints)
     mtop.moltype.resize(1);
     mtop.molblock.resize(1);
     mtop.molblock[0].type = 0;
-    const int settleStride = 1 + atomsPerSettle;
-    int      *iatoms;
-    snew(iatoms, numSettles*settleStride);
+    std::vector<int> &iatoms = mtop.moltype[0].ilist[F_SETTLE].iatoms;
     for (int i = 0; i < numSettles; ++i)
     {
-        iatoms[i*settleStride + 0] = settleType;
-        iatoms[i*settleStride + 1] = i*atomsPerSettle + 0;
-        iatoms[i*settleStride + 2] = i*atomsPerSettle + 1;
-        iatoms[i*settleStride + 3] = i*atomsPerSettle + 2;
+        iatoms.push_back(settleType);
+        iatoms.push_back(i*atomsPerSettle + 0);
+        iatoms.push_back(i*atomsPerSettle + 1);
+        iatoms.push_back(i*atomsPerSettle + 2);
     }
-    mtop.moltype[0].ilist[F_SETTLE].iatoms = iatoms;
-    mtop.moltype[0].ilist[F_SETTLE].nr     = numSettles*settleStride;
 
     // Set up the SETTLE parameters.
     mtop.ffparams.ntypes = 1;
@@ -239,8 +235,9 @@ TEST_P(SettleTest, SatisfiesConstraints)
     mdatoms.homenr  = numSettles * atomsPerSettle;
 
     // Finally make the settle data structures
-    settledata *settled = settle_init(mtop);
-    settle_set_constraints(settled, &mtop.moltype[0].ilist[F_SETTLE], mdatoms);
+    settledata    *settled = settle_init(mtop);
+    const t_ilist  ilist   = { mtop.moltype[0].ilist[F_SETTLE].size(), 0, mtop.moltype[0].ilist[F_SETTLE].iatoms.data(), 0 };
+    settle_set_constraints(settled, &ilist, mdatoms);
 
     // Copy the original positions from the array of doubles to a vector of reals
     std::vector<real> startingPositions(std::begin(g_positions), std::end(g_positions));
