@@ -1087,12 +1087,12 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, const unsigned char *gr
      */
     int ftype_connbond = 0;
     int ind_connbond   = 0;
-    if (molt->ilist[F_CONNBONDS].nr != 0)
+    if (molt->ilist[F_CONNBONDS].size() != 0)
     {
         fprintf(stderr, "nr. of CONNBONDS present already: %d\n",
-                molt->ilist[F_CONNBONDS].nr/3);
+                molt->ilist[F_CONNBONDS].size()/3);
         ftype_connbond = molt->ilist[F_CONNBONDS].iatoms[0];
-        ind_connbond   = molt->ilist[F_CONNBONDS].nr;
+        ind_connbond   = molt->ilist[F_CONNBONDS].size();
     }
     /* now we delete all bonded interactions, except the ones describing
      * a chemical bond. These are converted to CONNBONDS
@@ -1106,7 +1106,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, const unsigned char *gr
         }
         int nratoms = interaction_function[ftype].nratoms;
         int j       = 0;
-        while (j < molt->ilist[ftype].nr)
+        while (j < molt->ilist[ftype].size())
         {
             bool bexcl;
 
@@ -1124,11 +1124,11 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, const unsigned char *gr
                  */
                 if (bexcl && IS_CHEMBOND(ftype))
                 {
-                    srenew(molt->ilist[F_CONNBONDS].iatoms, ind_connbond + 3);
-                    molt->ilist[F_CONNBONDS].nr                     += 3;
-                    molt->ilist[F_CONNBONDS].iatoms[ind_connbond++]  = ftype_connbond;
-                    molt->ilist[F_CONNBONDS].iatoms[ind_connbond++]  = a1;
-                    molt->ilist[F_CONNBONDS].iatoms[ind_connbond++]  = a2;
+                    InteractionList &ilist = molt->ilist[F_CONNBONDS];
+                    ilist.iatoms.resize(ind_connbond + 3);
+                    ilist.iatoms[ind_connbond++]  = ftype_connbond;
+                    ilist.iatoms[ind_connbond++]  = a1;
+                    ilist.iatoms[ind_connbond++]  = a2;
                 }
             }
             else
@@ -1160,11 +1160,12 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, const unsigned char *gr
                 /* since the interaction involves QM atoms, these should be
                  * removed from the MM ilist
                  */
-                molt->ilist[ftype].nr -= (nratoms+1);
-                for (int l = j; l < molt->ilist[ftype].nr; l++)
+                InteractionList &ilist = molt->ilist[ftype];
+                for (int k = j; k < ilist.size() - (nratoms + 1); k++)
                 {
-                    molt->ilist[ftype].iatoms[l] = molt->ilist[ftype].iatoms[l+(nratoms+1)];
+                    ilist.iatoms[k] = ilist.iatoms[k + (nratoms + 1)];
                 }
+                ilist.iatoms.resize(ilist.size() - (nratoms + 1));
             }
             else
             {
@@ -1183,7 +1184,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, const unsigned char *gr
         if (IS_CHEMBOND(i))
         {
             int j = 0;
-            while (j < molt->ilist[i].nr)
+            while (j < molt->ilist[i].size())
             {
                 int a1 = molt->ilist[i].iatoms[j+1];
                 int a2 = molt->ilist[i].iatoms[j+2];
@@ -1269,7 +1270,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, const unsigned char *gr
     {
         int nratoms = interaction_function[i].nratoms;
         int j       = 0;
-        while (j < molt->ilist[i].nr)
+        while (j < molt->ilist[i].size())
         {
             int  a1    = molt->ilist[i].iatoms[j+1];
             int  a2    = molt->ilist[i].iatoms[j+2];
@@ -1281,11 +1282,12 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, const unsigned char *gr
                 /* since the interaction involves QM atoms, these should be
                  * removed from the MM ilist
                  */
-                molt->ilist[i].nr -= (nratoms+1);
-                for (int k = j; k < molt->ilist[i].nr; k++)
+                InteractionList &ilist = molt->ilist[i];
+                for (int k = j; k < ilist.size() - (nratoms + 1); k++)
                 {
-                    molt->ilist[i].iatoms[k] = molt->ilist[i].iatoms[k+(nratoms+1)];
+                    ilist.iatoms[k] = ilist.iatoms[k + (nratoms + 1)];
                 }
+                ilist.iatoms.resize(ilist.size() - (nratoms + 1));
             }
             else
             {

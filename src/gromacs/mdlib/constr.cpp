@@ -133,10 +133,8 @@ class Constraints::Impl
         int                   nflexcon = 0;
         //! A list of atoms to constraints for each moleculetype.
         std::vector<t_blocka> at2con_mt;
-        //! The size of at2settle = number of moltypes
-        int                   n_at2settle_mt = 0;
-        //! A list of atoms to settles.
-        int                 **at2settle_mt = nullptr;
+        //! A list of atoms to settles for each moleculetype
+        std::vector < std::vector < int>> at2settle_mt;
         //! Whether any SETTLES cross charge-group boundaries.
         bool                  bInterCGsettles = false;
         //! LINCS data.
@@ -741,10 +739,24 @@ FlexibleConstraintTreatment flexibleConstraintTreatment(bool haveDynamicsIntegra
     }
 }
 
-t_blocka make_at2con(int                          numAtoms,
-                     const t_ilist               *ilists,
-                     const t_iparams             *iparams,
-                     FlexibleConstraintTreatment  flexibleConstraintTreatment)
+/*! \brief Returns a block struct to go from atoms to constraints
+ *
+ * The block struct will contain constraint indices with lower indices
+ * directly matching the order in F_CONSTR and higher indices matching
+ * the order in F_CONSTRNC offset by the number of constraints in F_CONSTR.
+ *
+ * \param[in]  numAtoms  The number of atoms to construct the list for
+ * \param[in]  ilists    The interaction lists, size F_NRE
+ * \param[in]  iparams   Interaction parameters, can be null when flexibleConstraintTreatment=Include
+ * \param[in]  flexibleConstraintTreatment  The flexible constraint treatment, see enum above
+ * \returns a block struct with all constraints for each atom
+ */
+template <typename T>
+static t_blocka
+makeAtomsToConstraintsList(int                          numAtoms,
+                           const T                     *ilists,
+                           const t_iparams             *iparams,
+                           FlexibleConstraintTreatment  flexibleConstraintTreatment)
 {
     GMX_ASSERT(flexibleConstraintTreatment == FlexibleConstraintTreatment::Include || iparams != nullptr, "With flexible constraint detection we need valid iparams");
 
@@ -752,9 +764,9 @@ t_blocka make_at2con(int                          numAtoms,
 
     for (int ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
     {
-        const t_ilist &ilist  = ilists[ftype];
-        const int      stride = 1 + NRAL(ftype);
-        for (int i = 0; i < ilist.nr; i += stride)
+        const T   &ilist  = ilists[ftype];
+        const int  stride = 1 + NRAL(ftype);
+        for (int i = 0; i < ilist.size(); i += stride)
         {
             if (flexibleConstraintTreatment == FlexibleConstraintTreatment::Include ||
                 !isConstraintFlexible(iparams, ilist.iatoms[i]))
@@ -788,9 +800,9 @@ t_blocka make_at2con(int                          numAtoms,
     int numConstraints = 0;
     for (int ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
     {
-        const t_ilist &ilist  = ilists[ftype];
-        const int      stride = 1 + NRAL(ftype);
-        for (int i = 0; i < ilist.nr; i += stride)
+        const T   &ilist  = ilists[ftype];
+        const int  stride = 1 + NRAL(ftype);
+        for (int i = 0; i < ilist.size(); i += stride)
         {
             if (flexibleConstraintTreatment == FlexibleConstraintTreatment::Include ||
                 !isConstraintFlexible(iparams, ilist.iatoms[i]))
@@ -808,49 +820,65 @@ t_blocka make_at2con(int                          numAtoms,
     return at2con;
 }
 
-int countFlexibleConstraints(const t_ilist   *ilist,
-                             const t_iparams *iparams)
+t_blocka make_at2con(int                          numAtoms,
+                     const t_ilist               *ilist,
+                     const t_iparams             *iparams,
+                     FlexibleConstraintTreatment  flexibleConstraintTreatment)
+{
+    return makeAtomsToConstraintsList(numAtoms, ilist, iparams, flexibleConstraintTreatment);
+}
+
+t_blocka make_at2con(const gmx_moltype_t         &moltype,
+                     const t_iparams             *iparams,
+                     FlexibleConstraintTreatment  flexibleConstraintTreatment)
+{
+    return makeAtomsToConstraintsList(moltype.atoms.nr, moltype.ilist, iparams, flexibleConstraintTreatment);
+}
+
+//! Return the number of flexible constraints in the \c ilist and \c iparams.
+template <typename T>
+static int
+countFlexibleConstraintsTemplate(const T         *ilist,
+                                 const t_iparams *iparams)
 {
     int nflexcon = 0;
     for (int ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
     {
         const int numIatomsPerConstraint = 3;
-        int       ncon                   = ilist[ftype].nr /  numIatomsPerConstraint;
-        t_iatom  *ia                     = ilist[ftype].iatoms;
-        for (int con = 0; con < ncon; con++)
+        for (int i = 0; i < ilist[ftype].size(); i += numIatomsPerConstraint)
         {
-            if (iparams[ia[0]].constr.dA == 0 &&
-                iparams[ia[0]].constr.dB == 0)
+            const int type = ilist[ftype].iatoms[i];
+            if (iparams[type].constr.dA == 0 &&
+                iparams[type].constr.dB == 0)
             {
                 nflexcon++;
             }
-            ia += numIatomsPerConstraint;
         }
     }
 
     return nflexcon;
 }
 
-//! Returns the index of the settle to which each atom belongs.
-static int *make_at2settle(int natoms, const t_ilist *ilist)
+int countFlexibleConstraints(const t_ilist   *ilist,
+                             const t_iparams *iparams)
 {
-    int *at2s;
-    int  a, stride, s;
+    return countFlexibleConstraintsTemplate(ilist, iparams);
+}
 
-    snew(at2s, natoms);
+//! Returns the index of the settle to which each atom belongs.
+static std::vector<int> make_at2settle(int                    natoms,
+                                       const InteractionList &ilist)
+{
     /* Set all to no settle */
-    for (a = 0; a < natoms; a++)
-    {
-        at2s[a] = -1;
-    }
+    std::vector<int> at2s(natoms, -1);
 
-    stride = 1 + NRAL(F_SETTLE);
+    const int        stride = 1 + NRAL(F_SETTLE);
 
-    for (s = 0; s < ilist->nr; s += stride)
+    for (int s = 0; s < ilist.size(); s += stride)
     {
-        at2s[ilist->iatoms[s+1]] = s/stride;
-        at2s[ilist->iatoms[s+2]] = s/stride;
-        at2s[ilist->iatoms[s+3]] = s/stride;
+        at2s[ilist.iatoms[s + 1]] = s/stride;
+        at2s[ilist.iatoms[s + 2]] = s/stride;
+        at2s[ilist.iatoms[s + 3]] = s/stride;
     }
 
     return at2s;
@@ -918,8 +946,7 @@ makeAtomToConstraintMappings(const gmx_mtop_t            &mtop,
     mapping.reserve(mtop.moltype.size());
     for (const gmx_moltype_t &moltype : mtop.moltype)
     {
-        mapping.push_back(make_at2con(moltype.atoms.nr,
-                                      moltype.ilist,
+        mapping.push_back(make_at2con(moltype,
                                       mtop.ffparams.iparams,
                                       flexibleConstraintTreatment));
     }
@@ -986,7 +1013,8 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
 
         for (const gmx_molblock_t &molblock : mtop.molblock)
         {
-            int count = countFlexibleConstraints(mtop.moltype[molblock.type].ilist,
+            int count =
+                countFlexibleConstraintsTemplate(mtop.moltype[molblock.type].ilist,
                                                  mtop.ffparams.iparams);
             nflexcon += molblock.nmol*count;
         }
@@ -1050,13 +1078,10 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
         settled         = settle_init(mtop);
 
         /* Make an atom to settle index for use in domain decomposition */
-        n_at2settle_mt = mtop.moltype.size();
-        snew(at2settle_mt, n_at2settle_mt);
         for (size_t mt = 0; mt < mtop.moltype.size(); mt++)
         {
-            at2settle_mt[mt] =
-                make_at2settle(mtop.moltype[mt].atoms.nr,
-                               &mtop.moltype[mt].ilist[F_SETTLE]);
+            at2settle_mt.emplace_back(make_at2settle(mtop.moltype[mt].atoms.nr,
+                                                     mtop.moltype[mt].ilist[F_SETTLE]));
         }
 
         /* Allocate thread-local work arrays */
@@ -1111,7 +1136,7 @@ Constraints::atom2constraints_moltype() const
     return impl_->at2con_mt;
 }
 
-int *const* Constraints::atom2settle_moltype() const
+ArrayRef < const std::vector < int>> Constraints::atom2settle_moltype() const
 {
     return impl_->at2settle_mt;
 }
@@ -1121,7 +1146,6 @@ bool inter_charge_group_constraints(const gmx_mtop_t &mtop)
 {
     const gmx_moltype_t *molt;
     const t_block       *cgs;
-    const t_ilist       *il;
     int                 *at2cg, cg, a, ftype, i;
     bool                 bInterCG;
 
@@ -1130,9 +1154,9 @@ bool inter_charge_group_constraints(const gmx_mtop_t &mtop)
     {
         molt = &mtop.moltype[mtop.molblock[mb].type];
 
-        if (molt->ilist[F_CONSTR].nr   > 0 ||
-            molt->ilist[F_CONSTRNC].nr > 0 ||
-            molt->ilist[F_SETTLE].nr > 0)
+        if (molt->ilist[F_CONSTR].size()   > 0 ||
+            molt->ilist[F_CONSTRNC].size() > 0 ||
+            molt->ilist[F_SETTLE].size()   > 0)
         {
             cgs  = &molt->cgs;
             snew(at2cg, molt->atoms.nr);
@@ -1146,10 +1170,10 @@ bool inter_charge_group_constraints(const gmx_mtop_t &mtop)
 
             for (ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
             {
-                il = &molt->ilist[ftype];
-                for (i = 0; i < il->nr && !bInterCG; i += 1+NRAL(ftype))
+                const InteractionList &il = molt->ilist[ftype];
+                for (i = 0; i < il.size() && !bInterCG; i += 1+NRAL(ftype))
                 {
-                    if (at2cg[il->iatoms[i+1]] != at2cg[il->iatoms[i+2]])
+                    if (at2cg[il.iatoms[i + 1]] != at2cg[il.iatoms[i + 2]])
                     {
                         bInterCG = TRUE;
                     }
@@ -1167,7 +1191,6 @@ bool inter_charge_group_settles(const gmx_mtop_t &mtop)
 {
     const gmx_moltype_t *molt;
     const t_block       *cgs;
-    const t_ilist       *il;
     int                 *at2cg, cg, a, ftype, i;
     bool                 bInterCG;
 
@@ -1176,7 +1199,7 @@ bool inter_charge_group_settles(const gmx_mtop_t &mtop)
     {
         molt = &mtop.moltype[mtop.molblock[mb].type];
 
-        if (molt->ilist[F_SETTLE].nr > 0)
+        if (molt->ilist[F_SETTLE].size() > 0)
         {
             cgs  = &molt->cgs;
             snew(at2cg, molt->atoms.nr);
@@ -1190,11 +1213,11 @@ bool inter_charge_group_settles(const gmx_mtop_t &mtop)
 
             for (ftype = F_SETTLE; ftype <= F_SETTLE; ftype++)
             {
-                il = &molt->ilist[ftype];
-                for (i = 0; i < il->nr && !bInterCG; i += 1+NRAL(F_SETTLE))
+                const InteractionList &il = molt->ilist[ftype];
+                for (i = 0; i < il.size() && !bInterCG; i += 1+NRAL(F_SETTLE))
                 {
-                    if (at2cg[il->iatoms[i+1]] != at2cg[il->iatoms[i+2]] ||
-                        at2cg[il->iatoms[i+1]] != at2cg[il->iatoms[i+3]])
+                    if (at2cg[il.iatoms[i + 1]] != at2cg[il.iatoms[i + 2]] ||
+                        at2cg[il.iatoms[i + 1]] != at2cg[il.iatoms[i + 3]])
                     {
                         bInterCG = TRUE;
                     }

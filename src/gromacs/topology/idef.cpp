@@ -306,28 +306,28 @@ void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams)
     }
 }
 
-void pr_ilist(FILE *fp, int indent, const char *title,
-              const t_functype *functype, const t_ilist *ilist,
-              gmx_bool bShowNumbers,
-              gmx_bool bShowParameters, const t_iparams *iparams)
+template <typename T>
+static void
+printIlist(FILE *fp, int indent, const char *title,
+           const t_functype *functype, const T *ilist,
+           gmx_bool bShowNumbers,
+           gmx_bool bShowParameters, const t_iparams *iparams)
 {
     int      i, j, k, type, ftype;
-    t_iatom *iatoms;
 
-    if (available(fp, ilist, indent, title) && ilist->nr > 0)
+    if (available(fp, ilist, indent, title) && ilist->size() > 0)
     {
         indent = pr_title(fp, indent, title);
         pr_indent(fp, indent);
-        fprintf(fp, "nr: %d\n", ilist->nr);
-        if (ilist->nr > 0)
+        fprintf(fp, "nr: %d\n", ilist->size());
+        if (ilist->size() > 0)
         {
             pr_indent(fp, indent);
             fprintf(fp, "iatoms:\n");
-            iatoms = ilist->iatoms;
-            for (i = j = 0; i < ilist->nr; )
+            for (i = j = 0; i < ilist->size(); )
             {
                 pr_indent(fp, indent+INDENT);
-                type  = *(iatoms++);
+                type  = ilist->iatoms[i];
                 ftype = functype[type];
                 if (bShowNumbers)
                 {
@@ -337,7 +337,7 @@ void pr_ilist(FILE *fp, int indent, const char *title,
                 printf("(%s)", interaction_function[ftype].name);
                 for (k = 0; k < interaction_function[ftype].nratoms; k++)
                 {
-                    fprintf(fp, " %3d", *(iatoms++));
+                    fprintf(fp, " %3d", ilist->iatoms[i + 1 + k]);
                 }
                 if (bShowParameters)
                 {
@@ -349,6 +349,15 @@ void pr_ilist(FILE *fp, int indent, const char *title,
             }
         }
     }
+}
+
+void pr_ilist(FILE *fp, int indent, const char *title,
+              const t_functype *functype, const InteractionList *ilist,
+              gmx_bool bShowNumbers,
+              gmx_bool bShowParameters, const t_iparams *iparams)
+{
+    printIlist(fp, indent, title, functype, ilist,
+               bShowNumbers, bShowParameters, iparams);
 }
 
 static void pr_cmap(FILE *fp, int indent, const char *title,
@@ -438,9 +447,9 @@ void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef,
 
         for (j = 0; (j < F_NRE); j++)
         {
-            pr_ilist(fp, indent, interaction_function[j].longname,
-                     idef->functype, &idef->il[j], bShowNumbers,
-                     bShowParameters, idef->iparams);
+            printIlist(fp, indent, interaction_function[j].longname,
+                       idef->functype, &idef->il[j], bShowNumbers,
+                       bShowParameters, idef->iparams);
         }
     }
 }

@@ -115,14 +115,6 @@ gmx_moltype_t::gmx_moltype_t() :
     excls()
 {
     init_t_atoms(&atoms, 0, FALSE);
-
-    for (int ftype = 0; ftype < F_NRE; ftype++)
-    {
-        ilist[ftype].nr              = 0;
-        ilist[ftype].nr_nonperturbed = 0;
-        ilist[ftype].iatoms          = nullptr;
-        ilist[ftype].nalloc          = 0;
-    }
 }
 
 gmx_moltype_t::~gmx_moltype_t()
@@ -130,12 +122,6 @@ gmx_moltype_t::~gmx_moltype_t()
     done_atom(&atoms);
     done_block(&cgs);
     done_blocka(&excls);
-
-    for (int f = 0; f < F_NRE; f++)
-    {
-        sfree(ilist[f].iatoms);
-        ilist[f].nalloc = 0;
-    }
 }
 
 void done_gmx_groups_t(gmx_groups_t *g)
@@ -446,7 +432,7 @@ void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
             {
                 pr_ilist(fp, indent, interaction_function[j].longname,
                          mtop->ffparams.functype,
-                         &mtop->intermolecular_ilist[j],
+                         &(*mtop->intermolecular_ilist)[j],
                          bShowNumbers, bShowParameters, mtop->ffparams.iparams);
             }
         }

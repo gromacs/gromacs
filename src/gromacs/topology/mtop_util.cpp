@@ -398,8 +398,9 @@ static void gmx_mtop_ilistloop_destroy(gmx_mtop_ilistloop_t iloop)
     sfree(iloop);
 }
 
-gmx_bool gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t iloop,
-                                 const t_ilist **ilist_mol, int *nmol)
+gmx_bool gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t    iloop,
+                                 const InteractionList **ilist_mol,
+                                 int                    *nmol)
 {
     if (iloop == nullptr)
     {
@@ -412,7 +413,7 @@ gmx_bool gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t iloop,
         if (iloop->mblock == static_cast<int>(iloop->mtop->molblock.size()) &&
             iloop->mtop->bIntermolecularInteractions)
         {
-            *ilist_mol = iloop->mtop->intermolecular_ilist;
+            *ilist_mol = iloop->mtop->intermolecular_ilist->data();
             *nmol      = 1;
             return TRUE;
         }
@@ -456,8 +457,9 @@ static void gmx_mtop_ilistloop_all_destroy(gmx_mtop_ilistloop_all_t iloop)
     sfree(iloop);
 }
 
-gmx_bool gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
-                                     const t_ilist **ilist_mol, int *atnr_offset)
+gmx_bool gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t   iloop,
+                                     const InteractionList    **ilist_mol,
+                                     int                       *atnr_offset)
 {
 
     if (iloop == nullptr)
@@ -486,7 +488,7 @@ gmx_bool gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
             if (iloop->mblock == iloop->mtop->molblock.size() &&
                 iloop->mtop->bIntermolecularInteractions)
             {
-                *ilist_mol   = iloop->mtop->intermolecular_ilist;
+                *ilist_mol   = iloop->mtop->intermolecular_ilist->data();
                 *atnr_offset = 0;
                 return TRUE;
             }
@@ -506,21 +508,21 @@ gmx_bool gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
 
 int gmx_mtop_ftype_count(const gmx_mtop_t *mtop, int ftype)
 {
-    gmx_mtop_ilistloop_t iloop;
-    const t_ilist       *il;
-    int                  n, nmol;
+    gmx_mtop_ilistloop_t   iloop;
+    const InteractionList *il;
+    int                    n, nmol;
 
     n = 0;
 
     iloop = gmx_mtop_ilistloop_init(mtop);
     while (gmx_mtop_ilistloop_next(iloop, &il, &nmol))
     {
-        n += nmol*il[ftype].nr/(1+NRAL(ftype));
+        n += nmol*il[ftype].size()/(1+NRAL(ftype));
     }
 
     if (mtop->bIntermolecularInteractions)
     {
-        n += mtop->intermolecular_ilist[ftype].nr/(1+NRAL(ftype));
+        n += (*mtop->intermolecular_ilist)[ftype].size()/(1+NRAL(ftype));
     }
 
     return n;
@@ -747,24 +749,28 @@ static void blockacat(t_blocka *dest, const t_blocka *src, int copies,
     dest->index[dest->nr] = dest->nra;
 }
 
-static void ilistcat(int ftype, t_ilist *dest, const t_ilist *src, int copies,
-                     int dnum, int snum)
+static void ilistcat(int                    ftype,
+                     t_ilist               *dest,
+                     const InteractionList &src,
+                     int                    copies,
+                     int                    dnum,
+                     int                    snum)
 {
     int nral, c, i, a;
 
     nral = NRAL(ftype);
 
-    dest->nalloc = dest->nr + copies*src->nr;
+    dest->nalloc = dest->nr + copies*src.size();
     srenew(dest->iatoms, dest->nalloc);
 
     for (c = 0; c < copies; c++)
     {
-        for (i = 0; i < src->nr; )
+        for (i = 0; i < src.size(); )
         {
-            dest->iatoms[dest->nr++] = src->iatoms[i++];
+            dest->iatoms[dest->nr++] = src.iatoms[i++];
             for (a = 0; a < nral; a++)
             {
-                dest->iatoms[dest->nr++] = dnum + src->iatoms[i++];
+                dest->iatoms[dest->nr++] = dnum + src.iatoms[i++];
             }
         }
         dnum += snum;
@@ -941,22 +947,22 @@ static void gen_local_top(const gmx_mtop_t *mtop,
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
             if (bMergeConstr &&
-                ftype == F_CONSTR && molt.ilist[F_CONSTRNC].nr > 0)
+                ftype == F_CONSTR && molt.ilist[F_CONSTRNC].size() > 0)
             {
                 /* Merge all constrains into one ilist.
                  * This simplifies the constraint code.
                  */
                 for (int mol = 0; mol < molb.nmol; mol++)
                 {
-                    ilistcat(ftype, &idef->il[F_CONSTR], &molt.ilist[F_CONSTR],
+                    ilistcat(ftype, &idef->il[F_CONSTR], molt.ilist[F_CONSTR],
                              1, destnr + mol*srcnr, srcnr);
-                    ilistcat(ftype, &idef->il[F_CONSTR], &molt.ilist[F_CONSTRNC],
+                    ilistcat(ftype, &idef->il[F_CONSTR], molt.ilist[F_CONSTRNC],
                              1, destnr + mol*srcnr, srcnr);
                 }
             }
             else if (!(bMergeConstr && ftype == F_CONSTRNC))
             {
-                ilistcat(ftype, &idef->il[ftype], &molt.ilist[ftype],
+                ilistcat(ftype, &idef->il[ftype], molt.ilist[ftype],
                          molb.nmol, destnr, srcnr);
             }
         }
@@ -978,7 +984,7 @@ static void gen_local_top(const gmx_mtop_t *mtop,
     {
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
-            ilistcat(ftype, &idef->il[ftype], &mtop->intermolecular_ilist[ftype],
+            ilistcat(ftype, &idef->il[ftype], (*mtop->intermolecular_ilist)[ftype],
                      1, 0, mtop->natoms);
         }
     }

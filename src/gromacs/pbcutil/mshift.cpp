@@ -46,6 +46,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
@@ -93,26 +94,25 @@ static void add_gbond(t_graph *g, int a0, int a1)
  * When a non-null part array is supplied with part indices for each atom,
  * edges are only added when atoms have a different part index.
  */
-static bool mk_igraph(t_graph *g, int ftype, const t_ilist *il,
+template <typename T>
+static bool mk_igraph(t_graph *g, int ftype, const T &il,
                       int at_start, int at_end,
                       const int *part)
 {
-    t_iatom *ia;
     int      i, j, np;
     int      end;
     bool     addedEdge = false;
 
-    end = il->nr;
-    ia  = il->iatoms;
+    end = il.size();
 
     i = 0;
     while (i < end)
     {
         np = interaction_function[ftype].nratoms;
 
-        if (np > 1 && ia[1] >= at_start && ia[1] < at_end)
+        if (np > 1 && il.iatoms[i + 1] >= at_start && il.iatoms[i + 1] < at_end)
         {
-            if (ia[np] >= at_end)
+            if (il.iatoms[i + np] >= at_end)
             {
                 gmx_fatal(FARGS,
                           "Molecule in topology has atom numbers below and "
@@ -125,8 +125,8 @@ static bool mk_igraph(t_graph *g, int ftype, const t_ilist *il,
             if (ftype == F_SETTLE)
             {
                 /* Bond all the atoms in the settle */
-                add_gbond(g, ia[1], ia[2]);
-                add_gbond(g, ia[1], ia[3]);
+                add_gbond(g, il.iatoms[i + 1], il.iatoms[i + 2]);
+                add_gbond(g, il.iatoms[i + 1], il.iatoms[i + 3]);
                 addedEdge = true;
             }
             else if (part == nullptr)
@@ -134,7 +134,7 @@ static bool mk_igraph(t_graph *g, int ftype, const t_ilist *il,
                 /* Simply add this bond */
                 for (j = 1; j < np; j++)
                 {
-                    add_gbond(g, ia[j], ia[j+1]);
+                    add_gbond(g, il.iatoms[i + j], il.iatoms[i + j+1]);
                 }
                 addedEdge = true;
             }
@@ -143,15 +143,15 @@ static bool mk_igraph(t_graph *g, int ftype, const t_ilist *il,
                 /* Add this bond when it connects two unlinked parts of the graph */
                 for (j = 1; j < np; j++)
                 {
-                    if (part[ia[j]] != part[ia[j+1]])
+                    if (part[il.iatoms[i + j]] != part[il.iatoms[i + j+1]])
                     {
-                        add_gbond(g, ia[j], ia[j+1]);
+                        add_gbond(g, il.iatoms[i + j], il.iatoms[i + j+1]);
                         addedEdge = true;
                     }
                 }
             }
         }
-        ia += np+1;
+
         i  += np+1;
     }
 
@@ -197,36 +197,35 @@ void p_graph(FILE *log, const char *title, t_graph *g)
     fflush(log);
 }
 
-static void calc_1se(t_graph *g, int ftype, const t_ilist *il,
+template <typename T>
+static void calc_1se(t_graph *g, int ftype, const T &il,
                      int nbond[], int at_start, int at_end)
 {
     int      k, nratoms, end, j;
-    t_iatom *ia, iaa;
 
-    end = il->nr;
+    end = il.size();
 
-    ia = il->iatoms;
-    for (j = 0; (j < end); j += nratoms+1, ia += nratoms+1)
+    for (j = 0; (j < end); j += nratoms + 1)
     {
         nratoms = interaction_function[ftype].nratoms;
 
         if (ftype == F_SETTLE)
         {
-            iaa          = ia[1];
+            const int iaa = il.iatoms[j + 1];
             if (iaa >= at_start && iaa < at_end)
             {
-                nbond[iaa]   += 2;
-                nbond[ia[2]] += 1;
-                nbond[ia[3]] += 1;
-                g->at_start   = std::min(g->at_start, iaa);
-                g->at_end     = std::max(g->at_end, iaa+2+1);
+                nbond[iaa]              += 2;
+                nbond[il.iatoms[j + 2]] += 1;
+                nbond[il.iatoms[j + 3]] += 1;
+                g->at_start              = std::min(g->at_start, iaa);
+                g->at_end                = std::max(g->at_end, iaa+2+1);
             }
         }
         else
         {
             for (k = 1; (k <= nratoms); k++)
             {
-                iaa = ia[k];
+                const int iaa = il.iatoms[j + k];
                 if (iaa >= at_start && iaa < at_end)
                 {
                     g->at_start = std::min(g->at_start, iaa);
@@ -249,7 +248,8 @@ static void calc_1se(t_graph *g, int ftype, const t_ilist *il,
     }
 }
 
-static int calc_start_end(FILE *fplog, t_graph *g, const t_ilist il[],
+template <typename T>
+static int calc_start_end(FILE *fplog, t_graph *g, const T il[],
                           int at_start, int at_end,
                           int nbond[])
 {
@@ -265,7 +265,7 @@ static int calc_start_end(FILE *fplog, t_graph *g, const t_ilist il[],
     {
         if (interaction_function[i].flags & IF_CHEMBOND)
         {
-            calc_1se(g, i, &il[i], nbond, at_start, at_end);
+            calc_1se(g, i, il[i], nbond, at_start, at_end);
         }
     }
     /* Then add all the other interactions in fixed lists, but first
@@ -275,7 +275,7 @@ static int calc_start_end(FILE *fplog, t_graph *g, const t_ilist il[],
     {
         if (!(interaction_function[i].flags & IF_CHEMBOND))
         {
-            calc_1se(g, i, &il[i], nbond, at_start, at_end);
+            calc_1se(g, i, il[i], nbond, at_start, at_end);
         }
     }
 
@@ -377,10 +377,12 @@ static gmx_bool determine_graph_parts(t_graph *g, int *part)
     return bMultiPart;
 }
 
-void mk_graph_ilist(FILE *fplog,
-                    const t_ilist *ilist, int at_start, int at_end,
-                    gmx_bool bShakeOnly, gmx_bool bSettle,
-                    t_graph *g)
+template <typename T>
+static void
+mk_graph_ilist(FILE *fplog,
+               const T *ilist, int at_start, int at_end,
+               gmx_bool bShakeOnly, gmx_bool bSettle,
+               t_graph *g)
 {
     int        *nbond;
     int         i, nbtot;
@@ -426,7 +428,7 @@ void mk_graph_ilist(FILE *fplog,
             {
                 if (interaction_function[i].flags & IF_CHEMBOND)
                 {
-                    mk_igraph(g, i, &(ilist[i]), at_start, at_end, nullptr);
+                    mk_igraph(g, i, ilist[i], at_start, at_end, nullptr);
                 }
             }
 
@@ -447,7 +449,7 @@ void mk_graph_ilist(FILE *fplog,
                     if (!(interaction_function[i].flags & IF_CHEMBOND))
                     {
                         bool addedEdgeForType =
-                            mk_igraph(g, i, &(ilist[i]), at_start, at_end, nbond);
+                            mk_igraph(g, i, ilist[i], at_start, at_end, nbond);
                         addedEdge = (addedEdge || addedEdgeForType);
                     }
                 }
@@ -468,10 +470,10 @@ void mk_graph_ilist(FILE *fplog,
         else
         {
             /* This is a special thing used in splitter.c to generate shake-blocks */
-            mk_igraph(g, F_CONSTR, &(ilist[F_CONSTR]), at_start, at_end, nullptr);
+            mk_igraph(g, F_CONSTR, ilist[F_CONSTR], at_start, at_end, nullptr);
             if (bSettle)
             {
-                mk_igraph(g, F_SETTLE, &(ilist[F_SETTLE]), at_start, at_end, nullptr);
+                mk_igraph(g, F_SETTLE, ilist[F_SETTLE], at_start, at_end, nullptr);
             }
         }
         g->nbound = 0;
@@ -495,6 +497,14 @@ void mk_graph_ilist(FILE *fplog,
     {
         p_graph(debug, "graph", g);
     }
+}
+
+void mk_graph_moltype(const gmx_moltype_t &moltype,
+                      t_graph             *g)
+{
+    mk_graph_ilist(nullptr, moltype.ilist, 0, moltype.atoms.nr,
+                   FALSE, FALSE,
+                   g);
 }
 
 t_graph *mk_graph(FILE *fplog,

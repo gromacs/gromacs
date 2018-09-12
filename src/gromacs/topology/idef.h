@@ -39,6 +39,9 @@
 
 #include <stdio.h>
 
+#include <array>
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -274,22 +277,59 @@ typedef union t_iparams
 
 typedef int t_functype;
 
-/*
+/* List of listed interactions, see description further down.
+ *
+ * TODO: Consider storing the function type as well.
+ * TODO: Consider providing per interaction access.
+ */
+struct InteractionList
+{
+    /* Returns the total number of elements in iatoms */
+    int size() const
+    {
+        return iatoms.size();
+    }
+
+    /* List of interactions, see explanation further down */
+    std::vector<int> iatoms;
+};
+
+/* List of interaction lists, one list for each interaction type
+ *
+ * TODO: Consider only including entries in use instead of all F_NRE
+ */
+typedef std::array<InteractionList, F_NRE> InteractionLists;
+
+/* Deprecated list of listed interactions.
+ *
  * The nonperturbed/perturbed interactions are now separated (sorted) in the
  * ilist, such that the first 0..(nr_nonperturbed-1) ones are exactly that, and
  * the remaining ones from nr_nonperturbed..(nr-1) are perturbed bonded
  * interactions.
  */
-typedef struct t_ilist
+struct t_ilist
 {
+    /* Returns the total number of elements in iatoms */
+    int size() const
+    {
+        return nr;
+    }
+
     int      nr;
     int      nr_nonperturbed;
     t_iatom *iatoms;
     int      nalloc;
-} t_ilist;
+};
+
+/* TODO: Replace t_ilist in gmx_localtop_t by InteractionList.
+ *       The nr_nonperturbed functionality needs to be ported.
+ *       Remove t_topology.
+ *       Remove t_ilist and remove templating on list type
+ *       in mshift.cpp, constr.cpp, vsite.cpp and domdec_topology.cpp.
+ */
 
 /*
- * The struct t_ilist defines a list of atoms with their interactions.
+ * The structs InteractionList and t_ilist defines a list of atoms with their interactions.
  * General field description:
  *   int nr
  *      the size (nr elements) of the interactions array (iatoms[]).
@@ -387,7 +427,7 @@ typedef struct t_idef
 
 void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams);
 void pr_ilist(FILE *fp, int indent, const char *title,
-              const t_functype *functype, const t_ilist *ilist,
+              const t_functype *functype, const InteractionList *ilist,
               gmx_bool bShowNumbers,
               gmx_bool bShowParameters, const t_iparams *iparams);
 void pr_ffparams(FILE *fp, int indent, const char *title,

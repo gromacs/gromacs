@@ -75,9 +75,11 @@ struct gmx_moltype_t
 
     char          **name;         /**< Name of the molecule type            */
     t_atoms         atoms;        /**< The atoms in this molecule           */
-    t_ilist         ilist[F_NRE]; /**< Interaction list with local indices  */
+    InteractionList ilist[F_NRE]; /**< Interaction list with local indices  */
     t_block         cgs;          /**< The charge groups                    */
     t_blocka        excls;        /**< The exclusions                       */
+
+    /* TODO: Change ilist to InteractionLists */
 };
 
 /*! \brief Block of molecules of the same type, used in gmx_mtop_t */
@@ -135,22 +137,22 @@ struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
     /* Destructor */
     ~gmx_mtop_t();
 
-    char                      **name; /* Name of the topology                 */
-    gmx_ffparams_t              ffparams;
-    std::vector<gmx_moltype_t>  moltype;
-    std::vector<gmx_molblock_t> molblock;
-    gmx_bool                    bIntermolecularInteractions; /* Are there intermolecular
-                                                              * interactions?            */
-    t_ilist                    *intermolecular_ilist;        /* List of intermolecular interactions
-                                                              * using system wide atom indices,
-                                                              * either NULL or size F_NRE           */
+    char                            **name; /* Name of the topology                 */
+    gmx_ffparams_t                    ffparams;
+    std::vector<gmx_moltype_t>        moltype;
+    std::vector<gmx_molblock_t>       molblock;
+    gmx_bool                          bIntermolecularInteractions; /* Are there intermolecular
+                                                                    * interactions?            */
+    std::unique_ptr<InteractionLists> intermolecular_ilist;        /* List of intermolecular interactions
+                                                                    * using system wide atom indices,
+                                                                    * either NULL or size F_NRE           */
     int              natoms;
-    int              maxres_renum;                           /* Parameter for residue numbering      */
-    int              maxresnr;                               /* The maximum residue number in moltype */
-    t_atomtypes      atomtypes;                              /* Atomtype properties                  */
-    gmx_groups_t     groups;                                 /* Groups of atoms for different purposes */
-    t_symtab         symtab;                                 /* The symbol table                     */
-    bool             haveMoleculeIndices;                    /* Tells whether we have valid molecule indices */
+    int              maxres_renum;                                 /* Parameter for residue numbering      */
+    int              maxresnr;                                     /* The maximum residue number in moltype */
+    t_atomtypes      atomtypes;                                    /* Atomtype properties                  */
+    gmx_groups_t     groups;                                       /* Groups of atoms for different purposes */
+    t_symtab         symtab;                                       /* The symbol table                     */
+    bool             haveMoleculeIndices;                          /* Tells whether we have valid molecule indices */
 
     /* Derived data */
     std::vector<MoleculeBlockIndices> moleculeBlockIndices;  /* Indices for each molblock entry for fast lookup of atom properties */

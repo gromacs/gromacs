@@ -47,6 +47,7 @@
 #include <algorithm>
 #include <vector>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio-xdr.h"
@@ -1963,14 +1964,15 @@ static void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
     }
 }
 
-static void do_ilist(t_fileio *fio, t_ilist *ilist, gmx_bool bRead)
+static void do_ilist(t_fileio *fio, InteractionList *ilist, gmx_bool bRead)
 {
-    gmx_fio_do_int(fio, ilist->nr);
+    int nr = ilist->size();
+    gmx_fio_do_int(fio, nr);
     if (bRead)
     {
-        snew(ilist->iatoms, ilist->nr);
+        ilist->iatoms.resize(nr);
     }
-    gmx_fio_ndo_int(fio, ilist->iatoms, ilist->nr);
+    gmx_fio_ndo_int(fio, ilist->iatoms.data(), ilist->size());
 }
 
 static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
@@ -2022,23 +2024,22 @@ static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
     }
 }
 
-static void add_settle_atoms(t_ilist *ilist)
+static void add_settle_atoms(InteractionList *ilist)
 {
     int i;
 
     /* Settle used to only store the first atom: add the other two */
-    srenew(ilist->iatoms, 2*ilist->nr);
-    for (i = ilist->nr/2-1; i >= 0; i--)
+    ilist->iatoms.resize(2*ilist->size());
+    for (i = ilist->size()/4 - 1; i >= 0; i--)
     {
         ilist->iatoms[4*i+0] = ilist->iatoms[2*i+0];
         ilist->iatoms[4*i+1] = ilist->iatoms[2*i+1];
         ilist->iatoms[4*i+2] = ilist->iatoms[2*i+1] + 1;
         ilist->iatoms[4*i+3] = ilist->iatoms[2*i+1] + 2;
     }
-    ilist->nr = 2*ilist->nr;
 }
 
-static void do_ilists(t_fileio *fio, t_ilist *ilist, gmx_bool bRead,
+static void do_ilists(t_fileio *fio, InteractionList *ilist, gmx_bool bRead,
                       int file_version)
 {
     int          j;
@@ -2059,13 +2060,12 @@ static void do_ilists(t_fileio *fio, t_ilist *ilist, gmx_bool bRead,
         }
         if (bClear)
         {
-            ilist[j].nr     = 0;
-            ilist[j].iatoms = nullptr;
+            ilist[j].iatoms.clear();
         }
         else
         {
             do_ilist(fio, &ilist[j], bRead);
-            if (file_version < 78 && j == F_SETTLE && ilist[j].nr > 0)
+            if (file_version < 78 && j == F_SETTLE && ilist[j].size() > 0)
             {
                 add_settle_atoms(&ilist[j]);
             }
@@ -2454,27 +2454,26 @@ static void do_molblock(t_fileio *fio, gmx_molblock_t *molb,
 
 static void set_disres_npair(gmx_mtop_t *mtop)
 {
-    t_iparams            *ip;
-    gmx_mtop_ilistloop_t  iloop;
-    const t_ilist        *ilist, *il;
-    int                   nmol, i, npair;
-    t_iatom              *a;
+    t_iparams             *ip;
+    gmx_mtop_ilistloop_t   iloop;
+    const InteractionList *ilist;
+    int                    nmol;
 
     ip = mtop->ffparams.iparams;
 
     iloop     = gmx_mtop_ilistloop_init(mtop);
     while (gmx_mtop_ilistloop_next(iloop, &ilist, &nmol))
     {
-        il = &ilist[F_DISRES];
+        const InteractionList &il = ilist[F_DISRES];
 
-        if (il->nr > 0)
+        if (il.size() > 0)
         {
-            a     = il->iatoms;
-            npair = 0;
-            for (i = 0; i < il->nr; i += 3)
+            gmx::ArrayRef<const int> a     = il.iatoms;
+            int                      npair = 0;
+            for (int i = 0; i < il.size(); i += 3)
             {
                 npair++;
-                if (i+3 == il->nr || ip[a[i]].disres.label != ip[a[i+3]].disres.label)
+                if (i+3 == il.size() || ip[a[i]].disres.label != ip[a[i+3]].disres.label)
                 {
                     ip[a[i]].disres.npair = npair;
                     npair                 = 0;
@@ -2528,9 +2527,10 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
         {
             if (bRead)
             {
-                snew(mtop->intermolecular_ilist, F_NRE);
+                /* TODO: replace new by something better */
+                mtop->intermolecular_ilist = gmx::compat::make_unique<InteractionLists>();
             }
-            do_ilists(fio, mtop->intermolecular_ilist, bRead, file_version);
+            do_ilists(fio, mtop->intermolecular_ilist->data(), bRead, file_version);
         }
     }
     else
@@ -2907,7 +2907,7 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
             {
                 if (fileVersion < 57)
                 {
-                    if (mtop->moltype[0].ilist[F_DISRES].nr > 0)
+                    if (mtop->moltype[0].ilist[F_DISRES].size() > 0)
                     {
                         ir->eDisre = edrSimple;
                     }

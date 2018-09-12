@@ -135,7 +135,8 @@ void dd_clear_local_constraint_indices(gmx_domdec_t *dd)
 
 /*! \brief Walks over the constraints out from the local atoms into the non-local atoms and adds them to a list */
 static void walk_out(int con, int con_offset, int a, int offset, int nrec,
-                     int ncon1, const t_iatom *ia1, const t_iatom *ia2,
+                     gmx::ArrayRef<const int> ia1,
+                     gmx::ArrayRef<const int> ia2,
                      const t_blocka *at2con,
                      const gmx_ga2la_t &ga2la, gmx_bool bHomeConnect,
                      gmx_domdec_constraints_t *dc,
@@ -157,7 +158,7 @@ static void walk_out(int con, int con_offset, int a, int offset, int nrec,
             il_local->nalloc = over_alloc_dd(il_local->nr+3);
             srenew(il_local->iatoms, il_local->nalloc);
         }
-        iap = constr_iatomptr(ncon1, ia1, ia2, con);
+        iap = constr_iatomptr(ia1, ia2, con);
         il_local->iatoms[il_local->nr++] = iap[0];
         a1_gl = offset + iap[1];
         a2_gl = offset + iap[2];
@@ -200,7 +201,7 @@ static void walk_out(int con, int con_offset, int a, int offset, int nrec,
             if (coni != con)
             {
                 /* Walk further */
-                iap = constr_iatomptr(ncon1, ia1, ia2, coni);
+                iap = constr_iatomptr(ia1, ia2, coni);
                 if (a == iap[1])
                 {
                     b = iap[2];
@@ -212,7 +213,7 @@ static void walk_out(int con, int con_offset, int a, int offset, int nrec,
                 if (!ga2la.findHome(offset + b))
                 {
                     walk_out(coni, con_offset, b, offset, nrec-1,
-                             ncon1, ia1, ia2, at2con,
+                             ia1, ia2, at2con,
                              ga2la, FALSE, dc, dcc, il_local, ireq);
                 }
             }
@@ -224,7 +225,7 @@ static void walk_out(int con, int con_offset, int a, int offset, int nrec,
 static void atoms_to_settles(gmx_domdec_t *dd,
                              const gmx_mtop_t *mtop,
                              const int *cginfo,
-                             const int *const*at2settle_mt,
+                             gmx::ArrayRef < const std::vector < int>> at2settle_mt,
                              int cg_start, int cg_end,
                              t_ilist *ils_local,
                              std::vector<int> *ireq)
@@ -248,13 +249,13 @@ static void atoms_to_settles(gmx_domdec_t *dd,
 
                 if (settle >= 0)
                 {
-                    int      offset  = a_gl - a_mol;
+                    int        offset  = a_gl - a_mol;
 
-                    t_iatom *ia1     = mtop->moltype[molb->type].ilist[F_SETTLE].iatoms;
+                    const int *ia1     = mtop->moltype[molb->type].ilist[F_SETTLE].iatoms.data();
 
-                    int      a_gls[3];
-                    gmx_bool bAssign = FALSE;
-                    int      nlocal  = 0;
+                    int        a_gls[3];
+                    gmx_bool   bAssign = FALSE;
+                    int        nlocal  = 0;
                     for (int sa = 0; sa < nral; sa++)
                     {
                         int a_glsa = offset + ia1[settle*(1+nral)+1+sa];
@@ -312,8 +313,6 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
                                  std::vector<int> *ireq)
 {
     const t_blocka             *at2con;
-    int                         ncon1;
-    t_iatom                    *ia1, *ia2, *iap;
     int                         b_lo, offset, b_mol, i, con, con_offset;
 
     gmx_domdec_constraints_t   *dc     = dd->constraints;
@@ -336,12 +335,10 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
                 int molnr, a_mol;
                 mtopGetMolblockIndex(mtop, a_gl, &mb, &molnr, &a_mol);
 
-                const gmx_molblock_t *molb = &mtop->molblock[mb];
+                const gmx_molblock_t     &molb = mtop->molblock[mb];
 
-                ncon1 = mtop->moltype[molb->type].ilist[F_CONSTR].nr/NRAL(F_SETTLE);
-
-                ia1 = mtop->moltype[molb->type].ilist[F_CONSTR].iatoms;
-                ia2 = mtop->moltype[molb->type].ilist[F_CONSTRNC].iatoms;
+                gmx::ArrayRef<const int>  ia1 = mtop->moltype[molb.type].ilist[F_CONSTR].iatoms;
+                gmx::ArrayRef<const int>  ia2 = mtop->moltype[molb.type].ilist[F_CONSTRNC].iatoms;
 
                 /* Calculate the global constraint number offset for the molecule.
                  * This is only required for the global index to make sure
@@ -352,11 +349,11 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
 
                 /* The global atom number offset for this molecule */
                 offset = a_gl - a_mol;
-                at2con = &at2con_mt[molb->type];
+                at2con = &at2con_mt[molb.type];
                 for (i = at2con->index[a_mol]; i < at2con->index[a_mol+1]; i++)
                 {
-                    con = at2con->a[i];
-                    iap = constr_iatomptr(ncon1, ia1, ia2, con);
+                    con            = at2con->a[i];
+                    const int *iap = constr_iatomptr(ia1, ia2, con);
                     if (a_mol == iap[1])
                     {
                         b_mol = iap[2];
@@ -394,7 +391,7 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
                          * after this first call.
                          */
                         walk_out(con, con_offset, b_mol, offset, nrec,
-                                 ncon1, ia1, ia2, at2con,
+                                 ia1, ia2, at2con,
                                  ga2la, TRUE, dc, dcc, ilc_local, ireq);
                     }
                 }
@@ -424,7 +421,6 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
     t_ilist                      *ilc_local, *ils_local;
     std::vector<int>             *ireq;
     gmx::ArrayRef<const t_blocka> at2con_mt;
-    const int              *const*at2settle_mt;
     gmx::HashedMap<int>          *ga2la_specat;
     int at_end, i, j;
     t_iatom                      *iap;
@@ -463,6 +459,8 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
         ireq      = nullptr;
     }
 
+    gmx::ArrayRef < const std::vector < int>> at2settle_mt;
+    /* When settle works inside charge groups, we assigned them already */
     if (dd->bInterCGsettles)
     {
         // TODO Perhaps gmx_domdec_constraints_t should keep a valid constr?
@@ -470,13 +468,8 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
         at2settle_mt  = constr->atom2settle_moltype();
         ils_local->nr = 0;
     }
-    else
-    {
-        /* Settle works inside charge groups, we assigned them already */
-        at2settle_mt = nullptr;
-    }
 
-    if (at2settle_mt == nullptr)
+    if (at2settle_mt.empty())
     {
         atoms_to_constraints(dd, mtop, cginfo, at2con_mt, nrec,
                              ilc_local, ireq);
@@ -643,8 +636,8 @@ void init_domdec_constraints(gmx_domdec_t     *dd,
         molb                    = &mtop->molblock[mb];
         dc->molb_con_offset[mb] = ncon;
         dc->molb_ncon_mol[mb]   =
-            mtop->moltype[molb->type].ilist[F_CONSTR].nr/3 +
-            mtop->moltype[molb->type].ilist[F_CONSTRNC].nr/3;
+            mtop->moltype[molb->type].ilist[F_CONSTR].size()/3 +
+            mtop->moltype[molb->type].ilist[F_CONSTRNC].size()/3;
         ncon += molb->nmol*dc->molb_ncon_mol[mb];
     }
 
