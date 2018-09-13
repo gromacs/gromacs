@@ -42,6 +42,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
@@ -1061,17 +1062,12 @@ static void gen_local_top(const gmx_mtop_t &mtop,
     copyExclsFromMtop(mtop, &top->excls);
 }
 
-gmx_localtop_t *
-gmx_mtop_generate_local_top(const gmx_mtop_t *mtop,
+void
+gmx_mtop_generate_local_top(const gmx_mtop_t &mtop,
+                            gmx_localtop_t   *top,
                             bool              freeEnergyInteractionsAtEnd)
 {
-    gmx_localtop_t *top;
-
-    snew(top, 1);
-
-    gen_local_top(*mtop, freeEnergyInteractionsAtEnd, true, top);
-
-    return top;
+    gen_local_top(mtop, freeEnergyInteractionsAtEnd, true, top);
 }
 
 /*! \brief Fills an array with molecule begin/end atom indices

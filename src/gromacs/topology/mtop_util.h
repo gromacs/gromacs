@@ -216,12 +216,20 @@ t_atoms
 gmx_mtop_global_atoms(const gmx_mtop_t *mtop);
 
 
-/* Generate a 'local' topology for the whole system.
+/*! \brief
+ * Populate a 'local' topology for the whole system.
+ *
  * When freeEnergyInteractionsAtEnd == true, the free energy interactions will
  * be sorted to the end.
+ *
+ * \param[in] mtop Reference to global topology.
+ * \param[in,out] top Pointer to new local topology.
+ * \param[in] freeEnergyInteractionsAtEnd If free energy interactions will be sorted.
  */
-gmx_localtop_t *
-gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, bool freeEnergyInteractionsAtEnd);
+void
+gmx_mtop_generate_local_top(const gmx_mtop_t &mtop,
+                            gmx_localtop_t   *top,
+                            bool              freeEnergyInteractionsAtEnd);
 
 
 /*!\brief Creates and returns a struct with begin/end atom indices of all molecules

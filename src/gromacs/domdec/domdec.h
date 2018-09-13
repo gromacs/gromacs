@@ -318,25 +318,26 @@ void dd_atom_sum_real(struct gmx_domdec_t *dd, real v[]);
  * else state_local is redistributed between the nodes.
  * When f!=NULL, *f will be reallocated to the size of state_local.
  */
-void dd_partition_system(FILE                *fplog,
-                         const gmx::MDLogger &mdlog,
-                         int64_t              step,
-                         const t_commrec     *cr,
-                         gmx_bool             bMasterState,
-                         int                  nstglobalcomm,
-                         t_state             *state_global,
-                         const gmx_mtop_t    *top_global,
-                         const t_inputrec    *ir,
-                         t_state             *state_local,
-                         PaddedRVecVector    *f,
-                         gmx::MDAtoms        *mdatoms,
-                         gmx_localtop_t      *top_local,
-                         t_forcerec          *fr,
-                         gmx_vsite_t         *vsite,
-                         gmx::Constraints    *constr,
-                         t_nrnb              *nrnb,
-                         gmx_wallcycle       *wcycle,
-                         gmx_bool             bVerbose);
+void
+dd_partition_system(FILE                            *fplog,
+                    const gmx::MDLogger             &mdlog,
+                    int64_t                          step,
+                    const t_commrec                 *cr,
+                    gmx_bool                         bMasterState,
+                    int                              nstglobalcomm,
+                    t_state                         *state_global,
+                    const gmx_mtop_t                &top_global,
+                    const t_inputrec                *ir,
+                    t_state                         *state_local,
+                    PaddedRVecVector                *f,
+                    gmx::MDAtoms                    *mdatoms,
+                    gmx_localtop_t                  *top_local,
+                    t_forcerec                      *fr,
+                    gmx_vsite_t                     *vsite,
+                    gmx::Constraints                *constr,
+                    t_nrnb                          *nrnb,
+                    gmx_wallcycle                   *wcycle,
+                    gmx_bool                         bVerbose);
 
 /*! \brief Reset all the statistics and counters for total run counting */
 void reset_dd_statistics_counters(struct gmx_domdec_t *dd);
@@ -420,8 +421,13 @@ void dd_make_local_top(struct gmx_domdec_t *dd, struct gmx_domdec_zones_t *zones
 void dd_sort_local_top(gmx_domdec_t *dd, const t_mdatoms *mdatoms,
                        gmx_localtop_t *ltop);
 
-/*! \brief Construct local topology */
-gmx_localtop_t *dd_init_local_top(const gmx_mtop_t *top_global);
+/*! \brief Construct local topology
+ *
+ * \param[in] top_global Reference to global topology.
+ * \param[in,out] top Pointer to new local topology
+ */
+void dd_init_local_top(const gmx_mtop_t &top_global,
+                       gmx_localtop_t   *top);
 
 /*! \brief Construct local state */
 void dd_init_local_state(struct gmx_domdec_t *dd,

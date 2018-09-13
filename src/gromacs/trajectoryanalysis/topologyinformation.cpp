@@ -107,7 +107,8 @@ const gmx_localtop_t *TopologyInformation::expandedTopology() const
     // Do lazy initialization
     if (expandedTopology_ == nullptr && hasTopology())
     {
-        expandedTopology_.reset(gmx_mtop_generate_local_top(mtop_.get(), false));
+        expandedTopology_ = gmx::compat::make_unique<gmx_localtop_t>();
+        gmx_mtop_generate_local_top(*mtop_, expandedTopology_.get(), false);
     }
 
     return expandedTopology_.get();
