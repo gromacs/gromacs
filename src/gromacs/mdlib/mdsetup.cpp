@@ -59,17 +59,17 @@
  * The final solution should be an MD algorithm base class with methods
  * for initialization and atom-data setup.
  */
-
-void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
-                               const t_inputrec  *ir,
-                               const gmx_mtop_t  *top_global,
-                               gmx_localtop_t    *top,
-                               t_forcerec        *fr,
-                               t_graph          **graph,
-                               gmx::MDAtoms      *mdAtoms,
-                               gmx::Constraints  *constr,
-                               gmx_vsite_t       *vsite,
-                               gmx_shellfc_t     *shellfc)
+void
+mdAlgorithmsSetupAtomData(const t_commrec                 *cr,
+                          const t_inputrec                *ir,
+                          const gmx_mtop_t                &top_global,
+                          gmx_localtop_t                  *top,
+                          t_forcerec                      *fr,
+                          t_graph                        **graph,
+                          gmx::MDAtoms                    *mdAtoms,
+                          gmx::Constraints                *constr,
+                          gmx_vsite_t                     *vsite,
+                          gmx_shellfc_t                   *shellfc)
 {
     bool  usingDomDec = DOMAINDECOMP(cr);
 
@@ -86,9 +86,9 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
     {
         numAtomIndex = -1;
         atomIndex    = nullptr;
-        numHomeAtoms = top_global->natoms;
+        numHomeAtoms = top_global.natoms;
     }
-    atoms2md(top_global, ir, numAtomIndex, atomIndex, numHomeAtoms, mdAtoms);
+    atoms2md(&top_global, ir, numAtomIndex, atomIndex, numHomeAtoms, mdAtoms);
 
     auto mdatoms = mdAtoms->mdatoms();
     if (usingDomDec)
@@ -120,7 +120,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
     {
         GMX_ASSERT(graph != nullptr, "We use a graph with PBC (no periodic mols) and without DD");
 
-        *graph = mk_graph(nullptr, &(top->idef), 0, top_global->natoms, FALSE, FALSE);
+        *graph = mk_graph(nullptr, &(top->idef), 0, top_global.natoms, FALSE, FALSE);
     }
     else if (graph != nullptr)
     {

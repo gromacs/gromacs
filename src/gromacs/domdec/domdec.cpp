@@ -6182,25 +6182,26 @@ void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog)
 }
 
 // TODO Remove fplog when group scheme and charge groups are gone
-void dd_partition_system(FILE                *fplog,
-                         const gmx::MDLogger &mdlog,
-                         int64_t              step,
-                         const t_commrec     *cr,
-                         gmx_bool             bMasterState,
-                         int                  nstglobalcomm,
-                         t_state             *state_global,
-                         const gmx_mtop_t    *top_global,
-                         const t_inputrec    *ir,
-                         t_state             *state_local,
-                         PaddedRVecVector    *f,
-                         gmx::MDAtoms        *mdAtoms,
-                         gmx_localtop_t      *top_local,
-                         t_forcerec          *fr,
-                         gmx_vsite_t         *vsite,
-                         gmx::Constraints    *constr,
-                         t_nrnb              *nrnb,
-                         gmx_wallcycle       *wcycle,
-                         gmx_bool             bVerbose)
+void
+dd_partition_system(FILE                            *fplog,
+                    const gmx::MDLogger             &mdlog,
+                    int64_t                          step,
+                    const t_commrec                 *cr,
+                    gmx_bool                         bMasterState,
+                    int                              nstglobalcomm,
+                    t_state                         *state_global,
+                    const gmx_mtop_t                &top_global,
+                    const t_inputrec                *ir,
+                    t_state                         *state_local,
+                    PaddedRVecVector                *f,
+                    gmx::MDAtoms                    *mdAtoms,
+                    gmx_localtop_t                  *top_local,
+                    t_forcerec                      *fr,
+                    gmx_vsite_t                     *vsite,
+                    gmx::Constraints                *constr,
+                    t_nrnb                          *nrnb,
+                    gmx_wallcycle                   *wcycle,
+                    gmx_bool                         bVerbose)
 {
     gmx_domdec_t      *dd;
     gmx_domdec_comm_t *comm;
@@ -6679,7 +6680,7 @@ void dd_partition_system(FILE                *fplog,
                       comm->cellsize_min, np,
                       fr,
                       fr->cutoff_scheme == ecutsGROUP ? fr->cg_cm : as_rvec_array(state_local->x.data()),
-                      vsite, top_global, top_local);
+                      vsite, &top_global, top_local);
 
     wallcycle_sub_stop(wcycle, ewcsDD_MAKETOP);
 
@@ -6702,7 +6703,7 @@ void dd_partition_system(FILE                *fplog,
                 if (dd->bInterCGcons || dd->bInterCGsettles)
                 {
                     /* Only for inter-cg constraints we need special code */
-                    n = dd_make_local_constraints(dd, n, top_global, fr->cginfo,
+                    n = dd_make_local_constraints(dd, n, &top_global, fr->cginfo,
                                                   constr, ir->nProjOrder,
                                                   top_local->idef.il);
                 }
@@ -6806,7 +6807,7 @@ void dd_partition_system(FILE                *fplog,
     if (comm->nstDDDump > 0 && step % comm->nstDDDump == 0)
     {
         dd_move_x(dd, state_local->box, state_local->x, nullWallcycle);
-        write_dd_pdb("dd_dump", step, "dump", top_global, cr,
+        write_dd_pdb("dd_dump", step, "dump", &top_global, cr,
                      -1, as_rvec_array(state_local->x.data()), state_local->box);
     }
 
@@ -6828,7 +6829,7 @@ void dd_partition_system(FILE                *fplog,
     if (comm->DD_debug > 0)
     {
         /* Set the env var GMX_DD_DEBUG if you suspect corrupted indices */
-        check_index_consistency(dd, top_global->natoms, ncg_mtop(top_global),
+        check_index_consistency(dd, top_global.natoms, ncg_mtop(&top_global),
                                 "after partitioning");
     }
 

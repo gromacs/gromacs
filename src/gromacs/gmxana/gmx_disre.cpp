@@ -625,7 +625,7 @@ static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
 
 int gmx_disre(int argc, char *argv[])
 {
-    const char       *desc[] = {
+    const char                     *desc[] = {
         "[THISMODULE] computes violations of distance restraints.",
         "The program always",
         "computes the instantaneous violations rather than time-averaged,",
@@ -642,11 +642,11 @@ int gmx_disre(int argc, char *argv[])
         "the program will compute average violations using the third power",
         "averaging algorithm and print them in the log file."
     };
-    static int        ntop      = 0;
-    static int        nlevels   = 20;
-    static real       max_dr    = 0;
-    static gmx_bool   bThird    = TRUE;
-    t_pargs           pa[]      = {
+    static int                      ntop      = 0;
+    static int                      nlevels   = 20;
+    static real                     max_dr    = 0;
+    static gmx_bool                 bThird    = TRUE;
+    t_pargs                         pa[]      = {
         { "-ntop", FALSE, etINT,  {&ntop},
           "Number of large violations that are stored in the log file every step" },
         { "-maxdr", FALSE, etREAL, {&max_dr},
@@ -657,36 +657,36 @@ int gmx_disre(int argc, char *argv[])
           "Use inverse third power averaging or linear for matrix output" }
     };
 
-    FILE             *out = nullptr, *aver = nullptr, *numv = nullptr, *maxxv = nullptr, *xvg = nullptr;
-    t_tpxheader       header;
-    gmx_mtop_t        mtop;
-    rvec             *xtop;
-    gmx_localtop_t   *top;
-    t_atoms          *atoms = nullptr;
-    t_fcdata          fcd;
-    t_nrnb            nrnb;
-    t_graph          *g;
-    int               ntopatoms, natoms, i, j, kkk;
-    t_trxstatus      *status;
-    real              t;
-    rvec             *x, *xav = nullptr;
-    rvec4            *f;
-    matrix            box;
-    gmx_bool          bPDB;
-    int               isize;
-    int              *index = nullptr, *ind_fit = nullptr;
-    char             *grpname;
-    t_cluster_ndx    *clust = nullptr;
-    t_dr_result       dr, *dr_clust = nullptr;
-    char            **leg;
-    real             *vvindex = nullptr, *w_rls = nullptr;
-    t_pbc             pbc, *pbc_null;
-    int               my_clust;
-    FILE             *fplog;
-    gmx_output_env_t *oenv;
-    gmx_rmpbc_t       gpbc = nullptr;
+    FILE                           *out = nullptr, *aver = nullptr, *numv = nullptr, *maxxv = nullptr, *xvg = nullptr;
+    t_tpxheader                     header;
+    gmx_mtop_t                      mtop;
+    rvec                           *xtop;
+    std::unique_ptr<gmx_localtop_t> top   = nullptr;
+    t_atoms                        *atoms = nullptr;
+    t_fcdata                        fcd;
+    t_nrnb                          nrnb;
+    t_graph                        *g;
+    int                             ntopatoms, natoms, i, j, kkk;
+    t_trxstatus                    *status;
+    real                            t;
+    rvec                           *x, *xav = nullptr;
+    rvec4                          *f;
+    matrix                          box;
+    gmx_bool                        bPDB;
+    int                             isize;
+    int                            *index = nullptr, *ind_fit = nullptr;
+    char                           *grpname;
+    t_cluster_ndx                  *clust = nullptr;
+    t_dr_result                     dr, *dr_clust = nullptr;
+    char                          **leg;
+    real                           *vvindex = nullptr, *w_rls = nullptr;
+    t_pbc                           pbc, *pbc_null;
+    int                             my_clust;
+    FILE                           *fplog;
+    gmx_output_env_t               *oenv;
+    gmx_rmpbc_t                     gpbc = nullptr;
 
-    t_filenm          fnm[] = {
+    t_filenm                        fnm[] = {
         { efTPR, nullptr, nullptr, ffREAD },
         { efTRX, "-f", nullptr, ffREAD },
         { efXVG, "-ds", "drsum",  ffWRITE },
@@ -743,7 +743,7 @@ int gmx_disre(int argc, char *argv[])
         atoms->havePdbInfo = TRUE;
     }
 
-    top = gmx_mtop_generate_local_top(&mtop, ir->efep != efepNO);
+    top = gmx_mtop_generate_local_top(mtop, ir->efep != efepNO);
 
     g        = nullptr;
     pbc_null = nullptr;
