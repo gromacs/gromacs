@@ -203,30 +203,33 @@ void done_top_mtop(t_topology *top, gmx_mtop_t *mtop)
     }
 }
 
-void init_localtop(gmx_localtop_t *top)
+gmx_localtop_t::gmx_localtop_t(bool manageResource) : manageResource_(manageResource)
 {
-    init_block(&top->cgs);
-    init_blocka(&top->excls);
-    init_idef(&top->idef);
-    init_atomtypes(&top->atomtypes);
+    init_block_null(&cgs);
+    init_blocka_null(&excls);
+    init_idef(&idef);
+    init_atomtypes(&atomtypes);
+}
+
+gmx_localtop_t::~gmx_localtop_t()
+{
+    /* The domain decomposition code performs shallow copies of the data
+     * into localtop at a few places, so we need to avoid to clear data we
+     * do not own.
+     * TODO remove this once all shallow copies of the topology information are removed.
+     */
+    if (manageResource_)
+    {
+        done_localtop(this);
+    }
 }
 
 void done_localtop(gmx_localtop_t *top)
 {
-    if (top == nullptr)
-    {
-        return;
-    }
     done_idef(&top->idef);
     done_block(&top->cgs);
     done_blocka(&top->excls);
     done_atomtypes(&top->atomtypes);
-}
-
-void done_and_sfree_localtop(gmx_localtop_t *top)
-{
-    done_localtop(top);
-    sfree(top);
 }
 
 bool gmx_mtop_has_masses(const gmx_mtop_t *mtop)
