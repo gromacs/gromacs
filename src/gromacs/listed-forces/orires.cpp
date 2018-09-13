@@ -113,18 +113,17 @@ void init_orires(FILE                 *fplog,
     int                    typeMin = INT_MAX;
     int                    typeMax = 0;
     gmx_mtop_ilistloop_t   iloop   = gmx_mtop_ilistloop_init(mtop);
-    const InteractionList *il;
     int                    nmol;
-    while (gmx_mtop_ilistloop_next(iloop, &il, &nmol))
+    while (const InteractionLists *il = gmx_mtop_ilistloop_next(iloop, &nmol))
     {
         if (nmol > 1)
         {
             gmx_fatal(FARGS, "Found %d copies of a molecule with orientation restrains while the current code only supports a single copy. If you want to ensemble average, run multiple copies of the system using the multi-sim feature of mdrun.", nmol);
         }
 
-        for (int i = 0; i < il[F_ORIRES].size(); i += 3)
+        for (int i = 0; i < (*il)[F_ORIRES].size(); i += 3)
         {
-            int type = il[F_ORIRES].iatoms[i];
+            int type = (*il)[F_ORIRES].iatoms[i];
             int ex   = mtop->ffparams.iparams[type].orires.ex;
             if (ex >= od->nex)
             {

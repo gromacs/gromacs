@@ -72,13 +72,12 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
                  const gmx_multisim_t *ms,
                  t_fcdata *fcd, t_state *state, gmx_bool bIsREMD)
 {
-    int                    fa, nmol, npair, np;
-    t_disresdata          *dd;
-    history_t             *hist;
-    gmx_mtop_ilistloop_t   iloop;
-    const InteractionList *il;
-    char                  *ptr;
-    int                    type_min, type_max;
+    int                     fa, nmol, npair, np;
+    t_disresdata           *dd;
+    history_t              *hist;
+    gmx_mtop_ilistloop_t    iloop;
+    char                   *ptr;
+    int                     type_min, type_max;
 
     dd = &(fcd->disres);
 
@@ -131,19 +130,19 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
     type_min  = INT_MAX;
     type_max  = 0;
     iloop     = gmx_mtop_ilistloop_init(mtop);
-    while (gmx_mtop_ilistloop_next(iloop, &il, &nmol))
+    while (const InteractionLists *il = gmx_mtop_ilistloop_next(iloop, &nmol))
     {
-        if (nmol > 1 && il[F_DISRES].size() > 0 && ir->eDisre != edrEnsemble)
+        if (nmol > 1 && (*il)[F_DISRES].size() > 0 && ir->eDisre != edrEnsemble)
         {
             gmx_fatal(FARGS, "NMR distance restraints with multiple copies of the same molecule are currently only supported with ensemble averaging. If you just want to restrain distances between atom pairs using a flat-bottomed potential, use a restraint potential (bonds type 10) instead.");
         }
 
         np = 0;
-        for (fa = 0; fa < il[F_DISRES].size(); fa += 3)
+        for (fa = 0; fa < (*il)[F_DISRES].size(); fa += 3)
         {
             int type;
 
-            type  = il[F_DISRES].iatoms[fa];
+            type  = (*il)[F_DISRES].iatoms[fa];
 
             np++;
             npair = mtop->ffparams.iparams[type].disres.npair;

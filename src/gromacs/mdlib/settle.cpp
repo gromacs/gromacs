@@ -183,18 +183,18 @@ settledata *settle_init(const gmx_mtop_t &mtop)
     /* Check that we have only one settle type */
     int                    settle_type = -1;
     gmx_mtop_ilistloop_t   iloop       = gmx_mtop_ilistloop_init(mtop);
-    const InteractionList *ilist;
     int                    nmol;
     const int              nral1       = 1 + NRAL(F_SETTLE);
-    while (gmx_mtop_ilistloop_next(iloop, &ilist, &nmol))
+    while (const InteractionLists *ilists = gmx_mtop_ilistloop_next(iloop, &nmol))
     {
-        for (int i = 0; i < ilist[F_SETTLE].size(); i += nral1)
+        const InteractionList &ilist = (*ilists)[F_SETTLE];
+        for (int i = 0; i < ilist.size(); i += nral1)
         {
             if (settle_type == -1)
             {
-                settle_type = ilist[F_SETTLE].iatoms[i];
+                settle_type = ilist.iatoms[i];
             }
-            else if (ilist[F_SETTLE].iatoms[i] != settle_type)
+            else if (ilist.iatoms[i] != settle_type)
             {
                 gmx_fatal(FARGS,
                           "The [molecules] section of your topology specifies more than one block of\n"
