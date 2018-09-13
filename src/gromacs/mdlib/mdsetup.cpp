@@ -59,18 +59,20 @@
  * The final solution should be an MD algorithm base class with methods
  * for initialization and atom-data setup.
  */
-
-void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
-                               const t_inputrec  *ir,
-                               const gmx_mtop_t  *top_global,
-                               gmx_localtop_t    *top,
-                               t_forcerec        *fr,
-                               t_graph          **graph,
-                               gmx::MDAtoms      *mdAtoms,
-                               gmx::Constraints  *constr,
-                               gmx_vsite_t       *vsite,
-                               gmx_shellfc_t     *shellfc)
+std::unique_ptr<gmx_localtop_t>
+mdAlgorithmsSetupAtomData(const t_commrec   *cr,
+                          const t_inputrec  *ir,
+                          const gmx_mtop_t  *top_global,
+                          gmx_localtop_t    *top,
+                          t_forcerec        *fr,
+                          t_graph          **graph,
+                          gmx::MDAtoms      *mdAtoms,
+                          gmx::Constraints  *constr,
+                          gmx_vsite_t       *vsite,
+                          gmx_shellfc_t     *shellfc)
 {
+
+    std::unique_ptr<gmx_localtop_t> top_local;
     bool  usingDomDec = DOMAINDECOMP(cr);
 
     int   numAtomIndex, numHomeAtoms;
@@ -93,18 +95,15 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
     auto mdatoms = mdAtoms->mdatoms();
     if (usingDomDec)
     {
-        dd_sort_local_top(cr->dd, mdatoms, top);
+        top_local.reset(top);
+        dd_sort_local_top(cr->dd, mdatoms, top_local.get());
     }
     else
     {
         /* Currently gmx_generate_local_top allocates and returns a pointer.
          * We should implement a more elegant solution.
          */
-        gmx_localtop_t *tmpTop;
-
-        tmpTop = gmx_mtop_generate_local_top(top_global, ir->efep != efepNO);
-        *top   = *tmpTop;
-        sfree(tmpTop);
+        top_local = gmx_mtop_generate_local_top(top_global, ir->efep != efepNO);
     }
 
     if (vsite)
@@ -114,12 +113,12 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
             /* The vsites were already assigned by the domdec topology code.
              * We only need to do the thread division here.
              */
-            split_vsites_over_threads(top->idef.il, top->idef.iparams,
+            split_vsites_over_threads(top_local->idef.il, top_local->idef.iparams,
                                       mdatoms, vsite);
         }
         else
         {
-            set_vsite_top(vsite, top, mdatoms);
+            set_vsite_top(vsite, top_local.get(), mdatoms);
         }
     }
 
@@ -127,7 +126,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
     {
         GMX_ASSERT(graph != nullptr, "We use a graph with PBC (no periodic mols) and without DD");
 
-        *graph = mk_graph(nullptr, &(top->idef), 0, top_global->natoms, FALSE, FALSE);
+        *graph = mk_graph(nullptr, &(top_local->idef), 0, top_global->natoms, FALSE, FALSE);
     }
     else if (graph != nullptr)
     {
@@ -144,7 +143,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
 
     setup_bonded_threading(fr->bondedThreading,
                            fr->natoms_force,
-                           &top->idef);
+                           &top_local->idef);
 
     gmx_pme_reinit_atoms(fr->pmedata, numHomeAtoms, mdatoms->chargeA);
     /* This handles the PP+PME rank case where fr->pmedata is valid.
@@ -155,6 +154,8 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
 
     if (constr)
     {
-        constr->setConstraints(*top, *mdatoms);
+        constr->setConstraints(*top_local, *mdatoms);
     }
+
+    return top_local;
 }

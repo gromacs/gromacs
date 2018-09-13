@@ -6182,25 +6182,26 @@ void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog)
 }
 
 // TODO Remove fplog when group scheme and charge groups are gone
-void dd_partition_system(FILE                *fplog,
-                         const gmx::MDLogger &mdlog,
-                         int64_t              step,
-                         const t_commrec     *cr,
-                         gmx_bool             bMasterState,
-                         int                  nstglobalcomm,
-                         t_state             *state_global,
-                         const gmx_mtop_t    *top_global,
-                         const t_inputrec    *ir,
-                         t_state             *state_local,
-                         PaddedRVecVector    *f,
-                         gmx::MDAtoms        *mdAtoms,
-                         gmx_localtop_t      *top_local,
-                         t_forcerec          *fr,
-                         gmx_vsite_t         *vsite,
-                         gmx::Constraints    *constr,
-                         t_nrnb              *nrnb,
-                         gmx_wallcycle       *wcycle,
-                         gmx_bool             bVerbose)
+std::unique_ptr<gmx_localtop_t>
+dd_partition_system(FILE                *fplog,
+                    const gmx::MDLogger &mdlog,
+                    int64_t              step,
+                    const t_commrec     *cr,
+                    gmx_bool             bMasterState,
+                    int                  nstglobalcomm,
+                    t_state             *state_global,
+                    const gmx_mtop_t    *top_global,
+                    const t_inputrec    *ir,
+                    t_state             *state_local,
+                    PaddedRVecVector    *f,
+                    gmx::MDAtoms        *mdAtoms,
+                    gmx_localtop_t      *top_local,
+                    t_forcerec          *fr,
+                    gmx_vsite_t         *vsite,
+                    gmx::Constraints    *constr,
+                    t_nrnb              *nrnb,
+                    gmx_wallcycle       *wcycle,
+                    gmx_bool             bVerbose)
 {
     gmx_domdec_t      *dd;
     gmx_domdec_comm_t *comm;
@@ -6759,8 +6760,9 @@ void dd_partition_system(FILE                *fplog,
                         nat_f_novirsum);
 
     /* Update atom data for mdatoms and several algorithms */
-    mdAlgorithmsSetupAtomData(cr, ir, top_global, top_local, fr,
-                              nullptr, mdAtoms, constr, vsite, nullptr);
+    std::unique_ptr<gmx_localtop_t> top =
+        mdAlgorithmsSetupAtomData(cr, ir, top_global, top_local, fr,
+                                  nullptr, mdAtoms, constr, vsite, nullptr);
 
     auto mdatoms = mdAtoms->mdatoms();
     if (!thisRankHasDuty(cr, DUTY_PME))
@@ -6833,6 +6835,8 @@ void dd_partition_system(FILE                *fplog,
     }
 
     wallcycle_stop(wcycle, ewcDOMDEC);
+
+    return top;
 }
 
 /*! \brief Check whether bonded interactions are missing, if appropriate */

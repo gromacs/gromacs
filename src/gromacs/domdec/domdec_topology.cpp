@@ -2167,9 +2167,7 @@ void dd_sort_local_top(gmx_domdec_t *dd, const t_mdatoms *mdatoms,
 
 gmx_localtop_t *dd_init_local_top(const gmx_mtop_t *top_global)
 {
-    gmx_localtop_t *top;
-
-    snew(top, 1);
+    std::shared_ptr<gmx_localtop_t> top = std::make_shared<gmx_localtop_t>();
 
     top->idef.ntypes    = top_global->ffparams.ntypes;
     top->idef.atnr      = top_global->ffparams.atnr;
@@ -2180,7 +2178,7 @@ gmx_localtop_t *dd_init_local_top(const gmx_mtop_t *top_global)
 
     top->idef.ilsort    = ilsortUNKNOWN;
 
-    return top;
+    return top.get();
 }
 
 void dd_init_local_state(gmx_domdec_t *dd,
