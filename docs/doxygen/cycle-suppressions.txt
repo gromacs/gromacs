@@ -1,6 +1,7 @@
 # Order (or more generally, edge selection) is significant (see gmxtree.md);
 # "moduleA -> moduleB" means that moduleA should not depend on moduleB, and is
 # a problem to be addressed at some point.
+compat -> utility
 domdec -> imd
 domdec -> ewald
 domdec -> mdlib
