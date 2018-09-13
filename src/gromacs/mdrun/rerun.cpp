@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -205,7 +205,7 @@ void gmx::Integrator::do_rerun()
     t_trxstatus            *status;
     rvec                    mu_tot;
     t_trxframe              rerun_fr;
-    gmx_localtop_t         *top;
+    gmx_localtop_t          top;
     t_mdebin               *mdebin   = nullptr;
     gmx_enerdata_t         *enerd;
     PaddedVector<gmx::RVec> f {};
@@ -334,7 +334,7 @@ void gmx::Integrator::do_rerun()
 
     if (DOMAINDECOMP(cr))
     {
-        top = dd_init_local_top(top_global);
+        dd_init_local_top(*top_global, &top);
 
         stateInstance = compat::make_unique<t_state>();
         state         = stateInstance.get();
@@ -342,8 +342,8 @@ void gmx::Integrator::do_rerun()
 
         /* Distribute the charge groups over the nodes from the master node */
         dd_partition_system(fplog, mdlog, ir->init_step, cr, TRUE, 1,
-                            state_global, top_global, ir,
-                            state, &f, mdAtoms, top, fr,
+                            state_global, *top_global, ir,
+                            state, &f, mdAtoms, &top, fr,
                             vsite, constr,
                             nrnb, nullptr, FALSE);
         shouldCheckNumberOfBondedInteractions = true;
@@ -358,8 +358,7 @@ void gmx::Integrator::do_rerun()
         /* Copy the pointer to the global state */
         state = state_global;
 
-        snew(top, 1);
-        mdAlgorithmsSetupAtomData(cr, ir, top_global, top, fr,
+        mdAlgorithmsSetupAtomData(cr, ir, *top_global, &top, fr,
                                   &graph, mdAtoms, constr, vsite, shellfc);
     }
 
@@ -388,7 +387,7 @@ void gmx::Integrator::do_rerun()
                         &totalNumberOfBondedInteractions, &bSumEkinhOld, cglo_flags);
     }
     checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
-                                    top_global, top, state,
+                                    top_global, &top, state,
                                     &shouldCheckNumberOfBondedInteractions);
 
     if (MASTER(cr))
@@ -514,7 +513,7 @@ void gmx::Integrator::do_rerun()
                 gmx_fatal(FARGS, "Vsite recalculation with -rerun is not implemented with domain decomposition, "
                           "use a single rank");
             }
-            prepareRerunState(rerun_fr, state_global, constructVsites, vsite, top->idef, ir->delta_t, *fr, graph);
+            prepareRerunState(rerun_fr, state_global, constructVsites, vsite, top.idef, ir->delta_t, *fr, graph);
         }
 
         isLastStep = isLastStep || stopHandler->stoppingAfterCurrentStep(bNS);
@@ -525,8 +524,8 @@ void gmx::Integrator::do_rerun()
             const bool bMasterState = true;
             dd_partition_system(fplog, mdlog, step, cr,
                                 bMasterState, nstglobalcomm,
-                                state_global, top_global, ir,
-                                state, &f, mdAtoms, top, fr,
+                                state_global, *top_global, ir,
+                                state, &f, mdAtoms, &top, fr,
                                 vsite, constr,
                                 nrnb, wcycle,
                                 mdrunOptions.verbose);
@@ -555,7 +554,7 @@ void gmx::Integrator::do_rerun()
             /* Now is the time to relax the shells */
             relax_shell_flexcon(fplog, cr, ms, mdrunOptions.verbose,
                                 enforcedRotation, step,
-                                ir, bNS, force_flags, top,
+                                ir, bNS, force_flags, &top,
                                 constr, enerd, fcd,
                                 state, f.arrayRefWithPadding(), force_vir, mdatoms,
                                 nrnb, wcycle, graph, groups,
@@ -573,7 +572,7 @@ void gmx::Integrator::do_rerun()
             Awh       *awh = nullptr;
             gmx_edsam *ed  = nullptr;
             do_force(fplog, cr, ms, ir, awh, enforcedRotation,
-                     step, nrnb, wcycle, top, groups,
+                     step, nrnb, wcycle, &top, groups,
                      state->box, state->x.arrayRefWithPadding(), &state->hist,
                      f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
@@ -614,7 +613,7 @@ void gmx::Integrator::do_rerun()
                 shift_self(graph, state->box, as_rvec_array(state->x.data()));
             }
             construct_vsites(vsite, as_rvec_array(state->x.data()), ir->delta_t, as_rvec_array(state->v.data()),
-                             top->idef.iparams, top->idef.il,
+                             top.idef.iparams, top.idef.il,
                              fr->ePBC, fr->bMolPBC, cr, state->box);
 
             if (graph != nullptr)
@@ -640,7 +639,7 @@ void gmx::Integrator::do_rerun()
                             | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0)
                             );
             checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
-                                            top_global, top, state,
+                                            top_global, &top, state,
                                             &shouldCheckNumberOfBondedInteractions);
         }
 
@@ -769,5 +768,4 @@ void gmx::Integrator::do_rerun()
 
     destroy_enerdata(enerd);
     sfree(enerd);
-    sfree(top);
 }

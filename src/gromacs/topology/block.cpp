@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,6 +72,13 @@ void init_block(t_block *block)
     block->index[0]     = 0;
 }
 
+void init_block_null(t_block *block)
+{
+    block->nr           = 0;
+    block->nalloc_index = 0;
+    block->index        = nullptr;
+}
+
 void init_blocka(t_blocka *block)
 {
     block->nr           = 0;
@@ -79,6 +86,16 @@ void init_blocka(t_blocka *block)
     block->nalloc_index = 1;
     snew(block->index, block->nalloc_index);
     block->index[0]     = 0;
+    block->nalloc_a     = 0;
+    block->a            = nullptr;
+}
+
+void init_blocka_null(t_blocka *block)
+{
+    block->nr           = 0;
+    block->nra          = 0;
+    block->nalloc_index = 0;
+    block->index        = nullptr;
     block->nalloc_a     = 0;
     block->a            = nullptr;
 }

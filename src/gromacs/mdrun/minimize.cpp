@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -353,7 +353,7 @@ static void init_em(FILE *fplog,
                     t_inputrec *ir,
                     const MdrunOptions &mdrunOptions,
                     t_state *state_global, gmx_mtop_t *top_global,
-                    em_state_t *ems, gmx_localtop_t **top,
+                    em_state_t *ems, gmx_localtop_t *top,
                     t_nrnb *nrnb, rvec mu_tot,
                     t_forcerec *fr, gmx_enerdata_t **enerd,
                     t_graph **graph, gmx::MDAtoms *mdAtoms, gmx_global_stat_t *gstat,
@@ -410,14 +410,15 @@ static void init_em(FILE *fplog,
     auto mdatoms = mdAtoms->mdatoms();
     if (DOMAINDECOMP(cr))
     {
-        *top = dd_init_local_top(top_global);
+        top->useInDomainDecomp_ = true;
+        dd_init_local_top(*top_global, top);
 
         dd_init_local_state(cr->dd, state_global, &ems->s);
 
         /* Distribute the charge groups over the nodes from the master node */
         dd_partition_system(fplog, mdlog, ir->init_step, cr, TRUE, 1,
-                            state_global, top_global, ir,
-                            &ems->s, &ems->f, mdAtoms, *top,
+                            state_global, *top_global, ir,
+                            &ems->s, &ems->f, mdAtoms, top,
                             fr, vsite, constr,
                             nrnb, nullptr, FALSE);
         dd_store_state(cr->dd, &ems->s);
@@ -432,14 +433,13 @@ static void init_em(FILE *fplog,
         state_change_natoms(&ems->s, ems->s.natoms);
         ems->f.resizeWithPadding(ems->s.natoms);
 
-        snew(*top, 1);
-        mdAlgorithmsSetupAtomData(cr, ir, top_global, *top, fr,
+        mdAlgorithmsSetupAtomData(cr, ir, *top_global, top, fr,
                                   graph, mdAtoms,
                                   constr, vsite, shellfc ? *shellfc : nullptr);
 
         if (vsite)
         {
-            set_vsite_top(vsite, *top, mdatoms);
+            set_vsite_top(vsite, top, mdatoms);
         }
     }
 
@@ -736,7 +736,7 @@ static void em_dd_partition_system(FILE *fplog,
 {
     /* Repartition the domain decomposition */
     dd_partition_system(fplog, mdlog, step, cr, FALSE, 1,
-                        nullptr, top_global, ir,
+                        nullptr, *top_global, ir,
                         &ems->s, &ems->f,
                         mdAtoms, top, fr, vsite, constr,
                         nrnb, wcycle, FALSE);
@@ -1078,26 +1078,26 @@ namespace gmx
 void
 Integrator::do_cg()
 {
-    const char       *CG = "Polak-Ribiere Conjugate Gradients";
+    const char        *CG = "Polak-Ribiere Conjugate Gradients";
 
-    gmx_localtop_t   *top;
-    gmx_enerdata_t   *enerd;
-    gmx_global_stat_t gstat;
-    t_graph          *graph;
-    double            tmp, minstep;
-    real              stepsize;
-    real              a, b, c, beta = 0.0;
-    real              epot_repl = 0;
-    real              pnorm;
-    t_mdebin         *mdebin;
-    gmx_bool          converged, foundlower;
-    rvec              mu_tot;
-    gmx_bool          do_log = FALSE, do_ene = FALSE, do_x, do_f;
-    tensor            vir, pres;
-    int               number_steps, neval = 0, nstcg = inputrec->nstcgsteep;
-    gmx_mdoutf_t      outf;
-    int               m, step, nminstep;
-    auto              mdatoms = mdAtoms->mdatoms();
+    gmx_localtop_t     top;
+    gmx_enerdata_t    *enerd;
+    gmx_global_stat_t  gstat;
+    t_graph           *graph;
+    double             tmp, minstep;
+    real               stepsize;
+    real               a, b, c, beta = 0.0;
+    real               epot_repl = 0;
+    real               pnorm;
+    t_mdebin          *mdebin;
+    gmx_bool           converged, foundlower;
+    rvec               mu_tot;
+    gmx_bool           do_log = FALSE, do_ene = FALSE, do_x, do_f;
+    tensor             vir, pres;
+    int                number_steps, neval = 0, nstcg = inputrec->nstcgsteep;
+    gmx_mdoutf_t       outf;
+    int                m, step, nminstep;
+    auto               mdatoms = mdAtoms->mdatoms();
 
     GMX_LOG(mdlog.info).asParagraph().
         appendText("Note that activating conjugate gradient energy minimization via the "
@@ -1153,7 +1153,7 @@ Integrator::do_cg()
 
     EnergyEvaluator energyEvaluator {
         fplog, mdlog, cr, ms,
-        top_global, top,
+        top_global, &top,
         inputrec, nrnb, wcycle, gstat,
         vsite, constr, fcd, graph,
         mdAtoms, fr, ppForceWorkload, enerd
@@ -1326,7 +1326,7 @@ Integrator::do_cg()
         if (DOMAINDECOMP(cr) && s_min->s.ddp_count < cr->dd->ddp_count)
         {
             em_dd_partition_system(fplog, mdlog, step, cr, top_global, inputrec,
-                                   s_min, top, mdAtoms, fr, vsite, constr,
+                                   s_min, &top, mdAtoms, fr, vsite, constr,
                                    nrnb, wcycle);
         }
 
@@ -1431,7 +1431,7 @@ Integrator::do_cg()
                 {
                     /* Reload the old state */
                     em_dd_partition_system(fplog, mdlog, -1, cr, top_global, inputrec,
-                                           s_min, top, mdAtoms, fr, vsite, constr,
+                                           s_min, &top, mdAtoms, fr, vsite, constr,
                                            nrnb, wcycle);
                 }
 
@@ -1708,7 +1708,7 @@ Integrator::do_lbfgs()
 {
     static const char *LBFGS = "Low-Memory BFGS Minimizer";
     em_state_t         ems;
-    gmx_localtop_t    *top;
+    gmx_localtop_t     top;
     gmx_enerdata_t    *enerd;
     gmx_global_stat_t  gstat;
     t_graph           *graph;
@@ -1823,7 +1823,7 @@ Integrator::do_lbfgs()
     if (vsite)
     {
         construct_vsites(vsite, state_global->x.rvec_array(), 1, nullptr,
-                         top->idef.iparams, top->idef.il,
+                         top.idef.iparams, top.idef.il,
                          fr->ePBC, fr->bMolPBC, cr, state_global->box);
     }
 
@@ -1834,7 +1834,7 @@ Integrator::do_lbfgs()
     neval++;
     EnergyEvaluator energyEvaluator {
         fplog, mdlog, cr, ms,
-        top_global, top,
+        top_global, &top,
         inputrec, nrnb, wcycle, gstat,
         vsite, constr, fcd, graph,
         mdAtoms, fr, ppForceWorkload, enerd
@@ -2433,8 +2433,8 @@ Integrator::do_lbfgs()
 void
 Integrator::do_steep()
 {
-    const char       *SD = "Steepest Descents";
-    gmx_localtop_t   *top;
+    const char       *SD  = "Steepest Descents";
+    gmx_localtop_t    top;
     gmx_enerdata_t   *enerd;
     gmx_global_stat_t gstat;
     t_graph          *graph;
@@ -2491,7 +2491,7 @@ Integrator::do_steep()
     }
     EnergyEvaluator energyEvaluator {
         fplog, mdlog, cr, ms,
-        top_global, top,
+        top_global, &top,
         inputrec, nrnb, wcycle, gstat,
         vsite, constr, fcd, graph,
         mdAtoms, fr, ppForceWorkload, enerd
@@ -2608,7 +2608,7 @@ Integrator::do_steep()
             {
                 /* Reload the old state */
                 em_dd_partition_system(fplog, mdlog, count, cr, top_global, inputrec,
-                                       s_min, top, mdAtoms, fr, vsite, constr,
+                                       s_min, &top, mdAtoms, fr, vsite, constr,
                                        nrnb, wcycle);
             }
         }
@@ -2679,7 +2679,7 @@ Integrator::do_nm()
     const char          *NM = "Normal Mode Analysis";
     gmx_mdoutf_t         outf;
     int                  nnodes, node;
-    gmx_localtop_t      *top;
+    gmx_localtop_t       top;
     gmx_enerdata_t      *enerd;
     gmx_global_stat_t    gstat;
     t_graph             *graph;
@@ -2794,7 +2794,7 @@ Integrator::do_nm()
     cr->nnodes = 1;
     EnergyEvaluator energyEvaluator {
         fplog, mdlog, cr, ms,
-        top_global, top,
+        top_global, &top,
         inputrec, nrnb, wcycle, gstat,
         vsite, constr, fcd, graph,
         mdAtoms, fr, ppForceWorkload, enerd
@@ -2864,7 +2864,7 @@ Integrator::do_nm()
                                         inputrec,
                                         bNS,
                                         force_flags,
-                                        top,
+                                        &top,
                                         constr,
                                         enerd,
                                         fcd,
