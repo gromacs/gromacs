@@ -261,54 +261,54 @@ void gmx::Integrator::do_md()
     // alias to avoid a large ripple of nearly useless changes.
     // t_inputrec is being replaced by IMdpOptionsProvider, so this
     // will go away eventually.
-    t_inputrec       *ir   = inputrec;
-    gmx_mdoutf       *outf = nullptr;
-    int64_t           step, step_rel;
-    double            t, t0, lam0[efptNR];
-    gmx_bool          bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
-    gmx_bool          bNS, bNStList, bSimAnn, bStopCM,
-                      bFirstStep, bInitStep, bLastStep = FALSE;
-    gmx_bool          bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
-    gmx_bool          do_ene, do_log, do_verbose, bRerunWarnNoV = TRUE,
-                      bForceUpdate = FALSE, bCPT;
-    gmx_bool          bMasterState;
-    int               force_flags, cglo_flags;
-    tensor            force_vir, shake_vir, total_vir, tmp_vir, pres;
-    int               i, m;
-    t_trxstatus      *status;
-    rvec              mu_tot;
-    t_vcm            *vcm;
-    matrix            parrinellorahmanMu, M;
-    t_trxframe        rerun_fr;
-    gmx_repl_ex_t     repl_ex = nullptr;
-    int               nchkpt  = 1;
-    gmx_localtop_t   *top;
-    t_mdebin         *mdebin   = nullptr;
-    gmx_enerdata_t   *enerd;
-    PaddedRVecVector  f {};
-    gmx_global_stat_t gstat;
-    gmx_update_t     *upd   = nullptr;
-    t_graph          *graph = nullptr;
-    gmx_groups_t     *groups;
-    gmx_ekindata_t   *ekind;
-    gmx_shellfc_t    *shellfc;
-    gmx_bool          bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
-    gmx_bool          bResetCountersHalfMaxH = FALSE;
-    gmx_bool          bTemp, bPres, bTrotter;
-    real              dvdl_constr;
-    rvec             *cbuf        = nullptr;
-    int               cbuf_nalloc = 0;
-    matrix            lastbox;
-    int               lamnew  = 0;
+    t_inputrec                     *ir   = inputrec;
+    gmx_mdoutf                     *outf = nullptr;
+    int64_t                         step, step_rel;
+    double                          t, t0, lam0[efptNR];
+    gmx_bool                        bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
+    gmx_bool                        bNS, bNStList, bSimAnn, bStopCM,
+                                    bFirstStep, bInitStep, bLastStep = FALSE;
+    gmx_bool                        bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
+    gmx_bool                        do_ene, do_log, do_verbose, bRerunWarnNoV = TRUE,
+                                    bForceUpdate = FALSE, bCPT;
+    gmx_bool                        bMasterState;
+    int                             force_flags, cglo_flags;
+    tensor                          force_vir, shake_vir, total_vir, tmp_vir, pres;
+    int                             i, m;
+    t_trxstatus                    *status;
+    rvec                            mu_tot;
+    t_vcm                          *vcm;
+    matrix                          parrinellorahmanMu, M;
+    t_trxframe                      rerun_fr;
+    gmx_repl_ex_t                   repl_ex  = nullptr;
+    int                             nchkpt   = 1;
+    std::unique_ptr<gmx_localtop_t> top      = nullptr;
+    t_mdebin                       *mdebin   = nullptr;
+    gmx_enerdata_t                 *enerd;
+    PaddedRVecVector                f {};
+    gmx_global_stat_t               gstat;
+    gmx_update_t                   *upd   = nullptr;
+    t_graph                        *graph = nullptr;
+    gmx_groups_t                   *groups;
+    gmx_ekindata_t                 *ekind;
+    gmx_shellfc_t                  *shellfc;
+    gmx_bool                        bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
+    gmx_bool                        bResetCountersHalfMaxH = FALSE;
+    gmx_bool                        bTemp, bPres, bTrotter;
+    real                            dvdl_constr;
+    rvec                           *cbuf        = nullptr;
+    int                             cbuf_nalloc = 0;
+    matrix                          lastbox;
+    int                             lamnew  = 0;
     /* for FEP */
-    int               nstfep = 0;
-    double            cycles;
-    real              saved_conserved_quantity = 0;
-    real              last_ekin                = 0;
-    t_extmass         MassQ;
-    int             **trotter_seq;
-    char              sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
-    int               handled_stop_condition = gmx_stop_cond_none; /* compare to get_stop_condition*/
+    int                             nstfep = 0;
+    double                          cycles;
+    real                            saved_conserved_quantity = 0;
+    real                            last_ekin                = 0;
+    t_extmass                       MassQ;
+    int                           **trotter_seq;
+    char                            sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
+    int                             handled_stop_condition = gmx_stop_cond_none; /* compare to get_stop_condition*/
 
 
     /* PME load balancing data for GPU kernels */
@@ -451,8 +451,8 @@ void gmx::Integrator::do_md()
 
         /* Distribute the charge groups over the nodes from the master node */
         dd_partition_system(fplog, mdlog, ir->init_step, cr, TRUE, 1,
-                            state_global, top_global, ir,
-                            state, &f, mdAtoms, top, fr,
+                            state_global, *top_global, ir,
+                            state, &f, mdAtoms, &top, fr,
                             vsite, constr,
                             nrnb, nullptr, FALSE);
         shouldCheckNumberOfBondedInteractions = true;
@@ -468,8 +468,7 @@ void gmx::Integrator::do_md()
         /* Copy the pointer to the global state */
         state = state_global;
 
-        snew(top, 1);
-        mdAlgorithmsSetupAtomData(cr, ir, top_global, top, fr,
+        mdAlgorithmsSetupAtomData(cr, ir, *top_global, &top, fr,
                                   &graph, mdAtoms, constr, vsite, shellfc);
 
         update_realloc(upd, state->natoms);
@@ -632,7 +631,7 @@ void gmx::Integrator::do_md()
                         | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
     }
     checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
-                                    top_global, top, state,
+                                    top_global, top.get(), state,
                                     &shouldCheckNumberOfBondedInteractions);
     if (ir->eI == eiVVAK)
     {
@@ -997,8 +996,8 @@ void gmx::Integrator::do_md()
                 /* Repartition the domain decomposition */
                 dd_partition_system(fplog, mdlog, step, cr,
                                     bMasterState, nstglobalcomm,
-                                    state_global, top_global, ir,
-                                    state, &f, mdAtoms, top, fr,
+                                    state_global, *top_global, ir,
+                                    state, &f, mdAtoms, &top, fr,
                                     vsite, constr,
                                     nrnb, wcycle,
                                     do_verbose && !bPMETunePrinting);
@@ -1029,7 +1028,7 @@ void gmx::Integrator::do_md()
                             &totalNumberOfBondedInteractions, &bSumEkinhOld,
                             CGLO_GSTAT | CGLO_TEMPERATURE | CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS);
             checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
-                                            top_global, top, state,
+                                            top_global, top.get(), state,
                                             &shouldCheckNumberOfBondedInteractions);
         }
         clear_mat(force_vir);
@@ -1096,7 +1095,7 @@ void gmx::Integrator::do_md()
             /* Now is the time to relax the shells */
             relax_shell_flexcon(fplog, cr, ms, mdrunOptions.verbose,
                                 enforcedRotation, step,
-                                ir, bNS, force_flags, top,
+                                ir, bNS, force_flags, top.get(),
                                 constr, enerd, fcd,
                                 state, f, force_vir, mdatoms,
                                 nrnb, wcycle, graph, groups,
@@ -1125,7 +1124,7 @@ void gmx::Integrator::do_md()
              * Check comments in sim_util.c
              */
             do_force(fplog, cr, ms, ir, awh.get(), enforcedRotation,
-                     step, nrnb, wcycle, top, groups,
+                     step, nrnb, wcycle, top.get(), groups,
                      state->box, state->x, &state->hist,
                      f, force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
@@ -1218,7 +1217,7 @@ void gmx::Integrator::do_md()
                    b) If we are using EkinAveEkin for the kinetic energy for the temperature control, we still feed in
                    EkinAveVel because it's needed for the pressure */
                 checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
-                                                top_global, top, state,
+                                                top_global, top.get(), state,
                                                 &shouldCheckNumberOfBondedInteractions);
                 wallcycle_start(wcycle, ewcUPDATE);
             }
@@ -1608,7 +1607,7 @@ void gmx::Integrator::do_md()
                                 | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0)
                                 );
                 checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
-                                                top_global, top, state,
+                                                top_global, top.get(), state,
                                                 &shouldCheckNumberOfBondedInteractions);
             }
         }
@@ -1760,8 +1759,8 @@ void gmx::Integrator::do_md()
         if ( (bExchanged || bNeedRepartition) && DOMAINDECOMP(cr) )
         {
             dd_partition_system(fplog, mdlog, step, cr, TRUE, 1,
-                                state_global, top_global, ir,
-                                state, &f, mdAtoms, top, fr,
+                                state_global, *top_global, ir,
+                                state, &f, mdAtoms, &top, fr,
                                 vsite, constr,
                                 nrnb, wcycle, FALSE);
             shouldCheckNumberOfBondedInteractions = true;
@@ -1922,5 +1921,4 @@ void gmx::Integrator::do_md()
 
     destroy_enerdata(enerd);
     sfree(enerd);
-    sfree(top);
 }
