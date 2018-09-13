@@ -220,8 +220,8 @@ gmx_mtop_global_atoms(const gmx_mtop_t *mtop);
  * When freeEnergyInteractionsAtEnd == true, the free energy interactions will
  * be sorted to the end.
  */
-gmx_localtop_t *
-gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, bool freeEnergyInteractionsAtEnd);
+std::unique_ptr<gmx_localtop_t>
+gmx_mtop_generate_local_top(const gmx_mtop_t &mtop, bool freeEnergyInteractionsAtEnd);
 
 
 /*!\brief Creates and returns a struct with begin/end atom indices of all molecules
