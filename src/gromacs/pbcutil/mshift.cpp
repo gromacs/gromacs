@@ -502,7 +502,7 @@ mk_graph_ilist(FILE *fplog,
 void mk_graph_moltype(const gmx_moltype_t &moltype,
                       t_graph             *g)
 {
-    mk_graph_ilist(nullptr, moltype.ilist, 0, moltype.atoms.nr,
+    mk_graph_ilist(nullptr, moltype.ilist.data(), 0, moltype.atoms.nr,
                    FALSE, FALSE,
                    g);
 }

@@ -264,10 +264,10 @@ static void check_bonds_timestep(const gmx_mtop_t *mtop, double dt, warninp_t wi
     const gmx_moltype_t *w_moltype = nullptr;
     for (const gmx_moltype_t &moltype : mtop->moltype)
     {
-        const t_atom          *atom  = moltype.atoms.atom;
-        const InteractionList *ilist = moltype.ilist;
-        const InteractionList *ilc   = &ilist[F_CONSTR];
-        const InteractionList *ils   = &ilist[F_SETTLE];
+        const t_atom           *atom  = moltype.atoms.atom;
+        const InteractionLists &ilist = moltype.ilist;
+        const InteractionList  *ilc   = &ilist[F_CONSTR];
+        const InteractionList  *ils   = &ilist[F_SETTLE];
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
             if (!(ftype == F_BONDS || ftype == F_G96BONDS || ftype == F_HARMONIC))

@@ -493,7 +493,7 @@ static void count_excls(const t_block *cgs, const t_blocka *excls,
 }
 
 /*! \brief Run the reverse ilist generation and store it in r_il when \p bAssign = TRUE */
-static int low_make_reverse_ilist(const InteractionList *il_mt,
+static int low_make_reverse_ilist(const InteractionLists &il_mt,
                                   const t_atom *atom,
                                   gmx::ArrayRef < const std::vector < int>> vsitePbc,
                                   int *count,
@@ -597,7 +597,7 @@ static int low_make_reverse_ilist(const InteractionList *il_mt,
 }
 
 /*! \brief Make the reverse ilist: a list of bonded interactions linked to atoms */
-static int make_reverse_ilist(const InteractionList *ilist,
+static int make_reverse_ilist(const InteractionLists &ilist,
                               const t_atoms *atoms,
                               gmx::ArrayRef < const std::vector < int>> vsitePbc,
                               gmx_bool bConstr, gmx_bool bSettle,
@@ -701,7 +701,7 @@ static gmx_reverse_top_t make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
         GMX_RELEASE_ASSERT(mtop->intermolecular_ilist.get(), "We should have an ilist when intermolecular interactions are on");
 
         *nint +=
-            make_reverse_ilist(mtop->intermolecular_ilist->data(),
+            make_reverse_ilist(*mtop->intermolecular_ilist,
                                &atoms_global,
                                gmx::EmptyArrayRef(),
                                rt.bConstr, rt.bSettle, rt.bBCheck, FALSE,
@@ -2280,7 +2280,7 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
 
         GMX_RELEASE_ASSERT(mtop->intermolecular_ilist.get(), "We should have an ilist when intermolecular interactions are on");
 
-        make_reverse_ilist(mtop->intermolecular_ilist->data(),
+        make_reverse_ilist(*mtop->intermolecular_ilist,
                            &atoms,
                            gmx::EmptyArrayRef(),
                            FALSE, FALSE, FALSE, TRUE, &ril_intermol);
@@ -2507,7 +2507,7 @@ static void bonded_cg_distance_mol(const gmx_moltype_t *molt,
 }
 
 /*! \brief Set the distance, function type and atom indices for the longest atom distance involved in intermolecular interactions for two-body and multi-body bonded interactions */
-static void bonded_distance_intermol(const InteractionList *ilists_intermol,
+static void bonded_distance_intermol(const InteractionLists &ilists_intermol,
                                      gmx_bool bBCheck,
                                      const rvec *x, int ePBC, const matrix box,
                                      bonded_distance_t *bd_2b,
@@ -2701,7 +2701,7 @@ void dd_bonded_cg_distance(const gmx::MDLogger &mdlog,
 
         GMX_RELEASE_ASSERT(mtop->intermolecular_ilist.get(), "We should have an ilist when intermolecular interactions are on");
 
-        bonded_distance_intermol(mtop->intermolecular_ilist->data(),
+        bonded_distance_intermol(*mtop->intermolecular_ilist,
                                  bBCheck,
                                  x, ir->ePBC, box,
                                  &bd_2b, &bd_mb);

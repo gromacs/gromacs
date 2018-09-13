@@ -3228,18 +3228,17 @@ static int multi_body_bondeds_count(const gmx_mtop_t *mtop)
 {
     int                    n, nmol, ftype;
     gmx_mtop_ilistloop_t   iloop;
-    const InteractionList *il;
 
     n     = 0;
     iloop = gmx_mtop_ilistloop_init(mtop);
-    while (gmx_mtop_ilistloop_next(iloop, &il, &nmol))
+    while (const InteractionLists *il = gmx_mtop_ilistloop_next(iloop, &nmol))
     {
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
             if ((interaction_function[ftype].flags & IF_BOND) &&
                 NRAL(ftype) >  2)
             {
-                n += nmol*il[ftype].size()/(1 + NRAL(ftype));
+                n += nmol*(*il)[ftype].size()/(1 + NRAL(ftype));
             }
         }
     }

@@ -58,7 +58,7 @@ namespace gmx
 
 //! Recursing function to help find all adjacent constraints.
 static void constr_recur(const t_blocka *at2con,
-                         const InteractionList *ilist, const t_iparams *iparams,
+                         const InteractionLists &ilist, const t_iparams *iparams,
                          gmx_bool bTopB,
                          int at, int depth, int nc, int *path,
                          real r0, real r1, real *r2max,
