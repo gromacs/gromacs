@@ -59,6 +59,9 @@ a release.
   impossible to tell whether a variable passed as a parameter may
   change as a result of a function call without looking up the
   prototype.
+* Use ``not_null<T>`` pointers wherever possible to convey the
+  semantics that a pointer to a valid is required, and a reference
+  is inappropriate. See also |linkrefnotnull|.
 * Don't use C-style casts; use ``const_cast``, ``static_cast`` or
   ``reinterpret_cast as appropriate``. See the point on RTTI for
   ``dynamic_cast``. For emphasizing type (e.g. intentional integer division)
@@ -145,6 +148,7 @@ a release.
 .. |linkref7| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#c129-when-designing-a-class-hierarchy-distinguish-between-implementation-inheritance-and-interface-inheritance>`__
 .. |linkref8| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Renum-class>`__
 .. |linkref9| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rc-explicit>`__
+.. |linkrefnotnull| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Ri-nullptr> and here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rf-nullptr>`__
 
 .. _implementing exceptions:
 
