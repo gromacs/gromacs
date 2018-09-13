@@ -152,14 +152,27 @@ struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
     std::vector<MoleculeBlockIndices> moleculeBlockIndices;  /* Indices for each molblock entry for fast lookup of atom properties */
 };
 
-/* The mdrun node-local topology struct, completely written out */
-typedef struct gmx_localtop_t
+/* The mdrun node-local topology struct, used for temporary topologies */
+struct gmx_localtop_t
 {
-    t_idef        idef;         /* The interaction function definition  */
-    t_atomtypes   atomtypes;    /* Atomtype properties                  */
-    t_block       cgs;          /* The charge groups                    */
-    t_blocka      excls;        /* The exclusions                       */
-} gmx_localtop_t;
+    //! Delete default constructor because it is not safe.
+    gmx_localtop_t() = delete;
+    //! Explicit constructor, we may manage resources.
+    explicit gmx_localtop_t(bool manageResource);
+    //! Default destructor
+    ~gmx_localtop_t();
+
+    //! The interaction function definition
+    t_idef        idef;
+    //! Atomtype properties
+    t_atomtypes   atomtypes;
+    //! The charge groups
+    t_block       cgs;
+    //! The exclusions
+    t_blocka      excls;
+    //! If we are managing the resources for this object or not.
+    bool          manageResource_;
+};
 
 /* The old topology struct, completely written out, used in analysis tools */
 typedef struct t_topology
@@ -183,18 +196,11 @@ void done_top(t_topology *top);
 // the latter.
 void done_top_mtop(t_topology *top, gmx_mtop_t *mtop);
 /*! \brief
- * Properly initialize local topology.
- *
- * \param[in] top Pointer to topology to initialize.
- */
-void init_localtop(gmx_localtop_t *top);
-/*! \brief
  * Properly clear up local topology,
  *
  * \param[in] top Pointer to topology to clear up.
  */
 void done_localtop(gmx_localtop_t *top);
-void done_and_sfree_localtop(gmx_localtop_t *top);
 
 bool gmx_mtop_has_masses(const gmx_mtop_t *mtop);
 bool gmx_mtop_has_charges(const gmx_mtop_t *mtop);
@@ -211,7 +217,7 @@ void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, re
 void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
                 int natoms0, int natoms1);
 
-//! Deleter for gmx_localtop_t, needed until it has a proper destructor.
-using ExpandedTopologyPtr = gmx::unique_cptr<gmx_localtop_t, done_and_sfree_localtop>;
+//! Typedef for gmx_localtop in analysis tools.
+using ExpandedTopologyPtr = std::unique_ptr<gmx_localtop_t>;
 
 #endif
