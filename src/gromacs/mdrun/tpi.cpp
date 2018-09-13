@@ -131,36 +131,36 @@ namespace gmx
 void
 Integrator::do_tpi()
 {
-    gmx_localtop_t  *top;
-    gmx_groups_t    *groups;
-    gmx_enerdata_t  *enerd;
-    PaddedRVecVector f {};
-    real             lambda, t, temp, beta, drmax, epot;
-    double           embU, sum_embU, *sum_UgembU, V, V_all, VembU_all;
-    t_trxstatus     *status;
-    t_trxframe       rerun_fr;
-    gmx_bool         bDispCorr, bCharge, bRFExcl, bNotLastFrame, bStateChanged, bNS;
-    tensor           force_vir, shake_vir, vir, pres;
-    int              cg_tp, a_tp0, a_tp1, ngid, gid_tp, nener, e;
-    rvec            *x_mol;
-    rvec             mu_tot, x_init, dx, x_tp;
-    int              nnodes, frame;
-    int64_t          frame_step_prev, frame_step;
-    int64_t          nsteps, stepblocksize = 0, step;
-    int64_t          seed;
-    int              i;
-    FILE            *fp_tpi = nullptr;
-    char            *ptr, *dump_pdb, **leg, str[STRLEN], str2[STRLEN];
-    double           dbl, dump_ener;
-    gmx_bool         bCavity;
-    int              nat_cavity  = 0, d;
-    real            *mass_cavity = nullptr, mass_tot;
-    int              nbin;
-    double           invbinw, *bin, refvolshift, logV, bUlogV;
-    real             prescorr, enercorr, dvdlcorr;
-    gmx_bool         bEnergyOutOfBounds;
-    const char      *tpid_leg[2] = {"direct", "reweighted"};
-    auto             mdatoms     = mdAtoms->mdatoms();
+    gmx_localtop_t                  top;
+    gmx_groups_t                   *groups;
+    gmx_enerdata_t                 *enerd;
+    PaddedRVecVector                f {};
+    real                            lambda, t, temp, beta, drmax, epot;
+    double                          embU, sum_embU, *sum_UgembU, V, V_all, VembU_all;
+    t_trxstatus                    *status;
+    t_trxframe                      rerun_fr;
+    gmx_bool                        bDispCorr, bCharge, bRFExcl, bNotLastFrame, bStateChanged, bNS;
+    tensor                          force_vir, shake_vir, vir, pres;
+    int                             cg_tp, a_tp0, a_tp1, ngid, gid_tp, nener, e;
+    rvec                           *x_mol;
+    rvec                            mu_tot, x_init, dx, x_tp;
+    int                             nnodes, frame;
+    int64_t                         frame_step_prev, frame_step;
+    int64_t                         nsteps, stepblocksize = 0, step;
+    int64_t                         seed;
+    int                             i;
+    FILE                           *fp_tpi = nullptr;
+    char                           *ptr, *dump_pdb, **leg, str[STRLEN], str2[STRLEN];
+    double                          dbl, dump_ener;
+    gmx_bool                        bCavity;
+    int                             nat_cavity  = 0, d;
+    real                           *mass_cavity = nullptr, mass_tot;
+    int                             nbin;
+    double                          invbinw, *bin, refvolshift, logV, bUlogV;
+    real                            prescorr, enercorr, dvdlcorr;
+    gmx_bool                        bEnergyOutOfBounds;
+    const char                     *tpid_leg[2] = {"direct", "reweighted"};
+    auto                            mdatoms     = mdAtoms->mdatoms();
 
     GMX_UNUSED_VALUE(outputProvider);
 
@@ -177,7 +177,7 @@ Integrator::do_tpi()
 
     nnodes = cr->nnodes;
 
-    top = gmx_mtop_generate_local_top(top_global, inputrec->efep != efepNO);
+    gmx_mtop_generate_local_top(*top_global, &top, inputrec->efep != efepNO);
 
     groups = &top_global->groups;
 
@@ -269,9 +269,9 @@ Integrator::do_tpi()
     print_start(fplog, cr, walltime_accounting, "Test Particle Insertion");
 
     /* The last charge group is the group to be inserted */
-    cg_tp = top->cgs.nr - 1;
-    a_tp0 = top->cgs.index[cg_tp];
-    a_tp1 = top->cgs.index[cg_tp+1];
+    cg_tp = top.cgs.nr - 1;
+    a_tp0 = top.cgs.index[cg_tp];
+    a_tp1 = top.cgs.index[cg_tp+1];
     if (debug)
     {
         fprintf(debug, "TPI cg %d, atoms %d-%d\n", cg_tp, a_tp0, a_tp1);
@@ -293,7 +293,7 @@ Integrator::do_tpi()
     }
     bRFExcl = (bCharge && EEL_RF(fr->ic->eeltype));
 
-    calc_cgcm(fplog, cg_tp, cg_tp+1, &(top->cgs), as_rvec_array(state_global->x.data()), fr->cg_cm);
+    calc_cgcm(fplog, cg_tp, cg_tp+1, &(top.cgs), as_rvec_array(state_global->x.data()), fr->cg_cm);
     if (bCavity)
     {
         if (norm(fr->cg_cm[cg_tp]) > 0.5*inputrec->rlist && fplog)
@@ -620,7 +620,7 @@ Integrator::do_tpi()
             clear_mat(pres);
 
             /* Set the charge group center of mass of the test particle */
-            copy_rvec(x_init, fr->cg_cm[top->cgs.nr-1]);
+            copy_rvec(x_init, fr->cg_cm[top.cgs.nr-1]);
 
             /* Calc energy (no forces) on new positions.
              * Since we only need the intermolecular energy
@@ -631,7 +631,7 @@ Integrator::do_tpi()
             /* Make do_force do a single node force calculation */
             cr->nnodes = 1;
             do_force(fplog, cr, ms, inputrec, nullptr, nullptr,
-                     step, nrnb, wcycle, top, &top_global->groups,
+                     step, nrnb, wcycle, &top, &top_global->groups,
                      state_global->box, state_global->x, &state_global->hist,
                      f, force_vir, mdatoms, enerd, fcd,
                      state_global->lambda,

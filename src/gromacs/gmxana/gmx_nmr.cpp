@@ -198,25 +198,17 @@ static void get_orires_parms(const char *topnm, t_inputrec *ir,
     done_top_mtop(&top, &mtop);
 }
 
-static int get_bounds(const char *topnm,
-                      real **bounds, int **index, int **dr_pair, int *npairs,
-                      gmx_mtop_t *mtop, gmx_localtop_t **ltop, t_inputrec *ir)
+static int get_bounds(real **bounds, int **index, int **dr_pair, int *npairs,
+                      gmx_localtop_t *top)
 {
-    gmx_localtop_t *top;
     t_functype     *functype;
     t_iparams      *ip;
-    int             natoms, i, j, k, type, ftype, natom;
+    int             i, j, k, type, ftype, natom;
     t_ilist        *disres;
     t_iatom        *iatom;
     real           *b;
     int            *ind, *pair;
     int             nb, label1;
-    matrix          box;
-
-    read_tpx(topnm, ir, box, &natoms, nullptr, nullptr, mtop);
-    snew(*ltop, 1);
-    top   = gmx_mtop_generate_local_top(mtop, ir->efep != efepNO);
-    *ltop = top;
 
     functype = top->idef.functype;
     ip       = top->idef.iparams;
@@ -423,32 +415,32 @@ int gmx_nmr(int argc, char *argv[])
     };
 
     FILE              /* *out     = NULL,*/ *out_disre = nullptr, *fp_pairs = nullptr, *fort = nullptr, *fodt = nullptr, *foten = nullptr;
-    ener_file_t        fp;
-    int                timecheck = 0;
-    gmx_mtop_t         mtop;
-    gmx_localtop_t    *top = nullptr;
-    gmx_enxnm_t       *enm = nullptr;
-    t_enxframe         fr;
-    int                nre, teller, teller_disre;
-    int                nor     = 0, nex = 0, norfr = 0, enx_i = 0;
-    real              *bounds  = nullptr, *violaver = nullptr, *oobs = nullptr, *orient = nullptr, *odrms = nullptr;
-    int               *index   = nullptr, *pair = nullptr, norsel = 0, *orsel = nullptr, *or_label = nullptr;
-    int                nbounds = 0, npairs;
-    gmx_bool           bDisRe, bDRAll, bORA, bORT, bODA, bODR, bODT, bORIRE, bOTEN;
-    gmx_bool           bCont;
-    double             sumaver, sumt;
-    int               *set     = nullptr, i, j, k, nset, sss;
-    char             **pairleg, **odtleg, **otenleg;
-    char             **leg = nullptr;
-    const char        *anm_j, *anm_k, *resnm_j, *resnm_k;
-    int                resnr_j, resnr_k;
-    const char        *orinst_sub = "@ subtitle \"instantaneous\"\n";
-    char               buf[256];
-    gmx_output_env_t  *oenv;
-    t_enxblock        *blk_disre = nullptr;
-    int                ndisre    = 0;
+    ener_file_t                              fp;
+    int                                      timecheck = 0;
+    gmx_mtop_t                               mtop;
+    gmx_localtop_t                           top;
+    gmx_enxnm_t                             *enm = nullptr;
+    t_enxframe                               fr;
+    int                                      nre, teller, teller_disre;
+    int                                      nor     = 0, nex = 0, norfr = 0, enx_i = 0;
+    real                                    *bounds  = nullptr, *violaver = nullptr, *oobs = nullptr, *orient = nullptr, *odrms = nullptr;
+    int                                     *index   = nullptr, *pair = nullptr, norsel = 0, *orsel = nullptr, *or_label = nullptr;
+    int                                      nbounds = 0, npairs;
+    gmx_bool                                 bDisRe, bDRAll, bORA, bORT, bODA, bODR, bODT, bORIRE, bOTEN;
+    gmx_bool                                 bCont;
+    double                                   sumaver, sumt;
+    int                                     *set     = nullptr, i, j, k, nset, sss;
+    char                                   **pairleg, **odtleg, **otenleg;
+    char                                   **leg = nullptr;
+    const char                              *anm_j, *anm_k, *resnm_j, *resnm_k;
+    int                                      resnr_j, resnr_k;
+    const char                              *orinst_sub = "@ subtitle \"instantaneous\"\n";
+    char                                     buf[256];
+    gmx_output_env_t                        *oenv;
+    t_enxblock                              *blk_disre = nullptr;
+    int                                      ndisre    = 0;
 
-    t_filenm           fnm[] = {
+    t_filenm                                 fnm[] = {
         { efEDR, "-f",    nullptr,      ffREAD  },
         { efEDR, "-f2",   nullptr,      ffOPTRD },
         { efTPR, "-s",    nullptr,      ffOPTRD },
@@ -463,7 +455,7 @@ int gmx_nmr(int argc, char *argv[])
         { efXVG, "-oten", "oriten",  ffOPTWR }
     };
 #define NFILE asize(fnm)
-    int                npargs;
+    int                                      npargs;
 
     npargs = asize(pa);
     if (!parse_common_args(&argc, argv,
@@ -637,8 +629,16 @@ int gmx_nmr(int argc, char *argv[])
     }
     else
     {
-        nbounds = get_bounds(ftp2fn(efTPR, NFILE, fnm), &bounds, &index, &pair, &npairs,
-                             &mtop, &top, ir);
+
+        {
+            int    natoms;
+            matrix box;
+            read_tpx(ftp2fn(efTPR, NFILE, fnm), ir, box, &natoms, nullptr, nullptr, &mtop);
+            gmx_mtop_generate_local_top(mtop, &top, ir->efep != efepNO);
+        }
+
+        nbounds = get_bounds(&bounds, &index, &pair, &npairs,
+                             &top);
         snew(violaver, npairs);
         out_disre = xvgropen(opt2fn("-o", NFILE, fnm), "Sum of Violations",
                              "Time (ps)", "nm", oenv);
@@ -685,8 +685,8 @@ int gmx_nmr(int argc, char *argv[])
                 t_iatom   *fa;
                 t_iparams *ip;
 
-                fa = top->idef.il[F_DISRES].iatoms;
-                ip = top->idef.iparams;
+                fa = top.idef.il[F_DISRES].iatoms;
+                ip = top.idef.iparams;
                 if (blk_disre->nsub != 2 ||
                     (blk_disre->sub[0].nr != blk_disre->sub[1].nr) )
                 {
@@ -694,10 +694,10 @@ int gmx_nmr(int argc, char *argv[])
                 }
 
                 ndisre = blk_disre->sub[0].nr;
-                if (ndisre != top->idef.il[F_DISRES].nr/3)
+                if (ndisre != top.idef.il[F_DISRES].nr/3)
                 {
                     gmx_fatal(FARGS, "Number of disre pairs in the energy file (%d) does not match the number in the run input file (%d)\n",
-                              ndisre, top->idef.il[F_DISRES].nr/3);
+                              ndisre, top.idef.il[F_DISRES].nr/3);
                 }
                 snew(pairleg, ndisre);
                 int molb = 0;

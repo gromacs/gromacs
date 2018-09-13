@@ -2066,7 +2066,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                        t_forcerec *fr,
                        rvec *cgcm_or_x,
                        gmx_vsite_t *vsite,
-                       const gmx_mtop_t *mtop, gmx_localtop_t *ltop)
+                       const gmx_mtop_t &mtop, gmx_localtop_t *ltop)
 {
     gmx_bool bRCheckMB, bRCheck2B;
     real     rc = -1;
@@ -2136,7 +2136,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     }
 
     dd->nbonded_local =
-        make_local_bondeds_excls(dd, zones, mtop, fr->cginfo,
+        make_local_bondeds_excls(dd, zones, &mtop, fr->cginfo,
                                  bRCheckMB, rcheck, bRCheck2B, rc,
                                  dd->localAtomGroupFromAtom.data(),
                                  pbc_null, cgcm_or_x,
@@ -2153,7 +2153,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
         dd->nbonded_local += nexcl;
     }
 
-    ltop->atomtypes  = mtop->atomtypes;
+    ltop->atomtypes  = mtop.atomtypes;
 }
 
 void dd_sort_local_top(gmx_domdec_t *dd, const t_mdatoms *mdatoms,
@@ -2169,24 +2169,19 @@ void dd_sort_local_top(gmx_domdec_t *dd, const t_mdatoms *mdatoms,
     }
 }
 
-gmx_localtop_t *dd_init_local_top(const gmx_mtop_t *top_global)
+void dd_init_local_top(const gmx_mtop_t &top_global,
+                       gmx_localtop_t   *top)
 {
-    gmx_localtop_t *top;
-
-    snew(top, 1);
-
     /* TODO: Get rid of the const casts below, e.g. by using a reference */
-    top->idef.ntypes     = top_global->ffparams.numTypes();
-    top->idef.atnr       = top_global->ffparams.atnr;
-    top->idef.functype   = const_cast<t_functype *>(top_global->ffparams.functype.data());
-    top->idef.iparams    = const_cast<t_iparams *>(top_global->ffparams.iparams.data());
-    top->idef.fudgeQQ    = top_global->ffparams.fudgeQQ;
+    top->idef.ntypes     = top_global.ffparams.numTypes();
+    top->idef.atnr       = top_global.ffparams.atnr;
+    top->idef.functype   = const_cast<t_functype *>(top_global.ffparams.functype.data());
+    top->idef.iparams    = const_cast<t_iparams *>(top_global.ffparams.iparams.data());
+    top->idef.fudgeQQ    = top_global.ffparams.fudgeQQ;
     top->idef.cmap_grid  = new gmx_cmap_t;
-    *top->idef.cmap_grid = top_global->ffparams.cmap_grid;
+    *top->idef.cmap_grid = top_global.ffparams.cmap_grid;
 
-    top->idef.ilsort     = ilsortUNKNOWN;
-
-    return top;
+    top->idef.ilsort    = ilsortUNKNOWN;
 }
 
 void dd_init_local_state(gmx_domdec_t *dd,

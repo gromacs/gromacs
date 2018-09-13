@@ -2969,7 +2969,6 @@ static gmx_bool test_dd_cutoff(t_commrec     *cr,
             return FALSE;
         }
     }
-
     return TRUE;
 }
 
