@@ -308,22 +308,22 @@ static void chk_bonds(t_idef *idef, int ePBC, rvec *x, matrix box, real tol)
 
 static void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real tol)
 {
-    t_trxframe       fr;
-    t_count          count;
-    t_fr_time        first, last;
-    int              j = -1, new_natoms, natoms;
-    real             old_t1, old_t2;
-    gmx_bool         bShowTimestep = TRUE, newline = FALSE;
-    t_trxstatus     *status;
-    gmx_mtop_t       mtop;
-    gmx_localtop_t  *top = nullptr;
-    t_state          state;
-    t_inputrec       ir;
+    t_trxframe     fr;
+    t_count        count;
+    t_fr_time      first, last;
+    int            j = -1, new_natoms, natoms;
+    real           old_t1, old_t2;
+    gmx_bool       bShowTimestep = TRUE, newline = FALSE;
+    t_trxstatus   *status;
+    gmx_mtop_t     mtop;
+    gmx_localtop_t top;
+    t_state        state;
+    t_inputrec     ir;
 
     if (tpr)
     {
         read_tpx_state(tpr, &ir, &state, &mtop);
-        top = gmx_mtop_generate_local_top(&mtop, ir.efep != efepNO);
+        gmx_mtop_generate_local_top(mtop, &top, ir.efep != efepNO);
     }
     new_natoms = -1;
     natoms     = -1;
@@ -390,7 +390,7 @@ static void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tp
         natoms = new_natoms;
         if (tpr)
         {
-            chk_bonds(&top->idef, ir.ePBC, fr.x, fr.box, tol);
+            chk_bonds(&top.idef, ir.ePBC, fr.x, fr.box, tol);
         }
         if (fr.bX)
         {

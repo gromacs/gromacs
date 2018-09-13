@@ -326,20 +326,29 @@ void dd_make_reverse_top(FILE *fplog,
 void dd_make_local_cgs(struct gmx_domdec_t *dd, t_block *lcgs);
 
 /*! \brief Generate the local topology and virtual site data */
-void dd_make_local_top(struct gmx_domdec_t *dd, struct gmx_domdec_zones_t *zones,
-                       int npbcdim, matrix box,
-                       rvec cellsize_min, const ivec npulse,
-                       t_forcerec *fr,
-                       rvec *cgcm_or_x,
-                       gmx_vsite_t *vsite,
-                       const gmx_mtop_t *top, gmx_localtop_t *ltop);
+void dd_make_local_top(struct gmx_domdec_t       *dd,
+                       struct gmx_domdec_zones_t *zones,
+                       int                        npbcdim,
+                       matrix                     box,
+                       rvec                       cellsize_min,
+                       const ivec                 npulse,
+                       t_forcerec                *fr,
+                       rvec                      *cgcm_or_x,
+                       gmx_vsite_t               *vsite,
+                       const gmx_mtop_t          &top,
+                       gmx_localtop_t            *ltop);
 
 /*! \brief Sort ltop->ilist when we are doing free energy. */
 void dd_sort_local_top(gmx_domdec_t *dd, const t_mdatoms *mdatoms,
                        gmx_localtop_t *ltop);
 
-/*! \brief Construct local topology */
-gmx_localtop_t *dd_init_local_top(const gmx_mtop_t *top_global);
+/*! \brief Construct local topology
+ *
+ * \param[in] top_global Reference to global topology.
+ * \param[in,out] top Pointer to new local topology
+ */
+void dd_init_local_top(const gmx_mtop_t &top_global,
+                       gmx_localtop_t   *top);
 
 /*! \brief Construct local state */
 void dd_init_local_state(struct gmx_domdec_t *dd,
