@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -172,30 +172,23 @@ void done_top_mtop(t_topology *top, gmx_mtop_t *mtop)
     }
 }
 
-void init_localtop(gmx_localtop_t *top)
+gmx_localtop_t::gmx_localtop_t()
 {
-    init_block(&top->cgs);
-    init_blocka(&top->excls);
-    init_idef(&top->idef);
-    init_atomtypes(&top->atomtypes);
+    init_block_null(&cgs);
+    init_blocka_null(&excls);
+    init_idef(&idef);
+    init_atomtypes(&atomtypes);
 }
 
-void done_localtop(gmx_localtop_t *top)
+gmx_localtop_t::~gmx_localtop_t()
 {
-    if (top == nullptr)
+    if (!useInDomainDecomp_)
     {
-        return;
+        done_idef(&idef);
+        done_block(&cgs);
+        done_blocka(&excls);
+        done_atomtypes(&atomtypes);
     }
-    done_idef(&top->idef);
-    done_block(&top->cgs);
-    done_blocka(&top->excls);
-    done_atomtypes(&top->atomtypes);
-}
-
-void done_and_sfree_localtop(gmx_localtop_t *top)
-{
-    done_localtop(top);
-    sfree(top);
 }
 
 bool gmx_mtop_has_masses(const gmx_mtop_t *mtop)

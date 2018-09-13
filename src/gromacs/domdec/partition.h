@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -93,7 +93,7 @@ void dd_partition_system(FILE                    *fplog,
                          gmx_bool                 bMasterState,
                          int                      nstglobalcomm,
                          t_state                 *state_global,
-                         const gmx_mtop_t        *top_global,
+                         const gmx_mtop_t        &top_global,
                          const t_inputrec        *ir,
                          t_state                 *state_local,
                          PaddedVector<gmx::RVec> *f,
