@@ -309,7 +309,7 @@ void broadcastStateWithoutDynamics(const t_commrec *cr, t_state *state)
     }
 }
 
-static void bc_ilists(const t_commrec *cr, InteractionList *ilist)
+static void bc_ilists(const t_commrec *cr, InteractionLists *ilist)
 {
     int ftype;
 
@@ -318,12 +318,12 @@ static void bc_ilists(const t_commrec *cr, InteractionList *ilist)
     {
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
-            if (ilist[ftype].size() > 0)
+            if ((*ilist)[ftype].size() > 0)
             {
                 block_bc(cr, ftype);
-                int nr = ilist[ftype].size();
+                int nr = (*ilist)[ftype].size();
                 block_bc(cr, nr);
-                nblock_bc(cr, nr, ilist[ftype].iatoms.data());
+                nblock_bc(cr, nr, (*ilist)[ftype].iatoms.data());
             }
         }
         ftype = -1;
@@ -333,7 +333,7 @@ static void bc_ilists(const t_commrec *cr, InteractionList *ilist)
     {
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
-            ilist[ftype].iatoms.clear();
+            (*ilist)[ftype].iatoms.clear();
         }
         do
         {
@@ -342,8 +342,8 @@ static void bc_ilists(const t_commrec *cr, InteractionList *ilist)
             {
                 int nr;
                 block_bc(cr, nr);
-                ilist[ftype].iatoms.resize(nr);
-                nblock_bc(cr, nr, ilist[ftype].iatoms.data());
+                (*ilist)[ftype].iatoms.resize(nr);
+                nblock_bc(cr, nr, (*ilist)[ftype].iatoms.data());
             }
         }
         while (ftype >= 0);
@@ -745,7 +745,7 @@ static void bc_moltype(const t_commrec *cr, t_symtab *symtab,
         fprintf(debug, "after bc_atoms\n");
     }
 
-    bc_ilists(cr, moltype->ilist);
+    bc_ilists(cr, &moltype->ilist);
     bc_block(cr, &moltype->cgs);
     bc_blocka(cr, &moltype->excls);
 }
@@ -820,7 +820,7 @@ void bcast_ir_mtop(const t_commrec *cr, t_inputrec *inputrec, gmx_mtop_t *mtop)
     if (mtop->bIntermolecularInteractions)
     {
         mtop->intermolecular_ilist = gmx::compat::make_unique<InteractionLists>();
-        bc_ilists(cr, mtop->intermolecular_ilist->data());
+        bc_ilists(cr, mtop->intermolecular_ilist.get());
     }
 
     int nmolblock = mtop->molblock.size();

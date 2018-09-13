@@ -1385,8 +1385,8 @@ static void set_lincs_matrix(Lincs *li, real *invmass, real lambda)
 }
 
 //! Finds all triangles of atoms that share constraints to a central atom.
-static int count_triangle_constraints(const InteractionList *ilist,
-                                      const t_blocka        &at2con)
+static int count_triangle_constraints(const InteractionLists &ilist,
+                                      const t_blocka         &at2con)
 {
     int      ncon1, ncon_tot;
     int      c0, n1, c1, ac1, n2, c2;
@@ -1447,8 +1447,8 @@ static int count_triangle_constraints(const InteractionList *ilist,
 }
 
 //! Finds sequences of sequential constraints.
-static bool more_than_two_sequential_constraints(const InteractionList *ilist,
-                                                 const t_blocka        &at2con)
+static bool more_than_two_sequential_constraints(const InteractionLists &ilist,
+                                                 const t_blocka         &at2con)
 {
     int       ncon1, ncon_tot, c;
     bool      bMoreThanTwoSequentialConstraints;

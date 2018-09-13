@@ -3720,7 +3720,6 @@ static bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
 {
     int                    d, g, i;
     gmx_mtop_ilistloop_t   iloop;
-    const InteractionList *ilist;
     int                    nmol;
     t_iparams             *pr;
 
@@ -3748,14 +3747,14 @@ static bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
 
     /* Check for position restraints */
     iloop = gmx_mtop_ilistloop_init(sys);
-    while (gmx_mtop_ilistloop_next(iloop, &ilist, &nmol))
+    while (const InteractionLists *ilist = gmx_mtop_ilistloop_next(iloop, &nmol))
     {
         if (nmol > 0 &&
             (AbsRef[XX] == 0 || AbsRef[YY] == 0 || AbsRef[ZZ] == 0))
         {
-            for (i = 0; i < ilist[F_POSRES].size(); i += 2)
+            for (i = 0; i < (*ilist)[F_POSRES].size(); i += 2)
             {
-                pr = &sys->ffparams.iparams[ilist[F_POSRES].iatoms[i]];
+                pr = &sys->ffparams.iparams[(*ilist)[F_POSRES].iatoms[i]];
                 for (d = 0; d < DIM; d++)
                 {
                     if (pr->posres.fcA[d] != 0)
@@ -3764,10 +3763,10 @@ static bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
                     }
                 }
             }
-            for (i = 0; i < ilist[F_FBPOSRES].size(); i += 2)
+            for (i = 0; i < (*ilist)[F_FBPOSRES].size(); i += 2)
             {
                 /* Check for flat-bottom posres */
-                pr = &sys->ffparams.iparams[ilist[F_FBPOSRES].iatoms[i]];
+                pr = &sys->ffparams.iparams[(*ilist)[F_FBPOSRES].iatoms[i]];
                 if (pr->fbposres.k != 0)
                 {
                     switch (pr->fbposres.geom)

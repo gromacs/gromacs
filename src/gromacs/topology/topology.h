@@ -71,13 +71,11 @@ struct gmx_moltype_t
     /*! \brief Default copy constructor */
     gmx_moltype_t(const gmx_moltype_t &) = default;
 
-    char          **name;         /**< Name of the molecule type            */
-    t_atoms         atoms;        /**< The atoms in this molecule           */
-    InteractionList ilist[F_NRE]; /**< Interaction list with local indices  */
-    t_block         cgs;          /**< The charge groups                    */
-    t_blocka        excls;        /**< The exclusions                       */
-
-    /* TODO: Change ilist to InteractionLists */
+    char              **name;   /**< Name of the molecule type            */
+    t_atoms             atoms;  /**< The atoms in this molecule           */
+    InteractionLists    ilist;  /**< Interaction list with local indices  */
+    t_block             cgs;    /**< The charge groups                    */
+    t_blocka            excls;  /**< The exclusions                       */
 };
 
 /*! \brief Block of molecules of the same type, used in gmx_mtop_t */

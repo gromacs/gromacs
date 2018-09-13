@@ -2039,15 +2039,16 @@ static void add_settle_atoms(InteractionList *ilist)
     }
 }
 
-static void do_ilists(t_fileio *fio, InteractionList *ilist, gmx_bool bRead,
+static void do_ilists(t_fileio *fio, InteractionLists *ilists, gmx_bool bRead,
                       int file_version)
 {
-    int          j;
-    gmx_bool     bClear;
+    GMX_RELEASE_ASSERT(ilists, "Need a valid ilists object");
+    GMX_RELEASE_ASSERT(ilists->size() == F_NRE, "The code needs to be in sync with InteractionLists");
 
-    for (j = 0; (j < F_NRE); j++)
+    for (int j = 0; j < F_NRE; j++)
     {
-        bClear = FALSE;
+        InteractionList &ilist  = (*ilists)[j];
+        gmx_bool         bClear = FALSE;
         if (bRead)
         {
             for (int k = 0; k < NFTUPD; k++)
@@ -2060,14 +2061,14 @@ static void do_ilists(t_fileio *fio, InteractionList *ilist, gmx_bool bRead,
         }
         if (bClear)
         {
-            ilist[j].iatoms.clear();
+            ilist.iatoms.clear();
         }
         else
         {
-            do_ilist(fio, &ilist[j], bRead);
-            if (file_version < 78 && j == F_SETTLE && ilist[j].size() > 0)
+            do_ilist(fio, &ilist, bRead);
+            if (file_version < 78 && j == F_SETTLE && ilist.size() > 0)
             {
-                add_settle_atoms(&ilist[j]);
+                add_settle_atoms(&ilist);
             }
         }
     }
@@ -2409,7 +2410,7 @@ static void do_moltype(t_fileio *fio, gmx_moltype_t *molt, gmx_bool bRead,
 
     do_atoms(fio, &molt->atoms, bRead, symtab, file_version);
 
-    do_ilists(fio, molt->ilist, bRead, file_version);
+    do_ilists(fio, &molt->ilist, bRead, file_version);
 
     do_block(fio, &molt->cgs, bRead);
 
@@ -2456,15 +2457,14 @@ static void set_disres_npair(gmx_mtop_t *mtop)
 {
     t_iparams             *ip;
     gmx_mtop_ilistloop_t   iloop;
-    const InteractionList *ilist;
     int                    nmol;
 
     ip = mtop->ffparams.iparams;
 
     iloop     = gmx_mtop_ilistloop_init(mtop);
-    while (gmx_mtop_ilistloop_next(iloop, &ilist, &nmol))
+    while (const InteractionLists *ilist = gmx_mtop_ilistloop_next(iloop, &nmol))
     {
-        const InteractionList &il = ilist[F_DISRES];
+        const InteractionList &il = (*ilist)[F_DISRES];
 
         if (il.size() > 0)
         {
@@ -2529,7 +2529,7 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
             {
                 mtop->intermolecular_ilist = gmx::compat::make_unique<InteractionLists>();
             }
-            do_ilists(fio, mtop->intermolecular_ilist->data(), bRead, file_version);
+            do_ilists(fio, mtop->intermolecular_ilist.get(), bRead, file_version);
         }
     }
     else
