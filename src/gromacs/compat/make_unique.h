@@ -35,12 +35,21 @@
 #ifndef GMX_COMPAT_MAKE_UNIQUE_H
 #define GMX_COMPAT_MAKE_UNIQUE_H
 /*! \libinternal
- * \defgroup module_compat C++ standard library compatibility helpers.
- * \brief Provide uniform interface to selected C++ standard library features.
+ * \defgroup module_compat C++ "standard" library compatibility helpers.
+ *
+ * \brief Provide uniform interface to selected C++ standard and
+ * popular library features.
  *
  * For some features not available on all platforms supported by
- * \Gromacs, provide back-ports or mappings to available standard
+ * \Gromacs, provides back-ports or mappings to available standard
  * library implementations as appropriate.
+ *
+ * Backported implementations of features from newer C++ standards, or
+ * from community libraries such as Abseil or the Guidelines Support
+ * Library may also be considered for inclusion here. We generally
+ * expect that features included here are either already standard,
+ * proposed for the standard, or so useful in solving a frequently
+ * occuring problem that their use is not controversial.
  */
 
 /*!
