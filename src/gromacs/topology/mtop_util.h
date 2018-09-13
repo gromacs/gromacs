@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -217,12 +217,20 @@ t_atoms
 gmx_mtop_global_atoms(const gmx_mtop_t *mtop);
 
 
-/* Generate a 'local' topology for the whole system.
+/*! \brief
+ * Populate a 'local' topology for the whole system.
+ *
  * When freeEnergyInteractionsAtEnd == true, the free energy interactions will
  * be sorted to the end.
+ *
+ * \param[in]     mtop                        The global topology used to populate the local one.
+ * \param[in,out] top                         New local topology populated from global \p mtop.
+ * \param[in]     freeEnergyInteractionsAtEnd If free energy interactions will be sorted.
  */
-gmx_localtop_t *
-gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, bool freeEnergyInteractionsAtEnd);
+void
+gmx_mtop_generate_local_top(const gmx_mtop_t &mtop,
+                            gmx_localtop_t   *top,
+                            bool              freeEnergyInteractionsAtEnd);
 
 
 /*!\brief Creates and returns a struct with begin/end atom indices of all molecules

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -134,7 +134,7 @@ namespace gmx
 void
 Integrator::do_tpi()
 {
-    gmx_localtop_t         *top;
+    gmx_localtop_t          top;
     gmx_groups_t           *groups;
     gmx_enerdata_t         *enerd;
     PaddedVector<gmx::RVec> f {};
@@ -185,7 +185,7 @@ Integrator::do_tpi()
 
     nnodes = cr->nnodes;
 
-    top = gmx_mtop_generate_local_top(top_global, inputrec->efep != efepNO);
+    gmx_mtop_generate_local_top(*top_global, &top, inputrec->efep != efepNO);
 
     groups = &top_global->groups;
 
@@ -274,9 +274,9 @@ Integrator::do_tpi()
     print_start(fplog, cr, walltime_accounting, "Test Particle Insertion");
 
     /* The last charge group is the group to be inserted */
-    cg_tp = top->cgs.nr - 1;
-    a_tp0 = top->cgs.index[cg_tp];
-    a_tp1 = top->cgs.index[cg_tp+1];
+    cg_tp = top.cgs.nr - 1;
+    a_tp0 = top.cgs.index[cg_tp];
+    a_tp1 = top.cgs.index[cg_tp+1];
     if (debug)
     {
         fprintf(debug, "TPI cg %d, atoms %d-%d\n", cg_tp, a_tp0, a_tp1);
@@ -299,7 +299,7 @@ Integrator::do_tpi()
     }
     bRFExcl = (bCharge && EEL_RF(fr->ic->eeltype));
 
-    calc_cgcm(fplog, cg_tp, cg_tp+1, &(top->cgs), state_global->x.rvec_array(), fr->cg_cm);
+    calc_cgcm(fplog, cg_tp, cg_tp+1, &(top.cgs), state_global->x.rvec_array(), fr->cg_cm);
     if (bCavity)
     {
         if (norm(fr->cg_cm[cg_tp]) > 0.5*inputrec->rlist && fplog)
@@ -627,7 +627,7 @@ Integrator::do_tpi()
             clear_mat(pres);
 
             /* Set the charge group center of mass of the test particle */
-            copy_rvec(x_init, fr->cg_cm[top->cgs.nr-1]);
+            copy_rvec(x_init, fr->cg_cm[top.cgs.nr-1]);
 
             /* Calc energy (no forces) on new positions.
              * Since we only need the intermolecular energy
@@ -645,7 +645,7 @@ Integrator::do_tpi()
             std::fenv_t floatingPointEnvironment;
             std::feholdexcept(&floatingPointEnvironment);
             do_force(fplog, cr, ms, inputrec, nullptr, nullptr,
-                     step, nrnb, wcycle, top, &top_global->groups,
+                     step, nrnb, wcycle, &top, &top_global->groups,
                      state_global->box, state_global->x.arrayRefWithPadding(), &state_global->hist,
                      f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,
                      state_global->lambda,
