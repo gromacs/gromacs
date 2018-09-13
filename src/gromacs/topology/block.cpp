@@ -72,6 +72,13 @@ void init_block(t_block *block)
     block->index[0]     = 0;
 }
 
+void init_block_safe(t_block *block)
+{
+    block->nr           = 0;
+    block->nalloc_index = 0;
+    block->index        = nullptr;
+}
+
 void init_blocka(t_blocka *block)
 {
     block->nr           = 0;
@@ -79,6 +86,16 @@ void init_blocka(t_blocka *block)
     block->nalloc_index = 1;
     snew(block->index, block->nalloc_index);
     block->index[0]     = 0;
+    block->nalloc_a     = 0;
+    block->a            = nullptr;
+}
+
+void init_blocka_safe(t_blocka *block)
+{
+    block->nr           = 0;
+    block->nra          = 0;
+    block->nalloc_index = 0;
+    block->index        = nullptr;
     block->nalloc_a     = 0;
     block->a            = nullptr;
 }

@@ -204,30 +204,36 @@ void done_top_mtop(t_topology *top, gmx_mtop_t *mtop)
     }
 }
 
-void init_localtop(gmx_localtop_t *top)
+gmx_localtop_t::gmx_localtop_t(bool manageResource) : manageResource_(manageResource)
 {
-    init_block(&top->cgs);
-    init_blocka(&top->excls);
-    init_idef(&top->idef);
-    init_atomtypes(&top->atomtypes);
+    if (manageResource_)
+    {
+        init_block(&cgs);
+        init_blocka(&excls);
+    }
+    else
+    {
+        init_block_safe(&cgs);
+        init_blocka_safe(&excls);
+    }
+    init_idef(&idef);
+    init_atomtypes(&atomtypes);
+}
+
+gmx_localtop_t::~gmx_localtop_t()
+{
+    if (manageResource_)
+    {
+        done_localtop(this);
+    }
 }
 
 void done_localtop(gmx_localtop_t *top)
 {
-    if (top == nullptr)
-    {
-        return;
-    }
     done_idef(&top->idef);
     done_block(&top->cgs);
     done_blocka(&top->excls);
     done_atomtypes(&top->atomtypes);
-}
-
-void done_and_sfree_localtop(gmx_localtop_t *top)
-{
-    done_localtop(top);
-    sfree(top);
 }
 
 bool gmx_mtop_has_masses(const gmx_mtop_t *mtop)

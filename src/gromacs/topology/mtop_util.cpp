@@ -42,6 +42,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
@@ -1068,15 +1069,14 @@ static void gen_local_top(const gmx_mtop_t &mtop,
     copyExclsFromMtop(mtop, &top->excls);
 }
 
-gmx_localtop_t *
+std::unique_ptr<gmx_localtop_t>
 gmx_mtop_generate_local_top(const gmx_mtop_t *mtop,
                             bool              freeEnergyInteractionsAtEnd)
 {
-    gmx_localtop_t *top;
+    std::unique_ptr<gmx_localtop_t> top =
+        gmx::compat::make_unique<gmx_localtop_t>(true);
 
-    snew(top, 1);
-
-    gen_local_top(*mtop, freeEnergyInteractionsAtEnd, true, top);
+    gen_local_top(*mtop, freeEnergyInteractionsAtEnd, true, top.get());
 
     return top;
 }

@@ -6182,25 +6182,26 @@ void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog)
 }
 
 // TODO Remove fplog when group scheme and charge groups are gone
-void dd_partition_system(FILE                *fplog,
-                         const gmx::MDLogger &mdlog,
-                         int64_t              step,
-                         const t_commrec     *cr,
-                         gmx_bool             bMasterState,
-                         int                  nstglobalcomm,
-                         t_state             *state_global,
-                         const gmx_mtop_t    *top_global,
-                         const t_inputrec    *ir,
-                         t_state             *state_local,
-                         PaddedRVecVector    *f,
-                         gmx::MDAtoms        *mdAtoms,
-                         gmx_localtop_t      *top_local,
-                         t_forcerec          *fr,
-                         gmx_vsite_t         *vsite,
-                         gmx::Constraints    *constr,
-                         t_nrnb              *nrnb,
-                         gmx_wallcycle       *wcycle,
-                         gmx_bool             bVerbose)
+void
+dd_partition_system(FILE                            *fplog,
+                    const gmx::MDLogger             &mdlog,
+                    int64_t                          step,
+                    const t_commrec                 *cr,
+                    gmx_bool                         bMasterState,
+                    int                              nstglobalcomm,
+                    t_state                         *state_global,
+                    const gmx_mtop_t                *top_global,
+                    const t_inputrec                *ir,
+                    t_state                         *state_local,
+                    PaddedRVecVector                *f,
+                    gmx::MDAtoms                    *mdAtoms,
+                    std::unique_ptr<gmx_localtop_t> *top_local,
+                    t_forcerec                      *fr,
+                    gmx_vsite_t                     *vsite,
+                    gmx::Constraints                *constr,
+                    t_nrnb                          *nrnb,
+                    gmx_wallcycle                   *wcycle,
+                    gmx_bool                         bVerbose)
 {
     gmx_domdec_t      *dd;
     gmx_domdec_comm_t *comm;
@@ -6432,7 +6433,7 @@ void dd_partition_system(FILE                *fplog,
 
         distributeState(mdlog, dd, state_global, ddbox, state_local, f);
 
-        dd_make_local_cgs(dd, &top_local->cgs);
+        dd_make_local_cgs(dd, &(*top_local)->cgs);
 
         /* Ensure that we have space for the new distribution */
         dd_check_alloc_ncg(fr, state_local, f, dd->ncg_home);
@@ -6440,7 +6441,7 @@ void dd_partition_system(FILE                *fplog,
         if (fr->cutoff_scheme == ecutsGROUP)
         {
             calc_cgcm(fplog, 0, dd->ncg_home,
-                      &top_local->cgs, as_rvec_array(state_local->x.data()), fr->cg_cm);
+                      &(*top_local)->cgs, as_rvec_array(state_local->x.data()), fr->cg_cm);
         }
 
         inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
@@ -6471,7 +6472,7 @@ void dd_partition_system(FILE                *fplog,
         {
             /* Redetermine the cg COMs */
             calc_cgcm(fplog, 0, dd->ncg_home,
-                      &top_local->cgs, as_rvec_array(state_local->x.data()), fr->cg_cm);
+                      &(*top_local)->cgs, as_rvec_array(state_local->x.data()), fr->cg_cm);
         }
 
         inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
@@ -6679,7 +6680,7 @@ void dd_partition_system(FILE                *fplog,
                       comm->cellsize_min, np,
                       fr,
                       fr->cutoff_scheme == ecutsGROUP ? fr->cg_cm : as_rvec_array(state_local->x.data()),
-                      vsite, top_global, top_local);
+                      vsite, top_global, top_local->get());
 
     wallcycle_sub_stop(wcycle, ewcsDD_MAKETOP);
 
@@ -6695,7 +6696,7 @@ void dd_partition_system(FILE                *fplog,
             case DDAtomRanges::Type::Vsites:
                 if (vsite && vsite->n_intercg_vsite)
                 {
-                    n = dd_make_local_vsites(dd, n, top_local->idef.il);
+                    n = dd_make_local_vsites(dd, n, (*top_local)->idef.il);
                 }
                 break;
             case DDAtomRanges::Type::Constraints:
@@ -6704,7 +6705,7 @@ void dd_partition_system(FILE                *fplog,
                     /* Only for inter-cg constraints we need special code */
                     n = dd_make_local_constraints(dd, n, top_global, fr->cginfo,
                                                   constr, ir->nProjOrder,
-                                                  top_local->idef.il);
+                                                  (*top_local)->idef.il);
                 }
                 break;
             default:

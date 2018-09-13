@@ -35,6 +35,8 @@
 #ifndef GMX_MDLIB_MDSETUP_H
 #define GMX_MDLIB_MDSETUP_H
 
+#include <memory>
+
 struct bonded_threading_t;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
@@ -69,15 +71,16 @@ class MDAtoms;
  * \param[in,out] vsite      The virtual site data, can be NULL
  * \param[in,out] shellfc    The shell/flexible-constraint data, can be NULL
  */
-void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
-                               const t_inputrec  *ir,
-                               const gmx_mtop_t  *top_global,
-                               gmx_localtop_t    *top,
-                               t_forcerec        *fr,
-                               t_graph          **graph,
-                               gmx::MDAtoms      *mdAtoms,
-                               gmx::Constraints  *constr,
-                               gmx_vsite_t       *vsite,
-                               gmx_shellfc_t     *shellfc);
+void
+mdAlgorithmsSetupAtomData(const t_commrec                 *cr,
+                          const t_inputrec                *ir,
+                          const gmx_mtop_t                *top_global,
+                          std::unique_ptr<gmx_localtop_t> *top,
+                          t_forcerec                      *fr,
+                          t_graph                        **graph,
+                          gmx::MDAtoms                    *mdAtoms,
+                          gmx::Constraints                *constr,
+                          gmx_vsite_t                     *vsite,
+                          gmx_shellfc_t                   *shellfc);
 
 #endif
