@@ -1,0 +1,146 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-ort">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Calculated orientations"
+xaxis  label "Time (ps)"
+yaxis  label ""
+TYPE xy
+s0 legend "3"
+s1 legend "4"
+s2 legend "5"
+s3 legend "6"
+s4 legend "7"
+s5 legend "8"
+s6 legend "9"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">8</Int>
+          <Real>0.000000</Real>
+          <Real>-4.89452</Real>
+          <Real>-5.87842</Real>
+          <Real>-5.30698</Real>
+          <Real>-5.01504</Real>
+          <Real>-0.544227</Real>
+          <Real>-4.75521</Real>
+          <Real>-5.82053</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">8</Int>
+          <Real>0.002000</Real>
+          <Real>-5.15825</Real>
+          <Real>-6.3131</Real>
+          <Real>-4.82974</Real>
+          <Real>-5.30595</Real>
+          <Real>-0.699448</Real>
+          <Real>-5.26383</Real>
+          <Real>-4.98295</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">8</Int>
+          <Real>0.004000</Real>
+          <Real>-5.50881</Real>
+          <Real>-6.5012</Real>
+          <Real>-4.6769</Real>
+          <Real>-5.30756</Real>
+          <Real>-1.18245</Real>
+          <Real>-5.6455</Real>
+          <Real>-4.25769</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">8</Int>
+          <Real>0.006000</Real>
+          <Real>-5.78819</Real>
+          <Real>-6.57865</Real>
+          <Real>-4.73666</Real>
+          <Real>-5.14671</Real>
+          <Real>-1.67991</Real>
+          <Real>-5.82657</Real>
+          <Real>-3.80163</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">8</Int>
+          <Real>0.008000</Real>
+          <Real>-5.94801</Real>
+          <Real>-6.63582</Real>
+          <Real>-4.8771</Real>
+          <Real>-4.94553</Real>
+          <Real>-2.03635</Real>
+          <Real>-5.89558</Real>
+          <Real>-3.55664</Real>
+        </Sequence>
+        <Sequence Name="Row5">
+          <Int Name="Length">8</Int>
+          <Real>0.010000</Real>
+          <Real>-5.99537</Real>
+          <Real>-6.69487</Real>
+          <Real>-5.0156</Real>
+          <Real>-4.77013</Real>
+          <Real>-2.23404</Real>
+          <Real>-5.93982</Real>
+          <Real>-3.4359</Real>
+        </Sequence>
+        <Sequence Name="Row6">
+          <Int Name="Length">8</Int>
+          <Real>0.012000</Real>
+          <Real>-5.95561</Real>
+          <Real>-6.75984</Real>
+          <Real>-5.1177</Real>
+          <Real>-4.63846</Real>
+          <Real>-2.30732</Real>
+          <Real>-6.0011</Real>
+          <Real>-3.37638</Real>
+        </Sequence>
+        <Sequence Name="Row7">
+          <Int Name="Length">8</Int>
+          <Real>0.014000</Real>
+          <Real>-5.86272</Real>
+          <Real>-6.83544</Real>
+          <Real>-5.18525</Real>
+          <Real>-4.53827</Real>
+          <Real>-2.29768</Real>
+          <Real>-6.08155</Real>
+          <Real>-3.3403</Real>
+        </Sequence>
+        <Sequence Name="Row8">
+          <Int Name="Length">8</Int>
+          <Real>0.016000</Real>
+          <Real>-5.75713</Real>
+          <Real>-6.9238</Real>
+          <Real>-5.23559</Real>
+          <Real>-4.45047</Real>
+          <Real>-2.24405</Real>
+          <Real>-6.16018</Real>
+          <Real>-3.3078</Real>
+        </Sequence>
+        <Sequence Name="Row9">
+          <Int Name="Length">8</Int>
+          <Real>0.018000</Real>
+          <Real>-5.67512</Real>
+          <Real>-7.02144</Real>
+          <Real>-5.27937</Real>
+          <Real>-4.36782</Real>
+          <Real>-2.18139</Real>
+          <Real>-6.21335</Real>
+          <Real>-3.26937</Real>
+        </Sequence>
+        <Sequence Name="Row10">
+          <Int Name="Length">8</Int>
+          <Real>0.020000</Real>
+          <Real>-5.63729</Real>
+          <Real>-7.12295</Real>
+          <Real>-5.31557</Real>
+          <Real>-4.29384</Real>
+          <Real>-2.1358</Real>
+          <Real>-6.22931</Real>
+          <Real>-3.21908</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+  </OutputFiles>
+</ReferenceData>
