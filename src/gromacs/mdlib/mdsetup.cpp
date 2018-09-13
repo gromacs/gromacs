@@ -59,17 +59,17 @@
  * The final solution should be an MD algorithm base class with methods
  * for initialization and atom-data setup.
  */
-
-void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
-                               const t_inputrec  *ir,
-                               const gmx_mtop_t  *top_global,
-                               gmx_localtop_t    *top,
-                               t_forcerec        *fr,
-                               t_graph          **graph,
-                               gmx::MDAtoms      *mdAtoms,
-                               gmx::Constraints  *constr,
-                               gmx_vsite_t       *vsite,
-                               gmx_shellfc_t     *shellfc)
+void
+mdAlgorithmsSetupAtomData(const t_commrec                 *cr,
+                          const t_inputrec                *ir,
+                          const gmx_mtop_t                *top_global,
+                          std::unique_ptr<gmx_localtop_t> &top,
+                          t_forcerec                      *fr,
+                          t_graph                        **graph,
+                          gmx::MDAtoms                    *mdAtoms,
+                          gmx::Constraints                *constr,
+                          gmx_vsite_t                     *vsite,
+                          gmx_shellfc_t                   *shellfc)
 {
     bool  usingDomDec = DOMAINDECOMP(cr);
 
@@ -93,18 +93,14 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
     auto mdatoms = mdAtoms->mdatoms();
     if (usingDomDec)
     {
-        dd_sort_local_top(cr->dd, mdatoms, top);
+        dd_sort_local_top(cr->dd, mdatoms, top.get());
     }
     else
     {
         /* Currently gmx_generate_local_top allocates and returns a pointer.
          * We should implement a more elegant solution.
          */
-        gmx_localtop_t *tmpTop;
-
-        tmpTop = gmx_mtop_generate_local_top(top_global, ir->efep != efepNO);
-        *top   = *tmpTop;
-        sfree(tmpTop);
+        top = gmx_mtop_generate_local_top(top_global, ir->efep != efepNO);
     }
 
     if (vsite)
@@ -119,7 +115,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
         }
         else
         {
-            set_vsite_top(vsite, top, mdatoms);
+            set_vsite_top(vsite, top.get(), mdatoms);
         }
     }
 

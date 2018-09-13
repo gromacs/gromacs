@@ -2052,8 +2052,15 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
 
 void dd_make_local_cgs(gmx_domdec_t *dd, t_block *lcgs)
 {
+    if (dd->globalAtomGroupIndices.size() > (size_t)lcgs->nr)
+    {
+        srenew(lcgs->index, dd->globalAtomGroupIndices.size());
+    }
     lcgs->nr    = dd->globalAtomGroupIndices.size();
-    lcgs->index = dd->atomGrouping_.rawIndex().data();
+    for (int i = 0; i < lcgs->nr; i++)
+    {
+        lcgs->index[i] = dd->atomGrouping_.rawIndex()[i];
+    }
 }
 
 void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
@@ -2148,8 +2155,6 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     {
         dd->nbonded_local += nexcl;
     }
-
-    ltop->atomtypes  = mtop->atomtypes;
 }
 
 void dd_sort_local_top(gmx_domdec_t *dd, const t_mdatoms *mdatoms,
@@ -2165,20 +2170,12 @@ void dd_sort_local_top(gmx_domdec_t *dd, const t_mdatoms *mdatoms,
     }
 }
 
-gmx_localtop_t *dd_init_local_top(const gmx_mtop_t *top_global)
+std::unique_ptr<gmx_localtop_t>
+dd_init_local_top(const gmx_mtop_t *top_global)
 {
-    gmx_localtop_t *top;
+    std::unique_ptr<gmx_localtop_t> top = nullptr;
 
-    snew(top, 1);
-
-    top->idef.ntypes    = top_global->ffparams.ntypes;
-    top->idef.atnr      = top_global->ffparams.atnr;
-    top->idef.functype  = top_global->ffparams.functype;
-    top->idef.iparams   = top_global->ffparams.iparams;
-    top->idef.fudgeQQ   = top_global->ffparams.fudgeQQ;
-    top->idef.cmap_grid = top_global->ffparams.cmap_grid;
-
-    top->idef.ilsort    = ilsortUNKNOWN;
+    top = gmx_mtop_generate_local_top(top_global, true);
 
     return top;
 }

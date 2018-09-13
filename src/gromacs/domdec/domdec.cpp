@@ -6182,25 +6182,26 @@ void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog)
 }
 
 // TODO Remove fplog when group scheme and charge groups are gone
-void dd_partition_system(FILE                *fplog,
-                         const gmx::MDLogger &mdlog,
-                         int64_t              step,
-                         const t_commrec     *cr,
-                         gmx_bool             bMasterState,
-                         int                  nstglobalcomm,
-                         t_state             *state_global,
-                         const gmx_mtop_t    *top_global,
-                         const t_inputrec    *ir,
-                         t_state             *state_local,
-                         PaddedRVecVector    *f,
-                         gmx::MDAtoms        *mdAtoms,
-                         gmx_localtop_t      *top_local,
-                         t_forcerec          *fr,
-                         gmx_vsite_t         *vsite,
-                         gmx::Constraints    *constr,
-                         t_nrnb              *nrnb,
-                         gmx_wallcycle       *wcycle,
-                         gmx_bool             bVerbose)
+void
+dd_partition_system(FILE                            *fplog,
+                    const gmx::MDLogger             &mdlog,
+                    int64_t                          step,
+                    const t_commrec                 *cr,
+                    gmx_bool                         bMasterState,
+                    int                              nstglobalcomm,
+                    t_state                         *state_global,
+                    const gmx_mtop_t                *top_global,
+                    const t_inputrec                *ir,
+                    t_state                         *state_local,
+                    PaddedRVecVector                *f,
+                    gmx::MDAtoms                    *mdAtoms,
+                    std::unique_ptr<gmx_localtop_t> &top_local,
+                    t_forcerec                      *fr,
+                    gmx_vsite_t                     *vsite,
+                    gmx::Constraints                *constr,
+                    t_nrnb                          *nrnb,
+                    gmx_wallcycle                   *wcycle,
+                    gmx_bool                         bVerbose)
 {
     gmx_domdec_t      *dd;
     gmx_domdec_comm_t *comm;
@@ -6417,6 +6418,7 @@ void dd_partition_system(FILE                *fplog,
     cgs_gl = &comm->cgs_gl;
 
     bRedist = FALSE;
+
     if (bMasterState)
     {
         /* Clear the old state */
@@ -6679,7 +6681,7 @@ void dd_partition_system(FILE                *fplog,
                       comm->cellsize_min, np,
                       fr,
                       fr->cutoff_scheme == ecutsGROUP ? fr->cg_cm : as_rvec_array(state_local->x.data()),
-                      vsite, top_global, top_local);
+                      vsite, top_global, top_local.get());
 
     wallcycle_sub_stop(wcycle, ewcsDD_MAKETOP);
 

@@ -204,6 +204,16 @@ void done_top_mtop(t_topology *top, gmx_mtop_t *mtop)
     }
 }
 
+gmx_localtop_t::gmx_localtop_t()
+{
+    init_localtop(this);
+}
+
+gmx_localtop_t::~gmx_localtop_t()
+{
+    done_localtop(this);
+}
+
 void init_localtop(gmx_localtop_t *top)
 {
     init_block(&top->cgs);
@@ -214,20 +224,10 @@ void init_localtop(gmx_localtop_t *top)
 
 void done_localtop(gmx_localtop_t *top)
 {
-    if (top == nullptr)
-    {
-        return;
-    }
     done_idef(&top->idef);
     done_block(&top->cgs);
     done_blocka(&top->excls);
     done_atomtypes(&top->atomtypes);
-}
-
-void done_and_sfree_localtop(gmx_localtop_t *top)
-{
-    done_localtop(top);
-    sfree(top);
 }
 
 bool gmx_mtop_has_masses(const gmx_mtop_t *mtop)
