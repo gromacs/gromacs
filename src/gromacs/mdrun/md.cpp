@@ -169,7 +169,7 @@ void gmx::Integrator::do_md()
     t_vcm                  *vcm;
     matrix                  parrinellorahmanMu, M;
     gmx_repl_ex_t           repl_ex = nullptr;
-    gmx_localtop_t         *top;
+    gmx_localtop_t          top;
     t_mdebin               *mdebin   = nullptr;
     gmx_enerdata_t         *enerd;
     PaddedVector<gmx::RVec> f {};
@@ -298,7 +298,8 @@ void gmx::Integrator::do_md()
 
     if (DOMAINDECOMP(cr))
     {
-        top = dd_init_local_top(top_global);
+        top.useInDomainDecomp_ = true;
+        dd_init_local_top(*top_global, &top);
 
         stateInstance = compat::make_unique<t_state>();
         state         = stateInstance.get();
@@ -306,8 +307,8 @@ void gmx::Integrator::do_md()
 
         /* Distribute the charge groups over the nodes from the master node */
         dd_partition_system(fplog, mdlog, ir->init_step, cr, TRUE, 1,
-                            state_global, top_global, ir,
-                            state, &f, mdAtoms, top, fr,
+                            state_global, *top_global, ir,
+                            state, &f, mdAtoms, &top, fr,
                             vsite, constr,
                             nrnb, nullptr, FALSE);
         shouldCheckNumberOfBondedInteractions = true;
@@ -320,8 +321,8 @@ void gmx::Integrator::do_md()
         /* Copy the pointer to the global state */
         state = state_global;
 
-        snew(top, 1);
-        mdAlgorithmsSetupAtomData(cr, ir, top_global, top, fr,
+        /* Generate and initialize new topology */
+        mdAlgorithmsSetupAtomData(cr, ir, *top_global, &top, fr,
                                   &graph, mdAtoms, constr, vsite, shellfc);
 
         update_realloc(upd, state->natoms);
@@ -459,7 +460,7 @@ void gmx::Integrator::do_md()
         {
             /* Construct the virtual sites for the initial configuration */
             construct_vsites(vsite, state->x.rvec_array(), ir->delta_t, nullptr,
-                             top->idef.iparams, top->idef.il,
+                             top.idef.iparams, top.idef.il,
                              fr->ePBC, fr->bMolPBC, cr, state->box);
         }
     }
@@ -516,7 +517,7 @@ void gmx::Integrator::do_md()
                         | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
     }
     checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
-                                    top_global, top, state,
+                                    top_global, &top, state,
                                     &shouldCheckNumberOfBondedInteractions);
     if (ir->eI == eiVVAK)
     {
@@ -771,8 +772,8 @@ void gmx::Integrator::do_md()
                 /* Repartition the domain decomposition */
                 dd_partition_system(fplog, mdlog, step, cr,
                                     bMasterState, nstglobalcomm,
-                                    state_global, top_global, ir,
-                                    state, &f, mdAtoms, top, fr,
+                                    state_global, *top_global, ir,
+                                    state, &f, mdAtoms, &top, fr,
                                     vsite, constr,
                                     nrnb, wcycle,
                                     do_verbose && !bPMETunePrinting);
@@ -803,7 +804,7 @@ void gmx::Integrator::do_md()
                             &totalNumberOfBondedInteractions, &bSumEkinhOld,
                             CGLO_GSTAT | CGLO_TEMPERATURE | CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS);
             checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
-                                            top_global, top, state,
+                                            top_global, &top, state,
                                             &shouldCheckNumberOfBondedInteractions);
         }
         clear_mat(force_vir);
@@ -853,7 +854,7 @@ void gmx::Integrator::do_md()
             /* Now is the time to relax the shells */
             relax_shell_flexcon(fplog, cr, ms, mdrunOptions.verbose,
                                 enforcedRotation, step,
-                                ir, bNS, force_flags, top,
+                                ir, bNS, force_flags, &top,
                                 constr, enerd, fcd,
                                 state, f.arrayRefWithPadding(), force_vir, mdatoms,
                                 nrnb, wcycle, graph, groups,
@@ -882,7 +883,7 @@ void gmx::Integrator::do_md()
              * Check comments in sim_util.c
              */
             do_force(fplog, cr, ms, ir, awh.get(), enforcedRotation,
-                     step, nrnb, wcycle, top, groups,
+                     step, nrnb, wcycle, &top, groups,
                      state->box, state->x.arrayRefWithPadding(), &state->hist,
                      f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
@@ -966,7 +967,7 @@ void gmx::Integrator::do_md()
                    b) If we are using EkinAveEkin for the kinetic energy for the temperature control, we still feed in
                    EkinAveVel because it's needed for the pressure */
                 checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
-                                                top_global, top, state,
+                                                top_global, &top, state,
                                                 &shouldCheckNumberOfBondedInteractions);
                 wallcycle_start(wcycle, ewcUPDATE);
             }
@@ -1237,7 +1238,7 @@ void gmx::Integrator::do_md()
                 shift_self(graph, state->box, state->x.rvec_array());
             }
             construct_vsites(vsite, state->x.rvec_array(), ir->delta_t, state->v.rvec_array(),
-                             top->idef.iparams, top->idef.il,
+                             top.idef.iparams, top.idef.il,
                              fr->ePBC, fr->bMolPBC, cr, state->box);
 
             if (graph != nullptr)
@@ -1283,7 +1284,7 @@ void gmx::Integrator::do_md()
                                 | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0)
                                 );
                 checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
-                                                top_global, top, state,
+                                                top_global, &top, state,
                                                 &shouldCheckNumberOfBondedInteractions);
             }
         }
@@ -1435,8 +1436,8 @@ void gmx::Integrator::do_md()
         if ( (bExchanged || bNeedRepartition) && DOMAINDECOMP(cr) )
         {
             dd_partition_system(fplog, mdlog, step, cr, TRUE, 1,
-                                state_global, top_global, ir,
-                                state, &f, mdAtoms, top, fr,
+                                state_global, *top_global, ir,
+                                state, &f, mdAtoms, &top, fr,
                                 vsite, constr,
                                 nrnb, wcycle, FALSE);
             shouldCheckNumberOfBondedInteractions = true;
@@ -1538,11 +1539,5 @@ void gmx::Integrator::do_md()
     destroy_enerdata(enerd);
 
     sfree(enerd);
-
     /* Clean up topology. top->atomtypes has an allocated pointer if no domain decomposition*/
-    if (!DOMAINDECOMP(cr))
-    {
-        done_atomtypes(&top->atomtypes);
-    }
-    sfree(top);
 }
