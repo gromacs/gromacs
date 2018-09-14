@@ -101,6 +101,27 @@ class Allocator : public AllocationPolicy
         // The standard library specification for a custom allocator
         // requires this typedef, with this capitalization/underscoring.
         typedef T              value_type;      //!< Type of allocated elements
+        typedef T             &reference;       //!< Reference to allocated elements
+        typedef const T       &const_reference; //!< Constant reference to allocated elements
+        typedef T *            pointer;         //!< Pointer to allocated elements
+        typedef const T *      const_pointer;   //!< Constant pointer to allocated elements
+        typedef std::size_t    size_type;       //!< Integer type to use for size of objects
+        typedef std::ptrdiff_t difference_type; //!< Type to hold differences between pointers
+
+         /*! \libinternal \brief Standard-required typedef to use allocator with different class.
+          *
+          *  \tparam U new class
+          *
+          *  This is used for things like std::list where the size of each link
+          *  is larger than the class stored in the link.
+          *
+          *  Required by the specification for an allocator.
+          */
+         template <class U>
+         struct rebind
+         {
+             typedef Allocator<U, AllocationPolicy> other; //!< Align class U with our alignment
+         };
 
         /*! \brief Constructor
          *
