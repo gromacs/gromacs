@@ -83,6 +83,26 @@ namespace gmx
  */
 class Mdrunner
 {
+    public:
+        /*! \brief Defaulted constructor.
+         *
+         * Note that when member variables are not present in the constructor
+         * member initialization list (which is true for the default constructor),
+         * then they are initialized with any default member initializer specified
+         * when they were declared, or default initialized. */
+        Mdrunner() = default;
+        //! Start running mdrun by calling its C-style main function.
+        int mainFunction(int argc, char *argv[]);
+        /*! \brief Driver routine, that calls the different simulation methods. */
+        int mdrunner();
+        //! Called when thread-MPI spawns threads.
+        t_commrec *spawnThreads(int numThreadsToLaunch) const;
+        /*! \brief Re-initializes the object after threads spawn.
+         *
+         * \todo Can this be refactored so that the Mdrunner on a spawned thread is
+         * constructed ready to use? */
+        void reinitializeOnSpawnedThread();
+
     private:
         //! Parallelism-related user options.
         gmx_hw_opt_t             hw_opt;
@@ -156,26 +176,6 @@ class Mdrunner
         t_commrec                       *cr;
         //! Handle to multi-simulation handler.
         gmx_multisim_t                  *ms;
-
-    public:
-        /*! \brief Defaulted constructor.
-         *
-         * Note that when member variables are not present in the constructor
-         * member initialization list (which is true for the default constructor),
-         * then they are initialized with any default member initializer specified
-         * when they were declared, or default initialized. */
-        Mdrunner() = default;
-        //! Start running mdrun by calling its C-style main function.
-        int mainFunction(int argc, char *argv[]);
-        /*! \brief Driver routine, that calls the different simulation methods. */
-        int mdrunner();
-        //! Called when thread-MPI spawns threads.
-        t_commrec *spawnThreads(int numThreadsToLaunch) const;
-        /*! \brief Re-initializes the object after threads spawn.
-         *
-         * \todo Can this be refactored so that the Mdrunner on a spawned thread is
-         * constructed ready to use? */
-        void reinitializeOnSpawnedThread();
 };
 
 }      // namespace gmx
