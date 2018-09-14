@@ -67,12 +67,12 @@ EXTRACT_LOCAL_CLASSES  = NO
 EXTRACT_STATIC         = YES
 
 ALIASES               += Gromacs=GROMACS
-ALIASES               += linktodevmanual{2}="<A HREF=\"../../dev-manual/\1.html\">\2</A>"
-ALIASES               += linktodevmanual{3}="<A HREF=\"../../dev-manual/\1.html#\2\">\3</A>"
+ALIASES               += linktodevmanual{2}="<A HREF=\"../../\1.html\">\2</A>"
+ALIASES               += linktodevmanual{3}="<A HREF=\"../../\1.html#\2\">\3</A>"
 
 DOT_IMAGE_FORMAT       = svg
 DOT_MULTI_TARGETS      = YES
 # According to Doxygen docs, this is required for svg support on IE
 HTML_FILE_EXTENSION    = .xhtml
 
-OUTPUT_DIRECTORY       = @HTML_OUTPUT_DIR@/doxygen
+OUTPUT_DIRECTORY       = @DOXYGEN_OUTPUT_DIR@

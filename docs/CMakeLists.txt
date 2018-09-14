@@ -72,6 +72,9 @@ find_package(Sphinx ${EXPECTED_SPHINX_VERSION} QUIET COMPONENTS pygments)
 set(HTML_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/html")
 file(MAKE_DIRECTORY ${HTML_OUTPUT_DIR})
 
+# Set directory to be used for doxygen output
+set(DOXYGEN_OUTPUT_DIR "${HTML_OUTPUT_DIR}/dev-manual/doxygen")
+
 # Prepare directories for pdf/tex output
 set(TEX_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/manual")
 set(SPHINX_LATEX_FILE "${TEX_OUTPUT_DIR}/gromacs.tex")
