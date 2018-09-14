@@ -839,7 +839,7 @@ class GromacsTree(object):
         If only_files is True, XML data is not loaded for code constructs, but
         only for files, directories, and their potential parents.
         """
-        xmldir = os.path.join(self._build_root, 'docs', 'html', 'doxygen', 'xml')
+        xmldir = os.path.join(self._build_root, 'docs', 'html', 'dev-manual', 'doxygen', 'xml')
         self._docset = xml.DocumentationSet(xmldir, self._reporter)
         if only_files:
             if isinstance(only_files, collections.Iterable):
