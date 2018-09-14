@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,39 +32,18 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB UTILITY_SOURCES *.cpp)
-if (GMX_GPU AND NOT GMX_USE_OPENCL)
-    gmx_add_libgromacs_sources(cuda_version_information.cu)
-endif()
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${UTILITY_SOURCES} PARENT_SCOPE)
+file(GLOB DATA_STRUCT_SOURCES *.c *.cpp)
+set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${DATA_STRUCT_SOURCES} PARENT_SCOPE)
 
 gmx_install_headers(
-    alignedallocator.h
-    allocator.h
-    arrayref.h
-    arraysize.h
-    basedefinitions.h
-    baseversion.h
-    classhelpers.h
-    cstringutil.h
-    current_function.h
-    datafilefinder.h
-    errorcodes.h
-    exceptions.h
-    fatalerror.h
-    flags.h
-    fileptr.h
-    futil.h
-    gmxassert.h
-    init.h
-    programcontext.h
-    real.h
-    smalloc.h
-    stringutil.h
-    unique_cptr.h
+    flat_irreg_array_2d.h
+    flat_irreg_array_3d.h
+    flat_irreg_array_4d.h
+    irreg_array_1d.h
+    irreg_array_2d.h
+    irreg_array_3d.h
+    irreg_array_4d.h
     )
-
-add_subdirectory(data_structures)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)
