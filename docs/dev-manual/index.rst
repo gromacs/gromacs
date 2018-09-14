@@ -65,19 +65,19 @@ Doxygen documentation
 
 .. only:: html
 
-  * `Public API documentation <doxygen/html-user/index.xhtml>`_
+  * `Public API documentation <../doxygen/html-user/index.xhtml>`_
        This contains documentation for code that appears in installed headers,
        as well as some overview documentation to understand those parts of the
        code.
        Please note that the definition of the public API is very preliminary
        and subject to change, in particular for parts that have not been
        documented.
-  * `Code documentation <doxygen/html-lib/index.xhtml>`_
+  * `Code documentation <../doxygen/html-lib/index.xhtml>`_
        This contains the public API documentation as a subset, but also has more
        details on the internal implementation of |Gromacs|.  This is a good
        place to start to understand some specific area of the code in general
        to, e.g., contribute.
-  * `Full documentation <doxygen/html-full/index.xhtml>`_
+  * `Full documentation <../doxygen/html-full/index.xhtml>`_
        This contains every single documented function from the codebase,
        including internal  There can be an overwhelming amount of detail, but
        this can be useful if trying to find some specific function within the
