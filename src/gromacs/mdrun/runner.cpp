@@ -48,6 +48,7 @@
 #include "config.h"
 
 #include <cassert>
+#include <cerrno>
 #include <cinttypes>
 #include <csignal>
 #include <cstdlib>
@@ -1387,7 +1388,7 @@ int Mdrunner::mdrunner()
     if (MASTER(cr) && continuationOptions.appendFiles)
     {
         gmx_log_close(fplog);
-        fplog = nullptr;
+        fplog = nullptr; // Note log file closure is not atomic (not thread-safe).
     }
 
     /* Reset FPEs (important for unit tests) by disabling them. Assumes no
@@ -1398,6 +1399,17 @@ int Mdrunner::mdrunner()
     }
 
     rc = static_cast<int>(gmx_get_stop_condition());
+
+    // If log file is open, try to flush it before we return control to the API
+    if (MASTER(cr) && fplog != nullptr)
+    {
+        // If fplog is already closed, but has not been set to nullptr, we
+        // expect errno to be set, but we don't care, so we will make sure to
+        // leave it in the same state we found it.
+        const auto tempErrno = errno;
+        fflush(fplog);
+        errno = tempErrno;
+    }
 
 #if GMX_THREAD_MPI
     /* we need to join all threads. The sub-threads join when they

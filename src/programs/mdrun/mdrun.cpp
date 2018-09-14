@@ -512,10 +512,12 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     rc = mdrunner();
 
     /* Log file has to be closed in mdrunner if we are appending to it
-       (fplog not set here) */
+       (fplog not set here). Note: This check relies on behavioral assumptions
+       for thread-safety and may need to be reexamined as API access expands. */
     if (fplog != nullptr)
     {
         gmx_log_close(fplog);
+        fplog = nullptr;
     }
 
     if (GMX_LIB_MPI)
