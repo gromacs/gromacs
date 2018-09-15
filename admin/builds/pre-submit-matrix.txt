@@ -39,7 +39,7 @@ gcc-7 gpu gpu_id=1 cuda-9.2 thread-mpi openmp cmake-3.6.1 release-with-assert si
 # Test newest gcc at time of release
 gcc-7 tsan no-openmp cmake-3.10.0
 
-# Test on MacOS (the gcc-6 and/or x11 flags implicitly steer jobs to the OSX slave)
+# Test on MacOS (the gcc-6 and/or x11 flags implicitly steer jobs to the OSX node)
 # Test X11 build
 # Test gcc in double precision
 # Test without TNG support
