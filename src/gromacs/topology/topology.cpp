@@ -384,7 +384,7 @@ static void pr_moltype(FILE *fp, int indent, const char *title,
     for (j = 0; (j < F_NRE); j++)
     {
         pr_ilist(fp, indent, interaction_function[j].longname,
-                 ffparams->functype, &molt->ilist[j],
+                 ffparams->functype, molt->ilist[j],
                  bShowNumbers, bShowParameters, ffparams->iparams);
     }
 }
@@ -432,7 +432,7 @@ void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
             {
                 pr_ilist(fp, indent, interaction_function[j].longname,
                          mtop->ffparams.functype,
-                         &(*mtop->intermolecular_ilist)[j],
+                         (*mtop->intermolecular_ilist)[j],
                          bShowNumbers, bShowParameters, mtop->ffparams.iparams);
             }
         }
