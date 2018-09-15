@@ -2458,25 +2458,25 @@ static void bonded_cg_distance_mol(const gmx_moltype_t *molt,
     {
         if (dd_check_ftype(ftype, bBCheck, FALSE, FALSE))
         {
-            const auto    *il   = &molt->ilist[ftype];
+            const auto    &il   = molt->ilist[ftype];
             int            nral = NRAL(ftype);
             if (nral > 1)
             {
-                for (int i = 0; i < il->size(); i += 1+nral)
+                for (int i = 0; i < il.size(); i += 1+nral)
                 {
                     for (int ai = 0; ai < nral; ai++)
                     {
-                        int cgi = at2cg[il->iatoms[i+1+ai]];
+                        int cgi = at2cg[il.iatoms[i+1+ai]];
                         for (int aj = ai + 1; aj < nral; aj++)
                         {
-                            int cgj = at2cg[il->iatoms[i+1+aj]];
+                            int cgj = at2cg[il.iatoms[i+1+aj]];
                             if (cgi != cgj)
                             {
                                 real rij2 = distance2(cg_cm[cgi], cg_cm[cgj]);
 
                                 update_max_bonded_distance(rij2, ftype,
-                                                           il->iatoms[i+1+ai],
-                                                           il->iatoms[i+1+aj],
+                                                           il.iatoms[i+1+ai],
+                                                           il.iatoms[i+1+aj],
                                                            (nral == 2) ? bd_2b : bd_mb);
                             }
                         }
@@ -2521,24 +2521,24 @@ static void bonded_distance_intermol(const InteractionLists &ilists_intermol,
     {
         if (dd_check_ftype(ftype, bBCheck, FALSE, FALSE))
         {
-            const auto    *il   = &ilists_intermol[ftype];
+            const auto    &il   = ilists_intermol[ftype];
             int            nral = NRAL(ftype);
 
             /* No nral>1 check here, since intermol interactions always
              * have nral>=2 (and the code is also correct for nral=1).
              */
-            for (int i = 0; i < il->size(); i += 1+nral)
+            for (int i = 0; i < il.size(); i += 1+nral)
             {
                 for (int ai = 0; ai < nral; ai++)
                 {
-                    int atom_i = il->iatoms[i + 1 + ai];
+                    int atom_i = il.iatoms[i + 1 + ai];
 
                     for (int aj = ai + 1; aj < nral; aj++)
                     {
                         rvec dx;
                         real rij2;
 
-                        int  atom_j = il->iatoms[i + 1 + aj];
+                        int  atom_j = il.iatoms[i + 1 + aj];
 
                         pbc_dx(&pbc, x[atom_i], x[atom_j], dx);
 
