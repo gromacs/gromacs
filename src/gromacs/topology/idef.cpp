@@ -44,6 +44,20 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/txtdump.h"
 
+std::vector<const InteractionList *>
+InteractionLists::getFtypes(int flags) const
+{
+    std::vector<const InteractionList *> ftypes;
+    for (size_t ftype = 0; ftype < lists_.size(); ftype++)
+    {
+        if ((interaction_function[ftype].flags & flags) && lists_[ftype].size() > 0)
+        {
+            ftypes.push_back(&lists_[ftype]);
+        }
+    }
+    return ftypes;
+}
+
 static void pr_harm(FILE *fp, const t_iparams *iparams, const char *r, const char *kr)
 {
     fprintf(fp, "%sA=%12.5e, %sA=%12.5e, %sB=%12.5e, %sB=%12.5e\n",
