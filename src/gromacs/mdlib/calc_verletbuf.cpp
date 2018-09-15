@@ -234,17 +234,17 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
     {
         if (IS_VSITE(ft))
         {
-            const InteractionList *il = &moltype->ilist[ft];
+            const InteractionList &il = moltype->ilist[ft];
 
-            for (i = 0; i < il->size(); i += 1+NRAL(ft))
+            for (i = 0; i < il.size(); i += 1+NRAL(ft))
             {
                 const t_iparams *ip;
                 real             inv_mass, coeff, m_aj;
                 int              a1;
 
-                ip = &ffparams->iparams[il->iatoms[i]];
+                ip = &ffparams->iparams[il.iatoms[i]];
 
-                a1 = il->iatoms[i+1];
+                a1 = il.iatoms[i+1];
 
                 if (ft != F_VSITEN)
                 {
@@ -258,7 +258,7 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
                     assert(maxj <= 5);
                     for (j = 1; j < maxj; j++)
                     {
-                        int aj = il->iatoms[i + 1 + j];
+                        int aj = il.iatoms[i + 1 + j];
                         cam[j] = getMass(moltype->atoms, aj, setMassesToOne);
                         if (cam[j] == 0)
                         {
@@ -314,10 +314,10 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
 
                     /* Exact */
                     inv_mass = 0;
-                    for (j = 0; j < 3*ffparams->iparams[il->iatoms[i]].vsiten.n; j += 3)
+                    for (j = 0; j < 3*ffparams->iparams[il.iatoms[i]].vsiten.n; j += 3)
                     {
-                        int aj = il->iatoms[i + j + 2];
-                        coeff  = ffparams->iparams[il->iatoms[i+j]].vsiten.a;
+                        int aj = il.iatoms[i + j + 2];
+                        coeff  = ffparams->iparams[il.iatoms[i+j]].vsiten.a;
                         if (moltype->atoms.atom[aj].ptype == eptVSite)
                         {
                             m_aj = vsite_m[aj];
@@ -383,13 +383,13 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
 
         for (ft = F_CONSTR; ft <= F_CONSTRNC; ft++)
         {
-            const InteractionList *il = &moltype.ilist[ft];
+            const InteractionList &il = moltype.ilist[ft];
 
-            for (i = 0; i < il->size(); i += 1+NRAL(ft))
+            for (i = 0; i < il.size(); i += 1+NRAL(ft))
             {
-                ip         = &mtop->ffparams.iparams[il->iatoms[i]];
-                a1         = il->iatoms[i+1];
-                a2         = il->iatoms[i+2];
+                ip         = &mtop->ffparams.iparams[il.iatoms[i]];
+                a1         = il.iatoms[i+1];
+                a2         = il.iatoms[i+2];
                 real mass1 = getMass(*atoms, a1, setMassesToOne);
                 real mass2 = getMass(*atoms, a2, setMassesToOne);
                 if (mass2 > prop[a1].con_mass)
@@ -405,14 +405,14 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
             }
         }
 
-        const InteractionList *il = &moltype.ilist[F_SETTLE];
+        const InteractionList &il = moltype.ilist[F_SETTLE];
 
-        for (i = 0; i < il->size(); i += 1+NRAL(F_SETTLE))
+        for (i = 0; i < il.size(); i += 1+NRAL(F_SETTLE))
         {
-            ip         = &mtop->ffparams.iparams[il->iatoms[i]];
-            a1         = il->iatoms[i+1];
-            a2         = il->iatoms[i+2];
-            a3         = il->iatoms[i+3];
+            ip         = &mtop->ffparams.iparams[il.iatoms[i]];
+            a1         = il.iatoms[i+1];
+            a2         = il.iatoms[i+2];
+            a3         = il.iatoms[i+3];
             /* Usually the mass of a1 (usually oxygen) is larger than a2/a3.
              * If this is not the case, we overestimate the displacement,
              * which leads to a larger buffer (ok since this is an exotic case).

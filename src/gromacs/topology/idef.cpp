@@ -309,50 +309,47 @@ void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams)
 template <typename T>
 static void
 printIlist(FILE *fp, int indent, const char *title,
-           const t_functype *functype, const T *ilist,
+           const t_functype *functype, const T &ilist,
            gmx_bool bShowNumbers,
            gmx_bool bShowParameters, const t_iparams *iparams)
 {
     int      i, j, k, type, ftype;
 
-    if (available(fp, ilist, indent, title) && ilist->size() > 0)
+    indent = pr_title(fp, indent, title);
+    pr_indent(fp, indent);
+    fprintf(fp, "nr: %d\n", ilist.size());
+    if (ilist.size() > 0)
     {
-        indent = pr_title(fp, indent, title);
         pr_indent(fp, indent);
-        fprintf(fp, "nr: %d\n", ilist->size());
-        if (ilist->size() > 0)
+        fprintf(fp, "iatoms:\n");
+        for (i = j = 0; i < ilist.size(); )
         {
-            pr_indent(fp, indent);
-            fprintf(fp, "iatoms:\n");
-            for (i = j = 0; i < ilist->size(); )
+            pr_indent(fp, indent+INDENT);
+            type  = ilist.iatoms[i];
+            ftype = functype[type];
+            if (bShowNumbers)
             {
-                pr_indent(fp, indent+INDENT);
-                type  = ilist->iatoms[i];
-                ftype = functype[type];
-                if (bShowNumbers)
-                {
-                    fprintf(fp, "%d type=%d ", j, type);
-                }
-                j++;
-                printf("(%s)", interaction_function[ftype].name);
-                for (k = 0; k < interaction_function[ftype].nratoms; k++)
-                {
-                    fprintf(fp, " %3d", ilist->iatoms[i + 1 + k]);
-                }
-                if (bShowParameters)
-                {
-                    fprintf(fp, "  ");
-                    pr_iparams(fp, ftype,  &iparams[type]);
-                }
-                fprintf(fp, "\n");
-                i += 1+interaction_function[ftype].nratoms;
+                fprintf(fp, "%d type=%d ", j, type);
             }
+            j++;
+            printf("(%s)", interaction_function[ftype].name);
+            for (k = 0; k < interaction_function[ftype].nratoms; k++)
+            {
+                fprintf(fp, " %3d", ilist.iatoms[i + 1 + k]);
+            }
+            if (bShowParameters)
+            {
+                fprintf(fp, "  ");
+                pr_iparams(fp, ftype,  &iparams[type]);
+            }
+            fprintf(fp, "\n");
+            i += 1+interaction_function[ftype].nratoms;
         }
     }
 }
 
 void pr_ilist(FILE *fp, int indent, const char *title,
-              const t_functype *functype, const InteractionList *ilist,
+              const t_functype *functype, const InteractionList &ilist,
               gmx_bool bShowNumbers,
               gmx_bool bShowParameters, const t_iparams *iparams)
 {
@@ -448,7 +445,7 @@ void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef,
         for (j = 0; (j < F_NRE); j++)
         {
             printIlist(fp, indent, interaction_function[j].longname,
-                       idef->functype, &idef->il[j], bShowNumbers,
+                       idef->functype, idef->il[j], bShowNumbers,
                        bShowParameters, idef->iparams);
         }
     }

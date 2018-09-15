@@ -427,7 +427,7 @@ typedef struct t_idef
 
 void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams);
 void pr_ilist(FILE *fp, int indent, const char *title,
-              const t_functype *functype, const InteractionList *ilist,
+              const t_functype *functype, const InteractionList &ilist,
               gmx_bool bShowNumbers,
               gmx_bool bShowParameters, const t_iparams *iparams);
 void pr_ffparams(FILE *fp, int indent, const char *title,
