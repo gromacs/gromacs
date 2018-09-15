@@ -162,7 +162,7 @@ Jenkins is not automatically triggered for drafts, but if you add
 in having it try out your code. Then, you can go to Jenkins and log in
 with your OpenID. Then go to
 http://jenkins.gromacs.org/gerrit_manual_trigger/ and tell it to
-search for the commit for which you want to trigger the build slaves.
+search for the commit for which you want to trigger the build agents.
 For example, https://gerrit.gromacs.org/#/c/1238/ is 1238 (but maybe
 SHA or ChangeID will work, too).
 
