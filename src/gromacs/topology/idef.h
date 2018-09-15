@@ -290,6 +290,8 @@ struct InteractionList
         return iatoms.size();
     }
 
+    int              functionType;
+
     /* List of interactions, see explanation further down */
     std::vector<int> iatoms;
 };
@@ -298,7 +300,41 @@ struct InteractionList
  *
  * TODO: Consider only including entries in use instead of all F_NRE
  */
-typedef std::array<InteractionList, F_NRE> InteractionLists;
+class InteractionLists
+{
+    public:
+        InteractionLists()
+        {
+            for (int ftype = 0; ftype < static_cast<int>(lists_.size()); ftype++)
+            {
+                lists_[ftype].functionType = ftype;
+            }
+        }
+
+        /* Make the class behave like an array */
+        InteractionList &operator[](int ftype) { return lists_[ftype]; }
+        InteractionList  operator[](int ftype) const { return lists_[ftype]; }
+
+        /*! \brief Returns a list of all non-empty lists with any of the interaction flags in \p flags set
+         *
+         * \param[in] flags  Bit mask with one or more IF_... bits set
+         */
+        std::vector<const InteractionList *> getFtypes(int flags) const;
+
+        size_t size() const
+        {
+            return lists_.size();
+        }
+
+        /* Deprecated, remove when t_ilist is removed */
+        const InteractionList *rawPointer() const
+        {
+            return lists_.data();
+        }
+
+    private:
+        std::array<InteractionList, F_NRE> lists_;
+};
 
 /* Deprecated list of listed interactions.
  *

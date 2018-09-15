@@ -832,7 +832,7 @@ t_blocka make_at2con(const gmx_moltype_t         &moltype,
                      const t_iparams             *iparams,
                      FlexibleConstraintTreatment  flexibleConstraintTreatment)
 {
-    return makeAtomsToConstraintsList(moltype.atoms.nr, moltype.ilist.data(), iparams, flexibleConstraintTreatment);
+    return makeAtomsToConstraintsList(moltype.atoms.nr, moltype.ilist.rawPointer(), iparams, flexibleConstraintTreatment);
 }
 
 //! Return the number of flexible constraints in the \c ilist and \c iparams.
@@ -1014,7 +1014,7 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
         for (const gmx_molblock_t &molblock : mtop.molblock)
         {
             int count =
-                countFlexibleConstraintsTemplate(mtop.moltype[molblock.type].ilist.data(),
+                countFlexibleConstraintsTemplate(mtop.moltype[molblock.type].ilist.rawPointer(),
                                                  mtop.ffparams.iparams);
             nflexcon += molblock.nmol*count;
         }

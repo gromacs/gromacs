@@ -765,7 +765,7 @@ void constructVsitesGlobal(const gmx_mtop_t         &mtop,
     {
         const gmx_molblock_t  &molb = mtop.molblock[mb];
         const gmx_moltype_t   &molt = mtop.moltype[molb.type];
-        if (vsiteIlistNrCount(molt.ilist.data()) > 0)
+        if (vsiteIlistNrCount(molt.ilist.rawPointer()) > 0)
         {
             int atomOffset = mtop.moleculeBlockIndices[mb].globalAtomStart;
             for (int mol = 0; mol < molb.nmol; mol++)
@@ -2063,7 +2063,7 @@ initVsite(const gmx_mtop_t &mtop,
         {
             const gmx_moltype_t &molt = mtop.moltype[mt];
             vsite->vsite_pbc_molt[mt] = get_vsite_pbc(mtop.ffparams.iparams,
-                                                      molt.ilist.data(),
+                                                      molt.ilist.rawPointer(),
                                                       molt.atoms.atom, nullptr,
                                                       molt.cgs);
         }
