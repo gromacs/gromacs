@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 # These options need to match the node label in Jenkins and the
-# capabilities in releng/slaves.py for the slave where the analysis is
+# capabilities in releng/nodes.py for the node where the analysis is
 # intended to run.
 build_options = ['clang-6', 'clang-static-analyzer-6']
 

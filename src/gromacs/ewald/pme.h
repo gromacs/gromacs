@@ -187,7 +187,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                real *dvdlambda_q, real *dvdlambda_lj,
                int flags);
 
-/*! \brief Called on the nodes that do PME exclusively (as slaves) */
+/*! \brief Called on the nodes that do PME exclusively */
 int gmx_pmeonly(struct gmx_pme_t *pme,
                 const t_commrec *cr,     t_nrnb *mynrnb,
                 gmx_wallcycle  *wcycle,
