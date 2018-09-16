@@ -53,6 +53,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/partition.h"
 #include "gromacs/ewald/ewald-utils.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fft/calcgrid.h"
