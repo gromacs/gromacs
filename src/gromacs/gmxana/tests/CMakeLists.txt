@@ -39,5 +39,6 @@ gmx_add_gtest_executable(
     entropy.cpp
     gmx_traj.cpp
     gmx_trjconv.cpp
+    gmx_msd.cpp
     )
 gmx_register_gtest_test(GmxAnaTest ${exename} INTEGRATION_TEST)
