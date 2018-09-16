@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 
 struct BalanceRegion;
 struct gmx_domdec_t;
+struct t_nrnb;
 
 /*! \brief Tells if we should open the balancing region */
 enum class DdOpenBalanceRegionBeforeForceComputation
@@ -138,5 +139,14 @@ void ddCloseBalanceRegionCpu(const gmx_domdec_t *dd);
 void ddCloseBalanceRegionGpu(const gmx_domdec_t          *dd,
                              float                        waitCyclesGpuInCpuRegion,
                              DdBalanceRegionWaitedForGpu  waitedForGpu);
+
+/*! \brief Start the force flop count */
+void dd_force_flop_start(struct gmx_domdec_t *dd, t_nrnb *nrnb);
+
+/*! \brief Stop the force flop count */
+void dd_force_flop_stop(struct gmx_domdec_t *dd, t_nrnb *nrnb);
+
+//! Clear the cycle counts used for tuning.
+void clear_dd_cycle_counts(gmx_domdec_t *dd);
 
 #endif

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,7 +37,10 @@
 
 #include "dlbtiming.h"
 
+#include <cstring>
+
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "domdec_internal.h"
@@ -169,4 +172,74 @@ void ddCloseBalanceRegionGpu(const gmx_domdec_t          *dd,
         reg->isOpenOnGpu = false;
         reg->isOpen      = false;
     }
+}
+
+//! Accumulates flop counts for force calculations.
+static double force_flop_count(const t_nrnb *nrnb)
+{
+    int         i;
+    double      sum;
+    const char *name;
+
+    sum = 0;
+    for (i = 0; i < eNR_NBKERNEL_FREE_ENERGY; i++)
+    {
+        /* To get closer to the real timings, we half the count
+         * for the normal loops and again half it for water loops.
+         */
+        name = nrnb_str(i);
+        if (strstr(name, "W3") != nullptr || strstr(name, "W4") != nullptr)
+        {
+            sum += nrnb->n[i]*0.25*cost_nrnb(i);
+        }
+        else
+        {
+            sum += nrnb->n[i]*0.50*cost_nrnb(i);
+        }
+    }
+    for (i = eNR_NBKERNEL_FREE_ENERGY; i <= eNR_NB14; i++)
+    {
+        name = nrnb_str(i);
+        if (strstr(name, "W3") != nullptr || strstr(name, "W4") != nullptr)
+        {
+            sum += nrnb->n[i]*cost_nrnb(i);
+        }
+    }
+    for (i = eNR_BONDS; i <= eNR_WALLS; i++)
+    {
+        sum += nrnb->n[i]*cost_nrnb(i);
+    }
+
+    return sum;
+}
+
+void dd_force_flop_start(gmx_domdec_t *dd, t_nrnb *nrnb)
+{
+    if (dd->comm->eFlop)
+    {
+        dd->comm->flop -= force_flop_count(nrnb);
+    }
+}
+
+void dd_force_flop_stop(gmx_domdec_t *dd, t_nrnb *nrnb)
+{
+    if (dd->comm->eFlop)
+    {
+        dd->comm->flop += force_flop_count(nrnb);
+        dd->comm->flop_n++;
+    }
+}
+
+void clear_dd_cycle_counts(gmx_domdec_t *dd)
+{
+    int i;
+
+    for (i = 0; i < ddCyclNr; i++)
+    {
+        dd->comm->cycl[i]     = 0;
+        dd->comm->cycl_n[i]   = 0;
+        dd->comm->cycl_max[i] = 0;
+    }
+    dd->comm->flop   = 0;
+    dd->comm->flop_n = 0;
 }
