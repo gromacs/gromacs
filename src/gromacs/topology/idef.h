@@ -45,6 +45,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/view.h"
 
 /* check kernel/toppush.c when you change these numbers */
 #define MAXATOMLIST 6
@@ -292,6 +293,8 @@ struct InteractionList
 
     /* List of interactions, see explanation further down */
     std::vector<int> iatoms;
+    // Function type
+    int ftype;
 };
 
 /* List of interaction lists, one list for each interaction type
@@ -299,6 +302,13 @@ struct InteractionList
  * TODO: Consider only including entries in use instead of all F_NRE
  */
 typedef std::array<InteractionList, F_NRE> InteractionLists;
+
+//! Returns a view of  all non-empty lists with any of the interaction flags in \p flags set
+auto getFtypes(const InteractionLists& list, int flags)
+{
+    return gmx::makeFilteredView(list, [flags](const InteractionList& list) {
+            return (interaction_function[list.ftype].flags & flags) && list.size() > 0; });
+}
 
 /* Deprecated list of listed interactions.
  *
