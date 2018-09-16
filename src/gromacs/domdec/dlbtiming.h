@@ -47,6 +47,7 @@
 
 struct BalanceRegion;
 struct gmx_domdec_t;
+struct t_nrnb;
 
 /*! \brief Tells if we should open the balancing region */
 enum class DdOpenBalanceRegionBeforeForceComputation
@@ -138,5 +139,14 @@ void ddCloseBalanceRegionCpu(const gmx_domdec_t *dd);
 void ddCloseBalanceRegionGpu(const gmx_domdec_t          *dd,
                              float                        waitCyclesGpuInCpuRegion,
                              DdBalanceRegionWaitedForGpu  waitedForGpu);
+
+/*! \brief Start the force flop count */
+void dd_force_flop_start(struct gmx_domdec_t *dd, t_nrnb *nrnb);
+
+/*! \brief Stop the force flop count */
+void dd_force_flop_stop(struct gmx_domdec_t *dd, t_nrnb *nrnb);
+
+//! Clear the cycle counts used for tuning.
+void clear_dd_cycle_counts(gmx_domdec_t *dd);
 
 #endif
