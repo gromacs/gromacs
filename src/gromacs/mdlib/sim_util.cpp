@@ -49,8 +49,8 @@
 
 #include "gromacs/awh/awh.h"
 #include "gromacs/domdec/dlbtiming.h"
-#include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/partition.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gmxlib/chargegroup.h"
