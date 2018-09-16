@@ -86,6 +86,7 @@
 #include "domdec_constraints.h"
 #include "domdec_internal.h"
 #include "domdec_vsite.h"
+#include "dump.h"
 
 /*! \brief The number of integer item in the local state, used for broadcasting of the state */
 #define NITEM_DD_INIT_LOCAL_STATE 5
