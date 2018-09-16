@@ -60,7 +60,6 @@
 
 #include <vector>
 
-#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -70,7 +69,6 @@ struct cginfo_mb_t;
 struct gmx_domdec_t;
 struct gmx_ddbox_t;
 struct gmx_domdec_zones_t;
-struct gmx_enfrot;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
 struct gmx_vsite_t;
@@ -87,8 +85,6 @@ class t_state;
 
 namespace gmx
 {
-class Constraints;
-class MDAtoms;
 class MDLogger;
 class LocalAtomSetManager;
 } // namespace
@@ -281,18 +277,6 @@ enum {
 /*! \brief Add the wallcycle count to the DD counter */
 void dd_cycles_add(const gmx_domdec_t *dd, float cycles, int ddCycl);
 
-/*! \brief Start the force flop count */
-void dd_force_flop_start(struct gmx_domdec_t *dd, t_nrnb *nrnb);
-
-/*! \brief Stop the force flop count */
-void dd_force_flop_stop(struct gmx_domdec_t *dd, t_nrnb *nrnb);
-
-/*! \brief Return the PME/PP force load ratio, or -1 if nothing was measured.
- *
- * Should only be called on the DD master node.
- */
-float dd_pme_f_ratio(struct gmx_domdec_t *dd);
-
 /*! \brief Communicate the coordinates to the neighboring cells and do pbc. */
 void dd_move_x(struct gmx_domdec_t      *dd,
                matrix                    box,
@@ -315,56 +299,8 @@ void dd_atom_spread_real(struct gmx_domdec_t *dd, real v[]);
 /*! \brief Sum the contributions to a real for each atom over the neighboring cells. */
 void dd_atom_sum_real(struct gmx_domdec_t *dd, real v[]);
 
-/*! \brief Partition the system over the nodes.
- *
- * step is only used for printing error messages.
- * If bMasterState==TRUE then state_global from the master node is used,
- * else state_local is redistributed between the nodes.
- * When f!=NULL, *f will be reallocated to the size of state_local.
- */
-void dd_partition_system(FILE                *fplog,
-                         const gmx::MDLogger &mdlog,
-                         int64_t              step,
-                         const t_commrec     *cr,
-                         gmx_bool             bMasterState,
-                         int                  nstglobalcomm,
-                         t_state             *state_global,
-                         const gmx_mtop_t    *top_global,
-                         const t_inputrec    *ir,
-                         t_state             *state_local,
-                         PaddedRVecVector    *f,
-                         gmx::MDAtoms        *mdatoms,
-                         gmx_localtop_t      *top_local,
-                         t_forcerec          *fr,
-                         gmx_vsite_t         *vsite,
-                         gmx::Constraints    *constr,
-                         t_nrnb              *nrnb,
-                         gmx_wallcycle       *wcycle,
-                         gmx_bool             bVerbose);
-
 /*! \brief Reset all the statistics and counters for total run counting */
 void reset_dd_statistics_counters(struct gmx_domdec_t *dd);
-
-/*! \brief Print statistics for domain decomposition communication */
-void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog);
-
-/*! \brief Check whether bonded interactions are missing, if appropriate
- *
- * \param[in]    mdlog                                  Logger
- * \param[in]    cr                                     Communication object
- * \param[in]    totalNumberOfBondedInteractions        Result of the global reduction over the number of bonds treated in each domain
- * \param[in]    top_global                             Global topology for the error message
- * \param[in]    top_local                              Local topology for the error message
- * \param[in]    state                                  Global state for the error message
- * \param[in,out] shouldCheckNumberOfBondedInteractions Whether we should do the check. Always set to false.
- */
-void checkNumberOfBondedInteractions(const gmx::MDLogger  &mdlog,
-                                     t_commrec            *cr,
-                                     int                   totalNumberOfBondedInteractions,
-                                     const gmx_mtop_t     *top_global,
-                                     const gmx_localtop_t *top_local,
-                                     const t_state        *state,
-                                     bool                 *shouldCheckNumberOfBondedInteractions);
 
 /* In domdec_con.c */
 
@@ -472,24 +408,5 @@ real dd_choose_grid(const gmx::MDLogger &mdlog,
                     gmx_bool bDynLoadBal, real dlb_scale,
                     real cellsize_limit, real cutoff_dd,
                     gmx_bool bInterCGBondeds);
-
-
-/* In domdec_box.c */
-
-/*! \brief Set the box and PBC data in \p ddbox */
-void set_ddbox(const gmx_domdec_t             &dd,
-               bool                            masterRankHasTheSystemState,
-               const matrix                    box,
-               bool                            calculateUnboundedSize,
-               gmx::ArrayRef<const gmx::RVec>  x,
-               gmx_ddbox_t                    *ddbox);
-
-/*! \brief Set the box and PBC data in \p ddbox */
-void set_ddbox_cr(const t_commrec                &cr,
-                  const ivec                     *dd_nc,
-                  const t_inputrec               &ir,
-                  const matrix                    box,
-                  gmx::ArrayRef<const gmx::RVec>  x,
-                  gmx_ddbox_t                    *ddbox);
 
 #endif

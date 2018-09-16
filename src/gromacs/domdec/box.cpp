@@ -44,6 +44,8 @@
 
 #include "gmxpre.h"
 
+#include "box.h"
+
 #include "config.h"
 
 #include "gromacs/domdec/domdec.h"
@@ -317,4 +319,9 @@ void set_ddbox_cr(const t_commrec                &cr,
     }
 
     gmx_bcast(sizeof(gmx_ddbox_t), ddbox, &cr);
+}
+
+bool dynamic_dd_box(const gmx_domdec_t &dd)
+{
+    return (dd.numBoundedDimensions < DIM || dd.haveDynamicBox);
 }

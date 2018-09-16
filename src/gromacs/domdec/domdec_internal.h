@@ -54,6 +54,8 @@ struct t_commrec;
 
 /*! \cond INTERNAL */
 
+#define DD_NLOAD_MAX 9
+
 struct BalanceRegion;
 
 struct gmx_domdec_ind_t
@@ -441,7 +443,7 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
      */
     real PMELoadBal_max_cutoff;
 
-    ivec tric_dir;                /**< tric_dir from \p gmx_domdec_box_t is only stored here because dd_get_ns_ranges needs it */
+    ivec tric_dir;                /**< tric_dir from \p gmx_ddbox_t is only stored here because dd_get_ns_ranges needs it */
     rvec box0;                    /**< box lower corner, required with dim's without pbc and -gcom */
     rvec box_size;                /**< box size, required with dim's without pbc and -gcom */
 
