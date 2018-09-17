@@ -164,23 +164,18 @@ static void prepareRerunState(const t_trxframe  &rerunFrame,
                               t_graph           *graph,
                               gmx_bool          *warnWhenNoV)
 {
-    for (int i = 0; i < globalState->natoms; i++)
-    {
-        copy_rvec(rerunFrame.x[i], globalState->x[i]);
-    }
+    auto x      = globalState->x.unpaddedArrayRef();
+    auto v      = globalState->v.unpaddedArrayRef();
+    auto rerunX = arrayRefFromArray(reinterpret_cast<gmx::RVec *>(rerunFrame.x), globalState->natoms);
+    auto rerunV = arrayRefFromArray(reinterpret_cast<gmx::RVec *>(rerunFrame.v), globalState->natoms);
+    std::copy(rerunX.begin(), rerunX.end(), x.begin());
     if (rerunFrame.bV)
     {
-        for (int i = 0; i < globalState->natoms; i++)
-        {
-            copy_rvec(rerunFrame.v[i], globalState->v[i]);
-        }
+        std::copy(rerunV.begin(), rerunV.end(), v.begin());
     }
     else
     {
-        for (int i = 0; i < globalState->natoms; i++)
-        {
-            clear_rvec(globalState->v[i]);
-        }
+        std::fill(v.begin(), v.end(), gmx::RVec(0, 0, 0));
         if (*warnWhenNoV)
         {
             fprintf(stderr, "\nWARNING: Some frames do not contain velocities.\n"
@@ -201,15 +196,15 @@ static void prepareRerunState(const t_trxframe  &rerunFrame,
             /* Following is necessary because the graph may get out of sync
              * with the coordinates if we only have every N'th coordinate set
              */
-            mk_mshift(nullptr, graph, forceRec.ePBC, globalState->box, as_rvec_array(globalState->x.data()));
-            shift_self(graph, globalState->box, as_rvec_array(globalState->x.data()));
+            mk_mshift(nullptr, graph, forceRec.ePBC, globalState->box, globalState->x.rvec_array());
+            shift_self(graph, globalState->box, globalState->x.rvec_array());
         }
-        construct_vsites(vsite, as_rvec_array(globalState->x.data()), timeStep, as_rvec_array(globalState->v.data()),
+        construct_vsites(vsite, globalState->x.rvec_array(), timeStep, globalState->v.rvec_array(),
                          idef.iparams, idef.il,
                          forceRec.ePBC, forceRec.bMolPBC, nullptr, globalState->box);
         if (graph)
         {
-            unshift_self(graph, globalState->box, as_rvec_array(globalState->x.data()));
+            unshift_self(graph, globalState->box, globalState->x.rvec_array());
         }
     }
 }
@@ -222,51 +217,51 @@ void gmx::Integrator::do_md()
     // alias to avoid a large ripple of nearly useless changes.
     // t_inputrec is being replaced by IMdpOptionsProvider, so this
     // will go away eventually.
-    t_inputrec       *ir   = inputrec;
-    gmx_mdoutf       *outf = nullptr;
-    int64_t           step, step_rel;
-    double            t, t0, lam0[efptNR];
-    gmx_bool          bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
-    gmx_bool          bNS, bNStList, bSimAnn, bStopCM,
-                      bFirstStep, bInitStep, bLastStep = FALSE;
-    gmx_bool          bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
-    gmx_bool          do_ene, do_log, do_verbose, bRerunWarnNoV = TRUE,
-                      bForceUpdate = FALSE;
-    gmx_bool          bMasterState;
-    int               force_flags, cglo_flags;
-    tensor            force_vir, shake_vir, total_vir, tmp_vir, pres;
-    int               i, m;
-    t_trxstatus      *status;
-    rvec              mu_tot;
-    t_vcm            *vcm;
-    matrix            parrinellorahmanMu, M;
-    t_trxframe        rerun_fr;
-    gmx_repl_ex_t     repl_ex = nullptr;
-    gmx_localtop_t   *top;
-    t_mdebin         *mdebin   = nullptr;
-    gmx_enerdata_t   *enerd;
-    PaddedRVecVector  f {};
-    gmx_global_stat_t gstat;
-    gmx_update_t     *upd   = nullptr;
-    t_graph          *graph = nullptr;
-    gmx_groups_t     *groups;
-    gmx_ekindata_t   *ekind;
-    gmx_shellfc_t    *shellfc;
-    gmx_bool          bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
-    gmx_bool          bTemp, bPres, bTrotter;
-    real              dvdl_constr;
-    rvec             *cbuf        = nullptr;
-    int               cbuf_nalloc = 0;
-    matrix            lastbox;
-    int               lamnew  = 0;
+    t_inputrec             *ir   = inputrec;
+    gmx_mdoutf             *outf = nullptr;
+    int64_t                 step, step_rel;
+    double                  t, t0, lam0[efptNR];
+    gmx_bool                bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
+    gmx_bool                bNS, bNStList, bSimAnn, bStopCM,
+                            bFirstStep, bInitStep, bLastStep = FALSE;
+    gmx_bool                bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
+    gmx_bool                do_ene, do_log, do_verbose, bRerunWarnNoV = TRUE,
+                            bForceUpdate = FALSE;
+    gmx_bool                bMasterState;
+    int                     force_flags, cglo_flags;
+    tensor                  force_vir, shake_vir, total_vir, tmp_vir, pres;
+    int                     i, m;
+    t_trxstatus            *status;
+    rvec                    mu_tot;
+    t_vcm                  *vcm;
+    matrix                  parrinellorahmanMu, M;
+    t_trxframe              rerun_fr;
+    gmx_repl_ex_t           repl_ex = nullptr;
+    gmx_localtop_t         *top;
+    t_mdebin               *mdebin   = nullptr;
+    gmx_enerdata_t         *enerd;
+    PaddedVector<gmx::RVec> f {};
+    gmx_global_stat_t       gstat;
+    gmx_update_t           *upd   = nullptr;
+    t_graph                *graph = nullptr;
+    gmx_groups_t           *groups;
+    gmx_ekindata_t         *ekind;
+    gmx_shellfc_t          *shellfc;
+    gmx_bool                bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
+    gmx_bool                bTemp, bPres, bTrotter;
+    real                    dvdl_constr;
+    rvec                   *cbuf        = nullptr;
+    int                     cbuf_nalloc = 0;
+    matrix                  lastbox;
+    int                     lamnew  = 0;
     /* for FEP */
-    int               nstfep = 0;
-    double            cycles;
-    real              saved_conserved_quantity = 0;
-    real              last_ekin                = 0;
-    t_extmass         MassQ;
-    int             **trotter_seq;
-    char              sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
+    int                     nstfep = 0;
+    double                  cycles;
+    real                    saved_conserved_quantity = 0;
+    real                    last_ekin                = 0;
+    t_extmass               MassQ;
+    int                   **trotter_seq;
+    char                    sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
 
     /* PME load balancing data for GPU kernels */
     pme_load_balancing_t *pme_loadbal      = nullptr;
@@ -379,7 +374,7 @@ void gmx::Integrator::do_md()
 
     /* Set up interactive MD (IMD) */
     init_IMD(ir, cr, ms, top_global, fplog, ir->nstcalcenergy,
-             MASTER(cr) ? as_rvec_array(state_global->x.data()) : nullptr,
+             MASTER(cr) ? state_global->x.rvec_array() : nullptr,
              nfile, fnm, oenv, mdrunOptions);
 
     // Local state only becomes valid now.
@@ -406,10 +401,7 @@ void gmx::Integrator::do_md()
     else
     {
         state_change_natoms(state_global, state_global->natoms);
-        /* We need to allocate one element extra, since we might use
-         * (unaligned) 4-wide SIMD loads to access rvec entries.
-         */
-        f.resize(gmx::paddedRVecVectorSize(state_global->natoms));
+        f.resizeWithPadding(state_global->natoms);
         /* Copy the pointer to the global state */
         state = state_global;
 
@@ -490,13 +482,14 @@ void gmx::Integrator::do_md()
     {
         if (state->flags & (1 << estV))
         {
+            auto v = state->v.unpaddedArrayRef();
             /* Set the velocities of vsites, shells and frozen atoms to zero */
             for (i = 0; i < mdatoms->homenr; i++)
             {
                 if (mdatoms->ptype[i] == eptVSite ||
                     mdatoms->ptype[i] == eptShell)
                 {
-                    clear_rvec(state->v[i]);
+                    clear_rvec(v[i]);
                 }
                 else if (mdatoms->cFREEZE)
                 {
@@ -504,7 +497,7 @@ void gmx::Integrator::do_md()
                     {
                         if (ir->opts.nFreeze[mdatoms->cFREEZE[i]][m])
                         {
-                            state->v[i][m] = 0;
+                            v[i][m] = 0;
                         }
                     }
                 }
@@ -519,7 +512,7 @@ void gmx::Integrator::do_md()
         if (vsite)
         {
             /* Construct the virtual sites for the initial configuration */
-            construct_vsites(vsite, as_rvec_array(state->x.data()), ir->delta_t, nullptr,
+            construct_vsites(vsite, state->x.rvec_array(), ir->delta_t, nullptr,
                              top->idef.iparams, top->idef.il,
                              fr->ePBC, fr->bMolPBC, cr, state->box);
         }
@@ -1047,7 +1040,7 @@ void gmx::Integrator::do_md()
                                 enforcedRotation, step,
                                 ir, bNS, force_flags, top,
                                 constr, enerd, fcd,
-                                state, f, force_vir, mdatoms,
+                                state, f.paddedArrayRef(), force_vir, mdatoms,
                                 nrnb, wcycle, graph, groups,
                                 shellfc, fr, t, mu_tot,
                                 vsite,
@@ -1075,8 +1068,8 @@ void gmx::Integrator::do_md()
              */
             do_force(fplog, cr, ms, ir, awh.get(), enforcedRotation,
                      step, nrnb, wcycle, top, groups,
-                     state->box, state->x, &state->hist,
-                     f, force_vir, mdatoms, enerd, fcd,
+                     state->box, state->x.paddedArrayRef(), &state->hist,
+                     f.paddedArrayRef(), force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
                      fr, vsite, mu_tot, t, ed ? ed->getLegacyED() : nullptr,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags,
@@ -1098,7 +1091,7 @@ void gmx::Integrator::do_md()
                  * so that the input is actually the initial step.
                  */
                 snew(vbuf, state->natoms);
-                copy_rvecn(as_rvec_array(state->v.data()), vbuf, 0, state->natoms); /* should make this better for parallelizing? */
+                copy_rvecn(state->v.rvec_array(), vbuf, 0, state->natoms); /* should make this better for parallelizing? */
             }
             else
             {
@@ -1106,7 +1099,7 @@ void gmx::Integrator::do_md()
                 trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ1);
             }
 
-            update_coords(step, ir, mdatoms, state, f, fcd,
+            update_coords(step, ir, mdatoms, state, f.paddedArrayRef(), fcd,
                           ekind, M, upd, etrtVELOCITY1,
                           cr, constr);
 
@@ -1124,7 +1117,7 @@ void gmx::Integrator::do_md()
             {
                 /* Need to unshift here if a do_force has been
                    called in the previous step */
-                unshift_self(graph, state->box, as_rvec_array(state->x.data()));
+                unshift_self(graph, state->box, state->x.rvec_array());
             }
             /* if VV, compute the pressure and constraints */
             /* For VV2, we strictly only need this if using pressure
@@ -1212,7 +1205,7 @@ void gmx::Integrator::do_md()
             /* if it's the initial step, we performed this first step just to get the constraint virial */
             if (ir->eI == eiVV && bInitStep)
             {
-                copy_rvecn(vbuf, as_rvec_array(state->v.data()), 0, state->natoms);
+                copy_rvecn(vbuf, state->v.rvec_array(), 0, state->natoms);
                 sfree(vbuf);
             }
             wallcycle_stop(wcycle, ewcUPDATE);
@@ -1246,7 +1239,7 @@ void gmx::Integrator::do_md()
                statistics, but if performing simulated tempering, we
                do update the velocities and the tau_t. */
 
-            lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, state->fep_state, state->dfhist, step, as_rvec_array(state->v.data()), mdatoms);
+            lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, state->fep_state, state->dfhist, step, state->v.rvec_array(), mdatoms);
             /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
             if (MASTER(cr))
             {
@@ -1261,13 +1254,13 @@ void gmx::Integrator::do_md()
         do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
                                  ir, state, state_global, observablesHistory,
                                  top_global, fr,
-                                 outf, mdebin, ekind, f,
+                                 outf, mdebin, ekind, f.paddedArrayRef(),
                                  !bRerunMD && checkpointHandler->isCheckpointingStep(),
                                  bRerunMD, bLastStep,
                                  mdrunOptions.writeConfout,
                                  bSumEkinhOld);
         /* Check if IMD step and do IMD communication, if bIMD is TRUE. */
-        bIMDstep = do_IMD(ir->bIMD, step, cr, bNS, state->box, as_rvec_array(state->x.data()), ir, t, wcycle);
+        bIMDstep = do_IMD(ir->bIMD, step, cr, bNS, state->box, state->x.rvec_array(), ir, t, wcycle);
 
         /* kludge -- virial is lost with restart for MTTK NPT control. Must reload (saved earlier). */
         if (startingFromCheckpoint && (inputrecNptTrotter(ir) || inputrecNphTrotter(ir)))
@@ -1297,7 +1290,7 @@ void gmx::Integrator::do_md()
         if (ETC_ANDERSEN(ir->etc)) /* keep this outside of update_tcouple because of the extra info required to pass */
         {
             gmx_bool bIfRandomize;
-            bIfRandomize = update_randomize_velocities(ir, step, cr, mdatoms, state, upd, constr);
+            bIfRandomize = update_randomize_velocities(ir, step, cr, mdatoms, state->v.unpaddedArrayRef(), upd, constr);
             /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
             if (constr && bIfRandomize)
             {
@@ -1341,7 +1334,7 @@ void gmx::Integrator::do_md()
             if (EI_VV(ir->eI))
             {
                 /* velocity half-step update */
-                update_coords(step, ir, mdatoms, state, f, fcd,
+                update_coords(step, ir, mdatoms, state, f.paddedArrayRef(), fcd,
                               ekind, M, upd, etrtVELOCITY2,
                               cr, constr);
             }
@@ -1359,10 +1352,10 @@ void gmx::Integrator::do_md()
                     cbuf_nalloc = state->natoms;
                     srenew(cbuf, cbuf_nalloc);
                 }
-                copy_rvecn(as_rvec_array(state->x.data()), cbuf, 0, state->natoms);
+                copy_rvecn(state->x.rvec_array(), cbuf, 0, state->natoms);
             }
 
-            update_coords(step, ir, mdatoms, state, f, fcd,
+            update_coords(step, ir, mdatoms, state, f.paddedArrayRef(), fcd,
                           ekind, M, upd, etrtPOSITION, cr, constr);
             wallcycle_stop(wcycle, ewcUPDATE);
 
@@ -1389,13 +1382,13 @@ void gmx::Integrator::do_md()
                 wallcycle_start(wcycle, ewcUPDATE);
                 trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ4);
                 /* now we know the scaling, we can compute the positions again again */
-                copy_rvecn(cbuf, as_rvec_array(state->x.data()), 0, state->natoms);
+                copy_rvecn(cbuf, state->x.rvec_array(), 0, state->natoms);
 
-                update_coords(step, ir, mdatoms, state, f, fcd,
+                update_coords(step, ir, mdatoms, state, f.paddedArrayRef(), fcd,
                               ekind, M, upd, etrtPOSITION, cr, constr);
                 wallcycle_stop(wcycle, ewcUPDATE);
 
-                /* do we need an extra constraint here? just need to copy out of as_rvec_array(state->v.data()) to upd->xp? */
+                /* do we need an extra constraint here? just need to copy out of state->v.rvec_array() to upd->xp? */
                 /* are the small terms in the shake_vir here due
                  * to numerical errors, or are they important
                  * physically? I'm thinking they are just errors, but not completely sure.
@@ -1430,7 +1423,7 @@ void gmx::Integrator::do_md()
         else if (graph)
         {
             /* Need to unshift here */
-            unshift_self(graph, state->box, as_rvec_array(state->x.data()));
+            unshift_self(graph, state->box, state->x.rvec_array());
         }
 
         if (vsite != nullptr)
@@ -1438,15 +1431,15 @@ void gmx::Integrator::do_md()
             wallcycle_start(wcycle, ewcVSITECONSTR);
             if (graph != nullptr)
             {
-                shift_self(graph, state->box, as_rvec_array(state->x.data()));
+                shift_self(graph, state->box, state->x.rvec_array());
             }
-            construct_vsites(vsite, as_rvec_array(state->x.data()), ir->delta_t, as_rvec_array(state->v.data()),
+            construct_vsites(vsite, state->x.rvec_array(), ir->delta_t, state->v.rvec_array(),
                              top->idef.iparams, top->idef.il,
                              fr->ePBC, fr->bMolPBC, cr, state->box);
 
             if (graph != nullptr)
             {
-                unshift_self(graph, state->box, as_rvec_array(state->x.data()));
+                unshift_self(graph, state->box, state->x.rvec_array());
             }
             wallcycle_stop(wcycle, ewcVSITECONSTR);
         }
@@ -1616,7 +1609,7 @@ void gmx::Integrator::do_md()
             do_per_step(step, ir->swap->nstswap))
         {
             bNeedRepartition = do_swapcoords(cr, step, t, ir, wcycle,
-                                             bRerunMD ? rerun_fr.x   : as_rvec_array(state->x.data()),
+                                             bRerunMD ? rerun_fr.x   : state->x.rvec_array(),
                                              bRerunMD ? rerun_fr.box : state->box,
                                              MASTER(cr) && mdrunOptions.verbose,
                                              bRerunMD);
@@ -1669,7 +1662,7 @@ void gmx::Integrator::do_md()
 
         if ( (membed != nullptr) && (!bLastStep) )
         {
-            rescale_membed(step_rel, membed, as_rvec_array(state_global->x.data()));
+            rescale_membed(step_rel, membed, state_global->x.rvec_array());
         }
 
         if (bRerunMD)

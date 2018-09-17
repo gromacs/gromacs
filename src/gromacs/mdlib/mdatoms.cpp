@@ -101,14 +101,14 @@ MDAtoms::~MDAtoms()
 
 void MDAtoms::resize(int newSize)
 {
-    chargeA_.resize(newSize);
-    mdatoms_->chargeA = chargeA_.data();
+    chargeA_.resizeWithPadding(newSize);
+    mdatoms_->chargeA = chargeA_.unpaddedArrayRef().data();
 }
 
 void MDAtoms::reserve(int newCapacity)
 {
-    chargeA_.reserve(newCapacity);
-    mdatoms_->chargeA = chargeA_.data();
+    chargeA_.reserveWithPadding(newCapacity);
+    mdatoms_->chargeA = chargeA_.unpaddedArrayRef().data();
 }
 
 std::unique_ptr<MDAtoms>

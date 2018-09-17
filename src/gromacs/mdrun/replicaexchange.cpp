@@ -591,8 +591,8 @@ static void exchange_state(const gmx_multisim_t *ms, int b, t_state *state)
     exchange_doubles(ms, b, state->nhpres_vxi.data(), nnhpres);
     exchange_doubles(ms, b, state->therm_integral.data(), state->ngtc);
     exchange_doubles(ms, b, &state->baros_integral, 1);
-    exchange_rvecs(ms, b, as_rvec_array(state->x.data()), state->natoms);
-    exchange_rvecs(ms, b, as_rvec_array(state->v.data()), state->natoms);
+    exchange_rvecs(ms, b, state->x.rvec_array(), state->natoms);
+    exchange_rvecs(ms, b, state->v.rvec_array(), state->natoms);
 }
 
 static void copy_state_serial(const t_state *src, t_state *dest)
@@ -607,16 +607,11 @@ static void copy_state_serial(const t_state *src, t_state *dest)
     }
 }
 
-static void scale_velocities(t_state *state, real fac)
+static void scale_velocities(gmx::ArrayRef<gmx::RVec> velocities, real fac)
 {
-    int i;
-
-    if (as_rvec_array(state->v.data()))
+    for (auto &v : velocities)
     {
-        for (i = 0; i < state->natoms; i++)
-        {
-            svmul(fac, state->v[i], state->v[i]);
-        }
+        v.scale(fac);
     }
 }
 
@@ -1317,7 +1312,8 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr,
              * the velocities. */
             if (re->type == ereTEMP || re->type == ereTL)
             {
-                scale_velocities(state, std::sqrt(re->q[ereTEMP][replica_id]/re->q[ereTEMP][re->destinations[replica_id]]));
+                scale_velocities(state->v.unpaddedArrayRef(),
+                                 std::sqrt(re->q[ereTEMP][replica_id]/re->q[ereTEMP][re->destinations[replica_id]]));
             }
 
         }
