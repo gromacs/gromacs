@@ -101,13 +101,13 @@ MDAtoms::~MDAtoms()
 
 void MDAtoms::resize(int newSize)
 {
-    chargeA_.resize(newSize);
+    chargeA_.resizeWithPadding(newSize);
     mdatoms_->chargeA = chargeA_.data();
 }
 
 void MDAtoms::reserve(int newCapacity)
 {
-    chargeA_.reserve(newCapacity);
+    chargeA_.reserveWithPadding(newCapacity);
     mdatoms_->chargeA = chargeA_.data();
 }
 
