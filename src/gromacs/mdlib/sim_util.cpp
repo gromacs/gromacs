@@ -2980,3 +2980,39 @@ void init_md(FILE *fplog,
     clear_mat(total_vir);
     clear_mat(pres);
 }
+
+void init_rerun(FILE *fplog,
+                const t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
+                t_inputrec *ir, const gmx_output_env_t *oenv,
+                const MdrunOptions &mdrunOptions,
+                t_state *globalState, double *lam0,
+                t_nrnb *nrnb, gmx_mtop_t *mtop,
+                int nfile, const t_filenm fnm[],
+                gmx_mdoutf_t *outf, t_mdebin **mdebin,
+                gmx_wallcycle_t wcycle)
+{
+    /* Initialize lambda variables */
+    /* TODO: Clean up initialization of fep_state and lambda in t_state.
+     * We currently need to call initialize_lambdas on non-master ranks
+     * to initialize lam0.
+     */
+    if (MASTER(cr))
+    {
+        initialize_lambdas(fplog, ir, &globalState->fep_state, globalState->lambda, lam0);
+    }
+    else
+    {
+        int                      tmpFepState;
+        std::array<real, efptNR> tmpLambda;
+        initialize_lambdas(fplog, ir, &tmpFepState, tmpLambda, lam0);
+    }
+
+    init_nrnb(nrnb);
+
+    if (nfile != -1)
+    {
+        *outf   = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, mtop, oenv, wcycle);
+        *mdebin = init_mdebin(mdrunOptions.continuationOptions.appendFiles ? nullptr : mdoutf_get_fp_ene(*outf),
+                              mtop, ir, mdoutf_get_fp_dhdl(*outf), true);
+    }
+}
