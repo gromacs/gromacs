@@ -240,6 +240,36 @@ struct t_ilist
  *      identifier is an index in a params[] and functype[] array.
  */
 
+/*! \brief Type for returning a list of InteractionList references
+ *
+ * TODO: Remove when the function type is made part of InteractionList
+ */
+struct InteractionListHandle
+{
+    const int               functionType; //!< The function type
+    const std::vector<int> &iatoms;       //!< Reference to interaction list
+};
+
+/*! \brief Returns a list of all non-empty InteractionList entries with any of the interaction flags in \p flags set
+ *
+ * \param[in] ilists  Set of interaction lists
+ * \param[in] flags   Bit mask with one or more IF_... bits set
+ */
+static inline const std::vector<InteractionListHandle>
+getILists(const InteractionLists &ilists,
+          int                     flags)
+{
+    std::vector<InteractionListHandle> handles;
+    for (size_t ftype = 0; ftype < ilists.size(); ftype++)
+    {
+        if ((interaction_function[ftype].flags & flags) && ilists[ftype].size() > 0)
+        {
+            handles.push_back({ static_cast<int>(ftype), ilists[ftype].iatoms });
+        }
+    }
+    return handles;
+}
+
 typedef struct
 {
     real *cmap; /* Has length 4*grid_spacing*grid_spacing, */
