@@ -2916,7 +2916,7 @@ static gmx_bool test_dd_cutoff(t_commrec     *cr,
 
     dd = cr->dd;
 
-    set_ddbox(*dd, false, state.box, true, state.x, &ddbox);
+    set_ddbox(*dd, false, state.box, true, state.x.unpaddedConstArrayRef(), &ddbox);
 
     LocallyLimited = 0;
 

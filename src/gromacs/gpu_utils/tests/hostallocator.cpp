@@ -54,13 +54,15 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
+#include "gromacs/math/tests/testarrayrefs.h"
+
 #include "devicetransfers.h"
 #include "gputest.h"
 
 namespace gmx
 {
 
-namespace
+namespace test
 {
 
 /*! \internal \brief Typed test fixture for infrastructure for
@@ -71,64 +73,7 @@ class HostMemoryTest : public test::GpuTest
     public:
         //! Convenience type
         using ValueType = T;
-        //! Convenience type
-        using ViewType = ArrayRef<ValueType>;
-        //! Convenience type
-        using ConstViewType = ArrayRef<const ValueType>;
-        //! Prepare contents of a VectorType.
-        template <typename VectorType>
-        void fillInput(VectorType *input) const;
-        //! Compares input and output vectors.
-        void compareVectors(ConstViewType input,
-                            ConstViewType output) const;
-        //! Do some transfers and test the results.
-        void runTest(ConstViewType input, ViewType output) const;
 };
-
-// Already documented
-template <typename T> template <typename VectorType>
-void HostMemoryTest<T>::fillInput(VectorType *input) const
-{
-    input->resize(3);
-    (*input)[0] = 1;
-    (*input)[1] = 2;
-    (*input)[2] = 3;
-}
-
-//! Initialization specialization for RVec
-template <> template <typename VectorType>
-void HostMemoryTest<RVec>::fillInput(VectorType *input) const
-{
-    input->reserve(3);
-    input->resize(3);
-    (*input)[0] = {1, 2, 3};
-    (*input)[1] = {4, 5, 6};
-    (*input)[2] = {7, 8, 9};
-}
-
-// Already documented
-template <typename T>
-void HostMemoryTest<T>::compareVectors(ConstViewType input,
-                                       ConstViewType output) const
-{
-    for (index i = 0; i != input.size(); ++i)
-    {
-        EXPECT_EQ(input[i], output[i]) << "for index " << i;
-    }
-}
-
-//! Comparison specialization for RVec
-template <>
-void HostMemoryTest<RVec>::compareVectors(ConstViewType input,
-                                          ConstViewType output) const
-{
-    for (index i = 0; i != input.size(); ++i)
-    {
-        EXPECT_EQ(input[i][XX], output[i][XX]) << "for index " << i;
-        EXPECT_EQ(input[i][YY], output[i][YY]) << "for index " << i;
-        EXPECT_EQ(input[i][ZZ], output[i][ZZ]) << "for index " << i;
-    }
-}
 
 /*! \brief Convenience function to transform a view into one with base
  * type of (non-const) char.
@@ -150,15 +95,18 @@ ArrayRef<char> charArrayRefFromArray(T *data, size_t size)
 }
 
 template <typename T>
-void HostMemoryTest<T>::runTest(ConstViewType input, ViewType output) const
+void runTest(const gmx_gpu_info_t &gpuInfo,
+             ArrayRef<T>           input,
+             ArrayRef<T>           output)
 {
     // Convert the views of input and output to flat non-const chars,
     // so that there's no templating when we call doDeviceTransfers.
     auto inputRef  = charArrayRefFromArray(input.data(), input.size());
     auto outputRef = charArrayRefFromArray(output.data(), output.size());
 
-    doDeviceTransfers(*this->gpuInfo_, inputRef, outputRef);
-    this->compareVectors(input, output);
+    ASSERT_EQ(inputRef.size(), outputRef.size());
+    doDeviceTransfers(gpuInfo, inputRef, outputRef);
+    compareViews(input, output);
 }
 
 struct MoveOnly {
@@ -168,11 +116,30 @@ struct MoveOnly {
     MoveOnly &operator=(const MoveOnly &) = delete;
     MoveOnly &operator=(MoveOnly &&)      = default;
     bool operator==(const MoveOnly &o) const { return x == o.x; }
+    real operator*=(int scaleFactor) { return x *= scaleFactor; }
     real x;
 };
 
+}   // namespace test
+
+namespace detail
+{
+
+template<>
+struct PaddingTraits<test::MoveOnly>
+{
+    using SimdBaseType = real;
+    static constexpr int widthInSimdBaseType    = 1;
+    static constexpr int maxSimdWidthOfBaseType = GMX_REAL_MAX_SIMD_WIDTH;
+};
+
+}   // namespace detail
+
+namespace test
+{
+
 //! The types used in testing.
-typedef ::testing::Types<int, real, RVec, MoveOnly> TestTypes;
+typedef ::testing::Types<int, real, RVec, test::MoveOnly> TestTypes;
 
 //! Typed test fixture
 template <typename T>
@@ -212,7 +179,7 @@ TYPED_TEST(HostAllocatorTest, EmptyMemoryAlwaysWorks)
 TYPED_TEST(HostAllocatorTest, VectorsWithDefaultHostAllocatorAlwaysWorks)
 {
     typename TestFixture::VectorType input(3), output;
-    output.resize(input.size());
+    output.resizeWithPadding(input.unpaddedSize());
 }
 
 // Several tests actually do CUDA transfers. This is not necessary
@@ -224,18 +191,18 @@ TYPED_TEST(HostAllocatorTest, VectorsWithDefaultHostAllocatorAlwaysWorks)
 TYPED_TEST(HostAllocatorTest, TransfersWithoutPinningWork)
 {
     typename TestFixture::VectorType input;
-    this->fillInput(&input);
+    fillInput(&input, 1);
     typename TestFixture::VectorType output;
-    output.resize(input.size());
+    output.resizeWithPadding(input.unpaddedSize());
 
-    this->runTest(input, output);
+    runTest(*this->gpuInfo_, input.unpaddedArrayRef(), output.unpaddedArrayRef());
 }
 
 TYPED_TEST(HostAllocatorTest, FillInputAlsoWorksAfterCallingReserve)
 {
     typename TestFixture::VectorType input;
-    input.reserve(3);
-    this->fillInput(&input);
+    input.reserveWithPadding(3);
+    fillInput(&input, 1);
 }
 
 TYPED_TEST(HostAllocatorTestNoMem, CreateVector)
@@ -295,10 +262,10 @@ TYPED_TEST(HostAllocatorTestNoMem, Swap)
 {
     typename TestFixture::VectorType input1;
     typename TestFixture::VectorType input2({PinningPolicy::PinnedIfSupported});
-    swap(input1, input2);
+    std::swap(input1, input2);
     EXPECT_TRUE (input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
     EXPECT_FALSE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
-    swap(input2, input1);
+    std::swap(input2, input1);
     EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
     EXPECT_TRUE (input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
 }
@@ -324,19 +291,19 @@ TYPED_TEST(HostAllocatorTest, TransfersWithPinningWorkWithCuda)
 
     typename TestFixture::VectorType input;
     changePinningPolicy(&input, PinningPolicy::PinnedIfSupported);
-    this->fillInput(&input);
+    fillInput(&input, 1);
     typename TestFixture::VectorType output;
     changePinningPolicy(&output, PinningPolicy::PinnedIfSupported);
-    output.resize(input.size());
+    output.resizeWithPadding(input.unpaddedSize());
 
-    this->runTest(input, output);
+    runTest(*this->gpuInfo_, input.unpaddedArrayRef(), output.unpaddedArrayRef());
 }
 
 //! Helper function for wrapping a call to isHostMemoryPinned.
 template <typename VectorType>
 bool isPinned(const VectorType &v)
 {
-    void *data = const_cast<void *>(static_cast<const void *>(v.data()));
+    void *data = const_cast<void *>(static_cast<const void *>(v.unpaddedConstArrayRef().data()));
     return isHostMemoryPinned(data);
 }
 
@@ -353,26 +320,26 @@ TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkWithCuda)
     EXPECT_FALSE(isPinned(input));
 
     // Fill some contents, which will be pinned because of the policy.
-    this->fillInput(&input);
+    fillInput(&input, 1);
     EXPECT_TRUE(isPinned(input));
 
     // Switching policy to CannotBePinned must unpin the buffer (via
     // realloc and copy).
-    auto oldInputData = input.data();
+    auto oldInputData = input.unpaddedArrayRef().data();
     changePinningPolicy(&input, PinningPolicy::CannotBePinned);
     EXPECT_FALSE(isPinned(input));
     // These cannot be equal as both had to be allocated at the same
     // time for the contents to be able to be copied.
-    EXPECT_NE(oldInputData, input.data());
+    EXPECT_NE(oldInputData, input.unpaddedArrayRef().data());
 
     // Switching policy to PinnedIfSupported must pin the buffer (via
     // realloc and copy).
-    oldInputData = input.data();
+    oldInputData = input.unpaddedArrayRef().data();
     changePinningPolicy(&input, PinningPolicy::PinnedIfSupported);
     EXPECT_TRUE(isPinned(input));
     // These cannot be equal as both had to be allocated at the same
     // time for the contents to be able to be copied.
-    EXPECT_NE(oldInputData, input.data());
+    EXPECT_NE(oldInputData, input.unpaddedArrayRef().data());
 }
 
 #endif
@@ -382,7 +349,7 @@ TYPED_TEST(HostAllocatorTest, StatefulAllocatorUsesMemory)
     // The HostAllocator has state, so a container using it will be
     // larger than a normal vector, whose default allocator is
     // stateless.
-    EXPECT_LT(sizeof(std::vector<typename TestFixture::ValueType>),
+    EXPECT_LT(sizeof(std::vector<typename TestFixture::VectorType::value_type>),
               sizeof(typename TestFixture::VectorType));
 }
 
@@ -401,7 +368,7 @@ using AllocatorTypesToTest = ::testing::Types<HostAllocator<real>,
 
 TYPED_TEST_CASE(AllocatorTest, AllocatorTypesToTest);
 
-} // namespace
+} // namespace test
 } // namespace gmx
 
 // Includes tests common to all allocation policies.

@@ -253,48 +253,28 @@ static int init_ins_at(t_block *ins_at, t_block *rest_at, t_state *state, pos_in
                        gmx_groups_t *groups, int ins_grp_id, real xy_max)
 {
     int        i, gid, c = 0;
-    real       x, xmin, xmax, y, ymin, ymax, z, zmin, zmax;
+    real       xmin, xmax, ymin, ymax, zmin, zmax;
     const real min_memthick = 6.0;      /* minimum thickness of the bilayer that will be used to *
                                          * determine the overlap between molecule to embed and membrane */
     const real fac_inp_size = 1.000001; /* scaling factor to obtain input_size + 0.000001 (comparing reals) */
     snew(rest_at->index, state->natoms);
+    auto       x = state->x.unpaddedArrayRef();
 
-    xmin = xmax = state->x[ins_at->index[0]][XX];
-    ymin = ymax = state->x[ins_at->index[0]][YY];
-    zmin = zmax = state->x[ins_at->index[0]][ZZ];
+    xmin = xmax = x[ins_at->index[0]][XX];
+    ymin = ymax = x[ins_at->index[0]][YY];
+    zmin = zmax = x[ins_at->index[0]][ZZ];
 
     for (i = 0; i < state->natoms; i++)
     {
         gid = groups->grpnr[egcFREEZE][i];
         if (groups->grps[egcFREEZE].nm_ind[gid] == ins_grp_id)
         {
-            x = state->x[i][XX];
-            if (x < xmin)
-            {
-                xmin = x;
-            }
-            if (x > xmax)
-            {
-                xmax = x;
-            }
-            y = state->x[i][YY];
-            if (y < ymin)
-            {
-                ymin = y;
-            }
-            if (y > ymax)
-            {
-                ymax = y;
-            }
-            z = state->x[i][ZZ];
-            if (z < zmin)
-            {
-                zmin = z;
-            }
-            if (z > zmax)
-            {
-                zmax = z;
-            }
+            xmin = std::min(xmin, x[i][XX]);
+            xmax = std::max(xmax, x[i][XX]);
+            ymin = std::min(ymin, x[i][YY]);
+            ymax = std::max(ymax, x[i][YY]);
+            zmin = std::min(zmin, x[i][ZZ]);
+            zmax = std::max(zmax, x[i][ZZ]);
         }
         else
         {
@@ -733,6 +713,8 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
         }
     }
 
+    auto x = state->x.unpaddedArrayRef();
+    auto v = state->v.unpaddedArrayRef();
     rm = 0;
     for (int i = 0; i < state->natoms+n; i++)
     {
@@ -755,8 +737,8 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
                     new_egrp[j][i-rm] = groups->grpnr[j][i];
                 }
             }
-            copy_rvec(state->x[i], x_tmp[i-rm]);
-            copy_rvec(state->v[i], v_tmp[i-rm]);
+            copy_rvec(x[i], x_tmp[i-rm]);
+            copy_rvec(v[i], v_tmp[i-rm]);
             for (j = 0; j < ins_at->nr; j++)
             {
                 if (i == ins_at->index[j])
@@ -779,12 +761,12 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
     }
     for (int i = 0; i < state->natoms; i++)
     {
-        copy_rvec(x_tmp[i], state->x[i]);
+        copy_rvec(x_tmp[i], x[i]);
     }
     sfree(x_tmp);
     for (int i = 0; i < state->natoms; i++)
     {
-        copy_rvec(v_tmp[i], state->v[i]);
+        copy_rvec(v_tmp[i], v[i]);
     }
     sfree(v_tmp);
 
@@ -1209,9 +1191,9 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
         /* Check that moleculetypes in insertion group are not part of the rest of the system */
         check_types(ins_at, rest_at, mtop);
 
-        init_mem_at(mem_p, mtop, as_rvec_array(state->x.data()), state->box, pos_ins);
+        init_mem_at(mem_p, mtop, state->x.rvec_array(), state->box, pos_ins);
 
-        prot_area = est_prot_area(pos_ins, as_rvec_array(state->x.data()), ins_at, mem_p);
+        prot_area = est_prot_area(pos_ins, state->x.rvec_array(), ins_at, mem_p);
         if ( (prot_area > prot_vs_box) && ( (state->box[XX][XX]*state->box[YY][YY]-state->box[XX][YY]*state->box[YY][XX]) < box_vs_prot) )
         {
             warn++;
@@ -1241,14 +1223,14 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
 
         /* resize the protein by xy and by z if necessary*/
         snew(r_ins, ins_at->nr);
-        init_resize(ins_at, r_ins, pos_ins, mem_p, as_rvec_array(state->x.data()), bALLOW_ASYMMETRY);
+        init_resize(ins_at, r_ins, pos_ins, mem_p, state->x.rvec_array(), bALLOW_ASYMMETRY);
         membed->fac[0] = membed->fac[1] = xy_fac;
         membed->fac[2] = z_fac;
 
         membed->xy_step = (xy_max-xy_fac)/static_cast<double>(it_xy);
         membed->z_step  = (z_max-z_fac)/static_cast<double>(it_z-1);
 
-        resize(r_ins, as_rvec_array(state->x.data()), pos_ins, membed->fac);
+        resize(r_ins, state->x.rvec_array(), pos_ins, membed->fac);
 
         /* remove overlapping lipids and water from the membrane box*/
         /*mark molecules to be removed*/
@@ -1256,7 +1238,7 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
         set_pbc(pbc, inputrec->ePBC, state->box);
 
         snew(rm_p, 1);
-        lip_rm = gen_rm_list(rm_p, ins_at, rest_at, pbc, mtop, as_rvec_array(state->x.data()), mem_p, pos_ins,
+        lip_rm = gen_rm_list(rm_p, ins_at, rest_at, pbc, mtop, state->x.rvec_array(), mem_p, pos_ins,
                              probe_rad, low_up_rm, bALLOW_ASYMMETRY);
         lip_rm -= low_up_rm;
 

@@ -102,20 +102,19 @@ void state_change_natoms(t_state *state, int natoms)
 {
     state->natoms = natoms;
 
-    /* We need padding, since we might use SIMD access */
-    const size_t paddedSize = gmx::paddedRVecVectorSize(state->natoms);
-
+    /* We need padding, since we might use SIMD access, but the
+     * containers here all ensure that. */
     if (state->flags & (1 << estX))
     {
-        state->x.resize(paddedSize);
+        state->x.resizeWithPadding(natoms);
     }
     if (state->flags & (1 << estV))
     {
-        state->v.resize(paddedSize);
+        state->v.resizeWithPadding(natoms);
     }
     if (state->flags & (1 << estCGP))
     {
-        state->cg_p.resize(paddedSize);
+        state->cg_p.resizeWithPadding(natoms);
     }
 }
 
@@ -194,12 +193,12 @@ void comp_state(const t_state *st1, const t_state *st2,
         if ((st1->flags & (1<<estX)) && (st2->flags & (1<<estX)))
         {
             fprintf(stdout, "comparing x\n");
-            cmp_rvecs(stdout, "x", st1->natoms, as_rvec_array(st1->x.data()), as_rvec_array(st2->x.data()), bRMSD, ftol, abstol);
+            cmp_rvecs(stdout, "x", st1->natoms, st1->x.rvec_array(), st2->x.rvec_array(), bRMSD, ftol, abstol);
         }
         if ((st1->flags & (1<<estV)) && (st2->flags & (1<<estV)))
         {
             fprintf(stdout, "comparing v\n");
-            cmp_rvecs(stdout, "v", st1->natoms, as_rvec_array(st1->v.data()), as_rvec_array(st2->v.data()), bRMSD, ftol, abstol);
+            cmp_rvecs(stdout, "v", st1->natoms, st1->v.rvec_array(), st2->v.rvec_array(), bRMSD, ftol, abstol);
         }
     }
 }

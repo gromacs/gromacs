@@ -779,7 +779,9 @@ void berendsen_tcoupl(const t_inputrec *ir, const gmx_ekindata_t *ekind, real dt
 }
 
 void andersen_tcoupl(const t_inputrec *ir, int64_t step,
-                     const t_commrec *cr, const t_mdatoms *md, t_state *state, real rate, const gmx_bool *randomize, const real *boltzfac)
+                     const t_commrec *cr, const t_mdatoms *md,
+                     gmx::ArrayRef<gmx::RVec> v,
+                     real rate, const gmx_bool *randomize, const real *boltzfac)
 {
     const int                                 *gatindex = (DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
     int                                        i;
@@ -825,7 +827,7 @@ void andersen_tcoupl(const t_inputrec *ir, int64_t step,
 
                 for (d = 0; d < DIM; d++)
                 {
-                    state->v[i][d] = scal*normalDist(rng);
+                    v[i][d] = scal*normalDist(rng);
                 }
             }
         }
@@ -910,6 +912,7 @@ void trotter_update(const t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
             dt = dtc;
         }
 
+        auto v = state->v.unpaddedArrayRef();
         switch (trotter_seq[i])
         {
             case etrtBAROV:
@@ -949,14 +952,14 @@ void trotter_update(const t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
                     }
                     for (d = 0; d < DIM; d++)
                     {
-                        state->v[n][d] *= scalefac[gc];
+                        v[n][d] *= scalefac[gc];
                     }
 
                     if (debug)
                     {
                         for (d = 0; d < DIM; d++)
                         {
-                            sumv[d] += (state->v[n][d])/md->invmass[n];
+                            sumv[d] += (v[n][d])/md->invmass[n];
                         }
                     }
                 }
