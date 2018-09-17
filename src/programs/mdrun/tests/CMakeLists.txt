@@ -64,11 +64,7 @@ gmx_add_gtest_executable(
     # pseudo-library for code for mdrun
     $<TARGET_OBJECTS:mdrun_objlib>
     )
-if (GMX_GPU AND GMX_USE_OPENCL)
-    gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 OCL_INTEGRATION_TEST)
-else()
-    gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST)
-endif()
+gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST)
 
 # To avoid running into test timeouts, some end-to-end tests of mdrun
 # functionality are split off. This can be rearranged in future as we
@@ -124,8 +120,4 @@ gmx_add_gtest_executable(
     # pseudo-library for code for mdrun
     $<TARGET_OBJECTS:mdrun_objlib>
     )
-if (GMX_GPU AND GMX_USE_OPENCL)
-    gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 OCL_INTEGRATION_TEST)
-else()
-    gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST)
-endif()
+gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST)

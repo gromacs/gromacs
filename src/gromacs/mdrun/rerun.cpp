@@ -158,10 +158,9 @@ static void prepareRerunState(const t_trxframe  &rerunFrame,
                               const t_forcerec  &forceRec,
                               t_graph           *graph)
 {
-    for (int i = 0; i < globalState->natoms; i++)
-    {
-        copy_rvec(rerunFrame.x[i], globalState->x[i]);
-    }
+    auto x      = makeArrayRef(globalState->x);
+    auto rerunX = arrayRefFromArray(reinterpret_cast<gmx::RVec *>(rerunFrame.x), globalState->natoms);
+    std::copy(rerunX.begin(), rerunX.end(), x.begin());
     copy_mat(rerunFrame.box, globalState->box);
 
     if (constructVsites)
@@ -173,15 +172,15 @@ static void prepareRerunState(const t_trxframe  &rerunFrame,
             /* Following is necessary because the graph may get out of sync
              * with the coordinates if we only have every N'th coordinate set
              */
-            mk_mshift(nullptr, graph, forceRec.ePBC, globalState->box, as_rvec_array(globalState->x.data()));
+            mk_mshift(nullptr, graph, forceRec.ePBC, globalState->box, globalState->x.rvec_array());
             shift_self(graph, globalState->box, as_rvec_array(globalState->x.data()));
         }
-        construct_vsites(vsite, as_rvec_array(globalState->x.data()), timeStep, as_rvec_array(globalState->v.data()),
+        construct_vsites(vsite, globalState->x.rvec_array(), timeStep, globalState->v.rvec_array(),
                          idef.iparams, idef.il,
                          forceRec.ePBC, forceRec.bMolPBC, nullptr, globalState->box);
         if (graph)
         {
-            unshift_self(graph, globalState->box, as_rvec_array(globalState->x.data()));
+            unshift_self(graph, globalState->box, globalState->x.rvec_array());
         }
     }
 }
@@ -194,28 +193,28 @@ void gmx::Integrator::do_rerun()
     // alias to avoid a large ripple of nearly useless changes.
     // t_inputrec is being replaced by IMdpOptionsProvider, so this
     // will go away eventually.
-    t_inputrec       *ir   = inputrec;
-    gmx_mdoutf       *outf = nullptr;
-    int64_t           step, step_rel;
-    double            t, lam0[efptNR];
-    bool              isLastStep               = false;
-    bool              doFreeEnergyPerturbation = false;
-    int               force_flags;
-    tensor            force_vir, shake_vir, total_vir, pres;
-    t_trxstatus      *status;
-    rvec              mu_tot;
-    t_trxframe        rerun_fr;
-    gmx_localtop_t   *top;
-    t_mdebin         *mdebin   = nullptr;
-    gmx_enerdata_t   *enerd;
-    PaddedRVecVector  f {};
-    gmx_global_stat_t gstat;
-    t_graph          *graph = nullptr;
-    gmx_groups_t     *groups;
-    gmx_ekindata_t   *ekind;
-    gmx_shellfc_t    *shellfc;
+    t_inputrec             *ir   = inputrec;
+    gmx_mdoutf             *outf = nullptr;
+    int64_t                 step, step_rel;
+    double                  t, lam0[efptNR];
+    bool                    isLastStep               = false;
+    bool                    doFreeEnergyPerturbation = false;
+    int                     force_flags;
+    tensor                  force_vir, shake_vir, total_vir, pres;
+    t_trxstatus            *status;
+    rvec                    mu_tot;
+    t_trxframe              rerun_fr;
+    gmx_localtop_t         *top;
+    t_mdebin               *mdebin   = nullptr;
+    gmx_enerdata_t         *enerd;
+    PaddedVector<gmx::RVec> f {};
+    gmx_global_stat_t       gstat;
+    t_graph                *graph = nullptr;
+    gmx_groups_t           *groups;
+    gmx_ekindata_t         *ekind;
+    gmx_shellfc_t          *shellfc;
 
-    double            cycles;
+    double                  cycles;
 
     /* Domain decomposition could incorrectly miss a bonded
        interaction, but checking for that requires a global
@@ -333,7 +332,7 @@ void gmx::Integrator::do_rerun()
         /* We need to allocate one element extra, since we might use
          * (unaligned) 4-wide SIMD loads to access rvec entries.
          */
-        f.resize(gmx::paddedRVecVectorSize(state_global->natoms));
+        f.resizeWithPadding(state_global->natoms);
         /* Copy the pointer to the global state */
         state = state_global;
 

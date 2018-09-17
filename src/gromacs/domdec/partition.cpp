@@ -1881,7 +1881,8 @@ static void clearCommSetupData(dd_comm_setup_work_t *work)
 static void setup_dd_communication(gmx_domdec_t *dd,
                                    matrix box, gmx_ddbox_t *ddbox,
                                    t_forcerec *fr,
-                                   t_state *state, PaddedRVecVector *f)
+                                   t_state *state,
+                                   PaddedVector<gmx::RVec> *f)
 {
     int                    dim_ind, dim, dim0, dim1, dim2, dimd, nat_tot;
     int                    nzone, nzone_send, zone, zonei, cg0, cg1;
@@ -1920,7 +1921,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
             cg_cm = fr->cg_cm;
             break;
         case ecutsVERLET:
-            cg_cm = as_rvec_array(state->x.data());
+            cg_cm = state->x.rvec_array();
             break;
         default:
             gmx_incons("unimplemented");
@@ -2185,7 +2186,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
             }
             else
             {
-                cg_cm = as_rvec_array(state->x.data());
+                cg_cm = state->x.rvec_array();
             }
             /* Communicate cg_cm */
             gmx::ArrayRef<gmx::RVec> rvecBufferRef;
@@ -2958,25 +2959,25 @@ void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog)
 }
 
 // TODO Remove fplog when group scheme and charge groups are gone
-void dd_partition_system(FILE                *fplog,
-                         const gmx::MDLogger &mdlog,
-                         int64_t              step,
-                         const t_commrec     *cr,
-                         gmx_bool             bMasterState,
-                         int                  nstglobalcomm,
-                         t_state             *state_global,
-                         const gmx_mtop_t    *top_global,
-                         const t_inputrec    *ir,
-                         t_state             *state_local,
-                         PaddedRVecVector    *f,
-                         gmx::MDAtoms        *mdAtoms,
-                         gmx_localtop_t      *top_local,
-                         t_forcerec          *fr,
-                         gmx_vsite_t         *vsite,
-                         gmx::Constraints    *constr,
-                         t_nrnb              *nrnb,
-                         gmx_wallcycle       *wcycle,
-                         gmx_bool             bVerbose)
+void dd_partition_system(FILE                    *fplog,
+                         const gmx::MDLogger     &mdlog,
+                         int64_t                  step,
+                         const t_commrec         *cr,
+                         gmx_bool                 bMasterState,
+                         int                      nstglobalcomm,
+                         t_state                 *state_global,
+                         const gmx_mtop_t        *top_global,
+                         const t_inputrec        *ir,
+                         t_state                 *state_local,
+                         PaddedVector<gmx::RVec> *f,
+                         gmx::MDAtoms            *mdAtoms,
+                         gmx_localtop_t          *top_local,
+                         t_forcerec              *fr,
+                         gmx_vsite_t             *vsite,
+                         gmx::Constraints        *constr,
+                         t_nrnb                  *nrnb,
+                         gmx_wallcycle           *wcycle,
+                         gmx_bool                 bVerbose)
 {
     gmx_domdec_t      *dd;
     gmx_domdec_comm_t *comm;
@@ -3216,7 +3217,7 @@ void dd_partition_system(FILE                *fplog,
         if (fr->cutoff_scheme == ecutsGROUP)
         {
             calc_cgcm(fplog, 0, dd->ncg_home,
-                      &top_local->cgs, as_rvec_array(state_local->x.data()), fr->cg_cm);
+                      &top_local->cgs, state_local->x.rvec_array(), fr->cg_cm);
         }
 
         inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
@@ -3247,7 +3248,7 @@ void dd_partition_system(FILE                *fplog,
         {
             /* Redetermine the cg COMs */
             calc_cgcm(fplog, 0, dd->ncg_home,
-                      &top_local->cgs, as_rvec_array(state_local->x.data()), fr->cg_cm);
+                      &top_local->cgs, state_local->x.rvec_array(), fr->cg_cm);
         }
 
         inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
@@ -3462,7 +3463,7 @@ void dd_partition_system(FILE                *fplog,
 
     /*
        write_dd_pdb("dd_home",step,"dump",top_global,cr,
-                 -1,as_rvec_array(state_local->x.data()),state_local->box);
+                 -1,state_local->x.rvec_array(),state_local->box);
      */
 
     wallcycle_sub_start(wcycle, ewcsDD_MAKETOP);
@@ -3475,7 +3476,7 @@ void dd_partition_system(FILE                *fplog,
     dd_make_local_top(dd, &comm->zones, dd->npbcdim, state_local->box,
                       comm->cellsize_min, np,
                       fr,
-                      fr->cutoff_scheme == ecutsGROUP ? fr->cg_cm : as_rvec_array(state_local->x.data()),
+                      fr->cutoff_scheme == ecutsGROUP ? fr->cg_cm : state_local->x.rvec_array(),
                       vsite, top_global, top_local);
 
     wallcycle_sub_stop(wcycle, ewcsDD_MAKETOP);
@@ -3596,7 +3597,7 @@ void dd_partition_system(FILE                *fplog,
      * the last vsite construction, we need to communicate the constructing
      * atom coordinates again (for spreading the forces this MD step).
      */
-    dd_move_x_vsites(dd, state_local->box, as_rvec_array(state_local->x.data()));
+    dd_move_x_vsites(dd, state_local->box, state_local->x.rvec_array());
 
     wallcycle_sub_stop(wcycle, ewcsDD_TOPOTHER);
 
@@ -3604,7 +3605,7 @@ void dd_partition_system(FILE                *fplog,
     {
         dd_move_x(dd, state_local->box, state_local->x, nullWallcycle);
         write_dd_pdb("dd_dump", step, "dump", top_global, cr,
-                     -1, as_rvec_array(state_local->x.data()), state_local->box);
+                     -1, state_local->x.rvec_array(), state_local->box);
     }
 
     /* Store the partitioning step */
