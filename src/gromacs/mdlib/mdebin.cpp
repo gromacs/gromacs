@@ -102,7 +102,8 @@ const char *egrp_nm[egNR+1] = {
 t_mdebin *init_mdebin(ener_file_t       fp_ene,
                       const gmx_mtop_t *mtop,
                       const t_inputrec *ir,
-                      FILE             *fp_dhdl)
+                      FILE             *fp_dhdl,
+                      bool              isRerun)
 {
     const char         *ener_nm[F_NRE];
     static const char  *vir_nm[] = {
@@ -168,7 +169,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
 
     ncon           = gmx_mtop_ftype_count(mtop, F_CONSTR);
     nset           = gmx_mtop_ftype_count(mtop, F_SETTLE);
-    md->bConstr    = (ncon > 0 || nset > 0);
+    md->bConstr    = (ncon > 0 || nset > 0) && !isRerun;
     md->bConstrVir = FALSE;
     if (md->bConstr)
     {
@@ -192,6 +193,12 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     for (i = 0; i < F_NRE; i++)
     {
         md->bEner[i] = FALSE;
+        if (isRerun &&
+            (i == F_EKIN || i == F_ETOT || i == F_ECONSERVED ||
+             i == F_TEMP || i == F_PDISPCORR || i == F_PRES))
+        {
+            continue;
+        }
         if (i == F_LJ)
         {
             md->bEner[i] = !bBHAM;
@@ -291,16 +298,17 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         }
     }
 
-    md->epc            = ir->epc;
-    md->bDiagPres      = !TRICLINIC(ir->ref_p);
+    md->epc            = isRerun ? epcNO : ir->epc;
+    md->bDiagPres      = !TRICLINIC(ir->ref_p) && !isRerun;
     md->ref_p          = (ir->ref_p[XX][XX]+ir->ref_p[YY][YY]+ir->ref_p[ZZ][ZZ])/DIM;
     md->bTricl         = TRICLINIC(ir->compress) || TRICLINIC(ir->deform);
     md->bDynBox        = inputrecDynamicBox(ir);
-    md->etc            = ir->etc;
-    md->bNHC_trotter   = inputrecNvtTrotter(ir);
-    md->bPrintNHChains = ir->bPrintNHChains;
-    md->bMTTK          = (inputrecNptTrotter(ir) || inputrecNphTrotter(ir));
+    md->etc            = isRerun ? etcNO : ir->etc;
+    md->bNHC_trotter   = inputrecNvtTrotter(ir) && !isRerun;
+    md->bPrintNHChains = ir->bPrintNHChains && !isRerun;
+    md->bMTTK          = (inputrecNptTrotter(ir) || inputrecNphTrotter(ir)) && !isRerun;
     md->bMu            = inputrecNeedMutot(ir);
+    md->bPres          = !isRerun;
 
     md->ebin  = mk_ebin();
     /* Pass NULL for unit to let get_ebin_space determine the units
@@ -333,10 +341,13 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         md->isvir = get_ebin_space(md->ebin, asize(sv_nm), sv_nm, unit_energy);
         md->ifvir = get_ebin_space(md->ebin, asize(fv_nm), fv_nm, unit_energy);
     }
-    md->ivir   = get_ebin_space(md->ebin, asize(vir_nm), vir_nm, unit_energy);
-    md->ipres  = get_ebin_space(md->ebin, asize(pres_nm), pres_nm, unit_pres_bar);
-    md->isurft = get_ebin_space(md->ebin, asize(surft_nm), surft_nm,
-                                unit_surft_bar);
+    if (md->bPres)
+    {
+        md->ivir   = get_ebin_space(md->ebin, asize(vir_nm), vir_nm, unit_energy);
+        md->ipres  = get_ebin_space(md->ebin, asize(pres_nm), pres_nm, unit_pres_bar);
+        md->isurft = get_ebin_space(md->ebin, asize(surft_nm), surft_nm,
+                                    unit_surft_bar);
+    }
     if (md->epc == epcPARRINELLORAHMAN || md->epc == epcMTTK)
     {
         md->ipc = get_ebin_space(md->ebin, md->bTricl ? 6 : 3,
@@ -425,7 +436,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         }
     }
 
-    md->nTC  = groups->grps[egcTC].nr;
+    md->nTC  = isRerun ? 0 : groups->grps[egcTC].nr;
     md->nNHC = ir->opts.nhchainlength; /* shorthand for number of NH chains */
     if (md->bMTTK)
     {
@@ -986,10 +997,13 @@ void upd_mdebin(t_mdebin               *md,
         add_ebin(md->ebin, md->isvir, 9, svir[0], bSum);
         add_ebin(md->ebin, md->ifvir, 9, fvir[0], bSum);
     }
-    add_ebin(md->ebin, md->ivir, 9, vir[0], bSum);
-    add_ebin(md->ebin, md->ipres, 9, pres[0], bSum);
-    tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*box[ZZ][ZZ];
-    add_ebin(md->ebin, md->isurft, 1, &tmp, bSum);
+    if (md->bPres)
+    {
+        add_ebin(md->ebin, md->ivir, 9, vir[0], bSum);
+        add_ebin(md->ebin, md->ipres, 9, pres[0], bSum);
+        tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*box[ZZ][ZZ];
+        add_ebin(md->ebin, md->isurft, 1, &tmp, bSum);
+    }
     if (md->epc == epcPARRINELLORAHMAN || md->epc == epcMTTK)
     {
         tmp6[0] = state->boxv[XX][XX];
@@ -1450,12 +1464,15 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 pr_ebin(log, md->ebin, md->ifvir, 9, 3, mode, FALSE);
                 fprintf(log, "\n");
             }
-            fprintf(log, "   Total Virial (%s)\n", unit_energy);
-            pr_ebin(log, md->ebin, md->ivir, 9, 3, mode, FALSE);
-            fprintf(log, "\n");
-            fprintf(log, "   Pressure (%s)\n", unit_pres_bar);
-            pr_ebin(log, md->ebin, md->ipres, 9, 3, mode, FALSE);
-            fprintf(log, "\n");
+            if (md->bPres)
+            {
+                fprintf(log, "   Total Virial (%s)\n", unit_energy);
+                pr_ebin(log, md->ebin, md->ivir, 9, 3, mode, FALSE);
+                fprintf(log, "\n");
+                fprintf(log, "   Pressure (%s)\n", unit_pres_bar);
+                pr_ebin(log, md->ebin, md->ipres, 9, 3, mode, FALSE);
+                fprintf(log, "\n");
+            }
             if (md->bMu)
             {
                 fprintf(log, "   Total Dipole (%s)\n", unit_dipole_D);
