@@ -537,8 +537,8 @@ void gmx::Integrator::do_md()
                 !mdrunOptions.reproducible && ir->cutoff_scheme != ecutsGROUP);
     if (bPMETune)
     {
-        pme_loadbal_init(&pme_loadbal, cr, mdlog, ir, state->box,
-                         fr->ic, fr->nbv->listParams.get(), fr->pmedata, use_GPU(fr->nbv),
+        pme_loadbal_init(&pme_loadbal, cr, mdlog, *ir, state->box,
+                         *fr->ic, *fr->nbv->listParams, fr->pmedata, use_GPU(fr->nbv),
                          &bPMETunePrinting);
     }
 
@@ -869,7 +869,7 @@ void gmx::Integrator::do_md()
             pme_loadbal_do(pme_loadbal, cr,
                            (mdrunOptions.verbose && MASTER(cr)) ? stderr : nullptr,
                            fplog, mdlog,
-                           ir, fr, state,
+                           *ir, fr, *state,
                            wcycle,
                            step, step_rel,
                            &bPMETunePrinting);

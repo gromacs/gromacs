@@ -220,9 +220,9 @@ static int ddcoord2ddnodeid(gmx_domdec_t *dd, ivec c)
     return ddnodeid;
 }
 
-static gmx_bool dynamic_dd_box(const gmx_ddbox_t *ddbox, const t_inputrec *ir)
+static bool dynamic_dd_box(const gmx_domdec_t &dd)
 {
-    return (ddbox->nboundeddim < DIM || inputrecDynamicBox(ir));
+    return (dd.numBoundedDimensions < DIM || dd.haveDynamicBox);
 }
 
 int ddglatnr(const gmx_domdec_t *dd, int i)
@@ -3484,8 +3484,10 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     const real         tenPercentMargin = 1.1;
     gmx_domdec_comm_t *comm             = dd->comm;
 
-    dd->npbcdim   = ePBC2npbcdim(ir->ePBC);
-    dd->bScrewPBC = (ir->ePBC == epbcSCREW);
+    dd->npbcdim              = ePBC2npbcdim(ir->ePBC);
+    dd->numBoundedDimensions = inputrec2nboundeddim(ir);
+    dd->haveDynamicBox       = inputrecDynamicBox(ir);
+    dd->bScrewPBC            = (ir->ePBC == epbcSCREW);
 
     dd->pme_recv_f_alloc = 0;
     dd->pme_recv_f_buf   = nullptr;
@@ -3670,7 +3672,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     {
         copy_ivec(options.numCells, dd->nc);
         set_dd_dim(mdlog, dd);
-        set_ddbox_cr(cr, &dd->nc, ir, box, xGlobal, ddbox);
+        set_ddbox_cr(*cr, &dd->nc, *ir, box, xGlobal, ddbox);
 
         if (options.numPmeRanks >= 0)
         {
@@ -3695,7 +3697,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     }
     else
     {
-        set_ddbox_cr(cr, nullptr, ir, box, xGlobal, ddbox);
+        set_ddbox_cr(*cr, nullptr, *ir, box, xGlobal, ddbox);
 
         /* We need to choose the optimal DD grid and possibly PME nodes */
         real limit =
@@ -4081,7 +4083,7 @@ static void writeSettings(gmx::TextWriter       *log,
         }
         else
         {
-            if (dynamic_dd_box(ddbox, ir))
+            if (dynamic_dd_box(*dd))
             {
                 log->writeLine("(the following are initial values, they could change due to box deformation)");
             }
@@ -4414,9 +4416,9 @@ gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
     return dd;
 }
 
-static gmx_bool test_dd_cutoff(t_commrec *cr,
-                               t_state *state, const t_inputrec *ir,
-                               real cutoff_req)
+static gmx_bool test_dd_cutoff(t_commrec     *cr,
+                               const t_state &state,
+                               real           cutoffRequested)
 {
     gmx_domdec_t *dd;
     gmx_ddbox_t   ddbox;
@@ -4426,7 +4428,7 @@ static gmx_bool test_dd_cutoff(t_commrec *cr,
 
     dd = cr->dd;
 
-    set_ddbox(dd, false, ir, state->box, true, state->x, &ddbox);
+    set_ddbox(*dd, false, state.box, true, state.x, &ddbox);
 
     LocallyLimited = 0;
 
@@ -4435,12 +4437,12 @@ static gmx_bool test_dd_cutoff(t_commrec *cr,
         dim = dd->dim[d];
 
         inv_cell_size = DD_CELL_MARGIN*dd->nc[dim]/ddbox.box_size[dim];
-        if (dynamic_dd_box(&ddbox, ir))
+        if (dynamic_dd_box(*dd))
         {
             inv_cell_size *= DD_PRES_SCALE_MARGIN;
         }
 
-        np = 1 + static_cast<int>(cutoff_req*inv_cell_size*ddbox.skew_fac[dim]);
+        np = 1 + static_cast<int>(cutoffRequested*inv_cell_size*ddbox.skew_fac[dim]);
 
         if (!isDlbDisabled(dd->comm) && (dim < ddbox.npbcdim) && (dd->comm->cd[d].np_dlb > 0))
         {
@@ -4453,7 +4455,8 @@ static gmx_bool test_dd_cutoff(t_commrec *cr,
              * cut-off, we could still fix it, but this gets very complicated.
              * Without fixing here, we might actually need more checks.
              */
-            if ((dd->comm->cell_x1[dim] - dd->comm->cell_x0[dim])*ddbox.skew_fac[dim]*dd->comm->cd[d].np_dlb < cutoff_req)
+            real cellSizeAlongDim = (dd->comm->cell_x1[dim] - dd->comm->cell_x0[dim])*ddbox.skew_fac[dim];
+            if (cellSizeAlongDim*dd->comm->cd[d].np_dlb < cutoffRequested)
             {
                 LocallyLimited = 1;
             }
@@ -4466,7 +4469,7 @@ static gmx_bool test_dd_cutoff(t_commrec *cr,
          * Actually we shouldn't, because then the grid jump data is not set.
          */
         if (isDlbOn(dd->comm) &&
-            check_grid_jump(0, dd, cutoff_req, &ddbox, FALSE))
+            check_grid_jump(0, dd, cutoffRequested, &ddbox, FALSE))
         {
             LocallyLimited = 1;
         }
@@ -4482,16 +4485,17 @@ static gmx_bool test_dd_cutoff(t_commrec *cr,
     return TRUE;
 }
 
-gmx_bool change_dd_cutoff(t_commrec *cr, t_state *state, const t_inputrec *ir,
-                          real cutoff_req)
+gmx_bool change_dd_cutoff(t_commrec     *cr,
+                          const t_state &state,
+                          real           cutoffRequested)
 {
     gmx_bool bCutoffAllowed;
 
-    bCutoffAllowed = test_dd_cutoff(cr, state, ir, cutoff_req);
+    bCutoffAllowed = test_dd_cutoff(cr, state, cutoffRequested);
 
     if (bCutoffAllowed)
     {
-        cr->dd->comm->cutoff = cutoff_req;
+        cr->dd->comm->cutoff = cutoffRequested;
     }
 
     return bCutoffAllowed;
@@ -6425,7 +6429,7 @@ void dd_partition_system(FILE                *fplog,
 
         auto xGlobal = positionsFromStatePointer(state_global);
 
-        set_ddbox(dd, true, ir,
+        set_ddbox(*dd, true,
                   DDMASTER(dd) ? state_global->box : nullptr,
                   true, xGlobal,
                   &ddbox);
@@ -6478,7 +6482,7 @@ void dd_partition_system(FILE                *fplog,
 
         dd_set_cginfo(dd->globalAtomGroupIndices, 0, dd->ncg_home, fr, comm->bLocalCG);
 
-        set_ddbox(dd, bMasterState, ir, state_local->box,
+        set_ddbox(*dd, bMasterState, state_local->box,
                   true, state_local->x, &ddbox);
 
         bRedist = isDlbOn(comm);
@@ -6497,7 +6501,7 @@ void dd_partition_system(FILE                *fplog,
             copy_rvec(comm->box0, ddbox.box0    );
             copy_rvec(comm->box_size, ddbox.box_size);
         }
-        set_ddbox(dd, bMasterState, ir, state_local->box,
+        set_ddbox(*dd, bMasterState, state_local->box,
                   bNStGlobalComm, state_local->x, &ddbox);
 
         bBoxChanged = TRUE;
@@ -6507,7 +6511,7 @@ void dd_partition_system(FILE                *fplog,
     copy_rvec(ddbox.box0, comm->box0    );
     copy_rvec(ddbox.box_size, comm->box_size);
 
-    set_dd_cell_sizes(dd, &ddbox, dynamic_dd_box(&ddbox, ir), bMasterState, bDoDLB,
+    set_dd_cell_sizes(dd, &ddbox, dynamic_dd_box(*dd), bMasterState, bDoDLB,
                       step, wcycle);
 
     if (comm->nstDDDumpGrid > 0 && step % comm->nstDDDumpGrid == 0)

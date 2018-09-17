@@ -287,7 +287,7 @@ void increaseNstlist(FILE *fp, t_commrec *cr,
             }
             t_state state_tmp;
             copy_mat(box, state_tmp.box);
-            bDD = change_dd_cutoff(cr, &state_tmp, ir, rlist_new);
+            bDD = change_dd_cutoff(cr, state_tmp, rlist_new);
         }
 
         if (debug)
