@@ -105,9 +105,9 @@ typedef struct {
 
 struct gmx_update_t
 {
-    gmx_stochd_t     *sd;
+    gmx_stochd_t           *sd;
     /* xprime for constraint algorithms */
-    PaddedRVecVector  xp;
+    PaddedVector<gmx::RVec> xp;
 
     /* Variables for the deform algorithm */
     int64_t           deformref_step;
@@ -864,7 +864,7 @@ gmx_update_t *init_update(const t_inputrec    *ir,
 
     update_temperature_constants(upd, ir);
 
-    upd->xp.resize(0);
+    upd->xp.resizeWithPadding(0);
 
     upd->deform = deform;
 
@@ -875,7 +875,7 @@ void update_realloc(gmx_update_t *upd, int natoms)
 {
     GMX_ASSERT(upd, "upd must be allocated before its fields can be reallocated");
 
-    upd->xp.resize(gmx::paddedRVecVectorSize(natoms));
+    upd->xp.resizeWithPadding(natoms);
 }
 
 /*! \brief Sets the SD update type */
@@ -1253,11 +1253,11 @@ void calc_ke_part(const t_state *state, const t_grpopts *opts, const t_mdatoms *
 {
     if (ekind->cosacc.cos_accel == 0)
     {
-        calc_ke_part_normal(as_rvec_array(state->v.data()), opts, md, ekind, nrnb, bEkinAveVel);
+        calc_ke_part_normal(state->v.rvec_array(), opts, md, ekind, nrnb, bEkinAveVel);
     }
     else
     {
-        calc_ke_part_visc(state->box, as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), opts, md, ekind, nrnb, bEkinAveVel);
+        calc_ke_part_visc(state->box, state->x.rvec_array(), state->v.rvec_array(), opts, md, ekind, nrnb, bEkinAveVel);
     }
 }
 
@@ -1385,7 +1385,7 @@ void update_tcouple(int64_t           step,
         /* rescale in place here */
         if (EI_VV(inputrec->eI))
         {
-            rescale_velocities(ekind, md, 0, md->homenr, as_rvec_array(state->v.data()));
+            rescale_velocities(ekind, md, 0, md->homenr, state->v.rvec_array());
         }
     }
     else
@@ -1475,7 +1475,7 @@ void constrain_velocities(int64_t                        step,
         /* Constrain the coordinates upd->xp */
         constr->apply(do_log, do_ene,
                       step, 1, 1.0,
-                      as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), as_rvec_array(state->v.data()),
+                      state->x.rvec_array(), state->v.rvec_array(), state->v.rvec_array(),
                       state->box,
                       state->lambda[efptBONDED], dvdlambda,
                       nullptr, bCalcVir ? &vir_con : nullptr, ConstraintVariable::Velocities);
@@ -1511,7 +1511,7 @@ void constrain_coordinates(int64_t                        step,
         /* Constrain the coordinates upd->xp */
         constr->apply(do_log, do_ene,
                       step, 1, 1.0,
-                      as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), nullptr,
+                      state->x.rvec_array(), upd->xp.rvec_array(), nullptr,
                       state->box,
                       state->lambda[efptBONDED], dvdlambda,
                       as_rvec_array(state->v.data()), bCalcVir ? &vir_con : nullptr, ConstraintVariable::Positions);
@@ -1573,8 +1573,8 @@ update_sd_second_half(int64_t                        step,
                     inputrec->opts.acc, inputrec->opts.nFreeze,
                     md->invmass, md->ptype,
                     md->cFREEZE, nullptr, md->cTC,
-                    as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()),
-                    as_rvec_array(state->v.data()), nullptr,
+                    state->x.rvec_array(), upd->xp.rvec_array(),
+                    state->v.rvec_array(), nullptr,
                     step, inputrec->ld_seed,
                     DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
             }
@@ -1586,7 +1586,7 @@ update_sd_second_half(int64_t                        step,
         /* Constrain the coordinates upd->xp for half a time step */
         constr->apply(do_log, do_ene,
                       step, 1, 0.5,
-                      as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), nullptr,
+                      state->x.rvec_array(), upd->xp.rvec_array(), nullptr,
                       state->box,
                       state->lambda[efptBONDED], dvdlambda,
                       as_rvec_array(state->v.data()), nullptr, ConstraintVariable::Positions);
@@ -1633,6 +1633,8 @@ void finish_update(const t_inputrec              *inputrec,  /* input record and
             }
             if (partialFreezeAndConstraints)
             {
+                auto xp = makeArrayRef(upd->xp).subArray(0, homenr);
+                auto x  = makeConstArrayRef(state->x).subArray(0, homenr);
                 for (int i = 0; i < homenr; i++)
                 {
                     int g = md->cFREEZE[i];
@@ -1641,7 +1643,7 @@ void finish_update(const t_inputrec              *inputrec,  /* input record and
                     {
                         if (nFreeze[g][d])
                         {
-                            upd->xp[i][d] = state->x[i][d];
+                            xp[i][d] = x[i][d];
                         }
                     }
                 }
@@ -1650,7 +1652,7 @@ void finish_update(const t_inputrec              *inputrec,  /* input record and
 
         if (graph && (graph->nnodes > 0))
         {
-            unshift_x(graph, state->box, as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()));
+            unshift_x(graph, state->box, state->x.rvec_array(), upd->xp.rvec_array());
             if (TRICLINIC(state->box))
             {
                 inc_nrnb(nrnb, eNR_SHIFTX, 2*graph->nnodes);
@@ -1662,8 +1664,8 @@ void finish_update(const t_inputrec              *inputrec,  /* input record and
         }
         else
         {
-            /* The copy is performance sensitive, so use a bare pointer */
-            rvec          *xp = as_rvec_array(upd->xp.data());
+            auto           xp = makeConstArrayRef(upd->xp).subArray(0, homenr);
+            auto           x  = makeArrayRef(state->x).subArray(0, homenr);
 #ifndef __clang_analyzer__
             int gmx_unused nth = gmx_omp_nthreads_get(emntUpdate);
 #endif
@@ -1671,7 +1673,7 @@ void finish_update(const t_inputrec              *inputrec,  /* input record and
             for (int i = 0; i < homenr; i++)
             {
                 // Trivial statement, does not throw
-                copy_rvec(xp[i], state->x[i]);
+                x[i] = xp[i];
             }
         }
         wallcycle_stop(wcycle, ewcUPDATE);
@@ -1713,7 +1715,7 @@ void update_pcouple_after_coordinates(FILE             *fplog,
                                  forceVirial, constraintVirial,
                                  mu, &state->baros_integral);
                 berendsen_pscale(inputrec, mu, state->box, state->box_rel,
-                                 start, homenr, as_rvec_array(state->x.data()),
+                                 start, homenr, state->x.rvec_array(),
                                  md->cFREEZE, nrnb);
             }
             break;
@@ -1735,9 +1737,10 @@ void update_pcouple_after_coordinates(FILE             *fplog,
                 preserve_box_shape(inputrec, state->box_rel, state->box);
 
                 /* Scale the coordinates */
+                auto x = state->x.rvec_array();
                 for (int n = start; n < start + homenr; n++)
                 {
-                    tmvmul_ur0(parrinellorahmanMu, state->x[n], state->x[n]);
+                    tmvmul_ur0(parrinellorahmanMu, x[n], x[n]);
                 }
             }
             break;
@@ -1772,7 +1775,7 @@ void update_pcouple_after_coordinates(FILE             *fplog,
 
     if (upd->deform)
     {
-        auto localX = gmx::ArrayRef<gmx::RVec>(state->x).subArray(start, homenr);
+        auto localX = makeArrayRef(state->x).subArray(start, homenr);
         upd->deform->apply(localX, state->box, step);
     }
 }
@@ -1825,20 +1828,9 @@ void update_coords(int64_t                        step,
             int start_th, end_th;
             getThreadAtomRange(nth, th, homenr, &start_th, &end_th);
 
-            /* Strictly speaking, we would only need this check with SIMD
-             * and for the actual SIMD width. But since the code currently
-             * always adds padding for GMX_REAL_MAX_SIMD_WIDTH, we check that.
-             */
-            gmx::index gmx_used_in_debug homenrSimdPadded;
-            homenrSimdPadded = ((homenr + GMX_REAL_MAX_SIMD_WIDTH - 1)/GMX_REAL_MAX_SIMD_WIDTH)*GMX_REAL_MAX_SIMD_WIDTH;
-            GMX_ASSERT(gmx::index(state->x.size()) >= homenrSimdPadded, "state->x needs to be padded for SIMD access");
-            GMX_ASSERT(gmx::index(upd->xp.size())  >= homenrSimdPadded, "upd->xp needs to be padded for SIMD access");
-            GMX_ASSERT(gmx::index(state->v.size()) >= homenrSimdPadded, "state->v needs to be padded for SIMD access");
-            GMX_ASSERT(f.size()        >= homenrSimdPadded, "f needs to be padded for SIMD access");
-
-            const rvec *x_rvec  = as_rvec_array(state->x.data());
-            rvec       *xp_rvec = as_rvec_array(upd->xp.data());
-            rvec       *v_rvec  = as_rvec_array(state->v.data());
+            const rvec *x_rvec  = state->x.rvec_array();
+            rvec       *xp_rvec = upd->xp.rvec_array();
+            rvec       *v_rvec  = state->v.rvec_array();
             const rvec *f_rvec  = as_rvec_array(f.data());
 
             switch (inputrec->eI)
@@ -1924,7 +1916,9 @@ void update_coords(int64_t                        step,
 }
 
 extern gmx_bool update_randomize_velocities(const t_inputrec *ir, int64_t step, const t_commrec *cr,
-                                            const t_mdatoms *md, t_state *state, const gmx_update_t *upd,
+                                            const t_mdatoms *md,
+                                            gmx::ArrayRef<gmx::RVec> v,
+                                            const gmx_update_t *upd,
                                             const gmx::Constraints *constr)
 {
 
@@ -1945,7 +1939,7 @@ extern gmx_bool update_randomize_velocities(const t_inputrec *ir, int64_t step, 
        particle andersen or 2) it's massive andersen and it's tau_t/dt */
     if ((ir->etc == etcANDERSEN) || do_per_step(step, roundToInt(1.0/rate)))
     {
-        andersen_tcoupl(ir, step, cr, md, state, rate,
+        andersen_tcoupl(ir, step, cr, md, v, rate,
                         upd->sd->randomize_group, upd->sd->boltzfac);
         return TRUE;
     }
