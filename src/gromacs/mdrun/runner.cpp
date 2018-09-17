@@ -514,6 +514,16 @@ int Mdrunner::mdrunner()
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, globalState.get(), &mtop);
 
+        /* In rerun, set velocities to zero if present */
+        if (doRerun && globalState->flags & (1 << estV))
+        {
+            // rerun does not use velocities
+            for (int i = 0; i < globalState->natoms; i++)
+            {
+                clear_rvec(globalState->v[i]);
+            }
+        }
+
         if (inputrec->cutoff_scheme != ecutsVERLET)
         {
             if (nstlist_cmdline > 0)
