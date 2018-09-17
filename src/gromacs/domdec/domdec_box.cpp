@@ -62,25 +62,28 @@
 
 #include "domdec_internal.h"
 
-/*! \brief Calculates the average and standard deviation in 3D of n atoms */
-static void calc_pos_av_stddev(int n, const rvec *x,
-                               rvec av, rvec stddev,
-                               const MPI_Comm *mpiCommunicator)
+/*! \brief Calculates the average and standard deviation in 3D of atoms */
+static void calc_pos_av_stddev(gmx::ArrayRef<const gmx::RVec>  x,
+                               rvec                            av,
+                               rvec                            stddev,
+                               const MPI_Comm                 *mpiCommunicator)
 {
     dvec   s1, s2;
 
     clear_dvec(s1);
     clear_dvec(s2);
 
-    for (int i = 0; i < n; i++)
+    for (const gmx::RVec &coord : x)
     {
         for (int d = 0; d < DIM; d++)
         {
-            s1[d] += x[i][d];
-            s2[d] += x[i][d]*x[i][d];
+            s1[d] += coord[d];
+            s2[d] += coord[d]*coord[d];
         }
     }
 
+    /* With mpiCommunicator != nullptr, x.size() is the home atom count */
+    int numAtoms = x.size();
 #if GMX_MPI
     if (mpiCommunicator)
     {
@@ -93,7 +96,7 @@ static void calc_pos_av_stddev(int n, const rvec *x,
             sendBuffer[d]       = s1[d];
             sendBuffer[DIM + d] = s2[d];
         }
-        sendBuffer[6] = n;
+        sendBuffer[6] = numAtoms;
 
         MPI_Allreduce(sendBuffer, receiveBuffer, c_bufSize, MPI_DOUBLE,
                       MPI_SUM, *mpiCommunicator);
@@ -103,14 +106,14 @@ static void calc_pos_av_stddev(int n, const rvec *x,
             s1[d] = receiveBuffer[d];
             s2[d] = receiveBuffer[DIM + d];
         }
-        n = gmx::roundToInt(receiveBuffer[6]);
+        numAtoms = gmx::roundToInt(receiveBuffer[6]);
     }
 #else  // GMX_MPI
     GMX_UNUSED_VALUE(mpiCommunicator);
 #endif // GMX_MPI
 
-    dsvmul(1.0/n, s1, s1);
-    dsvmul(1.0/n, s2, s2);
+    dsvmul(1.0/numAtoms, s1, s1);
+    dsvmul(1.0/numAtoms, s2, s2);
 
     for (int d = 0; d < DIM; d++)
     {
@@ -227,20 +230,23 @@ static void set_tric_dir(const ivec *dd_nc, gmx_ddbox_t *ddbox, const matrix box
 }
 
 /*! \brief This function calculates bounding box and pbc info and populates ddbox */
-static void low_set_ddbox(const t_inputrec *ir, const ivec *dd_nc, const matrix box,
-                          bool calculateUnboundedSize,
-                          int numAtoms, const rvec *x,
-                          const MPI_Comm *mpiCommunicator,
-                          gmx_ddbox_t *ddbox)
+static void low_set_ddbox(int                             numPbcDimensions,
+                          int                             numBoundedDimensions,
+                          const ivec                     *dd_nc,
+                          const matrix                    box,
+                          bool                            calculateUnboundedSize,
+                          gmx::ArrayRef<const gmx::RVec>  x,
+                          const MPI_Comm                 *mpiCommunicator,
+                          gmx_ddbox_t                    *ddbox)
 {
     rvec av, stddev;
     real b0, b1;
     int  d;
 
-    ddbox->npbcdim     = ePBC2npbcdim(ir->ePBC);
-    ddbox->nboundeddim = inputrec2nboundeddim(ir);
+    ddbox->npbcdim     = numPbcDimensions;
+    ddbox->nboundeddim = numBoundedDimensions;
 
-    for (d = 0; d < ddbox->nboundeddim; d++)
+    for (d = 0; d < numBoundedDimensions; d++)
     {
         ddbox->box0[d]     = 0;
         ddbox->box_size[d] = box[d][d];
@@ -248,7 +254,7 @@ static void low_set_ddbox(const t_inputrec *ir, const ivec *dd_nc, const matrix 
 
     if (ddbox->nboundeddim < DIM && calculateUnboundedSize)
     {
-        calc_pos_av_stddev(numAtoms, x, av, stddev, mpiCommunicator);
+        calc_pos_av_stddev(x, av, stddev, mpiCommunicator);
 
         /* GRID_STDDEV_FAC * stddev
          * gives a uniform load for a rectangular block of cg's.
@@ -271,37 +277,44 @@ static void low_set_ddbox(const t_inputrec *ir, const ivec *dd_nc, const matrix 
     set_tric_dir(dd_nc, ddbox, box);
 }
 
-void set_ddbox(gmx_domdec_t *dd, bool masterRankHasTheSystemState,
-               const t_inputrec *ir, const matrix box,
-               bool calculateUnboundedSize,
-               gmx::ArrayRef<const gmx::RVec> x,
-               gmx_ddbox_t *ddbox)
+void set_ddbox(const gmx_domdec_t             &dd,
+               bool                            masterRankHasTheSystemState,
+               const matrix                    box,
+               bool                            calculateUnboundedSize,
+               gmx::ArrayRef<const gmx::RVec>  x,
+               gmx_ddbox_t                    *ddbox)
 {
     if (!masterRankHasTheSystemState || DDMASTER(dd))
     {
-        bool needToReduceCoordinateData = (!masterRankHasTheSystemState && dd->nnodes > 1);
+        bool                           needToReduceCoordinateData =
+            (!masterRankHasTheSystemState && dd.nnodes > 1);
+        gmx::ArrayRef<const gmx::RVec> xRef =
+            constArrayRefFromArray(x.data(), masterRankHasTheSystemState ? x.size() : dd.comm->atomRanges.numHomeAtoms());
 
-        low_set_ddbox(ir, &dd->nc, box, calculateUnboundedSize,
-                      masterRankHasTheSystemState ? x.size() : dd->comm->atomRanges.numHomeAtoms(), as_rvec_array(x.data()),
-                      needToReduceCoordinateData ? &dd->mpi_comm_all : nullptr,
+        low_set_ddbox(dd.npbcdim, dd.numBoundedDimensions,
+                      &dd.nc, box, calculateUnboundedSize, xRef,
+                      needToReduceCoordinateData ? &dd.mpi_comm_all : nullptr,
                       ddbox);
     }
 
     if (masterRankHasTheSystemState)
     {
-        dd_bcast(dd, sizeof(gmx_ddbox_t), ddbox);
+        dd_bcast(&dd, sizeof(gmx_ddbox_t), ddbox);
     }
 }
 
-void set_ddbox_cr(const t_commrec *cr, const ivec *dd_nc,
-                  const t_inputrec *ir, const matrix box,
-                  gmx::ArrayRef<const gmx::RVec> x,
-                  gmx_ddbox_t *ddbox)
+void set_ddbox_cr(const t_commrec                &cr,
+                  const ivec                     *dd_nc,
+                  const t_inputrec               &ir,
+                  const matrix                    box,
+                  gmx::ArrayRef<const gmx::RVec>  x,
+                  gmx_ddbox_t                    *ddbox)
 {
-    if (MASTER(cr))
+    if (MASTER(&cr))
     {
-        low_set_ddbox(ir, dd_nc, box, true, x.size(), as_rvec_array(x.data()), nullptr, ddbox);
+        low_set_ddbox(ePBC2npbcdim(ir.ePBC), inputrec2nboundeddim(&ir),
+                      dd_nc, box, true, x, nullptr, ddbox);
     }
 
-    gmx_bcast(sizeof(gmx_ddbox_t), ddbox, cr);
+    gmx_bcast(sizeof(gmx_ddbox_t), ddbox, &cr);
 }

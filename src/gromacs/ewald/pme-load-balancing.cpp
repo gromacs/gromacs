@@ -172,25 +172,25 @@ bool pme_loadbal_is_active(const pme_load_balancing_t *pme_lb)
 void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
                       t_commrec                 *cr,
                       const gmx::MDLogger       &mdlog,
-                      const t_inputrec          *ir,
-                      matrix                     box,
-                      const interaction_const_t *ic,
-                      const NbnxnListParameters *listParams,
+                      const t_inputrec          &ir,
+                      const matrix               box,
+                      const interaction_const_t &ic,
+                      const NbnxnListParameters &listParams,
                       gmx_pme_t                 *pmedata,
                       gmx_bool                   bUseGPU,
                       gmx_bool                  *bPrinting)
 {
-    GMX_RELEASE_ASSERT(ir->cutoff_scheme != ecutsGROUP, "PME tuning is not supported with cutoff-scheme=group (because it contains bugs)");
+    GMX_RELEASE_ASSERT(ir.cutoff_scheme != ecutsGROUP, "PME tuning is not supported with cutoff-scheme=group (because it contains bugs)");
 
     pme_load_balancing_t *pme_lb;
     real                  spm, sp;
     int                   d;
 
     // Note that we don't (yet) support PME load balancing with LJ-PME only.
-    GMX_RELEASE_ASSERT(EEL_PME(ir->coulombtype), "pme_loadbal_init called without PME electrostatics");
+    GMX_RELEASE_ASSERT(EEL_PME(ir.coulombtype), "pme_loadbal_init called without PME electrostatics");
     // To avoid complexity, we require a single cut-off with PME for q+LJ.
     // This is checked by grompp, but it doesn't hurt to check again.
-    GMX_RELEASE_ASSERT(!(EEL_PME(ir->coulombtype) && EVDW_PME(ir->vdwtype) && ir->rcoulomb != ir->rvdw), "With Coulomb and LJ PME, rcoulomb should be equal to rvdw");
+    GMX_RELEASE_ASSERT(!(EEL_PME(ir.coulombtype) && EVDW_PME(ir.vdwtype) && ir.rcoulomb != ir.rvdw), "With Coulomb and LJ PME, rcoulomb should be equal to rvdw");
 
     snew(pme_lb, 1);
 
@@ -202,34 +202,34 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
     /* Any number of stages >= 2 is supported */
     pme_lb->nstage            = 2;
 
-    pme_lb->cutoff_scheme     = ir->cutoff_scheme;
+    pme_lb->cutoff_scheme     = ir.cutoff_scheme;
 
-    pme_lb->rbufOuter_coulomb = listParams->rlistOuter - ic->rcoulomb;
-    pme_lb->rbufOuter_vdw     = listParams->rlistOuter - ic->rvdw;
-    pme_lb->rbufInner_coulomb = listParams->rlistInner - ic->rcoulomb;
-    pme_lb->rbufInner_vdw     = listParams->rlistInner - ic->rvdw;
+    pme_lb->rbufOuter_coulomb = listParams.rlistOuter - ic.rcoulomb;
+    pme_lb->rbufOuter_vdw     = listParams.rlistOuter - ic.rvdw;
+    pme_lb->rbufInner_coulomb = listParams.rlistInner - ic.rcoulomb;
+    pme_lb->rbufInner_vdw     = listParams.rlistInner - ic.rvdw;
 
     /* Scale box with Ewald wall factor; note that we pmedata->boxScaler
      * can't always usedd as it's not available with separate PME ranks.
      */
-    EwaldBoxZScaler boxScaler(*ir);
+    EwaldBoxZScaler boxScaler(ir);
     boxScaler.scaleBox(box, pme_lb->box_start);
 
     pme_lb->n = 1;
     snew(pme_lb->setup, pme_lb->n);
 
-    pme_lb->rcut_vdw                 = ic->rvdw;
-    pme_lb->rcut_coulomb_start       = ir->rcoulomb;
+    pme_lb->rcut_vdw                 = ic.rvdw;
+    pme_lb->rcut_coulomb_start       = ir.rcoulomb;
 
     pme_lb->cur                      = 0;
-    pme_lb->setup[0].rcut_coulomb    = ic->rcoulomb;
-    pme_lb->setup[0].rlistOuter      = listParams->rlistOuter;
-    pme_lb->setup[0].rlistInner      = listParams->rlistInner;
-    pme_lb->setup[0].grid[XX]        = ir->nkx;
-    pme_lb->setup[0].grid[YY]        = ir->nky;
-    pme_lb->setup[0].grid[ZZ]        = ir->nkz;
-    pme_lb->setup[0].ewaldcoeff_q    = ic->ewaldcoeff_q;
-    pme_lb->setup[0].ewaldcoeff_lj   = ic->ewaldcoeff_lj;
+    pme_lb->setup[0].rcut_coulomb    = ic.rcoulomb;
+    pme_lb->setup[0].rlistOuter      = listParams.rlistOuter;
+    pme_lb->setup[0].rlistInner      = listParams.rlistInner;
+    pme_lb->setup[0].grid[XX]        = ir.nkx;
+    pme_lb->setup[0].grid[YY]        = ir.nky;
+    pme_lb->setup[0].grid[ZZ]        = ir.nkz;
+    pme_lb->setup[0].ewaldcoeff_q    = ic.ewaldcoeff_q;
+    pme_lb->setup[0].ewaldcoeff_lj   = ic.ewaldcoeff_lj;
 
     if (!pme_lb->bSepPMERanks)
     {
@@ -248,13 +248,13 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
     }
     pme_lb->setup[0].spacing = spm;
 
-    if (ir->fourier_spacing > 0)
+    if (ir.fourier_spacing > 0)
     {
-        pme_lb->cut_spacing = ir->rcoulomb/ir->fourier_spacing;
+        pme_lb->cut_spacing = ir.rcoulomb/ir.fourier_spacing;
     }
     else
     {
-        pme_lb->cut_spacing = ir->rcoulomb/pme_lb->setup[0].spacing;
+        pme_lb->cut_spacing = ir.rcoulomb/pme_lb->setup[0].spacing;
     }
 
     pme_lb->stage = 0;
@@ -286,7 +286,7 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
      */
     pme_lb->bBalance = (pme_lb->bActive && (bUseGPU && !pme_lb->bSepPMERanks));
 
-    pme_lb->step_rel_stop = PMETunePeriod*ir->nstlist;
+    pme_lb->step_rel_stop = PMETunePeriod*ir.nstlist;
 
     /* Delay DD load balancing when GPUs are used */
     if (pme_lb->bActive && DOMAINDECOMP(cr) && cr->dd->nnodes > 1 && bUseGPU)
@@ -552,8 +552,8 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
                  FILE                      *fp_err,
                  FILE                      *fp_log,
                  const gmx::MDLogger       &mdlog,
-                 const t_inputrec          *ir,
-                 t_state                   *state,
+                 const t_inputrec          &ir,
+                 const t_state             &state,
                  double                     cycles,
                  interaction_const_t       *ic,
                  struct nonbonded_verlet_t *nbv,
@@ -575,7 +575,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
     set = &pme_lb->setup[pme_lb->cur];
     set->count++;
 
-    rtab = ir->rlist + ir->tabext;
+    rtab = ir.rlist + ir.tabext;
 
     if (set->count % 2 == 1)
     {
@@ -665,7 +665,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
             else
             {
                 /* Find the next setup */
-                OK = pme_loadbal_increase_cutoff(pme_lb, ir->pme_order, cr->dd);
+                OK = pme_loadbal_increase_cutoff(pme_lb, ir.pme_order, cr->dd);
 
                 if (!OK)
                 {
@@ -680,10 +680,10 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
                 pme_lb->elimited = epmelblimMAXSCALING;
             }
 
-            if (OK && ir->ePBC != epbcNONE)
+            if (OK && ir.ePBC != epbcNONE)
             {
                 OK = (gmx::square(pme_lb->setup[pme_lb->cur+1].rlistOuter)
-                      <= max_cutoff2(ir->ePBC, state->box));
+                      <= max_cutoff2(ir.ePBC, state.box));
                 if (!OK)
                 {
                     pme_lb->elimited = epmelblimBOX;
@@ -696,7 +696,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
 
                 if (DOMAINDECOMP(cr))
                 {
-                    OK = change_dd_cutoff(cr, state, ir,
+                    OK = change_dd_cutoff(cr, state,
                                           pme_lb->setup[pme_lb->cur].rlistOuter);
                     if (!OK)
                     {
@@ -769,7 +769,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
 
     if (DOMAINDECOMP(cr) && pme_lb->stage > 0)
     {
-        OK = change_dd_cutoff(cr, state, ir, pme_lb->setup[pme_lb->cur].rlistOuter);
+        OK = change_dd_cutoff(cr, state, pme_lb->setup[pme_lb->cur].rlistOuter);
         if (!OK)
         {
             /* For some reason the chosen cut-off is incompatible with DD.
@@ -853,7 +853,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
              * copying part of the old pointers.
              */
             gmx_pme_reinit(&set->pmedata,
-                           cr, pme_lb->setup[0].pmedata, ir,
+                           cr, pme_lb->setup[0].pmedata, &ir,
                            set->grid, set->ewaldcoeff_q, set->ewaldcoeff_lj);
         }
         *pmedata = set->pmedata;
@@ -905,9 +905,9 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
                     FILE                 *fp_err,
                     FILE                 *fp_log,
                     const gmx::MDLogger  &mdlog,
-                    const t_inputrec     *ir,
+                    const t_inputrec     &ir,
                     t_forcerec           *fr,
-                    t_state              *state,
+                    const t_state        &state,
                     gmx_wallcycle_t       wcycle,
                     int64_t               step,
                     int64_t               step_rel,
@@ -928,14 +928,14 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
     wallcycle_get(wcycle, ewcSTEP, &pme_lb->cycles_n, &pme_lb->cycles_c);
 
     /* Before the first step we haven't done any steps yet.
-     * Also handle cases where ir->init_step % ir->nstlist != 0.
+     * Also handle cases where ir.init_step % ir.nstlist != 0.
      */
-    if (pme_lb->cycles_n < ir->nstlist)
+    if (pme_lb->cycles_n < ir.nstlist)
     {
         return;
     }
     /* Sanity check, we expect nstlist cycle counts */
-    if (pme_lb->cycles_n - n_prev != ir->nstlist)
+    if (pme_lb->cycles_n - n_prev != ir.nstlist)
     {
         /* We could return here, but it's safer to issue an error and quit */
         gmx_incons("pme_loadbal_do called at an interval != nstlist");
@@ -954,7 +954,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
          * is not over the last nstlist steps, but the nstlist steps before
          * that. So the first useful ratio is available at step_rel=3*nstlist.
          */
-        else if (step_rel >= 3*ir->nstlist)
+        else if (step_rel >= 3*ir.nstlist)
         {
             if (DDMASTER(cr->dd))
             {
@@ -993,7 +993,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
              */
             continue_pme_loadbal(pme_lb, TRUE);
             pme_lb->bTriggerOnDLB = TRUE;
-            pme_lb->step_rel_stop = step_rel + PMETunePeriod*ir->nstlist;
+            pme_lb->step_rel_stop = step_rel + PMETunePeriod*ir.nstlist;
         }
         else
         {
@@ -1027,9 +1027,9 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
         /* Update deprecated rlist in forcerec to stay in sync with fr->nbv */
         fr->rlist         = fr->nbv->listParams->rlistOuter;
 
-        if (ir->eDispCorr != edispcNO)
+        if (ir.eDispCorr != edispcNO)
         {
-            calc_enervirdiff(nullptr, ir->eDispCorr, fr);
+            calc_enervirdiff(nullptr, ir.eDispCorr, fr);
         }
     }
 
