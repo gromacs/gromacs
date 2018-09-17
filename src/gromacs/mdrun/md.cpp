@@ -469,7 +469,9 @@ void gmx::Integrator::do_md()
         /* Copy the pointer to the global state */
         state = state_global;
 
-        snew(top, 1);
+        /* Generate and initialize new topology */
+        top = gmx_mtop_generate_local_top(top_global, ir->efep != efepNO);
+
         mdAlgorithmsSetupAtomData(cr, ir, top_global, top, fr,
                                   &graph, mdAtoms, constr, vsite, shellfc);
 

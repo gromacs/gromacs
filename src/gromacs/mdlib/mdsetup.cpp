@@ -97,14 +97,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
     }
     else
     {
-        /* Currently gmx_generate_local_top allocates and returns a pointer.
-         * We should implement a more elegant solution.
-         */
-        gmx_localtop_t *tmpTop;
-
-        tmpTop = gmx_mtop_generate_local_top(top_global, ir->efep != efepNO);
-        *top   = *tmpTop;
-        sfree(tmpTop);
+        // Topology has been already generated, do nothing here.
     }
 
     if (vsite)
