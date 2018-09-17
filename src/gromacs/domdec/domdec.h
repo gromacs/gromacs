@@ -232,10 +232,14 @@ gmx_bool dd_bonded_molpbc(const gmx_domdec_t *dd, int ePBC);
  *
  * This could fail when trying to increase the cut-off,
  * then FALSE will be returned and the cut-off is not modified.
+ *
+ * \param[in] cr               Communication recrod
+ * \param[in] state            State, used for computing the dimensions of the system
+ * \parma[in] cutoffRequested  The requested atom to atom cut-off distance, usually the pair-list cutoff distance
  */
-gmx_bool change_dd_cutoff(struct t_commrec *cr,
-                          t_state *state, const t_inputrec *ir,
-                          real cutoff_req );
+gmx_bool change_dd_cutoff(t_commrec     *cr,
+                          const t_state &state,
+                          real           cutoffRequested);
 
 /*! \brief Limit DLB to preserve the option of returning to the current cut-off.
  *
@@ -473,16 +477,19 @@ real dd_choose_grid(const gmx::MDLogger &mdlog,
 /* In domdec_box.c */
 
 /*! \brief Set the box and PBC data in \p ddbox */
-void set_ddbox(gmx_domdec_t *dd, bool masterRankHasTheSystemState,
-               const t_inputrec *ir, const matrix box,
-               bool calculateUnboundedSize,
-               gmx::ArrayRef<const gmx::RVec> x,
-               gmx_ddbox_t *ddbox);
+void set_ddbox(const gmx_domdec_t             &dd,
+               bool                            masterRankHasTheSystemState,
+               const matrix                    box,
+               bool                            calculateUnboundedSize,
+               gmx::ArrayRef<const gmx::RVec>  x,
+               gmx_ddbox_t                    *ddbox);
 
 /*! \brief Set the box and PBC data in \p ddbox */
-void set_ddbox_cr(const t_commrec *cr, const ivec *dd_nc,
-                  const t_inputrec *ir, const matrix box,
-                  gmx::ArrayRef<const gmx::RVec> x,
-                  gmx_ddbox_t *ddbox);
+void set_ddbox_cr(const t_commrec                &cr,
+                  const ivec                     *dd_nc,
+                  const t_inputrec               &ir,
+                  const matrix                    box,
+                  gmx::ArrayRef<const gmx::RVec>  x,
+                  gmx_ddbox_t                    *ddbox);
 
 #endif

@@ -60,8 +60,6 @@
 #define DD_MAXZONE  8
 //! Max number of izones in domain decomposition
 #define DD_MAXIZONE 4
-//! Are we the master node for domain decomposition
-#define DDMASTER(dd)       ((dd)->rank == (dd)->masterrank)
 
 struct AtomDistribution;
 struct gmx_domdec_comm_t;
@@ -153,8 +151,14 @@ struct gmx_domdec_t { //NOLINT(clang-analyzer-optin.performance.Padding)
     int      ndim;
     ivec     dim; /* indexed by 0 to ndim */
 
-    /* PBC from dim 0 to npbcdim */
-    int npbcdim;
+    /* TODO: Move the next 4, and more from domdec_internal.h, to a simulation system */
+
+    /* PBC from dim 0 (X) to npbcdim */
+    int  npbcdim;
+    /* The system is bounded from 0 (X) to numBoundedDimensions */
+    int  numBoundedDimensions;
+    /* Does the box size change during the simulaton? */
+    bool haveDynamicBox;
 
     /* Screw PBC? */
     gmx_bool bScrewPBC;
@@ -217,6 +221,18 @@ struct gmx_domdec_t { //NOLINT(clang-analyzer-optin.performance.Padding)
     /* gmx_pme_recv_f buffer */
     int   pme_recv_f_alloc = 0;
     rvec *pme_recv_f_buf   = nullptr;
+};
+
+//! Are we the master node for domain decomposition
+static inline bool DDMASTER(const gmx_domdec_t &dd)
+{
+    return dd.rank == dd.masterrank;
+};
+
+//! Are we the master node for domain decomposition, deprecated
+static inline bool DDMASTER(const gmx_domdec_t *dd)
+{
+    return dd->rank == dd->masterrank;
 };
 
 #endif
