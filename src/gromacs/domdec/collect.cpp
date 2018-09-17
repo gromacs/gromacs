@@ -305,17 +305,17 @@ void dd_collect_state(gmx_domdec_t *dd,
     }
     if (state_local->flags & (1 << estX))
     {
-        gmx::ArrayRef<gmx::RVec> globalXRef = state ? gmx::makeArrayRef(state->x) : gmx::EmptyArrayRef();
-        dd_collect_vec(dd, state_local, state_local->x, globalXRef);
+        gmx::ArrayRef<gmx::RVec> globalXRef = state ? state->x.unpaddedArrayRef() : gmx::EmptyArrayRef();
+        dd_collect_vec(dd, state_local, state_local->x.unpaddedConstArrayRef(), globalXRef);
     }
     if (state_local->flags & (1 << estV))
     {
-        gmx::ArrayRef<gmx::RVec> globalVRef = state ? gmx::makeArrayRef(state->v) : gmx::EmptyArrayRef();
-        dd_collect_vec(dd, state_local, state_local->v, globalVRef);
+        gmx::ArrayRef<gmx::RVec> globalVRef = state ? state->v.unpaddedArrayRef() : gmx::EmptyArrayRef();
+        dd_collect_vec(dd, state_local, state_local->v.unpaddedConstArrayRef(), globalVRef);
     }
     if (state_local->flags & (1 << estCGP))
     {
-        gmx::ArrayRef<gmx::RVec> globalCgpRef = state ? gmx::makeArrayRef(state->cg_p) : gmx::EmptyArrayRef();
-        dd_collect_vec(dd, state_local, state_local->cg_p, globalCgpRef);
+        gmx::ArrayRef<gmx::RVec> globalCgpRef = state ? state->cg_p.unpaddedArrayRef() : gmx::EmptyArrayRef();
+        dd_collect_vec(dd, state_local, state_local->cg_p.unpaddedConstArrayRef(), globalCgpRef);
     }
 }

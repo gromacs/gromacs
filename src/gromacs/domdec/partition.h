@@ -86,25 +86,25 @@ void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog)
  * else state_local is redistributed between the nodes.
  * When f!=NULL, *f will be reallocated to the size of state_local.
  */
-void dd_partition_system(FILE                *fplog,
-                         const gmx::MDLogger &mdlog,
-                         int64_t              step,
-                         const t_commrec     *cr,
-                         gmx_bool             bMasterState,
-                         int                  nstglobalcomm,
-                         t_state             *state_global,
-                         const gmx_mtop_t    *top_global,
-                         const t_inputrec    *ir,
-                         t_state             *state_local,
-                         PaddedRVecVector    *f,
-                         gmx::MDAtoms        *mdatoms,
-                         gmx_localtop_t      *top_local,
-                         t_forcerec          *fr,
-                         gmx_vsite_t         *vsite,
-                         gmx::Constraints    *constr,
-                         t_nrnb              *nrnb,
-                         gmx_wallcycle       *wcycle,
-                         gmx_bool             bVerbose);
+void dd_partition_system(FILE                    *fplog,
+                         const gmx::MDLogger     &mdlog,
+                         int64_t                  step,
+                         const t_commrec         *cr,
+                         gmx_bool                 bMasterState,
+                         int                      nstglobalcomm,
+                         t_state                 *state_global,
+                         const gmx_mtop_t        *top_global,
+                         const t_inputrec        *ir,
+                         t_state                 *state_local,
+                         PaddedVector<gmx::RVec> *f,
+                         gmx::MDAtoms            *mdatoms,
+                         gmx_localtop_t          *top_local,
+                         t_forcerec              *fr,
+                         gmx_vsite_t             *vsite,
+                         gmx::Constraints        *constr,
+                         t_nrnb                  *nrnb,
+                         gmx_wallcycle           *wcycle,
+                         gmx_bool                 bVerbose);
 
 /*! \brief Check whether bonded interactions are missing, if appropriate
  *

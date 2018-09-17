@@ -2760,8 +2760,8 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
 
     if (x == nullptr)
     {
-        x = as_rvec_array(state->x.data());
-        v = as_rvec_array(state->v.data());
+        x = state->x.rvec_array();
+        v = state->v.rvec_array();
     }
 
 #define do_test(fio, b, p) if (bRead && ((p) != NULL) && !(b)) gmx_fatal(FARGS, "No %s in %s",#p, gmx_fio_getname(fio))

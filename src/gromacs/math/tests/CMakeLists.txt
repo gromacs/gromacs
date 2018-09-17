@@ -36,5 +36,6 @@ gmx_add_unit_test(MathUnitTests math-test
                   dofit.cpp
                   functions.cpp
                   invertmatrix.cpp
+                  paddedvector.cpp
                   vectypes.cpp
                   )

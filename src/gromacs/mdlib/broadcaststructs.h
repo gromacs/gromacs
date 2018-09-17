@@ -49,6 +49,7 @@
 
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/smalloc.h"
 
 //! Convenience wrapper for gmx_bcast of a single value.
@@ -62,6 +63,12 @@ template <typename T>
 void nblock_bc(const t_commrec *cr, int numElements, T *data)
 {
     gmx_bcast(numElements * sizeof(T), static_cast<void *>(data), cr);
+}
+//! Convenience wrapper for gmx_bcast of an ArrayRef<T>
+template <typename T>
+void nblock_bc(const t_commrec *cr, gmx::ArrayRef<T> data)
+{
+    gmx_bcast(data.size() * sizeof(T), static_cast<void *>(data.data()), cr);
 }
 //! Convenience wrapper for allocation with snew of vectors that need allocation on non-master ranks.
 template <typename T>

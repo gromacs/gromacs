@@ -324,7 +324,7 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
 
             if (cnb.flags & PP_PME_CHARGE)
             {
-                pme_pp->chargeA.resize(nat);
+                pme_pp->chargeA.resizeWithPadding(nat);
             }
             if (cnb.flags & PP_PME_CHARGEB)
             {
@@ -346,7 +346,7 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
             {
                 pme_pp->sigmaB.resize(nat);
             }
-            pme_pp->x.resize(nat);
+            pme_pp->x.resizeWithPadding(nat);
             pme_pp->f.resize(nat);
 
             /* maxshift is sent when the charges are sent */
@@ -364,7 +364,7 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
                 }
                 switch (q)
                 {
-                    case eCommType_ChargeA: bufferPtr = pme_pp->chargeA.data();  break;
+                    case eCommType_ChargeA: bufferPtr = pme_pp->chargeA.unpaddedArrayRef().data();  break;
                     case eCommType_ChargeB: bufferPtr = pme_pp->chargeB.data();  break;
                     case eCommType_SQRTC6A: bufferPtr = pme_pp->sqrt_c6A.data(); break;
                     case eCommType_SQRTC6B: bufferPtr = pme_pp->sqrt_c6B.data(); break;
@@ -412,7 +412,8 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
             {
                 if (sender.numAtoms > 0)
                 {
-                    MPI_Irecv(pme_pp->x[nat], sender.numAtoms*sizeof(rvec),
+                    MPI_Irecv(pme_pp->x.unpaddedArrayRef()[nat],
+                              sender.numAtoms*sizeof(rvec),
                               MPI_BYTE,
                               sender.rankId, eCommType_COORD,
                               pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
@@ -589,7 +590,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
 
             if (atomSetChanged)
             {
-                gmx_pme_reinit_atoms(pme, natoms, pme_pp->chargeA.data());
+                gmx_pme_reinit_atoms(pme, natoms, pme_pp->chargeA.unpaddedArrayRef().data());
             }
 
             if (ret == pmerecvqxRESETCOUNTERS)
@@ -633,7 +634,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
             //TODO this should be set properly by gmx_pme_recv_coeffs_coords,
             // or maybe use inputrecDynamicBox(ir), at the very least - change this when this codepath is tested!
             pme_gpu_prepare_computation(pme, boxChanged, box, wcycle, pmeFlags);
-            pme_gpu_launch_spread(pme, as_rvec_array(pme_pp->x.data()), wcycle);
+            pme_gpu_launch_spread(pme, pme_pp->x.rvec_array(), wcycle);
             pme_gpu_launch_complex_transforms(pme, wcycle);
             pme_gpu_launch_gather(pme, wcycle, PmeForceOutputHandling::Set);
             pme_gpu_wait_finish_task(pme, wcycle, &forces, vir_q, &energy_q);
@@ -641,8 +642,8 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         }
         else
         {
-            gmx_pme_do(pme, 0, natoms, as_rvec_array(pme_pp->x.data()), as_rvec_array(pme_pp->f.data()),
-                       pme_pp->chargeA.data(), pme_pp->chargeB.data(),
+            gmx_pme_do(pme, 0, natoms, pme_pp->x.rvec_array(), as_rvec_array(pme_pp->f.data()),
+                       pme_pp->chargeA.unpaddedArrayRef().data(), pme_pp->chargeB.data(),
                        pme_pp->sqrt_c6A.data(), pme_pp->sqrt_c6B.data(),
                        pme_pp->sigmaA.data(), pme_pp->sigmaB.data(), box,
                        cr, maxshift_x, maxshift_y, mynrnb, wcycle,

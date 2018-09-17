@@ -89,21 +89,23 @@ class HostMemoryTest : public test::GpuTest
 template <typename T> template <typename VectorType>
 void HostMemoryTest<T>::fillInput(VectorType *input) const
 {
-    input->resize(3);
-    (*input)[0] = 1;
-    (*input)[1] = 2;
-    (*input)[2] = 3;
+    input->resizeWithPadding(3);
+    auto inputRef = input->unpaddedArrayRef();
+    inputRef[0] = 1;
+    inputRef[1] = 2;
+    inputRef[2] = 3;
 }
 
 //! Initialization specialization for RVec
 template <> template <typename VectorType>
 void HostMemoryTest<RVec>::fillInput(VectorType *input) const
 {
-    input->reserve(3);
-    input->resize(3);
-    (*input)[0] = {1, 2, 3};
-    (*input)[1] = {4, 5, 6};
-    (*input)[2] = {7, 8, 9};
+    input->reserveWithPadding(3);
+    input->resizeWithPadding(3);
+    auto inputRef = input->unpaddedArrayRef();
+    inputRef[0] = {1, 2, 3};
+    inputRef[1] = {4, 5, 6};
+    inputRef[2] = {7, 8, 9};
 }
 
 // Already documented
@@ -157,6 +159,7 @@ void HostMemoryTest<T>::runTest(ConstViewType input, ViewType output) const
     auto inputRef  = charArrayRefFromArray(input.data(), input.size());
     auto outputRef = charArrayRefFromArray(output.data(), output.size());
 
+    ASSERT_EQ(inputRef.size(), outputRef.size());
     doDeviceTransfers(*this->gpuInfo_, inputRef, outputRef);
     this->compareVectors(input, output);
 }
@@ -170,6 +173,24 @@ struct MoveOnly {
     bool operator==(const MoveOnly &o) const { return x == o.x; }
     real x;
 };
+
+}   // namespace
+
+namespace detail
+{
+
+template<>
+struct PaddingTraits<MoveOnly>
+{
+    using SimdBaseType = real;
+    static constexpr int widthInSimdBaseType    = 1;
+    static constexpr int maxSimdWidthOfBaseType = GMX_REAL_MAX_SIMD_WIDTH;
+};
+
+}   // namespace detail
+
+namespace
+{
 
 //! The types used in testing.
 typedef ::testing::Types<int, real, RVec, MoveOnly> TestTypes;
@@ -212,7 +233,7 @@ TYPED_TEST(HostAllocatorTest, EmptyMemoryAlwaysWorks)
 TYPED_TEST(HostAllocatorTest, VectorsWithDefaultHostAllocatorAlwaysWorks)
 {
     typename TestFixture::VectorType input(3), output;
-    output.resize(input.size());
+    output.resizeWithPadding(input.unpaddedSize());
 }
 
 // Several tests actually do CUDA transfers. This is not necessary
@@ -226,15 +247,15 @@ TYPED_TEST(HostAllocatorTest, TransfersWithoutPinningWork)
     typename TestFixture::VectorType input;
     this->fillInput(&input);
     typename TestFixture::VectorType output;
-    output.resize(input.size());
+    output.resizeWithPadding(input.unpaddedSize());
 
-    this->runTest(input, output);
+    this->runTest(input.unpaddedArrayRef(), output.unpaddedArrayRef());
 }
 
 TYPED_TEST(HostAllocatorTest, FillInputAlsoWorksAfterCallingReserve)
 {
     typename TestFixture::VectorType input;
-    input.reserve(3);
+    input.reserveWithPadding(3);
     this->fillInput(&input);
 }
 
@@ -295,10 +316,10 @@ TYPED_TEST(HostAllocatorTestNoMem, Swap)
 {
     typename TestFixture::VectorType input1;
     typename TestFixture::VectorType input2({PinningPolicy::PinnedIfSupported});
-    swap(input1, input2);
+    std::swap(input1, input2);
     EXPECT_TRUE (input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
     EXPECT_FALSE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
-    swap(input2, input1);
+    std::swap(input2, input1);
     EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
     EXPECT_TRUE (input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
 }
@@ -327,16 +348,16 @@ TYPED_TEST(HostAllocatorTest, TransfersWithPinningWorkWithCuda)
     this->fillInput(&input);
     typename TestFixture::VectorType output;
     changePinningPolicy(&output, PinningPolicy::PinnedIfSupported);
-    output.resize(input.size());
+    output.resizeWithPadding(input.unpaddedSize());
 
-    this->runTest(input, output);
+    this->runTest(input.unpaddedArrayRef(), output.unpaddedArrayRef());
 }
 
 //! Helper function for wrapping a call to isHostMemoryPinned.
 template <typename VectorType>
 bool isPinned(const VectorType &v)
 {
-    void *data = const_cast<void *>(static_cast<const void *>(v.data()));
+    void *data = const_cast<void *>(static_cast<const void *>(v.unpaddedConstArrayRef().data()));
     return isHostMemoryPinned(data);
 }
 
@@ -358,21 +379,21 @@ TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkWithCuda)
 
     // Switching policy to CannotBePinned must unpin the buffer (via
     // realloc and copy).
-    auto oldInputData = input.data();
+    auto oldInputData = input.unpaddedArrayRef().data();
     changePinningPolicy(&input, PinningPolicy::CannotBePinned);
     EXPECT_FALSE(isPinned(input));
     // These cannot be equal as both had to be allocated at the same
     // time for the contents to be able to be copied.
-    EXPECT_NE(oldInputData, input.data());
+    EXPECT_NE(oldInputData, input.unpaddedArrayRef().data());
 
     // Switching policy to PinnedIfSupported must pin the buffer (via
     // realloc and copy).
-    oldInputData = input.data();
+    oldInputData = input.unpaddedArrayRef().data();
     changePinningPolicy(&input, PinningPolicy::PinnedIfSupported);
     EXPECT_TRUE(isPinned(input));
     // These cannot be equal as both had to be allocated at the same
     // time for the contents to be able to be copied.
-    EXPECT_NE(oldInputData, input.data());
+    EXPECT_NE(oldInputData, input.unpaddedArrayRef().data());
 }
 
 #endif

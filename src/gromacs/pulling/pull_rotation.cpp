@@ -3630,7 +3630,7 @@ init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
         /* Remove pbc, make molecule whole.
          * When ir->bContinuation=TRUE this has already been done, but ok. */
         snew(x_pbc, mtop->natoms);
-        copy_rvecn(as_rvec_array(globalState->x.data()), x_pbc, 0, mtop->natoms);
+        copy_rvecn(globalState->x.rvec_array(), x_pbc, 0, mtop->natoms);
         do_pbc_first_mtop(nullptr, ir->ePBC, globalState->box, mtop, x_pbc);
         /* All molecules will be whole now, but not necessarily in the home box.
          * Additionally, if a rotation group consists of more than one molecule

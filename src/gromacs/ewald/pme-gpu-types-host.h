@@ -112,7 +112,7 @@ struct PmeGpuSettings
 struct PmeGpuStaging
 {
     //! Host-side force buffer
-    std::vector < gmx::RVec, gmx::HostAllocator < gmx::RVec>> h_forces;
+    gmx::HostVector<gmx::RVec> h_forces;
 
     /*! \brief Virial and energy intermediate host-side buffer. Size is PME_GPU_VIRIAL_AND_ENERGY_COUNT. */
     float  *h_virialAndEnergy;

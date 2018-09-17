@@ -602,17 +602,11 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         state->flags |= (1 << estV);
     }
     state_change_natoms(state, state->natoms);
-    for (int i = 0; i < state->natoms; i++)
-    {
-        copy_rvec(x[i], state->x[i]);
-    }
+    std::copy(x, x+state->natoms, state->x.unpaddedArrayRef().data());
     sfree(x);
     if (v != nullptr)
     {
-        for (int i = 0; i < state->natoms; i++)
-        {
-            copy_rvec(v[i], state->v[i]);
-        }
+        std::copy(v, v+state->natoms, state->v.unpaddedArrayRef().data());
         sfree(v);
     }
     /* This call fixes the box shape for runs with pressure scaling */
@@ -637,7 +631,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     if (ir->cutoff_scheme == ecutsGROUP && ir->ePBC != epbcNONE)
     {
         // Need temporary rvec for coordinates
-        do_pbc_first_mtop(nullptr, ir->ePBC, state->box, sys, as_rvec_array(state->x.data()));
+        do_pbc_first_mtop(nullptr, ir->ePBC, state->box, sys, state->x.rvec_array());
     }
 
     /* Do more checks, mostly related to constraints */
@@ -674,9 +668,9 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
             fprintf(stderr, "Setting gen_seed to %d\n", opts->seed);
         }
         state->flags |= (1 << estV);
-        maxwell_speed(opts->tempi, opts->seed, sys, as_rvec_array(state->v.data()));
+        maxwell_speed(opts->tempi, opts->seed, sys, state->v.rvec_array());
 
-        stop_cm(stdout, state->natoms, mass, as_rvec_array(state->x.data()), as_rvec_array(state->v.data()));
+        stop_cm(stdout, state->natoms, mass, state->x.rvec_array(), state->v.rvec_array());
         sfree(mass);
     }
 
@@ -688,8 +682,6 @@ static void copy_state(const char *slog, t_trxframe *fr,
                        bool bReadVel, t_state *state,
                        double *use_time)
 {
-    int i;
-
     if (fr->not_ok & FRAME_NOT_OK)
     {
         gmx_fatal(FARGS, "Can not start from an incomplete frame");
@@ -700,20 +692,14 @@ static void copy_state(const char *slog, t_trxframe *fr,
                   slog);
     }
 
-    for (i = 0; i < state->natoms; i++)
-    {
-        copy_rvec(fr->x[i], state->x[i]);
-    }
+    std::copy(fr->x, fr->x+state->natoms, state->x.unpaddedArrayRef().data());
     if (bReadVel)
     {
         if (!fr->bV)
         {
             gmx_incons("Trajecory frame unexpectedly does not contain velocities");
         }
-        for (i = 0; i < state->natoms; i++)
-        {
-            copy_rvec(fr->v[i], state->v[i]);
-        }
+        std::copy(fr->v, fr->v+state->natoms, state->v.unpaddedArrayRef().data());
     }
     if (fr->bBox)
     {
@@ -768,9 +754,10 @@ static void cont_status(const char *slog, const char *ener,
                     "\n"
                     "WARNING: Did not find a frame with velocities in file %s,\n"
                     "         all velocities will be set to zero!\n\n", slog);
+            auto v = state->v.unpaddedArrayRef();
             for (i = 0; i < sys->natoms; i++)
             {
-                clear_rvec(state->v[i]);
+                clear_rvec(v[i]);
             }
             close_trx(fp);
             /* Search for a frame without velocities */
@@ -1996,7 +1983,7 @@ int gmx_grompp(int argc, char *argv[])
     /* Check velocity for virtual sites and shells */
     if (bGenVel)
     {
-        check_vel(&sys, as_rvec_array(state.v.data()));
+        check_vel(&sys, state.v.rvec_array());
     }
 
     /* check for shells and inpurecs */
@@ -2048,7 +2035,7 @@ int gmx_grompp(int argc, char *argv[])
                 }
                 else
                 {
-                    buffer_temp = calc_temp(&sys, ir, as_rvec_array(state.v.data()));
+                    buffer_temp = calc_temp(&sys, ir, state.v.rvec_array());
                 }
                 if (buffer_temp > 0)
                 {
@@ -2160,7 +2147,7 @@ int gmx_grompp(int argc, char *argv[])
     if (ir->cutoff_scheme != ecutsVERLET && ir->rlist > 0)
     {
         set_warning_line(wi, mdparin, -1);
-        check_chargegroup_radii(&sys, ir, as_rvec_array(state.x.data()), wi);
+        check_chargegroup_radii(&sys, ir, state.x.rvec_array(), wi);
     }
 
     if (EEL_FULL(ir->coulombtype) || EVDW_PME(ir->vdwtype))
@@ -2222,7 +2209,7 @@ int gmx_grompp(int argc, char *argv[])
 
     if (ir->bPull)
     {
-        pull = set_pull_init(ir, &sys, as_rvec_array(state.x.data()), state.box, state.lambda[efptMASS], wi);
+        pull = set_pull_init(ir, &sys, state.x.rvec_array(), state.box, state.lambda[efptMASS], wi);
     }
 
     /* Modules that supply external potential for pull coordinates
@@ -2243,7 +2230,7 @@ int gmx_grompp(int argc, char *argv[])
 
     if (ir->bRot)
     {
-        set_reference_positions(ir->rot, as_rvec_array(state.x.data()), state.box,
+        set_reference_positions(ir->rot, state.x.rvec_array(), state.box,
                                 opt2fn("-ref", NFILE, fnm), opt2bSet("-ref", NFILE, fnm),
                                 wi);
     }
