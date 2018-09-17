@@ -181,8 +181,8 @@ void pme_gpu_realloc_forces(PmeGpu *pmeGpu)
     GMX_ASSERT(newForcesSize > 0, "Bad number of atoms in PME GPU");
     reallocateDeviceBuffer(&pmeGpu->kernelParams->atoms.d_forces, newForcesSize,
                            &pmeGpu->archSpecific->forcesSize, &pmeGpu->archSpecific->forcesSizeAlloc, pmeGpu->archSpecific->context);
-    pmeGpu->staging.h_forces.reserve(pmeGpu->nAtomsAlloc);
-    pmeGpu->staging.h_forces.resize(pmeGpu->kernelParams->atoms.nAtoms);
+    pmeGpu->staging.h_forces.reserveWithPadding(pmeGpu->nAtomsAlloc);
+    pmeGpu->staging.h_forces.resizeWithPadding(pmeGpu->kernelParams->atoms.nAtoms);
 }
 
 void pme_gpu_free_forces(const PmeGpu *pmeGpu)
