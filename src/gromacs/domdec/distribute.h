@@ -56,11 +56,11 @@ class MDLogger;
 }
 
 /*! \brief Distributes the state from the master rank to all DD ranks */
-void distributeState(const gmx::MDLogger &mdlog,
-                     gmx_domdec_t        *dd,
-                     t_state             *state_global,
-                     const gmx_ddbox_t   &ddbox,
-                     t_state             *state_local,
-                     PaddedRVecVector    *f);
+void distributeState(const gmx::MDLogger     &mdlog,
+                     gmx_domdec_t            *dd,
+                     t_state                 *state_global,
+                     const gmx_ddbox_t       &ddbox,
+                     t_state                 *state_local,
+                     PaddedVector<gmx::RVec> *f);
 
 #endif

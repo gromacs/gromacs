@@ -102,9 +102,9 @@ void check_screw_box(const matrix box)
     }
 }
 
-void dd_resize_state(t_state          *state,
-                     PaddedRVecVector *f,
-                     int               natoms)
+void dd_resize_state(t_state                 *state,
+                     PaddedVector<gmx::RVec> *f,
+                     int                      natoms)
 {
     if (debug)
     {
@@ -118,14 +118,14 @@ void dd_resize_state(t_state          *state,
         /* We need to allocate one element extra, since we might use
          * (unaligned) 4-wide SIMD loads to access rvec entries.
          */
-        f->resize(gmx::paddedRVecVectorSize(natoms));
+        f->resizeWithPadding(natoms);
     }
 }
 
-void dd_check_alloc_ncg(t_forcerec       *fr,
-                        t_state          *state,
-                        PaddedRVecVector *f,
-                        int               numChargeGroups)
+void dd_check_alloc_ncg(t_forcerec              *fr,
+                        t_state                 *state,
+                        PaddedVector<gmx::RVec> *f,
+                        int                      numChargeGroups)
 {
     if (numChargeGroups > fr->cg_nalloc)
     {

@@ -46,6 +46,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdtypes/enerdata.h"
@@ -108,9 +109,9 @@ class ElectricFieldTest : public ::testing::Test
             ForceProviders forceProviders;
             module->initForceProviders(&forceProviders);
 
-            t_mdatoms            md;
-            PaddedRVecVector     f = { { 0, 0, 0 } };
-            gmx::ForceWithVirial forceWithVirial(f, true);
+            t_mdatoms               md;
+            PaddedVector<gmx::RVec> f = { {0, 0, 0} };
+            gmx::ForceWithVirial    forceWithVirial(f, true);
             md.homenr = 1;
             snew(md.chargeA, md.homenr);
             md.chargeA[0] = 1;

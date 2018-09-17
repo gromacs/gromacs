@@ -1563,7 +1563,7 @@ void init_swapcoords(
         }
         swapstate = oh->swapHistory.get();
 
-        init_swapstate(swapstate, sc, mtop, as_rvec_array(globalState->x.data()), globalState->box, ir);
+        init_swapstate(swapstate, sc, mtop, globalState->x.rvec_array(), globalState->box, ir);
     }
 
     /* After init_swapstate we have a set of (old) whole positions for our
@@ -1723,7 +1723,7 @@ void init_swapcoords(
         else
         {
             fprintf(stderr, "%s Determining initial numbers of ions per compartment.\n", SwS);
-            get_initial_ioncounts(ir, as_rvec_array(globalState->x.data()), globalState->box, cr, mdrunOptions.rerun);
+            get_initial_ioncounts(ir, globalState->x.rvec_array(), globalState->box, cr, mdrunOptions.rerun);
         }
 
         /* Prepare (further) checkpoint writes ... */

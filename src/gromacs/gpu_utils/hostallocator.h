@@ -51,8 +51,8 @@
 #include <cstddef>
 
 #include <memory>
-#include <vector>
 
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/exceptions.h"
 
@@ -95,7 +95,7 @@ using HostAllocator = Allocator<T, HostAllocationPolicy>;
 
 //! Convenience alias for std::vector that uses HostAllocator.
 template <class T>
-using HostVector = std::vector<T, HostAllocator<T> >;
+using HostVector = PaddedVector<T, HostAllocator<T> >;
 
 /*! \libinternal
  * \brief Policy class for configuring gmx::Allocator, to manage
@@ -170,11 +170,7 @@ class HostAllocationPolicy
          * Does not throw.
          */
         void free(void *buffer) const noexcept;
-        /*! \brief Pin the allocation to physical memory, if appropriate.
-         *
-         * If the allocation policy is not in pinning mode, or the
-         * allocation is empty, ot the allocation is already pinned,
-         * then do nothing.
+        /*! \brief Return the active pinning policy.
          *
          * Does not throw.
          */
@@ -222,6 +218,7 @@ void changePinningPolicy(HostVector<T> *v, PinningPolicy pinningPolicy)
     //container is forced to realloc). Does nothing if policy is the same.
     *v = HostVector<T>(std::move(*v), {pinningPolicy});
 }
+
 }      // namespace gmx
 
 #endif
