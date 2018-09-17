@@ -38,6 +38,10 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <sstream>
+#include <istream>
+#include <iostream>
+
 
 #include <algorithm>
 
@@ -50,75 +54,74 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
+#include "gromacs/gmxana/dssp/structure.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/residuetypes.h"
 
-static int strip_dssp(char *dsspfile, int nres,
-                      const gmx_bool bPhobres[], real t,
-                      real *acc, FILE *fTArea,
-                      t_matrix *mat, int average_area[],
-                      const gmx_output_env_t *oenv)
+#include <string>
+
+namespace
 {
+
+int strip_dssp(const std::string  &dsspString,
+               const gmx_bool bPhobres[], real t,
+               real *acc, FILE *fTArea,
+               t_matrix *mat, int average_area[],
+               const gmx_output_env_t *oenv)
+{
+    std::istringstream is {
+        dsspString
+    };
     static gmx_bool bFirst = TRUE;
-    static char    *ssbuf;
-    FILE           *tapeout;
-    static int      xsize, frame;
-    char            buf[STRLEN+1];
-    char            SSTP;
-    int             i, nr, iacc, nresidues;
-    int             naccf, naccb; /* Count hydrophobic and hydrophilic residues */
-    real            iaccf, iaccb;
-    t_xpmelmt       c;
 
-    tapeout = gmx_ffopen(dsspfile, "r");
+    std::string     ssbuf = {};
+    static int      xsize;
+    static int      frame;
+    int             iacc = {};
+    int             nresidues = {};
+    int             naccf = {};
+    int             naccb = {}; /* Count hydrophobic and hydrophilic residues */
+    real            iaccf = {};
+    real            iaccb = {};
+    t_xpmelmt       c = {};
 
-    /* Skip header */
-    do
+    for (int nr = 0; !is.eof(); nr++)
     {
-        fgets2(buf, STRLEN, tapeout);
-    }
-    while (std::strstr(buf, "KAPPA") == nullptr);
-    if (bFirst)
-    {
-        /* Since we also have empty lines in the dssp output (temp) file,
-         * and some line content is saved to the ssbuf variable,
-         * we need more memory than just nres elements. To be shure,
-         * we allocate 2*nres-1, since for each chain there is a
-         * separating line in the temp file. (At most each residue
-         * could have been defined as a separate chain.) */
-        snew(ssbuf, 2*nres-1);
-    }
-
-    iaccb     = iaccf = 0;
-    nresidues = 0;
-    naccf     = 0;
-    naccb     = 0;
-    for (nr = 0; (fgets2(buf, STRLEN, tapeout) != nullptr); nr++)
-    {
-        if (buf[13] == '!') /* Chain separator line has '!' at pos. 13 */
+        std::string line;
+        std::getline(is, line);
+        if (line[13] == '!') /* Chain separator line has '!' at pos. 13 */
         {
-            SSTP = '=';     /* Chain separator sign '=' */
+            ssbuf += "=";    /* Chain separator sign '=' */
         }
         else
         {
-            SSTP = buf[16] == ' ' ? '~' : buf[16];
+            if (line[16] == ' ')
+            {
+                ssbuf += "~";
+            }
+            else
+            {
+                ssbuf += line[16];
+            }
         }
-        ssbuf[nr] = SSTP;
 
-        buf[39] = '\0';
+        line[39] = '\0';
 
         /* Only calculate solvent accessible area if needed */
-        if ((nullptr != acc) && (buf[13] != '!'))
+        if ((nullptr != acc) && (line[13] != '!'))
         {
-            sscanf(&(buf[34]), "%d", &iacc);
+            sscanf(&(line.c_str()[34]), "%d", &iacc);
             acc[nr] = iacc;
             /* average_area and bPhobres are counted from 0...nres-1 */
             average_area[nresidues] += iacc;
@@ -136,7 +139,6 @@ static int strip_dssp(char *dsspfile, int nres,
             nresidues++;
         }
     }
-    ssbuf[nr] = '\0';
 
     if (bFirst)
     {
@@ -150,9 +152,9 @@ static int strip_dssp(char *dsspfile, int nres,
         sprintf(mat->label_x, "%s", output_env_get_time_label(oenv).c_str());
         sprintf(mat->label_y, "Residue");
         mat->bDiscrete = TRUE;
-        mat->ny        = nr;
-        snew(mat->axis_y, nr);
-        for (i = 0; i < nr; i++)
+        mat->ny        = ssbuf.size();
+        snew(mat->axis_y, ssbuf.size());
+        for (size_t i = 0; i < ssbuf.size(); i++)
         {
             mat->axis_y[i] = i+1;
         }
@@ -169,9 +171,9 @@ static int strip_dssp(char *dsspfile, int nres,
         srenew(mat->matrix, xsize);
     }
     mat->axis_x[frame] = t;
-    snew(mat->matrix[frame], nr);
+    snew(mat->matrix[frame], ssbuf.size());
     c.c2 = 0;
-    for (i = 0; i < nr; i++)
+    for (size_t i = 0; i < ssbuf.size(); i++)
     {
         c.c1                  = ssbuf[i];
         mat->matrix[frame][i] = std::max(static_cast<t_matelmt>(0), searchcmap(mat->nmap, mat->map, c));
@@ -183,12 +185,12 @@ static int strip_dssp(char *dsspfile, int nres,
     {
         fprintf(fTArea, "%10g  %10g  %10g\n", t, 0.01*iaccb, 0.01*iaccf);
     }
-    gmx_ffclose(tapeout);
 
     /* Return the number of lines found in the dssp file (i.e. number
      * of redidues plus chain separator lines).
      * This is the number of y elements needed for the area xpm file */
-    return nr;
+    return ssbuf.size();
+}
 }
 
 static gmx_bool *bPhobics(t_atoms *atoms)
@@ -436,6 +438,213 @@ static void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string
     sfree(count);
 }
 
+namespace
+{
+static void xlate_atomname_gmx2pdb(char *name)
+{
+    int  i, length;
+    char temp;
+
+    length = std::strlen(name);
+    if (length > 3 && std::isdigit(name[length-1]))
+    {
+        temp = name[length-1];
+        for (i = length-1; i > 0; --i)
+        {
+            name[i] = name[i-1];
+        }
+        name[0] = temp;
+    }
+}
+static const char *pdbtp[epdbNR] = {
+    "ATOM  ", "HETATM", "ANISOU", "CRYST1",
+    "COMPND", "MODEL", "ENDMDL", "TER", "HEADER", "TITLE", "REMARK",
+    "CONECT"
+};
+
+std::string pdbAtomLine(enum PDB_record   record,
+                        int               atom_seq_number,
+                        const char *      atom_name,
+                        char              alternate_location,
+                        const char *      res_name,
+                        char              chain_id,
+                        int               res_seq_number,
+                        char              res_insertion_code,
+                        real              x,
+                        real              y,
+                        real              z,
+                        real              occupancy,
+                        real              b_factor,
+                        const char *      element)
+{
+    char     tmp_atomname[6], tmp_resname[6];
+    gmx_bool start_name_in_col13;
+
+    if (record != epdbATOM && record != epdbHETATM)
+    {
+        gmx_fatal(FARGS, "Can only print PDB atom lines as ATOM or HETATM records");
+    }
+
+    /* Format atom name */
+    if (atom_name != nullptr)
+    {
+        /* If the atom name is an element name with two chars, it should start already in column 13.
+         * Otherwise it should start in column 14, unless the name length is 4 chars.
+         */
+        if ( (element != nullptr) && (std::strlen(element) >= 2) && (gmx_strncasecmp(atom_name, element, 2) == 0) )
+        {
+            start_name_in_col13 = TRUE;
+        }
+        else
+        {
+            start_name_in_col13 = (std::strlen(atom_name) >= 4);
+        }
+        snprintf(tmp_atomname, sizeof(tmp_atomname), start_name_in_col13 ? "" : " ");
+        std::strncat(tmp_atomname, atom_name, 4);
+        tmp_atomname[5] = '\0';
+    }
+    else
+    {
+        tmp_atomname[0] = '\0';
+    }
+
+    /* Format residue name */
+    std::strncpy(tmp_resname, (res_name != nullptr) ? res_name : "", 4);
+    /* Make sure the string is terminated if strlen was > 4 */
+    tmp_resname[4] = '\0';
+    /* String is properly terminated, so now we can use strcat. By adding a
+     * space we can write it right-justified, and if the original name was
+     * three characters or less there will be a space added on the right side.
+     */
+    std::strcat(tmp_resname, " ");
+
+    /* Truncate integers so they fit */
+    atom_seq_number = atom_seq_number % 100000;
+    res_seq_number  = res_seq_number % 10000;
+
+    char line[STRLEN];
+    sprintf(line, "%-6s%5d %-4.4s%c%4.4s%c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f          %2s\n",
+            pdbtp[record],
+            atom_seq_number,
+            tmp_atomname,
+            alternate_location,
+            tmp_resname,
+            chain_id,
+            res_seq_number,
+            res_insertion_code,
+            x, y, z,
+            occupancy,
+            b_factor,
+            (element != nullptr) ? element : "");
+
+    return line;
+}
+
+std::string AtomsAsPdbString(const t_atoms *atoms, const rvec x[], int nindex, const int index[] )
+{
+    std::string       pdbString;
+    char              resnm[6], nm[6];
+    int               i, ii;
+    int               resind, resnr;
+    enum PDB_record   type;
+    unsigned char     resic, ch;
+    char              altloc;
+    real              occup, bfac;
+    gmx_bool          bOccup;
+    int               chainnum, lastchainnum;
+    gmx_residuetype_t*rt;
+    const char       *p_restype;
+    const char       *p_lastrestype;
+
+    gmx_residuetype_init(&rt);
+    pdbString += "MODEL\n";
+    if (atoms->havePdbInfo)
+    {
+        /* Check whether any occupancies are set, in that case leave it as is,
+         * otherwise set them all to one
+         */
+        bOccup = TRUE;
+        for (ii = 0; (ii < nindex) && bOccup; ii++)
+        {
+            i      = index[ii];
+            bOccup = bOccup && (atoms->pdbinfo[i].occup == 0.0);
+        }
+    }
+    else
+    {
+        bOccup = FALSE;
+    }
+
+    lastchainnum      = -1;
+    p_restype         = nullptr;
+
+    for (ii = 0; ii < nindex; ii++)
+    {
+        i             = index[ii];
+        resind        = atoms->atom[i].resind;
+        chainnum      = atoms->resinfo[resind].chainnum;
+        p_lastrestype = p_restype;
+        gmx_residuetype_get_type(rt, *atoms->resinfo[resind].name, &p_restype);
+
+        /* Add a TER record if we changed chain, and if either the previous or this chain is protein/DNA/RNA. */
+        if (ii > 0 && chainnum != lastchainnum)
+        {
+            /* Only add TER if the previous chain contained protein/DNA/RNA. */
+            if (gmx_residuetype_is_protein(rt, p_lastrestype) || gmx_residuetype_is_dna(rt, p_lastrestype) || gmx_residuetype_is_rna(rt, p_lastrestype))
+            {
+                pdbString += "TER\n";
+            }
+            lastchainnum    = chainnum;
+        }
+
+        strncpy(resnm, *atoms->resinfo[resind].name, sizeof(resnm)-1);
+        resnm[sizeof(resnm)-1] = 0;
+        strncpy(nm, *atoms->atomname[i], sizeof(nm)-1);
+        nm[sizeof(nm)-1] = 0;
+
+        /* rename HG12 to 2HG1, etc. */
+        xlate_atomname_gmx2pdb(nm);
+        resnr = atoms->resinfo[resind].nr;
+        resic = atoms->resinfo[resind].ic;
+        ch    = atoms->resinfo[resind].chainid;
+
+        if (ch == 0)
+        {
+            ch = ' ';
+        }
+        if (resnr >= 10000)
+        {
+            resnr = resnr % 10000;
+        }
+        t_pdbinfo pdbinfo;
+        if (atoms->pdbinfo != nullptr)
+        {
+            pdbinfo = atoms->pdbinfo[i];
+        }
+        else
+        {
+            gmx_pdbinfo_init_default(&pdbinfo);
+        }
+        type   = static_cast<enum PDB_record>(pdbinfo.type);
+        altloc = pdbinfo.altloc;
+        if (!isalnum(altloc))
+        {
+            altloc = ' ';
+        }
+        occup      = bOccup ? 1.0 : pdbinfo.occup;
+        bfac       = pdbinfo.bfac;
+        pdbString += pdbAtomLine(type, i+1, nm, altloc, resnm, ch, resnr, resic,
+                                 10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], occup, bfac, atoms->atom[i].elem);
+    }
+
+    pdbString += "TER\n";
+    pdbString += "ENDMDL\n";
+
+    gmx_residuetype_destroy(rt);
+    return pdbString;
+}
+}
+
 int gmx_do_dssp(int argc, char *argv[])
 {
     const char        *desc[] = {
@@ -487,8 +696,7 @@ int gmx_do_dssp(int argc, char *argv[])
     };
 
     t_trxstatus       *status;
-    FILE              *tapein;
-    FILE              *ss, *acc, *fTArea, *tmpf;
+    FILE              *ss, *acc, *fTArea;
     const char        *fnSCount, *fnArea, *fnTArea, *fnAArea;
     const char        *leg[] = { "Phobic", "Phylic" };
     t_topology         top;
@@ -506,9 +714,6 @@ int gmx_do_dssp(int argc, char *argv[])
     rvec              *xp, *x;
     int               *average_area;
     real             **accr, *accr_ptr = nullptr, *av_area, *norm_av_area;
-    char               pdbfile[32], tmpfile[32];
-    char               dssp[256];
-    const char        *dptr;
     gmx_output_env_t  *oenv;
     gmx_rmpbc_t        gpbc = nullptr;
 
@@ -556,65 +761,6 @@ int gmx_do_dssp(int argc, char *argv[])
     }
     fprintf(stderr, "There are %d residues in your selected group\n", nres);
 
-    std::strcpy(pdbfile, "ddXXXXXX");
-    gmx_tmpnam(pdbfile);
-    if ((tmpf = fopen(pdbfile, "w")) == nullptr)
-    {
-        sprintf(pdbfile, "%ctmp%cfilterXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR);
-        gmx_tmpnam(pdbfile);
-        if ((tmpf = fopen(pdbfile, "w")) == nullptr)
-        {
-            gmx_fatal(FARGS, "Can not open tmp file %s", pdbfile);
-        }
-    }
-    else
-    {
-        fclose(tmpf);
-    }
-
-    std::strcpy(tmpfile, "ddXXXXXX");
-    gmx_tmpnam(tmpfile);
-    if ((tmpf = fopen(tmpfile, "w")) == nullptr)
-    {
-        sprintf(tmpfile, "%ctmp%cfilterXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR);
-        gmx_tmpnam(tmpfile);
-        if ((tmpf = fopen(tmpfile, "w")) == nullptr)
-        {
-            gmx_fatal(FARGS, "Can not open tmp file %s", tmpfile);
-        }
-    }
-    else
-    {
-        fclose(tmpf);
-    }
-
-    if ((dptr = getenv("DSSP")) == nullptr)
-    {
-        dptr = "/usr/local/bin/dssp";
-    }
-    if (!gmx_fexist(dptr))
-    {
-        gmx_fatal(FARGS, "DSSP executable (%s) does not exist (use setenv DSSP)",
-                  dptr);
-    }
-    if (dsspVersion >= 2)
-    {
-        if (dsspVersion > 2)
-        {
-            printf("\nWARNING: You use DSSP version %d, which is not explicitly\nsupported by do_dssp. Assuming version 2 syntax.\n\n", dsspVersion);
-        }
-
-        sprintf(dssp, "%s -i %s -o %s > /dev/null %s",
-                dptr, pdbfile, tmpfile, bVerbose ? "" : "2> /dev/null");
-    }
-    else
-    {
-        sprintf(dssp, "%s %s %s %s > /dev/null %s",
-                dptr, bDoAccSurf ? "" : "-na", pdbfile, tmpfile, bVerbose ? "" : "2> /dev/null");
-
-    }
-    fprintf(stderr, "dssp cmd='%s'\n", dssp);
-
     if (fnTArea)
     {
         fTArea = xvgropen(fnTArea, "Solvent Accessible Surface Area",
@@ -659,28 +805,20 @@ int gmx_do_dssp(int argc, char *argv[])
             }
         }
         gmx_rmpbc(gpbc, natoms, box, x);
-        tapein = gmx_ffopen(pdbfile, "w");
-        write_pdbfile_indexed(tapein, nullptr, atoms, x, ePBC, box, ' ', -1, gnx, index, nullptr, TRUE, FALSE);
-        gmx_ffclose(tapein);
 
-        if (0 != system(dssp))
-        {
-            gmx_fatal(FARGS, "Failed to execute command: %s\n"
-                      "Try specifying your dssp version with the -ver option.", dssp);
-        }
-
-        /* strip_dssp returns the number of lines found in the dssp file, i.e.
-         * the number of residues plus the separator lines */
-
+        std::string pdbString = AtomsAsPdbString(atoms, x, gnx, index);
+        MProtein    protein;
+        protein.ReadPDB(pdbString);
+        protein.CalculateSecondaryStructure();
+        std::string dsspString = WriteDSSP(protein);
         if (bDoAccSurf)
         {
             accr_ptr = accr[nframe];
         }
-
-        nres_plus_separators = strip_dssp(tmpfile, nres, bPhbres, t,
+        /* strip_dssp returns the number of lines found in the dssp file, i.e.
+         * the number of residues plus the separator lines */
+        nres_plus_separators = strip_dssp(dsspString, bPhbres, t,
                                           accr_ptr, fTArea, &mat, average_area, oenv);
-        remove(tmpfile);
-        remove(pdbfile);
         nframe++;
     }
     while (read_next_x(oenv, status, &t, x, box));
