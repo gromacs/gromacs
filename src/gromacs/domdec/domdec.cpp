@@ -2511,7 +2511,7 @@ dd_print_load(gmx_domdec_t *dd,
         }
         log.ensureLineBreak();
     }
-    log.writeString("DD  step %s" + gmx::toString(step));
+    log.writeString("DD  step " + gmx::toString(step));
     if (isDlbOn(dd->comm))
     {
         log.writeStringFormatted("  vol min/aver %5.3f%c",
