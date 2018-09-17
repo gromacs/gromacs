@@ -58,7 +58,7 @@ void dd_redistribute_cg(FILE             *fplog,
                         gmx_domdec_t     *dd,
                         ivec              tric_dir,
                         t_state          *state,
-                        PaddedRVecVector *f,
+                        PaddedVector<gmx::RVec> *f,
                         t_forcerec       *fr,
                         t_nrnb           *nrnb,
                         int              *ncg_moved);

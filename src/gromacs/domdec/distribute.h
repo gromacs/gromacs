@@ -61,6 +61,6 @@ void distributeState(const gmx::MDLogger &mdlog,
                      t_state             *state_global,
                      const gmx_ddbox_t   &ddbox,
                      t_state             *state_local,
-                     PaddedRVecVector    *f);
+                     PaddedVector<gmx::RVec> *f);
 
 #endif

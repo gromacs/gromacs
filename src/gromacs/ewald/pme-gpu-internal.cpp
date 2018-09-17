@@ -181,8 +181,8 @@ void pme_gpu_realloc_forces(PmeGpu *pmeGpu)
     GMX_ASSERT(newForcesSize > 0, "Bad number of atoms in PME GPU");
     reallocateDeviceBuffer(&pmeGpu->kernelParams->atoms.d_forces, newForcesSize,
                            &pmeGpu->archSpecific->forcesSize, &pmeGpu->archSpecific->forcesSizeAlloc, pmeGpu->archSpecific->context);
-    pmeGpu->staging.h_forces.reserve(pmeGpu->nAtomsAlloc);
-    pmeGpu->staging.h_forces.resize(pmeGpu->kernelParams->atoms.nAtoms);
+    pmeGpu->staging.h_forces.reserveWithPadding(pmeGpu->nAtomsAlloc);
+    pmeGpu->staging.h_forces.resizeWithPadding(pmeGpu->kernelParams->atoms.nAtoms);
 }
 
 void pme_gpu_free_forces(const PmeGpu *pmeGpu)
@@ -193,7 +193,7 @@ void pme_gpu_free_forces(const PmeGpu *pmeGpu)
 void pme_gpu_copy_input_forces(PmeGpu *pmeGpu)
 {
     GMX_ASSERT(pmeGpu->kernelParams->atoms.nAtoms > 0, "Bad number of atoms in PME GPU");
-    float *h_forcesFloat = reinterpret_cast<float *>(pmeGpu->staging.h_forces.data());
+    float *h_forcesFloat = reinterpret_cast<float *>(pmeGpu->staging.h_forces.unpaddedArrayRef().data());
     copyToDeviceBuffer(&pmeGpu->kernelParams->atoms.d_forces, h_forcesFloat,
                        0, DIM * pmeGpu->kernelParams->atoms.nAtoms,
                        pmeGpu->archSpecific->pmeStream, pmeGpu->settings.transferKind, nullptr);
@@ -202,7 +202,7 @@ void pme_gpu_copy_input_forces(PmeGpu *pmeGpu)
 void pme_gpu_copy_output_forces(PmeGpu *pmeGpu)
 {
     GMX_ASSERT(pmeGpu->kernelParams->atoms.nAtoms > 0, "Bad number of atoms in PME GPU");
-    float *h_forcesFloat = reinterpret_cast<float *>(pmeGpu->staging.h_forces.data());
+    float *h_forcesFloat = reinterpret_cast<float *>(pmeGpu->staging.h_forces.unpaddedArrayRef().data());
     copyFromDeviceBuffer(h_forcesFloat, &pmeGpu->kernelParams->atoms.d_forces,
                          0, DIM * pmeGpu->kernelParams->atoms.nAtoms,
                          pmeGpu->archSpecific->pmeStream, pmeGpu->settings.transferKind, nullptr);
@@ -618,7 +618,7 @@ int getSplineParamFullIndex(int order, int splineIndex, int dimIndex, int atomIn
 
 gmx::ArrayRef<gmx::RVec> pme_gpu_get_forces(PmeGpu *pmeGpu)
 {
-    return pmeGpu->staging.h_forces;
+    return pmeGpu->staging.h_forces.unpaddedArrayRef();
 }
 
 void pme_gpu_get_energy_virial(const PmeGpu *pmeGpu, real *energy, matrix virial)

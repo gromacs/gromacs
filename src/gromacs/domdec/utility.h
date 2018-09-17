@@ -91,13 +91,13 @@ static inline int dd_load_count(const gmx_domdec_comm_t *comm)
 
 /*! \brief Resize the state and f, if !=nullptr, to natoms */
 void dd_resize_state(t_state          *state,
-                     PaddedRVecVector *f,
+                     PaddedVector<gmx::RVec> *f,
                      int               natoms);
 
 /*! \brief Enrsure fr, state and f, if != nullptr, can hold numChargeGroups atoms for the Verlet scheme and charge groups for the group scheme */
 void dd_check_alloc_ncg(t_forcerec       *fr,
                         t_state          *state,
-                        PaddedRVecVector *f,
+                        PaddedVector<gmx::RVec> *f,
                         int               numChargeGroups);
 
 #endif

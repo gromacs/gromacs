@@ -609,7 +609,7 @@ static int doVectorLow(XDR *xd, StatePart part, int ecpt, int sflags,
         {
             /* This conditional ensures that we don't resize on write.
              * In particular in the state where this code was written
-             * PaddedRVecVector has a size of numElemInThefile and we
+             * vector has a size of numElemInThefile and we
              * don't want to lose that padding here.
              */
             if (vector->size() < static_cast<unsigned int>(numElemInTheFile))
@@ -672,31 +672,32 @@ static int doRealArrayRef(XDR *xd, StatePart part, int ecpt, int sflags,
     return doVectorLow < real, std::allocator < real>>(xd, part, ecpt, sflags, vector.size(), nullptr, &v_real, nullptr, list, CptElementType::real);
 }
 
-//! \brief Read/Write a vector whose value_type is RVec and whose allocator is \c AllocatorType.
-template <typename AllocatorType>
+//! Convert from view of RVec to view of real.
+static gmx::ArrayRef<real>
+realArrayRefFromRVecArrayRef(gmx::ArrayRef<gmx::RVec> ofRVecs)
+{
+    return gmx::arrayRefFromArray<real>(reinterpret_cast<real *>(ofRVecs.data()), ofRVecs.size() * DIM);
+}
+
+//! \brief Read/Write a PaddedVector whose value_type is RVec.
+template <typename PaddedVectorOfRVecType>
 static int doRvecVector(XDR *xd, StatePart part, int ecpt, int sflags,
-                        std::vector<gmx::RVec, AllocatorType> *v, int numAtoms, FILE *list)
+                        PaddedVectorOfRVecType *v, int numAtoms, FILE *list)
 {
     const int numReals = numAtoms*DIM;
 
     if (list == nullptr)
     {
         GMX_RELEASE_ASSERT(sflags & (1 << ecpt), "When not listing, the flag for the entry should be set when requesting i/o");
-        GMX_RELEASE_ASSERT(v->size() >= static_cast<size_t>(numAtoms), "v should have sufficient size for numAtoms");
+        GMX_RELEASE_ASSERT(v->unpaddedSize() == static_cast<size_t>(numAtoms), "v should have sufficient size for numAtoms");
 
-        real *v_real = (*v)[0];
-
-        // PaddedRVecVector is padded beyond numAtoms, we should only write
-        // numAtoms RVecs
-        gmx::ArrayRef<real> ref(v_real, v_real + numReals);
-
-        return doRealArrayRef(xd, part, ecpt, sflags, ref, list);
+        return doRealArrayRef(xd, part, ecpt, sflags, realArrayRefFromRVecArrayRef(v->unpaddedArrayRef()), list);
     }
     else
     {
         // Use the rebind facility to change the value_type of the
         // allocator from RVec to real.
-        using realAllocator = typename std::allocator_traits<AllocatorType>::template rebind_alloc<real>;
+        using realAllocator = typename std::allocator_traits<typename PaddedVectorOfRVecType::allocator_type>::template rebind_alloc<real>;
         return doVectorLow<real, realAllocator>(xd, part, ecpt, sflags, numReals, nullptr, nullptr, nullptr, list, CptElementType::real);
     }
 }
@@ -2656,12 +2657,12 @@ void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr)
     fr->bX         = ((state.flags & (1<<estX)) != 0);
     if (fr->bX)
     {
-        fr->x   = makeRvecArray(state.x, state.natoms);
+        fr->x   = makeRvecArray(state.x.unpaddedArrayRef(), state.natoms);
     }
     fr->bV      = ((state.flags & (1<<estV)) != 0);
     if (fr->bV)
     {
-        fr->v   = makeRvecArray(state.v, state.natoms);
+        fr->v   = makeRvecArray(state.v.unpaddedArrayRef(), state.natoms);
     }
     fr->bF      = FALSE;
     fr->bBox    = ((state.flags & (1<<estBOX)) != 0);

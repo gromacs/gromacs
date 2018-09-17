@@ -211,8 +211,8 @@ class t_state
         real                       veta;           //!< Trotter based isotropic P-coupling
         real                       vol0;           //!< Initial volume,required for computing MTTK conserved quantity
         gmx::HostVector<gmx::RVec> x;              //!< The coordinates (natoms)
-        PaddedRVecVector           v;              //!< The velocities (natoms)
-        PaddedRVecVector           cg_p;           //!< p vector for conjugate gradient minimization
+        PaddedVector<gmx::RVec> v;          //!< The velocities (natoms)
+        PaddedVector<gmx::RVec> cg_p;       //!< p vector for conjugate gradient minimization
 
         ekinstate_t                ekinstate;      //!< The state of the kinetic energy
 
@@ -301,7 +301,7 @@ positionsFromStatePointer(const t_state *state)
 {
     if (state)
     {
-        return gmx::constArrayRefFromArray(state->x.data(), state->natoms);
+        return state->x.unpaddedConstArrayRef().subArray(0, state->natoms);
     }
     else
     {

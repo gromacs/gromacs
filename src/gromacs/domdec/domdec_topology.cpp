@@ -408,7 +408,7 @@ void dd_print_missing_interactions(const gmx::MDLogger  &mdlog,
 
     print_missing_interactions_atoms(mdlog, cr, top_global, &top_local->idef);
     write_dd_pdb("dd_dump_err", 0, "dump", top_global, cr,
-                 -1, as_rvec_array(state_local->x.data()), state_local->box);
+                 -1, state_local->x.rvec_array(), state_local->box);
 
     std::string errorMessage;
 

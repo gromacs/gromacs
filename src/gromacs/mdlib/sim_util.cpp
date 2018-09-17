@@ -2109,8 +2109,8 @@ void do_force(FILE                                     *fplog,
         flags &= ~GMX_FORCE_NONBONDED;
     }
 
-    GMX_ASSERT(x.size()     >= gmx::paddedRVecVectorSize(fr->natoms_force), "coordinates should be padded");
-    GMX_ASSERT(force.size() >= gmx::paddedRVecVectorSize(fr->natoms_force), "force should be padded");
+    GMX_ASSERT(x.size()     >= gmx::PaddedVector<gmx::RVec>::computePaddedSize(fr->natoms_force), "coordinates should be padded");
+    GMX_ASSERT(force.size() >= gmx::PaddedVector<gmx::RVec>::computePaddedSize(fr->natoms_force), "force should be padded");
 
     switch (inputrec->cutoff_scheme)
     {
@@ -2200,7 +2200,7 @@ void do_constrain_first(FILE *fplog, gmx::Constraints *constr,
     /* constrain the current position */
     constr->apply(TRUE, FALSE,
                   step, 0, 1.0,
-                  as_rvec_array(state->x.data()), as_rvec_array(state->x.data()), nullptr,
+                  state->x.rvec_array(), state->x.rvec_array(), nullptr,
                   state->box,
                   state->lambda[efptBONDED], &dvdl_dum,
                   nullptr, nullptr, gmx::ConstraintVariable::Positions);
@@ -2210,7 +2210,7 @@ void do_constrain_first(FILE *fplog, gmx::Constraints *constr,
         /* also may be useful if we need the ekin from the halfstep for velocity verlet */
         constr->apply(TRUE, FALSE,
                       step, 0, 1.0,
-                      as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), as_rvec_array(state->v.data()),
+                      state->x.rvec_array(), state->v.rvec_array(), state->v.rvec_array(),
                       state->box,
                       state->lambda[efptBONDED], &dvdl_dum,
                       nullptr, nullptr, gmx::ConstraintVariable::Velocities);
@@ -2218,14 +2218,16 @@ void do_constrain_first(FILE *fplog, gmx::Constraints *constr,
     /* constrain the inital velocities at t-dt/2 */
     if (EI_STATE_VELOCITY(ir->eI) && ir->eI != eiVV)
     {
+        auto x = state->x.unpaddedArrayRef().subArray(start,end);
+        auto v = state->v.unpaddedArrayRef().subArray(start,end);
         for (i = start; (i < end); i++)
         {
             for (m = 0; (m < DIM); m++)
             {
                 /* Reverse the velocity */
-                state->v[i][m] = -state->v[i][m];
+                v[i][m] = -v[i][m];
                 /* Store the position at t-dt in buf */
-                savex[i][m] = state->x[i][m] + dt*state->v[i][m];
+                savex[i][m] = x[i][m] + dt*v[i][m];
             }
         }
         /* Shake the positions at t=-dt with the positions at t=0
@@ -2240,17 +2242,17 @@ void do_constrain_first(FILE *fplog, gmx::Constraints *constr,
         dvdl_dum = 0;
         constr->apply(TRUE, FALSE,
                       step, -1, 1.0,
-                      as_rvec_array(state->x.data()), savex, nullptr,
+                      state->x.rvec_array(), savex, nullptr,
                       state->box,
                       state->lambda[efptBONDED], &dvdl_dum,
-                      as_rvec_array(state->v.data()), nullptr, gmx::ConstraintVariable::Positions);
+                      state->v.rvec_array(), nullptr, gmx::ConstraintVariable::Positions);
 
         for (i = start; i < end; i++)
         {
             for (m = 0; m < DIM; m++)
             {
                 /* Re-reverse the velocities */
-                state->v[i][m] = -state->v[i][m];
+                v[i][m] = -v[i][m];
             }
         }
     }

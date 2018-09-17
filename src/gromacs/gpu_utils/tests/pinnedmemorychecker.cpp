@@ -84,7 +84,7 @@ TEST_F(PinnedMemoryCheckerTest, NonpinnedContainerIsRecognized)
 
     HostVector<real> dummy(3, 1.5);
     changePinningPolicy(&dummy, PinningPolicy::CannotBePinned);
-    EXPECT_FALSE(isHostMemoryPinned(dummy.data()));
+    EXPECT_FALSE(isHostMemoryPinned(dummy.unpaddedArrayRef().data()));
 }
 
 TEST_F(PinnedMemoryCheckerTest, PinnedContainerIsRecognized)
@@ -96,7 +96,7 @@ TEST_F(PinnedMemoryCheckerTest, PinnedContainerIsRecognized)
 
     HostVector<real> dummy(3, 1.5);
     changePinningPolicy(&dummy, PinningPolicy::PinnedIfSupported);
-    EXPECT_TRUE(isHostMemoryPinned(dummy.data()));
+    EXPECT_TRUE(isHostMemoryPinned(dummy.unpaddedArrayRef().data()));
 }
 
 TEST_F(PinnedMemoryCheckerTest, DefaultCBufferIsRecognized)

@@ -201,7 +201,7 @@ static void dd_distribute_dfhist(gmx_domdec_t *dd, df_history_t *dfhist)
 
 static void dd_distribute_state(gmx_domdec_t *dd,
                                 const t_state *state, t_state *state_local,
-                                PaddedRVecVector *f)
+                                PaddedVector<gmx::RVec> *f)
 {
     int nh = state_local->nhchainlength;
 
@@ -266,15 +266,15 @@ static void dd_distribute_state(gmx_domdec_t *dd,
 
     if (state_local->flags & (1 << estX))
     {
-        distributeVec(dd, DDMASTER(dd) ? makeArrayRef(state->x) : gmx::EmptyArrayRef(), state_local->x);
+        distributeVec(dd, DDMASTER(dd) ? state->x.unpaddedConstArrayRef() : gmx::EmptyArrayRef(), state_local->x.unpaddedArrayRef());
     }
     if (state_local->flags & (1 << estV))
     {
-        distributeVec(dd, DDMASTER(dd) ? makeArrayRef(state->v) : gmx::EmptyArrayRef(), state_local->v);
+        distributeVec(dd, DDMASTER(dd) ? state->v.unpaddedConstArrayRef() : gmx::EmptyArrayRef(), state_local->v.unpaddedArrayRef());
     }
     if (state_local->flags & (1 << estCGP))
     {
-        distributeVec(dd, DDMASTER(dd) ? makeArrayRef(state->cg_p) : gmx::EmptyArrayRef(), state_local->cg_p);
+        distributeVec(dd, DDMASTER(dd) ? state->cg_p.unpaddedConstArrayRef() : gmx::EmptyArrayRef(), state_local->cg_p.unpaddedArrayRef());
     }
 }
 
@@ -545,9 +545,9 @@ void distributeState(const gmx::MDLogger &mdlog,
                      t_state             *state_global,
                      const gmx_ddbox_t   &ddbox,
                      t_state             *state_local,
-                     PaddedRVecVector    *f)
+                     PaddedVector<gmx::RVec> *f)
 {
-    rvec *xGlobal = (DDMASTER(dd) ? as_rvec_array(state_global->x.data()) : nullptr);
+    rvec *xGlobal = (DDMASTER(dd) ? state_global->x.rvec_array() : nullptr);
 
     distributeAtomGroups(mdlog, dd,
                          DDMASTER(dd) ? state_global->box : nullptr,
