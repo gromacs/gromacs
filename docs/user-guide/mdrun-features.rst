@@ -24,6 +24,13 @@ independently of the value in :mdp:`nstlist`, since
 structures were generated. Naturally, no update or constraint
 algorithms are ever used.
 
+The rerun feature cannot, in general, compute many of the quantities
+reported during full simulations. It does only take positions as input
+(ignoring potentially present velocities), and does only report potential
+energies, volume and density, dH/dl terms, and restraint information.
+It does notably not report kinetic, total or conserved energy, temperature,
+virial or pressure.
+
 Running a simulation in reproducible mode
 -----------------------------------------
 It is generally difficult to run an efficient parallel MD simulation

@@ -158,6 +158,17 @@ void init_md(FILE *fplog,
              rvec mu_tot,
              gmx_bool *bSimAnn, t_vcm **vcm,
              gmx_wallcycle_t wcycle);
+
+void init_rerun(FILE *fplog,
+                const t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
+                t_inputrec *ir, const gmx_output_env_t *oenv,
+                const MdrunOptions &mdrunOptions,
+                t_state *globalState, double *lam0,
+                t_nrnb *nrnb, gmx_mtop_t *mtop,
+                int nfile, const t_filenm fnm[],
+                gmx_mdoutf_t *outf, t_mdebin **mdebin,
+                gmx_wallcycle_t wcycle);
+
 /* Routine in sim_util.c */
 
 gmx_bool use_GPU(const nonbonded_verlet_t *nbv);

@@ -92,6 +92,7 @@ typedef struct t_mdebin {
     gmx_bool            bMTTK;
     gmx_bool            bMu; /* true if dipole is calculated */
     gmx_bool            bDiagPres;
+    gmx_bool            bPres;
     int                 f_nre;
     int                 epc;
     real                ref_p;
@@ -124,7 +125,8 @@ enum
 t_mdebin *init_mdebin(ener_file_t       fp_ene,
                       const gmx_mtop_t *mtop,
                       const t_inputrec *ir,
-                      FILE             *fp_dhdl);
+                      FILE             *fp_dhdl,
+                      bool              isRerun = false);
 /* Initiate MD energy bin and write header to energy file. */
 
 //! Destroy mdebin
