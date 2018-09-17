@@ -2711,7 +2711,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
         {
             /* Remove PBC, make molecule(s) subject to ED whole. */
             snew(x_pbc, mtop->natoms);
-            copy_rvecn(as_rvec_array(globalState->x.data()), x_pbc, 0, mtop->natoms);
+            copy_rvecn(globalState->x.rvec_array(), x_pbc, 0, mtop->natoms);
             do_pbc_first_mtop(nullptr, ir->ePBC, globalState->box, mtop, x_pbc);
         }
         /* Reset pointer to first ED data set which contains the actual ED data */

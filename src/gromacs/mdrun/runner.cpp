@@ -1183,8 +1183,7 @@ int Mdrunner::mdrunner()
             /* Make molecules whole at start of run */
             if (fr->ePBC != epbcNONE)
             {
-                rvec *xGlobal = as_rvec_array(globalState->x.data());
-                do_pbc_first_mtop(fplog, inputrec->ePBC, box, &mtop, xGlobal);
+                do_pbc_first_mtop(fplog, inputrec->ePBC, box, &mtop, globalState->x.rvec_array());
             }
             if (vsite)
             {
