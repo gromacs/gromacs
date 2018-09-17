@@ -157,7 +157,7 @@ void executeRerunTest(TestFileManager        *fileManager,
 
     // Specify how trajectory frame matching must work.
     TrajectoryFrameMatchSettings trajectoryMatchSettings {
-        true, true, true, true, true, true
+        true, true, true, true, false, true
     };
     /* Specify the default expected tolerances for trajectory
      * components for all simulation systems. */
