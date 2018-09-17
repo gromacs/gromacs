@@ -103,8 +103,8 @@ struct gmx_shellfc_t {
     int          nflexcon;               /* The number of flexible constraints        */
 
     /* Temporary arrays, should be fixed size 2 when fully converted to C++ */
-    PaddedRVecVector *x;                 /* Array for iterative minimization          */
-    PaddedRVecVector *f;                 /* Array for iterative minimization          */
+    PaddedVector<gmx::RVec> *x;          /* Array for iterative minimization          */
+    PaddedVector<gmx::RVec> *f;          /* Array for iterative minimization          */
 
     /* Flexible constraint working data */
     rvec        *acc_dir;                /* Acceleration direction for flexcon        */
@@ -325,8 +325,8 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     }
 
     snew(shfc, 1);
-    shfc->x        = new PaddedRVecVector[2] {};
-    shfc->f        = new PaddedRVecVector[2] {};
+    shfc->x        = new PaddedVector<gmx::RVec>[2] {};
+    shfc->f        = new PaddedVector<gmx::RVec>[2] {};
     shfc->nflexcon = nflexcon;
 
     if (nshell == 0)
@@ -1049,8 +1049,8 @@ void relax_shell_flexcon(FILE                                     *fplog,
 
     for (i = 0; (i < 2); i++)
     {
-        shfc->x[i].resize(gmx::paddedRVecVectorSize(nat));
-        shfc->f[i].resize(gmx::paddedRVecVectorSize(nat));
+        shfc->x[i].resizeWithPadding(nat);
+        shfc->f[i].resizeWithPadding(nat);
     }
 
     /* Create views that we can swap */
@@ -1058,8 +1058,8 @@ void relax_shell_flexcon(FILE                                     *fplog,
     gmx::PaddedArrayRef<gmx::RVec> force[2];
     for (i = 0; (i < 2); i++)
     {
-        pos[i]   = shfc->x[i];
-        force[i] = shfc->f[i];
+        pos[i]   = shfc->x[i].paddedArrayRef();
+        force[i] = shfc->f[i].paddedArrayRef();
     }
 
     if (bDoNS && inputrec->ePBC != epbcNONE && !DOMAINDECOMP(cr))
@@ -1070,7 +1070,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
          */
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
-            auto xRef = makeArrayRef(state->x);
+            auto xRef = state->x.paddedArrayRef();
             put_atoms_in_box_omp(fr->ePBC, state->box, xRef.subArray(0, md->homenr));
         }
         else
@@ -1078,19 +1078,19 @@ void relax_shell_flexcon(FILE                                     *fplog,
             cg0 = 0;
             cg1 = top->cgs.nr;
             put_charge_groups_in_box(fplog, cg0, cg1, fr->ePBC, state->box,
-                                     &(top->cgs), as_rvec_array(state->x.data()), fr->cg_cm);
+                                     &(top->cgs), state->x.rvec_array(), fr->cg_cm);
         }
 
         if (graph)
         {
-            mk_mshift(fplog, graph, fr->ePBC, state->box, as_rvec_array(state->x.data()));
+            mk_mshift(fplog, graph, fr->ePBC, state->box, state->x.rvec_array());
         }
     }
 
     /* After this all coordinate arrays will contain whole charge groups */
     if (graph)
     {
-        shift_self(graph, state->box, as_rvec_array(state->x.data()));
+        shift_self(graph, state->box, state->x.rvec_array());
     }
 
     if (nflexcon)
@@ -1103,12 +1103,14 @@ void relax_shell_flexcon(FILE                                     *fplog,
         }
         acc_dir = shfc->acc_dir;
         x_old   = shfc->x_old;
+        auto x = state->x.unpaddedArrayRef();
+        auto v = state->v.unpaddedArrayRef();
         for (i = 0; i < homenr; i++)
         {
             for (d = 0; d < DIM; d++)
             {
                 shfc->x_old[i][d] =
-                    state->x[i][d] - state->v[i][d]*inputrec->delta_t;
+                    x[i][d] - v[i][d]*inputrec->delta_t;
             }
         }
     }
@@ -1118,24 +1120,24 @@ void relax_shell_flexcon(FILE                                     *fplog,
      */
     if (shfc->bPredict && !bCont && (EI_STATE_VELOCITY(inputrec->eI) || bInit))
     {
-        predict_shells(fplog, as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), inputrec->delta_t, nshell, shell,
+        predict_shells(fplog, state->x.rvec_array(), state->v.rvec_array(), inputrec->delta_t, nshell, shell,
                        md->massT, nullptr, bInit);
     }
 
     /* do_force expected the charge groups to be in the box */
     if (graph)
     {
-        unshift_self(graph, state->box, as_rvec_array(state->x.data()));
+        unshift_self(graph, state->box, state->x.rvec_array());
     }
 
     /* Calculate the forces first time around */
     if (gmx_debug_at)
     {
-        pr_rvecs(debug, 0, "x b4 do_force", as_rvec_array(state->x.data()), homenr);
+        pr_rvecs(debug, 0, "x b4 do_force", state->x.rvec_array(), homenr);
     }
     do_force(fplog, cr, ms, inputrec, nullptr, enforcedRotation,
              mdstep, nrnb, wcycle, top, groups,
-             state->box, state->x, &state->hist,
+             state->box, state->x.paddedArrayRef(), &state->hist,
              force[Min], force_vir, md, enerd, fcd,
              state->lambda, graph,
              fr, vsite, mu_tot, t, nullptr,
@@ -1147,7 +1149,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
     {
         init_adir(shfc,
                   constr, inputrec, cr, dd_ac1, mdstep, md, end,
-                  shfc->x_old, as_rvec_array(state->x.data()), as_rvec_array(state->x.data()), as_rvec_array(force[Min].data()),
+                  shfc->x_old, state->x.rvec_array(), state->x.rvec_array(), as_rvec_array(force[Min].data()),
                   shfc->acc_dir,
                   state->box, state->lambda, &dum);
 
@@ -1159,7 +1161,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
 
     Epot[Min] = enerd->term[F_EPOT];
 
-    df[Min] = rms_force(cr, shfc->f[Min], nshell, shell, nflexcon, &sf_dir, &Epot[Min]);
+    df[Min] = rms_force(cr, shfc->f[Min].paddedArrayRef(), nshell, shell, nflexcon, &sf_dir, &Epot[Min]);
     df[Try] = 0;
     if (debug)
     {
@@ -1177,8 +1179,8 @@ void relax_shell_flexcon(FILE                                     *fplog,
          * shell positions are updated, therefore the other particles must
          * be set here.
          */
-        pos[Min] = state->x;
-        pos[Try] = state->x;
+        pos[Min] = state->x.paddedArrayRef();
+        pos[Try] = state->x.paddedArrayRef();
     }
 
     if (bVerbose && MASTER(cr))
@@ -1207,7 +1209,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
         if (vsite)
         {
             construct_vsites(vsite, as_rvec_array(pos[Min].data()),
-                             inputrec->delta_t, as_rvec_array(state->v.data()),
+                             inputrec->delta_t, state->v.rvec_array(),
                              idef->iparams, idef->il,
                              fr->ePBC, fr->bMolPBC, cr, state->box);
         }
@@ -1216,7 +1218,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
         {
             init_adir(shfc,
                       constr, inputrec, cr, dd_ac1, mdstep, md, end,
-                      x_old, as_rvec_array(state->x.data()), as_rvec_array(pos[Min].data()), as_rvec_array(force[Min].data()), acc_dir,
+                      x_old, state->x.rvec_array(), as_rvec_array(pos[Min].data()), as_rvec_array(force[Min].data()), acc_dir,
                       state->box, state->lambda, &dum);
 
             directional_sd(pos[Min], pos[Try], acc_dir, end, fr->fc_stepsize);
@@ -1256,7 +1258,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
         {
             init_adir(shfc,
                       constr, inputrec, cr, dd_ac1, mdstep, md, end,
-                      x_old, as_rvec_array(state->x.data()), as_rvec_array(pos[Try].data()), as_rvec_array(force[Try].data()), acc_dir,
+                      x_old, state->x.rvec_array(), as_rvec_array(pos[Try].data()), as_rvec_array(force[Try].data()), acc_dir,
                       state->box, state->lambda, &dum);
 
             for (i = 0; i < end; i++)
@@ -1304,11 +1306,12 @@ void relax_shell_flexcon(FILE                                     *fplog,
             {
                 /* Correct the velocities for the flexible constraints */
                 invdt = 1/inputrec->delta_t;
+                auto v = state->v.unpaddedArrayRef();
                 for (i = 0; i < end; i++)
                 {
                     for (d = 0; d < DIM; d++)
                     {
-                        state->v[i][d] += (pos[Try][i][d] - pos[Min][i][d])*invdt;
+                        v[i][d] += (pos[Try][i][d] - pos[Min][i][d])*invdt;
                     }
                 }
             }
@@ -1339,7 +1342,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
     }
 
     /* Copy back the coordinates and the forces */
-    std::copy(pos[Min].begin(), pos[Min].end(), state->x.begin());
+    std::copy(pos[Min].begin(), pos[Min].end(), state->x.unpaddedArrayRef().data());
     std::copy(force[Min].begin(), force[Min].end(), f.begin());
 }
 

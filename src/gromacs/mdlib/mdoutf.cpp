@@ -266,13 +266,13 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
         {
             if (mdof_flags & (MDOF_X | MDOF_X_COMPRESSED))
             {
-                gmx::ArrayRef<gmx::RVec> globalXRef = MASTER(cr) ? gmx::makeArrayRef(state_global->x) : gmx::EmptyArrayRef();
-                dd_collect_vec(cr->dd, state_local, state_local->x, globalXRef);
+                gmx::ArrayRef<gmx::RVec> globalXRef = MASTER(cr) ? state_global->x.unpaddedArrayRef() : gmx::EmptyArrayRef();
+                dd_collect_vec(cr->dd, state_local, state_local->x.unpaddedArrayRef(), globalXRef);
             }
             if (mdof_flags & MDOF_V)
             {
-                gmx::ArrayRef<gmx::RVec> globalVRef = MASTER(cr) ? gmx::makeArrayRef(state_global->v) : gmx::EmptyArrayRef();
-                dd_collect_vec(cr->dd, state_local, state_local->v, globalVRef);
+                gmx::ArrayRef<gmx::RVec> globalVRef = MASTER(cr) ? state_global->v.unpaddedArrayRef() : gmx::EmptyArrayRef();
+                dd_collect_vec(cr->dd, state_local, state_local->v.unpaddedArrayRef(), globalVRef);
             }
         }
         f_global = of->f_global;
@@ -307,8 +307,8 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
 
         if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))
         {
-            const rvec *x = (mdof_flags & MDOF_X) ? as_rvec_array(state_global->x.data()) : nullptr;
-            const rvec *v = (mdof_flags & MDOF_V) ? as_rvec_array(state_global->v.data()) : nullptr;
+            const rvec *x = (mdof_flags & MDOF_X) ? state_global->x.rvec_array() : nullptr;
+            const rvec *v = (mdof_flags & MDOF_V) ? state_global->v.rvec_array() : nullptr;
             const rvec *f = (mdof_flags & MDOF_F) ? f_global : nullptr;
 
             if (of->fp_trn)
@@ -349,7 +349,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
             {
                 /* We are writing the positions of all of the atoms to
                    the compressed output */
-                xxtc = as_rvec_array(state_global->x.data());
+                xxtc = state_global->x.rvec_array();
             }
             else
             {
@@ -359,11 +359,12 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
                 int i, j;
 
                 snew(xxtc, of->natoms_x_compressed);
+                auto x = state_global->x.unpaddedArrayRef();
                 for (i = 0, j = 0; (i < of->natoms_global); i++)
                 {
                     if (getGroupType(of->groups, egcCompressedX, i) == 0)
                     {
-                        copy_rvec(state_global->x[i], xxtc[j++]);
+                        copy_rvec(x[i], xxtc[j++]);
                     }
                 }
             }
