@@ -18,10 +18,10 @@ subsets of the molecular system (see :ref:`gmx convert-tpr` and
 :ref:`gmx trjconv`). It is easier to do a correct "single-point" energy
 evaluation with this feature than a 0-step simulation.
 
-Neighbor searching is normally performed for every frame in the
-trajectory, since :ref:`gmx mdrun` can no longer assume anything about how the
-structures were generated. If :mdp:`nstlist` is zero, then only one
-neighbor list will be constructed. Naturally, no update or constraint
+Neighbor searching is performed for every frame in the trajectory
+independently of the value in :mdp:`nstlist`, since
+:ref:`gmx mdrun` can no longer assume anything about how the
+structures were generated. Naturally, no update or constraint
 algorithms are ever used.
 
 Running a simulation in reproducible mode
