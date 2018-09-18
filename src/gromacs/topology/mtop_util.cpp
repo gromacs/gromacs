@@ -878,19 +878,19 @@ static void gen_local_top(const gmx_mtop_t *mtop,
      * We also need to make sure to only operate on valid data!
      */
 
-    if (ffp->functype)
+    if (!ffp->functype.empty())
     {
         snew(idef->functype, ffp->ntypes);
-        std::copy(ffp->functype, ffp->functype + ffp->ntypes, idef->functype);
+        std::copy(ffp->functype.data(), ffp->functype.data() + ffp->ntypes, idef->functype);
     }
     else
     {
         idef->functype = nullptr;
     }
-    if (ffp->iparams)
+    if (!ffp->iparams.empty())
     {
         snew(idef->iparams, ffp->ntypes);
-        std::copy(ffp->iparams, ffp->iparams + ffp->ntypes, idef->iparams);
+        std::copy(ffp->iparams.data(), ffp->iparams.data() + ffp->ntypes, idef->iparams);
     }
     else
     {
