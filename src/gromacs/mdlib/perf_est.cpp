@@ -282,7 +282,6 @@ static void pp_group_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
     gmx_bool       bBHAM, bLJcut, bWater, bQ, bLJ;
     int            nw, nqlj, nq, nlj;
     double         fq, fqlj, flj, fqljw, fqw;
-    t_iparams     *iparams;
 
     bBHAM = (mtop->ffparams.functype[0] == F_BHAM);
 
@@ -302,7 +301,7 @@ static void pp_group_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
     /* Cost of 1 water with one Q atom or with 1/3 water (LJ negligible) */
     fqw   = c_group_qw;
 
-    iparams           = mtop->ffparams.iparams;
+    gmx::ArrayRef<const t_iparams> iparams = mtop->ffparams.iparams;
     atnr              = mtop->ffparams.atnr;
     nw                = 0;
     nqlj              = 0;
@@ -404,7 +403,6 @@ static void pp_verlet_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
 {
     int            atnr, a, nqlj, nq, nlj;
     gmx_bool       bQRF;
-    t_iparams     *iparams;
     real           r_eff;
     double         c_qlj, c_q, c_lj;
     double         nppa;
@@ -420,7 +418,7 @@ static void pp_verlet_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
 
     bQRF = (EEL_RF(ir->coulombtype) || ir->coulombtype == eelCUT);
 
-    iparams           = mtop->ffparams.iparams;
+    gmx::ArrayRef<const t_iparams> iparams = mtop->ffparams.iparams;
     atnr              = mtop->ffparams.atnr;
     nqlj              = 0;
     nq                = 0;

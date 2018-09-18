@@ -3676,27 +3676,19 @@ void do_index(const char* mdparin, const char *ndx,
 
 
 
-static void check_disre(gmx_mtop_t *mtop)
+static void check_disre(const gmx_mtop_t *mtop)
 {
-    gmx_ffparams_t *ffparams;
-    t_functype     *functype;
-    t_iparams      *ip;
-    int             i, ndouble, ftype;
-    int             label, old_label;
-
     if (gmx_mtop_ftype_count(mtop, F_DISRES) > 0)
     {
-        ffparams  = &mtop->ffparams;
-        functype  = ffparams->functype;
-        ip        = ffparams->iparams;
-        ndouble   = 0;
-        old_label = -1;
-        for (i = 0; i < ffparams->ntypes; i++)
+        const gmx_ffparams_t &ffparams  = mtop->ffparams;
+        int                   ndouble   = 0;
+        int                   old_label = -1;
+        for (int i = 0; i < ffparams.numTypes(); i++)
         {
-            ftype = functype[i];
+            int ftype = ffparams.functype[i];
             if (ftype == F_DISRES)
             {
-                label = ip[i].disres.label;
+                int label = ffparams.iparams[i].disres.label;
                 if (label == old_label)
                 {
                     fprintf(stderr, "Distance restraint index %d occurs twice\n", label);

@@ -45,6 +45,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
 typedef union t_iparams
@@ -284,16 +285,27 @@ typedef struct gmx_cmap_t
 } gmx_cmap_t;
 
 
-typedef struct gmx_ffparams_t
+/* Struct that holds all force field parameters for the simulated system */
+struct gmx_ffparams_t
 {
-    int         ntypes;
-    int         atnr;
-    t_functype *functype;
-    t_iparams  *iparams;
-    double      reppow;    /* The repulsion power for VdW: C12*r^-reppow   */
-    real        fudgeQQ;   /* The scaling factor for Coulomb 1-4: f*q1*q2  */
-    gmx_cmap_t  cmap_grid; /* The dihedral correction maps                 */
-} gmx_ffparams_t;
+    /* Returns the number of function types, which matches the number of elements in iparams */
+    int numTypes() const
+    {
+        GMX_ASSERT(iparams.size() == functype.size(), "Parameters and function types go together");
+
+        return functype.size();
+    }
+
+    /* TODO: Consider merging functype and iparams, either by storing
+     *       the functype in t_iparams or by putting both in a single class.
+     */
+    int                     atnr;      /* The number of non-bonded atom types */
+    std::vector<t_functype> functype;  /* The function type per type */
+    std::vector<t_iparams>  iparams;   /* Force field parameters per type */
+    double                  reppow;    /* The repulsion power for VdW: C12*r^-reppow   */
+    real                    fudgeQQ;   /* The scaling factor for Coulomb 1-4: f*q1*q2  */
+    gmx_cmap_t              cmap_grid; /* The dihedral correction maps                 */
+};
 
 enum {
     ilsortUNKNOWN, ilsortNO_FE, ilsortFE_UNSORTED, ilsortFE_SORTED

@@ -379,12 +379,11 @@ static void bc_cmap(const t_commrec *cr, gmx_cmap_t *cmap_grid)
 
 static void bc_ffparams(const t_commrec *cr, gmx_ffparams_t *ffp)
 {
-    block_bc(cr, ffp->ntypes);
+    int numTypes = ffp->numTypes();
+    block_bc(cr, numTypes);
     block_bc(cr, ffp->atnr);
-    snew_bc(cr, ffp->functype, ffp->ntypes);
-    snew_bc(cr, ffp->iparams, ffp->ntypes);
-    nblock_bc(cr, ffp->ntypes, ffp->functype);
-    nblock_bc(cr, ffp->ntypes, ffp->iparams);
+    nblock_abc(cr, numTypes, &ffp->functype);
+    nblock_abc(cr, numTypes, &ffp->iparams);
     block_bc(cr, ffp->reppow);
     block_bc(cr, ffp->fudgeQQ);
     bc_cmap(cr, &ffp->cmap_grid);

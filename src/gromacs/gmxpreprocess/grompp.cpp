@@ -245,14 +245,14 @@ static void check_bonds_timestep(const gmx_mtop_t *mtop, double dt, warninp_t wi
      */
     int            min_steps_warn = 5;
     int            min_steps_note = 10;
-    t_iparams     *ip;
     int            ftype;
     int            i, a1, a2, w_a1, w_a2, j;
     real           twopi2, limit2, fc, re, m1, m2, period2, w_period2;
     bool           bFound, bWater, bWarn;
     char           warn_buf[STRLEN];
 
-    ip = mtop->ffparams.iparams;
+    /* Get the interaction parameters */
+    gmx::ArrayRef<const t_iparams> ip = mtop->ffparams.iparams;
 
     twopi2 = gmx::square(2*M_PI);
 
@@ -1373,20 +1373,20 @@ static void checkForUnboundAtoms(const gmx_mtop_t     *mtop,
  * involved in a single constraint; the mass of the two atoms needs to
  * differ by more than \p massFactorThreshold.
  */
-static bool haveDecoupledModeInMol(const gmx_moltype_t *molt,
-                                   const t_iparams     *iparams,
-                                   real                 massFactorThreshold)
+static bool haveDecoupledModeInMol(const gmx_moltype_t            &molt,
+                                   gmx::ArrayRef<const t_iparams>  iparams,
+                                   real                            massFactorThreshold)
 {
-    if (molt->ilist[F_CONSTR].size() == 0 &&
-        molt->ilist[F_CONSTRNC].size() == 0)
+    if (molt.ilist[F_CONSTR].size() == 0 &&
+        molt.ilist[F_CONSTRNC].size() == 0)
     {
         return false;
     }
 
-    const t_atom * atom = molt->atoms.atom;
+    const t_atom * atom = molt.atoms.atom;
 
     t_blocka       atomToConstraints =
-        gmx::make_at2con(*molt, iparams,
+        gmx::make_at2con(molt, iparams,
                          gmx::FlexibleConstraintTreatment::Exclude);
 
     bool           haveDecoupledMode = false;
@@ -1395,7 +1395,7 @@ static bool haveDecoupledModeInMol(const gmx_moltype_t *molt,
         if (interaction_function[ftype].flags & IF_ATYPE)
         {
             const int              nral = NRAL(ftype);
-            const InteractionList &il   = molt->ilist[ftype];
+            const InteractionList &il   = molt.ilist[ftype];
             for (int i = 0; i < il.size(); i += 1 + nral)
             {
                 /* Here we check for the mass difference between the atoms
@@ -1501,7 +1501,7 @@ static void checkDecoupledModeAccuracy(const gmx_mtop_t *mtop,
     bool haveDecoupledMode = false;
     for (const gmx_moltype_t &molt : mtop->moltype)
     {
-        if (haveDecoupledModeInMol(&molt, mtop->ffparams.iparams,
+        if (haveDecoupledModeInMol(molt, mtop->ffparams.iparams,
                                    massFactorThreshold))
         {
             haveDecoupledMode = true;

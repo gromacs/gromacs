@@ -210,12 +210,12 @@ TEST_P(SettleTest, SatisfiesConstraints)
     }
 
     // Set up the SETTLE parameters.
-    mtop.ffparams.ntypes = 1;
-    snew(mtop.ffparams.iparams, mtop.ffparams.ntypes);
-    const real                   dOH = 0.09572;
-    const real                   dHH = 0.15139;
-    mtop.ffparams.iparams[settleType].settle.doh = dOH;
-    mtop.ffparams.iparams[settleType].settle.dhh = dHH;
+    const real     dOH = 0.09572;
+    const real     dHH = 0.15139;
+    t_iparams      iparams;
+    iparams.settle.doh = dOH;
+    iparams.settle.dhh = dHH;
+    mtop.ffparams.iparams.push_back(iparams);
 
     // Set up the masses.
     t_mdatoms         mdatoms;

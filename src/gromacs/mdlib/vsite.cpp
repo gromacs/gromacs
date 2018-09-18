@@ -779,7 +779,7 @@ void constructVsitesGlobal(const gmx_mtop_t         &mtop,
 
                 construct_vsites(nullptr, as_rvec_array(x.data()) + atomOffset,
                                  0.0, nullptr,
-                                 mtop.ffparams.iparams, ilist,
+                                 mtop.ffparams.iparams.data(), ilist,
                                  epbcNONE, TRUE, nullptr, nullptr);
                 atomOffset += molt.atoms.nr;
             }
@@ -2062,7 +2062,7 @@ initVsite(const gmx_mtop_t &mtop,
         for (size_t mt = 0; mt < mtop.moltype.size(); mt++)
         {
             const gmx_moltype_t &molt = mtop.moltype[mt];
-            vsite->vsite_pbc_molt[mt] = get_vsite_pbc(mtop.ffparams.iparams,
+            vsite->vsite_pbc_molt[mt] = get_vsite_pbc(mtop.ffparams.iparams.data(),
                                                       molt.ilist.data(),
                                                       molt.atoms.atom, nullptr,
                                                       molt.cgs);
