@@ -169,9 +169,10 @@ struct gmx_domdec_t { //NOLINT(clang-analyzer-optin.performance.Padding)
     /* Only available on the master node */
     std::unique_ptr<AtomDistribution> ma;
 
-    /* Are there inter charge group constraints */
-    gmx_bool bInterCGcons;
-    gmx_bool bInterCGsettles;
+    /* Can atoms connected by constraints be assigned to different domains? */
+    bool splitConstraints;
+    /* Can atoms connected by settles be assigned to different domains? */
+    bool splitSettles;
 
     /* Global atom number to interaction list */
     gmx_reverse_top_t  *reverse_top;

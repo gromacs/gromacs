@@ -2111,8 +2111,8 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
         comm->bInterCGMultiBody = FALSE;
     }
 
-    dd->bInterCGcons    = gmx::inter_charge_group_constraints(*mtop);
-    dd->bInterCGsettles = gmx::inter_charge_group_settles(*mtop);
+    dd->splitConstraints = gmx::inter_charge_group_constraints(*mtop);
+    dd->splitSettles     = gmx::inter_charge_group_settles(*mtop);
 
     if (ir->rlist == 0)
     {
@@ -2229,7 +2229,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     }
 
     real rconstr = 0;
-    if (dd->bInterCGcons && options.constraintCommunicationRange <= 0)
+    if (dd->splitConstraints && options.constraintCommunicationRange <= 0)
     {
         /* There is a cell size limit due to the constraints (P-LINCS) */
         rconstr = gmx::constr_r_max(mdlog, mtop, ir);
@@ -2243,7 +2243,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     }
     else if (options.constraintCommunicationRange > 0)
     {
-        /* Here we do not check for dd->bInterCGcons,
+        /* Here we do not check for dd->splitConstraints.
          * because one can also set a cell size limit for virtual sites only
          * and at this point we don't know yet if there are intercg v-sites.
          */
@@ -2299,7 +2299,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
         if (dd->nc[XX] == 0)
         {
             char     buf[STRLEN];
-            gmx_bool bC = (dd->bInterCGcons && rconstr > r_bonded_limit);
+            gmx_bool bC = (dd->splitConstraints && rconstr > r_bonded_limit);
             sprintf(buf, "Change the number of ranks or mdrun option %s%s%s",
                     !bC ? "-rdd" : "-rcon",
                     comm->dlbState != DlbState::offUser ? " or -dds" : "",
@@ -2560,7 +2560,7 @@ static void writeSettings(gmx::TextWriter       *log,
 
     if (comm->bInterCGBondeds ||
         bInterCGVsites ||
-        dd->bInterCGcons || dd->bInterCGsettles)
+        dd->splitConstraints || dd->splitSettles)
     {
         log->writeLine("The maximum allowed distance for charge groups involved in interactions is:");
         log->writeLineFormatted("%40s  %-7s %6.3f nm", "non-bonded interactions", "", comm->cutoff);
@@ -2596,7 +2596,7 @@ static void writeSettings(gmx::TextWriter       *log,
             log->writeLineFormatted("%40s  %-7s %6.3f nm",
                                     "virtual site constructions", "(-rcon)", limit);
         }
-        if (dd->bInterCGcons || dd->bInterCGsettles)
+        if (dd->splitConstraints || dd->splitSettles)
         {
             std::string separation = gmx::formatString("atoms separated by up to %d constraints",
                                                        1+ir->nProjOrder);
