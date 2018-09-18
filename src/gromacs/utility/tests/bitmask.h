@@ -131,3 +131,10 @@ BITMASK_TEST_P(Union) //NOLINT(misc-definitions-in-headers)
     bitmask_union(&m1, m2);
     EXPECT_TRUE(bitmask_is_equal(m1, m2));
 }
+BITMASK_TEST_P(ToHex) //NOLINT(misc-definitions-in-headers)
+{
+    gmx_bitmask_t m;
+    bitmask_clear(&m);
+    bitmask_set_bit(&m, BITMASK_SIZE-1);
+    EXPECT_EQ(to_hex_string(m), "8" + std::string(BITMASK_SIZE/4-1, '0'));
+}
