@@ -1278,33 +1278,12 @@ check_assign_interactions_atom(int i, int i_gl,
     j = ind_start;
     while (j < ind_end)
     {
-        int            ftype;
-        int            nral;
-        t_iatom        tiatoms[1 + MAXATOMLIST];
+        t_iatom   tiatoms[1 + MAXATOMLIST];
 
-        ftype  = rtil[j++];
-        gmx::ArrayRef<const t_iatom> iatoms = gmx::constArrayRefFromArray(rtil.data() + j, rtil.size() - j);
-        nral   = NRAL(ftype);
-        if (ftype == F_SETTLE)
-        {
-            /* Settles are only in the reverse top when they
-             * operate within a charge group. So we can assign
-             * them without checks. We do this only for performance
-             * reasons; it could be handled by the code below.
-             */
-            if (iz == 0)
-            {
-                /* Home zone: add this settle to the local topology */
-                tiatoms[0] = iatoms[0];
-                tiatoms[1] = i;
-                tiatoms[2] = i + iatoms[2] - iatoms[1];
-                tiatoms[3] = i + iatoms[3] - iatoms[1];
-                add_ifunc(nral, tiatoms, &idef->il[ftype]);
-                (*nbonded_local)++;
-            }
-            j += 1 + nral;
-        }
-        else if (interaction_function[ftype].flags & IF_VSITE)
+        const int ftype  = rtil[j++];
+        auto      iatoms = gmx::constArrayRefFromArray(rtil.data() + j, rtil.size() - j);
+        const int nral   = NRAL(ftype);
+        if (interaction_function[ftype].flags & IF_VSITE)
         {
             assert(!bInterMolInteractions);
             /* The vsite construction goes where the vsite itself is */

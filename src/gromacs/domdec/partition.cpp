@@ -1892,7 +1892,6 @@ static void setup_dd_communication(gmx_domdec_t *dd,
     gmx_domdec_comm_dim_t *cd;
     cginfo_mb_t           *cginfo_mb;
     gmx_bool               bBondComm, bDist2B, bDistMB, bDistBonded;
-    real                   r_comm2, r_bcomm2;
     dd_corners_t           corners;
     rvec                  *cg_cm, *normal, *v_d, *v_0 = nullptr, *v_1 = nullptr;
     real                   skew_fac2_d, skew_fac_01;
@@ -1935,8 +1934,8 @@ static void setup_dd_communication(gmx_domdec_t *dd,
     /* Do we need to determine extra distances for only two-body bondeds? */
     bDist2B = (bBondComm && !bDistMB);
 
-    r_comm2  = gmx::square(comm->cutoff);
-    r_bcomm2 = gmx::square(comm->cutoff_mbody);
+    const real r_comm2  = gmx::square(domainToDomainToAtomToDomainCutoff(*comm, comm->cutoff));
+    const real r_bcomm2 = gmx::square(domainToDomainToAtomToDomainCutoff(*comm,comm->cutoff_mbody));
 
     if (debug)
     {

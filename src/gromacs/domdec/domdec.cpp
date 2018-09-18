@@ -2074,6 +2074,7 @@ static bool systemHasConstraintsOrVsites(const gmx_mtop_t &mtop)
 
 static void setupUpdateGroups(const gmx::MDLogger &mdlog,
                               const gmx_mtop_t    &mtop,
+                              real                 cutoffMargin,
                               int                  numMpiRanksTotal,
                               gmx_domdec_comm_t   *comm)
 {
@@ -2110,7 +2111,8 @@ static void setupUpdateGroups(const gmx::MDLogger &mdlog,
         /* To use update groups, the large domain-to-domain cutoff distance
          * should be compatible with the box size.
          */
-        /* TODO: add this cutoff check */
+        comm->useUpdateGroups = (atomToAtomToDomainToDomainCutoff(*comm, 0) < cutoffMargin);
+        /* TODO: Enable update groups when all infrastructure is present */
         comm->useUpdateGroups = false;
 
         if (comm->useUpdateGroups)
@@ -2180,7 +2182,8 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     comm->useUpdateGroups = false;
     if (ir->cutoff_scheme == ecutsVERLET)
     {
-        setupUpdateGroups(mdlog, *mtop, cr->nnodes, comm);
+        real cutoffMargin = std::sqrt(max_cutoff2(ir->ePBC, box)) - ir->rlist;
+        setupUpdateGroups(mdlog, *mtop, cutoffMargin, cr->nnodes, comm);
     }
 
     comm->bInterCGBondeds = ((ncg_mtop(mtop) > gmx_mtop_num_molecules(*mtop)) ||
@@ -2194,8 +2197,16 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
         comm->bInterCGMultiBody = FALSE;
     }
 
-    dd->splitConstraints = gmx::inter_charge_group_constraints(*mtop);
-    dd->splitSettles     = gmx::inter_charge_group_settles(*mtop);
+    if (comm->useUpdateGroups)
+    {
+        dd->splitConstraints = false;
+        dd->splitSettles     = false;
+    }
+    else
+    {
+        dd->splitConstraints = gmx::inter_charge_group_constraints(*mtop);
+        dd->splitSettles     = gmx::inter_charge_group_settles(*mtop);
+    }
 
     if (ir->rlist == 0)
     {
@@ -2207,7 +2218,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     }
     else
     {
-        comm->cutoff   = ir->rlist;
+        comm->cutoff   = atomToAtomToDomainToDomainCutoff(*comm, ir->rlist);
     }
     comm->cutoff_mbody = 0;
 
@@ -2245,7 +2256,7 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     {
         if (options.minimumCommunicationRange > 0)
         {
-            comm->cutoff_mbody = options.minimumCommunicationRange;
+            comm->cutoff_mbody = atomToAtomToDomainToDomainCutoff(*comm, options.minimumCommunicationRange);
             if (options.useBondedCommunication)
             {
                 comm->bBondComm = (comm->cutoff_mbody > comm->cutoff);
