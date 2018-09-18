@@ -40,17 +40,17 @@
 namespace gmxapi
 {
 
-version_t Version::major()
+version_t Version::majorVersion()
 {
     return c_majorVersion;
 }
 
-version_t Version::minor()
+version_t Version::minorVersion()
 {
     return c_minorVersion;
 }
 
-version_t Version::patch()
+version_t Version::patchVersion()
 {
     return c_patchVersion;
 }
@@ -72,23 +72,23 @@ bool Version::isAtLeast(version_t major,
                         version_t minor,
                         version_t patch)
 {
-    if (Version::major() < major)
+    if (Version::majorVersion() < major)
     {
         return false;
     }
-    if (Version::major() > major)
+    if (Version::majorVersion() > major)
     {
         return true;
     }
-    if (Version::minor() < minor)
+    if (Version::minorVersion() < minor)
     {
         return false;
     }
-    if (Version::minor() > minor)
+    if (Version::minorVersion() > minor)
     {
         return true;
     }
-    return Version::patch() >= patch;
+    return Version::patchVersion() >= patch;
 }
 
 
