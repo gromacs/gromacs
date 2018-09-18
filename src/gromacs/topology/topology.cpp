@@ -79,9 +79,8 @@ void init_mtop(gmx_mtop_t *mtop)
     // TODO: Move to ffparams when that is converted to C++
     mtop->ffparams.functype.clear();
     mtop->ffparams.iparams.clear();
-    mtop->ffparams.cmap_grid.ngrid        = 0;
     mtop->ffparams.cmap_grid.grid_spacing = 0;
-    mtop->ffparams.cmap_grid.cmapdata     = nullptr;
+    mtop->ffparams.cmap_grid.cmapdata.clear();
 
     mtop->moltype.clear();
     mtop->molblock.clear();
@@ -153,12 +152,6 @@ gmx_mtop_t::gmx_mtop_t()
 gmx_mtop_t::~gmx_mtop_t()
 {
     done_symtab(&symtab);
-
-    for (int i = 0; i < ffparams.cmap_grid.ngrid; i++)
-    {
-        sfree(ffparams.cmap_grid.cmapdata[i].cmap);
-    }
-    sfree(ffparams.cmap_grid.cmapdata);
 
     moltype.clear();
     molblock.clear();
@@ -526,18 +519,25 @@ static void cmp_iparm_AB(FILE *fp, const char *s, t_functype ft,
 
 static void cmp_cmap(FILE *fp, const gmx_cmap_t *cmap1, const gmx_cmap_t *cmap2, real ftol, real abstol)
 {
-    cmp_int(fp, "cmap ngrid", -1, cmap1->ngrid, cmap2->ngrid);
+    int cmap1_ngrid = (cmap1 ? cmap1->cmapdata.size() : 0);
+    int cmap2_ngrid = (cmap2 ? cmap2->cmapdata.size() : 0);
+
+    cmp_int(fp, "cmap ngrid", -1, cmap1_ngrid, cmap2_ngrid);
+
+    if (cmap1 == nullptr || cmap2 == nullptr)
+    {
+        return;
+    }
+
     cmp_int(fp, "cmap grid_spacing", -1, cmap1->grid_spacing, cmap2->grid_spacing);
-    if (cmap1->ngrid == cmap2->ngrid &&
+    if (cmap1->cmapdata.size() == cmap2->cmapdata.size() &&
         cmap1->grid_spacing == cmap2->grid_spacing)
     {
-        int g;
-
-        for (g = 0; g < cmap1->ngrid; g++)
+        for (size_t g = 0; g < cmap1->cmapdata.size(); g++)
         {
             int i;
 
-            fprintf(fp, "comparing cmap %d\n", g);
+            fprintf(fp, "comparing cmap %zu\n", g);
 
             for (i = 0; i < 4*cmap1->grid_spacing*cmap1->grid_spacing; i++)
             {
@@ -566,7 +566,7 @@ static void cmp_idef(FILE *fp, const t_idef *id1, const t_idef *id2, real ftol, 
                       id1->iparams[i], id2->iparams[i], ftol, abstol);
         }
         cmp_real(fp, "fudgeQQ", -1, id1->fudgeQQ, id2->fudgeQQ, ftol, abstol);
-        cmp_cmap(fp, &id1->cmap_grid, &id2->cmap_grid, ftol, abstol);
+        cmp_cmap(fp, id1->cmap_grid, id2->cmap_grid, ftol, abstol);
         for (i = 0; (i < F_NRE); i++)
         {
             cmp_ilist(fp, i, &(id1->il[i]), &(id2->il[i]));

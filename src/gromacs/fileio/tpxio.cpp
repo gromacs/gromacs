@@ -2372,28 +2372,27 @@ static void do_symtab(t_fileio *fio, t_symtab *symtab, gmx_bool bRead)
 
 static void do_cmap(t_fileio *fio, gmx_cmap_t *cmap_grid, gmx_bool bRead)
 {
-    int i, j, ngrid, gs, nelem;
 
-    gmx_fio_do_int(fio, cmap_grid->ngrid);
+    int ngrid = cmap_grid->cmapdata.size();
+    gmx_fio_do_int(fio, ngrid);
     gmx_fio_do_int(fio, cmap_grid->grid_spacing);
 
-    ngrid = cmap_grid->ngrid;
-    gs    = cmap_grid->grid_spacing;
-    nelem = gs * gs;
+    int gs    = cmap_grid->grid_spacing;
+    int nelem = gs * gs;
 
     if (bRead)
     {
-        snew(cmap_grid->cmapdata, ngrid);
+        cmap_grid->cmapdata.resize(ngrid);
 
-        for (i = 0; i < cmap_grid->ngrid; i++)
+        for (int i = 0; i < ngrid; i++)
         {
-            snew(cmap_grid->cmapdata[i].cmap, 4*nelem);
+            cmap_grid->cmapdata[i].cmap.resize(4*nelem);
         }
     }
 
-    for (i = 0; i < cmap_grid->ngrid; i++)
+    for (int i = 0; i < ngrid; i++)
     {
-        for (j = 0; j < nelem; j++)
+        for (int j = 0; j < nelem; j++)
         {
             gmx_fio_do_real(fio, cmap_grid->cmapdata[i].cmap[j*4]);
             gmx_fio_do_real(fio, cmap_grid->cmapdata[i].cmap[j*4+1]);
@@ -2545,9 +2544,8 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
     }
     else
     {
-        mtop->ffparams.cmap_grid.ngrid        = 0;
         mtop->ffparams.cmap_grid.grid_spacing = 0;
-        mtop->ffparams.cmap_grid.cmapdata     = nullptr;
+        mtop->ffparams.cmap_grid.cmapdata.clear();
     }
 
     do_groups(fio, &mtop->groups, bRead, &(mtop->symtab));

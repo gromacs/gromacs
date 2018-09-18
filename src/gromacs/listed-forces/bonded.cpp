@@ -2899,7 +2899,7 @@ cmap_dihs(int nbonds,
     int         i, n;
     int         ai, aj, ak, al, am;
     int         a1i, a1j, a1k, a1l, a2i, a2j, a2k, a2l;
-    int         type, cmapA;
+    int         type;
     int         t11, t21, t31, t12, t22, t32;
     int         iphi1, ip1m1, ip1p1, ip1p2;
     int         iphi2, ip2m1, ip2p1, ip2p2;
@@ -2926,8 +2926,6 @@ cmap_dihs(int nbonds,
     ivec        jt1, dt1_ij, dt1_kj, dt1_lj;
     ivec        jt2, dt2_ij, dt2_kj, dt2_lj;
 
-    const real *cmapd;
-
     int         loop_index[4][4] = {
         {0, 4, 8, 12},
         {1, 5, 9, 13},
@@ -2949,8 +2947,8 @@ cmap_dihs(int nbonds,
         am     = forceatoms[n++];
 
         /* Which CMAP type is this */
-        cmapA = forceparams[type].cmap.cmapA;
-        cmapd = cmap_grid->cmapdata[cmapA].cmap;
+        const int   cmapA = forceparams[type].cmap.cmapA;
+        const real *cmapd = cmap_grid->cmapdata[cmapA].cmap.data();
 
         /* First torsion */
         a1i   = ai;

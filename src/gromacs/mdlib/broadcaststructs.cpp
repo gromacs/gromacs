@@ -357,22 +357,22 @@ static void bc_ilists(const t_commrec *cr, InteractionLists *ilist)
 
 static void bc_cmap(const t_commrec *cr, gmx_cmap_t *cmap_grid)
 {
-    int i, nelem, ngrid;
-
-    block_bc(cr, cmap_grid->ngrid);
+    int ngrid = cmap_grid->cmapdata.size();
+    block_bc(cr, ngrid);
     block_bc(cr, cmap_grid->grid_spacing);
 
-    ngrid = cmap_grid->ngrid;
-    nelem = cmap_grid->grid_spacing * cmap_grid->grid_spacing;
+    int nelem = cmap_grid->grid_spacing * cmap_grid->grid_spacing;
 
     if (ngrid > 0)
     {
-        snew_bc(cr, cmap_grid->cmapdata, ngrid);
-
-        for (i = 0; i < ngrid; i++)
+        if (!MASTER(cr))
         {
-            snew_bc(cr, cmap_grid->cmapdata[i].cmap, 4*nelem);
-            nblock_bc(cr, 4*nelem, cmap_grid->cmapdata[i].cmap);
+            cmap_grid->cmapdata.resize(ngrid);
+        }
+
+        for (int i = 0; i < ngrid; i++)
+        {
+            nblock_abc(cr, 4*nelem, &cmap_grid->cmapdata[i].cmap);
         }
     }
 }
