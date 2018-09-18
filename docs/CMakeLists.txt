@@ -166,6 +166,7 @@ if (SPHINX_FOUND)
         user-guide/file-formats.rst
         user-guide/cmdline.rst
         user-guide/environment-variables.rst
+        user-guide/security.rst
         user-guide/terminology.rst
         user-guide/plotje.gif
         user-guide/xvgr.gif
