@@ -770,7 +770,7 @@ void dd_make_reverse_top(FILE *fplog,
     dd->reverse_top  = new gmx_reverse_top_t;
     *dd->reverse_top =
         make_reverse_top(mtop, ir->efep != efepNO, vsitePbcPerMoltype,
-                         !dd->bInterCGcons, !dd->bInterCGsettles,
+                         !dd->splitConstraints, !dd->splitSettles,
                          bBCheck, &dd->nbonded_global);
 
     gmx_reverse_top_t *rt = dd->reverse_top;
@@ -822,7 +822,7 @@ void dd_make_reverse_top(FILE *fplog,
         init_domdec_vsites(dd, vsite->n_intercg_vsite);
     }
 
-    if (dd->bInterCGcons || dd->bInterCGsettles)
+    if (dd->splitConstraints || dd->splitSettles)
     {
         init_domdec_constraints(dd, mtop);
     }

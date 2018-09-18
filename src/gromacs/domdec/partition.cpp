@@ -3476,7 +3476,7 @@ void dd_partition_system(FILE                *fplog,
                 }
                 break;
             case DDAtomRanges::Type::Constraints:
-                if (dd->bInterCGcons || dd->bInterCGsettles)
+                if (dd->splitConstraints || dd->splitSettles)
                 {
                     /* Only for inter-cg constraints we need special code */
                     n = dd_make_local_constraints(dd, n, top_global, fr->cginfo,
