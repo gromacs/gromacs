@@ -284,16 +284,16 @@ typedef struct gmx_cmap_t
 } gmx_cmap_t;
 
 
-typedef struct gmx_ffparams_t
+struct gmx_ffparams_t
 {
-    int         ntypes;
-    int         atnr;
-    t_functype *functype;
-    t_iparams  *iparams;
-    double      reppow;    /* The repulsion power for VdW: C12*r^-reppow   */
-    real        fudgeQQ;   /* The scaling factor for Coulomb 1-4: f*q1*q2  */
-    gmx_cmap_t  cmap_grid; /* The dihedral correction maps                 */
-} gmx_ffparams_t;
+    int                     ntypes;
+    int                     atnr;
+    std::vector<t_functype> functype;
+    std::vector<t_iparams>  iparams;
+    double                  reppow;    /* The repulsion power for VdW: C12*r^-reppow   */
+    real                    fudgeQQ;   /* The scaling factor for Coulomb 1-4: f*q1*q2  */
+    gmx_cmap_t              cmap_grid; /* The dihedral correction maps                 */
+};
 
 enum {
     ilsortUNKNOWN, ilsortNO_FE, ilsortFE_UNSORTED, ilsortFE_SORTED

@@ -58,7 +58,8 @@ namespace gmx
 
 //! Recursing function to help find all adjacent constraints.
 static void constr_recur(const t_blocka *at2con,
-                         const InteractionLists &ilist, const t_iparams *iparams,
+                         const InteractionLists &ilist,
+                         gmx::ArrayRef<const t_iparams> iparams,
                          gmx_bool bTopB,
                          int at, int depth, int nc, int *path,
                          real r0, real r1, real *r2max,
@@ -150,9 +151,9 @@ static void constr_recur(const t_blocka *at2con,
 }
 
 //! Find the interaction radius needed for constraints for this molecule type.
-static real constr_r_max_moltype(const gmx_moltype_t *molt,
-                                 const t_iparams     *iparams,
-                                 const t_inputrec    *ir)
+static real constr_r_max_moltype(const gmx_moltype_t            *molt,
+                                 gmx::ArrayRef<const t_iparams>  iparams,
+                                 const t_inputrec               *ir)
 {
     int      natoms, *path, at, count;
 

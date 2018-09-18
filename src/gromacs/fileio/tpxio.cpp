@@ -1982,11 +1982,11 @@ static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
     gmx_fio_do_int(fio, ffparams->ntypes);
     if (bRead)
     {
-        snew(ffparams->functype, ffparams->ntypes);
-        snew(ffparams->iparams, ffparams->ntypes);
+        ffparams->functype.resize(ffparams->ntypes);
+        ffparams->iparams.resize(ffparams->ntypes);
     }
     /* Read/write all the function types */
-    gmx_fio_ndo_int(fio, ffparams->functype, ffparams->ntypes);
+    gmx_fio_ndo_int(fio, ffparams->functype.data(), ffparams->ntypes);
 
     if (file_version >= 66)
     {
@@ -2455,11 +2455,10 @@ static void do_molblock(t_fileio *fio, gmx_molblock_t *molb,
 
 static void set_disres_npair(gmx_mtop_t *mtop)
 {
-    t_iparams             *ip;
-    gmx_mtop_ilistloop_t   iloop;
-    int                    nmol;
+    gmx_mtop_ilistloop_t     iloop;
+    int                      nmol;
 
-    ip = mtop->ffparams.iparams;
+    gmx::ArrayRef<t_iparams> ip = mtop->ffparams.iparams;
 
     iloop     = gmx_mtop_ilistloop_init(mtop);
     while (const InteractionLists *ilist = gmx_mtop_ilistloop_next(iloop, &nmol))

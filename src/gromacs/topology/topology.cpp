@@ -77,8 +77,8 @@ void init_mtop(gmx_mtop_t *mtop)
     mtop->name = nullptr;
 
     // TODO: Move to ffparams when that is converted to C++
-    mtop->ffparams.functype               = nullptr;
-    mtop->ffparams.iparams                = nullptr;
+    mtop->ffparams.functype.clear();
+    mtop->ffparams.iparams.clear();
     mtop->ffparams.cmap_grid.ngrid        = 0;
     mtop->ffparams.cmap_grid.grid_spacing = 0;
     mtop->ffparams.cmap_grid.cmapdata     = nullptr;
@@ -155,8 +155,6 @@ gmx_mtop_t::~gmx_mtop_t()
 {
     done_symtab(&symtab);
 
-    sfree(ffparams.functype);
-    sfree(ffparams.iparams);
     for (int i = 0; i < ffparams.cmap_grid.ngrid; i++)
     {
         sfree(ffparams.cmap_grid.cmapdata[i].cmap);
@@ -368,8 +366,8 @@ static void pr_moltype(FILE *fp, int indent, const char *title,
     for (j = 0; (j < F_NRE); j++)
     {
         pr_ilist(fp, indent, interaction_function[j].longname,
-                 ffparams->functype, molt->ilist[j],
-                 bShowNumbers, bShowParameters, ffparams->iparams);
+                 ffparams->functype.data(), molt->ilist[j],
+                 bShowNumbers, bShowParameters, ffparams->iparams.data());
     }
 }
 
@@ -415,9 +413,9 @@ void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
             for (int j = 0; j < F_NRE; j++)
             {
                 pr_ilist(fp, indent, interaction_function[j].longname,
-                         mtop->ffparams.functype,
+                         mtop->ffparams.functype.data(),
                          (*mtop->intermolecular_ilist)[j],
-                         bShowNumbers, bShowParameters, mtop->ffparams.iparams);
+                         bShowNumbers, bShowParameters, mtop->ffparams.iparams.data());
             }
         }
         pr_ffparams(fp, indent, "ffparams", &(mtop->ffparams), bShowNumbers);
