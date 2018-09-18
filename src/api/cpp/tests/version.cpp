@@ -58,22 +58,22 @@ const int current_patch = gmxapi::c_patchVersion;
  */
 TEST(VersionTest, SaneComparisons)
 {
-    ASSERT_TRUE(Version::isAtLeast(0,
+    EXPECT_TRUE(Version::isAtLeast(0,
                                    0,
                                    0));
-    ASSERT_FALSE(Version::isAtLeast(SHRT_MAX,
+    EXPECT_FALSE(Version::isAtLeast(SHRT_MAX,
                                     SHRT_MAX,
                                     SHRT_MAX));
-    ASSERT_TRUE(Version::isAtLeast(current_major,
+    EXPECT_TRUE(Version::isAtLeast(current_major,
                                    current_minor,
                                    current_patch));
-    ASSERT_FALSE(Version::isAtLeast(current_major + 1,
+    EXPECT_FALSE(Version::isAtLeast(current_major + 1,
                                     current_minor,
                                     current_patch));
-    ASSERT_FALSE(Version::isAtLeast(current_major,
+    EXPECT_FALSE(Version::isAtLeast(current_major,
                                     current_minor + 1,
                                     current_patch));
-    ASSERT_FALSE(Version::isAtLeast(current_major,
+    EXPECT_FALSE(Version::isAtLeast(current_major,
                                     current_minor,
                                     current_patch + 1));
 }
@@ -81,23 +81,22 @@ TEST(VersionTest, SaneComparisons)
 /*!
  * \brief Check whether gmxapi correctly advertises or refutes feature availability.
  *
- * A few unimplemented features are tests with ``ASSERT_FALSE`` just for sanity
- * checking and to give an idea of near-term targeted named features. If the
- * feature is available, it is expected to conform to the API specification
+ * Check for correct responses from the Version API for features or
+ * functionality not (yet) guaranteed by the current API version.
+ * If a feature is available, it is expected to conform to the API specification
  * for the library Version::release(). As we discover features that break
  * forward-compatibility of the API, we will have to provide developer documentation
  * or sample code for build-time CMake feature checks.
+ * Designed but unimplemented features could be tested with ``EXPECT_FALSE``
+ * just for sanity checking and to give an idea of near-term targeted named
+ * features, but there aren't any yet.
+ *
+ * This is the test for pre-0.1 features leading up to that specification.
  */
 TEST(VersionTest, Named0_1_Features)
 {
-    ASSERT_FALSE(Version::hasFeature(""));
-    ASSERT_FALSE(Version::hasFeature("MD_plugin_restraint_force"));
-    ASSERT_FALSE(Version::hasFeature("MD_plugin_restraint_callback"));
-    ASSERT_FALSE(Version::hasFeature("MD_plugin_mpi_domain_decomposition"));
-    ASSERT_FALSE(Version::hasFeature("MD_stop_signal"));
-    ASSERT_FALSE(Version::hasFeature("MD_set_final_trajectory_step"));
-    ASSERT_FALSE(Version::hasFeature("gmxapi_communicator_from_client"));
-    ASSERT_FALSE(Version::hasFeature("gmxapi_simulation_from_tpr"));
+    EXPECT_FALSE(Version::hasFeature(""));
+    EXPECT_FALSE(Version::hasFeature("nonexistent feature"));
 }
 
 } // end anonymous namespace
