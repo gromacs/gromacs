@@ -160,7 +160,7 @@ gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
 
     /* Loop over all the function types and compare the A/B parameters */
     gmx_bool bPert = FALSE;
-    for (int i = 0; i < ffparams->ntypes; i++)
+    for (int i = 0; i < ffparams->numTypes(); i++)
     {
         int ftype = ffparams->functype[i];
         if (interaction_function[ftype].flags & IF_BOND)
@@ -194,7 +194,6 @@ gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
 void gmx_sort_ilist_fe(t_idef *idef, const real *qA, const real *qB)
 {
     int        ftype, nral, i, ic, ib, a;
-    t_iparams *iparams;
     t_ilist   *ilist;
     t_iatom   *iatoms;
     t_iatom   *iabuf;
@@ -208,7 +207,7 @@ void gmx_sort_ilist_fe(t_idef *idef, const real *qA, const real *qB)
     iabuf_nalloc = 0;
     iabuf        = nullptr;
 
-    iparams = idef->iparams;
+    const t_iparams *iparams = idef->iparams;
 
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
