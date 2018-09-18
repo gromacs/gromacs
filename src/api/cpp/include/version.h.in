@@ -107,19 +107,19 @@ class Version
          *
          * \returns major version number
          */
-        static version_t major();
+        static version_t majorVersion();
 
         /*! \brief Query gmxapi minor version.
          *
          * \returns minor version number
          */
-        static version_t minor();
+        static version_t minorVersion();
 
         /*! \brief Query gmxapi patch level.
          *
          * \returns patch level number
          */
-        static version_t patch();
+        static version_t patchVersion();
 
         /*! \brief Get formatted release string.
          *
