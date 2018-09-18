@@ -100,4 +100,34 @@ void dd_check_alloc_ncg(t_forcerec       *fr,
                         PaddedRVecVector *f,
                         int               numChargeGroups);
 
+/*! \brief Returns a domain-to-domain cutoff distance given an atom-to-atom cutoff */
+static inline real
+atomToAtomToDomainToDomainCutoff(const gmx_domdec_comm_t &comm,
+                                 real                     cutoff)
+{
+    if (comm.useUpdateGroups)
+    {
+        GMX_ASSERT(comm.updateGroupsCog.get(), "updateGroupsCog should be initialized here");
+
+        cutoff += 2*comm.updateGroupsCog->maxUpdateGroupRadius();
+    }
+
+    return cutoff;
+}
+
+/*! \brief Returns an atom-to-domain cutoff distance given a domain-to-domain cutoff */
+static inline real
+domainToDomainToAtomToDomainCutoff(const gmx_domdec_comm_t &comm,
+                                   real                     cutoff)
+{
+    if (comm.useUpdateGroups)
+    {
+        GMX_ASSERT(comm.updateGroupsCog.get(), "updateGroupsCog should be initialized here");
+
+        cutoff -= comm.updateGroupsCog->maxUpdateGroupRadius();
+    }
+
+    return cutoff;
+}
+
 #endif
