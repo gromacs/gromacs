@@ -48,9 +48,11 @@
 
 #include <string.h>
 
+#include <algorithm>
 #include <array>
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/stringutil.h"
 
 /*! \brief Size of bitmask. Has to be 32 or multiple of 64. */
 #ifndef BITMASK_SIZE
@@ -195,5 +197,28 @@ inline static void bitmask_union(gmx_bitmask_t* a, gmx_bitmask_t b)
     }
 }
 #endif
+//In bitmask.h because only current use is for bitmask.
+
+//! Convert uint32_t to hex string
+inline static std::string to_hex_string(uint32_t m)
+{
+    return gmx::formatString("%08" PRIx32, m);
+}
+//! Convert uint64_t to hex string
+inline static std::string to_hex_string(uint64_t m)
+{
+    return gmx::formatString("%016" PRIx64, m);
+}
+//! Convert container of intergers to hex string
+template <typename C>
+inline static std::string to_hex_string(C m)
+{
+    std::string ret;
+    for (auto it = m.rbegin(); it < m.rend(); ++it)
+    {
+        ret += to_hex_string(*it);
+    }
+    return ret;
+}
 
 #endif
