@@ -428,12 +428,12 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
     // This code should not be called unless this condition is true,
     // because that's the only time init_domdec_constraints is
     // called...
-    GMX_RELEASE_ASSERT(dd->bInterCGcons || dd->bInterCGsettles, "dd_make_local_constraints called when there are no local constraints");
+    GMX_RELEASE_ASSERT(dd->splitConstraints || dd->splitSettles, "dd_make_local_constraints called when there are no local constraints");
     // ... and init_domdec_constraints always sets
     // dd->constraint_comm...
     GMX_RELEASE_ASSERT(dd->constraint_comm, "Invalid use of dd_make_local_constraints before construction of constraint_comm");
     // ... which static analysis needs to be reassured about, because
-    // otherwise, when dd->bInterCGsettles is
+    // otherwise, when dd->splitSettles is
     // true. dd->constraint_comm is unilaterally dereferenced before
     // the call to atoms_to_settles.
 
@@ -461,7 +461,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
 
     gmx::ArrayRef < const std::vector < int>> at2settle_mt;
     /* When settle works inside charge groups, we assigned them already */
-    if (dd->bInterCGsettles)
+    if (dd->splitSettles)
     {
         // TODO Perhaps gmx_domdec_constraints_t should keep a valid constr?
         GMX_RELEASE_ASSERT(constr != nullptr, "Must have valid constraints object");
