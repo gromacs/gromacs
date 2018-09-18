@@ -407,8 +407,8 @@ void pr_ffparams(FILE *fp, int indent, const char *title,
     pr_indent(fp, indent);
     fprintf(fp, "atnr=%d\n", ffparams->atnr);
     pr_indent(fp, indent);
-    fprintf(fp, "ntypes=%d\n", ffparams->ntypes);
-    for (i = 0; i < ffparams->ntypes; i++)
+    fprintf(fp, "ntypes=%d\n", ffparams->numTypes());
+    for (i = 0; i < ffparams->numTypes(); i++)
     {
         pr_indent(fp, indent+INDENT);
         fprintf(fp, "functype[%d]=%s, ",

@@ -235,9 +235,9 @@ flexibleConstraintTreatment(bool haveDynamicsIntegrator);
  * \param[in]  flexibleConstraintTreatment  The flexible constraint treatment, see enum above
  * \returns a block struct with all constraints for each atom
  */
-t_blocka make_at2con(const gmx_moltype_t         &moltype,
-                     const t_iparams             *iparams,
-                     FlexibleConstraintTreatment  flexibleConstraintTreatment);
+t_blocka make_at2con(const gmx_moltype_t            &moltype,
+                     gmx::ArrayRef<const t_iparams>  iparams,
+                     FlexibleConstraintTreatment     flexibleConstraintTreatment);
 
 /*! \brief Returns a block struct to go from atoms to constraints
  *

@@ -2175,10 +2175,11 @@ gmx_localtop_t *dd_init_local_top(const gmx_mtop_t *top_global)
 
     snew(top, 1);
 
-    top->idef.ntypes    = top_global->ffparams.ntypes;
+    /* TODO: Get rid of the const casts below, e.g. by using a reference */
+    top->idef.ntypes    = top_global->ffparams.numTypes();
     top->idef.atnr      = top_global->ffparams.atnr;
-    top->idef.functype  = top_global->ffparams.functype;
-    top->idef.iparams   = top_global->ffparams.iparams;
+    top->idef.functype  = const_cast<t_functype *>(top_global->ffparams.functype.data());
+    top->idef.iparams   = const_cast<t_iparams *>(top_global->ffparams.iparams.data());
     top->idef.fudgeQQ   = top_global->ffparams.fudgeQQ;
     top->idef.cmap_grid = top_global->ffparams.cmap_grid;
 
@@ -2618,7 +2619,7 @@ static void get_cgcm_mol(const gmx_moltype_t *molt,
         }
 
         construct_vsites(nullptr, xs, 0.0, nullptr,
-                         ffparams->iparams, ilist,
+                         ffparams->iparams.data(), ilist,
                          epbcNONE, TRUE, nullptr, nullptr);
     }
 
