@@ -368,6 +368,20 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Perform weighted histogram analysis after umbrella sampling");
     registerModule(manager, &gmx_wheel, "wheel",
                    "Plot helical wheels");
+    registerModule(manager, &gmx_mapcompare, "mapcompare",
+                   "Compare density maps");
+    registerModule(manager, &gmx_mapconvert, "mapconvert",
+                   "Convert between density maps");
+    registerModule(manager, &gmx_mapcreate, "mapcreate",
+                   "Create a density map");
+    registerModule(manager, &gmx_mapinfo, "mapinfo",
+                   "Print stats of three-dimensional density maps");
+    registerModule(manager, &gmx_mapdiff, "mapdiff",
+                   "Difference between density maps");
+    registerModule(manager, &gmx_maplog, "maplog",
+                   "Log of density maps");
+    registerModule(manager, &gmx_mapnorm, "mapnorm",
+                   "Normalise density maps");
     registerModuleNoNice(manager, &gmx_view, "view",
                          "View a trajectory on an X-Windows terminal");
 
@@ -435,6 +449,12 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("trjorder");
         group.addModule("xpm2ps");
         group.addModule("report");
+        group.addModule("mapconvert");
+        group.addModule("mapdiff");
+        group.addModule("maplog");
+        group.addModule("mapnorm");
+        group.addModule("mapcompare");
+        group.addModule("mapcreate");
     }
     {
         gmx::CommandLineModuleGroup group =

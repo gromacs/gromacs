@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,39 +32,60 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*!  \file
  * \brief
- * Defines an enumeration type for specifying file types for options.
+ * Defines volume data containers.
  *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \author Christian Blau <cblau@gwdg.de>
  * \inpublicapi
- * \ingroup module_options
  */
-#ifndef GMX_OPTIONS_OPTIONFILETYPE_HPP
-#define GMX_OPTIONS_OPTIONFILETYPE_HPP
+#include "convolution.h"
+#include "densitypadding.h"
+#include "fouriertransform.h"
+#include "gromacs/math/gmxcomplex.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {
 
-/*! \brief
- * Purpose of file(s) provided through an option.
- *
- * \ingroup module_options
- */
-enum OptionFileType {
-    eftUnknown,
-    eftTopology,
-    eftTrajectory,
-    eftEnergy,
-    eftPDB,
-    eftIndex,
-    eftPlot,
-    eftGenericData,
-    eftCCP4,
-    eftXPLOR,
-    eftOptionFileType_NR
+GaussConvolution::GaussConvolution(const GridDataReal3D &input)
+    : input_(input), padded_input_
+          (nullptr)
+{}
+GaussConvolution &GaussConvolution::pad(const MdFloatVector<DIM> &paddingFactor)
+{
+    padded_input_ = padDensity(input_, paddingFactor);
+    return *this;
+}
+
+std::unique_ptr < GridDataReal3D> GaussConvolution::convolute(real sigma)
+{
+    if (padded_input_ != nullptr)
+    {
+        fourierTransform_ =
+            FourierTransformRealToComplex3D().normalize().result(*padded_input_);
+    }
+    else
+    {
+        fourierTransform_ =
+            FourierTransformRealToComplex3D().normalize().result(input_);
+    }
+    auto sigmaSquared          = gmx::square(sigma);
+    auto convoluteWithGaussian = [sigmaSquared](t_complex &value, RVec k) {
+            auto prefactor = 1/(sqrt(2)) * exp(-2.0 * M_PI * M_PI * sigmaSquared * norm2(k));
+            value.re *= prefactor;
+            value.im *= prefactor;
+        };
+
+    ApplyToUnshiftedFourierTransform(*fourierTransform_).apply(convoluteWithGaussian);
+    auto result =
+        FourierTransformComplexToReal3D().normalize().result(*fourierTransform_);
+
+    if (padded_input_ != nullptr)
+    {
+        result = unpadDensity(*result, input_.getGrid().lattice());
+    }
+    return result;
 };
-
-} // namespace gmx
-
-#endif
+}

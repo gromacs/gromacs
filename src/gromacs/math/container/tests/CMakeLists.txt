@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,23 +32,5 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_add_unit_test(TrajectoryAnalysisUnitTests trajectoryanalysis-test
-                  moduletest.cpp
-                  clustsize.cpp
-                  cmdlinerunner.cpp
-                  angle.cpp
-                  distance.cpp
-                  freevolume.cpp
-                  pairdist.cpp
-                  rdf.cpp
-                  sasa.cpp
-                  select.cpp
-                  surfacearea.cpp
-                  topologyinformation.cpp
-                  maptide.cpp
-                  trajectory.cpp
-                  unionfind.cpp
-                  $<TARGET_OBJECTS:analysisdata-test-shared>)
-
-add_executable(test_selection ${UNITTEST_TARGET_OPTIONS} test_selection.cpp)
-target_link_libraries(test_selection libgromacs ${GMX_EXE_LINKER_FLAGS} ${GMX_STDLIB_LIBRARIES})
+gmx_add_unit_test(containerUnitTest container-test
+                  )
