@@ -901,17 +901,8 @@ static void gen_local_top(const gmx_mtop_t *mtop,
     idef->iparams_fbposres        = nullptr;
     idef->iparams_fbposres_nalloc = 0;
     idef->fudgeQQ                 = ffp->fudgeQQ;
-    idef->cmap_grid.ngrid         = ffp->cmap_grid.ngrid;
-    idef->cmap_grid.grid_spacing  = ffp->cmap_grid.grid_spacing;
-    if (ffp->cmap_grid.cmapdata)
-    {
-        snew(idef->cmap_grid.cmapdata, ffp->cmap_grid.ngrid);
-        std::copy(ffp->cmap_grid.cmapdata, ffp->cmap_grid.cmapdata + ffp->cmap_grid.ngrid, idef->cmap_grid.cmapdata);
-    }
-    else
-    {
-        idef->cmap_grid.cmapdata = nullptr;
-    }
+    idef->cmap_grid               = new gmx_cmap_t;
+    *idef->cmap_grid              = ffp->cmap_grid;
     idef->ilsort                  = ilsortUNKNOWN;
 
     init_block(&top->cgs);

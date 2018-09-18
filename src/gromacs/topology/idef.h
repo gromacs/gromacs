@@ -271,18 +271,17 @@ extractILists(const InteractionLists &ilists,
     return handles;
 }
 
-typedef struct
+struct gmx_cmapdata_t
 {
-    real *cmap; /* Has length 4*grid_spacing*grid_spacing, */
+    std::vector<real> cmap; /* Has length 4*grid_spacing*grid_spacing, */
     /* there are 4 entries for each cmap type (V,dVdx,dVdy,d2dVdxdy) */
-} gmx_cmapdata_t;
+};
 
-typedef struct gmx_cmap_t
+struct gmx_cmap_t
 {
-    int             ngrid;        /* Number of allocated cmap (cmapdata_t ) grids */
-    int             grid_spacing; /* Grid spacing */
-    gmx_cmapdata_t *cmapdata;     /* Pointer to grid with actual, pre-interpolated data */
-} gmx_cmap_t;
+    int                         grid_spacing; /* Grid spacing */
+    std::vector<gmx_cmapdata_t> cmapdata;     /* Lists of grids with actual, pre-interpolated data */
+};
 
 
 /* Struct that holds all force field parameters for the simulated system */
@@ -318,7 +317,7 @@ typedef struct t_idef
     t_functype *functype;
     t_iparams  *iparams;
     real        fudgeQQ;
-    gmx_cmap_t  cmap_grid;
+    gmx_cmap_t *cmap_grid;
     t_iparams  *iparams_posres, *iparams_fbposres;
     int         iparams_posres_nalloc, iparams_fbposres_nalloc;
 

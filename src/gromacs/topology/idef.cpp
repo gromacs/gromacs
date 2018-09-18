@@ -371,7 +371,7 @@ static void pr_cmap(FILE *fp, int indent, const char *title,
     {
         fprintf(fp, "%s\n", title);
 
-        for (i = 0; i < cmap_grid->ngrid; i++)
+        for (i = 0; i < static_cast<int>(cmap_grid->cmapdata.size()); i++)
         {
             idx = -180.0;
             fprintf(fp, "%8s %8s %8s %8s\n", "V", "dVdx", "dVdy", "d2dV");
@@ -468,7 +468,7 @@ void init_idef(t_idef *idef)
         idef->il[f].nr              = 0;
         idef->il[f].nr_nonperturbed = 0;
     }
-    idef->cmap_grid.cmapdata      = nullptr;
+    idef->cmap_grid               = nullptr;
     idef->iparams_posres_nalloc   = 0;
     idef->iparams_fbposres_nalloc = 0;
     idef->ilsort                  = 0;
@@ -485,6 +485,6 @@ void done_idef(t_idef *idef)
         sfree(idef->il[f].iatoms);
     }
 
-    sfree(idef->cmap_grid.cmapdata);
+    delete idef->cmap_grid;
     init_idef(idef);
 }

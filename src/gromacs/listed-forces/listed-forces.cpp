@@ -310,7 +310,7 @@ calc_one_bond(int thread,
                wallcycle needs to be extended to support calling from
                multiple threads. */
             v = cmap_dihs(nbn, iatoms+nb0,
-                          idef->iparams, &idef->cmap_grid,
+                          idef->iparams, idef->cmap_grid,
                           x, f, fshift,
                           pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
                           md, fcd, global_atom_index);

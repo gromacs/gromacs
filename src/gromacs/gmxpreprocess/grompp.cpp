@@ -1186,15 +1186,14 @@ static void init_cmap_grid(gmx_cmap_t *cmap_grid, int ngrid, int grid_spacing)
 {
     int i, nelem;
 
-    cmap_grid->ngrid        = ngrid;
     cmap_grid->grid_spacing = grid_spacing;
     nelem                   = cmap_grid->grid_spacing*cmap_grid->grid_spacing;
 
-    snew(cmap_grid->cmapdata, ngrid);
+    cmap_grid->cmapdata.resize(ngrid);
 
-    for (i = 0; i < cmap_grid->ngrid; i++)
+    for (i = 0; i < ngrid; i++)
     {
-        snew(cmap_grid->cmapdata[i].cmap, 4*nelem);
+        cmap_grid->cmapdata[i].cmap.resize(4*nelem);
     }
 }
 
