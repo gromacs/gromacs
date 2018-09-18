@@ -81,23 +81,22 @@ TEST(VersionTest, SaneComparisons)
 /*!
  * \brief Check whether gmxapi correctly advertises or refutes feature availability.
  *
- * A few unimplemented features are tests with ``ASSERT_FALSE`` just for sanity
- * checking and to give an idea of near-term targeted named features. If the
- * feature is available, it is expected to conform to the API specification
+ * Check for correct responses from the Version API for features or
+ * functionality not (yet) guaranteed by the current API version.
+ * If a feature is available, it is expected to conform to the API specification
  * for the library Version::release(). As we discover features that break
  * forward-compatibility of the API, we will have to provide developer documentation
  * or sample code for build-time CMake feature checks.
+ * Designed but unimplemented features could be tested with ``ASSERT_FALSE``
+ * just for sanity checking and to give an idea of near-term targeted named
+ * features, but there aren't any yet.
+ *
+ * This is the test for pre-0.1 features leading up to that specification.
  */
 TEST(VersionTest, Named0_1_Features)
 {
     ASSERT_FALSE(Version::hasFeature(""));
-    ASSERT_FALSE(Version::hasFeature("MD_plugin_restraint_force"));
-    ASSERT_FALSE(Version::hasFeature("MD_plugin_restraint_callback"));
-    ASSERT_FALSE(Version::hasFeature("MD_plugin_mpi_domain_decomposition"));
-    ASSERT_FALSE(Version::hasFeature("MD_stop_signal"));
-    ASSERT_FALSE(Version::hasFeature("MD_set_final_trajectory_step"));
-    ASSERT_FALSE(Version::hasFeature("gmxapi_communicator_from_client"));
-    ASSERT_FALSE(Version::hasFeature("gmxapi_simulation_from_tpr"));
+    ASSERT_FALSE(Version::hasFeature("nonexistent feature"));
 }
 
 } // end anonymous namespace
