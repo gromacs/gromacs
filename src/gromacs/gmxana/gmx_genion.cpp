@@ -430,14 +430,14 @@ int gmx_genion(int argc, char *argv[])
     {
         qtot += atoms.atom[i].q;
     }
-    iqtot = std::round(qtot);
+    iqtot = gmx::roundToInt(qtot);
 
 
     if (conc > 0)
     {
         /* Compute number of ions to be added */
         vol   = det(box);
-        nsalt = std::round(conc*vol*AVOGADRO/1e24);
+        nsalt = gmx::roundToInt(conc*vol*AVOGADRO/1e24);
         p_num = abs(nsalt*n_q);
         n_num = abs(nsalt*p_q);
     }

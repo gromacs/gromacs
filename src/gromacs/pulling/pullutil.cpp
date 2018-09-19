@@ -706,7 +706,7 @@ void pull_calc_coms(const t_commrec *cr,
     }
 
     pullAllReduce(cr, comm, pull->group.size()*3*DIM,
-                  static_cast<double *>(comm->comBuffer.data()[0]));
+                  static_cast<double *>(comm->comBuffer[0]));
 
     for (size_t g = 0; g < pull->group.size(); g++)
     {

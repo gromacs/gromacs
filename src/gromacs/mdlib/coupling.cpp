@@ -1265,7 +1265,7 @@ static real energyNoseHoover(const t_inputrec *ir, const t_state *state, const t
         const double *ivxi  = &state->nosehoover_vxi[i*nh];
         const double *iQinv = &(MassQ->Qinv[i*nh]);
 
-        int           nd    = ir->opts.nrdf[i];
+        int           nd    = static_cast<int>(ir->opts.nrdf[i]);
         real          reft  = std::max<real>(ir->opts.ref_t[i], 0);
         real          kT    = BOLTZ * reft;
 
@@ -1287,7 +1287,7 @@ static real energyNoseHoover(const t_inputrec *ir, const t_state *state, const t
                         }
                         else
                         {
-                            ndj = 1.0;
+                            ndj = 1;
                         }
                         energy += ndj*ixi[j]*kT;
                     }

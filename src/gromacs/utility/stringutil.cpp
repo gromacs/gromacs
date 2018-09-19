@@ -126,7 +126,7 @@ std::string stripString(const std::string &str)
     {
         ++start;
     }
-    while (start != end && std::isspace(*(end - 1)))
+    while (start != end && (std::isspace(*(end - 1)) != 0))
     {
         --end;
     }

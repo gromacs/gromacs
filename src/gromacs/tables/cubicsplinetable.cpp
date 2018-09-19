@@ -146,7 +146,7 @@ fillSingleCubicSplineTableData(const std::function<double(double)>   &function,
                                double                                 spacing,
                                std::vector<real>                     *yfghTableData)
 {
-    int  endIndex   = range.second / spacing + 2;
+    int  endIndex   = static_cast<int>(range.second / spacing + 2);
 
     yfghTableData->resize(4*endIndex);
 
@@ -227,7 +227,7 @@ fillSingleCubicSplineTableData(ArrayRef<const double>                 function,
                                double                                 spacing,
                                std::vector<real>                     *yfghTableData)
 {
-    int                 endIndex   = range.second / spacing + 2;
+    int                 endIndex   = static_cast<int>(range.second / spacing + 2);
 
     std::vector<double> tmpFunction(endIndex);
     std::vector<double> tmpDerivative(endIndex);
@@ -241,7 +241,7 @@ fillSingleCubicSplineTableData(ArrayRef<const double>                 function,
     {
         double x     = i * spacing;
         double xtab  = x / inputSpacing;
-        int    index = xtab;
+        int    index = static_cast<int>(xtab);
         double eps   = xtab - index;
 
         if (range.first > 0 && i == 0)
@@ -329,7 +329,7 @@ CubicSplineTable::CubicSplineTable(std::initializer_list<AnalyticalSplineTableIn
     double minQuotient = GMX_REAL_MAX;
 
     // loop over all functions to find smallest spacing
-    for (auto thisFuncInput : analyticalInputList)
+    for (const auto &thisFuncInput : analyticalInputList)
     {
         try
         {
@@ -368,7 +368,7 @@ CubicSplineTable::CubicSplineTable(std::initializer_list<AnalyticalSplineTableIn
     // combine them into a multiplexed table function.
     std::size_t funcIndex = 0;
 
-    for (auto thisFuncInput : analyticalInputList)
+    for (const auto &thisFuncInput : analyticalInputList)
     {
         try
         {

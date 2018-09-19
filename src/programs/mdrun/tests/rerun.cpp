@@ -230,7 +230,7 @@ TEST_P(MdrunRerunTest, WithinTolerances)
                                                 "no", "no");
 
     // bd is much less reproducible in a rerun than the other integrators
-    double           toleranceScaleFactor = (integrator == "bd") ? 2 : 1;
+    const int        toleranceScaleFactor = (integrator == "bd") ? 2 : 1;
     EnergyTolerances energiesToMatch
     {{
          {

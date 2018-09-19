@@ -474,22 +474,22 @@ constexpr int64_t exactDiv(int64_t a, int64_t b)
  */
 static inline int roundToInt(float x)
 {
-    return rintf(x);
+    return static_cast<int>(rintf(x));
 }
 //! Round double to int
 static inline int roundToInt(double x)
 {
-    return rint(x);
+    return static_cast<int>(rint(x));
 }
 //! Round float to int64_t
 static inline int64_t roundToInt64(float x)
 {
-    return rintf(x);
+    return static_cast<int>(rintf(x));
 }
 //! Round double to int64_t
 static inline int64_t roundToInt64(double x)
 {
-    return rint(x);
+    return static_cast<int>(rint(x));
 }
 
 } // namespace gmx
