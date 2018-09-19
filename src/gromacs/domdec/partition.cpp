@@ -2801,7 +2801,8 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
     dd->ncg_home = sort->sorted.size();
     if (debug)
     {
-        fprintf(debug, "Set the new home charge group count to %d\n",
+        fprintf(debug, "Set the new home %s count to %d\n",
+                dd->comm->bCGs ? "charge group" : "atom",
                 dd->ncg_home);
     }
 
@@ -3302,7 +3303,7 @@ void dd_partition_system(FILE                *fplog,
 
     ncg_home_old = dd->ncg_home;
 
-    /* When repartitioning we mark charge groups that will move to neighboring
+    /* When repartitioning we mark atom groups that will move to neighboring
      * DD cells, but we do not move them right away for performance reasons.
      * Thus we need to keep track of how many charge groups will move for
      * obtaining correct local charge group / atom counts.
