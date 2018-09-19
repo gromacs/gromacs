@@ -189,6 +189,7 @@ struct nbnxn_grid_t
     std::vector<int>          flags;     /* Flags for properties of clusters in each cell */
     std::vector<unsigned int> fep;       /* FEP signal bits for atoms in each cluster */
 
+    /* Statistics */
     int                       nsubc_tot; /* Total number of subcell, used for printing  */
 };
 
