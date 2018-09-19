@@ -336,7 +336,7 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
         else
         {
             time_unit_t  time_unit
-                = static_cast<time_unit_t>(impl_->settings_.timeUnit() + 1); // NOLINT(misc-misplaced-widening-cast)
+                = static_cast<time_unit_t>(impl_->settings_.timeUnit() + 1); // NOLINT(bugprone-misplaced-widening-cast)
             xvg_format_t xvg_format
                 = (impl_->settings_.plotFormat() > 0
                    ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())

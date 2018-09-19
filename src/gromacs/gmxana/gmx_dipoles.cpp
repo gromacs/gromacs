@@ -137,7 +137,7 @@ static void done_gkrbin(t_gkrbin **gb)
 
 static void add2gkr(t_gkrbin *gb, real r, real cosa, real phi)
 {
-    int  cy, index = std::round(r/gb->spacing);
+    int  cy, index = gmx::roundToInt(r/gb->spacing);
     real alpha;
 
     if (index < gb->nelem)

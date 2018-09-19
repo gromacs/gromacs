@@ -266,9 +266,9 @@ TEST_P(BiasTest, ForcesBiasPmf)
      * In taking this deviation we lose a lot of precision, so we should
      * compare against k*max(coord) instead of the instantaneous force.
      */
-    const double kCoordMax = bias.dimParams()[0].k*coordMaxValue;
+    const double  kCoordMax = bias.dimParams()[0].k*coordMaxValue;
 
-    const double ulpTol    = 10;
+    constexpr int ulpTol    = 10;
 
     checker.checkSequence(props.begin(),     props.end(),     "Properties");
     checker.setDefaultTolerance(absoluteTolerance(kCoordMax*GMX_DOUBLE_EPS*ulpTol));

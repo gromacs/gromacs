@@ -699,7 +699,7 @@ static gmx_reverse_top_t make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
         atoms_global.nr   = mtop->natoms;
         atoms_global.atom = nullptr; /* Only used with virtual sites */
 
-        GMX_RELEASE_ASSERT(mtop->intermolecular_ilist.get(), "We should have an ilist when intermolecular interactions are on");
+        GMX_RELEASE_ASSERT(mtop->intermolecular_ilist, "We should have an ilist when intermolecular interactions are on");
 
         *nint +=
             make_reverse_ilist(*mtop->intermolecular_ilist,
@@ -2281,7 +2281,7 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
         atoms.nr   = mtop->natoms;
         atoms.atom = nullptr;
 
-        GMX_RELEASE_ASSERT(mtop->intermolecular_ilist.get(), "We should have an ilist when intermolecular interactions are on");
+        GMX_RELEASE_ASSERT(mtop->intermolecular_ilist, "We should have an ilist when intermolecular interactions are on");
 
         make_reverse_ilist(*mtop->intermolecular_ilist,
                            &atoms,
@@ -2702,7 +2702,7 @@ void dd_bonded_cg_distance(const gmx::MDLogger &mdlog,
             gmx_fatal(FARGS, "The combination of intermolecular interactions, charge groups and domain decomposition is not supported. Use cutoff-scheme=Verlet (which removes the charge groups) or run without domain decomposition.");
         }
 
-        GMX_RELEASE_ASSERT(mtop->intermolecular_ilist.get(), "We should have an ilist when intermolecular interactions are on");
+        GMX_RELEASE_ASSERT(mtop->intermolecular_ilist, "We should have an ilist when intermolecular interactions are on");
 
         bonded_distance_intermol(*mtop->intermolecular_ilist,
                                  bBCheck,

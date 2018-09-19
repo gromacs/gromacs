@@ -515,7 +515,8 @@ static inline FloatingPointTolerance defaultRealTolerance()
 static inline FloatingPointTolerance defaultFloatTolerance()
 {
     return relativeToleranceAsPrecisionDependentUlp
-               (1.0, detail::g_defaultUlpTolerance, detail::g_defaultUlpTolerance * (GMX_FLOAT_EPS / GMX_DOUBLE_EPS));
+               (1.0, detail::g_defaultUlpTolerance,
+               static_cast<uint64_t>(detail::g_defaultUlpTolerance * (GMX_FLOAT_EPS / GMX_DOUBLE_EPS)));
 }
 
 /*! \name Assertions for floating-point comparison

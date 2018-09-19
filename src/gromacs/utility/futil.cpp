@@ -660,36 +660,33 @@ int gmx_file_rename(const char *oldname, const char *newname)
 
 int gmx_file_copy(const char *oldname, const char *newname, gmx_bool copy_if_empty)
 {
-/* the full copy buffer size: */
-#define FILECOPY_BUFSIZE (1<<16)
-    FILE *in  = nullptr;
-    FILE *out = nullptr;
-    char *buf;
-
-    snew(buf, FILECOPY_BUFSIZE);
-
-    in = fopen(oldname, "rb");
+    gmx::FilePtr in(fopen(oldname, "rb"));
     if (!in)
     {
-        goto error;
+        return 1;
     }
 
     /* If we don't copy when empty, we postpone opening the file
        until we're actually ready to write. */
+    gmx::FilePtr out;
     if (copy_if_empty)
     {
-        out = fopen(newname, "wb");
+        out.reset(fopen(newname, "wb"));
         if (!out)
         {
-            goto error;
+            return 1;
         }
     }
 
-    while (!feof(in))
+    /* the full copy buffer size: */
+    constexpr int     FILECOPY_BUFSIZE = 1<<16;
+    std::vector<char> buf(FILECOPY_BUFSIZE);
+
+    while (!feof(in.get()))
     {
         size_t nread;
 
-        nread = fread(buf, sizeof(char), FILECOPY_BUFSIZE, in);
+        nread = fread(buf.data(), sizeof(char), FILECOPY_BUFSIZE, in.get());
         if (nread > 0)
         {
             size_t ret;
@@ -697,39 +694,24 @@ int gmx_file_copy(const char *oldname, const char *newname, gmx_bool copy_if_emp
             {
                 /* so this is where we open when copy_if_empty is false:
                    here we know we read something. */
-                out = fopen(newname, "wb");
+                out.reset(fopen(newname, "wb"));
                 if (!out)
                 {
-                    goto error;
+                    return 1;
                 }
             }
-            ret = fwrite(buf, sizeof(char), nread, out);
+            ret = fwrite(buf.data(), sizeof(char), nread, out.get());
             if (ret != nread)
             {
-                goto error;
+                return 1;
             }
         }
-        if (ferror(in))
+        if (ferror(in.get()))
         {
-            goto error;
+            return 1;
         }
     }
-    sfree(buf);
-    fclose(in);
-    fclose(out);
     return 0;
-error:
-    sfree(buf);
-    if (in)
-    {
-        fclose(in);
-    }
-    if (out)
-    {
-        fclose(out);
-    }
-    return 1;
-#undef FILECOPY_BUFSIZE
 }
 
 

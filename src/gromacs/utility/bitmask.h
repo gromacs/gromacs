@@ -147,7 +147,7 @@ inline static void bitmask_init_low_bits(gmx_bitmask_t* m, int b)
 {
     memset(m->data(), 255, b/64*8);
     (*m)[b/64] = (static_cast<uint64_t>(1) << (b%64)) - 1;
-    memset(&(m->data())[b/64+1], 0, (BITMASK_ALEN-b/64-1)*8);
+    memset(&(*m)[b/64+1], 0, (BITMASK_ALEN-b/64-1)*8);
 }
 
 inline static bool bitmask_is_set(gmx_bitmask_t m, int b)

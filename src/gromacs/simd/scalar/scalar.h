@@ -442,7 +442,7 @@ blend(float a, float b, bool sel)
 static inline std::int32_t
 cvtR2I(float a)
 {
-    return std::round(a);
+    return static_cast<std::int32_t>(std::round(a));
 };
 
 /*! \brief Truncate single precision floating point to integer.
@@ -457,7 +457,7 @@ cvtR2I(float a)
 static inline std::int32_t
 cvttR2I(float a)
 {
-    return std::trunc(a);
+    return static_cast<std::int32_t>(std::trunc(a));
 };
 
 /*! \brief Return integer.
@@ -844,7 +844,7 @@ blend(double a, double b, bool sel)
 static inline std::int32_t
 cvtR2I(double a)
 {
-    return std::round(a);
+    return static_cast<std::int32_t>(std::round(a));
 };
 
 /*! \brief Truncate single precision doubleing point to integer.
@@ -859,7 +859,7 @@ cvtR2I(double a)
 static inline std::int32_t
 cvttR2I(double a)
 {
-    return std::trunc(a);
+    return static_cast<std::int32_t>(std::trunc(a));
 };
 
 // We do not have a separate cvtI2R for double, since that would require
