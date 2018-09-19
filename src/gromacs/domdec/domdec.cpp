@@ -108,7 +108,7 @@
 
 static const char *edlbs_names[int(DlbState::nr)] = { "off", "auto", "locked", "on", "on" };
 
-/* The size per charge group of the cggl_flag buffer in gmx_domdec_comm_t */
+/* The size per atom group of the cggl_flag buffer in gmx_domdec_comm_t */
 #define DD_CGIBS 2
 
 /* The flags for the cggl_flag buffer in gmx_domdec_comm_t */
@@ -2112,8 +2112,6 @@ static void setupUpdateGroups(const gmx::MDLogger &mdlog,
          * should be compatible with the box size.
          */
         comm->useUpdateGroups = (atomToAtomToDomainToDomainCutoff(*comm, 0) < cutoffMargin);
-        /* TODO: Enable update groups when all infrastructure is present */
-        comm->useUpdateGroups = false;
 
         if (comm->useUpdateGroups)
         {
@@ -2125,9 +2123,7 @@ static void setupUpdateGroups(const gmx::MDLogger &mdlog,
         }
         else
         {
-            /* TODO: Removed this comment when enabling update groups
-               GMX_LOG(mdlog.info).appendTextFormatted("The combination of rlist and box size prohibits the use of update groups\n");
-            */
+            GMX_LOG(mdlog.info).appendTextFormatted("The combination of rlist and box size prohibits the use of update groups\n");
             comm->updateGroupingPerMoleculetype.clear();
             comm->updateGroupsCog.reset(nullptr);
         }
@@ -2659,7 +2655,21 @@ static void writeSettings(gmx::TextWriter       *log,
         bInterCGVsites ||
         dd->splitConstraints || dd->splitSettles)
     {
-        log->writeLine("The maximum allowed distance for charge groups involved in interactions is:");
+        std::string decompUnits;
+        if (comm->bCGs)
+        {
+            decompUnits = "charge groups";
+        }
+        else if (comm->useUpdateGroups)
+        {
+            decompUnits = "atom groups";
+        }
+        else
+        {
+            decompUnits = "atoms";
+        }
+
+        log->writeLineFormatted("The maximum allowed distance for %s involved in interactions is:", decompUnits.c_str());
         log->writeLineFormatted("%40s  %-7s %6.3f nm", "non-bonded interactions", "", comm->cutoff);
 
         if (bDynLoadBal)
