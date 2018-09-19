@@ -884,7 +884,7 @@ static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_
     char         **grpname;
     int            i, i0, i1, j, N, nat_trx;
     real          *DD, *SigmaD, a, a2, b, r, chi2;
-    rvec          *x;
+    rvec          *x = nullptr;
     matrix         box;
     int           *gnx_com     = nullptr; /* the COM removal group size  */
     int          **index_com   = nullptr; /* the COM removal group atom indices */

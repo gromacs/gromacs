@@ -43,6 +43,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/utility/cstringutil.h"
@@ -421,7 +422,7 @@ int gmx_atomprop_atomnumber(gmx_atomprop_t aps, const char *elem)
     {
         if (gmx_strcasecmp(ap->prop[epropElement].atomnm[i], elem) == 0)
         {
-            return std::round(ap->prop[epropElement].value[i]);
+            return gmx::roundToInt(ap->prop[epropElement].value[i]);
         }
     }
     return -1;

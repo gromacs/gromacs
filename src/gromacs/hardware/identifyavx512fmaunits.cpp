@@ -227,7 +227,7 @@ timeFmaOnlyLoop(uint64_t loopCount)
 bool
 checkDualAvx512FmaUnits()
 {
-    uint64_t timeFmaAndShuf = 1e9;             // Large value
+    uint64_t timeFmaAndShuf = static_cast<uint64_t>(1e9);             // Large value
 
     // Make sure the CPU is in AVX512 mode by executing a fairly long loop.
     // Use the return value to make sure it is not optimized away. Later invocations

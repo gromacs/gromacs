@@ -379,7 +379,7 @@ parse_values_range(const SelectionParserValueList &values,
     /* Store the values */
     if (param->flags & SPAR_VARNUM)
     {
-        dataGuard.release();
+        (void)dataGuard.release();
         param->val.nr  = n;
         if (param->val.type == INT_VALUE)
         {

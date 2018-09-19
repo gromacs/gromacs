@@ -49,6 +49,7 @@
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selectionenums.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -265,7 +266,7 @@ void SelectionTreeElement::mempoolReserve(int count)
             break;
 
         default:
-            GMX_THROW(gmx::InternalError("Memory pooling not implemented for requested type"));
+            gmx_incons("Memory pooling not implemented for requested type");
     }
 }
 
@@ -291,7 +292,7 @@ void SelectionTreeElement::mempoolRelease()
             break;
 
         default:
-            GMX_THROW(gmx::InternalError("Memory pooling not implemented for requested type"));
+            gmx_incons("Memory pooling not implemented for requested type");
     }
 }
 

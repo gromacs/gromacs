@@ -108,7 +108,7 @@ evaluate_single(real r2, real tabscale, const real *vftab, real tableStride,
     ntab             = static_cast<int>(rtab);
     eps              = rtab-ntab;
     eps2             = eps*eps;
-    ntab             = tableStride*ntab;
+    ntab             = static_cast<int>(tableStride*ntab);
     /* Electrostatics */
     Y                = vftab[ntab];
     F                = vftab[ntab+1];
@@ -264,7 +264,7 @@ free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
             ntab             = static_cast<int>(rtab);
             eps              = rtab-ntab;
             eps2             = eps*eps;
-            ntab             = tableStride*ntab;
+            ntab             = static_cast<int>(tableStride*ntab);
             /* Electrostatics */
             Y                = vftab[ntab];
             F                = vftab[ntab+1];
