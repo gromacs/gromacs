@@ -1198,7 +1198,8 @@ static void do_force_cutsVERLET(FILE *fplog,
             wallcycle_sub_start(wcycle, ewcsNBS_GRID_LOCAL);
             nbnxn_put_on_grid(nbv->nbs.get(), fr->ePBC, box,
                               0, vzero, box_diag,
-                              0, mdatoms->homenr, -1, fr->cginfo, as_rvec_array(x.data()),
+                              nullptr, 0, mdatoms->homenr, -1,
+                              fr->cginfo, x,
                               0, nullptr,
                               nbv->grp[eintLocal].kernel_type,
                               nbv->nbat);
@@ -1208,7 +1209,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         {
             wallcycle_sub_start(wcycle, ewcsNBS_GRID_NONLOCAL);
             nbnxn_put_on_grid_nonlocal(nbv->nbs.get(), domdec_zones(cr->dd),
-                                       fr->cginfo, as_rvec_array(x.data()),
+                                       fr->cginfo, x,
                                        nbv->grp[eintNonlocal].kernel_type,
                                        nbv->nbat);
             wallcycle_sub_stop(wcycle, ewcsNBS_GRID_NONLOCAL);

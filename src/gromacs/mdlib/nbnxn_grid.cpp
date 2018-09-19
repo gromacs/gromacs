@@ -52,6 +52,7 @@
 #include "gromacs/mdlib/nbnxn_internal.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/nbnxn_util.h"
+#include "gromacs/mdlib/updategroupscog.h"
 #include "gromacs/mdtypes/forcerec.h" // only for GET_CGINFO_*
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
@@ -236,7 +237,9 @@ static void set_grid_size_xy(const nbnxn_search   *nbs,
  */
 static void sort_atoms(int dim, gmx_bool Backwards,
                        int gmx_unused dd_zone,
-                       int *a, int n, const rvec *x,
+                       bool gmx_unused relevantAtomsAreWithinGridBounds,
+                       int *a, int n,
+                       gmx::ArrayRef<const gmx::RVec> x,
                        real h0, real invh, int n_per_h,
                        gmx::ArrayRef<int> sort)
 {
@@ -246,12 +249,7 @@ static void sort_atoms(int dim, gmx_bool Backwards,
         return;
     }
 
-#ifndef NDEBUG
-    if (n > n_per_h)
-    {
-        gmx_incons("n > n_per_h");
-    }
-#endif
+    GMX_ASSERT(n <= n_per_h, "We require n <= n_per_h");
 
     /* Transform the inverse range height into the inverse hole height */
     invh *= n_per_h*SORT_GRID_OVERSIZE;
@@ -276,13 +274,18 @@ static void sort_atoms(int dim, gmx_bool Backwards,
 
 #ifndef NDEBUG
         /* As we can have rounding effect, we use > iso >= here */
-        if (zi < 0 || (dd_zone == 0 && zi > n_per_h*SORT_GRID_OVERSIZE))
+        if (relevantAtomsAreWithinGridBounds &&
+            (zi < 0 || (dd_zone == 0 && zi > n_per_h*SORT_GRID_OVERSIZE)))
         {
             gmx_fatal(FARGS, "(int)((x[%d][%c]=%f - %f)*%f) = %d, not in 0 - %d*%d\n",
                       a[i], 'x'+dim, x[a[i]][dim], h0, invh, zi,
                       n_per_h, SORT_GRID_OVERSIZE);
         }
 #endif
+        if (zi < 0)
+        {
+            zi = 0;
+        }
 
         /* In a non-local domain, particles communcated for bonded interactions
          * can be far beyond the grid size, which is set by the non-bonded
@@ -793,14 +796,14 @@ static void sort_cluster_on_flag(int                 numAtomsInCluster,
 /* Fill a pair search cell with atoms.
  * Potentially sorts atoms and sets the interaction flags.
  */
-static void fill_cell(nbnxn_search          *nbs,
-                      nbnxn_grid_t          *grid,
-                      nbnxn_atomdata_t      *nbat,
-                      int                    atomStart,
-                      int                    atomEnd,
-                      const int             *atinfo,
-                      const rvec            *x,
-                      nbnxn_bb_t gmx_unused *bb_work_aligned)
+static void fill_cell(nbnxn_search                  *nbs,
+                      nbnxn_grid_t                  *grid,
+                      nbnxn_atomdata_t              *nbat,
+                      int                            atomStart,
+                      int                            atomEnd,
+                      const int                     *atinfo,
+                      gmx::ArrayRef<const gmx::RVec> x,
+                      nbnxn_bb_t gmx_unused         *bb_work_aligned)
 {
     const int numAtoms = atomEnd - atomStart;
 
@@ -836,7 +839,8 @@ static void fill_cell(nbnxn_search          *nbs,
         nbs->cell[nbs->a[at]] = at;
     }
 
-    copy_rvec_to_nbat_real(nbs->a.data() + atomStart, numAtoms, grid->na_c, x,
+    copy_rvec_to_nbat_real(nbs->a.data() + atomStart, numAtoms, grid->na_c,
+                           as_rvec_array(x.data()),
                            nbat->XFormat, nbat->x, atomStart);
 
     if (nbat->XFormat == nbatX4)
@@ -927,7 +931,7 @@ static void sort_columns_simple(nbnxn_search *nbs,
                                 nbnxn_grid_t *grid,
                                 int atomStart, int atomEnd,
                                 const int *atinfo,
-                                const rvec *x,
+                                gmx::ArrayRef<const gmx::RVec> x,
                                 nbnxn_atomdata_t *nbat,
                                 int cxy_start, int cxy_end,
                                 gmx::ArrayRef<int> sort_work)
@@ -938,6 +942,8 @@ static void sort_columns_simple(nbnxn_search *nbs,
                 grid->cell0, cxy_start, cxy_end, atomStart, atomEnd);
     }
 
+    const bool relevantAtomsAreWithinGridBounds = (grid->maxAtomGroupRadius == 0);
+
     /* Sort the atoms within each x,y column in 3 dimensions */
     for (int cxy = cxy_start; cxy < cxy_end; cxy++)
     {
@@ -947,6 +953,7 @@ static void sort_columns_simple(nbnxn_search *nbs,
 
         /* Sort the atoms within each x,y column on z coordinate */
         sort_atoms(ZZ, FALSE, dd_zone,
+                   relevantAtomsAreWithinGridBounds,
                    nbs->a.data() + ash, na, x,
                    grid->c0[ZZ],
                    1.0/grid->size[ZZ], ncz*grid->na_sc,
@@ -991,7 +998,7 @@ static void sort_columns_supersub(nbnxn_search *nbs,
                                   nbnxn_grid_t *grid,
                                   int atomStart, int atomEnd,
                                   const int *atinfo,
-                                  const rvec *x,
+                                  gmx::ArrayRef<const gmx::RVec> x,
                                   nbnxn_atomdata_t *nbat,
                                   int cxy_start, int cxy_end,
                                   gmx::ArrayRef<int> sort_work)
@@ -1005,9 +1012,11 @@ static void sort_columns_supersub(nbnxn_search *nbs,
                 grid->cell0, cxy_start, cxy_end, atomStart, atomEnd);
     }
 
-    int subdiv_x = grid->na_c;
-    int subdiv_y = c_gpuNumClusterPerCellX*subdiv_x;
-    int subdiv_z = c_gpuNumClusterPerCellY*subdiv_y;
+    const bool relevantAtomsAreWithinGridBounds = (grid->maxAtomGroupRadius == 0);
+
+    int        subdiv_x = grid->na_c;
+    int        subdiv_y = c_gpuNumClusterPerCellX*subdiv_x;
+    int        subdiv_z = c_gpuNumClusterPerCellY*subdiv_y;
 
     /* Sort the atoms within each x,y column in 3 dimensions.
      * Loop over all columns on the x/y grid.
@@ -1023,6 +1032,7 @@ static void sort_columns_supersub(nbnxn_search *nbs,
 
         /* Sort the atoms within each x,y column on z coordinate */
         sort_atoms(ZZ, FALSE, dd_zone,
+                   relevantAtomsAreWithinGridBounds,
                    nbs->a.data() + ash, numAtomsInColumn, x,
                    grid->c0[ZZ],
                    1.0/grid->size[ZZ], numCellsInColumn*grid->na_sc,
@@ -1056,6 +1066,7 @@ static void sort_columns_supersub(nbnxn_search *nbs,
             {
                 /* Sort the atoms along y */
                 sort_atoms(YY, (sub_z & 1) != 0, dd_zone,
+                           relevantAtomsAreWithinGridBounds,
                            nbs->a.data() + ash_z, na_z, x,
                            grid->c0[YY] + gridY*grid->cellSize[YY],
                            grid->invCellSize[YY], subdiv_z,
@@ -1071,6 +1082,7 @@ static void sort_columns_supersub(nbnxn_search *nbs,
                 {
                     /* Sort the atoms along x */
                     sort_atoms(XX, ((cz*c_gpuNumClusterPerCellY + sub_y) & 1) != 0, dd_zone,
+                               relevantAtomsAreWithinGridBounds,
                                nbs->a.data() + ash_y, na_y, x,
                                grid->c0[XX] + gridX*grid->cellSize[XX],
                                grid->invCellSize[XX], subdiv_y,
@@ -1109,8 +1121,9 @@ static void setCellAndAtomCount(gmx::ArrayRef<int>  cell,
 
 /* Determine in which grid column atoms should go */
 static void calc_column_indices(nbnxn_grid_t *grid,
+                                const gmx::UpdateGroupsCog *updateGroupsCog,
                                 int atomStart, int atomEnd,
-                                const rvec *x,
+                                gmx::ArrayRef<const gmx::RVec> x,
                                 int dd_zone, const int *move,
                                 int thread, int nthread,
                                 gmx::ArrayRef<int> cell,
@@ -1131,13 +1144,16 @@ static void calc_column_indices(nbnxn_grid_t *grid,
         {
             if (move == nullptr || move[i] >= 0)
             {
+
+                const gmx::RVec &coord = (updateGroupsCog ? updateGroupsCog->cogForAtom(i) : x[i]);
+
                 /* We need to be careful with rounding,
                  * particles might be a few bits outside the local zone.
                  * The int cast takes care of the lower bound,
                  * we will explicitly take care of the upper bound.
                  */
-                int cx = static_cast<int>((x[i][XX] - grid->c0[XX])*grid->invCellSize[XX]);
-                int cy = static_cast<int>((x[i][YY] - grid->c0[YY])*grid->invCellSize[YY]);
+                int cx = static_cast<int>((coord[XX] - grid->c0[XX])*grid->invCellSize[XX]);
+                int cy = static_cast<int>((coord[YY] - grid->c0[YY])*grid->invCellSize[YY]);
 
 #ifndef NDEBUG
                 if (cx < 0 || cx > grid->numCells[XX] ||
@@ -1220,16 +1236,18 @@ static void resizeForNumberOfCells(const nbnxn_grid_t &grid,
 }
 
 /* Determine in which grid cells the atoms should go */
-static void calc_cell_indices(nbnxn_search         *nbs,
-                              int                   ddZone,
-                              nbnxn_grid_t         *grid,
-                              int                   atomStart,
-                              int                   atomEnd,
-                              const int            *atinfo,
-                              const rvec           *x,
-                              int                   numAtomsMoved,
-                              const int            *move,
-                              nbnxn_atomdata_t     *nbat)
+static void
+calc_cell_indices(const nbnxn_search_t            nbs,
+                  int                             ddZone,
+                  nbnxn_grid_t                   *grid,
+                  const gmx::UpdateGroupsCog     *updateGroupsCog,
+                  int                             atomStart,
+                  int                             atomEnd,
+                  const int                      *atinfo,
+                  gmx::ArrayRef<const gmx::RVec>  x,
+                  int                             numAtomsMoved,
+                  const int                      *move,
+                  nbnxn_atomdata_t               *nbat)
 {
     /* First compute all grid/column indices and store them in nbs->cell */
     nbs->cell.resize(atomEnd);
@@ -1241,7 +1259,9 @@ static void calc_cell_indices(nbnxn_search         *nbs,
     {
         try
         {
-            calc_column_indices(grid, atomStart, atomEnd, x, ddZone, move, thread, nthread,
+            calc_column_indices(grid, updateGroupsCog,
+                                atomStart, atomEnd, x,
+                                ddZone, move, thread, nthread,
                                 nbs->cell, nbs->work[thread].cxy_na);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -1393,21 +1413,22 @@ static void calc_cell_indices(nbnxn_search         *nbs,
  * This function only operates on one domain of the domain decompostion.
  * Note that without domain decomposition there is only one domain.
  */
-void nbnxn_put_on_grid(nbnxn_search_t    nbs,
-                       int               ePBC,
-                       const matrix      box,
-                       int               ddZone,
-                       const rvec        lowerCorner,
-                       const rvec        upperCorner,
-                       int               atomStart,
-                       int               atomEnd,
-                       real              atomDensity,
-                       const int        *atinfo,
-                       const rvec       *x,
-                       int               numAtomsMoved,
-                       const int        *move,
-                       int               nb_kernel_type,
-                       nbnxn_atomdata_t *nbat)
+void nbnxn_put_on_grid(nbnxn_search_t                  nbs,
+                       int                             ePBC,
+                       const matrix                    box,
+                       int                             ddZone,
+                       const rvec                      lowerCorner,
+                       const rvec                      upperCorner,
+                       const gmx::UpdateGroupsCog     *updateGroupsCog,
+                       int                             atomStart,
+                       int                             atomEnd,
+                       real                            atomDensity,
+                       const int                      *atinfo,
+                       gmx::ArrayRef<const gmx::RVec>  x,
+                       int                             numAtomsMoved,
+                       const int                      *move,
+                       int                             nb_kernel_type,
+                       nbnxn_atomdata_t               *nbat)
 {
     nbnxn_grid_t *grid = &nbs->grid[ddZone];
 
@@ -1435,8 +1456,6 @@ void nbnxn_put_on_grid(nbnxn_search_t    nbs,
 
     const int n = atomEnd - atomStart;
 
-    grid->maxAtomGroupRadius = 0;
-
     if (ddZone == 0)
     {
         nbs->ePBC = ePBC;
@@ -1460,6 +1479,14 @@ void nbnxn_put_on_grid(nbnxn_search_t    nbs,
          */
         nbs->natoms_nonlocal = atomEnd - numAtomsMoved;
 
+        /* When not using atom groups, all atoms should be within the grid bounds */
+        grid->maxAtomGroupRadius = (updateGroupsCog ? updateGroupsCog->maxUpdateGroupRadius() : 0);
+        /* For the non-local grids the situation is the same as for the local */
+        for (size_t g = 1; g < nbs->grid.size(); g++)
+        {
+            nbs->grid[g].maxAtomGroupRadius = grid->maxAtomGroupRadius;
+        }
+
         if (debug)
         {
             fprintf(debug, "natoms_local = %5d atom_density = %5.1f\n",
@@ -1479,7 +1506,7 @@ void nbnxn_put_on_grid(nbnxn_search_t    nbs,
                      lowerCorner, upperCorner,
                      nbs->grid[0].atom_density);
 
-    calc_cell_indices(nbs, ddZone, grid, atomStart, atomEnd, atinfo, x, numAtomsMoved, move, nbat);
+    calc_cell_indices(nbs, ddZone, grid, updateGroupsCog, atomStart, atomEnd, atinfo, x, numAtomsMoved, move, nbat);
 
     if (ddZone == 0)
     {
@@ -1493,7 +1520,7 @@ void nbnxn_put_on_grid(nbnxn_search_t    nbs,
 void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
                                 const struct gmx_domdec_zones_t *zones,
                                 const int                       *atinfo,
-                                const rvec                      *x,
+                                gmx::ArrayRef<const gmx::RVec>   x,
                                 int                              nb_kernel_type,
                                 nbnxn_atomdata_t                *nbat)
 {
@@ -1508,6 +1535,7 @@ void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
 
         nbnxn_put_on_grid(nbs, nbs->ePBC, nullptr,
                           zone, c0, c1,
+                          nullptr,
                           zones->cg_range[zone],
                           zones->cg_range[zone+1],
                           -1,

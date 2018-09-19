@@ -47,6 +47,7 @@
 
 struct gmx_ddbox_t;
 struct gmx_domdec_t;
+struct gmx_mtop_t;
 struct t_block;
 class t_state;
 
@@ -58,6 +59,7 @@ class MDLogger;
 /*! \brief Distributes the state from the master rank to all DD ranks */
 void distributeState(const gmx::MDLogger &mdlog,
                      gmx_domdec_t        *dd,
+                     const gmx_mtop_t    &mtop,
                      t_state             *state_global,
                      const gmx_ddbox_t   &ddbox,
                      t_state             *state_local,

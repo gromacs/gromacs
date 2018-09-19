@@ -43,6 +43,10 @@
 #include "gromacs/utility/real.h"
 
 struct gmx_domdec_zones_t;
+namespace gmx
+{
+class UpdateGroupsCog;
+}
 
 /* Put the atoms on the pair search grid.
  * Only atoms atomStart to atomEnd in x are put on the grid.
@@ -53,21 +57,22 @@ struct gmx_domdec_zones_t;
  * When move[i] < 0 particle i has migrated and will not be put on the grid.
  * Without domain decomposition move will be NULL.
  */
-void nbnxn_put_on_grid(nbnxn_search_t    nbs,
-                       int               ePBC,
-                       const matrix      box,
-                       int               ddZone,
-                       const rvec        lowerCorner,
-                       const rvec        upperCorner,
-                       int               atomStart,
-                       int               atomEnd,
-                       real              atomDensity,
-                       const int        *atinfo,
-                       const rvec       *x,
-                       int               numAtomsMoved,
-                       const int        *move,
-                       int               nb_kernel_type,
-                       nbnxn_atomdata_t *nbat);
+void nbnxn_put_on_grid(nbnxn_search_t          nbs,
+                       int                     ePBC,
+                       const matrix            box,
+                       int                     ddZone,
+                       const rvec              lowerCorner,
+                       const rvec              upperCorner,
+                       const gmx::UpdateGroupsCog *updateGroupsCog,
+                       int                     atomStart,
+                       int                     atomEnd,
+                       real                    atomDensity,
+                       const int              *atinfo,
+                       gmx::ArrayRef<const gmx::RVec>  x,
+                       int                     numAtomsMoved,
+                       const int              *move,
+                       int                     nb_kernel_type,
+                       nbnxn_atomdata_t       *nbat);
 
 /* As nbnxn_put_on_grid, but for the non-local atoms
  * with domain decomposition. Should be called after calling
@@ -76,7 +81,7 @@ void nbnxn_put_on_grid(nbnxn_search_t    nbs,
 void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
                                 const struct gmx_domdec_zones_t *zones,
                                 const int                       *atinfo,
-                                const rvec                      *x,
+                                gmx::ArrayRef<const gmx::RVec>   x,
                                 int                              nb_kernel_type,
                                 nbnxn_atomdata_t                *nbat);
 
