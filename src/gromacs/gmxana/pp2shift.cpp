@@ -160,7 +160,7 @@ static t_shiftdata *read_shifts(const char *fn)
     {
         gmx_fatal(FARGS, "Error reading from file %s", fn);
     }
-
+    GMX_ASSERT(nx > 0, "");
     sd->nx = nx;
     sd->ny = ny;
     sd->dx = nx/(2*M_PI);

@@ -1,4 +1,4 @@
-Checks:  clang-diagnostic-*,clang-analyzer-*,-clang-analyzer-security.insecureAPI.strcpy,
+Checks:  clang-diagnostic-*,-clang-analyzer-*,-clang-analyzer-security.insecureAPI.strcpy,
          bugprone-*,misc-*,readability-*,performance-*,mpi-*,
          -readability-inconsistent-declaration-parameter-name,
          -readability-function-size,-readability-else-after-return,
@@ -9,6 +9,7 @@ Checks:  clang-diagnostic-*,clang-analyzer-*,-clang-analyzer-security.insecureAP
          modernize-redundant-void-arg,modernize-use-bool-literals,
          cppcoreguidelines-*,-cppcoreguidelines-pro-*,-cppcoreguidelines-owning-memory,
          -cppcoreguidelines-no-malloc,-cppcoreguidelines-special-member-functions,
+         -cppcoreguidelines-avoid-goto,
          google-*,-google-build-using-namespace,-google-explicit-constructor,
          -google-readability-function-size,-google-readability-todo,-google-runtime-int
 HeaderFilterRegex: .*

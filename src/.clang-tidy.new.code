@@ -1,4 +1,4 @@
-Checks:  clang-diagnostic-*,clang-analyzer-*,
+Checks:  clang-diagnostic-*,-clang-analyzer-*,
          bugprone-*,misc-*,readability-*,performance-*,mpi-*,-misc-incorrect-roundings,
          -readability-else-after-return,
          modernize-use-nullptr,modernize-use-emplace,
@@ -12,6 +12,7 @@ Checks:  clang-diagnostic-*,clang-analyzer-*,
          -cppcoreguidelines-pro-bounds-constant-array-index,
          -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
          -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+         -cppcoreguidelines-avoid-goto,
          google-*,-google-build-using-namespace,-google-explicit-constructor,
          -google-readability-todo,
          -google-runtime-int

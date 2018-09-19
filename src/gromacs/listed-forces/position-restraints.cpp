@@ -199,7 +199,7 @@ real fbposres(int nbonds,
     gmx_bool         bInvert;
 
     npbcdim = ePBC2npbcdim(ePBC);
-
+    GMX_ASSERT((ePBC == epbcNONE) ==  (npbcdim == 0), "");
     if (refcoord_scaling == erscCOM)
     {
         clear_rvec(com_sc);
@@ -329,7 +329,7 @@ real posres(int nbonds,
     rvec             comA_sc, comB_sc, rdist, dpdl, dx;
 
     npbcdim = ePBC2npbcdim(ePBC);
-
+    GMX_ASSERT((ePBC == epbcNONE) ==  (npbcdim == 0), "");
     if (refcoord_scaling == erscCOM)
     {
         clear_rvec(comA_sc);

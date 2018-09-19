@@ -125,7 +125,7 @@ bool is_int(double x)
     {
         x = -x;
     }
-    ix = std::round(x);
+    ix = gmx::roundToInt(x);
 
     return (fabs(x-ix) < tol);
 }

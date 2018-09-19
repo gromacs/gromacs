@@ -47,6 +47,7 @@
 #include <string>
 
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
@@ -879,7 +880,7 @@ static void write_xpm_data(FILE *out, int n_x, int n_y, real **mat,
         fprintf(out, "\"");
         for (i = 0; (i < n_x); i++)
         {
-            c = std::round((mat[i][j]-lo)*invlevel);
+            c = gmx::roundToInt((mat[i][j]-lo)*invlevel);
             if (c < 0)
             {
                 c = 0;
@@ -929,11 +930,11 @@ static void write_xpm_data3(FILE *out, int n_x, int n_y, real **mat,
         {
             if (mat[i][j] >= mid)
             {
-                c = nmid+std::round((mat[i][j]-mid)*invlev_hi);
+                c = nmid+gmx::roundToInt((mat[i][j]-mid)*invlev_hi);
             }
             else if (mat[i][j] >= lo)
             {
-                c = std::round((mat[i][j]-lo)*invlev_lo);
+                c = gmx::roundToInt((mat[i][j]-lo)*invlev_lo);
             }
             else
             {
@@ -989,7 +990,7 @@ static void write_xpm_data_split(FILE *out, int n_x, int n_y, real **mat,
         {
             if (i < j)
             {
-                c = nlevel_bot+std::round((mat[i][j]-lo_top)*invlev_top);
+                c = nlevel_bot+gmx::roundToInt((mat[i][j]-lo_top)*invlev_top);
                 if ((c < nlevel_bot) || (c >= nlevel_bot+nlevel_top))
                 {
                     gmx_fatal(FARGS, "Range checking i = %d, j = %d, c = %d, bot = %d, top = %d matrix[i,j] = %f", i, j, c, nlevel_bot, nlevel_top, mat[i][j]);
@@ -997,7 +998,7 @@ static void write_xpm_data_split(FILE *out, int n_x, int n_y, real **mat,
             }
             else if (i > j)
             {
-                c = std::round((mat[i][j]-lo_bot)*invlev_bot);
+                c = gmx::roundToInt((mat[i][j]-lo_bot)*invlev_bot);
                 if ((c < 0) || (c >= nlevel_bot+nlevel_bot))
                 {
                     gmx_fatal(FARGS, "Range checking i = %d, j = %d, c = %d, bot = %d, top = %d matrix[i,j] = %f", i, j, c, nlevel_bot, nlevel_top, mat[i][j]);

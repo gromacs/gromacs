@@ -282,7 +282,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                                 {
                                     r     = rsq*rinv;
                                     rt    = r*iconst->tabq_scale;
-                                    n0    = rt;
+                                    n0    = static_cast<int>(rt);
                                     eps   = rt - n0;
 
                                     fexcl = (1 - eps)*Ftab[n0] + eps*Ftab[n0+1];
