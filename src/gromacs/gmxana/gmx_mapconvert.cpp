@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,39 +32,62 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
- * \brief
- * Defines an enumeration type for specifying file types for options.
- *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inpublicapi
- * \ingroup module_options
- */
-#ifndef GMX_OPTIONS_OPTIONFILETYPE_HPP
-#define GMX_OPTIONS_OPTIONFILETYPE_HPP
+#include "gmxpre.h"
+
+#include "gromacs/fileio/griddataview.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/toolrunner.h"
+#include "gromacs/math/griddata/griddata.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/filenameoption.h"
+#include "gromacs/options/optionfiletype.h"
 
 namespace gmx
 {
 
-/*! \brief
- * Purpose of file(s) provided through an option.
- *
- * \ingroup module_options
- */
-enum OptionFileType {
-    eftUnknown,
-    eftTopology,
-    eftTrajectory,
-    eftEnergy,
-    eftPDB,
-    eftIndex,
-    eftPlot,
-    eftGenericData,
-    eftCCP4,
-    eftXPLOR,
-    eftOptionFileType_NR
+class MapConvert final : public ToolRunner
+{
+
+    public:
+        void initOptions(Options* options) override;
+        void optionsFinished() override;
+        void analyze() override;
+    private:
+        std::string               fnInput_;
+        std::string               fnOutput_;
 };
 
-} // namespace gmx
+void MapConvert::initOptions(Options* options)
+{
+    setHelpText("[THISMODULE] reads a density map, guesses its format from the"
+                " file extension then outputs according to the to the output"
+                " file format. Supported conversions are ccp4 and xplor to"
+                " ccp4, xplor and dat.");
+    setBugDescriptions({});
 
-#endif
+    options->addOption(StringOption("mi")
+                           .defaultValue("input.ccp4")
+                           .store(&fnInput_)
+                           .required());
+
+    options->addOption(StringOption("mo")
+                           .defaultValue("output.ccp4")
+                           .store(&fnOutput_)
+                           .required());
+}
+
+void MapConvert::optionsFinished()
+{
+}
+
+void MapConvert::analyze()
+{
+    MapConverter(fnInput_).to(fnOutput_);
+}
+
+}
+
+int gmx_mapconvert(int argc, char *argv[])
+{
+    return gmx::MapConvert().run(argc, argv);
+}

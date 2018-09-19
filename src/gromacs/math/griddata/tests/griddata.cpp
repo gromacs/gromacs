@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,39 +32,60 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \internal \file
  * \brief
- * Defines an enumeration type for specifying file types for options.
+ * Tests canonical vector basis
  *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inpublicapi
- * \ingroup module_options
+ * \author Christian Blau <cblau@gwdg.de>
+ * \ingroup module_math
  */
-#ifndef GMX_OPTIONS_OPTIONFILETYPE_HPP
-#define GMX_OPTIONS_OPTIONFILETYPE_HPP
+#include "gmxpre.h"
+
+#include "gromacs/math/griddata/griddata.h"
+
+#include <string>
+#include <vector>
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
+#include "testutils/testasserts.h"
+
+// #include "testutils/testfilemanager.h"
 
 namespace gmx
 {
 
-/*! \brief
- * Purpose of file(s) provided through an option.
- *
- * \ingroup module_options
- */
-enum OptionFileType {
-    eftUnknown,
-    eftTopology,
-    eftTrajectory,
-    eftEnergy,
-    eftPDB,
-    eftIndex,
-    eftPlot,
-    eftGenericData,
-    eftCCP4,
-    eftXPLOR,
-    eftOptionFileType_NR
-};
+namespace test
+{
 
-} // namespace gmx
+namespace internal
+{
 
-#endif
+namespace
+{
+
+TEST(GridDataTest, memoryOffsetIsCorrect)
+{
+    // auto grid = Grid<3>(CanonicalVectorBasis<3>({1, 0.5, 0.25}), {10, 40, 80});
+    // GridDataFloat3D griddata(grid);
+    // griddata.memoryOffset();
+    // std::vector<CanonicalVectorBasis<3>::NdVector> toIndex        = {{{0, 0, 0}}, {{0, 0.49, 0}}, {{0, 10, 0}}, {{0, 0, -2}}, {{-0.12, 0.3, 2.1}}};
+    // std::vector<offset<3>> expectedResult = {{0, 0, 0}, {0, 39, 0}, {0, 800, 0}, {0, 0, -640}, {-2, 24, 672}};
+    // auto currExpected = std::begin(expectedResult);
+    // for (const auto x : toIndex)
+    // {
+    //     ASSERT_EQ((*currExpected)[0], grid.coordinateToFloorMultiIndex(x)[0]);
+    //     ASSERT_EQ((*currExpected)[1], grid.coordinateToFloorMultiIndex(x)[1]);
+    //     ASSERT_EQ((*currExpected)[2], grid.coordinateToFloorMultiIndex(x)[2]);
+    //     ++currExpected;
+    // }
+}
+
+} // namespace
+
+} // internal
+
+} // test
+
+} // gmx

@@ -153,7 +153,28 @@ int
 gmx_make_ndx(int argc, char *argv[]);
 
 int
+gmx_mapcreate(int argc, char *argv[]);
+
+int
+gmx_mapcompare(int argc, char *argv[]);
+
+int
+gmx_mapconvert(int argc, char *argv[]);
+
+int
+gmx_mapinfo(int argc, char *argv[]);
+
+int
+gmx_mapdiff(int argc, char *argv[]);
+
+int
+gmx_mapnorm(int argc, char *argv[]);
+
+int
 gmx_mindist(int argc, char *argv[]);
+
+int
+gmx_maplog(int argc, char *argv[]);
 
 int
 gmx_mk_angndx(int argc, char *argv[]);
