@@ -279,8 +279,8 @@ struct gmx_cmapdata_t
 
 struct gmx_cmap_t
 {
-    int                         grid_spacing; /* Grid spacing */
-    std::vector<gmx_cmapdata_t> cmapdata;     /* Lists of grids with actual, pre-interpolated data */
+    int                         grid_spacing = 0; /* Grid spacing */
+    std::vector<gmx_cmapdata_t> cmapdata;         /* Lists of grids with actual, pre-interpolated data */
 };
 
 
@@ -298,12 +298,12 @@ struct gmx_ffparams_t
     /* TODO: Consider merging functype and iparams, either by storing
      *       the functype in t_iparams or by putting both in a single class.
      */
-    int                     atnr;      /* The number of non-bonded atom types */
-    std::vector<t_functype> functype;  /* The function type per type */
-    std::vector<t_iparams>  iparams;   /* Force field parameters per type */
-    double                  reppow;    /* The repulsion power for VdW: C12*r^-reppow   */
-    real                    fudgeQQ;   /* The scaling factor for Coulomb 1-4: f*q1*q2  */
-    gmx_cmap_t              cmap_grid; /* The dihedral correction maps                 */
+    int                     atnr = 0;      /* The number of non-bonded atom types */
+    std::vector<t_functype> functype;      /* The function type per type */
+    std::vector<t_iparams>  iparams;       /* Force field parameters per type */
+    double                  reppow  = 0.0; /* The repulsion power for VdW: C12*r^-reppow   */
+    real                    fudgeQQ = 0.0; /* The scaling factor for Coulomb 1-4: f*q1*q2  */
+    gmx_cmap_t              cmap_grid;     /* The dihedral correction maps                 */
 };
 
 enum {

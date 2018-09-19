@@ -511,8 +511,6 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     char                        buf[STRLEN];
     char                        warn_buf[STRLEN];
 
-    init_mtop(sys);
-
     /* TOPOLOGY processing */
     sys->name = do_top(bVerbose, topfile, topppfile, opts, bZero, &(sys->symtab),
                        plist, comb, reppow, fudgeQQ,
