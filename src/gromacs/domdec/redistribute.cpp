@@ -166,25 +166,32 @@ static void print_cg_move(FILE *fplog,
                           gmx_bool bHaveCgcmOld, real limitd,
                           rvec cm_old, rvec cm_new, real pos_d)
 {
-    gmx_domdec_comm_t *comm;
-    char               buf[22];
+    const gmx_domdec_comm_t *comm = dd->comm;
+    std::string              mesg;
 
-    comm = dd->comm;
+    fprintf(fplog, "\nStep %" PRId64 ":\n", step);
 
-    fprintf(fplog, "\nStep %s:\n", gmx_step_str(step, buf));
-    if (limitd > 0)
+    if (comm->bCGs)
     {
-        fprintf(fplog, "%s %d moved more than the distance allowed by the domain decomposition (%f) in direction %c\n",
-                dd->comm->bCGs ? "The charge group starting at atom" : "Atom",
-                ddglatnr(dd, dd->atomGrouping().block(cg).begin()), limitd, dim2char(dim));
+        mesg += "The charge group starting at atom";
+    }
+    else if (comm->useUpdateGroups)
+    {
+        mesg += "The update group starting at atom";
     }
     else
     {
-        /* We don't have a limiting distance available: don't print it */
-        fprintf(fplog, "%s %d moved more than the distance allowed by the domain decomposition in direction %c\n",
-                dd->comm->bCGs ? "The charge group starting at atom" : "Atom",
-                ddglatnr(dd, dd->atomGrouping().block(cg).begin()), dim2char(dim));
+        mesg += "Atom";
     }
+    mesg += gmx::formatString(" %d moved more than the distance allowed by the domain decomposition",
+                              ddglatnr(dd, dd->atomGrouping().block(cg).begin()));
+    if (limitd > 0)
+    {
+        mesg += gmx::formatString(" (%f)", limitd);
+    }
+    mesg += gmx::formatString(" in direction %c\n", dim2char(dim));
+    fprintf(fplog, "%s", mesg.c_str());
+
     fprintf(fplog, "distance out of cell %f\n",
             dir == 1 ? pos_d - comm->cell_x1[dim] : pos_d - comm->cell_x0[dim]);
     if (bHaveCgcmOld)
@@ -217,9 +224,8 @@ static void cg_move_error(FILE *fplog,
     print_cg_move(stderr, dd, step, cg, dim, dir,
                   bHaveCgcmOld, limitd, cm_old, cm_new, pos_d);
     gmx_fatal(FARGS,
-              "%s moved too far between two domain decomposition steps\n"
-              "This usually means that your system is not well equilibrated",
-              dd->comm->bCGs ? "An atom group" : "An atom");
+              "One or more atoms moved too far between two domain decomposition steps.\n"
+              "This usually means that your system is not well equilibrated");
 }
 
 static void rotate_state_atom(t_state *state, int a)
