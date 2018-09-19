@@ -3207,7 +3207,7 @@ void dd_partition_system(FILE                *fplog,
                   true, xGlobal,
                   &ddbox);
 
-        distributeState(mdlog, dd, state_global, ddbox, state_local, f);
+        distributeState(mdlog, dd, *top_global, state_global, ddbox, state_local, f);
 
         dd_make_local_cgs(dd, &top_local->cgs);
 
@@ -3292,6 +3292,12 @@ void dd_partition_system(FILE                *fplog,
         write_dd_grid_pdb("dd_grid", step, dd, state_local->box, &ddbox);
     }
 
+    if (comm->useUpdateGroups)
+    {
+        comm->updateGroupsCog->addCogs(gmx::arrayRefFromArray(dd->globalAtomGroupIndices.data(), dd->ncg_home),
+                                       state_local->x);
+    }
+
     /* Check if we should sort the charge groups */
     const bool bSortCG = (bMasterState || bRedist);
 
@@ -3313,6 +3319,12 @@ void dd_partition_system(FILE                *fplog,
                            nrnb, &ncg_moved);
 
         GMX_RELEASE_ASSERT(bSortCG, "Sorting is required after redistribution");
+
+        if (comm->useUpdateGroups)
+        {
+            comm->updateGroupsCog->addCogs(gmx::arrayRefFromArray(dd->globalAtomGroupIndices.data(), dd->ncg_home),
+                                           state_local->x);
+        }
 
         wallcycle_sub_stop(wcycle, ewcsDD_REDIST);
     }
@@ -3369,10 +3381,11 @@ void dd_partition_system(FILE                *fplog,
                                   0,
                                   comm->zones.size[0].bb_x0,
                                   comm->zones.size[0].bb_x1,
+                                  comm->updateGroupsCog.get(),
                                   0, dd->ncg_home,
                                   comm->zones.dens_zone0,
                                   fr->cginfo,
-                                  as_rvec_array(state_local->x.data()),
+                                  state_local->x,
                                   ncg_moved, bRedist ? comm->movedBuffer.data() : nullptr,
                                   fr->nbv->grp[eintLocal].kernel_type,
                                   fr->nbv->nbat);
@@ -3417,6 +3430,14 @@ void dd_partition_system(FILE                *fplog,
         ncgindex_set = 0;
 
         wallcycle_sub_stop(wcycle, ewcsDD_GRID);
+    }
+
+    if (comm->useUpdateGroups)
+    {
+        /* The update groups cog's are invalid after sorting
+         * and need to be cleared before the next partitioning anyhow.
+         */
+        comm->updateGroupsCog->clear();
     }
 
     wallcycle_sub_start(wcycle, ewcsDD_SETUPCOMM);

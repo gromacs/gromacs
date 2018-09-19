@@ -57,6 +57,7 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxomp.h"
 
 #include "domdec_internal.h"
 #include "utility.h"
@@ -218,7 +219,7 @@ static void cg_move_error(FILE *fplog,
     gmx_fatal(FARGS,
               "%s moved too far between two domain decomposition steps\n"
               "This usually means that your system is not well equilibrated",
-              dd->comm->bCGs ? "A charge group" : "An atom");
+              dd->comm->bCGs ? "An atom group" : "An atom");
 }
 
 static void rotate_state_atom(t_state *state, int a)
@@ -462,6 +463,127 @@ static void calc_cg_move(FILE *fplog, int64_t step,
     }
 }
 
+struct PbcAndFlag
+{
+    /* Constructor that purposely does not initialize anything */
+    PbcAndFlag()
+    {
+    }
+
+    gmx::RVec pbcShift;
+    int       moveFlag;
+};
+
+/* Determine to which domains atom groups in the range \p groupBegin, \p groupEnd should go.
+ *
+ * Returns in the move array where the groups should go.
+ * Also updates the COGs and coordinates for jumps over periodic boundaries.
+ */
+static void calcGroupMove(FILE *fplog, int64_t step,
+                          gmx_domdec_t *dd,
+                          t_state *state,
+                          const ivec tric_dir, matrix tcm,
+                          const rvec cell_x0, const rvec cell_x1,
+                          const MoveLimits &moveLimits,
+                          int groupBegin, int groupEnd,
+                          gmx::ArrayRef<PbcAndFlag> pbcAndFlags)
+{
+    GMX_RELEASE_ASSERT(!dd->bScrewPBC, "Screw PBC is not supported here");
+
+    const int             npbcdim         = dd->npbcdim;
+
+    gmx::UpdateGroupsCog *updateGroupsCog = dd->comm->updateGroupsCog.get();
+
+    for (int g = groupBegin; g < groupEnd; g++)
+    {
+
+        gmx::RVec &cog    = updateGroupsCog->cog(g);
+        gmx::RVec  cogOld = cog;
+
+        ivec       dev = { 0 };
+        /* Do pbc and check DD cell boundary crossings */
+        for (int d = DIM - 1; d >= 0; d--)
+        {
+            if (dd->nc[d] > 1)
+            {
+                /* Determine the location of this cg in lattice coordinates */
+                real pos_d = cog[d];
+                if (tric_dir[d])
+                {
+                    for (int d2 = d + 1; d2 < DIM; d2++)
+                    {
+                        pos_d += cog[d2]*tcm[d2][d];
+                    }
+                }
+                /* Put the charge group in the triclinic unit-cell */
+                if (pos_d >= cell_x1[d])
+                {
+                    if (pos_d >= moveLimits.upper[d])
+                    {
+                        cg_move_error(fplog, dd, step, g, d, 1,
+                                      true, moveLimits.distance[d],
+                                      cogOld, cog, pos_d);
+                    }
+                    dev[d] = 1;
+                    if (dd->ci[d] == dd->nc[d] - 1)
+                    {
+                        rvec_dec(cog, state->box[d]);
+                    }
+                }
+                else if (pos_d < cell_x0[d])
+                {
+                    if (pos_d < moveLimits.lower[d])
+                    {
+                        cg_move_error(fplog, dd, step, g, d, -1,
+                                      true, moveLimits.distance[d],
+                                      cogOld, cog, pos_d);
+                    }
+                    dev[d] = -1;
+                    if (dd->ci[d] == 0)
+                    {
+                        rvec_inc(cog, state->box[d]);
+                    }
+                }
+            }
+            else if (d < npbcdim)
+            {
+                /* Put the COG in the rectangular unit-cell */
+                while (cog[d] >= state->box[d][d])
+                {
+                    rvec_dec(cog, state->box[d]);
+                }
+                while (cog[d] < 0)
+                {
+                    rvec_inc(cog, state->box[d]);
+                }
+            }
+        }
+
+        /* Store the PBC and move flag, so we can later apply them to the atoms */
+        PbcAndFlag &pbcAndFlag = pbcAndFlags[g];
+
+        rvec_sub(cog, cogOld, pbcAndFlag.pbcShift);
+        pbcAndFlag.moveFlag = computeMoveFlag(*dd, dev);
+    }
+}
+
+static void
+applyPbcAndSetMoveFlags(const gmx::UpdateGroupsCog      &updateGroupsCog,
+                        gmx::ArrayRef<const PbcAndFlag>  pbcAndFlags,
+                        int                              atomBegin,
+                        int                              atomEnd,
+                        gmx::ArrayRef<gmx::RVec>         atomCoords,
+                        gmx::ArrayRef<int>               move)
+{
+    for (int a = atomBegin; a < atomEnd; a++)
+    {
+        const PbcAndFlag &pbcAndFlag = pbcAndFlags[updateGroupsCog.cogIndex(a)];
+        rvec_inc(atomCoords[a], pbcAndFlag.pbcShift);
+        /* Temporarily store the flag in move */
+        move[a] = pbcAndFlag.moveFlag;
+    }
+}
+
 void dd_redistribute_cg(FILE *fplog, int64_t step,
                         gmx_domdec_t *dd, ivec tric_dir,
                         t_state *state, PaddedRVecVector *f,
@@ -537,18 +659,42 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
     /* Compute the center of geometry for all home charge groups
      * and put them in the box and determine where they should go.
      */
-#pragma omp parallel for num_threads(nthread) schedule(static)
-    for (int thread = 0; thread < nthread; thread++)
+    std::vector<PbcAndFlag>  pbcAndFlags(comm->useUpdateGroups ? comm->updateGroupsCog->numCogs() : 0);
+
+#pragma omp parallel num_threads(nthread)
     {
         try
         {
-            calc_cg_move(fplog, step, dd, state, tric_dir, tcm,
-                         cell_x0, cell_x1, moveLimits,
-                         atomGrouping,
-                         ( thread   *dd->ncg_home)/nthread,
-                         ((thread+1)*dd->ncg_home)/nthread,
-                         fr->cutoff_scheme == ecutsGROUP ? cg_cm : as_rvec_array(state->x.data()),
-                         move);
+            const int thread = gmx_omp_get_thread_num();
+
+            if (comm->useUpdateGroups)
+            {
+                const auto &updateGroupsCog = *comm->updateGroupsCog.get();
+                const int   numGroups       = updateGroupsCog.numCogs();
+                calcGroupMove(fplog, step, dd, state, tric_dir, tcm,
+                              cell_x0, cell_x1, moveLimits,
+                              ( thread   *numGroups)/nthread,
+                              ((thread+1)*numGroups)/nthread,
+                              pbcAndFlags);
+                /* We need a barrier as atoms below can be in a COG of a different thread */
+#pragma omp barrier
+                const int numHomeAtoms = comm->atomRanges.numHomeAtoms();
+                applyPbcAndSetMoveFlags(updateGroupsCog, pbcAndFlags,
+                                        ( thread   *numHomeAtoms)/nthread,
+                                        ((thread+1)*numHomeAtoms)/nthread,
+                                        state->x,
+                                        move);
+            }
+            else
+            {
+                calc_cg_move(fplog, step, dd, state, tric_dir, tcm,
+                             cell_x0, cell_x1, moveLimits,
+                             atomGrouping,
+                             ( thread   *dd->ncg_home)/nthread,
+                             ((thread+1)*dd->ncg_home)/nthread,
+                             fr->cutoff_scheme == ecutsGROUP ? cg_cm : as_rvec_array(state->x.data()),
+                             move);
+            }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
