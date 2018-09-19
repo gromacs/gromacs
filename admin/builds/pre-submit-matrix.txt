@@ -58,7 +58,7 @@ clang-3.4 double simd=avx_128_fma thread-mpi no-openmp fftpack cmake-3.4.3 tng
 
 # Test newest clang at time of release
 # Test with AddressSanitizer (without OpenMP, see below)
-clang-6 no-openmp asan cmake-3.11.4
+clang-7 no-openmp asan cmake-3.11.4
 
 # Test newest cmake at time of release
 # Test with clang-tidy (without OpenMP, cmake>=3.6)
