@@ -2694,7 +2694,7 @@ void dd_bonded_cg_distance(const gmx::MDLogger &mdlog,
 
     if (*r_2b > 0 || *r_mb > 0)
     {
-        GMX_LOG(mdlog.info).appendText("Initial maximum inter charge-group distances:");
+        GMX_LOG(mdlog.info).appendText("Initial maximum distances in bonded interactions:");
         if (*r_2b > 0)
         {
             GMX_LOG(mdlog.info).appendTextFormatted(

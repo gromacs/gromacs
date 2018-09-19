@@ -1579,7 +1579,7 @@ Lincs *init_lincs(FILE *fplog, const gmx_mtop_t &mtop,
         fprintf(fplog, "The number of constraints is %d\n", li->ncg);
         if (bPLINCS)
         {
-            fprintf(fplog, "There are inter charge-group constraints,\n"
+            fprintf(fplog, "There are constraints between atoms in different decomposition domains,\n"
                     "will communicate selected coordinates each lincs iteration\n");
         }
         if (li->ncg_triangle > 0)
