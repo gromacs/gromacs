@@ -131,25 +131,39 @@ struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
 
     ~gmx_mtop_t();
 
-    char                            **name; /* Name of the topology                 */
+    //! Name of the topology.
+    char                            **name = nullptr;
+    //! Force field parameters used.
     gmx_ffparams_t                    ffparams;
+    //! Vector of different molecule types.
     std::vector<gmx_moltype_t>        moltype;
+    //! Vector of different molecule blocks.
     std::vector<gmx_molblock_t>       molblock;
-    gmx_bool                          bIntermolecularInteractions; /* Are there intermolecular
-                                                                    * interactions?            */
-    std::unique_ptr<InteractionLists> intermolecular_ilist;        /* List of intermolecular interactions
-                                                                    * using system wide atom indices,
-                                                                    * either NULL or size F_NRE           */
-    int              natoms;
-    int              maxres_renum;                                 /* Parameter for residue numbering      */
-    int              maxresnr;                                     /* The maximum residue number in moltype */
-    t_atomtypes      atomtypes;                                    /* Atomtype properties                  */
-    gmx_groups_t     groups;                                       /* Groups of atoms for different purposes */
-    t_symtab         symtab;                                       /* The symbol table                     */
-    bool             haveMoleculeIndices;                          /* Tells whether we have valid molecule indices */
+    //! Are there intermolecular interactions?
+    bool                              bIntermolecularInteractions = false;
+    /* \brief
+     * List of intermolecular interactions using system wide
+     * atom indices, either NULL or size F_NRE
+     */
+    std::unique_ptr<InteractionLists> intermolecular_ilist;
+    //! Number of global atoms.
+    int                               natoms = 0;
+    //! Parameter for residue numbering.
+    int                               maxres_renum = 0;
+    //! The maximum residue number in moltype
+    int                               maxresnr = 0;
+    //! Atomtype properties
+    t_atomtypes                       atomtypes;
+    //! Groups of atoms for different purposes
+    gmx_groups_t                      groups;
+    //! The symbol table
+    t_symtab                          symtab;
+    //! Tells whether we have valid molecule indices
+    bool                              haveMoleculeIndices;
 
-    /* Derived data */
-    std::vector<MoleculeBlockIndices> moleculeBlockIndices;  /* Indices for each molblock entry for fast lookup of atom properties */
+    /* Derived data  below */
+    //! Indices for each molblock entry for fast lookup of atom properties
+    std::vector<MoleculeBlockIndices> moleculeBlockIndices;
 };
 
 /* The mdrun node-local topology struct, completely written out */
@@ -175,7 +189,6 @@ typedef struct t_topology
     t_symtab        symtab;                      /* The symbol table                     */
 } t_topology;
 
-void init_mtop(gmx_mtop_t *mtop);
 void init_top(t_topology *top);
 void done_gmx_groups_t(gmx_groups_t *g);
 void done_top(t_topology *top);
