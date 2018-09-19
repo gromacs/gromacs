@@ -1816,19 +1816,16 @@ static real *get_slb_frac(const gmx::MDLogger &mdlog,
 
 static int multi_body_bondeds_count(const gmx_mtop_t *mtop)
 {
-    int                    n, nmol, ftype;
-    gmx_mtop_ilistloop_t   iloop;
-
-    n     = 0;
-    iloop = gmx_mtop_ilistloop_init(mtop);
-    while (const InteractionLists *il = gmx_mtop_ilistloop_next(iloop, &nmol))
+    int                  n     = 0;
+    gmx_mtop_ilistloop_t iloop = gmx_mtop_ilistloop_init(mtop);
+    int                  nmol;
+    while (const InteractionLists *ilists = gmx_mtop_ilistloop_next(iloop, &nmol))
     {
-        for (ftype = 0; ftype < F_NRE; ftype++)
+        for (auto &ilist : extractILists(*ilists, IF_BOND))
         {
-            if ((interaction_function[ftype].flags & IF_BOND) &&
-                NRAL(ftype) >  2)
+            if (NRAL(ilist.functionType) >  2)
             {
-                n += nmol*(*il)[ftype].size()/(1 + NRAL(ftype));
+                n += nmol*(ilist.iatoms.size()/ilistStride(ilist));
             }
         }
     }
@@ -2057,6 +2054,82 @@ static gmx_domdec_comm_t *init_dd_comm()
     return comm;
 }
 
+/* Returns whether mtop contains constraints and/or vsites */
+static bool systemHasConstraintsOrVsites(const gmx_mtop_t &mtop)
+{
+    auto ilistLoop = gmx_mtop_ilistloop_init(mtop);
+    int  nmol;
+    while (const InteractionLists *ilists = gmx_mtop_ilistloop_next(ilistLoop, &nmol))
+    {
+        if (!extractILists(*ilists, IF_CONSTRAINT | IF_VSITE).empty())
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static void setupUpdateGroups(const gmx::MDLogger &mdlog,
+                              const gmx_mtop_t    &mtop,
+                              int                  numMpiRanksTotal,
+                              gmx_domdec_comm_t   *comm)
+{
+    /* When we have constraints and/or vsites, it is beneficial to use
+     * update groups (when possible) to allow independent update of groups.
+     */
+    if (!systemHasConstraintsOrVsites(mtop))
+    {
+        /* No constraints or vsites, atoms can be updated independently */
+        return;
+    }
+
+    comm->updateGroupingPerMoleculetype = gmx::makeUpdateGroups(mtop);
+    comm->useUpdateGroups               = !comm->updateGroupingPerMoleculetype.empty();
+
+    if (comm->useUpdateGroups)
+    {
+        int numUpdateGroups = 0;
+        for (const auto &molblock : mtop.molblock)
+        {
+            numUpdateGroups += molblock.nmol*comm->updateGroupingPerMoleculetype[molblock.type].numBlocks();
+        }
+
+        /* Note: We would like to use dd->nnodes for the atom count estimate,
+         *       but that is not yet available here. But this anyhow only
+         *       affect performance up to the second dd_partition_system call.
+         */
+        int homeAtomCountEstimate =  mtop.natoms/numMpiRanksTotal;
+        comm->updateGroupsCog =
+            gmx::compat::make_unique<gmx::UpdateGroupsCog>(mtop,
+                                                           comm->updateGroupingPerMoleculetype,
+                                                           homeAtomCountEstimate);
+
+        /* To use update groups, the large domain-to-domain cutoff distance
+         * should be compatible with the box size.
+         */
+        /* TODO: add this cutoff check */
+        comm->useUpdateGroups = false;
+
+        if (comm->useUpdateGroups)
+        {
+            GMX_LOG(mdlog.info).appendTextFormatted(
+                    "Using update groups, nr %d, average size %.1f atoms, max. radius %.3f nm\n",
+                    numUpdateGroups,
+                    mtop.natoms/static_cast<double>(numUpdateGroups),
+                    comm->updateGroupsCog->maxUpdateGroupRadius());
+        }
+        else
+        {
+            /* TODO: Remove this comment when enabling update groups
+             * GMX_LOG(mdlog.info).appendTextFormatted("The combination of rlist and box size prohibits the use of update groups\n");
+             */
+            comm->updateGroupingPerMoleculetype.clear();
+            comm->updateGroupsCog.reset(nullptr);
+        }
+    }
+}
+
 /*! \brief Set the cell size and interaction limits, as well as the DD grid */
 static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
                                    t_commrec *cr, gmx_domdec_t *dd,
@@ -2101,14 +2174,11 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
 
     comm->bCGs = (ncg_mtop(mtop) < mtop->natoms);
 
+    /* We need to decide on update groups early, as this affects communication distances */
     comm->useUpdateGroups = false;
     if (ir->cutoff_scheme == ecutsVERLET)
     {
-        std::vector<gmx::RangePartitioning> updateGroups = gmx::makeUpdateGroups(*mtop);
-        if (!updateGroups.empty())
-        {
-            /* TODO: Initialize and enable update groups here */
-        }
+        setupUpdateGroups(mdlog, *mtop, cr->nnodes, comm);
     }
 
     comm->bInterCGBondeds = ((ncg_mtop(mtop) > gmx_mtop_num_molecules(*mtop)) ||
@@ -2452,7 +2522,10 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
                 gmx::boolToString(comm->bBondComm), comm->cellsize_limit);
     }
 
-    check_dd_restrictions(dd, ir, mdlog);
+    if (MASTER(cr))
+    {
+        check_dd_restrictions(dd, ir, mdlog);
+    }
 }
 
 static char *init_bLocalCG(const gmx_mtop_t *mtop)
