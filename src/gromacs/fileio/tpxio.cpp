@@ -2485,10 +2485,6 @@ static void set_disres_npair(gmx_mtop_t *mtop)
 static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
                     int file_version)
 {
-    if (bRead)
-    {
-        init_mtop(mtop);
-    }
     do_symtab(fio, &(mtop->symtab), bRead);
 
     do_symstr(fio, &(mtop->name), bRead, &(mtop->symtab));
