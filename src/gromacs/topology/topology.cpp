@@ -72,29 +72,6 @@ static void init_groups(gmx_groups_t *groups)
 
 }
 
-void init_mtop(gmx_mtop_t *mtop)
-{
-    mtop->name = nullptr;
-
-    // TODO: Move to ffparams when that is converted to C++
-    mtop->ffparams.functype.clear();
-    mtop->ffparams.iparams.clear();
-    mtop->ffparams.cmap_grid.grid_spacing = 0;
-    mtop->ffparams.cmap_grid.cmapdata.clear();
-
-    mtop->moltype.clear();
-    mtop->molblock.clear();
-    mtop->bIntermolecularInteractions = FALSE;
-    mtop->intermolecular_ilist        = nullptr;
-
-    mtop->natoms       = 0;
-    mtop->maxres_renum = 0;
-    mtop->maxresnr     = -1;
-    init_atomtypes(&mtop->atomtypes);
-    init_groups(&mtop->groups);
-    open_symtab(&mtop->symtab);
-}
-
 void init_top(t_topology *top)
 {
     top->name = nullptr;
@@ -146,7 +123,9 @@ void done_gmx_groups_t(gmx_groups_t *g)
 
 gmx_mtop_t::gmx_mtop_t()
 {
-    init_mtop(this);
+    init_atomtypes(&atomtypes);
+    init_groups(&groups);
+    open_symtab(&symtab);
 }
 
 gmx_mtop_t::~gmx_mtop_t()
