@@ -53,6 +53,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
 
@@ -382,6 +383,7 @@ computeAtomGroupDomainIndex(const gmx_domdec_t                         &dd,
 
 static std::vector < std::vector < int>>
 getAtomGroupDistribution(const gmx::MDLogger &mdlog,
+                         const gmx_mtop_t &mtop,
                          const matrix box, const gmx_ddbox_t &ddbox,
                          rvec pos[],
                          gmx_domdec_t *dd)
@@ -406,17 +408,53 @@ getAtomGroupDistribution(const gmx::MDLogger &mdlog,
 
     std::vector < std::vector < int>> indices(dd->nnodes);
 
-    /* Compute the center of geometry for all charge groups */
-    for (int icg = 0; icg < cgs->nr; icg++)
+    if (dd->comm->useUpdateGroups)
     {
-        int domainIndex =
-            computeAtomGroupDomainIndex(*dd, ddbox, triclinicCorrectionMatrix,
-                                        cellBoundaries,
-                                        cgindex[icg], cgindex[icg + 1], box,
-                                        pos);
+        int atomOffset = 0;
+        for (const gmx_molblock_t &molblock : mtop.molblock)
+        {
+            const auto &updateGrouping = dd->comm->updateGroupingPerMoleculetype[molblock.type];
 
-        indices[domainIndex].push_back(icg);
-        ma.domainGroups[domainIndex].numAtoms += cgindex[icg + 1] - cgindex[icg];
+            for (int mol = 0; mol < molblock.nmol; mol++)
+            {
+                for (int g = 0; g < updateGrouping.numBlocks(); g++)
+                {
+                    const auto &block       = updateGrouping.block(g);
+                    const int   atomBegin   = atomOffset + block.begin();
+                    const int   atomEnd     = atomOffset + block.end();
+                    const int   domainIndex =
+                        computeAtomGroupDomainIndex(*dd, ddbox, triclinicCorrectionMatrix,
+                                                    cellBoundaries,
+                                                    atomBegin, atomEnd, box,
+                                                    pos);
+
+                    for (int atomIndex : block)
+                    {
+                        indices[domainIndex].push_back(atomOffset + atomIndex);
+                    }
+                    ma.domainGroups[domainIndex].numAtoms += block.size();
+                }
+
+                atomOffset += updateGrouping.fullRange().end();
+            }
+        }
+
+        GMX_RELEASE_ASSERT(atomOffset == mtop.natoms, "Should distribute all atoms");
+    }
+    else
+    {
+        /* Compute the center of geometry for all atoms or charge groups */
+        for (int icg = 0; icg < cgs->nr; icg++)
+        {
+            int domainIndex =
+                computeAtomGroupDomainIndex(*dd, ddbox, triclinicCorrectionMatrix,
+                                            cellBoundaries,
+                                            cgindex[icg], cgindex[icg + 1], box,
+                                            pos);
+
+            indices[domainIndex].push_back(icg);
+            ma.domainGroups[domainIndex].numAtoms += cgindex[icg + 1] - cgindex[icg];
+        }
     }
 
     {
@@ -454,6 +492,7 @@ getAtomGroupDistribution(const gmx::MDLogger &mdlog,
 
 static void distributeAtomGroups(const gmx::MDLogger &mdlog,
                                  gmx_domdec_t *dd,
+                                 const gmx_mtop_t &mtop,
                                  const matrix box, const gmx_ddbox_t *ddbox,
                                  rvec pos[])
 {
@@ -472,7 +511,7 @@ static void distributeAtomGroups(const gmx::MDLogger &mdlog,
             check_screw_box(box);
         }
 
-        groupIndices = getAtomGroupDistribution(mdlog, box, *ddbox, pos, dd);
+        groupIndices = getAtomGroupDistribution(mdlog, mtop, box, *ddbox, pos, dd);
 
         for (int rank = 0; rank < dd->nnodes; rank++)
         {
@@ -542,6 +581,7 @@ static void distributeAtomGroups(const gmx::MDLogger &mdlog,
 
 void distributeState(const gmx::MDLogger &mdlog,
                      gmx_domdec_t        *dd,
+                     const gmx_mtop_t    &mtop,
                      t_state             *state_global,
                      const gmx_ddbox_t   &ddbox,
                      t_state             *state_local,
@@ -549,7 +589,7 @@ void distributeState(const gmx::MDLogger &mdlog,
 {
     rvec *xGlobal = (DDMASTER(dd) ? as_rvec_array(state_global->x.data()) : nullptr);
 
-    distributeAtomGroups(mdlog, dd,
+    distributeAtomGroups(mdlog, dd, mtop,
                          DDMASTER(dd) ? state_global->box : nullptr,
                          &ddbox, xGlobal);
 
