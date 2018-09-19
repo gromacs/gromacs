@@ -82,10 +82,10 @@ unit testing (CTest)
 regression tests
 
 clang-tidy
-  `clang-tidy <http://releases.llvm.org/6.0.0/tools/clang/tools/extra/docs/clang-tidy/index.html>`_
+  `clang-tidy <http://releases.llvm.org/7.0.0/tools/clang/tools/extra/docs/clang-tidy/index.html>`_
   is used for static code analysis. clang-tidy is easy to install. It is contained in
   the llvm binary `package <http://releases.llvm.org/download.html#6.0.0>`_. Only
-  version 6.0.* with libstdc++<7 or libc++ is supported. Others might miss tests or give false positives.
+  version 7.0.* with libstdc++<7 or libc++ is supported. Others might miss tests or give false positives.
   It is run automatically on Jenkins for each commit. Many checks have fixes which can automatically be
   applied. To run it, the build has to be configured with
   ``cmake -DGMX_CLANG_TIDY=ON -DGMX_OPENMP=no -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=on``.

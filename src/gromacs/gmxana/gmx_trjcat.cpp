@@ -370,7 +370,7 @@ static void do_demux(gmx::ArrayRef<const std::string> inFiles,
         }
         for (gmx::index i = 0; i < inFiles.size(); i++)
         {
-            int j = std::round(value[i][k]);
+            int j = gmx::roundToInt(value[i][k]);
             range_check(j, 0, inFiles.size());
             if (bSet[j])
             {

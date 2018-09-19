@@ -62,7 +62,7 @@ clang-6 no-openmp asan cmake-3.11.4
 
 # Test newest cmake at time of release
 # Test with clang-tidy (without OpenMP, cmake>=3.6)
-clang-6 no-openmp cmake-3.12.1 tidy
+clang-7 no-openmp cmake-3.12.1 tidy
 
 # Test oldest supported MSVC on Windows
 # Test newest supported MSVC on Windows

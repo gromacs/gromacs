@@ -273,7 +273,7 @@ static void dd_move_cellx(gmx_domdec_t      *dd,
                         /* c is the off-diagonal coupling between the cell planes
                          * along directions d and d1.
                          */
-                        c = ddbox->v[dim][dd->dim[d1]][dim];
+                        c = static_cast<int>(ddbox->v[dim][dd->dim[d1]][dim]);
                     }
                     else
                     {

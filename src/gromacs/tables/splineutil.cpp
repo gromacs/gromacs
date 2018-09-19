@@ -114,8 +114,8 @@ throwUnlessDerivativeIsConsistentWithFunction(ArrayRef<const double>        func
                                               double                        inputSpacing,
                                               const std::pair<real, real>  &range)
 {
-    std::size_t     firstIndex   = range.first / inputSpacing;
-    std::size_t     lastIndex    = range.second / inputSpacing;
+    std::size_t     firstIndex   = static_cast<std::size_t>(range.first / inputSpacing);
+    std::size_t     lastIndex    = static_cast<std::size_t>(range.second / inputSpacing);
     bool            isConsistent = true;
     std::size_t     minFail      = lastIndex;
     std::size_t     maxFail      = firstIndex;
@@ -214,8 +214,8 @@ findSmallestQuotientOfFunctionAndSecondDerivative(ArrayRef<const double>        
                                                   const std::pair<real, real>   &range)
 {
 
-    std::size_t  firstIndex  = range.first  / inputSpacing;
-    std::size_t  lastIndex   = range.second / inputSpacing;
+    std::size_t  firstIndex  = static_cast<std::size_t>(range.first  / inputSpacing);
+    std::size_t  lastIndex   = static_cast<std::size_t>(range.second / inputSpacing);
     double       minQuotient = GMX_REAL_MAX;
 
     for (std::size_t i = firstIndex + 1; (i + 1) < lastIndex; i++)
@@ -292,8 +292,8 @@ findSmallestQuotientOfFunctionAndThirdDerivative(ArrayRef<const double>        f
                                                  const std::pair<real, real>   &range)
 {
 
-    std::size_t  firstIndex  = range.first  / inputSpacing;
-    std::size_t  lastIndex   = range.second / inputSpacing;
+    std::size_t  firstIndex  = static_cast<std::size_t>(range.first  / inputSpacing);
+    std::size_t  lastIndex   = static_cast<std::size_t>(range.second / inputSpacing);
     double       minQuotient = GMX_REAL_MAX;
 
     for (std::size_t i = firstIndex + 2; (i + 2) < lastIndex; i++)

@@ -566,7 +566,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
 
         /* set program name, command line, and default values for output options */
         output_env_init(oenv, gmx::getProgramContext(),
-                        static_cast<time_unit_t>(timeUnit + 1), bView, // NOLINT(misc-misplaced-widening-cast)
+                        static_cast<time_unit_t>(timeUnit + 1), bView, // NOLINT(bugprone-misplaced-widening-cast)
                         static_cast<xvg_format_t>(xvgFormat + 1), 0);
 
         /* Extract Time info from arguments */

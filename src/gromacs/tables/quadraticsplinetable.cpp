@@ -83,7 +83,7 @@ fillSingleQuadraticSplineTableData(const std::function<double(double)>   &functi
                                    std::vector<real>                     *functionTableData,
                                    std::vector<real>                     *derivativeTableData)
 {
-    std::size_t  endIndex   = range.second / spacing + 2;
+    std::size_t  endIndex   = static_cast<std::size_t>(range.second / spacing + 2);
 
     functionTableData->resize(endIndex);
     derivativeTableData->resize(endIndex);
@@ -162,7 +162,7 @@ fillSingleQuadraticSplineTableData(ArrayRef<const double>                 functi
                                    std::vector<real>                     *functionTableData,
                                    std::vector<real>                     *derivativeTableData)
 {
-    std::size_t  endIndex   = range.second / spacing + 2;
+    std::size_t  endIndex   = static_cast<std::size_t>(range.second / spacing + 2);
 
     functionTableData->resize(endIndex);
     derivativeTableData->resize(endIndex);
@@ -190,7 +190,7 @@ fillSingleQuadraticSplineTableData(ArrayRef<const double>                 functi
         {
             // Step 1: Interpolate the function value at x from input table.
             double inputXTab  = x / inputSpacing;
-            int    inputIndex = inputXTab;
+            int    inputIndex = static_cast<std::size_t>(inputXTab);
             double inputEps   = inputXTab - inputIndex;
 
             // Linear interpolation of input derivative and third derivative
@@ -288,7 +288,7 @@ QuadraticSplineTable::QuadraticSplineTable(std::initializer_list<AnalyticalSplin
     double minQuotient = GMX_REAL_MAX;
 
     // loop over all functions to find smallest spacing
-    for (auto thisFuncInput : analyticalInputList)
+    for (const auto &thisFuncInput : analyticalInputList)
     {
         try
         {
@@ -324,7 +324,7 @@ QuadraticSplineTable::QuadraticSplineTable(std::initializer_list<AnalyticalSplin
     // combine them into a multiplexed table function.
     std::size_t funcIndex = 0;
 
-    for (auto thisFuncInput : analyticalInputList)
+    for (const auto &thisFuncInput : analyticalInputList)
     {
         try
         {
