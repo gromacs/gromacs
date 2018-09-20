@@ -267,7 +267,7 @@ static void dd_move_cellx(gmx_domdec_t      *dd,
                      */
                     real dist_d = comm->cell_x1[dim] - buf_r[0].p1_0;
 
-                    int  c;
+                    real c;
                     if (ddbox->tric_dir[dim])
                     {
                         /* c is the off-diagonal coupling between the cell planes
