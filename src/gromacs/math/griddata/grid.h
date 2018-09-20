@@ -312,7 +312,7 @@ class Grid
         //! \brief serializes grid
         void serialize(ISerializer * serializer)
         {
-            serialize(serializer, lattice_);
+            gmx::serialize<Rank>(serializer, lattice_);
             cell_.serialize(serializer);
             unitCell_.serialize(serializer);
             translator_.serialize(serializer);

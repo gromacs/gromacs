@@ -268,7 +268,7 @@ extern void communicate_group_positions(
 
 
 /* Determine the (weighted) sum vector from positions x */
-extern double get_sum_of_positions(rvec x[], real weight[], const int nat, dvec dsumvec)
+extern double get_sum_of_positions(const rvec x[], const real weight[], const int nat, dvec dsumvec)
 {
     int    i;
     rvec   x_weighted;

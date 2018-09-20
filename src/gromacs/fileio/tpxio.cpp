@@ -47,10 +47,14 @@
 #include <algorithm>
 #include <vector>
 
+#include "gromacs/applied-forces/densityfitting/densfit.h"
+#include "gromacs/applied-forces/densityfitting/densfitdata.h"
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio-xdr.h"
+#include "gromacs/fileio/mrcmetadata.h"
+#include "gromacs/math/griddata/griddata.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/awh-history.h"
@@ -120,6 +124,7 @@ enum tpxv {
     tpxv_GenericParamsForElectricField,                      /**< Introduced KeyValueTree and moved electric field parameters */
     tpxv_AcceleratedWeightHistogram,                         /**< sampling with accelerated weight histogram method (AWH) */
     tpxv_RemoveImplicitSolvation,                            /**< removed support for implicit solvation */
+    tpxv_DensityFitting,                                     /**< fitting to cryo (and other) EM densities */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -1478,6 +1483,26 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     else
     {
         ir->bRot = FALSE;
+    }
+
+    /* Fitting to an electron density map */
+    if (file_version >= tpxv_DensityFitting)
+    {
+        gmx_fio_do_gmx_bool(fio, ir->bDensityFitting);
+        if (ir->bDensityFitting)
+        {
+            if (bRead)
+            {
+                ir->densfitParameters = new gmx::DensfitData;
+            }
+            GMX_RELEASE_ASSERT(ir->densfitParameters != nullptr, "Density fitting structure must be defined for reading/writing");
+            gmx::FileIOXdrSerializer serializer(fio);
+            ir->densfitParameters->serialize(&serializer);
+        }
+    }
+    else
+    {
+        ir->densfitParameters = nullptr;
     }
 
     /* Interactive molecular dynamics */

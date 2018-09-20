@@ -46,6 +46,8 @@
 #include <algorithm>
 #include <string>
 
+#include "gromacs/applied-forces/densityfitting/densfit.h"
+#include "gromacs/applied-forces/densityfitting/densfitdata.h"
 #include "gromacs/awh/read-params.h"
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/warninp.h"
@@ -94,7 +96,6 @@
  * (like the c-shell), which will give you a very weird compiler
  * message.
  */
-
 typedef struct t_inputrec_strings
 {
     char tcgrps[STRLEN], tau_t[STRLEN], ref_t[STRLEN],
@@ -107,12 +108,12 @@ typedef struct t_inputrec_strings
     char   lambda_weights[STRLEN];
     char **pull_grp;
     char **rot_grp;
+    char  *dens_grp;
     char   anneal[STRLEN], anneal_npoints[STRLEN],
            anneal_time[STRLEN], anneal_temp[STRLEN];
     char   QMmethod[STRLEN], QMbasis[STRLEN], QMcharge[STRLEN], QMmult[STRLEN],
            bSH[STRLEN], CASorbitals[STRLEN], CASelectrons[STRLEN], SAon[STRLEN],
            SAoff[STRLEN], SAsteps[STRLEN];
-
 } gmx_inputrec_strings;
 
 static gmx_inputrec_strings *is = nullptr;
@@ -2113,6 +2114,17 @@ void get_ir(const char *mdparin, const char *mdparout,
         is->rot_grp = read_rotparams(&inp, ir->rot, wi);
     }
 
+    /* Fitting to cryo-EM density maps */
+    printStringNewline(&inp, "FITTING TO A DENSITY MAP");
+    printStringNoNewline(&inp, "Add an extra potential resulting from a density map (yes/no)");
+    ir->bDensityFitting = get_eeenum(&inp, "DensityFitting", yesno_names, wi);
+    if (ir->bDensityFitting)
+    {
+        gmx::DensfitData parameters;
+        parameters.read_densparams(&inp, wi);
+        ir->densfitParameters = new gmx::DensfitData(parameters);
+    }
+
     /* Interactive MD */
     ir->bIMD = FALSE;
     printStringNewline(&inp, "Group to display and/or manipulate in interactive MD session");
@@ -3476,6 +3488,11 @@ void do_index(const char* mdparin, const char *ndx,
     if (ir->bRot)
     {
         make_rotation_groups(ir->rot, is->rot_grp, grps, gnames);
+    }
+
+    if (ir->densfitParameters != nullptr)
+    {
+        ir->densfitParameters->makeGroups(grps, gnames);
     }
 
     if (ir->eSwapCoords != eswapNO)

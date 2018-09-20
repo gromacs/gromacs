@@ -47,6 +47,7 @@
 
 #include <sys/types.h>
 
+#include "gromacs/applied-forces/densityfitting/densfit.h"
 #include "gromacs/awh/read-params.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/compat/make_unique.h"
@@ -58,6 +59,8 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/warninp.h"
+#include "gromacs/fileio/griddataio.h"
+#include "gromacs/fileio/mrcmetadata.h"
 #include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/convparm.h"
 #include "gromacs/gmxpreprocess/gen_maxwell_velocities.h"

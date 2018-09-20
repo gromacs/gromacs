@@ -63,8 +63,9 @@
 #include <type_traits>
 #include <vector>
 
+#include "grid.h"
+
 #include "gromacs/math/gmxcomplex.h"
-#include "gromacs/math/griddata/grid.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/real.h"

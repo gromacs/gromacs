@@ -39,7 +39,8 @@
 
 #include <cstdio>
 
-#include <memory>
+#include <array>
+#include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -60,6 +61,7 @@ namespace gmx
 {
 class Awh;
 struct AwhParams;
+class DensfitData;
 class KeyValueTreeObject;
 }
 
@@ -543,10 +545,13 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
 
     /* AWH bias data */
     //! Whether to use AWH biasing for PMF calculations
-    gmx_bool        bDoAwh;
+    gmx_bool                          bDoAwh;
     //! AWH biasing parameters
-    gmx::AwhParams *awhParams;
-
+    gmx::AwhParams                   *awhParams;
+    /* Fit to a (electron) density map?             */
+    gmx_bool                          bDensityFitting;
+    /* (Electron) density reference map for fitting */
+    gmx::DensfitData                 *densfitParameters;
     /* Enforced rotation data */
     //! Whether to calculate enforced rotation potential(s)
     gmx_bool               bRot;

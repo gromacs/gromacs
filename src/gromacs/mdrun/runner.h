@@ -107,7 +107,7 @@ class Mdrunner
         //! Parallelism-related user options.
         gmx_hw_opt_t             hw_opt;
         //! Filenames and properties from command-line argument values.
-        std::array<t_filenm, 34> filenames =
+        std::array<t_filenm, 36> filenames =
         {{{ efTPR, nullptr,     nullptr,     ffREAD },
           { efTRN, "-o",        nullptr,     ffWRITE },
           { efCOMPRESSED, "-x", nullptr,     ffOPTWR },
@@ -134,6 +134,8 @@ class Mdrunner
           { efLOG, "-ra",       "rotangles", ffOPTWR },
           { efLOG, "-rs",       "rotslabs",  ffOPTWR },
           { efLOG, "-rt",       "rottorque", ffOPTWR },
+          { efXVG, "-d",        "densfit",   ffOPTWR }, /* Density fitting output file */
+          { efDENSITYMAP, "-mo", "map",      ffOPTWR }, /* Computed density map used in density fitting */
           { efMTX, "-mtx",      "nm",        ffOPTWR },
           { efRND, "-multidir", nullptr,     ffOPTRDMULT},
           { efXVG, "-awh",      "awhinit",   ffOPTRD },

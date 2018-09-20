@@ -381,6 +381,11 @@ void please_cite(FILE *fp, const char *key)
           "Accelerated weight histogram method for exploring free energy landscapes",
           "J. Chem. Phys.",
           141, 2014, "044110" },
+        { "Tama2008",
+          "M. Orzechowski, F. Tama",
+          "Flexible Fitting of High-Resolution X-Ray Structures into Cryoelectron Microscopy Maps Using Biased Molecular Dynamics Simulations",
+          "Biophys. J.",
+          95, 2008, "5692-5705"},
     };
 #define NSTR static_cast<int>(asize(citedb))
 

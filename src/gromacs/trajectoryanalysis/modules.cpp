@@ -54,6 +54,7 @@
 #include "modules/rdf.h"
 #include "modules/sasa.h"
 #include "modules/select.h"
+#include "modules/maptide.h"
 #include "modules/trajectory.h"
 
 namespace gmx

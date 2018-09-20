@@ -70,6 +70,8 @@ int pr_title_n(FILE *fp, int indent, const char *title, int n);
 int pr_title_nxn(FILE *fp, int indent, const char *title, int n1, int n2);
 //! Prints an array of reals.
 void pr_reals(FILE *fp, int indent, const char *title, const real vec[], int n);
+//! Prints an array of floats.
+void pr_floats(FILE *fp, int indent, const char *title, const float *vec, int n);
 //! Prints an array of doubles.
 void pr_doubles(FILE *fp, int indent, const char *title, const double *vec, int n);
 //! Prints an array of reals as a matrix with inner dimension dim.

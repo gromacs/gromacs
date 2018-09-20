@@ -56,6 +56,8 @@ gmx_add_gtest_executable(
     rerun.cpp
     swapcoords.cpp
     tabulated_bonded_interactions.cpp
+    interactiveMD.cpp
+    densityfitting.cpp
     termination.cpp
     tpitest.cpp
     trajectory_writing.cpp

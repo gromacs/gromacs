@@ -113,7 +113,9 @@ static const char *wcn[ewcNR] =
     "Wait GPU NB nonloc.", "Wait GPU NB local", "NB X/F buffer ops.",
     "Vsite spread", "COM pull force", "AWH",
     "Write traj.", "Update", "Constraints", "Comm. energies",
-    "Enforced rotation", "Add rot. forces", "Position swapping", "IMD", "Test"
+    "Enforced rotation", "Add rot. forces", "Position swapping", "IMD",
+    "Dens. Fitting Comm.", "DF spreading", "DF sum dens. grid", "DF forces",
+    "Test"
 };
 
 static const char *wcsn[ewcsNR] =

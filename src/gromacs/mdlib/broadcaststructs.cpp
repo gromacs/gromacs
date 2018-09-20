@@ -41,6 +41,7 @@
 
 #include <cstring>
 
+#include "gromacs/applied-forces/densityfitting/densfitdata.h"
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
@@ -657,7 +658,6 @@ static void bc_swapions(const t_commrec *cr, t_swapcoords *swap)
     }
 }
 
-
 static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
 {
     // Note that this overwrites pointers in inputrec, so all pointer fields
@@ -684,6 +684,60 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
         gmx::InMemoryDeserializer serializer(buffer);
         inputrec->params = new gmx::KeyValueTreeObject(
                     gmx::deserializeKeyValueTree(&serializer));
+    }
+
+    if (inputrec->bDensityFitting)
+    {
+        if (SIMMASTER(cr))
+        {
+            gmx::InMemorySerializer serializer;
+            inputrec->densfitParameters->serialize(&serializer);
+            std::vector<char>       buffer = serializer.finishAndGetBuffer();
+            size_t                  size   = buffer.size();
+            block_bc(cr, size);
+            nblock_bc(cr, size, buffer.data());
+        }
+        else
+        {
+            // block_bc() above overwrites the old pointer, so set it to a
+            // reasonable value in case code below throws.
+            // cppcheck-suppress redundantAssignment
+            inputrec->densfitParameters = nullptr;
+            std::vector<char> buffer;
+            size_t            size;
+            block_bc(cr, size);
+            nblock_abc(cr, size, &buffer);
+            gmx::InMemoryDeserializer serializer(buffer);
+            inputrec->densfitParameters = new gmx::DensfitData();
+            inputrec->densfitParameters->serialize(&serializer);
+        }
+    }
+
+    if (inputrec->bDensityFitting)
+    {
+        if (SIMMASTER(cr))
+        {
+            gmx::InMemorySerializer serializer;
+            inputrec->densfitParameters->serialize(&serializer);
+            std::vector<char>       buffer = serializer.finishAndGetBuffer();
+            size_t                  size   = buffer.size();
+            block_bc(cr, size);
+            nblock_bc(cr, size, buffer.data());
+        }
+        else
+        {
+            // block_bc() above overwrites the old pointer, so set it to a
+            // reasonable value in case code below throws.
+            // cppcheck-suppress redundantAssignment
+            inputrec->densfitParameters = nullptr;
+            std::vector<char> buffer;
+            size_t            size;
+            block_bc(cr, size);
+            nblock_abc(cr, size, &buffer);
+            gmx::InMemoryDeserializer serializer(buffer);
+            inputrec->densfitParameters = new gmx::DensfitData();
+            inputrec->densfitParameters->serialize(&serializer);
+        }
     }
 
     bc_grpopts(cr, &(inputrec->opts));
@@ -723,6 +777,7 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
         snew_bc(cr, inputrec->rot, 1);
         bc_rot(cr, inputrec->rot);
     }
+
     if (inputrec->bIMD)
     {
         snew_bc(cr, inputrec->imd, 1);
