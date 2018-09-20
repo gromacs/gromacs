@@ -35,7 +35,7 @@
 # These options need to match the node label in Jenkins and the
 # capabilities in releng/agents.py for the agent where the analysis is
 # intended to run.
-build_options = ['clang-6', 'clang-static-analyzer-6']
+build_options = ['clang-7', 'clang-static-analyzer-7']
 
 def do_build(context):
     cmake_opts = {
