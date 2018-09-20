@@ -47,6 +47,7 @@
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/maptools/maptools.h"
 #include "gromacs/gmxpreprocess/genconf.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/gmxpreprocess/insert-molecules.h"
@@ -199,6 +200,41 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
             manager, gmx::pdb2gmxInfo::name,
             gmx::pdb2gmxInfo::shortDescription,
             &gmx::pdb2gmxInfo::create);
+
+    gmx::ICommandLineOptionsModule::registerModuleFactory(
+            manager, gmx::mapcompareInfo::name,
+            gmx::mapcompareInfo::shortDescription,
+            &gmx::mapcompareInfo::create);
+
+    gmx::ICommandLineOptionsModule::registerModuleFactory(
+            manager, gmx::mapconvertInfo::name,
+            gmx::mapconvertInfo::shortDescription,
+            &gmx::mapconvertInfo::create);
+
+    gmx::ICommandLineOptionsModule::registerModuleFactory(
+            manager, gmx::mapcreateInfo::name,
+            gmx::mapcreateInfo::shortDescription,
+            &gmx::mapcreateInfo::create);
+
+    gmx::ICommandLineOptionsModule::registerModuleFactory(
+            manager, gmx::mapinfoInfo::name,
+            gmx::mapinfoInfo::shortDescription,
+            &gmx::mapinfoInfo::create);
+
+    gmx::ICommandLineOptionsModule::registerModuleFactory(
+            manager, gmx::mapdiffInfo::name,
+            gmx::mapdiffInfo::shortDescription,
+            &gmx::mapdiffInfo::create);
+
+    gmx::ICommandLineOptionsModule::registerModuleFactory(
+            manager, gmx::maplogInfo::name,
+            gmx::maplogInfo::shortDescription,
+            &gmx::maplogInfo::create);
+
+    gmx::ICommandLineOptionsModule::registerModuleFactory(
+            manager, gmx::mapnormInfo::name,
+            gmx::mapnormInfo::shortDescription,
+            &gmx::mapnormInfo::create);
 
     // Modules from gmx_ana.h.
     registerModule(manager, &gmx_do_dssp, "do_dssp",
@@ -435,6 +471,12 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("trjorder");
         group.addModule("xpm2ps");
         group.addModule("report");
+        group.addModule(gmx::mapconvertInfo::name);
+        group.addModule(gmx::mapdiffInfo::name);
+        group.addModule(gmx::maplogInfo::name);
+        group.addModule(gmx::mapnormInfo::name);
+        group.addModule(gmx::mapcompareInfo::name);
+        group.addModule(gmx::mapcreateInfo::name);
     }
     {
         gmx::CommandLineModuleGroup group =
