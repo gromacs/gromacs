@@ -2235,7 +2235,9 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
      */
     constexpr real c_chanceThatAtomMovesBeyondDomain = 1e-12;
     const real     limitForAtomDisplacement          =
-        minCellSizeForAtomDisplacement(*mtop, *ir, c_chanceThatAtomMovesBeyondDomain);
+        minCellSizeForAtomDisplacement(*mtop, *ir,
+                                       comm->updateGroupingPerMoleculetype,
+                                       c_chanceThatAtomMovesBeyondDomain);
     GMX_LOG(mdlog.info).appendTextFormatted(
             "Minimum cell size due to atom displacement: %.3f nm",
             limitForAtomDisplacement);
