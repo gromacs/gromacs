@@ -51,9 +51,11 @@
 #include "gromacs/mdlib/nbnxn_util.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/block.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/strconvert.h"
 
 /* The code in this file estimates a pairlist buffer length
@@ -1134,9 +1136,222 @@ static real minCellSizeFromPairlistBuffer(const t_inputrec &ir)
     return ir.rlist - std::max(ir.rvdw, ir.rcoulomb);
 }
 
-real minCellSizeForAtomDisplacement(const gmx_mtop_t &mtop,
-                                    const t_inputrec &ir,
-                                    real              chanceRequested)
+static real
+chanceOfAtomCrossingCell(gmx::ArrayRef<const VerletbufAtomtype> atomtypes,
+                         real                                   kT_fac,
+                         real                                   cellSize)
+{
+    /* We assume atoms are distributed uniformly over the cell width.
+     * Once an atom has moved by more than the cellSize (as passed
+     * as the buffer argument to energyDriftAtomPair() below),
+     * the chance of crossing the boundary of the neighbor cell
+     * thus increases as 1/cellSize with the additional displacement
+     * on top of cellSize. We thus create a linear interaction with
+     * derivative = -1/cellSize. Using this in the energyDriftAtomPair
+     * function will return the chance of crossing the next boundary.
+     */
+    const pot_derivatives_t boundaryInteraction = { 1/cellSize, 0, 0 };
+
+    real                    chance = 0;
+    for (const VerletbufAtomtype &att : atomtypes)
+    {
+        const atom_nonbonded_kinetic_prop_t &propAtom = att.prop;
+        real s2_2d;
+        real s2_3d;
+        get_atom_sigma2(kT_fac, &propAtom, &s2_2d, &s2_3d);
+
+        real chancePerAtom = energyDriftAtomPair(propAtom.bConstr, false,
+                                                 s2_2d + s2_3d, s2_2d, 0,
+                                                 cellSize,
+                                                 &boundaryInteraction);
+
+        if (propAtom.bConstr)
+        {
+            /* energyDriftAtomPair() uses an unlimited Gaussian displacement
+             * distribution for constrained atoms, whereas they can
+             * actually not move more than the COM of the two constrained
+             * atoms plus twice the distance from the COM.
+             * Use this maximum, limited displacement when this results in
+             * a smaller chance (note that this is still an overestimate).
+             */
+            real massFraction = propAtom.con_mass/(propAtom.mass + propAtom.con_mass);
+            real comDistance  = propAtom.con_len*massFraction;
+
+            real chanceWithMaxDistance =
+                energyDriftAtomPair(false, false,
+                                    s2_3d, 0, 0,
+                                    cellSize - 2*comDistance,
+                                    &boundaryInteraction);
+            chancePerAtom = std::min(chancePerAtom, chanceWithMaxDistance);
+        }
+
+        /* Take into account the line density of the boundary */
+        chancePerAtom /= cellSize;
+
+        chance        += att.n*chancePerAtom;
+    }
+
+    return chance;
+}
+
+/* Struct for storing constraint properties of atoms */
+struct AtomConstraintProps
+{
+    void addConstraint(real length)
+    {
+        numConstraints += 1;
+        sumLengths     += length;
+    }
+
+    int  numConstraints = 0; /* The number of constraints of an atom */
+    real sumLengths     = 0; /* The sum of constraint length over the constraints */
+};
+
+/* Constructs and returns a list of constraint properties per atom */
+static std::vector<AtomConstraintProps>
+getAtomConstraintProps(const gmx_moltype_t  &moltype,
+                       const gmx_ffparams_t &ffparams)
+{
+    const t_atoms                    &atoms = moltype.atoms;
+    std::vector<AtomConstraintProps>  props(atoms.nr);
+
+    for (const auto &ilist : extractILists(moltype.ilist, IF_CONSTRAINT))
+    {
+        // Settles are handled separately
+        if (ilist.functionType == F_SETTLE)
+        {
+            continue;
+        }
+
+        for (size_t i = 0; i < ilist.iatoms.size(); i += ilistStride(ilist))
+        {
+            int  type   = ilist.iatoms[i];
+            int  a1     = ilist.iatoms[i + 1];
+            int  a2     = ilist.iatoms[i + 2];
+            real length = ffparams.iparams[type].constr.dA;
+            props[a1].addConstraint(length);
+            props[a2].addConstraint(length);
+        }
+    }
+
+    return props;
+}
+
+/* Return the chance of at least one update group in a molecule crossing a cell of size cellSize */
+static real
+chanceOfUpdateGroupCrossingCell(const gmx_moltype_t          &moltype,
+                                const gmx_ffparams_t         &ffparams,
+                                const gmx::RangePartitioning &updateGrouping,
+                                real                          kT_fac,
+                                real                          cellSize)
+{
+    const t_atoms &atoms = moltype.atoms;
+    GMX_ASSERT(updateGrouping.fullRange().end() == atoms.nr, "The update groups should match the molecule type");
+
+    const pot_derivatives_t boundaryInteraction = { 1/cellSize, 0, 0 };
+
+    const auto              atomConstraintProps = getAtomConstraintProps(moltype, ffparams);
+
+    real                    chance              = 0;
+    for (int group = 0; group < updateGrouping.numBlocks(); group++)
+    {
+        const auto &block                   = updateGrouping.block(group);
+        /* Determine the number of atoms with constraints and the mass of the COG */
+        int         numAtomsWithConstraints = 0;
+        real        massSum                 = 0;
+        for (const int &atom : block)
+        {
+            if (atomConstraintProps[atom].numConstraints > 0)
+            {
+                numAtomsWithConstraints++;
+            }
+            massSum += moltype.atoms.atom[atom].m;
+        }
+        /* Determine the maximum possible distance between the center of mass
+         * and the center of geometry of the update group
+         */
+        real maxComCogDistance = 0;
+        if (numAtomsWithConstraints == 2)
+        {
+            for (const int &atom : block)
+            {
+                if (atomConstraintProps[atom].numConstraints > 0)
+                {
+                    GMX_ASSERT(atomConstraintProps[atom].numConstraints == 1,
+                               "Two atoms should be connected by one constraint");
+                    maxComCogDistance = std::abs(atoms.atom[atom].m/massSum - 0.5)*atomConstraintProps[atom].sumLengths;
+                    break;
+                }
+            }
+        }
+        else if (numAtomsWithConstraints > 2)
+        {
+            for (const int &atom : block)
+            {
+                if (atomConstraintProps[atom].numConstraints == numAtomsWithConstraints - 1)
+                {
+                    real comCogDistance = atomConstraintProps[atom].sumLengths/numAtomsWithConstraints;
+                    maxComCogDistance   = std::max(maxComCogDistance, comCogDistance);
+                }
+            }
+        }
+        else if (block.size() > 1)
+        {
+            // All normal atoms must be connected by SETTLE
+            for (const int &atom : block)
+            {
+                const auto &ilist = moltype.ilist[F_SETTLE];
+                GMX_RELEASE_ASSERT(ilist.size() > 0, "There should be at least one settle in this moltype");
+                for (int i = 0; i < ilist.size(); i += 1 + NRAL(F_SETTLE))
+                {
+                    if (atom == ilist.iatoms[i + 1])
+                    {
+                        const t_iparams &iparams = ffparams.iparams[ilist.iatoms[i]];
+                        real             dOH     = iparams.settle.doh;
+                        real             dHH     = iparams.settle.dhh;
+                        real             dOMidH  = std::sqrt(dOH*dOH - 0.25_real*dHH*dHH);
+                        maxComCogDistance        = std::abs(atoms.atom[atom].m/massSum - 1.0_real/3.0_real)*dOMidH;
+                    }
+                }
+            }
+        }
+        real s2_3d  = kT_fac/massSum;
+        chance     += energyDriftAtomPair(false, false,
+                                          s2_3d, 0, 0,
+                                          cellSize - 2*maxComCogDistance,
+                                          &boundaryInteraction);
+    }
+
+    return chance;
+}
+
+/* Return the chance of at least one update group in the system crossing a cell of size cellSize */
+static real
+chanceOfUpdateGroupCrossingCell(const gmx_mtop_t       &mtop,
+                                PartitioningPerMoltype  updateGrouping,
+                                real                    kT_fac,
+                                real                    cellSize)
+{
+    GMX_RELEASE_ASSERT(static_cast<size_t>(updateGrouping.size()) == mtop.moltype.size(),
+                       "The update groups should match the topology");
+
+    real chance = 0;
+    for (const gmx_molblock_t &molblock : mtop.molblock)
+    {
+        const gmx_moltype_t &moltype  = mtop.moltype[molblock.type];
+        chance                       +=
+            molblock.nmol*chanceOfUpdateGroupCrossingCell(moltype, mtop.ffparams, updateGrouping[molblock.type],
+                                                          kT_fac, cellSize);
+    }
+
+    return chance;
+}
+
+real
+minCellSizeForAtomDisplacement(const gmx_mtop_t       &mtop,
+                               const t_inputrec       &ir,
+                               PartitioningPerMoltype  updateGrouping,
+                               real                    chanceRequested)
 {
     if (!EI_DYNAMICS(ir.eI) || (EI_MD(ir.eI) && ir.etc == etcNO))
     {
@@ -1166,57 +1381,17 @@ real minCellSizeForAtomDisplacement(const gmx_mtop_t &mtop,
     real cellSize = 0;
     while (ib1 - ib0 > 1)
     {
-        int ib = (ib0 + ib1)/2;
-        cellSize = ib*resolution;
+        int  ib     = (ib0 + ib1)/2;
+        cellSize    = ib*resolution;
 
-        /* We assumes atom are distributed uniformly over the cell width.
-         * Once an atom has moved by more than the cellSize (as passed
-         * as the buffer argument to energyDriftAtomPair() below),
-         * the chance of crossing the boundary of the neighbor cell
-         * thus increases as 1/cellSize with the additional displacement
-         * on to of cellSize. We thus create a linear interaction with
-         * derivative = -1/cellSize. Using this in the energyDriftAtomPair
-         * function will return the chance of crossing the next boundary.
-         */
-        const pot_derivatives_t boundaryInteraction = { 1/cellSize, 0, 0 };
-
-        real                    chance = 0;
-        for (const VerletbufAtomtype &att : atomtypes)
+        real chance;
+        if (updateGrouping.empty())
         {
-            const atom_nonbonded_kinetic_prop_t &propAtom = att.prop;
-            real s2_2d;
-            real s2_3d;
-            get_atom_sigma2(kT_fac, &propAtom, &s2_2d, &s2_3d);
-
-            real chancePerAtom = energyDriftAtomPair(propAtom.bConstr, false,
-                                                     s2_2d + s2_3d, s2_2d, 0,
-                                                     cellSize,
-                                                     &boundaryInteraction);
-
-            if (propAtom.bConstr)
-            {
-                /* energyDriftAtomPair() uses an unlimited Gaussian displacement
-                 * distribution for constrained atoms, whereas they can
-                 * actually not move more than the COM of the two constrained
-                 * atoms plus twice the distance from the COM.
-                 * Use this maximum, limited displacement when this results in
-                 * a smaller chance (note that this is still an overestimate).
-                 */
-                real massFraction = propAtom.con_mass/(propAtom.mass + propAtom.con_mass);
-                real comDistance  = propAtom.con_len*massFraction;
-
-                real chanceWithMaxDistance =
-                    energyDriftAtomPair(false, false,
-                                        s2_3d, 0, 0,
-                                        cellSize - 2*comDistance,
-                                        &boundaryInteraction);
-                chancePerAtom = std::min(chancePerAtom, chanceWithMaxDistance);
-            }
-
-            /* Take into account the line density of the boundary */
-            chancePerAtom /= cellSize;
-
-            chance        += att.n*chancePerAtom;
+            chance = chanceOfAtomCrossingCell(atomtypes, kT_fac, cellSize);
+        }
+        else
+        {
+            chance = chanceOfUpdateGroupCrossingCell(mtop, updateGrouping, kT_fac, cellSize);
         }
 
         /* Note: chance is for every nstlist steps */
