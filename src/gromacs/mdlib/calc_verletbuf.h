@@ -36,11 +36,17 @@
 #ifndef GMX_MDLIB_CALC_VERLETBUF_H
 #define GMX_MDLIB_CALC_VERLETBUF_H
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
 struct t_inputrec;
+
+namespace gmx
+{
+class RangePartitioning;
+} // namespace gmx
 
 struct VerletbufListSetup
 {
@@ -100,11 +106,15 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                              int *n_nonlin_vsite,
                              real *rlist);
 
+/* Convenience type */
+using PartitioningPerMoltype = gmx::ArrayRef<const gmx::RangePartitioning>;
+
 /* Determines the mininum cell size based on atom displacement
  *
  * The value returned is the minimum size for which the chance that
- * an atom crosses to non nearest-neighbor cells is <= chanceRequested
- * within ir.nstlist steps.
+ * an atom or update group crosses to non nearest-neighbor cells
+ * is <= chanceRequested within ir.nstlist steps.
+ * Update groups are used when !updateGrouping.empty().
  * Without T-coupling, SD or BD, we can not estimate atom displacements
  * and fall back to the, crude, estimate of using the pairlist buffer size.
  *
@@ -114,9 +124,11 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
  *
  * Note: This size increases (very slowly) with system size.
  */
-real minCellSizeForAtomDisplacement(const gmx_mtop_t &mtop,
-                                    const t_inputrec &ir,
-                                    real              chanceRequested);
+real
+minCellSizeForAtomDisplacement(const gmx_mtop_t       &mtop,
+                               const t_inputrec       &ir,
+                               PartitioningPerMoltype  updateGrouping,
+                               real                    chanceRequested);
 
 /* Struct for unique atom type for calculating the energy drift.
  * The atom displacement depends on mass and constraints.
