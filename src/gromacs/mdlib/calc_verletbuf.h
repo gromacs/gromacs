@@ -124,12 +124,12 @@ real minCellSizeForAtomDisplacement(const gmx_mtop_t &mtop,
  */
 struct atom_nonbonded_kinetic_prop_t
 {
-    real     mass;     /* mass */
-    int      type;     /* type (used for LJ parameters) */
-    real     q;        /* charge */
-    gmx_bool bConstr;  /* constrained, if TRUE, use #DOF=2 iso 3 */
-    real     con_mass; /* mass of heaviest atom connected by constraints */
-    real     con_len;  /* constraint length to the heaviest atom */
+    real mass     = 0;     /* mass */
+    int  type     = 0;     /* type (used for LJ parameters) */
+    real q        = 0;     /* charge */
+    bool bConstr  = false; /* constrained, if TRUE, use #DOF=2 iso 3 */
+    real con_mass = 0;     /* mass of heaviest atom connected by constraints */
+    real con_len  = 0;     /* constraint length to the heaviest atom */
 };
 
 /* This function computes two components of the estimate of the variance
