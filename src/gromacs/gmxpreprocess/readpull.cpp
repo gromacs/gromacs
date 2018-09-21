@@ -148,7 +148,7 @@ static void init_pull_coord(t_pull_coord *pcrd, int coord_index_for_output,
                                            pcrd->eGeom == epullgANGLEAXIS ||
                                            pcrd->eGeom == epullgDIHEDRAL))
     {
-        gmx_fatal(FARGS, "Pulling of type %s can not be combined with geometry %s. Consider using pull type %s.",
+        gmx_fatal(FARGS, "Pulling of type %s cannot be combined with geometry %s. Consider using pull type %s.",
                   epull_names[pcrd->eType],
                   epullg_names[pcrd->eGeom],
                   epull_names[epullUMBRELLA]);
@@ -232,7 +232,7 @@ static void init_pull_coord(t_pull_coord *pcrd, int coord_index_for_output,
     {
         if (dnorm2(vec) == 0)
         {
-            gmx_fatal(FARGS, "With pull geometry %s the pull vector can not be 0,0,0",
+            gmx_fatal(FARGS, "With pull geometry %s the pull vector cannot be 0,0,0",
                       epullg_names[pcrd->eGeom]);
         }
         for (int d = 0; d < DIM; d++)
@@ -527,7 +527,7 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
     {
         char buf[STRLEN];
         sprintf(buf,
-                "Pull group %d has atoms at a distance larger than %g times half the box size from the PBC atom (%d). If atoms are or will more beyond half the box size from the PBC atom, the COM will be ill defined.",
+                "Pull group %d has atoms at a distance larger than %g times half the box size from the PBC atom (%d). If atoms are, or will be, beyond half the box size from the PBC atom, the COM will be ill defined.",
                 groupThatFailsPbc,
                 c_pullGroupPbcMargin,
                 pull->group[groupThatFailsPbc].pbcatom);
