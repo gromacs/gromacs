@@ -346,6 +346,11 @@ class MyMol
          * Return my inner molprop
          */
         MolProp *molProp() const { return mp_; }
+        
+         /*! \brief
+         * Return mol state
+         */
+        t_state *molState() const { return state_;}
 
         /*! \brief
          * It generates the topology structure which will be used to print the topology file.

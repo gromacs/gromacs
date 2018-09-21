@@ -296,7 +296,28 @@ void print_electric_props(FILE                           *fp,
                     mol.molProp()->getMolname().c_str(),
                     mol.molProp()->getCharge(),
                     mol.molProp()->getMultiplicity());
-                    
+            
+            auto nEsp     = mol.Qgresp_.nEsp();
+            auto EspPoint = mol.Qgresp_.espPoint();
+            
+            mol.Qgeem_.generateCharges(debug,
+                                       mol.molProp()->getMolname().c_str(),
+                                       pd, 
+                                       &(mol.topology_->atoms),
+                                       mol.x());
+            
+            mol.Qgresp_.updateAtomCharges(&mol.topology_->atoms);
+            //mol.Qgresp_.updateAtomCoords(mol.x());                
+            mol.Qgresp_.calcPot();           
+            if (mol.espRms() < 7e-3) // do not add outlier to statistics
+            {
+                for (size_t i = 0; i < nEsp; i++)
+                {
+                    gmx_stats_add_point(lsq_esp, gmx2convert(EspPoint[i].v(), eg2cHartree_e), gmx2convert(EspPoint[i].vCalc(), eg2cHartree_e), 0, 0);
+                }
+            }
+            fprintf(fp, "ESP rms: %g (Hartree/e) %s\n", mol.espRms(), (mol.espRms() > 7e-3) ? "XXX" : "");
+                       
             mol.CalcDipole();
             print_dipole(fp, &mol, qtElec, dip_toler);
             for (int j = 0; j < qtElec; j++)
@@ -343,18 +364,6 @@ void print_electric_props(FILE                           *fp,
                 }
             }
             
-            mol.Qgresp_.updateAtomCharges(&mol.topology_->atoms);
-            mol.Qgresp_.calcPot();
-            fprintf(fp,   "ESP rms: %g (Hartree/e) %s\n", mol.espRms(), (mol.espRms() > 7e-3) ? "XXX" : "");
-            auto nEsp     = mol.Qgresp_.nEsp();
-            auto EspPoint = mol.Qgresp_.espPoint();
-            if (mol.espRms() < 7e-3) // do not add outlier to statistics
-            {
-                for (size_t i = 0; i < nEsp; i++)
-                {
-                    gmx_stats_add_point(lsq_esp, gmx2convert(EspPoint[i].v(), eg2cHartree_e), gmx2convert(EspPoint[i].vCalc(), eg2cHartree_e), 0, 0);
-                }
-            }
             fprintf(fp, "Atom   Type      q_Calc     q_ESP     q_CM5     q_HPA     q_MPA       x       y       z\n");
             auto qcm5 = mol.chargeQM(qtCM5);
             auto x    = mol.x();
@@ -381,10 +390,9 @@ void print_electric_props(FILE                           *fp,
                                 qCalc += mol.topology_->atoms.atom[j+1].q;
                             }
                             gmx_stats_add_point(k->lsq, qcm5[i], qCalc, 0, 0);
-                            if (mol.espRms() < 7e-3)
-                            {
-                                gmx_stats_add_point(lsq_charge, qcm5[i], qCalc, 0, 0);
-                            }
+
+                            gmx_stats_add_point(lsq_charge, qcm5[i], qCalc, 0, 0);
+
                             qrmsd += gmx::square(qcm5[i]-qCalc);
                         }
                         fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f  %8.4f  %8.4f  %8.4f%8.3f%8.3f%8.3f\n",
@@ -405,10 +413,7 @@ void print_electric_props(FILE                           *fp,
             }
             fprintf(fp, "\n");
             qrmsd /= mol.topology_->atoms.nr;
-            if(qrmsd > 0.005)
-            {
-                fprintf(fp, "High RMSD in Charge for Molecule %s: %0.3f\n", mol.molProp()->getMolname().c_str(), qrmsd);
-            }
+            fprintf(fp, "q rms: %g (e) %s\n", qrmsd, (qrmsd > 5e-3) ? "XXX" : "");
             n++;
         }
     }

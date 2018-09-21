@@ -171,8 +171,7 @@ void OptEEM::addEspPoint()
         {
             mymol.Qgresp_.setChargeDistributionModel(iChargeDistributionModel());
             mymol.Qgresp_.setAtomWeight(watoms());
-            mymol.Qgresp_.setAtomInfo(&mymol.topology_->atoms, poldata(),
-                                      mymol.x(), mymol.molProp()->getCharge());
+            mymol.Qgresp_.setAtomInfo(&mymol.topology_->atoms, poldata(), mymol.x(), mymol.molProp()->getCharge());
             mymol.Qgresp_.setAtomSymmetry(mymol.symmetric_charges_);
             mymol.Qgresp_.setMolecularCharge(mymol.molProp()->getCharge());
             mymol.Qgresp_.summary(debug);
@@ -275,7 +274,8 @@ void OptEEM::calcDeviation()
             converged = false;
             iter = 0;
             do
-            {     
+            {                     
+
                 if (nullptr != mymol.shellfc_)
                 {
                     if (bFitAlpha_)
@@ -284,18 +284,18 @@ void OptEEM::calcDeviation()
                     }
                     mymol.computeForces(nullptr, commrec());
                 }
-                
-                mymol.Qgeem_.generateCharges(debug,
-                                             mymol.molProp()->getMolname().c_str(),
-                                             poldata(), 
-                                             &(mymol.topology_->atoms),
-                                             mymol.x());    
                                                  
                 for (auto i = 0; i < mymol.mtop_->natoms; i++)
                 {
                     mymol.mtop_->moltype[0].atoms.atom[i].q = 
                         mymol.mtop_->moltype[0].atoms.atom[i].qB = mymol.topology_->atoms.atom[i].q;                         
-                }                                                        
+                }         
+                
+                mymol.Qgeem_.generateCharges(debug,
+                                             mymol.molProp()->getMolname().c_str(),
+                                             poldata(), 
+                                             &(mymol.topology_->atoms),
+                                             mymol.x());
                 
                 q       = mymol.Qgeem_.q(); 
                 EemRms  = 0;                  
@@ -949,7 +949,7 @@ int alex_tune_eem(int argc, char *argv[])
     {
         opt.InitOpt(factor);
     }
-    if (opt.bESP() && opt.iChargeGenerationAlgorithm() != eqgESP)
+    if (opt.iChargeGenerationAlgorithm() != eqgESP)
     {
         opt.addEspPoint();
     }

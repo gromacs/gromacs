@@ -100,4 +100,22 @@ double OptParam::computeBeta(int iter)
     }
     return 1/(BOLTZ*temp);
 }
+
+double OptParam::computeBeta(int maxiter, int iter, int ncycle)
+{
+    double temp = temperature_;
+    if (anneal_)
+    {
+        if (iter >= maxiter_)
+        {
+            temp = 0;
+        }
+        else
+        {
+            temp = (0.5*temperature_)*((exp(-iter/(0.2*(maxiter+1)))) * (1.1 + cos((ncycle*M_PI*iter)/(maxiter+1))));
+        }
+    }
+    return 1/(BOLTZ*temp);
+}
+
 }

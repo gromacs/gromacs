@@ -145,7 +145,7 @@ void QgenEem::setInfo(const Poldata            &pd,
                     snprintf(buf, sizeof(buf), "Row should be at least 1. Here: atype = %s q = %g zeta = %g row = %d model = %s",
                              atp.c_str(), q_[j][k], zeta_[j][k], row_[j][k],
                              getEemtypeName(iChargeDistributionModel_));
-                    GMX_RELEASE_ASSERT(iChargeDistributionModel == eqdAXp || row_[j][k] != 0, buf);
+                    //GMX_RELEASE_ASSERT(iChargeDistributionModel == eqdAXp || row_[j][k] != 0, buf);
                     #if HAVE_LIBCLN
                     if (row_[j][k] > SLATER_MAX_CLN)
                     {

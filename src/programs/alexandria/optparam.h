@@ -103,6 +103,16 @@ class OptParam
          * \return The Boltzmann factor
          */
         double computeBeta(int iter);
+        
+        /*! \brief Compute and return the Boltzmann factor
+         * it applies periodic annealing
+         *
+         * \param[in] maxiter The maximum number of itearion
+         * \param[in] iter    The iteration number
+         * \param[in] ncycle  The multiplicity of the cosine function
+         * \return The Boltzmann factor
+         */
+        double computeBeta(int maxiter, int iter, int ncycle);
 
         //! \brief Return Max # iterations
         int maxIter() const { return maxiter_; }
