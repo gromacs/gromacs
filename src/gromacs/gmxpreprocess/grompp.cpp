@@ -692,7 +692,7 @@ static void copy_state(const char *slog, t_trxframe *fr,
 
     if (fr->not_ok & FRAME_NOT_OK)
     {
-        gmx_fatal(FARGS, "Can not start from an incomplete frame");
+        gmx_fatal(FARGS, "Cannot start from an incomplete frame");
     }
     if (!fr->bX)
     {
@@ -1846,13 +1846,13 @@ int gmx_grompp(int argc, char *argv[])
     {
         if (ir->eI == eiCG || ir->eI == eiLBFGS)
         {
-            sprintf(warn_buf, "Can not do %s with %s, use %s",
+            sprintf(warn_buf, "Cannot do %s with %s, use %s",
                     EI(ir->eI), econstr_names[econtSHAKE], econstr_names[econtLINCS]);
             warning_error(wi, warn_buf);
         }
         if (ir->bPeriodicMols)
         {
-            sprintf(warn_buf, "Can not do periodic molecules with %s, use %s",
+            sprintf(warn_buf, "Cannot do periodic molecules with %s, use %s",
                     econstr_names[econtSHAKE], econstr_names[econtLINCS]);
             warning_error(wi, warn_buf);
         }

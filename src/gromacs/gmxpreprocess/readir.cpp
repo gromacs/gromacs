@@ -283,7 +283,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     {
         warning_error(wi, "rlist should be >= 0");
     }
-    sprintf(err_buf, "nstlist can not be smaller than 0. (If you were trying to use the heuristic neighbour-list update scheme for efficient buffering for improved energy conservation, please use the Verlet cut-off scheme instead.)");
+    sprintf(err_buf, "nstlist cannot be smaller than 0. (If you were trying to use the heuristic neighbour-list update scheme for efficient buffering for improved energy conservation, please use the Verlet cut-off scheme instead.)");
     CHECK(ir->nstlist < 0);
 
     process_interaction_modifier(ir, &ir->coulomb_modifier);
@@ -293,7 +293,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     {
         warning_note(wi,
                      "The group cutoff scheme is deprecated since GROMACS 5.0 and will be removed in a future "
-                     "release when all interaction forms are supported for the verlet scheme. The verlet "
+                     "release when all interaction forms are supported for the Verlet scheme. The verlet "
                      "scheme already scales better, and it is compatible with GPUs and other accelerators.");
 
         if (ir->rlist > 0 && ir->rlist < ir->rcoulomb)
@@ -307,7 +307,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
         if (ir->rlist == 0 && ir->ePBC != epbcNONE)
         {
-            warning_error(wi, "Can not have an infinite cut-off with PBC");
+            warning_error(wi, "Cannot have an infinite cut-off with PBC");
         }
     }
 
@@ -372,7 +372,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
         if (EEL_USER(ir->coulombtype))
         {
-            sprintf(warn_buf, "Coulomb type %s is not supported with the verlet scheme", eel_names[ir->coulombtype]);
+            sprintf(warn_buf, "Coulomb type %s is not supported with the Verlet scheme", eel_names[ir->coulombtype]);
             warning_error(wi, warn_buf);
         }
 
@@ -392,12 +392,12 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             if (ir->verletbuf_tol == 0)
             {
-                warning_error(wi, "Can not have Verlet buffer tolerance of exactly 0");
+                warning_error(wi, "Cannot have Verlet buffer tolerance of exactly 0");
             }
 
             if (ir->rlist < rc_max)
             {
-                warning_error(wi, "With verlet lists rlist can not be smaller than rvdw or rcoulomb");
+                warning_error(wi, "With Verlet lists rlist cannot be smaller than rvdw or rcoulomb");
             }
 
             if (ir->rlist == rc_max && ir->nstlist > 1)
@@ -604,7 +604,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
         if (ir->etc == etcNOSEHOOVER)
         {
-            sprintf(warn_buf, "Nose-Hoover based temperature control such as [%s] my not be entirelyconsistent with simulated tempering", etcoupl_names[ir->etc]);
+            sprintf(warn_buf, "Nose-Hoover based temperature control such as [%s] my not be entirely consistent with simulated tempering", etcoupl_names[ir->etc]);
             warning_note(wi, warn_buf);
         }
 
@@ -633,10 +633,10 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
                 static_cast<int>(fep->sc_r_power));
         CHECK(fep->sc_alpha != 0 && fep->sc_r_power != 6.0 && fep->sc_r_power != 48.0);
 
-        sprintf(err_buf, "Can't use positive delta-lambda (%g) if initial state/lambda does not start at zero", fep->delta_lambda);
+        sprintf(err_buf, "Cannot use positive delta-lambda (%g) if initial state/lambda does not start at zero", fep->delta_lambda);
         CHECK(fep->delta_lambda > 0 && ((fep->init_fep_state > 0) ||  (fep->init_lambda > 0)));
 
-        sprintf(err_buf, "Can't use positive delta-lambda (%g) with expanded ensemble simulations", fep->delta_lambda);
+        sprintf(err_buf, "Cannot use positive delta-lambda (%g) with expanded ensemble simulations", fep->delta_lambda);
         CHECK(fep->delta_lambda > 0 && (ir->efep == efepEXPANDED));
 
         sprintf(err_buf, "Can only use expanded ensemble with md-vv (for now)");
@@ -680,7 +680,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             }
             if (n_lambda_terms > 1)
             {
-                sprintf(warn_buf, "If lambda vector states (fep-lambdas, coul-lambdas etc.) are set, don't use init-lambda to set lambda state (except for slow growth). Use init-lambda-state instead.");
+                sprintf(warn_buf, "If lambda vector states (fep-lambdas, coul-lambdas etc.) are set, do not use init-lambda to set lambda state (except for slow growth). Use init-lambda-state instead.");
                 warning(wi, warn_buf);
             }
 
@@ -845,14 +845,14 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
         else
         {
-            sprintf(err_buf, "Can not have pressure coupling with pbc=%s",
+            sprintf(err_buf, "Cannot have pressure coupling with pbc=%s",
                     epbc_names[ir->ePBC]);
             CHECK(ir->epc != epcNO);
         }
-        sprintf(err_buf, "Can not have Ewald with pbc=%s", epbc_names[ir->ePBC]);
+        sprintf(err_buf, "Cannot have Ewald with pbc=%s", epbc_names[ir->ePBC]);
         CHECK(EEL_FULL(ir->coulombtype));
 
-        sprintf(err_buf, "Can not have dispersion correction with pbc=%s",
+        sprintf(err_buf, "Cannot have dispersion correction with pbc=%s",
                 epbc_names[ir->ePBC]);
         CHECK(ir->eDispCorr != edispcNO);
     }
@@ -895,7 +895,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
         if (ir->comm_mode == ecmANGULAR)
         {
-            sprintf(err_buf, "Can not remove the rotation around the center of mass with periodic molecules");
+            sprintf(err_buf, "Cannot remove the rotation around the center of mass with periodic molecules");
             CHECK(ir->bPeriodicMols);
             if (ir->ePBC != epbcNONE)
             {
@@ -922,7 +922,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     {
         if (ir->opts.nhchainlength < 1)
         {
-            sprintf(warn_buf, "number of Nose-Hoover chains (currently %d) cannot be less than 1,reset to 1\n", ir->opts.nhchainlength);
+            sprintf(warn_buf, "number of Nose-Hoover chains (currently %d) cannot be less than 1, nhchainlength reset to 1\n", ir->opts.nhchainlength);
             ir->opts.nhchainlength = 1;
             warning(wi, warn_buf);
         }
@@ -1174,7 +1174,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             {
                 sprintf(err_buf,
                         "With coulombtype = %s (without modifier), rcoulomb must be equal to rlist.\n"
-                        "For optimal energy conservation,consider using\n"
+                        "For optimal energy conservation consider using "
                         "a potential modifier.", eel_names[ir->coulombtype]);
                 CHECK(ir->rcoulomb != ir->rlist);
             }
@@ -1217,7 +1217,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     {
         if (ir->cutoff_scheme == ecutsVERLET)
         {
-            sprintf(warn_buf, "Since molecules/charge groups are broken using the Verlet scheme, you can not use a dipole correction to the %s electrostatics.",
+            sprintf(warn_buf, "Since molecules/charge groups are broken using the Verlet scheme, you cannot use a dipole correction to the %s electrostatics.",
                     eel_names[ir->coulombtype]);
             warning(wi, warn_buf);
         }
@@ -3095,7 +3095,7 @@ static void make_swap_groups(
     /* Just a quick check here, more thorough checks are in mdrun */
     if (strcmp(swap->grp[eGrpSplit0].molname, swap->grp[eGrpSplit1].molname) == 0)
     {
-        gmx_fatal(FARGS, "The split groups can not both be '%s'.", swap->grp[eGrpSplit0].molname);
+        gmx_fatal(FARGS, "The split groups cannot both be '%s'.", swap->grp[eGrpSplit0].molname);
     }
 
     /* Get the index atoms of the split0, split1, solvent, and swap groups */
@@ -3653,7 +3653,7 @@ void do_index(const char* mdparin, const char *ndx,
     }
     if (bExcl && EEL_FULL(ir->coulombtype))
     {
-        warning(wi, "Can not exclude the lattice Coulomb energy between energy groups");
+        warning(wi, "Cannot exclude the lattice Coulomb energy between energy groups");
     }
 
     bTable = do_egp_flag(ir, groups, "energygrp-table", is->egptable, EGP_TABLE);
@@ -3784,7 +3784,7 @@ static bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
                             AbsRef[d] = 1;
                             break;
                         default:
-                            gmx_fatal(FARGS, " Invalid geometry for flat-bottom position restraint.\n"
+                            gmx_fatal(FARGS, "Invalid geometry for flat-bottom position restraint.\n"
                                       "Expected nr between 1 and %d. Found %d\n", efbposresNR-1,
                                       pr->fbposres.geom);
                     }
@@ -4178,7 +4178,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
                         if (ir->pull->coord[c].eGeom == epullgDIRPBC &&
                             ir->pull->coord[c].vec[m] != 0)
                         {
-                            gmx_fatal(FARGS, "Can not have dynamic box while using pull geometry '%s' (dim %c)", EPULLGEOM(ir->pull->coord[c].eGeom), 'x'+m);
+                            gmx_fatal(FARGS, "Cannot have dynamic box while using pull geometry '%s' (dim %c)", EPULLGEOM(ir->pull->coord[c].eGeom), 'x'+m);
                         }
                     }
                 }
@@ -4242,7 +4242,7 @@ void double_check(t_inputrec *ir, matrix box,
 
     if (ir->LincsWarnAngle > 90.0)
     {
-        sprintf(warn_buf, "lincs-warnangle can not be larger than 90 degrees, setting it to 90.\n");
+        sprintf(warn_buf, "lincs-warnangle cannot be larger than 90 degrees, setting it to 90.\n");
         warning(wi, warn_buf);
         ir->LincsWarnAngle = 90.0;
     }
@@ -4270,7 +4270,7 @@ void double_check(t_inputrec *ir, matrix box,
                 warning_error(wi, warn_buf);
                 if (TRICLINIC(box))
                 {
-                    fprintf(stderr, "Grid search might allow larger cut-off's than simple search with triclinic boxes.");
+                    fprintf(stderr, "Grid search might allow larger cut-offs than simple search with triclinic boxes.");
                 }
             }
         }
