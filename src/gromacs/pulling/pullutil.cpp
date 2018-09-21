@@ -857,7 +857,7 @@ static bool pullGroupObeysPbcRestrictions(const pull_group_work_t &group,
     for (gmx::index indexInSet = 0; indexInSet < localAtomIndices.size(); indexInSet++)
     {
         rvec dx;
-        pbc_dx(&pbc, x[indexInSet], x_pbc, dx);
+        pbc_dx(&pbc, x[localAtomIndices[indexInSet]], x_pbc, dx);
 
         bool atomIsTooFar = false;
         if (pbcIsRectangular)
