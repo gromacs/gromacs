@@ -96,6 +96,8 @@ endfunction()
 # This function can be called with extra options and arguments:
 #   MPI_RANKS <N>     declares the requirement to run the test binary with N ranks
 #   INTEGRATION_TEST  requires the use of the IntegrationTest label in CTest
+#   OCL_INTEGRATION_TEST requires the use of the IntegrationTest label in CTest,
+#                        only difference is 2x longer timeout as OpenCL JIT can be slow
 #   SLOW_TEST         requires the use of the SlowTest label in CTest, and
 #                     increase the length of the ctest timeout.
 #
@@ -104,15 +106,19 @@ endfunction()
 # ranks.
 function (gmx_register_gtest_test NAME EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
-        set(_options INTEGRATION_TEST SLOW_TEST)
+        set(_options INTEGRATION_TEST OCL_INTEGRATION_TEST SLOW_TEST)
         set(_one_value_args MPI_RANKS)
         cmake_parse_arguments(ARG "${_options}" "${_one_value_args}" "" ${ARGN})
         set(_xml_path ${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
         set(_labels GTest)
         set(_timeout 30)
-        if (ARG_INTEGRATION_TEST)
+        if (ARG_INTEGRATION_TEST OR ARG_OCL_INTEGRATION_TEST)
             list(APPEND _labels IntegrationTest)
-            set(_timeout 120)
+            if (ARG_OCL_INTEGRATION_TEST)
+                set(_timeout 240)
+            else()
+                set(_timeout 120)
+            endif()
             gmx_get_test_prefix_cmd(_prefix_cmd IGNORE_LEAKS)
         elseif (ARG_SLOW_TEST)
             list(APPEND _labels SlowTest)

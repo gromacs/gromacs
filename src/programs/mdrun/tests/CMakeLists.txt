@@ -66,7 +66,11 @@ gmx_add_gtest_executable(
     # pseudo-library for code for mdrun
     $<TARGET_OBJECTS:mdrun_objlib>
     )
-gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST)
+if (GMX_GPU AND GMX_USE_OPENCL)
+    gmx_register_gtest_test(${testname} ${exename} OCL_INTEGRATION_TEST)
+else()
+    gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST)
+endif()
 
 set(testname "MdrunMpiTests")
 set(exename "mdrun-mpi-test")
