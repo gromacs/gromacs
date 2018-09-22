@@ -335,14 +335,14 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
         }
         else
         {
-            time_unit_t  time_unit
+            time_unit_t  timeUnit
                 = static_cast<time_unit_t>(impl_->settings_.timeUnit() + 1); // NOLINT(bugprone-misplaced-widening-cast)
-            xvg_format_t xvg_format
+            xvg_format_t xvgFormat
                 = (impl_->settings_.plotFormat() > 0
                    ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())
                    : exvgNONE);
             gmx_output_env_t                                    *oenv;
-            output_env_init(&oenv, getProgramContext(), time_unit, FALSE, xvg_format, 0);
+            output_env_init(&oenv, getProgramContext(), timeUnit, FALSE, xvgFormat, 0);
             const unique_cptr<gmx_output_env_t, output_env_done> oenvGuard(oenv);
             impl_->fp_ = xvgropen(impl_->filename_.c_str(), impl_->title_.c_str(),
                                   impl_->xlabel_, impl_->ylabel_,

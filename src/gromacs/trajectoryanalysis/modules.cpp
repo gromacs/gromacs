@@ -78,9 +78,9 @@ void registerModule(CommandLineModuleManager *manager,
                     CommandLineModuleGroup    group)
 {
     TrajectoryAnalysisCommandLineRunner::registerModule(
-            manager, ModuleInfo::name, ModuleInfo::shortDescription,
+            manager, ModuleInfo::c_name, ModuleInfo::c_shortDescription,
             &ModuleInfo::create);
-    group.addModule(ModuleInfo::name);
+    group.addModule(ModuleInfo::c_name);
 }
 
 }   // namespace

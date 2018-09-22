@@ -118,7 +118,7 @@ AnalysisDataDisplacementModule::Impl::~Impl()
  */
 
 AnalysisDataDisplacementModule::AnalysisDataDisplacementModule()
-    : _impl(new Impl())
+    : impl_(new Impl())
 {
     setMultipoint(true);
 }
@@ -132,7 +132,7 @@ AnalysisDataDisplacementModule::~AnalysisDataDisplacementModule()
 void
 AnalysisDataDisplacementModule::setMaxTime(real tmax)
 {
-    _impl->tmax = tmax;
+    impl_->tmax = tmax;
 }
 
 
@@ -140,8 +140,8 @@ void
 AnalysisDataDisplacementModule::setMSDHistogram(
         const AnalysisDataBinAverageModulePointer &histm)
 {
-    GMX_RELEASE_ASSERT(_impl->histm == nullptr, "Can only set MSD histogram once");
-    _impl->histm = histm.get();
+    GMX_RELEASE_ASSERT(impl_->histm == nullptr, "Can only set MSD histogram once");
+    impl_->histm = histm.get();
     addModule(histm);
 }
 
@@ -170,16 +170,16 @@ AnalysisDataDisplacementModule::flags() const
 void
 AnalysisDataDisplacementModule::dataStarted(AbstractAnalysisData *data)
 {
-    if (data->columnCount() % _impl->ndim != 0)
+    if (data->columnCount() % impl_->ndim != 0)
     {
         GMX_THROW(APIError("Data has incorrect number of columns"));
     }
-    _impl->nmax = data->columnCount();
-    snew(_impl->oldval, _impl->nmax);
-    _impl->ci = -_impl->nmax;
+    impl_->nmax = data->columnCount();
+    snew(impl_->oldval, impl_->nmax);
+    impl_->ci = -impl_->nmax;
 
-    int ncol = _impl->nmax / _impl->ndim + 1;
-    _impl->currValues_.reserve(ncol);
+    int ncol = impl_->nmax / impl_->ndim + 1;
+    impl_->currValues_.reserve(ncol);
     setColumnCount(0, ncol);
 }
 
@@ -188,63 +188,63 @@ void
 AnalysisDataDisplacementModule::frameStarted(const AnalysisDataFrameHeader &header)
 {
     // Initialize times.
-    if (_impl->bFirst)
+    if (impl_->bFirst)
     {
-        _impl->t0 = header.x();
+        impl_->t0 = header.x();
     }
-    else if (_impl->dt <= 0)
+    else if (impl_->dt <= 0)
     {
-        _impl->dt = header.x() - _impl->t0;
-        if (_impl->dt < 0 || gmx_within_tol(_impl->dt, 0.0, GMX_REAL_EPS))
+        impl_->dt = header.x() - impl_->t0;
+        if (impl_->dt < 0 || gmx_within_tol(impl_->dt, 0.0, GMX_REAL_EPS))
         {
             GMX_THROW(APIError("Identical or decreasing frame times"));
         }
     }
     else
     {
-        if (!gmx_within_tol(header.x() - _impl->t, _impl->dt, GMX_REAL_EPS))
+        if (!gmx_within_tol(header.x() - impl_->t, impl_->dt, GMX_REAL_EPS))
         {
             GMX_THROW(APIError("Frames not evenly spaced"));
         }
     }
-    _impl->t = header.x();
+    impl_->t = header.x();
 
     // Allocate memory for all the positions once it is possible.
-    if (_impl->max_store == -1 && !_impl->bFirst)
+    if (impl_->max_store == -1 && !impl_->bFirst)
     {
-        _impl->max_store = _impl->nmax * static_cast<int>(_impl->tmax/_impl->dt + 1);
-        srenew(_impl->oldval, _impl->max_store);
+        impl_->max_store = impl_->nmax * static_cast<int>(impl_->tmax/impl_->dt + 1);
+        srenew(impl_->oldval, impl_->max_store);
     }
 
     // Increment the index where current positions are stored.
-    _impl->ci += _impl->nmax;
-    if (_impl->ci >= _impl->max_store)
+    impl_->ci += impl_->nmax;
+    if (impl_->ci >= impl_->max_store)
     {
-        _impl->ci = 0;
+        impl_->ci = 0;
     }
 
 /*
-    for (int i = 0; i < _impl->nmax; ++i)
+    for (int i = 0; i < impl_->nmax; ++i)
     {
-        _impl->p[_impl->ci + i].bPres = false;
+        impl_->p[impl_->ci + i].bPres = false;
     }
  */
-    _impl->nstored++;
-    _impl->bFirst = false;
+    impl_->nstored++;
+    impl_->bFirst = false;
 }
 
 
 void
 AnalysisDataDisplacementModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
-    if (points.firstColumn() % _impl->ndim != 0
-        || points.columnCount() % _impl->ndim != 0)
+    if (points.firstColumn() % impl_->ndim != 0
+        || points.columnCount() % impl_->ndim != 0)
     {
         GMX_THROW(APIError("Partial data points"));
     }
     for (int i = 0; i < points.columnCount(); ++i)
     {
-        _impl->oldval[_impl->ci + points.firstColumn() + i] = points.y(i);
+        impl_->oldval[impl_->ci + points.firstColumn() + i] = points.y(i);
     }
 }
 
@@ -252,49 +252,49 @@ AnalysisDataDisplacementModule::pointsAdded(const AnalysisDataPointSetRef &point
 void
 AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
 {
-    if (_impl->nstored <= 1)
+    if (impl_->nstored <= 1)
     {
         return;
     }
 
     int step, i;
 
-    if (_impl->nstored == 2)
+    if (impl_->nstored == 2)
     {
-        if (_impl->histm)
+        if (impl_->histm)
         {
-            _impl->histm->init(histogramFromBins(0, _impl->max_store / _impl->nmax,
-                                                 _impl->dt).integerBins());
+            impl_->histm->init(histogramFromBins(0, impl_->max_store / impl_->nmax,
+                                                 impl_->dt).integerBins());
         }
         moduleManager().notifyDataStart(this);
     }
-    AnalysisDataFrameHeader header(_impl->nstored - 2, _impl->t, 0);
+    AnalysisDataFrameHeader header(impl_->nstored - 2, impl_->t, 0);
     moduleManager().notifyFrameStart(header);
 
-    for (i = _impl->ci - _impl->nmax, step = 1;
-         step < _impl->nstored && i != _impl->ci;
-         i -= _impl->nmax, ++step)
+    for (i = impl_->ci - impl_->nmax, step = 1;
+         step < impl_->nstored && i != impl_->ci;
+         i -= impl_->nmax, ++step)
     {
         if (i < 0)
         {
-            i += _impl->max_store;
+            i += impl_->max_store;
         }
-        _impl->currValues_.clear();
-        _impl->currValues_.emplace_back(step * _impl->dt);
+        impl_->currValues_.clear();
+        impl_->currValues_.emplace_back(step * impl_->dt);
         int k = 1;
-        for (int j = 0; j < _impl->nmax; j += _impl->ndim, ++k)
+        for (int j = 0; j < impl_->nmax; j += impl_->ndim, ++k)
         {
             real dist2 = 0.0;
 
-            for (int d = 0; d < _impl->ndim; ++d)
+            for (int d = 0; d < impl_->ndim; ++d)
             {
-                real displ = _impl->oldval[_impl->ci + j + d]
-                    - _impl->oldval[i + j + d];
+                real displ = impl_->oldval[impl_->ci + j + d]
+                    - impl_->oldval[i + j + d];
                 dist2 += displ * displ;
             }
-            _impl->currValues_.emplace_back(dist2);
+            impl_->currValues_.emplace_back(dist2);
         }
-        moduleManager().notifyPointsAdd(AnalysisDataPointSetRef(header, _impl->currValues_));
+        moduleManager().notifyPointsAdd(AnalysisDataPointSetRef(header, impl_->currValues_));
     }
 
     moduleManager().notifyFrameFinish(header);
@@ -304,7 +304,7 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
 void
 AnalysisDataDisplacementModule::dataFinished()
 {
-    if (_impl->nstored >= 2)
+    if (impl_->nstored >= 2)
     {
         moduleManager().notifyDataFinish();
     }

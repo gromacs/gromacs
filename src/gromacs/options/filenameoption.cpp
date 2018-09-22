@@ -79,7 +79,7 @@ struct FileTypeMapping
 };
 
 //! Mappings from OptionFileType to file types in filetypes.h.
-const FileTypeMapping c_fileTypeMapping[] =
+const FileTypeMapping g_cFileTypeMapping[] =
 {
     { eftTopology,    efTPS },
     { eftTrajectory,  efTRX },
@@ -215,7 +215,7 @@ FileNameOptionStorage::FileNameOptionStorage(const FileNameOption  &settings,
     }
     else
     {
-        ArrayRef<const FileTypeMapping>                 map(c_fileTypeMapping);
+        ArrayRef<const FileTypeMapping>                 map(g_cFileTypeMapping);
         ArrayRef<const FileTypeMapping>::const_iterator i;
         for (i = map.begin(); i != map.end(); ++i)
         {

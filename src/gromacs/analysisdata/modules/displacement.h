@@ -98,7 +98,7 @@ class AnalysisDataDisplacementModule : public AbstractAnalysisData,
 
         class Impl;
 
-        PrivateImplPointer<Impl> _impl;
+        PrivateImplPointer<Impl> impl_;
 };
 
 //! Smart pointer to manage an AnalysisDataDisplacementModule object.

@@ -62,11 +62,11 @@ namespace
 {
 
 //! Value used to signify that a real-valued histogram setting is not set.
-const real UNDEFINED = std::numeric_limits<real>::max();
+const real g_undefined = std::numeric_limits<real>::max();
 //! Checks whether \p value is defined.
 bool isDefined(real value)
 {
-    return value != UNDEFINED;
+    return value != g_undefined;
 }
 
 } // namespace
@@ -79,7 +79,7 @@ namespace gmx
  */
 
 AnalysisHistogramSettingsInitializer::AnalysisHistogramSettingsInitializer()
-    : min_(UNDEFINED), max_(UNDEFINED), binWidth_(UNDEFINED),
+    : min_(g_undefined), max_(g_undefined), binWidth_(g_undefined),
       binCount_(0), bIntegerBins_(false), bRoundRange_(false),
       bIncludeAll_(false)
 {

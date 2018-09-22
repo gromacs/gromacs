@@ -289,8 +289,8 @@ Trajectory::writeOutput()
 
 }       // namespace
 
-const char TrajectoryInfo::name[]             = "trajectory";
-const char TrajectoryInfo::shortDescription[] =
+const char TrajectoryInfo::c_name[]             = "trajectory";
+const char TrajectoryInfo::c_shortDescription[] =
     "Print coordinates, velocities, and/or forces for selections";
 
 TrajectoryAnalysisModulePointer TrajectoryInfo::create()

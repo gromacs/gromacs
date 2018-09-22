@@ -190,7 +190,7 @@ TopologyInformation::name() const
     return nullptr;
 }
 
-gmx_rmpbc_t gmx_rmpbc_init(const gmx::TopologyInformation &topInfo)
+gmx_rmpbc_t gmxRmpbcInit(const gmx::TopologyInformation &topInfo)
 {
     GMX_RELEASE_ASSERT(topInfo.hasTopology(), "Cannot remove PBC without a topology");
 

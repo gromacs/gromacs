@@ -198,7 +198,7 @@ class TopologyInformation
 };
 
 //! Convenience overload useful for implementing legacy tools.
-gmx_rmpbc_t gmx_rmpbc_init(const gmx::TopologyInformation &topInfo);
+gmx_rmpbc_t gmxRmpbcInit(const gmx::TopologyInformation &topInfo);
 
 } // namespace gmx
 

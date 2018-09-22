@@ -91,7 +91,7 @@ namespace
 //! \{
 
 //! Tracks information on two nearest neighbors of a single surface dot.
-struct t_conect
+struct TConect
 {
     //! Index of the second nearest neighbor dot.
     int      aa;
@@ -111,7 +111,7 @@ struct t_conect
  * \param[in]     j  Index of the other surface dot to add to the array.
  * \param[in]     d2 Squared distance between `i` and `j`.
  */
-void add_rec(t_conect c[], int i, int j, real d2)
+void addRec(TConect c[], int i, int j, real d2)
 {
     if (c[i].aa == -1)
     {
@@ -156,11 +156,11 @@ void add_rec(t_conect c[], int i, int j, real d2)
  * neighbors.  The function is copied verbatim from the old gmx_sas.c
  * implementation.
  */
-void do_conect(const char *fn, int n, rvec x[])
+void doConect(const char *fn, int n, rvec x[])
 {
     FILE     *fp;
     int       i, j;
-    t_conect *c;
+    TConect *c;
     rvec      dx;
     real      d2;
 
@@ -177,8 +177,8 @@ void do_conect(const char *fn, int n, rvec x[])
         {
             rvec_sub(x[i], x[j], dx);
             d2 = iprod(dx, dx);
-            add_rec(c, i, j, d2);
-            add_rec(c, j, i, d2);
+            addRec(c, i, j, d2);
+            addRec(c, j, i, d2);
         }
     }
     fp = gmx_ffopen(fn, "a");
@@ -197,7 +197,7 @@ void do_conect(const char *fn, int n, rvec x[])
 /*! \brief
  * Plots the surface into a PDB file, optionally including the original atoms.
  */
-void connolly_plot(const char *fn, int ndots, const real dots[], rvec x[], t_atoms *atoms,
+void connollyPlot(const char *fn, int ndots, const real dots[], rvec x[], t_atoms *atoms,
                    t_symtab *symtab, int ePBC, const matrix box, gmx_bool bIncludeSolute)
 {
     const char *const  atomnm = "DOT";
@@ -270,7 +270,7 @@ void connolly_plot(const char *fn, int ndots, const real dots[], rvec x[], t_ato
         }
         aaa.nr = ndots;
         write_sto_conf(fn, title, &aaa, xnew, nullptr, ePBC, const_cast<rvec *>(box));
-        do_conect(fn, ndots, xnew);
+        doConect(fn, ndots, xnew);
         done_atom(&aaa);
     }
     sfree(xnew);
@@ -966,7 +966,7 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         // structures.  But since it is only used in the first frame, and no
         // one else uses the topology after initialization, it may just work
         // even with future parallelization.
-        connolly_plot(fnConnolly_.c_str(),
+        connollyPlot(fnConnolly_.c_str(),
                       nsurfacedots, surfacedots, fr.x, atoms_.get(),
                       &mtop_->symtab, fr.ePBC, fr.box, bIncludeSolute_);
     }
@@ -1067,8 +1067,8 @@ Sasa::writeOutput()
 
 }       // namespace
 
-const char SasaInfo::name[]             = "sasa";
-const char SasaInfo::shortDescription[] =
+const char SasaInfo::c_name[]             = "sasa";
+const char SasaInfo::c_shortDescription[] =
     "Compute solvent accessible surface area";
 
 TrajectoryAnalysisModulePointer SasaInfo::create()

@@ -261,10 +261,10 @@ enum Group2Type
     Group2Type_SphereNormal
 };
 //! String values corresponding to Group1Type.
-const char *const cGroup1TypeEnum[] =
+const char *const g_cGroup1TypeEnum[] =
 { "angle", "dihedral", "vector", "plane" };
 //! String values corresponding to Group2Type.
-const char *const cGroup2TypeEnum[] =
+const char *const g_cGroup2TypeEnum[] =
 { "none", "vector", "plane", "t0", "z", "sphnorm" };
 
 class Angle : public TrajectoryAnalysisModule
@@ -394,10 +394,10 @@ Angle::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *setti
                            .store(&fnHistogram_).defaultBasename("anghist")
                            .description("Histogram of the angles"));
 
-    options->addOption(EnumOption<Group1Type>("g1").enumValue(cGroup1TypeEnum)
+    options->addOption(EnumOption<Group1Type>("g1").enumValue(g_cGroup1TypeEnum)
                            .store(&g1type_)
                            .description("Type of analysis/first vector group"));
-    options->addOption(EnumOption<Group2Type>("g2").enumValue(cGroup2TypeEnum)
+    options->addOption(EnumOption<Group2Type>("g2").enumValue(g_cGroup2TypeEnum)
                            .store(&g2type_)
                            .description("Type of second vector group"));
     options->addOption(DoubleOption("binw").store(&binWidth_)
@@ -650,7 +650,7 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
 //! Helper method to calculate a vector from two or three positions.
 void
-calc_vec(int natoms, rvec x[], t_pbc *pbc, rvec xout, rvec cout)
+calcVec(int natoms, rvec x[], t_pbc *pbc, rvec xout, rvec cout)
 {
     switch (natoms)
     {
@@ -789,13 +789,13 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                 }
                 case Group1Type_Vector:
                 case Group1Type_Plane:
-                    calc_vec(natoms1_, x, pbc, v1, c1);
+                    calcVec(natoms1_, x, pbc, v1, c1);
                     switch (g2type_)
                     {
                         case Group2Type_Vector:
                         case Group2Type_Plane:
                             iter2.getCurrentPositions(x);
-                            calc_vec(natoms2_, x, pbc, v2, c2);
+                            calcVec(natoms2_, x, pbc, v2, c2);
                             break;
                         case Group2Type_TimeZero:
                             // FIXME: This is not parallelizable.
@@ -849,8 +849,8 @@ Angle::writeOutput()
 
 }       // namespace
 
-const char AngleInfo::name[]             = "gangle";
-const char AngleInfo::shortDescription[] =
+const char AngleInfo::c_name[]             = "gangle";
+const char AngleInfo::c_shortDescription[] =
     "Calculate angles";
 
 TrajectoryAnalysisModulePointer AngleInfo::create()

@@ -271,9 +271,9 @@ enum PdbAtomsSelection
     PdbAtomsSelection_Selected
 };
 //! String values corresponding to ResidueNumbering.
-const char *const     cResNumberEnum[] = { "number", "index" };
+const char *const     g_cResNumberEnum[] = { "number", "index" };
 //! String values corresponding to PdbAtomsSelection.
-const char *const     cPDBAtomsEnum[] = { "all", "maxsel", "selected" };
+const char *const     g_cPdbAtomsEnum[] = { "all", "maxsel", "selected" };
 
 class Select : public TrajectoryAnalysisModule
 {
@@ -458,10 +458,10 @@ Select::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *sett
     options->addOption(BooleanOption("cfnorm").store(&bFracNorm_)
                            .description("Normalize by covered fraction with -os"));
     options->addOption(EnumOption<ResidueNumbering>("resnr").store(&resNumberType_)
-                           .enumValue(cResNumberEnum)
+                           .enumValue(g_cResNumberEnum)
                            .description("Residue number output type with -oi and -on"));
     options->addOption(EnumOption<PdbAtomsSelection>("pdbatoms").store(&pdbAtoms_)
-                           .enumValue(cPDBAtomsEnum)
+                           .enumValue(g_cPdbAtomsEnum)
                            .description("Atoms to write with -ofpdb"));
     options->addOption(BooleanOption("cumlt").store(&bCumulativeLifetimes_)
                            .description("Cumulate subintervals of longer intervals in -olt"));
@@ -762,8 +762,8 @@ Select::writeOutput()
 
 }       // namespace
 
-const char SelectInfo::name[]             = "select";
-const char SelectInfo::shortDescription[] =
+const char SelectInfo::c_name[]             = "select";
+const char SelectInfo::c_shortDescription[] =
     "Print general information about selections";
 
 TrajectoryAnalysisModulePointer SelectInfo::create()

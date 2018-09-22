@@ -220,16 +220,16 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
     // Add a module for plotting the data automatically at the end of
     // the calculation. With this in place you only have to add data
     // points to the data et.
-    AnalysisDataPlotModulePointer plotm_(new AnalysisDataPlotModule());
-    plotm_->setSettings(settings.plotSettings());
-    plotm_->setFileName(fnFreevol_);
-    plotm_->setTitle("Free Volume");
-    plotm_->setXAxisIsTime();
-    plotm_->setYLabel("Free Volume (%)");
-    plotm_->appendLegend("Free Volume");
-    plotm_->appendLegend("Volume");
+    AnalysisDataPlotModulePointer plotm(new AnalysisDataPlotModule());
+    plotm->setSettings(settings.plotSettings());
+    plotm->setFileName(fnFreevol_);
+    plotm->setTitle("Free Volume");
+    plotm->setXAxisIsTime();
+    plotm->setYLabel("Free Volume (%)");
+    plotm->appendLegend("Free Volume");
+    plotm->appendLegend("Volume");
 
-    data_.addModule(plotm_);
+    data_.addModule(plotm);
 
     // Initiate variable
     cutoff_               = 0;
@@ -325,15 +325,15 @@ FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     dh.startFrame(frnr, fr.time);
 
     // Compute volume and number of insertions to perform
-    real V       = det(fr.box);
-    int  Ninsert = static_cast<int>(ninsert_*V);
+    real v       = det(fr.box);
+    int  ninsert = static_cast<int>(ninsert_*v);
 
     // Use neighborsearching tools!
     AnalysisNeighborhoodSearch nbsearch = nb_.initSearch(pbc, sel);
 
     // Then loop over insertions
-    int NinsTot = 0;
-    for (int i = 0; (i < Ninsert); i++)
+    int ninsTot = 0;
+    for (int i = 0; (i < ninsert); i++)
     {
         rvec rand, ins, dx;
 
@@ -364,19 +364,19 @@ FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         if (!bOverlap)
         {
             // We found some free volume!
-            NinsTot++;
+            ninsTot++;
         }
     }
     // Compute total free volume for this frame
     double frac = 0;
-    if (Ninsert > 0)
+    if (ninsert > 0)
     {
-        frac = (100.0*NinsTot)/Ninsert;
+        frac = (100.0*ninsTot)/ninsert;
     }
     // Add the free volume fraction to the data set in column 0
     dh.setPoint(0, frac);
     // Add the total volume to the data set in column 1
-    dh.setPoint(1, V);
+    dh.setPoint(1, v);
 
     // Magic
     dh.finishFrame();
@@ -394,39 +394,39 @@ void
 FreeVolume::writeOutput()
 {
     // Final results come from statistics module in analysis framework
-    double FVaver  = adata_->average(0, 0);
-    double FVerror = adata_->standardDeviation(0, 0);
-    printf("Free volume %.2f +/- %.2f %%\n", FVaver, FVerror);
+    double fVaver  = adata_->average(0, 0);
+    double fVerror = adata_->standardDeviation(0, 0);
+    printf("Free volume %.2f +/- %.2f %%\n", fVaver, fVerror);
 
-    double Vaver  = adata_->average(0, 1);
-    double Verror = adata_->standardDeviation(0, 1);
-    printf("Total volume %.2f +/- %.2f nm^3\n", Vaver, Verror);
+    double vaver  = adata_->average(0, 1);
+    double verror = adata_->standardDeviation(0, 1);
+    printf("Total volume %.2f +/- %.2f nm^3\n", vaver, verror);
 
     printf("Number of molecules %d total mass %.2f Dalton\n", nmol_, mtot_);
-    double RhoAver  = mtot_ / (Vaver * 1e-24 * AVOGADRO);
-    double RhoError = gmx::square(RhoAver / Vaver)*Verror;
+    double rhoAver  = mtot_ / (vaver * 1e-24 * AVOGADRO);
+    double rhoError = gmx::square(rhoAver / vaver)*verror;
     printf("Average molar mass: %.2f Dalton\n", mtot_/nmol_);
 
-    double VmAver  = Vaver/nmol_;
-    double VmError = Verror/nmol_;
-    printf("Density rho: %.2f +/- %.2f nm^3\n", RhoAver, RhoError);
+    double vmAver  = vaver/nmol_;
+    double vmError = verror/nmol_;
+    printf("Density rho: %.2f +/- %.2f nm^3\n", rhoAver, rhoError);
     printf("Molecular volume Vm assuming homogeneity: %.4f +/- %.4f nm^3\n",
-           VmAver, VmError);
+           vmAver, vmError);
 
-    double VvdWaver  = (1-FVaver/100)*VmAver;
-    double VvdWerror = 0;
+    double vvdWaver  = (1-fVaver/100)*vmAver;
+    double vvdWerror = 0;
     printf("Molecular van der Waals volume assuming homogeneity:  %.4f +/- %.4f nm^3\n",
-           VvdWaver, VvdWerror);
+           vvdWaver, vvdWerror);
 
-    double FFVaver  = 1-1.3*((100-FVaver)/100);
-    double FFVerror = (FVerror/FVaver)*FFVaver;
-    printf("Fractional free volume %.3f +/- %.3f\n", FFVaver, FFVerror);
+    double ffVaver  = 1-1.3*((100-fVaver)/100);
+    double ffVerror = (fVerror/fVaver)*ffVaver;
+    printf("Fractional free volume %.3f +/- %.3f\n", ffVaver, ffVerror);
 }
 
 }       // namespace
 
-const char FreeVolumeInfo::name[]             = "freevolume";
-const char FreeVolumeInfo::shortDescription[] =
+const char FreeVolumeInfo::c_name[]             = "freevolume";
+const char FreeVolumeInfo::c_shortDescription[] =
     "Calculate free volume";
 
 TrajectoryAnalysisModulePointer FreeVolumeInfo::create()

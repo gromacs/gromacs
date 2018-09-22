@@ -202,9 +202,9 @@ TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
     {
         return;
     }
-    time_unit_t time_unit
+    time_unit_t timeUnit
         = static_cast<time_unit_t>(settings_.timeUnit() + 1); // NOLINT(bugprone-misplaced-widening-cast)
-    output_env_init(&oenv_, getProgramContext(), time_unit, FALSE, exvgNONE, 0);
+    output_env_init(&oenv_, getProgramContext(), timeUnit, FALSE, exvgNONE, 0);
 
     int frflags = settings_.frflags();
     frflags |= TRX_NEED_X;
@@ -261,7 +261,7 @@ TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
     set_trxframe_ePBC(fr, topInfo_.ePBC());
     if (topInfo_.hasTopology() && settings_.hasRmPBC())
     {
-        gpbc_             = gmx_rmpbc_init(topInfo_);
+        gpbc_             = gmxRmpbcInit(topInfo_);
     }
 }
 

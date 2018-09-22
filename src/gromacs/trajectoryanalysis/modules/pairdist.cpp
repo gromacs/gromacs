@@ -94,9 +94,9 @@ enum GroupType
 };
 
 //! Strings corresponding to DistanceType.
-const char *const           c_distanceTypes[] = { "min", "max" };
+const char *const           g_cDistanceTypes[] = { "min", "max" };
 //! Strings corresponding to GroupType.
-const char *const           c_groupTypes[]    = { "all", "res", "mol", "none" };
+const char *const           g_cGroupTypes[]    = { "all", "res", "mol", "none" };
 
 /*! \brief
  * Implements `gmx pairdist` trajectory analysis module.
@@ -223,13 +223,13 @@ PairDistance::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings
     options->addOption(DoubleOption("cutoff").store(&cutoff_)
                            .description("Maximum distance to consider"));
     options->addOption(EnumOption<DistanceType>("type").store(&distanceType_)
-                           .enumValue(c_distanceTypes)
+                           .enumValue(g_cDistanceTypes)
                            .description("Type of distances to calculate"));
     options->addOption(EnumOption<GroupType>("refgrouping").store(&refGroupType_)
-                           .enumValue(c_groupTypes)
+                           .enumValue(g_cGroupTypes)
                            .description("Grouping of -ref positions to compute the min/max over"));
     options->addOption(EnumOption<GroupType>("selgrouping").store(&selGroupType_)
-                           .enumValue(c_groupTypes)
+                           .enumValue(g_cGroupTypes)
                            .description("Grouping of -sel positions to compute the min/max over"));
 
     options->addOption(SelectionOption("ref").store(&refSel_).required()
@@ -540,8 +540,8 @@ PairDistance::writeOutput()
 
 }       // namespace
 
-const char PairDistanceInfo::name[]             = "pairdist";
-const char PairDistanceInfo::shortDescription[] =
+const char PairDistanceInfo::c_name[]             = "pairdist";
+const char PairDistanceInfo::c_shortDescription[] =
     "Calculate pairwise distances between groups of positions";
 
 TrajectoryAnalysisModulePointer PairDistanceInfo::create()

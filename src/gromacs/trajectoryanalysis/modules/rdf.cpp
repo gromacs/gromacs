@@ -98,7 +98,7 @@ enum Normalization
     Normalization_None
 };
 //! String values corresponding to Normalization.
-const char *const c_NormalizationEnum[] = { "rdf", "number_density", "none" };
+const char *const g_cNormalizationEnum[] = { "rdf", "number_density", "none" };
 //! Whether to compute RDF wrt. surface of the reference group.
 enum SurfaceType
 {
@@ -107,7 +107,7 @@ enum SurfaceType
     SurfaceType_Residue
 };
 //! String values corresponding to SurfaceType.
-const char *const c_SurfaceEnum[] = { "no", "mol", "res" };
+const char *const g_cSurfaceEnum[] = { "no", "mol", "res" };
 
 /*! \brief
  * Implements `gmx rdf` trajectory analysis module.
@@ -289,7 +289,7 @@ Rdf::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *setting
 
     options->addOption(DoubleOption("bin").store(&binwidth_)
                            .description("Bin width (nm)"));
-    options->addOption(EnumOption<Normalization>("norm").enumValue(c_NormalizationEnum)
+    options->addOption(EnumOption<Normalization>("norm").enumValue(g_cNormalizationEnum)
                            .store(&normalization_)
                            .storeIsSet(&bNormalizationSet_)
                            .description("Normalization"));
@@ -302,7 +302,7 @@ Rdf::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *setting
     options->addOption(DoubleOption("rmax").store(&rmax_)
                            .description("Largest distance (nm) to calculate"));
 
-    options->addOption(EnumOption<SurfaceType>("surf").enumValue(c_SurfaceEnum)
+    options->addOption(EnumOption<SurfaceType>("surf").enumValue(g_cSurfaceEnum)
                            .store(&surface_)
                            .description("RDF with respect to the surface of the reference"));
 
@@ -692,8 +692,8 @@ Rdf::writeOutput()
 
 }       // namespace
 
-const char RdfInfo::name[]             = "rdf";
-const char RdfInfo::shortDescription[] =
+const char RdfInfo::c_name[]             = "rdf";
+const char RdfInfo::c_shortDescription[] =
     "Calculate radial distribution functions";
 
 TrajectoryAnalysisModulePointer RdfInfo::create()

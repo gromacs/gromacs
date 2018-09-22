@@ -64,7 +64,7 @@ namespace
 {
 
 //! Extensions that are recognized as compressed files.
-const char *const c_compressedExtensions[] =
+const char *const g_cCompressedExtensions[] =
 { ".gz", ".Z" };
 
 /********************************************************************
@@ -185,7 +185,7 @@ std::string FileNameOptionManager::completeFileName(
         if (fileType == efNR
             && impl_->redirector_->fileExists(value, File::throwOnError))
         {
-            ArrayRef<const char *const>                 compressedExtensions(c_compressedExtensions);
+            ArrayRef<const char *const>                 compressedExtensions(g_cCompressedExtensions);
             ArrayRef<const char *const>::const_iterator ext;
             for (ext = compressedExtensions.begin(); ext != compressedExtensions.end(); ++ext)
             {

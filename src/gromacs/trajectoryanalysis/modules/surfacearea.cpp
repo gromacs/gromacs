@@ -64,7 +64,7 @@ using namespace gmx;
 #define TORAD(A)     ((A)*0.017453293)
 #define DP_TOL     0.001
 
-static real safe_asin(real f)
+static real safeAsin(real f)
 {
     if ( (fabs(f) < 1.00) )
     {
@@ -75,7 +75,7 @@ static real safe_asin(real f)
 }
 
 /* routines for dot distributions on the surface of the unit sphere */
-static real icosaeder_vertices(real *xus)
+static real icosaederVertices(real *xus)
 {
     const real rh = std::sqrt(1.-2.*cos(TORAD(72.)))/(1.-cos(TORAD(72.)));
     const real rg = cos(TORAD(72.))/(1.-cos(TORAD(72.)));
@@ -115,7 +115,7 @@ static void divarc(real x1, real y1, real z1,
     GMX_ASSERT(d1 >= 0.5, "Vector 1 too short");
     GMX_ASSERT(d2 >= 0.5, "Vector 2 too short");
 
-    phi  = safe_asin(dd/std::sqrt(d1*d2));
+    phi  = safeAsin(dd/std::sqrt(d1*d2));
     phi  = phi*(static_cast<real>(div1))/(static_cast<real>(div2));
     sphi = sin(phi); cphi = cos(phi);
     s    = (x1*xd+y1*yd+z1*zd)/dd;
@@ -128,7 +128,7 @@ static void divarc(real x1, real y1, real z1,
 }
 
 /* densit...required dots per unit sphere */
-static std::vector<real> ico_dot_arc(int densit)
+static std::vector<real> icoDotArc(int densit)
 {
     /* dot distribution on a unit sphere based on an icosaeder *
      * great circle average refining of icosahedral face       */
@@ -145,7 +145,7 @@ static std::vector<real> ico_dot_arc(int densit)
     GMX_RELEASE_ASSERT(ndot >= densit, "Inconsistent surface dot formula");
 
     std::vector<real> xus(3*ndot);
-    const real        rh = icosaeder_vertices(xus.data());
+    const real        rh = icosaederVertices(xus.data());
 
     if (tess > 1)
     {
@@ -251,13 +251,13 @@ static std::vector<real> ico_dot_arc(int densit)
 }                                  /* end of routine ico_dot_arc */
 
 /* densit...required dots per unit sphere */
-static std::vector<real> ico_dot_dod(int densit)
+static std::vector<real> icoDotDod(int densit)
 {
     /* dot distribution on a unit sphere based on an icosaeder *
      * great circle average refining of icosahedral face       */
 
     int   i, j, k, tl, tl2, tn, tess, j1, j2;
-    real  a, d, x, y, z, x2, y2, z2, x3, y3, z3, ai_d, adod;
+    real  a, d, x, y, z, x2, y2, z2, x3, y3, z3, aiD, adod;
     real  xij, yij, zij, xji, yji, zji, xik, yik, zik, xki, yki, zki,
           xjk, yjk, zjk, xkj, ykj, zkj;
 
@@ -268,7 +268,7 @@ static std::vector<real> ico_dot_dod(int densit)
     GMX_RELEASE_ASSERT(ndot >= densit, "Inconsistent surface dot formula");
 
     std::vector<real> xus(3*ndot);
-    const real        rh = icosaeder_vertices(xus.data());
+    const real        rh = icosaederVertices(xus.data());
 
     tn = 12;
     /* square of the edge of an icosaeder */
@@ -317,12 +317,12 @@ static std::vector<real> ico_dot_dod(int densit)
         /* square of the edge of an dodecaeder */
         adod = 4.*(cos(TORAD(108.))-cos(TORAD(120.)))/(1.-cos(TORAD(120.)));
         /* square of the distance of two adjacent vertices of ico- and dodecaeder */
-        ai_d = 2.*(1.-std::sqrt(1.-a/3.));
+        aiD = 2.*(1.-std::sqrt(1.-a/3.));
 
         /* calculate tessalation of mixed edges */
         for (i = 0; i < 31; i++)
         {
-            j1 = 12; j2 = 32; a = ai_d;
+            j1 = 12; j2 = 32; a = aiD;
             if (i >= 12)
             {
                 j1 = i+1; a = adod;
@@ -355,7 +355,7 @@ static std::vector<real> ico_dot_dod(int densit)
                 x = xus[3*i]-xus[3*j];
                 y = xus[1+3*i]-xus[1+3*j]; z = xus[2+3*i]-xus[2+3*j];
                 d = x*x+y*y+z*z;
-                if (std::fabs(ai_d-d) > DP_TOL)
+                if (std::fabs(aiD-d) > DP_TOL)
                 {
                     continue;
                 }
@@ -365,7 +365,7 @@ static std::vector<real> ico_dot_dod(int densit)
                     x = xus[3*i]-xus[3*k];
                     y = xus[1+3*i]-xus[1+3*k]; z = xus[2+3*i]-xus[2+3*k];
                     d = x*x+y*y+z*z;
-                    if (std::fabs(ai_d-d) > DP_TOL)
+                    if (std::fabs(aiD-d) > DP_TOL)
                     {
                         continue;
                     }
@@ -424,7 +424,7 @@ static std::vector<real> ico_dot_dod(int densit)
     return xus;
 }       /* end of routine ico_dot_dod */
 
-static int unsp_type(int densit)
+static int unspType(int densit)
 {
     int i1, i2;
     i1 = 1;
@@ -447,22 +447,22 @@ static int unsp_type(int densit)
     }
 }
 
-static std::vector<real> make_unsp(int densit, int cubus)
+static std::vector<real> makeUnsp(int densit, int cubus)
 {
-    int              *ico_wk, *ico_pt;
-    int               ico_cube, ico_cube_cb, i, j, k, l, ijk, tn, tl, tl2;
+    int              *icoWk, *icoPt;
+    int               icoCube, icoCubeCb, i, j, k, l, ijk, tn, tl, tl2;
     int              *work;
     real              x, y, z;
 
-    int               mode = unsp_type(densit);
+    int               mode = unspType(densit);
     std::vector<real> xus;
     if (mode == UNSP_ICO_ARC)
     {
-        xus = ico_dot_arc(densit);
+        xus = icoDotArc(densit);
     }
     else if (mode == UNSP_ICO_DOD)
     {
-        xus = ico_dot_dod(densit);
+        xus = icoDotDod(densit);
     }
     else
     {
@@ -474,7 +474,7 @@ static std::vector<real> make_unsp(int densit, int cubus)
     /* determine distribution of points in elementary cubes */
     if (cubus)
     {
-        ico_cube = cubus;
+        icoCube = cubus;
     }
     else
     {
@@ -483,52 +483,52 @@ static std::vector<real> make_unsp(int densit, int cubus)
         {
             i++;
         }
-        ico_cube = std::max(i-1, 0);
+        icoCube = std::max(i-1, 0);
     }
-    ico_cube_cb = ico_cube*ico_cube*ico_cube;
-    const real del_cube = 2./(static_cast<real>(ico_cube));
+    icoCubeCb = icoCube*icoCube*icoCube;
+    const real delCube = 2./(static_cast<real>(icoCube));
     snew(work, ndot);
     for (l = 0; l < ndot; l++)
     {
-        i = std::max(static_cast<int>(floor((1.+xus[3*l])/del_cube)), 0);
-        if (i >= ico_cube)
+        i = std::max(static_cast<int>(floor((1.+xus[3*l])/delCube)), 0);
+        if (i >= icoCube)
         {
-            i = ico_cube-1;
+            i = icoCube-1;
         }
-        j = std::max(static_cast<int>(floor((1.+xus[1+3*l])/del_cube)), 0);
-        if (j >= ico_cube)
+        j = std::max(static_cast<int>(floor((1.+xus[1+3*l])/delCube)), 0);
+        if (j >= icoCube)
         {
-            j = ico_cube-1;
+            j = icoCube-1;
         }
-        k = std::max(static_cast<int>(floor((1.+xus[2+3*l])/del_cube)), 0);
-        if (k >= ico_cube)
+        k = std::max(static_cast<int>(floor((1.+xus[2+3*l])/delCube)), 0);
+        if (k >= icoCube)
         {
-            k = ico_cube-1;
+            k = icoCube-1;
         }
-        ijk     = i+j*ico_cube+k*ico_cube*ico_cube;
+        ijk     = i+j*icoCube+k*icoCube*icoCube;
         work[l] = ijk;
     }
 
-    snew(ico_wk, 2*ico_cube_cb+1);
+    snew(icoWk, 2*icoCubeCb+1);
 
-    ico_pt = ico_wk+ico_cube_cb;
+    icoPt = icoWk+icoCubeCb;
     for (l = 0; l < ndot; l++)
     {
-        ico_wk[work[l]]++; /* dots per elementary cube */
+        icoWk[work[l]]++; /* dots per elementary cube */
     }
 
     /* reordering of the coordinate array in accordance with box number */
     tn = 0;
-    for (i = 0; i < ico_cube; i++)
+    for (i = 0; i < icoCube; i++)
     {
-        for (j = 0; j < ico_cube; j++)
+        for (j = 0; j < icoCube; j++)
         {
-            for (k = 0; k < ico_cube; k++)
+            for (k = 0; k < icoCube; k++)
             {
                 tl            = 0;
                 tl2           = tn;
-                ijk           = i+ico_cube*j+ico_cube*ico_cube*k;
-                *(ico_pt+ijk) = tn;
+                ijk           = i+icoCube*j+icoCube*icoCube*k;
+                *(icoPt+ijk) = tn;
                 for (l = tl2; l < ndot; l++)
                 {
                     if (ijk == work[l])
@@ -541,18 +541,18 @@ static std::vector<real> make_unsp(int densit, int cubus)
                         tn++; tl++;
                     }
                 }
-                *(ico_wk+ijk) = tl;
+                *(icoWk+ijk) = tl;
             } /* cycle k */
         }     /* cycle j */
     }         /* cycle i */
-    sfree(ico_wk);
+    sfree(icoWk);
     sfree(work);
 
     return xus;
 }
 
 static void
-nsc_dclm_pbc(const rvec *coords, const ArrayRef<const real> &radius, int nat,
+nscDclmPbc(const rvec *coords, const ArrayRef<const real> &radius, int nat,
              const real *xus, int n_dot, int mode,
              real *value_of_area, real **at_area,
              real *value_of_vol,
@@ -574,7 +574,7 @@ nsc_dclm_pbc(const rvec *coords, const ArrayRef<const real> &radius, int nat,
         return;
     }
     real        area = 0.0, vol = 0.0;
-    real       *dots = nullptr, *atom_area = nullptr;
+    real       *dots = nullptr, *atomArea = nullptr;
     int         lfnr = 0, maxdots = 0;
     if (mode & FLAG_VOLUME)
     {
@@ -588,7 +588,7 @@ nsc_dclm_pbc(const rvec *coords, const ArrayRef<const real> &radius, int nat,
     }
     if (mode & FLAG_ATOM_AREA)
     {
-        snew(atom_area, nat);
+        snew(atomArea, nat);
     }
 
     // Compute the center of the molecule for volume calculation.
@@ -663,7 +663,7 @@ nsc_dclm_pbc(const rvec *coords, const ArrayRef<const real> &radius, int nat,
         area = area + a;
         if (mode & FLAG_ATOM_AREA)
         {
-            atom_area[i] = a;
+            atomArea[i] = a;
         }
         const real xi = coords[iat][XX];
         const real yi = coords[iat][YY];
@@ -713,7 +713,7 @@ nsc_dclm_pbc(const rvec *coords, const ArrayRef<const real> &radius, int nat,
     }
     if (mode & FLAG_ATOM_AREA)
     {
-        *at_area = atom_area;
+        *at_area = atomArea;
     }
     *value_of_area = area;
 
@@ -750,7 +750,7 @@ SurfaceAreaCalculator::~SurfaceAreaCalculator()
 
 void SurfaceAreaCalculator::setDotCount(int dotCount)
 {
-    impl_->unitSphereDots_ = make_unsp(dotCount, 4);
+    impl_->unitSphereDots_ = makeUnsp(dotCount, 4);
 }
 
 void SurfaceAreaCalculator::setRadii(const ArrayRef<const real> &radius)
@@ -838,7 +838,7 @@ void SurfaceAreaCalculator::calculate(
     {
         *n_dots = 0;
     }
-    nsc_dclm_pbc(x, impl_->radius_, nat,
+    nscDclmPbc(x, impl_->radius_, nat,
                  &impl_->unitSphereDots_[0], impl_->unitSphereDots_.size()/3,
                  flags, area, at_area, volume, lidots, n_dots, index,
                  &impl_->nb_, pbc);

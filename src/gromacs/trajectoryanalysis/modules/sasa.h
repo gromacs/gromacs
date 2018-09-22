@@ -53,8 +53,8 @@ namespace analysismodules
 class SasaInfo
 {
     public:
-        static const char name[];
-        static const char shortDescription[];
+        static const char c_name[];
+        static const char c_shortDescription[];
         static TrajectoryAnalysisModulePointer create();
 };
 

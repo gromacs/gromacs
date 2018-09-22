@@ -382,8 +382,8 @@ Distance::writeOutput()
 
 }       // namespace
 
-const char DistanceInfo::name[]             = "distance";
-const char DistanceInfo::shortDescription[] =
+const char DistanceInfo::c_name[]             = "distance";
+const char DistanceInfo::c_shortDescription[] =
     "Calculate distances between pairs of positions";
 
 TrajectoryAnalysisModulePointer DistanceInfo::create()
