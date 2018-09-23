@@ -44,6 +44,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <vector>
 
 #include <sys/types.h>
 
@@ -1108,19 +1109,17 @@ setup_cmap (int                    grid_spacing,
             const real *           grid,
             gmx_cmap_t       *     cmap_grid)
 {
-    double *tmp_u, *tmp_u2, *tmp_yy, *tmp_y1, *tmp_t2, *tmp_grid;
+    int                 i, j, k, ii, jj, kk, idx;
+    int                 offset;
+    double              dx, xmin, v, v1, v2, v12;
+    double              phi, psi;
 
-    int     i, j, k, ii, jj, kk, idx;
-    int     offset;
-    double  dx, xmin, v, v1, v2, v12;
-    double  phi, psi;
-
-    snew(tmp_u, 2*grid_spacing);
-    snew(tmp_u2, 2*grid_spacing);
-    snew(tmp_yy, 2*grid_spacing);
-    snew(tmp_y1, 2*grid_spacing);
-    snew(tmp_t2, 2*grid_spacing*2*grid_spacing);
-    snew(tmp_grid, 2*grid_spacing*2*grid_spacing);
+    std::vector<double> tmp_u(2*grid_spacing, 0.0);
+    std::vector<double> tmp_u2(2*grid_spacing, 0.0);
+    std::vector<double> tmp_yy(2*grid_spacing, 0.0);
+    std::vector<double> tmp_y1(2*grid_spacing, 0.0);
+    std::vector<double> tmp_t2(2*grid_spacing*2*grid_spacing, 0.0);
+    std::vector<double> tmp_grid(2*grid_spacing*2*grid_spacing, 0.0);
 
     dx   = 360.0/grid_spacing;
     xmin = -180.0-dx*grid_spacing/2;
@@ -1146,7 +1145,7 @@ setup_cmap (int                    grid_spacing,
 
         for (i = 0; i < 2*grid_spacing; i++)
         {
-            spline1d(dx, &(tmp_grid[2*grid_spacing*i]), 2*grid_spacing, tmp_u, &(tmp_t2[2*grid_spacing*i]));
+            spline1d(dx, &(tmp_grid[2*grid_spacing*i]), 2*grid_spacing, tmp_u.data(), &(tmp_t2[2*grid_spacing*i]));
         }
 
         for (i = grid_spacing/2; i < grid_spacing+grid_spacing/2; i++)
@@ -1165,10 +1164,10 @@ setup_cmap (int                    grid_spacing,
                                   &(tmp_t2[2*grid_spacing*k]), psi, &tmp_yy[k], &tmp_y1[k]);
                 }
 
-                spline1d(dx, tmp_yy, 2*grid_spacing, tmp_u, tmp_u2);
-                interpolate1d(xmin, dx, tmp_yy, tmp_u2, phi, &v, &v1);
-                spline1d(dx, tmp_y1, 2*grid_spacing, tmp_u, tmp_u2);
-                interpolate1d(xmin, dx, tmp_y1, tmp_u2, phi, &v2, &v12);
+                spline1d(dx, tmp_yy.data(), 2*grid_spacing, tmp_u.data(), tmp_u2.data());
+                interpolate1d(xmin, dx, tmp_yy.data(), tmp_u2.data(), phi, &v, &v1);
+                spline1d(dx, tmp_y1.data(), 2*grid_spacing, tmp_u.data(), tmp_u2.data());
+                interpolate1d(xmin, dx, tmp_y1.data(), tmp_u2.data(), phi, &v2, &v12);
 
                 idx = ii*grid_spacing+jj;
                 cmap_grid->cmapdata[kk].cmap[idx*4]   = grid[offset+ii*grid_spacing+jj];
