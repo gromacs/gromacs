@@ -413,7 +413,8 @@ void print_electric_props(FILE                           *fp,
             }
             fprintf(fp, "\n");
             qrmsd /= mol.topology_->atoms.nr;
-            fprintf(fp, "q rms: %g (e) %s\n", qrmsd, (qrmsd > 5e-3) ? "XXX" : "");
+            qrmsd = sqrt(qrmsd);
+            fprintf(fp, "q rms: %g (e) %s\n", qrmsd, (qrmsd > 5e-2) ? "XXX" : "");
             n++;
         }
     }
