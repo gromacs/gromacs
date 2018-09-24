@@ -52,6 +52,7 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/unique_cptr.h"
 
+#include "gromacs/mdlib/tests/watersystem.h"
 #include "testutils/testasserts.h"
 
 namespace gmx
@@ -59,61 +60,6 @@ namespace gmx
 
 namespace test
 {
-
-//! Database of 51 water atom input positions (DIM reals per atom, taken from spc216.gro) for use as test inputs.
-const double g_positions[] = {
-    .130, -.041, -.291,
-    .120, -.056, -.192,
-    .044, -.005, -.327,
-    -.854, -.406, .477,
-    -.900, -.334, .425,
-    -.858, -.386, .575,
-    .351, -.061, .853,
-    .401, -.147, .859,
-    .416, .016, .850,
-    -.067, -.796, .873,
-    -.129, -.811, .797,
-    -.119, -.785, .958,
-    -.635, -.312, -.356,
-    -.629, -.389, -.292,
-    -.687, -.338, -.436,
-    .321, -.919, .242,
-    .403, -.880, .200,
-    .294, -1.001, .193,
-    -.404, .735, .728,
-    -.409, .670, .803,
-    -.324, .794, .741,
-    .461, -.596, -.135,
-    .411, -.595, -.221,
-    .398, -.614, -.059,
-    -.751, -.086, .237,
-    -.811, -.148, .287,
-    -.720, -.130, .152,
-    .202, .285, -.364,
-    .122, .345, -.377,
-    .192, .236, -.278,
-    -.230, -.485, .081,
-    -.262, -.391, .071,
-    -.306, -.548, .069,
-    .464, -.119, .323,
-    .497, -.080, .409,
-    .540, -.126, .258,
-    -.462, .107, .426,
-    -.486, .070, .336,
-    -.363, .123, .430,
-    .249, -.077, -.621,
-    .306, -.142, -.571,
-    .233, -.110, -.714,
-    -.922, -.164, .904,
-    -.842, -.221, .925,
-    -.971, -.204, .827,
-    .382, .700, .480,
-    .427, .610, .477,
-    .288, .689, .513,
-    .781, .264, -.113,
-    .848, .203, -.070,
-    .708, .283, -.048
-};
 
 //! Simple cubic simulation box to use in tests
 matrix g_box = {{real(1.86206), 0, 0}, {0, real(1.86206), 0}, {0, 0, real(1.86206)}};
@@ -135,17 +81,17 @@ class SettleTest : public ::testing::TestWithParam<SettleTestParameters>
 {
     public:
         //! Updated water atom positions to constrain (DIM reals per atom)
-        std::vector<real> updatedPositions_;
+        std::vector<gmx::RVec> updatedPositions_;
         //! Water atom velocities to constrain (DIM reals per atom)
-        std::vector<real> velocities_;
-        //! PBC option to test
-        t_pbc             pbcNone_;
-        //! PBC option to test
-        t_pbc             pbcXYZ_;
+        std::vector<gmx::RVec> velocities_;
+        //! PBC option to test: none
+        t_pbc                  pbcNone_;
+        //! PBC option to test: xyz
+        t_pbc                  pbcXYZ_;
 
         SettleTest() :
-            updatedPositions_(std::begin(g_positions), std::end(g_positions)),
-            velocities_(updatedPositions_.size(), 0)
+            updatedPositions_(std::begin(c_waterPositions), std::end(c_waterPositions)),
+            velocities_(updatedPositions_.size(), { 0, 0, 0 })
         {
             set_pbc(&pbcNone_, epbcNONE, g_box);
             set_pbc(&pbcXYZ_, epbcXYZ, g_box);
@@ -153,23 +99,23 @@ class SettleTest : public ::testing::TestWithParam<SettleTestParameters>
             // Perturb the atom positions, to appear like an
             // "update," and where there is definitely constraining
             // work to do.
-            for (size_t i = 0; i != updatedPositions_.size(); ++i)
+            for (size_t i = 0; i != updatedPositions_.size()*DIM; ++i)
             {
                 if (i % 4 == 0)
                 {
-                    updatedPositions_[i] += 0.01;
+                    updatedPositions_[i / 3][i % 3] += 0.01;
                 }
                 else if (i % 4 == 1)
                 {
-                    updatedPositions_[i] -= 0.01;
+                    updatedPositions_[i / 3][i % 3] -= 0.01;
                 }
                 else if (i % 4 == 2)
                 {
-                    updatedPositions_[i] += 0.02;
+                    updatedPositions_[i / 3][i % 3] += 0.02;
                 }
                 else if (i % 4 == 3)
                 {
-                    updatedPositions_[i] -= 0.02;
+                    updatedPositions_[i / 3][i % 3] -= 0.02;
                 }
             }
         }
@@ -193,7 +139,7 @@ TEST_P(SettleTest, SatisfiesConstraints)
 
     const int settleType     = 0;
     const int atomsPerSettle = NRAL(F_SETTLE);
-    ASSERT_LE(numSettles, updatedPositions_.size() / (atomsPerSettle * DIM)) << "cannot test that many SETTLEs " << testDescription;
+    ASSERT_LE(numSettles, updatedPositions_.size() / atomsPerSettle) << "cannot test that many SETTLEs " << testDescription;
 
     // Set up the topology.
     gmx_mtop_t mtop;
@@ -240,7 +186,7 @@ TEST_P(SettleTest, SatisfiesConstraints)
     settle_set_constraints(settled, &ilist, mdatoms);
 
     // Copy the original positions from the array of doubles to a vector of reals
-    std::vector<real> startingPositions(std::begin(g_positions), std::end(g_positions));
+    std::vector<gmx::RVec> startingPositions(std::begin(c_waterPositions), std::end(c_waterPositions));
 
     // Run the test
     bool       errorOccured;
@@ -249,8 +195,8 @@ TEST_P(SettleTest, SatisfiesConstraints)
     const real reciprocalTimeStep = 1.0/0.002;
     csettle(settled, numThreads, threadIndex,
             usePbc ? &pbcXYZ_ : &pbcNone_,
-            startingPositions.data(), updatedPositions_.data(), reciprocalTimeStep,
-            useVelocities ? velocities_.data() : nullptr,
+            static_cast<real *>(startingPositions.data()[0]), static_cast<real *>(updatedPositions_.data()[0]), reciprocalTimeStep,
+            useVelocities ? static_cast<real *>(velocities_.data()[0]) : nullptr,
             calcVirial, virial, &errorOccured);
     settle_free(settled);
     EXPECT_FALSE(errorOccured) << testDescription;
@@ -263,18 +209,11 @@ TEST_P(SettleTest, SatisfiesConstraints)
         relativeToleranceAsPrecisionDependentUlp(dOH*dOH, 80, 380);
 
     // Verify the updated coordinates match the requirements
-    int positionIndex = 0, velocityIndex = 0;
     for (int i = 0; i < numSettles; ++i)
     {
-        rvec positionO  {
-            updatedPositions_[positionIndex++], updatedPositions_[positionIndex++], updatedPositions_[positionIndex++]
-        };
-        rvec positionH1 {
-            updatedPositions_[positionIndex++], updatedPositions_[positionIndex++], updatedPositions_[positionIndex++]
-        };
-        rvec positionH2 {
-            updatedPositions_[positionIndex++], updatedPositions_[positionIndex++], updatedPositions_[positionIndex++]
-        };
+        const gmx::RVec &positionO  = updatedPositions_[i*3 + 0];
+        const gmx::RVec &positionH1 = updatedPositions_[i*3 + 1];
+        const gmx::RVec &positionH2 = updatedPositions_[i*3 + 2];
 
         EXPECT_REAL_EQ_TOL(dOH*dOH, distance2(positionO, positionH1), tolerance) << formatString("for water %d ", i) << testDescription;
         EXPECT_REAL_EQ_TOL(dOH*dOH, distance2(positionO, positionH2), tolerance) << formatString("for water %d ", i) << testDescription;
@@ -283,9 +222,12 @@ TEST_P(SettleTest, SatisfiesConstraints)
         // This merely tests whether the velocities were
         // updated from the starting values of zero (or not),
         // but not whether the update was correct.
-        for (int j = 0; j < atomsPerSettle * DIM; ++j, ++velocityIndex)
+        for (int j = 0; j < atomsPerSettle; ++j)
         {
-            EXPECT_TRUE(useVelocities == (0. != velocities_[velocityIndex])) << formatString("for water %d velocity coordinate %d ", i, j) << testDescription;
+            for (int d = 0; d < DIM; ++d)
+            {
+                EXPECT_TRUE(useVelocities == (0. != velocities_[i*3 + j][d])) << formatString("for water %d velocity atom %d dim %d", i, j, d) << testDescription;
+            }
         }
     }
 
