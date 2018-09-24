@@ -230,8 +230,8 @@ void gmx::Integrator::do_md()
        md uses averaged half step kinetic energies to determine temperature unless defined otherwise by GMX_EKIN_AVE_VEL; */
     bTrotter = (EI_VV(ir->eI) && (inputrecNptTrotter(ir) || inputrecNphTrotter(ir) || inputrecNvtTrotter(ir)));
 
-    const bool bRerunMD      = false;
-    int        nstglobalcomm = mdrunOptions.globalCommunicationInterval;
+    const bool bRerunMD = false;
+    int nstglobalcomm = mdrunOptions.globalCommunicationInterval;
 
     nstglobalcomm   = check_nstglobalcomm(mdlog, nstglobalcomm, ir);
     bGStatEveryStep = (nstglobalcomm == 1);

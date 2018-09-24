@@ -105,7 +105,7 @@ struct MdrunOptions
     gmx_bool            rerun = FALSE;
     //! Re-construct virual sites durin a rerun simulation
     gmx_bool            rerunConstructVsites = FALSE;
-    //! Request to do global communication at this interval in steps, -1 is determine from inputrec
+    //! Request to do global communication at this interval in steps, -1 is determine from inputrec (deprecated).
     int                 globalCommunicationInterval = -1;
     //! Try to make the simulation binary reproducible
     gmx_bool            reproducible = FALSE;

@@ -1577,6 +1577,11 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
     }
     if (bVsites)
     {
+        if (bVsiteAromatics)
+        {
+            fprintf(stdout, "The conversion of aromatic rings into virtual sites is deprecated "
+                    "and may be removed in a future version of GROMACS");
+        }
         /* determine which atoms will be vsites and add dummy masses
            also renumber atom numbers in plist[0..F_NRE]! */
         do_vsites(nrtp, rtp, atype, atoms, tab, x, plist,

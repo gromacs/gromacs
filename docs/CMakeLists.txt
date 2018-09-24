@@ -323,7 +323,8 @@ if (SPHINX_FOUND)
         release-notes/performance.rst
         release-notes/tools.rst
         release-notes/bugs-fixed.rst
-        release-notes/removed-features.rst
+        release-notes/deprecated-functionality.rst
+        release-notes/removed-functionality.rst
         release-notes/portability.rst
         release-notes/miscellaneous.rst
         release-notes/2018/2018.4.rst
