@@ -87,6 +87,7 @@ class EssentialDynamics
 
         PrivateImplPointer<Impl> impl_;
 };
+class MDLogger;
 } // namespace gmx
 
 /*! \brief Applies essential dynamics constrains as defined in the .edi input file.
@@ -105,6 +106,7 @@ void do_edsam(const t_inputrec *ir, int64_t step,
 
 /*! \brief Initializes the essential dynamics and flooding module.
  *
+ * \param mdlog             Logger.
  * \param ediFileName       Essential dynamics input file.
  * \param edoFileName       Output file for essential dynamics data.
  * \param mtop              Molecular topology.
@@ -119,6 +121,7 @@ void do_edsam(const t_inputrec *ir, int64_t step,
  * \returns                 A pointer to the ED data structure.
  */
 std::unique_ptr<gmx::EssentialDynamics> init_edsam(
+        const gmx::MDLogger    &mdlog,
         const char             *ediFileName,
         const char             *edoFileName,
         const gmx_mtop_t       *mtop,

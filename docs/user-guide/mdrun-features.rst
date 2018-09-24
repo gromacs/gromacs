@@ -134,7 +134,9 @@ This method was initially described as a ProtSqueeze technique
 (`Yesylevskyy S.O., J Chem Inf Model 47(5) (2007) 1986-94`_) and
 later implemented in |Gromacs| as g_membed tool (`Wolf et al, J Comp Chem 31 (2010) 2169-2174`_).
 Currently the functionality of g_membed is available in mdrun if
-``-membed`` option is specified (see below).
+``-membed`` option is specified (see below). This approach is
+unsuitable, and may be deprecated and replaced in future, e.g. with
+``gmx membed``.
 
 .. _Yesylevskyy S.O., J Chem Inf Model 47(5) (2007) 1986-94: https://dx.doi.org/10.1021/ci600553y
 .. _Wolf et al, J Comp Chem 31 (2010) 2169-2174: http://onlinelibrary.wiley.com/doi/10.1002/jcc.21507/full

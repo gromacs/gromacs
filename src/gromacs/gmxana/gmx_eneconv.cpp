@@ -505,6 +505,9 @@ int gmx_eneconv(int argc, char *argv[])
     {
         return 0;
     }
+    fprintf(stdout, "Note that major changes are planned in future for "
+            "eneconv, to improve usability and utility.");
+
     tadjust      = 0;
     nremax       = 0;
     nset         = 0;
