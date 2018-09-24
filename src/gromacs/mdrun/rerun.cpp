@@ -231,6 +231,11 @@ void gmx::Integrator::do_rerun()
     // signals, and will use this object to achieve that.
     SimulationSignaller nullSignaller(nullptr, nullptr, nullptr, false, false);
 
+    GMX_LOG(mdlog.info).asParagraph().
+        appendText("Note that it is planned that the command gmx mdrun -rerun will "
+                   "be available in a different form in a future version of GROMACS, "
+                   "e.g. gmx rerun -f.");
+
     if (ir->bExpanded)
     {
         gmx_fatal(FARGS, "Expanded ensemble not supported by rerun.");

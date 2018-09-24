@@ -89,6 +89,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "integrator.h"
@@ -163,6 +164,11 @@ Integrator::do_tpi()
     auto             mdatoms     = mdAtoms->mdatoms();
 
     GMX_UNUSED_VALUE(outputProvider);
+
+    GMX_LOG(mdlog.info).asParagraph().
+        appendText("Note that it is planned to change the command gmx mdrun -tpi "
+                   "(and -tpic) to make the functionality available in a different "
+                   "form in a future version of GROMACS, e.g. gmx test-particle-insertion.");
 
     /* Since there is no upper limit to the insertion energies,
      * we need to set an upper limit for the distribution output.

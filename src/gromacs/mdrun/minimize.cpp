@@ -1103,6 +1103,12 @@ Integrator::do_cg()
     int               m, step, nminstep;
     auto              mdatoms = mdAtoms->mdatoms();
 
+    GMX_LOG(mdlog.info).asParagraph().
+        appendText("Note that activating conjugate gradient energy minimization via the "
+                   "integrator .mdp option and the command gmx mdrun may "
+                   "be available in a different form in a future version of GROMACS, "
+                   "e.g. gmx minimize and an .mdp option.");
+
     step = 0;
 
     if (MASTER(cr))
@@ -1725,6 +1731,12 @@ Integrator::do_lbfgs()
     int                i, k, m, n, gf, step;
     int                mdof_flags;
     auto               mdatoms = mdAtoms->mdatoms();
+
+    GMX_LOG(mdlog.info).asParagraph().
+        appendText("Note that activating L-BFGS energy minimization via the "
+                   "integrator .mdp option and the command gmx mdrun may "
+                   "be available in a different form in a future version of GROMACS, "
+                   "e.g. gmx minimize and an .mdp option.");
 
     if (PAR(cr))
     {
@@ -2441,6 +2453,12 @@ Integrator::do_steep()
     int               steps_accepted = 0;
     auto              mdatoms        = mdAtoms->mdatoms();
 
+    GMX_LOG(mdlog.info).asParagraph().
+        appendText("Note that activating steepest-descent energy minimization via the "
+                   "integrator .mdp option and the command gmx mdrun may "
+                   "be available in a different form in a future version of GROMACS, "
+                   "e.g. gmx minimize and an .mdp option.");
+
     /* Create 2 states on the stack and extract pointers that we will swap */
     em_state_t  s0 {}, s1 {};
     em_state_t *s_min = &s0;
@@ -2682,6 +2700,12 @@ Integrator::do_nm()
     real                      x_min;
     bool                      bIsMaster = MASTER(cr);
     auto                      mdatoms   = mdAtoms->mdatoms();
+
+    GMX_LOG(mdlog.info).asParagraph().
+        appendText("Note that activating normal-mode analysis via the integrator "
+                   ".mdp option and the command gmx mdrun may "
+                   "be available in a different form in a future version of GROMACS, "
+                   "e.g. gmx normal-modes.");
 
     if (constr != nullptr)
     {

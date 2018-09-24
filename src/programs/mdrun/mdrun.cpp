@@ -144,7 +144,8 @@ int gmx_mdrun(int argc, char *argv[])
         "be given. For the topology to work, a file name given here must match a",
         "character sequence before the file extension. That sequence is: an underscore,",
         "then a 'b' for bonds, an 'a' for angles or a 'd' for dihedrals,",
-        "and finally the matching table number index used in the topology.[PAR]",
+        "and finally the matching table number index used in the topology. Note that,",
+        "these options are deprecated, and in future will be available via grompp.[PAR]",
         "The options [TT]-px[tt] and [TT]-pf[tt] are used for writing pull COM",
         "coordinates and forces when pulling is selected",
         "in the [REF].mdp[ref] file.[PAR]",
@@ -208,7 +209,8 @@ int gmx_mdrun(int argc, char *argv[])
         "file is written at the first neighbor search step where the run time",
         "exceeds [TT]-maxh[tt]\\*0.99 hours. This option is particularly useful in",
         "combination with setting [TT]nsteps[tt] to -1 either in the mdp or using the",
-        "similarly named command line option. This results in an infinite run,",
+        "similarly named command line option (although the latter is deprecated).",
+        "This results in an infinite run,",
         "terminated only when the time limit set by [TT]-maxh[tt] is reached (if any)",
         "or upon receiving a signal.",
         "[PAR]",
@@ -335,7 +337,7 @@ int gmx_mdrun(int argc, char *argv[])
           "direction of the corresponding DD cells. Only effective with static "
           "load balancing." },
         { "-gcom",    FALSE, etINT, {&mdrunOptions.globalCommunicationInterval},
-          "Global communication frequency" },
+          "Global communication frequency (deprecated)" },
         { "-nb",      FALSE, etENUM, {nbpu_opt_choices},
           "Calculate non-bonded interactions on" },
         { "-nstlist", FALSE, etINT, {&nstlist_cmdline},
@@ -359,7 +361,7 @@ int gmx_mdrun(int argc, char *argv[])
         { "-append",  FALSE, etBOOL, {&bTryToAppendFiles},
           "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names" },
         { "-nsteps",  FALSE, etINT64, {&mdrunOptions.numStepsCommandline},
-          "Run this number of steps, overrides .mdp file option (-1 means infinite, -2 means use mdp option, smaller is invalid)" },
+          "Run this number of steps, overrides .mdp file option (-1 means infinite, -2 means use mdp option, smaller is invalid) (deprecated)" },
         { "-maxh",   FALSE, etREAL, {&mdrunOptions.maximumHoursToRun},
           "Terminate after 0.99 times this time (hours)" },
         { "-replex",  FALSE, etINT, {&replExParams.exchangeInterval},
@@ -379,13 +381,13 @@ int gmx_mdrun(int argc, char *argv[])
         { "-rerunvsite", FALSE, etBOOL, {&mdrunOptions.rerunConstructVsites},
           "HIDDENRecalculate virtual site coordinates with [TT]-rerun[tt]" },
         { "-confout", FALSE, etBOOL, {&mdrunOptions.writeConfout},
-          "HIDDENWrite the last configuration with [TT]-c[tt] and force checkpointing at the last step" },
+          "HIDDENWrite the last configuration with [TT]-c[tt] and force checkpointing at the last step (deprecated)" },
         { "-stepout", FALSE, etINT, {&mdrunOptions.verboseStepPrintInterval},
-          "HIDDENFrequency of writing the remaining wall clock time for the run" },
+          "HIDDENFrequency of writing the remaining wall clock time for the run (deprecated)" },
         { "-resetstep", FALSE, etINT, {&mdrunOptions.timingOptions.resetStep},
-          "HIDDENReset cycle counters after these many time steps" },
+          "HIDDENReset cycle counters after these many time steps (deprecated)" },
         { "-resethway", FALSE, etBOOL, {&mdrunOptions.timingOptions.resetHalfway},
-          "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt]" }
+          "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt] (deprecated)" }
     };
     int               rc;
 
@@ -538,6 +540,36 @@ int gmx_mdrun(int argc, char *argv[])
     domdecOptions.numCells[XX] = roundToInt(realddxyz[XX]);
     domdecOptions.numCells[YY] = roundToInt(realddxyz[YY]);
     domdecOptions.numCells[ZZ] = roundToInt(realddxyz[ZZ]);
+
+    if (fplog)
+    {
+        if (opt2parg_bSet("-gcom", asize(pa), pa))
+        {
+            fprintf(fplog, "Note that gmx mdrun -gcom is deprecated, and will be removed\n"
+                    "in a future version of GROMACS.\n\n");
+        }
+        if (opt2bSet("-table", filenames().size(), filenames().data()) ||
+            opt2bSet("-tablep", filenames().size(), filenames().data()) ||
+            opt2bSet("-tableb", filenames().size(), filenames().data()))
+        {
+            fprintf(fplog, "Note that gmx mdrun -table options are deprecated. Table reading\n"
+                    "will likely be supported by grompp in a future version of GROMACS.\n\n");
+        }
+        if (opt2parg_bSet("-confout", asize(pa), pa) ||
+            opt2parg_bSet("-resetstep", asize(pa), pa) ||
+            opt2parg_bSet("-resethway", asize(pa), pa))
+        {
+            fprintf(fplog, "Note that gmx mdrun options intended for benchmarking, including\n"
+                    "-confout, -resetstep, and -resethway are deprecated. They will\n"
+                    "likely be supported by gmx benchmark in a future version of GROMACS.\n\n");
+        }
+        if (opt2parg_bSet("-nsteps", asize(pa), pa))
+        {
+            fprintf(fplog, "Note that gmx mdrun -nsteps is deprecated. Use gmx convert-tpr\n"
+                    "or gmx grompp to change the intended number of steps for your\n"
+                    "simulation.\n\n");
+        }
+    }
 
     /* The Context is a shared resource owned by the client code.
      * A more complete design should address handles to resources with appropriate

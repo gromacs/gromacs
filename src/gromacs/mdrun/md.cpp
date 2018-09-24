@@ -242,7 +242,8 @@ void gmx::Integrator::do_md()
     if (opt2bSet("-ei", nfile, fnm) || observablesHistory->edsamHistory != nullptr)
     {
         /* Initialize essential dynamics sampling */
-        ed = init_edsam(opt2fn_null("-ei", nfile, fnm), opt2fn("-eo", nfile, fnm),
+        ed = init_edsam(mdlog,
+                        opt2fn_null("-ei", nfile, fnm), opt2fn("-eo", nfile, fnm),
                         top_global,
                         ir, cr, constr,
                         state_global, observablesHistory,
