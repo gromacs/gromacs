@@ -162,3 +162,11 @@ If your code is of interest to the wider |Gromacs| community, we will be happy t
 in the process of including it in the main source tree.
 
 .. _developer mailing list: https://maillist.sys.kth.se/mailman/listinfo/gromacs.org_gmx-developers
+
+Removing functionality
+----------------------
+
+This is occasionally necessary, and there is :ref:`policy for such
+occasions <deprecation policy>`. For users, there are also lists of
+:ref:`anticipated changes <anticipated changes>` and :ref:`deprecated
+functionality <deprecated functionality>`.
