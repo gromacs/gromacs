@@ -73,6 +73,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
@@ -2643,6 +2644,7 @@ static void write_edo_legend(gmx_edsam * ed, int nED, const gmx_output_env_t *oe
 /* Init routine for ED and flooding. Calls init_edi in a loop for every .edi-cycle
  * contained in the input file, creates a NULL terminated list of t_edpar structures */
 std::unique_ptr<gmx::EssentialDynamics> init_edsam(
+        const gmx::MDLogger    &mdlog,
         const char             *ediFileName,
         const char             *edoFileName,
         const gmx_mtop_t       *mtop,
@@ -2671,7 +2673,12 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
             gmx_fatal(FARGS, "The checkpoint file you provided is from an essential dynamics or flooding\n"
                       "simulation. Please also set the .edi file on the command line with -ei.\n");
         }
+
     }
+    GMX_LOG(mdlog.info).asParagraph().
+        appendText("Activating essential dynamics via files passed to "
+                   "gmx mdrun -edi will change in future to be files passed to "
+                   "gmx grompp and the related .mdp options may change also.");
 
     /* Open input and output files, allocate space for ED data structure */
     auto edHandle = ed_open(mtop->natoms, oh, ediFileName, edoFileName, bAppend, oenv, cr);

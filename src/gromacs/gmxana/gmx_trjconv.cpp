@@ -927,6 +927,8 @@ int gmx_trjconv(int argc, char *argv[])
     {
         return 0;
     }
+    fprintf(stdout, "Note that major changes are planned in future for "
+            "trjconv, to improve usability and utility.");
 
     top_file = ftp2fn(efTPS, NFILE, fnm);
 
