@@ -1759,7 +1759,7 @@ void gmx::Integrator::do_md()
     /* IMD cleanup, if bIMD is TRUE. */
     IMD_finalize(ir->bIMD, ir->imd);
 
-    walltime_accounting_set_nsteps_done(walltime_accounting, step);
+    walltime_accounting_set_nsteps_done(walltime_accounting, step_rel);
 
     destroy_enerdata(enerd);
     sfree(enerd);
