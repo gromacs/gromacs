@@ -502,6 +502,9 @@ int gmx_trjcat(int argc, char *argv[])
     {
         return 0;
     }
+    fprintf(stdout, "Note that major changes are planned in future for "
+            "trjconv, to improve usability and utility.");
+
     auto timeUnit = output_env_get_time_unit(oenv);
 
     bIndex = ftp2bSet(efNDX, NFILE, fnm);

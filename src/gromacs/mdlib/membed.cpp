@@ -1033,6 +1033,8 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
 
     if (MASTER(cr))
     {
+        fprintf(fplog, "Note: it is expected that in future gmx mdrun -membed will not be the "
+                "way to access this feature, perhaps changing to e.g. gmx membed.");
         /* get input data out membed file */
         try
         {
@@ -1049,7 +1051,7 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
 
         if (PAR(cr))
         {
-            gmx_input("Sorry, parallel g_membed is not yet fully functional.");
+            gmx_input("Sorry, parallel membed is not yet fully functional.");
         }
 
         if (*cpt >= 0)
