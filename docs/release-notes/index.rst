@@ -34,7 +34,8 @@ Major release
    performance
    tools
    bugs-fixed
-   removed-features
+   deprecated-functionality
+   removed-functionality
    portability
    miscellaneous
 
