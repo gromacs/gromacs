@@ -63,15 +63,20 @@ class UpdateGroupsCog
     public:
         /*! \brief Constructor
          *
+         * The temperature is used for computing the maximum update group
+         * radius.
+         *
          * \note \p numHomeAtoms only affects the performance up till the first
          *       call to clear().
          *
          * \param[in] mtop                         The global topology
          * \param[in] updateGroupsPerMoleculetype  List of update groups for each molecule type in \p mtop
+         * \param[in] temperature                  The maximum reference temperature, pass -1 when unknown or not applicable
          * \param[in] numHomeAtoms                 Estimate of the number of home atoms per DD cell
          */
         UpdateGroupsCog(const gmx_mtop_t                            &mtop,
                         gmx::ArrayRef<const gmx::RangePartitioning>  updateGroupsPerMoleculetype,
+                        real                                         temperature,
                         int                                          numHomeAtoms);
 
         /*! \brief Compute centers of geometry for supplied coordinates

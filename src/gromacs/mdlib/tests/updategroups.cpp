@@ -98,6 +98,14 @@ gmx_moltype_t ethane()
         0, 4, 6,
         0, 4, 7
     };
+    moltype.ilist[F_ANGLES].iatoms = {
+        1, 1, 0, 2,
+        1, 1, 0, 3,
+        1, 2, 0, 3,
+        1, 5, 4, 6,
+        1, 5, 4, 7,
+        1, 6, 4, 7
+    };
 
     return moltype;
 }
@@ -140,6 +148,23 @@ gmx_moltype_t waterFourSite()
     return moltype;
 }
 
+/*! \brief Returns a water molecule with flexible angle */
+gmx_moltype_t waterFlexAngle()
+{
+    gmx_moltype_t moltype = {};
+
+    moltype.atoms.nr               = 3;
+    moltype.ilist[F_CONSTR].iatoms = {
+        0, 0, 1,
+        0, 0, 2,
+    };
+    moltype.ilist[F_ANGLES].iatoms = {
+        1, 1, 0, 2,
+    };
+
+    return moltype;
+}
+
 TEST(UpdateGroups, ethaneUA)
 {
     gmx_mtop_t mtop;
@@ -154,7 +179,8 @@ TEST(UpdateGroups, ethaneUA)
     ASSERT_EQ(updateGroups.size(), 1);
     EXPECT_EQ(updateGroups[0].numBlocks(), 1);
 
-    real maxRadius = computeMaxUpdateGroupRadius(mtop, updateGroups);
+    real temperature = 298;
+    real maxRadius   = computeMaxUpdateGroupRadius(mtop, updateGroups, temperature);
     EXPECT_FLOAT_EQ(maxRadius, 0.3/2);
 }
 
@@ -172,8 +198,9 @@ TEST(UpdateGroups, methane)
     ASSERT_EQ(updateGroups.size(), 1);
     EXPECT_EQ(updateGroups[0].numBlocks(), 1);
 
-    real maxRadius = computeMaxUpdateGroupRadius(mtop, updateGroups);
-    EXPECT_FLOAT_EQ(maxRadius, 0.1);
+    real temperature = 298;
+    real maxRadius   = computeMaxUpdateGroupRadius(mtop, updateGroups, temperature);
+    EXPECT_FLOAT_EQ(maxRadius, 0.14);
 }
 TEST(UpdateGroups, ethane)
 {
@@ -183,14 +210,25 @@ TEST(UpdateGroups, ethane)
     t_iparams iparams;
     iparams.constr        = { 0.1, 0.1 };
     mtop.ffparams.iparams.push_back(iparams);
+    iparams.linangle      = { 276.144, 107.800, 276.144, 107.800 };
+    mtop.ffparams.iparams.push_back(iparams);
 
     auto updateGroups = gmx::makeUpdateGroups(mtop);
 
     ASSERT_EQ(updateGroups.size(), 1);
     EXPECT_EQ(updateGroups[0].numBlocks(), 2);
 
-    real maxRadius = computeMaxUpdateGroupRadius(mtop, updateGroups);
-    EXPECT_FLOAT_EQ(maxRadius, 0.1);
+    real temperature = 298;
+    real maxRadius   = computeMaxUpdateGroupRadius(mtop, updateGroups, temperature);
+    EXPECT_FLOAT_EQ(maxRadius, 0.094746813);
+
+    temperature = 0;
+    maxRadius   = computeMaxUpdateGroupRadius(mtop, updateGroups, temperature);
+    EXPECT_FLOAT_EQ(maxRadius, 0.10310466);
+
+    temperature = -1;
+    maxRadius   = computeMaxUpdateGroupRadius(mtop, updateGroups, temperature);
+    EXPECT_FLOAT_EQ(maxRadius, 0.125);
 }
 
 TEST(UpdateGroups, butaneUA)
@@ -221,7 +259,8 @@ TEST(UpdateGroups, waterThreeSite)
     ASSERT_EQ(updateGroups.size(), 1);
     EXPECT_EQ(updateGroups[0].numBlocks(), 1);
 
-    real maxRadius = computeMaxUpdateGroupRadius(mtop, updateGroups);
+    real temperature = 298;
+    real maxRadius   = computeMaxUpdateGroupRadius(mtop, updateGroups, temperature);
     EXPECT_FLOAT_EQ(maxRadius, 0.083887339);
 }
 
@@ -254,6 +293,36 @@ TEST(UpdateGroups, fourAtomsWithSettle)
 
     ASSERT_EQ(updateGroups.size(), 1);
     EXPECT_EQ(updateGroups[0].numBlocks(), 2);
+}
+
+// Tests groups with two constraints and an angle potential
+TEST(UpdateGroups, waterFlexAngle)
+{
+    gmx_mtop_t mtop;
+
+    mtop.moltype.emplace_back(waterFlexAngle());
+    t_iparams iparams;
+    iparams.constr        = { 0.1, 0.1 };
+    mtop.ffparams.iparams.push_back(iparams);
+    iparams.linangle      = { 383.0, 109.47, 383.0, 109.47 };
+    mtop.ffparams.iparams.push_back(iparams);
+
+    auto updateGroups = gmx::makeUpdateGroups(mtop);
+
+    ASSERT_EQ(updateGroups.size(), 1);
+    EXPECT_EQ(updateGroups[0].numBlocks(), 1);
+
+    real temperature = 298;
+    real maxRadius   = computeMaxUpdateGroupRadius(mtop, updateGroups, temperature);
+    EXPECT_FLOAT_EQ(maxRadius, 0.090824135);
+
+    temperature = 0;
+    maxRadius   = computeMaxUpdateGroupRadius(mtop, updateGroups, temperature);
+    EXPECT_FLOAT_EQ(maxRadius, 0.1);
+
+    temperature = -1;
+    maxRadius   = computeMaxUpdateGroupRadius(mtop, updateGroups, temperature);
+    EXPECT_FLOAT_EQ(maxRadius, 0.1);
 }
 
 TEST(UpdateGroups, twoMoltypes)
