@@ -490,8 +490,7 @@ int Mdrunner::mainFunction(int argc, char *argv[])
        there instead.  */
     if (MASTER(cr) && !continuationOptions.appendFiles)
     {
-        gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr,
-                     continuationOptions.appendFiles, &fplog);
+        gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr->nodeid, cr->nnodes, &fplog);
     }
     else
     {

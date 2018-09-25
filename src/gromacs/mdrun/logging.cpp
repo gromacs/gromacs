@@ -44,7 +44,6 @@
 #include "logging.h"
 
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -53,54 +52,66 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
 
-void gmx_log_open(const char *lognm, const t_commrec *cr,
-                  gmx_bool bAppendFiles, FILE** fplog)
+//! Implements aspects of logfile handling common to opening either for writing or appending.
+static void gmx_log_setup(const int rankIndex,
+                          const int numRanks,
+                          FILE    * fplog)
 {
     int    pid;
     char   host[256];
     char   timebuf[STRLEN];
-    FILE  *fp = *fplog;
 
-    if (!bAppendFiles)
-    {
-        fp = gmx_fio_fopen(lognm, bAppendFiles ? "a+" : "w+" );
-    }
-
-    gmx_fatal_set_log_file(fp);
+    GMX_RELEASE_ASSERT(fplog != nullptr, "Log file must be already open");
+    gmx_fatal_set_log_file(fplog);
 
     /* Get some machine parameters */
     gmx_gethostname(host, 256);
     pid = gmx_getpid();
     gmx_format_current_time(timebuf, STRLEN);
 
-    if (bAppendFiles)
-    {
-        fprintf(fp,
-                "\n"
-                "\n"
-                "-----------------------------------------------------------\n"
-                "Restarting from checkpoint, appending to previous log file.\n"
-                "\n"
-                );
-    }
-
-    fprintf(fp,
+    fprintf(fplog,
             "Log file opened on %s"
             "Host: %s  pid: %d  rank ID: %d  number of ranks:  %d\n",
-            timebuf, host, pid, cr->nodeid, cr->nnodes);
+            timebuf, host, pid, rankIndex, numRanks);
     try
     {
         gmx::BinaryInformationSettings settings;
         settings.extendedInfo(true);
-        settings.copyright(!bAppendFiles);
-        gmx::printBinaryInformation(fp, gmx::getProgramContext(), settings);
+        settings.copyright(true);
+        gmx::printBinaryInformation(fplog, gmx::getProgramContext(), settings);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    fprintf(fp, "\n");
+    fprintf(fplog, "\n");
 
-    fflush(fp);
+    fflush(fplog);
+}
 
-    *fplog = fp;
+void gmx_log_open(const char *lognm,
+                  const int   rankIndex,
+                  const int   numRanks,
+                  FILE     ** fplog)
+{
+    *fplog = gmx_fio_fopen(lognm, "w+");
+    if (*fplog == nullptr)
+    {
+        GMX_THROW(gmx::FileIOError("Could not open log file" + std::string(lognm)));
+    }
+    gmx_log_setup(rankIndex, numRanks, *fplog);
+}
+
+void gmx_log_append(const int rankIndex,
+                    const int numRanks,
+                    FILE     *fplog)
+{
+    GMX_RELEASE_ASSERT(fplog != nullptr, "Log file must be already open");
+    fprintf(fplog,
+            "\n"
+            "\n"
+            "-----------------------------------------------------------\n"
+            "Restarting from checkpoint, appending to previous log file.\n"
+            "\n"
+            );
+    gmx_log_setup(rankIndex, numRanks, fplog);
 }
 
 void gmx_log_close(FILE *fp)
