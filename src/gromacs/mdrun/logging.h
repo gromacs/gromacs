@@ -47,14 +47,27 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
-struct gmx_multisim_t;
-struct t_commrec;
+/*! \brief Open the log file for writing.
+ *
+ * \throws FileIOError when the log file cannot be opened.
+ * */
+void gmx_log_open(const char *lognm,
+                  int         rankIndex,
+                  int         numRanks,
+                  FILE      **fplog);
 
-/*! \brief Open the log file */
-void gmx_log_open(const char *fn, const t_commrec *cr,
-                  gmx_bool bAppendFiles, FILE** /*fplog*/);
+/*! \brief Use the open log file for appending.
+ *
+ * Does not throw.
+ */
+void gmx_log_append(int   rankIndex,
+                    int   numRanks,
+                    FILE *fplog);
 
-/*! \brief Close the log file */
+/*! \brief Close the log file.
+ *
+ * Does not throw.
+ */
 void gmx_log_close(FILE *fp);
 
 #endif
