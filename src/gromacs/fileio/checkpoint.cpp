@@ -2210,6 +2210,94 @@ static void check_match(FILE *fplog, const t_commrec *cr, const ivec dd_nc,
     }
 }
 
+static void lockLogFile(FILE       *fplog,
+                        t_fileio   *chksum_file,
+                        const char *filename,
+                        bool        bForceAppend)
+{
+    /* Note that there are systems where the lock operation
+     * will succeed, but a second process can also lock the file.
+     * We should probably try to detect this.
+     */
+#if defined __native_client__
+    errno = ENOSYS;
+    if (true)
+#elif GMX_NATIVE_WINDOWS
+    if (_locking(fileno(gmx_fio_getfp(chksum_file)), _LK_NBLCK, LONG_MAX) == -1)
+#else
+    struct flock         fl; /* don't initialize here: the struct order is OS
+                                dependent! */
+    fl.l_type   = F_WRLCK;
+    fl.l_whence = SEEK_SET;
+    fl.l_start  = 0;
+    fl.l_len    = 0;
+    fl.l_pid    = 0;
+
+    if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl) == -1)
+#endif
+    {
+        if (errno == ENOSYS)
+        {
+            if (!bForceAppend)
+            {
+                gmx_fatal(FARGS, "File locking is not supported on this system. Use -noappend or specify -append explicitly to append anyhow.");
+            }
+            else
+            {
+                if (fplog)
+                {
+                    fprintf(fplog, "\nNOTE: File locking not supported on this system, will not lock %s\n\n", filename);
+                }
+            }
+        }
+        else if (errno == EACCES || errno == EAGAIN)
+        {
+            gmx_fatal(FARGS, "Failed to lock: %s. Already running "
+                      "simulation?", filename);
+        }
+        else
+        {
+            gmx_fatal(FARGS, "Failed to lock: %s. %s.",
+                      filename, std::strerror(errno));
+        }
+    }
+}
+
+//! Check whether chksum_file output file has a checksum that matches \c outputfile from the checkpoint.
+static void checkOutputFile(t_fileio                  *chksum_file,
+                            const gmx_file_position_t &outputfile)
+{
+    /* compute md5 chksum */
+    std::array<unsigned char, 16> digest;
+    if (outputfile.checksumSize != -1)
+    {
+        if (gmx_fio_get_file_md5(chksum_file, outputfile.offset,
+                                 &digest) != outputfile.checksumSize) /*at the end of the call the file position is at the end of the file*/
+        {
+            gmx_fatal(FARGS, "Can't read %d bytes of '%s' to compute checksum. The file has been replaced or its contents have been modified. Cannot do appending because of this condition.",
+                      outputfile.checksumSize,
+                      outputfile.filename);
+        }
+    }
+
+    /* compare md5 chksum */
+    if (outputfile.checksumSize != -1 &&
+        digest != outputfile.checksum)
+    {
+        if (debug)
+        {
+            fprintf(debug, "chksum for %s: ", outputfile.filename);
+            for (int j = 0; j < 16; j++)
+            {
+                fprintf(debug, "%02x", digest[j]);
+            }
+            fprintf(debug, "\n");
+        }
+        gmx_fatal(FARGS, "Checksum wrong for '%s'. The file has been replaced or its contents have been modified. Cannot do appending because of this condition.",
+                  outputfile.filename);
+    }
+}
+
 static void read_checkpoint(const char *fn, FILE **pfplog,
                             const t_commrec *cr,
                             const ivec dd_nc,
@@ -2222,23 +2310,11 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                             gmx_bool reproducibilityRequested)
 {
     t_fileio            *fp;
-    int                  j, rc;
+    int                  rc;
     char                 buf[STEPSTRSIZE];
     int                  ret;
     t_fileio            *chksum_file;
     FILE               * fplog = *pfplog;
-#if !defined __native_client__ && !GMX_NATIVE_WINDOWS
-    struct flock         fl; /* don't initialize here: the struct order is OS
-                                dependent! */
-#endif
-
-#if !defined __native_client__ && !GMX_NATIVE_WINDOWS
-    fl.l_type   = F_WRLCK;
-    fl.l_whence = SEEK_SET;
-    fl.l_start  = 0;
-    fl.l_len    = 0;
-    fl.l_pid    = 0;
-#endif
 
     fp = gmx_fio_open(fn, "r");
     do_cpt_header(gmx_fio_getxdr(fp), TRUE, nullptr, headerContents);
@@ -2421,7 +2497,6 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                           " offsets. Can not append. Run mdrun with -noappend",
                           outputfile.filename);
             }
-            std::array<unsigned char, 16> digest;
             if (GMX_FAHCORE)
             {
                 chksum_file = gmx_fio_open(outputfile.filename, "a");
@@ -2430,61 +2505,14 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
             {
                 chksum_file = gmx_fio_open(outputfile.filename, "r+");
 
-                /* lock log file */
                 if (firstFile)
                 {
-                    /* Note that there are systems where the lock operation
-                     * will succeed, but a second process can also lock the file.
-                     * We should probably try to detect this.
-                     */
-#if defined __native_client__
-                    errno = ENOSYS;
-                    if (1)
-
-#elif GMX_NATIVE_WINDOWS
-                    if (_locking(fileno(gmx_fio_getfp(chksum_file)), _LK_NBLCK, LONG_MAX) == -1)
-#else
-                    if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl) == -1)
-#endif
-                    {
-                        if (errno == ENOSYS)
-                        {
-                            if (!bForceAppend)
-                            {
-                                gmx_fatal(FARGS, "File locking is not supported on this system. Use -noappend or specify -append explicitly to append anyhow.");
-                            }
-                            else
-                            {
-                                if (fplog)
-                                {
-                                    fprintf(fplog, "\nNOTE: File locking not supported on this system, will not lock %s\n\n", outputfile.filename);
-                                }
-                            }
-                        }
-                        else if (errno == EACCES || errno == EAGAIN)
-                        {
-                            gmx_fatal(FARGS, "Failed to lock: %s. Already running "
-                                      "simulation?", outputfile.filename);
-                        }
-                        else
-                        {
-                            gmx_fatal(FARGS, "Failed to lock: %s. %s.",
-                                      outputfile.filename, std::strerror(errno));
-                        }
-                    }
+                    /* lock log file */
+                    lockLogFile(fplog, chksum_file, outputfile.filename, bForceAppend);
                 }
 
-                /* compute md5 chksum */
-                if (outputfile.checksumSize != -1)
-                {
-                    if (gmx_fio_get_file_md5(chksum_file, outputfile.offset,
-                                             &digest) != outputfile.checksumSize) /*at the end of the call the file position is at the end of the file*/
-                    {
-                        gmx_fatal(FARGS, "Can't read %d bytes of '%s' to compute checksum. The file has been replaced or its contents have been modified. Cannot do appending because of this condition.",
-                                  outputfile.checksumSize,
-                                  outputfile.filename);
-                    }
-                }
+                checkOutputFile(chksum_file, outputfile);
+
                 /* log file needs to be seeked in case we need to truncate
                  * (other files are truncated below)*/
                 if (firstFile)
@@ -2505,23 +2533,6 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
             else
             {
                 gmx_fio_close(chksum_file);
-            }
-            /* compare md5 chksum */
-            if (!GMX_FAHCORE &&
-                outputfile.checksumSize != -1 &&
-                digest != outputfile.checksum)
-            {
-                if (debug)
-                {
-                    fprintf(debug, "chksum for %s: ", outputfile.filename);
-                    for (j = 0; j < 16; j++)
-                    {
-                        fprintf(debug, "%02x", digest[j]);
-                    }
-                    fprintf(debug, "\n");
-                }
-                gmx_fatal(FARGS, "Checksum wrong for '%s'. The file has been replaced or its contents have been modified. Cannot do appending because of this condition.",
-                          outputfile.filename);
             }
 
             // We could preprocess less, but then checkers complain
