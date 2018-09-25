@@ -220,9 +220,6 @@ class Mdrunner
         //! Print a warning if any force is larger than this (in kJ/mol nm).
         real                                    pforce = -1;
 
-        //! \brief Non-owning handle to file used for logging.
-        FILE                                   *fplog = nullptr;
-
         //! \brief Non-owning handle to communication data structure.
         t_commrec                              *cr = nullptr;
 
@@ -469,17 +466,6 @@ class MdrunnerBuilder final
          * initialized in Mdrunner.
          */
         MdrunnerBuilder &addOutputEnvironment(gmx_output_env_t* outputEnvironment);
-
-        /*!
-         * \brief Provide the address of the filehandle pointer to be used for the MD log.
-         *
-         * Required.
-         *
-         * \param logFileHandle Non-owning handle to file used for logging.
-         * \internal
-         * \todo This method becomes unnecessary with resolution of http://redmine.gromacs.org/issues/2651
-         */
-        MdrunnerBuilder &addLogFile(FILE** logFileHandle);
 
         ~MdrunnerBuilder();
 
