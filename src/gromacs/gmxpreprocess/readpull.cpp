@@ -522,7 +522,7 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
 
     pull_calc_coms(nullptr, pull_work, md, &pbc, t_start, x, nullptr);
 
-    int groupThatFailsPbc = pullCheckPbcWithinGroups(*pull_work, x, pbc);
+    int groupThatFailsPbc = pullCheckPbcWithinGroups(*pull_work, x, pbc, c_pullGroupPbcMargin);
     if (groupThatFailsPbc >= 0)
     {
         char buf[STRLEN];
