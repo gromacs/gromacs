@@ -2313,7 +2313,6 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     int                  rc;
     char                 buf[STEPSTRSIZE];
     int                  ret;
-    t_fileio            *chksum_file;
     FILE               * fplog = *pfplog;
 
     fp = gmx_fio_open(fn, "r");
@@ -2487,7 +2486,6 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
             gmx_fatal(FARGS, "The first output file should always be the log "
                       "file but instead is: %s. Cannot do appending because of this condition.", outputfiles[0].filename);
         }
-        bool firstFile = true;
         for (const auto &outputfile : outputfiles)
         {
             if (outputfile.offset < 0)
@@ -2497,61 +2495,47 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                           " offsets. Can not append. Run mdrun with -noappend",
                           outputfile.filename);
             }
-            if (GMX_FAHCORE)
-            {
-                chksum_file = gmx_fio_open(outputfile.filename, "a");
-            }
-            else
-            {
-                chksum_file = gmx_fio_open(outputfile.filename, "r+");
+        }
 
-                if (firstFile)
+        // Handle the log file separately - it comes first in the
+        // list, so we make sure that we retain a lock on the open
+        // file that is never lifted after the checksum is calculated.
+        {
+            const char                *fileOpeningMode = GMX_FAHCORE ? "a" : "r+";
+            const gmx_file_position_t &logOutputFile   = outputfiles[0];
+            t_fileio                  *chksum_file     = gmx_fio_open(logOutputFile.filename, fileOpeningMode);
+            if (!GMX_FAHCORE)
+            {
+                lockLogFile(fplog, chksum_file, logOutputFile.filename, bForceAppend);
+                checkOutputFile(chksum_file, logOutputFile);
+
+                if (gmx_fio_seek(chksum_file, logOutputFile.offset))
                 {
-                    /* lock log file */
-                    lockLogFile(fplog, chksum_file, outputfile.filename, bForceAppend);
+                    gmx_fatal(FARGS, "Seek error! Failed to truncate log-file: %s.", std::strerror(errno));
                 }
-
+            }
+            *pfplog = gmx_fio_getfp(chksum_file);
+        }
+        if (!GMX_FAHCORE)
+        {
+            // Now handle the remaining outputfiles
+            gmx::ArrayRef<gmx_file_position_t> outputfilesView(outputfiles);
+            for (const auto &outputfile : outputfilesView.subArray(1, outputfiles.size()-1))
+            {
+                t_fileio *chksum_file = gmx_fio_open(outputfile.filename, "r+");
                 checkOutputFile(chksum_file, outputfile);
+                gmx_fio_close(chksum_file);
 
-                /* log file needs to be seeked in case we need to truncate
-                 * (other files are truncated below)*/
-                if (firstFile)
+                if (!GMX_NATIVE_WINDOWS)
                 {
-                    if (gmx_fio_seek(chksum_file, outputfile.offset))
+                    /* For FAHCORE, we do this elsewhere*/
+                    rc = gmx_truncate(outputfile.filename, outputfile.offset);
+                    if (rc != 0)
                     {
-                        gmx_fatal(FARGS, "Seek error! Failed to truncate log-file: %s.", std::strerror(errno));
+                        gmx_fatal(FARGS, "Truncation of file %s failed. Cannot do appending because of this failure.", outputfile.filename);
                     }
                 }
             }
-
-            /* open log file here - so that lock is never lifted
-             * after chksum is calculated */
-            if (firstFile)
-            {
-                *pfplog = gmx_fio_getfp(chksum_file);
-            }
-            else
-            {
-                gmx_fio_close(chksum_file);
-            }
-
-            // We could preprocess less, but then checkers complain
-            // about possible bugs when using logic on constant
-            // expressions.
-#if !GMX_NATIVE_WINDOWS || !GMX_FAHCORE
-            // The log file is already seeked to correct position, but
-            // others must be truncated.
-            if (!firstFile)
-            {
-                /* For FAHCORE, we do this elsewhere*/
-                rc = gmx_truncate(outputfile.filename, outputfile.offset);
-                if (rc != 0)
-                {
-                    gmx_fatal(FARGS, "Truncation of file %s failed. Cannot do appending because of this failure.", outputfile.filename);
-                }
-            }
-#endif
-            firstFile = false;
         }
     }
 }
