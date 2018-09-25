@@ -33,9 +33,10 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_unit_test(MathUnitTests math-test
+                  canonicalvectorbasis.cpp
                   dofit.cpp
                   functions.cpp
                   invertmatrix.cpp
-                  vectypes.cpp
                   mdarrayindexing.cpp
+                  vectypes.cpp
                   )
