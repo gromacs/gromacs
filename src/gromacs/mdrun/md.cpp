@@ -1091,116 +1091,113 @@ void gmx::Integrator::do_md()
         copy_mat(state->box, lastbox);
 
         dvdl_constr = 0;
-
-        // TODO: Remove braces
+        
+        wallcycle_start(wcycle, ewcUPDATE);
+        /* UPDATE PRESSURE VARIABLES IN TROTTER FORMULATION WITH CONSTRAINTS */
+        if (bTrotter)
         {
-            wallcycle_start(wcycle, ewcUPDATE);
-            /* UPDATE PRESSURE VARIABLES IN TROTTER FORMULATION WITH CONSTRAINTS */
-            if (bTrotter)
-            {
-                trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ3);
-                /* We can only do Berendsen coupling after we have summed
-                 * the kinetic energy or virial. Since the happens
-                 * in global_state after update, we should only do it at
-                 * step % nstlist = 1 with bGStatEveryStep=FALSE.
-                 */
-            }
-            else
-            {
-                update_tcouple(step, ir, state, ekind, &MassQ, mdatoms);
-                update_pcouple_before_coordinates(fplog, step, ir, state,
-                                                  parrinellorahmanMu, M,
-                                                  bInitStep);
-            }
-
-            if (EI_VV(ir->eI))
-            {
-                /* velocity half-step update */
-                update_coords(step, ir, mdatoms, state, f, fcd,
-                              ekind, M, upd, etrtVELOCITY2,
-                              cr, constr);
-            }
-
-            /* Above, initialize just copies ekinh into ekin,
-             * it doesn't copy position (for VV),
-             * and entire integrator for MD.
+            trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ3);
+            /* We can only do Berendsen coupling after we have summed
+             * the kinetic energy or virial. Since the happens
+             * in global_state after update, we should only do it at
+             * step % nstlist = 1 with bGStatEveryStep=FALSE.
              */
+        }
+        else
+        {
+            update_tcouple(step, ir, state, ekind, &MassQ, mdatoms);
+            update_pcouple_before_coordinates(fplog, step, ir, state,
+                                              parrinellorahmanMu, M,
+                                              bInitStep);
+        }
 
-            if (ir->eI == eiVVAK)
+        if (EI_VV(ir->eI))
+        {
+            /* velocity half-step update */
+            update_coords(step, ir, mdatoms, state, f, fcd,
+                          ekind, M, upd, etrtVELOCITY2,
+                          cr, constr);
+        }
+
+        /* Above, initialize just copies ekinh into ekin,
+         * it doesn't copy position (for VV),
+         * and entire integrator for MD.
+         */
+
+        if (ir->eI == eiVVAK)
+        {
+            /* We probably only need md->homenr, not state->natoms */
+            if (state->natoms > cbuf_nalloc)
             {
-                /* We probably only need md->homenr, not state->natoms */
-                if (state->natoms > cbuf_nalloc)
-                {
-                    cbuf_nalloc = state->natoms;
-                    srenew(cbuf, cbuf_nalloc);
-                }
-                copy_rvecn(as_rvec_array(state->x.data()), cbuf, 0, state->natoms);
+                cbuf_nalloc = state->natoms;
+                srenew(cbuf, cbuf_nalloc);
             }
+            copy_rvecn(as_rvec_array(state->x.data()), cbuf, 0, state->natoms);
+        }
+
+        update_coords(step, ir, mdatoms, state, f, fcd,
+                      ekind, M, upd, etrtPOSITION, cr, constr);
+        wallcycle_stop(wcycle, ewcUPDATE);
+
+        constrain_coordinates(step, &dvdl_constr, state,
+                              shake_vir,
+                              wcycle, upd, constr,
+                              bCalcVir, do_log, do_ene);
+        update_sd_second_half(step, &dvdl_constr, ir, mdatoms, state,
+                              cr, nrnb, wcycle, upd, constr, do_log, do_ene);
+        finish_update(ir, mdatoms,
+                      state, graph,
+                      nrnb, wcycle, upd, constr);
+
+        if (ir->eI == eiVVAK)
+        {
+            /* erase F_EKIN and F_TEMP here? */
+            /* just compute the kinetic energy at the half step to perform a trotter step */
+            compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
+                            wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
+                            constr, &nullSignaller, lastbox,
+                            nullptr, &bSumEkinhOld,
+                            (bGStat ? CGLO_GSTAT : 0) | CGLO_TEMPERATURE
+                            );
+            wallcycle_start(wcycle, ewcUPDATE);
+            trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ4);
+            /* now we know the scaling, we can compute the positions again again */
+            copy_rvecn(cbuf, as_rvec_array(state->x.data()), 0, state->natoms);
 
             update_coords(step, ir, mdatoms, state, f, fcd,
                           ekind, M, upd, etrtPOSITION, cr, constr);
             wallcycle_stop(wcycle, ewcUPDATE);
 
-            constrain_coordinates(step, &dvdl_constr, state,
-                                  shake_vir,
-                                  wcycle, upd, constr,
-                                  bCalcVir, do_log, do_ene);
-            update_sd_second_half(step, &dvdl_constr, ir, mdatoms, state,
-                                  cr, nrnb, wcycle, upd, constr, do_log, do_ene);
+            /* do we need an extra constraint here? just need to copy out of as_rvec_array(state->v.data()) to upd->xp? */
+            /* are the small terms in the shake_vir here due
+             * to numerical errors, or are they important
+             * physically? I'm thinking they are just errors, but not completely sure.
+             * For now, will call without actually constraining, constr=NULL*/
             finish_update(ir, mdatoms,
                           state, graph,
-                          nrnb, wcycle, upd, constr);
-
-            if (ir->eI == eiVVAK)
-            {
-                /* erase F_EKIN and F_TEMP here? */
-                /* just compute the kinetic energy at the half step to perform a trotter step */
-                compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
-                                wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                                constr, &nullSignaller, lastbox,
-                                nullptr, &bSumEkinhOld,
-                                (bGStat ? CGLO_GSTAT : 0) | CGLO_TEMPERATURE
-                                );
-                wallcycle_start(wcycle, ewcUPDATE);
-                trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ4);
-                /* now we know the scaling, we can compute the positions again again */
-                copy_rvecn(cbuf, as_rvec_array(state->x.data()), 0, state->natoms);
-
-                update_coords(step, ir, mdatoms, state, f, fcd,
-                              ekind, M, upd, etrtPOSITION, cr, constr);
-                wallcycle_stop(wcycle, ewcUPDATE);
-
-                /* do we need an extra constraint here? just need to copy out of as_rvec_array(state->v.data()) to upd->xp? */
-                /* are the small terms in the shake_vir here due
-                 * to numerical errors, or are they important
-                 * physically? I'm thinking they are just errors, but not completely sure.
-                 * For now, will call without actually constraining, constr=NULL*/
-                finish_update(ir, mdatoms,
-                              state, graph,
-                              nrnb, wcycle, upd, nullptr);
-            }
-            if (EI_VV(ir->eI))
-            {
-                /* this factor or 2 correction is necessary
-                   because half of the constraint force is removed
-                   in the vv step, so we have to double it.  See
-                   the Redmine issue #1255.  It is not yet clear
-                   if the factor of 2 is exact, or just a very
-                   good approximation, and this will be
-                   investigated.  The next step is to see if this
-                   can be done adding a dhdl contribution from the
-                   rattle step, but this is somewhat more
-                   complicated with the current code. Will be
-                   investigated, hopefully for 4.6.3. However,
-                   this current solution is much better than
-                   having it completely wrong.
-                 */
-                enerd->term[F_DVDL_CONSTR] += 2*dvdl_constr;
-            }
-            else
-            {
-                enerd->term[F_DVDL_CONSTR] += dvdl_constr;
-            }
+                          nrnb, wcycle, upd, nullptr);
+        }
+        if (EI_VV(ir->eI))
+        {
+            /* this factor or 2 correction is necessary
+               because half of the constraint force is removed
+               in the vv step, so we have to double it.  See
+               the Redmine issue #1255.  It is not yet clear
+               if the factor of 2 is exact, or just a very
+               good approximation, and this will be
+               investigated.  The next step is to see if this
+               can be done adding a dhdl contribution from the
+               rattle step, but this is somewhat more
+               complicated with the current code. Will be
+               investigated, hopefully for 4.6.3. However,
+               this current solution is much better than
+               having it completely wrong.
+             */
+            enerd->term[F_DVDL_CONSTR] += 2*dvdl_constr;
+        }
+        else
+        {
+            enerd->term[F_DVDL_CONSTR] += dvdl_constr;
         }
 
         if (vsite != nullptr)
