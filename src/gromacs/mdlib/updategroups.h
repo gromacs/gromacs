@@ -79,9 +79,11 @@ std::vector<RangePartitioning> makeUpdateGroups(const gmx_mtop_t &mtop);
  *
  * \param[in] mtop          The system topology
  * \param[in] updateGroups  List of update group, size should match the number of moltypes in \p mtop or be 0
+ * \param[in] temperature   The maximum reference temperature, pass -1 when unknown or not applicable
  */
 real computeMaxUpdateGroupRadius(const gmx_mtop_t                       &mtop,
-                                 gmx::ArrayRef<const RangePartitioning>  updateGroups);
+                                 gmx::ArrayRef<const RangePartitioning>  updateGroups,
+                                 real                                    temperature);
 
 }      // namespace gmx
 
