@@ -43,31 +43,38 @@
 #ifndef GMX_MDRUN_LOGGING_H
 #define GMX_MDRUN_LOGGING_H
 
-#include <cstdio>
+#include <memory>
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/unique_cptr.h"
 
-/*! \brief Open the log file for writing.
+struct t_fileio;
+
+namespace gmx
+{
+
+/*! \brief Close the log file */
+void closeLogFile(t_fileio *logfio);
+
+//! Simple guard pointer See unique_cptr for details.
+using LogFilePtr = std::unique_ptr < t_fileio, functor_wrapper < t_fileio, closeLogFile>>;
+
+/*! \brief Open the log file for writing/appending.
  *
- * \throws FileIOError when the log file cannot be opened.
- * */
-void gmx_log_open(const char *lognm,
-                  int         rankIndex,
-                  int         numRanks,
-                  FILE      **fplog);
+ * \throws FileIOError when the log file cannot be opened. */
+LogFilePtr openLogFile(const char *lognm,
+                       bool        appendFiles,
+                       int         rankIndex,
+                       int         numRanks);
 
-/*! \brief Use the open log file for appending.
+/*! \brief Prepare to use the open log file when appending.
  *
  * Does not throw.
  */
-void gmx_log_append(int   rankIndex,
-                    int   numRanks,
-                    FILE *fplog);
+void prepareLogAppending(int   rankIndex,
+                         int   numRanks,
+                         FILE *fplog);
 
-/*! \brief Close the log file.
- *
- * Does not throw.
- */
-void gmx_log_close(FILE *fp);
+}    // namespace gmx
 
 #endif

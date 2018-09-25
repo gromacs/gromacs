@@ -2299,7 +2299,7 @@ static void checkOutputFile(t_fileio                  *chksum_file,
     }
 }
 
-static void read_checkpoint(const char *fn, FILE **pfplog,
+static void read_checkpoint(const char *fn, t_fileio *logfio,
                             const t_commrec *cr,
                             const ivec dd_nc,
                             int eIntegrator,
@@ -2314,7 +2314,6 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     int                  rc;
     char                 buf[STEPSTRSIZE];
     int                  ret;
-    FILE               * fplog = *pfplog;
 
     fp = gmx_fio_open(fn, "r");
     do_cpt_header(gmx_fio_getxdr(fp), TRUE, nullptr, headerContents);
@@ -2325,7 +2324,11 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         gmx_fatal(FARGS, "Output file appending requested, but the code and checkpoint file precision (single/double) don't match");
     }
 
-    /* This will not be written if we do appending, since fplog is still NULL then */
+    // If we are appending, then we don't write to the open log file
+    // because we still need to compute a checksum for it. Otherwise
+    // we report to the new log file about the checkpoint file that we
+    // are reading from.
+    FILE *fplog = bAppendOutputFiles ? nullptr : gmx_fio_getfp(logfio);
     if (fplog)
     {
         fprintf(fplog, "\n");
@@ -2502,20 +2505,17 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         // list, so we make sure that we retain a lock on the open
         // file that is never lifted after the checksum is calculated.
         {
-            const char                *fileOpeningMode = GMX_FAHCORE ? "a" : "r+";
             const gmx_file_position_t &logOutputFile   = outputfiles[0];
-            t_fileio                  *chksum_file     = gmx_fio_open(logOutputFile.filename, fileOpeningMode);
             if (!GMX_FAHCORE)
             {
-                lockLogFile(fplog, chksum_file, logOutputFile.filename, bForceAppend);
-                checkOutputFile(chksum_file, logOutputFile);
+                lockLogFile(fplog, logfio, logOutputFile.filename, bForceAppend);
+                checkOutputFile(logfio, logOutputFile);
 
-                if (gmx_fio_seek(chksum_file, logOutputFile.offset))
+                if (gmx_fio_seek(logfio, logOutputFile.offset))
                 {
                     gmx_fatal(FARGS, "Seek error! Failed to truncate log-file: %s.", std::strerror(errno));
                 }
             }
-            *pfplog = gmx_fio_getfp(chksum_file);
         }
         if (!GMX_FAHCORE)
         {
@@ -2542,7 +2542,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 }
 
 
-void load_checkpoint(const char *fn, FILE **fplog,
+void load_checkpoint(const char *fn, t_fileio *logfio,
                      const t_commrec *cr, const ivec dd_nc,
                      t_inputrec *ir, t_state *state,
                      gmx_bool *bReadEkin,
@@ -2554,7 +2554,7 @@ void load_checkpoint(const char *fn, FILE **fplog,
     if (SIMMASTER(cr))
     {
         /* Read the state from the checkpoint file */
-        read_checkpoint(fn, fplog,
+        read_checkpoint(fn, logfio,
                         cr, dd_nc,
                         ir->eI, &(ir->fepvals->init_fep_state),
                         &headerContents,
