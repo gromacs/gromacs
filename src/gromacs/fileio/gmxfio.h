@@ -40,6 +40,7 @@
 
 #include <stdio.h>
 
+#include <array>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
@@ -141,10 +142,10 @@ FILE *gmx_fio_getfp(t_fileio *fio);
  * enable large files).  */
 struct gmx_file_position_t
 {
-    char          filename[STRLEN] = {0};
-    gmx_off_t     offset           = 0;
-    unsigned char chksum[16]       = {0};
-    int           chksum_size      = 0;
+    char                          filename[STRLEN]  = {0};
+    gmx_off_t                     offset            = 0;
+    std::array<unsigned char, 16> checksum          = {0};
+    int                           checksumSize      = 0;
 };
 
 /*! \brief Return data about output files.
@@ -167,9 +168,24 @@ t_fileio *gmx_fio_all_output_fsync();
  */
 
 
-int gmx_fio_get_file_md5(t_fileio *fio, gmx_off_t offset,
-                         unsigned char digest[]);
-
+/*! \brief Return the MD5 digest of part of the open file \c fio.
+ *
+ * The last 1MB before \c offset contributes to the MD5 sum, starting
+ * from the beginning of the file if less than 1MB is available. If
+ * the actual read length does not match the \c expectedReadLength,
+ * then an exception is thrown.
+ *
+ * Upon normal or throwing exits, the file pointer will be at the end
+ * of the file.
+ *
+ * \return                        The MD5 sum corresponding to that part of the file.
+ * \throws FileIOError            When a file I/O error occured.
+ * \throws InconsistentInputError When the length of the file read does not
+ *                                match the expected length.
+ */
+std::array<unsigned char, 16> gmx_fio_get_file_md5(t_fileio *fio,
+                                                   gmx_off_t offset,
+                                                   gmx_off_t expectedReadLength);
 
 int xtc_seek_time(t_fileio *fio, real time, int natoms, gmx_bool bSeekForwardOnly);
 
