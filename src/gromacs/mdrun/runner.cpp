@@ -64,6 +64,7 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme-gpu-program.h"
 #include "gromacs/fileio/checkpoint.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxlib/network.h"
@@ -180,10 +181,7 @@ Mdrunner Mdrunner::cloneOnSpawnedThread() const
 
     threadMpiMdrunnerAccessBarrier();
 
-    GMX_RELEASE_ASSERT(!MASTER(newRunner.cr), "reinitializeOnSpawnedThread should only be called on spawned threads");
-
-    // Only the master rank writes to the log file
-    newRunner.fplog = nullptr;
+    GMX_RELEASE_ASSERT(!MASTER(newRunner.cr), "cloneOnSpawnedThread should only be called on spawned threads");
 
     return newRunner;
 }
@@ -428,11 +426,6 @@ int Mdrunner::mdrunner()
     t_inputrec                     *inputrec = &inputrecInstance;
     gmx_mtop_t                      mtop;
 
-    if (mdrunOptions.continuationOptions.appendFiles)
-    {
-        fplog = nullptr;
-    }
-
     bool doMembed = opt2bSet("-membed", filenames().size(), filenames().data());
     bool doRerun  = mdrunOptions.rerun;
 
@@ -472,6 +465,16 @@ int Mdrunner::mdrunner()
 
     // Here we assume that SIMMASTER(cr) does not change even after the
     // threads are started.
+
+    FILE *fplog = nullptr;
+    // If we are appending, we don't write log output because we need
+    // to check that the old log file matches what the checkpoint file
+    // expects. Otherwise, we should start to write log output now if
+    // there is a file ready for it.
+    if (logFileHandle != nullptr && !mdrunOptions.continuationOptions.appendFiles)
+    {
+        fplog = gmx_fio_getfp(logFileHandle);
+    }
     gmx::LoggerOwner logOwner(buildLogger(fplog, cr));
     gmx::MDLogger    mdlog(logOwner.logger());
 
@@ -806,7 +809,8 @@ int Mdrunner::mdrunner()
          */
         gmx_bool bReadEkin;
 
-        load_checkpoint(opt2fn_master("-cpi", filenames().size(), filenames().data(), cr), &fplog,
+        load_checkpoint(opt2fn_master("-cpi", filenames().size(), filenames().data(), cr),
+                        logFileHandle,
                         cr, domdecOptions.numCells,
                         inputrec, globalState.get(),
                         &bReadEkin, &observablesHistory,
@@ -818,13 +822,15 @@ int Mdrunner::mdrunner()
         {
             continuationOptions.haveReadEkin = true;
         }
-    }
 
-    if (SIMMASTER(cr) && continuationOptions.appendFiles)
-    {
-        gmx_log_append(cr->nodeid, cr->nnodes, fplog);
-        logOwner = buildLogger(fplog, nullptr);
-        mdlog    = logOwner.logger();
+        if (continuationOptions.appendFiles && logFileHandle)
+        {
+            // Now we can start normal logging to the truncated log file.
+            fplog    = gmx_fio_getfp(logFileHandle);
+            prepareLogAppending(cr->nodeid, cr->nnodes, fplog);
+            logOwner = buildLogger(fplog, cr);
+            mdlog    = logOwner.logger();
+        }
     }
 
     if (mdrunOptions.numStepsCommandline > -2)
@@ -1435,11 +1441,10 @@ int Mdrunner::mdrunner()
     walltime_accounting_destroy(walltime_accounting);
     sfree(nrnb);
 
-    /* Close logfile already here if we were appending to it */
-    if (MASTER(cr) && continuationOptions.appendFiles)
+    // Ensure log file content is written
+    if (logFileHandle)
     {
-        gmx_log_close(fplog);
-        fplog = nullptr;
+        gmx_fio_flush(logFileHandle);
     }
 
     /* Reset FPEs (important for unit tests) by disabling them. Assumes no
@@ -1500,7 +1505,7 @@ class Mdrunner::BuilderImplementation
 
         void addOutputEnvironment(gmx_output_env_t* outputEnvironment);
 
-        void addLogFile(FILE** logFileHandle);
+        void addLogFile(t_fileio *logFileHandle);
 
         Mdrunner build();
 
@@ -1556,10 +1561,9 @@ class Mdrunner::BuilderImplementation
          * \todo Improve log file handle management.
          * \internal
          * Code managing the FILE* relies on the ability to set it to
-         * nullptr to check whether the filehandle has been closed, so the object
-         * we are pointing to is actually the `FILE*`, not the `FILE`.
+         * nullptr to check whether the filehandle is valid.
          */
-        FILE**                logFile_ = nullptr;
+        t_fileio* logFileHandle_ = nullptr;
 };
 
 Mdrunner::BuilderImplementation::BuilderImplementation(SimulationContext* context) :
@@ -1651,24 +1655,7 @@ Mdrunner Mdrunner::BuilderImplementation::build()
         GMX_THROW(gmx::APIError("MdrunnerBuilder::addOutputEnvironment() is required before build()"));
     }
 
-    /* \todo Responsibility for owning, opening and closing the log file should be consolidated.
-     * Currently, ownership of the filehandle is unclear and it could be closed
-     * in multiple places, so we have to keep a pointer-to-pointer in order to
-     * be able to invalidate it by setting nullptr. However, we lose that connection
-     * at the following assignment. Near term API functionality will require a
-     * resolution. Ref https://redmine.gromacs.org/issues/2587 and gmxapi milestone 21
-     * described with https://redmine.gromacs.org/issues/2585
-     */
-    if (logFile_)
-    {
-        // We do not check whether the pointed-to pointer is nullptr. nullptr is a valid
-        // value for Mdrunner::fplog.
-        newRunner.fplog = *logFile_;
-    }
-    else
-    {
-        GMX_THROW(gmx::APIError("MdrunnerBuilder::addLogFile() is required before build()"));
-    }
+    newRunner.logFileHandle = logFileHandle_;
 
     if (nbpu_opt_)
     {
@@ -1719,10 +1706,9 @@ void Mdrunner::BuilderImplementation::addOutputEnvironment(gmx_output_env_t* out
     outputEnvironment_ = outputEnvironment;
 }
 
-void Mdrunner::BuilderImplementation::addLogFile(FILE** logFileHandle)
+void Mdrunner::BuilderImplementation::addLogFile(t_fileio *logFileHandle)
 {
-    assert(logFileHandle);
-    logFile_ = logFileHandle;
+    logFileHandle_ = logFileHandle;
 }
 
 MdrunnerBuilder::MdrunnerBuilder(compat::not_null<SimulationContext*> context) :
@@ -1809,7 +1795,7 @@ MdrunnerBuilder &MdrunnerBuilder::addOutputEnvironment(gmx_output_env_t* outputE
     return *this;
 }
 
-MdrunnerBuilder &MdrunnerBuilder::addLogFile(FILE** logFileHandle)
+MdrunnerBuilder &MdrunnerBuilder::addLogFile(t_fileio *logFileHandle)
 {
     impl_->addLogFile(logFileHandle);
     return *this;
