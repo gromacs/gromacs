@@ -934,3 +934,47 @@ int pullCheckPbcWithinGroups(const pull_t &pull,
 
     return -1;
 }
+
+bool pullCheckPbcWithinGroup(const pull_t &pull,
+                             const rvec   *x,
+                             const t_pbc  &pbc,
+                             int           groupNr,
+                             real          pbcMargin)
+{
+    if (pbc.ePBC == epbcNONE))
+    {
+        return true;
+    }
+    GMX_ASSERT(groupNr < static_cast<int>(pull.group.size()), "groupNr is out of range");
+
+    /* Determine what dimensions are used for each group by pull coordinates */
+    BoolVec dimUsed = { false, false, false };
+    for (size_t c = 0; c < pull.coord.size(); c++)
+    {
+        const t_pull_coord &coordParams = pull.coord[c].params;
+        for (int groupIndex = 0; groupIndex < coordParams.ngroup; groupIndex++)
+        {
+            if (coordParams.group[groupIndex] == groupNr)
+            {
+                for (int d = 0; d < DIM; d++)
+                {
+                    if (coordParams.dim[d] &&
+                        !(coordParams.eGeom == epullgCYL && groupIndex == 0))
+                    {
+                        dimUsed[d] = true;
+                    }
+                }
+            }
+        }
+    }
+
+    /* Check PBC for every group that uses a PBC reference atom treatment */
+    const pull_group_work_t &group = pull.group[groupNr];
+    if (group.epgrppbc == epgrppbcREFAT &&
+        !pullGroupObeysPbcRestrictions(group, dimUsed, x, pbc, pull.comm.pbcAtomBuffer[groupNr], pbcMargin))
+    {
+        return false;
+    }
+
+    return true;
+}
