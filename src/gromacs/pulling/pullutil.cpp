@@ -808,7 +808,8 @@ static bool pullGroupObeysPbcRestrictions(const pull_group_work_t &group,
                                           const BoolVec           &dimUsed,
                                           const rvec              *x,
                                           const t_pbc             &pbc,
-                                          const gmx::RVec         &x_pbc)
+                                          const gmx::RVec         &x_pbc,
+                                          const real               pbcMargin)
 {
     /* Determine which dimensions are relevant for PBC */
     BoolVec dimUsesPbc       = { false, false, false };
@@ -838,7 +839,7 @@ static bool pullGroupObeysPbcRestrictions(const pull_group_work_t &group,
         /* Use margins for dimensions independently */
         for (int d = 0; d < pbc.ndim_ePBC; d++)
         {
-            marginPerDim[d] = c_pullGroupPbcMargin*pbc.hbox_diag[d];
+            marginPerDim[d] = pbcMargin*pbc.hbox_diag[d];
         }
     }
     else
@@ -848,7 +849,7 @@ static bool pullGroupObeysPbcRestrictions(const pull_group_work_t &group,
         {
             if (dimUsesPbc[d])
             {
-                marginDistance2 += c_pullGroupPbcMargin*gmx::square(0.5)*norm2(pbc.box[d]);
+                marginDistance2 += pbcMargin*gmx::square(0.5)*norm2(pbc.box[d]);
             }
         }
     }
@@ -894,7 +895,8 @@ static bool pullGroupObeysPbcRestrictions(const pull_group_work_t &group,
 
 int pullCheckPbcWithinGroups(const pull_t &pull,
                              const rvec   *x,
-                             const t_pbc  &pbc)
+                             const t_pbc  &pbc,
+                             real          pbcMargin)
 {
     if (pbc.ePBC == epbcNONE)
     {
@@ -924,7 +926,7 @@ int pullCheckPbcWithinGroups(const pull_t &pull,
     {
         const pull_group_work_t &group = pull.group[g];
         if (group.epgrppbc == epgrppbcREFAT &&
-            !pullGroupObeysPbcRestrictions(group, dimUsed[g], x, pbc, pull.comm.pbcAtomBuffer[g]))
+            !pullGroupObeysPbcRestrictions(group, dimUsed[g], x, pbc, pull.comm.pbcAtomBuffer[g], pbcMargin))
         {
             return g;
         }
