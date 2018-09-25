@@ -146,8 +146,9 @@ TEST(UpdateGroupsCog, ComputesCogs)
 
     // Run the test
     auto            updateGroups = makeUpdateGroups(mtop);
+    real            temperature  = 300;
 
-    UpdateGroupsCog updateGroupsCog(mtop, updateGroups, numAtoms);
+    UpdateGroupsCog updateGroupsCog(mtop, updateGroups, temperature, numAtoms);
 
     EXPECT_FLOAT_EQ(updateGroupsCog.maxUpdateGroupRadius(), 0.083887339);
 

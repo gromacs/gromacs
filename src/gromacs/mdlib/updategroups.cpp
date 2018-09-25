@@ -46,6 +46,10 @@
 
 #include <cmath>
 
+#include <unordered_map>
+
+#include "gromacs/math/functions.h"
+#include "gromacs/math/units.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/block.h"
@@ -422,11 +426,183 @@ std::vector<RangePartitioning> makeUpdateGroups(const gmx_mtop_t &mtop)
     return updateGroups;
 }
 
+/*! \brief Returns a map of angles ilist.iatoms indices with the middle atom as key */
+static std::unordered_multimap<int, int>
+getAngleIndices(const gmx_moltype_t &moltype)
+{
+    const InteractionList            &angles = moltype.ilist[F_ANGLES];
+
+    std::unordered_multimap<int, int> indices(angles.size());
+
+    for (int i = 0; i < angles.size(); i += 1 + NRAL(F_ANGLES))
+    {
+        indices.insert({ angles.iatoms[i + 2], i });
+    }
+
+    return indices;
+}
+
+/*! \brief When possible, computes the maximum radius of constrained atom in an update group
+ *
+ * Supports groups with 2 or 3 atoms where all partner atoms are connected to
+ * each other by angle potentials. The temperature is used to compute a radius
+ * that is not exceeded with a chance of 10^-9. Note that this computation
+ * assumes there are no other strong forces working on these angular
+ * degrees of freedom.
+ * The return value is -1 when all partners are not connected to each other
+ * by one angle potential, when a potential is perturbed or when an angle
+ * could reach more than 180 degrees.
+ */
+template <int numPartnerAtoms> static real
+constraintGroupRadius(const gmx_moltype_t                     &moltype,
+                      gmx::ArrayRef<const t_iparams>           iparams,
+                      const int                                centralAtom,
+                      const t_blocka                          &at2con,
+                      const std::unordered_multimap<int, int> &angleIndices,
+                      const real                               constraintLength,
+                      const real                               temperature)
+{
+    const int numConstraints = at2con.index[centralAtom + 1] - at2con.index[centralAtom];
+    GMX_RELEASE_ASSERT(numConstraints == numPartnerAtoms, "We expect as many constraints as partner atoms here");
+
+    std::array<int, numPartnerAtoms> partnerAtoms;
+    for (int i = 0; i < numPartnerAtoms; i++)
+    {
+        const int ind = at2con.a[at2con.index[centralAtom] + i]*3;
+        if (ind >= moltype.ilist[F_CONSTR].size())
+        {
+            /* This is a flexible constraint, we don't optimize for that */
+            return -1;
+        }
+        const int a1    = moltype.ilist[F_CONSTR].iatoms[ind + 1];
+        const int a2    = moltype.ilist[F_CONSTR].iatoms[ind + 2];
+        partnerAtoms[i] = (a1 == centralAtom ? a2 : a1);
+    }
+
+    const InteractionList            &angles      = moltype.ilist[F_ANGLES];
+    auto                              range       = angleIndices.equal_range(centralAtom);
+    int                               angleType   = -1;
+    std::array<int, numPartnerAtoms>  numAngles   = { 0 };
+    bool                              areSameType = true;
+    for (auto it = range.first; it != range.second; ++it)
+    {
+        /* Check if the outer atoms in the angle are both partner atoms */
+        int numAtomsFound = 0;
+        for (int ind = it->second + 1; ind < it->second + 4; ind += 2)
+        {
+            for (const int &partnerAtom : partnerAtoms)
+            {
+                if (angles.iatoms[ind] == partnerAtom)
+                {
+                    numAtomsFound++;
+                }
+            }
+        }
+        if (numAtomsFound == 2)
+        {
+            /* Check that the angle potentials have the same type */
+            if (angleType == -1)
+            {
+                angleType = angles.iatoms[it->second];
+            }
+            else if (angles.iatoms[it->second] != angleType)
+            {
+                areSameType = false;
+            }
+            /* Count the number of angle interactions per atoms */
+            for (int ind = it->second + 1; ind < it->second + 4; ind += 2)
+            {
+                for (size_t i = 0; i < partnerAtoms.size(); i++)
+                {
+                    if (angles.iatoms[ind] == partnerAtoms[i])
+                    {
+                        numAngles[i]++;
+                    }
+                }
+            }
+        }
+    }
+
+    bool criteriaSatisfied = areSameType;
+    for (int i = 0; i < numPartnerAtoms; i++)
+    {
+        if (numAngles[i] != numPartnerAtoms - 1)
+        {
+            criteriaSatisfied = false;
+        }
+    }
+
+    /* We don't bother optimizing the perturbed angle case */
+    const t_iparams &angleParams = iparams[angleType];
+    if (criteriaSatisfied &&
+        angleParams.linangle.aB == angleParams.linangle.aA &&
+        angleParams.linangle.klinB == angleParams.linangle.klinA)
+    {
+        /* Set number of stddevs such that change of exceeding < 10^-9 */
+        constexpr real c_numSigma = 6.0;
+        /* Compute the maximally stretched angle */
+        const real     eqAngle  = angleParams.linangle.aA*DEG2RAD;
+        const real     fc       = angleParams.linangle.klinA;
+        const real     maxAngle = eqAngle + c_numSigma*BOLTZ*temperature/((numPartnerAtoms - 1)*fc);
+        if (maxAngle >= M_PI)
+        {
+            return -1;
+        }
+
+        if (numPartnerAtoms == 2)
+        {
+            /* With two atoms constrainted to a cental atom we have a triangle
+             * with two equal sides because the constraint type is equal.
+             * Return the distance from the COG to the farthest two corners,
+             * i.e. the partner atoms.
+             */
+            real distMidPartner = std::sin(0.5*maxAngle)*constraintLength;
+            real distCentralMid = std::cos(0.5*maxAngle)*constraintLength;
+            real distCogMid     = distCentralMid*numPartnerAtoms/(numPartnerAtoms + 1);
+            real distCogPartner = std::sqrt(gmx::square(distMidPartner) + gmx::square(distCogMid));
+
+            return distCogPartner;
+        }
+        else if (numPartnerAtoms == 3)
+        {
+            /* With three atoms constrainted to a cental atom we have the
+             * largest COG-atom distance when one partner atom (the outlier)
+             * moves out by stretching its two angles by an equal amount.
+             * The math here gets a bit more involved, but it is still
+             * rather straightforward geometry.
+             * We first compute distances in the plane of the three partners.
+             * Here we have two "equilibrium" partners and one outlier.
+             * We make use of the "Mid" point between the two "Eq" partners.
+             * We project the central atom on this plane.
+             * Then we compute the distance of the central atom to the plane.
+             * The distance of the COG to the ourlier is returned.
+             */
+            real halfDistEqPartner    = std::sin(0.5*eqAngle)*constraintLength;
+            real distPartnerOutlier   = 2*std::sin(0.5*maxAngle)*constraintLength;
+            real distMidOutlier       = std::sqrt(gmx::square(distPartnerOutlier) - gmx::square(halfDistEqPartner));
+            real distMidCenterInPlane = 0.5*(distMidOutlier - gmx::square(halfDistEqPartner)/distMidOutlier);
+            real distCentralToPlane   = std::sqrt(gmx::square(constraintLength) - gmx::square(halfDistEqPartner) - gmx::square(distMidCenterInPlane));
+            real distCogOutlierH      = distCentralToPlane/(numPartnerAtoms + 1);
+            real distCogOutlierP      = distMidOutlier - (distMidOutlier + distMidCenterInPlane)/(numPartnerAtoms + 1);
+            real distCogOutlier       = std::sqrt(gmx::square(distCogOutlierH) + gmx::square(distCogOutlierP));
+
+            return distCogOutlier;
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(false, "Only 2 or 3 constraints are supported here");
+        }
+    }
+
+    return -1;
+}
+
 /*! \brief Returns the maximum update group radius for \p moltype */
 static real
 computeMaxUpdateGroupRadius(const gmx_moltype_t            &moltype,
                             gmx::ArrayRef<const t_iparams>  iparams,
-                            const RangePartitioning        &updateGroups)
+                            const RangePartitioning        &updateGroups,
+                            real                            temperature)
 {
     GMX_RELEASE_ASSERT(!hasFlexibleConstraints(moltype, iparams),
                        "Flexible constraints are not supported here");
@@ -436,8 +612,7 @@ computeMaxUpdateGroupRadius(const gmx_moltype_t            &moltype,
     t_blocka               at2con =
         make_at2con(moltype, iparams, FlexibleConstraintTreatment::Include);
 
-    const int  stride = 1 + NRAL(F_CONSTR);
-    const real half   = 0.5;
+    const auto angleIndices = getAngleIndices(moltype);
 
     real       maxRadius = 0;
     for (int group = 0; group < updateGroups.numBlocks(); group++)
@@ -467,9 +642,13 @@ computeMaxUpdateGroupRadius(const gmx_moltype_t            &moltype,
             continue;
         }
 
+        bool allTypesAreEqual     = true;
+        int  constraintType       = -1;
+        real maxConstraintLength  = 0;
+        real sumConstraintLengths = 0;
         for (int i = at2con.index[maxAtom]; i < at2con.index[maxAtom + 1]; i++)
         {
-            int conIndex = at2con.a[i]*stride;
+            int conIndex = at2con.a[i]*(1 + NRAL(F_CONSTR));
             int iparamsIndex;
             if (conIndex < moltype.ilist[F_CONSTR].size())
             {
@@ -479,26 +658,74 @@ computeMaxUpdateGroupRadius(const gmx_moltype_t            &moltype,
             {
                 iparamsIndex = moltype.ilist[F_CONSTRNC].iatoms[conIndex - moltype.ilist[F_CONSTR].size()];
             }
+            if (i == at2con.index[maxAtom])
+            {
+                constraintType = iparamsIndex;
+            }
+            else if (iparamsIndex != constraintType)
+            {
+                allTypesAreEqual = false;
+            }
             /* Here we take the maximum constraint length of the A and B
              * topology, which assumes lambda is between 0 and 1 for
              * free-energy runs.
              */
-            real constraintLength = std::max(iparams[iparamsIndex].constr.dA,
-                                             iparams[iparamsIndex].constr.dB);
-            if (at2con.index[maxAtom + 1] == at2con.index[maxAtom] + 1)
+            real constraintLength  = std::max(iparams[iparamsIndex].constr.dA,
+                                              iparams[iparamsIndex].constr.dB);
+            maxConstraintLength    = std::max(maxConstraintLength,
+                                              constraintLength);
+            sumConstraintLengths  += constraintLength;
+        }
+
+        int  numConstraints = at2con.index[maxAtom + 1] - at2con.index[maxAtom];
+        real radius;
+        if (numConstraints == 1)
+        {
+            /* Single constraint: the radius is the distance from the midpoint */
+            radius = 0.5_real*maxConstraintLength;
+        }
+        else
+        {
+            radius = -1;
+
+            /* With 2 constraints the maximum possible radius is the
+             * constraint length, so we can use that for the 0 K case.
+             */
+            if (numConstraints == 2 && allTypesAreEqual && temperature > 0)
             {
-                /* Single constraint: use the distance from the midpoint */
-                maxRadius = std::max(maxRadius, half*constraintLength);
+                radius = constraintGroupRadius<2>(moltype, iparams,
+                                                  maxAtom, at2con,
+                                                  angleIndices,
+                                                  maxConstraintLength,
+                                                  temperature);
             }
-            else
+            /* With 3 constraints the maximum possible radius is 1.4 times
+             * the constraint length, so it is worth computing a smaller
+             * radius to enable update groups for systems in a small box.
+             */
+            if (numConstraints == 3 && allTypesAreEqual && temperature >= 0)
             {
-                /* Multiple constraints: use the distance from the central
-                 * atom. We can do better than this if we would assume
-                 * that the angles between bonds do not stretch a lot.
+                radius = constraintGroupRadius<3>(moltype, iparams,
+                                                  maxAtom, at2con,
+                                                  angleIndices,
+                                                  maxConstraintLength,
+                                                  temperature);
+                if (temperature == 0 && radius >= 0)
+                {
+                    /* Add a 10% margin for deviation at 0 K */
+                    radius *= 1.1_real;
+                }
+            }
+
+            if (radius < 0)
+            {
+                /* Worst case: atom with the longest constraint on one side
+                 * of the center, all others on the opposite side
                  */
-                maxRadius = std::max(maxRadius, constraintLength);
+                radius = maxConstraintLength + (sumConstraintLengths - 2*maxConstraintLength)/(numConstraints + 1);
             }
         }
+        maxRadius = std::max(maxRadius, radius);
     }
 
     for (int i = 0; i < settles.size(); i += 1 + NRAL(F_SETTLE))
@@ -517,8 +744,10 @@ computeMaxUpdateGroupRadius(const gmx_moltype_t            &moltype,
     return maxRadius;
 }
 
-real computeMaxUpdateGroupRadius(const gmx_mtop_t                       &mtop,
-                                 gmx::ArrayRef<const RangePartitioning>  updateGroups)
+real
+computeMaxUpdateGroupRadius(const gmx_mtop_t                       &mtop,
+                            gmx::ArrayRef<const RangePartitioning>  updateGroups,
+                            real                                    temperature)
 {
     if (updateGroups.empty())
     {
@@ -536,7 +765,8 @@ real computeMaxUpdateGroupRadius(const gmx_mtop_t                       &mtop,
             = std::max(maxRadius,
                        computeMaxUpdateGroupRadius(mtop.moltype[moltype],
                                                    mtop.ffparams.iparams,
-                                                   updateGroups[moltype]));
+                                                   updateGroups[moltype],
+                                                   temperature));
     }
 
     return maxRadius;
