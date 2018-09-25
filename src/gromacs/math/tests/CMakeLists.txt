@@ -36,6 +36,7 @@ gmx_add_unit_test(MathUnitTests math-test
                   canonicalvectorbasis.cpp
                   dofit.cpp
                   functions.cpp
+                  mdgrid.cpp
                   invertmatrix.cpp
                   mdarrayindexing.cpp
                   vectypes.cpp
