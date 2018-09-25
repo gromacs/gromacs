@@ -64,6 +64,7 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme-gpu-program.h"
 #include "gromacs/fileio/checkpoint.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxlib/network.h"
@@ -159,9 +160,6 @@ void Mdrunner::reinitializeOnSpawnedThread()
     cr  = reinitialize_commrec_for_this_thread(cr);
 
     GMX_RELEASE_ASSERT(!MASTER(cr), "reinitializeOnSpawnedThread should only be called on spawned threads");
-
-    // Only the master rank writes to the log file
-    fplog = nullptr;
 }
 
 /*! \brief The callback used for running on spawned threads.
@@ -405,11 +403,6 @@ int Mdrunner::mdrunner()
     t_inputrec                     *inputrec = &inputrecInstance;
     gmx_mtop_t                      mtop;
 
-    if (mdrunOptions.continuationOptions.appendFiles)
-    {
-        fplog = nullptr;
-    }
-
     bool doMembed = opt2bSet("-membed", nfile, fnm);
     bool doRerun  = mdrunOptions.rerun;
 
@@ -449,6 +442,13 @@ int Mdrunner::mdrunner()
 
     // Here we assume that SIMMASTER(cr) does not change even after the
     // threads are started.
+
+    LogFilePtr logFileGuard(nullptr);
+    if (MASTER(cr))
+    {
+        logFileGuard = openLogFile(ftp2fn(efLOG, nfile, fnm), mdrunOptions.continuationOptions.appendFiles, cr->nodeid, cr->nnodes);
+    }
+    FILE            *fplog = gmx_fio_getfp(logFileGuard.get());
     gmx::LoggerOwner logOwner(buildLogger(fplog, cr));
     gmx::MDLogger    mdlog(logOwner.logger());
 
@@ -783,7 +783,8 @@ int Mdrunner::mdrunner()
          */
         gmx_bool bReadEkin;
 
-        load_checkpoint(opt2fn_master("-cpi", nfile, fnm, cr), &fplog,
+        load_checkpoint(opt2fn_master("-cpi", nfile, fnm, cr),
+                        logFileGuard.get(),
                         cr, domdecOptions.numCells,
                         inputrec, globalState.get(),
                         &bReadEkin, &observablesHistory,
@@ -795,13 +796,6 @@ int Mdrunner::mdrunner()
         {
             continuationOptions.haveReadEkin = true;
         }
-    }
-
-    if (SIMMASTER(cr) && continuationOptions.appendFiles)
-    {
-        gmx_log_append(cr->nodeid, cr->nnodes, fplog);
-        logOwner = buildLogger(fplog, nullptr);
-        mdlog    = logOwner.logger();
     }
 
     if (mdrunOptions.numStepsCommandline > -2)
@@ -1400,13 +1394,6 @@ int Mdrunner::mdrunner()
     print_date_and_time(fplog, cr->nodeid, "Finished mdrun", gmx_gettime());
     walltime_accounting_destroy(walltime_accounting);
     sfree(nrnb);
-
-    /* Close logfile already here if we were appending to it */
-    if (MASTER(cr) && continuationOptions.appendFiles)
-    {
-        gmx_log_close(fplog);
-        fplog = nullptr;
-    }
 
     /* Reset FPEs (important for unit tests) by disabling them. Assumes no
      * exceptions were enabled before function was called. */

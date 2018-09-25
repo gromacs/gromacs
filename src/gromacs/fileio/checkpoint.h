@@ -86,7 +86,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
  * \throws InconsistentInputError When the length of a file referred to in the
  *                                checkpoint read does not match the expected length.
  */
-void load_checkpoint(const char *fn, FILE **fplog,
+void load_checkpoint(const char *fn, t_fileio *logfio,
                      const t_commrec *cr, const ivec dd_nc,
                      t_inputrec *ir, t_state *state,
                      gmx_bool *bReadEkin,

@@ -485,18 +485,6 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     mdrunOptions.rerun            = opt2bSet("-rerun", nfile, fnm);
     mdrunOptions.ntompOptionIsSet = opt2parg_bSet("-ntomp", asize(pa), pa);
 
-    /* We postpone opening the log file if we are appending, so we can
-       first truncate the old log file and append to the correct position
-       there instead.  */
-    if (MASTER(cr) && !continuationOptions.appendFiles)
-    {
-        gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr->nodeid, cr->nnodes, &fplog);
-    }
-    else
-    {
-        fplog = nullptr;
-    }
-
     domdecOptions.rankOrder    = static_cast<DdRankOrder>(nenum(ddrank_opt_choices));
     domdecOptions.dlbOption    = static_cast<DlbOption>(nenum(dddlb_opt_choices));
     domdecOptions.numCells[XX] = roundToInt(realddxyz[XX]);
@@ -509,13 +497,6 @@ int Mdrunner::mainFunction(int argc, char *argv[])
 
 
     rc = mdrunner();
-
-    /* Log file has to be closed in mdrunner if we are appending to it
-       (fplog not set here) */
-    if (fplog != nullptr)
-    {
-        gmx_log_close(fplog);
-    }
 
     if (GMX_LIB_MPI)
     {

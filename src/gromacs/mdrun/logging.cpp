@@ -43,6 +43,8 @@
 
 #include "logging.h"
 
+#include <memory>
+
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
@@ -52,11 +54,14 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
 
+namespace gmx
+{
+
 //! Implements aspects of logfile handling common to opening either for writing or appending.
-static void gmx_log_setup(gmx::BinaryInformationSettings settings,
-                          const int                      rankIndex,
-                          const int                      numRanks,
-                          FILE                         * fplog)
+static void prepareLogFile(BinaryInformationSettings settings,
+                           const int                 rankIndex,
+                           const int                 numRanks,
+                           FILE                     *fplog)
 {
     int    pid;
     char   host[256];
@@ -77,7 +82,7 @@ static void gmx_log_setup(gmx::BinaryInformationSettings settings,
     try
     {
         settings.extendedInfo(true);
-        gmx::printBinaryInformation(fplog, gmx::getProgramContext(), settings);
+        printBinaryInformation(fplog, getProgramContext(), settings);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     fprintf(fplog, "\n");
@@ -85,25 +90,35 @@ static void gmx_log_setup(gmx::BinaryInformationSettings settings,
     fflush(fplog);
 }
 
-void gmx_log_open(const char *lognm,
-                  const int   rankIndex,
-                  const int   numRanks,
-                  FILE     ** fplog)
+LogFilePtr openLogFile(const char *lognm,
+                       bool        appendFiles,
+                       const int   rankIndex,
+                       const int   numRanks)
 {
-    *fplog = gmx_fio_fopen(lognm, "w+");
-    if (*fplog == nullptr)
+    const char *fileOpeningMode;
+#ifdef GMX_FAHCORE
+    fileOpeningMode = appendFiles ? "a" : "w+";
+#else
+    fileOpeningMode = appendFiles ? "r+" : "w+";
+#endif
+
+    LogFilePtr logfio(gmx_fio_open(lognm, fileOpeningMode));
+    if (!logfio)
     {
-        GMX_THROW(gmx::FileIOError("Could not open log file" + std::string(lognm)));
+        GMX_THROW(FileIOError("Could not open log file" + std::string(lognm)));
     }
+    FILE *fplog = gmx_fio_getfp(logfio.get());
     gmx::BinaryInformationSettings settings;
     settings.copyright(true);
-    gmx_log_setup(settings, rankIndex, numRanks, *fplog);
+    prepareLogFile(settings, rankIndex, numRanks, fplog);
+    return logfio;
 }
 
-void gmx_log_append(const int rankIndex,
-                    const int numRanks,
-                    FILE     *fplog)
+void prepareLogAppending(const int rankIndex,
+                         const int numRanks,
+                         t_fileio *logfio)
 {
+    FILE *fplog = gmx_fio_getfp(logfio);
     GMX_RELEASE_ASSERT(fplog != nullptr, "Log file must be already open");
     fprintf(fplog,
             "\n"
@@ -114,14 +129,16 @@ void gmx_log_append(const int rankIndex,
             );
     gmx::BinaryInformationSettings settings;
     settings.copyright(false);
-    gmx_log_setup(settings, rankIndex, numRanks, fplog);
+    prepareLogFile(settings, rankIndex, numRanks, fplog);
 }
 
-void gmx_log_close(FILE *fp)
+void closeLogFile(t_fileio *logfio)
 {
-    if (fp)
+    if (logfio)
     {
         gmx_fatal_set_log_file(nullptr);
-        gmx_fio_fclose(fp);
+        gmx_fio_close(logfio);
     }
 }
+
+}    // namespace gmx

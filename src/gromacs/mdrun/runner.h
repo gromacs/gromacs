@@ -170,8 +170,6 @@ class Mdrunner
         ReplicaExchangeParameters        replExParams;
         //! Print a warning if any force is larger than this (in kJ/mol nm).
         real                             pforce = -1;
-        //! Handle to file used for logging.
-        FILE                            *fplog;
         //! Handle to communication data structure.
         t_commrec                       *cr;
         //! Handle to multi-simulation handler.
