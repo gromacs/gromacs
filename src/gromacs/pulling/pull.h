@@ -54,6 +54,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/pull-params.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -313,6 +314,32 @@ int pullCheckPbcWithinGroups(const pull_t &pull,
                              const rvec   *x,
                              const t_pbc  &pbc,
                              real          pbcMargin);
+
+/*! \brief Checks whether a specific group that uses a reference atom is within PBC restrictions
+ *
+ * Groups that use a reference atom for determining PBC should have all their
+ * atoms within half the box size from the PBC atom. The box size is used
+ * per dimension for rectangular boxes, but can be a combination of
+ * dimensions for triclinic boxes, depending on which dimensions are
+ * involved in the pull coordinates a group is involved in. A margin is specified
+ * to ensure that atoms are not too close to the maximum distance. Only one group is
+ * checked.
+ *
+ * Should be called without MPI parallelization and after pull_calc_coms()
+ * has been called at least once.
+ *
+ * \param[in] pull       The pull data structure
+ * \param[in] x          The coordinates
+ * \param[in] pbc        Information struct about periodicity
+ * \param[in] groupNr    The index of the group (in pull.group[]) to check
+ * \param[in] pbcMargin  The minimum margin (as a fraction) to half the box size
+ * \returns true if the group obeys PBC otherwise false
+ */
+bool pullCheckPbcWithinGroup(const pull_t                  &pull,
+                             gmx::ArrayRef<const gmx::RVec> x,
+                             const t_pbc                   &pbc,
+                             int                            groupNr,
+                             real                           pbcMargin);
 
 /*! \brief Returns if we have pull coordinates with potential pulling.
  *
