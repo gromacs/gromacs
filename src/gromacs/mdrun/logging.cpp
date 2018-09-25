@@ -53,9 +53,10 @@
 #include "gromacs/utility/sysinfo.h"
 
 //! Implements aspects of logfile handling common to opening either for writing or appending.
-static void gmx_log_setup(const int rankIndex,
-                          const int numRanks,
-                          FILE    * fplog)
+static void gmx_log_setup(gmx::BinaryInformationSettings settings,
+                          const int                      rankIndex,
+                          const int                      numRanks,
+                          FILE                         * fplog)
 {
     int    pid;
     char   host[256];
@@ -75,9 +76,7 @@ static void gmx_log_setup(const int rankIndex,
             timebuf, host, pid, rankIndex, numRanks);
     try
     {
-        gmx::BinaryInformationSettings settings;
         settings.extendedInfo(true);
-        settings.copyright(true);
         gmx::printBinaryInformation(fplog, gmx::getProgramContext(), settings);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -96,7 +95,9 @@ void gmx_log_open(const char *lognm,
     {
         GMX_THROW(gmx::FileIOError("Could not open log file" + std::string(lognm)));
     }
-    gmx_log_setup(rankIndex, numRanks, *fplog);
+    gmx::BinaryInformationSettings settings;
+    settings.copyright(true);
+    gmx_log_setup(settings, rankIndex, numRanks, *fplog);
 }
 
 void gmx_log_append(const int rankIndex,
@@ -111,7 +112,9 @@ void gmx_log_append(const int rankIndex,
             "Restarting from checkpoint, appending to previous log file.\n"
             "\n"
             );
-    gmx_log_setup(rankIndex, numRanks, fplog);
+    gmx::BinaryInformationSettings settings;
+    settings.copyright(false);
+    gmx_log_setup(settings, rankIndex, numRanks, fplog);
 }
 
 void gmx_log_close(FILE *fp)

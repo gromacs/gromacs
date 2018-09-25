@@ -55,10 +55,13 @@
 
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/md5.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/mutex.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "gmxfio-impl.h"
 
@@ -443,42 +446,54 @@ int gmx_fio_fclose(FILE *fp)
     return rc;
 }
 
-/* internal variant of get_file_md5 that operates on a locked file */
-static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
-                                    unsigned char digest[])
+//! Getter for whether a file is opened in a mode suitable for computing an md5 sum.
+static bool gmx_fio_isReadWriteFile(t_fileio *fio)
 {
+    return fio->fp && fio->bReadWrite;
+}
+
+//! Helper struct for returning the MD5 checksum and the amount of the file that contributed to it.
+struct MD5Checksum
+{
+    //! Checksum md5 digest.
+    std::array<unsigned char, 16> checksum;
+    //! The length of the file that contributed to the digest.
+    gmx_off_t                     readLength;
+};
+
+/* internal variant of get_file_md5 that operates on a locked file */
+static MD5Checksum gmx_fio_int_get_file_md5(t_fileio       *fio,
+                                            const gmx_off_t offset)
+{
+    MD5Checksum      result;
     /*1MB: large size important to catch almost identical files */
-#define CPT_CHK_LEN  1048576
-    md5_state_t    state;
-    unsigned char *buf;
-    gmx_off_t      read_len;
-    gmx_off_t      seek_offset;
-    int            ret = -1;
+    constexpr size_t comparisonBufferLength = 1048576;
 
-    seek_offset = offset - CPT_CHK_LEN;
-    if (seek_offset < 0)
+    // We start comparing 1M back from the offset, but no further back
+    // than the beginning of the file!
+    gmx_off_t seekOffset = offset - comparisonBufferLength;
+    if (seekOffset < 0)
     {
-        seek_offset = 0;
+        seekOffset = 0;
     }
-    read_len = offset - seek_offset;
+    result.readLength = offset - seekOffset;
 
-
-    if (fio->fp && fio->bReadWrite)
+    GMX_RELEASE_ASSERT(fio->fp, "Must have an open file to compute the md5 sum");
+    if (!fio->bReadWrite)
     {
-        ret = gmx_fseek(fio->fp, seek_offset, SEEK_SET);
-        if (ret)
-        {
-            gmx_fseek(fio->fp, 0, SEEK_END);
-        }
-    }
-    if (ret) /*either no fp, not readwrite, or fseek not successful */
-    {
-        return -1;
+        GMX_THROW(gmx::FileIOError("Can only compute an md5 sum on a file open in read-write mode"));
     }
 
-    snew(buf, CPT_CHK_LEN);
+    if (gmx_fseek(fio->fp, seekOffset, SEEK_SET))
+    {
+        gmx_fseek(fio->fp, 0, SEEK_END);
+        GMX_THROW(gmx::FileIOError("Must be able to seek in a file to compute the md5 sum"));
+    }
+
+    std::vector<unsigned char> buf(comparisonBufferLength);
+
     /* the read puts the file position back to offset */
-    if (static_cast<gmx_off_t>(fread(buf, 1, read_len, fio->fp)) != read_len)
+    if (static_cast<gmx_off_t>(fread(buf.data(), 1, result.readLength, fio->fp)) != result.readLength)
     {
         /* not fatal: md5sum check to prevent overwriting files
          * works (less safe) without
@@ -488,19 +503,7 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
             fprintf(stderr, "\nTrying to get md5sum: %s: %s\n", fio->fn,
                     strerror(errno));
         }
-        else if (feof(fio->fp))
-        {
-            /*
-             * For long runs that checkpoint frequently but write e.g. logs
-             * infrequently we don't want to issue lots of warnings before we
-             * have written anything to the log.
-             */
-            if (/* DISABLES CODE */ (false))
-            {
-                fprintf(stderr, "\nTrying to get md5sum: EOF: %s\n", fio->fn);
-            }
-        }
-        else
+        else if (!feof(fio->fp))
         {
             fprintf(
                     stderr,
@@ -509,44 +512,39 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
         }
 
         gmx_fseek(fio->fp, 0, SEEK_END);
-
-        ret = -1;
     }
     gmx_fseek(fio->fp, 0, SEEK_END); /*is already at end, but under windows
                                         it gives problems otherwise*/
 
     if (debug)
     {
-        fprintf(debug, "chksum %s readlen %ld\n", fio->fn, static_cast<long int>(read_len));
+        fprintf(debug, "chksum %s readlen %ld\n", fio->fn, static_cast<long int>(result.readLength));
     }
 
-    if (!ret)
-    {
-        gmx_md5_init(&state);
-        gmx_md5_append(&state, buf, read_len);
-        gmx_md5_finish(&state, digest);
-        ret = read_len;
-    }
-    sfree(buf);
-    return ret;
+    md5_state_t state;
+    gmx_md5_init(&state);
+    gmx_md5_append(&state, buf.data(), result.readLength);
+    result.checksum = gmx_md5_finish(&state);
+    return result;
 }
 
-
-/*
- * fio: file to compute md5 for
- * offset: starting pointer of region to use for md5
- * digest: return array of md5 sum
- */
-int gmx_fio_get_file_md5(t_fileio *fio, gmx_off_t offset,
-                         unsigned char digest[])
+std::array<unsigned char, 16> gmx_fio_get_file_md5(t_fileio       *fio,
+                                                   const gmx_off_t offset,
+                                                   const gmx_off_t expectedReadLength)
 {
-    int ret;
-
     gmx_fio_lock(fio);
-    ret = gmx_fio_int_get_file_md5(fio, offset, digest);
+    MD5Checksum result = gmx_fio_int_get_file_md5(fio, offset);
+    if (result.readLength != expectedReadLength)
+    {
+        auto message = gmx::formatString("Can't read %ld bytes to compute checksum. The file "
+                                         "has been replaced or its contents have been modified. "
+                                         "Cannot do appending because of this condition.",
+                                         expectedReadLength);
+        GMX_THROW(gmx::InconsistentInputError(message));
+    }
     gmx_fio_unlock(fio);
 
-    return ret;
+    return result.checksum;
 }
 
 /* The fio_mutex should ALWAYS be locked when this function is called */
@@ -594,10 +592,17 @@ std::vector<gmx_file_position_t> gmx_fio_get_output_file_positions()
             /* Get the file position */
             gmx_fio_int_get_file_position(cur, &outputfiles.back().offset);
 #ifndef GMX_FAHCORE
-            outputfiles.back().chksum_size
-                = gmx_fio_int_get_file_md5(cur,
-                                           outputfiles.back().offset,
-                                           outputfiles.back().chksum);
+            if (gmx_fio_isReadWriteFile(cur))
+            {
+                MD5Checksum result = gmx_fio_int_get_file_md5(cur,
+                                                              outputfiles.back().offset);
+                outputfiles.back().checksumSize = result.readLength;
+                outputfiles.back().checksum     = result.checksum;
+            }
+            else
+            {
+                outputfiles.back().checksumSize = -1;
+            }
 #endif
         }
 
