@@ -259,10 +259,6 @@ int gmx_mdrun(int argc, char *argv[])
     // \todo Clarify initialization, ownership, and lifetime.
     gmx_output_env_t                *oenv = nullptr;
 
-    // Handle to file used for logging.
-    // \todo Move to RAII filehandle management; open and close in one place.
-    FILE                            *fplog;
-
     /* Command line options */
     rvec              realddxyz                                               = {0, 0, 0};
     const char       *ddrank_opt_choices[static_cast<int>(DdRankOrder::nr)+1] =
@@ -517,20 +513,15 @@ int gmx_mdrun(int argc, char *argv[])
                                              filenames().data());
     mdrunOptions.ntompOptionIsSet = opt2parg_bSet("-ntomp", asize(pa), pa);
 
-    /* We postpone opening the log file if we are appending, so we can
-       first truncate the old log file and append to the correct position
-       there instead.  */
-    if (MASTER(cr) && !continuationOptions.appendFiles)
+    LogFilePtr logFileGuard(nullptr);
+    if (MASTER(cr))
     {
-        gmx_log_open(ftp2fn(efLOG,
-                            static_cast<int>(filenames().size()),
-                            filenames().data()),
-                     cr->nodeid, cr->nnodes,
-                     &fplog);
-    }
-    else
-    {
-        fplog = nullptr;
+        logFileGuard = openLogFile(ftp2fn(efLOG,
+                                          filenames().size(),
+                                          filenames().data()),
+                                   continuationOptions.appendFiles,
+                                   cr->nodeid,
+                                   cr->nnodes);
     }
 
     domdecOptions.rankOrder    = static_cast<DdRankOrder>(nenum(ddrank_opt_choices));
@@ -581,21 +572,11 @@ int gmx_mdrun(int argc, char *argv[])
     // \todo Implement lifetime management for gmx_output_env_t.
     // \todo Output environment should be configured outside of Mdrunner and provided as a resource.
     builder.addOutputEnvironment(oenv);
-    // \todo Clean up log file management
-    // Log file opening and closing could be managed entirely within Mdrunner::mdrunner(), or a file-like
-    // object could be owned by the client (such a via SimulationContext) and the handle lent to the
-    // Mdrunner, but currently fplog can be opened or closed in multiple places.
-    builder.addLogFile(&fplog);
+    builder.addLogFile(logFileGuard.get());
+
     auto runner = builder.build();
 
     rc = runner.mdrunner();
-
-    /* Log file has to be closed in mdrunner if we are appending to it
-       (fplog not set here) */
-    if (fplog != nullptr)
-    {
-        gmx_log_close(fplog);
-    }
 
     if (GMX_LIB_MPI)
     {
