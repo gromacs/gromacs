@@ -79,6 +79,12 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
  * With bAppend and bForceAppend: truncate anyhow if the system does not
  * support file locking.
  * With reproducibilityRequested warns about version, build, #ranks differences.
+ *
+ * \todo Use more exceptions for error handling.
+ *
+ * \throws FileIOError            When a file I/O error occured.
+ * \throws InconsistentInputError When the length of a file referred to in the
+ *                                checkpoint read does not match the expected length.
  */
 void load_checkpoint(const char *fn, FILE **fplog,
                      const t_commrec *cr, const ivec dd_nc,

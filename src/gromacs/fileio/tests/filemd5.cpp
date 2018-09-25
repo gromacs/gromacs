@@ -41,6 +41,7 @@
  */
 #include "gmxpre.h"
 
+#include <array>
 #include <algorithm>
 #include <numeric>
 #include <string>
@@ -51,9 +52,11 @@
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/textwriter.h"
 
 #include "testutils/refdata.h"
+#include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
 namespace gmx
@@ -91,31 +94,38 @@ TEST_F(FileMD5Test, CanComputeMD5)
     prepareFile(1000);
     file_ = gmx_fio_open(filename_.c_str(), "r+");
 
-    unsigned char           digest[16] = {0};
-    ArrayRef<unsigned char> digestView(digest);
+    std::array<unsigned char, 16> digest = {0};
     // Chosen to be less than the full file length
-    gmx_off_t               offset             = 64;
-    gmx_off_t               expectedLength     = 64;
-    gmx_off_t               lengthActuallyRead = gmx_fio_get_file_md5(file_, offset, digest);
-
-    EXPECT_EQ(expectedLength, lengthActuallyRead);
+    gmx_off_t                     offset         = 64;
+    gmx_off_t                     expectedLength = 64;
+    digest = gmx_fio_get_file_md5(file_, offset, expectedLength);
     // Did we compute an actual checksum? We can't assert on the
     // actual values because the implementation is merely portable,
     // not reproducible.
-    auto total = std::accumulate(digestView.begin(), digestView.end(), 0);
+    auto total = std::accumulate(digest.begin(), digest.end(), 0);
     EXPECT_LT(0, total);
 }
 
-TEST_F(FileMD5Test, ReturnsErrorIfFileModeIsWrong)
+TEST_F(FileMD5Test, ThrowsWhenUnexpectedLengthIsFound)
+{
+    prepareFile(1000);
+    file_ = gmx_fio_open(filename_.c_str(), "r+");
+
+    gmx_off_t offset         = 100;
+    gmx_off_t expectedLength = offset+1; // Too long
+    EXPECT_THROW_GMX(gmx_fio_get_file_md5(file_, offset, expectedLength),
+                     gmx::InconsistentInputError);
+}
+
+TEST_F(FileMD5Test, ThrowsIfFileModeIsWrong)
 {
     prepareFile(1000);
     file_ = gmx_fio_open(filename_.c_str(), "r");
 
-    unsigned char           digest[16] = {0};
-    ArrayRef<unsigned char> digestView(digest);
-    gmx_off_t               offset             = 100;
-    gmx_off_t               lengthActuallyRead = gmx_fio_get_file_md5(file_, offset, digest);
-    EXPECT_EQ(-1, lengthActuallyRead);
+    gmx_off_t offset         = 100;
+    gmx_off_t expectedLength = offset;
+    EXPECT_THROW_GMX(gmx_fio_get_file_md5(file_, offset, expectedLength),
+                     gmx::FileIOError);
 }
 
 } // namespace
