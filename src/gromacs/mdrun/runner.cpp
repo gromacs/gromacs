@@ -799,8 +799,7 @@ int Mdrunner::mdrunner()
 
     if (SIMMASTER(cr) && continuationOptions.appendFiles)
     {
-        gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr,
-                     continuationOptions.appendFiles, &fplog);
+        gmx_log_append(cr->nodeid, cr->nnodes, fplog);
         logOwner = buildLogger(fplog, nullptr);
         mdlog    = logOwner.logger();
     }
