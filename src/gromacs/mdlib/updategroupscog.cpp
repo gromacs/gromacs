@@ -54,6 +54,7 @@ namespace gmx
 
 UpdateGroupsCog::UpdateGroupsCog(const gmx_mtop_t                            &mtop,
                                  gmx::ArrayRef<const gmx::RangePartitioning>  updateGroupsPerMoleculetype,
+                                 real                                         temperature,
                                  int                                          numHomeAtoms) :
     globalToLocalMap_(numHomeAtoms),
     mtop_(mtop)
@@ -78,7 +79,7 @@ UpdateGroupsCog::UpdateGroupsCog(const gmx_mtop_t                            &mt
     }
 
     maxUpdateGroupRadius_ =
-        computeMaxUpdateGroupRadius(mtop, updateGroupsPerMoleculetype);
+        computeMaxUpdateGroupRadius(mtop, updateGroupsPerMoleculetype, temperature);
 }
 
 void UpdateGroupsCog::addCogs(gmx::ArrayRef<const int>        globalAtomIndices,
