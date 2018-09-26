@@ -895,7 +895,7 @@ void gmx::Integrator::do_md()
             constrain_velocities(step, nullptr,
                                  state,
                                  shake_vir,
-                                 wcycle, constr,
+                                 constr,
                                  bCalcVir, do_log, do_ene);
             wallcycle_start(wcycle, ewcUPDATE);
             /* if VV, compute the pressure and constraints */
@@ -1075,7 +1075,7 @@ void gmx::Integrator::do_md()
                 constrain_velocities(step, nullptr,
                                      state,
                                      tmp_vir,
-                                     wcycle, constr,
+                                     constr,
                                      bCalcVir, do_log, do_ene);
             }
         }
@@ -1137,7 +1137,7 @@ void gmx::Integrator::do_md()
 
         constrain_coordinates(step, &dvdl_constr, state,
                               shake_vir,
-                              wcycle, upd, constr,
+                              upd, constr,
                               bCalcVir, do_log, do_ene);
         update_sd_second_half(step, &dvdl_constr, ir, mdatoms, state,
                               cr, nrnb, wcycle, upd, constr, do_log, do_ene);
