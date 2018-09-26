@@ -71,7 +71,8 @@
 
 #include "gromacs/compat/pointers.h"
 #include "gromacs/mdlib/sighandler.h"
-#include "gromacs/mdlib/simulationsignal.h"
+#include "gromacs/mdrunutility/accumulateglobals.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_walltime_accounting;
 
@@ -98,24 +99,26 @@ enum class StopSignal
  * The functions are implemented within this header file to avoid leaving
  * the translation unit unnecessarily.
  */
-class StopHandler final
+class StopHandler final : public IAccumulateGlobalsClient
 {
     public:
         /*! \brief StopHandler constructor (will be called by StopHandlerBuilder)
          *
-         * @param signal Non-null pointer to a signal used for reading and writing of signals
-         * @param simulationShareState Whether this signal needs to be shared across multiple simulations
+         * @param accumulateGlobalsBuilder Non-null pointer to a resource to register the need for global reduction
+         * @param simulationsShareState Whether this signal needs to be shared across multiple simulations
          * @param stopConditions Vector of callback functions setting the signal
          * @param neverUpdateNeighborList Whether simulation keeps same neighbor list forever
+         * @param numMpiThreads The number of MPI threads that will participate in global reduction
          *
          * Note: As the StopHandler does not work without this signal, it keeps a non-const reference
          * to it as a member variable.
          */
         StopHandler(
-            compat::not_null<SimulationSignal*>        signal,
-            bool                                       simulationShareState,
-            std::vector< std::function<StopSignal()> > stopConditions,
-            bool                                       neverUpdateNeighborList);
+            compat::not_null<AccumulateGlobalsBuilder*> accumulateGlobalsBuilder,
+            bool                                        simulationsShareState,
+            std::vector< std::function<StopSignal()> >  stopConditions,
+            bool                                        neverUpdateNeighborList,
+            int                                         numMpiThreads);
 
         /*! \brief Decides whether a stop signal shall be sent
          *
@@ -132,7 +135,7 @@ class StopHandler final
                 const StopSignal sig = condition();
                 if (sig != StopSignal::noSignal)
                 {
-                    signal_.sig = static_cast<signed char>(sig);
+                    signalView_[0] = static_cast<double>(sig);
                     if (sig == StopSignal::stopImmediately)
                     {
                         // We don't want this to be overwritten by a less urgent stop
@@ -151,15 +154,37 @@ class StopHandler final
          */
         bool stoppingAfterCurrentStep(bool bNS) const
         {
-            return static_cast<StopSignal>(signal_.set) == StopSignal::stopImmediately ||
-                   (static_cast<StopSignal>(signal_.set) == StopSignal::stopAtNextNSStep &&
-                    (bNS || neverUpdateNeighborlist_));
+            bool immediateStop = false;
+            if (static_cast<StopSignal>(signalView_[0] + 0.5) != StopSignal::noSignal &&
+                signalView_[1] == numMpiThreads_)
+            {
+                immediateStop = static_cast<StopSignal>(signalView_[0] + 0.5) == StopSignal::stopImmediately;
+                stopAtNextNS_ = static_cast<StopSignal>(signalView_[0] + 0.5) == StopSignal::stopAtNextNSStep;
+
+                signalView_[0] = static_cast<double>(StopSignal::noSignal);
+            }
+            signalView_[1] = 1;
+
+            return immediateStop ||
+                   (stopAtNextNS_ && (bNS || neverUpdateNeighborlist_));
         }
 
+        /* From IAccumulateGlobalsClient */
+        //! Return the number of values needed to pass signal.
+        int getNumGlobalsRequired() const override;
+        //! Store where to write and read signal
+        void setViewForGlobals(AccumulateGlobals *accumulateGlobals,
+                               ArrayRef<double>   view) override;
+        //! Called (in debug mode) after MPI reduction is complete.
+        void notifyAfterCommunication() override;
+
     private:
-        SimulationSignal &signal_;
-        const             std::vector< std::function<StopSignal()> > stopConditions_;
-        const bool        neverUpdateNeighborlist_;
+        ArrayRef<double> signalView_;
+        mutable bool     stopAtNextNS_;
+
+        const            std::vector< std::function<StopSignal()> > stopConditions_;
+        const bool       neverUpdateNeighborlist_;
+        const int        numMpiThreads_;
 };
 
 /*! \libinternal
@@ -190,7 +215,6 @@ class StopConditionSignal final
         const bool makeBinaryReproducibleSimulation_;
         const int  nstSignalComm_;
         const int  nstList_;
-
 };
 
 /*! \libinternal
@@ -273,18 +297,19 @@ class StopHandlerBuilder final
          * pointer or reference remain valid for the lifetime of the returned StopHandler.
          */
         std::unique_ptr<StopHandler> getStopHandlerMD (
-            compat::not_null<SimulationSignal*> signal,
-            bool                                simulationShareState,
-            bool                                isMaster,
-            int                                 nstList,
-            bool                                makeBinaryReproducibleSimulation,
-            int                                 nstSignalComm,
-            real                                maximumHoursToRun,
-            bool                                neverUpdateNeighborList,
-            FILE                               *fplog,
-            const int64_t                      &step,
-            const gmx_bool                     &bNS,
-            gmx_walltime_accounting            *walltime_accounting);
+            compat::not_null<AccumulateGlobalsBuilder*> accumulateGlobalsBuilder,
+            bool                                        simulationsShareState,
+            bool                                        isMaster,
+            int                                         nstList,
+            bool                                        makeBinaryReproducibleSimulation,
+            int                                         nstSignalComm,
+            real                                        maximumHoursToRun,
+            bool                                        neverUpdateNeighborList,
+            int                                         numMpiThreads,
+            FILE                                       *fplog,
+            const int64_t                              &step,
+            const gmx_bool                             &bNS,
+            gmx_walltime_accounting                    *walltime_accounting);
 
     private:
         /*! \brief Initial stopConditions
