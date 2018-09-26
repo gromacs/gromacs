@@ -142,14 +142,13 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
                     gmx_incons("Invalid reduced precision file format");
             }
         }
-        if ((EI_DYNAMICS(ir->eI) || EI_ENERGY_MINIMIZATION(ir->eI))
-#ifndef GMX_FAHCORE
-            &&
-            !(EI_DYNAMICS(ir->eI) &&
-              ir->nstxout == 0 &&
-              ir->nstvout == 0 &&
-              ir->nstfout == 0)
-#endif
+        if ((EI_DYNAMICS(ir->eI) || EI_ENERGY_MINIMIZATION(ir->eI)) &&
+            (!GMX_FAHCORE &&
+             !(EI_DYNAMICS(ir->eI) &&
+               ir->nstxout == 0 &&
+               ir->nstvout == 0 &&
+               ir->nstfout == 0)
+            )
             )
         {
             const char *filename;

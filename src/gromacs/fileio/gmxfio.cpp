@@ -593,12 +593,13 @@ std::vector<gmx_file_position_t> gmx_fio_get_output_file_positions()
 
             /* Get the file position */
             gmx_fio_int_get_file_position(cur, &outputfiles.back().offset);
-#ifndef GMX_FAHCORE
-            outputfiles.back().chksum_size
-                = gmx_fio_int_get_file_md5(cur,
-                                           outputfiles.back().offset,
-                                           outputfiles.back().chksum);
-#endif
+            if (!GMX_FAHCORE)
+            {
+                outputfiles.back().chksum_size
+                    = gmx_fio_int_get_file_md5(cur,
+                                               outputfiles.back().offset,
+                                               outputfiles.back().chksum);
+            }
         }
 
         cur = gmx_fio_get_next(cur);
