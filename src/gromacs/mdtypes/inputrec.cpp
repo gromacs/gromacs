@@ -1524,3 +1524,31 @@ int ndof_com(const t_inputrec *ir)
 
     return n;
 }
+
+real maxReferenceTemperature(const t_inputrec &ir)
+{
+    if (EI_ENERGY_MINIMIZATION(ir.eI) || ir.eI == eiNM)
+    {
+        return 0;
+    }
+
+    if (EI_MD(ir.eI) && ir.etc == etcNO)
+    {
+        return -1;
+    }
+
+    /* SD and BD also use ref_t and tau_t for setting the reference temperature.
+     * TPI can be treated as MD, since it needs an ensemble temperature.
+     */
+
+    real maxTemperature = 0;
+    for (int i = 0; i < ir.opts.ngtc; i++)
+    {
+        if (ir.opts.tau_t[i] >= 0)
+        {
+            maxTemperature = std::max(maxTemperature, ir.opts.ref_t[i]);
+        }
+    }
+
+    return maxTemperature;
+}

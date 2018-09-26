@@ -690,9 +690,18 @@ int inputrec2nboundeddim(const t_inputrec *ir);
 
 /*! \brief Returns the number of degrees of freedom in center of mass motion
  *
- * \param[in] ir the inputrec structure
+ * \param[in] ir  The inputrec structure
  * \return the number of degrees of freedom of the center of mass
  */
 int ndof_com(const t_inputrec *ir);
+
+/*! \brief Returns the maximum reference temperature over all coupled groups
+ *
+ * Returns 0 for energy minimization and normal mode computation.
+ * Returns -1 for MD without temperature coupling.
+ *
+ * \param[in] ir  The inputrec structure
+ */
+real maxReferenceTemperature(const t_inputrec &ir);
 
 #endif /* GMX_MDTYPES_INPUTREC_H */
