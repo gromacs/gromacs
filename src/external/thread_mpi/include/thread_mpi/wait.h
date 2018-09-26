@@ -39,7 +39,7 @@
 #ifndef TMPI_WAIT_H_
 #define TMPI_WAIT_H_
 
-#ifndef TMPI_WAIT_FOR_NO_ONE
+#if TMPI_WAIT_FOR_NO_ONE
 
 #if !(defined( _WIN32 ) || defined( _WIN64 ) )
 #ifdef HAVE_UNISTD_H

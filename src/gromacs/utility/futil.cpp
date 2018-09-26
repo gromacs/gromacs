@@ -156,7 +156,7 @@ static void push_ps(FILE *fp)
     pstack   = ps;
 }
 
-#ifdef GMX_FAHCORE
+#if GMX_FAHCORE
 /* don't use pipes!*/
 #define popen fah_fopen
 #define pclose fah_fclose
@@ -719,7 +719,7 @@ int gmx_fsync(FILE *fp)
 {
     int rc = 0;
 
-#ifdef GMX_FAHCORE
+#if GMX_FAHCORE
     /* the fahcore defines its own os-independent fsync */
     rc = fah_fsync(fp);
 #else /* GMX_FAHCORE */

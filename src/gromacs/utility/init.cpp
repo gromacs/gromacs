@@ -81,7 +81,7 @@ void init(int *argc, char ***argv) // NOLINT(readability-non-const-parameter)
     }
     else
     {
-#ifdef GMX_FAHCORE
+#if GMX_FAHCORE
         fah_MPI_Init(argc, argv);
 #else
 #    if GMX_OPENMP

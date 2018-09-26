@@ -136,7 +136,7 @@
 #include "integrator.h"
 #include "replicaexchange.h"
 
-#ifdef GMX_FAHCORE
+#if GMX_FAHCORE
 #include "corewrap.h"
 #endif
 
@@ -201,10 +201,6 @@ void gmx::Integrator::do_md()
     /* Interactive MD */
     gmx_bool          bIMDstep = FALSE;
 
-#ifdef GMX_FAHCORE
-    /* Temporary addition for FAHCORE checkpointing */
-    int chkpt_ret;
-#endif
     /* Domain decomposition could incorrectly miss a bonded
        interaction, but checking for that requires a global
        communication stage, which does not otherwise happen in DD
@@ -571,10 +567,10 @@ void gmx::Integrator::do_md()
     wallcycle_start(wcycle, ewcRUN);
     print_start(fplog, cr, walltime_accounting, "mdrun");
 
+#if GMX_FAHCORE
     /* safest point to do file checkpointing is here.  More general point would be immediately before integrator call */
-#ifdef GMX_FAHCORE
-    chkpt_ret = fcCheckPointParallel( cr->nodeid,
-                                      NULL, 0);
+    int chkpt_ret = fcCheckPointParallel( cr->nodeid,
+                                          NULL, 0);
     if (chkpt_ret == 0)
     {
         gmx_fatal( 3, __FILE__, __LINE__, "Checkpoint error on step %d\n", 0 );

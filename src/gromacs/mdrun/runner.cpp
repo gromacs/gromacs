@@ -134,7 +134,7 @@
 #include "integrator.h"
 #include "replicaexchange.h"
 
-#ifdef GMX_FAHCORE
+#if GMX_FAHCORE
 #include "corewrap.h"
 #endif
 
@@ -749,7 +749,7 @@ int Mdrunner::mdrunner()
         }
     }
 
-#ifdef GMX_FAHCORE
+#if GMX_FAHCORE
     if (MASTER(cr))
     {
         fcRegisterSteps(inputrec->nsteps, inputrec->init_step);
