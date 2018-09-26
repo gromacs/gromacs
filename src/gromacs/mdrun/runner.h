@@ -69,6 +69,13 @@ namespace gmx
  * that exist for the life of the simulation, e.g. for logging and
  * communication.
  *
+ * It is also responsible for initializing data members that
+ * e.g. correspond to values potentially set by commmand-line
+ * options. Later these will be obtained directly from modules, and
+ * the results of command-line option handling returned directly to
+ * the modules, rather than propagated to them by data members of this
+ * class.
+ *
  * \todo Most of the attributes should be declared by specific modules
  * as command-line options. Accordingly, they do not conform to the
  * naming scheme, because that would make for a lot of noise in the

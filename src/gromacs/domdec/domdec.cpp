@@ -2849,22 +2849,6 @@ static void set_dd_envvar_options(const gmx::MDLogger &mdlog,
     }
 }
 
-DomdecOptions::DomdecOptions() :
-    checkBondedInteractions(TRUE),
-    useBondedCommunication(TRUE),
-    numPmeRanks(-1),
-    rankOrder(DdRankOrder::pp_pme),
-    minimumCommunicationRange(0),
-    constraintCommunicationRange(0),
-    dlbOption(DlbOption::turnOnWhenUseful),
-    dlbScaling(0.8),
-    cellSizeX(nullptr),
-    cellSizeY(nullptr),
-    cellSizeZ(nullptr)
-{
-    clear_ivec(numCells);
-}
-
 gmx_domdec_t *init_domain_decomposition(const gmx::MDLogger           &mdlog,
                                         t_commrec                     *cr,
                                         const DomdecOptions           &options,
