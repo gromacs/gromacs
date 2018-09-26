@@ -821,27 +821,6 @@ static real md3_force_switch(real p, real rswitch, real rc)
     return md3_pot + md3_sw;
 }
 
-/* Returns the maximum reference temperature over all coupled groups */
-static real maxReferenceTemperature(const t_inputrec &ir)
-{
-    if (EI_MD(ir.eI) && ir.etc == etcNO)
-    {
-        /* This case should be handled outside calc_verlet_buffer_size */
-        gmx_incons("calc_verlet_buffer_size called with an NVE ensemble and reference_temperature < 0");
-    }
-
-    real maxTemperature = 0;
-    for (int i = 0; i < ir.opts.ngtc; i++)
-    {
-        if (ir.opts.tau_t[i] >= 0)
-        {
-            maxTemperature = std::max(maxTemperature, ir.opts.ref_t[i]);
-        }
-    }
-
-    return maxTemperature;
-}
-
 /* Returns the variance of the atomic displacement over timePeriod.
  *
  * Note: When not using BD with a non-mass dependendent friction coefficient,
@@ -942,6 +921,8 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
          * interact, this might underestimate the buffer size.
          */
         reference_temperature = maxReferenceTemperature(*ir);
+
+        GMX_RELEASE_ASSERT(reference_temperature >= 0, "Without T-coupling we should not end up here");
     }
 
     /* Resolution of the buffer size */
