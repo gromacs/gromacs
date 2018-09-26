@@ -1474,7 +1474,6 @@ void constrain_velocities(int64_t                        step,
         clear_mat(vir_part);
 
         /* Constrain the coordinates upd->xp */
-        wallcycle_start(wcycle, ewcCONSTR);
         {
             constr->apply(do_log, do_ene,
                           step, 1, 1.0,
@@ -1483,7 +1482,6 @@ void constrain_velocities(int64_t                        step,
                           state->lambda[efptBONDED], dvdlambda,
                           nullptr, bCalcVir ? &vir_con : nullptr, ConstraintVariable::Velocities);
         }
-        wallcycle_stop(wcycle, ewcCONSTR);
 
         if (bCalcVir)
         {
