@@ -50,7 +50,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
-#include "gromacs/mdlib/simulationsignal.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
@@ -157,9 +156,9 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx::Constraints *constr,
-                     gmx::SimulationSignaller *signalCoordinator,
                      matrix box,
                      gmx::AccumulateGlobals *accumulateGlobals,
+                     const gmx_multisim_t *ms, bool doInterSimSignal,
                      int *totalNumberOfBondedInteractions,
                      gmx_bool *bSumEkinhOld, int flags)
 {
@@ -226,20 +225,30 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
         }
         else
         {
-            gmx::ArrayRef<real> signalBuffer = signalCoordinator->getCommunicationBuffer();
             if (PAR(cr))
             {
                 wallcycle_start(wcycle, ewcMoveE);
                 global_stat(gstat, cr, enerd, force_vir, shake_vir, mu_tot,
                             ir, ekind, constr, bStopCM ? vcm : nullptr,
-                            signalBuffer.size(), signalBuffer.data(),
                             accumulateGlobals->getReductionView(),
                             totalNumberOfBondedInteractions,
                             *bSumEkinhOld, flags);
                 accumulateGlobals->notifyClientsAfterCommunication();
                 wallcycle_stop(wcycle, ewcMoveE);
             }
-            signalCoordinator->finalizeSignals();
+            if (doInterSimSignal && accumulateGlobals->isMultiSimReductionRequired())
+            {
+                GMX_ASSERT(isMultiSim(ms), "Cannot do inter-simulation signalling without a multi-simulation");
+                auto      multiSimReductionView = accumulateGlobals->getMultiSimReductionView();
+                const int reductionSize         = static_cast<int>(multiSimReductionView.size());
+                if (MASTER(cr))
+                {
+                    // Communicate the signals between the simulations.
+                    gmx_sumd_sim(reductionSize, multiSimReductionView.data(), ms);
+                }
+                // Communicate the signals from the master to the others.
+                gmx_bcast(reductionSize*sizeof(multiSimReductionView[0]), multiSimReductionView.data(), cr);
+            }
             *bSumEkinhOld = FALSE;
         }
     }

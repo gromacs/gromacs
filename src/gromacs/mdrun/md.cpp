@@ -94,7 +94,6 @@
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
-#include "gromacs/mdlib/simulationsignal.h"
 #include "gromacs/mdlib/stophandler.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/trajectory_writing.h"
@@ -214,11 +213,6 @@ void gmx::Integrator::do_md()
        check happens, and the result it returns. */
     bool              shouldCheckNumberOfBondedInteractions = false;
     int               totalNumberOfBondedInteractions       = -1;
-
-    SimulationSignals signals;
-    // Most global communnication stages don't propagate mdrun
-    // signals, and will use this object to achieve that.
-    SimulationSignaller nullSignaller(nullptr, nullptr, nullptr, false, false);
 
     if (!mdrunOptions.writeConfout)
     {
@@ -423,20 +417,23 @@ void gmx::Integrator::do_md()
     }
 
     auto stopHandler = stopHandlerBuilder->getStopHandlerMD(
-            compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]), simulationsShareState,
-            MASTER(cr), ir->nstlist, mdrunOptions.reproducible, nstSignalComm,
-            mdrunOptions.maximumHoursToRun, ir->nstlist == 0, fplog, step, bNS, walltime_accounting);
+                compat::not_null<AccumulateGlobalsBuilder*>(accumulateGlobalsBuilder_), simulationsShareState,
+                MASTER(cr), ir->nstlist, mdrunOptions.reproducible, nstSignalComm,
+                mdrunOptions.maximumHoursToRun, ir->nstlist == 0, cr->nnodes - cr->npmenodes,
+                fplog, step, bNS, walltime_accounting);
 
     auto checkpointHandler = compat::make_unique<CheckpointHandler>(
-            compat::make_not_null<SimulationSignal*>(&signals[eglsCHKPT]),
-            simulationsShareState, ir->nstlist == 0, MASTER(cr),
-            mdrunOptions.writeConfout, mdrunOptions.checkpointOptions.period);
+                compat::not_null<AccumulateGlobalsBuilder*>(accumulateGlobalsBuilder_),
+                simulationsShareState, ir->nstlist == 0, MASTER(cr),
+                mdrunOptions.writeConfout, mdrunOptions.checkpointOptions.period,
+                cr->nnodes - cr->npmenodes);
 
     const bool resetCountersIsLocal = true;
     auto       resetHandler         = compat::make_unique<ResetHandler>(
-            compat::make_not_null<SimulationSignal*>(&signals[eglsRESETCOUNTERS]), !resetCountersIsLocal,
-            ir->nsteps, MASTER(cr), mdrunOptions.timingOptions.resetHalfway,
-            mdrunOptions.maximumHoursToRun, mdlog, wcycle, walltime_accounting);
+                compat::not_null<AccumulateGlobalsBuilder*>(accumulateGlobalsBuilder_), !resetCountersIsLocal,
+                ir->nsteps, MASTER(cr), mdrunOptions.timingOptions.resetHalfway,
+                mdrunOptions.maximumHoursToRun, mdlog, wcycle, walltime_accounting,
+                cr->nnodes - cr->npmenodes);
 
     // This must be prepared before the first stage of global
     // communication, and also before the first client module code
@@ -529,8 +526,8 @@ void gmx::Integrator::do_md()
         }
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                         nullptr, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                        constr, &nullSignaller, state->box,
-                        &accumulateGlobals,
+                        constr, state->box,
+                        &accumulateGlobals, ms, false,
                         &totalNumberOfBondedInteractions, &bSumEkinhOld, cglo_flags_iteration
                         | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
     }
@@ -547,8 +544,8 @@ void gmx::Integrator::do_md()
 
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                         nullptr, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                        constr, &nullSignaller, state->box,
-                        &accumulateGlobals,
+                        constr, state->box,
+                        &accumulateGlobals, ms, false,
                         nullptr, &bSumEkinhOld,
                         cglo_flags & ~CGLO_PRESSURE);
     }
@@ -778,8 +775,8 @@ void gmx::Integrator::do_md()
             /* This may not be quite working correctly yet . . . . */
             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                             wcycle, enerd, nullptr, nullptr, nullptr, nullptr, mu_tot,
-                            constr, &nullSignaller, state->box,
-                            &accumulateGlobals,
+                            constr, state->box,
+                            &accumulateGlobals, ms, false,
                             &totalNumberOfBondedInteractions, &bSumEkinhOld,
                             CGLO_GSTAT | CGLO_TEMPERATURE | CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS);
             checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
@@ -933,8 +930,8 @@ void gmx::Integrator::do_md()
                 wallcycle_stop(wcycle, ewcUPDATE);
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                                constr, &nullSignaller, state->box,
-                                &accumulateGlobals,
+                                constr, state->box,
+                                &accumulateGlobals, ms, false,
                                 &totalNumberOfBondedInteractions, &bSumEkinhOld,
                                 (bGStat ? CGLO_GSTAT : 0)
                                 | CGLO_ENERGY
@@ -989,8 +986,8 @@ void gmx::Integrator::do_md()
                     /* This may not be quite working correctly yet . . . . */
                     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                                     wcycle, enerd, nullptr, nullptr, nullptr, nullptr, mu_tot,
-                                    constr, &nullSignaller, state->box,
-                                    &accumulateGlobals,
+                                    constr, state->box,
+                                    &accumulateGlobals, ms, false,
                                     nullptr, &bSumEkinhOld,
                                     CGLO_GSTAT | CGLO_TEMPERATURE);
                     wallcycle_start(wcycle, ewcUPDATE);
@@ -1166,8 +1163,8 @@ void gmx::Integrator::do_md()
             /* just compute the kinetic energy at the half step to perform a trotter step */
             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                             wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                            constr, &nullSignaller, lastbox,
-                            &accumulateGlobals,
+                            constr, lastbox,
+                            &accumulateGlobals, ms, false,
                             nullptr, &bSumEkinhOld,
                             (bGStat ? CGLO_GSTAT : 0) | CGLO_TEMPERATURE
                             );
@@ -1242,21 +1239,10 @@ void gmx::Integrator::do_md()
 
             if (bGStat || (!EI_VV(ir->eI) && do_per_step(step+1, nstglobalcomm)) || doInterSimSignal)
             {
-                // Since we're already communicating at this step, we
-                // can propagate intra-simulation signals. Note that
-                // check_nstglobalcomm has the responsibility for
-                // choosing the value of nstglobalcomm that is one way
-                // bGStat becomes true, so we can't get into a
-                // situation where e.g. checkpointing can't be
-                // signalled.
-                bool                doIntraSimSignal = true;
-                SimulationSignaller signaller(&signals, cr, ms, doInterSimSignal, doIntraSimSignal);
-
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                                constr, &signaller,
-                                lastbox,
-                                &accumulateGlobals,
+                                constr, lastbox,
+                                &accumulateGlobals, ms, doInterSimSignal,
                                 &totalNumberOfBondedInteractions, &bSumEkinhOld,
                                 (bGStat ? CGLO_GSTAT : 0)
                                 | (!EI_VV(ir->eI) ? CGLO_ENERGY : 0)

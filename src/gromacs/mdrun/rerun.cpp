@@ -94,7 +94,6 @@
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
-#include "gromacs/mdlib/simulationsignal.h"
 #include "gromacs/mdlib/stophandler.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/trajectory_writing.h"
@@ -227,11 +226,6 @@ void gmx::Integrator::do_rerun()
     bool              shouldCheckNumberOfBondedInteractions = false;
     int               totalNumberOfBondedInteractions       = -1;
 
-    SimulationSignals signals;
-    // Most global communnication stages don't propagate mdrun
-    // signals, and will use this object to achieve that.
-    SimulationSignaller nullSignaller(nullptr, nullptr, nullptr, false, false);
-
     if (ir->bExpanded)
     {
         gmx_fatal(FARGS, "Expanded ensemble not supported by rerun.");
@@ -357,6 +351,12 @@ void gmx::Integrator::do_rerun()
         doFreeEnergyPerturbation = true;
     }
 
+    auto stopHandler = stopHandlerBuilder->getStopHandlerMD(
+                compat::not_null<AccumulateGlobalsBuilder*>(accumulateGlobalsBuilder_), false,
+                MASTER(cr), ir->nstlist, mdrunOptions.reproducible, nstglobalcomm,
+                mdrunOptions.maximumHoursToRun, ir->nstlist == 0, cr->nnodes,
+                fplog, step, bNS, walltime_accounting);
+
     // This must be prepared before the first stage of global
     // communication, and also before the first client module code
     // that needs it.
@@ -369,7 +369,7 @@ void gmx::Integrator::do_rerun()
         t_vcm *vcm          = nullptr;
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                         nullptr, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                        constr, &nullSignaller, state->box, &accumulateGlobals,
+                        constr, state->box, &accumulateGlobals, ms, false,
                         &totalNumberOfBondedInteractions, &bSumEkinhOld, cglo_flags);
     }
     checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
@@ -451,11 +451,6 @@ void gmx::Integrator::do_rerun()
          */
         calc_shifts(rerun_fr.box, fr->shift_vec);
     }
-
-    auto stopHandler = stopHandlerBuilder->getStopHandlerMD(
-                compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]), false,
-                MASTER(cr), ir->nstlist, mdrunOptions.reproducible, nstglobalcomm,
-                mdrunOptions.maximumHoursToRun, ir->nstlist == 0, fplog, step, bNS, walltime_accounting);
 
     // we don't do counter resetting in rerun - finish will always be valid
     walltime_accounting_set_valid_finish(walltime_accounting);
@@ -611,16 +606,13 @@ void gmx::Integrator::do_rerun()
 
         {
             const bool          doInterSimSignal = false;
-            const bool          doIntraSimSignal = true;
             bool                bSumEkinhOld     = false;
             t_vcm              *vcm              = nullptr;
-            SimulationSignaller signaller(&signals, cr, ms, doInterSimSignal, doIntraSimSignal);
 
             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                             wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                            constr, &signaller,
-                            state->box,
-                            &accumulateGlobals,
+                            constr, state->box,
+                            &accumulateGlobals, ms, doInterSimSignal,
                             &totalNumberOfBondedInteractions, &bSumEkinhOld,
                             CGLO_GSTAT | CGLO_ENERGY
                             | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0)
