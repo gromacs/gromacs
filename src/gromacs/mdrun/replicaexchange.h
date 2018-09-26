@@ -61,19 +61,12 @@ class t_state;
  * \brief The parameters for the replica exchange algorithm. */
 struct ReplicaExchangeParameters
 {
-    ReplicaExchangeParameters() :
-        exchangeInterval(0),
-        numExchanges(0),
-        randomSeed(-1)
-    {
-    }
-
     //! Interval in steps at which to attempt exchanges, 0 means no replica exchange.
-    int exchangeInterval;
+    int exchangeInterval = 0;
     //! The number of exchanges to attempt at an exchange step.
-    int numExchanges;
+    int numExchanges = 0;
     //! The random seed, -1 means generate a seed.
-    int randomSeed;
+    int randomSeed = -1;
 };
 
 //! Abstract type for replica exchange

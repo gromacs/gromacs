@@ -168,36 +168,33 @@ enum class DlbOption
 /*! \libinternal \brief Structure containing all (command line) options for the domain decomposition */
 struct DomdecOptions
 {
-    /*! \brief Constructor */
-    DomdecOptions();
-
     //! If true, check that all bonded interactions have been assigned to exactly one domain/rank.
-    gmx_bool          checkBondedInteractions;
+    gmx_bool          checkBondedInteractions = TRUE;
     //! If true, don't communicate all atoms between the non-bonded cut-off and the larger bonded cut-off, but only those that have non-local bonded interactions. This significantly reduces the communication volume.
-    gmx_bool          useBondedCommunication;
+    gmx_bool          useBondedCommunication = TRUE;
     //! The domain decomposition grid cell count, 0 means let domdec choose based on the number of ranks.
-    ivec              numCells;
+    ivec              numCells = {0};
     //! The number of separate PME ranks requested, -1 = auto.
-    int               numPmeRanks;
+    int               numPmeRanks = -1;
     //! Ordering of the PP and PME ranks, values from enum above.
-    DdRankOrder       rankOrder;
+    DdRankOrder       rankOrder = DdRankOrder::pp_pme;
     //! The minimum communication range, used for extended the communication range for bonded interactions (nm).
-    real              minimumCommunicationRange;
+    real              minimumCommunicationRange = 0;
     //! Communication range for atom involved in constraints (P-LINCS) (nm).
-    real              constraintCommunicationRange;
+    real              constraintCommunicationRange = 0;
     //! Dynamic load balancing option, values from enum above.
-    DlbOption         dlbOption;
+    DlbOption         dlbOption = DlbOption::turnOnWhenUseful;
     /*! \brief Fraction in (0,1) by whose reciprocal the initial
      * DD cell size will be increased in order to provide a margin
      * in which dynamic load balancing can act, while preserving
      * the minimum cell size. */
-    real              dlbScaling;
+    real              dlbScaling = 0.8;
     //! String containing a vector of the relative sizes in the x direction of the corresponding DD cells.
-    const char       *cellSizeX;
+    const char       *cellSizeX = nullptr;
     //! String containing a vector of the relative sizes in the y direction of the corresponding DD cells.
-    const char       *cellSizeY;
+    const char       *cellSizeY = nullptr;
     //! String containing a vector of the relative sizes in the z direction of the corresponding DD cells.
-    const char       *cellSizeZ;
+    const char       *cellSizeZ = nullptr;
 };
 
 /*! \brief Initialized the domain decomposition, chooses the DD grid and PME ranks, return the DD struct */
