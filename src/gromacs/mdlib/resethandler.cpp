@@ -44,6 +44,8 @@
 
 #include "resethandler.h"
 
+#include <cmath>
+
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme-load-balancing.h"
@@ -59,24 +61,21 @@
 namespace gmx
 {
 ResetHandler::ResetHandler(
-        compat::not_null<SimulationSignal*> signal,
-        bool                                simulationsShareState,
-        int64_t                             nsteps,
-        bool                                isMaster,
-        bool                                resetHalfway,
-        real                                maximumHoursToRun,
-        const MDLogger                     &mdlog,
-        gmx_wallcycle_t                     wcycle,
-        gmx_walltime_accounting_t           walltime_accounting) :
-    signal_(*signal),
+        compat::not_null<AccumulateGlobalsBuilder*> accumulateGlobalsBuilder,
+        bool                                        simulationsShareState,
+        int64_t                                     nsteps,
+        bool                                        isMaster,
+        bool                                        resetHalfway,
+        real                                        maximumHoursToRun,
+        const MDLogger                             &mdlog,
+        gmx_wallcycle_t                             wcycle,
+        gmx_walltime_accounting_t                   walltime_accounting,
+        int                                         numMpiThreads) :
     rankCanSetSignal_(false),
     simulationNeedsReset_(false),
-    maximumHoursToRun_(maximumHoursToRun)
+    maximumHoursToRun_(maximumHoursToRun),
+    numMpiThreads_(numMpiThreads)
 {
-    if (simulationsShareState)
-    {
-        signal_.isLocal = false;
-    }
     if (resetHalfway)
     {
         GMX_LOG(mdlog.info).asParagraph().
@@ -103,6 +102,12 @@ ResetHandler::ResetHandler(
         // if no reset is happening, this will always be valid
         walltime_accounting_set_valid_finish(walltime_accounting);
     }
+
+    if (simulationNeedsReset_)
+    {
+        accumulateGlobalsBuilder->registerClient(
+                compat::not_null<IAccumulateGlobalsClient*>(this), simulationsShareState);
+    }
 }
 
 bool ResetHandler::setSignalImpl(gmx_walltime_accounting_t walltime_accounting)
@@ -111,7 +116,7 @@ bool ResetHandler::setSignalImpl(gmx_walltime_accounting_t walltime_accounting)
     if (secondsSinceStart > maximumHoursToRun_ * 60.0 * 60.0 * 0.495)
     {
         /* Set flag that will communicate the signal to all ranks in the simulation */
-        signal_.sig = static_cast<signed char>(ResetSignal::doResetCounters);
+        signalView_[0] = static_cast<signed char>(ResetSignal::doResetCounters);
         /* Let handler know that we did signal a reset */
         return true;
     }
@@ -132,8 +137,9 @@ bool ResetHandler::resetCountersImpl(
         gmx_wallcycle_t             wcycle,
         gmx_walltime_accounting_t   walltime_accounting)
 {
-    /* Reset either if signal has been passed,  */
-    if (static_cast<ResetSignal>(signal_.set) == ResetSignal::doResetCounters ||
+    /* Reset either if signal has been passed,  or if numbers of step for reset has been reached */
+    if ((static_cast<ResetSignal>(lround(signalView_[0])) == ResetSignal::doResetCounters &&
+         signalView_[1] == numMpiThreads_) ||
         step_rel == wcycle_get_reset_counters(wcycle))
     {
         if (pme_loadbal_is_active(pme_loadbal))
@@ -193,15 +199,45 @@ bool ResetHandler::resetCountersImpl(
             gmx_pme_send_resetcounters(cr, step);
         }
         /* Reset can only happen once, so clear the triggering flag. */
-        signal_.set = static_cast<signed char>(ResetSignal::noSignal);
+        signalView_[0] = static_cast<double>(ResetSignal::noSignal);
+        /* No more resetting, so put this to zero to avoid overflow from repeated reduction. */
+        signalView_[1] = 0;
         /* We have done a reset, so the finish will be valid. */
         walltime_accounting_set_valid_finish(walltime_accounting);
         /* Let handler know that we handled a reset */
         return true;
     }
 
+    signalView_[1] = 1;
     /* Let handler know that we did not handle a reset */
     return false;
+}
+
+int ResetHandler::getNumGlobalsRequired() const
+{
+    return 2;
+}
+
+void ResetHandler::setViewForGlobals(
+        AccumulateGlobals *accumulateGlobals gmx_unused,
+        ArrayRef<double>   view)
+{
+    // saving the ref to accumulateGlobals would only be interesting if we
+    // needed to signal that global reduction is needed - but these signals
+    // are not urgent.
+
+    signalView_ = view;
+    // set signal empty
+    signalView_[0] = static_cast<double>(ResetSignal::noSignal);
+    // The second reduced variable is notifying that reduction has happened -
+    // we set it to zero on all ranks when we set the signal, and it will
+    // hence be reduced to the number of ranks once reduction has happened.
+    signalView_[1] = simulationNeedsReset_ ? 1 : 0;
+}
+
+void ResetHandler::notifyAfterCommunication()
+{
+    // Not sure if we'll need that for anything...
 }
 
 }  // namespace gmx

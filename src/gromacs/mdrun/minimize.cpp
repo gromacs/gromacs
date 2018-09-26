@@ -834,7 +834,6 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
     gmx_bool bNS;
     tensor   force_vir, shake_vir, ekin;
     real     dvdl_constr, prescorr, enercorr, dvdlcorr;
-    real     terminate = 0;
 
     /* Set the time to the initial time, the time does not change during EM */
     t = inputrec->init_t;
@@ -898,7 +897,7 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
         wallcycle_start(wcycle, ewcMoveE);
 
         global_stat(gstat, cr, enerd, force_vir, shake_vir, mu_tot,
-                    inputrec, nullptr, nullptr, nullptr, 1, &terminate,
+                    inputrec, nullptr, nullptr, nullptr,
                     accumulateGlobals_.getReductionView(),
                     nullptr, FALSE,
                     CGLO_ENERGY |
