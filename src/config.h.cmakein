@@ -205,9 +205,9 @@
 #cmakedefine THREAD_WINDOWS
 
 /* Define for busy wait option  */
-/* See gmxpre-config.h.cmakein for explanation for the #ifdef */
+/* See gmxpre-config.h.cmakein for explanation for the #ifndef */
 #ifndef TMPI_WAIT_FOR_NO_ONE
-#cmakedefine TMPI_WAIT_FOR_NO_ONE
+#cmakedefine01 TMPI_WAIT_FOR_NO_ONE
 #endif
 
 /* Define for copy buffer option */

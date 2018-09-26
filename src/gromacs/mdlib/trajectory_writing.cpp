@@ -119,7 +119,7 @@ do_md_trajectory_writing(FILE                    *fplog,
         mdof_flags |= MDOF_LAMBDA_COMPRESSED;
     }
 
-#if defined(GMX_FAHCORE)
+#if GMX_FAHCORE
     if (bLastStep)
     {
         /* Enforce writing positions and velocities at end of run */
