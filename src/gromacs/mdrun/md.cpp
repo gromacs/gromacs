@@ -397,6 +397,47 @@ void gmx::Integrator::do_md()
                          &bPMETunePrinting);
     }
 
+    bool simulationsShareState = false;
+    int  nstSignalComm         = nstglobalcomm;
+    {
+        // TODO This implementation of ensemble orientation restraints is nasty because
+        // a user can't just do multi-sim with single-sim orientation restraints.
+        bool usingEnsembleRestraints = (fcd->disres.nsystems > 1) || ((ms != nullptr) && (fcd->orires.nr != 0));
+        bool awhUsesMultiSim         = (ir->bDoAwh && ir->awhParams->shareBiasMultisim && (ms != nullptr));
+
+        // Replica exchange, ensemble restraints and AWH need all
+        // simulations to remain synchronized, so they need
+        // checkpoints and stop conditions to act on the same step, so
+        // the propagation of such signals must take place between
+        // simulations, not just within simulations.
+        // TODO: Make algorithm initializers set these flags.
+        simulationsShareState = useReplicaExchange || usingEnsembleRestraints || awhUsesMultiSim;
+
+        if (simulationsShareState)
+        {
+            // Inter-simulation signal communication does not need to happen
+            // often, so we use a minimum of 200 steps to reduce overhead.
+            const int c_minimumInterSimulationSignallingInterval = 200;
+            nstSignalComm = ((c_minimumInterSimulationSignallingInterval + nstglobalcomm - 1)/nstglobalcomm)*nstglobalcomm;
+        }
+    }
+
+    auto stopHandler = stopHandlerBuilder->getStopHandlerMD(
+                compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]), simulationsShareState,
+                MASTER(cr), ir->nstlist, mdrunOptions.reproducible, nstSignalComm,
+                mdrunOptions.maximumHoursToRun, ir->nstlist == 0, fplog, step, bNS, walltime_accounting);
+
+    auto checkpointHandler = compat::make_unique<CheckpointHandler>(
+                compat::make_not_null<SimulationSignal*>(&signals[eglsCHKPT]),
+                simulationsShareState, ir->nstlist == 0, MASTER(cr),
+                mdrunOptions.writeConfout, mdrunOptions.checkpointOptions.period);
+
+    const bool resetCountersIsLocal = true;
+    auto       resetHandler         = compat::make_unique<ResetHandler>(
+                compat::make_not_null<SimulationSignal*>(&signals[eglsRESETCOUNTERS]), !resetCountersIsLocal,
+                ir->nsteps, MASTER(cr), mdrunOptions.timingOptions.resetHalfway,
+                mdrunOptions.maximumHoursToRun, mdlog, wcycle, walltime_accounting);
+
     // This must be prepared before the first stage of global
     // communication, and also before the first client module code
     // that needs it.
@@ -601,47 +642,6 @@ void gmx::Integrator::do_md()
     bSumEkinhOld     = FALSE;
     bExchanged       = FALSE;
     bNeedRepartition = FALSE;
-
-    bool simulationsShareState = false;
-    int  nstSignalComm         = nstglobalcomm;
-    {
-        // TODO This implementation of ensemble orientation restraints is nasty because
-        // a user can't just do multi-sim with single-sim orientation restraints.
-        bool usingEnsembleRestraints = (fcd->disres.nsystems > 1) || ((ms != nullptr) && (fcd->orires.nr != 0));
-        bool awhUsesMultiSim         = (ir->bDoAwh && ir->awhParams->shareBiasMultisim && (ms != nullptr));
-
-        // Replica exchange, ensemble restraints and AWH need all
-        // simulations to remain synchronized, so they need
-        // checkpoints and stop conditions to act on the same step, so
-        // the propagation of such signals must take place between
-        // simulations, not just within simulations.
-        // TODO: Make algorithm initializers set these flags.
-        simulationsShareState = useReplicaExchange || usingEnsembleRestraints || awhUsesMultiSim;
-
-        if (simulationsShareState)
-        {
-            // Inter-simulation signal communication does not need to happen
-            // often, so we use a minimum of 200 steps to reduce overhead.
-            const int c_minimumInterSimulationSignallingInterval = 200;
-            nstSignalComm = ((c_minimumInterSimulationSignallingInterval + nstglobalcomm - 1)/nstglobalcomm)*nstglobalcomm;
-        }
-    }
-
-    auto stopHandler = stopHandlerBuilder->getStopHandlerMD(
-                compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]), simulationsShareState,
-                MASTER(cr), ir->nstlist, mdrunOptions.reproducible, nstSignalComm,
-                mdrunOptions.maximumHoursToRun, ir->nstlist == 0, fplog, step, bNS, walltime_accounting);
-
-    auto checkpointHandler = compat::make_unique<CheckpointHandler>(
-                compat::make_not_null<SimulationSignal*>(&signals[eglsCHKPT]),
-                simulationsShareState, ir->nstlist == 0, MASTER(cr),
-                mdrunOptions.writeConfout, mdrunOptions.checkpointOptions.period);
-
-    const bool resetCountersIsLocal = true;
-    auto       resetHandler         = compat::make_unique<ResetHandler>(
-                compat::make_not_null<SimulationSignal*>(&signals[eglsRESETCOUNTERS]), !resetCountersIsLocal,
-                ir->nsteps, MASTER(cr), mdrunOptions.timingOptions.resetHalfway,
-                mdrunOptions.maximumHoursToRun, mdlog, wcycle, walltime_accounting);
 
     DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion   = (DOMAINDECOMP(cr) ? DdOpenBalanceRegionBeforeForceComputation::yes : DdOpenBalanceRegionBeforeForceComputation::no);
     DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion  = (DOMAINDECOMP(cr) ? DdCloseBalanceRegionAfterForceComputation::yes : DdCloseBalanceRegionAfterForceComputation::no);
