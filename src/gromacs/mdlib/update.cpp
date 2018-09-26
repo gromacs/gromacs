@@ -1450,7 +1450,6 @@ void constrain_velocities(int64_t                        step,
                           real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
                           t_state                       *state,
                           tensor                         vir_part,
-                          gmx_wallcycle_t                wcycle,
                           gmx::Constraints              *constr,
                           gmx_bool                       bCalcVir,
                           bool                           do_log,
@@ -1474,16 +1473,12 @@ void constrain_velocities(int64_t                        step,
         clear_mat(vir_part);
 
         /* Constrain the coordinates upd->xp */
-        wallcycle_start(wcycle, ewcCONSTR);
-        {
-            constr->apply(do_log, do_ene,
-                          step, 1, 1.0,
-                          as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), as_rvec_array(state->v.data()),
-                          state->box,
-                          state->lambda[efptBONDED], dvdlambda,
-                          nullptr, bCalcVir ? &vir_con : nullptr, ConstraintVariable::Velocities);
-        }
-        wallcycle_stop(wcycle, ewcCONSTR);
+        constr->apply(do_log, do_ene,
+                        step, 1, 1.0,
+                        as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), as_rvec_array(state->v.data()),
+                        state->box,
+                        state->lambda[efptBONDED], dvdlambda,
+                        nullptr, bCalcVir ? &vir_con : nullptr, ConstraintVariable::Velocities);
 
         if (bCalcVir)
         {
@@ -1496,7 +1491,6 @@ void constrain_coordinates(int64_t                        step,
                            real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
                            t_state                       *state,
                            tensor                         vir_part,
-                           gmx_wallcycle_t                wcycle,
                            gmx_update_t                  *upd,
                            gmx::Constraints              *constr,
                            gmx_bool                       bCalcVir,
@@ -1515,16 +1509,12 @@ void constrain_coordinates(int64_t                        step,
         clear_mat(vir_part);
 
         /* Constrain the coordinates upd->xp */
-        wallcycle_start(wcycle, ewcCONSTR);
-        {
-            constr->apply(do_log, do_ene,
-                          step, 1, 1.0,
-                          as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), nullptr,
-                          state->box,
-                          state->lambda[efptBONDED], dvdlambda,
-                          as_rvec_array(state->v.data()), bCalcVir ? &vir_con : nullptr, ConstraintVariable::Positions);
-        }
-        wallcycle_stop(wcycle, ewcCONSTR);
+        constr->apply(do_log, do_ene,
+                        step, 1, 1.0,
+                        as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), nullptr,
+                        state->box,
+                        state->lambda[efptBONDED], dvdlambda,
+                        as_rvec_array(state->v.data()), bCalcVir ? &vir_con : nullptr, ConstraintVariable::Positions);
 
         if (bCalcVir)
         {
@@ -1593,17 +1583,13 @@ update_sd_second_half(int64_t                        step,
         inc_nrnb(nrnb, eNR_UPDATE, homenr);
         wallcycle_stop(wcycle, ewcUPDATE);
 
-        {
-            /* Constrain the coordinates upd->xp for half a time step */
-            wallcycle_start(wcycle, ewcCONSTR);
-            constr->apply(do_log, do_ene,
-                          step, 1, 0.5,
-                          as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), nullptr,
-                          state->box,
-                          state->lambda[efptBONDED], dvdlambda,
-                          as_rvec_array(state->v.data()), nullptr, ConstraintVariable::Positions);
-            wallcycle_stop(wcycle, ewcCONSTR);
-        }
+        /* Constrain the coordinates upd->xp for half a time step */
+        constr->apply(do_log, do_ene,
+                        step, 1, 0.5,
+                        as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), nullptr,
+                        state->box,
+                        state->lambda[efptBONDED], dvdlambda,
+                        as_rvec_array(state->v.data()), nullptr, ConstraintVariable::Positions);
     }
 }
 
