@@ -357,6 +357,11 @@ void gmx::Integrator::do_rerun()
         doFreeEnergyPerturbation = true;
     }
 
+    auto stopHandler = stopHandlerBuilder->getStopHandlerMD(
+            compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]), false,
+            MASTER(cr), ir->nstlist, mdrunOptions.reproducible, nstglobalcomm,
+            mdrunOptions.maximumHoursToRun, ir->nstlist == 0, fplog, step, bNS, walltime_accounting);
+
     // This must be prepared before the first stage of global
     // communication, and also before the first client module code
     // that needs it.
@@ -451,11 +456,6 @@ void gmx::Integrator::do_rerun()
          */
         calc_shifts(rerun_fr.box, fr->shift_vec);
     }
-
-    auto stopHandler = stopHandlerBuilder->getStopHandlerMD(
-                compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]), false,
-                MASTER(cr), ir->nstlist, mdrunOptions.reproducible, nstglobalcomm,
-                mdrunOptions.maximumHoursToRun, ir->nstlist == 0, fplog, step, bNS, walltime_accounting);
 
     // we don't do counter resetting in rerun - finish will always be valid
     walltime_accounting_set_valid_finish(walltime_accounting);
