@@ -61,8 +61,16 @@ namespace compat
 
 //! Contract-assurance macros that work like a simple version of the GSL ones
 //! \{
-#define Expects(cond) GMX_ASSERT(cond, "Precondition violation")
-#define Ensures(cond) GMX_ASSERT(cond, "Postcondition violation")
+#ifndef __INTEL_COMPILER
+#define Expects(cond) GMX_ASSERT((cond), "Precondition violation")
+#define Ensures(cond) GMX_ASSERT((cond), "Postcondition violation")
+#else
+// icc 18.0.0 in a RelWithAssert build has an ICE, even if we directly
+// embed the contents of GMX_ASSERT, so it seems the lambda in
+// GMX_ASSERT is too complex for it in this use case.
+#define Expects(cond)
+#define Ensures(cond)
+#endif
 //! \}
 
 /*! \libinternal
