@@ -52,18 +52,17 @@ namespace gmx
 {
 
 StopHandler::StopHandler(
-        compat::not_null<SimulationSignal*>         signal,
-        bool                                        simulationShareState,
-        std::vector < std::function<StopSignal()> > stopConditions,
+        compat::not_null<AccumulateGlobalsBuilder*> accumulateGlobalsBuilder,
+        bool                                        simulationsShareState,
+        std::vector< std::function<StopSignal()> >  stopConditions,
         bool                                        neverUpdateNeighborList) :
-    signal_(*signal),
+    stopAtNextNS_(false),
+    stopImmediately_(false),
     stopConditions_(std::move(stopConditions)),
     neverUpdateNeighborlist_(neverUpdateNeighborList)
 {
-    if (simulationShareState)
-    {
-        signal_.isLocal = false;
-    }
+    accumulateGlobalsBuilder->registerClient(
+            compat::not_null<IAccumulateGlobalsClient*>(this), simulationsShareState);
 }
 
 StopConditionSignal::StopConditionSignal(
@@ -172,18 +171,18 @@ void StopHandlerBuilder::registerStopCondition(std::function<StopSignal()> stopC
 };
 
 std::unique_ptr<StopHandler> StopHandlerBuilder::getStopHandlerMD (
-        compat::not_null<SimulationSignal*> signal,
-        bool                                simulationShareState,
-        bool                                isMaster,
-        int                                 nstList,
-        bool                                makeBinaryReproducibleSimulation,
-        int                                 nstSignalComm,
-        real                                maximumHoursToRun,
-        bool                                neverUpdateNeighborList,
-        FILE                               *fplog,
-        const int64_t                      &step,
-        const gmx_bool                     &bNS,
-        gmx_walltime_accounting_t           walltime_accounting)
+        compat::not_null<AccumulateGlobalsBuilder*> accumulateGlobalsBuilder,
+        bool                                        simulationsShareState,
+        bool                                        isMaster,
+        int                                         nstList,
+        bool                                        makeBinaryReproducibleSimulation,
+        int                                         nstSignalComm,
+        real                                        maximumHoursToRun,
+        bool                                        neverUpdateNeighborList,
+        FILE                                       *fplog,
+        const int64_t                              &step,
+        const gmx_bool                             &bNS,
+        gmx_walltime_accounting_t                   walltime_accounting)
 {
     if (!GMX_THREAD_MPI || isMaster)
     {
@@ -208,7 +207,30 @@ std::unique_ptr<StopHandler> StopHandlerBuilder::getStopHandlerMD (
     }
 
     return compat::make_unique<StopHandler>(
-            signal, simulationShareState, stopConditions_, neverUpdateNeighborList);
+            accumulateGlobalsBuilder, simulationsShareState, stopConditions_, neverUpdateNeighborList);
+}
+
+int StopHandler::getNumGlobalsRequired() const
+{
+    return 1;
+}
+
+void StopHandler::setViewForGlobals(
+        AccumulateGlobals *accumulateGlobals gmx_unused,
+        ArrayRef<double>   view)
+{
+    // saving the ref to accumulateGlobals would only be interesting if we
+    // needed to signal that global reduction is needed - but these signals
+    // are not urgent.
+
+    signalView_ = view;
+    // set signal empty
+    signalView_[0] = static_cast<double>(StopSignal::noSignal);
+}
+
+void StopHandler::notifyAfterCommunication()
+{
+    // Not sure if we'll need that for anything...
 }
 
 } // namespace gmx

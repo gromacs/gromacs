@@ -67,15 +67,20 @@
 #ifndef GMX_MDLIB_RESETHANDLER_H
 #define GMX_MDLIB_RESETHANDLER_H
 
+#include <cmath>
+
 #include "gromacs/compat/pointers.h"
-#include "gromacs/mdlib/simulationsignal.h"
+#include "gromacs/mdrunutility/accumulateglobals.h"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_pme_t;
 struct gmx_wallcycle;
 struct gmx_walltime_accounting;
 struct nonbonded_verlet_t;
 struct pme_load_balancing_t;
+struct t_commrec;
 struct t_nrnb;
 
 namespace gmx
@@ -99,7 +104,7 @@ enum class ResetSignal
  * All ranks receive the reset signal and reset their respective counters.
  * This also resets the counters if half the time steps have passed (no communication needed).
  */
-class ResetHandler final
+class ResetHandler final : public IAccumulateGlobalsClient
 {
     public:
         /*! \brief ResetHandler constructor
@@ -110,15 +115,15 @@ class ResetHandler final
          * the resetting signal.
          */
         ResetHandler(
-            compat::not_null<SimulationSignal*> signal,
-            bool                                simulationsShareState,
-            int64_t                             nsteps,
-            bool                                isMaster,
-            bool                                resetHalfway,
-            real                                maximumHoursToRun,
-            const MDLogger                     &mdlog,
-            gmx_wallcycle                      *wcycle,
-            gmx_walltime_accounting            *walltime_accounting);
+            compat::not_null<AccumulateGlobalsBuilder*> accumulateGlobalsBuilder,
+            bool                                        simulationsShareState,
+            int64_t                                     nsteps,
+            bool                                        isMaster,
+            bool                                        resetHalfway,
+            real                                        maximumHoursToRun,
+            const MDLogger                             &mdlog,
+            gmx_wallcycle                              *wcycle,
+            gmx_walltime_accounting                    *walltime_accounting);
 
         /*! \brief Decides whether a reset signal needs to be set
          *
@@ -133,6 +138,19 @@ class ResetHandler final
                     // need to set the reset signal only once
                     rankCanSetSignal_ = false;
                 }
+            }
+        }
+
+        /*! \brief Checks whether a signal has been received
+         *
+         */
+        void handleSignal()
+        {
+            if (simulationDoesReset_ &&
+                static_cast<ResetSignal>(lround(signalView_[0])) == ResetSignal::doResetCounters)
+            {
+                signalView_[0]              = static_cast<double>(ResetSignal::noSignal);
+                resetCounterSignalReceived_ = true;
             }
         }
 
@@ -160,28 +178,34 @@ class ResetHandler final
             gmx_wallcycle              *wcycle,
             gmx_walltime_accounting    *walltime_accounting)
         {
-            if (simulationNeedsReset_)
+            /* Reset either if signal has been passed,  or if numbers of step for reset has been reached */
+            if (simulationDoesReset_ &&
+                (resetCounterSignalReceived_ || step_rel == wcycle_get_reset_counters(wcycle)))
             {
-                if (resetCountersImpl(
-                            step, step_rel, mdlog, fplog,
-                            cr, nbv, nrnb, pme, pme_loadbal,
-                            wcycle, walltime_accounting))
-                {
-                    // need to reset the counters only once
-                    simulationNeedsReset_ = false;
-                    rankCanSetSignal_     = false;
-                }
+                resetCountersImpl(
+                        step, mdlog, fplog, cr, nbv, nrnb,
+                        pme, pme_loadbal, wcycle, walltime_accounting);
+                simulationDoesReset_ = false;
+                rankCanSetSignal_    = false;
             }
         }
+
+        /* From IAccumulateGlobalsClient */
+        //! Return the number of values needed to pass signal.
+        int getNumGlobalsRequired() const override;
+        //! Store where to write and read signal
+        void setViewForGlobals(AccumulateGlobals *accumulateGlobals,
+                               ArrayRef<double>   view) override;
+        //! Called (in debug mode) after MPI reduction is complete.
+        void notifyAfterCommunication() override;
 
     private:
         //! Implementation of the setSignal() function
         bool setSignalImpl(gmx_walltime_accounting *walltime_accounting);
 
         //! Implementation of the resetCounters() function
-        bool resetCountersImpl(
+        void resetCountersImpl(
             int64_t                     step,
-            int64_t                     step_rel,
             const MDLogger             &mdlog,
             FILE                       *fplog,
             const t_commrec            *cr,
@@ -192,11 +216,12 @@ class ResetHandler final
             gmx_wallcycle              *wcycle,
             gmx_walltime_accounting    *walltime_accounting);
 
-        SimulationSignal &signal_;
+        ArrayRef<double> signalView_;
 
-        bool              rankCanSetSignal_;
-        bool              simulationNeedsReset_;
-        const real        maximumHoursToRun_;
+        bool             rankCanSetSignal_;
+        bool             simulationDoesReset_;
+        bool             resetCounterSignalReceived_;
+        const real       maximumHoursToRun_;
 };
 }      // namespace gmx
 
