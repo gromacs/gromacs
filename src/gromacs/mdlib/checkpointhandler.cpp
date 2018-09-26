@@ -49,13 +49,13 @@ namespace gmx
 {
 
 CheckpointHandler::CheckpointHandler(
-        compat::not_null<SimulationSignal*> signal,
-        bool                                simulationsShareState,
-        bool                                neverUpdateNeighborList,
-        bool                                isMaster,
-        bool                                writeFinalCheckpoint,
-        real                                checkpointingPeriod) :
-    signal_(*signal),
+        compat::not_null<AccumulateGlobalsBuilder*> accumulateGlobalsBuilder,
+        bool                                        simulationsShareState,
+        bool                                        neverUpdateNeighborList,
+        bool                                        isMaster,
+        bool                                        writeFinalCheckpoint,
+        real                                        checkpointingPeriod) :
+    hasUnhandledSignal_(false),
     checkpointThisStep_(false),
     numberOfNextCheckpoint_(1),
     rankCanSetSignal_(checkpointingPeriod >= 0 && isMaster),
@@ -64,36 +64,58 @@ CheckpointHandler::CheckpointHandler(
     neverUpdateNeighborlist_(neverUpdateNeighborList),
     checkpointingPeriod_(checkpointingPeriod)
 {
-    if (simulationsShareState)
+    if (checkpointingIsActive_)
     {
-        signal_.isLocal = false;
+        accumulateGlobalsBuilder->registerClient(
+                compat::not_null<IAccumulateGlobalsClient*>(this), simulationsShareState);
+
     }
 }
 
 void CheckpointHandler::setSignalImpl(
         gmx_walltime_accounting_t walltime_accounting) const
 {
-    const double secondsSinceStart = walltime_accounting_get_time_since_start(walltime_accounting);
-    if (static_cast<CheckpointSignal>(signal_.set) == CheckpointSignal::noSignal &&
-        static_cast<CheckpointSignal>(signal_.sig) == CheckpointSignal::noSignal &&
-        (checkpointingPeriod_ == 0 || secondsSinceStart >= numberOfNextCheckpoint_ * checkpointingPeriod_ * 60.0))
+    if (!hasUnhandledSignal_ &&
+        (checkpointingPeriod_ == 0 ||
+         walltime_accounting_get_time_since_start(walltime_accounting) >=
+         numberOfNextCheckpoint_ * checkpointingPeriod_ * 60.0))
     {
-        signal_.sig = static_cast<signed char>(CheckpointSignal::doCheckpoint);
+        signalView_[0] = static_cast<double>(CheckpointSignal::doCheckpoint);
     }
 }
 
 void CheckpointHandler::decideIfCheckpointingThisStepImpl(
         bool bNS, bool bFirstStep, bool bLastStep)
 {
-    checkpointThisStep_ = (((static_cast<CheckpointSignal>(signal_.set) == CheckpointSignal::doCheckpoint &&
-                             (bNS || neverUpdateNeighborlist_)) ||
-                            (bLastStep && writeFinalCheckpoint_)) &&
-                           !bFirstStep);
-    if (checkpointThisStep_)
+    if (((hasUnhandledSignal_ && (bNS || neverUpdateNeighborlist_)) ||
+         (bLastStep && writeFinalCheckpoint_)) &&
+        !bFirstStep)
     {
-        signal_.set = static_cast<signed char>(CheckpointSignal::noSignal);
+        checkpointThisStep_ = true;
+        hasUnhandledSignal_ = false;
         numberOfNextCheckpoint_++;
     }
+}
+
+int CheckpointHandler::getNumGlobalsRequired() const
+{
+    return 1;
+}
+
+void CheckpointHandler::setViewForGlobals(
+        AccumulateGlobals *accumulateGlobals gmx_unused,
+        ArrayRef<double>   view)
+{
+    // No need for AccumulateGlobals pointer
+
+    signalView_ = view;
+    // set signal empty
+    signalView_[0] = static_cast<double>(CheckpointSignal::noSignal);
+}
+
+void CheckpointHandler::notifyAfterCommunication()
+{
+    // Not sure if we'll need that for anything...
 }
 
 } // namespace gmx

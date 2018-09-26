@@ -141,7 +141,6 @@ void global_stat(const gmx_global_stat *gs,
                  const t_inputrec *inputrec,
                  gmx_ekindata_t *ekind, const gmx::Constraints *constr,
                  t_vcm *vcm,
-                 int nsig, real *sig,
                  gmx::ArrayRef<double> accumulateGlobals,
                  int *totalNumberOfBondedInteractions,
                  gmx_bool bSumEkinhOld, int flags)
@@ -151,7 +150,6 @@ void global_stat(const gmx_global_stat *gs,
     int       *itc0, *itc1;
     int        ie    = 0, ifv = 0, isv = 0, irmsd = 0, imu = 0;
     int        idedl = 0, idedlo = 0, idvdll = 0, idvdlnl = 0, iepl = 0, icm = 0, imass = 0, ica = 0, inb = 0;
-    int        isig  = -1;
     int        icj   = -1, ici = -1, icx = -1;
     int        inn[egNR];
     real       copyenerd[F_NRE];
@@ -281,10 +279,6 @@ void global_stat(const gmx_global_stat *gs,
         nb  = cr->dd->nbonded_local;
         inb = add_bind(rb, 1, &nb);
     }
-    if (nsig > 0)
-    {
-        isig = add_binr(rb, nsig, sig);
-    }
 
     /* Global sum it all */
     if (debug)
@@ -383,11 +377,6 @@ void global_stat(const gmx_global_stat *gs,
     {
         extract_bind(rb, inb, 1, &nb);
         *totalNumberOfBondedInteractions = gmx::roundToInt(nb);
-    }
-
-    if (nsig > 0)
-    {
-        extract_binr(rb, isig, nsig, sig);
     }
 }
 

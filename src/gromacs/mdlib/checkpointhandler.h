@@ -55,11 +55,13 @@
 #ifndef GMX_MDLIB_CHECKPOINTHANDLER_H
 #define GMX_MDLIB_CHECKPOINTHANDLER_H
 
+#include <cmath>
+
 #include <memory>
 
 #include "gromacs/compat/pointers.h"
 #include "gromacs/mdlib/mdrun.h"
-#include "gromacs/mdlib/simulationsignal.h"
+#include "gromacs/mdrunutility/accumulateglobals.h"
 
 struct gmx_walltime_accounting;
 
@@ -82,22 +84,22 @@ enum class CheckpointSignal
  * Master rank sets the checkpointing signal periodically
  * All ranks receive checkpointing signal and set the respective flag
  */
-class CheckpointHandler final
+class CheckpointHandler final : public IAccumulateGlobalsClient
 {
     public:
         /*! \brief CheckpointHandler constructor
          *
-         * Needs a non-null pointer to the signal which is reduced by compute_globals, and
+         * Needs a non-null pointer to the builder to register for global communication, and
          * (const) references to data it needs to determine whether a signal needs to be
          * set or handled.
          */
         CheckpointHandler(
-            compat::not_null<SimulationSignal*> signal,
-            bool                                simulationsShareState,
-            bool                                neverUpdateNeighborList,
-            bool                                isMaster,
-            bool                                writeFinalCheckpoint,
-            real                                checkpointingPeriod);
+            compat::not_null<AccumulateGlobalsBuilder*> accumulateGlobalsBuilder,
+            bool                                        simulationsShareState,
+            bool                                        neverUpdateNeighborList,
+            bool                                        isMaster,
+            bool                                        writeFinalCheckpoint,
+            real                                        checkpointingPeriod);
 
         /*! \brief Decides whether a checkpointing signal needs to be set
          *
@@ -109,6 +111,19 @@ class CheckpointHandler final
             if (rankCanSetSignal_)
             {
                 setSignalImpl(walltime_accounting);
+            }
+        }
+
+        /*! \brief Checks whether a signal has been received
+         *
+         */
+        void handleSignal()
+        {
+            if (checkpointingIsActive_ &&
+                static_cast<CheckpointSignal>(lround(signalView_[0])) == CheckpointSignal::doCheckpoint)
+            {
+                signalView_[0]      = static_cast<double>(CheckpointSignal::noSignal);
+                hasUnhandledSignal_ = true;
             }
         }
 
@@ -134,12 +149,23 @@ class CheckpointHandler final
             return checkpointThisStep_;
         }
 
+        /* From IAccumulateGlobalsClient */
+        //! Return the number of values needed to pass signal.
+        int getNumGlobalsRequired() const override;
+        //! Store where to write and read signal
+        void setViewForGlobals(AccumulateGlobals *accumulateGlobals,
+                               ArrayRef<double>   view) override;
+        //! Called (in debug mode) after MPI reduction is complete.
+        void notifyAfterCommunication() override;
+
     private:
         void setSignalImpl(gmx_walltime_accounting *walltime_accounting) const;
 
         void decideIfCheckpointingThisStepImpl(bool bNS, bool bFirstStep, bool bLastStep);
 
-        SimulationSignal &signal_;
+        ArrayRef<double>  signalView_;
+
+        bool              hasUnhandledSignal_;
         bool              checkpointThisStep_;
         int               numberOfNextCheckpoint_;
 

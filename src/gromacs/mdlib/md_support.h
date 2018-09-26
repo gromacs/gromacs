@@ -125,7 +125,6 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx::Constraints *constr,
-                     gmx::SimulationSignaller *signalCoordinator,
                      matrix box,
                      gmx::AccumulateGlobals *accumulateGlobals,
                      const gmx_multisim_t *ms, bool doInterSimSignal,
