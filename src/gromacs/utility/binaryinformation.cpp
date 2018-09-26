@@ -147,22 +147,9 @@ void printCopyright(gmx::TextWriter *writer)
         "the Royal Institute of Technology, Sweden.",
         "check out http://www.gromacs.org for more information."
     };
-    static const char * const LicenseText[] = {
-        "GROMACS is free software; you can redistribute it and/or modify it",
-        "under the terms of the GNU Lesser General Public License",
-        "as published by the Free Software Foundation; either version 2.1",
-        "of the License, or (at your option) any later version."
-    };
 
 #define NCONTRIBUTORS static_cast<int>(asize(Contributors))
 #define NCR static_cast<int>(asize(CopyrightText))
-
-// FAH has an exception permission from LGPL to allow digital signatures in Gromacs.
-#ifdef GMX_FAHCORE
-#define NLICENSE 0
-#else
-#define NLICENSE static_cast<int>(asize(LicenseText))
-#endif
 
     // TODO a centering behaviour of TextWriter could be useful here
     writer->writeLine(formatCentered(78, "GROMACS is written by:"));
@@ -189,9 +176,16 @@ void printCopyright(gmx::TextWriter *writer)
         writer->writeLine(CopyrightText[i]);
     }
     writer->ensureEmptyLine();
-    for (int i = 0; i < NLICENSE; ++i)
+
+    // Folding At Home has different licence to allow digital
+    // signatures in GROMACS, so does not need to show the normal
+    // license statement.
+    if (!GMX_FAHCORE)
     {
-        writer->writeLine(LicenseText[i]);
+        writer->writeLine("GROMACS is free software; you can redistribute it and/or modify it");
+        writer->writeLine("under the terms of the GNU Lesser General Public License");
+        writer->writeLine("as published by the Free Software Foundation; either version 2.1");
+        writer->writeLine("of the License, or (at your option) any later version.");
     }
 }
 

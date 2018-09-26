@@ -79,7 +79,7 @@
    system.
 
    This option can be set with cmake. */
-/*#define TMPI_WAIT_FOR_NO_ONE */
+/*#define TMPI_WAIT_FOR_NO_ONE 1 */
 
 
 
