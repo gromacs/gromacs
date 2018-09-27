@@ -378,8 +378,7 @@ void get_gpu_device_info_string(char *s, const gmx_gpu_info_t &gpu_info, int ind
 }
 
 //! This function is documented in the header file
-void init_gpu(const gmx::MDLogger               & /*mdlog*/,
-              gmx_device_info_t                *deviceInfo)
+void init_gpu(const gmx_device_info_t *deviceInfo)
 {
     assert(deviceInfo);
 

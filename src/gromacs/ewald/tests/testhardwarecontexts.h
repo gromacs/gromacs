@@ -77,7 +77,7 @@ struct TestHardwareContext
     //! Readable description
     std::string               description_;
     //! Device information pointer
-    gmx_device_info_t        *deviceInfo_;
+    const gmx_device_info_t  *deviceInfo_;
     //! Persistent compiled GPU kernels for PME.
     PmeGpuProgramStorage      program_;
 
@@ -85,13 +85,13 @@ struct TestHardwareContext
         //! Retuns the code path for this context.
         CodePath getCodePath() const { return codePath_; }
         //! Returns a human-readable context description line
-        std::string         getDescription() const{return description_; }
+        std::string              getDescription() const{return description_; }
         //! Returns the device info pointer
-        gmx_device_info_t  *getDeviceInfo() const{return deviceInfo_; }
+        const gmx_device_info_t *getDeviceInfo() const{return deviceInfo_; }
         //! Returns the persistent PME GPU kernels
-        PmeGpuProgramHandle getPmeGpuProgram() const{return program_.get(); }
+        PmeGpuProgramHandle      getPmeGpuProgram() const{return program_.get(); }
         //! Constructs the context
-        TestHardwareContext(CodePath codePath, const char *description, gmx_device_info_t *deviceInfo) :
+        TestHardwareContext(CodePath codePath, const char *description, const gmx_device_info_t *deviceInfo) :
             codePath_(codePath), description_(description), deviceInfo_(deviceInfo),
             program_(buildPmeGpuProgram(deviceInfo_)) {}
         ~TestHardwareContext();

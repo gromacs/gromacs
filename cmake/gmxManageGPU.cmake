@@ -130,26 +130,6 @@ ${_msg}")
     endif()
 endif()
 
-# Try to find NVML if a GPU accelerated binary should be build.
-if (GMX_GPU)
-    if (DEFINED NVML_LIBRARY)
-        set(NVML_FIND_QUIETLY TRUE)
-    endif()
-    find_package(NVML)
-    # TODO Default to off, since linking is not implemented reliably
-    option(GMX_USE_NVML "Use NVML support for better CUDA performance" OFF)
-    mark_as_advanced(GMX_USE_NVML)
-    if(GMX_USE_NVML)
-        if(NVML_FOUND)
-            include_directories(SYSTEM ${NVML_INCLUDE_DIR})
-            set(HAVE_NVML 1)
-            list(APPEND GMX_EXTRA_LIBRARIES ${NVML_LIBRARY})
-        else()
-            message(FATAL_ERROR "NVML support was required, but was not detected. Please consult the install guide.")
-        endif()
-    endif()
-endif()
-
 # Annoyingly enough, FindCUDA leaves a few variables behind as non-advanced.
 # We need to mark these advanced outside the conditional, otherwise, if the
 # user turns GMX_GPU=OFF after a failed cmake pass, these variables will be
