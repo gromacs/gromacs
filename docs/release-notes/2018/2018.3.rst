@@ -137,7 +137,6 @@ the missing checks that prevents the failure.
 Fix enforced rotation energy output
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
