@@ -41,6 +41,7 @@
 
 #include <type_traits>
 
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
 #define XX      0 /* Defines for indexing in */
@@ -140,7 +141,30 @@ class BasicVector
         {
             return {x_[0] - right[0], x_[1] - right[1], x_[2] - right[2]};
         }
-        //! Allow vector scalar multiplication (dot product)
+        //! Allow vector scalar division
+        BasicVector<ValueType> operator/(const ValueType &right) const
+        {
+            GMX_ASSERT(right != 0, "Cannot divide by zero");
+
+            return *this*(1/right);
+        }
+        //! Scale vector by a scalar
+        BasicVector<ValueType> &operator*=(const ValueType &right)
+        {
+            x_[0] *= right;
+            x_[1] *= right;
+            x_[2] *= right;
+
+            return *this;
+        }
+        //! Divide vector by a scalar
+        BasicVector<ValueType> &operator/=(const ValueType &right)
+        {
+            GMX_ASSERT(right != 0, "Cannot divide by zero");
+
+            return *this *= 1/right;
+        }
+        //! Return dot product
         ValueType dot(const BasicVector<ValueType> &right) const
         {
             return x_[0]*right[0] + x_[1]*right[1] + x_[2]*right[2];
@@ -156,16 +180,13 @@ class BasicVector
             };
         }
 
-        //! Allow vector scaling (vector by scalar multiply)
-        BasicVector<ValueType> scale(const ValueType &right) const
-        {
-            return {x_[0] * right, x_[1] * right, x_[2] * right};
-        }
-
         //! Return normalized to unit vector
         BasicVector<ValueType> unitVector() const
         {
-            return scale(1/norm());
+            const ValueType vectorNorm = norm();
+            GMX_ASSERT(vectorNorm != 0, "unitVector() should not be called with a zero vector");
+
+            return *this/vectorNorm;
         }
 
         //! Length^2 of vector
@@ -204,13 +225,24 @@ class BasicVector
         RawArray x_;
 };
 
-/*! \brief
- * scale for gmx::BasicVector
- */
-template <typename VectorType, typename ValueType> static inline
-VectorType scale(const VectorType &v, ValueType s)
+//! Allow vector scalar multiplication
+template<typename ValueType>
+BasicVector<ValueType> operator*(const BasicVector<ValueType> &basicVector,
+                                 const ValueType              &scalar)
 {
-    return v.scale(s);
+    return {
+               basicVector[0]*scalar, basicVector[1]*scalar, basicVector[2]*scalar
+    };
+}
+
+//! Allow scalar vector multiplication
+template<typename ValueType>
+BasicVector<ValueType> operator*(const ValueType              &scalar,
+                                 const BasicVector<ValueType> &basicVector)
+{
+    return {
+               scalar*basicVector[0], scalar*basicVector[1], scalar*basicVector[2]
+    };
 }
 
 /*! \brief
