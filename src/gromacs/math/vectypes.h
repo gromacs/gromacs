@@ -140,7 +140,29 @@ class BasicVector
         {
             return {x_[0] - right[0], x_[1] - right[1], x_[2] - right[2]};
         }
-        //! Allow vector scalar multiplication (dot product)
+        //! Allow vector scalar multiplication
+        BasicVector<ValueType> operator*(const ValueType &right) const
+        {
+            return {x_[0]*right, x_[1]*right, x_[2]*right};
+        }
+        //! Allow vector scalar division
+        BasicVector<ValueType> operator/(const ValueType &right) const
+        {
+            return *this*(1/right);
+        }
+        //! Scale vector by a scalar
+        BasicVector<ValueType> &operator*=(const ValueType &right)
+        {
+            x_[0] *= right;
+            x_[1] *= right;
+            x_[2] *= right;
+        }
+        //! Divide vector by a scalar
+        BasicVector<ValueType> &operator/=(const ValueType &right)
+        {
+            *this *= 1/right;
+        }
+        //! Return dot product
         ValueType dot(const BasicVector<ValueType> &right) const
         {
             return x_[0]*right[0] + x_[1]*right[1] + x_[2]*right[2];
@@ -154,12 +176,6 @@ class BasicVector
                        x_[ZZ]*right.x_[XX]-x_[XX]*right.x_[ZZ],
                        x_[XX]*right.x_[YY]-x_[YY]*right.x_[XX]
             };
-        }
-
-        //! Allow vector scaling (vector by scalar multiply)
-        BasicVector<ValueType> scale(const ValueType &right) const
-        {
-            return {x_[0] * right, x_[1] * right, x_[2] * right};
         }
 
         //! Return normalized to unit vector
@@ -205,12 +221,12 @@ class BasicVector
 };
 
 /*! \brief
- * scale for gmx::BasicVector
+ * scaled for gmx::BasicVector
  */
 template <typename VectorType, typename ValueType> static inline
-VectorType scale(const VectorType &v, ValueType s)
+VectorType scaled(const VectorType &v, ValueType s)
 {
-    return v.scale(s);
+    return v.scaled(s);
 }
 
 /*! \brief
