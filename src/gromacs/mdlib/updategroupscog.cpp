@@ -133,7 +133,7 @@ void UpdateGroupsCog::addCogs(gmx::ArrayRef<const int>        globalAtomIndices,
         const int numAtoms = numAtomsPerCog_[i];
         if (numAtoms > 1)
         {
-            cogs_[i] = cogs_[i].scale(1.0_real/numAtoms);
+            cogs_[i] /= numAtoms;
         }
     }
 }
