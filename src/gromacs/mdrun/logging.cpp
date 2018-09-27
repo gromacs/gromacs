@@ -60,7 +60,6 @@ static void gmx_log_setup(gmx::BinaryInformationSettings settings,
 {
     int    pid;
     char   host[256];
-    char   timebuf[STRLEN];
 
     GMX_RELEASE_ASSERT(fplog != nullptr, "Log file must be already open");
     gmx_fatal_set_log_file(fplog);
@@ -68,12 +67,11 @@ static void gmx_log_setup(gmx::BinaryInformationSettings settings,
     /* Get some machine parameters */
     gmx_gethostname(host, 256);
     pid = gmx_getpid();
-    gmx_format_current_time(timebuf, STRLEN);
 
     fprintf(fplog,
             "Log file opened on %s"
             "Host: %s  pid: %d  rank ID: %d  number of ranks:  %d\n",
-            timebuf, host, pid, rankIndex, numRanks);
+            gmx_format_current_time().c_str(), host, pid, rankIndex, numRanks);
     try
     {
         settings.extendedInfo(true);

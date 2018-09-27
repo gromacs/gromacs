@@ -44,6 +44,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <string>
 
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
@@ -61,6 +62,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atype,
                        warninp_t wi)
@@ -68,7 +70,6 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atyp
     int   i, j, k = -1, nf;
     int   nr, nrfp;
     real  c, bi, bj, ci, cj, ci0, ci1, ci2, cj0, cj1, cj2;
-    char  errbuf[STRLEN];
 
     /* Lean mean shortcuts */
     nr   = get_atomtype_ntypes(atype);
@@ -146,8 +147,8 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atyp
 
                     break;
                 default:
-                    sprintf(errbuf, "No such combination rule %d", comb);
-                    warning_error_and_exit(wi, errbuf, FARGS);
+                    auto message = gmx::formatString("No such combination rule %d", comb);
+                    warning_error_and_exit(wi, message, FARGS);
             }
             if (plist->nr != k)
             {
@@ -182,9 +183,9 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atyp
 
             break;
         default:
-            sprintf(errbuf, "Invalid nonbonded type %s",
-                    interaction_function[ftype].longname);
-            warning_error(wi, errbuf);
+            auto message = gmx::formatString("Invalid nonbonded type %s",
+                                             interaction_function[ftype].longname);
+            warning_error(wi, message);
     }
 }
 
@@ -239,7 +240,6 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
     double     m, q;
     double     c[MAXFORCEPARAM];
     char       tmpfield[12][100]; /* Max 12 fields of width 100 */
-    char       errbuf[STRLEN];
     t_atom    *atom;
     t_param   *param;
     int        atomnr;
@@ -443,8 +443,8 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
             break;
 
         default:
-            sprintf(errbuf, "Invalid function type %d in push_at", nb_funct);
-            warning_error_and_exit(wi, errbuf, FARGS);
+            auto message = gmx::formatString("Invalid function type %d in push_at", nb_funct);
+            warning_error_and_exit(wi, message, FARGS);
     }
     for (j = nfp0; (j < MAXFORCEPARAM); j++)
     {
@@ -475,8 +475,8 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
     }
     if (j == eptNR)
     {
-        sprintf(errbuf, "Invalid particle type %s", ptype);
-        warning_error_and_exit(wi, errbuf, FARGS);
+        auto message = gmx::formatString("Invalid particle type %s", ptype);
+        warning_error_and_exit(wi, message, FARGS);
     }
     pt = xl[j].ptype;
 
@@ -496,20 +496,20 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
 
     if ((nr = get_atomtype_type(type, at)) != NOTSET)
     {
-        sprintf(errbuf, "Overriding atomtype %s", type);
-        warning(wi, errbuf);
+        auto message = gmx::formatString("Overriding atomtype %s", type);
+        warning(wi, message);
         if ((nr = set_atomtype(nr, at, symtab, atom, type, param, batype_nr,
                                atomnr)) == NOTSET)
         {
-            sprintf(errbuf, "Replacing atomtype %s failed", type);
-            warning_error_and_exit(wi, errbuf, FARGS);
+            auto message = gmx::formatString("Replacing atomtype %s failed", type);
+            warning_error_and_exit(wi, message, FARGS);
         }
     }
     else if ((add_atomtype(at, symtab, atom, type, param,
                            batype_nr, atomnr)) == NOTSET)
     {
-        sprintf(errbuf, "Adding atomtype %s failed", type);
-        warning_error_and_exit(wi, errbuf, FARGS);
+        auto message = gmx::formatString("Adding atomtype %s failed", type);
+        warning_error_and_exit(wi, message, FARGS);
     }
     else
     {
@@ -538,7 +538,6 @@ static void push_bondtype(t_params     *       bt,
 {
     int      nr   = bt->nr;
     int      nrfp = NRFP(ftype);
-    char     errbuf[STRLEN];
 
     /* If bAllowRepeat is TRUE, we allow multiple entries as long as they
        are on directly _adjacent_ lines.
@@ -593,18 +592,22 @@ static void push_bondtype(t_params     *       bt,
                      */
                     if (!isContinuationOfBlock && !haveErrored)
                     {
-                        warning_error(wi, "Encountered a second block of parameters for dihedral type 9 for the same atoms, with either different parameters and/or the first block has multiple lines. This is not supported.");
+                        warning_error(wi, "Encountered a second block of parameters for dihedral "
+                                      "type 9 for the same atoms, with either different parameters "
+                                      "and/or the first block has multiple lines. This is not supported.");
                         haveErrored = true;
                     }
                 }
                 else if (!haveWarned)
                 {
-                    sprintf(errbuf, "Overriding %s parameters.%s",
+                    auto message = gmx::formatString
+                            ("Overriding %s parameters.%s",
                             interaction_function[ftype].longname,
                             (ftype == F_PDIHS) ?
-                            "\nUse dihedraltype 9 to allow several multiplicity terms. Only consecutive lines are combined. Non-consective lines overwrite each other."
+                            "\nUse dihedraltype 9 to allow several multiplicity terms. Only consecutive "
+                            "lines are combined. Non-consective lines overwrite each other."
                             : "");
-                    warning(wi, errbuf);
+                    warning(wi, message);
 
                     fprintf(stderr, "  old:                                         ");
                     for (int j = 0; (j < nrfp); j++)
@@ -689,7 +692,6 @@ void push_bt(directive d, t_params bt[], int nral,
     /* One force parameter more, so we can check if we read too many */
     double      c[MAXFORCEPARAM+1];
     t_param     p;
-    char        errbuf[STRLEN];
 
     if ((bat && at) || (!bat && !at))
     {
@@ -700,8 +702,8 @@ void push_bt(directive d, t_params bt[], int nral,
     if ((nn = sscanf(line, formal[nral],
                      alc[0], alc[1], alc[2], alc[3], alc[4], alc[5])) != nral+1)
     {
-        sprintf(errbuf, "Not enough atomtypes (%d instead of %d)", nn-1, nral);
-        warning_error(wi, errbuf);
+        auto message = gmx::formatString("Not enough atomtypes (%d instead of %d)", nn-1, nral);
+        warning_error(wi, message);
         return;
     }
 
@@ -743,13 +745,13 @@ void push_bt(directive d, t_params bt[], int nral,
     {
         if (at && ((p.a[i] = get_atomtype_type(alc[i], at)) == NOTSET))
         {
-            sprintf(errbuf, "Unknown atomtype %s\n", alc[i]);
-            warning_error_and_exit(wi, errbuf, FARGS);
+            auto message = gmx::formatString("Unknown atomtype %s\n", alc[i]);
+            warning_error_and_exit(wi, message, FARGS);
         }
         else if (bat && ((p.a[i] = get_bond_atomtype_type(alc[i], bat)) == NOTSET))
         {
-            sprintf(errbuf, "Unknown bond_atomtype %s\n", alc[i]);
-            warning_error_and_exit(wi, errbuf, FARGS);
+            auto message = gmx::formatString("Unknown bond_atomtype %s\n", alc[i]);
+            warning_error_and_exit(wi, message, FARGS);
         }
     }
     for (i = 0; (i < nrfp); i++)
@@ -802,7 +804,6 @@ void push_dihedraltype(directive d, t_params bt[],
     double       c[MAXFORCEPARAM];
     t_param      p;
     bool         bAllowRepeat;
-    char         errbuf[STRLEN];
 
     /* This routine accepts dihedraltypes defined from either 2 or 4 atoms.
      *
@@ -843,8 +844,8 @@ void push_dihedraltype(directive d, t_params bt[],
     }
     else
     {
-        sprintf(errbuf, "Incorrect number of atomtypes for dihedral (%d instead of 2 or 4)", nn-1);
-        warning_error(wi, errbuf);
+        auto message = gmx::formatString("Incorrect number of atomtypes for dihedral (%d instead of 2 or 4)", nn-1);
+        warning_error(wi, message);
         return;
     }
 
@@ -914,8 +915,8 @@ void push_dihedraltype(directive d, t_params bt[],
         {
             if ((p.a[i] = get_bond_atomtype_type(alc[i], bat)) == NOTSET)
             {
-                sprintf(errbuf, "Unknown bond_atomtype %s", alc[i]);
-                warning_error_and_exit(wi, errbuf, FARGS);
+                auto message = gmx::formatString("Unknown bond_atomtype %s", alc[i]);
+                warning_error_and_exit(wi, message, FARGS);
             }
         }
     }
@@ -945,7 +946,6 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
     int         ai, aj;
     t_nbparam  *nbp;
     bool        bId;
-    char        errbuf[STRLEN];
 
     if (sscanf (pline, "%s%s%d", a0, a1, &f) != 3)
     {
@@ -957,10 +957,10 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
 
     if (ftype != nb_funct)
     {
-        sprintf(errbuf, "Trying to add %s while the default nonbond type is %s",
-                interaction_function[ftype].longname,
-                interaction_function[nb_funct].longname);
-        warning_error(wi, errbuf);
+        auto message = gmx::formatString("Trying to add %s while the default nonbond type is %s",
+                                         interaction_function[ftype].longname,
+                                         interaction_function[nb_funct].longname);
+        warning_error(wi, message);
         return;
     }
 
@@ -1010,8 +1010,8 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
     }
     else
     {
-        sprintf(errbuf, "Number of force parameters for nonbonded interactions is %d", nrfp);
-        warning_error_and_exit(wi, errbuf, FARGS);
+        auto message = gmx::formatString("Number of force parameters for nonbonded interactions is %d", nrfp);
+        warning_error_and_exit(wi, message, FARGS);
     }
     for (i = 0; (i < nrfp); i++)
     {
@@ -1021,13 +1021,13 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
     /* Put the parameters in the matrix */
     if ((ai = get_atomtype_type (a0, atype)) == NOTSET)
     {
-        sprintf(errbuf, "Atomtype %s not found", a0);
-        warning_error_and_exit(wi, errbuf, FARGS);
+        auto message = gmx::formatString("Atomtype %s not found", a0);
+        warning_error_and_exit(wi, message, FARGS);
     }
     if ((aj = get_atomtype_type (a1, atype)) == NOTSET)
     {
-        sprintf(errbuf, "Atomtype %s not found", a1);
-        warning_error_and_exit(wi, errbuf, FARGS);
+        auto message = gmx::formatString("Atomtype %s not found", a1);
+        warning_error_and_exit(wi, message, FARGS);
     }
     nbp = &(nbt[std::max(ai, aj)][std::min(ai, aj)]);
 
@@ -1040,8 +1040,8 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
         }
         if (!bId)
         {
-            sprintf(errbuf, "Overriding non-bonded parameters,");
-            warning(wi, errbuf);
+            auto message = gmx::formatString("Overriding non-bonded parameters,");
+            warning(wi, message);
             fprintf(stderr, "  old:");
             for (i = 0; i < nrfp; i++)
             {
@@ -1069,7 +1069,6 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
     int          nxcmap, nycmap, ncmap, read_cmap, sl, nct;
     char         s[20], alc[MAXATOMLIST+2][20];
     t_param      p;
-    char         errbuf[STRLEN];
 
     /* Keep the compiler happy */
     read_cmap = 0;
@@ -1080,8 +1079,8 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
     /* Here we can only check for < 8 */
     if ((nn = sscanf(line, formal, alc[0], alc[1], alc[2], alc[3], alc[4], alc[5], alc[6], alc[7], &nchar_consumed)) < nral+3)
     {
-        sprintf(errbuf, "Incorrect number of atomtypes for cmap (%d instead of 5)", nn-1);
-        warning_error(wi, errbuf);
+        auto message = gmx::formatString("Incorrect number of atomtypes for cmap (%d instead of 5)", nn-1);
+        warning_error(wi, message);
         return;
     }
     start += nchar_consumed;
@@ -1093,8 +1092,8 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
     /* Check for equal grid spacing in x and y dims */
     if (nxcmap != nycmap)
     {
-        sprintf(errbuf, "Not the same grid spacing in x and y for cmap grid: x=%d, y=%d", nxcmap, nycmap);
-        warning_error(wi, errbuf);
+        auto message = gmx::formatString("Not the same grid spacing in x and y for cmap grid: x=%d, y=%d", nxcmap, nycmap);
+        warning_error(wi, message);
     }
 
     ncmap  = nxcmap*nycmap;
@@ -1125,8 +1124,8 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
         }
         else
         {
-            sprintf(errbuf, "Error in reading cmap parameter for angle %s %s %s %s %s", alc[0], alc[1], alc[2], alc[3], alc[4]);
-            warning_error(wi, errbuf);
+            auto message = gmx::formatString("Error in reading cmap parameter for angle %s %s %s %s %s", alc[0], alc[1], alc[2], alc[3], alc[4]);
+            warning_error(wi, message);
         }
 
     }
@@ -1170,13 +1169,13 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
     {
         if (at && ((p.a[i] = get_bond_atomtype_type(alc[i], bat)) == NOTSET))
         {
-            sprintf(errbuf, "Unknown atomtype %s\n", alc[i]);
-            warning_error(wi, errbuf);
+            auto message = gmx::formatString("Unknown atomtype %s\n", alc[i]);
+            warning_error(wi, message);
         }
         else if (bat && ((p.a[i] = get_bond_atomtype_type(alc[i], bat)) == NOTSET))
         {
-            sprintf(errbuf, "Unknown bond_atomtype %s\n", alc[i]);
-            warning_error(wi, errbuf);
+            auto message = gmx::formatString("Unknown bond_atomtype %s\n", alc[i]);
+            warning_error(wi, message);
         }
 
         /* Assign a grid number to each cmap_type */
@@ -1189,8 +1188,8 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
     /* Check for the correct number of atoms (again) */
     if (bt[F_CMAP].nct != nct)
     {
-        sprintf(errbuf, "Incorrect number of atom types (%d) in cmap type %d\n", nct, bt[F_CMAP].nc);
-        warning_error(wi, errbuf);
+        auto message = gmx::formatString("Incorrect number of atom types (%d) in cmap type %d\n", nct, bt[F_CMAP].nc);
+        warning_error(wi, message);
     }
 
     /* Is this correct?? */
@@ -1215,12 +1214,13 @@ static void push_atom_now(t_symtab *symtab, t_atoms *at, int atomnr,
     int           j, resind = 0, resnr;
     unsigned char ric;
     int           nr = at->nr;
-    char          errbuf[STRLEN];
 
     if (((nr == 0) && (atomnr != 1)) || (nr && (atomnr != at->nr+1)))
     {
-        sprintf(errbuf, "Atoms in the .top are not numbered consecutively from 1 (rather, atomnr = %d, while at->nr = %d)", atomnr, at->nr);
-        warning_error_and_exit(wi, errbuf, FARGS);
+        auto message = gmx::formatString
+                ("Atoms in the .top are not numbered consecutively from 1 (rather, "
+                "atomnr = %d, while at->nr = %d)", atomnr, at->nr);
+        warning_error_and_exit(wi, message, FARGS);
     }
 
     j = strlen(resnumberic) - 1;
@@ -1233,9 +1233,9 @@ static void push_atom_now(t_symtab *symtab, t_atoms *at, int atomnr,
         ric = resnumberic[j];
         if (j == 0 || !isdigit(resnumberic[j-1]))
         {
-            sprintf(errbuf, "Invalid residue number '%s' for atom %d",
-                    resnumberic, atomnr);
-            warning_error_and_exit(wi, errbuf, FARGS);
+            auto message = gmx::formatString("Invalid residue number '%s' for atom %d",
+                                             resnumberic, atomnr);
+            warning_error_and_exit(wi, message, FARGS);
         }
     }
     resnr = strtol(resnumberic, nullptr, 10);
@@ -1314,7 +1314,6 @@ void push_atom(t_symtab *symtab, t_block *cgs,
                   resnumberic[STRLEN], resname[STRLEN], name[STRLEN], check[STRLEN];
     double        m, q, mb, qb;
     real          m0, q0, mB, qB;
-    char          errbuf[STRLEN];
 
     /* Make a shortcut for writing in this molecule  */
     nr = at->nr;
@@ -1329,8 +1328,8 @@ void push_atom(t_symtab *symtab, t_block *cgs,
     sscanf(id, "%d", &atomnr);
     if ((type  = get_atomtype_type(ctype, atype)) == NOTSET)
     {
-        sprintf(errbuf, "Atomtype %s not found", ctype);
-        warning_error_and_exit(wi, errbuf, FARGS);
+        auto message = gmx::formatString("Atomtype %s not found", ctype);
+        warning_error_and_exit(wi, message, FARGS);
     }
     ptype = get_atomtype_ptype(type, atype);
 
@@ -1356,8 +1355,8 @@ void push_atom(t_symtab *symtab, t_block *cgs,
             {
                 if ((typeB = get_atomtype_type(ctypeB, atype)) == NOTSET)
                 {
-                    sprintf(errbuf, "Atomtype %s not found", ctypeB);
-                    warning_error_and_exit(wi, errbuf, FARGS);
+                    auto message = gmx::formatString("Atomtype %s not found", ctypeB);
+                    warning_error_and_exit(wi, message, FARGS);
                 }
                 qB = get_atomtype_qA(typeB, atype);
                 mB = get_atomtype_massA(typeB, atype);
@@ -1391,7 +1390,6 @@ void push_molt(t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,
     char       type[STRLEN];
     int        nrexcl, i;
     t_molinfo *newmol;
-    char       errbuf[STRLEN];
 
     if ((sscanf(line, "%s%d", type, &nrexcl)) != 2)
     {
@@ -1404,8 +1402,8 @@ void push_molt(t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,
     {
         if (strcmp(*((*mol)[i].name), type) == 0)
         {
-            sprintf(errbuf, "moleculetype %s is redefined", type);
-            warning_error_and_exit(wi, errbuf, FARGS);
+            auto message = gmx::formatString("moleculetype %s is redefined", type);
+            warning_error_and_exit(wi, message, FARGS);
         }
         i++;
     }
@@ -1525,7 +1523,6 @@ static bool default_cmap_params(t_params bondtype[],
     int        i, nparam_found;
     int        ct;
     bool       bFound = FALSE;
-    char       errbuf[STRLEN];
 
     nparam_found = 0;
     ct           = 0;
@@ -1557,9 +1554,9 @@ static bool default_cmap_params(t_params bondtype[],
     /* If we did not find a matching type for this cmap torsion */
     if (!bFound)
     {
-        sprintf(errbuf, "Unknown cmap torsion between atoms %d %d %d %d %d",
-                p->a[0]+1, p->a[1]+1, p->a[2]+1, p->a[3]+1, p->a[4]+1);
-        warning_error_and_exit(wi, errbuf, FARGS);
+        auto message = gmx::formatString("Unknown cmap torsion between atoms %d %d %d %d %d",
+                                         p->a[0]+1, p->a[1]+1, p->a[2]+1, p->a[3]+1, p->a[4]+1);
+        warning_error_and_exit(wi, message, FARGS);
     }
 
     *nparam_def = nparam_found;
@@ -1742,7 +1739,6 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
     t_param      param, *param_defA, *param_defB;
     bool         bFoundA = FALSE, bFoundB = FALSE, bDef, bPert, bSwapParity = FALSE;
     int          nparam_defA, nparam_defB;
-    char         errbuf[STRLEN];
 
     nparam_defA = nparam_defB = 0;
 
@@ -1798,10 +1794,10 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
                 case F_VSITE3OUT:
                     break;
                 default:
-                    sprintf(errbuf, "Negative function types only allowed for %s and %s",
-                            interaction_function[F_VSITE3FAD].longname,
-                            interaction_function[F_VSITE3OUT].longname);
-                    warning_error_and_exit(wi, errbuf, FARGS);
+                    auto message = gmx::formatString("Negative function types only allowed for %s and %s",
+                                                     interaction_function[F_VSITE3FAD].longname,
+                                                     interaction_function[F_VSITE3OUT].longname);
+                    warning_error_and_exit(wi, message, FARGS);
             }
         }
     }
@@ -1812,30 +1808,31 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
     {
         if (aa[i] < 1 || aa[i] > at->nr)
         {
-            sprintf(errbuf, "Atom index (%d) in %s out of bounds (1-%d).\n"
+            auto message = gmx::formatString
+                    ("Atom index (%d) in %s out of bounds (1-%d).\n"
                     "This probably means that you have inserted topology section \"%s\"\n"
                     "in a part belonging to a different molecule than you intended to.\n"
                     "In that case move the \"%s\" section to the right molecule.",
                     aa[i], dir2str(d), at->nr, dir2str(d), dir2str(d));
-            warning_error_and_exit(wi, errbuf, FARGS);
+            warning_error_and_exit(wi, message, FARGS);
         }
         for (j = i+1; (j < nral); j++)
         {
             GMX_ASSERT(j < MAXATOMLIST + 1, "Values from nral=NRAL() will satisfy this, we assert to keep gcc 4 happy");
             if (aa[i] == aa[j])
             {
-                sprintf(errbuf, "Duplicate atom index (%d) in %s", aa[i], dir2str(d));
+                auto message = gmx::formatString("Duplicate atom index (%d) in %s", aa[i], dir2str(d));
                 if (ftype == F_ANGRES)
                 {
                     /* Since the angle restraints uses 2 pairs of atoms to
                      * defines an angle between vectors, it can be useful
                      * to use one atom twice, so we only issue a note here.
                      */
-                    warning_note(wi, errbuf);
+                    warning_note(wi, message);
                 }
                 else
                 {
-                    warning_error(wi, errbuf);
+                    warning_error(wi, message);
                 }
             }
         }
@@ -1924,9 +1921,10 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
 
             if (bPert && *bWarn_copy_A_B)
             {
-                sprintf(errbuf,
-                        "Some parameters for bonded interaction involving perturbed atoms are specified explicitly in state A, but not B - copying A to B");
-                warning(wi, errbuf);
+                auto message = gmx::formatString("Some parameters for bonded interaction involving "
+                                                 "perturbed atoms are specified explicitly in "
+                                                 "state A, but not B - copying A to B");
+                warning(wi, message);
                 *bWarn_copy_A_B = FALSE;
             }
 
@@ -1949,9 +1947,11 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
         if ((nread != 0) && (nread != EOF) && (nread != NRFP(ftype)) &&
             !(ftype == F_LJC14_Q && nread == 1))
         {
-            sprintf(errbuf, "Incorrect number of parameters - found %d, expected %d or %d for %s (after the function type).",
+            auto message = gmx::formatString
+                    ("Incorrect number of parameters - found %d, expected %d "
+                    "or %d for %s (after the function type).",
                     nread, NRFPA(ftype), NRFP(ftype), interaction_function[ftype].longname);
-            warning_error_and_exit(wi, errbuf, FARGS);
+            warning_error_and_exit(wi, message, FARGS);
         }
 
         for (j = 0; (j < nread); j++)
@@ -1979,18 +1979,18 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
         {
             if ((nparam_defA != nparam_defB) || ((nparam_defA > 1 || nparam_defB > 1) && (param_defA != param_defB)))
             {
-                sprintf(errbuf,
-                        "Cannot automatically perturb a torsion with multiple terms to different form.\n"
-                        "Please specify perturbed parameters manually for this torsion in your topology!");
-                warning_error(wi, errbuf);
+                auto message =
+                    gmx::formatString("Cannot automatically perturb a torsion with multiple terms to different form.\n"
+                                      "Please specify perturbed parameters manually for this torsion in your topology!");
+                warning_error(wi, message);
             }
         }
 
         if (nread > 0 && nread < NRFPA(ftype))
         {
             /* Issue an error, do not use defaults */
-            sprintf(errbuf, "Not enough parameters, there should be at least %d (or 0 for defaults)", NRFPA(ftype));
-            warning_error(wi, errbuf);
+            auto message = gmx::formatString("Not enough parameters, there should be at least %d (or 0 for defaults)", NRFPA(ftype));
+            warning_error(wi, message);
         }
 
         if (nread == 0 || nread == EOF)
@@ -2019,8 +2019,8 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
                     }
                     else
                     {
-                        sprintf(errbuf, "No default %s types", interaction_function[ftype].longname);
-                        warning_error(wi, errbuf);
+                        auto message = gmx::formatString("No default %s types", interaction_function[ftype].longname);
+                        warning_error(wi, message);
                     }
                 }
             }
@@ -2050,9 +2050,9 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
 
                 if (bPert)
                 {
-                    sprintf(errbuf, "No default %s types for perturbed atoms, "
-                            "using normal values", interaction_function[ftype].longname);
-                    warning(wi, errbuf);
+                    auto message = gmx::formatString("No default %s types for perturbed atoms, "
+                                                     "using normal values", interaction_function[ftype].longname);
+                    warning(wi, message);
                 }
             }
         }
@@ -2061,18 +2061,18 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
     if ((ftype == F_PDIHS || ftype == F_ANGRES || ftype == F_ANGRESZ)
         && param.c[5] != param.c[2])
     {
-        sprintf(errbuf, "%s multiplicity can not be perturbed %f!=%f",
-                interaction_function[ftype].longname,
-                param.c[2], param.c[5]);
-        warning_error_and_exit(wi, errbuf, FARGS);
+        auto message = gmx::formatString("%s multiplicity can not be perturbed %f!=%f",
+                                         interaction_function[ftype].longname,
+                                         param.c[2], param.c[5]);
+        warning_error_and_exit(wi, message, FARGS);
     }
 
     if (IS_TABULATED(ftype) && param.c[2] != param.c[0])
     {
-        sprintf(errbuf, "%s table number can not be perturbed %d!=%d",
-                interaction_function[ftype].longname,
-                gmx::roundToInt(param.c[0]), gmx::roundToInt(param.c[2]));
-        warning_error_and_exit(wi, errbuf, FARGS);
+        auto message = gmx::formatString("%s table number can not be perturbed %d!=%d",
+                                         interaction_function[ftype].longname,
+                                         gmx::roundToInt(param.c[0]), gmx::roundToInt(param.c[2]));
+        warning_error_and_exit(wi, message, FARGS);
     }
 
     /* Dont add R-B dihedrals where all parameters are zero (no interaction) */
@@ -2134,7 +2134,6 @@ void push_cmap(directive d, t_params bondtype[], t_params bond[],
     int      i, j, ftype, nral, nread, ncmap_params;
     int      cmap_type;
     int      aa[MAXATOMLIST+1];
-    char     errbuf[STRLEN];
     bool     bFound;
     t_param  param;
 
@@ -2160,20 +2159,21 @@ void push_cmap(directive d, t_params bondtype[], t_params bond[],
     {
         if (aa[i] < 1 || aa[i] > at->nr)
         {
-            sprintf(errbuf, "Atom index (%d) in %s out of bounds (1-%d).\n"
+            auto message = gmx::formatString
+                    ("Atom index (%d) in %s out of bounds (1-%d).\n"
                     "This probably means that you have inserted topology section \"%s\"\n"
                     "in a part belonging to a different molecule than you intended to.\n"
                     "In that case move the \"%s\" section to the right molecule.",
                     aa[i], dir2str(d), at->nr, dir2str(d), dir2str(d));
-            warning_error_and_exit(wi, errbuf, FARGS);
+            warning_error_and_exit(wi, message, FARGS);
         }
 
         for (j = i+1; (j < nral); j++)
         {
             if (aa[i] == aa[j])
             {
-                sprintf(errbuf, "Duplicate atom index (%d) in %s", aa[i], dir2str(d));
-                warning_error(wi, errbuf);
+                auto message = gmx::formatString("Duplicate atom index (%d) in %s", aa[i], dir2str(d));
+                warning_error(wi, message);
             }
         }
     }
@@ -2201,9 +2201,9 @@ void push_cmap(directive d, t_params bondtype[], t_params bond[],
     else
     {
         /* This is essentially the same check as in default_cmap_params() done one more time */
-        sprintf(errbuf, "Unable to assign a cmap type to torsion %d %d %d %d and %d\n",
-                param.a[0]+1, param.a[1]+1, param.a[2]+1, param.a[3]+1, param.a[4]+1);
-        warning_error_and_exit(wi, errbuf, FARGS);
+        auto message = gmx::formatString("Unable to assign a cmap type to torsion %d %d %d %d and %d\n",
+                                         param.a[0]+1, param.a[1]+1, param.a[2]+1, param.a[3]+1, param.a[4]+1);
+        warning_error_and_exit(wi, message, FARGS);
     }
 }
 
@@ -2218,7 +2218,6 @@ void push_vsitesn(directive d, t_params bond[],
     int    *atc    = nullptr;
     double *weight = nullptr, weight_tot;
     t_param param;
-    char    errbuf[STRLEN];
 
     /* default force parameters  */
     for (j = 0; (j < MAXATOMLIST); j++)
@@ -2235,9 +2234,9 @@ void push_vsitesn(directive d, t_params bond[],
     ptr += n;
     if (ret == 0)
     {
-        sprintf(errbuf, "Expected an atom index in section \"%s\"",
-                dir2str(d));
-        warning_error_and_exit(wi, errbuf, FARGS);
+        auto message = gmx::formatString("Expected an atom index in section \"%s\"",
+                                         dir2str(d));
+        warning_error_and_exit(wi, message, FARGS);
     }
 
     param.a[0] = a - 1;
@@ -2277,14 +2276,16 @@ void push_vsitesn(directive d, t_params bond[],
                     ptr       += n;
                     if (weight[nj] < 0)
                     {
-                        sprintf(errbuf, "No weight or negative weight found for vsiten constructing atom %d (atom index %d)",
+                        auto message = gmx::formatString
+                                ("No weight or negative weight found for vsiten "
+                                "constructing atom %d (atom index %d)",
                                 nj+1, atc[nj]+1);
-                        warning_error_and_exit(wi, errbuf, FARGS);
+                        warning_error_and_exit(wi, message, FARGS);
                     }
                     break;
                 default:
-                    sprintf(errbuf, "Unknown vsiten type %d", type);
-                    warning_error_and_exit(wi, errbuf, FARGS);
+                    auto message = gmx::formatString("Unknown vsiten type %d", type);
+                    warning_error_and_exit(wi, message, FARGS);
             }
             weight_tot += weight[nj];
             nj++;
@@ -2294,9 +2295,9 @@ void push_vsitesn(directive d, t_params bond[],
 
     if (nj == 0)
     {
-        sprintf(errbuf, "Expected more than one atom index in section \"%s\"",
-                dir2str(d));
-        warning_error_and_exit(wi, errbuf, FARGS);
+        auto message = gmx::formatString("Expected more than one atom index in section \"%s\"",
+                                         dir2str(d));
+        warning_error_and_exit(wi, message, FARGS);
     }
 
     if (weight_tot == 0)
@@ -2322,7 +2323,6 @@ void push_mol(int nrmols, t_molinfo mols[], char *pline, int *whichmol,
               warninp_t wi)
 {
     char type[STRLEN];
-    char errbuf[STRLEN];
 
     if (sscanf(pline, "%s%d", type, nrcopies) != 2)
     {
@@ -2364,8 +2364,12 @@ void push_mol(int nrmols, t_molinfo mols[], char *pline, int *whichmol,
         // avoid matching case-insensitive when we have multiple matches
         if (nrci > 1)
         {
-            sprintf(errbuf, "For moleculetype '%s' in [ system ] %d case insensitive matches, but %d case sensitive matches were found. Check the case of the characters in the moleculetypes.", type, nrci, nrcs);
-            warning_error_and_exit(wi, errbuf, FARGS);
+            auto message = gmx::formatString
+                    ("For moleculetype '%s' in [ system ] %d case insensitive "
+                    "matches, but %d case sensitive matches were found. Check "
+                    "the case of the characters in the moleculetypes.",
+                    type, nrci, nrcs);
+            warning_error_and_exit(wi, message, FARGS);
         }
         if (nrci == 1)
         {
@@ -2374,8 +2378,8 @@ void push_mol(int nrmols, t_molinfo mols[], char *pline, int *whichmol,
         }
         else
         {
-            sprintf(errbuf, "No such moleculetype %s", type);
-            warning_error_and_exit(wi, errbuf, FARGS);
+            auto message = gmx::formatString("No such moleculetype %s", type);
+            warning_error_and_exit(wi, message, FARGS);
         }
     }
 }
@@ -2414,7 +2418,6 @@ void push_excl(char *line, t_block2 *b2, warninp_t wi)
     int  i, j;
     int  n;
     char base[STRLEN], format[STRLEN];
-    char errbuf[STRLEN];
 
     if (sscanf(line, "%d", &i) == 0)
     {
@@ -2449,8 +2452,8 @@ void push_excl(char *line, t_block2 *b2, warninp_t wi)
             }
             else
             {
-                sprintf(errbuf, "Invalid Atomnr j: %d, b2->nr: %d\n", j, b2->nr);
-                warning_error_and_exit(wi, errbuf, FARGS);
+                auto message = gmx::formatString("Invalid Atomnr j: %d, b2->nr: %d\n", j, b2->nr);
+                warning_error_and_exit(wi, message, FARGS);
             }
         }
     }
@@ -2497,7 +2500,6 @@ void merge_excl(t_blocka *excl, t_block2 *b2, warninp_t wi)
     int     i, k;
     int     j;
     int     nra;
-    char    errbuf[STRLEN];
 
     if (!b2->nr)
     {
@@ -2505,9 +2507,9 @@ void merge_excl(t_blocka *excl, t_block2 *b2, warninp_t wi)
     }
     else if (b2->nr != excl->nr)
     {
-        sprintf(errbuf, "DEATH HORROR: b2->nr = %d, while excl->nr = %d",
-                b2->nr, excl->nr);
-        warning_error_and_exit(wi, errbuf, FARGS);
+        auto message = gmx::formatString("DEATH HORROR: b2->nr = %d, while excl->nr = %d",
+                                         b2->nr, excl->nr);
+        warning_error_and_exit(wi, message, FARGS);
     }
 
     /* First copy all entries from excl to b2 */
@@ -2639,7 +2641,6 @@ static void generate_LJCpairsNB(t_molinfo *mol, int nb_funct, t_params *nbp, war
     t_blocka *excl;
     bool      bExcl;
     t_param   param;
-    char      errbuf[STRLEN];
 
     n    = mol->atoms.nr;
     atom = mol->atoms.atom;
@@ -2674,8 +2675,10 @@ static void generate_LJCpairsNB(t_molinfo *mol, int nb_funct, t_params *nbp, war
             {
                 if (nb_funct != F_LJ)
                 {
-                    sprintf(errbuf, "Can only generate non-bonded pair interactions for Van der Waals type Lennard-Jones");
-                    warning_error_and_exit(wi, errbuf, FARGS);
+                    auto message = gmx::formatString
+                            ("Can only generate non-bonded pair interactions "
+                            "for Van der Waals type Lennard-Jones");
+                    warning_error_and_exit(wi, message, FARGS);
                 }
                 param.a[0] = i;
                 param.a[1] = j;
@@ -2714,7 +2717,6 @@ static void decouple_atoms(t_atoms *atoms, int atomtype_decouple,
                            const char *mol_name, warninp_t wi)
 {
     int  i;
-    char errbuf[STRLEN];
 
     for (i = 0; i < atoms->nr; i++)
     {
@@ -2724,9 +2726,13 @@ static void decouple_atoms(t_atoms *atoms, int atomtype_decouple,
 
         if (atom->qB != atom->q || atom->typeB != atom->type)
         {
-            sprintf(errbuf, "Atom %d in molecule type '%s' has different A and B state charges and/or atom types set in the topology file as well as through the mdp option '%s'. You can not use both these methods simultaneously.",
+            auto message = gmx::formatString
+                    ("Atom %d in molecule type '%s' has different A and B state "
+                    "charges and/or atom types set in the topology file as well "
+                    "as through the mdp option '%s'. You can not use both "
+                    "these methods simultaneously.",
                     i + 1, mol_name, "couple-moltype");
-            warning_error_and_exit(wi, errbuf, FARGS);
+            warning_error_and_exit(wi, message, FARGS);
         }
 
         if (couple_lam0 == ecouplamNONE || couple_lam0 == ecouplamVDW)

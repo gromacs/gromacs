@@ -2421,7 +2421,7 @@ static void init_edsamstate(const gmx_edsam &ed, edsamhistory_t *EDstate)
 
 
 /* Adds 'buf' to 'str' */
-static void add_to_string(char **str, char *buf)
+static void add_to_string(char **str, const char *buf)
 {
     int len;
 
@@ -2432,7 +2432,7 @@ static void add_to_string(char **str, char *buf)
 }
 
 
-static void add_to_string_aligned(char **str, char *buf)
+static void add_to_string_aligned(char **str, const char *buf)
 {
     char buf_aligned[STRLEN];
 
@@ -2443,13 +2443,10 @@ static void add_to_string_aligned(char **str, char *buf)
 
 static void nice_legend(const char ***setname, int *nsets, char **LegendStr, const char *value, const char *unit, char EDgroupchar)
 {
-    char tmp[STRLEN], tmp2[STRLEN];
-
-
-    sprintf(tmp, "%c %s", EDgroupchar, value);
-    add_to_string_aligned(LegendStr, tmp);
-    sprintf(tmp2, "%s (%s)", tmp, unit);
-    (*setname)[*nsets] = gmx_strdup(tmp2);
+    auto tmp = gmx::formatString("%c %s", EDgroupchar, value);
+    add_to_string_aligned(LegendStr, tmp.c_str());
+    tmp               += gmx::formatString(" (%s)", unit);
+    (*setname)[*nsets] = gmx_strdup(tmp.c_str());
     (*nsets)++;
 }
 

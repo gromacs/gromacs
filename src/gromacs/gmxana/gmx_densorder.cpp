@@ -558,8 +558,8 @@ static void writesurftoxpms(t_interf ***surf1, t_interf ***surf2, int tblocks, i
         yticks[j] += bw;
     }
 
-    xpmfile1 = gmx_ffopen(outfiles[0].c_str(), "w");
-    xpmfile2 = gmx_ffopen(outfiles[1].c_str(), "w");
+    xpmfile1 = gmx_ffopen(outfiles[0], "w");
+    xpmfile2 = gmx_ffopen(outfiles[1], "w");
 
     max1 = max2 = 0.0;
     min1 = min2 = zbins*bwz;
@@ -615,8 +615,8 @@ static void writeraw(t_interf ***int1, t_interf ***int2, int tblocks,
     FILE *raw1, *raw2;
     int   i, j, n;
 
-    raw1 = gmx_ffopen(fnms[0].c_str(), "w");
-    raw2 = gmx_ffopen(fnms[1].c_str(), "w");
+    raw1 = gmx_ffopen(fnms[0], "w");
+    raw2 = gmx_ffopen(fnms[1], "w");
     try
     {
         gmx::BinaryInformationSettings settings;

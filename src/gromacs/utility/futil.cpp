@@ -45,6 +45,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <utility>
+
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -286,10 +288,10 @@ gmx_off_t gmx_ftell(FILE *stream)
 #endif
 }
 
-int gmx_truncate(const char *filename, gmx_off_t length)
+int gmx_truncate(const std::string &filename, gmx_off_t length)
 {
 #if GMX_NATIVE_WINDOWS
-    FILE *fp = fopen(filename, "rb+");
+    FILE *fp = fopen(filename.c_str(), "rb+");
     if (fp == NULL)
     {
         return -1;
@@ -302,18 +304,16 @@ int gmx_truncate(const char *filename, gmx_off_t length)
     fclose(fp);
     return rc;
 #else
-    return truncate(filename, length);
+    return truncate(filename.c_str(), length);
 #endif
 }
 
-static FILE *uncompress(const char *fn, const char *mode)
+static FILE *uncompress(const std::string &fn, const char *mode)
 {
-    FILE *fp;
-    char  buf[256];
-
-    sprintf(buf, "uncompress -c < %s", fn);
-    fprintf(stderr, "Going to execute '%s'\n", buf);
-    if ((fp = popen(buf, mode)) == nullptr)
+    FILE       *fp;
+    std::string buf = "uncompress -c < " + fn;
+    fprintf(stderr, "Going to execute '%s'\n", buf.c_str());
+    if ((fp = popen(buf.c_str(), mode)) == nullptr)
     {
         gmx_open(fn);
     }
@@ -322,14 +322,13 @@ static FILE *uncompress(const char *fn, const char *mode)
     return fp;
 }
 
-static FILE *gunzip(const char *fn, const char *mode)
+static FILE *gunzip(const std::string &fn, const char *mode)
 {
-    FILE *fp;
-    char  buf[256];
-
-    sprintf(buf, "gunzip -c < %s", fn);
-    fprintf(stderr, "Going to execute '%s'\n", buf);
-    if ((fp = popen(buf, mode)) == nullptr)
+    FILE       *fp;
+    std::string buf = "gunzip -c < ";
+    buf += fn;
+    fprintf(stderr, "Going to execute '%s'\n", buf.c_str());
+    if ((fp = popen(buf.c_str(), mode)) == nullptr)
     {
         gmx_open(fn);
     }
@@ -338,20 +337,20 @@ static FILE *gunzip(const char *fn, const char *mode)
     return fp;
 }
 
-gmx_bool gmx_fexist(const char *fname)
+gmx_bool gmx_fexist(const std::string &fname)
 {
     FILE *test;
 
-    if (fname == nullptr)
+    if (fname.empty())
     {
         return FALSE;
     }
-    test = fopen(fname, "r");
+    test = fopen(fname.c_str(), "r");
     if (test == nullptr)
     {
         /*Windows doesn't allow fopen of directory - so we need to check this seperately */
         #if GMX_NATIVE_WINDOWS
-        DWORD attr = GetFileAttributes(fname);
+        DWORD attr = GetFileAttributes(fname.c_str());
         return (attr != INVALID_FILE_ATTRIBUTES) && (attr & FILE_ATTRIBUTE_DIRECTORY);
         #else
         return FALSE;
@@ -364,36 +363,19 @@ gmx_bool gmx_fexist(const char *fname)
     }
 }
 
-static char *backup_fn(const char *file)
+static std::string backup_fn(const std::string &file)
 {
-    int          i, count = 1;
-    char        *directory, *fn;
-    char        *buf;
+    int          count = 1;
 
-    smalloc(buf, GMX_PATH_MAX);
-
-    for (i = strlen(file)-1; ((i > 0) && (file[i] != DIR_SEPARATOR)); i--)
+    std::string  directory, fn, buf;
+    std::tie(directory, fn) = gmx::Path::getParentPathAndBasename(file);
+    if (directory.empty())
     {
-        ;
-    }
-    /* Must check whether i > 0, i.e. whether there is a directory
-     * in the file name. In that case we overwrite the / sign with
-     * a '\0' to end the directory string .
-     */
-    if (i > 0)
-    {
-        directory    = gmx_strdup(file);
-        directory[i] = '\0';
-        fn           = gmx_strdup(file+i+1);
-    }
-    else
-    {
-        directory    = gmx_strdup(".");
-        fn           = gmx_strdup(file);
+        directory = ".";
     }
     do
     {
-        sprintf(buf, "%s/#%s.%d#", directory, fn, count);
+        buf = gmx::formatString("%s/#%s.%d#", directory.c_str(), fn.c_str(), count);
         count++;
     }
     while ((count <= s_maxBackupCount) && gmx_fexist(buf));
@@ -405,16 +387,13 @@ static char *backup_fn(const char *file)
          * Gromacs command-line interface. */
         gmx_fatal(FARGS, "Won't make more than %d backups of %s for you.\n"
                   "The env.var. GMX_MAXBACKUP controls this maximum, -1 disables backups.",
-                  s_maxBackupCount, fn);
+                  s_maxBackupCount, fn.c_str());
     }
-
-    sfree(directory);
-    sfree(fn);
 
     return buf;
 }
 
-void make_backup(const char *name)
+void make_backup(const std::string &name)
 {
     if (s_maxBackupCount <= 0)
     {
@@ -422,31 +401,29 @@ void make_backup(const char *name)
     }
     if (gmx_fexist(name))
     {
-        char *backup = backup_fn(name);
-        if (rename(name, backup) == 0)
+        auto backup = backup_fn(name);
+        if (rename(name.c_str(), backup.c_str()) == 0)
         {
             fprintf(stderr, "\nBack Off! I just backed up %s to %s\n",
-                    name, backup);
+                    name.c_str(), backup.c_str());
         }
         else
         {
-            fprintf(stderr, "\nSorry couldn't backup %s to %s\n", name, backup);
+            fprintf(stderr, "\nSorry couldn't backup %s to %s\n", name.c_str(), backup.c_str());
         }
-        sfree(backup);
     }
 }
 
-FILE *gmx_ffopen(const char *file, const char *mode)
+FILE *gmx_ffopen(const std::string &file, const char *mode)
 {
 #ifdef SKIP_FFOPS
     return fopen(file, mode);
 #else
     FILE    *ff = nullptr;
-    char     buf[256], *bufsize = nullptr, *ptr;
     gmx_bool bRead;
     int      bs;
 
-    if (file == nullptr)
+    if (file.empty())
     {
         return nullptr;
     }
@@ -457,16 +434,16 @@ FILE *gmx_ffopen(const char *file, const char *mode)
     }
 
     bRead = (mode[0] == 'r' && mode[1] != '+');
-    strcpy(buf, file);
-    if (!bRead || gmx_fexist(buf))
+    if (!bRead || gmx_fexist(file))
     {
-        if ((ff = fopen(buf, mode)) == nullptr)
+        if ((ff = fopen(file.c_str(), mode)) == nullptr)
         {
-            gmx_file(buf);
+            gmx_file(file);
         }
         /* Check whether we should be using buffering (default) or not
          * (for debugging)
          */
+        const char *bufsize = nullptr;
         if (bUnbuffered || ((bufsize = getenv("GMX_LOG_BUFFER")) != nullptr))
         {
             /* Check whether to use completely unbuffered */
@@ -484,6 +461,7 @@ FILE *gmx_ffopen(const char *file, const char *mode)
             }
             else
             {
+                char *ptr;
                 snew(ptr, bs+8);
                 if (setvbuf(ff, ptr, _IOFBF, bs) != 0)
                 {
@@ -494,14 +472,16 @@ FILE *gmx_ffopen(const char *file, const char *mode)
     }
     else
     {
-        sprintf(buf, "%s.Z", file);
+        std::string buf = file;
+        buf += ".Z";
         if (gmx_fexist(buf))
         {
             ff = uncompress(buf, mode);
         }
         else
         {
-            sprintf(buf, "%s.gz", file);
+            std::string buf = file;
+            buf += ".gz";
             if (gmx_fexist(buf))
             {
                 ff = gunzip(buf, mode);

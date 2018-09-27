@@ -168,5 +168,5 @@ FILE *fflib_open(const std::string &file)
 {
     std::string fileFullPath = gmx::findLibraryFile(file);
     fprintf(stderr, "Opening force field file %s\n", fileFullPath.c_str());
-    return gmx_ffopen(fileFullPath.c_str(), "r");
+    return gmx_ffopen(fileFullPath, "r");
 }

@@ -84,7 +84,7 @@ void
 gmx_fatal_set_log_file(FILE *fp);
 
 /** Function pointer type for fatal error handler callback. */
-typedef void (*gmx_error_handler_t)(const char *title, const char *msg, const char *file, int line);
+typedef void (*gmx_error_handler_t)(const char *title, const std::string &msg, const char *file, int line);
 
 /*! \brief
  * Sets an error handler for gmx_fatal() and other fatal error routines.
@@ -179,7 +179,7 @@ gmx_fatal(int fatal_errno, const char *file, int line, gmx_fmtstr const char *fm
 #define FARGS 0, __FILE__, __LINE__
 
 /** Implementation for gmx_error(). */
-[[noreturn]] void _gmx_error(const char *key, const char *msg, const char *file, int line);
+[[noreturn]] void _gmx_error(const char *key, const std::string &msg, const char *file, int line);
 /*! \brief
  * Alternative fatal error routine with canned messages.
  *
