@@ -801,6 +801,10 @@ int gmx_mindist(int argc, char *argv[])
             dump_res(debug, nres, residues, index[0]);
         }
     }
+    else if (bEachResEachTime || bPrintResName)
+    {
+        gmx_fatal(FARGS, "Option -or needs to be set to print residues");
+    }
 
     if (bPI)
     {
