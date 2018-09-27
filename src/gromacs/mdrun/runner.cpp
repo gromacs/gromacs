@@ -1022,7 +1022,7 @@ int Mdrunner::mdrunner()
         {
             int nonbondedDeviceId = nbGpuTaskMapping->deviceId_;
             nonbondedDeviceInfo = getDeviceInfo(hwinfo->gpu_info, nonbondedDeviceId);
-            init_gpu(mdlog, nonbondedDeviceInfo);
+            init_gpu(nonbondedDeviceInfo);
 
             if (DOMAINDECOMP(cr))
             {
@@ -1046,7 +1046,7 @@ int Mdrunner::mdrunner()
     if (thisRankHasPmeGpuTask)
     {
         pmeDeviceInfo = getDeviceInfo(hwinfo->gpu_info, pmeGpuTaskMapping->deviceId_);
-        init_gpu(mdlog, pmeDeviceInfo);
+        init_gpu(pmeDeviceInfo);
         pmeGpuProgram = buildPmeGpuProgram(pmeDeviceInfo);
         // TODO It would be nice to move this logic into the factory
         // function. See Redmine #2535.

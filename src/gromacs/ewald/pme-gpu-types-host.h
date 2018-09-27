@@ -201,7 +201,7 @@ struct PmeGpu
     int nAtomsAlloc;
 
     /*! \brief A pointer to the device used during the execution. */
-    gmx_device_info_t *deviceInfo;
+    const gmx_device_info_t *deviceInfo;
 
     /*! \brief Kernel scheduling grid width limit in X - derived from deviceinfo compute capability in CUDA.
      * Declared as very large int to make it useful in computations with type promotion, to avoid overflows.
