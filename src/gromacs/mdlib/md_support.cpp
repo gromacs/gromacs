@@ -160,6 +160,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
                      gmx::SimulationSignaller *signalCoordinator,
                      matrix box,
                      gmx::AccumulateGlobals *accumulateGlobals,
+                     const gmx_multisim_t *ms, bool doInterSimSignal,
                      int *totalNumberOfBondedInteractions,
                      gmx_bool *bSumEkinhOld, int flags)
 {
@@ -238,6 +239,19 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
                             *bSumEkinhOld, flags);
                 accumulateGlobals->notifyClientsAfterCommunication();
                 wallcycle_stop(wcycle, ewcMoveE);
+            }
+            if (doInterSimSignal && accumulateGlobals->isMultiSimReductionRequired())
+            {
+                GMX_ASSERT(isMultiSim(ms), "Cannot do inter-simulation signalling without a multi-simulation");
+                auto      multiSimReductionView = accumulateGlobals->getMultiSimReductionView();
+                const int reductionSize         = static_cast<int>(multiSimReductionView.size());
+                if (MASTER(cr))
+                {
+                    // Communicate the signals between the simulations.
+                    gmx_sumd_sim(reductionSize, multiSimReductionView.data(), ms);
+                }
+                // Communicate the signals from the master to the others.
+                gmx_bcast(reductionSize*sizeof(multiSimReductionView[0]), multiSimReductionView.data(), cr);
             }
             signalCoordinator->finalizeSignals();
             *bSumEkinhOld = FALSE;
