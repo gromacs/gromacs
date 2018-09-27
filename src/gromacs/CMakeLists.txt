@@ -44,6 +44,11 @@ set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
 set_property(GLOBAL PROPERTY GMX_AVX_512_SOURCE)
 
 add_library(libgromacs_external OBJECT "")
+if(CMAKE_COMPILER_IS_GNUCXX)
+    # Keep quiet about e.g. linearalgebra module
+    target_compile_options(libgromacs_external PRIVATE ${CXXFLAGS_NO_STRINGOP_TRUNCATION})
+endif()
+
 add_library(libgromacs_generated OBJECT "")
 if (BUILD_SHARED_LIBS)
     set_target_properties(libgromacs_external PROPERTIES POSITION_INDEPENDENT_CODE true)

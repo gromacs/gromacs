@@ -208,6 +208,11 @@ void warning_error_and_exit(warninp_t wi, const char *s, int f_errno, const char
     check_warning_error_impl(wi, f_errno, file, line);
 }
 
+void warning_error_and_exit(warninp_t wi, const std::string &s, int f_errno, const char *file, int line)
+{
+    warning_error_and_exit(wi, s.c_str(), f_errno, file, line);
+}
+
 gmx_bool warning_errors_exist(warninp_t wi)
 {
     return (wi->nwarn_error > 0);

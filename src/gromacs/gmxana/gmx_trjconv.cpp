@@ -905,7 +905,7 @@ int gmx_trjconv(int argc, char *argv[])
     char              out_file2[256], *charpt;
     char             *outf_base = nullptr;
     const char       *outf_ext  = nullptr;
-    char              top_title[256], title[256], timestr[32], stepstr[32], filemode[5];
+    char              top_title[256], timestr[32], stepstr[32], filemode[5];
     gmx_output_env_t *oenv;
 
     t_filenm          fnm[] = {
@@ -1777,6 +1777,7 @@ int gmx_trjconv(int argc, char *argv[])
                             mk_filenm(outf_base, ftp2ext(ftp), nzero, file_nr, out_file2);
                         }
 
+                        std::string title;
                         switch (ftp)
                         {
                             case efTNG:
@@ -1858,7 +1859,7 @@ int gmx_trjconv(int argc, char *argv[])
                                 {
                                     std::strcpy(stepstr, "");
                                 }
-                                snprintf(title, 256, "%s%s%s", top_title, timestr, stepstr);
+                                title = gmx::formatString("%s%s%s", top_title, timestr, stepstr);
                                 if (bSeparate || bSplitHere)
                                 {
                                     out = gmx_ffopen(out_file2, "w");
@@ -1866,7 +1867,7 @@ int gmx_trjconv(int argc, char *argv[])
                                 switch (ftp)
                                 {
                                     case efGRO:
-                                        write_hconf_p(out, title, &useatoms,
+                                        write_hconf_p(out, title.c_str(), &useatoms,
                                                       frout.x, frout.bV ? frout.v : nullptr, frout.box);
                                         break;
                                     case efPDB:
@@ -1882,14 +1883,14 @@ int gmx_trjconv(int argc, char *argv[])
                                         {
                                             model_nr++;
                                         }
-                                        write_pdbfile(out, title, &useatoms, frout.x,
+                                        write_pdbfile(out, title.c_str(), &useatoms, frout.x,
                                                       frout.ePBC, frout.box, ' ', model_nr, gc, TRUE);
                                         break;
                                     case efG96:
                                         const char *outputTitle = "";
                                         if (bSeparate || bTDump)
                                         {
-                                            outputTitle = title;
+                                            outputTitle = title.c_str();
                                             if (bTPS)
                                             {
                                                 frout.bAtoms = TRUE;
@@ -1902,7 +1903,7 @@ int gmx_trjconv(int argc, char *argv[])
                                         {
                                             if (outframe == 0)
                                             {
-                                                outputTitle = title;
+                                                outputTitle = title.c_str();
                                             }
                                             frout.bAtoms = FALSE;
                                             frout.bStep  = TRUE;

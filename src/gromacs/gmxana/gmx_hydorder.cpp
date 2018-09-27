@@ -475,8 +475,8 @@ static void writesurftoxpms(real ***surf, int tblocks, int xbins, int ybins, rea
         yticks[j] += bw;
     }
 
-    xpmfile1 = gmx_ffopen(outfiles[0].c_str(), "w");
-    xpmfile2 = gmx_ffopen(outfiles[1].c_str(), "w");
+    xpmfile1 = gmx_ffopen(outfiles[0], "w");
+    xpmfile2 = gmx_ffopen(outfiles[1], "w");
 
     max1 = max2 = 0.0;
     min1 = min2 = 1000.00;
@@ -533,8 +533,8 @@ static void writeraw(real ***surf, int tblocks, int xbins, int ybins,
     FILE *raw1, *raw2;
     int   i, j, n;
 
-    raw1 = gmx_ffopen(fnms[0].c_str(), "w");
-    raw2 = gmx_ffopen(fnms[1].c_str(), "w");
+    raw1 = gmx_ffopen(fnms[0], "w");
+    raw2 = gmx_ffopen(fnms[1], "w");
     fprintf(raw1, "#Legend\n#TBlock\n#Xbin Ybin Z t\n");
     fprintf(raw2, "#Legend\n#TBlock\n#Xbin Ybin Z t\n");
     for (n = 0; n < tblocks; n++)

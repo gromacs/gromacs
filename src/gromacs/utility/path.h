@@ -64,8 +64,18 @@ class Path
         static std::string join(const std::string &path1,
                                 const std::string &path2,
                                 const std::string &path3);
+        //! Return a path using directory separators that suit the execution OS.
         static std::string normalize(const std::string &path);
+        /*! \brief Returns the part of the path before the last
+         * directory separator, if any.
+         *
+         * Path must not contain '.' or '..' elements. */
         static std::string getParentPath(const std::string &path);
+        /*! \brief Returns the parts of the path before and after the
+         * last directory separator, if any.
+         *
+         * Path must not contain '.' or '..' elements. */
+        static std::pair<std::string, std::string> getParentPathAndBasename(const std::string &path);
         static std::string getFilename(const std::string &path);
         static bool hasExtension(const std::string &path);
         static std::string stripExtension(const std::string &path);

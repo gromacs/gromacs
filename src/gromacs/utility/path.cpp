@@ -54,6 +54,7 @@
 
 #include <algorithm>
 #include <string>
+#include <utility>
 
 #include <sys/stat.h>
 
@@ -274,6 +275,18 @@ std::string Path::getParentPath(const std::string &path)
         return std::string();
     }
     return path.substr(0, pos);
+}
+
+std::pair<std::string, std::string> Path::getParentPathAndBasename(const std::string &path)
+{
+    /* Expects that the path doesn't contain "." or "..". If used on a path for
+     * which this isn't guaranteed realpath needs to be called first. */
+    size_t pos = path.find_last_of(cDirSeparators);
+    if (pos == std::string::npos)
+    {
+        return std::make_pair(std::string(), path);
+    }
+    return std::make_pair(path.substr(0, pos), path.substr(pos+1));
 }
 
 std::string Path::getFilename(const std::string &path)
