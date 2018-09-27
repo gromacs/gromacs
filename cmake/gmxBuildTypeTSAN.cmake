@@ -32,9 +32,9 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Custom build type "TSAN", to be used for compiling GROMACS 
-# with clang 3.4 or gcc 4.8 (currently pre-release) with ThreadSanitizer
-# (aka "TSan") turned on, so that the tests can be run to detect data races.
+# Custom build type "TSAN", to be used for compiling GROMACS with
+# clang or gcc with ThreadSanitizer (aka "TSan") turned on, so that
+# the tests can be run to detect data races.
 #
 # The main advantage of the clang version is that there can be a
 # suppressions file that acts at compile time, though there is no use of 
@@ -66,7 +66,7 @@
 # Later, if a blacklist is needed, use something like
 # "-fsanitize-blacklist=${CMAKE_SOURCE_DIR}/cmake/thread-sanitizer.supp"
 # TODO find a better home for this and other suppression files
-set(_flags "-O1 -g -fsanitize=thread")
+set(_flags "-O2 -g -fsanitize=thread")
 
 foreach(_language C CXX)
 
