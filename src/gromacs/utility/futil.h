@@ -95,12 +95,12 @@ void gmx_set_max_backup_count(int count);
  * Note that this returns `TRUE` even if \p fname is a directory instead of a
  * file.
  */
-gmx_bool gmx_fexist(const char *fname);
+gmx_bool gmx_fexist(const std::string &fname);
 
 /*! \brief
  * Makes a backup of file if the file exists.
  */
-void make_backup(const char *file);
+void make_backup(const std::string &file);
 
 /*! \brief
  * Opens a file, with \Gromacs-specific additions.
@@ -115,7 +115,7 @@ void make_backup(const char *file);
  * overwriting it.
  * A fatal error results if the file cannot be opened, for whatever reason.
  */
-FILE *gmx_ffopen(const char *file, const char *mode);
+FILE *gmx_ffopen(const std::string &file, const char *mode);
 
 /** Closes a file opened with gmx_ffopen(). */
 int gmx_ffclose(FILE *fp);
@@ -135,7 +135,7 @@ int gmx_fseek(FILE *stream, gmx_off_t offset, int whence);
 gmx_off_t gmx_ftell(FILE *stream);
 
 /** OS-independent truncate(). */
-int gmx_truncate(const char *filename, gmx_off_t length);
+int gmx_truncate(const std::string &filename, gmx_off_t length);
 
 namespace gmx
 {

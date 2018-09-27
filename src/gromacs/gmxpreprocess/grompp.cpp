@@ -1506,26 +1506,33 @@ static void checkDecoupledModeAccuracy(const gmx_mtop_t *mtop,
 
     if (haveDecoupledMode)
     {
-        char modeMessage[STRLEN];
-        sprintf(modeMessage, "There are atoms at both ends of an angle, connected by constraints and with masses that differ by more than a factor of %g. This means that there are likely dynamic modes that are only very weakly coupled.",
-                massFactorThreshold);
-        char buf[STRLEN];
+        std::string message = gmx::formatString(
+                    "There are atoms at both ends of an angle, connected by constraints "
+                    "and with masses that differ by more than a factor of %g. This means "
+                    "that there are likely dynamic modes that are only very weakly coupled.",
+                    massFactorThreshold);
         if (ir->cutoff_scheme == ecutsVERLET)
         {
-            sprintf(buf, "%s To ensure good equipartitioning, you need to either not use constraints on all bonds (but, if possible, only on bonds involving hydrogens) or use integrator = %s or decrease one or more tolerances: verlet-buffer-tolerance <= %g, LINCS iterations >= %d, LINCS order >= %d or SHAKE tolerance <= %g",
-                    modeMessage,
-                    ei_names[eiSD1],
-                    bufferToleranceThreshold,
-                    lincsIterationThreshold, lincsOrderThreshold,
-                    shakeToleranceThreshold);
+            message += gmx::formatString(
+                        " To ensure good equipartitioning, you need to either not use "
+                        "constraints on all bonds (but, if possible, only on bonds involving "
+                        "hydrogens) or use integrator = %s or decrease one or more tolerances: "
+                        "verlet-buffer-tolerance <= %g, LINCS iterations >= %d, LINCS order "
+                        ">= %d or SHAKE tolerance <= %g",
+                        ei_names[eiSD1],
+                        bufferToleranceThreshold,
+                        lincsIterationThreshold, lincsOrderThreshold,
+                        shakeToleranceThreshold);
         }
         else
         {
-            sprintf(buf, "%s To ensure good equipartitioning, we suggest to switch to the %s cutoff-scheme, since that allows for better control over the Verlet buffer size and thus over the energy drift.",
-                    modeMessage,
-                    ecutscheme_names[ecutsVERLET]);
+            message += gmx::formatString(
+                        " To ensure good equipartitioning, we suggest to switch to the %s "
+                        "cutoff-scheme, since that allows for better control over the Verlet "
+                        "buffer size and thus over the energy drift.",
+                        ecutscheme_names[ecutsVERLET]);
         }
-        warning(wi, buf);
+        warning(wi, message);
     }
 }
 
