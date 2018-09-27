@@ -195,10 +195,41 @@ TEST(RVecTest, CanScaleRVecInplace)
     RVec a(1, 2, 3);
     real b = 2.0;
     RVec c;
-    c = a.scale(b);
+    c = a*b;
     EXPECT_EQ(2, c[XX]);
     EXPECT_EQ(4, c[YY]);
     EXPECT_EQ(6, c[ZZ]);
+}
+
+TEST(RVecTest, CanDivideRVecInplace)
+{
+    RVec a(1, 2, 3);
+    real b = 0.5;
+    RVec c;
+    c = a/b;
+    EXPECT_EQ(2, c[XX]);
+    EXPECT_EQ(4, c[YY]);
+    EXPECT_EQ(6, c[ZZ]);
+}
+
+TEST(RVecTest, CanScaleRVec)
+{
+    RVec a(1, 2, 3);
+    real b = 2.0;
+    a *= b;
+    EXPECT_EQ(2, a[XX]);
+    EXPECT_EQ(4, a[YY]);
+    EXPECT_EQ(6, a[ZZ]);
+}
+
+TEST(RVecTest, CanDivideRVec)
+{
+    RVec a(1, 2, 3);
+    real b = 0.5;
+    a /= b;
+    EXPECT_EQ(2, a[XX]);
+    EXPECT_EQ(4, a[YY]);
+    EXPECT_EQ(6, a[ZZ]);
 }
 
 TEST(RVecTest, CanDoUnitvFromRVec)
@@ -251,17 +282,6 @@ TEST(RVecTest, CanCastToDVec)
 /*! \brief
  * Tests for out of class functions
  */
-TEST(RVecTest, CanScaleRVec)
-{
-    RVec a(1, 2, 3);
-    real b = 2.0;
-    RVec c;
-    c = gmx::scale(a, b);
-    EXPECT_EQ(2, c[XX]);
-    EXPECT_EQ(4, c[YY]);
-    EXPECT_EQ(6, c[ZZ]);
-}
-
 TEST(RVecTest, CanGetUnitvFromRVec)
 {
     RVec a(3, 0, 0);
