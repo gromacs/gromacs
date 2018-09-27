@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="Length Read">64</Int>
+  <Sequence Name="Digest">
+    <Int Name="Length">16</Int>
+    <Int>43</Int>
+    <Int>1</Int>
+    <Int>143</Int>
+    <Int>163</Int>
+    <Int>159</Int>
+    <Int>148</Int>
+    <Int>20</Int>
+    <Int>178</Int>
+    <Int>183</Int>
+    <Int>231</Int>
+    <Int>96</Int>
+    <Int>154</Int>
+    <Int>66</Int>
+    <Int>6</Int>
+    <Int>127</Int>
+    <Int>100</Int>
+  </Sequence>
+</ReferenceData>
