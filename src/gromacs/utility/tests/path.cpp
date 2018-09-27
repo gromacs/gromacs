@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,8 @@
 
 #include "gromacs/utility/path.h"
 
+#include <utility>
+
 #include <gtest/gtest.h>
 
 namespace
@@ -74,6 +76,77 @@ TEST(PathTest, ConcatenateBeforeExtensionWorks)
     EXPECT_STREQ("simpledir/traj34.tng", gmx::Path::concatenateBeforeExtension("simpledir/traj.tng", "34").c_str());
     EXPECT_STREQ("complex.dir/traj34.tng", gmx::Path::concatenateBeforeExtension("complex.dir/traj.tng", "34").c_str());
     EXPECT_STREQ("complex.dir/traj34", gmx::Path::concatenateBeforeExtension("complex.dir/traj", "34").c_str());
+}
+
+TEST(PathTest, GetParentPathWorks)
+{
+    {
+        auto result = gmx::Path::getParentPath("");
+        EXPECT_EQ("", result);
+    }
+    {
+        auto result = gmx::Path::getParentPath("file.txt");
+        EXPECT_EQ("", result);
+    }
+    {
+        auto result = gmx::Path::getParentPath("dir/file.txt");
+        EXPECT_EQ("dir", result);
+    }
+    {
+        auto result = gmx::Path::getParentPath("windowsdir\\file.txt");
+        EXPECT_EQ("windowsdir", result);
+    }
+    {
+        auto result = gmx::Path::getParentPath("dir/anotherdir/file.txt");
+        EXPECT_EQ("dir/anotherdir", result);
+    }
+    {
+        auto result = gmx::Path::getParentPath("dir");
+        EXPECT_EQ("", result);
+    }
+    {
+        auto result = gmx::Path::getParentPath("dir/anotherdir");
+        EXPECT_EQ("dir", result);
+    }
+}
+
+TEST(PathTest, GetParentPathAndBasenameWorks)
+{
+    {
+        auto result = gmx::Path::getParentPathAndBasename("");
+        EXPECT_EQ("", std::get<0>(result));
+        EXPECT_EQ("", std::get<1>(result));
+    }
+    {
+        auto result = gmx::Path::getParentPathAndBasename("file.txt");
+        EXPECT_EQ("", std::get<0>(result));
+        EXPECT_EQ("file.txt", std::get<1>(result));
+    }
+    {
+        auto result = gmx::Path::getParentPathAndBasename("dir/file.txt");
+        EXPECT_EQ("dir", std::get<0>(result));
+        EXPECT_EQ("file.txt", std::get<1>(result));
+    }
+    {
+        auto result = gmx::Path::getParentPathAndBasename("windowsdir\\file.txt");
+        EXPECT_EQ("windowsdir", std::get<0>(result));
+        EXPECT_EQ("file.txt", std::get<1>(result));
+    }
+    {
+        auto result = gmx::Path::getParentPathAndBasename("dir/anotherdir/file.txt");
+        EXPECT_EQ("dir/anotherdir", std::get<0>(result));
+        EXPECT_EQ("file.txt", std::get<1>(result));
+    }
+    {
+        auto result = gmx::Path::getParentPathAndBasename("dir");
+        EXPECT_EQ("", std::get<0>(result));
+        EXPECT_EQ("dir", std::get<1>(result));
+    }
+    {
+        auto result = gmx::Path::getParentPathAndBasename("dir/anotherdir");
+        EXPECT_EQ("dir", std::get<0>(result));
+        EXPECT_EQ("anotherdir", std::get<1>(result));
+    }
 }
 
 } // namespace

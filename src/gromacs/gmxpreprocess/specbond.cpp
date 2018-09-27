@@ -280,19 +280,19 @@ int mk_specbonds(t_atoms *pdba, rvec x[], bool bInteractive,
                 e = std::min(b+MAXCOL, nspec-1);
                 for (i = b; (i < e); i++)
                 {
-                    sprintf(buf, "%s%d", *pdba->atomname[sgp[i]], sgp[i]+1);
-                    fprintf(stderr, "%8s", buf);
+                    std::string buf = gmx::formatString("%s%d", *pdba->atomname[sgp[i]], sgp[i]+1);
+                    fprintf(stderr, "%8s", buf.c_str());
                 }
                 fprintf(stderr, "\n");
                 /* print matrix */
                 e = std::min(b+MAXCOL, nspec);
                 for (i = b+1; (i < nspec); i++)
                 {
-                    sprintf(buf, "%s%d", *pdba->resinfo[pdba->atom[sgp[i]].resind].name,
-                            pdba->resinfo[specp[i]].nr);
-                    fprintf(stderr, "%8s", buf);
-                    sprintf(buf, "%s%d", *pdba->atomname[sgp[i]], sgp[i]+1);
-                    fprintf(stderr, "%8s", buf);
+                    std::string buf = gmx::formatString("%s%d", *pdba->resinfo[pdba->atom[sgp[i]].resind].name,
+                                                        pdba->resinfo[specp[i]].nr);
+                    fprintf(stderr, "%8s", buf.c_str());
+                    buf = gmx::formatString("%s%d", *pdba->atomname[sgp[i]], sgp[i]+1);
+                    fprintf(stderr, "%8s", buf.c_str());
                     e2 = std::min(i, e);
                     for (j = b; (j < e2); j++)
                     {

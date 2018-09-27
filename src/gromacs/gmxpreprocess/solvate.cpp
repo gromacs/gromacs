@@ -747,7 +747,7 @@ static void update_top(t_atoms *atoms, int firstSolventResidueIndex, matrix box,
                        gmx_atomprop_t aps)
 {
     FILE        *fpin, *fpout;
-    char         buf[STRLEN], buf2[STRLEN], *temp;
+    char         buf[STRLEN*2], buf2[STRLEN], *temp;
     const char  *topinout;
     int          line;
     bool         bSystem;

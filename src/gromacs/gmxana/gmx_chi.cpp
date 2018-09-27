@@ -61,6 +61,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 static gmx_bool bAllowed(real phi, real psi)
 {
@@ -480,7 +481,7 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
     int      ***his_aa, *histmp;
     int         i, j, k, m, n, nn, Dih, nres, hindex, angle;
     gmx_bool    bBfac, bOccup;
-    char        hisfile[256], hhisfile[256], sshisfile[256], title[256], *ss_str = nullptr;
+    char        hisfile[256], hhisfile[256], title[256], *ss_str = nullptr;
     char      **leg;
     const char *residue_name;
     int         rt_size;
@@ -784,7 +785,7 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
                 {
                     for (k = 0; (k < 3); k++)
                     {
-                        sprintf(sshisfile, "%s-%s.xvg", hisfile, sss[k]);
+                        std::string sshisfile = gmx::formatString("%s-%s.xvg", hisfile, sss[k]);
                         ssfp[k] = gmx_ffopen(sshisfile, "w");
                     }
                 }

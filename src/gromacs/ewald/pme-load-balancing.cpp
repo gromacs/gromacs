@@ -77,6 +77,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strconvert.h"
 
 #include "pme-internal.h"
 
@@ -431,28 +432,21 @@ static void print_grid(FILE *fp_err, FILE *fp_log,
                        const pme_setup_t *set,
                        double cycles)
 {
-    char buf[STRLEN], buft[STRLEN];
-
+    auto buf = gmx::formatString("%-11s%10s pme grid %d %d %d, coulomb cutoff %.3f",
+                                 pre, desc,
+                                 set->grid[XX], set->grid[YY], set->grid[ZZ], set->rcut_coulomb);
     if (cycles >= 0)
     {
-        sprintf(buft, ": %.1f M-cycles", cycles*1e-6);
+        buf += gmx::formatString(": %.1f M-cycles", cycles*1e-6);
     }
-    else
-    {
-        buft[0] = '\0';
-    }
-    sprintf(buf, "%-11s%10s pme grid %d %d %d, coulomb cutoff %.3f%s",
-            pre,
-            desc, set->grid[XX], set->grid[YY], set->grid[ZZ], set->rcut_coulomb,
-            buft);
     if (fp_err != nullptr)
     {
-        fprintf(fp_err, "\r%s\n", buf);
+        fprintf(fp_err, "\r%s\n", buf.c_str());
         fflush(fp_err);
     }
     if (fp_log != nullptr)
     {
-        fprintf(fp_log, "%s\n", buf);
+        fprintf(fp_log, "%s\n", buf.c_str());
     }
 }
 
@@ -475,20 +469,18 @@ static void print_loadbal_limited(FILE *fp_err, FILE *fp_log,
                                   int64_t step,
                                   pme_load_balancing_t *pme_lb)
 {
-    char buf[STRLEN], sbuf[22];
-
-    sprintf(buf, "step %4s: the %s limits the PME load balancing to a coulomb cut-off of %.3f",
-            gmx_step_str(step, sbuf),
-            pmelblim_str[pme_lb->elimited],
-            pme_lb->setup[pme_loadbal_end(pme_lb)-1].rcut_coulomb);
+    auto buf = gmx::formatString("step %4s: the %s limits the PME load balancing to a coulomb cut-off of %.3f",
+                                 gmx::int64ToString(step).c_str(),
+                                 pmelblim_str[pme_lb->elimited],
+                                 pme_lb->setup[pme_loadbal_end(pme_lb)-1].rcut_coulomb);
     if (fp_err != nullptr)
     {
-        fprintf(fp_err, "\r%s\n", buf);
+        fprintf(fp_err, "\r%s\n", buf.c_str());
         fflush(fp_err);
     }
     if (fp_log != nullptr)
     {
-        fprintf(fp_log, "%s\n", buf);
+        fprintf(fp_log, "%s\n", buf.c_str());
     }
 }
 

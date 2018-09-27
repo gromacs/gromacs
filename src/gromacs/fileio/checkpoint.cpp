@@ -1855,13 +1855,12 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     snew(fntemp, std::strlen(fn));
     std::strcpy(fntemp, fn);
 #endif
-    char timebuf[STRLEN];
-    gmx_format_current_time(timebuf, STRLEN);
+    std::string timebuf = gmx_format_current_time();
 
     if (fplog)
     {
         fprintf(fplog, "Writing checkpoint, step %s at %s\n\n",
-                gmx_step_str(step, buf), timebuf);
+                gmx_step_str(step, buf), timebuf.c_str());
     }
 
     /* Get offsets for open files */
@@ -1964,7 +1963,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     };
     std::strcpy(headerContents.version, gmx_version());
     std::strcpy(headerContents.fprog, gmx::getProgramContext().fullBinaryPath());
-    std::strcpy(headerContents.ftime, timebuf);
+    std::strcpy(headerContents.ftime, timebuf.c_str());
     if (DOMAINDECOMP(cr))
     {
         copy_ivec(domdecCells, headerContents.dd_nc);
@@ -2575,7 +2574,7 @@ void read_checkpoint_part_and_step(const char  *filename,
 
     if (filename == nullptr ||
         !gmx_fexist(filename) ||
-        (!(fp = gmx_fio_open(filename, "r"))))
+        ((fp = gmx_fio_open(filename, "r")) == nullptr))
     {
         *simulation_part = 0;
         *step            = 0;
