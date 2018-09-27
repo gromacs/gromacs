@@ -110,6 +110,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/sysinfo.h"
 
 #include "nbnxn_gpu.h"
@@ -130,9 +131,7 @@ void print_time(FILE                     *out,
                 const t_commrec          *cr)
 {
     time_t finish;
-    char   timebuf[STRLEN];
     double dt, elapsed_seconds, time_per_step;
-    char   buf[48];
 
 #if !GMX_THREAD_MPI
     if (!PAR(cr))
@@ -140,7 +139,8 @@ void print_time(FILE                     *out,
     {
         fprintf(out, "\r");
     }
-    fprintf(out, "step %s", gmx_step_str(step, buf));
+    fputs("step ", out);
+    fputs(gmx::int64ToString(step).c_str(), out);
     fflush(out);
 
     if ((step >= ir->nstlist))
@@ -155,10 +155,9 @@ void print_time(FILE                     *out,
             if (dt >= 300)
             {
                 finish = static_cast<time_t>(seconds_since_epoch + dt);
-                gmx_ctime_r(&finish, timebuf, STRLEN);
-                sprintf(buf, "%s", timebuf);
-                buf[strlen(buf)-1] = '\0';
-                fprintf(out, ", will finish %s", buf);
+                auto timebuf = gmx_ctime_r(&finish);
+                fputs(", will finish ", out);
+                fputs(timebuf.c_str(), out);
             }
             else
             {
@@ -186,27 +185,18 @@ void print_time(FILE                     *out,
 void print_date_and_time(FILE *fplog, int nodeid, const char *title,
                          double the_time)
 {
-    char   time_string[STRLEN];
-
     if (!fplog)
     {
         return;
     }
 
-    {
-        int    i;
-        char   timebuf[STRLEN];
-        time_t temp_time = static_cast<time_t>(the_time);
+    time_t temp_time = static_cast<time_t>(the_time);
 
-        gmx_ctime_r(&temp_time, timebuf, STRLEN);
-        for (i = 0; timebuf[i] >= ' '; i++)
-        {
-            time_string[i] = timebuf[i];
-        }
-        time_string[i] = '\0';
-    }
+    auto   timebuf = gmx_ctime_r(&temp_time);
+    // Retain only the characters before the first space
+    timebuf.erase(std::find(timebuf.begin(), timebuf.end(), ' '), timebuf.end());
 
-    fprintf(fplog, "%s on rank %d %s\n", title, nodeid, time_string);
+    fprintf(fplog, "%s on rank %d %s\n", title, nodeid, timebuf.c_str());
 }
 
 void print_start(FILE *fplog, const t_commrec *cr,

@@ -224,7 +224,7 @@ choose_ff_impl(const char *ffsel,
                 // TODO: Use a C++ API without such an intermediate/fixed-length buffer.
                 char  buf[STRLEN];
                 /* We don't use fflib_open, because we don't want printf's */
-                FILE *fp = gmx_ffopen(docFileName.c_str(), "r");
+                FILE *fp = gmx_ffopen(docFileName, "r");
                 get_a_line(fp, buf, STRLEN);
                 gmx_ffclose(fp);
                 desc.emplace_back(buf);

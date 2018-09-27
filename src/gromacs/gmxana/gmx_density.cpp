@@ -89,7 +89,7 @@ static int get_electrons(t_electron **eltab, const char *fn)
     int   nr;        /* number of atomstypes to read */
     int   i;
 
-    if (!(in = gmx_ffopen(fn, "r")))
+    if ((in = gmx_ffopen(fn, "r")) == nullptr)
     {
         gmx_fatal(FARGS, "Couldn't open %s. Exiting.\n", fn);
     }
