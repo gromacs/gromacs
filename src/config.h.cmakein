@@ -244,9 +244,6 @@
 /* Cluster size used by nonbonded OpenCL kernel. Should be 8 for NVIDIA/AMD and 4 for Intel */
 #define GMX_OCL_NB_CLUSTER_SIZE @GMX_OCL_NB_CLUSTER_SIZE@
 
-/* Use NVML */
-#cmakedefine01 HAVE_NVML
-
 /* Define relative path to OpenCL kernels */
 #define GMX_INSTALL_OCLDIR "@GMX_INSTALL_OCLDIR@"
 

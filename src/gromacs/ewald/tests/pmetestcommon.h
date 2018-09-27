@@ -120,14 +120,14 @@ uint64_t getSplineModuliDoublePrecisionUlps(int splineOrder);
 //! Simple PME initialization (no atom data)
 PmeSafePointer pmeInitEmpty(const t_inputrec *inputRec,
                             CodePath mode = CodePath::CPU,
-                            gmx_device_info_t *gpuInfo = nullptr,
+                            const gmx_device_info_t *gpuInfo = nullptr,
                             PmeGpuProgramHandle pmeGpuProgram = nullptr,
                             const Matrix3x3 &box = {{1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}},
                             real ewaldCoeff_q = 0.0f, real ewaldCoeff_lj = 0.0f);
 //! PME initialization with atom data and system box
 PmeSafePointer pmeInitAtoms(const t_inputrec         *inputRec,
                             CodePath                  mode,
-                            gmx_device_info_t        *gpuInfo,
+                            const gmx_device_info_t  *gpuInfo,
                             PmeGpuProgramHandle       pmeGpuProgram,
                             const CoordinatesVector  &coordinates,
                             const ChargesVector      &charges,
