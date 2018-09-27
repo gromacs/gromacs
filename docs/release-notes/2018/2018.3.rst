@@ -137,6 +137,14 @@ the missing checks that prevents the failure.
 Fix enforced rotation energy output
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+Fix mindist output file checks
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+mindist would not check if the output file needed to print residue names and
+residue contacts over time was actually defined, leading to errors with
+empty file name strings.
+
+:issue:`2653`
 
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
