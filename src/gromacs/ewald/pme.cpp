@@ -603,21 +603,21 @@ static int div_round_up(int enumerator, int denominator)
     return (enumerator + denominator - 1)/denominator;
 }
 
-gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
-                        const NumPmeDomains &numPmeDomains,
-                        const t_inputrec    *ir,
-                        int                  homenr,
-                        gmx_bool             bFreeEnergy_q,
-                        gmx_bool             bFreeEnergy_lj,
-                        gmx_bool             bReproducible,
-                        real                 ewaldcoeff_q,
-                        real                 ewaldcoeff_lj,
-                        int                  nthread,
-                        PmeRunMode           runMode,
-                        PmeGpu              *pmeGpu,
-                        gmx_device_info_t   *gpuInfo,
-                        PmeGpuProgramHandle  pmeGpuProgram,
-                        const gmx::MDLogger  & /*mdlog*/)
+gmx_pme_t *gmx_pme_init(const t_commrec         *cr,
+                        const NumPmeDomains     &numPmeDomains,
+                        const t_inputrec        *ir,
+                        int                      homenr,
+                        gmx_bool                 bFreeEnergy_q,
+                        gmx_bool                 bFreeEnergy_lj,
+                        gmx_bool                 bReproducible,
+                        real                     ewaldcoeff_q,
+                        real                     ewaldcoeff_lj,
+                        int                      nthread,
+                        PmeRunMode               runMode,
+                        PmeGpu                  *pmeGpu,
+                        const gmx_device_info_t *gpuInfo,
+                        PmeGpuProgramHandle      pmeGpuProgram,
+                        const gmx::MDLogger      & /*mdlog*/)
 {
     int               use_threads, sum_use_threads, i;
     ivec              ndata;

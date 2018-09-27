@@ -755,9 +755,9 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t *pme)
  * \param[in,out] gpuInfo        The GPU information structure.
  * \param[in]     pmeGpuProgram  The handle to the program/kernel data created outside (e.g. in unit tests/runner)
  */
-static void pme_gpu_init(gmx_pme_t          *pme,
-                         gmx_device_info_t  *gpuInfo,
-                         PmeGpuProgramHandle pmeGpuProgram)
+static void pme_gpu_init(gmx_pme_t               *pme,
+                         const gmx_device_info_t *gpuInfo,
+                         PmeGpuProgramHandle      pmeGpuProgram)
 {
     pme->gpu          = new PmeGpu();
     PmeGpu *pmeGpu = pme->gpu;
@@ -856,9 +856,9 @@ void pme_gpu_get_real_grid_sizes(const PmeGpu *pmeGpu, gmx::IVec *gridSize, gmx:
     }
 }
 
-void pme_gpu_reinit(gmx_pme_t          *pme,
-                    gmx_device_info_t  *gpuInfo,
-                    PmeGpuProgramHandle pmeGpuProgram)
+void pme_gpu_reinit(gmx_pme_t               *pme,
+                    const gmx_device_info_t *gpuInfo,
+                    PmeGpuProgramHandle      pmeGpuProgram)
 {
     if (!pme_gpu_active(pme))
     {
