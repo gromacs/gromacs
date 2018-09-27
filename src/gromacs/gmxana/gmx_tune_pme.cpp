@@ -1129,7 +1129,6 @@ static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes,
                     int nPMEnodes, int nr, gmx_bool bKeepStderr)
 {
     char        numstring[STRLEN];
-    char        newfilename[STRLEN];
     const char *fn = nullptr;
     int         i;
     const char *opt;
@@ -1153,12 +1152,12 @@ static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes,
             {
                 sprintf(numstring, "_%d", nr);
             }
-            sprintf(newfilename, "%s_no%d_np%d_npme%d%s", opt2fn("-bg", nfile, fnm), k, nnodes, nPMEnodes, numstring);
+            std::string newfilename = gmx::formatString("%s_no%d_np%d_npme%d%s", opt2fn("-bg", nfile, fnm), k, nnodes, nPMEnodes, numstring);
             if (gmx_fexist(opt2fn("-bg", nfile, fnm)))
             {
-                fprintf(stdout, "renaming log file to %s\n", newfilename);
-                make_backup(newfilename);
-                rename(opt2fn("-bg", nfile, fnm), newfilename);
+                fprintf(stdout, "renaming log file to %s\n", newfilename.c_str());
+                make_backup(newfilename.c_str());
+                rename(opt2fn("-bg", nfile, fnm), newfilename.c_str());
             }
         }
         else if (std::strcmp(opt, "-err") == 0)
@@ -1171,14 +1170,14 @@ static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes,
             {
                 sprintf(numstring, "_%d", nr);
             }
-            sprintf(newfilename, "%s_no%d_np%d_npme%d%s", fn, k, nnodes, nPMEnodes, numstring);
+            std::string newfilename = gmx::formatString("%s_no%d_np%d_npme%d%s", fn, k, nnodes, nPMEnodes, numstring);
             if (gmx_fexist(fn))
             {
                 if (bKeepStderr)
                 {
-                    fprintf(stdout, "Saving stderr output in %s\n", newfilename);
-                    make_backup(newfilename);
-                    rename(fn, newfilename);
+                    fprintf(stdout, "Saving stderr output in %s\n", newfilename.c_str());
+                    make_backup(newfilename.c_str());
+                    rename(fn, newfilename.c_str());
                 }
                 else
                 {

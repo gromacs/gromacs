@@ -369,6 +369,12 @@ int get_eint(std::vector<t_inpfile> *inp, const char *name, int def,
     }
 }
 
+int get_eint(std::vector<t_inpfile> *inp, const std::string &name, int def,
+             warninp_t wi)
+{
+    return get_eint(inp, name.c_str(), def, wi);
+}
+
 /* Note that sanitizing the trailing part of inp[ii].value was the responsibility of read_inpfile() */
 int64_t get_eint64(std::vector<t_inpfile> *inp,
                    const char *name, int64_t def,
@@ -397,6 +403,13 @@ int64_t get_eint64(std::vector<t_inpfile> *inp,
 
         return ret;
     }
+}
+
+int64_t get_eint64(std::vector<t_inpfile> *inp,
+                   const std::string &name, int64_t def,
+                   warninp_t wi)
+{
+    return get_eint64(inp, name.c_str(), def, wi);
 }
 
 /* Note that sanitizing the trailing part of inp[ii].value was the responsibility of read_inpfile() */
@@ -428,6 +441,12 @@ double get_ereal(std::vector<t_inpfile> *inp, const char *name, double def,
     }
 }
 
+double get_ereal(std::vector<t_inpfile> *inp, const std::string &name, double def,
+                 warninp_t wi)
+{
+    return get_ereal(inp, name.c_str(), def, wi);
+}
+
 /* Note that sanitizing the trailing part of inp[ii].value was the responsibility of read_inpfile() */
 const char *get_estr(std::vector<t_inpfile> *inp, const char *name, const char *def)
 {
@@ -454,6 +473,11 @@ const char *get_estr(std::vector<t_inpfile> *inp, const char *name, const char *
     {
         return inpRef[ii].value_.c_str();
     }
+}
+
+const char *get_estr(std::vector<t_inpfile> *inp, const std::string &name, const char *def)
+{
+    return get_estr(inp, name.c_str(), def);
 }
 
 /* Note that sanitizing the trailing part of inp[ii].value was the responsibility of read_inpfile() */
@@ -507,6 +531,12 @@ int get_eeenum(std::vector<t_inpfile> *inp, const char *name, const char **defs,
     }
 
     return i;
+}
+
+int get_eeenum(std::vector<t_inpfile> *inp, const std::string &name, const char **defs,
+               warninp_t wi)
+{
+    return get_eeenum(inp, name.c_str(), defs, wi);
 }
 
 int get_eenum(std::vector<t_inpfile> *inp, const char *name, const char **defs)

@@ -42,6 +42,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <string>
+
 #include "gromacs/awh/awh.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -68,6 +70,7 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 static const char *conrmsd_nm[] = { "Constr. rmsd", "Constr.2 rmsd" };
 
@@ -687,14 +690,11 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
     FILE       *fp;
     const char *dhdl = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda",
     *lambdastate     = "\\lambda state";
-    char        title[STRLEN], label_x[STRLEN], label_y[STRLEN];
-    int         i, nps, nsets, nsets_de, nsetsbegin;
+    int         i, nsets, nsets_de, nsetsbegin;
     int         n_lambda_terms = 0;
     t_lambda   *fep            = ir->fepvals; /* for simplicity */
     t_expanded *expand         = ir->expandedvals;
-    char      **setname;
-    char        buf[STRLEN], lambda_vec_str[STRLEN], lambda_name_str[STRLEN];
-    int         bufplace = 0;
+    char        lambda_vec_str[STRLEN], lambda_name_str[STRLEN];
 
     int         nsets_dhdl = 0;
     int         s          = 0;
@@ -710,34 +710,35 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
         }
     }
 
+    std::string title, label_x, label_y;
     if (fep->n_lambda == 0)
     {
-        sprintf(title, "%s", dhdl);
-        sprintf(label_x, "Time (ps)");
-        sprintf(label_y, "%s (%s %s)",
-                dhdl, unit_energy, "[\\lambda]\\S-1\\N");
+        title   = gmx::formatString("%s", dhdl);
+        label_x = gmx::formatString("Time (ps)");
+        label_y = gmx::formatString("%s (%s %s)",
+                                    dhdl, unit_energy, "[\\lambda]\\S-1\\N");
     }
     else
     {
-        sprintf(title, "%s and %s", dhdl, deltag);
-        sprintf(label_x, "Time (ps)");
-        sprintf(label_y, "%s and %s (%s %s)",
-                dhdl, deltag, unit_energy, "[\\8l\\4]\\S-1\\N");
+        title   = gmx::formatString("%s and %s", dhdl, deltag);
+        label_x = gmx::formatString("Time (ps)");
+        label_y = gmx::formatString("%s and %s (%s %s)",
+                                    dhdl, deltag, unit_energy, "[\\8l\\4]\\S-1\\N");
     }
     fp = gmx_fio_fopen(filename, "w+");
-    xvgr_header(fp, title, label_x, label_y, exvggtXNY, oenv);
+    xvgr_header(fp, title.c_str(), label_x.c_str(), label_y.c_str(), exvggtXNY, oenv);
 
+    std::string buf;
     if (!(ir->bSimTemp))
     {
-        bufplace = sprintf(buf, "T = %g (K) ",
-                           ir->opts.ref_t[0]);
+        buf = gmx::formatString("T = %g (K) ", ir->opts.ref_t[0]);
     }
     if ((ir->efep != efepSLOWGROWTH) && (ir->efep != efepEXPANDED))
     {
         if ( (fep->init_lambda >= 0)  && (n_lambda_terms == 1 ))
         {
             /* compatibility output */
-            sprintf(&(buf[bufplace]), "%s = %.4f", lambda, fep->init_lambda);
+            buf += gmx::formatString("%s = %.4f", lambda, fep->init_lambda);
         }
         else
         {
@@ -745,12 +746,12 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
                                 lambda_vec_str);
             print_lambda_vector(fep, fep->init_fep_state, TRUE, TRUE,
                                 lambda_name_str);
-            sprintf(&(buf[bufplace]), "%s %d: %s = %s",
-                    lambdastate, fep->init_fep_state,
-                    lambda_name_str, lambda_vec_str);
+            buf += gmx::formatString("%s %d: %s = %s",
+                                     lambdastate, fep->init_fep_state,
+                                     lambda_name_str, lambda_vec_str);
         }
     }
-    xvgr_subtitle(fp, buf, oenv);
+    xvgr_subtitle(fp, buf.c_str(), oenv);
 
 
     nsets_dhdl = 0;
@@ -783,29 +784,29 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
                              dhdl.xvg file) */
         write_pV     = TRUE;
     }
-    snew(setname, nsetsextend);
+    std::vector<std::string> setname;
 
     if (expand->elmcmove > elmcmoveNO)
     {
         /* state for the fep_vals, if we have alchemical sampling */
-        sprintf(buf, "%s", "Thermodynamic state");
-        setname[s] = gmx_strdup(buf);
+        setname.push_back("Thermodynamic state");
         s         += 1;
     }
 
     if (fep->edHdLPrintEnergy != edHdLPrintEnergyNO)
     {
+        std::string energy;
         switch (fep->edHdLPrintEnergy)
         {
             case edHdLPrintEnergyPOTENTIAL:
-                sprintf(buf, "%s (%s)", "Potential Energy", unit_energy);
+                energy = gmx::formatString("%s (%s)", "Potential Energy", unit_energy);
                 break;
             case edHdLPrintEnergyTOTAL:
             case edHdLPrintEnergyYES:
             default:
-                sprintf(buf, "%s (%s)", "Total Energy", unit_energy);
+                energy = gmx::formatString("%s (%s)", "Total Energy", unit_energy);
         }
-        setname[s] = gmx_strdup(buf);
+        setname.push_back(energy);
         s         += 1;
     }
 
@@ -815,11 +816,11 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
         {
             if (fep->separate_dvdl[i])
             {
-
+                std::string derivative;
                 if ( (fep->init_lambda >= 0)  && (n_lambda_terms == 1 ))
                 {
                     /* compatibility output */
-                    sprintf(buf, "%s %s %.4f", dhdl, lambda, fep->init_lambda);
+                    derivative = gmx::formatString("%s %s %.4f", dhdl, lambda, fep->init_lambda);
                 }
                 else
                 {
@@ -828,10 +829,10 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
                     {
                         lam = fep->all_lambda[i][fep->init_fep_state];
                     }
-                    sprintf(buf, "%s %s = %.4f", dhdl, efpt_singular_names[i],
-                            lam);
+                    derivative = gmx::formatString("%s %s = %.4f", dhdl, efpt_singular_names[i],
+                                                   lam);
                 }
-                setname[s] = gmx_strdup(buf);
+                setname.push_back(derivative);
                 s         += 1;
             }
         }
@@ -861,40 +862,33 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
         for (i = fep->lambda_start_n; i < fep->lambda_stop_n; i++)
         {
             print_lambda_vector(fep, i, FALSE, FALSE, lambda_vec_str);
+            std::string lambda;
             if ( (fep->init_lambda >= 0)  && (n_lambda_terms == 1 ))
             {
                 /* for compatible dhdl.xvg files */
-                nps = sprintf(buf, "%s %s %s", deltag, lambda, lambda_vec_str);
+                lambda = gmx::formatString("%s %s %s", deltag, lambda.c_str(), lambda_vec_str);
             }
             else
             {
-                nps = sprintf(buf, "%s %s to %s", deltag, lambda, lambda_vec_str);
+                lambda = gmx::formatString("%s %s to %s", deltag, lambda.c_str(), lambda_vec_str);
             }
 
             if (ir->bSimTemp)
             {
                 /* print the temperature for this state if doing simulated annealing */
-                sprintf(&buf[nps], "T = %g (%s)",
-                        ir->simtempvals->temperatures[s-(nsetsbegin)],
-                        unit_temp_K);
+                lambda += gmx::formatString("T = %g (%s)",
+                                            ir->simtempvals->temperatures[s-(nsetsbegin)],
+                                            unit_temp_K);
             }
-            setname[s] = gmx_strdup(buf);
+            setname.push_back(lambda);
             s++;
         }
         if (write_pV)
         {
-            sprintf(buf, "pV (%s)", unit_energy);
-            setname[nsetsextend-1] = gmx_strdup(buf);  /* the first entry after
-                                                          nsets */
+            setname.push_back(gmx::formatString("pV (%s)", unit_energy));
         }
 
-        xvgr_legend(fp, nsetsextend, setname, oenv);
-
-        for (s = 0; s < nsetsextend; s++)
-        {
-            sfree(setname[s]);
-        }
-        sfree(setname);
+        xvgrLegend(fp, setname, oenv);
     }
 
     return fp;

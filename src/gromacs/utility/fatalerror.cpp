@@ -54,6 +54,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/mutex.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/stringutil.h"
 
 #if GMX_MPI
 #include "gromacs/utility/basenetwork.h"
@@ -97,17 +98,17 @@ void gmx_fatal_set_log_file(FILE *fp)
     log_file = fp;
 }
 
-static void default_error_handler(const char *title, const char *msg,
+static void default_error_handler(const char *title, const std::string &msg,
                                   const char *file, int line)
 {
     if (log_file)
     {
         gmx::internal::printFatalErrorHeader(log_file, title, nullptr, file, line);
-        gmx::internal::printFatalErrorMessageLine(log_file, msg, 0);
+        gmx::internal::printFatalErrorMessageLine(log_file, msg.c_str(), 0);
         gmx::internal::printFatalErrorFooter(log_file);
     }
     gmx::internal::printFatalErrorHeader(stderr, title, nullptr, file, line);
-    gmx::internal::printFatalErrorMessageLine(stderr, msg, 0);
+    gmx::internal::printFatalErrorMessageLine(stderr, msg.c_str(), 0);
     gmx::internal::printFatalErrorFooter(stderr);
 }
 
@@ -152,14 +153,12 @@ static const char *gmx_strerror(const char *key)
     return gmx::getErrorCodeString(gmx::eeUnknownError);
 }
 
-static void call_error_handler(const char *key, const char *file, int line, const char *msg)
+static void call_error_handler(const char *key, const char *file, int line, const std::string &msg)
 {
-    if (msg == nullptr)
-    {
-        msg = "Empty gmx_fatal message (bug).";
-    }
     Lock lock(error_mutex);
-    gmx_error_handler(gmx_strerror(key), msg, file, line);
+    gmx_error_handler(gmx_strerror(key),
+                      msg.empty() ? "Empty gmx_fatal message (bug)." : msg,
+                      file, line);
 }
 
 void gmx_exit_on_fatal_error(ExitType exitType, int returnValue)
@@ -213,8 +212,7 @@ void gmx_fatal_mpi_va(int /*f_errno*/, const char *file, int line,
 {
     if (bMaster)
     {
-        char msg[STRLEN];
-        vsprintf(msg, fmt, ap);
+        std::string msg = gmx::formatStringV(fmt, ap);
         call_error_handler("fatal", file, line, msg);
     }
 
@@ -234,7 +232,7 @@ void gmx_fatal(int f_errno, const char *file, int line, gmx_fmtstr const char *f
     va_end(ap);
 }
 
-void _gmx_error(const char *key, const char *msg, const char *file, int line)
+void _gmx_error(const char *key, const std::string &msg, const char *file, int line)
 {
     call_error_handler(key, file, line, msg);
     gmx_exit_on_fatal_error(ExitType_Abort, 1);

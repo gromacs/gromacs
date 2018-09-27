@@ -1849,7 +1849,7 @@ static void read_wham_in(const char *fn, char ***filenamesRet, int *nfilesRet,
 //! Open a file or a pipe to a gzipped file
 static FILE *open_pdo_pipe(const char *fn, t_UmbrellaOptions *opt, gmx_bool *bPipeOpen)
 {
-    char            Buffer[1024], gunzip[1024], *Path = nullptr;
+    char            Buffer[2048], gunzip[1024], *Path = nullptr;
     FILE           *pipe   = nullptr;
     static gmx_bool bFirst = true;
 

@@ -1820,13 +1820,12 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     snew(fntemp, std::strlen(fn));
     std::strcpy(fntemp, fn);
 #endif
-    char timebuf[STRLEN];
-    gmx_format_current_time(timebuf, STRLEN);
+    std:: string timebuf = gmx_format_current_time();
 
     if (fplog)
     {
         fprintf(fplog, "Writing checkpoint, step %s at %s\n\n",
-                gmx_step_str(step, buf), timebuf);
+                gmx_step_str(step, buf), timebuf.c_str());
     }
 
     /* Get offsets for open files */
@@ -1932,7 +1931,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     std::strcpy(headerContents.buser, BUILD_USER);
     std::strcpy(headerContents.bhost, BUILD_HOST);
     std::strcpy(headerContents.fprog, gmx::getProgramContext().fullBinaryPath());
-    std::strcpy(headerContents.ftime, timebuf);
+    std::strcpy(headerContents.ftime, timebuf.c_str());
     if (DOMAINDECOMP(cr))
     {
         copy_ivec(domdecCells, headerContents.dd_nc);

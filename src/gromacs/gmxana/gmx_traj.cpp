@@ -64,6 +64,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 static void low_print_data(FILE *fp, real time, rvec x[], int n, const int *index,
                            const gmx_bool bDim[], const char *sffmt)
@@ -669,7 +670,7 @@ int gmx_traj(int argc, char *argv[])
     t_block          *mols;
     gmx_bool          bTop, bOX, bOXT, bOV, bOF, bOB, bOT, bEKT, bEKR, bCV, bCF;
     gmx_bool          bDim[4], bDum[4], bVD;
-    char              sffmt[STRLEN], sffmt6[STRLEN];
+    char              sffmt[STRLEN];
     const char       *box_leg[6] = { "XX", "YY", "ZZ", "YX", "ZX", "ZY" };
     gmx_output_env_t *oenv;
 
@@ -735,7 +736,7 @@ int gmx_traj(int argc, char *argv[])
     {
         sprintf(sffmt, "\t%%g");
     }
-    sprintf(sffmt6, "%s%s%s%s%s%s", sffmt, sffmt, sffmt, sffmt, sffmt, sffmt);
+    std::string sffmt6 = gmx::formatString("%s%s%s%s%s%s", sffmt, sffmt, sffmt, sffmt, sffmt, sffmt);
 
     bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC,
                          &xtop, nullptr, topbox,
@@ -979,7 +980,7 @@ int gmx_traj(int argc, char *argv[])
         if (bOB && fr.bBox)
         {
             fprintf(outb, "\t%g", fr.time);
-            fprintf(outb, sffmt6,
+            fprintf(outb, sffmt6.c_str(),
                     fr.box[XX][XX], fr.box[YY][YY], fr.box[ZZ][ZZ],
                     fr.box[YY][XX], fr.box[ZZ][XX], fr.box[ZZ][YY]);
             fprintf(outb, "\n");
