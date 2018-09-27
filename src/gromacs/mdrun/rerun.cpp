@@ -375,6 +375,7 @@ void gmx::Integrator::do_rerun()
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                         nullptr, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                         constr, &nullSignaller, state->box, &accumulateGlobals,
+                        ms, false,
                         &totalNumberOfBondedInteractions, &bSumEkinhOld, cglo_flags);
     }
     checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
@@ -621,6 +622,7 @@ void gmx::Integrator::do_rerun()
                             constr, &signaller,
                             state->box,
                             &accumulateGlobals,
+                            ms, doInterSimSignal,
                             &totalNumberOfBondedInteractions, &bSumEkinhOld,
                             CGLO_GSTAT | CGLO_ENERGY
                             | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0)
