@@ -40,6 +40,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <string>
+
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -51,6 +53,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -97,24 +100,21 @@ static t_pdbfile *read_pdbf(const char *fn)
     return pdbf;
 }
 
-static t_pdbfile **read_em_all(const char *fn, int *npdbf)
+static t_pdbfile **read_em_all(const std::string &fn, int *npdbf)
 {
     t_pdbfile **pdbf = nullptr;
     int         i, maxpdbf;
-    char        buf[256], name[256];
     gmx_bool    bExist;
 
-    std::strcpy(buf, fn);
-    buf[std::strlen(buf)-4] = '\0';
     maxpdbf                 = 100;
     snew(pdbf, maxpdbf);
     i = 0;
     do
     {
-        sprintf(name, "%s_%d.pdb", buf, i+1);
-        if ((bExist = gmx_fexist(name)))
+        auto newFilename = gmx::Path::concatenateBeforeExtension(fn, gmx::formatString("_%d", i+1));
+        if ((bExist = gmx_fexist(newFilename)))
         {
-            pdbf[i]        = read_pdbf(name);
+            pdbf[i]        = read_pdbf(newFilename.c_str());
             pdbf[i]->index = i+1;
             i++;
             if (i >= maxpdbf)

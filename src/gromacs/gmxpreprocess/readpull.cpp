@@ -358,10 +358,10 @@ char **read_pullparams(std::vector<t_inpfile> *inp,
                        &pcrd->group[4], &pcrd->group[5], &idum);
         if (nscan != pcrd->ngroup)
         {
-            sprintf(wbuf, "%s should contain %d pull group indices with geometry %s",
-                    buf, pcrd->ngroup, epullg_names[pcrd->eGeom]);
+            auto message = gmx::formatString("%s should contain %d pull group indices with geometry %s",
+                                             buf, pcrd->ngroup, epullg_names[pcrd->eGeom]);
             set_warning_line(wi, nullptr, -1);
-            warning_error(wi, wbuf);
+            warning_error(wi, message);
         }
         for (int g = 0; g < pcrd->ngroup; g++)
         {
