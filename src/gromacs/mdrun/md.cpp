@@ -423,20 +423,20 @@ void gmx::Integrator::do_md()
     }
 
     auto stopHandler = stopHandlerBuilder->getStopHandlerMD(
-            compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]), simulationsShareState,
-            MASTER(cr), ir->nstlist, mdrunOptions.reproducible, nstSignalComm,
-            mdrunOptions.maximumHoursToRun, ir->nstlist == 0, fplog, step, bNS, walltime_accounting);
+                compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]), simulationsShareState,
+                MASTER(cr), ir->nstlist, mdrunOptions.reproducible, nstSignalComm,
+                mdrunOptions.maximumHoursToRun, ir->nstlist == 0, fplog, step, bNS, walltime_accounting);
 
     auto checkpointHandler = compat::make_unique<CheckpointHandler>(
-            compat::make_not_null<SimulationSignal*>(&signals[eglsCHKPT]),
-            simulationsShareState, ir->nstlist == 0, MASTER(cr),
-            mdrunOptions.writeConfout, mdrunOptions.checkpointOptions.period);
+                compat::make_not_null<SimulationSignal*>(&signals[eglsCHKPT]),
+                simulationsShareState, ir->nstlist == 0, MASTER(cr),
+                mdrunOptions.writeConfout, mdrunOptions.checkpointOptions.period);
 
     const bool resetCountersIsLocal = true;
     auto       resetHandler         = compat::make_unique<ResetHandler>(
-            compat::make_not_null<SimulationSignal*>(&signals[eglsRESETCOUNTERS]), !resetCountersIsLocal,
-            ir->nsteps, MASTER(cr), mdrunOptions.timingOptions.resetHalfway,
-            mdrunOptions.maximumHoursToRun, mdlog, wcycle, walltime_accounting);
+                compat::make_not_null<SimulationSignal*>(&signals[eglsRESETCOUNTERS]), !resetCountersIsLocal,
+                ir->nsteps, MASTER(cr), mdrunOptions.timingOptions.resetHalfway,
+                mdrunOptions.maximumHoursToRun, mdlog, wcycle, walltime_accounting);
 
     // This must be prepared before the first stage of global
     // communication, and also before the first client module code
@@ -530,7 +530,7 @@ void gmx::Integrator::do_md()
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                         nullptr, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                         constr, &nullSignaller, state->box,
-                        &accumulateGlobals,
+                        &accumulateGlobals, ms, false,
                         &totalNumberOfBondedInteractions, &bSumEkinhOld, cglo_flags_iteration
                         | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
     }
@@ -548,7 +548,7 @@ void gmx::Integrator::do_md()
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                         nullptr, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                         constr, &nullSignaller, state->box,
-                        &accumulateGlobals,
+                        &accumulateGlobals, ms, false,
                         nullptr, &bSumEkinhOld,
                         cglo_flags & ~CGLO_PRESSURE);
     }
@@ -779,7 +779,7 @@ void gmx::Integrator::do_md()
             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                             wcycle, enerd, nullptr, nullptr, nullptr, nullptr, mu_tot,
                             constr, &nullSignaller, state->box,
-                            &accumulateGlobals,
+                            &accumulateGlobals, ms, false,
                             &totalNumberOfBondedInteractions, &bSumEkinhOld,
                             CGLO_GSTAT | CGLO_TEMPERATURE | CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS);
             checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
@@ -934,7 +934,7 @@ void gmx::Integrator::do_md()
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                 constr, &nullSignaller, state->box,
-                                &accumulateGlobals,
+                                &accumulateGlobals, ms, false,
                                 &totalNumberOfBondedInteractions, &bSumEkinhOld,
                                 (bGStat ? CGLO_GSTAT : 0)
                                 | CGLO_ENERGY
@@ -990,7 +990,7 @@ void gmx::Integrator::do_md()
                     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                                     wcycle, enerd, nullptr, nullptr, nullptr, nullptr, mu_tot,
                                     constr, &nullSignaller, state->box,
-                                    &accumulateGlobals,
+                                    &accumulateGlobals, ms, false,
                                     nullptr, &bSumEkinhOld,
                                     CGLO_GSTAT | CGLO_TEMPERATURE);
                     wallcycle_start(wcycle, ewcUPDATE);
@@ -1167,7 +1167,7 @@ void gmx::Integrator::do_md()
             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                             wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                             constr, &nullSignaller, lastbox,
-                            &accumulateGlobals,
+                            &accumulateGlobals, ms, false,
                             nullptr, &bSumEkinhOld,
                             (bGStat ? CGLO_GSTAT : 0) | CGLO_TEMPERATURE
                             );
@@ -1257,6 +1257,7 @@ void gmx::Integrator::do_md()
                                 constr, &signaller,
                                 lastbox,
                                 &accumulateGlobals,
+                                ms, doInterSimSignal,
                                 &totalNumberOfBondedInteractions, &bSumEkinhOld,
                                 (bGStat ? CGLO_GSTAT : 0)
                                 | (!EI_VV(ir->eI) ? CGLO_ENERGY : 0)
