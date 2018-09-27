@@ -455,7 +455,6 @@ void write_hconf_indexed_p(FILE *out, const char *title, const t_atoms *atoms,
                            int nx, const int index[],
                            const rvec *x, const rvec *v, const matrix box)
 {
-    char resnm[6], nm[6];
     int  ai, i, resind, resnr;
 
     fprintf(out, "%s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
@@ -468,28 +467,29 @@ void write_hconf_indexed_p(FILE *out, const char *title, const t_atoms *atoms,
         ai = index[i];
 
         resind = atoms->atom[ai].resind;
-        std::strncpy(resnm, " ??? ", sizeof(resnm)-1);
+        std::string resnm;
         if (resind < atoms->nres)
         {
-            std::strncpy(resnm, *atoms->resinfo[resind].name, sizeof(resnm)-1);
+            resnm = *atoms->resinfo[resind].name;
             resnr = atoms->resinfo[resind].nr;
         }
         else
         {
-            std::strncpy(resnm, " ??? ", sizeof(resnm)-1);
+            resnm = " ??? ";
             resnr = resind + 1;
         }
 
+        std::string nm;
         if (atoms->atom)
         {
-            std::strncpy(nm, *atoms->atomname[ai], sizeof(nm)-1);
+            nm = *atoms->atomname[i];
         }
         else
         {
-            std::strncpy(nm, " ??? ", sizeof(nm)-1);
+            nm = " ??? ";
         }
 
-        fprintf(out, "%5d%-5.5s%5.5s%5d", resnr%100000, resnm, nm, (ai+1)%100000);
+        fprintf(out, "%5d%-5.5s%5.5s%5d", resnr%100000, resnm.c_str(), nm.c_str(), (ai+1)%100000);
         /* next fprintf uses built format string */
         if (v)
         {

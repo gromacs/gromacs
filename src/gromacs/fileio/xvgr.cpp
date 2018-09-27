@@ -239,8 +239,7 @@ void xvgr_header(FILE *fp, const char *title, const std::string &xaxis,
 
     if (output_env_get_print_xvgr_codes(oenv))
     {
-        gmx_format_current_time(buf, STRLEN);
-        fprintf(fp, "# This file was created %s", buf);
+        fprintf(fp, "# This file was created %s", gmx_format_current_time().c_str());
         try
         {
             gmx::BinaryInformationSettings settings;

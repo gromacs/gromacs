@@ -1165,7 +1165,7 @@ static void edit_index(int natoms, const t_atoms *atoms, const rvec *x, t_blocka
     static char   **atnames, *ostring;
     static gmx_bool bFirst = TRUE;
     char            inp_string[STRLEN], *string;
-    char            gname[STRLEN], gname1[STRLEN], gname2[STRLEN];
+    char            gname[STRLEN*3], gname1[STRLEN], gname2[STRLEN];
     int             i, i0, i1, sel_nr, sel_nr2, newgroup;
     int             nr, nr1, nr2, *index, *index1, *index2;
     gmx_bool        bAnd, bOr, bPrintOnce;
