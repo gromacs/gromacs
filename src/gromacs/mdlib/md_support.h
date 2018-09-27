@@ -128,6 +128,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
                      gmx::SimulationSignaller *signalCoordinator,
                      matrix box,
                      gmx::AccumulateGlobals *accumulateGlobals,
+                     const gmx_multisim_t *ms, bool doInterSimSignal,
                      int *totalNumberOfBondedInteractions,
                      gmx_bool *bSumEkinhOld, int flags);
 /* Compute global variables during integration */

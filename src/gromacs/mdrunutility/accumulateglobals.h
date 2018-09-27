@@ -149,6 +149,10 @@ class AccumulateGlobals
         bool isReductionRequired() const;
         //! Getter for the view to be reduced over MPI.
         ArrayRef<double> getReductionView();
+        //! Whether any values need to be reduced over multiple simulations.
+        bool isMultiSimReductionRequired() const;
+        //! Getter for the view to be reduced over MPI for multiple simulations.
+        ArrayRef<double> getMultiSimReductionView();
         /*! \brief Called after MPI reduction is complete to permit
          * clients to check their logic.
          *
@@ -161,7 +165,11 @@ class AccumulateGlobals
         //! The subset of clients to notify after this reduction completes.
         std::vector < compat::not_null < IAccumulateGlobalsClient * >> clientsToNotifyThisStep_;
         //! Whether reduction is required.
-        bool reductionRequired_;
+        bool   reductionRequired_;
+        //! Whether reduction over multiple simulations is required
+        bool   multiSimReductionRequired_;
+        //! The number of globals that need to be reduced over multiple simulations
+        size_t numMultiSimGlobals_;
 };
 
 /*! \libinternal
@@ -182,17 +190,20 @@ class AccumulateGlobalsBuilder
 {
     public:
         //! Registers a client that may need to reduce global values.
-        void registerClient(compat::not_null<IAccumulateGlobalsClient *> newClient);
+        void registerClient(compat::not_null<IAccumulateGlobalsClient *> newClient,
+                            bool                                         needsMultiSimReduction = false);
         /*! \brief Determine and fulfil client requirements for an
          * AccumulateGlobals.
          *
          * Calls the registered clients to learn how much memory is required,
          * allocates memory, and notifies each client of the view they can
          * later use. */
-        AccumulateGlobals build() const;
+        AccumulateGlobals build(bool simulationsShareState = false) const;
     private:
-        //! The registered clients.
-        std::vector < compat::not_null < IAccumulateGlobalsClient * >> clients_;
+        //! The registered clients (local communication only, no multisim)
+        std::vector < compat::not_null < IAccumulateGlobalsClient * >> localClients_;
+        //! The registered clients (need multisim)
+        std::vector < compat::not_null < IAccumulateGlobalsClient * >> multiSimClients_;
 };
 
 } // namespace gmx

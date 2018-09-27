@@ -63,13 +63,21 @@ constexpr bool c_debugBuild =
 #endif
 
 void
-AccumulateGlobalsBuilder::registerClient(compat::not_null<IAccumulateGlobalsClient *> newClient)
+AccumulateGlobalsBuilder::registerClient(compat::not_null<IAccumulateGlobalsClient *> newClient,
+                                         bool                                         needsMultiSimReduction)
 {
-    clients_.push_back(newClient);
+    if (needsMultiSimReduction)
+    {
+        multiSimClients_.push_back(newClient);
+    }
+    else
+    {
+        localClients_.push_back(newClient);
+    }
 }
 
 AccumulateGlobals
-AccumulateGlobalsBuilder::build() const
+AccumulateGlobalsBuilder::build(bool simulationsShareState) const
 {
     AccumulateGlobals globals;
 
@@ -79,9 +87,15 @@ AccumulateGlobalsBuilder::build() const
     // but can e.g. have zero-sized contributions to the set of
     // globals, which RangePartitioning cannot.
     std::vector<int>  globalsForEachClient;
-    globalsForEachClient.reserve(clients_.size());
+    globalsForEachClient.reserve(localClients_.size() + multiSimClients_.size());
     size_t            numGlobals = 0;
-    for (const auto &client : clients_)
+    for (const auto &client : multiSimClients_)
+    {
+        globalsForEachClient.push_back(client->getNumGlobalsRequired());
+        numGlobals += globalsForEachClient.back();
+    }
+    globals.numMultiSimGlobals_ = numGlobals;
+    for (const auto &client : localClients_)
     {
         globalsForEachClient.push_back(client->getNumGlobalsRequired());
         numGlobals += globalsForEachClient.back();
@@ -93,10 +107,16 @@ AccumulateGlobalsBuilder::build() const
     // Let the clients know where to find their values.
     ArrayRef<double> globalsToSend = globals.values_;
     size_t           currentStart  = 0;
-    for (size_t i = 0; i != clients_.size(); ++i)
+    for (size_t i = 0; i != multiSimClients_.size(); ++i)
     {
         size_t numGlobalsForThisClient = globalsForEachClient[i];
-        clients_[i]->setViewForGlobals(&globals, globalsToSend.subArray(currentStart, numGlobalsForThisClient));
+        multiSimClients_[i]->setViewForGlobals(&globals, globalsToSend.subArray(currentStart, numGlobalsForThisClient));
+        currentStart += numGlobalsForThisClient;
+    }
+    for (size_t i = 0; i != localClients_.size(); ++i)
+    {
+        size_t numGlobalsForThisClient = globalsForEachClient[i + multiSimClients_.size()];
+        localClients_[i]->setViewForGlobals(&globals, globalsToSend.subArray(currentStart, numGlobalsForThisClient));
         currentStart += numGlobalsForThisClient;
     }
     GMX_RELEASE_ASSERT(currentStart == numGlobals, "Failed to build current AccumulateGlobals");
@@ -104,7 +124,10 @@ AccumulateGlobalsBuilder::build() const
     // Pre-allocate the maximum number of clients to notify in any
     // step. This prevents any reallocation occuring during normal
     // usage.
-    globals.clientsToNotifyThisStep_.reserve(clients_.size());
+    globals.clientsToNotifyThisStep_.reserve(multiSimClients_.size() + localClients_.size());
+
+    // Multi-sim reduction is needed if we have more than one simulation, and any clients require it
+    globals.multiSimReductionRequired_ = simulationsShareState && globals.numMultiSimGlobals_ > 0;
 
     return globals;
 }
@@ -129,6 +152,16 @@ bool AccumulateGlobals::isReductionRequired() const
 ArrayRef<double> AccumulateGlobals::getReductionView()
 {
     return values_;
+}
+
+bool AccumulateGlobals::isMultiSimReductionRequired() const
+{
+    return multiSimReductionRequired_;
+}
+
+ArrayRef<double> AccumulateGlobals::getMultiSimReductionView()
+{
+    return ArrayRef<double>(values_).subArray(0, numMultiSimGlobals_);
 }
 
 void AccumulateGlobals::notifyClientsAfterCommunication()
