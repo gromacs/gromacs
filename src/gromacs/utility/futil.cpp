@@ -441,8 +441,8 @@ FILE *gmx_ffopen(const char *file, const char *mode)
 #ifdef SKIP_FFOPS
     return fopen(file, mode);
 #else
-    FILE    *ff = nullptr;
-    char     buf[256], *bufsize = nullptr, *ptr;
+    FILE    *ff      = nullptr;
+    char    *bufsize = nullptr, *ptr;
     gmx_bool bRead;
     int      bs;
 
@@ -457,12 +457,11 @@ FILE *gmx_ffopen(const char *file, const char *mode)
     }
 
     bRead = (mode[0] == 'r' && mode[1] != '+');
-    strcpy(buf, file);
-    if (!bRead || gmx_fexist(buf))
+    if (!bRead || gmx_fexist(file))
     {
-        if ((ff = fopen(buf, mode)) == nullptr)
+        if ((ff = fopen(file, mode)) == nullptr)
         {
-            gmx_file(buf);
+            gmx_file(file);
         }
         /* Check whether we should be using buffering (default) or not
          * (for debugging)
@@ -494,17 +493,19 @@ FILE *gmx_ffopen(const char *file, const char *mode)
     }
     else
     {
-        sprintf(buf, "%s.Z", file);
-        if (gmx_fexist(buf))
+        std::string compressedFileName = file;
+        compressedFileName += ".Z";
+        if (gmx_fexist(compressedFileName.c_str()))
         {
-            ff = uncompress(buf, mode);
+            ff = uncompress(compressedFileName.c_str(), mode);
         }
         else
         {
-            sprintf(buf, "%s.gz", file);
-            if (gmx_fexist(buf))
+            compressedFileName  = file;
+            compressedFileName += ".gz";
+            if (gmx_fexist(compressedFileName.c_str()))
             {
-                ff = gunzip(buf, mode);
+                ff = gunzip(compressedFileName.c_str(), mode);
             }
             else
             {
