@@ -131,7 +131,6 @@ int gmx_covar(int argc, char *argv[])
     int               d, dj, nfit;
     int              *index, *ifit;
     gmx_bool          bDiffMass1, bDiffMass2;
-    char              timebuf[STRLEN];
     t_rgb             rlo, rmi, rhi;
     real             *eigenvectors;
     gmx_output_env_t *oenv;
@@ -590,8 +589,7 @@ int gmx_covar(int argc, char *argv[])
 
     out = gmx_ffopen(logfile, "w");
 
-    gmx_format_current_time(timebuf, STRLEN);
-    fprintf(out, "Covariance analysis log, written %s\n", timebuf);
+    fprintf(out, "Covariance analysis log, written %s\n", gmx_format_current_time().c_str());
 
     fprintf(out, "Program: %s\n", argv[0]);
     gmx_getcwd(str, STRLEN);

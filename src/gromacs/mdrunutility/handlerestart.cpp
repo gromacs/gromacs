@@ -113,7 +113,7 @@ read_checkpoint_data(const char *filename, int *simulation_part,
 
     if (SIMMASTER(cr))
     {
-        if (!gmx_fexist(filename) || (!(fp = gmx_fio_open(filename, "r")) ))
+        if (!gmx_fexist(filename) || ((fp = gmx_fio_open(filename, "r")) != nullptr ))
         {
             *simulation_part = 0;
             /* We have already warned the user that no checkpoint file existed before, don't
