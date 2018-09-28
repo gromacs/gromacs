@@ -44,6 +44,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include <vector>
+
 #if HAVE_IO_H
 #include <io.h>
 #endif
@@ -443,29 +445,36 @@ int gmx_fio_fclose(FILE *fp)
     return rc;
 }
 
+//! Helper struct for returning the MD5 checksum and the amount of the file that contributed to it.
+struct MD5Checksum
+{
+    //! Checksum md5 digest.
+    std::array<unsigned char, 16> checksum;
+    //! The length of the file that contributed to the digest.
+    gmx_off_t                     readLength;
+};
+
 /* internal variant of get_file_md5 that operates on a locked file */
 static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
-                                    unsigned char digest[])
+                                    std::array<unsigned char, 16> *checksum)
 {
     /*1MB: large size important to catch almost identical files */
-#define CPT_CHK_LEN  1048576
-    md5_state_t    state;
-    unsigned char *buf;
-    gmx_off_t      read_len;
-    gmx_off_t      seek_offset;
-    int            ret = -1;
+    constexpr size_t maximumChecksumInputSize = 1048576;
+    md5_state_t      state;
+    gmx_off_t        readLength;
+    gmx_off_t        seekOffset;
+    int              ret = -1;
 
-    seek_offset = offset - CPT_CHK_LEN;
-    if (seek_offset < 0)
+    seekOffset = offset - maximumChecksumInputSize;
+    if (seekOffset < 0)
     {
-        seek_offset = 0;
+        seekOffset = 0;
     }
-    read_len = offset - seek_offset;
-
+    readLength = offset - seekOffset;
 
     if (fio->fp && fio->bReadWrite)
     {
-        ret = gmx_fseek(fio->fp, seek_offset, SEEK_SET);
+        ret = gmx_fseek(fio->fp, seekOffset, SEEK_SET);
         if (ret)
         {
             gmx_fseek(fio->fp, 0, SEEK_END);
@@ -476,9 +485,9 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
         return -1;
     }
 
-    snew(buf, CPT_CHK_LEN);
+    std::vector<unsigned char> buf(maximumChecksumInputSize);
     /* the read puts the file position back to offset */
-    if (static_cast<gmx_off_t>(fread(buf, 1, read_len, fio->fp)) != read_len)
+    if (static_cast<gmx_off_t>(fread(buf.data(), 1, readLength, fio->fp)) != readLength)
     {
         /* not fatal: md5sum check to prevent overwriting files
          * works (less safe) without
@@ -488,19 +497,7 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
             fprintf(stderr, "\nTrying to get md5sum: %s: %s\n", fio->fn,
                     strerror(errno));
         }
-        else if (feof(fio->fp))
-        {
-            /*
-             * For long runs that checkpoint frequently but write e.g. logs
-             * infrequently we don't want to issue lots of warnings before we
-             * have written anything to the log.
-             */
-            if (/* DISABLES CODE */ (false))
-            {
-                fprintf(stderr, "\nTrying to get md5sum: EOF: %s\n", fio->fn);
-            }
-        }
-        else
+        else if (!feof(fio->fp))
         {
             fprintf(
                     stderr,
@@ -517,17 +514,16 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
 
     if (debug)
     {
-        fprintf(debug, "chksum %s readlen %ld\n", fio->fn, static_cast<long int>(read_len));
+        fprintf(debug, "chksum %s readlen %ld\n", fio->fn, static_cast<long int>(readLength));
     }
 
     if (!ret)
     {
         gmx_md5_init(&state);
-        gmx_md5_append(&state, buf, read_len);
-        gmx_md5_finish(&state, digest);
-        ret = read_len;
+        gmx_md5_append(&state, buf.data(), readLength);
+        *checksum = gmx_md5_finish(&state);
+        ret       = readLength;
     }
-    sfree(buf);
     return ret;
 }
 
@@ -538,12 +534,12 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
  * digest: return array of md5 sum
  */
 int gmx_fio_get_file_md5(t_fileio *fio, gmx_off_t offset,
-                         unsigned char digest[])
+                         std::array<unsigned char, 16> *checksum)
 {
     int ret;
 
     gmx_fio_lock(fio);
-    ret = gmx_fio_int_get_file_md5(fio, offset, digest);
+    ret = gmx_fio_int_get_file_md5(fio, offset, checksum);
     gmx_fio_unlock(fio);
 
     return ret;
@@ -594,10 +590,10 @@ std::vector<gmx_file_position_t> gmx_fio_get_output_file_positions()
             /* Get the file position */
             gmx_fio_int_get_file_position(cur, &outputfiles.back().offset);
 #ifndef GMX_FAHCORE
-            outputfiles.back().chksum_size
+            outputfiles.back().checksumSize
                 = gmx_fio_int_get_file_md5(cur,
                                            outputfiles.back().offset,
-                                           outputfiles.back().chksum);
+                                           &outputfiles.back().checksum);
 #endif
         }
 

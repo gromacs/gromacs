@@ -91,18 +91,17 @@ TEST_F(FileMD5Test, CanComputeMD5)
     prepareFile(1000);
     file_ = gmx_fio_open(filename_.c_str(), "r+");
 
-    unsigned char           digest[16] = {0};
-    ArrayRef<unsigned char> digestView(digest);
+    std::array<unsigned char, 16> digest = {0};
     // Chosen to be less than the full file length
-    gmx_off_t               offset             = 64;
-    gmx_off_t               expectedLength     = 64;
-    gmx_off_t               lengthActuallyRead = gmx_fio_get_file_md5(file_, offset, digest);
+    gmx_off_t                     offset             = 64;
+    gmx_off_t                     expectedLength     = 64;
+    gmx_off_t                     lengthActuallyRead = gmx_fio_get_file_md5(file_, offset, &digest);
 
     EXPECT_EQ(expectedLength, lengthActuallyRead);
     // Did we compute an actual checksum? We can't assert on the
     // actual values because the implementation is merely portable,
     // not reproducible.
-    auto total = std::accumulate(digestView.begin(), digestView.end(), 0);
+    auto total = std::accumulate(digest.begin(), digest.end(), 0);
     EXPECT_LT(0, total);
 }
 
@@ -111,10 +110,9 @@ TEST_F(FileMD5Test, ReturnsErrorIfFileModeIsWrong)
     prepareFile(1000);
     file_ = gmx_fio_open(filename_.c_str(), "r");
 
-    unsigned char           digest[16] = {0};
-    ArrayRef<unsigned char> digestView(digest);
-    gmx_off_t               offset             = 100;
-    gmx_off_t               lengthActuallyRead = gmx_fio_get_file_md5(file_, offset, digest);
+    std::array<unsigned char, 16> digest;
+    gmx_off_t                     offset             = 100;
+    gmx_off_t                     lengthActuallyRead = gmx_fio_get_file_md5(file_, offset, &digest);
     EXPECT_EQ(-1, lengthActuallyRead);
 }
 
