@@ -756,6 +756,29 @@ static void do_lincsp(const rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
 }
 
 #if GMX_SIMD_HAVE_REAL
+
+//! Helper function so that we can run TSAN with SIMD support (where implemented).
+template <int align>
+static inline void gmx_simdcall
+gatherLoadUTransposeTSANSafe(const float *        base,
+                             const std::int32_t   offset[],
+                             SimdFloat *          v0,
+                             SimdFloat *          v1,
+                             SimdFloat *          v2)
+{
+    if (CMAKE_BUILD_TYPE == CMAKE_BUILD_TYPE_TSAN && GMX_SIMD_X86_AVX2_256)
+    {
+        // This function is only implemented in this case
+#if GMX_SIMD_X86_AVX2_256
+        gatherLoadUTransposeSafe<align>(base, offset, v0, v1, v2);
+#endif
+    }
+    else
+    {
+        gatherLoadUTranspose<align>(base, offset, v0, v1, v2);
+    }
+}
+
 /*! \brief Calculate the constraint distance vectors r to project on from x.
  *
  * Determine the right-hand side of the matrix equation using coordinates xp. */
@@ -795,8 +818,8 @@ calc_dr_x_xp_simd(int                       b0,
             offset1[i] = bla[bs*2 + i*2 + 1];
         }
 
-        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), offset0, &x0_S, &y0_S, &z0_S);
-        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), offset1, &x1_S, &y1_S, &z1_S);
+        gatherLoadUTransposeTSANSafe<3>(reinterpret_cast<const real *>(x), offset0, &x0_S, &y0_S, &z0_S);
+        gatherLoadUTransposeTSANSafe<3>(reinterpret_cast<const real *>(x), offset1, &x1_S, &y1_S, &z1_S);
         rx_S = x0_S - x1_S;
         ry_S = y0_S - y1_S;
         rz_S = z0_S - z1_S;
@@ -812,8 +835,9 @@ calc_dr_x_xp_simd(int                       b0,
 
         transposeScatterStoreU<3>(reinterpret_cast<real *>(r + bs), offset2, rx_S, ry_S, rz_S);
 
-        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(xp), offset0, &x0_S, &y0_S, &z0_S);
-        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(xp), offset1, &x1_S, &y1_S, &z1_S);
+        gatherLoadUTransposeTSANSafe<3>(reinterpret_cast<const real *>(xp), offset0, &x0_S, &y0_S, &z0_S);
+        gatherLoadUTransposeTSANSafe<3>(reinterpret_cast<const real *>(xp), offset1, &x1_S, &y1_S, &z1_S);
+
         rxp_S = x0_S - x1_S;
         ryp_S = y0_S - y1_S;
         rzp_S = z0_S - z1_S;
@@ -922,8 +946,9 @@ calc_dist_iter_simd(int                       b0,
             offset1[i] = bla[bs*2 + i*2 + 1];
         }
 
-        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), offset0, &x0_S, &y0_S, &z0_S);
-        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), offset1, &x1_S, &y1_S, &z1_S);
+        gatherLoadUTransposeTSANSafe<3>(reinterpret_cast<const real *>(x), offset0, &x0_S, &y0_S, &z0_S);
+        gatherLoadUTransposeTSANSafe<3>(reinterpret_cast<const real *>(x), offset1, &x1_S, &y1_S, &z1_S);
+
         rx_S = x0_S - x1_S;
         ry_S = y0_S - y1_S;
         rz_S = z0_S - z1_S;
