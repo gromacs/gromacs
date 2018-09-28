@@ -50,6 +50,7 @@ add_subdirectory(include)
 configure_file(include/version.h.in include/gmxapi/version.h)
 
 add_library(gmxapi SHARED
+            context.cpp
             md.cpp
             mdmodule.cpp
             version.cpp)
