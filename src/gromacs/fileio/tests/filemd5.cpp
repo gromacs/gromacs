@@ -41,6 +41,8 @@
  */
 #include "gmxpre.h"
 
+#include <cstdio>
+
 #include <algorithm>
 #include <numeric>
 #include <string>
@@ -51,7 +53,6 @@
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/textwriter.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testfilemanager.h"
@@ -71,8 +72,10 @@ class FileMD5Test : public ::testing::Test
             // Fill some memory with some arbitrary bits.
             std::vector<char> data(lengthInBytes);
             std::iota(data.begin(), data.end(), 1);
-            std::string       textFromData(data.data());
-            TextWriter::writeFileFromString(filename_, textFromData);
+            // Binary mode ensures it works the same on all OS
+            FILE *fp = fopen(filename_.c_str(), "wb");
+            fwrite(data.data(), sizeof(char), data.size(), fp);
+            fclose(fp);
         }
         ~FileMD5Test() override
         {
@@ -82,7 +85,8 @@ class FileMD5Test : public ::testing::Test
             }
         }
         TestFileManager fileManager_;
-        std::string     filename_ = fileManager_.getTemporaryFilePath("data.txt");
+        // Make sure the file is one that gmxfio will open as binary.
+        std::string     filename_ = fileManager_.getTemporaryFilePath("data.xtc");
         t_fileio       *file_     = nullptr;
 };
 
@@ -99,11 +103,9 @@ TEST_F(FileMD5Test, CanComputeMD5)
     gmx_off_t               lengthActuallyRead = gmx_fio_get_file_md5(file_, offset, digest);
 
     EXPECT_EQ(expectedLength, lengthActuallyRead);
-    // Did we compute an actual checksum? We can't assert on the
-    // actual values because the implementation is merely portable,
-    // not reproducible.
+    // Did we compute an actual reproducible checksum?
     auto total = std::accumulate(digestView.begin(), digestView.end(), 0);
-    EXPECT_LT(0, total);
+    EXPECT_EQ(2111, total);
 }
 
 TEST_F(FileMD5Test, ReturnsErrorIfFileModeIsWrong)
