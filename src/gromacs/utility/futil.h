@@ -128,10 +128,16 @@ int gmx_ffclose(FILE *fp);
  */
 void frewind(FILE *fp);
 
-/** OS-independent 64-bit fseek(). */
+/** OS-independent 64-bit fseek().
+ *
+ * \return 0 when successful, or -1 (and set errno) in case of error.
+ */
 int gmx_fseek(FILE *stream, gmx_off_t offset, int whence);
 
-/** OS-independent 64-bit ftell(). */
+/** OS-independent 64-bit ftell().
+ *
+ * \return The current offset when successful, or -1 (and set errno) in case of error.
+ */
 gmx_off_t gmx_ftell(FILE *stream);
 
 /** OS-independent truncate(). */

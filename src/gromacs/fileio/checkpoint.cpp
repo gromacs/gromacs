@@ -1763,19 +1763,19 @@ static int do_cpt_files(XDR *xd, gmx_bool bRead,
         }
         if (file_version >= 8)
         {
-            if (do_cpt_int(xd, "file_checksum_size", &outputfile.chksum_size,
+            if (do_cpt_int(xd, "file_checksum_size", &outputfile.checksumSize,
                            list) != 0)
             {
                 return -1;
             }
-            if (do_cpt_u_chars(xd, "file_checksum", 16, outputfile.chksum, list) != 0)
+            if (do_cpt_u_chars(xd, "file_checksum", outputfile.checksum.size(), outputfile.checksum.data(), list) != 0)
             {
                 return -1;
             }
         }
         else
         {
-            outputfile.chksum_size = -1;
+            outputfile.checksumSize = -1;
         }
     }
     return 0;
@@ -2182,7 +2182,6 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     int                  ret;
     t_fileio            *chksum_file;
     FILE               * fplog = *pfplog;
-    unsigned char        digest[16];
 #if !defined __native_client__ && !GMX_NATIVE_WINDOWS
     struct flock         fl; /* don't initialize here: the struct order is OS
                                 dependent! */
@@ -2431,13 +2430,14 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
             }
 
             /* compute md5 chksum */
-            if (outputfile.chksum_size != -1)
+            std::array<unsigned char, 16> digest;
+            if (outputfile.checksumSize != -1)
             {
                 if (gmx_fio_get_file_md5(chksum_file, outputfile.offset,
-                                         digest) != outputfile.chksum_size) /*at the end of the call the file position is at the end of the file*/
+                                         &digest) != outputfile.checksumSize) /*at the end of the call the file position is at the end of the file*/
                 {
                     gmx_fatal(FARGS, "Can't read %d bytes of '%s' to compute checksum. The file has been replaced or its contents have been modified. Cannot do appending because of this condition.",
-                              outputfile.chksum_size,
+                              outputfile.checksumSize,
                               outputfile.filename);
                 }
             }
@@ -2464,8 +2464,8 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
             }
 #ifndef GMX_FAHCORE
             /* compare md5 chksum */
-            if (outputfile.chksum_size != -1 &&
-                memcmp(digest, outputfile.chksum, 16) != 0)
+            if (outputfile.checksumSize != -1 &&
+                digest != outputfile.checksum)
             {
                 if (debug)
                 {
