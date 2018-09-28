@@ -99,11 +99,9 @@ TEST_F(FileMD5Test, CanComputeMD5)
     gmx_off_t               lengthActuallyRead = gmx_fio_get_file_md5(file_, offset, digest);
 
     EXPECT_EQ(expectedLength, lengthActuallyRead);
-    // Did we compute an actual checksum? We can't assert on the
-    // actual values because the implementation is merely portable,
-    // not reproducible.
+    // Did we compute an actual reproducible checksum?
     auto total = std::accumulate(digestView.begin(), digestView.end(), 0);
-    EXPECT_LT(0, total);
+    EXPECT_EQ(2111, total);
 }
 
 TEST_F(FileMD5Test, ReturnsErrorIfFileModeIsWrong)
