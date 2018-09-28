@@ -1168,7 +1168,7 @@ void Optimization::checkSupport(FILE *fp)
                                     if (debug)
                                     {
                                         fprintf(debug, "Cannot find %s dihedral %s-%s-%s-%s in %s\n",
-                                                eitPROPER_DIHEDRALS ? "proper" : "improper",
+                                                (iType == eitPROPER_DIHEDRALS) ? "proper" : "improper",
                                                 aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str(),
                                                 mymol->molProp()->getMolname().c_str());
                                     }

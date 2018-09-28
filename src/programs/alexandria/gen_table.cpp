@@ -278,8 +278,8 @@ static void gen_alexandria_tables(Poldata                 &pd,
     char         buf1[STRLEN];
     char         buf2[STRLEN];
     char         fnbuf[STRLEN];
-    FILE        *fp1;
-    FILE        *fp2;
+    FILE        *fp1 = nullptr;
+    FILE        *fp2 = nullptr;
 
     auto nmax     = 1+(int)(rcut/spacing);
     auto FFatypes = pd.getAtypes();
@@ -367,7 +367,7 @@ static void gen_alexandria_tables(Poldata                 &pd,
                         }
                     }
                     fclose(fp1);
-                    if (atpi->getType() != atpj->getType())
+                    if (atpi->getType() != atpj->getType() && fp2)
                     {
                         fclose(fp2);
                     }
