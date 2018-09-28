@@ -96,15 +96,6 @@ class SimulationContext;
  */
 class Mdrunner
 {
-    private:
-        /*! \brief Constructor.
-         *
-         * Note that when member variables are not present in the constructor
-         * member initialization list (which is true for the default constructor),
-         * then they are initialized with any default member initializer specified
-         * when they were declared, or default initialized. */
-        Mdrunner() = default;
-
     public:
         /*! \brief Builder class to manage object creation.
          *
@@ -173,6 +164,14 @@ class Mdrunner
         Mdrunner cloneOnSpawnedThread() const;
 
     private:
+        /*! \brief Constructor.
+         *
+         * Note that when member variables are not present in the constructor
+         * member initialization list (which is true for the default constructor),
+         * then they are initialized with any default member initializer specified
+         * when they were declared, or default initialized. */
+        Mdrunner() = default;
+
         //! Parallelism-related user options.
         gmx_hw_opt_t             hw_opt;
 
