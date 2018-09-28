@@ -244,6 +244,19 @@
 /* Cluster size used by nonbonded OpenCL kernel. Should be 8 for NVIDIA/AMD and 4 for Intel */
 #define GMX_OCL_NB_CLUSTER_SIZE @GMX_OCL_NB_CLUSTER_SIZE@
 
+/* Define constants for build types (starting at 1 to make sure undefined values don't match) */
+#define CMAKE_BUILD_TYPE_DEBUG 1
+#define CMAKE_BUILD_TYPE_RELEASE 2
+#define CMAKE_BUILD_TYPE_RELWITHDEBINFO 3
+#define CMAKE_BUILD_TYPE_MINSIZEREL 4
+#define CMAKE_BUILD_TYPE_REFERENCE 5
+#define CMAKE_BUILD_TYPE_RELWITHASSERT 6
+#define CMAKE_BUILD_TYPE_PROFILE 7
+#define CMAKE_BUILD_TYPE_TSAN 8
+#define CMAKE_BUILD_TYPE_ASAN 9
+#define CMAKE_BUILD_TYPE_MSAN 10
+#cmakedefine CMAKE_BUILD_TYPE CMAKE_BUILD_TYPE_@CMAKE_BUILD_TYPE_UPPER@
+
 /* Define relative path to OpenCL kernels */
 #define GMX_INSTALL_OCLDIR "@GMX_INSTALL_OCLDIR@"
 
