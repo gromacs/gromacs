@@ -404,5 +404,10 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     endif()
 endif()
 
+string(TOUPPER "${CMAKE_BUILD_TYPE}" _cmake_build_type)
+if (_cmake_build_type STREQUAL "TSAN" AND NOT (GMX_SIMD_ACTIVE STREQUAL "NONE" OR GMX_SIMD_ACTIVE STREQUAL "REFERENCE" OR GMX_SIMD_ACTIVE MATCHES "AVX_512" OR GMX_SIMD_ACTIVE STREQUAL AVX2_256))
+   message(WARNING "TSAN is only tested with SIMD None, Reference, AVX2_256, and AVX_512. It is known to detect (harmless) memory races with SSE and AVX.")
+endif()	
+
 endmacro()
 
