@@ -40,6 +40,7 @@
 #include "programs/alexandria/poldata_low.h"
 #include "programs/alexandria/poldata_xml.h"
 
+#include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
@@ -69,8 +70,6 @@ class PoldataTest : public ::testing::Test
         {
             gmx_atomprop_t aps = gmx_atomprop_init();
 
-            // Reads the file, the file only supports 3 chargedistributionModels
-            // eqdAXp,eqdAXg,  eqdAXs,  23/07/15
             std::string dataName = gmx::test::TestFileManager::getInputFilePath("gentop.dat");
             try
             {
@@ -131,7 +130,7 @@ TEST_F(PoldataTest, addAtype){
     auto fa = pd_.findAtype(atype);
     if (fa != pd_.getAtypeEnd())
     {
-        // Test if the extractions where correct
+        /* Test if the extractions where correct */
         checker_.checkString(fa->getElem(), elem.c_str());
         checker_.checkString(fa->getDesc(), desc.c_str());
         checker_.checkString(fa->getType(), atype.c_str());
@@ -203,22 +202,17 @@ TEST_F (PoldataTest, row){
     checker_.checkSequence(rows.begin(), rows.end(), "row");
 }
 
-
 TEST_F (PoldataTest, zeta)
 {
     std::vector<double>      zetas;
-    int numAtoms = 3;
-    int numModels = 3;
-    
-    for (int atomNr = 0; atomNr < numAtoms; atomNr++)
-    {
-        for (int model = 0; model <  numModels; model++)
-        {
-            for(int z = 0; z < pd_.getNzeta((ChargeDistributionModel)model, atomName); z++)
-            {
-                zetas.push_back(pd_.getZeta((ChargeDistributionModel)model, atomName, z));
-            }
-        }
+    std::vector<ChargeDistributionModel> eqd;
+    eqd.push_back(eqdAXpp);
+    eqd.push_back(eqdAXpg);
+    eqd.push_back(eqdAXps);
+
+    for (auto model : eqd)
+    {        
+        zetas.push_back(pd_.getZeta((ChargeDistributionModel)model, atomName, 1));
     }
     checker_.checkSequence(zetas.begin(), zetas.end(), "zeta");
 }

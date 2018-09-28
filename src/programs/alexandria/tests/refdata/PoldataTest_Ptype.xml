@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
-<ReferenceData>
-  <String Name="type">p_ha</String>
-  <String Name="miller">H</String>
-  <String Name="bosque">H</String>
-  <Real Name="polarizability">0.365503</Real>
-  <Real Name="sigPol">0.0157654</Real>
-</ReferenceData>
