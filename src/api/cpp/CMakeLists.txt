@@ -52,6 +52,7 @@ configure_file(include/version.h.in include/gmxapi/version.h)
 add_library(gmxapi SHARED
             md.cpp
             mdmodule.cpp
+            system.cpp
             version.cpp)
 
 # Define public interface. Make sure targets linking against `gmxapi` in the build
