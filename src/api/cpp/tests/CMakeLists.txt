@@ -73,6 +73,7 @@ configure_file(testingconfiguration.in.cpp testingconfiguration.cpp)
 gmx_add_gtest_executable(
     gmxapi-test
     status.cpp
+    system.cpp
     testingconfiguration.cpp
     version.cpp
     )
@@ -96,6 +97,7 @@ set_tests_properties(GmxapiExternalInterfaceTests PROPERTIES
 gmx_add_gtest_executable(
     gmxapi-mpi-test MPI
     status.cpp
+    system.cpp
     testingconfiguration.cpp
     version.cpp
     )
