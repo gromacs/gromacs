@@ -1,0 +1,295 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2018, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+
+/*! \internal \file
+ * \brief
+ * Regression style tests for mdrun functionality
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_mdrun_integration_tests
+ */
+#include "gmxpre.h"
+
+#include <map>
+#include <memory>
+#include <ostream>
+#include <string>
+#include <tuple>
+#include <vector>
+
+#include <gtest/gtest.h>
+
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/state.h"
+#include "gromacs/topology/ifunc.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/taskassignment/decidegpuusage.h"
+#include "gromacs/trajectory/energyframe.h"
+#include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/stringutil.h"
+
+#include "testutils/refdata.h"
+#include "testutils/testasserts.h"
+#include "testutils/testfilemanager.h"
+
+#include "energycomparison.h"
+#include "moduletest.h"
+#include "simulationdatabase.h"
+//#include "trajectoryreader.h"
+
+namespace gmx
+{
+namespace test
+{
+namespace
+{
+
+//! Parameter type for the value-parametrized test fixture.
+struct RegressionTestParameters
+{
+        std::string systemName;
+};
+
+/*! \brief Provide useful names for test cases.
+ *
+ * Note: test names must be non-empty, unique, and may only contain
+ * ASCII alphanumeric characters or underscore. */
+std::string
+prettyPrinter(const testing::TestParamInfo<std::tuple<RegressionTestParameters, std::string>> &info)
+{
+    const RegressionTestParameters &p = std::get<0>(info.param);
+    const std::string &mdpText = std::get<1>(info.param);
+    std::string message = replaceAll(p.systemName + '_' + mdpText, "-", "_");
+    return message;
+}
+
+//! Test fixture base for nbnxn module in mdrun.
+class NbnxnRegressionTest : public MdrunTestFixture,
+                            public ::testing::WithParamInterface <
+    std::tuple<RegressionTestParameters, std::string>>
+{
+    public:
+        NbnxnRegressionTest();
+        void runGrompp();
+        void runMdrun();
+        void runChecks(const std::string      &systemName,
+                       const EnergyUlpComparisons &energiesToMatch);
+        TestReferenceData    refData_;
+        TestReferenceChecker rootChecker_{refData_.rootChecker()};
+        std::string trajectoryFileName_;
+        std::string energyFileName_;
+};
+
+NbnxnRegressionTest::NbnxnRegressionTest()
+{
+    //trajectoryFileName_ = fileManager_.getTemporaryFilePath(".trr");
+    energyFileName_ = fileManager_.getTemporaryFilePath(".edr");
+}
+
+//! Database for testing nonbonded setups supported in the Verlet scheme.
+std::map<std::string, std::string> nonbondedCases_g = {
+    { "rf",
+      R"(coulombtype      = reaction-field)" },
+    { "pme-order-4",
+      R"(coulombtype      = pme
+         pme-order        = 4)" },
+    { "pme-order-5",
+      R"(coulombtype      = pme
+         pme-order        = 5)" },
+    { "pme-order-6",
+      R"(coulombtype      = pme
+         pme-order        = 6)" },
+    { "ljpme-geometric",
+      R"(coulombtype      = pme
+         vdwtype          = pme
+         lj-pme-comb-rule = Geometric)" },
+    { "energy-groups",
+      R"(coulombtype      = pme
+         energygrps       = HEX)" },
+};
+
+//! Run grompp and then mdrun
+void
+NbnxnRegressionTest::runGrompp()
+{
+    using MdpField = MdpFieldValues::value_type;
+
+    auto params = std::get<0>(GetParam());
+    auto mdpFieldValues = prepareDefaultMdpFieldValues(params.systemName.c_str());
+    std::string mdpText = nonbondedCases_g[std::get<1>(GetParam())];
+    mdpFieldValues["other"] = mdpText;
+
+    // TODO Work out how to test the range of things the nbnxn module
+    // supports, e.g. PME (including different orders and LJ-PME), RF
+    // (and flavors), VDW switch behaviors, combination rules
+
+    // TODO evolve grompp to report the number of warnings issued, so
+    // tests always expect the right number.
+    CommandLine caller;
+    caller.append("grompp");
+    caller.addOption("-maxwarn", 0);
+    runner_.useTopGroAndNdxFromDatabase(params.systemName);
+    runner_.useStringAsMdpFile(prepareMdpFileContents(mdpFieldValues));
+    EXPECT_EQ(0, runner_.callGrompp(caller));
+}
+
+struct TaskTargets
+{
+        TaskTarget nb, pme, pmeFft;
+};
+
+std::vector<TaskTargets> taskTargetImPossibilities_g = {
+    { TaskTarget::Auto, TaskTarget::Cpu,  TaskTarget::Gpu  },
+    { TaskTarget::Cpu,  TaskTarget::Auto, TaskTarget::Gpu  },
+    { TaskTarget::Cpu,  TaskTarget::Cpu,  TaskTarget::Gpu  },
+    { TaskTarget::Cpu,  TaskTarget::Gpu,  TaskTarget::Auto },
+    { TaskTarget::Cpu,  TaskTarget::Gpu,  TaskTarget::Gpu  },
+    { TaskTarget::Gpu,  TaskTarget::Auto, TaskTarget::Gpu  },
+    { TaskTarget::Gpu,  TaskTarget::Cpu,  TaskTarget::Gpu  },
+};
+
+// TODO update this if/when things get more complicated.
+std::vector<TaskTargets> taskTargetPossibilities_g = {
+    { TaskTarget::Auto, TaskTarget::Auto, TaskTarget::Auto },
+    { TaskTarget::Auto, TaskTarget::Auto, TaskTarget::Cpu  },
+    { TaskTarget::Auto, TaskTarget::Auto, TaskTarget::Gpu  },
+    { TaskTarget::Auto, TaskTarget::Cpu,  TaskTarget::Auto },
+    { TaskTarget::Auto, TaskTarget::Cpu,  TaskTarget::Cpu  },
+    { TaskTarget::Auto, TaskTarget::Gpu,  TaskTarget::Auto },
+    { TaskTarget::Auto, TaskTarget::Gpu,  TaskTarget::Cpu  },
+    { TaskTarget::Auto, TaskTarget::Gpu,  TaskTarget::Gpu  },
+    { TaskTarget::Cpu,  TaskTarget::Auto, TaskTarget::Auto },
+    { TaskTarget::Cpu,  TaskTarget::Auto, TaskTarget::Cpu },
+    { TaskTarget::Cpu,  TaskTarget::Cpu,  TaskTarget::Auto },
+    { TaskTarget::Cpu,  TaskTarget::Auto, TaskTarget::Auto },
+    { TaskTarget::Cpu,  TaskTarget::Auto, TaskTarget::Auto },
+    { TaskTarget::Cpu,  TaskTarget::Auto, TaskTarget::Auto },
+    { TaskTarget::Cpu,  TaskTarget::Auto, TaskTarget::Auto },
+};
+std::map<std::string, std::string> taskAssignments_g = {
+    { "NB CPU PME CPU",
+      "-nb cpu -pme cpu"},
+    { "NB GPU PME CPU",
+      "-nb gpu -pme cpu"},
+    { "NB GPU PME GPU PMEFFT CPU",
+      "-nb gpu -pme gpu -pmefft CPU"},
+};
+
+void
+NbnxnRegressionTest::runMdrun()
+{
+    // TODO Eventually, we will be able to avoid writing the .tpr to
+    // disk, and just keep using the data structures built by grompp.
+    t_state globalState;
+    t_inputrec inputrec;
+    gmx_mtop_t mtop;
+    read_tpx_state(runner_.tprFileName_.c_str(), &inputrec, &globalState, &mtop);
+
+    // TODO Implement a way to loop over things like -nb, -pme, -npme
+    // in a stable way, comparing with the same reference data each
+    // time.
+
+    //runner_.fullPrecisionTrajectoryFileName_ = trajectoryFileName_;
+    runner_.edrFileName_                     = energyFileName_;
+    CommandLine normalRunCaller;
+    normalRunCaller.append("mdrun");
+    ASSERT_EQ(0, runner_.callMdrun(normalRunCaller));
+}
+
+void
+NbnxnRegressionTest::runChecks(const std::string      &systemName,
+                               const EnergyUlpComparisons &energiesToMatch)
+{
+    checkEnergiesAgainstReferenceData(energyFileName_, energiesToMatch, &rootChecker_);
+}
+
+TEST_P(NbnxnRegressionTest, WithinTolerances)
+{
+    auto params = std::get<0>(GetParam());
+    SCOPED_TRACE("Checking run of system '" + params.systemName + "'");
+
+    EnergyUlpComparisons energiesToMatch
+    {{
+         {
+             interaction_function[F_COUL_SR].longname,
+             5, 10
+         },
+         // TODO work out how to insert this only when testing electrostatic PME
+         /*
+            {
+            interaction_function[F_COUL_RECIP].longname,
+            5, 10
+            },
+          */
+         {
+             interaction_function[F_EPOT].longname,
+             5, 10
+         },
+         {
+             interaction_function[F_PRES].longname,
+             5, 10
+         },
+     }};
+
+    try
+    {
+        runGrompp();
+        runMdrun();
+        // Check the energies agree with the refdata within \c tolerance.
+        runChecks(params.systemName, energiesToMatch);
+    }
+    catch (GromacsException &ex)
+    {
+        ADD_FAILURE() << "Failed to open energy file with required energy fields and compare them with reference data. Details:\n" << ex.what();
+    }
+}
+
+std::vector<RegressionTestParameters> testCases_g = {{ "hexane-and-water" }};
+
+INSTANTIATE_TEST_CASE_P(IsReproduced, NbnxnRegressionTest,
+                        ::testing::Combine
+                        (::testing::ValuesIn(testCases_g),
+                         ::testing::Values("rf",
+                                           "pme-order-4",
+                                           "pme-order-5",
+                                           "pme-order-6",
+                                           "ljpme-geometric",
+                                           "energy-groups")),
+                        prettyPrinter);
+
+} // namespace
+} // namespace
+} // namespace
