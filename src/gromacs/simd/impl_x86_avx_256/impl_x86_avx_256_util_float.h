@@ -157,6 +157,7 @@ gatherLoadTranspose(const float *        base,
 
 static const int c_simdBestPairAlignmentFloat = 2;
 
+#if !(CMAKE_BUILD_TYPE == CMAKE_BUILD_TYPE_TSAN && GMX_SIMD_X86_AVX2_256)
 template <int align>
 static inline void gmx_simdcall
 gatherLoadUTranspose(const float *        base,
@@ -203,6 +204,7 @@ gatherLoadUTranspose(const float *        base,
     v1->simdInternal_ = _mm256_shuffle_ps(t5, t6, _MM_SHUFFLE(3, 2, 3, 2));
     v2->simdInternal_ = _mm256_shuffle_ps(t7, t8, _MM_SHUFFLE(1, 0, 1, 0));
 }
+#endif
 
 template <int align>
 static inline void gmx_simdcall
