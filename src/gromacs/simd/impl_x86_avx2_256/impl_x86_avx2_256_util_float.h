@@ -40,4 +40,32 @@
 
 #include "gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_util_float.h"
 
+namespace gmx
+{
+
+// This version is marginally slower than the AVX 4-wide component load
+// version on Intel Skylake. On older Intel architectures this version
+// is significantly slower.
+template <int align>
+static inline void gmx_simdcall
+gatherLoadUTranspose(const float *        base,
+                     const std::int32_t   offset[],
+                     SimdFloat *          v0,
+                     SimdFloat *          v1,
+                     SimdFloat *          v2)
+{
+    assert(std::size_t(offset) % 32 == 0);
+
+    constexpr SimdFInt32 alignSimd = SimdFInt32(align);
+
+    SimdFInt32 vindex = _mm256_load_si256(reinterpret_cast<const __m256i *>(offset));
+    vindex = vindex*alignSimd;
+
+    *v0 = _mm256_i32gather_ps(base + 0, vindex.simdInternal_, 1);
+    *v1 = _mm256_i32gather_ps(base + 1, vindex.simdInternal_, 1);
+    *v2 = _mm256_i32gather_ps(base + 2, vindex.simdInternal_, 1);
+}
+
+}      // namespace gmx
+
 #endif // GMX_SIMD_IMPL_X86_AVX2_256_UTIL_FLOAT_H
