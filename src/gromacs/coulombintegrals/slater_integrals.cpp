@@ -47,8 +47,6 @@
 
 #if HAVE_LIBCLN
 
-#define SLATER_MAX_CLN 5
-
 cl_R Nuclear_1S(cl_R r, cl_R xi)
 {
     cl_R S = ZERO;
@@ -243,6 +241,27 @@ cl_R DNuclear_6S(cl_R r, cl_R xi)
 
 typedef cl_R t_slater_SS_func (cl_R r, cl_R xi, cl_R xj);
 typedef cl_R t_slater_NS_func (cl_R r, cl_R xi);
+#if SLATER_MAX_CLN == 3
+t_slater_SS_func (*Slater_SS[SLATER_MAX_CLN][SLATER_MAX_CLN]) = {
+    {  Slater_1S_1S,  Slater_1S_2S,  Slater_1S_3S },
+    {  Slater_2S_1S,  Slater_2S_2S,  Slater_2S_3S },
+    {  Slater_3S_1S,  Slater_3S_2S,  Slater_3S_3S }
+};
+
+t_slater_SS_func (*DSlater_SS[SLATER_MAX_CLN][SLATER_MAX_CLN]) = {
+    {  DSlater_1S_1S,  DSlater_1S_2S,  DSlater_1S_3S },
+    {  DSlater_2S_1S,  DSlater_2S_2S,  DSlater_2S_3S },
+    {  DSlater_3S_1S,  DSlater_3S_2S,  DSlater_3S_3S }
+};
+
+t_slater_NS_func (*Slater_NS[SLATER_MAX_CLN]) = {
+    Nuclear_1S,  Nuclear_2S,  Nuclear_3S
+};
+
+t_slater_NS_func (*DSlater_NS[SLATER_MAX_CLN]) = {
+    DNuclear_1S,  DNuclear_2S,  DNuclear_3S
+};
+#else
 t_slater_SS_func (*Slater_SS[SLATER_MAX_CLN][SLATER_MAX_CLN]) = {
     {  Slater_1S_1S,  Slater_1S_2S,  Slater_1S_3S ,  Slater_1S_4S, Slater_1S_5S}, // Slater_1S_6S},
     {  Slater_2S_1S,  Slater_2S_2S,  Slater_2S_3S ,  Slater_2S_4S, Slater_2S_5S}, // Slater_2S_6S},
@@ -268,6 +287,7 @@ t_slater_NS_func (*Slater_NS[SLATER_MAX_CLN]) = {
 t_slater_NS_func (*DSlater_NS[SLATER_MAX_CLN]) = {
     DNuclear_1S,  DNuclear_2S,  DNuclear_3S ,  DNuclear_4S,  DNuclear_5S // DNuclear_6S
 };
+#endif
 
 static char *my_ftoa(double d)
 {
