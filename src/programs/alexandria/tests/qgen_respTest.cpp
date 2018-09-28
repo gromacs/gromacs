@@ -89,7 +89,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             //Read input file for molprop
             dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol3-esp.log");
             ReadGauss(dataName.c_str(), molprop, molnm, iupac, conf, basis,
-                      maxpot, nsymm, pd_.getForceField().c_str(), jobtype);
+                      maxpot, nsymm, pd_.getForceField(), jobtype);
             std::vector<MolProp> vmp;
             vmp.push_back(molprop);
             mp_.molProp()->Merge(vmp.begin());

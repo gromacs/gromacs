@@ -97,7 +97,7 @@ BabelFiles::BabelFiles ()
     bfiles_.push_back(BabelFile(ebftSDF,  ".sdf",  "sdf"));
     bfiles_.push_back(BabelFile(ebftMOL,  ".mol",  "mol"));
     bfiles_.push_back(BabelFile(ebftMOL2, ".mol2", "mol2"));
-    bfiles_.push_back(BabelFile(ebftG09,  ".log",  "g09"));
+    bfiles_.push_back(BabelFile(ebftG09,  ".log",  "g03"));
 }
 
 BabelFileIterator BabelFiles::findBabelFile(const std::string &fn)
@@ -413,7 +413,7 @@ void ReadGauss(const char          *g09,
     mpt.LastExperiment()->AddEnergy(mes);
 
     // Atoms
-    OpenBabel::OBForceField *ff = OpenBabel::OBForceField::FindForceField(forcefield);
+    auto *ff = OpenBabel::OBForceField::FindForceField(forcefield);
     if (ff && (ff->Setup(mol)))
     {
         ff->GetAtomTypes(mol);
