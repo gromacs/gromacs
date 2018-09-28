@@ -115,6 +115,11 @@ gatherLoadTranspose(const double *        base,
 
 static const int c_simdBestPairAlignmentDouble = 2;
 
+// With the implementation below, thread-sanitizer can detect false positives.
+// For loading a triplet, we load 4 floats and ignore the last. Another thread
+// might write to this element, but that will not affect the result.
+// On AVX2 we can use a gather intrinsic instead.
+#if !(CMAKE_BUILD_TYPE == CMAKE_BUILD_TYPE_TSAN && GMX_SIMD_X86_AVX2_256)
 template <int align>
 static inline void gmx_simdcall
 gatherLoadUTranspose(const double *        base,
@@ -148,6 +153,7 @@ gatherLoadUTranspose(const double *        base,
     v1->simdInternal_ = _mm256_permute2f128_pd(t6, t8, 0x20);
     v2->simdInternal_ = _mm256_permute2f128_pd(t5, t7, 0x31);
 }
+#endif
 
 template <int align>
 static inline void gmx_simdcall
