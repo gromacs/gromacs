@@ -41,6 +41,8 @@
  */
 #include "gmxpre.h"
 
+#include <cstdio>
+
 #include <algorithm>
 #include <numeric>
 #include <string>
@@ -51,7 +53,6 @@
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/textwriter.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testfilemanager.h"
@@ -71,8 +72,10 @@ class FileMD5Test : public ::testing::Test
             // Fill some memory with some arbitrary bits.
             std::vector<char> data(lengthInBytes);
             std::iota(data.begin(), data.end(), 1);
-            std::string       textFromData(data.data());
-            TextWriter::writeFileFromString(filename_, textFromData);
+            // Binary mode ensures it works the same on all OS
+            FILE *fp = fopen(filename_.c_str(), "w");
+            fwrite(data.data(), sizeof(char), data.size(), fp);
+            fclose(fp);
         }
         ~FileMD5Test() override
         {
@@ -89,6 +92,7 @@ class FileMD5Test : public ::testing::Test
 TEST_F(FileMD5Test, CanComputeMD5)
 {
     prepareFile(1000);
+    // Binary mode ensures it works the same on all OS
     file_ = gmx_fio_open(filename_.c_str(), "r+");
 
     unsigned char           digest[16] = {0};
@@ -99,17 +103,16 @@ TEST_F(FileMD5Test, CanComputeMD5)
     gmx_off_t               lengthActuallyRead = gmx_fio_get_file_md5(file_, offset, digest);
 
     EXPECT_EQ(expectedLength, lengthActuallyRead);
-    // Did we compute an actual checksum? We can't assert on the
-    // actual values because the implementation is merely portable,
-    // not reproducible.
+    // Did we compute an actual reproducible checksum?
     auto total = std::accumulate(digestView.begin(), digestView.end(), 0);
-    EXPECT_LT(0, total);
+    EXPECT_EQ(2111, total);
 }
 
 TEST_F(FileMD5Test, ReturnsErrorIfFileModeIsWrong)
 {
     prepareFile(1000);
-    file_ = gmx_fio_open(filename_.c_str(), "r");
+    // Binary mode ensures it works the same on all OS
+    file_ = gmx_fio_open(filename_.c_str(), "rb");
 
     unsigned char           digest[16] = {0};
     ArrayRef<unsigned char> digestView(digest);
