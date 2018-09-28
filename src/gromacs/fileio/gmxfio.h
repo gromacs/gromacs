@@ -40,6 +40,7 @@
 
 #include <stdio.h>
 
+#include <array>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
@@ -141,10 +142,10 @@ FILE *gmx_fio_getfp(t_fileio *fio);
  * enable large files).  */
 struct gmx_file_position_t
 {
-    char          filename[STRLEN] = {0};
-    gmx_off_t     offset           = 0;
-    unsigned char chksum[16]       = {0};
-    int           chksum_size      = 0;
+    char                          filename[STRLEN]  = {0};
+    gmx_off_t                     offset            = 0;
+    std::array<unsigned char, 16> checksum          = {{0}};
+    int                           checksumSize      = 0;
 };
 
 /*! \brief Return data about output files.
@@ -168,7 +169,7 @@ t_fileio *gmx_fio_all_output_fsync();
 
 
 int gmx_fio_get_file_md5(t_fileio *fio, gmx_off_t offset,
-                         unsigned char digest[]);
+                         std::array<unsigned char, 16> *checksum);
 
 
 int xtc_seek_time(t_fileio *fio, real time, int natoms, gmx_bool bSeekForwardOnly);
