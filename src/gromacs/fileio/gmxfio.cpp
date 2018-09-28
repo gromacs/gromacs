@@ -454,7 +454,11 @@ struct MD5Checksum
     gmx_off_t                     readLength;
 };
 
-/* internal variant of get_file_md5 that operates on a locked file */
+/*! \brief Internal variant of get_file_md5 that operates on a locked
+ * file.
+ *
+ * \return -1 any time a checksum cannot be computed, otherwise the
+ *            length of the data from which the checksum was computed. */
 static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
                                     std::array<unsigned char, 16> *checksum)
 {
@@ -463,7 +467,6 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
     md5_state_t      state;
     gmx_off_t        readLength;
     gmx_off_t        seekOffset;
-    int              ret = -1;
 
     seekOffset = offset - maximumChecksumInputSize;
     if (seekOffset < 0)
@@ -472,26 +475,41 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
     }
     readLength = offset - seekOffset;
 
-    if (fio->fp && fio->bReadWrite)
+    if (!fio->fp)
     {
-        ret = gmx_fseek(fio->fp, seekOffset, SEEK_SET);
-        if (ret)
-        {
-            gmx_fseek(fio->fp, 0, SEEK_END);
-        }
+        // It's not an error if the file isn't open.
+        return -1;
     }
-    if (ret) /*either no fp, not readwrite, or fseek not successful */
+    if (!fio->bReadWrite)
     {
+        // It's not an error if the file is open in the wrong mode.
+        //
+        // TODO It is unclear why this check exists. The bReadWrite
+        // flag is true when the file-opening mode included "+" but we
+        // only need read and seek to be able to compute the
+        // md5sum. Other requirements (e.g. that we can truncate when
+        // doing an appending restart) should be expressed in a
+        // different way, but it is unclear whether that is part of
+        // the logic here.
+        return -1;
+    }
+
+    if (gmx_fseek(fio->fp, seekOffset, SEEK_SET))
+    {
+        // It's not an error if file seeking fails. (But it could be
+        // an issue when moving a checkpoint from one platform to
+        // another, when they differ in their support for seeking, and
+        // so can't agree on a checksum for appending).
+        gmx_fseek(fio->fp, 0, SEEK_END);
         return -1;
     }
 
     std::vector<unsigned char> buf(maximumChecksumInputSize);
-    /* the read puts the file position back to offset */
+    // The fread puts the file position back to offset.
     if (static_cast<gmx_off_t>(fread(buf.data(), 1, readLength, fio->fp)) != readLength)
     {
-        /* not fatal: md5sum check to prevent overwriting files
-         * works (less safe) without
-         * */
+        // Read an unexpected length. This is not a fatal error; the
+        // md5sum check to prevent overwriting files is not vital.
         if (ferror(fio->fp))
         {
             fprintf(stderr, "\nTrying to get md5sum: %s: %s\n", fio->fn,
@@ -506,25 +524,20 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
         }
 
         gmx_fseek(fio->fp, 0, SEEK_END);
-
-        ret = -1;
+        return -1;
     }
-    gmx_fseek(fio->fp, 0, SEEK_END); /*is already at end, but under windows
-                                        it gives problems otherwise*/
+    // Return the file position to the end of the file.
+    gmx_fseek(fio->fp, 0, SEEK_END);
 
     if (debug)
     {
         fprintf(debug, "chksum %s readlen %ld\n", fio->fn, static_cast<long int>(readLength));
     }
 
-    if (!ret)
-    {
-        gmx_md5_init(&state);
-        gmx_md5_append(&state, buf.data(), readLength);
-        *checksum = gmx_md5_finish(&state);
-        ret       = readLength;
-    }
-    return ret;
+    gmx_md5_init(&state);
+    gmx_md5_append(&state, buf.data(), readLength);
+    *checksum = gmx_md5_finish(&state);
+    return readLength;
 }
 
 
