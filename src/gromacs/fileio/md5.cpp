@@ -421,8 +421,7 @@ gmx_md5_append(md5_state_t *pms, const md5_byte_t *data, int nbytes)
     }
 }
 
-void
-gmx_md5_finish(md5_state_t *pms, md5_byte_t digest[16])
+std::array<unsigned char, 16> gmx_md5_finish(md5_state_t *pms)
 {
     static const md5_byte_t pad[64] = {
         0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -442,8 +441,10 @@ gmx_md5_finish(md5_state_t *pms, md5_byte_t digest[16])
     gmx_md5_append(pms, pad, ((55 - (pms->count[0] >> 3)) & 63) + 1);
     /* Append the length. */
     gmx_md5_append(pms, data, 8);
-    for (i = 0; i < 16; ++i)
+    std::array<unsigned char, 16> digest;
+    for (size_t i = 0; i < digest.size(); ++i)
     {
-        digest[i] = static_cast<md5_byte_t>(pms->abcd[i >> 2] >> ((i & 3) << 3));
+        digest[i] = static_cast<unsigned char>(pms->abcd[i >> 2] >> ((i & 3) << 3));
     }
+    return digest;
 }
