@@ -205,14 +205,14 @@ TEST_F (PoldataTest, row){
 TEST_F (PoldataTest, zeta)
 {
     std::vector<double>      zetas;
-    std::vector<ChargeDistributionModel> eqd;
-    eqd.push_back(eqdAXpp);
-    eqd.push_back(eqdAXpg);
-    eqd.push_back(eqdAXps);
+    std::vector<ChargeDistributionModel> eqd = { eqdAXpp, eqdAXpg, eqdAXps };
 
     for (auto model : eqd)
     {        
-        zetas.push_back(pd_.getZeta((ChargeDistributionModel)model, atomName, 1));
+        for(int i=0; i<pd_.getNzeta(model, atomName); i++)
+        {
+            zetas.push_back(pd_.getZeta(model, atomName, i));
+        }
     }
     checker_.checkSequence(zetas.begin(), zetas.end(), "zeta");
 }

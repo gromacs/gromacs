@@ -80,7 +80,7 @@ int alex_gauss2molprop(int argc, char *argv[])
     static char                     *conf       = (char *)"minimum";
     static gmx_bool                  bVerbose   = false;
     static gmx_bool                  compress   = false;
-    static const char               *forcefield = "GAFF";
+    static const char               *forcefield = "gaff";
     
     t_pargs                          pa[]       = {
         { "-v",      FALSE, etBOOL, {&bVerbose},
