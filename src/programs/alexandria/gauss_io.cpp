@@ -179,7 +179,7 @@ void ReadGauss(const char          *g09,
                const char          *basisset,
                int                  maxPotential,
                int                  nsymm,
-               const char          *forcefield,
+               std::string          forcefield,
                const char          *jobType)
 {
     /* Read a gaussian log file */
@@ -422,7 +422,7 @@ void ReadGauss(const char          *g09,
             OpenBabel::OBPairData *type = (OpenBabel::OBPairData*) atom->GetData("FFAtomType");
             if (nullptr == type)
             {
-                gmx_fatal(FARGS, "Cannot find %s atom type for atom %s", forcefield, atom->GetIdx());
+                gmx_fatal(FARGS, "Cannot find %s atom type for atom %s", forcefield.c_str(), atom->GetIdx());
             }
             if (nullptr != debug)
             {
@@ -457,7 +457,7 @@ void ReadGauss(const char          *g09,
     }
     else
     {
-        gmx_fatal(FARGS, "Cannot read %s force field", forcefield);
+        gmx_fatal(FARGS, "Cannot read %s force field", forcefield.c_str());
     }
 
     // Bonds

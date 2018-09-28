@@ -106,7 +106,7 @@ void ReadGauss(const char          *g98,
                const char          *basis,
                int                  maxpot,
                int                  nsymm,
-               const char          *forcefield,
+               std::string          forcefield,
                const char          *jobtype);
 
 #endif
