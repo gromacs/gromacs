@@ -654,12 +654,12 @@ int gmx_trjcat(int argc, char *argv[])
                 if (bIndex)
                 {
                     trxout = trjtools_gmx_prepare_tng_writing(out_file, 'w', nullptr,
-                                                              inFilesEdited[0].c_str(), isize, nullptr, index, grpname);
+                                                              inFilesEdited[0].c_str(), isize, nullptr, gmx::arrayRefFromArray(index, isize), grpname);
                 }
                 else
                 {
                     trxout = trjtools_gmx_prepare_tng_writing(out_file, 'w', nullptr,
-                                                              inFilesEdited[0].c_str(), -1, nullptr, nullptr, nullptr);
+                                                              inFilesEdited[0].c_str(), -1, nullptr, gmx::EmptyArrayRef(), nullptr);
                 }
             }
             else

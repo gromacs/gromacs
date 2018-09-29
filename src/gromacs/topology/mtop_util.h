@@ -253,7 +253,7 @@ gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop, bool freeMTop);
  * \param[in]  mtop Molecular topology
  * \returns Vector that will be filled with the atom indices
  */
-std::vector<size_t> get_atom_index(const gmx_mtop_t *mtop);
+std::vector<int> get_atom_index(const gmx_mtop_t *mtop);
 
 /*! \brief Converts a t_atoms struct to an mtop struct
  *

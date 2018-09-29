@@ -1370,7 +1370,7 @@ int gmx_trjconv(int argc, char *argv[])
                                                               nullptr,
                                                               nout,
                                                               mtop.get(),
-                                                              index,
+                                                              gmx::arrayRefFromArray(index, nout),
                                                               grpnm);
                     break;
                 case efXTC:

@@ -39,6 +39,7 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -148,7 +149,7 @@ void gmx_prepare_tng_writing(const char              *filename,
                              gmx_tng_trajectory_t    *out,
                              int                      nAtoms,
                              const struct gmx_mtop_t *mtop,
-                             const int               *index,
+                             gmx::ArrayRef<const int> index,
                              const char              *indexGroupName);
 
 /*! \brief Write a trxframe to a TNG file
@@ -168,10 +169,9 @@ void gmx_write_tng_from_trxframe(gmx_tng_trajectory_t    output,
 /*! \brief Creates a molecule containing only the indexed atoms and sets
  * the number of all other molecules to 0. Works similar to a
  * selection group. */
-void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t tng,
-                                 int                  nind,
-                                 const int           *ind,
-                                 const char          *name);
+void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t     tng,
+                                 gmx::ArrayRef<const int> ind,
+                                 const char              *name);
 
 /*! \brief Read the first/next TNG frame. */
 gmx_bool gmx_read_next_tng_frame(gmx_tng_trajectory_t        input,
