@@ -535,14 +535,14 @@ constraintGroupRadius(const gmx_moltype_t                     &moltype,
     /* We don't bother optimizing the perturbed angle case */
     const t_iparams &angleParams = iparams[angleType];
     if (criteriaSatisfied &&
-        angleParams.linangle.aB == angleParams.linangle.aA &&
-        angleParams.linangle.klinB == angleParams.linangle.klinA)
+        angleParams.harmonic.rB == angleParams.harmonic.rA &&
+        angleParams.harmonic.krB == angleParams.harmonic.krA)
     {
         /* Set number of stddevs such that change of exceeding < 10^-9 */
         constexpr real c_numSigma = 6.0;
         /* Compute the maximally stretched angle */
-        const real     eqAngle  = angleParams.linangle.aA*DEG2RAD;
-        const real     fc       = angleParams.linangle.klinA;
+        const real     eqAngle  = angleParams.harmonic.rA*DEG2RAD;
+        const real     fc       = angleParams.harmonic.krA;
         const real     maxAngle = eqAngle + c_numSigma*BOLTZ*temperature/((numPartnerAtoms - 1)*fc);
         if (maxAngle >= M_PI)
         {
