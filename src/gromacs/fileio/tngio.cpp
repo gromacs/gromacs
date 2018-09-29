@@ -1004,7 +1004,7 @@ void gmx_prepare_tng_writing(const char              *filename,
                              gmx_tng_trajectory_t    *gmx_tng_output,
                              int                      nAtoms,
                              const gmx_mtop_t        *mtop,
-                             const int               *index,
+                             gmx::ArrayRef<const int> index,
                              const char              *indexGroupName)
 {
 #if GMX_USE_TNG
@@ -1116,9 +1116,9 @@ void gmx_prepare_tng_writing(const char              *filename,
         tng_num_frames_per_frame_set_set(*output, 1);
     }
 
-    if (index && nAtoms > 0)
+    if ((!index.empty()) && nAtoms > 0)
     {
-        gmx_tng_setup_atom_subgroup(*gmx_tng_output, nAtoms, index, indexGroupName);
+        gmx_tng_setup_atom_subgroup(*gmx_tng_output, index, indexGroupName);
     }
 
     /* If for some reason there are more requested atoms than there are atoms in the
@@ -1282,10 +1282,9 @@ real getDistanceScaleFactor(gmx_tng_trajectory_t in)
 
 } // namespace
 
-void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t gmx_tng,
-                                 const int            nind,
-                                 const int           *ind,
-                                 const char          *name)
+void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t     gmx_tng,
+                                 gmx::ArrayRef<const int> ind,
+                                 const char              *name)
 {
 #if GMX_USE_TNG
     int64_t                  nAtoms, cnt, nMols;
@@ -1298,7 +1297,7 @@ void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t gmx_tng,
 
     tng_num_particles_get(tng, &nAtoms);
 
-    if (nAtoms == nind)
+    if (nAtoms == ind.size())
     {
         return;
     }
@@ -1308,7 +1307,7 @@ void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t gmx_tng,
     {
         tng_molecule_num_atoms_get(tng, mol, &nAtoms);
         tng_molecule_cnt_get(tng, mol, &cnt);
-        if (nAtoms == nind)
+        if (nAtoms == ind.size())
         {
             stat = TNG_SUCCESS;
         }
@@ -1324,7 +1323,7 @@ void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t gmx_tng,
         tng_molecule_name_set(tng, mol, name);
         tng_molecule_chain_add(tng, mol, "", &chain);
 
-        for (int i = 0; i < nind; i++)
+        for (int i = 0; i < ind.size(); i++)
         {
             char        temp_name[256], temp_type[256];
 
@@ -1370,7 +1369,6 @@ void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t gmx_tng,
     }
 #else
     GMX_UNUSED_VALUE(gmx_tng);
-    GMX_UNUSED_VALUE(nind);
     GMX_UNUSED_VALUE(ind);
     GMX_UNUSED_VALUE(name);
 #endif

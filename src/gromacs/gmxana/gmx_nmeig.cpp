@@ -124,15 +124,15 @@ static int get_nharm(const gmx_mtop_t *mtop)
 }
 
 static void
-nma_full_hessian(real                      *hess,
-                 int                        ndim,
-                 gmx_bool                   bM,
-                 const t_topology          *top,
-                 const std::vector<size_t> &atom_index,
-                 int                        begin,
-                 int                        end,
-                 real                      *eigenvalues,
-                 real                      *eigenvectors)
+nma_full_hessian(real                   *hess,
+                 int                     ndim,
+                 gmx_bool                bM,
+                 const t_topology       *top,
+                 const std::vector<int> &atom_index,
+                 int                     begin,
+                 int                     end,
+                 real                   *eigenvalues,
+                 real                   *eigenvectors)
 {
     real mass_fac;
 
@@ -186,13 +186,13 @@ nma_full_hessian(real                      *hess,
 
 
 static void
-nma_sparse_hessian(gmx_sparsematrix_t        *sparse_hessian,
-                   gmx_bool                   bM,
-                   const t_topology          *top,
-                   const std::vector<size_t> &atom_index,
-                   int                        neig,
-                   real                      *eigenvalues,
-                   real                      *eigenvectors)
+nma_sparse_hessian(gmx_sparsematrix_t     *sparse_hessian,
+                   gmx_bool                bM,
+                   const t_topology       *top,
+                   const std::vector<int> &atom_index,
+                   int                     neig,
+                   real                   *eigenvalues,
+                   real                   *eigenvectors)
 {
     int    i, k;
     int    row, col;
@@ -330,16 +330,16 @@ static double calcRotationalHeatCapacity(gmx_bool linear)
     }
 }
 
-static void analyzeThermochemistry(FILE                      *fp,
-                                   const t_topology          &top,
-                                   rvec                       top_x[],
-                                   const std::vector<size_t> &atom_index,
-                                   real                       eigfreq[],
-                                   real                       T,
-                                   real                       P,
-                                   int                        sigma_r,
-                                   real                       scale_factor,
-                                   real                       linear_toler)
+static void analyzeThermochemistry(FILE                   *fp,
+                                   const t_topology       &top,
+                                   rvec                    top_x[],
+                                   const std::vector<int> &atom_index,
+                                   real                    eigfreq[],
+                                   real                    T,
+                                   real                    P,
+                                   int                     sigma_r,
+                                   real                    scale_factor,
+                                   real                    linear_toler)
 {
     std::vector<int>       index(atom_index.begin(), atom_index.end());
 
@@ -530,7 +530,7 @@ int gmx_nmeig(int argc, char *argv[])
     {
         nharm = get_nharm(&mtop);
     }
-    std::vector<size_t> atom_index = get_atom_index(&mtop);
+    std::vector<int> atom_index = get_atom_index(&mtop);
 
     top = gmx_mtop_t_to_t_topology(&mtop, true);
 

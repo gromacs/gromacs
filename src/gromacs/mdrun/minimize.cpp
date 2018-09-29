@@ -2694,7 +2694,7 @@ Integrator::do_nm()
             vsite, constr, &shellfc,
             nfile, fnm, &outf, nullptr, wcycle);
 
-    std::vector<size_t> atom_index = get_atom_index(top_global);
+    std::vector<int> atom_index = get_atom_index(top_global);
     snew(fneg, atom_index.size());
     snew(dfdx, atom_index.size());
 
