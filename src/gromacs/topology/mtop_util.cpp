@@ -1158,10 +1158,10 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop, bool freeMTop)
     return top;
 }
 
-std::vector<size_t> get_atom_index(const gmx_mtop_t *mtop)
+std::vector<int> get_atom_index(const gmx_mtop_t *mtop)
 {
 
-    std::vector<size_t>       atom_index;
+    std::vector<int>          atom_index;
     gmx_mtop_atomloop_block_t aloopb = gmx_mtop_atomloop_block_init(mtop);
     const t_atom             *atom;
     int                       nmol, j = 0;

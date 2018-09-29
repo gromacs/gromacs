@@ -124,15 +124,15 @@ static int get_nharm(const gmx_mtop_t *mtop)
 }
 
 static void
-nma_full_hessian(real                      *hess,
-                 int                        ndim,
-                 gmx_bool                   bM,
-                 const t_topology          *top,
-                 const std::vector<size_t> &atom_index,
-                 int                        begin,
-                 int                        end,
-                 real                      *eigenvalues,
-                 real                      *eigenvectors)
+nma_full_hessian(real                    *hess,
+                 int                      ndim,
+                 gmx_bool                 bM,
+                 const t_topology        *top,
+                 gmx::ArrayRef<const int> atom_index,
+                 int                      begin,
+                 int                      end,
+                 real                    *eigenvalues,
+                 real                    *eigenvectors)
 {
     real mass_fac;
 
@@ -140,12 +140,12 @@ nma_full_hessian(real                      *hess,
 
     if (bM)
     {
-        for (size_t i = 0; (i < atom_index.size()); i++)
+        for (int i = 0; (i < atom_index.size()); i++)
         {
             size_t ai = atom_index[i];
             for (size_t j = 0; (j < DIM); j++)
             {
-                for (size_t k = 0; (k < atom_index.size()); k++)
+                for (int k = 0; (k < atom_index.size()); k++)
                 {
                     size_t ak = atom_index[k];
                     mass_fac = gmx::invsqrt(top->atoms.atom[ai].m*top->atoms.atom[ak].m);
@@ -170,7 +170,7 @@ nma_full_hessian(real                      *hess,
     {
         for (int i = 0; i < (end-begin+1); i++)
         {
-            for (size_t j = 0; j < atom_index.size(); j++)
+            for (int j = 0; j < atom_index.size(); j++)
             {
                 size_t aj = atom_index[j];
                 mass_fac = gmx::invsqrt(top->atoms.atom[aj].m);
@@ -186,13 +186,13 @@ nma_full_hessian(real                      *hess,
 
 
 static void
-nma_sparse_hessian(gmx_sparsematrix_t        *sparse_hessian,
-                   gmx_bool                   bM,
-                   const t_topology          *top,
-                   const std::vector<size_t> &atom_index,
-                   int                        neig,
-                   real                      *eigenvalues,
-                   real                      *eigenvectors)
+nma_sparse_hessian(gmx_sparsematrix_t      *sparse_hessian,
+                   gmx_bool                 bM,
+                   const t_topology        *top,
+                   gmx::ArrayRef<const int> atom_index,
+                   int                      neig,
+                   real                    *eigenvalues,
+                   real                    *eigenvectors)
 {
     int    i, k;
     int    row, col;
@@ -209,7 +209,7 @@ nma_sparse_hessian(gmx_sparsematrix_t        *sparse_hessian,
 
     if (bM)
     {
-        for (size_t iatom = 0; (iatom < atom_index.size()); iatom++)
+        for (int iatom = 0; (iatom < atom_index.size()); iatom++)
         {
             size_t ai = atom_index[iatom];
             for (size_t j = 0; (j < DIM); j++)
@@ -236,7 +236,7 @@ nma_sparse_hessian(gmx_sparsematrix_t        *sparse_hessian,
     {
         for (i = 0; i < neig; i++)
         {
-            for (size_t j = 0; j < atom_index.size(); j++)
+            for (int j = 0; j < atom_index.size(); j++)
             {
                 size_t aj = atom_index[j];
                 mass_fac = gmx::invsqrt(top->atoms.atom[aj].m);
@@ -330,16 +330,16 @@ static double calcRotationalHeatCapacity(gmx_bool linear)
     }
 }
 
-static void analyzeThermochemistry(FILE                      *fp,
-                                   const t_topology          &top,
-                                   rvec                       top_x[],
-                                   const std::vector<size_t> &atom_index,
-                                   real                       eigfreq[],
-                                   real                       T,
-                                   real                       P,
-                                   int                        sigma_r,
-                                   real                       scale_factor,
-                                   real                       linear_toler)
+static void analyzeThermochemistry(FILE                    *fp,
+                                   const t_topology        &top,
+                                   rvec                     top_x[],
+                                   gmx::ArrayRef<const int> atom_index,
+                                   real                     eigfreq[],
+                                   real                     T,
+                                   real                     P,
+                                   int                      sigma_r,
+                                   real                     scale_factor,
+                                   real                     linear_toler)
 {
     std::vector<int>       index(atom_index.begin(), atom_index.end());
 
@@ -530,7 +530,7 @@ int gmx_nmeig(int argc, char *argv[])
     {
         nharm = get_nharm(&mtop);
     }
-    std::vector<size_t> atom_index = get_atom_index(&mtop);
+    std::vector<int> atom_index = get_atom_index(&mtop);
 
     top = gmx_mtop_t_to_t_topology(&mtop, true);
 
