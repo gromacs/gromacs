@@ -1361,6 +1361,10 @@ int gmx_trjconv(int argc, char *argv[])
 
             /* open output for writing */
             std::strcpy(filemode, "w");
+            //TODO remove this once index handling has been changed to use gmx::indexType
+            std::vector<size_t> indexVector(nout);
+            std::copy(index, index+nout, indexVector.begin());
+
             switch (ftp)
             {
                 case efTNG:
@@ -1370,7 +1374,7 @@ int gmx_trjconv(int argc, char *argv[])
                                                               nullptr,
                                                               nout,
                                                               mtop.get(),
-                                                              index,
+                                                              indexVector,
                                                               grpnm);
                     break;
                 case efXTC:

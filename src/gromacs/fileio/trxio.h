@@ -39,6 +39,7 @@
 #define GMX_FILEIO_TRXIO_H
 
 #include "gromacs/fileio/pdbio.h"
+#include "gromacs/utility/arrayref.h"
 
 struct gmx_mtop_t;
 struct gmx_output_env_t;
@@ -96,26 +97,40 @@ int write_trx(t_trxstatus *status, int nind, const int *ind, const t_atoms *atom
  * v can be NULL.
  * atoms can be NULL for file types which don't need atom names.
  */
-t_trxstatus *
-trjtools_gmx_prepare_tng_writing(const char               *filename,
-                                 char                      filemode,
-                                 t_trxstatus              *in,
-                                 const char               *infile,
-                                 int                       natoms,
-                                 const struct gmx_mtop_t  *mtop,
-                                 const int                *index,
-                                 const char               *index_group_name);
-/* Sets up *out for writing TNG. If *in != NULL and contains a TNG trajectory
- * some data, e.g. molecule system, will be copied over from *in to the return value.
- * If *in == NULL a file name (infile) of a TNG file can be provided instead
+
+/*! \brief
+ * Set up TNG writing to \p out.
+ *
+ * Sets up \p out for writing TNG. If \p in != NULL and contains a TNG trajectory
+ * some data, e.g. molecule system, will be copied over from \p in to the return value.
+ * If \p in == NULL a file name (infile) of a TNG file can be provided instead
  * and used for copying data to the return value.
- * If there is no TNG input natoms is used to create "implicit atoms" (no atom
- * or molecular data present). If natoms == -1 the number of atoms are
+ * If there is no TNG input \p natoms is used to create "implicit atoms" (no atom
+ * or molecular data present). If \p natoms == -1 the number of atoms are
  * not known (or there is already a TNG molecule system to copy, in which case
  * natoms is not required anyhow). If an group of indexed atoms are written
- * natoms must be the length of index. index_group_name is the name of the
+ * \p natoms must be the length of \p index. \p index_group_name is the name of the
  * index group.
+ *
+ * \param[in] filename Name of new TNG file.
+ * \param[in] filemode How to open the output file.
+ * \param[in] in Input file pointer or null.
+ * \param[in] infile Input file name or null.
+ * \param[in] natoms Number of atoms to write.
+ * \param[in] mtop Pointer to system topology or null.
+ * \param[in] index Array of atom indices.
+ * \param[in] index_group_name Name of the group of atom indices.
+ * \returns Pointer to output TNG file.
  */
+t_trxstatus *
+trjtools_gmx_prepare_tng_writing(const char                 *filename,
+                                 char                        filemode,
+                                 t_trxstatus                *in,
+                                 const char                 *infile,
+                                 int                         natoms,
+                                 const struct gmx_mtop_t    *mtop,
+                                 gmx::ArrayRef<const size_t> index,
+                                 const char                 *index_group_name);
 
 /*! \brief Write a trxframe to the TNG file in status.
  *
