@@ -210,7 +210,7 @@ TEST(UpdateGroups, ethane)
     t_iparams iparams;
     iparams.constr        = { 0.1, 0.1 };
     mtop.ffparams.iparams.push_back(iparams);
-    iparams.linangle      = { 276.144, 107.800, 276.144, 107.800 };
+    iparams.hamonic       = { 107.800, 276.144, 107.800, 276.144 };
     mtop.ffparams.iparams.push_back(iparams);
 
     auto updateGroups = gmx::makeUpdateGroups(mtop);
@@ -304,7 +304,7 @@ TEST(UpdateGroups, waterFlexAngle)
     t_iparams iparams;
     iparams.constr        = { 0.1, 0.1 };
     mtop.ffparams.iparams.push_back(iparams);
-    iparams.linangle      = { 383.0, 109.47, 383.0, 109.47 };
+    iparams.harmonic      = { 109.47, 383.0, 109.47, 383.0 };
     mtop.ffparams.iparams.push_back(iparams);
 
     auto updateGroups = gmx::makeUpdateGroups(mtop);
