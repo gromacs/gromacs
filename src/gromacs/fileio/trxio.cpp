@@ -465,14 +465,14 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
 }
 
 t_trxstatus *
-trjtools_gmx_prepare_tng_writing(const char       *filename,
-                                 char              filemode,
-                                 t_trxstatus      *in,
-                                 const char       *infile,
-                                 const int         natoms,
-                                 const gmx_mtop_t *mtop,
-                                 const int        *index,
-                                 const char       *index_group_name)
+trjtools_gmx_prepare_tng_writing(const char                 *filename,
+                                 char                        filemode,
+                                 t_trxstatus                *in,
+                                 const char                 *infile,
+                                 const int                   natoms,
+                                 const gmx_mtop_t           *mtop,
+                                 gmx::ArrayRef<const size_t> index,
+                                 const char                 *index_group_name)
 {
     if (filemode != 'w' && filemode != 'a')
     {

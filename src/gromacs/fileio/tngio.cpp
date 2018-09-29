@@ -998,14 +998,14 @@ float gmx_tng_get_time_of_final_frame(gmx_tng_trajectory_t gmx_tng)
 #endif
 }
 
-void gmx_prepare_tng_writing(const char              *filename,
-                             char                     mode,
-                             gmx_tng_trajectory_t    *gmx_tng_input,
-                             gmx_tng_trajectory_t    *gmx_tng_output,
-                             int                      nAtoms,
-                             const gmx_mtop_t        *mtop,
-                             const int               *index,
-                             const char              *indexGroupName)
+void gmx_prepare_tng_writing(const char                 *filename,
+                             char                        mode,
+                             gmx_tng_trajectory_t       *gmx_tng_input,
+                             gmx_tng_trajectory_t       *gmx_tng_output,
+                             int                         nAtoms,
+                             const gmx_mtop_t           *mtop,
+                             gmx::ArrayRef<const size_t> index,
+                             const char                 *indexGroupName)
 {
 #if GMX_USE_TNG
     tng_trajectory_t   *input  = (gmx_tng_input && *gmx_tng_input) ? &(*gmx_tng_input)->tng : nullptr;
@@ -1116,7 +1116,7 @@ void gmx_prepare_tng_writing(const char              *filename,
         tng_num_frames_per_frame_set_set(*output, 1);
     }
 
-    if (index && nAtoms > 0)
+    if ((!index.empty()) && nAtoms > 0)
     {
         gmx_tng_setup_atom_subgroup(*gmx_tng_output, nAtoms, index, indexGroupName);
     }
@@ -1282,10 +1282,10 @@ real getDistanceScaleFactor(gmx_tng_trajectory_t in)
 
 } // namespace
 
-void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t gmx_tng,
-                                 const int            nind,
-                                 const int           *ind,
-                                 const char          *name)
+void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t        gmx_tng,
+                                 const int                   nind,
+                                 gmx::ArrayRef<const size_t> ind,
+                                 const char                 *name)
 {
 #if GMX_USE_TNG
     int64_t                  nAtoms, cnt, nMols;

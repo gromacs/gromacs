@@ -520,6 +520,7 @@ int gmx_trjcat(int argc, char *argv[])
             imax = std::max(imax, index[i]);
         }
     }
+
     if (bDeMux)
     {
         nset    = 0;
@@ -643,6 +644,11 @@ int gmx_trjcat(int argc, char *argv[])
          */
         t_corr = 0;
 
+
+        //TODO remove this once index handling has been changed to use gmx::indexType
+        std::vector<size_t> indexVector(isize);
+        std::copy(index, index+isize, indexVector.begin());
+
         if (n_append == -1)
         {
             if (ftpout == efTNG)
@@ -654,12 +660,12 @@ int gmx_trjcat(int argc, char *argv[])
                 if (bIndex)
                 {
                     trxout = trjtools_gmx_prepare_tng_writing(out_file, 'w', nullptr,
-                                                              inFilesEdited[0].c_str(), isize, nullptr, index, grpname);
+                                                              inFilesEdited[0].c_str(), isize, nullptr, indexVector, grpname);
                 }
                 else
                 {
                     trxout = trjtools_gmx_prepare_tng_writing(out_file, 'w', nullptr,
-                                                              inFilesEdited[0].c_str(), -1, nullptr, nullptr, nullptr);
+                                                              inFilesEdited[0].c_str(), -1, nullptr, indexVector, nullptr);
                 }
             }
             else
