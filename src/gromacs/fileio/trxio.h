@@ -103,7 +103,7 @@ trjtools_gmx_prepare_tng_writing(const char               *filename,
                                  const char               *infile,
                                  int                       natoms,
                                  const struct gmx_mtop_t  *mtop,
-                                 const int                *index,
+                                 const size_t             *index,
                                  const char               *index_group_name);
 /* Sets up *out for writing TNG. If *in != NULL and contains a TNG trajectory
  * some data, e.g. molecule system, will be copied over from *in to the return value.
@@ -116,6 +116,22 @@ trjtools_gmx_prepare_tng_writing(const char               *filename,
  * natoms must be the length of index. index_group_name is the name of the
  * index group.
  */
+
+/*! \brief
+ * Convenience overload for trjtools_gmx_prepare_tng_writing.
+ *
+ * Overload to allow using of old size type for index type. \p mtop now
+ * uses size_t that is incompatible with the previous int.
+ */
+t_trxstatus *
+trjtools_gmx_prepare_tng_writing_old(const char               *filename,
+                                     char                      filemode,
+                                     t_trxstatus              *in,
+                                     const char               *infile,
+                                     int                       natoms,
+                                     const struct gmx_mtop_t  *mtop,
+                                     const int                *index,
+                                     const char               *index_group_name);
 
 /*! \brief Write a trxframe to the TNG file in status.
  *

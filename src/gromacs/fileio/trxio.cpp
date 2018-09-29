@@ -471,7 +471,7 @@ trjtools_gmx_prepare_tng_writing(const char       *filename,
                                  const char       *infile,
                                  const int         natoms,
                                  const gmx_mtop_t *mtop,
-                                 const int        *index,
+                                 const size_t     *index,
                                  const char       *index_group_name)
 {
     if (filemode != 'w' && filemode != 'a')
@@ -521,6 +521,33 @@ trjtools_gmx_prepare_tng_writing(const char       *filename,
                                 index_group_name);
     }
     return out;
+}
+
+t_trxstatus *
+trjtools_gmx_prepare_tng_writing_old(const char       *filename,
+                                     char              filemode,
+                                     t_trxstatus      *in,
+                                     const char       *infile,
+                                     const int         natoms,
+                                     const gmx_mtop_t *mtop,
+                                     const int        *index,
+                                     const char       *index_group_name)
+{
+    std::vector<size_t> newIndex(natoms);
+    for (int i = 0; i < natoms; i++)
+    {
+        newIndex[i] = index[i];
+    }
+    return trjtools_gmx_prepare_tng_writing(filename,
+                                            filemode,
+                                            in,
+                                            infile,
+                                            natoms,
+                                            mtop,
+                                            newIndex.data(),
+                                            index_group_name);
+
+
 }
 
 void write_tng_frame(t_trxstatus *status,
