@@ -243,7 +243,9 @@ check_cxx_compiler_flag("-Wno-unused -Wno-unused-parameter" HAS_NO_UNUSED)
 check_cxx_compiler_flag(-Wno-missing-declarations HAS_NO_MISSING_DECL)
 check_cxx_compiler_flag(-Wno-missing-prototypes HAS_NO_MISSING_PROTO)
 check_cxx_compiler_flag(/wd4101 HAS_NO_MSVC_UNUSED)
-check_cxx_compiler_flag(-wd1419 HAS_DECL_IN_SOURCE)
+if (NOT MSVC)
+    check_cxx_compiler_flag(-wd1419 HAS_DECL_IN_SOURCE)
+endif()
 if (HAS_NO_UNUSED)
     target_compile_options(libgromacs_generated PRIVATE "-Wno-unused;-Wno-unused-parameter")
 endif()
@@ -307,6 +309,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
      /wd28199 #uninitialized memory
      # For compile time constant (e.g. templates) the following warnings have flase postives
      /wd6239  #(<non-zero> && <expr>)
+     /wd6240  #(<expr> && <non-zero>)
      /wd6294  #Ill-defined for-loop
      /wd6326  #comparison of constant with other constant
      /wd28020 #expression involving paramter is not true

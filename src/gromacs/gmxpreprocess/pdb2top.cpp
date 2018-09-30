@@ -642,25 +642,13 @@ void print_top_mols(FILE *out,
                     const char *title, const char *ffdir, const char *water,
                     int nincl, char **incls, int nmol, t_mols *mols)
 {
-    int   i;
-    char *incl;
 
     if (nincl > 0)
     {
         fprintf(out, "; Include chain topologies\n");
-        for (i = 0; (i < nincl); i++)
+        for (int i = 0; i < nincl; i++)
         {
-            incl = strrchr(incls[i], DIR_SEPARATOR);
-            if (incl == nullptr)
-            {
-                incl = incls[i];
-            }
-            else
-            {
-                /* Remove the path from the include name */
-                incl = incl + 1;
-            }
-            fprintf(out, "#include \"%s\"\n", incl);
+            fprintf(out, "#include \"%s\"\n", gmx::Path::getFilename(incls[i]).c_str());
         }
         fprintf(out, "\n");
     }
@@ -675,7 +663,7 @@ void print_top_mols(FILE *out,
     {
         fprintf(out, "[ %s ]\n", dir2str(d_molecules));
         fprintf(out, "; %-15s %5s\n", "Compound", "#mols");
-        for (i = 0; (i < nmol); i++)
+        for (int i = 0; i < nmol; i++)
         {
             fprintf(out, "%-15s %5d\n", mols[i].name, mols[i].nr);
         }
