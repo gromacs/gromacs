@@ -208,7 +208,6 @@ void linearArrayIndexToMultiDim(int indexLinear, int numDimensions, const awh_iv
     {
         int stride = 1;
 
-        /* Workaround for bug in clang */
         for (int k = d + 1; k < numDimensions; k++)
         {
             stride *= numPointsDim[k];
