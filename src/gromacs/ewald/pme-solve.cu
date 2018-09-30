@@ -43,6 +43,8 @@
 
 #include <cassert>
 
+#include <math_constants.h>
+
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 
 #include "pme.cuh"
@@ -203,7 +205,7 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
             const float m2k        = mhxk * mhxk + mhyk * mhyk + mhzk * mhzk;
             assert(m2k != 0.0f);
             //TODO: use LDG/textures for gm_splineValue
-            float       denom = m2k * float(M_PI) * kernelParams.current.boxVolume * gm_splineValueMajor[kMajor] * gm_splineValueMiddle[kMiddle] * gm_splineValueMinor[kMinor];
+            float       denom = m2k * float(CUDART_PI_F) * kernelParams.current.boxVolume * gm_splineValueMajor[kMajor] * gm_splineValueMiddle[kMiddle] * gm_splineValueMinor[kMinor];
             assert(isfinite(denom));
             assert(denom != 0.0f);
             const float   tmp1   = expf(-kernelParams.grid.ewaldFactor * m2k);
