@@ -70,8 +70,8 @@ static const int          c_fbufStride  = c_clSizeSq;
 /*! \brief i-cluster interaction mask for a super-cluster with all c_numClPerSupercl=8 bits set */
 static const unsigned     superClInteractionMask = ((1U << c_numClPerSupercl) - 1U);
 
-static const float        c_oneSixth    = 0.16666667f;
-static const float        c_oneTwelveth = 0.08333333f;
+static const float __device__        c_oneSixth    = 0.16666667f;
+static const float __device__        c_oneTwelveth = 0.08333333f;
 
 
 /*! Convert LJ sigma,epsilon parameters to C6,C12. */

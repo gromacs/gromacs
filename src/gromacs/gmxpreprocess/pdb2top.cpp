@@ -650,7 +650,7 @@ void print_top_mols(FILE *out,
         fprintf(out, "; Include chain topologies\n");
         for (i = 0; (i < nincl); i++)
         {
-            incl = strrchr(incls[i], DIR_SEPARATOR);
+            incl = std::max(strrchr(incls[i], '/'), strrchr(incls[i], '\\'));
             if (incl == nullptr)
             {
                 incl = incls[i];

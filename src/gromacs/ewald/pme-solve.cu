@@ -47,6 +47,7 @@
 
 #include "pme.cuh"
 
+const static real __device__ M_PI = 3.14159265;
 /*! \brief
  * PME complex grid solver kernel function.
  *
