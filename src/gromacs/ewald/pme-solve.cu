@@ -47,6 +47,9 @@
 
 #include "pme.cuh"
 
+#ifndef M_PI //Windows
+#define M_PI 3.1415926535897931
+#endif
 /*! \brief
  * PME complex grid solver kernel function.
  *
