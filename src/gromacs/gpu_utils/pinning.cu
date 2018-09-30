@@ -54,7 +54,7 @@
 
 namespace gmx
 {
-
+#pragma diag_suppress 177  
 //! Is \c ptr aligned on a boundary that is a multiple of \c bytes.
 gmx_unused static inline bool isAligned(const void *ptr, size_t bytes)
 {

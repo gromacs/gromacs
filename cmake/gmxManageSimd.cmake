@@ -332,6 +332,7 @@ if(GMX_ENABLE_AVX512_TESTS AND
     # Since we might be overriding AVX2 architecture flags with the AVX512 flags for the
     # files where it is used, we also check for a flag not to warn about the first (unused) arch.
     # To avoid spamming the user with lots of gromacs tests we just call the CMake flag test directly.
+	if (NOT MSVC)
     foreach(_testflag "-Wno-unused-command-line-argument" "-wd10121")
         string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" FLAG_ACCEPTED_VARIABLE "${_testflag}_FLAG_ACCEPTED")
         check_cxx_compiler_flag("${_testflag}" ${FLAG_ACCEPTED_VARIABLE})
@@ -340,6 +341,7 @@ if(GMX_ENABLE_AVX512_TESTS AND
             break()
         endif()
     endforeach(_testflag)
+	endif()
 endif()
 
 # By default, 32-bit windows cannot pass SIMD (SSE/AVX) arguments in registers,

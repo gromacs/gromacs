@@ -46,7 +46,7 @@ function(GMX_TEST_CXX11 CXX11_CXX_FLAG_NAME STDLIB_CXX_FLAG_NAME STDLIB_LIBRARIE
     # First check that the compiler is OK, and find the appropriate flag.
 
     if(WIN32 AND NOT MINGW)
-        set(CXX11_CXX_FLAG "/Qstd=c++11")
+        set(CXX11_CXX_FLAG "/std:c++14 /Zc:__cplusplus")
     elseif(CYGWIN)
         set(CXX11_CXX_FLAG "-std=gnu++11") #required for strdup
     else()

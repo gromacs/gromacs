@@ -65,6 +65,14 @@ namespace test
  */
 struct AwhTestParameters
 {
+	AwhTestParameters() = default;
+	AwhTestParameters(AwhTestParameters && o) : beta(o.beta), awhDimParams(std::move(o.awhDimParams)),
+		awhBiasParams(std::move(o.awhBiasParams)), awhParams(std::move(o.awhParams)),
+		dimParams(std::move(o.dimParams))
+	{
+		awhBiasParams.dimParams = &awhDimParams;
+		awhParams.awhBiasParams = &awhBiasParams;
+	}
     double                 beta;          //!< 1/(kB*T)
 
     AwhDimParams           awhDimParams;  //!< Dimension parameters pointed to by \p awhBiasParams
