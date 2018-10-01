@@ -85,7 +85,7 @@ typedef struct {
  * \note The function types in the list are ordered on increasing value.
  * \note Currently bonded are only supported with CUDA, not with OpenCL.
  */
-constexpr std::array<int, 7> ftypesOnGpu =
+constexpr std::array<int, 8> ftypesOnGpu =
 {
     F_BONDS,
     F_ANGLES,
@@ -93,6 +93,7 @@ constexpr std::array<int, 7> ftypesOnGpu =
     F_PDIHS,
     F_RBDIHS,
     F_IDIHS,
+    F_PIDIHS,
     F_LJ14
 };
 
@@ -253,7 +254,6 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
 
         if (useGpuForBondeds &&
             // TODO remove the next line when we have GPU bonded kernels
-            false && // NOLINT readability-simplify-boolean-expr
             ftypeGpuIndex < ftypesOnGpu.size() &&
             ftypesOnGpu[ftypeGpuIndex] == ftype)
         {
