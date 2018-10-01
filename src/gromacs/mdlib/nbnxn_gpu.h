@@ -111,12 +111,15 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t gmx_unused *nb,
 /*! \brief
  * Launch asynchronously the download of nonbonded forces from the GPU
  * (and energies/shift forces if required).
+ * When haveOtherWork=true, the copy-back is done even when there was
+ * no non-bonded work.
  */
 GPU_FUNC_QUALIFIER
 void nbnxn_gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused              *nb,
                               const struct nbnxn_atomdata_t gmx_unused *nbatom,
                               int                    gmx_unused         flags,
-                              int                    gmx_unused         aloc) GPU_FUNC_TERM
+                              int                    gmx_unused         aloc,
+                              bool                   gmx_unused         haveOtherWork) GPU_FUNC_TERM
 
 /*! \brief Attempts to complete nonbonded GPU task.
  *
@@ -144,6 +147,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused              *nb,
  * \param[in]  nb     The nonbonded data GPU structure
  * \param[in]  flags  Force flags
  * \param[in]  aloc   Atom locality identifier
+ * \param[in]  haveOtherWork  Tells whether there is other work than non-bonded work in the nbnxn stream(s)
  * \param[out] e_lj   Pointer to the LJ energy output to accumulate into
  * \param[out] e_el   Pointer to the electrostatics energy output to accumulate into
  * \param[out] fshift Pointer to the shift force buffer to accumulate into
@@ -154,6 +158,7 @@ GPU_FUNC_QUALIFIER
 bool nbnxn_gpu_try_finish_task(gmx_nbnxn_gpu_t gmx_unused  *nb,
                                int             gmx_unused   flags,
                                int             gmx_unused   aloc,
+                               bool            gmx_unused   haveOtherWork,
                                real            gmx_unused  *e_lj,
                                real            gmx_unused  *e_el,
                                rvec            gmx_unused  *fshift,
@@ -169,6 +174,7 @@ bool nbnxn_gpu_try_finish_task(gmx_nbnxn_gpu_t gmx_unused  *nb,
  * \param[in] nb The nonbonded data GPU structure
  * \param[in] flags Force flags
  * \param[in] aloc Atom locality identifier
+ * \param[in]  haveOtherWork  Tells whether there is other work than non-bonded work in the nbnxn stream(s)
  * \param[out] e_lj Pointer to the LJ energy output to accumulate into
  * \param[out] e_el Pointer to the electrostatics energy output to accumulate into
  * \param[out] fshift Pointer to the shift force buffer to accumulate into
@@ -177,6 +183,7 @@ GPU_FUNC_QUALIFIER
 void nbnxn_gpu_wait_finish_task(gmx_nbnxn_gpu_t gmx_unused *nb,
                                 int             gmx_unused  flags,
                                 int             gmx_unused  aloc,
+                                bool            gmx_unused  haveOtherWork,
                                 real            gmx_unused *e_lj,
                                 real            gmx_unused *e_el,
                                 rvec            gmx_unused *fshift) GPU_FUNC_TERM
