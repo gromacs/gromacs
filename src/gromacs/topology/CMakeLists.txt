@@ -39,6 +39,7 @@ gmx_install_headers(
     atomprop.h
     atoms.h
     block.h
+    forcefieldparameters.h
     idef.h
     ifunc.h
     index.h
