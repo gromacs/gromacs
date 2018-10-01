@@ -83,7 +83,7 @@ GMX_TEST_OPTIONS(MdrunTestOptions, options)
 {
     GMX_UNUSED_VALUE(options);
 #if GMX_OPENMP
-    options->addOption(IntegerOption("nt_omp").store(&g_numOpenMPThreads)
+    options->addOption(IntegerOption("ntomp").store(&g_numOpenMPThreads)
                            .description("Number of OpenMP threads for child mdrun calls"));
 #endif
 }
@@ -114,8 +114,8 @@ SimulationRunner::SimulationRunner(TestFileManager *fileManager) :
 void
 SimulationRunner::useEmptyMdpFile()
 {
-    // TODO When removing the group scheme, update actual and potential users of useEmptyMdpFile
-    useStringAsMdpFile("cutoff-scheme = Group\n");
+    useStringAsMdpFile(R"(cutoff-scheme = Verlet
+                          verlet-buffer-tolerance = 0.005)");
 }
 
 void
