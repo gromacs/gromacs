@@ -1132,3 +1132,36 @@ gmx_bool nbnxn_gpu_is_kernel_ewald_analytical(const gmx_nbnxn_ocl_t *nb)
     return ((nb->nbparam->eeltype == eelOclEWALD_ANA) ||
             (nb->nbparam->eeltype == eelOclEWALD_ANA_TWIN));
 }
+
+//! This function is documented in the header file
+void *nbnxn_gpu_command_stream(gmx_nbnxn_gpu_t *nb,
+                               int              iloc)
+{
+    assert(nb);
+
+    return static_cast<void *>(&nb->stream[iloc]);
+}
+
+//! This function is documented in the header file
+void *nbnxn_gpu_get_xq(gmx_nbnxn_gpu_t *nb)
+{
+    assert(nb);
+
+    return static_cast<void *>(nb->atdat->xq);
+}
+
+//! This function is documented in the header file
+void *nbnxn_gpu_get_f(gmx_nbnxn_gpu_t *nb)
+{
+    assert(nb);
+
+    return static_cast<void *>(nb->atdat->f);
+}
+
+//! This function is documented in the header file
+rvec *nbnxn_gpu_get_fshift(gmx_nbnxn_gpu_t *nb)
+{
+    assert(nb);
+
+    return reinterpret_cast<rvec *>(nb->atdat->fshift);
+}

@@ -39,6 +39,8 @@
 
 #include "ifunc.h"
 
+// TODO: Remove this dependency on gmxlib
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/disre.h"
 #include "gromacs/listed-forces/orires.h"
