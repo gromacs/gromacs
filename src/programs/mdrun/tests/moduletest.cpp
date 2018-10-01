@@ -83,7 +83,7 @@ GMX_TEST_OPTIONS(MdrunTestOptions, options)
 {
     GMX_UNUSED_VALUE(options);
 #if GMX_OPENMP
-    options->addOption(IntegerOption("nt_omp").store(&g_numOpenMPThreads)
+    options->addOption(IntegerOption("ntomp").store(&g_numOpenMPThreads)
                            .description("Number of OpenMP threads for child mdrun calls"));
 #endif
 }
@@ -107,15 +107,15 @@ SimulationRunner::SimulationRunner(TestFileManager *fileManager) :
 // TODO The combination of defaulting to Verlet cut-off scheme, NVE,
 // and verlet-buffer-tolerance = -1 gives a grompp error. If we keep
 // things that way, this function should be renamed. For now,
-// force the use of the group scheme.
+// we use the Verlet scheme and hard-code a tolerance.
 // TODO There is possible outstanding unexplained behaviour of mdp
 // input parsing e.g. Redmine 2074, so this particular set of mdp
 // contents is also tested with GetIrTest in gmxpreprocess-test.
 void
 SimulationRunner::useEmptyMdpFile()
 {
-    // TODO When removing the group scheme, update actual and potential users of useEmptyMdpFile
-    useStringAsMdpFile("cutoff-scheme = Group\n");
+    useStringAsMdpFile(R"(cutoff-scheme = Verlet
+                          verlet-buffer-tolerance = 0.005)");
 }
 
 void

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,9 +68,11 @@ typedef MdrunCompressedXOutputTest MdrunCompressedXOutput;
 /* This test tests a few ways that mdrun can write a compressed trajectory. */
 TEST_P(MdrunCompressedXOutput, ExitsNormally)
 {
-    std::string mdpFile("cutoff-scheme = Group\n"
-                        "nsteps = 1\n"
-                        "nstxout-compressed = 1\n");
+    std::string mdpFile(R"(cutoff-scheme = Verlet
+                           verlet-buffer-tolerance = 0.005
+                           nsteps = 1
+                           nstxout-compressed = 1
+                           )");
     std::string compressedXGrpsLine = GetParam();
     mdpFile += compressedXGrpsLine;
     runner_.useStringAsMdpFile(mdpFile.c_str());
