@@ -59,6 +59,7 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/listed-forces/manage-threading.h"
+#include "gromacs/listed-forces/listed-forces.h"
 #include "gromacs/listed-forces/pairs.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
@@ -3077,6 +3078,15 @@ void init_forcerec(FILE                             *fp,
         init_nb_verlet(mdlog, &fr->nbv, bFEP_NonBonded, ir, fr,
                        cr, hardwareInfo, deviceInfo,
                        mtop, box);
+
+        if (useGpuForBonded)
+        {
+            init_gpu_bonded(fr->gpuBondedLists,
+                            mtop->ffparams,
+                            DOMAINDECOMP(cr) ?
+                            nbnxn_gpu_command_stream(fr->nbv->gpu_nbv, eintNonlocal) :
+                            nbnxn_gpu_command_stream(fr->nbv->gpu_nbv, eintLocal));
+        }
     }
 
     if (fp != nullptr)
