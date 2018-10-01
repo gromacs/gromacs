@@ -70,6 +70,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "listed-internal.h"
+#include "utilities.h"
 
 /*! \brief struct for passing all data required for a function type */
 typedef struct {
@@ -77,24 +78,6 @@ typedef struct {
     int            ftype; /**< the function type index */
     int            nat;   /**< nr of atoms involved in a single ftype interaction */
 } ilist_data_t;
-
-/*! \brief List of all bonded function types supported on a GPUs
- *
- * \note This list should be in sync with the actual GPU code.
- * \note Perturbed interactions are not supported on GPUs.
- * \note The function types in the list are ordered on increasing value.
- * \note Currently bonded are only supported with CUDA, not with OpenCL.
- */
-constexpr std::array<int, 7> ftypesOnGpu =
-{
-    F_BONDS,
-    F_ANGLES,
-    F_UREY_BRADLEY,
-    F_PDIHS,
-    F_RBDIHS,
-    F_IDIHS,
-    F_LJ14
-};
 
 /*! \brief Divides listed interactions over threads
  *
@@ -252,8 +235,6 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
         int            nrToAssignToCpuThreads = il.nr;
 
         if (useGpuForBondeds &&
-                     // TODO remove the next line when we have GPU bonded kernels
-            false && // NOLINT readability-simplify-boolean-expr
             ftypeGpuIndex < ftypesOnGpu.size() &&
             ftypesOnGpu[ftypeGpuIndex] == ftype)
         {
@@ -476,6 +457,14 @@ bool inputSupportsGpuBondeds(const t_inputrec &ir,
     if (!EI_DYNAMICS(ir.eI))
     {
         errorReasons.emplace_back("not a dynamical integrator");
+    }
+    if (EI_MIMIC(ir.eI))
+    {
+        errorReasons.emplace_back("MiMiC");
+    }
+    if (ir.opts.ngener > 1)
+    {
+        errorReasons.emplace_back("Cannot run with multiple energy groups");
     }
     return addMessageIfNotSupported(errorReasons, error);
 }
