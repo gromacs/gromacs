@@ -90,7 +90,7 @@ class MimicTest : public gmx::test::MdrunTestFixture
             EnergyTolerances energiesToMatch
             {{
                  {
-                     interaction_function[F_EPOT].longname, relativeToleranceAsFloatingPoint(-20.1, 1e-4)
+                     interaction_function[F_EPOT].longname, relativeToleranceAsFloatingPoint(1.0, 2e-6)
                  },
              }};
 
