@@ -138,7 +138,7 @@ reportGpuUsage(const MDLogger                &mdlog,
                                     gpuIdsString.c_str());
         // Because there is a GPU in use, there must be a PP task on a GPU.
         output += gmx::formatString("PP tasks will do short-ranged%s interactions on the GPU\n",
-                                    useGpuForBonded ? "and most bonded" : "");
+                                    useGpuForBonded ? " and most bonded" : "");
         if (pmeRunMode == PmeRunMode::Mixed)
         {
             output += gmx::formatString("PME tasks will do only spread and gather on the GPU\n");
