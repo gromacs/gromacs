@@ -75,6 +75,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "listed-internal.h"
+#include "utilities.h"
 
 struct BondedInteractions
 {
@@ -518,14 +519,6 @@ calc_one_bond(int thread,
 }
 
 } // namespace
-
-gmx_bool
-ftype_is_bonded_potential(int ftype)
-{
-    return
-        ((interaction_function[ftype].flags & IF_BOND) != 0u) &&
-        !(ftype == F_CONNBONDS || ftype == F_POSRES || ftype == F_FBPOSRES);
-}
 
 /*! \brief Compute the bonded part of the listed forces, parallelized over threads
  */

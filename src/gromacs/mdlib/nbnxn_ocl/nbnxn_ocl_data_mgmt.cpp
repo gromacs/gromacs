@@ -1132,3 +1132,4 @@ gmx_bool nbnxn_gpu_is_kernel_ewald_analytical(const gmx_nbnxn_ocl_t *nb)
     return ((nb->nbparam->eeltype == eelOclEWALD_ANA) ||
             (nb->nbparam->eeltype == eelOclEWALD_ANA_TWIN));
 }
+
