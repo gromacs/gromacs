@@ -116,6 +116,7 @@
 #include "nbnxn_gpu.h"
 #include "nbnxn_kernels/nbnxn_kernel_cpu.h"
 #include "nbnxn_kernels/nbnxn_kernel_prune.h"
+#include "nbnxn_cuda/gpuBondedCUDA.h"
 
 // TODO: this environment variable allows us to verify before release
 // that on less common architectures the total cost of polling is not larger than
@@ -1522,13 +1523,30 @@ static void do_force_cutsVERLET(FILE *fplog,
     {
         update_QMMMrec(cr, fr, as_rvec_array(x.data()), mdatoms, box);
     }
+    if (bUseGPU) {
+     if(bNS) update_gpu_bonded( &(top->idef), fr ,box,
+                              x.size() , mdatoms, lambda,
+                              &(enerd->grpp) );
+     reset_gpu_bonded(nbv->nbs->natoms_nonlocal, enerd->grpp.nener);
+   }
 
     /* Compute the bonded and non-bonded energies and optionally forces */
-    do_force_lowlevel(fr, inputrec, &(top->idef),
+
+   if (bUseGPU)
+    {
+       do_bonded_gpu(fr,inputrec, &(top->idef), 
+                     flags, graph, nbv->nbs->natoms_nonlocal, as_rvec_array(x.data()) , 
+                     lambda,mdatoms,f,inputrec->fepvals,enerd);
+       do_bonded_gpu_finalize(fr,
+                     flags, nbv->nbs->natoms_nonlocal, f, enerd);
+    } else {
+       do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, ms, nrnb, wcycle, mdatoms,
                       as_rvec_array(x.data()), hist, f, &forceWithVirial, enerd, fcd,
                       box, inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
                       flags, &cycles_pme);
+
+   }
 
     wallcycle_stop(wcycle, ewcFORCE);
 
