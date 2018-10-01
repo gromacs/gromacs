@@ -130,6 +130,13 @@ void checkHardwareOversubscription(int                             numThreadsOnT
                                    const PhysicalNodeCommunicator &comm,
                                    const MDLogger                 &mdlog);
 
+/*! \brief Prints layout of threads within NUMA nodes
+ */
+void reportThreadToHardwareMapping(gmx_hw_opt_t                   &hw_opt,
+                                   const HardwareTopology         &hwTop,
+                                   const MDLogger                 &mdlog,
+                                   int                             nPmeRanks);
+
 }  // namespace gmx
 
 #endif

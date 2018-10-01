@@ -962,4 +962,63 @@ void checkHardwareOversubscription(int                             numThreadsOnT
     }
 }
 
+/* TODO: hw_opt should have an ntmpi_pme field to replace extra nPmeRanks function parameter
+ * here and in check_and_update_hw_opt_1
+ */
+void reportThreadToHardwareMapping(gmx_hw_opt_t                   &hw_opt,
+                                   const HardwareTopology         &hwTop,
+                                   const MDLogger                 &mdlog,
+                                   int                             nPmeRanks)
+{
+    // Cannot check if we don't have the relevant topology info
+    if (hwTop.supportLevel() < gmx::HardwareTopology::SupportLevel::Full)
+    {
+        return;
+    }
+
+    // Do not check if cores were not pinned
+    if (hw_opt.thread_affinity == threadaffOFF)
+    {
+        return;
+    }
+
+    std::string threadInfo = gmx::formatString("Thread number:       ");
+    std::string procInfo   = gmx::formatString("Logical processor ID:");
+    std::string numaInfo   = gmx::formatString("NUMA ID:             ");
+
+
+    int           nPPRanks                = hw_opt.nthreads_tmpi - nPmeRanks;
+    int           currentLogicalProcessor = hw_opt.core_pinning_offset;
+    int           pinstride               = hw_opt.core_pinning_stride > 0 ? hw_opt.core_pinning_stride : 1;
+    auto          machine                 = hwTop.machine();
+    for (int i = 0; i < nPPRanks; i++)
+    {
+        for (int j = 0; j < hw_opt.nthreads_omp; j++)
+        {
+            threadInfo += gmx::formatString(" %3d", i);
+            procInfo   += gmx::formatString(" %3d", currentLogicalProcessor);
+            numaInfo   += gmx::formatString(" %3d", machine.logicalProcessors[currentLogicalProcessor].numaNodeId);
+
+            currentLogicalProcessor += pinstride;
+        }
+
+    }
+    for (int i = nPPRanks; i < (nPmeRanks + nPPRanks); i++)
+    {
+        for (int j = 0; j < hw_opt.nthreads_omp_pme; j++)
+        {
+            threadInfo              += gmx::formatString(" %3d", i);
+            procInfo                += gmx::formatString(" %3d", currentLogicalProcessor);
+            numaInfo                += gmx::formatString(" %3d", machine.logicalProcessors[currentLogicalProcessor].numaNodeId);
+
+            currentLogicalProcessor += pinstride;
+        }
+
+    }
+    threadInfo += "\n" + procInfo + "\n" + numaInfo + "\n\n";
+    GMX_LOG(mdlog.info).asParagraph().appendText(threadInfo);
+}
+
+
+
 }  // namespace gmx

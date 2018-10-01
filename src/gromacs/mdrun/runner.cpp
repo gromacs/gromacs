@@ -1078,6 +1078,7 @@ int Mdrunner::mdrunner()
                                   *hwinfo->hardwareTopology,
                                   physicalNodeComm, mdlog);
 
+
     if (hw_opt.thread_affinity != threadaffOFF)
     {
         /* Before setting affinity, check whether the affinity has changed
@@ -1095,6 +1096,10 @@ int Mdrunner::mdrunner()
         gmx_set_thread_affinity(mdlog, cr, &hw_opt, *hwinfo->hardwareTopology,
                                 numThreadsOnThisRank, numThreadsOnThisNode,
                                 intraNodeThreadOffset, nullptr);
+
+        reportThreadToHardwareMapping(hw_opt, *hwinfo->hardwareTopology,
+                                      mdlog, domdecOptions.numPmeRanks);
+
     }
 
     if (mdrunOptions.timingOptions.resetStep > -1)
