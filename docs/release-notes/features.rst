@@ -1,6 +1,16 @@
 New and improved features
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
+|Gromacs| build is now more reproducible
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The build system no longer embeds information about who built the
+binary and where.  We used to include this information to help
+troubleshoot problems and ensure checkpoint continuations are exact
+where possible, but this does not seem necessary. This makes the build
+closer to ``reproducible by default`` which is useful for projects
+that offer distributions of reproducible software, including
+|Gromacs|.
+
 Update gmx cluster to write correct PDB files and index files with cluster frames
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
