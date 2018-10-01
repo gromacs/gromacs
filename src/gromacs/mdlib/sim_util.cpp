@@ -115,6 +115,7 @@
 #include "nbnxn_gpu.h"
 #include "nbnxn_kernels/nbnxn_kernel_cpu.h"
 #include "nbnxn_kernels/nbnxn_kernel_prune.h"
+#include "nbnxn_cuda/gpuBondedCUDA.h"
 
 // TODO: this environment variable allows us to verify before release
 // that on less common architectures the total cost of polling is not larger than
@@ -1534,14 +1535,60 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     {
         update_QMMMrec(cr, fr, as_rvec_array(x.data()), mdatoms, box);
     }
+    if (bUseGPU) {
+     if(bNS) update_gpu_bonded( &(top->idef), fr ,box,
+                              x.size() , mdatoms, lambda,
+                              &(enerd->grpp) );
+     reset_gpu_bonded(nbv->nbs->natoms_nonlocal, enerd->grpp.nener);
+   }
 
     /* Compute the bonded and non-bonded energies and optionally forces */
-    do_force_lowlevel(fr, inputrec, &(top->idef),
+#ifdef DEBUG_JV
+       int rank=0;
+       MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+       real tot_cpu=0;
+       for (i=0 ; i<  SHIFTS ; i++)
+       {
+         tot_cpu +=norm2(fr->fshift[i]);
+       }
+       bool bCalcEnerVir = (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY));
+       if(bCalcEnerVir) {
+         printf("%d (shift force cpu initial) :: %f\n",rank,tot_cpu);
+         for (i = 0; i < F_NRE; i++)
+         {
+           if(enerd->term[i] > 0 )
+           {
+             printf("%d (vtot initial) : %d %f\n",rank,i,enerd->term[i]);
+           }
+         }
+       }
+       do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, nrnb, wcycle, mdatoms,
                       as_rvec_array(x.data()), hist, f, &forceWithVirial, enerd, fcd, top, fr->born,
                       bBornRadii, box,
                       inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
                       flags, &cycles_pme);
+#endif
+
+
+   if (bUseGPU)
+    {
+       do_bonded_gpu(fr,inputrec, &(top->idef), 
+                     flags, graph, nbv->nbs->natoms_nonlocal, as_rvec_array(x.data()) , 
+                     lambda,mdatoms,f,inputrec->fepvals,enerd);
+       do_bonded_gpu_finalize(fr,inputrec, &(top->idef),
+                     flags, graph, nbv->nbs->natoms_nonlocal, as_rvec_array(x.data()) ,
+                     lambda,mdatoms,f,inputrec->fepvals,enerd);
+    } else {
+       do_force_lowlevel(fr, inputrec, &(top->idef),
+                      cr, nrnb, wcycle, mdatoms,
+                      as_rvec_array(x.data()), hist, f, &forceWithVirial, enerd, fcd, top, fr->born,
+                      bBornRadii, box,
+                      inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
+                      flags, &cycles_pme);
+
+   }
+
 
     wallcycle_stop(wcycle, ewcFORCE);
 
