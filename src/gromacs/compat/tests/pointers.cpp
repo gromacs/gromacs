@@ -61,7 +61,8 @@ TEST(NotNullConstruction, Works)
     not_null < std::shared_ptr < int>> sharedPointer(
             std::make_shared<int>(10));
 
-#ifndef NDEBUG
+    // See pointers.h for why we can't test the Intel compiler reliably.
+#if !defined(NDEBUG) && !defined(__INTEL_COMPILER)
     int *nullPointer = nullptr;
     EXPECT_DEATH_IF_SUPPORTED(not_null<int *> invalidNullPointer(nullPointer), "");
 #endif
