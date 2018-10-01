@@ -55,11 +55,47 @@ struct bonded_threading_t;
 struct gmx_mtop_t;
 struct t_inputrec;
 
+/*! \brief List of all bonded function types supported on a GPUs
+ *
+ * \note This list should be in sync with the actual GPU code.
+ * \note Perturbed interactions are not supported on GPUs.
+ * \note The function types in the list are ordered on increasing value.
+ * \note Currently bonded are only supported with CUDA, not with OpenCL.
+ */
+constexpr std::array<int, 8> ftypesOnGpu =
+{
+    F_BONDS,
+    F_ANGLES,
+    F_UREY_BRADLEY,
+    F_PDIHS,
+    F_RBDIHS,
+    F_IDIHS,
+    F_PIDIHS,
+    F_LJ14
+};
+
 /*! \internal \brief Struct for storing lists of bonded interaction for evaluation on a GPU */
 struct GpuBondedLists
 {
-    InteractionLists iLists;           /**< The interaction lists */
-    bool             haveInteractions; /**< Tells whether there are any interaction in iLists */
+    GpuBondedLists()
+    {
+        for (int ftype = 0; ftype < F_NRE; ftype++)
+        {
+            iListsDevice[ftype].nr     = 0;
+            iListsDevice[ftype].iatoms = nullptr;
+            iListsDevice[ftype].nalloc = 0;
+        }
+    }
+
+    InteractionLists       iLists;           /**< The interaction lists */
+    bool                   haveInteractions; /**< Tells whether there are any interaction in iLists */
+
+    t_iparams             *forceparamsDevice = nullptr;
+    t_ilist                iListsDevice[F_NRE]; /**< Interaction lists on the device */
+    std::vector<real>      vtot;
+    real                  *vtotDevice   = nullptr;
+
+    void                  *stream;
 };
 
 
