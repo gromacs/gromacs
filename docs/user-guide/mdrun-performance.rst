@@ -257,6 +257,19 @@ behavior.
     Multiple PME ranks are not supported with PME on GPU, so if a GPU is used
     for the PME calculation -npme must be set to 1.
 
+``-bonded``
+    Used to set where to execute the bonded interactions that are part of the
+    PP workload for a domain.
+    Can be set to "auto", "cpu", "gpu."
+    Defaults to "auto," which uses a compatible CUDA GPU only when one
+    is available, a GPU is handling short-ranged interactions, and the
+    CPU is handling long-ranged interaction work (electrostatic or
+    LJ). The work for the bonded interactions takes place on the same
+    GPU as the short-ranged interactions, and cannot be independently
+    assigned.
+    Setting "gpu" requires that a compatible GPU be available and will
+    be used.
+
 ``-gpu_id``
     A string that specifies the ID numbers of the GPUs that
     are available to be used by ranks on this node. For example,
@@ -311,7 +324,7 @@ behavior.
       Mapping of GPU IDs to the 4 GPU tasks in the 4 ranks on this node:
       PP:0,PP:0,PP:0,PME:1
 
-    In this case, 3 ranks are set by user to compute short-range work
+    In this case, 3 ranks are set by user to compute PP work
     on GPU 0, and 1 rank to compute PME on GPU 1.
     The detailed indexing of the GPUs is also reported in the log file.
 
@@ -360,6 +373,25 @@ all of their OpenMP threads run on the same socket.
 The number of ranks must be a multiple of the number of
 sockets, and the number of cores per node must be
 a multiple of the number of threads per rank.
+
+::
+
+    gmx mdrun -ntmpi 4 -nb gpu -pme cpu
+
+Starts :ref:`mdrun <gmx mdrun>` using four thread-MPI ranks. The CPU
+cores available will be split evenly between the ranks using OpenMP
+threads. The long-range component of the forces are calculated on
+CPUs. This may be optimal on hardware where the CPUs are relatively
+powerful compared to the GPUs.
+
+::
+
+    gmx mdrun -ntmpi 1 -nb gpu -pme gpu -bonded gpu
+
+Starts :ref:`mdrun <gmx mdrun>` using a single thread-MPI rank that
+will use all available CPU cores. All interactions type that can run
+on a GPU will do so. This may be optimal on hardware where the CPUs
+are extremely weak compared to the GPUs.
 
 ::
 
@@ -463,7 +495,8 @@ cases.
     for molecular systems with heterogeneous particle or interaction
     density. When a certain threshold for performance loss is
     exceeded, DLB activates and shifts particles between ranks to improve
-    performance.
+    performance. If available, using ``-bonded gpu`` is expected
+    to improve the ability of DLB to maximize performance.
 
 ``-gcom``
     During the simulation :ref:`gmx mdrun` must communicate between all ranks to
@@ -802,7 +835,7 @@ GPU accelerated calculation of PME
 
 .. TODO again, extend this and add some actual useful information concerning performance etc...
 
-Recent additions to |Gromacs| now also allow the off-loading of the PME calculation
+|Gromacs| now allows the off-loading of the PME calculation
 to the GPU, to further reduce the load on the CPU and improve usage overlap between
 CPU and GPU. Here, the solving of PME will be performed in addition to the calculation
 of the short range interactions on the same GPU as the short range interactions.
@@ -831,15 +864,25 @@ Known limitations
 
 - LJ PME is not supported on GPUs.
 
+GPU accelerated calculation of bonded interactions (CUDA only)
+..............................................................
+
+.. TODO again, extend this and add some actual useful information concerning performance etc...
+
+|Gromacs| now allows the off-loading of the bonded part of the PP
+workload to a CUDA-compatible GPU. This is treated as part of the PP
+work, and requires that the short-ranged non-bonded task also runs on
+a GPU. It is an advantage usually only when the CPU is relatively weak
+compared with the GPU, perhaps because its workload is too large for
+the available cores. This would likely be the case for free-energy
+calculations.
+
 Assigning tasks to GPUs
 .......................
 
 Depending on which tasks should be performed on which hardware, different kinds of
 calculations can be combined on the same or different GPUs, according to the information
 provided for running :ref:`mdrun <gmx mdrun>`.
-
-.. Someone more knowledgeable than me should check the accuracy of this part, so that
-   I don't say something that is factually wrong :)
 
 It is possible to assign the calculation of the different computational tasks to the same GPU, meaning
 that they will share the computational resources on the same device, or to different processing units
@@ -849,7 +892,7 @@ One overview over the possible task assignments is given below:
 
 |Gromacs| version 2018:
 
-  Two different types of GPU accelerated tasks are available, NB and PME.
+  Two different types of assignable GPU accelerated tasks are available, NB and PME.
   Each PP rank has a NB task that can be offloaded to a GPU.
   If there is only one rank with a PME task (including if that rank is a
   PME-only rank), then that task can be offloaded to a GPU. Such a PME
@@ -880,7 +923,8 @@ Performance considerations for GPU tasks
    with the GPUs focused on the calculation of the NB.
 
 #) With fast/modern GPUs and/or slow/old CPUs with few cores,
-   it generally helps to have the GPU do PME.
+   it generally helps to have the GPU do PME. With very few/weak
+   cores, it can help to have the GPU do bonded interactions also.
 
 #) It *is* possible to use multiple GPUs with PME offload
    by letting e.g.
@@ -990,8 +1034,7 @@ Known limitations of the OpenCL support
 
 Limitations in the current OpenCL support of interest to |Gromacs| users:
 
-- PME GPU offload is not supported with OpenCL.
-- No Intel devices (CPUs, GPUs or Xeon Phi) are supported
+- Intel integrated GPUs are supported, but not CPUs or Xeon Phi
 - Due to blocking behavior of some asynchronous task enqueuing functions
   in the NVIDIA OpenCL runtime, with the affected driver versions there is
   almost no performance gain when using NVIDIA GPUs.

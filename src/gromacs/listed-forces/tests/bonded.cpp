@@ -51,8 +51,10 @@
 
 #include "gromacs/listed-forces/listed-forces.h"
 #include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/idef.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
