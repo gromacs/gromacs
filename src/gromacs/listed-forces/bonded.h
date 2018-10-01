@@ -47,20 +47,15 @@
 #ifndef GMX_LISTED_FORCES_BONDED_H
 #define GMX_LISTED_FORCES_BONDED_H
 
-#include <cstdio>
-
-#include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/mdtypes/fcdata.h"
-#include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/interaction_const.h"
-#include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/topology/idef.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
 
-
+struct gmx_cmap_t;
+struct t_fcdata;
 struct t_graph;
+struct t_mdatom;
+struct t_nrnb;
 struct t_pbc;
 
 /*! \brief Calculate bond-angle. No PBC is taken into account (use mol-shift) */
