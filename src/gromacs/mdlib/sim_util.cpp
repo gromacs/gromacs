@@ -63,6 +63,7 @@
 #include "gromacs/imd/imd.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/disre.h"
+#include "gromacs/listed-forces/listed-forces.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/listed-forces/orires.h"
 #include "gromacs/math/functions.h"
@@ -1534,8 +1535,28 @@ static void do_force_cutsVERLET(FILE *fplog,
     {
         update_QMMMrec(cr, fr, as_rvec_array(x.data()), mdatoms, box);
     }
+    if (fr->gpuBondedLists)
+    {
+        if (bNS)
+        {
+            update_gpu_bonded(fr->gpuBondedLists, &(top->idef),
+                              x.size(), mdatoms, &(enerd->grpp));
+        }
+        reset_gpu_bonded(nbv->nbs->natoms_nonlocal, enerd->grpp.nener);
+    }
 
     /* Compute the bonded and non-bonded energies and optionally forces */
+    if (fr->gpuBondedLists)
+    {
+        /* NOTE: Currently top->idef is used instead of fr->gpuBondedLists,
+         *       because we still pass normal x/f instead of the nbnxn x/f.
+         */
+        do_bonded_gpu(fr, mdatoms->nenergrp,
+                      flags, nbv->nbs->natoms_nonlocal, as_rvec_array(x.data()),
+                      box);
+        do_bonded_gpu_finalize(fr, flags, nbv->nbs->natoms_nonlocal, f, enerd);
+    }
+
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, ms, nrnb, wcycle, mdatoms,
                       as_rvec_array(x.data()), hist, f, &forceWithVirial, enerd, fcd,

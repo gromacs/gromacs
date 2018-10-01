@@ -58,8 +58,20 @@ struct t_inputrec;
 /*! \internal \brief Struct for storing lists of bonded interaction for evaluation on a GPU */
 struct GpuBondedLists
 {
-    InteractionLists iLists;           /**< The interaction lists */
-    bool             haveInteractions; /**< Tells whether there are any interaction in iLists */
+    GpuBondedLists()
+    {
+        for (int ftype = 0; ftype < F_NRE; ftype++)
+        {
+            iListsDevice[ftype].nr     = 0;
+            iListsDevice[ftype].iatoms = nullptr;
+            iListsDevice[ftype].nalloc = 0;
+        }
+    }
+
+    InteractionLists iLists;              /**< The interaction lists */
+    bool             haveInteractions;    /**< Tells whether there are any interaction in iLists */
+
+    t_ilist          iListsDevice[F_NRE]; /**< Interaction lists on the device */
 };
 
 
