@@ -37,7 +37,7 @@
 #ifndef GMX_TOPOLOGY_IDEF_H
 #define GMX_TOPOLOGY_IDEF_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <array>
 #include <vector>
@@ -45,7 +45,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
 typedef union t_iparams
@@ -293,28 +292,6 @@ struct gmx_cmap_t
 };
 
 
-/* Struct that holds all force field parameters for the simulated system */
-struct gmx_ffparams_t
-{
-    /* Returns the number of function types, which matches the number of elements in iparams */
-    int numTypes() const
-    {
-        GMX_ASSERT(iparams.size() == functype.size(), "Parameters and function types go together");
-
-        return functype.size();
-    }
-
-    /* TODO: Consider merging functype and iparams, either by storing
-     *       the functype in t_iparams or by putting both in a single class.
-     */
-    int                     atnr = 0;          /* The number of non-bonded atom types */
-    std::vector<t_functype> functype;          /* The function type per type */
-    std::vector<t_iparams>  iparams;           /* Force field parameters per type */
-    double                  reppow  = 0.0;     /* The repulsion power for VdW: C12*r^-reppow   */
-    real                    fudgeQQ = 0._real; /* The scaling factor for Coulomb 1-4: f*q1*q2  */
-    gmx_cmap_t              cmap_grid;         /* The dihedral correction maps                 */
-};
-
 enum {
     ilsortUNKNOWN, ilsortNO_FE, ilsortFE_UNSORTED, ilsortFE_SORTED
 };
@@ -373,8 +350,6 @@ void pr_ilist(FILE *fp, int indent, const char *title,
               const t_functype *functype, const InteractionList &ilist,
               gmx_bool bShowNumbers,
               gmx_bool bShowParameters, const t_iparams *iparams);
-void pr_ffparams(FILE *fp, int indent, const char *title,
-                 const gmx_ffparams_t *ffparams, gmx_bool bShowNumbers);
 void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef,
              gmx_bool bShowNumbers, gmx_bool bShowParameters);
 
