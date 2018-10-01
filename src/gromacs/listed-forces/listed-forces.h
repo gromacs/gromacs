@@ -50,7 +50,7 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  *
  */
-/*! \file
+/*! \libinternal \file
  *
  * \brief This file contains declarations of high-level functions used
  * by mdrun to compute energies and forces for listed interactions.
@@ -60,12 +60,13 @@
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  *
- * \inpublicapi
+ * \inlibraryapi
  * \ingroup module_listed-forces
  */
 #ifndef GMX_LISTED_FORCES_LISTED_FORCES_H
 #define GMX_LISTED_FORCES_LISTED_FORCES_H
 
+#include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -77,7 +78,7 @@ struct t_commrec;
 struct t_fcdata;
 struct t_forcerec;
 struct t_idef;
-struct t_inputrec;
+struct t_graph;
 struct t_lambda;
 struct t_mdatoms;
 struct t_nrnb;
@@ -87,15 +88,6 @@ namespace gmx
 {
 class ForceWithVirial;
 }
-
-/*! \brief Return whether this is an interaction that actually
- * calculates a potential and works on multiple atoms (not e.g. a
- * connection or a position restraint).
- *
- * \todo This function could go away when idef is not a big bucket of
- * everything. */
-gmx_bool
-ftype_is_bonded_potential(int ftype);
 
 /*! \brief Calculates all listed force interactions.
  *
@@ -152,5 +144,31 @@ do_force_listed(struct gmx_wallcycle           *wcycle,
                 struct t_fcdata                *fcd,
                 int                            *global_atom_index,
                 int                             flags);
+
+/*! \brief Updates the bonded work to run on a GPU
+ *
+ * Intended to be called after each domain decomposition stage. */
+CUDA_FUNC_QUALIFIER
+void update_gpu_bonded(const t_idef gmx_unused      *idef,
+                       int gmx_unused                size,
+                       const t_mdatoms gmx_unused   *md,
+                       gmx_grppairener_t gmx_unused *grppener) CUDA_FUNC_TERM
+
+/*! \brief Launches bonded kernels on a GPU */
+CUDA_FUNC_QUALIFIER
+void do_bonded_gpu(t_forcerec gmx_unused *fr,
+                   const t_idef gmx_unused *idef, int gmx_unused numEnergyGroups,
+                   int gmx_unused flags,
+                   int gmx_unused natoms, rvec gmx_unused x[],
+                   const matrix gmx_unused box) CUDA_FUNC_TERM
+
+/*! \brief Wauts for bonded kernels on a GPU and returns energies and forces. */
+CUDA_FUNC_QUALIFIER
+void do_bonded_gpu_finalize(t_forcerec gmx_unused *fr, int gmx_unused flags, int gmx_unused natoms,
+                            rvec gmx_unused *input_force, gmx_enerdata_t gmx_unused *enerd) CUDA_FUNC_TERM
+
+/*! \brief Clears GPU buffers between force calculations */
+CUDA_FUNC_QUALIFIER
+void reset_gpu_bonded(int gmx_unused size, int gmx_unused nener) CUDA_FUNC_TERM
 
 #endif
