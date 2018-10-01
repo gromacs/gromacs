@@ -837,3 +837,32 @@ gmx_bool nbnxn_gpu_is_kernel_ewald_analytical(const gmx_nbnxn_cuda_t *nb)
     return ((nb->nbparam->eeltype == eelCuEWALD_ANA) ||
             (nb->nbparam->eeltype == eelCuEWALD_ANA_TWIN));
 }
+
+void *nbnxn_gpu_get_command_stream(gmx_nbnxn_gpu_t *nb,
+                                   int              iloc)
+{
+    assert(nb);
+
+    return static_cast<void *>(&nb->stream[iloc]);
+}
+
+void *nbnxn_gpu_get_xq(gmx_nbnxn_gpu_t *nb)
+{
+    assert(nb);
+
+    return static_cast<void *>(nb->atdat->xq);
+}
+
+void *nbnxn_gpu_get_f(gmx_nbnxn_gpu_t *nb)
+{
+    assert(nb);
+
+    return static_cast<void *>(nb->atdat->f);
+}
+
+rvec *nbnxn_gpu_get_fshift(gmx_nbnxn_gpu_t *nb)
+{
+    assert(nb);
+
+    return reinterpret_cast<rvec *>(nb->atdat->fshift);
+}
