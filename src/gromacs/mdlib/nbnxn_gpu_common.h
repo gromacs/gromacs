@@ -305,6 +305,7 @@ static inline void nbnxn_gpu_accumulate_timings(gmx_wallclock_gpu_nbnxn_t *timin
 bool nbnxn_gpu_try_finish_task(gmx_nbnxn_gpu_t  *nb,
                                int               flags,
                                int               aloc,
+                               bool              haveOtherWork,
                                real             *e_lj,
                                real             *e_el,
                                rvec             *fshift,
@@ -315,7 +316,7 @@ bool nbnxn_gpu_try_finish_task(gmx_nbnxn_gpu_t  *nb,
 
     //  We skip when during the non-local phase there was actually no work to do.
     //  This is consistent with nbnxn_gpu_launch_kernel.
-    if (!canSkipWork(nb, iLocality))
+    if (haveOtherWork || !canSkipWork(nb, iLocality))
     {
         // Query the state of the GPU stream and return early if we're not done
         if (completionKind == GpuTaskCompletion::Check)
@@ -361,6 +362,7 @@ bool nbnxn_gpu_try_finish_task(gmx_nbnxn_gpu_t  *nb,
  * \param[in] nb The nonbonded data GPU structure
  * \param[in] flags Force flags
  * \param[in] aloc Atom locality identifier
+ * \param[in] haveOtherWork  Tells whether there is other work than non-bonded work in the nbnxn stream(s)
  * \param[out] e_lj Pointer to the LJ energy output to accumulate into
  * \param[out] e_el Pointer to the electrostatics energy output to accumulate into
  * \param[out] fshift Pointer to the shift force buffer to accumulate into
@@ -369,11 +371,12 @@ bool nbnxn_gpu_try_finish_task(gmx_nbnxn_gpu_t  *nb,
 void nbnxn_gpu_wait_finish_task(gmx_nbnxn_gpu_t *nb,
                                 int              flags,
                                 int              aloc,
+                                bool             haveOtherWork,
                                 real            *e_lj,
                                 real            *e_el,
                                 rvec            *fshift)
 {
-    nbnxn_gpu_try_finish_task(nb, flags, aloc, e_lj, e_el, fshift,
+    nbnxn_gpu_try_finish_task(nb, flags, aloc, haveOtherWork, e_lj, e_el, fshift,
                               GpuTaskCompletion::Wait);
 }
 
