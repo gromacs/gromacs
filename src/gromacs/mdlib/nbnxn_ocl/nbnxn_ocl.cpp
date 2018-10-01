@@ -701,7 +701,8 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t       *nb,
 void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
                               const struct nbnxn_atomdata_t *nbatom,
                               int                            flags,
-                              int                            aloc)
+                              int                            aloc,
+                              bool                           haveOtherWork)
 {
     cl_int gmx_unused cl_error;
     int               adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
@@ -719,7 +720,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
 
 
     /* don't launch non-local copy-back if there was no non-local work to do */
-    if (canSkipWork(nb, iloc))
+    if (!haveOtherWork && canSkipWork(nb, iloc))
     {
         /* TODO An alternative way to signal that non-local work is
            complete is to use a clEnqueueMarker+clEnqueueBarrier
