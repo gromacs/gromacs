@@ -94,12 +94,14 @@ function (gmx_add_gtest_executable EXENAME)
 endfunction()
 
 # This function can be called with extra options and arguments:
-#   MPI_RANKS <N>     declares the requirement to run the test binary with N ranks
-#   INTEGRATION_TEST  requires the use of the IntegrationTest label in CTest
-#   OCL_INTEGRATION_TEST requires the use of the IntegrationTest label in CTest,
-#                        only difference is 2x longer timeout as OpenCL JIT can be slow
-#   SLOW_TEST         requires the use of the SlowTest label in CTest, and
-#                     increase the length of the ctest timeout.
+#   OPENMP_THREADS <N>    declares the requirement to run the test binary with N OpenMP
+#                           threads (when supported by the build configuration)
+#   MPI_RANKS <N>         declares the requirement to run the test binary with N ranks
+#   INTEGRATION_TEST      requires the use of the IntegrationTest label in CTest
+#   OCL_INTEGRATION_TEST  requires the use of the IntegrationTest label in CTest,
+#                           only difference is 2x longer timeout as OpenCL JIT can be slow
+#   SLOW_TEST             requires the use of the SlowTest label in CTest, and
+#                         increase the length of the ctest timeout.
 #
 # TODO When a test case needs it, generalize the MPI_RANKS mechanism so
 # that ctest can run the test binary over a range of numbers of MPI
@@ -129,6 +131,11 @@ function (gmx_register_gtest_test NAME EXENAME)
             gmx_get_test_prefix_cmd(_prefix_cmd)
         endif()
         set(_cmd ${_prefix_cmd} $<TARGET_FILE:${EXENAME}>)
+        if (ARG_OPENMP_THREADS)
+            if (GMX_OPENMP)
+                list(APPEND _cmd -ntomp ${ARG_OPENMP_THREADS})
+            endif()
+        endif()
         if (ARG_MPI_RANKS)
             if (NOT GMX_CAN_RUN_MPI_TESTS)
                 return()

@@ -57,7 +57,6 @@ gmx_add_gtest_executable(
     swapcoords.cpp
     tabulated_bonded_interactions.cpp
     termination.cpp
-    tpitest.cpp
     trajectory_writing.cpp
     trajectorycomparison.cpp
     trajectoryreader.cpp
@@ -67,10 +66,23 @@ gmx_add_gtest_executable(
     $<TARGET_OBJECTS:mdrun_objlib>
     )
 if (GMX_GPU AND GMX_USE_OPENCL)
-    gmx_register_gtest_test(${testname} ${exename} OCL_INTEGRATION_TEST)
+    gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 OCL_INTEGRATION_TEST)
 else()
-    gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST)
+    gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST)
 endif()
+
+set(testname "LegacyGroupSchemeMdrunTests")
+set(exename "legacy-mdrun-test")
+
+gmx_add_gtest_executable(
+    ${exename}
+    tpitest.cpp
+    # pseudo-library for code for testing mdrun
+    $<TARGET_OBJECTS:mdrun_test_objlib>
+    # pseudo-library for code for mdrun
+    $<TARGET_OBJECTS:mdrun_objlib>
+    )
+gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST)
 
 set(testname "MdrunMpiTests")
 set(exename "mdrun-mpi-test")
