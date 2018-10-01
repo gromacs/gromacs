@@ -1,0 +1,174 @@
+
+clFFT Contents
+--------------
+The clFFT library is an open source OpenCL library
+implementation of discrete Fast Fourier Transforms. It:
+
+* Provides a fast and accurate platform for calculating
+  discrete FFTs
+* Supports 1D, 2D, and 3D transforms with a batch size
+  that can be greater than 1
+* Supports complex and real transforms
+* Supports planar (real and complex components in
+  separate arrays) and interleaved (real and complex
+  components as a pair contiguous in memory) formats
+* Supports dimension lengths that can be any mix of
+  powers of 2, 3, 5, 7, 11 and 13
+* Supports single and double precision floating-point
+  formats
+* Supports in-place or out-of-place transforms
+
+
+clFFT - Release Notes - version 2.12.2
+--------------------------------------
+
+This is a patch update release to v2.12.1.
+It has the following:
+
+* Fix for thread safety issues
+* Fix for failures in certain 2D transforms
+* Fix for failures on POCL runtime
+* Other minor improvements
+
+Details on issues available on GitHub.
+
+
+clFFT - Release Notes - version 2.12.1
+--------------------------------------
+
+New features of this release:
+
+* Fixes for bugs in decomposition logic of very large problem sizes
+  with environment flag CLFFT_REQUEST_LIB_NOMEMALLOC=1
+* Validation of sizes that are powers of 2,3,5 and combinations
+  thereof upto maximum size close to 25GB on S9170
+
+Driver notes:
+
+* This library version has been tested with Catalyst
+  Pro driver version 15.302 on Firepro W9100 & S9170.
+
+
+clFFT - Release Notes - version 2.12.0
+--------------------------------------
+
+New features of this release:
+
+* Addition of radix 11 & 13 enables support for powers of 11 & 13 size
+  transforms
+* Support for 1D large size transforms with no extra memory allocation
+  requirement with environment flag CLFFT_REQUEST_LIB_NOMEMALLOC=1
+  for complex FFTs of powers of 3,5,10 sizes. Note that support for
+  power-of-2 size has been available since version 2.10.
+
+Driver notes:
+
+* This library version has been tested with Catalyst
+  Pro driver version 15.201 on Firepro W9100.
+
+
+clFFT - Release Notes - version 2.10.2
+--------------------------------------
+
+This is a patch update release to v2.10.1.
+It has the following:
+
+* Fixes for accuracy/stability issues noted in large size real FFTs
+
+
+clFFT - Release Notes - version 2.10.1
+--------------------------------------
+
+This is a patch update release to v2.10.0.
+It has the following:
+
+* Performance fixes for slowdown observed vs v2.8. Specifically,
+  2D transforms for certain sizes showed significant slowdown.
+  This issue has been fixed in this release. The fix also makes the
+  performance in general better than v2.8.
+* Code reorganization in transposes and performance improvements.
+  There is a modest performance improvement with inplace transforms
+  for large power-of-2 sizes.
+* Several minor enhancements and bug fixes 
+
+
+clFFT - Release Notes - version 2.10.0
+--------------------------------------
+
+New features of this release:
+
+* Post-callback feature that enables custom post-processing
+  of output data directly by the library with user callback function
+* Support for in-place transposes for power-of-2 sizes enables really
+  large 1D transforms as well as supporting no additional memory
+  allocation, by library, for a range of problem sizes
+
+
+clFFT - Release Notes - version 2.8.0
+--------------------------------------
+
+New features of this release:
+
+* Support for power-of-7 size transforms
+* Pre-callback feature that enables custom pre-processing
+  of input data directly by the library with user callback function
+* Support for 1D large size transforms with no extra memory allocation
+  requirement for certain sizes
+
+Driver notes:
+
+* This library version has been tested with Catalyst
+  Pro driver version 14.502 on Firepro W9100.
+
+
+clFFT - Release Notes - version 2.6.1
+--------------------------------------
+
+This is a patch update release to v2.6.0. It has the following.
+
+* Fix for client application crash with Linux 14.502 driver
+* Performance fixes for real forward and backward transform when
+  enabling ECC
+* Performance fixes for complex transforms over a small range in
+  power-of-2 sizes
+* Improvement in API timing in client
+* Several minor enhancements and bug fixes
+
+Driver notes:
+
+* This library version has been tested with Catalyst
+  Pro driver version 14.502 on Firepro W9100.
+
+
+clFFT - Release Notes - version 2.6.0
+--------------------------------------
+
+New features of this release:
+
+* Significant uplift of 1D real forward transform
+  performance for power-of-2 sizes
+* Significant uplift of large 2D/3D real transform
+  performance for power-of-2 sizes
+
+Known issues:
+
+* Size limit on 1D real transforms remain at 2^24
+  for single precision and 2^22 for double
+  precision
+
+Driver notes:
+
+* This library version has been tested with Catalyst
+  Pro driver version 14.301 on Firepro W9100.
+
+
+clFFT - Release Notes - version 2.4.0
+--------------------------------------
+
+New features of this release:
+
+* Significant uplift of 1D complex transform performance
+* 1D large size limit relaxation for complex transforms
+* 2D/3D size limit relaxation on real and complex transforms
+* Binary caching feature
+* Several minor fixes and improvements

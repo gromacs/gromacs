@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,10 +39,6 @@
 
 #include <stdio.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct t_symbuf
 {
     int               bufsize;
@@ -75,7 +71,12 @@ void close_symtab(t_symtab *symtab);
 /* Undoes the effect of open_symtab(), after invoking this function,
  * no value can be added to the symbol table, only values can be
  * retrieved using get_symtab().
+ *
+ * Note that this does no work.
  */
+
+/*! \brief Returns a deep copy of \c symtab. */
+t_symtab *duplicateSymtab(const t_symtab *symtab);
 
 void free_symtab(t_symtab *symtab);
 /* Frees the space allocated by the symbol table itself */
@@ -121,9 +122,5 @@ void pr_symtab(FILE *fp, int indent, const char *title, t_symtab *symtab);
  * number of spaces the text should be indented. Title is used
  * to print a header text.
  */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

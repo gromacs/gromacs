@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,8 +37,12 @@
 #ifndef GMX_MDLIB_QMMM_H
 #define GMX_MDLIB_QMMM_H
 
+#include "config.h"
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/tgroup.h"
+
+#define GMX_QMMM (GMX_QMMM_MOPAC || GMX_QMMM_GAMESS || GMX_QMMM_GAUSSIAN || GMX_QMMM_ORCA)
 
 struct gmx_localtop_t;
 struct gmx_mtop_t;
@@ -60,9 +64,6 @@ typedef struct {
     int                QMmethod;       /* see enums.h for all methods       */
     int                QMbasis;        /* see enums.h for all bases         */
     int                nelectrons;     /* total number of elecs in QM region*/
-    gmx_bool           bTS;            /* Optimize a TS, only steep, no md  */
-    gmx_bool           bOPT;           /* Optimize QM subsys, only steep, no md  */
-    gmx_bool          *frontatoms;     /* qm atoms on the QM side of a QM-MM bond */
     /* Gaussian specific stuff */
     int                nQMcpus;        /* no. of CPUs used for the QM calc. */
     int                QMmem;          /* memory for the gaussian calc.     */
@@ -73,14 +74,12 @@ typedef struct {
     char              *devel_dir;
     char              *orca_basename; /* basename for I/O with orca        */
     char              *orca_dir;      /* directory for ORCA                */
-    real              *c6;
-    real              *c12;
     /* Surface hopping stuff */
-    gmx_bool           bSH;     /* surface hopping (diabatic only)   */
-    real               SAon;    /* at which energy gap the SA starts */
-    real               SAoff;   /* at which energy gap the SA stops  */
-    int                SAsteps; /* stepwise switchinng on the SA     */
-    int                SAstep;  /* current state of SA               */
+    gmx_bool           bSH;           /* surface hopping (diabatic only)   */
+    real               SAon;          /* at which energy gap the SA starts */
+    real               SAoff;         /* at which energy gap the SA stops  */
+    int                SAsteps;       /* stepwise switchinng on the SA     */
+    int                SAstep;        /* current state of SA               */
     int                CIdim;
     real              *CIvec1;
     real              *CIvec2;
@@ -99,9 +98,6 @@ typedef struct {
     int           *shiftMM;
     int           *MMatomtype;  /* only important for semi-emp.      */
     real           scalefactor;
-    /* gaussian specific stuff */
-    real          *c6;
-    real          *c12;
 } t_MMrec;
 
 
@@ -114,13 +110,16 @@ typedef struct t_QMMMrec {
 
 void atomic_number(int nr, char ***atomtype, int *nucnum);
 
-t_QMMMrec *mk_QMMMrec(void);
+t_QMMMrec *mk_QMMMrec();
 /* allocates memory for QMMMrec */
 
-void init_QMMMrec(t_commrec  *cr,
-                  gmx_mtop_t *mtop,
-                  t_inputrec *ir,
-                  t_forcerec *fr);
+#if !GMX_QMMM
+[[noreturn]]
+#endif
+void init_QMMMrec(const t_commrec  *cr,
+                  gmx_mtop_t       *mtop,
+                  t_inputrec       *ir,
+                  const t_forcerec *fr);
 
 /* init_QMMMrec initializes the QMMM record. From
  * topology->atoms.atomname and topology->atoms.atomtype the atom
@@ -128,23 +127,23 @@ void init_QMMMrec(t_commrec  *cr,
  * resp. inputrec->QMmult the nelecs and multiplicity are determined
  * and md->cQMMM gives numbers of the MM and QM atoms
  */
-
-void update_QMMMrec(t_commrec      *cr,
-                    t_forcerec     *fr,
-                    rvec            x[],
-                    t_mdatoms      *md,
-                    matrix          box,
-                    gmx_localtop_t *top);
+#if !GMX_QMMM
+[[noreturn]]
+#endif
+void update_QMMMrec(const t_commrec  *cr,
+                    const t_forcerec *fr,
+                    const rvec       *x,
+                    const t_mdatoms  *md,
+                    const matrix      box);
 
 /* update_QMMMrec fills the MM stuff in QMMMrec. The MM atoms are
  * taken froom the neighbourlists of the QM atoms. In a QMMM run this
  * routine should be called at every step, since it updates the MM
  * elements of the t_QMMMrec struct.
  */
-
-real calculate_QMMM(t_commrec *cr,
-                    rvec x[], rvec f[],
-                    t_forcerec *fr);
+real calculate_QMMM(const t_commrec  *cr,
+                    rvec              f[],
+                    const t_forcerec *fr);
 
 /* QMMM computes the QM forces. This routine makes either function
  * calls to gmx QM routines (derived from MOPAC7 (semi-emp.) and MPQC

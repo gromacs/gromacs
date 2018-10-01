@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,7 +48,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
@@ -60,7 +59,7 @@
 #include "gromacs/utility/smalloc.h"
 
 static void calc_com_pbc(int nrefat, const t_topology *top, rvec x[], t_pbc *pbc,
-                         int index[], rvec xref, int ePBC)
+                         const int index[], rvec xref, int ePBC)
 {
     const real tol = 1e-4;
     gmx_bool   bChanged;
@@ -116,7 +115,7 @@ static void calc_com_pbc(int nrefat, const t_topology *top, rvec x[], t_pbc *pbc
     }
 }
 
-void spol_atom2molindex(int *n, int *index, const t_block *mols)
+static void spol_atom2molindex(int *n, int *index, const t_block *mols)
 {
     int nmol, i, j, m;
 
@@ -152,7 +151,6 @@ void spol_atom2molindex(int *n, int *index, const t_block *mols)
 int gmx_spol(int argc, char *argv[])
 {
     t_topology  *top;
-    t_inputrec  *ir;
     t_atom      *atom;
     t_trxstatus *status;
     int          nrefat, natoms, nf, ntot;
@@ -224,8 +222,8 @@ int gmx_spol(int argc, char *argv[])
 
     snew(top, 1);
     // TODO: Only ePBC is used, not the full inputrec.
-    gmx::MDModules mdModules;
-    ir = mdModules.inputrec();
+    t_inputrec  irInstance;
+    t_inputrec *ir = &irInstance;
     read_tpx_top(ftp2fn(efTPR, NFILE, fnm),
                  ir, box, &natoms, nullptr, nullptr, top);
 
@@ -362,7 +360,7 @@ int gmx_spol(int argc, char *argv[])
 
     /* clean up */
     sfree(x);
-    close_trj(status);
+    close_trx(status);
 
     fprintf(stderr, "Average number of molecules within %g nm is %.1f\n",
             rmax, static_cast<real>(ntot)/nf);

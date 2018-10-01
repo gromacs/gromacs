@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2006,2007,2008,2009,2010,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2006,2007,2008,2009,2010,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,35 +46,35 @@
 
 #include "domdec_specatomcomm.h"
 
-#include <assert.h>
+#include <cassert>
 
 #include <algorithm>
 
+#include "gromacs/domdec/dlb.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
+#include "gromacs/domdec/hashedmap.h"
+#include "gromacs/domdec/partition.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/smalloc.h"
-
-#include "hash.h"
 
 void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                       rvec *f, rvec *fshift)
 {
     gmx_specatsend_t *spas;
     rvec             *vbuf;
-    int               n, n0, n1, d, dim, dir, i;
+    int               n, n0, n1, dim, dir;
     ivec              vis;
     int               is;
     gmx_bool          bPBC, bScrew;
 
     n = spac->at_end;
-    for (d = dd->ndim-1; d >= 0; d--)
+    for (int d = dd->ndim - 1; d >= 0; d--)
     {
         dim = dd->dim[d];
         if (dd->nc[dim] > 2)
@@ -84,11 +84,12 @@ void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
             n0   = spas[0].nrecv;
             n1   = spas[1].nrecv;
             n   -= n1 + n0;
-            vbuf = spac->vbuf;
+            vbuf = as_rvec_array(spac->vbuf.data());
             /* Send and receive the coordinates */
             dd_sendrecv2_rvec(dd, d,
-                              f+n+n1, n0, vbuf, spas[0].nsend,
-                              f+n, n1, vbuf+spas[0].nsend, spas[1].nsend);
+                              f + n + n1, n0, vbuf, spas[0].a.size(),
+                              f + n, n1, vbuf + spas[0].a.size(),
+                              spas[1].a.size());
             for (dir = 0; dir < 2; dir++)
             {
                 bPBC   = ((dir == 0 && dd->ci[dim] == 0) ||
@@ -99,9 +100,9 @@ void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                 /* Sum the buffer into the required forces */
                 if (!bPBC || (!bScrew && fshift == nullptr))
                 {
-                    for (i = 0; i < spas->nsend; i++)
+                    for (int a : spas->a)
                     {
-                        rvec_inc(f[spas->a[i]], *vbuf);
+                        rvec_inc(f[a], *vbuf);
                         vbuf++;
                     }
                 }
@@ -113,9 +114,9 @@ void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                     if (!bScrew)
                     {
                         /* Sum and add to shift forces */
-                        for (i = 0; i < spas->nsend; i++)
+                        for (int a : spas->a)
                         {
-                            rvec_inc(f[spas->a[i]], *vbuf);
+                            rvec_inc(f[a], *vbuf);
                             rvec_inc(fshift[is], *vbuf);
                             vbuf++;
                         }
@@ -123,11 +124,11 @@ void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                     else
                     {
                         /* Rotate the forces */
-                        for (i = 0; i < spas->nsend; i++)
+                        for (int a : spas->a)
                         {
-                            f[spas->a[i]][XX] += (*vbuf)[XX];
-                            f[spas->a[i]][YY] -= (*vbuf)[YY];
-                            f[spas->a[i]][ZZ] -= (*vbuf)[ZZ];
+                            f[a][XX] += (*vbuf)[XX];
+                            f[a][YY] -= (*vbuf)[YY];
+                            f[a][ZZ] -= (*vbuf)[ZZ];
                             if (fshift)
                             {
                                 rvec_inc(fshift[is], *vbuf);
@@ -144,26 +145,31 @@ void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
             spas = &spac->spas[d][0];
             n   -= spas->nrecv;
             /* Send and receive the coordinates */
-            dd_sendrecv_rvec(dd, d, dddirForward,
-                             f+n, spas->nrecv, spac->vbuf, spas->nsend);
+            ddSendrecv(dd, d, dddirForward,
+                       f + n, spas->nrecv,
+                       as_rvec_array(spac->vbuf.data()), spas->a.size());
             /* Sum the buffer into the required forces */
             if (dd->bScrewPBC && dim == XX &&
                 (dd->ci[dim] == 0 ||
                  dd->ci[dim] == dd->nc[dim]-1))
             {
-                for (i = 0; i < spas->nsend; i++)
+                int i = 0;
+                for (int a : spas->a)
                 {
                     /* Rotate the force */
-                    f[spas->a[i]][XX] += spac->vbuf[i][XX];
-                    f[spas->a[i]][YY] -= spac->vbuf[i][YY];
-                    f[spas->a[i]][ZZ] -= spac->vbuf[i][ZZ];
+                    f[a][XX] += spac->vbuf[i][XX];
+                    f[a][YY] -= spac->vbuf[i][YY];
+                    f[a][ZZ] -= spac->vbuf[i][ZZ];
+                    i++;
                 }
             }
             else
             {
-                for (i = 0; i < spas->nsend; i++)
+                int i = 0;
+                for (int a : spas->a)
                 {
-                    rvec_inc(f[spas->a[i]], spac->vbuf[i]);
+                    rvec_inc(f[a], spac->vbuf[i]);
+                    i++;
                 }
             }
         }
@@ -171,12 +177,11 @@ void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
 }
 
 void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
-                      matrix box,
+                      const matrix box,
                       rvec *x0,
                       rvec *x1, gmx_bool bX1IsCoord)
 {
     gmx_specatsend_t *spas;
-    rvec             *x, *vbuf, *rbuf;
     int               nvec, v, n, nn, ns0, ns1, nr0, nr1, nr, d, dim, dir, i;
     gmx_bool          bPBC, bScrew = FALSE;
     rvec              shift = {0, 0, 0};
@@ -194,7 +199,7 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
         if (dd->nc[dim] > 2)
         {
             /* Pulse the grid forward and backward */
-            vbuf = spac->vbuf;
+            rvec *vbuf = as_rvec_array(spac->vbuf.data());
             for (dir = 0; dir < 2; dir++)
             {
                 if (dir == 0 && dd->ci[dim] == 0)
@@ -220,34 +225,34 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                 spas = &spac->spas[d][dir];
                 for (v = 0; v < nvec; v++)
                 {
-                    x = (v == 0 ? x0 : x1);
+                    rvec *x = (v == 0 ? x0 : x1);
                     /* Copy the required coordinates to the send buffer */
                     if (!bPBC || (v == 1 && !bX1IsCoord))
                     {
                         /* Only copy */
-                        for (i = 0; i < spas->nsend; i++)
+                        for (int a : spas->a)
                         {
-                            copy_rvec(x[spas->a[i]], *vbuf);
+                            copy_rvec(x[a], *vbuf);
                             vbuf++;
                         }
                     }
                     else if (!bScrew)
                     {
                         /* Shift coordinates */
-                        for (i = 0; i < spas->nsend; i++)
+                        for (int a : spas->a)
                         {
-                            rvec_add(x[spas->a[i]], shift, *vbuf);
+                            rvec_add(x[a], shift, *vbuf);
                             vbuf++;
                         }
                     }
                     else
                     {
                         /* Shift and rotate coordinates */
-                        for (i = 0; i < spas->nsend; i++)
+                        for (int a : spas->a)
                         {
-                            (*vbuf)[XX] =               x[spas->a[i]][XX] + shift[XX];
-                            (*vbuf)[YY] = box[YY][YY] - x[spas->a[i]][YY] + shift[YY];
-                            (*vbuf)[ZZ] = box[ZZ][ZZ] - x[spas->a[i]][ZZ] + shift[ZZ];
+                            (*vbuf)[XX] =               x[a][XX] + shift[XX];
+                            (*vbuf)[YY] = box[YY][YY] - x[a][YY] + shift[YY];
+                            (*vbuf)[ZZ] = box[ZZ][ZZ] - x[a][ZZ] + shift[ZZ];
                             vbuf++;
                         }
                     }
@@ -255,23 +260,25 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
             }
             /* Send and receive the coordinates */
             spas = spac->spas[d];
-            ns0  = spas[0].nsend;
+            ns0  = spas[0].a.size();
             nr0  = spas[0].nrecv;
-            ns1  = spas[1].nsend;
+            ns1  = spas[1].a.size();
             nr1  = spas[1].nrecv;
             if (nvec == 1)
             {
+                rvec *vbuf = as_rvec_array(spac->vbuf.data());
                 dd_sendrecv2_rvec(dd, d,
-                                  spac->vbuf+ns0, ns1, x0+n, nr1,
-                                  spac->vbuf, ns0, x0+n+nr1, nr0);
+                                  vbuf + ns0, ns1, x0 + n, nr1,
+                                  vbuf, ns0, x0 + n + nr1, nr0);
             }
             else
             {
+                rvec *vbuf = as_rvec_array(spac->vbuf.data());
                 /* Communicate both vectors in one buffer */
-                rbuf = spac->vbuf2;
+                rvec *rbuf = as_rvec_array(spac->vbuf2.data());
                 dd_sendrecv2_rvec(dd, d,
-                                  spac->vbuf+2*ns0, 2*ns1, rbuf, 2*nr1,
-                                  spac->vbuf, 2*ns0, rbuf+2*nr1, 2*nr0);
+                                  vbuf + 2*ns0, 2*ns1, rbuf, 2*nr1,
+                                  vbuf, 2*ns0, rbuf + 2*nr1, 2*nr0);
                 /* Split the buffer into the two vectors */
                 nn = n;
                 for (dir = 1; dir >= 0; dir--)
@@ -279,7 +286,7 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                     nr = spas[dir].nrecv;
                     for (v = 0; v < 2; v++)
                     {
-                        x = (v == 0 ? x0 : x1);
+                        rvec *x = (v == 0 ? x0 : x1);
                         for (i = 0; i < nr; i++)
                         {
                             copy_rvec(*rbuf, x[nn+i]);
@@ -295,29 +302,29 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
         {
             spas = &spac->spas[d][0];
             /* Copy the required coordinates to the send buffer */
-            vbuf = spac->vbuf;
+            rvec *vbuf = as_rvec_array(spac->vbuf.data());
             for (v = 0; v < nvec; v++)
             {
-                x = (v == 0 ? x0 : x1);
+                rvec *x = (v == 0 ? x0 : x1);
                 if (dd->bScrewPBC && dim == XX &&
                     (dd->ci[XX] == 0 || dd->ci[XX] == dd->nc[XX]-1))
                 {
                     /* Here we only perform the rotation, the rest of the pbc
                      * is handled in the constraint or viste routines.
                      */
-                    for (i = 0; i < spas->nsend; i++)
+                    for (int a : spas->a)
                     {
-                        (*vbuf)[XX] =               x[spas->a[i]][XX];
-                        (*vbuf)[YY] = box[YY][YY] - x[spas->a[i]][YY];
-                        (*vbuf)[ZZ] = box[ZZ][ZZ] - x[spas->a[i]][ZZ];
+                        (*vbuf)[XX] =               x[a][XX];
+                        (*vbuf)[YY] = box[YY][YY] - x[a][YY];
+                        (*vbuf)[ZZ] = box[ZZ][ZZ] - x[a][ZZ];
                         vbuf++;
                     }
                 }
                 else
                 {
-                    for (i = 0; i < spas->nsend; i++)
+                    for (int a : spas->a)
                     {
-                        copy_rvec(x[spas->a[i]], *vbuf);
+                        copy_rvec(x[a], *vbuf);
                         vbuf++;
                     }
                 }
@@ -325,20 +332,22 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
             /* Send and receive the coordinates */
             if (nvec == 1)
             {
-                dd_sendrecv_rvec(dd, d, dddirBackward,
-                                 spac->vbuf, spas->nsend, x0+n, spas->nrecv);
+                rvec *vbuf = as_rvec_array(spac->vbuf.data());
+                ddSendrecv(dd, d, dddirBackward,
+                           vbuf, spas->a.size(), x0 + n, spas->nrecv);
             }
             else
             {
+                rvec *vbuf = as_rvec_array(spac->vbuf.data());
                 /* Communicate both vectors in one buffer */
-                rbuf = spac->vbuf2;
-                dd_sendrecv_rvec(dd, d, dddirBackward,
-                                 spac->vbuf, 2*spas->nsend, rbuf, 2*spas->nrecv);
+                rvec *rbuf = as_rvec_array(spac->vbuf2.data());
+                ddSendrecv(dd, d, dddirBackward,
+                           vbuf, 2*spas->a.size(), rbuf, 2*spas->nrecv);
                 /* Split the buffer into the two vectors */
                 nr = spas[0].nrecv;
                 for (v = 0; v < 2; v++)
                 {
-                    x = (v == 0 ? x0 : x1);
+                    rvec *x = (v == 0 ? x0 : x1);
                     for (i = 0; i < nr; i++)
                     {
                         copy_rvec(*rbuf, x[n+i]);
@@ -352,17 +361,17 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
 }
 
 int setup_specat_communication(gmx_domdec_t               *dd,
-                               ind_req_t                  *ireq,
+                               std::vector<int>           *ireq,
                                gmx_domdec_specat_comm_t   *spac,
-                               gmx_hash_t                 *ga2la_specat,
+                               gmx::HashedMap<int>        *ga2la_specat,
                                int                         at_start,
                                int                         vbuf_fac,
                                const char                 *specat_type,
                                const char                 *add_err)
 {
     int               nsend[2], nlast, nsend_zero[2] = {0, 0}, *nsend_ptr;
-    int               d, dim, ndir, dir, nr, ns, i, nrecv_local, n0, start, indr, ind, buf[2];
-    int               nat_tot_specat, nat_tot_prev, nalloc_old;
+    int               dim, ndir, nr, ns, nrecv_local, n0, start, buf[2];
+    int               nat_tot_specat, nat_tot_prev;
     gmx_bool          bPBC;
     gmx_specatsend_t *spas;
 
@@ -375,10 +384,11 @@ int setup_specat_communication(gmx_domdec_t               *dd,
      *           we communicate this for more efficients checks
      * nsend[1]: the total number of requested atoms
      */
-    nsend[0] = ireq->n;
-    nsend[1] = nsend[0];
-    nlast    = nsend[1];
-    for (d = dd->ndim-1; d >= 0; d--)
+    const int numRequested = ireq->size();
+    nsend[0]               = ireq->size();
+    nsend[1]               = nsend[0];
+    nlast                  = nsend[1];
+    for (int d = dd->ndim-1; d >= 0; d--)
     {
         /* Pulse the grid forward and backward */
         dim  = dd->dim[d];
@@ -392,7 +402,7 @@ int setup_specat_communication(gmx_domdec_t               *dd,
         {
             ndir = 2;
         }
-        for (dir = 0; dir < ndir; dir++)
+        for (int dir = 0; dir < ndir; dir++)
         {
             if (!bPBC &&
                 dd->nc[dim] > 2 &&
@@ -407,17 +417,13 @@ int setup_specat_communication(gmx_domdec_t               *dd,
                 nsend_ptr = nsend;
             }
             /* Communicate the number of indices */
-            dd_sendrecv_int(dd, d, dir == 0 ? dddirForward : dddirBackward,
-                            nsend_ptr, 2, spac->nreq[d][dir], 2);
+            ddSendrecv(dd, d, dir == 0 ? dddirForward : dddirBackward,
+                       nsend_ptr, 2, spac->nreq[d][dir], 2);
             nr = spac->nreq[d][dir][1];
-            if (nlast+nr > ireq->nalloc)
-            {
-                ireq->nalloc = over_alloc_dd(nlast+nr);
-                srenew(ireq->ind, ireq->nalloc);
-            }
+            ireq->resize(nlast + nr);
             /* Communicate the indices */
-            dd_sendrecv_int(dd, d, dir == 0 ? dddirForward : dddirBackward,
-                            ireq->ind, nsend_ptr[1], ireq->ind+nlast, nr);
+            ddSendrecv(dd, d, dir == 0 ? dddirForward : dddirBackward,
+                       ireq->data(), nsend_ptr[1], ireq->data() + nlast, nr);
             nlast += nr;
         }
         nsend[1] = nlast;
@@ -430,7 +436,7 @@ int setup_specat_communication(gmx_domdec_t               *dd,
     /* Search for the requested atoms and communicate the indices we have */
     nat_tot_specat = at_start;
     nrecv_local    = 0;
-    for (d = 0; d < dd->ndim; d++)
+    for (int d = 0; d < dd->ndim; d++)
     {
         /* Pulse the grid forward and backward */
         if (dd->dim[d] >= dd->npbcdim || dd->nc[dd->dim[d]] > 2)
@@ -442,17 +448,13 @@ int setup_specat_communication(gmx_domdec_t               *dd,
             ndir = 1;
         }
         nat_tot_prev = nat_tot_specat;
-        for (dir = ndir-1; dir >= 0; dir--)
+        for (int dir = ndir - 1; dir >= 0; dir--)
         {
-            if (nat_tot_specat > spac->bSendAtom_nalloc)
+            /* To avoid cost of clearing by resize(), we only increase size */
+            if (static_cast<size_t>(nat_tot_specat) > spac->sendAtom.size())
             {
-                nalloc_old             = spac->bSendAtom_nalloc;
-                spac->bSendAtom_nalloc = over_alloc_dd(nat_tot_specat);
-                srenew(spac->bSendAtom, spac->bSendAtom_nalloc);
-                for (i = nalloc_old; i < spac->bSendAtom_nalloc; i++)
-                {
-                    spac->bSendAtom[i] = FALSE;
-                }
+                /* Note: resize initializes new elements to false, which is actually needed here */
+                spac->sendAtom.resize(nat_tot_specat);
             }
             spas = &spac->spas[d][dir];
             n0   = spac->nreq[d][dir][0];
@@ -463,57 +465,58 @@ int setup_specat_communication(gmx_domdec_t               *dd,
                         d, dir, nr);
             }
             start       = nlast - nr;
-            spas->nsend = 0;
+            spas->a.clear();
+            spac->ibuf.clear();
             nsend[0]    = 0;
-            for (i = 0; i < nr; i++)
+            for (int i = 0; i < nr; i++)
             {
-                indr = ireq->ind[start+i];
-                ind  = -1;
+                const int indr = (*ireq)[start + i];
+                int       ind;
                 /* Check if this is a home atom and if so ind will be set */
-                if (!ga2la_get_home(dd->ga2la, indr, &ind))
+                if (const int *homeIndex = dd->ga2la->findHome(indr))
+                {
+                    ind = *homeIndex;
+                }
+                else
                 {
                     /* Search in the communicated atoms */
-                    ind = gmx_hash_get_minone(ga2la_specat, indr);
+                    if (const int *a = ga2la_specat->find(indr))
+                    {
+                        ind = *a;
+                    }
+                    else
+                    {
+                        ind = -1;
+                    }
                 }
                 if (ind >= 0)
                 {
-                    if (i < n0 || !spac->bSendAtom[ind])
+                    if (i < n0 || !spac->sendAtom[ind])
                     {
-                        if (spas->nsend+1 > spas->a_nalloc)
-                        {
-                            spas->a_nalloc = over_alloc_large(spas->nsend+1);
-                            srenew(spas->a, spas->a_nalloc);
-                        }
                         /* Store the local index so we know which coordinates
                          * to send out later.
                          */
-                        spas->a[spas->nsend] = ind;
-                        spac->bSendAtom[ind] = TRUE;
-                        if (spas->nsend+1 > spac->ibuf_nalloc)
-                        {
-                            spac->ibuf_nalloc = over_alloc_large(spas->nsend+1);
-                            srenew(spac->ibuf, spac->ibuf_nalloc);
-                        }
+                        spas->a.push_back(ind);
+                        spac->sendAtom[ind] = true;
                         /* Store the global index so we can send it now */
-                        spac->ibuf[spas->nsend] = indr;
+                        spac->ibuf.push_back(indr);
                         if (i < n0)
                         {
                             nsend[0]++;
                         }
-                        spas->nsend++;
                     }
                 }
             }
             nlast = start;
             /* Clear the local flags */
-            for (i = 0; i < spas->nsend; i++)
+            for (int a : spas->a)
             {
-                spac->bSendAtom[spas->a[i]] = FALSE;
+                spac->sendAtom[a] = false;
             }
             /* Send and receive the number of indices to communicate */
-            nsend[1] = spas->nsend;
-            dd_sendrecv_int(dd, d, dir == 0 ? dddirBackward : dddirForward,
-                            nsend, 2, buf, 2);
+            nsend[1] = spas->a.size();
+            ddSendrecv(dd, d, dir == 0 ? dddirBackward : dddirForward,
+                       nsend, 2, buf, 2);
             if (debug)
             {
                 fprintf(debug, "Send to rank %d, %d (%d) indices, "
@@ -522,86 +525,79 @@ int setup_specat_communication(gmx_domdec_t               *dd,
                         dd->neighbor[d][dir], buf[1], buf[0]);
                 if (gmx_debug_at)
                 {
-                    for (i = 0; i < spas->nsend; i++)
+                    for (int i : spac->ibuf)
                     {
-                        fprintf(debug, " %d", spac->ibuf[i]+1);
+                        fprintf(debug, " %d", i + 1);
                     }
                     fprintf(debug, "\n");
                 }
             }
             nrecv_local += buf[0];
             spas->nrecv  = buf[1];
-            if (nat_tot_specat + spas->nrecv > dd->gatindex_nalloc)
-            {
-                dd->gatindex_nalloc =
-                    over_alloc_dd(nat_tot_specat + spas->nrecv);
-                srenew(dd->gatindex, dd->gatindex_nalloc);
-            }
+            dd->globalAtomIndices.resize(nat_tot_specat + spas->nrecv);
             /* Send and receive the indices */
-            dd_sendrecv_int(dd, d, dir == 0 ? dddirBackward : dddirForward,
-                            spac->ibuf, spas->nsend,
-                            dd->gatindex+nat_tot_specat, spas->nrecv);
+            ddSendrecv(dd, d, dir == 0 ? dddirBackward : dddirForward,
+                       spac->ibuf.data(), spac->ibuf.size(),
+                       dd->globalAtomIndices.data() + nat_tot_specat, spas->nrecv);
             nat_tot_specat += spas->nrecv;
         }
 
-        /* Allocate the x/f communication buffers */
-        ns = spac->spas[d][0].nsend;
+        /* Increase the x/f communication buffer sizes, when necessary */
+        ns = spac->spas[d][0].a.size();
         nr = spac->spas[d][0].nrecv;
         if (ndir == 2)
         {
-            ns += spac->spas[d][1].nsend;
+            ns += spac->spas[d][1].a.size();
             nr += spac->spas[d][1].nrecv;
         }
-        if (vbuf_fac*ns > spac->vbuf_nalloc)
+        if (vbuf_fac*ns > gmx::index(spac->vbuf.size()))
         {
-            spac->vbuf_nalloc = over_alloc_dd(vbuf_fac*ns);
-            srenew(spac->vbuf, spac->vbuf_nalloc);
+            spac->vbuf.resize(vbuf_fac*ns);
         }
-        if (vbuf_fac == 2 && vbuf_fac*nr > spac->vbuf2_nalloc)
+        if (vbuf_fac == 2 && vbuf_fac*nr > gmx::index(spac->vbuf2.size()))
         {
-            spac->vbuf2_nalloc = over_alloc_dd(vbuf_fac*nr);
-            srenew(spac->vbuf2, spac->vbuf2_nalloc);
+            spac->vbuf2.resize(vbuf_fac*nr);
         }
 
         /* Make a global to local index for the communication atoms */
-        for (i = nat_tot_prev; i < nat_tot_specat; i++)
+        for (int i = nat_tot_prev; i < nat_tot_specat; i++)
         {
-            gmx_hash_change_or_set(ga2la_specat, dd->gatindex[i], i);
+            ga2la_specat->insert_or_assign(dd->globalAtomIndices[i], i);
         }
     }
 
     /* Check that in the end we got the number of atoms we asked for */
-    if (nrecv_local != ireq->n)
+    if (nrecv_local != numRequested)
     {
         if (debug)
         {
             fprintf(debug, "Requested %d, received %d (tot recv %d)\n",
-                    ireq->n, nrecv_local, nat_tot_specat-at_start);
+                    numRequested, nrecv_local, nat_tot_specat - at_start);
             if (gmx_debug_at)
             {
-                for (i = 0; i < ireq->n; i++)
+                for (int i = 0; i < numRequested; i++)
                 {
-                    ind = gmx_hash_get_minone(ga2la_specat, ireq->ind[i]);
+                    const int *ind = ga2la_specat->find((*ireq)[i]);
                     fprintf(debug, " %s%d",
-                            (ind >= 0) ? "" : "!",
-                            ireq->ind[i]+1);
+                            ind ? "" : "!",
+                            (*ireq)[i] + 1);
                 }
                 fprintf(debug, "\n");
             }
         }
         fprintf(stderr, "\nDD cell %d %d %d: Neighboring cells do not have atoms:",
                 dd->ci[XX], dd->ci[YY], dd->ci[ZZ]);
-        for (i = 0; i < ireq->n; i++)
+        for (int i = 0; i < numRequested; i++)
         {
-            if (gmx_hash_get_minone(ga2la_specat, ireq->ind[i]) < 0)
+            if (!ga2la_specat->find((*ireq)[i]))
             {
-                fprintf(stderr, " %d", ireq->ind[i]+1);
+                fprintf(stderr, " %d", (*ireq)[i] + 1);
             }
         }
         fprintf(stderr, "\n");
         gmx_fatal(FARGS, "DD cell %d %d %d could only obtain %d of the %d atoms that are connected via %ss from the neighboring cells. This probably means your %s lengths are too long compared to the domain decomposition cell size. Decrease the number of domain decomposition grid cells%s%s.",
                   dd->ci[XX], dd->ci[YY], dd->ci[ZZ],
-                  nrecv_local, ireq->n, specat_type,
+                  nrecv_local, numRequested, specat_type,
                   specat_type, add_err,
                   dd_dlb_is_on(dd) ? " or use the -rcon option of mdrun" : "");
     }
@@ -615,15 +611,4 @@ int setup_specat_communication(gmx_domdec_t               *dd,
     }
 
     return nat_tot_specat;
-}
-
-gmx_domdec_specat_comm_t *specat_comm_init(int nthread)
-{
-    gmx_domdec_specat_comm_t *spac;
-
-    snew(spac, 1);
-    spac->nthread = nthread;
-    snew(spac->ireq, spac->nthread);
-
-    return spac;
 }

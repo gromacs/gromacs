@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -109,12 +109,7 @@ gmx_bool get_header(char line[], char *header)
         return FALSE;
     }
     dum[0] = '\0';
-    if (sscanf(temp, "%s%*s", header) != 1)
-    {
-        return FALSE;
-    }
-
-    return TRUE;
+    return sscanf(temp, "%s%*s", header) == 1;
 }
 
 int search_str(int nstr, char **str, char *key)
@@ -168,12 +163,6 @@ static int fget_lines(FILE *in, const char *db, char ***strings)
 
 int get_lines(const char *db, char ***strings)
 {
-    FILE *in;
-    int   nstr;
-
-    in   = libopen(db);
-    nstr = fget_lines(in, db, strings);
-    gmx_ffclose(in);
-
-    return nstr;
+    gmx::FilePtr in = gmx::openLibraryFile(db);
+    return fget_lines(in.get(), db, strings);
 }

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,8 +38,8 @@
 
 #include "topdirs.h"
 
-#include <stdarg.h>
-#include <stdio.h>
+#include <cstdarg>
+#include <cstdio>
 
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -118,10 +118,13 @@ int ifunc_index(directive d, int type)
                 case 10:
                     return F_RESTRBONDS;
                 default:
+<<<<<<< HEAD
                     fprintf(stderr, "Invalid bond type %d\n", type);
                     return -1;
+=======
+                    gmx_fatal(FARGS, "Invalid bond type %d", type);
+>>>>>>> master
             }
-            break;
         case d_angles:
         case d_angletypes:
             switch (type)
@@ -145,10 +148,13 @@ int ifunc_index(directive d, int type)
                 case 10:
                     return F_RESTRANGLES;
                 default:
+<<<<<<< HEAD
                     fprintf(stderr, "Invalid angle type %d\n", type);
                     return -1;
+=======
+                    gmx_fatal(FARGS, "Invalid angle type %d", type);
+>>>>>>> master
             }
-            break;
         case d_pairs:
         case d_pairtypes:
             if (type == 1 || (d == d_pairtypes && type == 2))
@@ -164,7 +170,6 @@ int ifunc_index(directive d, int type)
                 fprintf(stderr, "Invalid pairs type %d\n", type);
                 return -1;
             }
-            break;
         case d_pairs_nb:
             return F_LJC_PAIRS_NB;
         case d_dihedrals:
@@ -193,7 +198,6 @@ int ifunc_index(directive d, int type)
                     fprintf(stderr, "Invalid dihedral type %d\n", type);
                     return -1;
             }
-            break;
         case d_cmaptypes:
         case d_cmap:
             return F_CMAP;
@@ -224,7 +228,6 @@ int ifunc_index(directive d, int type)
                     fprintf(stderr, "Invalid vsites3 type %d\n", type);
                     return -1;
             }
-            break;
         case d_vsites4:
             switch (type)
             {
@@ -236,7 +239,6 @@ int ifunc_index(directive d, int type)
                     fprintf(stderr, "Invalid vsites4 type %d\n", type);
                     return -1;
             }
-            break;
         case d_vsitesn:
             return F_VSITEN;
         case d_constraints:
@@ -251,7 +253,6 @@ int ifunc_index(directive d, int type)
                     fprintf(stderr, "Invalid constraints type %d\n", type);
                     return -1;
             }
-            break;
         case d_settles:
             return F_SETTLE;
         case d_position_restraints:
@@ -265,7 +266,6 @@ int ifunc_index(directive d, int type)
                     fprintf(stderr, "Invalid position restraint type %d\n", type);
                     return -1;
             }
-            break;
         case d_polarization:
             switch (type)
             {
@@ -279,7 +279,6 @@ int ifunc_index(directive d, int type)
                     fprintf(stderr, "Invalid polarization type %d\n", type);
                     return -1;
             }
-            break;
         case d_thole_polarization:
             return F_THOLE_POL;
         case d_water_polarization:
@@ -295,10 +294,14 @@ int ifunc_index(directive d, int type)
         case d_dihedral_restraints:
             return F_DIHRES;
         default:
+<<<<<<< HEAD
             fprintf(stderr, "invalid directive %d in ifunc_index (%s:%d)",
                     (int)d, __FILE__, __LINE__);
+=======
+            gmx_fatal(FARGS, "invalid directive %s in ifunc_index (%s:%d)",
+                      dir2str(d), __FILE__, __LINE__);
+>>>>>>> master
     }
-    return -1;
 }
 
 const char *dir2str (directive d)
@@ -331,9 +334,9 @@ directive str2dir (char *dstr)
 
     for (d = 0; (d < d_maxdir); d++)
     {
-        if (gmx_strcasecmp_min(ptr, dir2str((directive)d)) == 0)
+        if (gmx_strcasecmp_min(ptr, dir2str(static_cast<directive>(d))) == 0)
         {
-            return (directive)d;
+            return static_cast<directive>(d);
         }
     }
 
@@ -352,7 +355,7 @@ static void set_nec(directive **n, ...)
     va_start(ap, n);
     do
     {
-        d = (directive)va_arg(ap, int);
+        d = static_cast<directive>(va_arg(ap, int));
         srenew(*n, ++ind);
         (*n)[ind-1] = d;
     }
@@ -375,6 +378,13 @@ void DS_Init(DirStack **DS)
         set_nec(&(necessary[d_angletypes]), d_atomtypes, d_none);
         set_nec(&(necessary[d_dihedraltypes]), d_atomtypes, d_none);
         set_nec(&(necessary[d_nonbond_params]), d_atomtypes, d_none);
+        // Note that the content of the next two directives are
+        // ignored, but if grompp reads them in old force field files,
+        // it still needs to understand that they are in a valid place
+        // in the .top structure. It doesn't have to require them to
+        // be in the same place that was valid in old versions (ie. child
+        // directive of [atomtypes]) but any relevant case will
+        // satisfy that.
         set_nec(&(necessary[d_implicit_genborn_params]), d_atomtypes, d_none);
         set_nec(&(necessary[d_implicit_surface_params]), d_atomtypes, d_none);
         set_nec(&(necessary[d_cmaptypes]), d_atomtypes, d_none);
@@ -408,10 +418,6 @@ void DS_Init(DirStack **DS)
 
         for (i = 0; (i < d_maxdir); i++)
         {
-            if (debug)
-            {
-                fprintf(debug, "%20s:  ", dir2str((directive)i));
-            }
             if (necessary[i])
             {
                 directive d;
@@ -419,16 +425,8 @@ void DS_Init(DirStack **DS)
                 do
                 {
                     d = necessary[i][j++];
-                    if (debug)
-                    {
-                        fprintf(debug, "%20s  ", dir2str(d));
-                    }
                 }
                 while (d != d_none);
-            }
-            if (debug)
-            {
-                fprintf(debug, "\n");
             }
         }
     }
@@ -468,7 +466,7 @@ int DS_Search(DirStack *DS, directive d)
         D = D->prev;
     }
 
-    return (D != nullptr);
+    return static_cast<int>(D != nullptr);
 }
 
 int DS_Check_Order(DirStack *DS, directive d)

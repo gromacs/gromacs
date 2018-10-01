@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,17 +45,13 @@
 #ifndef GMX_UTILITY_FUTIL_H
 #define GMX_UTILITY_FUTIL_H
 
-#include <limits.h>
-#include <stdio.h>
+#include <climits>
+#include <cstdio>
+
+#include <string>
 
 #include "gromacs/utility/basedefinitions.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
-}
-#endif
+#include "gromacs/utility/fileptr.h"
 
 /*! \def GMX_PATH_MAX
  * \brief
@@ -70,7 +66,7 @@ extern "C" {
 #endif
 
 /** \Gromacs definition to use instead of `off_t`. */
-typedef gmx_int64_t    gmx_off_t;
+typedef int64_t    gmx_off_t;
 
 /*! \brief
  * Turn off buffering for output files (which is default) for debugging
@@ -78,7 +74,7 @@ typedef gmx_int64_t    gmx_off_t;
  *
  * This only has effect on files opened with gmx_ffopen().
  */
-void gmx_disable_file_buffering(void);
+void gmx_disable_file_buffering();
 
 /*! \brief
  * Enables backups with the specified number of maximum backups.
@@ -141,41 +137,32 @@ gmx_off_t gmx_ftell(FILE *stream);
 /** OS-independent truncate(). */
 int gmx_truncate(const char *filename, gmx_off_t length);
 
+namespace gmx
+{
+
 /*! \brief
  * Finds full path for a library file.
  *
- * Searches first in the current directory, and then in the configured library
- * directories.
- * Fatal error results if the file is not found in any location.
- * The caller is responsible of freeing the returned string.
+ * Searches in the configured library directories for \c filename. If
+ * \c bAddCWD is true, searches first in the current directory. Fatal
+ * error results if the file is not found in any location and \c
+ * bFatal is true.
  */
-char *gmxlibfn(const char *file);
+std::string findLibraryFile(const std::string &filename, bool bAddCWD = true, bool bFatal = true);
+//! \copydoc findLibraryFile(const std::string &, bool, bool)
+std::string findLibraryFile(const char *filename, bool bAddCWD = true, bool bFatal = true);
 
 /*! \brief
- * Opens a library file for reading.
+ * Opens a library file for reading in an RAII-style `FILE` handle.
  *
- * Works as gmxlibfn(), except that it opens the file and returns a file
- * handle.
+ * Works as findLibraryFile(), except that it opens the file and
+ * returns a file handle.
  */
-FILE *libopen(const char *file);
+FilePtr openLibraryFile(const std::string &filename, bool bAddCWD = true, bool bFatal = true);
+//! \copydoc openLibraryFile(const std::string &, bool, bool)
+FilePtr openLibraryFile(const char *filename, bool bAddCWD = true, bool bFatal = true);
 
-/*! \brief
- * More flexible gmxlibfn().
- *
- * Works as gmxlibfn(), but provides control whether the current working
- * directory is searched or not, and whether a missing file is a fatal error or
- * not.
- */
-char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal);
-
-/*! \brief
- * Alternative for libopen() that optionally does not exit.
- *
- * Works as libopen(), but provides control whether a missing file is a fatal
- * error or not.
- */
-FILE *low_libopen(const char *file, gmx_bool bFatal);
-
+} // namespace gmx
 
 /*! \brief
  * Creates unique name for temp file (wrapper around mkstemp) and opens it.
@@ -225,9 +212,6 @@ void gmx_chdir(const char *directory);
  */
 void gmx_getcwd(char *buffer, size_t size);
 
-#ifdef __cplusplus
-}
-
 namespace gmx
 {
 
@@ -261,7 +245,7 @@ const DataFileFinder &getLibraryFileFinder();
  * The provided object must remain valid until the global instance is changed
  * by another call to setLibraryFileFinder().
  *
- * The global instance is used by gmxlibfn() and libopen().
+ * The global instance is used by findLibraryFile() and openLibraryFile().
  *
  * This method is not thread-safe.  See setProgramContext(); the same
  * constraints apply here as well.
@@ -271,6 +255,5 @@ const DataFileFinder &getLibraryFileFinder();
 void setLibraryFileFinder(const DataFileFinder *finder);
 
 } // namespace gmx
-#endif
 
 #endif

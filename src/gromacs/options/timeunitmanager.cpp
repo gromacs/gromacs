@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,8 +87,10 @@ TimeUnitManager::TimeUnitManager()
 }
 
 TimeUnitManager::TimeUnitManager(TimeUnit unit)
+    : timeUnit_(unit)
 {
-    setTimeUnit(unit);
+    GMX_RELEASE_ASSERT(unit >= 0 && unit <= TimeUnit_s,
+                       "Invalid time unit");
 }
 
 void TimeUnitManager::setTimeUnit(TimeUnit unit)
@@ -108,7 +110,7 @@ const char *TimeUnitManager::timeUnitAsString() const
 double TimeUnitManager::timeScaleFactor() const
 {
     GMX_RELEASE_ASSERT(timeUnit_ >= 0
-                       && (size_t)timeUnit_ < sizeof(g_timeScaleFactors)/sizeof(g_timeScaleFactors[0]),
+                       && static_cast<size_t>(timeUnit_) < sizeof(g_timeScaleFactors)/sizeof(g_timeScaleFactors[0]),
                        "Time unit index has become out-of-range");
     return g_timeScaleFactors[timeUnit_];
 }
@@ -127,14 +129,14 @@ TimeUnitBehavior::TimeUnitBehavior()
 {
 }
 
-void TimeUnitBehavior::setTimeUnit(TimeUnit timeUnit)
+void TimeUnitBehavior::setTimeUnit(TimeUnit unit)
 {
-    GMX_RELEASE_ASSERT(timeUnit >= 0 && timeUnit <= TimeUnit_s,
+    GMX_RELEASE_ASSERT(unit >= 0 && unit <= TimeUnit_s,
                        "Invalid time unit");
-    timeUnit_ = timeUnit;
+    timeUnit_ = unit;
     if (timeUnitStore_ != nullptr)
     {
-        *timeUnitStore_ = timeUnit;
+        *timeUnitStore_ = unit;
     }
 }
 
@@ -149,8 +151,8 @@ void TimeUnitBehavior::setTimeUnitFromEnvironment()
     const char *const value = std::getenv("GMXTIMEUNIT");
     if (value != nullptr)
     {
-        ConstArrayRef<const char *>                 timeUnits(g_timeUnits);
-        ConstArrayRef<const char *>::const_iterator i =
+        ArrayRef<const char *const>                 timeUnits(g_timeUnits);
+        ArrayRef<const char *const>::const_iterator i =
             std::find(timeUnits.begin(), timeUnits.end(), std::string(value));
         if (i == timeUnits.end())
         {
@@ -190,14 +192,14 @@ class TimeOptionScaler : public OptionsModifyingTypeVisitor<FloatingPointOptionI
         //! Initializes a scaler with the given factor.
         explicit TimeOptionScaler(double factor) : factor_(factor) {}
 
-        void visitSection(OptionSectionInfo *section)
+        void visitSection(OptionSectionInfo *section) override
         {
             OptionsModifyingIterator iterator(section);
             iterator.acceptSections(this);
             iterator.acceptOptions(this);
         }
 
-        void visitOptionType(FloatingPointOptionInfo *option)
+        void visitOptionType(FloatingPointOptionInfo *option) override
         {
             if (option->isTime())
             {

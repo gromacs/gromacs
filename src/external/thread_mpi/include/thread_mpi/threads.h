@@ -73,18 +73,6 @@
 #include "atomic.h"
 
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-#if 0
-} /* Avoids screwing up auto-indentation */
-#endif
-
-
-
-
-
 /*! \brief Thread ID: abstract tMPI_Thread type
  *
  *  The contents of this structure depends on the actual threads
@@ -684,10 +672,5 @@ TMPI_EXPORT
 int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *barrier);
 
 /*! \} */
-
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* TMPI_THREADS_H_ */

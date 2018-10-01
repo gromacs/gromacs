@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,19 +39,73 @@
 
 #include <cstdio>
 
+#include <memory>
+#include <vector>
+
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/unique_cptr.h"
 
 struct gmx_mtop_t;
 struct t_inputrec;
 
-t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t *mtop, gmx_bool bFreeEnergy);
+namespace gmx
+{
+
+/*! \libinternal
+ * \brief Contains a C-style t_mdatoms while managing some of its
+ * memory with C++ vectors with allocators.
+ *
+ * The group-scheme kernels need to use a plain C-style t_mdatoms, so
+ * this type combines that with the memory management needed for
+ * efficient PME on GPU transfers.
+ *
+ * \todo Refactor this class and rename MDAtoms once the group scheme
+ * is removed. */
+class MDAtoms
+{
+    //! C-style mdatoms struct.
+    unique_cptr<t_mdatoms> mdatoms_;
+    //! Memory for chargeA that can be set up for efficient GPU transfer.
+    HostVector<real>       chargeA_;
+    public:
+        // TODO make this private
+        MDAtoms();
+        ~MDAtoms();
+        //! Getter.
+        t_mdatoms *mdatoms()
+        {
+            return mdatoms_.get();
+        }
+        /*! \brief Resizes memory.
+         *
+         * \throws std::bad_alloc  If out of memory.
+         */
+        void resize(int newSize);
+        /*! \brief Reserves memory.
+         *
+         * \throws std::bad_alloc  If out of memory.
+         */
+        void reserve(int newCapacity);
+        //! Builder function.
+        friend std::unique_ptr<MDAtoms>
+        makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
+                    bool rankHasPmeGpuTask);
+};
+
+//! Builder function for MdAtomsWrapper.
+std::unique_ptr<MDAtoms>
+makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
+            bool useGpuForPme);
+
+}  // namespace gmx
 
 void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
               int nindex, const int *index,
               int homenr,
-              t_mdatoms *md);
+              gmx::MDAtoms *mdAtoms);
 /* This routine copies the atoms->atom struct into md.
  * If index!=NULL only the indexed atoms are copied.
  * For the masses the A-state (lambda=0) mass is used.

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,10 +40,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/topology/index.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct gmx_output_env_t;
 struct gmx_residuetype_t;
 
@@ -58,7 +54,7 @@ enum {
 
 #define NHISTO 360
 #define NONCHI 3
-#define MAXCHI edMax-NONCHI
+#define MAXCHI (edMax-NONCHI)
 #define NROT 4  /* number of rotamers: 1=g(-), 2=t, 3=g(+), 0=other */
 
 typedef struct {
@@ -86,7 +82,7 @@ typedef struct {
     real        Jcsig;   /* Standard deviation in Jc */
 } t_karplus;
 
-void calc_distribution_props(int nh, int histo[],
+void calc_distribution_props(int nh, const int histo[],
                              real start, int  nkkk, t_karplus kkk[],
                              real *S2);
 /* This routine takes a dihedral distribution and calculates
@@ -204,7 +200,7 @@ void make_histo(FILE *log,
  *           if both are 0, these values are computed by the routine itself
  */
 
-void normalize_histo(int npoints, int histo[], real dx, real normhisto[]);
+void normalize_histo(int npoints, const int histo[], real dx, real normhisto[]);
 /*
  * Normalize a histogram so that the integral over the histo is 1
  *
@@ -254,10 +250,6 @@ void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
                   real sigma_ct[], real sigma_nt[], real sigma_kt[],
                   real fit_start, real temp);
 
-void compute_derivative(int nn, real x[], real y[], real dydx[]);
-
-#ifdef __cplusplus
-}
-#endif
+void compute_derivative(int nn, const real x[], const real y[], real dydx[]);
 
 #endif

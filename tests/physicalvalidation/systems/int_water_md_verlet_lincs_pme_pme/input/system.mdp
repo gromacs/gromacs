@@ -1,0 +1,14 @@
+nsteps                   = 1000
+dt                       = 0.001
+nstcalcenergy            = 1
+nstenergy                = 1
+cutoff-scheme            = verlet
+verlet-buffer-tolerance  = 1e-10
+integrator               = md
+vdwtype                  = PME
+coulombtype              = PME
+fourierspacing           = 0.05
+constraint-algorithm     = lincs
+lincs-order              = 6
+lincs-iter               = 2
+constraints              = all-bonds

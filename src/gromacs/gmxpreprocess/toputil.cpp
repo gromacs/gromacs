@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,10 +38,9 @@
 
 #include "toputil.h"
 
-#include <string.h>
-
 #include <climits>
 #include <cmath>
+#include <cstring>
 
 #include <algorithm>
 
@@ -67,7 +66,7 @@ void set_p_string(t_param *p, const char *s)
         }
         else
         {
-            gmx_fatal(FARGS, "Increase MAXSLEN in the grompp code to at least %d,"
+            gmx_fatal(FARGS, "Increase MAXSLEN in the grompp code to at least %zu,"
                       " or shorten your definition of bonds like %s to at most %d",
                       strlen(s)+1, s, MAXSLEN-1);
         }
@@ -91,7 +90,7 @@ void pr_alloc (int extra, t_params *pr)
     {
         return;
     }
-    GMX_ASSERT(pr->nr != 0 || pr->param == NULL, "Invalid t_params object");
+    GMX_ASSERT(pr->nr != 0 || pr->param == nullptr, "Invalid t_params object");
     if (pr->nr+extra > pr->maxnr)
     {
         pr->maxnr = std::max(static_cast<int>(1.2*pr->maxnr), pr->maxnr + extra);
@@ -128,6 +127,17 @@ void init_plist(t_params plist[])
         plist[i].nc           = 0;
         plist[i].nct          = 0;
         plist[i].cmap_types   = nullptr;
+    }
+}
+
+void done_plist(t_params *plist)
+{
+    for (int i = 0; i < F_NRE; i++)
+    {
+        t_params *pl = &plist[i];
+        sfree(pl->param);
+        sfree(pl->cmap);
+        sfree(pl->cmap_types);
     }
 }
 
@@ -177,34 +187,24 @@ void init_molinfo(t_molinfo *mol)
     init_block(&mol->cgs);
     init_block(&mol->mols);
     init_blocka(&mol->excls);
-    init_atom(&mol->atoms);
+    init_t_atoms(&mol->atoms, 0, FALSE);
 }
 
 /* FREEING MEMORY */
 
-void done_bt (t_params *pl)
-{
-    sfree(pl->param);
-}
-
 void done_mi(t_molinfo *mi)
 {
-    int i;
-
     done_atom (&(mi->atoms));
     done_block(&(mi->cgs));
     done_block(&(mi->mols));
-    for (i = 0; (i < F_NRE); i++)
-    {
-        done_bt(&(mi->plist[i]));
-    }
+    done_plist(mi->plist);
 }
 
 /* PRINTING STRUCTURES */
 
-void print_bt(FILE *out, directive d, gpp_atomtype_t at,
-              int ftype, int fsubtype, t_params plist[],
-              gmx_bool bFullDih)
+static void print_bt(FILE *out, directive d, gpp_atomtype_t at,
+                     int ftype, int fsubtype, t_params plist[],
+                     bool bFullDih)
 {
     /* This dihp is a DIRTY patch because the dih-types do not use
      * all four atoms to determine the type.
@@ -212,7 +212,7 @@ void print_bt(FILE *out, directive d, gpp_atomtype_t at,
     const int    dihp[2][2] = { { 1, 2 }, { 0, 3 } };
     t_params    *bt;
     int          i, j, f, nral, nrfp;
-    gmx_bool     bDih = FALSE, bSwapParity;
+    bool         bDih = FALSE, bSwapParity;
 
     bt = &(plist[ftype]);
 
@@ -371,7 +371,7 @@ void print_blocka(FILE *out, const char *szName,
         for (i = 0; (i < block->nr); i++)
         {
             fprintf (out, "%6d", i+1);
-            for (j = block->index[i]; (j < ((int)block->index[i+1])); j++)
+            for (j = block->index[i]; (j < (block->index[i+1])); j++)
             {
                 fprintf (out, "%5d", block->a[j]+1);
             }
@@ -384,7 +384,7 @@ void print_blocka(FILE *out, const char *szName,
 void print_excl(FILE *out, int natoms, t_excls excls[])
 {
     int         i;
-    gmx_bool    have_excl;
+    bool        have_excl;
     int         j;
 
     have_excl = FALSE;
@@ -431,7 +431,7 @@ static double get_residue_charge(const t_atoms *atoms, int at)
 }
 
 void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
-                 gmx_bool bRTPresname)
+                 bool bRTPresname)
 {
     int         i, ri;
     int         tpA, tpB;
@@ -445,12 +445,6 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
             "nr", "type", "resnr", "residue", "atom", "cgnr", "charge", "mass", "typeB", "chargeB", "massB");
 
     qtot  = 0;
-
-    if (debug)
-    {
-        fprintf(debug, "This molecule has %d atoms and %d residues\n",
-                at->nr, at->nres);
-    }
 
     if (at->nres)
     {
@@ -503,12 +497,25 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
                 fprintf(out, " %6s %10g %10g",
                         tpnmB, at->atom[i].qB, at->atom[i].mB);
             }
-            qtot += (double)at->atom[i].q;
-            if (fabs(qtot) < 4*GMX_REAL_EPS)
+            // Accumulate the total charge to help troubleshoot issues.
+            qtot += static_cast<double>(at->atom[i].q);
+            // Round it to zero if it is close to zero, because
+            // printing -9.34e-5 confuses users.
+            if (fabs(qtot) < 0.0001)
             {
                 qtot = 0;
             }
-            fprintf(out, "   ; qtot %.4g\n", qtot);
+            // Write the total charge for the last atom of the system
+            // and/or residue, because generally that's where it is
+            // expected to be an integer.
+            if (i == at->nr-1 || ri != at->atom[i+1].resind)
+            {
+                fprintf(out, "   ; qtot %.4g\n", qtot);
+            }
+            else
+            {
+                fputs("\n", out);
+            }
         }
     }
     fprintf(out, "\n");
@@ -532,7 +539,7 @@ void print_bondeds(FILE *out, int natoms, directive d,
     {
         char buf[12];
         sprintf(buf, "%4d", (i+1));
-        add_atomtype(atype, &stab, a, buf, param, 0, 0, 0, 0, 0, 0, 0);
+        add_atomtype(atype, &stab, a, buf, param, 0, 0);
     }
     print_bt(out, d, atype, ftype, fsubtype, plist, TRUE);
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -112,7 +112,7 @@ static t_pdbfile **read_em_all(const char *fn, int *npdbf)
     do
     {
         sprintf(name, "%s_%d.pdb", buf, i+1);
-        if ((bExist = gmx_fexist(name)) == TRUE)
+        if ((bExist = gmx_fexist(name)))
         {
             pdbf[i]        = read_pdbf(name);
             pdbf[i]->index = i+1;
@@ -137,12 +137,12 @@ static gmx_bool bFreeSort = FALSE;
 
 static int pdbf_comp(const void *a, const void *b)
 {
-    t_pdbfile *pa, *pb;
-    real       x;
-    int        dc;
+    const t_pdbfile *pa, *pb;
+    real             x;
+    int              dc;
 
-    pa = *(t_pdbfile **)a;
-    pb = *(t_pdbfile **)b;
+    pa = *static_cast<t_pdbfile *const*>(a);
+    pb = *static_cast<t_pdbfile *const*>(b);
 
     dc = pa->cluster_id - pb->cluster_id;
 
@@ -182,8 +182,9 @@ static void analyse_em_all(int npdb, t_pdbfile *pdbf[], const char *edocked,
     FILE *fp;
     int   i;
 
-    for (bFreeSort = FALSE; (bFreeSort <= TRUE); bFreeSort++)
+    for (int freeSort = 0; freeSort < 2; freeSort++)
     {
+        bFreeSort = (freeSort == 1);
         qsort(pdbf, npdb, sizeof(pdbf[0]), pdbf_comp);
         fp = xvgropen(bFreeSort ? efree : edocked,
                       etitles[bFreeSort], "()", "E (kJ/mol)", oenv);

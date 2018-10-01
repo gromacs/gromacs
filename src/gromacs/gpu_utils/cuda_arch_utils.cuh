@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,6 +35,10 @@
 #ifndef CUDA_ARCH_UTILS_CUH_
 #define CUDA_ARCH_UTILS_CUH_
 
+#include "config.h"
+
+#include "gromacs/utility/basedefinitions.h"
+
 /*! \file
  *  \brief CUDA arch dependent definitions.
  *
@@ -57,5 +61,125 @@
  */
 static const int warp_size      = 32;
 static const int warp_size_log2 = 5;
+/*! \brief Bitmask corresponding to all threads active in a warp.
+ *  NOTE that here too we assume 32-wide warps.
+ */
+static const unsigned int c_fullWarpMask = 0xffffffff;
+
+/* Below are backward-compatibility wrappers for CUDA 9 warp-wide intrinsics. */
+
+/*! \brief Compatibility wrapper around the CUDA __syncwarp() instrinsic.  */
+static __forceinline__ __device__
+void gmx_syncwarp(const unsigned int activeMask = c_fullWarpMask)
+{
+#if GMX_CUDA_VERSION < 9000
+    /* no sync needed on pre-Volta. */
+    GMX_UNUSED_VALUE(activeMask);
+#else
+    __syncwarp(activeMask);
+#endif
+}
+
+/*! \brief Compatibility wrapper around the CUDA __ballot()/__ballot_sync() instrinsic.  */
+static __forceinline__ __device__
+unsigned int gmx_ballot_sync(const unsigned int activeMask,
+                             const int          pred)
+{
+#if GMX_CUDA_VERSION < 9000
+    GMX_UNUSED_VALUE(activeMask);
+    return __ballot(pred);
+#else
+    return __ballot_sync(activeMask, pred);
+#endif
+}
+
+/*! \brief Compatibility wrapper around the CUDA __any()/__any_sync() instrinsic.  */
+static __forceinline__ __device__
+int gmx_any_sync(const unsigned int activeMask,
+                 const int          pred)
+{
+#if GMX_CUDA_VERSION < 9000
+    GMX_UNUSED_VALUE(activeMask);
+    return __any(pred);
+#else
+    return __any_sync(activeMask, pred);
+#endif
+}
+
+/*! \brief Compatibility wrapper around the CUDA __shfl_up()/__shfl_up_sync() instrinsic.  */
+template <typename T>
+static __forceinline__ __device__
+T gmx_shfl_up_sync(const unsigned int activeMask,
+                   const T            var,
+                   unsigned int       offset,
+                   int                width = warp_size)
+{
+#if GMX_CUDA_VERSION < 9000
+    GMX_UNUSED_VALUE(activeMask);
+    return __shfl_up(var, offset, width);
+#else
+    return __shfl_up_sync(activeMask, var, offset, width);
+#endif
+}
+
+/*! \brief Compatibility wrapper around the CUDA __shfl_down()/__shfl_down_sync() instrinsic.  */
+template <typename T>
+static __forceinline__ __device__
+T gmx_shfl_down_sync(const unsigned int activeMask,
+                     const T            var,
+                     unsigned int       offset,
+                     int                width = warp_size)
+{
+#if GMX_CUDA_VERSION < 9000
+    GMX_UNUSED_VALUE(activeMask);
+    return __shfl_down(var, offset, width);
+#else
+    return __shfl_down_sync(activeMask, var, offset, width);
+#endif
+}
+
+/*! \brief Allow disabling CUDA textures using the GMX_DISABLE_CUDA_TEXTURES macro.
+ *
+ *  Only texture objects supported, disable textures for <= CC 2.0 (but not in host code).
+ *  Disable texture support missing in clang (all versions up to <=5.0-dev as of writing).
+ *
+ *  This option will not influence functionality. All features using textures ought
+ *  to have fallback for texture-less reads (direct/LDG loads), all new code needs
+ *  to provide fallback code.
+ */
+#if defined(GMX_DISABLE_CUDA_TEXTURES) || (GMX_PTX_ARCH > 0 && GMX_PTX_ARCH < 300) || (defined(__clang__) && defined(__CUDA__))
+#define DISABLE_CUDA_TEXTURES 1
+#else
+#define DISABLE_CUDA_TEXTURES 0
+#endif
+
+/*! \brief True if the use of texture fetch in the CUDA kernels is disabled. */
+static const bool c_disableCudaTextures = DISABLE_CUDA_TEXTURES;
+
+
+/* CUDA architecture technical characteristics. Needs macros because it is used
+ * in the __launch_bounds__ function qualifiers and might need it in preprocessor
+ * conditionals.
+ *
+ */
+#if GMX_PTX_ARCH > 0
+    #if   GMX_PTX_ARCH <= 210  // CC 2.x
+        #define GMX_CUDA_MAX_BLOCKS_PER_MP   8
+        #define GMX_CUDA_MAX_THREADS_PER_MP  1536
+    #elif GMX_PTX_ARCH <= 370  // CC 3.x
+        #define GMX_CUDA_MAX_BLOCKS_PER_MP   16
+        #define GMX_CUDA_MAX_THREADS_PER_MP  2048
+    #else // CC 5.x, 6.x
+          /* Note that this final branch covers all future architectures (current gen
+           * is 6.x as of writing), hence assuming that these *currently defined* upper
+           * limits will not be lowered.
+           */
+        #define GMX_CUDA_MAX_BLOCKS_PER_MP   32
+        #define GMX_CUDA_MAX_THREADS_PER_MP  2048
+    #endif
+#else
+        #define GMX_CUDA_MAX_BLOCKS_PER_MP   0
+        #define GMX_CUDA_MAX_THREADS_PER_MP  0
+#endif
 
 #endif /* CUDA_ARCH_UTILS_CUH_ */

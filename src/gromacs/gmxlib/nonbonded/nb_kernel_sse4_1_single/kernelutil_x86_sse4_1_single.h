@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -271,19 +271,19 @@ gmx_mm_load_3rvec_4ptr_swizzle_ps(const float * gmx_restrict ptrA,
                                   __m128 * gmx_restrict x3, __m128 * gmx_restrict y3, __m128 * gmx_restrict z3)
 {
     __m128 t1, t2, t3, t4;
-    t1            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (void *)ptrA ) );
-    t2            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (void *)ptrB ) );
-    t3            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (void *)ptrC ) );
-    t4            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (void *)ptrD ) );
+    t1            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (__m128i *)ptrA ) );
+    t2            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (__m128i *)ptrB ) );
+    t3            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (__m128i *)ptrC ) );
+    t4            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (__m128i *)ptrD ) );
     _MM_TRANSPOSE4_PS(t1, t2, t3, t4);
     *x1           = t1;
     *y1           = t2;
     *z1           = t3;
     *x2           = t4;
-    t1            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (void *)(ptrA+4) ) );
-    t2            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (void *)(ptrB+4) ) );
-    t3            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (void *)(ptrC+4) ) );
-    t4            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (void *)(ptrD+4) ) );
+    t1            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (__m128i *)(ptrA+4) ) );
+    t2            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (__m128i *)(ptrB+4) ) );
+    t3            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (__m128i *)(ptrC+4) ) );
+    t4            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (__m128i *)(ptrD+4) ) );
     _MM_TRANSPOSE4_PS(t1, t2, t3, t4);
     *y2           = t1;
     *z2           = t2;
@@ -310,28 +310,28 @@ gmx_mm_load_4rvec_4ptr_swizzle_ps(const float * gmx_restrict ptrA,
                                   __m128 * gmx_restrict x4, __m128 * gmx_restrict y4, __m128 * gmx_restrict z4)
 {
     __m128 t1, t2, t3, t4;
-    t1            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (void *)(ptrA) ) );
-    t2            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (void *)(ptrB) ) );
-    t3            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (void *)(ptrC) ) );
-    t4            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (void *)(ptrD) ) );
+    t1            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (__m128i *)(ptrA) ) );
+    t2            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (__m128i *)(ptrB) ) );
+    t3            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (__m128i *)(ptrC) ) );
+    t4            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (__m128i *)(ptrD) ) );
     _MM_TRANSPOSE4_PS(t1, t2, t3, t4);
     *x1           = t1;
     *y1           = t2;
     *z1           = t3;
     *x2           = t4;
-    t1            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (void *)(ptrA+4) ) );
-    t2            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (void *)(ptrB+4) ) );
-    t3            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (void *)(ptrC+4) ) );
-    t4            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (void *)(ptrD+4) ) );
+    t1            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (__m128i *)(ptrA+4) ) );
+    t2            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (__m128i *)(ptrB+4) ) );
+    t3            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (__m128i *)(ptrC+4) ) );
+    t4            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (__m128i *)(ptrD+4) ) );
     _MM_TRANSPOSE4_PS(t1, t2, t3, t4);
     *y2           = t1;
     *z2           = t2;
     *x3           = t3;
     *y3           = t4;
-    t1            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (void *)(ptrA+8) ) );
-    t2            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (void *)(ptrB+8) ) );
-    t3            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (void *)(ptrC+8) ) );
-    t4            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (void *)(ptrD+8) ) );
+    t1            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (__m128i *)(ptrA+8) ) );
+    t2            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (__m128i *)(ptrB+8) ) );
+    t3            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (__m128i *)(ptrC+8) ) );
+    t4            = gmx_mm_castsi128_ps( _mm_lddqu_si128( (__m128i *)(ptrD+8) ) );
     _MM_TRANSPOSE4_PS(t1, t2, t3, t4);
     *z3           = t1;
     *x4           = t2;

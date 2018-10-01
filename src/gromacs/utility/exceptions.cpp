@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -160,7 +160,7 @@ ErrorMessage
 ErrorMessage::prependContext(const std::string &context) const
 {
     ErrorMessage newMessage(context);
-    newMessage.child_.reset(new ErrorMessage(*this));
+    newMessage.child_ = std::make_shared<ErrorMessage>(*this);
     return newMessage;
 }
 
@@ -330,12 +330,12 @@ class MessageWriterFileNoThrow : public IMessageWriter
         //! Initializes a writer that writes to the given file handle.
         explicit MessageWriterFileNoThrow(FILE *fp) : fp_(fp) {}
 
-        virtual void writeLine(const char *text, int indent)
+        void writeLine(const char *text, int indent) override
         {
             internal::printFatalErrorMessageLine(fp_, text, indent);
         }
-        virtual void writeErrNoInfo(int errorNumber, const char *funcName,
-                                    int indent)
+        void writeErrNoInfo(int errorNumber, const char *funcName,
+                            int indent) override
         {
             std::fprintf(fp_, "%*sReason: %s\n", indent, "",
                          std::strerror(errorNumber));
@@ -361,13 +361,13 @@ class MessageWriterTextWriter : public IMessageWriter
         {
         }
 
-        virtual void writeLine(const char *text, int indent)
+        void writeLine(const char *text, int indent) override
         {
             writer_->wrapperSettings().setIndent(indent);
             writer_->writeLine(text);
         }
-        virtual void writeErrNoInfo(int errorNumber, const char *funcName,
-                                    int indent)
+        void writeErrNoInfo(int errorNumber, const char *funcName,
+                            int indent) override
         {
             writer_->wrapperSettings().setIndent(indent);
             writer_->writeLine(formatString("Reason: %s", std::strerror(errorNumber)));
@@ -392,7 +392,7 @@ class MessageWriterString : public IMessageWriter
         //! Post-processes the output string to not end in a line feed.
         void removeTerminatingLineFeed()
         {
-            if (result_.size() > 0U)
+            if (!result_.empty())
             {
                 result_.erase(result_.size() - 1);
             }
@@ -400,14 +400,14 @@ class MessageWriterString : public IMessageWriter
         //! Returns the constructed string.
         const std::string &result() const { return result_; }
 
-        virtual void writeLine(const char *text, int indent)
+        void writeLine(const char *text, int indent) override
         {
             result_.append(indent, ' ');
             result_.append(text);
             result_.append("\n");
         }
-        virtual void writeErrNoInfo(int errorNumber, const char *funcName,
-                                    int indent)
+        void writeErrNoInfo(int errorNumber, const char *funcName,
+                            int indent) override
         {
             writeLine(formatString("Reason: %s", std::strerror(errorNumber)).c_str(),
                       indent);

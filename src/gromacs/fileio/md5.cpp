@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -109,7 +109,7 @@
 #  define BYTE_ORDER 0
 #endif
 
-#define T_MASK ((md5_word_t) ~0)
+#define T_MASK (static_cast<md5_word_t>(~0))
 #define T1 /* 0xd76aa478 */ (T_MASK ^ 0x28955b87)
 #define T2 /* 0xe8c7b756 */ (T_MASK ^ 0x173848a9)
 #define T3    0x242070db
@@ -212,7 +212,7 @@ md5_process(md5_state_t *pms, const md5_byte_t *data /*[64]*/)
             if (!((data - reinterpret_cast<const md5_byte_t *>(0)) & 3))
             {
                 /* data are properly aligned */
-                X = (const md5_word_t *)data;
+                X = reinterpret_cast<const md5_word_t *>(data);
             }
             else
             {
@@ -254,8 +254,8 @@ md5_process(md5_state_t *pms, const md5_byte_t *data /*[64]*/)
        a = b + ((a + F(b,c,d) + X[k] + T[i]) <<< s). */
 #define F(x, y, z) (((x) & (y)) | (~(x) & (z)))
 #define SET(a, b, c, d, k, s, Ti) \
-    t = a + F(b, c, d) + X[k] + Ti; \
-    a = ROTATE_LEFT(t, s) + b
+    t   = (a) + F(b, c, d) + X[k] + (Ti); \
+    (a) = ROTATE_LEFT(t, s) + b
     /* Do the following 16 operations. */
     SET(a, b, c, d,  0,  7,  T1);
     SET(d, a, b, c,  1, 12,  T2);
@@ -280,8 +280,8 @@ md5_process(md5_state_t *pms, const md5_byte_t *data /*[64]*/)
          a = b + ((a + G(b,c,d) + X[k] + T[i]) <<< s). */
 #define G(x, y, z) (((x) & (z)) | ((y) & ~(z)))
 #define SET(a, b, c, d, k, s, Ti) \
-    t = a + G(b, c, d) + X[k] + Ti; \
-    a = ROTATE_LEFT(t, s) + b
+    t   = (a) + G(b, c, d) + X[k] + (Ti); \
+    (a) = ROTATE_LEFT(t, s) + b
     /* Do the following 16 operations. */
     SET(a, b, c, d,  1,  5, T17);
     SET(d, a, b, c,  6,  9, T18);
@@ -306,8 +306,8 @@ md5_process(md5_state_t *pms, const md5_byte_t *data /*[64]*/)
          a = b + ((a + H(b,c,d) + X[k] + T[i]) <<< s). */
 #define H(x, y, z) ((x) ^ (y) ^ (z))
 #define SET(a, b, c, d, k, s, Ti) \
-    t = a + H(b, c, d) + X[k] + Ti; \
-    a = ROTATE_LEFT(t, s) + b
+    t   = (a) + H(b, c, d) + X[k] + (Ti); \
+    (a) = ROTATE_LEFT(t, s) + b
     /* Do the following 16 operations. */
     SET(a, b, c, d,  5,  4, T33);
     SET(d, a, b, c,  8, 11, T34);
@@ -332,8 +332,8 @@ md5_process(md5_state_t *pms, const md5_byte_t *data /*[64]*/)
          a = b + ((a + I(b,c,d) + X[k] + T[i]) <<< s). */
 #define I(x, y, z) ((y) ^ ((x) | ~(z)))
 #define SET(a, b, c, d, k, s, Ti) \
-    t = a + I(b, c, d) + X[k] + Ti; \
-    a = ROTATE_LEFT(t, s) + b
+    t   = (a) + I(b, c, d) + X[k] + (Ti); \
+    (a) = ROTATE_LEFT(t, s) + b
     /* Do the following 16 operations. */
     SET(a, b, c, d,  0,  6, T49);
     SET(d, a, b, c,  7, 10, T50);
@@ -378,7 +378,7 @@ gmx_md5_append(md5_state_t *pms, const md5_byte_t *data, int nbytes)
     const md5_byte_t *p = data;
     int left            = nbytes;
     int offset          = (pms->count[0] >> 3) & 63;
-    md5_word_t nbits    = (md5_word_t)(nbytes << 3);
+    md5_word_t nbits    = static_cast<md5_word_t>(nbytes << 3);
 
     if (nbytes <= 0)
     {
@@ -436,7 +436,7 @@ gmx_md5_finish(md5_state_t *pms, md5_byte_t digest[16])
     /* Save the length before padding. */
     for (i = 0; i < 8; ++i)
     {
-        data[i] = (md5_byte_t)(pms->count[i >> 2] >> ((i & 3) << 3));
+        data[i] = static_cast<md5_byte_t>(pms->count[i >> 2] >> ((i & 3) << 3));
     }
     /* Pad to 56 bytes mod 64. */
     gmx_md5_append(pms, pad, ((55 - (pms->count[0] >> 3)) & 63) + 1);
@@ -444,6 +444,6 @@ gmx_md5_finish(md5_state_t *pms, md5_byte_t digest[16])
     gmx_md5_append(pms, data, 8);
     for (i = 0; i < 16; ++i)
     {
-        digest[i] = (md5_byte_t)(pms->abcd[i >> 2] >> ((i & 3) << 3));
+        digest[i] = static_cast<md5_byte_t>(pms->abcd[i >> 2] >> ((i & 3) << 3));
     }
 }

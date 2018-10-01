@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,12 +46,29 @@
 #ifndef NBNXN_CUDA_TYPES_H
 #define NBNXN_CUDA_TYPES_H
 
+#include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/devicebuffer.h"
+#include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_gpu_types_common.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/timing/gpu_timing.h"
 
+
+/*! \brief Macro definining default for the prune kernel's j4 processing concurrency.
+ *
+ *  The GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY macro allows compile-time override.
+ */
+#ifndef GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
+#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY 4
+#endif
+/*! \brief Default for the prune kernel's j4 processing concurrency.
+ *
+ *  Initialized using the #GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY macro which allows compile-time override.
+ */
+const int c_cudaPruneKernelJ4Concurrency = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY;
 
 /* TODO: consider moving this to kernel_utils */
 /* Convenience defines */
@@ -59,10 +76,6 @@
 static const int c_numClPerSupercl = c_nbnxnGpuNumClusterPerSupercluster;
 /*! \brief cluster size = number of atoms per cluster. */
 static const int c_clSize          = c_nbnxnGpuClusterSize;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /*! \brief Electrostatic CUDA kernel flavors.
  *
@@ -98,10 +111,8 @@ enum evdwCu {
 /* All structs prefixed with "cu_" hold data used in GPU calculations and
  * are passed to the kernels, except cu_timers_t. */
 /*! \cond */
-typedef struct cu_plist     cu_plist_t;
 typedef struct cu_atomdata  cu_atomdata_t;
 typedef struct cu_nbparam   cu_nbparam_t;
-typedef struct cu_timers    cu_timers_t;
 typedef struct nb_staging   nb_staging_t;
 /*! \endcond */
 
@@ -150,26 +161,28 @@ struct cu_atomdata
 struct cu_nbparam
 {
 
-    int             eeltype;          /**< type of electrostatics, takes values from #eelCu */
-    int             vdwtype;          /**< type of VdW impl., takes values from #evdwCu     */
+    int             eeltype;              /**< type of electrostatics, takes values from #eelCu */
+    int             vdwtype;              /**< type of VdW impl., takes values from #evdwCu     */
 
-    float           epsfac;           /**< charge multiplication factor                      */
-    float           c_rf;             /**< Reaction-field/plain cutoff electrostatics const. */
-    float           two_k_rf;         /**< Reaction-field electrostatics constant            */
-    float           ewald_beta;       /**< Ewald/PME parameter                               */
-    float           sh_ewald;         /**< Ewald/PME correction term substracted from the direct-space potential */
-    float           sh_lj_ewald;      /**< LJ-Ewald/PME correction term added to the correction potential        */
-    float           ewaldcoeff_lj;    /**< LJ-Ewald/PME coefficient                          */
+    float           epsfac;               /**< charge multiplication factor                      */
+    float           c_rf;                 /**< Reaction-field/plain cutoff electrostatics const. */
+    float           two_k_rf;             /**< Reaction-field electrostatics constant            */
+    float           ewald_beta;           /**< Ewald/PME parameter                               */
+    float           sh_ewald;             /**< Ewald/PME correction term substracted from the direct-space potential */
+    float           sh_lj_ewald;          /**< LJ-Ewald/PME correction term added to the correction potential        */
+    float           ewaldcoeff_lj;        /**< LJ-Ewald/PME coefficient                          */
 
-    float           rcoulomb_sq;      /**< Coulomb cut-off squared                           */
+    float           rcoulomb_sq;          /**< Coulomb cut-off squared                           */
 
-    float           rvdw_sq;          /**< VdW cut-off squared                               */
-    float           rvdw_switch;      /**< VdW switched cut-off                              */
-    float           rlist_sq;         /**< pair-list cut-off squared                         */
+    float           rvdw_sq;              /**< VdW cut-off squared                               */
+    float           rvdw_switch;          /**< VdW switched cut-off                              */
+    float           rlistOuter_sq;        /**< Full, outer pair-list cut-off squared             */
+    float           rlistInner_sq;        /**< Inner, dynamic pruned pair-list cut-off squared   */
+    bool            useDynamicPruning;    /**< True if we use dynamic pair-list pruning          */
 
-    shift_consts_t  dispersion_shift; /**< VdW shift dispersion constants           */
-    shift_consts_t  repulsion_shift;  /**< VdW shift repulsion constants            */
-    switch_consts_t vdw_switch;       /**< VdW switch constants                     */
+    shift_consts_t  dispersion_shift;     /**< VdW shift dispersion constants           */
+    shift_consts_t  repulsion_shift;      /**< VdW shift repulsion constants            */
+    switch_consts_t vdw_switch;           /**< VdW switch constants                     */
 
     /* LJ non-bonded parameters - accessed through texture memory */
     float               *nbfp;             /**< nonbonded parameter table with C6/C12 pairs per atom type-pair, 2*ntype^2 elements */
@@ -178,7 +191,6 @@ struct cu_nbparam
     cudaTextureObject_t  nbfp_comb_texobj; /**< texture object bound to nbfp_texobj                                                */
 
     /* Ewald Coulomb force table data - accessed through texture memory */
-    int                  coulomb_tab_size;   /**< table size (s.t. it fits in texture cache) */
     float                coulomb_tab_scale;  /**< table scale/spacing                        */
     float               *coulomb_tab;        /**< pointer to the table in the device memory  */
     cudaTextureObject_t  coulomb_tab_texobj; /**< texture object bound to coulomb_tab        */
@@ -187,52 +199,19 @@ struct cu_nbparam
 /** \internal
  * \brief Pair list data.
  */
-struct cu_plist
-{
-    int              na_c;        /**< number of atoms per cluster                  */
-
-    int              nsci;        /**< size of sci, # of i clusters in the list     */
-    int              sci_nalloc;  /**< allocation size of sci                       */
-    nbnxn_sci_t     *sci;         /**< list of i-cluster ("super-clusters")         */
-
-    int              ncj4;        /**< total # of 4*j clusters                      */
-    int              cj4_nalloc;  /**< allocation size of cj4                       */
-    nbnxn_cj4_t     *cj4;         /**< 4*j cluster list, contains j cluster number
-                                       and index into the i cluster list            */
-    nbnxn_excl_t    *excl;        /**< atom interaction bits                        */
-    int              nexcl;       /**< count for excl                               */
-    int              excl_nalloc; /**< allocation size of excl                      */
-
-    bool             bDoPrune;    /**< true if pair-list pruning needs to be
-                                       done during the  current step                */
-};
+using cu_plist_t = gpu_plist;
 
 /** \internal
- * \brief CUDA events used for timing GPU kernels and H2D/D2H transfers.
- *
- * The two-sized arrays hold the local and non-local values and should always
- * be indexed with eintLocal/eintNonlocal.
+ * \brief Typedef of actual timer type.
  */
-struct cu_timers
-{
-    cudaEvent_t start_atdat;     /**< start event for atom data transfer (every PS step)             */
-    cudaEvent_t stop_atdat;      /**< stop event for atom data transfer (every PS step)              */
-    cudaEvent_t start_nb_h2d[2]; /**< start events for x/q H2D transfers (l/nl, every step)          */
-    cudaEvent_t stop_nb_h2d[2];  /**< stop events for x/q H2D transfers (l/nl, every step)           */
-    cudaEvent_t start_nb_d2h[2]; /**< start events for f D2H transfer (l/nl, every step)             */
-    cudaEvent_t stop_nb_d2h[2];  /**< stop events for f D2H transfer (l/nl, every step)              */
-    cudaEvent_t start_pl_h2d[2]; /**< start events for pair-list H2D transfers (l/nl, every PS step) */
-    cudaEvent_t stop_pl_h2d[2];  /**< start events for pair-list H2D transfers (l/nl, every PS step) */
-    cudaEvent_t start_nb_k[2];   /**< start event for non-bonded kernels (l/nl, every step)          */
-    cudaEvent_t stop_nb_k[2];    /**< stop event non-bonded kernels (l/nl, every step)               */
-};
+typedef struct nbnxn_gpu_timers_t cu_timers_t;
 
 /** \internal
  * \brief Main data structure for CUDA nonbonded force calculations.
  */
 struct gmx_nbnxn_cuda_t
 {
-    struct gmx_device_info_t *dev_info;       /**< CUDA device information                              */
+    const gmx_device_info_t  *dev_info;       /**< CUDA device information                              */
     bool                      bUseTwoStreams; /**< true if doing both local/non-local NB work on GPU    */
     cu_atomdata_t            *atdat;          /**< atom data                                            */
     cu_nbparam_t             *nbparam;        /**< parameters required for the non-bonded calc.         */
@@ -253,13 +232,9 @@ struct gmx_nbnxn_cuda_t
      * concurrent streams, so we won't time if both l/nl work is done on GPUs.
      * Timer init/uninit is still done even with timing off so only the condition
      * setting bDoTime needs to be change if this CUDA "feature" gets fixed. */
-    bool                 bDoTime;   /**< True if event-based timing is enabled.               */
-    cu_timers_t         *timers;    /**< CUDA event-based timers.                             */
-    gmx_wallclock_gpu_t *timings;   /**< Timing data.                                         */
+    bool                       bDoTime;   /**< True if event-based timing is enabled.               */
+    cu_timers_t               *timers;    /**< CUDA event-based timers.                             */
+    gmx_wallclock_gpu_nbnxn_t *timings;   /**< Timing data. TODO: deprecate this and query timers for accumulated data instead */
 };
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif  /* NBNXN_CUDA_TYPES_H */

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,10 +68,10 @@
 #include <stdio.h>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/commrec.h"
-#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/utility/real.h"
 
+struct t_commrec;
+struct t_forcerec;
 struct t_inputrec;
 
 /* Forward declaration of type for managing Ewald tables */
@@ -84,21 +84,26 @@ init_ewald_tab(struct gmx_ewald_tab_t **et, const t_inputrec *ir,
 
 /*! \brief Do the long-ranged part of an Ewald calculation */
 real
-do_ewald(t_inputrec *ir,
-         rvec x[],        rvec f[],
-         real chargeA[],  real chargeB[],
-         rvec box,
-         t_commrec *cr,  int natoms,
-         matrix lrvir,   real ewaldcoeff,
-         real lambda,    real *dvdlambda,
-         struct gmx_ewald_tab_t *et);
+do_ewald(const t_inputrec *ir,
+         const rvec        x[],
+         rvec              f[],
+         const real        chargeA[],
+         const real        chargeB[],
+         matrix            box,
+         const t_commrec  *cr,
+         int               natoms,
+         matrix            lrvir,
+         real              ewaldcoeff,
+         real              lambda,
+         real             *dvdlambda,
+         gmx_ewald_tab_t  *et);
 
 /*! \brief Calculate the correction to the Ewald sum, due to a net system
  * charge.
  *
  * Should only be called on one thread. */
 real
-ewald_charge_correction(t_commrec *cr, t_forcerec *fr, real lambda, matrix box,
+ewald_charge_correction(const t_commrec *cr, t_forcerec *fr, real lambda, matrix box,
                         real *dvdlambda, tensor vir);
 
 #endif

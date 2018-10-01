@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,8 +64,8 @@ typedef struct
     double          dx;                 /* the histogram spacing in kJ/mol. This is the
                                            same for the two histograms? */
     unsigned int    nbins;              /* the number of bins in the histograms*/
-    gmx_int64_t     x0[2];              /* the starting point in units of spacing
-                                               of the histogram */
+    int64_t         x0[2];              /* the starting point in units of spacing
+                                                   of the histogram */
     unsigned int    maxbin[2];          /* highest bin number with data */
 
     int             type;               /* the block type according to dhbtDH, etc. */
@@ -75,8 +75,8 @@ typedef struct
     int             nlambda;            /* length of the lambda vector */
     gmx_bool        written;            /* whether this data has already been written out */
 
-    gmx_int64_t     subblock_meta_l[5]; /* metadata for an mdebin subblock for
-                                               I/O: for histogram counts, etc.*/
+    int64_t         subblock_meta_l[5]; /* metadata for an mdebin subblock for
+                                                   I/O: for histogram counts, etc.*/
     double         *subblock_meta_d;    /* metadata subblock for I/O, used for
                                            communicating doubles (i.e. the lambda
                                            vector) */
@@ -134,6 +134,8 @@ struct t_mde_delta_h_coll
 void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc,
                            const t_inputrec   *ir);
 
+void done_mde_delta_h_coll(t_mde_delta_h_coll *dhc);
+
 /* add a bunch of samples to the delta_h collection
     dhc = the collection
     dhdl = the hamiltonian derivatives
@@ -172,6 +174,6 @@ void mde_delta_h_coll_update_energyhistory(const t_mde_delta_h_coll *dhc,
 
 /* restore the variables from an energyhistory */
 void mde_delta_h_coll_restore_energyhistory(t_mde_delta_h_coll      *dhc,
-                                            const delta_h_history_t *enerhist);
+                                            const delta_h_history_t *deltaH);
 
 #endif  /* _mdebin_bar_h */

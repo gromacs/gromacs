@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -255,7 +255,7 @@ int gmx_dos(int argc, char *argv[])
         "in the trajecotry with sufficiently high frequency such as to cover",
         "all vibrations. For flexible systems that would be around a few fs",
         "between saving. Properties based on the DoS are printed on the",
-        "standard output."
+        "standard output.",
         "Note that the density of states is calculated from the mass-weighted",
         "autocorrelation, and by default only from the square of the real",
         "component rather than absolute value. This means the shape can differ",
@@ -398,7 +398,7 @@ int gmx_dos(int argc, char *argv[])
     }
     while (read_next_frame(oenv, status, &fr));
 
-    close_trj(status);
+    close_trx(status);
 
     if (nframes < min_frames)
     {
@@ -482,7 +482,7 @@ int gmx_dos(int argc, char *argv[])
         gmx_fatal(FARGS, "gmx_fft_init_1d_real returned %d", fftcode);
     }
     if ((fftcode = gmx_fft_1d_real(fft, GMX_FFT_REAL_TO_COMPLEX,
-                                   (void *)dos[MVACF], (void *)dos[DOS])) != 0)
+                                   dos[MVACF], dos[DOS])) != 0)
     {
         gmx_fatal(FARGS, "gmx_fft_1d_real returned %d", fftcode);
     }
@@ -506,7 +506,7 @@ int gmx_dos(int argc, char *argv[])
         }
     }
     /* Normalize it */
-    dostot = evaluate_integral(nframes/4, nu, dos[DOS], nullptr, nframes/4, &stddev);
+    dostot = evaluate_integral(nframes/4, nu, dos[DOS], nullptr, int{nframes/4}, &stddev);
     if (bNormalizeDos)
     {
         for (j = 0; (j < nframes/4); j++)
@@ -585,7 +585,7 @@ int gmx_dos(int argc, char *argv[])
         dos[DOS_E][j]  = (dos[DOS_DIFF][j]*wEdiff +
                           dos[DOS_SOLID][j]*wEsolid(nu[j], beta));
     }
-    DiffCoeff = evaluate_integral(nframes/2, tt, dos[VACF], nullptr, nframes/2, &stddev);
+    DiffCoeff = evaluate_integral(nframes/2, tt, dos[VACF], nullptr, nframes/2., &stddev);
     DiffCoeff = 1000*DiffCoeff/3.0;
     fprintf(fplog, "Diffusion coefficient from VACF %g 10^-5 cm^2/s\n",
             DiffCoeff);
@@ -593,7 +593,7 @@ int gmx_dos(int argc, char *argv[])
             1000*DoS0/(12*tmass*beta));
 
     cP = BOLTZ * evaluate_integral(nframes/4, nu, dos[DOS_CP], nullptr,
-                                   nframes/4, &stddev);
+                                   int{nframes/4}, &stddev);
     fprintf(fplog, "Heat capacity %g J/mol K\n", 1000*cP/Nmol);
     fprintf(fplog, "\nArrivederci!\n");
     gmx_fio_fclose(fplog);

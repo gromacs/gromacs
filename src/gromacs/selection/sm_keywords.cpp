@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -222,7 +222,7 @@ class StringKeywordMatchItem
                                             "cannot match \"%s\"", str);
                     GMX_THROW(gmx::InvalidInputError(message));
                 }
-                regex_.reset(new gmx::Regex(str));
+                regex_ = std::make_shared<gmx::Regex>(str);
             }
         }
 
@@ -443,7 +443,7 @@ init_data_kwint(int  /* npar */, gmx_ana_selparam_t * /* param */)
 static void
 init_kwint(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
-    t_methoddata_kwint *d = (t_methoddata_kwint *)data;
+    t_methoddata_kwint *d = static_cast<t_methoddata_kwint *>(data);
 
     d->v = param[0].val.u.i;
     d->n = param[1].val.nr;
@@ -462,7 +462,7 @@ static void
 evaluate_keyword_int(const gmx::SelMethodEvalContext & /*context*/,
                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_kwint *d = (t_methoddata_kwint *)data;
+    t_methoddata_kwint *d = static_cast<t_methoddata_kwint *>(data);
     int                 n, i, j, jmin, jmax;
     int                 val;
 
@@ -518,7 +518,7 @@ init_data_kwreal(int /* npar */, gmx_ana_selparam_t * /* param */)
 static void
 init_kwreal(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
-    t_methoddata_kwreal *d = (t_methoddata_kwreal *)data;
+    t_methoddata_kwreal *d = static_cast<t_methoddata_kwreal *>(data);
 
     d->v = param[0].val.u.r;
     d->n = param[1].val.nr;
@@ -537,7 +537,7 @@ static void
 evaluate_keyword_real(const gmx::SelMethodEvalContext & /*context*/,
                       gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_kwreal *d = (t_methoddata_kwreal *)data;
+    t_methoddata_kwreal *d = static_cast<t_methoddata_kwreal *>(data);
     int                  n, i, j, jmin, jmax;
     real                 val;
 

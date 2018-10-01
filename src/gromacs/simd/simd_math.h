@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,6 +58,8 @@
 #include "config.h"
 
 #include <cmath>
+
+#include <limits>
 
 #include "gromacs/math/utilities.h"
 #include "gromacs/simd/simd.h"
@@ -131,7 +133,15 @@ rsqrtIter(SimdFloat lu, SimdFloat x)
 
 /*! \brief Calculate 1/sqrt(x) for SIMD float.
  *
- *  \param x Argument that must be >0. This routine does not check arguments.
+ *  \param x Argument that must be larger than GMX_FLOAT_MIN and smaller than
+ *           GMX_FLOAT_MAX, i.e. within the range of single precision.
+ *           For the single precision implementation this is obviously always
+ *           true for positive values, but for double precision it adds an
+ *           extra restriction since the first lookup step might have to be
+ *           performed in single precision on some architectures. Note that the
+ *           responsibility for checking falls on you - this routine does not
+ *           check arguments.
+ *
  *  \return 1/sqrt(x). Result is undefined if your argument was invalid.
  */
 static inline SimdFloat gmx_simdcall
@@ -152,13 +162,22 @@ invsqrt(SimdFloat x)
 
 /*! \brief Calculate 1/sqrt(x) for two SIMD floats.
  *
- * \param x0  First set of arguments, x0 must be positive - no argument checking.
- * \param x1  Second set of arguments, x1 must be positive - no argument checking.
+ * \param x0  First set of arguments, x0 must be in single range (see below).
+ * \param x1  Second set of arguments, x1 must be in single range (see below).
  * \param[out] out0  Result 1/sqrt(x0)
  * \param[out] out1  Result 1/sqrt(x1)
  *
  *  In particular for double precision we can sometimes calculate square root
  *  pairs slightly faster by using single precision until the very last step.
+ *
+ * \note Both arguments must be larger than GMX_FLOAT_MIN and smaller than
+ *       GMX_FLOAT_MAX, i.e. within the range of single precision.
+ *       For the single precision implementation this is obviously always
+ *       true for positive values, but for double precision it adds an
+ *       extra restriction since the first lookup step might have to be
+ *       performed in single precision on some architectures. Note that the
+ *       responsibility for checking falls on you - this routine does not
+ *       check arguments.
  */
 static inline void gmx_simdcall
 invsqrtPair(SimdFloat x0,    SimdFloat x1,
@@ -187,7 +206,15 @@ rcpIter(SimdFloat lu, SimdFloat x)
 
 /*! \brief Calculate 1/x for SIMD float.
  *
- *  \param x Argument that must be nonzero. This routine does not check arguments.
+ *  \param x Argument with magnitude larger than GMX_FLOAT_MIN and smaller than
+ *           GMX_FLOAT_MAX, i.e. within the range of single precision.
+ *           For the single precision implementation this is obviously always
+ *           true for positive values, but for double precision it adds an
+ *           extra restriction since the first lookup step might have to be
+ *           performed in single precision on some architectures. Note that the
+ *           responsibility for checking falls on you - this routine does not
+ *           check arguments.
+ *
  *  \return 1/x. Result is undefined if your argument was invalid.
  */
 static inline SimdFloat gmx_simdcall
@@ -209,7 +236,12 @@ inv(SimdFloat x)
 /*! \brief Division for SIMD floats
  *
  * \param nom    Nominator
- * \param denom  Denominator
+ * \param denom  Denominator, with magnitude in range (GMX_FLOAT_MIN,GMX_FLOAT_MAX).
+ *               For single precision this is equivalent to a nonzero argument,
+ *               but in double precision it adds an extra restriction since
+ *               the first lookup step might have to be performed in single
+ *               precision on some architectures. Note that the responsibility
+ *               for checking falls on you - this routine does not check arguments.
  *
  * \return nom/denom
  *
@@ -228,7 +260,9 @@ operator/(SimdFloat nom, SimdFloat denom)
  *  Illegal values in the masked-out elements will not lead to
  *  floating-point exceptions.
  *
- *  \param x Argument that must be >0 for masked-in entries
+ *  \param x Argument that must be larger than GMX_FLOAT_MIN and smaller than
+ *           GMX_FLOAT_MAX for masked-in entries.
+ *           See \ref invsqrt for the discussion about argument restrictions.
  *  \param m Mask
  *  \return 1/sqrt(x). Result is undefined if your argument was invalid or
  *          entry was not masked, and 0.0 for masked-out entries.
@@ -251,7 +285,9 @@ maskzInvsqrt(SimdFloat x, SimdFBool m)
 
 /*! \brief Calculate 1/x for SIMD float, masked version.
  *
- *  \param x Argument that must be nonzero for non-masked entries.
+ *  \param x Argument with magnitude larger than GMX_FLOAT_MIN and smaller than
+ *           GMX_FLOAT_MAX for masked-in entries.
+ *           See \ref invsqrt for the discussion about argument restrictions.
  *  \param m Mask
  *  \return 1/x for elements where m is true, or 0.0 for masked-out entries.
  */
@@ -271,17 +307,37 @@ maskzInv(SimdFloat x, SimdFBool m)
     return lu;
 }
 
-/*! \brief Calculate sqrt(x) correctly for SIMD floats, including argument 0.0.
+/*! \brief Calculate sqrt(x) for SIMD floats
  *
- *  \param x Argument that must be >=0.
- *  \return sqrt(x). If x=0, the result will correctly be set to 0.
- *          The result is undefined if the input value is negative.
+ *  \tparam opt By default, this function checks if the input value is 0.0
+ *              and masks this to return the correct result. If you are certain
+ *              your argument will never be zero, and you know you need to save
+ *              every single cycle you can, you can alternatively call the
+ *              function as sqrt<MathOptimization::Unsafe>(x).
+ *
+ *  \param  x   Argument that must be in range 0 <=x <= GMX_FLOAT_MAX, since the
+ *              lookup step often has to be implemented in single precision.
+ *              Arguments smaller than GMX_FLOAT_MIN will always lead to a zero
+ *              result, even in double precision. If you are using the unsafe
+ *              math optimization parameter, the argument must be in the range
+ *              GMX_FLOAT_MIN <= x <= GMX_FLOAT_MAX.
+ *
+ *  \return sqrt(x). The result is undefined if the input value does not fall
+ *          in the allowed range specified for the argument.
  */
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall
 sqrt(SimdFloat x)
 {
-    SimdFloat  res = maskzInvsqrt(x, setZero() < x);
-    return res*x;
+    if (opt == MathOptimization::Safe)
+    {
+        SimdFloat  res = maskzInvsqrt(x, setZero() < x);
+        return res*x;
+    }
+    else
+    {
+        return x * invsqrt(x);
+    }
 }
 
 #if !GMX_SIMD_HAVE_NATIVE_LOG_FLOAT
@@ -328,16 +384,39 @@ log(SimdFloat x)
 #endif
 
 #if !GMX_SIMD_HAVE_NATIVE_EXP2_FLOAT
-/*! \brief SIMD float 2^x.
+/*! \brief SIMD float 2^x
  *
- * \param x Argument.
- * \result 2^x. Undefined if input argument caused overflow.
+ * \tparam opt If this is changed from the default (safe) into the unsafe
+ *             option, input values that would otherwise lead to zero-clamped
+ *             results are not allowed and will lead to undefined results.
+ *
+ * \param x Argument. For the default (safe) function version this can be
+ *          arbitrarily small value, but the routine might clamp the result to
+ *          zero for arguments that would produce subnormal IEEE754-2008 results.
+ *          This corresponds to inputs below -126 in single or -1022 in double,
+ *          and it might overflow for arguments reaching 127 (single) or
+ *          1023 (double). If you enable the unsafe math optimization,
+ *          very small arguments will not necessarily be zero-clamped, but
+ *          can produce undefined results.
+ *
+ * \result 2^x. The result is undefined for very large arguments that cause
+ *          internal floating-point overflow. If unsafe optimizations are enabled,
+ *          this is also true for very small values.
+ *
+ * \note    The definition range of this function is just-so-slightly smaller
+ *          than the allowed IEEE exponents for many architectures. This is due
+ *          to the implementation, which will hopefully improve in the future.
+ *
+ * \warning You cannot rely on this implementation returning inf for arguments
+ *          that cause overflow. If you have some very large
+ *          values and need to rely on getting a valid numerical output,
+ *          take the minimum of your variable and the largest valid argument
+ *          before calling this routine.
  */
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall
 exp2(SimdFloat x)
 {
-    // Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127.
-    const SimdFloat  arglimit(126.0f);
     const SimdFloat  CC6(0.0001534581200287996416911311f);
     const SimdFloat  CC5(0.001339993121934088894618990f);
     const SimdFloat  CC4(0.009618488957115180159497841f);
@@ -349,12 +428,31 @@ exp2(SimdFloat x)
     SimdFloat        intpart;
     SimdFloat        fexppart;
     SimdFloat        p;
-    SimdFBool        m;
 
-    fexppart  = ldexp(one, cvtR2I(x));
+    // Large negative values are valid arguments to exp2(), so there are two
+    // things we need to account for:
+    // 1. When the exponents reaches -127, the (biased) exponent field will be
+    //    zero and we can no longer multiply with it. There are special IEEE
+    //    formats to handle this range, but for now we have to accept that
+    //    we cannot handle those arguments. If input value becomes even more
+    //    negative, it will start to loop and we would end up with invalid
+    //    exponents. Thus, we need to limit or mask this.
+    // 2. For VERY large negative values, we will have problems that the
+    //    subtraction to get the fractional part loses accuracy, and then we
+    //    can end up with overflows in the polynomial.
+    //
+    // For now, we handle this by forwarding the math optimization setting to
+    // ldexp, where the routine will return zero for very small arguments.
+    //
+    // However, before doing that we need to make sure we do not call cvtR2I
+    // with an argument that is so negative it cannot be converted to an integer.
+    if (opt == MathOptimization::Safe)
+    {
+        x         = max(x, SimdFloat(std::numeric_limits<std::int32_t>::lowest()));
+    }
+
+    fexppart  = ldexp<opt>(one, cvtR2I(x));
     intpart   = round(x);
-    m         = abs(x) <= arglimit;
-    fexppart  = selectByMask(fexppart, m);
     x         = x - intpart;
 
     p         = fma(CC6, x, CC5);
@@ -374,16 +472,39 @@ exp2(SimdFloat x)
  * In addition to scaling the argument for 2^x this routine correctly does
  * extended precision arithmetics to improve accuracy.
  *
- * \param x Argument.
- * \result exp(x). Undefined if input argument caused overflow,
- * which can happen if abs(x) \> 7e13.
+ * \tparam opt If this is changed from the default (safe) into the unsafe
+ *             option, input values that would otherwise lead to zero-clamped
+ *             results are not allowed and will lead to undefined results.
+ *
+ * \param x Argument. For the default (safe) function version this can be
+ *          arbitrarily small value, but the routine might clamp the result to
+ *          zero for arguments that would produce subnormal IEEE754-2008 results.
+ *          This corresponds to input arguments reaching
+ *          -126*ln(2)=-87.3 in single, or -1022*ln(2)=-708.4 (double).
+ *          Similarly, it might overflow for arguments reaching
+ *          127*ln(2)=88.0 (single) or 1023*ln(2)=709.1 (double). If the
+ *          unsafe math optimizations are enabled, small input values that would
+ *          result in zero-clamped output are not allowed.
+ *
+ * \result exp(x). Overflowing arguments are likely to either return 0 or inf,
+ *         depending on the underlying implementation. If unsafe optimizations
+ *         are enabled, this is also true for very small values.
+ *
+ * \note    The definition range of this function is just-so-slightly smaller
+ *          than the allowed IEEE exponents for many architectures. This is due
+ *          to the implementation, which will hopefully improve in the future.
+ *
+ * \warning You cannot rely on this implementation returning inf for arguments
+ *          that cause overflow. If you have some very large
+ *          values and need to rely on getting a valid numerical output,
+ *          take the minimum of your variable and the largest valid argument
+ *          before calling this routine.
  */
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall
 exp(SimdFloat x)
 {
     const SimdFloat  argscale(1.44269504088896341f);
-    // Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127.
-    const SimdFloat  arglimit(126.0f);
     const SimdFloat  invargscale0(-0.693145751953125f);
     const SimdFloat  invargscale1(-1.428606765330187045e-06f);
     const SimdFloat  CC4(0.00136324646882712841033936f);
@@ -395,13 +516,36 @@ exp(SimdFloat x)
     SimdFloat        fexppart;
     SimdFloat        intpart;
     SimdFloat        y, p;
-    SimdFBool        m;
+
+    // Large negative values are valid arguments to exp2(), so there are two
+    // things we need to account for:
+    // 1. When the exponents reaches -127, the (biased) exponent field will be
+    //    zero and we can no longer multiply with it. There are special IEEE
+    //    formats to handle this range, but for now we have to accept that
+    //    we cannot handle those arguments. If input value becomes even more
+    //    negative, it will start to loop and we would end up with invalid
+    //    exponents. Thus, we need to limit or mask this.
+    // 2. For VERY large negative values, we will have problems that the
+    //    subtraction to get the fractional part loses accuracy, and then we
+    //    can end up with overflows in the polynomial.
+    //
+    // For now, we handle this by forwarding the math optimization setting to
+    // ldexp, where the routine will return zero for very small arguments.
+    //
+    // However, before doing that we need to make sure we do not call cvtR2I
+    // with an argument that is so negative it cannot be converted to an integer
+    // after being multiplied by argscale.
+
+    if (opt == MathOptimization::Safe)
+    {
+        x         = max(x, SimdFloat(std::numeric_limits<std::int32_t>::lowest())/argscale);
+    }
 
     y         = x * argscale;
-    fexppart  = ldexp(one, cvtR2I(y));
+
+
+    fexppart  = ldexp<opt>(one, cvtR2I(y));
     intpart   = round(y);
-    m         = (abs(y) <= arglimit);
-    fexppart  = selectByMask(fexppart, m);
 
     // Extended precision arithmetics
     x         = fma(invargscale0, intpart, x);
@@ -598,7 +742,7 @@ erfc(SimdFloat x)
     const SimdFloat         sieve(SimdFloat(-5.965323564e+29f) | SimdFloat(7.05044434e-30f));
 #else
     const int               isieve   = 0xFFFFF000;
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  mem[GMX_SIMD_FLOAT_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) float  mem[GMX_SIMD_FLOAT_WIDTH];
 
     union {
         float f; int i;
@@ -662,7 +806,7 @@ erfc(SimdFloat x)
         conv.i  = conv.i & isieve;
         mem[i]  = conv.f;
     }
-    z = load(mem);
+    z = load<SimdFloat>(mem);
 #endif
     q       = (z-y) * (z+y);
     corr    = fma(CD4, q, CD3);
@@ -1357,7 +1501,15 @@ rsqrtIter(SimdDouble lu, SimdDouble x)
 
 /*! \brief Calculate 1/sqrt(x) for SIMD double.
  *
- *  \param x Argument that must be >0. This routine does not check arguments.
+ *  \param x Argument that must be larger than GMX_FLOAT_MIN and smaller than
+ *           GMX_FLOAT_MAX, i.e. within the range of single precision.
+ *           For the single precision implementation this is obviously always
+ *           true for positive values, but for double precision it adds an
+ *           extra restriction since the first lookup step might have to be
+ *           performed in single precision on some architectures. Note that the
+ *           responsibility for checking falls on you - this routine does not
+ *           check arguments.
+ *
  *  \return 1/sqrt(x). Result is undefined if your argument was invalid.
  */
 static inline SimdDouble gmx_simdcall
@@ -1381,13 +1533,22 @@ invsqrt(SimdDouble x)
 
 /*! \brief Calculate 1/sqrt(x) for two SIMD doubles.
  *
- * \param x0  First set of arguments, x0 must be positive - no argument checking.
- * \param x1  Second set of arguments, x1 must be positive - no argument checking.
+ * \param x0  First set of arguments, x0 must be in single range (see below).
+ * \param x1  Second set of arguments, x1 must be in single range (see below).
  * \param[out] out0  Result 1/sqrt(x0)
  * \param[out] out1  Result 1/sqrt(x1)
  *
  *  In particular for double precision we can sometimes calculate square root
  *  pairs slightly faster by using single precision until the very last step.
+ *
+ * \note Both arguments must be larger than GMX_FLOAT_MIN and smaller than
+ *       GMX_FLOAT_MAX, i.e. within the range of single precision.
+ *       For the single precision implementation this is obviously always
+ *       true for positive values, but for double precision it adds an
+ *       extra restriction since the first lookup step might have to be
+ *       performed in single precision on some architectures. Note that the
+ *       responsibility for checking falls on you - this routine does not
+ *       check arguments.
  */
 static inline void gmx_simdcall
 invsqrtPair(SimdDouble x0,    SimdDouble x1,
@@ -1444,7 +1605,15 @@ rcpIter(SimdDouble lu, SimdDouble x)
 
 /*! \brief Calculate 1/x for SIMD double.
  *
- *  \param x Argument that must be nonzero. This routine does not check arguments.
+ *  \param x Argument with magnitude larger than GMX_FLOAT_MIN and smaller than
+ *           GMX_FLOAT_MAX, i.e. within the range of single precision.
+ *           For the single precision implementation this is obviously always
+ *           true for positive values, but for double precision it adds an
+ *           extra restriction since the first lookup step might have to be
+ *           performed in single precision on some architectures. Note that the
+ *           responsibility for checking falls on you - this routine does not
+ *           check arguments.
+ *
  *  \return 1/x. Result is undefined if your argument was invalid.
  */
 static inline SimdDouble gmx_simdcall
@@ -1469,7 +1638,12 @@ inv(SimdDouble x)
 /*! \brief Division for SIMD doubles
  *
  * \param nom    Nominator
- * \param denom  Denominator
+ * \param denom  Denominator, with magnitude in range (GMX_FLOAT_MIN,GMX_FLOAT_MAX).
+ *               For single precision this is equivalent to a nonzero argument,
+ *               but in double precision it adds an extra restriction since
+ *               the first lookup step might have to be performed in single
+ *               precision on some architectures. Note that the responsibility
+ *               for checking falls on you - this routine does not check arguments.
  *
  * \return nom/denom
  *
@@ -1489,7 +1663,9 @@ operator/(SimdDouble nom, SimdDouble denom)
  *  Illegal values in the masked-out elements will not lead to
  *  floating-point exceptions.
  *
- *  \param x Argument that must be >0 for masked-in entries
+ *  \param x Argument that must be larger than GMX_FLOAT_MIN and smaller than
+ *           GMX_FLOAT_MAX for masked-in entries.
+ *           See \ref invsqrt for the discussion about argument restrictions.
  *  \param m Mask
  *  \return 1/sqrt(x). Result is undefined if your argument was invalid or
  *          entry was not masked, and 0.0 for masked-out entries.
@@ -1515,7 +1691,9 @@ maskzInvsqrt(SimdDouble x, SimdDBool m)
 
 /*! \brief Calculate 1/x for SIMD double, masked version.
  *
- *  \param x Argument that must be nonzero for non-masked entries.
+ *  \param x Argument with magnitude larger than GMX_FLOAT_MIN and smaller than
+ *           GMX_FLOAT_MAX for masked-in entries.
+ *           See \ref invsqrt for the discussion about argument restrictions.
  *  \param m Mask
  *  \return 1/x for elements where m is true, or 0.0 for masked-out entries.
  */
@@ -1539,16 +1717,24 @@ maskzInv(SimdDouble x, SimdDBool m)
 }
 
 
-/*! \brief Calculate sqrt(x) correctly for SIMD doubles, including argument 0.0.
+/*! \brief Calculate sqrt(x) for SIMD doubles.
  *
- *  \param x Argument that must be >=0.
- *  \return sqrt(x). If x=0, the result will correctly be set to 0.
- *          The result is undefined if the input value is negative.
+ *  \copydetails sqrt(SimdFloat)
  */
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble gmx_simdcall
 sqrt(SimdDouble x)
 {
-    return x * maskzInvsqrt(x, setZero() < x);
+    if (opt == MathOptimization::Safe)
+    {
+        // As we might use a float version of rsqrt, we mask out small values
+        SimdDouble res = maskzInvsqrt(x, SimdDouble(GMX_FLOAT_MIN) < x);
+        return res*x;
+    }
+    else
+    {
+        return x * invsqrt(x);
+    }
 }
 
 #if !GMX_SIMD_HAVE_NATIVE_LOG_DOUBLE
@@ -1603,13 +1789,12 @@ log(SimdDouble x)
 #if !GMX_SIMD_HAVE_NATIVE_EXP2_DOUBLE
 /*! \brief SIMD double 2^x.
  *
- * \param x Argument.
- * \result 2^x. Undefined if input argument caused overflow.
+ * \copydetails exp2(SimdFloat)
  */
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble gmx_simdcall
 exp2(SimdDouble x)
 {
-    const SimdDouble  arglimit(1022.0);
     const SimdDouble  CE11(4.435280790452730022081181e-10);
     const SimdDouble  CE10(7.074105630863314448024247e-09);
     const SimdDouble  CE9(1.017819803432096698472621e-07);
@@ -1626,12 +1811,31 @@ exp2(SimdDouble x)
     SimdDouble        intpart;
     SimdDouble        fexppart;
     SimdDouble        p;
-    SimdDBool         m;
 
-    fexppart  = ldexp(one, cvtR2I(x));
+    // Large negative values are valid arguments to exp2(), so there are two
+    // things we need to account for:
+    // 1. When the exponents reaches -1023, the (biased) exponent field will be
+    //    zero and we can no longer multiply with it. There are special IEEE
+    //    formats to handle this range, but for now we have to accept that
+    //    we cannot handle those arguments. If input value becomes even more
+    //    negative, it will start to loop and we would end up with invalid
+    //    exponents. Thus, we need to limit or mask this.
+    // 2. For VERY large negative values, we will have problems that the
+    //    subtraction to get the fractional part loses accuracy, and then we
+    //    can end up with overflows in the polynomial.
+    //
+    // For now, we handle this by forwarding the math optimization setting to
+    // ldexp, where the routine will return zero for very small arguments.
+    //
+    // However, before doing that we need to make sure we do not call cvtR2I
+    // with an argument that is so negative it cannot be converted to an integer.
+    if (opt == MathOptimization::Safe)
+    {
+        x         = max(x, SimdDouble(std::numeric_limits<std::int32_t>::lowest()));
+    }
+
+    fexppart  = ldexp<opt>(one, cvtR2I(x));
     intpart   = round(x);
-    m         = abs(x) <= arglimit;
-    fexppart  = selectByMask(fexppart, m);
     x         = x - intpart;
 
     p         = fma(CE11, x, CE10);
@@ -1653,18 +1857,13 @@ exp2(SimdDouble x)
 #if !GMX_SIMD_HAVE_NATIVE_EXP_DOUBLE
 /*! \brief SIMD double exp(x).
  *
- * In addition to scaling the argument for 2^x this routine correctly does
- * extended precision arithmetics to improve accuracy.
- *
- * \param x Argument.
- * \result exp(x). Undefined if input argument caused overflow,
- * which can happen if abs(x) \> 7e13.
+ * \copydetails exp(SimdFloat)
  */
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble gmx_simdcall
 exp(SimdDouble x)
 {
     const SimdDouble  argscale(1.44269504088896340735992468100);
-    const SimdDouble  arglimit(1022.0);
     const SimdDouble  invargscale0(-0.69314718055966295651160180568695068359375);
     const SimdDouble  invargscale1(-2.8235290563031577122588448175013436025525412068e-13);
     const SimdDouble  CE12(2.078375306791423699350304e-09);
@@ -1682,13 +1881,35 @@ exp(SimdDouble x)
     SimdDouble        fexppart;
     SimdDouble        intpart;
     SimdDouble        y, p;
-    SimdDBool         m;
+
+    // Large negative values are valid arguments to exp2(), so there are two
+    // things we need to account for:
+    // 1. When the exponents reaches -1023, the (biased) exponent field will be
+    //    zero and we can no longer multiply with it. There are special IEEE
+    //    formats to handle this range, but for now we have to accept that
+    //    we cannot handle those arguments. If input value becomes even more
+    //    negative, it will start to loop and we would end up with invalid
+    //    exponents. Thus, we need to limit or mask this.
+    // 2. For VERY large negative values, we will have problems that the
+    //    subtraction to get the fractional part loses accuracy, and then we
+    //    can end up with overflows in the polynomial.
+    //
+    // For now, we handle this by forwarding the math optimization setting to
+    // ldexp, where the routine will return zero for very small arguments.
+    //
+    // However, before doing that we need to make sure we do not call cvtR2I
+    // with an argument that is so negative it cannot be converted to an integer
+    // after being multiplied by argscale.
+
+    if (opt == MathOptimization::Safe)
+    {
+        x         = max(x, SimdDouble(std::numeric_limits<std::int32_t>::lowest())/argscale);
+    }
 
     y         = x * argscale;
-    fexppart  = ldexp(one, cvtR2I(y));
+
+    fexppart  = ldexp<opt>(one, cvtR2I(y));
     intpart   = round(y);
-    m         = (abs(y) <= arglimit);
-    fexppart  = selectByMask(fexppart, m);
 
     // Extended precision arithmetics
     x         = fma(invargscale0, intpart, x);
@@ -2695,7 +2916,15 @@ pmePotentialCorrection(SimdDouble z2)
 
 /*! \brief Calculate 1/sqrt(x) for SIMD double, but in single accuracy.
  *
- *  \param x Argument that must be >0. This routine does not check arguments.
+ *  \param x Argument that must be larger than GMX_FLOAT_MIN and smaller than
+ *           GMX_FLOAT_MAX, i.e. within the range of single precision.
+ *           For the single precision implementation this is obviously always
+ *           true for positive values, but for double precision it adds an
+ *           extra restriction since the first lookup step might have to be
+ *           performed in single precision on some architectures. Note that the
+ *           responsibility for checking falls on you - this routine does not
+ *           check arguments.
+ *
  *  \return 1/sqrt(x). Result is undefined if your argument was invalid.
  */
 static inline SimdDouble gmx_simdcall
@@ -2720,7 +2949,15 @@ invsqrtSingleAccuracy(SimdDouble x)
  *  Illegal values in the masked-out elements will not lead to
  *  floating-point exceptions.
  *
- *  \param x Argument that must be >0 for masked-in entries
+ *  \param x Argument that must be larger than GMX_FLOAT_MIN and smaller than
+ *           GMX_FLOAT_MAX, i.e. within the range of single precision.
+ *           For the single precision implementation this is obviously always
+ *           true for positive values, but for double precision it adds an
+ *           extra restriction since the first lookup step might have to be
+ *           performed in single precision on some architectures. Note that the
+ *           responsibility for checking falls on you - this routine does not
+ *           check arguments.
+ *
  *  \param m Mask
  *  \return 1/sqrt(x). Result is undefined if your argument was invalid or
  *          entry was not masked, and 0.0 for masked-out entries.
@@ -2743,13 +2980,22 @@ maskzInvsqrtSingleAccuracy(SimdDouble x, SimdDBool m)
 
 /*! \brief Calculate 1/sqrt(x) for two SIMD doubles, but single accuracy.
  *
- * \param x0  First set of arguments, x0 must be positive - no argument checking.
- * \param x1  Second set of arguments, x1 must be positive - no argument checking.
+ * \param x0  First set of arguments, x0 must be in single range (see below).
+ * \param x1  Second set of arguments, x1 must be in single range (see below).
  * \param[out] out0  Result 1/sqrt(x0)
  * \param[out] out1  Result 1/sqrt(x1)
  *
  *  In particular for double precision we can sometimes calculate square root
  *  pairs slightly faster by using single precision until the very last step.
+ *
+ * \note Both arguments must be larger than GMX_FLOAT_MIN and smaller than
+ *       GMX_FLOAT_MAX, i.e. within the range of single precision.
+ *       For the single precision implementation this is obviously always
+ *       true for positive values, but for double precision it adds an
+ *       extra restriction since the first lookup step might have to be
+ *       performed in single precision on some architectures. Note that the
+ *       responsibility for checking falls on you - this routine does not
+ *       check arguments.
  */
 static inline void gmx_simdcall
 invsqrtPairSingleAccuracy(SimdDouble x0,    SimdDouble x1,
@@ -2781,7 +3027,15 @@ invsqrtPairSingleAccuracy(SimdDouble x0,    SimdDouble x1,
 
 /*! \brief Calculate 1/x for SIMD double, but in single accuracy.
  *
- *  \param x Argument that must be nonzero. This routine does not check arguments.
+ *  \param x Argument with magnitude larger than GMX_FLOAT_MIN and smaller than
+ *           GMX_FLOAT_MAX, i.e. within the range of single precision.
+ *           For the single precision implementation this is obviously always
+ *           true for positive values, but for double precision it adds an
+ *           extra restriction since the first lookup step might have to be
+ *           performed in single precision on some architectures. Note that the
+ *           responsibility for checking falls on you - this routine does not
+ *           check arguments.
+ *
  *  \return 1/x. Result is undefined if your argument was invalid.
  */
 static inline SimdDouble gmx_simdcall
@@ -2802,7 +3056,15 @@ invSingleAccuracy(SimdDouble x)
 
 /*! \brief 1/x for masked entries of SIMD double, single accuracy.
  *
- *  \param x Argument that must be nonzero for non-masked entries.
+ *  \param x Argument with magnitude larger than GMX_FLOAT_MIN and smaller than
+ *           GMX_FLOAT_MAX, i.e. within the range of single precision.
+ *           For the single precision implementation this is obviously always
+ *           true for positive values, but for double precision it adds an
+ *           extra restriction since the first lookup step might have to be
+ *           performed in single precision on some architectures. Note that the
+ *           responsibility for checking falls on you - this routine does not
+ *           check arguments.
+ *
  *  \param m Mask
  *  \return 1/x for elements where m is true, or 0.0 for masked-out entries.
  */
@@ -2823,17 +3085,25 @@ maskzInvSingleAccuracy(SimdDouble x, SimdDBool m)
 }
 
 
-/*! \brief Calculate sqrt(x) (correct for 0.0) for SIMD double, single accuracy.
+/*! \brief Calculate sqrt(x) (correct for 0.0) for SIMD double, with single accuracy.
  *
- *  \param x Argument that must be >=0.
- *  \return sqrt(x). If x=0, the result will correctly be set to 0.
- *          The result is undefined if the input value is negative.
+ *  \copydetails sqrt(SimdFloat)
  */
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble gmx_simdcall
 sqrtSingleAccuracy(SimdDouble x)
 {
-    return x * maskzInvsqrtSingleAccuracy(x, setZero() < x);
+    if (opt == MathOptimization::Safe)
+    {
+        SimdDouble res = maskzInvsqrt(x, SimdDouble(GMX_FLOAT_MIN) < x);
+        return res*x;
+    }
+    else
+    {
+        return x * invsqrtSingleAccuracy(x);
+    }
 }
+
 
 /*! \brief SIMD log(x). Double precision SIMD data, single accuracy.
  *
@@ -2876,16 +3146,14 @@ logSingleAccuracy(SimdDouble x)
     return p;
 }
 
-/*! \brief SIMD 2^x. Double precision SIMD data, single accuracy.
+/*! \brief SIMD 2^x. Double precision SIMD, single accuracy.
  *
- * \param x Argument.
- * \result 2^x. Undefined if input argument caused overflow.
+ * \copydetails exp2(SimdFloat)
  */
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble gmx_simdcall
 exp2SingleAccuracy(SimdDouble x)
 {
-    // Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127.
-    const SimdDouble  arglimit = SimdDouble(126.0);
     const SimdDouble  CC6(0.0001534581200287996416911311);
     const SimdDouble  CC5(0.001339993121934088894618990);
     const SimdDouble  CC4(0.009618488957115180159497841);
@@ -2896,12 +3164,32 @@ exp2SingleAccuracy(SimdDouble x)
 
     SimdDouble        intpart;
     SimdDouble        p;
-    SimdDBool         valuemask;
     SimdDInt32        ix;
+
+    // Large negative values are valid arguments to exp2(), so there are two
+    // things we need to account for:
+    // 1. When the exponents reaches -1023, the (biased) exponent field will be
+    //    zero and we can no longer multiply with it. There are special IEEE
+    //    formats to handle this range, but for now we have to accept that
+    //    we cannot handle those arguments. If input value becomes even more
+    //    negative, it will start to loop and we would end up with invalid
+    //    exponents. Thus, we need to limit or mask this.
+    // 2. For VERY large negative values, we will have problems that the
+    //    subtraction to get the fractional part loses accuracy, and then we
+    //    can end up with overflows in the polynomial.
+    //
+    // For now, we handle this by forwarding the math optimization setting to
+    // ldexp, where the routine will return zero for very small arguments.
+    //
+    // However, before doing that we need to make sure we do not call cvtR2I
+    // with an argument that is so negative it cannot be converted to an integer.
+    if (opt == MathOptimization::Safe)
+    {
+        x         = max(x, SimdDouble(std::numeric_limits<std::int32_t>::lowest()));
+    }
 
     ix        = cvtR2I(x);
     intpart   = round(x);
-    valuemask = (abs(x) <= arglimit);
     x         = x - intpart;
 
     p         = fma(CC6, x, CC5);
@@ -2910,23 +3198,24 @@ exp2SingleAccuracy(SimdDouble x)
     p         = fma(p, x, CC2);
     p         = fma(p, x, CC1);
     p         = fma(p, x, one);
-    x         = ldexp(p, ix);
-    x         = selectByMask(x, valuemask);
+    x         = ldexp<opt>(p, ix);
 
     return x;
 }
 
-/*! \brief SIMD exp(x). Double precision SIMD data, single accuracy.
+
+
+/*! \brief SIMD exp(x). Double precision SIMD, single accuracy.
  *
- * \param x Argument.
- * \result exp(x). Undefined if input argument caused overflow.
+ * \copydetails exp(SimdFloat)
  */
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble gmx_simdcall
 expSingleAccuracy(SimdDouble x)
 {
     const SimdDouble  argscale(1.44269504088896341);
-    // Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127
-    const SimdDouble  arglimit(126.0);
+    // Lower bound: Clamp args that would lead to an IEEE fp exponent below -1023.
+    const SimdDouble  smallArgLimit(-709.0895657128);
     const SimdDouble  invargscale(-0.69314718055994528623);
     const SimdDouble  CC4(0.00136324646882712841033936);
     const SimdDouble  CC3(0.00836596917361021041870117);
@@ -2936,13 +3225,36 @@ expSingleAccuracy(SimdDouble x)
     const SimdDouble  one(1.0);
     SimdDouble        intpart;
     SimdDouble        y, p;
-    SimdDBool         valuemask;
     SimdDInt32        iy;
 
+    // Large negative values are valid arguments to exp2(), so there are two
+    // things we need to account for:
+    // 1. When the exponents reaches -1023, the (biased) exponent field will be
+    //    zero and we can no longer multiply with it. There are special IEEE
+    //    formats to handle this range, but for now we have to accept that
+    //    we cannot handle those arguments. If input value becomes even more
+    //    negative, it will start to loop and we would end up with invalid
+    //    exponents. Thus, we need to limit or mask this.
+    // 2. For VERY large negative values, we will have problems that the
+    //    subtraction to get the fractional part loses accuracy, and then we
+    //    can end up with overflows in the polynomial.
+    //
+    // For now, we handle this by forwarding the math optimization setting to
+    // ldexp, where the routine will return zero for very small arguments.
+    //
+    // However, before doing that we need to make sure we do not call cvtR2I
+    // with an argument that is so negative it cannot be converted to an integer
+    // after being multiplied by argscale.
+
+    if (opt == MathOptimization::Safe)
+    {
+        x         = max(x, SimdDouble(std::numeric_limits<std::int32_t>::lowest())/argscale);
+    }
+
     y         = x * argscale;
+
     iy        = cvtR2I(y);
     intpart   = round(y);        // use same rounding algorithm here
-    valuemask = (abs(y) <= arglimit);
 
     // Extended precision arithmetics not needed since
     // we have double precision and only need single accuracy.
@@ -2954,10 +3266,10 @@ expSingleAccuracy(SimdDouble x)
     p         = fma(p, x, CC0);
     p         = fma(x*x, p, x);
     p         = p + one;
-    x         = ldexp(p, iy);
-    x         = selectByMask(x, valuemask);
+    x         = ldexp<opt>(p, iy);
     return x;
 }
+
 
 /*! \brief SIMD erf(x). Double precision SIMD data, single accuracy.
  *
@@ -3658,7 +3970,7 @@ atan2SingleAccuracy(SimdDouble y, SimdDouble x)
  * added to \f$1/r\f$ the error will be insignificant.
  *
  */
-static SimdDouble gmx_simdcall
+static inline SimdDouble gmx_simdcall
 pmeForceCorrectionSingleAccuracy(SimdDouble z2)
 {
     const SimdDouble  FN6(-1.7357322914161492954e-8);
@@ -3730,7 +4042,7 @@ pmeForceCorrectionSingleAccuracy(SimdDouble z2)
  * This approximation achieves an accuracy slightly lower than 1e-6; when
  * added to \f$1/r\f$ the error will be insignificant.
  */
-static SimdDouble gmx_simdcall
+static inline SimdDouble gmx_simdcall
 pmePotentialCorrectionSingleAccuracy(SimdDouble z2)
 {
     const SimdDouble  VN6(1.9296833005951166339e-8);
@@ -3803,8 +4115,15 @@ rsqrtIter(Simd4Float lu, Simd4Float x)
 
 /*! \brief Calculate 1/sqrt(x) for SIMD4 float.
  *
- *  \param x Argument that must be >0. This routine does not check arguments.
- *  \return 1/sqrt(x). Result is undefined if your argument was invalid.
+ *  \param x Argument that must be larger than GMX_FLOAT_MIN and smaller than
+ *           GMX_FLOAT_MAX, i.e. within the range of single precision.
+ *           For the single precision implementation this is obviously always
+ *           true for positive values, but for double precision it adds an
+ *           extra restriction since the first lookup step might have to be
+ *           performed in single precision on some architectures. Note that the
+ *           responsibility for checking falls on you - this routine does not
+ *           check arguments.
+ *  \return  1/sqrt(x). Result is undefined if your argument was invalid.
  */
 static inline Simd4Float gmx_simdcall
 invsqrt(Simd4Float x)
@@ -3852,8 +4171,15 @@ rsqrtIter(Simd4Double lu, Simd4Double x)
 
 /*! \brief Calculate 1/sqrt(x) for SIMD4 double.
  *
- *  \param x Argument that must be >0. This routine does not check arguments.
- *  \return 1/sqrt(x). Result is undefined if your argument was invalid.
+ *  \param x Argument that must be larger than GMX_FLOAT_MIN and smaller than
+ *           GMX_FLOAT_MAX, i.e. within the range of single precision.
+ *           For the single precision implementation this is obviously always
+ *           true for positive values, but for double precision it adds an
+ *           extra restriction since the first lookup step might have to be
+ *           performed in single precision on some architectures. Note that the
+ *           responsibility for checking falls on you - this routine does not
+ *           check arguments.
+ *  \return  1/sqrt(x). Result is undefined if your argument was invalid.
  */
 static inline Simd4Double gmx_simdcall
 invsqrt(Simd4Double x)
@@ -3881,8 +4207,15 @@ invsqrt(Simd4Double x)
 
 /*! \brief Calculate 1/sqrt(x) for SIMD4 double, but in single accuracy.
  *
- *  \param x Argument that must be >0. This routine does not check arguments.
- *  \return 1/sqrt(x). Result is undefined if your argument was invalid.
+ *  \param x Argument that must be larger than GMX_FLOAT_MIN and smaller than
+ *           GMX_FLOAT_MAX, i.e. within the range of single precision.
+ *           For the single precision implementation this is obviously always
+ *           true for positive values, but for double precision it adds an
+ *           extra restriction since the first lookup step might have to be
+ *           performed in single precision on some architectures. Note that the
+ *           responsibility for checking falls on you - this routine does not
+ *           check arguments.
+ *  \return  1/sqrt(x). Result is undefined if your argument was invalid.
  */
 static inline Simd4Double gmx_simdcall
 invsqrtSingleAccuracy(Simd4Double x)
@@ -3909,8 +4242,15 @@ invsqrtSingleAccuracy(Simd4Double x)
 #if GMX_SIMD_HAVE_FLOAT
 /*! \brief Calculate 1/sqrt(x) for SIMD float, only targeting single accuracy.
  *
- *  \param x Argument that must be >0. This routine does not check arguments.
- *  \return 1/sqrt(x). Result is undefined if your argument was invalid.
+ *  \param x Argument that must be larger than GMX_FLOAT_MIN and smaller than
+ *           GMX_FLOAT_MAX, i.e. within the range of single precision.
+ *           For the single precision implementation this is obviously always
+ *           true for positive values, but for double precision it adds an
+ *           extra restriction since the first lookup step might have to be
+ *           performed in single precision on some architectures. Note that the
+ *           responsibility for checking falls on you - this routine does not
+ *           check arguments.
+ *  \return  1/sqrt(x). Result is undefined if your argument was invalid.
  */
 static inline SimdFloat gmx_simdcall
 invsqrtSingleAccuracy(SimdFloat x)
@@ -3924,10 +4264,17 @@ invsqrtSingleAccuracy(SimdFloat x)
  *  Illegal values in the masked-out elements will not lead to
  *  floating-point exceptions.
  *
- *  \param x Argument that must be >0 for masked-in entries
+ *  \param x Argument that must be larger than GMX_FLOAT_MIN and smaller than
+ *           GMX_FLOAT_MAX, i.e. within the range of single precision.
+ *           For the single precision implementation this is obviously always
+ *           true for positive values, but for double precision it adds an
+ *           extra restriction since the first lookup step might have to be
+ *           performed in single precision on some architectures. Note that the
+ *           responsibility for checking falls on you - this routine does not
+ *           check arguments.
  *  \param m Mask
- *  \return 1/sqrt(x). Result is undefined if your argument was invalid or
- *          entry was not masked, and 0.0 for masked-out entries.
+ *  \return  1/sqrt(x). Result is undefined if your argument was invalid or
+ *           entry was not masked, and 0.0 for masked-out entries.
  */
 static inline SimdFloat
 maskzInvsqrtSingleAccuracy(SimdFloat x, SimdFBool m)
@@ -3937,13 +4284,22 @@ maskzInvsqrtSingleAccuracy(SimdFloat x, SimdFBool m)
 
 /*! \brief Calculate 1/sqrt(x) for two SIMD floats, only targeting single accuracy.
  *
- * \param x0  First set of arguments, x0 must be positive - no argument checking.
- * \param x1  Second set of arguments, x1 must be positive - no argument checking.
+ * \param x0  First set of arguments, x0 must be in single range (see below).
+ * \param x1  Second set of arguments, x1 must be in single range (see below).
  * \param[out] out0  Result 1/sqrt(x0)
  * \param[out] out1  Result 1/sqrt(x1)
  *
  *  In particular for double precision we can sometimes calculate square root
  *  pairs slightly faster by using single precision until the very last step.
+ *
+ * \note Both arguments must be larger than GMX_FLOAT_MIN and smaller than
+ *       GMX_FLOAT_MAX, i.e. within the range of single precision.
+ *       For the single precision implementation this is obviously always
+ *       true for positive values, but for double precision it adds an
+ *       extra restriction since the first lookup step might have to be
+ *       performed in single precision on some architectures. Note that the
+ *       responsibility for checking falls on you - this routine does not
+ *       check arguments.
  */
 static inline void gmx_simdcall
 invsqrtPairSingleAccuracy(SimdFloat x0,    SimdFloat x1,
@@ -3954,8 +4310,15 @@ invsqrtPairSingleAccuracy(SimdFloat x0,    SimdFloat x1,
 
 /*! \brief Calculate 1/x for SIMD float, only targeting single accuracy.
  *
- *  \param x Argument that must be nonzero. This routine does not check arguments.
- *  \return 1/x. Result is undefined if your argument was invalid.
+ *  \param x Argument with magnitude larger than GMX_FLOAT_MIN and smaller than
+ *           GMX_FLOAT_MAX, i.e. within the range of single precision.
+ *           For the single precision implementation this is obviously always
+ *           true for positive values, but for double precision it adds an
+ *           extra restriction since the first lookup step might have to be
+ *           performed in single precision on some architectures. Note that the
+ *           responsibility for checking falls on you - this routine does not
+ *           check arguments.
+ *  \return  1/x. Result is undefined if your argument was invalid.
  */
 static inline SimdFloat gmx_simdcall
 invSingleAccuracy(SimdFloat x)
@@ -3966,9 +4329,16 @@ invSingleAccuracy(SimdFloat x)
 
 /*! \brief Calculate 1/x for masked SIMD floats, only targeting single accuracy.
  *
- *  \param x Argument that must be nonzero for non-masked entries.
+ *  \param x Argument with magnitude larger than GMX_FLOAT_MIN and smaller than
+ *           GMX_FLOAT_MAX, i.e. within the range of single precision.
+ *           For the single precision implementation this is obviously always
+ *           true for positive values, but for double precision it adds an
+ *           extra restriction since the first lookup step might have to be
+ *           performed in single precision on some architectures. Note that the
+ *           responsibility for checking falls on you - this routine does not
+ *           check arguments.
  *  \param m Mask
- *  \return 1/x for elements where m is true, or 0.0 for masked-out entries.
+ *  \return  1/x for elements where m is true, or 0.0 for masked-out entries.
  */
 static inline SimdFloat
 maskzInvSingleAccuracy(SimdFloat x, SimdFBool m)
@@ -3976,16 +4346,15 @@ maskzInvSingleAccuracy(SimdFloat x, SimdFBool m)
     return maskzInv(x, m);
 }
 
-/*! \brief Calculate sqrt(x) for SIMD float, only targeting single accuracy.
+/*! \brief Calculate sqrt(x) for SIMD float, always targeting single accuracy.
  *
- *  \param x Argument that must be >=0.
- *  \return sqrt(x). If x=0, the result will correctly be set to 0.
- *          The result is undefined if the input value is negative.
+ * \copydetails sqrt(SimdFloat)
  */
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall
 sqrtSingleAccuracy(SimdFloat x)
 {
-    return sqrt(x);
+    return sqrt<opt>(x);
 }
 
 /*! \brief SIMD float log(x), only targeting single accuracy. This is the natural logarithm.
@@ -4001,25 +4370,26 @@ logSingleAccuracy(SimdFloat x)
 
 /*! \brief SIMD float 2^x, only targeting single accuracy.
  *
- * \param x Argument.
- * \result 2^x. Undefined if input argument caused overflow.
+ * \copydetails exp2(SimdFloat)
  */
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall
 exp2SingleAccuracy(SimdFloat x)
 {
-    return exp2(x);
+    return exp2<opt>(x);
 }
 
 /*! \brief SIMD float e^x, only targeting single accuracy.
  *
- * \param x Argument.
- * \result exp(x). Undefined if input argument caused overflow.
+ * \copydetails exp(SimdFloat)
  */
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall
 expSingleAccuracy(SimdFloat x)
 {
-    return exp(x);
+    return exp<opt>(x);
 }
+
 
 /*! \brief SIMD float erf(x), only targeting single accuracy.
  *
@@ -4181,7 +4551,14 @@ pmePotentialCorrectionSingleAccuracy(SimdFloat z2)
 #if GMX_SIMD4_HAVE_FLOAT
 /*! \brief Calculate 1/sqrt(x) for SIMD4 float, only targeting single accuracy.
  *
- *  \param x Argument that must be >0. This routine does not check arguments.
+ *  \param x Argument that must be larger than GMX_FLOAT_MIN and smaller than
+ *           GMX_FLOAT_MAX, i.e. within the range of single precision.
+ *           For the single precision implementation this is obviously always
+ *           true for positive values, but for double precision it adds an
+ *           extra restriction since the first lookup step might have to be
+ *           performed in single precision on some architectures. Note that the
+ *           responsibility for checking falls on you - this routine does not
+ *           check arguments.
  *  \return 1/sqrt(x). Result is undefined if your argument was invalid.
  */
 static inline Simd4Float gmx_simdcall

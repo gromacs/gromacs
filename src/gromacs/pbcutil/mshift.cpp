@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,7 @@
 
 #include "mshift.h"
 
-#include <string.h>
+#include <cstring>
 
 #include <algorithm>
 
@@ -46,8 +46,11 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/stringutil.h"
 
 /************************************************************
  *
@@ -86,25 +89,30 @@ static void add_gbond(t_graph *g, int a0, int a1)
     }
 }
 
-static void mk_igraph(t_graph *g, int ftype, const t_ilist *il,
+/* Make the actual graph for an ilist, returns whether an edge was added.
+ *
+ * When a non-null part array is supplied with part indices for each atom,
+ * edges are only added when atoms have a different part index.
+ */
+template <typename T>
+static bool mk_igraph(t_graph *g, int ftype, const T &il,
                       int at_start, int at_end,
-                      int *part)
+                      const int *part)
 {
-    t_iatom *ia;
     int      i, j, np;
     int      end;
+    bool     addedEdge = false;
 
-    end = il->nr;
-    ia  = il->iatoms;
+    end = il.size();
 
     i = 0;
     while (i < end)
     {
         np = interaction_function[ftype].nratoms;
 
-        if (ia[1] >= at_start && ia[1] < at_end)
+        if (np > 1 && il.iatoms[i + 1] >= at_start && il.iatoms[i + 1] < at_end)
         {
-            if (ia[np] >= at_end)
+            if (il.iatoms[i + np] >= at_end)
             {
                 gmx_fatal(FARGS,
                           "Molecule in topology has atom numbers below and "
@@ -117,40 +125,45 @@ static void mk_igraph(t_graph *g, int ftype, const t_ilist *il,
             if (ftype == F_SETTLE)
             {
                 /* Bond all the atoms in the settle */
-                add_gbond(g, ia[1], ia[2]);
-                add_gbond(g, ia[1], ia[3]);
+                add_gbond(g, il.iatoms[i + 1], il.iatoms[i + 2]);
+                add_gbond(g, il.iatoms[i + 1], il.iatoms[i + 3]);
+                addedEdge = true;
             }
             else if (part == nullptr)
             {
                 /* Simply add this bond */
                 for (j = 1; j < np; j++)
                 {
-                    add_gbond(g, ia[j], ia[j+1]);
+                    add_gbond(g, il.iatoms[i + j], il.iatoms[i + j+1]);
                 }
+                addedEdge = true;
             }
             else
             {
                 /* Add this bond when it connects two unlinked parts of the graph */
                 for (j = 1; j < np; j++)
                 {
-                    if (part[ia[j]] != part[ia[j+1]])
+                    if (part[il.iatoms[i + j]] != part[il.iatoms[i + j+1]])
                     {
-                        add_gbond(g, ia[j], ia[j+1]);
+                        add_gbond(g, il.iatoms[i + j], il.iatoms[i + j+1]);
+                        addedEdge = true;
                     }
                 }
             }
         }
-        ia += np+1;
+
         i  += np+1;
     }
+
+    return addedEdge;
 }
 
-gmx_noreturn static void g_error(int line, const char *file)
+[[noreturn]] static void g_error(int line, const char *file)
 {
     gmx_fatal(FARGS, "Trying to print nonexistent graph (file %s, line %d)",
               file, line);
 }
-#define GCHECK(g) if (g == NULL) g_error(__LINE__, __FILE__)
+#define GCHECK(g) if ((g) == NULL) g_error(__LINE__, __FILE__)
 
 void p_graph(FILE *log, const char *title, t_graph *g)
 {
@@ -184,36 +197,35 @@ void p_graph(FILE *log, const char *title, t_graph *g)
     fflush(log);
 }
 
-static void calc_1se(t_graph *g, int ftype, const t_ilist *il,
+template <typename T>
+static void calc_1se(t_graph *g, int ftype, const T &il,
                      int nbond[], int at_start, int at_end)
 {
     int      k, nratoms, end, j;
-    t_iatom *ia, iaa;
 
-    end = il->nr;
+    end = il.size();
 
-    ia = il->iatoms;
-    for (j = 0; (j < end); j += nratoms+1, ia += nratoms+1)
+    for (j = 0; (j < end); j += nratoms + 1)
     {
         nratoms = interaction_function[ftype].nratoms;
 
         if (ftype == F_SETTLE)
         {
-            iaa          = ia[1];
+            const int iaa = il.iatoms[j + 1];
             if (iaa >= at_start && iaa < at_end)
             {
-                nbond[iaa]   += 2;
-                nbond[ia[2]] += 1;
-                nbond[ia[3]] += 1;
-                g->at_start   = std::min(g->at_start, iaa);
-                g->at_end     = std::max(g->at_end, iaa+2+1);
+                nbond[iaa]              += 2;
+                nbond[il.iatoms[j + 2]] += 1;
+                nbond[il.iatoms[j + 3]] += 1;
+                g->at_start              = std::min(g->at_start, iaa);
+                g->at_end                = std::max(g->at_end, iaa+2+1);
             }
         }
         else
         {
             for (k = 1; (k <= nratoms); k++)
             {
-                iaa = ia[k];
+                const int iaa = il.iatoms[j + k];
                 if (iaa >= at_start && iaa < at_end)
                 {
                     g->at_start = std::min(g->at_start, iaa);
@@ -236,7 +248,8 @@ static void calc_1se(t_graph *g, int ftype, const t_ilist *il,
     }
 }
 
-static int calc_start_end(FILE *fplog, t_graph *g, const t_ilist il[],
+template <typename T>
+static int calc_start_end(FILE *fplog, t_graph *g, const T il[],
                           int at_start, int at_end,
                           int nbond[])
 {
@@ -252,7 +265,7 @@ static int calc_start_end(FILE *fplog, t_graph *g, const t_ilist il[],
     {
         if (interaction_function[i].flags & IF_CHEMBOND)
         {
-            calc_1se(g, i, &il[i], nbond, at_start, at_end);
+            calc_1se(g, i, il[i], nbond, at_start, at_end);
         }
     }
     /* Then add all the other interactions in fixed lists, but first
@@ -262,7 +275,7 @@ static int calc_start_end(FILE *fplog, t_graph *g, const t_ilist il[],
     {
         if (!(interaction_function[i].flags & IF_CHEMBOND))
         {
-            calc_1se(g, i, &il[i], nbond, at_start, at_end);
+            calc_1se(g, i, il[i], nbond, at_start, at_end);
         }
     }
 
@@ -355,8 +368,8 @@ static gmx_bool determine_graph_parts(t_graph *g, int *part)
         }
         if (debug)
         {
-            fprintf(debug, "graph part[] nchanged=%d, bMultiPart=%d\n",
-                    nchanged, bMultiPart);
+            fprintf(debug, "graph part[] nchanged=%d, bMultiPart=%s\n",
+                    nchanged, gmx::boolToString(bMultiPart));
         }
     }
     while (nchanged > 0);
@@ -364,10 +377,12 @@ static gmx_bool determine_graph_parts(t_graph *g, int *part)
     return bMultiPart;
 }
 
-void mk_graph_ilist(FILE *fplog,
-                    const t_ilist *ilist, int at_start, int at_end,
-                    gmx_bool bShakeOnly, gmx_bool bSettle,
-                    t_graph *g)
+template <typename T>
+static void
+mk_graph_ilist(FILE *fplog,
+               const T *ilist, int at_start, int at_end,
+               gmx_bool bShakeOnly, gmx_bool bSettle,
+               t_graph *g)
 {
     int        *nbond;
     int         i, nbtot;
@@ -378,8 +393,9 @@ void mk_graph_ilist(FILE *fplog,
      * some atoms are not connected by the graph, which runs from
      * g->at_start (>= g->at0) to g->at_end (<= g->at1).
      */
-    g->at0 = at_start;
-    g->at1 = at_end;
+    g->at0       = at_start;
+    g->at1       = at_end;
+    g->parts     = t_graph::BondedParts::Single;
 
     snew(nbond, at_end);
     nbtot = calc_start_end(fplog, g, ilist, at_start, at_end, nbond);
@@ -412,7 +428,7 @@ void mk_graph_ilist(FILE *fplog,
             {
                 if (interaction_function[i].flags & IF_CHEMBOND)
                 {
-                    mk_igraph(g, i, &(ilist[i]), at_start, at_end, nullptr);
+                    mk_igraph(g, i, ilist[i], at_start, at_end, nullptr);
                 }
             }
 
@@ -427,12 +443,24 @@ void mk_graph_ilist(FILE *fplog,
                  * but only when they connect parts of the graph
                  * that are not connected through IF_CHEMBOND interactions.
                  */
+                bool addedEdge = false;
                 for (i = 0; (i < F_NRE); i++)
                 {
                     if (!(interaction_function[i].flags & IF_CHEMBOND))
                     {
-                        mk_igraph(g, i, &(ilist[i]), at_start, at_end, nbond);
+                        bool addedEdgeForType =
+                            mk_igraph(g, i, ilist[i], at_start, at_end, nbond);
+                        addedEdge = (addedEdge || addedEdgeForType);
                     }
+                }
+
+                if (addedEdge)
+                {
+                    g->parts = t_graph::BondedParts::MultipleConnected;
+                }
+                else
+                {
+                    g->parts = t_graph::BondedParts::MultipleDisconnected;
                 }
             }
 
@@ -442,10 +470,10 @@ void mk_graph_ilist(FILE *fplog,
         else
         {
             /* This is a special thing used in splitter.c to generate shake-blocks */
-            mk_igraph(g, F_CONSTR, &(ilist[F_CONSTR]), at_start, at_end, nullptr);
+            mk_igraph(g, F_CONSTR, ilist[F_CONSTR], at_start, at_end, nullptr);
             if (bSettle)
             {
-                mk_igraph(g, F_SETTLE, &(ilist[F_SETTLE]), at_start, at_end, nullptr);
+                mk_igraph(g, F_SETTLE, ilist[F_SETTLE], at_start, at_end, nullptr);
             }
         }
         g->nbound = 0;
@@ -469,6 +497,14 @@ void mk_graph_ilist(FILE *fplog,
     {
         p_graph(debug, "graph", g);
     }
+}
+
+void mk_graph_moltype(const gmx_moltype_t &moltype,
+                      t_graph             *g)
+{
+    mk_graph_ilist(nullptr, moltype.ilist.data(), 0, moltype.atoms.nr,
+                   FALSE, FALSE,
+                   g);
 }
 
 t_graph *mk_graph(FILE *fplog,
@@ -504,7 +540,7 @@ void done_graph(t_graph *g)
  ************************************************************/
 
 static void mk_1shift_tric(int npbcdim, const matrix box, const rvec hbox,
-                           const rvec xi, const rvec xj, int *mi, int *mj)
+                           const rvec xi, const rvec xj, const int *mi, int *mj)
 {
     /* Calculate periodicity for triclinic box... */
     int  m, d;
@@ -542,7 +578,7 @@ static void mk_1shift_tric(int npbcdim, const matrix box, const rvec hbox,
 }
 
 static void mk_1shift(int npbcdim, const rvec hbox, const rvec xi, const rvec xj,
-                      int *mi, int *mj)
+                      const int *mi, int *mj)
 {
     /* Calculate periodicity for rectangular box... */
     int  m;
@@ -572,7 +608,7 @@ static void mk_1shift(int npbcdim, const rvec hbox, const rvec xi, const rvec xj
 }
 
 static void mk_1shift_screw(const matrix box, const rvec hbox,
-                            const rvec xi, const rvec xj, int *mi, int *mj)
+                            const rvec xi, const rvec xj, const int *mi, int *mj)
 {
     /* Calculate periodicity for rectangular box... */
     int  signi, m;
@@ -698,7 +734,7 @@ static int mk_grey(egCol egc[], t_graph *g, int *AtomI,
     return ng;
 }
 
-static int first_colour(int fC, egCol Col, t_graph *g, egCol egc[])
+static int first_colour(int fC, egCol Col, t_graph *g, const egCol egc[])
 /* Return the first node with colour Col starting at fC.
  * return -1 if none found.
  */
@@ -714,6 +750,32 @@ static int first_colour(int fC, egCol Col, t_graph *g, egCol egc[])
     }
 
     return -1;
+}
+
+/* Returns the maximum length of the graph edges for coordinates x */
+static real maxEdgeLength(const t_graph g,
+                          int           ePBC,
+                          const matrix  box,
+                          const rvec    x[])
+{
+    t_pbc pbc;
+
+    set_pbc(&pbc, ePBC, box);
+
+    real maxEdgeLength2 = 0;
+
+    for (int node = 0; node < g.nnodes; node++)
+    {
+        for (int edge = 0; edge < g.nedge[node]; edge++)
+        {
+            int  nodeJ = g.edge[node][edge];
+            rvec dx;
+            pbc_dx(&pbc, x[g.at0 + node], x[g.at0 + nodeJ], dx);
+            maxEdgeLength2 = std::max(maxEdgeLength2, norm2(dx));
+        }
+    }
+
+    return std::sqrt(maxEdgeLength2);
 }
 
 void mk_mshift(FILE *log, t_graph *g, int ePBC,
@@ -758,7 +820,7 @@ void mk_mshift(FILE *log, t_graph *g, int ePBC,
         g->negc = nnodes;
         srenew(g->egc, g->negc);
     }
-    memset(g->egc, 0, (size_t)(nnodes*sizeof(g->egc[0])));
+    memset(g->egc, 0, static_cast<size_t>(nnodes*sizeof(g->egc[0])));
 
     nW = g->nbound;
     nG = 0;
@@ -817,6 +879,46 @@ void mk_mshift(FILE *log, t_graph *g, int ePBC,
     }
     if (nerror > 0)
     {
+        /* We use a threshold of 0.25*boxSize for generating a fatal error
+         * to allow removing PBC for systems with periodic molecules.
+         *
+         * TODO: Consider a better solution for systems with periodic
+         *       molecules. Ideally analysis tools should only ask to make
+         *       non-periodic molecules whole in a system with periodic mols.
+         */
+        constexpr real c_relativeDistanceThreshold = 0.25;
+
+        int            numPbcDimensions = ePBC2npbcdim(ePBC);
+        GMX_RELEASE_ASSERT(numPbcDimensions > 0, "Expect PBC with graph");
+        real           minBoxSize = norm(box[XX]);
+        for (int d = 1; d < numPbcDimensions; d++)
+        {
+            minBoxSize = std::min(minBoxSize, norm(box[d]));
+        }
+        real maxDistance = maxEdgeLength(*g, ePBC, box, x);
+        if (maxDistance >= c_relativeDistanceThreshold*minBoxSize)
+        {
+            std::string mesg = gmx::formatString("There are inconsistent shifts over periodic boundaries in a molecule type consisting of %d atoms. The longest distance involved in such interactions is %.3f nm which is %s half the box length.",
+                                                 g->at1 - g->at0, maxDistance,
+                                                 maxDistance >= 0.5*minBoxSize ? "above" : "close to");
+
+            switch (g->parts)
+            {
+                case t_graph::BondedParts::MultipleConnected:
+                    /* Ideally we should check if the long distances are
+                     * actually between the parts, but that would require
+                     * a lot of extra code.
+                     */
+                    mesg += " This molecule type consists of muliple parts, e.g. monomers, that are connected by interactions that are not chemical bonds, e.g. restraints. Such systems can not be treated. The only solution is increasing the box size.";
+                    break;
+                default:
+                    mesg += " Either you have excessively large distances between atoms in bonded interactions or your system is exploding.";
+            }
+            gmx_fatal(FARGS, "%s", mesg.c_str());
+        }
+
+        /* The most likely reason for arriving here is a periodic molecule. */
+
         nerror_tot++;
         if (nerror_tot <= 100)
         {

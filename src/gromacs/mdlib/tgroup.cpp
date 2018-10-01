@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,7 +39,7 @@
 
 #include "tgroup.h"
 
-#include <math.h>
+#include <cmath>
 
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
@@ -69,9 +69,9 @@ static void init_grptcstat(int ngtc, t_grp_tcstat tcstat[])
     }
 }
 
-static void init_grpstat(gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
+static void init_grpstat(const gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
 {
-    gmx_groups_t           *groups;
+    const gmx_groups_t     *groups;
     gmx_mtop_atomloop_all_t aloop;
     int                     i, grp;
     const t_atom           *atom;
@@ -82,7 +82,7 @@ static void init_grpstat(gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
         aloop  = gmx_mtop_atomloop_all_init(mtop);
         while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
         {
-            grp = ggrpnr(groups, egcACC, i);
+            grp = getGroupType(groups, egcACC, i);
             if ((grp < 0) && (grp >= ngacc))
             {
                 gmx_incons("Input for acceleration groups wrong");
@@ -95,15 +95,11 @@ static void init_grpstat(gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
     }
 }
 
-void init_ekindata(FILE gmx_unused *log, gmx_mtop_t *mtop, t_grpopts *opts,
+void init_ekindata(FILE gmx_unused *log, const gmx_mtop_t *mtop, const t_grpopts *opts,
                    gmx_ekindata_t *ekind)
 {
     int i;
     int nthread, thread;
-#ifdef DEBUG
-    fprintf(log, "ngtc: %d, ngacc: %d, ngener: %d\n", opts->ngtc, opts->ngacc,
-            opts->ngener);
-#endif
 
     /* bNEMD tells if we should remove remove the COM velocity
      * from the velocities during velocity scaling in T-coupling.
@@ -159,7 +155,7 @@ void init_ekindata(FILE gmx_unused *log, gmx_mtop_t *mtop, t_grpopts *opts,
     init_grpstat(mtop, opts->ngacc, ekind->grpstat);
 }
 
-void accumulate_u(t_commrec *cr, t_grpopts *opts, gmx_ekindata_t *ekind)
+void accumulate_u(const t_commrec *cr, const t_grpopts *opts, gmx_ekindata_t *ekind)
 {
     /* This routine will only be called when it's necessary */
     t_bin *rb;
@@ -180,26 +176,8 @@ void accumulate_u(t_commrec *cr, t_grpopts *opts, gmx_ekindata_t *ekind)
     destroy_bin(rb);
 }
 
-/* I don't think accumulate_ekin is used anymore? */
-
-#if 0
-static void accumulate_ekin(t_commrec *cr, t_grpopts *opts,
-                            gmx_ekindata_t *ekind)
-{
-    int g;
-
-    if (PAR(cr))
-    {
-        for (g = 0; (g < opts->ngtc); g++)
-        {
-            gmx_sum(DIM*DIM, ekind->tcstat[g].ekinf[0], cr);
-        }
-    }
-}
-#endif
-
 void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
-                     t_grpopts *opts, rvec v[], t_mdatoms *md, real lambda)
+                     const t_grpopts *opts, const rvec v[], const t_mdatoms *md, real lambda)
 {
     int  d, g, n;
     real mv;
@@ -242,7 +220,7 @@ void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
     }
 }
 
-real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
+real sum_ekin(const t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
               gmx_bool bEkinAveVel, gmx_bool bScaleEkin)
 {
     int           i, j, m, ngtc;

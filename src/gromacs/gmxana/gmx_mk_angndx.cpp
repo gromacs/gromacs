@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,7 +50,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-static int calc_ntype(int nft, int *ft, const t_idef *idef)
+static int calc_ntype(int nft, const int *ft, const t_idef *idef)
 {
     int  i, f, nf = 0;
 
@@ -68,7 +68,7 @@ static int calc_ntype(int nft, int *ft, const t_idef *idef)
     return nf;
 }
 
-static void fill_ft_ind(int nft, int *ft, const t_idef *idef,
+static void fill_ft_ind(int nft, const int *ft, const t_idef *idef,
                         int ft_ind[], char *grpnames[])
 {
     char buf[125];
@@ -141,8 +141,8 @@ static void fill_ft_ind(int nft, int *ft, const t_idef *idef,
     }
 }
 
-static void fill_ang(int nft, int *ft, int fac,
-                     int nr[], int *index[], int ft_ind[], const t_topology *top,
+static void fill_ang(int nft, const int *ft, int fac,
+                     int nr[], int *index[], const int ft_ind[], const t_topology *top,
                      gmx_bool bNoH, real hq)
 {
     int           f, ftype, i, j, indg, nr_fac;
@@ -177,7 +177,7 @@ static void fill_ang(int nft, int *ft, int fac,
                     }
                 }
             }
-            if (hq)
+            if (hq != 0.0f)
             {
                 for (j = 0; j < fac; j++)
                 {

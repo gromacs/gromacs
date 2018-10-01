@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,9 +94,9 @@ TEST(MutexBasicTest, CanBeUsedInLockGuard)
 }
 
 //! A shared value for a mutex to protect
-static int   g_sharedValue;
+int   g_sharedValue;
 //! A mutex to protect a shared value
-static Mutex g_sharedValueMutex;
+Mutex g_sharedValueMutex;
 
 //! Function type for asynchronous tasks.
 using TaskType = std::function<int(void)>;
@@ -139,7 +139,6 @@ int updateSharedValueWithTryLock()
 class DifferentTasksTest : public ::testing::TestWithParam<TaskType>
 {
     public:
-        //! Constructor
         DifferentTasksTest()
         {
             g_sharedValue = 0;
@@ -147,7 +146,7 @@ class DifferentTasksTest : public ::testing::TestWithParam<TaskType>
         //! Check the results
         void checkResults()
         {
-            int result;
+            int result = 0;
             EXPECT_NO_THROW(result = futureResult_.get()) << "Future should not contain an exception";
             EXPECT_EQ(1, result) << "Task should have run";
             EXPECT_EQ(1, g_sharedValue) << "Shared value should be updated";
@@ -240,5 +239,5 @@ TEST(MutexTaskTest, MutualExclusionWorksWithTryLockOnSameThread)
 }
 
 } // namespace
-} // namespace
-} // namespace
+} // namespace test
+} // namespace gmx

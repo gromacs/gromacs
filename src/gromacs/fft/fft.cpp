@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2003 Erik Lindahl, David van der Spoel, University of Groningen.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,10 +39,10 @@
 
 #include "config.h"
 
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/utility/fatalerror.h"
@@ -181,7 +181,8 @@ int gmx_fft_transpose_2d(t_complex *          in_data,
                          int                  nx,
                          int                  ny)
 {
-    int        i, j, k, im, n, ncount, done1, done2;
+    int        i, j, k, im, n, ncount;
+    bool       done1, done2;
     int        i1, i1c, i2, i2c, kmi, max;
 
     t_complex  tmp1, tmp2, tmp3;
@@ -254,7 +255,7 @@ int gmx_fft_transpose_2d(t_complex *          in_data,
             i = j;
             j = k;
         }
-        while (k);
+        while (k != 0);
         ncount += i-1;
     }
 
@@ -263,7 +264,7 @@ int gmx_fft_transpose_2d(t_complex *          in_data,
     i  = 1;
     im = ny;
 
-    done1 = 0;
+    done1 = false;
     do
     {
         i1      = i;
@@ -274,7 +275,7 @@ int gmx_fft_transpose_2d(t_complex *          in_data,
         tmp2.re = data[i1c].re;
         tmp2.im = data[i1c].im;
 
-        done2 = 0;
+        done2 = false;
         do
         {
             i2  = ny*i1-k*(i1/nx);
@@ -290,7 +291,7 @@ int gmx_fft_transpose_2d(t_complex *          in_data,
             ncount += 2;
             if (i2 == i)
             {
-                done2 = 1;
+                done2 = true;
             }
             else if (i2 == kmi)
             {
@@ -300,7 +301,7 @@ int gmx_fft_transpose_2d(t_complex *          in_data,
                 tmp1.im = tmp2.im;
                 tmp2.re = tmp3.re;
                 tmp2.im = tmp3.im;
-                done2   = 1;
+                done2   = true;
             }
             else
             {
@@ -321,11 +322,11 @@ int gmx_fft_transpose_2d(t_complex *          in_data,
 
         if (ncount >= n)
         {
-            done1 = 1;
+            done1 = true;
         }
         else
         {
-            done2 = 0;
+            done2 = false;
             do
             {
                 max = k-i;
@@ -347,12 +348,12 @@ int gmx_fft_transpose_2d(t_complex *          in_data,
                         }
                         if (i2 == i)
                         {
-                            done2 = 1;
+                            done2 = true;
                         }
                     }
                     else if (!move[i])
                     {
-                        done2 = 1;
+                        done2 = true;
                     }
                 }
             }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -114,7 +114,7 @@ SelectionData::SelectionData(SelectionTreeElement *elem,
             {
                 child = child->child->child;
             }
-            bDynamic_ = (child->child->flags & SEL_DYNAMIC);
+            bDynamic_ = ((child->child->flags & SEL_DYNAMIC) != 0);
         }
     }
     initCoveredFraction(CFRAC_NONE);
@@ -165,7 +165,7 @@ void computeMassesAndCharges(const gmx_mtop_t *top, const gmx_ana_pos_t &pos,
                              std::vector<real> *masses,
                              std::vector<real> *charges)
 {
-    GMX_ASSERT(top != NULL, "Should not have been called with NULL topology");
+    GMX_ASSERT(top != nullptr, "Should not have been called with NULL topology");
     masses->clear();
     charges->clear();
     int molb = 0;

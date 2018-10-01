@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,10 +39,7 @@
 #define GMX_FILEIO_TRXIO_H
 
 #include "gromacs/fileio/pdbio.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "gromacs/utility/arrayref.h"
 
 struct gmx_mtop_t;
 struct gmx_output_env_t;
@@ -101,39 +98,53 @@ int write_trx(t_trxstatus *status, int nind, const int *ind, const t_atoms *atom
  * atoms can be NULL for file types which don't need atom names.
  */
 
-void trjtools_gmx_prepare_tng_writing(const char               *filename,
-                                      char                      filemode,
-                                      t_trxstatus              *in,
-                                      t_trxstatus             **out,
-                                      const char               *infile,
-                                      const int                 natoms,
-                                      const struct gmx_mtop_t  *mtop,
-                                      const int                *index,
-                                      const char               *index_group_name);
-/* Sets up *out for writing TNG. If *in != NULL and contains a TNG trajectory
- * some data, e.g. molecule system, will be copied over from *in to *out.
- * If *in == NULL a file name (infile) of a TNG file can be provided instead
- * and used for copying data to *out.
- * If there is no TNG input natoms is used to create "implicit atoms" (no atom
- * or molecular data present). If natoms == -1 the number of atoms are
+/*! \brief
+ * Set up TNG writing to \p out.
+ *
+ * Sets up \p out for writing TNG. If \p in != NULL and contains a TNG trajectory
+ * some data, e.g. molecule system, will be copied over from \p in to the return value.
+ * If \p in == NULL a file name (infile) of a TNG file can be provided instead
+ * and used for copying data to the return value.
+ * If there is no TNG input \p natoms is used to create "implicit atoms" (no atom
+ * or molecular data present). If \p natoms == -1 the number of atoms are
  * not known (or there is already a TNG molecule system to copy, in which case
  * natoms is not required anyhow). If an group of indexed atoms are written
- * natoms must be the length of index. index_group_name is the name of the
+ * \p natoms must be the length of \p index. \p index_group_name is the name of the
  * index group.
+ *
+ * \param[in] filename Name of new TNG file.
+ * \param[in] filemode How to open the output file.
+ * \param[in] in Input file pointer or null.
+ * \param[in] infile Input file name or null.
+ * \param[in] natoms Number of atoms to write.
+ * \param[in] mtop Pointer to system topology or null.
+ * \param[in] index Array of atom indices.
+ * \param[in] index_group_name Name of the group of atom indices.
+ * \returns Pointer to output TNG file.
  */
+t_trxstatus *
+trjtools_gmx_prepare_tng_writing(const char              *filename,
+                                 char                     filemode,
+                                 t_trxstatus             *in,
+                                 const char              *infile,
+                                 int                      natoms,
+                                 const struct gmx_mtop_t *mtop,
+                                 gmx::ArrayRef<const int> index,
+                                 const char              *index_group_name);
 
 /*! \brief Write a trxframe to the TNG file in status.
  *
  * This function is needed because both t_trxstatus and
- * tng_trajectory_t are encapsulated, so client trajectory-writing
+ * gmx_tng_trajectory_t are encapsulated, so client trajectory-writing
  * code with a t_trxstatus can't just call the TNG writing
  * function. */
 void write_tng_frame(t_trxstatus        *status,
                      struct t_trxframe  *fr);
 
 void close_trx(t_trxstatus *status);
-/* Close trajectory file as opened with read_first_x, read_frist_frame
- * or open_trx. Identical to close_trj.
+/* Close trajectory file as opened with read_first_x, read_first_frame
+ * or open_trx.
+ * Also frees memory in the structure.
  */
 
 t_trxstatus *open_trx(const char *outfile, const char *filemode);
@@ -197,19 +208,19 @@ int check_times(real t);
 #define DATA_NOT_OK   (1<<1)
 #define FRAME_NOT_OK  (HEADER_NOT_OK | DATA_NOT_OK)
 
-int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
-                     const char *fn, struct t_trxframe *fr, int flags);
+bool read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
+                      const char *fn, struct t_trxframe *fr, int flags);
 /* Read the first frame which is in accordance with flags, which are
  * defined further up in this file.
  * Memory will be allocated for flagged entries.
  * The flags are copied to fr for subsequent calls to read_next_frame.
- * Returns TRUE when succeeded, FALSE otherwise.
+ * Returns true when succeeded, false otherwise.
  */
 
-gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status,
-                         struct t_trxframe *fr);
+bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status,
+                     struct t_trxframe *fr);
 /* Reads the next frame which is in accordance with fr->flags.
- * Returns TRUE when succeeded, FALSE otherwise.
+ * Returns true when succeeded, false otherwise.
  */
 
 int read_first_x(const gmx_output_env_t *oenv, t_trxstatus **status,
@@ -226,11 +237,6 @@ gmx_bool read_next_x(const gmx_output_env_t *oenv, t_trxstatus *status, real *t,
  * status is the integer set in read_first_x.
  */
 
-void close_trj(t_trxstatus *status);
-/* Close trajectory file as opened with read_first_x, read_first_frame
- * or open_trx. Identical to close_trx.
- */
-
 void rewind_trj(t_trxstatus *status);
 /* Rewind trajectory file as opened with read_first_x */
 
@@ -238,9 +244,5 @@ struct t_topology *read_top(const char *fn, int *ePBC);
 /* Extract a topology data structure from a topology file.
  * If ePBC!=NULL *ePBC gives the pbc type.
  */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

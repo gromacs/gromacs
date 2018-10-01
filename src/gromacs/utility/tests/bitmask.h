@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,7 +58,7 @@ class BITMASK_CLASSNAME(BITMASK_SIZE) : public ::testing::TestWithParam<int>
 {
 };
 
-BITMASK_TEST_P(SetAndClear)
+BITMASK_TEST_P(SetAndClear) //NOLINT(misc-definitions-in-headers)
 {
     gmx_bitmask_t m;
     int           i = GetParam();
@@ -74,7 +74,7 @@ BITMASK_TEST_P(SetAndClear)
     EXPECT_TRUE(bitmask_is_zero(m));
 }
 
-BITMASK_TEST_P(InitBit)
+BITMASK_TEST_P(InitBit) //NOLINT(misc-definitions-in-headers)
 {
     gmx_bitmask_t m1, m2;
     int           i = GetParam();
@@ -85,7 +85,7 @@ BITMASK_TEST_P(InitBit)
     EXPECT_TRUE(bitmask_is_equal(m1, m2));
 }
 
-BITMASK_TEST_P(InitLowBits)
+BITMASK_TEST_P(InitLowBits) //NOLINT(misc-definitions-in-headers)
 {
     gmx_bitmask_t m;
     int           i = GetParam();
@@ -96,7 +96,7 @@ BITMASK_TEST_P(InitLowBits)
     }
 }
 
-BITMASK_TEST_P(Disjoint)
+BITMASK_TEST_P(Disjoint) //NOLINT(misc-definitions-in-headers)
 {
     gmx_bitmask_t m1, m2;
     int           i = GetParam();
@@ -107,7 +107,7 @@ BITMASK_TEST_P(Disjoint)
     EXPECT_TRUE(bitmask_is_disjoint(m1, m2));
 }
 
-BITMASK_TEST_P(Union)
+BITMASK_TEST_P(Union) //NOLINT(misc-definitions-in-headers)
 {
     gmx_bitmask_t m1, m2;
     int           i = GetParam();
@@ -130,4 +130,11 @@ BITMASK_TEST_P(Union)
     bitmask_init_bit(&m2, i);
     bitmask_union(&m1, m2);
     EXPECT_TRUE(bitmask_is_equal(m1, m2));
+}
+BITMASK_TEST_P(ToHex) //NOLINT(misc-definitions-in-headers)
+{
+    gmx_bitmask_t m;
+    bitmask_clear(&m);
+    bitmask_set_bit(&m, BITMASK_SIZE-1);
+    EXPECT_EQ(to_hex_string(m), "8" + std::string(BITMASK_SIZE/4-1, '0'));
 }

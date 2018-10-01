@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 
-gmx_bool convolution(int dataSize, real *x, int kernelSize, real* kernel)
+gmx_bool convolution(int dataSize, real *x, int kernelSize, const real* kernel)
 {
     int   i, j, k;
     real *out;
@@ -90,7 +90,7 @@ gmx_bool convolution(int dataSize, real *x, int kernelSize, real* kernel)
 /* Assuming kernel is shorter than x */
 
 gmx_bool periodic_convolution(int datasize, real *x, int kernelsize,
-                              real *kernel)
+                              const real *kernel)
 {
     int   i, j, idx;
     real *filtered;

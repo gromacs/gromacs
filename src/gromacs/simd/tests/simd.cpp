@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,29 +64,48 @@ namespace test
  * them in a single place makes sure they are consistent.
  */
 #if GMX_SIMD_HAVE_REAL
-const SimdReal rSimd_1_2_3    = setSimdRealFrom3R(1, 2, 3);
-const SimdReal rSimd_4_5_6    = setSimdRealFrom3R(4, 5, 6);
-const SimdReal rSimd_7_8_9    = setSimdRealFrom3R(7, 8, 9);
-const SimdReal rSimd_5_7_9    = setSimdRealFrom3R(5, 7, 9);
-const SimdReal rSimd_m1_m2_m3 = setSimdRealFrom3R(-1, -2, -3);
-const SimdReal rSimd_3_1_4    = setSimdRealFrom3R(3, 1, 4);
-const SimdReal rSimd_m3_m1_m4 = setSimdRealFrom3R(-3, -1, -4);
-const SimdReal rSimd_2p25     = setSimdRealFrom1R(2.25);
-const SimdReal rSimd_3p25     = setSimdRealFrom1R(3.25);
-const SimdReal rSimd_3p75     = setSimdRealFrom1R(3.75);
+const SimdReal rSimd_c0c1c2 = setSimdRealFrom3R( c0, c1, c2);
+const SimdReal rSimd_c3c4c5 = setSimdRealFrom3R( c3, c4, c5);
+const SimdReal rSimd_c6c7c8 = setSimdRealFrom3R( c6, c7, c8);
+const SimdReal rSimd_c3c0c4 = setSimdRealFrom3R( c3, c0, c4);
+const SimdReal rSimd_c4c6c8 = setSimdRealFrom3R( c4, c6, c8);
+const SimdReal rSimd_c7c2c3 = setSimdRealFrom3R( c7, c2, c3);
+const SimdReal rSimd_m0m1m2 = setSimdRealFrom3R(-c0, -c1, -c2);
+const SimdReal rSimd_m3m0m4 = setSimdRealFrom3R(-c3, -c0, -c4);
+
+const SimdReal rSimd_2p25     = setSimdRealFrom1R( 2.25);
+const SimdReal rSimd_3p25     = setSimdRealFrom1R( 3.25);
+const SimdReal rSimd_3p75     = setSimdRealFrom1R( 3.75);
 const SimdReal rSimd_m2p25    = setSimdRealFrom1R(-2.25);
 const SimdReal rSimd_m3p25    = setSimdRealFrom1R(-3.25);
 const SimdReal rSimd_m3p75    = setSimdRealFrom1R(-3.75);
 const SimdReal rSimd_Exp      = setSimdRealFrom3R( 1.4055235171027452623914516e+18,
                                                    5.3057102734253445623914516e-13,
                                                    -2.1057102745623934534514516e+16);
-#    if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
+#if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
 // Make sure we also test exponents outside single precision when we use double
 const SimdReal rSimd_ExpDouble = setSimdRealFrom3R( 6.287393598732017379054414e+176,
                                                     8.794495252903116023030553e-140,
                                                     -3.637060701570496477655022e+202);
-#    endif
-#endif  // GMX_SIMD_HAVE_REAL
+#endif  // GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
+
+#if GMX_SIMD_HAVE_LOGICAL
+// The numbers below all have exponent (2^0), which will not change with AND/OR operations.
+// We also leave the last part of the mantissa as zeros, to avoid rounding issues in the compiler
+#if GMX_DOUBLE
+const SimdReal rSimd_logicalA         = setSimdRealFrom1R(1.3333333332557231188); // mantissa 01010101010101010101010101010101
+const SimdReal rSimd_logicalB         = setSimdRealFrom1R(1.7999999998137354851); // mantissa 11001100110011001100110011001100
+const SimdReal rSimd_logicalResultAnd = setSimdRealFrom1R(1.266666666604578495);  // mantissa 01000100010001000100010001000100
+const SimdReal rSimd_logicalResultOr  = setSimdRealFrom1R(1.8666666664648801088); // mantissa 11011101110111011101110111011101
+#else                                                                             // GMX_DOUBLE
+const SimdReal rSimd_logicalA         = setSimdRealFrom1R(1.3333282470703125);    // mantissa 0101010101010101
+const SimdReal rSimd_logicalB         = setSimdRealFrom1R(1.79998779296875);      // mantissa 1100110011001100
+const SimdReal rSimd_logicalResultAnd = setSimdRealFrom1R(1.26666259765625);      // mantissa 0100010001000100
+const SimdReal rSimd_logicalResultOr  = setSimdRealFrom1R(1.8666534423828125);    // mantissa 1101110111011101
+#endif                                                                            // GMX_DOUBLE
+#endif                                                                            // GMX_SIMD_HAVE_LOGICAL
+
+#endif                                                                            // GMX_SIMD_HAVE_REAL
 #if GMX_SIMD_HAVE_INT32_ARITHMETICS
 const SimdInt32 iSimd_1_2_3      = setSimdIntFrom3I(1, 2, 3);
 const SimdInt32 iSimd_4_5_6      = setSimdIntFrom3I(4, 5, 6);
@@ -102,10 +121,42 @@ const SimdInt32 iSimd_0xCCCCCCCC = setSimdIntFrom1I(0xCCCCCCCC);
 #endif
 
 #if GMX_SIMD_HAVE_REAL
+TEST(SimdTest, GmxAligned)
+{
+    // Test alignment with two variables that must be aligned, and one that
+    // doesn't have to be. The order of variables is up to the compiler, but
+    // if it ignores alignment it is highly unlikely that both r1/r3 still end
+    // up being aligned by mistake.
+    alignas(GMX_SIMD_ALIGNMENT) real        r1;
+    real                                    r2;
+    alignas(GMX_SIMD_ALIGNMENT) real        r3;
+
+    std::uint64_t addr1 = reinterpret_cast<std::uint64_t>(&r1);
+    std::uint64_t addr2 = reinterpret_cast<std::uint64_t>(&r2);
+    std::uint64_t addr3 = reinterpret_cast<std::uint64_t>(&r3);
+
+    EXPECT_EQ(0, addr1 % GMX_SIMD_ALIGNMENT);
+    EXPECT_NE(0, addr2); // Just so r2 is not optimized away
+    EXPECT_EQ(0, addr3 % GMX_SIMD_ALIGNMENT);
+
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t         i1;
+    std::int32_t                                     i2;
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t         i3;
+
+    addr1 = reinterpret_cast<std::uint64_t>(&i1);
+    addr2 = reinterpret_cast<std::uint64_t>(&i2);
+    addr3 = reinterpret_cast<std::uint64_t>(&i3);
+
+    EXPECT_EQ(0, addr1 % GMX_SIMD_ALIGNMENT);
+    EXPECT_NE(0, addr2); // Just so i2 is not optimized away
+    EXPECT_EQ(0, addr3 % GMX_SIMD_ALIGNMENT);
+}
+
+
 ::std::vector<real>
 simdReal2Vector(const SimdReal simd)
 {
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  mem[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) real        mem[GMX_SIMD_REAL_WIDTH];
 
     store(mem, simd);
     std::vector<real>   v(mem, mem+GMX_SIMD_REAL_WIDTH);
@@ -116,13 +167,13 @@ simdReal2Vector(const SimdReal simd)
 SimdReal
 vector2SimdReal(const std::vector<real> &v)
 {
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  mem[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) real        mem[GMX_SIMD_REAL_WIDTH];
 
     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
         mem[i] = v[i % v.size()];  // repeat vector contents to fill simd width
     }
-    return load(mem);
+    return load<SimdReal>(mem);
 }
 
 SimdReal
@@ -154,33 +205,33 @@ SimdTest::compareSimdRealUlp(const char *  refExpr,     const char *  tstExpr,
 }
 
 testing::AssertionResult
-SimdTest::compareSimdRealEq(const char * refExpr, const char * tstExpr,
-                            const SimdReal ref, const SimdReal tst)
+SimdTest::compareSimdEq(const char * refExpr, const char * tstExpr,
+                        const SimdReal ref, const SimdReal tst)
 {
     return compareVectorEq(refExpr, tstExpr, simdReal2Vector(ref), simdReal2Vector(tst));
 }
 
-std::vector<int>
+std::vector<std::int32_t>
 simdInt2Vector(const SimdInt32 simd)
 {
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)  mem[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t  mem[GMX_SIMD_REAL_WIDTH];
 
     store(mem, simd);
-    std::vector<int>    v(mem, mem+GMX_SIMD_REAL_WIDTH);
+    std::vector<std::int32_t>    v(mem, mem+GMX_SIMD_REAL_WIDTH);
 
     return v;
 }
 
 SimdInt32
-vector2SimdInt(const std::vector<int> &v)
+vector2SimdInt(const std::vector<std::int32_t> &v)
 {
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)  mem[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t   mem[GMX_SIMD_REAL_WIDTH];
 
     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
         mem[i] = v[i % v.size()];  // repeat vector contents to fill simd width
     }
-    return load(mem);
+    return load<SimdInt32>(mem);
 }
 
 SimdInt32
@@ -205,8 +256,8 @@ setSimdIntFrom1I(int value)
 }
 
 ::testing::AssertionResult
-SimdTest::compareSimdInt32(const char *  refExpr,      const char *  tstExpr,
-                           const SimdInt32 ref, const SimdInt32 tst)
+SimdTest::compareSimdEq(const char *  refExpr,      const char *  tstExpr,
+                        const SimdInt32 ref, const SimdInt32 tst)
 {
     return compareVectorEq(refExpr, tstExpr, simdInt2Vector(ref), simdInt2Vector(tst));
 }
@@ -216,7 +267,7 @@ SimdTest::compareSimdInt32(const char *  refExpr,      const char *  tstExpr,
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace
+}      // namespace test
+}      // namespace gmx
 
 #endif // GMX_SIMD

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,7 +49,7 @@
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
-#include "gromacs/gmxpreprocess/read-conformation.h"
+#include "gromacs/gmxpreprocess/makeexclusiondistances.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
@@ -68,12 +68,15 @@
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/atomsbuilder.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/trajectoryanalysis/topologyinformation.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/unique_cptr.h"
 
 using gmx::RVec;
 
@@ -83,29 +86,27 @@ enum RotationType {
 };
 const char *const cRotationEnum[] = {"xyz", "z", "none"};
 
-static void center_molecule(std::vector<RVec> *x)
+static void center_molecule(gmx::ArrayRef<RVec> x)
 {
-    const size_t atomCount = x->size();
-    rvec         center;
-    clear_rvec(center);
-    for (size_t i = 0; i < atomCount; ++i)
+    rvec center = {0};
+    for (auto &xi : x)
     {
-        rvec_inc(center, (*x)[i]);
+        rvec_inc(center, xi);
     }
-    svmul(1.0/atomCount, center, center);
-    for (size_t i = 0; i < atomCount; ++i)
+    svmul(1.0/x.size(), center, center);
+    for (auto &xi : x)
     {
-        rvec_dec((*x)[i], center);
+        rvec_dec(xi, center);
     }
 }
 
-static void generate_trial_conf(const std::vector<RVec> &xin,
+static void generate_trial_conf(gmx::ArrayRef<RVec> xin,
                                 const rvec offset, RotationType enum_rot,
                                 gmx::DefaultRandomEngine * rng,
                                 std::vector<RVec> *xout)
 {
     gmx::UniformRealDistribution<real> dist(0, 2.0*M_PI);
-    *xout = xin;
+    xout->assign(xin.begin(), xin.end());
 
     real alfa = 0.0, beta = 0.0, gamma = 0.0;
     switch (enum_rot)
@@ -166,7 +167,7 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
                         real defaultDistance, real scaleFactor,
                         t_atoms *atoms, t_symtab *symtab, std::vector<RVec> *x,
                         const std::set<int> &removableAtoms,
-                        const t_atoms &atoms_insrt, const std::vector<RVec> &x_insrt,
+                        const t_atoms &atoms_insrt, gmx::ArrayRef<RVec> x_insrt,
                         int ePBC, matrix box,
                         const std::string &posfn, const rvec deltaR,
                         RotationType enum_rot)
@@ -243,9 +244,7 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
 
     while (mol < nmol_insrt && trial < ntry*nmol_insrt)
     {
-        // cppcheck 1.72 complains about uninitialized variables in the
-        // assignments below otherwise...
-        rvec offset_x = {0};
+        rvec offset_x;
         if (!insertAtPositions)
         {
             // Insert at random positions.
@@ -328,38 +327,26 @@ class InsertMolecules : public ICommandLineOptionsModule, public ITopologyProvid
     public:
         InsertMolecules()
             : bBox_(false), nmolIns_(0), nmolTry_(10), seed_(0),
-              defaultDistance_(0.105), scaleFactor_(0.57), enumRot_(en_rotXYZ),
-              top_(nullptr), ePBC_(-1)
+              defaultDistance_(0.105), scaleFactor_(0.57), enumRot_(en_rotXYZ)
         {
             clear_rvec(newBox_);
             clear_rvec(deltaR_);
-            clear_mat(box_);
-        }
-        virtual ~InsertMolecules()
-        {
-            if (top_ != nullptr)
-            {
-                done_mtop(top_);
-                sfree(top_);
-            }
         }
 
         // From ITopologyProvider
-        virtual gmx_mtop_t *getTopology(bool /*required*/) { return top_; }
-        virtual int getAtomCount() { return 0; }
+        gmx_mtop_t *getTopology(bool /*required*/) override { return topInfo_.mtop(); }
+        int getAtomCount() override { return 0; }
 
         // From ICommandLineOptionsModule
-        virtual void init(CommandLineModuleSettings * /*settings*/)
+        void init(CommandLineModuleSettings * /*settings*/) override
         {
         }
-        virtual void initOptions(IOptionsContainer                 *options,
-                                 ICommandLineOptionsModuleSettings *settings);
-        virtual void optionsFinished();
-        virtual int run();
+        void initOptions(IOptionsContainer                 *options,
+                         ICommandLineOptionsModuleSettings *settings) override;
+        void optionsFinished() override;
+        int run() override;
 
     private:
-        void loadSolute();
-
         SelectionCollection selections_;
 
         std::string         inputConfFile_;
@@ -377,10 +364,7 @@ class InsertMolecules : public ICommandLineOptionsModule, public ITopologyProvid
         RotationType        enumRot_;
         Selection           replaceSel_;
 
-        gmx_mtop_t         *top_;
-        std::vector<RVec>   x_;
-        matrix              box_;
-        int                 ePBC_;
+        TopologyInformation topInfo_;
 };
 
 void InsertMolecules::initOptions(IOptionsContainer                 *options,
@@ -508,12 +492,11 @@ void InsertMolecules::optionsFinished()
                                          "together with an existing configuration (-f)."));
     }
 
-    snew(top_, 1);
     if (!inputConfFile_.empty())
     {
-        readConformation(inputConfFile_.c_str(), top_, &x_, nullptr,
-                         &ePBC_, box_, "solute");
-        if (top_->natoms == 0)
+        fprintf(stderr, "Reading solute configuration\n");
+        topInfo_.fillFromInputFile(inputConfFile_);
+        if (topInfo_.mtop()->natoms == 0)
         {
             fprintf(stderr, "Note: no atoms in %s\n", inputConfFile_.c_str());
         }
@@ -522,16 +505,29 @@ void InsertMolecules::optionsFinished()
 
 int InsertMolecules::run()
 {
+    const char       *outputTitle = topInfo_.name();
+    std::vector<RVec> xOutput;
+    matrix            box = {{ 0 }};
+    if (topInfo_.hasTopology())
+    {
+        xOutput = copyOf(topInfo_.x());
+        topInfo_.getBox(box);
+    }
+    else
+    {
+        xOutput.resize(topInfo_.mtop()->natoms);
+    }
+    auto          atomsSolute = topInfo_.copyAtoms();
     std::set<int> removableAtoms;
     if (replaceSel_.isValid())
     {
         t_pbc       pbc;
-        set_pbc(&pbc, ePBC_, box_);
+        set_pbc(&pbc, topInfo_.ePBC(), box);
         t_trxframe *fr;
         snew(fr, 1);
-        fr->natoms = x_.size();
+        fr->natoms = topInfo_.mtop()->natoms;
         fr->bX     = TRUE;
-        fr->x      = as_rvec_array(x_.data());
+        fr->x      = as_rvec_array(xOutput.data());
         selections_.evaluate(fr, &pbc);
         sfree(fr);
         removableAtoms.insert(replaceSel_.atomIndices().begin(),
@@ -541,74 +537,78 @@ int InsertMolecules::run()
         // individual atoms.
     }
 
+    int ePBCForOutput = topInfo_.ePBC();
     if (bBox_)
     {
-        ePBC_ = epbcXYZ;
-        clear_mat(box_);
-        box_[XX][XX] = newBox_[XX];
-        box_[YY][YY] = newBox_[YY];
-        box_[ZZ][ZZ] = newBox_[ZZ];
+        ePBCForOutput = epbcXYZ;
+        clear_mat(box);
+        box[XX][XX] = newBox_[XX];
+        box[YY][YY] = newBox_[YY];
+        box[ZZ][ZZ] = newBox_[ZZ];
     }
-    if (det(box_) == 0)
+    if (det(box) == 0)
     {
         gmx_fatal(FARGS, "Undefined solute box.\nCreate one with gmx editconf "
                   "or give explicit -box command line option");
     }
 
-    t_topology        *top_insrt;
-    std::vector<RVec>  x_insrt;
-    snew(top_insrt, 1);
+    fprintf(stderr, "Reading molecule configuration\n");
+    TopologyInformation      topInfoForInsertedMolecule;
+    topInfoForInsertedMolecule.fillFromInputFile(insertConfFile_);
+    auto                     atomsInserted = topInfoForInsertedMolecule.atoms();
+    std::vector<RVec>        xInserted     = copyOf(topInfoForInsertedMolecule.x());
+
+    if (topInfoForInsertedMolecule.mtop()->natoms == 0)
     {
-        int         ePBC_dummy;
-        matrix      box_dummy;
-        readConformation(insertConfFile_.c_str(), top_insrt, &x_insrt,
-                         nullptr, &ePBC_dummy, box_dummy, "molecule");
-        if (top_insrt->atoms.nr == 0)
-        {
-            gmx_fatal(FARGS, "No molecule in %s, please check your input",
-                      insertConfFile_.c_str());
-        }
-        if (top_->name == nullptr)
-        {
-            top_->name = top_insrt->name;
-        }
-        if (positionFile_.empty())
-        {
-            center_molecule(&x_insrt);
-        }
+        gmx_fatal(FARGS, "No molecule in %s, please check your input",
+                  insertConfFile_.c_str());
+    }
+    if (outputTitle == nullptr)
+    {
+        outputTitle = topInfoForInsertedMolecule.name();
+    }
+    if (positionFile_.empty())
+    {
+        center_molecule(xInserted);
     }
 
-    // TODO: Adapt to use mtop throughout.
-    t_atoms atoms = gmx_mtop_global_atoms(top_);
-
+    auto              symtabInserted = duplicateSymtab(&topInfo_.mtop()->symtab);
+    const sfree_guard symtabInsertedGuard(symtabInserted);
     /* add nmol_ins molecules of atoms_ins
        in random orientation at random place */
     insert_mols(nmolIns_, nmolTry_, seed_, defaultDistance_, scaleFactor_,
-                &atoms, &top_->symtab, &x_, removableAtoms, top_insrt->atoms, x_insrt,
-                ePBC_, box_, positionFile_, deltaR_, enumRot_);
+                atomsSolute.get(), symtabInserted, &xOutput, removableAtoms, *atomsInserted, xInserted,
+                ePBCForOutput, box, positionFile_, deltaR_, enumRot_);
 
     /* write new configuration to file confout */
     fprintf(stderr, "Writing generated configuration to %s\n",
             outputConfFile_.c_str());
-    write_sto_conf(outputConfFile_.c_str(), *top_->name, &atoms,
-                   as_rvec_array(x_.data()), nullptr, ePBC_, box_);
+    write_sto_conf(outputConfFile_.c_str(), outputTitle, atomsSolute.get(),
+                   as_rvec_array(xOutput.data()), nullptr, ePBCForOutput, box);
 
     /* print size of generated configuration */
     fprintf(stderr, "\nOutput configuration contains %d atoms in %d residues\n",
-            atoms.nr, atoms.nres);
-
-    done_atom(&atoms);
-    done_top(top_insrt);
-    sfree(top_insrt);
-
+            atomsSolute->nr, atomsSolute->nres);
+    done_symtab(symtabInserted);
     return 0;
 }
 
 }   // namespace
 
-const char InsertMoleculesInfo::name[]             = "insert-molecules";
-const char InsertMoleculesInfo::shortDescription[] =
-    "Insert molecules into existing vacancies";
+
+const char* InsertMoleculesInfo::name()
+{
+    static const char* name = "insert-molecules";
+    return name;
+}
+
+const char* InsertMoleculesInfo::shortDescription()
+{
+    static const char* shortDescription =
+        "Insert molecules into existing vacancies";
+    return shortDescription;
+}
+
 ICommandLineOptionsModulePointer InsertMoleculesInfo::create()
 {
     return ICommandLineOptionsModulePointer(new InsertMolecules());

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -107,6 +107,7 @@ if(REGRESSIONTEST_PATH)
     # gmxtests target builds all binaries required for running gmxtest
     add_custom_target(gmxtests DEPENDS gmx)
     add_dependencies(run-ctest gmxtests)
+    add_dependencies(run-ctest-nophys gmxtests)
 
     if(GMX_DOUBLE)
         list(APPEND ARGS -double)
@@ -166,7 +167,7 @@ if(REGRESSIONTEST_PATH)
     endif()
 
     #currently not testing tools because they don't contain any useful tests
-    foreach(subtest simple complex kernel freeenergy pdb2gmx rotation)
+    foreach(subtest simple complex kernel freeenergy pdb2gmx rotation essentialdynamics)
         add_test(NAME regressiontests/${subtest}
             #windows requires the command to be perl and not the script
             COMMAND perl "${REGRESSIONTEST_PATH}/gmxtest.pl" ${subtest} ${ARGS})
@@ -177,5 +178,195 @@ else()
     gmx_add_missing_tests_notice("Regression tests have not been run. If you want to run them from the build system, get the correct version of the regression tests package and set REGRESSIONTEST_PATH in CMake to point to it, or set REGRESSIONTEST_DOWNLOAD=ON.")
 endif()
 
+
+#
+# Physical validation tests are opt-in via -DGMX_PHYSICAL_VALIDATION=ON
+#
+if(GMX_PHYSICAL_VALIDATION)
+    # physical validation suite is distributed with the source
+    set(PHYSVALTEST_SOURCE_PATH
+            "${CMAKE_CURRENT_SOURCE_DIR}/physicalvalidation")
+    #       CACHE PATH "Source directory containing physical validation tests.")
+    if(NOT EXISTS ${PHYSVALTEST_SOURCE_PATH}/gmx_physicalvalidation.py)
+        message(FATAL_ERROR
+            "GMX_PHYSICAL_VALIDATION set, but physical validation script not found in ${PHYSVALTEST_SOURCE_PATH}.")
+    endif()
+
+    if(CMAKE_CROSSCOMPILING OR CMAKE_CONFIGURATION_TYPES OR GMX_BUILD_MDRUN_ONLY)
+        # The following comment is copied from regression tests:
+        #     Cross-compiling toolchains require us to compile both front-end and
+        #     back-end binaries to run gmxtest.pl.
+        #     Testing an mdrun-only builds require supporting binaries from a full build
+        # TODO: Look into the details of this.
+        # For now, turn it off - our python-gmx interface is probably not that stable for special cases anyway
+        message(WARNING
+                "With cross-compiling, multi-configuration generators (e.g. Visual Studio), or with mdrun-only builds,\
+                running physical validation tests from build system is not supported.\
+                Please run physicalvalidation.py directly.")
+        set(GMX_PHYSICAL_VALIDATION OFF CACHE BOOL
+                "With cross-compiling or multi-configuration generators, running physical validation tests from build\
+                system is not supported." FORCE)
+
+    else()
+        #
+        # Making sure gmx is built before running physical validation tests
+        #
+        add_dependencies(run-ctest-phys gmx)
+        add_dependencies(run-ctest gmx)
+
+        #
+        # Determine arguments passed to physicalvalidation.py
+        #
+        set(PARGS "")
+        list(APPEND PARGS --wd ${CMAKE_CURRENT_BINARY_DIR}/physicalvalidation)
+        list(APPEND PARGS --bindir ${CMAKE_BINARY_DIR}/bin)
+
+        if(GMX_LIB_MPI AND NOT MPIEXEC) # find_program failed
+            message(WARNING
+                "Please set MPIEXEC. Otherwise mpirun is assumed for running tests.")
+        endif()
+        if(GMX_LIB_MPI)
+            # define number of processors in analogy to regression tests?
+            if(MPIEXEC)
+                list(APPEND ARGS --mpicmd ${MPIEXEC})
+            else()
+                list(APPEND ARGS --mpicmd mpirun)
+            endif()
+        endif()
+        if(GMX_LIB_MPI)
+            message(FATAL_ERROR
+                "Physical validation using MPI not supported.")
+        endif()
+
+        if(GMX_BINARY_SUFFIX)
+            list(APPEND PARGS --suffix ${GMX_BINARY_SUFFIX})
+        endif()
+
+        #
+        # Give possibility to add args via cache
+        #
+        set(PHYSVALTEST_EXTRA_ARGS "" CACHE STRING
+            "Extra arguments passed to phystest")
+        mark_as_advanced(PHYSVALTEST_EXTRA_ARGS)
+        list(APPEND PARGS ${PHYSVALTEST_EXTRA_ARGS})
+
+        #
+        # The following lines are directly copied from regression tests.
+        # They seem to be applicable to physical validation tests as well.
+        #
+        if(GMX_NATIVE_WINDOWS)
+            set(PATH_SEPARATOR "\\;")
+            #replacing \ with / shouldn't be neccessary. But otherwise "..\bin\;c:\.."
+            #gets turned into "...\bin\\c:\.." don't know why and don't have a better
+            #workaround. This workaround doesn't hurt.
+            string(REPLACE "\\" "/" PATH "$ENV{PATH}")
+            #protect ; (don't treat as list)
+            string(REPLACE ";" "\\;" PATH "${PATH}")
+        else()
+            set(PATH_SEPARATOR ":")
+            set(PATH "$ENV{PATH}")
+        endif()
+
+        foreach(FOLDER bin lib) #lib folders might be needed for
+                                #e.g. DLLs. For GMX paths native ("\") is needed for GMXLIB detection
+            file(TO_NATIVE_PATH "${CMAKE_BINARY_DIR}/${FOLDER}" DIR)
+            set(PATH "${DIR}${PATH_SEPARATOR}${PATH}")
+        endforeach()
+        #
+        # End copied from regression tests.
+        #
+
+        #
+        # TODO: Switch to python >= 3.3. For now, use 2.7 for compatibility with rest of build system.
+        #
+        # ${PYTHON_EXECUTABLE} can only be set for one version per build system.
+        # Currently, the following files set 2.7 explicitly:
+        # * cmake/CheckTarget.cmake
+        # * docs/CMakeList.txt
+        # Parts of the documentation rely on python scripts.
+        # These need to be ported to be able to make the move to python 3.
+        #
+        if (NOT PYTHON_EXECUTABLE)
+            message(FATAL_ERROR
+                    "Python not found. Physical validation relies on python >= 3.3 (python 2.7 supported, but\
+                    deprecated). Install python, set PYTHON_EXECUTABLE to the python location, or set\
+                    GMX_PHYSCIAL_VALIDATION=OFF to disable the physical validation tests.")
+        endif()
+        #
+        foreach(module numpy scipy pymbar) # add further modules if necessary
+            find_python_module(${module})
+            string(TOUPPER ${module} module_upper)
+            if(NOT PYTHONMODULE_${module_upper})
+                message(WARNING
+                        "Python module ${module} not found. Physical validation relies on ${module}. Make sure\
+                        ${module} can be found by PYTHON_EXECUTABLE, or set GMX_PHYSCIAL_VALIDATION=OFF to disable\
+                        the physical validation tests.")
+            endif()
+        endforeach()
+
+        #
+        # Hook in our own tests
+        # Read them from json file to make every system a separate test
+        #
+        if (GMX_DOUBLE)
+            set(PHYSVALTEST_JSON "${PHYSVALTEST_SOURCE_PATH}/systems_d.json")
+        else()
+            set(PHYSVALTEST_JSON "${PHYSVALTEST_SOURCE_PATH}/systems.json")
+        endif()
+        file(STRINGS "${PHYSVALTEST_JSON}" json)
+        string(REPLACE "\"" "" json ${json})
+        string(REPLACE "," "" json ${json})
+        string(REPLACE " " "" json ${json})
+        string(REPLACE ";" "<<>>" json ${json})
+        string(REPLACE "[" "" json ${json})
+        string(REPLACE "]" "" json ${json})
+        string(REPLACE "{" "" json ${json})
+        string(REPLACE "}" "" json ${json})
+        string(REPLACE "<<>>" ";" json ${json})
+        foreach(line ${json})
+            if("${line}" MATCHES "name:")
+                string(REPLACE "name:" "" testname ${line})
+                add_test(NAME physicalvalidationtests/${testname}
+                        COMMAND ${PYTHON_EXECUTABLE} "${PHYSVALTEST_SOURCE_PATH}/gmx_physicalvalidation.py" "${PHYSVALTEST_JSON}" -s ${testname} -a ${PARGS})
+                set_tests_properties(physicalvalidationtests/${testname} PROPERTIES
+                        ENVIRONMENT "PATH=${PATH}"
+                        LABELS "PhysicalValidationTest")
+            endif()
+        endforeach()
+
+        #
+        # Create prepare and run targets while all variables are set
+        # Will be referenced in CheckTarget.cmake
+        #
+        # "check-phys-prepare" prepares the systems needed for physical validation for external running
+        add_custom_target(check-phys-prepare
+                          COMMAND ${PYTHON_EXECUTABLE} "${PHYSVALTEST_SOURCE_PATH}/gmx_physicalvalidation.py" "${PHYSVALTEST_JSON}" -p ${PARGS}
+                          COMMENT "Preparing systems for physical validation"
+                          DEPENDS gmx)
+        # "run-physval-sims" prepares and runs the systems needed for physical validation
+        add_custom_target(run-physval-sims
+                          COMMAND ${PYTHON_EXECUTABLE} "${PHYSVALTEST_SOURCE_PATH}/gmx_physicalvalidation.py" "${PHYSVALTEST_JSON}" -r ${PARGS}
+                          COMMENT "Preparing and running systems for physical validation"
+                          DEPENDS gmx)
+    endif()
+else()
+    #
+    # Create dummy prepare and run targets
+    # Will be referenced in CheckTarget.cmake
+    #
+    # "check-phys-prepare" prepares the systems needed for physical validation for external running
+    add_custom_target(check-phys-prepare
+                      COMMAND ${CMAKE_COMMAND} -E echo "NOTE: You called the target `check-phys-prepare`, but ran cmake with\
+ `-DGMX_PHYSICAL_VALIDATION=OFF`. The physical validation tests are therefore unavailable,\
+ and this target is not doing anything."
+                      COMMENT "No physical validation" VERBATIM)
+    # "run-physval-sims" prepares and runs the systems needed for physical validation
+    add_custom_target(run-physval-sims
+                      COMMAND ${CMAKE_COMMAND} -E echo "NOTE: You called the target `run-physval-sims`, but ran cmake with\
+ `-DGMX_PHYSICAL_VALIDATION=OFF`. The physical validation tests are therefore unavailable,\
+ and this target is not doing anything."
+                      COMMENT "No physical validation" VERBATIM)
+endif()
+
 gmx_create_missing_tests_notice_target()
-include(CppCheck.cmake)
+

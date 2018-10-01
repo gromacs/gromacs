@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -197,6 +197,23 @@ TEST_F(TreeValueTransformTest, ObjectFromMultipleStrings)
                 builder->addValue<int>("b", gmx::fromString<int>(values[0]));
                 builder->addValue<int>("c", gmx::fromString<int>(values[1]));
             });
+
+    testTransform(input, transform);
+}
+
+TEST_F(TreeValueTransformTest, ScopedTransformRules)
+{
+    gmx::KeyValueTreeBuilder     builder;
+    builder.rootObject().addValue<std::string>("a", "1");
+    builder.rootObject().addValue<std::string>("b", "2");
+    gmx::KeyValueTreeObject      input = builder.build();
+
+    gmx::KeyValueTreeTransformer transform;
+    auto                         scope = transform.rules()->scopedTransform("/foo");
+    scope.rules()->addRule()
+        .from<std::string>("/a").to<int>("/i").transformWith(&gmx::fromStdString<int>);
+    scope.rules()->addRule()
+        .from<std::string>("/b").to<int>("/j").transformWith(&gmx::fromStdString<int>);
 
     testTransform(input, transform);
 }

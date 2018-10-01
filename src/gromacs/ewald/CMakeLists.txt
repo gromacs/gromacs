@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,8 +32,57 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB EWALD_SOURCES *.cpp)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${EWALD_SOURCES} PARENT_SCOPE)
+gmx_add_libgromacs_sources(
+    calculate-spline-moduli.cpp
+    ewald.cpp
+    ewald-utils.cpp
+    long-range-correction.cpp
+    pme.cpp
+    pme-gather.cpp
+    pme-grid.cpp
+    pme-load-balancing.cpp
+    pme-only.cpp
+    pme-pp.cpp
+    pme-redistribute.cpp
+    pme-solve.cpp
+    pme-spline-work.cpp
+    pme-spread.cpp
+    # Files that implement stubs
+    pme-gpu-program.cpp
+    )
+if (GMX_USE_CUDA)
+    gmx_add_libgromacs_sources(
+        # CUDA-specific sources
+        pme-gather.cu
+        pme-gpu-3dfft.cu
+        pme-solve.cu
+        pme-spread.cu
+        pme-gpu-program-impl.cu
+        # GPU-specific sources
+        pme-gpu.cpp
+        pme-gpu-internal.cpp
+        pme-gpu-timings.cpp
+        )
+    gmx_compile_cpp_as_cuda(
+        pme-gpu-internal.cpp
+        pme-gpu-timings.cpp
+        )
+elseif (GMX_USE_OPENCL)
+    gmx_add_libgromacs_sources(
+        # OpenCL-specific sources
+        pme-gpu-3dfft-ocl.cpp
+        pme-gpu-program-impl-ocl.cpp
+        # GPU-specific sources
+        pme-gpu.cpp
+        pme-gpu-internal.cpp
+        pme-gpu-timings.cpp
+        )
+else()
+    gmx_add_libgromacs_sources(
+        # Files that implement stubs
+        pme-gpu-program-impl.cpp
+        )
+endif()
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

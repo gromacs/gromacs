@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,10 +37,11 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include <stdio.h>
-#include <string.h>
+#include "hizzie.h"
 
 #include <cmath>
+#include <cstdio>
+#include <cstring>
 
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
@@ -69,7 +70,7 @@ static int in_strings(char *key, int nstr, const char **str)
     return -1;
 }
 
-static gmx_bool hbond(rvec x[], int i, int j, real distance)
+static bool hbond(rvec x[], int i, int j, real distance)
 {
     real   tol = distance*distance;
     rvec   tmp;
@@ -80,7 +81,7 @@ static gmx_bool hbond(rvec x[], int i, int j, real distance)
 }
 
 static void chk_allhb(t_atoms *pdba, rvec x[], t_blocka *hb,
-                      gmx_bool donor[], gmx_bool accept[], real dist)
+                      const bool donor[], const bool accept[], real dist)
 {
     int i, j, k, ii, natom;
 
@@ -119,32 +120,11 @@ static void chk_allhb(t_atoms *pdba, rvec x[], t_blocka *hb,
     hb->nra = k;
 }
 
-static void pr_hbonds(FILE *fp, t_blocka *hb, t_atoms *pdba)
+static bool chk_hbonds(int i, t_atoms *pdba, rvec x[],
+                       const bool ad[], bool hbond[], rvec xh,
+                       real angle, real dist)
 {
-    int i, j, k, j0, j1;
-
-    fprintf(fp, "Dumping all hydrogen bonds!\n");
-    for (i = 0; (i < hb->nr); i++)
-    {
-        j0 = hb->index[i];
-        j1 = hb->index[i+1];
-        for (j = j0; (j < j1); j++)
-        {
-            k = hb->a[j];
-            fprintf(fp, "%5s%4d%5s - %5s%4d%5s\n",
-                    *pdba->resinfo[pdba->atom[i].resind].name,
-                    pdba->resinfo[pdba->atom[i].resind].nr, *pdba->atomname[i],
-                    *pdba->resinfo[pdba->atom[k].resind].name,
-                    pdba->resinfo[pdba->atom[k].resind].nr, *pdba->atomname[k]);
-        }
-    }
-}
-
-static gmx_bool chk_hbonds(int i, t_atoms *pdba, rvec x[],
-                           gmx_bool ad[], gmx_bool hbond[], rvec xh,
-                           real angle, real dist)
-{
-    gmx_bool bHB;
+    bool     bHB;
     int      j, aj, ri, natom;
     real     d2, dist2, a;
     rvec     nh, oh;
@@ -170,16 +150,6 @@ static gmx_bool chk_hbonds(int i, t_atoms *pdba, rvec x[],
                 a  = RAD2DEG * acos(cos_angle(nh, oh));
                 if ((d2 < dist2) && (a > angle))
                 {
-                    if (debug)
-                    {
-                        fprintf(debug,
-                                "HBOND between %s%d-%s and %s%d-%s is %g nm, %g deg\n",
-                                *pdba->resinfo[pdba->atom[i].resind].name,
-                                pdba->resinfo[pdba->atom[i].resind].nr, *pdba->atomname[i],
-                                *pdba->resinfo[pdba->atom[aj].resind].name,
-                                pdba->resinfo[pdba->atom[aj].resind].nr, *pdba->atomname[aj],
-                                std::sqrt(d2), a);
-                    }
                     hbond[i] = TRUE;
                     bHB      = TRUE;
                 }
@@ -214,9 +184,9 @@ void set_histp(t_atoms *pdba, rvec *x, real angle, real dist)
     };
 #define NPD asize(prot_don)
 
-    gmx_bool *donor, *acceptor;
-    gmx_bool *hbond;
-    gmx_bool  bHDd, bHEd;
+    bool     *donor, *acceptor;
+    bool     *hbond;
+    bool      bHDd, bHEd;
     rvec      xh1, xh2;
     int       natom;
     int       i, j, nd, na, hisind, type = -1;
@@ -264,10 +234,6 @@ void set_histp(t_atoms *pdba, rvec *x, real angle, real dist)
     }
     fprintf(stderr, " %d donors and %d acceptors were found.\n", nd, na);
     chk_allhb(pdba, x, hb, donor, acceptor, dist);
-    if (debug)
-    {
-        pr_hbonds(debug, hb, pdba);
-    }
     fprintf(stderr, "There are %d hydrogen bonds\n", hb->nra);
 
     /* Now do the HIS stuff */

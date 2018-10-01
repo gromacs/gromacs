@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,14 +79,14 @@
 #error "No VdW type defined"
 #endif
 
-static void
+void
 #ifndef CALC_ENERGIES
-NBK_FUNC_NAME(_F)
+NBK_FUNC_NAME(_F)     // NOLINT(misc-definitions-in-headers)
 #else
 #ifndef ENERGY_GROUPS
-NBK_FUNC_NAME(_VF)
+NBK_FUNC_NAME(_VF)    // NOLINT(misc-definitions-in-headers)
 #else
-NBK_FUNC_NAME(_VgrpF)
+NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 #endif
 #endif
 #undef NBK_FUNC_NAME
@@ -95,11 +95,8 @@ NBK_FUNC_NAME(_VgrpF)
  const nbnxn_atomdata_t     *nbat,
  const interaction_const_t  *ic,
  rvec                       *shift_vec,
- real                       *f
-#ifdef CALC_SHIFTFORCES
- ,
- real                       *fshift
-#endif
+ real                       *f,
+ real gmx_unused            *fshift
 #ifdef CALC_ENERGIES
  ,
  real                       *Vvdw,
@@ -252,9 +249,9 @@ NBK_FUNC_NAME(_VgrpF)
          * inner LJ + C      for full-LJ + C
          * inner LJ          for full-LJ + no-C / half-LJ + no-C
          */
-        do_LJ   = (nbln->shift & NBNXN_CI_DO_LJ(0));
-        do_coul = (nbln->shift & NBNXN_CI_DO_COUL(0));
-        half_LJ = ((nbln->shift & NBNXN_CI_HALF_LJ(0)) || !do_LJ) && do_coul;
+        do_LJ   = ((nbln->shift & NBNXN_CI_DO_LJ(0)) != 0);
+        do_coul = ((nbln->shift & NBNXN_CI_DO_COUL(0)) != 0);
+        half_LJ = (((nbln->shift & NBNXN_CI_HALF_LJ(0)) != 0) || !do_LJ) && do_coul;
 #ifdef CALC_ENERGIES
 
 #ifdef LJ_EWALD

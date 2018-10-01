@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,10 +39,16 @@
 
 #include <stdio.h>
 
+#include <array>
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
+<<<<<<< HEAD
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -156,6 +162,8 @@ enum {
 
 #define IS_RESTRAINT_TYPE(ifunc) (((ifunc == F_POSRES) || (ifunc == F_FBPOSRES) || (ifunc == F_DISRES) || (ifunc == F_RESTRBONDS) || (ifunc == F_DISRESVIOL) || (ifunc == F_ORIRES) || (ifunc == F_ORIRESDEV) || (ifunc == F_ANGRES) || (ifunc == F_ANGRESZ) || (ifunc == F_DIHRES)))
 
+=======
+>>>>>>> master
 typedef union t_iparams
 {
     /* Some parameters have A and B values for free energy calculations.
@@ -273,9 +281,6 @@ typedef union t_iparams
         int  table; real kA; real kB;
     } tab;
     struct {
-        real sar, st, pi, gbr, bmlt;
-    } gb;
-    struct {
         int cmapA, cmapB;
     } cmap;
     struct {
@@ -285,22 +290,59 @@ typedef union t_iparams
 
 typedef int t_functype;
 
-/*
+/* List of listed interactions, see description further down.
+ *
+ * TODO: Consider storing the function type as well.
+ * TODO: Consider providing per interaction access.
+ */
+struct InteractionList
+{
+    /* Returns the total number of elements in iatoms */
+    int size() const
+    {
+        return iatoms.size();
+    }
+
+    /* List of interactions, see explanation further down */
+    std::vector<int> iatoms;
+};
+
+/* List of interaction lists, one list for each interaction type
+ *
+ * TODO: Consider only including entries in use instead of all F_NRE
+ */
+typedef std::array<InteractionList, F_NRE> InteractionLists;
+
+/* Deprecated list of listed interactions.
+ *
  * The nonperturbed/perturbed interactions are now separated (sorted) in the
  * ilist, such that the first 0..(nr_nonperturbed-1) ones are exactly that, and
  * the remaining ones from nr_nonperturbed..(nr-1) are perturbed bonded
  * interactions.
  */
-typedef struct t_ilist
+struct t_ilist
 {
+    /* Returns the total number of elements in iatoms */
+    int size() const
+    {
+        return nr;
+    }
+
     int      nr;
     int      nr_nonperturbed;
     t_iatom *iatoms;
     int      nalloc;
-} t_ilist;
+};
+
+/* TODO: Replace t_ilist in gmx_localtop_t by InteractionList.
+ *       The nr_nonperturbed functionality needs to be ported.
+ *       Remove t_topology.
+ *       Remove t_ilist and remove templating on list type
+ *       in mshift.cpp, constr.cpp, vsite.cpp and domdec_topology.cpp.
+ */
 
 /*
- * The struct t_ilist defines a list of atoms with their interactions.
+ * The structs InteractionList and t_ilist defines a list of atoms with their interactions.
  * General field description:
  *   int nr
  *      the size (nr elements) of the interactions array (iatoms[]).
@@ -318,30 +360,79 @@ typedef struct t_ilist
  *      identifier is an index in a params[] and functype[] array.
  */
 
-typedef struct
+/*! \brief Type for returning a list of InteractionList references
+ *
+ * TODO: Remove when the function type is made part of InteractionList
+ */
+struct InteractionListHandle
 {
-    real *cmap; /* Has length 4*grid_spacing*grid_spacing, */
+    const int               functionType; //!< The function type
+    const std::vector<int> &iatoms;       //!< Reference to interaction list
+};
+
+/*! \brief Returns a list of all non-empty InteractionList entries with any of the interaction flags in \p flags set
+ *
+ * \param[in] ilists  Set of interaction lists
+ * \param[in] flags   Bit mask with one or more IF_... bits set
+ */
+static inline const std::vector<InteractionListHandle>
+extractILists(const InteractionLists &ilists,
+              int                     flags)
+{
+    std::vector<InteractionListHandle> handles;
+    for (size_t ftype = 0; ftype < ilists.size(); ftype++)
+    {
+        if ((interaction_function[ftype].flags & flags) && ilists[ftype].size() > 0)
+        {
+            handles.push_back({ static_cast<int>(ftype), ilists[ftype].iatoms });
+        }
+    }
+    return handles;
+}
+
+/*! \brief Returns the stride for the iatoms array in \p ilistHandle
+ *
+ * \param[in] ilistHandle  The ilist to return the stride for
+ */
+static inline int ilistStride(const InteractionListHandle &ilistHandle)
+{
+    return 1 + NRAL(ilistHandle.functionType);
+}
+
+struct gmx_cmapdata_t
+{
+    std::vector<real> cmap; /* Has length 4*grid_spacing*grid_spacing, */
     /* there are 4 entries for each cmap type (V,dVdx,dVdy,d2dVdxdy) */
-} gmx_cmapdata_t;
+};
 
-typedef struct gmx_cmap_t
+struct gmx_cmap_t
 {
-    int             ngrid;        /* Number of allocated cmap (cmapdata_t ) grids */
-    int             grid_spacing; /* Grid spacing */
-    gmx_cmapdata_t *cmapdata;     /* Pointer to grid with actual, pre-interpolated data */
-} gmx_cmap_t;
+    int                         grid_spacing = 0; /* Grid spacing */
+    std::vector<gmx_cmapdata_t> cmapdata;         /* Lists of grids with actual, pre-interpolated data */
+};
 
 
-typedef struct gmx_ffparams_t
+/* Struct that holds all force field parameters for the simulated system */
+struct gmx_ffparams_t
 {
-    int         ntypes;
-    int         atnr;
-    t_functype *functype;
-    t_iparams  *iparams;
-    double      reppow;    /* The repulsion power for VdW: C12*r^-reppow   */
-    real        fudgeQQ;   /* The scaling factor for Coulomb 1-4: f*q1*q2  */
-    gmx_cmap_t  cmap_grid; /* The dihedral correction maps                 */
-} gmx_ffparams_t;
+    /* Returns the number of function types, which matches the number of elements in iparams */
+    int numTypes() const
+    {
+        GMX_ASSERT(iparams.size() == functype.size(), "Parameters and function types go together");
+
+        return functype.size();
+    }
+
+    /* TODO: Consider merging functype and iparams, either by storing
+     *       the functype in t_iparams or by putting both in a single class.
+     */
+    int                     atnr = 0;          /* The number of non-bonded atom types */
+    std::vector<t_functype> functype;          /* The function type per type */
+    std::vector<t_iparams>  iparams;           /* Force field parameters per type */
+    double                  reppow  = 0.0;     /* The repulsion power for VdW: C12*r^-reppow   */
+    real                    fudgeQQ = 0._real; /* The scaling factor for Coulomb 1-4: f*q1*q2  */
+    gmx_cmap_t              cmap_grid;         /* The dihedral correction maps                 */
+};
 
 enum {
     ilsortUNKNOWN, ilsortNO_FE, ilsortFE_UNSORTED, ilsortFE_SORTED
@@ -354,15 +445,12 @@ typedef struct t_idef
     t_functype *functype;
     t_iparams  *iparams;
     real        fudgeQQ;
-    gmx_cmap_t  cmap_grid;
+    gmx_cmap_t *cmap_grid;
     t_iparams  *iparams_posres, *iparams_fbposres;
     int         iparams_posres_nalloc, iparams_fbposres_nalloc;
 
     t_ilist     il[F_NRE];
     int         ilsort;
-    int         nthreads;
-    int        *il_thread_division;
-    int         il_thread_division_nalloc;
 } t_idef;
 
 /*
@@ -397,20 +485,11 @@ typedef struct t_idef
  *      such as LJ and COUL will have 0 entries.
  *   int ilsort
  *      The state of the sorting of il, values are provided above.
- *   int nthreads
- *      The number of threads used to set il_thread_division.
- *   int *il_thread_division
- *      The division of the normal bonded interactions of threads.
- *      il_thread_division[ftype*(nthreads+1)+t] contains an index
- *      into il[ftype].iatoms; thread th operates on t=th to t=th+1.
- *   int il_thread_division_nalloc
- *      The allocated size of il_thread_division,
- *      should be at least F_NRE*(nthreads+1).
  */
 
 void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams);
 void pr_ilist(FILE *fp, int indent, const char *title,
-              const t_functype *functype, const t_ilist *ilist,
+              const t_functype *functype, const InteractionList &ilist,
               gmx_bool bShowNumbers,
               gmx_bool bShowParameters, const t_iparams *iparams);
 void pr_ffparams(FILE *fp, int indent, const char *title,
@@ -418,8 +497,18 @@ void pr_ffparams(FILE *fp, int indent, const char *title,
 void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef,
              gmx_bool bShowNumbers, gmx_bool bShowParameters);
 
-#ifdef __cplusplus
-}
-#endif
+/*! \brief
+ * Properly initialize idef struct.
+ *
+ * \param[in] idef Pointer to idef struct to initialize.
+ */
+void init_idef(t_idef *idef);
+
+/*! \brief
+ * Properly clean up idef struct.
+ *
+ * \param[in] idef Pointer to idef struct to clean up.
+ */
+void done_idef(t_idef *idef);
 
 #endif

@@ -46,14 +46,6 @@
 
 #include "visibility.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-#if 0
-} /* Avoids screwing up auto-indentation */
-#endif
-
 /** Execute function once over comm
 
     Executes a given function only once per collective call over comm.
@@ -120,9 +112,5 @@ typedef struct
 /** Allocate data structure for asynchronous reduce. */
 TMPI_EXPORT
 tMPI_Reduce_req *tMPI_Reduce_req_alloc(tMPI_Comm comm);
-
-#ifdef __cplusplus
-} /* closing extern "C" */
-#endif
 
 #endif /* TMPI_COLLECTIVE_H_ */

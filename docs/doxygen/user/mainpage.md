@@ -65,6 +65,9 @@ give an overview of some of the topics that are documented:
  - \subpage page_simd <br/>
    Documentation about the new SIMD module that makes it possible to write
    highly accelerated CPU code that is still portable.
+ - \subpage page_awh <br/>
+   Documentation about the accelerated weight histogram (AWH) method,
+   which is used for accelerating sampling along reaction coordinates.
  - \subpage page_mdmodules <br/>
    Documentation for work-in-progress modularization of parts of mdrun, that
    should make it easier to implement additional features as add-ons on top of

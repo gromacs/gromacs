@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,6 +51,7 @@
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/analysisdata/modules/plot.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
@@ -271,17 +272,17 @@ class Angle : public TrajectoryAnalysisModule
     public:
         Angle();
 
-        virtual void initOptions(IOptionsContainer          *options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation        &top);
+        void initOptions(IOptionsContainer          *options,
+                         TrajectoryAnalysisSettings *settings) override;
+        void optionsFinished(TrajectoryAnalysisSettings *settings) override;
+        void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                          const TopologyInformation        &top) override;
 
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+        void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                          TrajectoryAnalysisModuleData *pdata) override;
 
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
+        void finishAnalysis(int nframes) override;
+        void writeOutput() override;
 
     private:
         void initFromSelections(const SelectionList &sel1,
@@ -318,9 +319,9 @@ Angle::Angle()
       g1type_(Group1Type_Angle), g2type_(Group2Type_None),
       binWidth_(1.0), natoms1_(0), natoms2_(0)
 {
-    averageModule_.reset(new AnalysisDataFrameAverageModule());
+    averageModule_ = compat::make_unique<AnalysisDataFrameAverageModule>();
     angles_.addModule(averageModule_);
-    histogramModule_.reset(new AnalysisDataSimpleHistogramModule());
+    histogramModule_ = compat::make_unique<AnalysisDataSimpleHistogramModule>();
     angles_.addModule(histogramModule_);
 
     registerAnalysisDataset(&angles_, "angle");
@@ -648,7 +649,7 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
 
 //! Helper method to calculate a vector from two or three positions.
-static void
+void
 calc_vec(int natoms, rvec x[], t_pbc *pbc, rvec xout, rvec cout)
 {
     switch (natoms)
@@ -766,20 +767,14 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     rvec dx[3];
                     if (pbc)
                     {
-                        // cppcheck-suppress uninitvar
                         pbc_dx(pbc, x[0], x[1], dx[0]);
-                        // cppcheck-suppress uninitvar
                         pbc_dx(pbc, x[2], x[1], dx[1]);
-                        // cppcheck-suppress uninitvar
                         pbc_dx(pbc, x[2], x[3], dx[2]);
                     }
                     else
                     {
-                        // cppcheck-suppress uninitvar
                         rvec_sub(x[0], x[1], dx[0]);
-                        // cppcheck-suppress uninitvar
                         rvec_sub(x[2], x[1], dx[1]);
-                        // cppcheck-suppress uninitvar
                         rvec_sub(x[2], x[3], dx[2]);
                     }
                     cprod(dx[0], dx[1], v1);

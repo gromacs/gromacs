@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -55,6 +55,8 @@
 #         GROMACS     5.0    0
 #         GROMACS     5.1    1
 #         GROMACS     2016   2
+#         GROMACS     2018   3
+#         GROMACS     2019   4
 #   LIBRARY_SOVERSION_MINOR so minor version for the built libraries.
 #       Should be increased for each release that changes only the implementation.
 #       In GROMACS, the typical policy is to increase it for each patch version
@@ -147,33 +149,33 @@
 # header) can provide useful information for, e.g., diagnosing bug reports and
 # identifying what exact version the user was using.  The following formats are
 # possible (with examples given for a particular version):
-#   4.6.1       Plain version number without any suffix signifies a build from
-#               a released source tarball.
-#   4.6.1-dev   '-dev' suffix signifies all other builds. If there is no other
-#               information, either the user built the code outside any git
-#               repository, or disabled the version info generation.
-#   4.6.1-dev-YYYYMMDD-1234abc
-#               The YYYYMMDD part shows the commit date (not author date) of
-#               the HEAD commit from which the code was built.  The abbreviated
-#               hash is the hash of that commit (the full hash is available in
-#               'gmx -version' output).
-#               If the HEAD hash is not identified as coming from branches in
-#               "authoritative" GROMACS repositories, 'gmx -version' will show
-#               the nearest ancestor commit that is identified as such (but see
-#               the '-local' and '-unknown' suffixes below).
-#   4.6.1-dev-YYYYMMDD-1234abc-dirty
-#               As above, but there were local modifications in the source tree
-#               when the code was built.
-#   4.6.1-dev-YYYYMMDD-1234abc-unknown
-#               As above, but there were no remotes in the repository that
-#               could be identified as "authoritative" GROMACS repositories.
-#               This happens if the code is not cloned from git.gromacs.org
-#               or gerrit.gromacs.org.
-#   4.6.1-dev-YYYYMMDD-1234abc-local
-#               As above, but there were no commits in the recent history of
-#               the branch that could be identified as coming from
-#               "authoritative" GROMACS repositories.  This should be
-#               relatively rare.
+#   2018.1       Plain version number without any suffix signifies a build from
+#                a released source tarball.
+#   2018.1-dev   '-dev' suffix signifies all other builds. If there is no other
+#                information, either the user built the code outside any git
+#                repository, or disabled the version info generation.
+#   2018.1-dev-YYYYMMDD-1234abc
+#                The YYYYMMDD part shows the commit date (not author date) of
+#                the HEAD commit from which the code was built.  The abbreviated
+#                hash is the hash of that commit (the full hash is available in
+#                'gmx -version' output).
+#                If the HEAD hash is not identified as coming from branches in
+#                "authoritative" GROMACS repositories, 'gmx -version' will show
+#                the nearest ancestor commit that is identified as such (but see
+#                the '-local' and '-unknown' suffixes below).
+#   2018.1-dev-YYYYMMDD-1234abc-dirty
+#                As above, but there were local modifications in the source tree
+#                when the code was built.
+#   2018.1-dev-YYYYMMDD-1234abc-unknown
+#                As above, but there were no remotes in the repository that
+#                could be identified as "authoritative" GROMACS repositories.
+#                This happens if the code is not cloned from git.gromacs.org
+#                or gerrit.gromacs.org.
+#   2018.1-dev-YYYYMMDD-1234abc-local
+#                As above, but there were no commits in the recent history of
+#                the branch that could be identified as coming from
+#                "authoritative" GROMACS repositories.  This should be
+#                relatively rare.
 #
 # Other variables set here are not intended for use outside this file.
 # The scripts gmxGenerateVersionInfo.cmake and gmxConfigureVersionInfo.cmake
@@ -184,7 +186,7 @@
 
 # The GROMACS convention is that these are the version number of the next
 # release that is going to be made from this branch.
-set(GMX_VERSION_MAJOR 2017)
+set(GMX_VERSION_MAJOR 2019)
 set(GMX_VERSION_PATCH 0)
 # The suffix, on the other hand, is used mainly for betas and release
 # candidates, where it signifies the most recent such release from
@@ -201,7 +203,7 @@ set(GMX_VERSION_SUFFIX "")
 # here. The important thing is to minimize the chance of third-party
 # code being able to dynamically link with a version of libgromacs
 # that might not work.
-set(LIBRARY_SOVERSION_MAJOR 3)
+set(LIBRARY_SOVERSION_MAJOR 4)
 set(LIBRARY_SOVERSION_MINOR 0)
 set(LIBRARY_VERSION ${LIBRARY_SOVERSION_MAJOR}.${LIBRARY_SOVERSION_MINOR}.0)
 
@@ -224,8 +226,13 @@ if (NOT SOURCE_IS_SOURCE_DISTRIBUTION AND
 endif()
 
 set(REGRESSIONTEST_VERSION "${GMX_VERSION_STRING}")
-set(REGRESSIONTEST_BRANCH "refs/heads/master")
-set(REGRESSIONTEST_MD5SUM "366438549270d005fa6def6e56ca0256")
+set(REGRESSIONTEST_BRANCH "refs/heads/release-2018")
+# Run the regressiontests packaging job with the correct pakage
+# version string, and the release box checked, in order to have it
+# build the regressiontests tarball with all the right naming. The
+# naming affects the md5sum that has to go here, and if it isn't right
+# release workflow will report a failure.
+set(REGRESSIONTEST_MD5SUM "368aabf0eb4e6fbc9abb7961475f66de" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
 
 math(EXPR GMX_VERSION_NUMERIC
      "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_PATCH}")

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,49 +47,76 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdlib/updategroupscog.h"
+#include "gromacs/timing/cyclecounter.h"
 #include "gromacs/topology/block.h"
+
+struct t_commrec;
 
 /*! \cond INTERNAL */
 
-typedef struct
+#define DD_NLOAD_MAX 9
+
+struct BalanceRegion;
+
+struct gmx_domdec_ind_t
 {
     /* The numbers of charge groups to send and receive for each cell
      * that requires communication, the last entry contains the total
      * number of atoms that needs to be communicated.
      */
-    int  nsend[DD_MAXIZONE+2];
-    int  nrecv[DD_MAXIZONE+2];
+    int              nsend[DD_MAXIZONE+2];
+    int              nrecv[DD_MAXIZONE+2];
     /* The charge groups to send */
-    int *index;
-    int  nalloc;
+    std::vector<int> index;
     /* The atom range for non-in-place communication */
-    int  cell2at0[DD_MAXIZONE];
-    int  cell2at1[DD_MAXIZONE];
-} gmx_domdec_ind_t;
+    int              cell2at0[DD_MAXIZONE];
+    int              cell2at1[DD_MAXIZONE];
+};
 
-typedef struct
+struct gmx_domdec_comm_dim_t
 {
-    int               np;       /* Number of grid pulses in this dimension */
-    int               np_dlb;   /* For dlb, for use with edlbAUTO          */
-    gmx_domdec_ind_t *ind;      /* The indices to communicate, size np     */
-    int               np_nalloc;
-    gmx_bool          bInPlace; /* Can we communicate in place?            */
-} gmx_domdec_comm_dim_t;
+    /* Returns the number of grid pulses (the number of domains in the halo along this dimension) */
+    int numPulses() const
+    {
+        return ind.size();
+    }
 
-/*! \brief Struct for load balancing along a dim on the root rank of that dim */
-typedef struct
+    int                           np_dlb;         /* For dlb, for use with edlbAUTO          */
+    std::vector<gmx_domdec_ind_t> ind;            /* The indices to communicate, size np     */
+    bool                          receiveInPlace; /* Can we receive data in place?            */
+};
+
+/*! \brief Load balancing data along a dim used on the master rank of that dim */
+struct RowMaster
 {
-    gmx_bool *bCellMin;    /**< Temp. var.: is this cell size at the limit    */
-    real     *cell_f;      /**< State var.: cell boundaries, box relative     */
-    real     *old_cell_f;  /**< Temp. var.: old cell size                     */
-    real     *cell_f_max0; /**< State var.: max lower bound., incl. neighbors */
-    real     *cell_f_min1; /**< State var.: min upper bound., incl. neighbors */
-    real     *bound_min;   /**< Temp. var.: lower limit for cell boundary     */
-    real     *bound_max;   /**< Temp. var.: upper limit for cell boundary     */
-    gmx_bool  bLimited;    /**< State var.: is DLB limited in this row        */
-    real     *buf_ncd;     /**< Temp. var.                                    */
-} domdec_root_t;
+    struct Bounds
+    {
+        real cellFracLowerMax; /**< State var.: max lower bound., incl. neighbors */
+        real cellFracUpperMin; /**< State var.: min upper bound., incl. neighbors */
+        real boundMin;         /**< Temp. var.: lower limit for cell boundary */
+        real boundMax;         /**< Temp. var.: upper limit for cell boundary */
+    };
+
+    std::vector<bool>   isCellMin;    /**< Temp. var.: is this cell size at the limit */
+    std::vector<real>   cellFrac;     /**< State var.: cell boundaries, box relative */
+    std::vector<real>   oldCellFrac;  /**< Temp. var.: old cell size */
+    std::vector<Bounds> bounds;       /**< Cell bounds */
+    bool                dlbIsLimited; /**< State var.: is DLB limited in this row */
+    std::vector<real>   buf_ncd;      /**< Temp. var.  */
+};
+
+/*! \brief Struct for managing cell sizes with DLB along a dimension */
+struct DDCellsizesWithDlb
+{
+    /* Cell sizes for dynamic load balancing */
+    std::unique_ptr<RowMaster> rowMaster;    /**< Cell row root struct, only available on the first rank in a row */
+    std::vector<real>          fracRow;      /**< The cell sizes, in fractions, along a row, not available on the first rank in a row */
+    real                       fracLower;    /**< The lower corner, in fractions, in triclinic space */
+    real                       fracUpper;    /**< The upper corner, in fractions, in triclinic space */
+    real                       fracLowerMax; /**< The maximum lower corner among all our neighbors */
+    real                       fracUpperMin; /**< The minimum upper corner among all our neighbors */
+};
 
 /*! \brief Struct for compute load commuication
  *
@@ -109,6 +136,7 @@ typedef struct
     int    flags;     /**< Bit flags that tell if DLB was limited, per dimension */
 } domdec_load_t;
 
+/*! \brief Data needed to sort an atom to the desired location in the local state */
 typedef struct
 {
     int  nsc;     /**< Neighborsearch grid cell index */
@@ -116,51 +144,115 @@ typedef struct
     int  ind;     /**< Local atom/charge group index */
 } gmx_cgsort_t;
 
+/*! \brief Temporary buffers for sorting atoms */
 typedef struct
 {
-    gmx_cgsort_t *sort;             /**< Sorted array of indices */
-    gmx_cgsort_t *sort2;            /**< Array of stationary atom/charge group indices */
-    int           sort_nalloc;      /**< Number of elements in both arrays of indices */
-    gmx_cgsort_t *sort_new;         /**< Array of moved atom/charge group indices */
-    int           sort_new_nalloc;  /**< Number of elements in array of moved atom/charge group indices */
-    int          *ibuf;             /**< Integer buffer used for sorting */
-    int           ibuf_nalloc;      /**< Number of elements allocated in the buffer */
+    std::vector<gmx_cgsort_t> sorted;     /**< Sorted array of indices */
+    std::vector<gmx_cgsort_t> stationary; /**< Array of stationary atom/charge group indices */
+    std::vector<gmx_cgsort_t> moved;      /**< Array of moved atom/charge group indices */
+    std::vector<int>          intBuffer;  /**< Integer buffer for sorting */
 } gmx_domdec_sort_t;
 
-/*! \brief rvec array with allocation size, used for DD communication */
-typedef struct
+/*! \brief Manages atom ranges and order for the local state atom vectors */
+class DDAtomRanges
 {
-    rvec *v;      /**< The rvec array              */
-    int   nalloc; /**< The allocation size of \p v */
-} vec_rvec_t;
+    public:
+        /*! \brief The local state atom order
+         *
+         * This enum determines the order of the atoms in the local state.
+         * ddnatHOME and ddnatZONE should be first and second,
+         * the others can be ordered as wanted.
+         */
+        enum class Type : int
+        {
+            Home,        /**< The home atoms */
+            Zones,       /**< All zones in the eighth shell */
+            Vsites,      /**< Atoms communicated for virtual sites */
+            Constraints, /**< Atoms communicated for constraints */
+            Number       /**< Not a count, only present for convenience */
+        };
 
-/*! \brief The x-vector content order
+        /*! \brief Returns the start atom index for range \p rangeType */
+        int start(Type rangeType) const
+        {
+            if (rangeType == Type::Home)
+            {
+                return 0;
+            }
+            else
+            {
+                return end_[static_cast<int>(rangeType) - 1];
+            }
+        }
+
+        /*! \brief Returns the end atom index for range \p rangeType */
+        int end(Type rangeType) const
+        {
+            return end_[static_cast<int>(rangeType)];
+        }
+
+        /*! \brief Returns the number of home atoms */
+        int numHomeAtoms() const
+        {
+            return end_[static_cast<int>(Type::Home)];
+        }
+
+        /*! \brief Returns the total number of atoms */
+        int numAtomsTotal() const
+        {
+            return end_[static_cast<int>(Type::Number) - 1];
+        }
+
+        /*! \brief Sets the end index of range \p rangeType to \p end
+         *
+         * This should be called either with Type::Home or with a type
+         * that is larger than that passed in the previous call to setEnd.
+         * A release assertion for these conditions are present.
+         */
+        void setEnd(Type rangeType,
+                    int  end)
+        {
+            GMX_RELEASE_ASSERT(rangeType == Type::Home || rangeType > lastTypeSet_, "Can only set either home or a larger type than the last one");
+
+            for (int i = static_cast<int>(rangeType); i < static_cast<int>(Type::Number); i++)
+            {
+                end_[i] = end;
+            }
+
+            lastTypeSet_ = rangeType;
+        }
+
+    private:
+        /*! \brief The list of end atom indices */
+        std::array<int, static_cast<int>(Type::Number)> end_;
+        Type                                            lastTypeSet_ = Type::Number;
+};
+
+/*! \brief Enum of dynamic load balancing states
  *
- * This enum determines the order of the coordinates.
- * ddnatHOME and ddnatZONE should be first and second,
- * the others can be ordered as wanted.
+ * Allowed DLB states and transitions
+ * - intialization at startup:
+ *                             -> offUser ("-dlb no")
+ *                             -> onUser  ("-dlb yes")
+ *                             -> offCanTurnOn ("-dlb auto")
+ *
+ * - in automatic mode (i.e. initial state offCanTurnOn):
+ *   offCanTurnOn         -> onCanTurnOff
+ *   offCanTurnOn         -> offForever
+ *   offCanTurnOn         -> offTemporarilyLocked
+ *   offTemporarilyLocked -> offCanTurnOn
+ *   onCanTurnOff         -> offCanTurnOn
  */
-enum {
-    ddnatHOME, ddnatZONE, ddnatVSITE, ddnatCON, ddnatNR
+enum class DlbState
+{
+    offUser,              /**< DLB is permanently off per user request */
+    offForever,           /**< DLB is off due to a runtime condition (not supported or causes performance loss) and will never be turned on */
+    offCanTurnOn,         /**< DLB is off and will turn on on imbalance */
+    offTemporarilyLocked, /**< DLB is off and temporarily can't turn on */
+    onCanTurnOff,         /**< DLB is on and can turn off when slow */
+    onUser,               /**< DLB is permanently on per user request */
+    nr                    /**< The number of DLB states */
 };
-
-/*! \brief Enum of dynamic load balancing states */
-enum {
-    edlbsOffForever,           /**< DLB is off and will never be turned on */
-    edlbsOffCanTurnOn,         /**< DLB is off and will turn on on imbalance */
-    edlbsOffTemporarilyLocked, /**< DLB is off and temporarily can't turn on */
-    edlbsOnCanTurnOff,         /**< DLB is on and can turn off when slow */
-    edlbsOnForever,            /**< DLB is on and will stay on forever, because the user chose this */
-    edlbsNR                    /**< The number of DLB states */
-};
-
-/* Allowed DLB state transitions in automatic mode:
- *   edlbsOffCanTurnOn         -> edlbsOnCanTurnOff
- *   edlbsOffCanTurnOn         -> edlbsOffForever
- *   edlbsOffCanTurnOn         -> edlbsOffTemporarilyLocked
- *   edlbsOffTemporarilyLocked -> edlbsOffCanTurnOn
- *   edlbsOnCanTurnOff         -> edlbsOffCanTurnOn
- */
 
 /*! \brief The PME domain decomposition for one dimension */
 typedef struct
@@ -174,7 +266,7 @@ typedef struct
     int      maxshift;  /**< The maximum shift for coordinate redistribution in PME */
 } gmx_ddpme_t;
 
-typedef struct
+struct gmx_ddzone_t
 {
     real min0;    /* The minimum bottom of this zone                        */
     real max1;    /* The maximum top of this zone                           */
@@ -183,18 +275,104 @@ typedef struct
     real mch1;    /* The maximum top communicaton height for this zone      */
     real p1_0;    /* The bottom value of the first cell in this zone        */
     real p1_1;    /* The top value of the first cell in this zone           */
-} gmx_ddzone_t;
+};
 
-typedef struct
+/*! \brief The number of reals in gmx_ddzone_t */
+constexpr int c_ddzoneNumReals = 7;
+
+template<typename T> class DDBufferAccess;
+
+/*! \brief Temporary storage container that minimizes (re)allocation and clearing
+ *
+ * This is only the storage, actual access happens through DDBufferAccess.
+ * All methods check if the buffer is (not) in use.
+ */
+template<typename T>
+class DDBuffer
 {
-    gmx_domdec_ind_t ind;
-    int             *ibuf;
-    int              ibuf_nalloc;
-    vec_rvec_t       vbuf;
-    int              nsend;
-    int              nat;
-    int              nsend_zone;
-} dd_comm_setup_work_t;
+    private:
+        /*! \brief Returns a buffer of size \p numElements, the elements are undefined */
+        gmx::ArrayRef<T> resize(size_t numElements)
+        {
+            GMX_ASSERT(isInUse_, "Should only operate on acquired buffers");
+
+            if (numElements > buffer_.size())
+            {
+                buffer_.resize(numElements);
+            }
+
+            return gmx::arrayRefFromArray(buffer_.data(), numElements);
+        }
+
+        /*! \brief Acquire the buffer for use with size set to \p numElements, the elements are undefined */
+        gmx::ArrayRef<T> acquire(size_t numElements)
+        {
+            GMX_RELEASE_ASSERT(!isInUse_, "Should only request free buffers");
+            isInUse_ = true;
+
+            return resize(numElements);
+        }
+
+        /*! \brief Releases the buffer, buffer_ should not be used after this */
+        void release()
+        {
+            GMX_RELEASE_ASSERT(isInUse_, "Should only release buffers in use");
+            isInUse_ = false;
+        }
+
+        std::vector<T> buffer_;          /**< The actual memory buffer */
+        bool           isInUse_ = false; /**< Flag that tells whether the buffer is in use */
+
+        friend class DDBufferAccess<T>;
+};
+
+/*! \brief Class that manages access to a temporary memory buffer */
+template<typename T>
+class DDBufferAccess
+{
+    public:
+        /*! \brief Constructor, returns a buffer of size \p numElements, element values are undefined
+         *
+         * \note The actual memory buffer \p ddBuffer can not be used to
+         *       create other DDBufferAccess objects until the one created
+         *       here is destroyed.
+         */
+        DDBufferAccess(DDBuffer<T> &ddBuffer,
+                       size_t       numElements) :
+            ddBuffer_(ddBuffer)
+        {
+            buffer = ddBuffer_.acquire(numElements);
+        }
+
+        ~DDBufferAccess()
+        {
+            ddBuffer_.release();
+        }
+
+        /*! \brief Resizes the buffer to \p numElements, new elements are undefined
+         *
+         * \note The buffer arrayref is updated after this call.
+         */
+        void resize(size_t numElements)
+        {
+            buffer = ddBuffer_.resize(numElements);
+        }
+
+    private:
+        DDBuffer<T>      &ddBuffer_; /**< Reference to the storage class */
+    public:
+        gmx::ArrayRef<T>  buffer;    /**< The access to the memory buffer */
+};
+
+/*! brief Temporary buffer for setting up communiation over one pulse and all zones in the halo */
+struct dd_comm_setup_work_t
+{
+    std::vector<int>       localAtomGroupBuffer; /**< The local atom group indices to send */
+    std::vector<int>       atomGroupBuffer;      /**< Buffer for collecting the global atom group indices to send */
+    std::vector<gmx::RVec> positionBuffer;       /**< Buffer for collecting the atom group positions to send */
+    int                    nat;                  /**< The number of atoms contained in the atom groups to send */
+    int                    nsend_zone;           /**< The number of atom groups to send for the last zone */
+};
 
 /*! \brief Struct for domain decomposition communication
  *
@@ -206,7 +384,7 @@ typedef struct
  * All arrays are indexed with 0 to dd->ndim (not Cartesian indexing),
  * unless stated otherwise.
  */
-struct gmx_domdec_comm_t
+struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
 {
     /* PME and Cartesian communicator stuff */
     int         npmedecompdim;     /**< The number of decomposition dimensions for PME, 0: no PME */
@@ -228,7 +406,14 @@ struct gmx_domdec_comm_t
     t_block cgs_gl;               /**< The global charge groups, this defined the DD state (except for the DLB state) */
 
     /* Charge group / atom sorting */
-    gmx_domdec_sort_t *sort;      /**< Data structure for cg/atom sorting */
+    std::unique_ptr<gmx_domdec_sort_t> sort; /**< Data structure for cg/atom sorting */
+
+    //! True when update groups are used
+    bool                                  useUpdateGroups;
+    //!  Update atom grouping for each molecule type
+    std::vector<gmx::RangePartitioning>   updateGroupingPerMoleculetype;
+    //! Centers of mass of local update groups
+    std::unique_ptr<gmx::UpdateGroupsCog> updateGroupsCog;
 
     /* Are there charge groups? */
     gmx_bool bCGs;                /**< True when there are charge groups */
@@ -242,11 +427,11 @@ struct gmx_domdec_comm_t
     char     *bLocalCG;           /**< Local cg availability, TODO: remove when group scheme is removed */
 
     /* The DLB state, possible values are defined above */
-    int      dlbState;
-    /* With dlbState=edlbsOffCanTurnOn, should we check if to DLB on at the next DD? */
+    DlbState dlbState;
+    /* With dlbState=DlbState::offCanTurnOn, should we check if to DLB on at the next DD? */
     gmx_bool bCheckWhetherToTurnDlbOn;
     /* The first DD count since we are running without DLB */
-    int      ddPartioningCountFirstDlbOff;
+    int      ddPartioningCountFirstDlbOff = 0;
 
     /* Cell sizes for static load balancing, first index cartesian */
     real **slb_frac;
@@ -266,7 +451,7 @@ struct gmx_domdec_comm_t
      */
     real PMELoadBal_max_cutoff;
 
-    ivec tric_dir;                /**< tric_dir from \p gmx_domdec_box_t is only stored here because dd_get_ns_ranges needs it */
+    ivec tric_dir;                /**< tric_dir from \p gmx_ddbox_t is only stored here because dd_get_ns_ranges needs it */
     rvec box0;                    /**< box lower corner, required with dim's without pbc and -gcom */
     rvec box_size;                /**< box size, required with dim's without pbc and -gcom */
 
@@ -294,47 +479,35 @@ struct gmx_domdec_comm_t
     /** Which cg distribution is stored on the master node,
      *  stored as DD partitioning call count.
      */
-    gmx_int64_t master_cg_ddp_count;
+    int64_t master_cg_ddp_count;
 
     /** The number of cg's received from the direct neighbors */
     int  zone_ncg1[DD_MAXZONE];
 
-    /** The atom counts, the range for each type t is nat[t-1] <= at < nat[t] */
-    int  nat[ddnatNR];
+    /** The atom ranges in the local state */
+    DDAtomRanges atomRanges;
 
     /** Array for signalling if atoms have moved to another domain */
-    int  *moved;
-    int   moved_nalloc;                /**< Allocation size for \p moved */
+    std::vector<int> movedBuffer;
 
     /** Communication int buffer for general use */
-    int  *buf_int;
-    int   nalloc_int;                  /**< Allocation size for \p buf_int */
+    DDBuffer<int> intBuffer;
 
     /** Communication rvec buffer for general use */
-    vec_rvec_t vbuf;
+    DDBuffer<gmx::RVec> rvecBuffer;
 
     /* Temporary storage for thread parallel communication setup */
-    int                   nth;         /**< The number of threads to be used */
-    dd_comm_setup_work_t *dth;         /**< Thread-local work data */
+    std::vector<dd_comm_setup_work_t> dth; /**< Thread-local work data */
 
-    /* Communication buffers only used with multiple grid pulses */
-    int       *buf_int2;               /**< Another integer comm. buffer */
-    int        nalloc_int2;            /**< Allocation size of \p buf_int2 */
-    vec_rvec_t vbuf2;                  /**< Another rvec comm. buffer */
+    /* Communication buffer only used with multiple grid pulses */
+    DDBuffer<gmx::RVec> rvecBuffer2; /**< Another rvec comm. buffer */
 
     /* Communication buffers for local redistribution */
-    int  **cggl_flag;                  /**< Charge group flag comm. buffers */
-    int    cggl_flag_nalloc[DIM*2];    /**< Allocation sizes of \p *cggl_flag */
-    rvec **cgcm_state;                 /**< Charge group center comm. buffers */
-    int    cgcm_state_nalloc[DIM*2];   /**< Allocation sizes of \p *ccgm_state */
+    std::array<std::vector<int>, DIM*2>       cggl_flag;  /**< Charge group flag comm. buffers */
+    std::array<std::vector<gmx::RVec>, DIM*2> cgcm_state; /**< Charge group center comm. buffers */
 
     /* Cell sizes for dynamic load balancing */
-    domdec_root_t **root;              /**< Cell row root struct pointer, per dd DIM */
-    real           *cell_f_row;        /**< The cell sizes, in fractions, along a row */
-    real            cell_f0[DIM];      /**< The lower corner, in fractions, in triclinic space */
-    real            cell_f1[DIM];      /**< The upper corner, in fractions, in triclinic space */
-    real            cell_f_max0[DIM];  /**< The maximum lower corner among all our neighbors */
-    real            cell_f_min1[DIM];  /**< The minimum upper corner among all our neighbors */
+    std::vector<DDCellsizesWithDlb> cellsizesWithDlb;
 
     /* Stuff for load communication */
     gmx_bool        bRecordLoad;         /**< Should we record the load */
@@ -345,10 +518,12 @@ struct gmx_domdec_comm_t
     MPI_Comm        mpi_comm_gpu_shared; /**< The MPI load communicator for ranks sharing a GPU */
 #endif
 
-    /** Maximum DLB scaling per load balancing step in percent */
-    int dlb_scale_lim;
+    /* Information for managing the dynamic load balancing */
+    int            dlb_scale_lim;      /**< Maximum DLB scaling per load balancing step in percent */
 
-    /* Cycle counters */
+    BalanceRegion *balanceRegion;      /**< Struct for timing the force load balancing region */
+
+    /* Cycle counters over nstlist steps */
     float  cycl[ddCyclNr];             /**< Total cycles counted */
     int    cycl_n[ddCyclNr];           /**< The number of cycle recordings */
     float  cycl_max[ddCyclNr];         /**< The maximum cycle count */
@@ -365,10 +540,12 @@ struct gmx_domdec_comm_t
     float       cyclesPerStepBeforeDLB;     /**< The averaged cycles per step over the last nstlist step before turning on DLB */
     float       cyclesPerStepDlbExpAverage; /**< The running average of the cycles per step during DLB */
     bool        haveTurnedOffDlb;           /**< Have we turned off DLB (after turning DLB on)? */
-    gmx_int64_t dlbSlowerPartitioningCount; /**< The DD step at which we last measured that DLB off was faster than DLB on, 0 if there was no such step */
+    int64_t     dlbSlowerPartitioningCount; /**< The DD step at which we last measured that DLB off was faster than DLB on, 0 if there was no such step */
 
-    /* Statistics */
-    double sum_nat[ddnatNR-ddnatZONE]; /**< The atoms per zone, summed over the steps */
+    /* Statistics for atoms */
+    double sum_nat[static_cast<int>(DDAtomRanges::Type::Number)]; /**< The atoms per range, summed over the steps */
+
+    /* Statistics for calls and times */
     int    ndecomp;                    /**< The number of partioning calls */
     int    nload;                      /**< The number of load recordings */
     double load_step;                  /**< Total MD step time */
@@ -379,7 +556,7 @@ struct gmx_domdec_comm_t
     double load_pme;                   /**< Total time on our PME-only rank */
 
     /** The last partition step */
-    gmx_int64_t partition_step;
+    int64_t partition_step;
 
     /* Debugging */
     int  nstDDDump;                    /**< Step interval for dumping the local+non-local atoms to pdb */
@@ -411,6 +588,42 @@ real dd_cutoff_multibody(const gmx_domdec_t *dd);
 
 /*! \brief Returns the DD cut-off distance for two-body interactions */
 real dd_cutoff_twobody(const gmx_domdec_t *dd);
+
+/*! \brief Returns the domain index given the number of domains and the domain coordinates
+ *
+ * This order is required to minimize the coordinate communication in PME
+ * which uses decomposition in the x direction.
+ */
+static inline int dd_index(const ivec numDomains,
+                           const ivec domainCoordinates)
+{
+    return ((domainCoordinates[XX]*numDomains[YY] + domainCoordinates[YY])*numDomains[ZZ]) + domainCoordinates[ZZ];
+};
+
+/*! Returns the size of the buffer to hold fractional cell boundaries for DD dimension index dimIndex */
+static inline int ddCellFractionBufferSize(const gmx_domdec_t *dd,
+                                           int                 dimIndex)
+{
+    return dd->nc[dd->dim[dimIndex ]] + 1 + dimIndex*2 + 1 + dimIndex;
+}
+
+/*! \brief Maximum number of ranks for using send/recv for state scattering and gathering
+ *
+ * Use separate MPI send and receive commands
+ * when #ranks <= c_maxNumRanksUseSendRecvForScatterAndGather
+ * This saves memory (and some copying for small #ranks).
+ * For high parallelization scatter and gather calls are used.
+ */
+static constexpr int c_maxNumRanksUseSendRecvForScatterAndGather = 4;
+
+/*! \brief Make DD cells larger by this factor than the limit to avoid rounding issues */
+static constexpr double DD_CELL_MARGIN       = 1.0001;
+
+/*! \brief Factor for checking DD cell size limitation during DLB, should be in between 1 and DD_CELL_MARGIN */
+static constexpr double DD_CELL_MARGIN2      = 1.00005;
+
+/*! \brief With pressure scaling, keep cell sizes 2% above the limit to allow for some scaling */
+static constexpr double DD_PRES_SCALE_MARGIN = 1.02;
 
 /*! \endcond */
 

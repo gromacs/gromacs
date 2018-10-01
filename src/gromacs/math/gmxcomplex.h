@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,14 +37,14 @@
 #ifndef GMX_MATH_GMXCOMPLEX_H
 #define GMX_MATH_GMXCOMPLEX_H
 
-#include <math.h>
+#include <cmath>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
-typedef struct {
+struct t_complex{
     real re, im;
-} t_complex;
+};
 
 typedef t_complex cvec[DIM];
 
@@ -58,18 +58,18 @@ static t_complex rcmul(real r, t_complex c)
     return d;
 }
 
-static t_complex rcexp(real r)
+static inline t_complex rcexp(real r)
 {
     t_complex c;
 
-    c.re = (real)cos(r);
-    c.im = (real)sin(r);
+    c.re = cos(r);
+    c.im = sin(r);
 
     return c;
 }
 
 
-static t_complex cadd(t_complex a, t_complex b)
+static inline t_complex cadd(t_complex a, t_complex b)
 {
     t_complex c;
 
@@ -79,7 +79,7 @@ static t_complex cadd(t_complex a, t_complex b)
     return c;
 }
 
-static t_complex csub(t_complex a, t_complex b)
+static inline t_complex csub(t_complex a, t_complex b)
 {
     t_complex c;
 
@@ -109,7 +109,7 @@ static t_complex conjugate(t_complex c)
     return d;
 }
 
-static real cabs2(t_complex c)
+static inline real cabs2(t_complex c)
 {
     real abs2;
     abs2 = (c.re*c.re)+(c.im*c.im);
@@ -117,9 +117,7 @@ static real cabs2(t_complex c)
     return abs2;
 }
 
-
-
-static t_complex cdiv(t_complex teller, t_complex noemer)
+static inline t_complex cdiv(t_complex teller, t_complex noemer)
 {
     t_complex res, anoemer;
 
@@ -128,4 +126,8 @@ static t_complex cdiv(t_complex teller, t_complex noemer)
 
     return rcmul(1.0/anoemer.re, res);
 }
+
+inline bool operator==(const t_complex &lhs, const t_complex &rhs){ return (lhs.re == rhs.re) && (lhs.im == rhs.im); }
+inline bool operator!=(const t_complex &lhs, const t_complex &rhs){ return !(lhs == rhs); }
+
 #endif

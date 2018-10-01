@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,8 +50,8 @@ struct t_blocka;
 #define MAXSLEN 32
 
 typedef struct {
-    gmx_bool bSet;              /* Has this combination been set        */
-    real     c[4];              /* The non-bonded parameters            */
+    bool     bSet;          /* Has this combination been set        */
+    real     c[4];          /* The non-bonded parameters            */
 } t_nbparam;
 /* The t_nbparam struct is used to temporary store the explicit
  * non-bonded parameter combinations, which will be copied to t_params.
@@ -79,10 +79,10 @@ typedef struct {
     real      &c2() { return c[2]; }
 } t_param;
 
-typedef struct {
+typedef struct {        // NOLINT (clang-analyzer-optin.performance.Padding)
     int          nr;    /* The number of bonds in this record   */
     int          maxnr; /* The amount of elements in the array  */
-    t_param     *param; /* Array of parameters (dim: nr)	*/
+    t_param     *param; /* Array of parameters (dim: nr or nr*nr) */
 
     /* CMAP tmp data, there are probably better places for this */
     int         grid_spacing; /* Cmap grid spacing */
@@ -104,8 +104,8 @@ typedef struct {
 typedef struct {
     char            **name;
     int               nrexcl;       /* Number of exclusions per atom	*/
-    gmx_bool          excl_set;     /* Have exclusions been generated?	*/
-    gmx_bool          bProcessed;   /* Has the mol been processed           */
+    bool              excl_set;     /* Have exclusions been generated?	*/
+    bool              bProcessed;   /* Has the mol been processed           */
     t_atoms           atoms;        /* Atoms                                */
     t_block           cgs;          /* Charge groups                        */
     t_block           mols;         /* Molecules                            */
@@ -118,7 +118,7 @@ typedef struct {
     int   nr;
 } t_mols;
 
-gmx_bool is_int(double x);
+bool is_int(double x);
 /* Returns TRUE when x is integer */
 
 /* Must correspond to strings in topdirs.c */

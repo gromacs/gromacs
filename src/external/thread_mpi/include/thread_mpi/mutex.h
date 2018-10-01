@@ -50,9 +50,6 @@
 #include "system_error.h"
 #include "threads.h"
 
-#ifdef __cplusplus
-
-
 namespace tMPI
 {
 /*! \brief A lock guard class that allows for the simple management of
@@ -172,7 +169,5 @@ class TMPI_EXPORT mutex
         tMPI_Thread_mutex_t handle_;
 };
 }
-
-#endif /* __cplusplus */
 
 #endif /* TMPI_MUTEX_H_ */

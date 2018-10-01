@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,18 +40,18 @@
 #include <stdio.h>
 
 #include "gromacs/fileio/enxio.h"
-#include "gromacs/trajectory/energy.h"
+#include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/basedefinitions.h"
 
 /* This is a running averaging structure ('energy bin') for use during mdrun. */
 typedef struct {
     int             nener;
     gmx_enxnm_t    *enm;
-    gmx_int64_t     nsteps;
-    gmx_int64_t     nsum;
+    int64_t         nsteps;
+    int64_t         nsum;
     t_energy       *e;
-    gmx_int64_t     nsteps_sim;
-    gmx_int64_t     nsum_sim;
+    int64_t         nsteps_sim;
+    int64_t         nsum_sim;
     t_energy       *e_sim;
 } t_ebin;
 
@@ -59,10 +59,13 @@ enum {
     eprNORMAL, eprAVER, eprRMS, eprNR
 };
 
-t_ebin *mk_ebin(void);
+t_ebin *mk_ebin();
 /* Create an energy bin */
 
-int get_ebin_space(t_ebin *eb, int nener, const char *enm[], const char *unit);
+//! Empty the contents of \c eb.
+void done_ebin(t_ebin *eb);
+
+int get_ebin_space(t_ebin *eb, int nener, const char *const enm[], const char *unit);
 
 /* Create space in the energy bin and register names.
  * The enm array must be static, because the contents are not copied,
@@ -71,7 +74,7 @@ int get_ebin_space(t_ebin *eb, int nener, const char *enm[], const char *unit);
  * calls to add_ebin.
  */
 
-void add_ebin(t_ebin *eb, int index, int nener, real ener[], gmx_bool bSum);
+void add_ebin(t_ebin *eb, int index, int nener, const real ener[], gmx_bool bSum);
 /* Add nener reals (eg. energies, box-lengths, pressures) to the
  * energy bin at position index.
  * If bSum is TRUE then the reals are also added to the sum
@@ -86,13 +89,19 @@ void ebin_increase_count(t_ebin *eb, gmx_bool bSum);
 void reset_ebin_sums(t_ebin *eb);
 /* Reset the average and fluctuation sums */
 
+/*! \brief Print the contents of some energy bins.
+ *
+ * We will print nperline entries on a text line (advisory <=
+ * 5). prmode may be any of the above listed enum values. tsteps is
+ * used only when eprAVER or eprRMS is set. If bPrHead than the
+ * header is printed.
+ *
+ * \c index and \c nener must be in [0, eb->nener), except that \c
+ * nener -1 is interpreted as eb->nener.
+ *
+ * \todo Callers should be refactored pass eb->nener, rather than
+ * us implement and rely on this special behaviour of -1. */
 void pr_ebin(FILE *fp, t_ebin *eb, int index, int nener, int nperline,
              int prmode, gmx_bool bPrHead);
-/* Print the contents of the energy bin. If nener = -1 ALL energies from
- * index to the end will be printed. We will print nperline entries on a text
- * line (advisory <= 5). prmode may be any of the above listed enum values.
- * tsteps is used only when eprAVER or eprRMS is set.
- * If bPrHead than the header is printed.
- */
 
 #endif

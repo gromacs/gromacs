@@ -1,0 +1,262 @@
+GROMACS 2018.1 release notes
+----------------------------
+
+This version was released on March 21, 2018. These release notes
+document the changes that have taken place in GROMACS since the
+initial version 2018, to fix known issues. It also incorporates all
+fixes made in version 2016.5 and earlier, which you can find described
+in the :ref:`release-notes`.
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed leap-frog integrator with Nose-Hoover T coupling and Parrinello-Rahman P coupling
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With Parrinello-Rahman P coupling active, when applying Nose-Hoover T
+coupling at an MD step where no P coupling occured, the update phase
+could use outdated or garbage coupling data. Such simulations with
+:mdp:`nsttcouple` equal to :mdp:`nstpcouple` are unaffected
+by this issue, so few users will be impacted by this. Simulations
+using other coupling algorithms are unaffected.
+
+:issue:`2418`
+
+Used SIMD bondeds without perturbed interactions
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+In free-energy calculations that lacked bonded interactions between
+perturbed atom types, the SIMD-accelerated bonded functions were
+inadvertently disabled. This has been enabled, which will improve
+the performance of some kinds of free-energy calculations.
+
+Fixed bonds whose displacement was zero
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+We should allow overlapping atoms in harmonic bonds. But the former
+code would cause a floating point exception and incorrect free-energy
+derivatives.
+
+Fixed centre-of-mass motion removal on part of the system
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+COMM removal requested for part of the system acted on the whole
+system.
+
+:issue:`2381`
+
+Fixed multi-simulations with multiple ranks per simulation
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+These used to crash or hang mysteriously before the simulation would
+start.
+
+:issue:`2403`
+
+Improved inter-simulation signalling implementation
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Reduced communication overhead with either many simulations or many
+ranks per simulation.
+
+Fixed FEP calculations with SHAKE
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+All SHAKE + FEP calculations accumulated wrong values to dH/dl output,
+but in some cases the result will look the same.
+
+:issue:`2434`
+
+Fixed handling of mdp ``define`` statement assigning preprocessor values
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Now .mdp files can configure the topology with values, as originally
+intended, e.g. ``"define = -DBOOL -DVAR=VALUE"``.
+
+:issue:`2392`
+
+Prevented log file energy average printing dividing by zero
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+If very few simulation frames have computed energies, then there may
+be insufficient data for averages. If so, skip the average printing
+entirely.
+
+:issue:`2394`
+
+Correctly set cutoff modifiers in forcerec
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The cutoff modifiers were not copied from interaction_const_t
+to forcerec_t which meant only the generic kernels were used with
+the group scheme. This fix will restore the performance of the
+group scheme.
+
+:issue:`2399`
+
+Fixed box scaling in PME mixed mode using both GPU and CPU
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2385`
+
+Re-enabled GPU support with walls and 1 energy group
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+With a single non-bonded energy group and walls, we can now use a GPU
+for non-bonded calculations.
+
+Removed tumbling ice-cube warning with SD integrator
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+With SD, there is friction, so ice cubes will not tumble.
+
+Fixed assertion failure in test-particle insertion
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Erroneous logic in the TPI meant that it always failed without producing
+any result.
+
+:issue:`2398`
+
+Avoided mdrun echoing "No option -multi"
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+mdrun would print as many messages "No option -multi" as there
+are MPI ranks to stderr.
+Also updated -multi to -multidir in an error message.
+
+:issue:`2377`
+
+Improved mdrun handling when GPUs are present but unavailable
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2415`
+
+Fixed crash with AWH and awh1-equilibrate-histogram=yes
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When running AWH with awh1-equilibrate-histogram=yes and multiple MPI
+ranks, the simulation would segmentation fault.
+
+:issue:`2436`
+
+Fixed issues with AWH and bias sharing
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When sharing AWH biases between multiple simulations, there were four
+issues. An MPI error would occur when an individual simulation would
+use more than one rank. The deconvoluted PMF would be garbage (but
+the sampling was correct). with more than 32 MPI ranks for an individual
+simulation, an error about a coordinate being 0 could occur.
+And continuation from checkpoints could be refused.
+
+:issue:`2433`
+:issue:`2439`
+:issue:`2441`
+:issue:`2444`
+
+Fixed virial with AWH and domain decomposiion
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When running AWH with domain decomposition, the AWH/pull virial
+contribution would be multiplied with the number of MPI ranks.
+
+
+Fixed restart bug with pull geometry direction-periodic
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+With COM pulling with geometry direction-periodic, (only) at the step
+of continuing from checkpoint the closest PBC image would be used
+instead of the of the one closest to the reference value. This could
+lead to a sharp spike in the pull force at the continuation step.
+
+:issue:`2446`
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Added check in grompp to avoid assertion failure
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+With an mdp file with a parameter present with both the current name
+and the old name which automatically gets replaced, an assertion
+would fail. Now a fatal error is issued.
+
+:issue:`2386`
+
+Fixed grompp net charge check
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Use of multiple non-consecutive blocks of a moleculetype now works
+correctly.
+
+:issue:`2407`
+
+Fixed issue with adding selection groups for TNG output
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When there were more molecule blocks than molecule types in the topology,
+the output was wrong.
+
+Fixed help text and functionality of ``pdb2gmx -missing``
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+This now permits dangling bonds at termini, which is occasionally useful.
+
+Fixes to improve portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+PME on Fermi-era GPUs on large systems now works
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+On older GPUs, it was possible to run into a hardware size limitation
+that has now been fixed.
+
+:issue:`2409`
+
+GoogleTest death tests are now used in a more portable way
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Tests for GPU utility functionality are now more robust
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Non-GPU builds, and GPU builds that find incompatible or otherwise
+unavailable devices will pass the tests in the manner intended.
+
+:issue:`2405`
+
+Used more portable python shebangs
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Per https://www.python.org/dev/peps/pep-0394/#recommendation, we
+should use env, and point it at python2. When we either make them 2/3
+or just-3 compatible, this should change.
+
+Some distros (notably Arch Linux) already point python at python3 so
+we should choose to be explicit, and thus somewhat portable.
+
+:issue:`2401`
+
+Added work-around for GCC 5.3 targetting AVX512 hardware
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+GCC 5.3 has bug in overload resolution causing the AVX512
+and scalar function to become ambiguous.
+
+Used isfinite unambiguously
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Patch provdied by Veselin Kolev to quiet some compiler warnings.
+
+:issue:`2400`
+
+Worked around gcc-6 bug in tabulated group non-bonded kernels
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+With the gcc-6 compiler, AVX and -O3, which is the default,
+the tabulated non-bonded kernels of the (deprecated) group
+cutoff-scheme produced incorrect energies and forces.
+The errors are so large that they could not have caused latent issues.
+
+:issue:`2424`
+
+Detected correct AMD Zen SMT topology
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+On recent AMD Zen processors, hardware thread detection and pinning
+handling have been fixed, improving performance.
+
+:issue:`2388`
+
+Fixed POWER VSX SIMD usage for upcoming gcc version 8
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+:issue:`2421`
+
+Fixed clang 6 with CUDA 9
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Permits builds for sm_70 and may work around an issue with sm_37
+
+:issue:`2443`
+
+Miscellaneous
+^^^^^^^^^^^^^
+
+Made multi-atom TPI reproducible with different compilers
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Documentation enhancements
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+In particular, for handling options to mdrun relating to GPUs and
+running mdrun with good performance.

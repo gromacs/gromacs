@@ -1,35 +1,80 @@
-gcc-4.4 double no-openmp host=bs_centos63
-clang-3.4 gmxtest+"-npme 1 -nt 3" double no-openmp fftpack release host=bs_centos63
-clang-3.4 double no-openmp fftpack asan host=bs_centos63
-gcc-4.1 double no-openmp simd-sse2 host=bs_nix1004
-gcc-4.3 mpi simd-sse2 host=bs_nix1004
-gcc-4.5 no-openmp atlas mpi host=bs_nix64
-icc-12.1.2 no-openmp no-threadmpi host=bs_nix64
-gcc-4.7 no-openmp host=bs_nix64
-icc-12.1.2 double mkl release host=bs_nix64
-gcc-4.7 double no-threadmpi simd-sse4.1 release host=bs_nix64
-icc-15.0.0 gmxtest+"-ntomp 1" no-threadmpi host=bs_mac
-gcc-4.8 no-openmp no-threadmpi fftpack optimized host=bs_mac
-gcc-4.9 optimized host=bs_mac
-icc-14.0.3 Platform=Phi host=bs_mic
-icc-14.0.3 Platform=Phi optimized host=bs_mic
-clang-3.4 asan host=bs_mic
-msvc-2010 release host=bs_Win2008_64
-msvc-2010 double no-threadmpi fftpack cmake+GMX_PREFER_STATIC_LIBS=OFF release host=bs_Win2008_64
-icc-12.1.2 cmake+GMX_DLOPEN=OFF no-threadmpi fftpack release host=bs_Win2008_64
-clang-3.6 double no-openmp fftpack host=bs_nix1204
-gcc-4.7 gmxtest+"-nt 1" gpu cuda-4.2 double simd-sse4.1 host=bs_nix1204
-gcc-4.4 gpu cuda-4.0 mpi simd-avx_256 host=bs_nix1204
-gcc-4.5 gpu cuda-4.1 atlas mpi simd-sse4.1 host=bs_nix1204
-gcc-4.6 gpu cuda-5.0 no-threadmpi release host=bs_nix1204
-gcc-4.7 gpu cuda-5.5 atlas simd-sse2 release host=bs_nix1204
-gcc-4.4 double mpi simd-avx_256 host=bs_nix1310
-gcc-4.6 double no-threadmpi simd-avx_256 release host=bs_nix1310
-gcc-4.7 gmxtest+"-npme 1 -np 3" no-threadmpi mpi simd-avx2_256 release host=bs_nix1310
-gcc-4.7 gmxtest+"-npme 1 -nt 3 -gpu_id 12" gpu cuda-5.5 simd-sse4.1 release host=bs_nix1310
-clang-3.4 gmxtest+"-npme 1 -nt 3" double no-openmp simd-avx_256 release host=bs_nix1310
-gcc-4.9 tsan host=bs_nix1310
-gcc-4.9 double no-threadmpi optimized host=bs_nix1404
-gcc-4.7 double gmxtest+"-nt 1" host=bs_nix1404
-gcc-5.1 gmxtest+"-npme 1 -np 3" double no-threadmpi mpi host=bs_nix1404
-gcc-5.1 mpi release host=bs_nix1404
+# Comment line(s) preceding each configuration document the main
+# intent behind that configuration, so that we can correctly judge
+# whether to preserve that during maintenance decisions.
+#
+# Other configurations might coincidentally test such configurations
+# (e.g. because they are the current default), but it is appropriate
+# to intend to teach each feature (or a feature combination) exactly
+# once, and for the intent to be reflected precisely in the
+# configuration syntax, so that the configurations are stable even
+# if the defaults change in future.
+
+# Test on ARM v7
+# Test ARM_NEON SIMD
+gcc-5 simd=ARM_NEON release-with-assert
+
+# Test on ARM v8
+# Test ARM_NEON_ASIMD SIMD
+gcc-5 simd=ARM_NEON_ASIMD release-with-assert
+
+# Test the mdrun-only build
+# Test newest gcc at time of release
+# TODO In combination with gmx from another build, arrange to run regressiontests
+gcc-7 mpi no-openmp fftpack mdrun-only
+
+# Test MPMD PME with thread-MPI
+# Test oldest supported icc
+# Test icc with AVX256 in double precision in release mode
+icc-17 simd=avx_256 npme=1 nranks=2 no-openmp  double fftpack release
+
+# Test CUDA build on a agent with no CUDA devices
+# Test without TNG support
+gcc-4.9 gpu cuda-7.0 openmp no-tng release-with-assert
+
+# Test non-default GMX_PREFER_STATIC_LIBS behavior
+# TODO enable this
+# msvc-2017 double no-threadmpi no-prefer-static-libs release-with-assert
+
+# Test with SSE2 + double
+icc-18 simd=sse2 double mkl release-with-assert
+
+# Test SSE4.1 SIMD
+# Test single-rank GPU
+# Test clang + OpenMP + CUDA
+clang-4 simd=sse4.1 openmp nranks=1 gpu cuda-8.0 clang_cuda
+
+# Test MPMD PME with library MPI
+# Test clang + OpenMP
+clang-5 openmp simd=avx_128_fma npme=1 nranks=2 mpi
+
+# Test SSE2 SIMD
+# Test CMAKE_BUILD_TYPE=Release
+# Test OpenCL
+# Test bundled clFFT (developed by AMD) on NVIDIA OpenCL
+gcc-6 gpu npme=1 nranks=2 opencl cuda-7.5 simd=sse2 release
+
+# Test non-default use of mdrun -gpu_id
+# Test GPU-sharing among 4 PP ranks
+# Test no hwloc build, tests internal CPU topology detection (mainly for x86)
+gcc-5 gpu nranks=4 gpu_id=1 cuda-8.0 no-hwloc release-with-assert
+
+# Test icc on Windows
+# Test newest icc at time of release
+# Test icc with SIMD in mixed precision in release mode
+icc-18 msvc-2017 fftpack simd=avx2_256 release
+
+# Test ARM HPC compier toolchain with gcc-7
+#gcc-7 armhpc-18.2 openmp simd=ARM_NEON_ASIMD release
+
+# Test ARM HPC compier toolchain with armclang
+#armclang-18.2 armhpc-18.2 openmp simd=ARM_NEON_ASIMD release-with-assert
+
+# TODO
+# Add SIMD + OpenMP + CUDA asan build
+# Add OpenMP + CUDA + device sharing TSAN build
+# Test statically linked hwloc support (if/when it can work well)
+# Test 3D DD (2D is partially covered in regressiontests)
+# Test own-fftw build (from local copy of the file)
+# Test mdrun -tunepme (e.g. with relaxed tolerances, for now)
+# Consider testing of other CMake option paths
+# Test behaviour when dlopen is not present

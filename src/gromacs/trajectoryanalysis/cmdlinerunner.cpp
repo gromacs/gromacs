@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,7 @@
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/trajectoryanalysis/topologyinformation.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/gmxassert.h"
@@ -78,11 +79,11 @@ class RunnerModule : public ICommandLineOptionsModule
         {
         }
 
-        virtual void init(CommandLineModuleSettings * /*settings*/) {}
-        virtual void initOptions(IOptionsContainer                 *options,
-                                 ICommandLineOptionsModuleSettings *settings);
-        virtual void optionsFinished();
-        virtual int run();
+        void init(CommandLineModuleSettings * /*settings*/) override {}
+        void initOptions(IOptionsContainer                 *options,
+                         ICommandLineOptionsModuleSettings *settings) override;
+        void optionsFinished() override;
+        int run() override;
 
         TrajectoryAnalysisModulePointer module_;
         TrajectoryAnalysisSettings      settings_;
@@ -185,7 +186,7 @@ int RunnerModule::run()
 // static
 int
 TrajectoryAnalysisCommandLineRunner::runAsMain(
-        int argc, char *argv[], ModuleFactoryMethod factory)
+        int argc, char *argv[], const ModuleFactoryMethod &factory)
 {
     auto runnerFactory = [factory]
     {
@@ -198,7 +199,7 @@ TrajectoryAnalysisCommandLineRunner::runAsMain(
 void
 TrajectoryAnalysisCommandLineRunner::registerModule(
         CommandLineModuleManager *manager, const char *name,
-        const char *description, ModuleFactoryMethod factory)
+        const char *description, const ModuleFactoryMethod &factory)
 {
     auto runnerFactory = [factory]
     {

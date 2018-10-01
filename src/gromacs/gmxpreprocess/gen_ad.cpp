@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,11 +39,10 @@
 
 #include "gen_ad.h"
 
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include <cctype>
 #include <cmath>
+#include <cstdlib>
+#include <cstring>
 
 #include <algorithm>
 
@@ -61,12 +60,12 @@
 #include "gromacs/utility/smalloc.h"
 
 #define DIHEDRAL_WAS_SET_IN_RTP 0
-static gmx_bool was_dihedral_set_in_rtp(const t_param *dih)
+static bool was_dihedral_set_in_rtp(const t_param *dih)
 {
     return dih->c[MAXFORCEPARAM-1] == DIHEDRAL_WAS_SET_IN_RTP;
 }
 
-typedef gmx_bool (*peq)(t_param *p1, t_param *p2);
+typedef bool (*peq)(t_param *p1, t_param *p2);
 
 static int acomp(const void *a1, const void *a2)
 {
@@ -133,42 +132,34 @@ static int dcomp(const void *d1, const void *d2)
     {
         return 1;
     }
-    /* Finally, sort by I and J (two outer) atoms */
+    /* Then sort by I and J (two outer) atoms */
     else if ((dc = (p1->ai()-p2->ai())) != 0)
+    {
+        return dc;
+    }
+    else if ((dc = (p1->al()-p2->al())) != 0)
     {
         return dc;
     }
     else
     {
-        return (p1->al()-p2->al());
+        // AMBER force fields with type 9 dihedrals can reach here, where we sort on
+        // the contents of the string that names the macro for the parameters.
+        return strcmp(p1->s, p2->s);
     }
 }
 
 
-static gmx_bool is_dihedral_on_same_bond(t_param *p1, t_param *p2)
+static bool is_dihedral_on_same_bond(t_param *p1, t_param *p2)
 {
-    if (((p1->aj() == p2->aj()) && (p1->ak() == p2->ak())) ||
-        ((p1->aj() == p2->ak()) && (p1->ak() == p2->aj())))
-    {
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
-    }
+    return ((p1->aj() == p2->aj()) && (p1->ak() == p2->ak())) ||
+           ((p1->aj() == p2->ak()) && (p1->ak() == p2->aj()));
 }
 
 
-static gmx_bool preq(t_param *p1, t_param *p2)
+static bool preq(t_param *p1, t_param *p2)
 {
-    if ((p1->ai() == p2->ai()) && (p1->aj() == p2->aj()))
-    {
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
-    }
+    return (p1->ai() == p2->ai()) && (p1->aj() == p2->aj());
 }
 
 static void rm2par(t_param p[], int *np, peq eq)
@@ -206,13 +197,6 @@ static void rm2par(t_param p[], int *np, peq eq)
         }
         if (p[index[i]].a[0] == p[index[i]].a[1])
         {
-            if (debug)
-            {
-                fprintf(debug,
-                        "Something VERY strange is going on in rm2par (gen_ad.c)\n"
-                        "a[0] %d a[1] %d a[2] %d a[3] %d\n",
-                        p[i].a[0], p[i].a[1], p[i].a[2], p[i].a[3]);
-            }
             strcpy(p[i].s, "");
         }
         else if (index[i] > i)
@@ -276,7 +260,7 @@ static void cpparam(t_param *dest, t_param *src)
     }
 }
 
-static void set_p(t_param *p, int ai[4], real *c, char *s)
+static void set_p(t_param *p, const int ai[4], const real *c, char *s)
 {
     int j;
 
@@ -297,11 +281,6 @@ static void set_p(t_param *p, int ai[4], real *c, char *s)
     }
 
     set_p_string(p, s);
-}
-
-static int int_comp(const void *a, const void *b)
-{
-    return (*(int *)a) - (*(int *)b);
 }
 
 static int idcomp(const void *a, const void *b)
@@ -325,7 +304,7 @@ static int idcomp(const void *a, const void *b)
     }
     else
     {
-        return (int) (pa->a[2]-pb->a[2]);
+        return (pa->a[2]-pb->a[2]);
     }
 }
 
@@ -345,11 +324,11 @@ static void sort_id(int nr, t_param ps[])
     /* Now sort it */
     if (nr > 1)
     {
-        qsort(ps, nr, (size_t)sizeof(ps[0]), idcomp);
+        qsort(ps, nr, static_cast<size_t>(sizeof(ps[0])), idcomp);
     }
 }
 
-static int n_hydro(int a[], char ***atomname)
+static int n_hydro(const int a[], char ***atomname)
 {
     int  i, nh = 0;
     char c0, c1, *aname;
@@ -362,7 +341,7 @@ static int n_hydro(int a[], char ***atomname)
         {
             nh++;
         }
-        else if (((int)strlen(aname) > 1) && (c0 >= '0') && (c0 <= '9'))
+        else if ((static_cast<int>(strlen(aname)) > 1) && (c0 >= '0') && (c0 <= '9'))
         {
             c1 = toupper(aname[1]);
             if (c1 == 'H')
@@ -377,8 +356,8 @@ static int n_hydro(int a[], char ***atomname)
 /* Clean up the dihedrals (both generated and read from the .rtp
  * file). */
 static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper,
-                      t_atoms *atoms, gmx_bool bKeepAllGeneratedDihedrals,
-                      gmx_bool bRemoveDihedralIfWithImproper)
+                      t_atoms *atoms, bool bKeepAllGeneratedDihedrals,
+                      bool bRemoveDihedralIfWithImproper)
 {
     int   i, j, k, l;
     int  *index, nind;
@@ -425,8 +404,8 @@ static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper
     k = 0;
     for (i = 0; i < nind; i++)
     {
-        gmx_bool bWasSetInRTP = was_dihedral_set_in_rtp(&dih[index[i]]);
-        gmx_bool bKeep        = TRUE;
+        bool bWasSetInRTP = was_dihedral_set_in_rtp(&dih[index[i]]);
+        bool bKeep        = TRUE;
         if (!bWasSetInRTP && bRemoveDihedralIfWithImproper)
         {
             /* Remove the dihedral if there is an improper on the same
@@ -486,12 +465,12 @@ static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper
 }
 
 static int get_impropers(t_atoms *atoms, t_hackblock hb[], t_param **improper,
-                         gmx_bool bAllowMissing)
+                         bool bAllowMissing)
 {
     t_rbondeds   *impropers;
     int           nimproper, i, j, k, start, ninc, nalloc;
     int           ai[MAXATOMLIST];
-    gmx_bool      bStop;
+    bool          bStop;
 
     ninc   = 500;
     nalloc = ninc;
@@ -567,13 +546,13 @@ static int nb_dist(t_nextnb *nnb, int ai, int aj)
     return NRE;
 }
 
-gmx_bool is_hydro(t_atoms *atoms, int ai)
+static bool is_hydro(t_atoms *atoms, int ai)
 {
     return ((*(atoms->atomname[ai]))[0] == 'H');
 }
 
 static void get_atomnames_min(int n, char **anm,
-                              int resind, t_atoms *atoms, int *a)
+                              int resind, t_atoms *atoms, const int *a)
 {
     int m;
 
@@ -597,7 +576,7 @@ static void get_atomnames_min(int n, char **anm,
 }
 
 static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
-                      gmx_bool bAllowMissing)
+                      bool bAllowMissing)
 {
     int         r;
     int         a, astart, i1, i2, itmp;
@@ -643,7 +622,7 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
     {
         if (excls[a].nr > 1)
         {
-            qsort(excls[a].e, excls[a].nr, (size_t)sizeof(int), int_comp);
+            std::sort(excls[a].e, excls[a].e+excls[a].nr);
         }
     }
 }
@@ -754,7 +733,7 @@ void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
 /* Generate pairs, angles and dihedrals from .rtp settings */
 void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
              t_params plist[], t_excls excls[], t_hackblock hb[],
-             gmx_bool bAllowMissing)
+             bool bAllowMissing)
 {
     t_param    *ang, *dih, *pai, *improper;
     t_rbondeds *hbang, *hbdih;
@@ -765,7 +744,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     int         ninc, maxang, maxdih, maxpai;
     int         nang, ndih, npai, nimproper, nbd;
     int         nFound;
-    gmx_bool    bFound, bExcl;
+    bool        bFound, bExcl;
 
     /* These are the angles, dihedrals and pairs that we generate
      * from the bonds. The ones that are already there from the rtp file
@@ -974,10 +953,6 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                 }
 
                                 nbd = nb_dist(nnb, i, l1);
-                                if (debug)
-                                {
-                                    fprintf(debug, "Distance (%d-%d) = %d\n", i+1, l1+1, nbd);
-                                }
                                 if (nbd == 3)
                                 {
                                     i1    = std::min(i, l1);
@@ -1027,7 +1002,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
             hbang = &hb[i].rb[ebtsANGLES];
             for (j = 0; j < hbang->nb; j++)
             {
-                if (hbang->b[j].match == TRUE)
+                if (hbang->b[j].match)
                 {
                     /* We already used this entry, continue to the next */
                     continue;
@@ -1072,7 +1047,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
             hbdih = &hb[i].rb[ebtsPDIHS];
             for (j = 0; j < hbdih->nb; j++)
             {
-                if (hbdih->b[j].match == TRUE)
+                if (hbdih->b[j].match)
                 {
                     /* We already used this entry, continue to the next */
                     continue;
@@ -1119,19 +1094,19 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     /* Sort angles with respect to j-i-k (middle atom first) */
     if (nang > 1)
     {
-        qsort(ang, nang, (size_t)sizeof(ang[0]), acomp);
+        qsort(ang, nang, static_cast<size_t>(sizeof(ang[0])), acomp);
     }
 
     /* Sort dihedrals with respect to j-k-i-l (middle atoms first) */
     if (ndih > 1)
     {
-        qsort(dih, ndih, (size_t)sizeof(dih[0]), dcomp);
+        qsort(dih, ndih, static_cast<size_t>(sizeof(dih[0])), dcomp);
     }
 
     /* Sort the pairs */
     if (npai > 1)
     {
-        qsort(pai, npai, (size_t)sizeof(pai[0]), pcomp);
+        qsort(pai, npai, static_cast<size_t>(sizeof(pai[0])), pcomp);
     }
     if (npai > 0)
     {

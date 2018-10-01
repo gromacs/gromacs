@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,7 +48,11 @@
 
 #include <string.h>
 
+#include <algorithm>
+#include <array>
+
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/stringutil.h"
 
 /*! \brief Size of bitmask. Has to be 32 or multiple of 64. */
 #ifndef BITMASK_SIZE
@@ -61,111 +65,111 @@
 
 #if BITMASK_SIZE <= 64 || defined DOXYGEN
 #if BITMASK_SIZE == 32
-typedef gmx_uint32_t gmx_bitmask_t;
+typedef uint32_t gmx_bitmask_t;
 #else
-typedef gmx_uint64_t gmx_bitmask_t; /**< bitmask type */
+typedef uint64_t gmx_bitmask_t; /**< bitmask type */
 #endif
 
 /*! \brief Initialize all bits to 0 */
-gmx_inline static void bitmask_clear(gmx_bitmask_t* m)
+inline static void bitmask_clear(gmx_bitmask_t* m)
 {
     *m = 0;
 }
 
 /*! \brief Set bit at position b to 1. */
-gmx_inline static void bitmask_set_bit(gmx_bitmask_t* m, int b)
+inline static void bitmask_set_bit(gmx_bitmask_t* m, int b)
 {
-    *m |= ((gmx_bitmask_t)1 << b);
+    *m |= gmx_bitmask_t(1) << b;
 }
 
 /*! \brief Initialize all bits: bit b to 1, others to 0 */
-gmx_inline static void bitmask_init_bit(gmx_bitmask_t* m, int b)
+inline static void bitmask_init_bit(gmx_bitmask_t* m, int b)
 {
-    *m = ((gmx_bitmask_t)1 << b);
+    *m = gmx_bitmask_t(1) << b;
 }
 
 /*! \brief Initialize all bits: all bits below b to 1, others to 0 */
-gmx_inline static void bitmask_init_low_bits(gmx_bitmask_t* m, int b)
+inline static void bitmask_init_low_bits(gmx_bitmask_t* m, int b)
 {
-    *m = ((gmx_bitmask_t)1 << b) - 1;
+    *m = (gmx_bitmask_t(1) << b) - 1;
 }
 
 /*! \brief Test if bit b is set */
-gmx_inline static gmx_bool bitmask_is_set(gmx_bitmask_t m, int b)
+inline static bool bitmask_is_set(gmx_bitmask_t m, int b)
 {
-    return (m & ((gmx_bitmask_t)1 << b)) != 0;
+    return (m & (gmx_bitmask_t(1) << b)) != 0;
 }
 
 /*! \brief Test if both bitmasks have no common bits enabled */
-gmx_inline static gmx_bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)
+inline static bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)
 {
-    return !(a & b);
+    return (a & b) == 0u;
 }
 
 /*! \brief Test if both bitmasks are equal */
-gmx_inline static gmx_bool bitmask_is_equal(gmx_bitmask_t a, gmx_bitmask_t b)
+inline static bool bitmask_is_equal(gmx_bitmask_t a, gmx_bitmask_t b)
 {
     return a == b;
 }
 
 /*! \brief Test if bitmask has no enabled bits */
-gmx_inline static gmx_bool bitmask_is_zero(gmx_bitmask_t m)
+inline static bool bitmask_is_zero(gmx_bitmask_t m)
 {
-    return !m;
+    return m == 0u;
 }
 
 /*! \brief Set all bits enabled in either mask and write into a */
-gmx_inline static void bitmask_union(gmx_bitmask_t* a, gmx_bitmask_t b)
+inline static void bitmask_union(gmx_bitmask_t* a, gmx_bitmask_t b)
 {
     *a |= b;
 }
 #else
 #define BITMASK_ALEN (BITMASK_SIZE/64)
-typedef gmx_uint64_t gmx_bitmask_t[BITMASK_ALEN];
+using gmx_bitmask_t = std::array<uint64_t, BITMASK_ALEN>;
 
-gmx_inline static void bitmask_clear(gmx_bitmask_t* m)
+inline static void bitmask_clear(gmx_bitmask_t* m)
 {
-    memset(*m, 0, BITMASK_SIZE/8);
+    m->fill(0);
 }
 
-gmx_inline static void bitmask_set_bit(gmx_bitmask_t* m, int b)
+inline static void bitmask_set_bit(gmx_bitmask_t* m, int b)
 {
-    (*m)[b/64] |= ((gmx_uint64_t)1 << (b%64));
+    (*m)[b/64] |= (static_cast<uint64_t>(1) << (b%64));
 }
 
-gmx_inline static void bitmask_init_bit(gmx_bitmask_t* m, int b)
+inline static void bitmask_init_bit(gmx_bitmask_t* m, int b)
 {
     bitmask_clear(m);
-    (*m)[b/64] = ((gmx_uint64_t)1 << (b%64));
+    (*m)[b/64] = (static_cast<uint64_t>(1) << (b%64));
 }
 
-gmx_inline static void bitmask_init_low_bits(gmx_bitmask_t* m, int b)
+inline static void bitmask_init_low_bits(gmx_bitmask_t* m, int b)
 {
-    memset(*m, 255, b/64*8);
-    (*m)[b/64] = ((gmx_uint64_t)1 << (b%64)) - 1;
+    memset(m->data(), 255, b/64*8);
+    (*m)[b/64] = (static_cast<uint64_t>(1) << (b%64)) - 1;
     memset(&(*m)[b/64+1], 0, (BITMASK_ALEN-b/64-1)*8);
 }
 
-gmx_inline static gmx_bool bitmask_is_set(gmx_bitmask_t m, int b)
+inline static bool bitmask_is_set(gmx_bitmask_t m, int b)
 {
-    return (m[b/64] & ((gmx_uint64_t)1 << (b%64))) != 0;
+    return (m[b/64] & (static_cast<uint64_t>(1) << (b%64))) != 0;
 }
 
-gmx_inline static gmx_bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)
+inline static bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)
 {
     int      i;
-    gmx_bool r = 1;
+    bool     r = true;
     for (i = 0; i < BITMASK_ALEN; i++)
     {
-        r = r && !(a[i] & b[i]);
+        r = r && ((a[i] & b[i]) == 0u);
     }
     return r;
 }
 
-gmx_inline static gmx_bool bitmask_is_equal(gmx_bitmask_t a, gmx_bitmask_t b)
+inline static bool bitmask_is_equal(gmx_bitmask_t a, gmx_bitmask_t b)
 {
     int      i;
-    gmx_bool r = 1;
+    bool     r = true;
     for (i = 0; i < BITMASK_ALEN; i++)
     {
         r = r && (a[i] == b[i]);
@@ -173,18 +177,18 @@ gmx_inline static gmx_bool bitmask_is_equal(gmx_bitmask_t a, gmx_bitmask_t b)
     return r;
 }
 
-gmx_inline static gmx_bool bitmask_is_zero(gmx_bitmask_t m)
+inline static bool bitmask_is_zero(gmx_bitmask_t m)
 {
     int      i;
-    gmx_bool r = 1;
+    bool     r = true;
     for (i = 0; i < BITMASK_ALEN; i++)
     {
-        r = r && !m[i];
+        r = r && (m[i] == 0u);
     }
     return r;
 }
 
-gmx_inline static void bitmask_union(gmx_bitmask_t* a, gmx_bitmask_t b)
+inline static void bitmask_union(gmx_bitmask_t* a, gmx_bitmask_t b)
 {
     int i;
     for (i = 0; i < BITMASK_ALEN; i++)
@@ -193,5 +197,28 @@ gmx_inline static void bitmask_union(gmx_bitmask_t* a, gmx_bitmask_t b)
     }
 }
 #endif
+//In bitmask.h because only current use is for bitmask.
+
+//! Convert uint32_t to hex string
+inline static std::string to_hex_string(uint32_t m)
+{
+    return gmx::formatString("%08" PRIx32, m);
+}
+//! Convert uint64_t to hex string
+inline static std::string to_hex_string(uint64_t m)
+{
+    return gmx::formatString("%016" PRIx64, m);
+}
+//! Convert container of intergers to hex string
+template <typename C>
+inline static std::string to_hex_string(C m)
+{
+    std::string ret;
+    for (auto it = m.rbegin(); it < m.rend(); ++it)
+    {
+        ret += to_hex_string(*it);
+    }
+    return ret;
+}
 
 #endif

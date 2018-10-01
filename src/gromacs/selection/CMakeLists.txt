@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2010,2012,2013,2014,2015,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,7 +33,12 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB SELECTION_SOURCES *.cpp)
+set(LIBGROMACS_SOURCES_GENERATED
+    "${CMAKE_CURRENT_LIST_DIR}/scanner.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/parser.cpp")
+list(REMOVE_ITEM SELECTION_SOURCES ${LIBGROMACS_SOURCES_GENERATED})
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${SELECTION_SOURCES} PARENT_SCOPE)
+target_sources(libgromacs_generated PRIVATE ${LIBGROMACS_SOURCES_GENERATED})
 
 gmx_install_headers(
     nbsearch.h

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -138,6 +138,9 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     const real    six         = 6.0;
     const real    fourtyeight = 48.0;
 
+    /* Extract pointer to non-bonded interaction constants */
+    const interaction_const_t *ic = fr->ic;
+
     x                   = xx[0];
     f                   = ff[0];
 
@@ -155,9 +158,9 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     shiftvec            = fr->shift_vec[0];
     chargeA             = mdatoms->chargeA;
     chargeB             = mdatoms->chargeB;
-    facel               = fr->epsfac;
-    krf                 = fr->k_rf;
-    crf                 = fr->c_rf;
+    facel               = fr->ic->epsfac;
+    krf                 = ic->k_rf;
+    crf                 = ic->c_rf;
     Vc                  = kernel_data->energygrp_elec;
     typeA               = mdatoms->typeA;
     typeB               = mdatoms->typeB;
@@ -174,21 +177,21 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     sc_r_power          = fr->sc_r_power;
     sigma6_def          = fr->sc_sigma6_def;
     sigma6_min          = fr->sc_sigma6_min;
-    bDoForces           = kernel_data->flags & GMX_NONBONDED_DO_FORCE;
-    bDoShiftForces      = kernel_data->flags & GMX_NONBONDED_DO_SHIFTFORCE;
-    bDoPotential        = kernel_data->flags & GMX_NONBONDED_DO_POTENTIAL;
+    bDoForces           = ((kernel_data->flags & GMX_NONBONDED_DO_FORCE) != 0);
+    bDoShiftForces      = ((kernel_data->flags & GMX_NONBONDED_DO_SHIFTFORCE) != 0);
+    bDoPotential        = ((kernel_data->flags & GMX_NONBONDED_DO_POTENTIAL) != 0);
 
-    rcoulomb            = fr->rcoulomb;
-    rvdw                = fr->rvdw;
-    sh_invrc6           = fr->ic->sh_invrc6;
-    sh_lj_ewald         = fr->ic->sh_lj_ewald;
-    ewclj               = fr->ewaldcoeff_lj;
+    rcoulomb            = ic->rcoulomb;
+    rvdw                = ic->rvdw;
+    sh_invrc6           = ic->sh_invrc6;
+    sh_lj_ewald         = ic->sh_lj_ewald;
+    ewclj               = ic->ewaldcoeff_lj;
     ewclj2              = ewclj*ewclj;
     ewclj6              = ewclj2*ewclj2*ewclj2;
 
-    if (fr->coulomb_modifier == eintmodPOTSWITCH)
+    if (ic->coulomb_modifier == eintmodPOTSWITCH)
     {
-        d               = fr->rcoulomb-fr->rcoulomb_switch;
+        d               = ic->rcoulomb - ic->rcoulomb_switch;
         elec_swV3       = -10.0/(d*d*d);
         elec_swV4       =  15.0/(d*d*d*d);
         elec_swV5       =  -6.0/(d*d*d*d*d);
@@ -202,9 +205,9 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
         elec_swV3 = elec_swV4 = elec_swV5 = elec_swF2 = elec_swF3 = elec_swF4 = 0.0;
     }
 
-    if (fr->vdw_modifier == eintmodPOTSWITCH)
+    if (ic->vdw_modifier == eintmodPOTSWITCH)
     {
-        d               = fr->rvdw-fr->rvdw_switch;
+        d               = ic->rvdw - ic->rvdw_switch;
         vdw_swV3        = -10.0/(d*d*d);
         vdw_swV4        =  15.0/(d*d*d*d);
         vdw_swV5        =  -6.0/(d*d*d*d*d);
@@ -220,9 +223,8 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 
     if (fr->cutoff_scheme == ecutsVERLET)
     {
-        const interaction_const_t *ic;
+        const interaction_const_t *ic = fr->ic;
 
-        ic = fr->ic;
         if (EVDW_PME(ic->vdwtype))
         {
             ivdw         = GMX_NBKERNEL_VDW_LJEWALD;
@@ -250,12 +252,12 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     }
     else
     {
-        bExactElecCutoff = (fr->coulomb_modifier != eintmodNONE) || fr->eeltype == eelRF_ZERO;
-        bExactVdwCutoff  = (fr->vdw_modifier != eintmodNONE);
+        bExactElecCutoff = (ic->coulomb_modifier != eintmodNONE) || ic->eeltype == eelRF_ZERO;
+        bExactVdwCutoff  = (ic->vdw_modifier != eintmodNONE);
     }
 
     bExactCutoffAll = (bExactElecCutoff && bExactVdwCutoff);
-    rcutoff_max2    = std::max(fr->rcoulomb, fr->rvdw);
+    rcutoff_max2    = std::max(ic->rcoulomb, ic->rvdw);
     rcutoff_max2    = rcutoff_max2*rcutoff_max2;
 
     bEwald          = (icoul == GMX_NBKERNEL_ELEC_EWALD);
@@ -263,12 +265,12 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 
     if (bEwald || bEwaldLJ)
     {
-        sh_ewald       = fr->ic->sh_ewald;
-        ewtab          = fr->ic->tabq_coul_FDV0;
-        ewtabscale     = fr->ic->tabq_scale;
+        sh_ewald       = ic->sh_ewald;
+        ewtab          = ic->tabq_coul_FDV0;
+        ewtabscale     = ic->tabq_scale;
         ewtabhalfspace = half/ewtabscale;
-        tab_ewald_F_lj = fr->ic->tabq_vdw_F;
-        tab_ewald_V_lj = fr->ic->tabq_vdw_V;
+        tab_ewald_F_lj = ic->tabq_vdw_F;
+        tab_ewald_V_lj = ic->tabq_vdw_V;
     }
 
     /* For Ewald/PME interactions we cannot easily apply the soft-core component to
@@ -284,11 +286,11 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
      * things (1/r rather than short-range Ewald). For these settings, we just
      * use the traditional short-range Ewald interaction in that case.
      */
-    bConvertEwaldToCoulomb = (bEwald && (fr->coulomb_modifier != eintmodPOTSWITCH));
+    bConvertEwaldToCoulomb = (bEwald && (ic->coulomb_modifier != eintmodPOTSWITCH));
     /* For now the below will always be true (since LJ-PME only works with Shift in Gromacs-5.0),
      * but writing it this way means we stay in sync with coulomb, and it avoids future bugs.
      */
-    bConvertLJEwaldToLJ6   = (bEwaldLJ && (fr->vdw_modifier   != eintmodPOTSWITCH));
+    bConvertLJEwaldToLJ6   = (bEwaldLJ && (ic->vdw_modifier   != eintmodPOTSWITCH));
 
     /* We currently don't implement exclusion correction, needed with the Verlet cut-off scheme, without conversion */
     if (fr->cutoff_scheme == ecutsVERLET &&
@@ -331,8 +333,8 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 
     /* Ewald (not PME) table is special (icoul==enbcoulFEWALD) */
 
-    do_tab = (icoul == GMX_NBKERNEL_ELEC_CUBICSPLINETABLE ||
-              ivdw == GMX_NBKERNEL_VDW_CUBICSPLINETABLE);
+    do_tab = static_cast<int>(icoul == GMX_NBKERNEL_ELEC_CUBICSPLINETABLE ||
+                              ivdw == GMX_NBKERNEL_VDW_CUBICSPLINETABLE);
     if (do_tab)
     {
         tabscale         = kernel_data->table_elec_vdw->scale;
@@ -543,7 +545,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                     /* The shift for the Coulomb potential is stored in
                                      * the RF parameter c_rf, which is 0 without shift.
                                      */
-                                    Vcoul[i]  -= qq[i]*fr->ic->c_rf;
+                                    Vcoul[i]  -= qq[i]*ic->c_rf;
                                     break;
 
                                 case GMX_NBKERNEL_ELEC_REACTIONFIELD:
@@ -564,10 +566,6 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                     FF         = Fp+Geps+two*Heps2;
                                     Vcoul[i]   = qq[i]*VV;
                                     FscalC[i]  = -qq[i]*tabscale*FF*rC;
-                                    break;
-
-                                case GMX_NBKERNEL_ELEC_GENERALIZEDBORN:
-                                    gmx_fatal(FARGS, "Free energy and GB not implemented.\n");
                                     break;
 
                                 case GMX_NBKERNEL_ELEC_EWALD:
@@ -597,12 +595,11 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 
                                 default:
                                     gmx_incons("Invalid icoul in free energy kernel");
-                                    break;
                             }
 
-                            if (fr->coulomb_modifier == eintmodPOTSWITCH)
+                            if (ic->coulomb_modifier == eintmodPOTSWITCH)
                             {
-                                d                = rC-fr->rcoulomb_switch;
+                                d                = rC - ic->rcoulomb_switch;
                                 d                = (d > zero) ? d : zero;
                                 d2               = d*d;
                                 sw               = one+d2*d*(elec_swV3+d*(elec_swV4+d*elec_swV5));
@@ -649,8 +646,6 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 
                                 case GMX_NBKERNEL_VDW_BUCKINGHAM:
                                     gmx_fatal(FARGS, "Buckingham free energy not supported.");
-                                    break;
-
                                 case GMX_NBKERNEL_VDW_CUBICSPLINETABLE:
                                     /* Table LJ */
                                     nnn = n1V+4;
@@ -719,12 +714,11 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 
                                 default:
                                     gmx_incons("Invalid ivdw in free energy kernel");
-                                    break;
                             }
 
-                            if (fr->vdw_modifier == eintmodPOTSWITCH)
+                            if (ic->vdw_modifier == eintmodPOTSWITCH)
                             {
-                                d                = rV-fr->rvdw_switch;
+                                d                = rV - ic->rvdw_switch;
                                 d                = (d > zero) ? d : zero;
                                 d2               = d*d;
                                 sw               = one+d2*d*(vdw_swV3+d*(vdw_swV4+d*vdw_swV5));

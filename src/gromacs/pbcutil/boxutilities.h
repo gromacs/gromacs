@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,30 +38,28 @@
 #include <stdio.h>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/real.h"
 
-struct t_inputrec;
-
-/*! \brief Make sure the relative box shape remains the same
+/*! \brief Change box components to preserve the relative box shape
  *
- * This function ensures that the relative box dimensions are
- * preserved, which otherwise might diffuse away due to rounding
- * errors in pressure coupling or the deform option.
- *
- * \param[in]    ir      Input record
- * \param[in]    box_rel Relative box dimensions
- * \param[inout] box     The corrected actual box dimensions
+ * Change box components to box[XX][XX]*box_rel to preserve the relative box shape
  */
-void preserve_box_shape(const t_inputrec *ir, matrix box_rel, matrix box);
+void do_box_rel(int ndim, const matrix deform, matrix box_rel,
+                matrix b, bool bInit);
 
-/*! \brief Determine the relative box components
- *
- * Set box_rel e.g. used in mdrun state, used to preserve the box shape
- * \param[in]    ir      Input record
- * \param[inout] box_rel Relative box dimensions
- * \param[inout] box     Actual box dimensions
+namespace gmx
+{
+
+/*! \brief
+ * Returns whether two boxes are of equal size and shape (within reasonable
+ * tolerance).
  */
-void set_box_rel(const t_inputrec *ir, matrix box_rel, matrix box);
+bool boxesAreEqual(const matrix box1, const matrix box2);
+
+/*! \brief
+ * Returns whether a box is only initialised to zero or not.
+ */
+bool boxIsZero(const matrix box);
+
+} // namespace gmx
 
 #endif

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,9 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/ewald/pme.h"
 #include "gromacs/listed-forces/manage-threading.h"
+#include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/vsite.h"
@@ -58,13 +60,14 @@
  * for initialization and atom-data setup.
  */
 
-void mdAlgorithmsSetupAtomData(t_commrec         *cr,
+void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
                                const t_inputrec  *ir,
                                const gmx_mtop_t  *top_global,
                                gmx_localtop_t    *top,
                                t_forcerec        *fr,
                                t_graph          **graph,
-                               t_mdatoms         *mdatoms,
+                               gmx::MDAtoms      *mdAtoms,
+                               gmx::Constraints  *constr,
                                gmx_vsite_t       *vsite,
                                gmx_shellfc_t     *shellfc)
 {
@@ -76,8 +79,8 @@ void mdAlgorithmsSetupAtomData(t_commrec         *cr,
     if (usingDomDec)
     {
         numAtomIndex = dd_natoms_mdatoms(cr->dd);
-        atomIndex    = cr->dd->gatindex;
-        numHomeAtoms = cr->dd->nat_home;
+        atomIndex    = cr->dd->globalAtomIndices.data();
+        numHomeAtoms = dd_numHomeAtoms(*cr->dd);
     }
     else
     {
@@ -85,8 +88,9 @@ void mdAlgorithmsSetupAtomData(t_commrec         *cr,
         atomIndex    = nullptr;
         numHomeAtoms = top_global->natoms;
     }
-    atoms2md(top_global, ir, numAtomIndex, atomIndex, numHomeAtoms, mdatoms);
+    atoms2md(top_global, ir, numAtomIndex, atomIndex, numHomeAtoms, mdAtoms);
 
+    auto mdatoms = mdAtoms->mdatoms();
     if (usingDomDec)
     {
         dd_sort_local_top(cr->dd, mdatoms, top);
@@ -111,17 +115,17 @@ void mdAlgorithmsSetupAtomData(t_commrec         *cr,
              * We only need to do the thread division here.
              */
             split_vsites_over_threads(top->idef.il, top->idef.iparams,
-                                      mdatoms, FALSE, vsite);
+                                      mdatoms, vsite);
         }
         else
         {
-            set_vsite_top(vsite, top, mdatoms, cr);
+            set_vsite_top(vsite, top, mdatoms);
         }
     }
 
     if (!usingDomDec && ir->ePBC != epbcNONE && !fr->bMolPBC)
     {
-        GMX_ASSERT(graph != NULL, "We use a graph with PBC (no periodic mols) and without DD");
+        GMX_ASSERT(graph != nullptr, "We use a graph with PBC (no periodic mols) and without DD");
 
         *graph = mk_graph(nullptr, &(top->idef), 0, top_global->natoms, FALSE, FALSE);
     }
@@ -138,5 +142,19 @@ void mdAlgorithmsSetupAtomData(t_commrec         *cr,
         make_local_shells(cr, mdatoms, shellfc);
     }
 
-    setup_bonded_threading(fr, &top->idef);
+    setup_bonded_threading(fr->bondedThreading,
+                           fr->natoms_force,
+                           &top->idef);
+
+    gmx_pme_reinit_atoms(fr->pmedata, numHomeAtoms, mdatoms->chargeA);
+    /* This handles the PP+PME rank case where fr->pmedata is valid.
+     * For PME-only ranks, gmx_pmeonly() has its own call to gmx_pme_reinit_atoms().
+     * TODO: this only handles the GPU logic so far, should handle CPU as well.
+     * TODO: this also does not account for TPI.
+     */
+
+    if (constr)
+    {
+        constr->setConstraints(*top, *mdatoms);
+    }
 }

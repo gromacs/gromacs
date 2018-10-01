@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -113,7 +113,7 @@ static int calc_Nbin(real phi, int multiplicity, real core_frac)
         phi += r360;
     }
 
-    rot_width   = 360/multiplicity;
+    rot_width   = 360./multiplicity;
     core_width  = core_frac * rot_width;
     core_offset = (rot_width - core_width)/2.0;
     for (bin = 1; bin <= multiplicity; bin++)
@@ -621,7 +621,7 @@ void get_chi_product_traj (real **dih, int nframes, int nlist,
 
 }
 
-void calc_distribution_props(int nh, int histo[], real start,
+void calc_distribution_props(int nh, const int histo[], real start,
                              int nkkk, t_karplus kkk[],
                              real *S2)
 {
@@ -648,7 +648,7 @@ void calc_distribution_props(int nh, int histo[], real start,
         kkk[i].Jc    = 0;
         kkk[i].Jcsig = 0;
     }
-    tdc = 0, tds = 0;
+    tdc = 0; tds = 0;
     for (j = 0; (j < nh); j++)
     {
         d    = invth*histo[j];
@@ -696,7 +696,7 @@ static void calc_angles(struct t_pbc *pbc,
     }
 }
 
-static real calc_fraction(real angles[], int nangles)
+static real calc_fraction(const real angles[], int nangles)
 {
     int  i;
     real trans = 0, gauche = 0;
@@ -730,18 +730,18 @@ static real calc_fraction(real angles[], int nangles)
 }
 
 static void calc_dihs(struct t_pbc *pbc,
-                      int n4, int index[], real ang[], rvec x_s[])
+                      int n4, const int index[], real ang[], rvec x_s[])
 {
     int  i, ix, t1, t2, t3;
     rvec r_ij, r_kj, r_kl, m, n;
-    real sign, aaa;
+    real aaa;
 
     for (i = ix = 0; (ix < n4); i++, ix += 4)
     {
         aaa = dih_angle(x_s[index[ix]], x_s[index[ix+1]], x_s[index[ix+2]],
                         x_s[index[ix+3]], pbc,
                         r_ij, r_kj, r_kl, m, n,
-                        &sign, &t1, &t2, &t3);
+                        &t1, &t2, &t3);
 
         ang[i] = aaa; /* not taking into account ryckaert bellemans yet */
     }
@@ -785,7 +785,7 @@ void make_histo(FILE *log,
     }
 }
 
-void normalize_histo(int npoints, int histo[], real dx, real normhisto[])
+void normalize_histo(int npoints, const int histo[], real dx, real normhisto[])
 {
     int    i;
     double d, fac;
@@ -961,7 +961,7 @@ void read_ang_dih(const char *trj_fn,
             }
 
             /* Update the distribution histogram */
-            angind = static_cast<int>((angle*maxangstat)/pifac + 0.5);
+            angind = gmx::roundToInt((angle*maxangstat)/pifac);
             if (angind == maxangstat)
             {
                 angind = 0;
@@ -1001,7 +1001,7 @@ void read_ang_dih(const char *trj_fn,
         teller++;
     }
     while (read_next_x(oenv, status, &t, x, box));
-    close_trj(status);
+    close_trx(status);
 
     sfree(x);
     sfree(angles[cur]);

@@ -1,0 +1,178 @@
+GROMACS 2018.3 release notes
+----------------------------
+
+This version was released on August 23, 2018. These release notes document
+the changes that have taken place in GROMACS since version 2018.2, to fix known
+issues. It also incorporates all fixes made in version 2016.5 and
+earlier, which you can find described in the :ref:`release-notes`.
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Multi-domain GPU runs can no longer miss pair interactions
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With systems with empty space in the unit cell, GPU runs with domain
+decomposition would not compute LJ and Coulomb interactions between
+domains when there we no interactions between domains on a rank at some
+point in time.
+
+ - This bug only affects simulations running on GPUs with domain decomposition
+   and containing empty regions of space that can lead to domains being empty.
+ - Possible observations of this bug may have been seemingly random failures
+   of calculations that where not reproducible when restarting a simulation
+   from a checkpoint file, as the domain would then again be filled properly
+   if interactions are present at the beginning.
+ - It is unlikely that this bug will have unnoticed effects on all but
+   very short simulations, as the missing interactions will inevitable lead
+   to simulation instability and crashes.
+ - If a simulation that crashed due to this bug is restarted it can contain
+   a small region around the crash that will be unphysical due to some
+   interactions not being calculated just before the crash itself.
+
+**This is a critical fix and users of 2018.x series that run on GPUs should
+update to this point release**
+
+:issue:`2502`
+
+Fix Conjugate Gradient assertion failure at end of minimization
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When the final step coincided with a coordinate output step,
+conjugate gradient minimization would exit with an assertion failure
+instead of writing confout.gro.
+
+:issue:`2554`
+
+Multi-domain Conjugate Gradient minimimization no longer segfaults.
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2554`
+
+Fix pairlist buffer with Brownian Dynamics
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With Brownian Dynamics and bd-fric > 0, the Verlet pairlist buffer would
+be determined with incorrect masses for constrained atoms and virtual
+sites. This would lead to a too small buffer for typical atomistic
+systems with constraints.
+
+:issue:`2613`
+
+Avoid "atom moved to far" errors
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The introduction of the dual pair list has led to larger nstlist values,
+which leads to larger atom displacements between domain decomposition
+steps. This has made it more likely that the errors
+"An atom moved too far between two domain decomposition steps" and
+"N particles communicated to PME rank M are more than 2/3 times the cut-off
+out of the domain decomposition cell ..." appear for stable systems.
+Now atom displacements are correctly taken into account when determining
+the minimum cell size, so these errors should only appear for unstable systems.
+
+:issue:`2614`
+
+grompp now checks that pull groups are not close to half the box size
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Pull groups that use a reference atom for periodic boundary treatment
+should have all their atoms well within half the box size of this reference.
+When this is not the case, grompp will issue a warning.
+
+:issue:`2397`
+
+Fixed segmentation fault in mdrun with QM/MM ONIOM scheme
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2617`
+
+Correctly specified that PME on GPUs is only supported for dynamical integrators
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Previously PME on GPU support could run (but fail) for energy
+minimization and normal-mode analysis runs.
+
+:issue:`2578`
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed syntax error in make_gromos_rtp.py
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2557`
+
+Fix gmx solvate topology updating
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Removed hard coded solvent names to allow updates to topology based on
+solvent molecule information. Also allows updating with multiple solvent
+types.
+
+:issue:`1929`
+
+Fix bfactor output error caused by fix for :issue:`2511`
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The fix for the PQR file output broke the output of bfactors from other tools.
+
+:issue:`2575`
+
+Made sure that gmx rms can skip values
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When requested to skip values, gmx rms would still output all values despite
+the option. Now it only outputs values that are requested to be processed.
+
+:issue:`2565`
+
+Fix trjconv when not providing structure file
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+trjconv would fail with a segmentation violation when running without any structure
+file due to incomplete initialization of the topology data structure. This fix adds
+the missing checks that prevents the failure.
+
+:issue:`2619`
+
+Fix enforced rotation energy output
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+
+Fixes to improve portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix nvcc host compiler check triggering
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2583`
+
+
+Report up to date hwloc version information
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2591`
+
+
+Disable single compilation unit with CUDA 9.0
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2561`
+
+
+Miscellaneous
+^^^^^^^^^^^^^
+
+Avoid aborting mdrun when GPU sanity check detects errors
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2415`
+
+
+Improve OpenCL kernel performance on AMD Vega GPUs
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The OpenCL kernel optimization flags did not explicitly turn off denorm handling
+which could lead to performance loss. The optimization is now explicitly turned
+on both for consistency with CUDA and performance reasons.
+On AMD Vega GPUs (with ROCm) kernel performance improves by up to 30%.
+
+

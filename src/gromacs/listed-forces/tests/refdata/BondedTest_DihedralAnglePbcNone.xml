@@ -2,7 +2,6 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Real Name="angle">-1.5707964</Real>
-  <Real Name="cosine_angle">-1</Real>
   <Int Name="t1">22</Int>
   <Int Name="t2">22</Int>
   <Int Name="t3">22</Int>

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,28 +65,23 @@ static void string2dvec(char buf[], dvec nums)
 }
 
 
-extern char **read_rotparams(int *ninp_p, t_inpfile **inp_p, t_rot *rot,
+extern char **read_rotparams(std::vector<t_inpfile> *inp, t_rot *rot,
                              warninp_t wi)
 {
-    int         ninp, g, m;
-    t_inpfile  *inp;
-    const char *tmp;
-    char      **grpbuf;
-    char        buf[STRLEN];
-    char        warn_buf[STRLEN];
-    dvec        vec;
-    t_rotgrp   *rotg;
-
-    ninp   = *ninp_p;
-    inp    = *inp_p;
+    int                    g, m;
+    char                 **grpbuf;
+    char                   buf[STRLEN];
+    char                   warn_buf[STRLEN];
+    dvec                   vec;
+    t_rotgrp              *rotg;
 
     /* read rotation parameters */
-    CTYPE("Output frequency for angle, torque and rotation potential energy for the whole group");
-    ITYPE("rot-nstrout",     rot->nstrout, 100);
-    CTYPE("Output frequency for per-slab data (angles, torques and slab centers)");
-    ITYPE("rot-nstsout",     rot->nstsout, 1000);
-    CTYPE("Number of rotation groups");
-    ITYPE("rot-ngroups",     rot->ngrp, 1);
+    printStringNoNewline(inp, "Output frequency for angle, torque and rotation potential energy for the whole group");
+    rot->nstrout = get_eint(inp, "rot-nstrout", 100, wi);
+    printStringNoNewline(inp, "Output frequency for per-slab data (angles, torques and slab centers)");
+    rot->nstsout = get_eint(inp, "rot-nstsout", 1000, wi);
+    printStringNoNewline(inp, "Number of rotation groups");
+    rot->ngrp = get_eint(inp, "rot-ngroups", 1, wi);
 
     if (rot->ngrp < 1)
     {
@@ -101,21 +96,21 @@ extern char **read_rotparams(int *ninp_p, t_inpfile **inp_p, t_rot *rot,
     {
         rotg = &rot->grp[g];
         snew(grpbuf[g], STRLEN);
-        CTYPE("Rotation group name");
+        printStringNoNewline(inp, "Rotation group name");
         sprintf(buf, "rot-group%d", g);
-        STYPE(buf, grpbuf[g], "");
+        setStringEntry(inp, buf, grpbuf[g], "");
 
-        CTYPE("Rotation potential. Can be iso, iso-pf, pm, pm-pf, rm, rm-pf, rm2, rm2-pf, flex, flex-t, flex2, flex2-t");
+        printStringNoNewline(inp, "Rotation potential. Can be iso, iso-pf, pm, pm-pf, rm, rm-pf, rm2, rm2-pf, flex, flex-t, flex2, flex2-t");
         sprintf(buf, "rot-type%d", g);
-        ETYPE(buf, rotg->eType, erotg_names);
+        rotg->eType = get_eenum(inp, buf, erotg_names);
 
-        CTYPE("Use mass-weighting of the rotation group positions");
+        printStringNoNewline(inp, "Use mass-weighting of the rotation group positions");
         sprintf(buf, "rot-massw%d", g);
-        ETYPE(buf, rotg->bMassW, yesno_names);
+        rotg->bMassW = get_eenum(inp, buf, yesno_names);
 
-        CTYPE("Rotation vector, will get normalized");
+        printStringNoNewline(inp, "Rotation vector, will get normalized");
         sprintf(buf, "rot-vec%d", g);
-        STYPE(buf, s_vec, "1.0 0.0 0.0");
+        setStringEntry(inp, buf, s_vec, "1.0 0.0 0.0");
         string2dvec(s_vec, vec);
         /* Normalize the rotation vector */
         if (dnorm(vec) != 0)
@@ -131,12 +126,12 @@ extern char **read_rotparams(int *ninp_p, t_inpfile **inp_p, t_rot *rot,
                 RotStr, g, erotg_names[rotg->eType], vec[0], vec[1], vec[2]);
         for (m = 0; m < DIM; m++)
         {
-            rotg->vec[m] = vec[m];
+            rotg->inputVec[m] = vec[m];
         }
 
-        CTYPE("Pivot point for the potentials iso, pm, rm, and rm2 (nm)");
+        printStringNoNewline(inp, "Pivot point for the potentials iso, pm, rm, and rm2 (nm)");
         sprintf(buf, "rot-pivot%d", g);
-        STYPE(buf, s_vec, "0.0 0.0 0.0");
+        setStringEntry(inp, buf, s_vec, "0.0 0.0 0.0");
         clear_dvec(vec);
         if ( (rotg->eType == erotgISO) || (rotg->eType == erotgPM) || (rotg->eType == erotgRM) || (rotg->eType == erotgRM2) )
         {
@@ -147,63 +142,60 @@ extern char **read_rotparams(int *ninp_p, t_inpfile **inp_p, t_rot *rot,
             rotg->pivot[m] = vec[m];
         }
 
-        CTYPE("Rotation rate (degree/ps) and force constant (kJ/(mol*nm^2))");
+        printStringNoNewline(inp, "Rotation rate (degree/ps) and force constant (kJ/(mol*nm^2))");
         sprintf(buf, "rot-rate%d", g);
-        RTYPE(buf, rotg->rate, 0.0);
+        rotg->rate = get_ereal(inp, buf, 0.0, wi);
 
         sprintf(buf, "rot-k%d", g);
-        RTYPE(buf, rotg->k, 0.0);
+        rotg->k = get_ereal(inp, buf, 0.0, wi);
         if (rotg->k <= 0.0)
         {
             sprintf(warn_buf, "rot-k%d <= 0", g);
             warning_note(wi, warn_buf);
         }
 
-        CTYPE("Slab distance for flexible axis rotation (nm)");
+        printStringNoNewline(inp, "Slab distance for flexible axis rotation (nm)");
         sprintf(buf, "rot-slab-dist%d", g);
-        RTYPE(buf, rotg->slab_dist, 1.5);
+        rotg->slab_dist = get_ereal(inp, buf, 1.5, wi);
         if (rotg->slab_dist <= 0.0)
         {
             sprintf(warn_buf, "rot-slab-dist%d <= 0", g);
             warning_error(wi, warn_buf);
         }
 
-        CTYPE("Minimum value of Gaussian function for the force to be evaluated (for flex* potentials)");
+        printStringNoNewline(inp, "Minimum value of Gaussian function for the force to be evaluated (for flex* potentials)");
         sprintf(buf, "rot-min-gauss%d", g);
-        RTYPE(buf, rotg->min_gaussian, 1e-3);
+        rotg->min_gaussian = get_ereal(inp, buf, 1e-3, wi);
         if (rotg->min_gaussian <= 0.0)
         {
             sprintf(warn_buf, "rot-min-gauss%d <= 0", g);
             warning_error(wi, warn_buf);
         }
 
-        CTYPE("Value of additive constant epsilon' (nm^2) for rm2* and flex2* potentials");
+        printStringNoNewline(inp, "Value of additive constant epsilon' (nm^2) for rm2* and flex2* potentials");
         sprintf(buf, "rot-eps%d", g);
-        RTYPE(buf, rotg->eps, 1e-4);
+        rotg->eps = get_ereal(inp, buf, 1e-4, wi);
         if ( (rotg->eps <= 0.0) && (rotg->eType == erotgRM2 || rotg->eType == erotgFLEX2) )
         {
             sprintf(warn_buf, "rot-eps%d <= 0", g);
             warning_error(wi, warn_buf);
         }
 
-        CTYPE("Fitting method to determine angle of rotation group (rmsd, norm, or potential)");
+        printStringNoNewline(inp, "Fitting method to determine angle of rotation group (rmsd, norm, or potential)");
         sprintf(buf, "rot-fit-method%d", g);
-        ETYPE(buf, rotg->eFittype, erotg_fitnames);
-        CTYPE("For fit type 'potential', nr. of angles around the reference for which the pot. is evaluated");
+        rotg->eFittype = get_eenum(inp, buf, erotg_fitnames);
+        printStringNoNewline(inp, "For fit type 'potential', nr. of angles around the reference for which the pot. is evaluated");
         sprintf(buf, "rot-potfit-nsteps%d", g);
-        ITYPE(buf, rotg->PotAngle_nstep, 21);
+        rotg->PotAngle_nstep = get_eint(inp, buf, 21, wi);
         if ( (rotg->eFittype == erotgFitPOT) && (rotg->PotAngle_nstep < 1) )
         {
             sprintf(warn_buf, "rot-potfit-nsteps%d < 1", g);
             warning_error(wi, warn_buf);
         }
-        CTYPE("For fit type 'potential', distance in degrees between two consecutive angles");
+        printStringNoNewline(inp, "For fit type 'potential', distance in degrees between two consecutive angles");
         sprintf(buf, "rot-potfit-step%d", g);
-        RTYPE(buf, rotg->PotAngle_step, 0.25);
+        rotg->PotAngle_step = get_ereal(inp, buf, 0.25, wi);
     }
-
-    *ninp_p   = ninp;
-    *inp_p    = inp;
 
     return grpbuf;
 }
@@ -213,7 +205,7 @@ extern char **read_rotparams(int *ninp_p, t_inpfile **inp_p, t_rot *rot,
 static void check_box_unchanged(matrix f_box, matrix box, char fn[], warninp_t wi)
 {
     int      i, ii;
-    gmx_bool bSame = TRUE;
+    bool     bSame = TRUE;
     char     warn_buf[STRLEN];
 
 
@@ -241,7 +233,7 @@ static void check_box_unchanged(matrix f_box, matrix box, char fn[], warninp_t w
 /* Extract the reference positions for the rotation group(s) */
 extern void set_reference_positions(
         t_rot *rot, rvec *x, matrix box,
-        const char *fn, gmx_bool bSet, warninp_t wi)
+        const char *fn, bool bSet, warninp_t wi)
 {
     int              g, i, ii;
     t_rotgrp        *rotg;

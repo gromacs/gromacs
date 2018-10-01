@@ -52,6 +52,20 @@ Doxygen documentation file for directories in the source tree.
  */
 
 /*! \libinternal
+\dir src/gromacs/compat
+\brief \ref group_compatibility
+
+\ingroup group_compatibility
+ */
+
+/*! \internal
+\dir src/gromacs/compat/tests
+\brief Tests for \ref group_compatibility
+
+\ingroup group_compatibility
+ */
+
+/*! \libinternal
 \dir src/gromacs/onlinehelp
 \brief \ref module_onlinehelp
 

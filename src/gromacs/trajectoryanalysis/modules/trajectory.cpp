@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,17 +74,17 @@ class Trajectory : public TrajectoryAnalysisModule
     public:
         Trajectory();
 
-        virtual void initOptions(IOptionsContainer          *options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation        &top);
+        void initOptions(IOptionsContainer          *options,
+                         TrajectoryAnalysisSettings *settings) override;
+        void optionsFinished(TrajectoryAnalysisSettings *settings) override;
+        void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                          const TopologyInformation        &top) override;
 
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+        void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                          TrajectoryAnalysisModuleData *pdata) override;
 
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
+        void finishAnalysis(int nframes) override;
+        void writeOutput() override;
 
     private:
         SelectionList                       sel_;
@@ -92,19 +92,17 @@ class Trajectory : public TrajectoryAnalysisModule
         std::string                         fnX_;
         std::string                         fnV_;
         std::string                         fnF_;
-        bool                                dimMask_[4];
-        bool                                maskSet_[4];
+        std::array<bool, 4>                 dimMask_;
+        std::array<bool, 4>                 maskSet_;
 
         AnalysisData                        xdata_;
         AnalysisData                        vdata_;
         AnalysisData                        fdata_;
 };
 
-Trajectory::Trajectory()
+Trajectory::Trajectory() :
+    dimMask_ {true, true, true, false}, maskSet_ {}
 {
-    std::fill(std::begin(dimMask_), std::end(dimMask_), true);
-    dimMask_[DIM] = false;
-    std::fill(std::begin(maskSet_), std::end(maskSet_), false);
     registerAnalysisDataset(&xdata_, "x");
     registerAnalysisDataset(&vdata_, "v");
     registerAnalysisDataset(&fdata_, "f");
@@ -194,7 +192,7 @@ Trajectory::initAnalysis(const TrajectoryAnalysisSettings &settings,
         }
         AnalysisDataVectorPlotModulePointer plot(
                 new AnalysisDataVectorPlotModule(settings.plotSettings()));
-        plot->setWriteMask(dimMask_);
+        plot->setWriteMask(dimMask_.data());
         plot->setFileName(fnX_);
         plot->setTitle("Coordinates");
         plot->setXAxisIsTime();
@@ -211,7 +209,7 @@ Trajectory::initAnalysis(const TrajectoryAnalysisSettings &settings,
         }
         AnalysisDataVectorPlotModulePointer plot(
                 new AnalysisDataVectorPlotModule(settings.plotSettings()));
-        plot->setWriteMask(dimMask_);
+        plot->setWriteMask(dimMask_.data());
         plot->setFileName(fnV_);
         plot->setTitle("Velocities");
         plot->setXAxisIsTime();
@@ -228,7 +226,7 @@ Trajectory::initAnalysis(const TrajectoryAnalysisSettings &settings,
         }
         AnalysisDataVectorPlotModulePointer plot(
                 new AnalysisDataVectorPlotModule(settings.plotSettings()));
-        plot->setWriteMask(dimMask_);
+        plot->setWriteMask(dimMask_.data());
         plot->setFileName(fnF_);
         plot->setTitle("Forces");
         plot->setXAxisIsTime();
@@ -238,68 +236,43 @@ Trajectory::initAnalysis(const TrajectoryAnalysisSettings &settings,
 }
 
 
+//! Helper function for Trajectory::analyzeFrame
+template<typename T> void
+analyzeFrameImpl(int frnr, const t_trxframe &fr,
+                 AnalysisDataHandle* dh, const SelectionList &sel, T getField)
+{
+    if (dh->isValid())
+    {
+        dh->startFrame(frnr, fr.time);
+        for (size_t g = 0; g < sel.size(); ++g)
+        {
+            dh->selectDataSet(g);
+            for (int i = 0; i < sel[g].posCount(); ++i)
+            {
+                const SelectionPosition &pos = sel[g].position(i);
+                dh->setPoints(i*3, 3, getField(pos), pos.selected());
+            }
+        }
+        dh->finishFrame();
+    }
+}
+
 void
 Trajectory::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
                          TrajectoryAnalysisModuleData *pdata)
 {
+    AnalysisDataHandle   dh  = pdata->dataHandle(xdata_);
     const SelectionList &sel = pdata->parallelSelections(sel_);
-
-    // There is some duplication here, but cppcheck cannot handle function
-    // types that return rvec references, and MSVC also apparently segfaults
-    // when using std::function with a member function here...
-    {
-        AnalysisDataHandle dh = pdata->dataHandle(xdata_);
-        if (dh.isValid())
-        {
-            dh.startFrame(frnr, fr.time);
-            for (size_t g = 0; g < sel.size(); ++g)
-            {
-                dh.selectDataSet(g);
-                for (int i = 0; i < sel[g].posCount(); ++i)
-                {
-                    const SelectionPosition &pos = sel[g].position(i);
-                    dh.setPoints(i*3, 3, pos.x(), pos.selected());
-                }
-            }
-            dh.finishFrame();
-        }
-    }
+    analyzeFrameImpl(frnr, fr, &dh, sel, [](const SelectionPosition &pos) { return pos.x(); });
     if (fr.bV)
     {
-        AnalysisDataHandle dh = pdata->dataHandle(xdata_);
-        if (dh.isValid())
-        {
-            dh.startFrame(frnr, fr.time);
-            for (size_t g = 0; g < sel.size(); ++g)
-            {
-                dh.selectDataSet(g);
-                for (int i = 0; i < sel[g].posCount(); ++i)
-                {
-                    const SelectionPosition &pos = sel[g].position(i);
-                    dh.setPoints(i*3, 3, pos.v(), pos.selected());
-                }
-            }
-            dh.finishFrame();
-        }
+        analyzeFrameImpl(frnr, fr, &dh, sel, [](const SelectionPosition &pos) { return pos.v(); });
     }
     if (fr.bF)
     {
-        AnalysisDataHandle dh = pdata->dataHandle(xdata_);
-        if (dh.isValid())
-        {
-            dh.startFrame(frnr, fr.time);
-            for (size_t g = 0; g < sel.size(); ++g)
-            {
-                dh.selectDataSet(g);
-                for (int i = 0; i < sel[g].posCount(); ++i)
-                {
-                    const SelectionPosition &pos = sel[g].position(i);
-                    dh.setPoints(i*3, 3, pos.f(), pos.selected());
-                }
-            }
-            dh.finishFrame();
-        }
+        analyzeFrameImpl(frnr, fr, &dh, sel, [](const SelectionPosition &pos) { return pos.f(); });
     }
+
 }
 
 

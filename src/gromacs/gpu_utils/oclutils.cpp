@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,39 +48,39 @@
 
 #include <string>
 
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-/*! \brief Launches synchronous or asynchronous host to device memory copy.
- *
- *  If copy_event is not NULL, on return it will contain an event object
- *  identifying this particular host to device operation. The event can further
- *  be used to queue a wait for this operation or to query profiling information.
- */
-static int ocl_copy_H2D_generic(cl_mem d_dest, void* h_src,
-                                size_t offset, size_t bytes,
-                                bool bAsync /* = false*/,
-                                cl_command_queue command_queue,
-                                cl_event *copy_event)
+int ocl_copy_H2D(cl_mem d_dest, void* h_src,
+                 size_t offset, size_t bytes,
+                 GpuApiCallBehavior transferKind,
+                 cl_command_queue command_queue,
+                 cl_event *copy_event)
 {
     cl_int gmx_unused cl_error;
 
-    if (d_dest == NULL || h_src == NULL || bytes == 0)
+    if (d_dest == nullptr || h_src == nullptr || bytes == 0)
     {
         return -1;
     }
 
-    if (bAsync)
+    switch (transferKind)
     {
-        cl_error = clEnqueueWriteBuffer(command_queue, d_dest, CL_FALSE, offset, bytes, h_src, 0, NULL, copy_event);
-        assert(cl_error == CL_SUCCESS);
-        // TODO: handle errors
-    }
-    else
-    {
-        cl_error = clEnqueueWriteBuffer(command_queue, d_dest, CL_TRUE, offset, bytes, h_src, 0, NULL, copy_event);
-        assert(cl_error == CL_SUCCESS);
-        // TODO: handle errors
+        case GpuApiCallBehavior::Async:
+            cl_error = clEnqueueWriteBuffer(command_queue, d_dest, CL_FALSE, offset, bytes, h_src, 0, nullptr, copy_event);
+            assert(cl_error == CL_SUCCESS);
+            // TODO: handle errors
+            break;
+
+        case GpuApiCallBehavior::Sync:
+            cl_error = clEnqueueWriteBuffer(command_queue, d_dest, CL_TRUE, offset, bytes, h_src, 0, nullptr, copy_event);
+            assert(cl_error == CL_SUCCESS);
+            // TODO: handle errors
+            break;
+
+        default:
+            throw;
     }
 
     return 0;
@@ -88,7 +88,7 @@ static int ocl_copy_H2D_generic(cl_mem d_dest, void* h_src,
 
 /*! \brief Launches asynchronous host to device memory copy.
  *
- *  If copy_event is not NULL, on return it will contain an event object
+ *  If copy_event is not nullptr, on return it will contain an event object
  *  identifying this particular host to device operation. The event can further
  *  be used to queue a wait for this operation or to query profiling information.
  */
@@ -97,48 +97,47 @@ int ocl_copy_H2D_async(cl_mem d_dest, void * h_src,
                        cl_command_queue command_queue,
                        cl_event *copy_event)
 {
-    return ocl_copy_H2D_generic(d_dest, h_src, offset, bytes, true, command_queue, copy_event);
+    return ocl_copy_H2D(d_dest, h_src, offset, bytes, GpuApiCallBehavior::Async, command_queue, copy_event);
 }
 
 /*! \brief Launches synchronous host to device memory copy.
  */
-int ocl_copy_H2D(cl_mem d_dest, void * h_src,
-                 size_t offset, size_t bytes,
-                 cl_command_queue command_queue)
+int ocl_copy_H2D_sync(cl_mem d_dest, void * h_src,
+                      size_t offset, size_t bytes,
+                      cl_command_queue command_queue)
 {
-    return ocl_copy_H2D_generic(d_dest, h_src, offset, bytes, false, command_queue, NULL);
+    return ocl_copy_H2D(d_dest, h_src, offset, bytes, GpuApiCallBehavior::Sync, command_queue, nullptr);
 }
 
-/*! \brief Launches synchronous or asynchronous device to host memory copy.
- *
- *  If copy_event is not NULL, on return it will contain an event object
- *  identifying this particular device to host operation. The event can further
- *  be used to queue a wait for this operation or to query profiling information.
- */
-int ocl_copy_D2H_generic(void * h_dest, cl_mem d_src,
-                         size_t offset, size_t bytes,
-                         bool bAsync,
-                         cl_command_queue command_queue,
-                         cl_event *copy_event)
+int ocl_copy_D2H(void * h_dest, cl_mem d_src,
+                 size_t offset, size_t bytes,
+                 GpuApiCallBehavior transferKind,
+                 cl_command_queue command_queue,
+                 cl_event *copy_event)
 {
     cl_int gmx_unused cl_error;
 
-    if (h_dest == NULL || d_src == NULL || bytes == 0)
+    if (h_dest == nullptr || d_src == nullptr || bytes == 0)
     {
         return -1;
     }
 
-    if (bAsync)
+    switch (transferKind)
     {
-        cl_error = clEnqueueReadBuffer(command_queue, d_src, CL_FALSE, offset, bytes, h_dest, 0, NULL, copy_event);
-        assert(cl_error == CL_SUCCESS);
-        // TODO: handle errors
-    }
-    else
-    {
-        cl_error = clEnqueueReadBuffer(command_queue, d_src, CL_TRUE, offset, bytes, h_dest, 0, NULL, copy_event);
-        assert(cl_error == CL_SUCCESS);
-        // TODO: handle errors
+        case GpuApiCallBehavior::Async:
+            cl_error = clEnqueueReadBuffer(command_queue, d_src, CL_FALSE, offset, bytes, h_dest, 0, nullptr, copy_event);
+            assert(cl_error == CL_SUCCESS);
+            // TODO: handle errors
+            break;
+
+        case GpuApiCallBehavior::Sync:
+            cl_error = clEnqueueReadBuffer(command_queue, d_src, CL_TRUE, offset, bytes, h_dest, 0, nullptr, copy_event);
+            assert(cl_error == CL_SUCCESS);
+            // TODO: handle errors
+            break;
+
+        default:
+            throw;
     }
 
     return 0;
@@ -146,7 +145,7 @@ int ocl_copy_D2H_generic(void * h_dest, cl_mem d_src,
 
 /*! \brief Launches asynchronous device to host memory copy.
  *
- *  If copy_event is not NULL, on return it will contain an event object
+ *  If copy_event is not nullptr, on return it will contain an event object
  *  identifying this particular host to device operation. The event can further
  *  be used to queue a wait for this operation or to query profiling information.
  */
@@ -155,7 +154,7 @@ int ocl_copy_D2H_async(void * h_dest, cl_mem d_src,
                        cl_command_queue command_queue,
                        cl_event *copy_event)
 {
-    return ocl_copy_D2H_generic(h_dest, d_src, offset, bytes, true, command_queue, copy_event);
+    return ocl_copy_D2H(h_dest, d_src, offset, bytes, GpuApiCallBehavior::Async, command_queue, copy_event);
 }
 
 /*! \brief \brief Allocates nbytes of host memory. Use ocl_free to free memory allocated with this function.
@@ -167,7 +166,7 @@ int ocl_copy_D2H_async(void * h_dest, cl_mem d_src,
  * \param[in,out]    h_ptr   Pointer where to store the address of the newly allocated buffer.
  * \param[in]        nbytes  Size in bytes of the buffer to be allocated.
  */
-void ocl_pmalloc(void **h_ptr, size_t nbytes)
+void pmalloc(void **h_ptr, size_t nbytes)
 {
     /* Need a temporary type whose size is 1 byte, so that the
      * implementation of snew_aligned can cope without issuing
@@ -182,18 +181,17 @@ void ocl_pmalloc(void **h_ptr, size_t nbytes)
     snew_aligned(*temporary, nbytes, 16);
 }
 
-/*! \brief Frees memory allocated with ocl_pmalloc.
+/*! \brief Frees memory allocated with pmalloc.
  *
- * \param[in]    h_ptr   Buffer allocated with ocl_pmalloc that needs to be freed.
+ * \param[in]    h_ptr   Buffer allocated with pmalloc that needs to be freed.
  */
-void ocl_pfree(void *h_ptr)
+void pfree(void *h_ptr)
 {
 
     if (h_ptr)
     {
         sfree_aligned(h_ptr);
     }
-    return;
 }
 
 /*! \brief Convert error code to diagnostic string */
@@ -271,6 +269,7 @@ std::string ocl_get_error_string(cl_int error)
         case -1003: return "CL_INVALID_D3D10_RESOURCE_KHR";
         case -1004: return "CL_D3D10_RESOURCE_ALREADY_ACQUIRED_KHR";
         case -1005: return "CL_D3D10_RESOURCE_NOT_ACQUIRED_KHR";
-        default: return "Unknown OpenCL error";
+        default:    return "Unknown OpenCL error: " +
+                   std::to_string(static_cast<int32_t>(error));
     }
 }

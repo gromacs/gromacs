@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,9 +39,11 @@
 
 #include "nm2type.h"
 
-#include <string.h>
+#include <cstring>
 
 #include <algorithm>
+#include <string>
+#include <vector>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
@@ -58,10 +60,10 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
+static void rd_nm2type_file(const std::string &filename, int *nnm, t_nm2type **nmp)
 {
     FILE         *fp;
-    gmx_bool      bCont;
+    bool          bCont;
     char          libfilename[128];
     char          format[128], f1[128];
     char          buf[1024], elem[16], type[16], nbbuf[16], **newbuf;
@@ -69,10 +71,10 @@ static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
     double        qq, mm;
     t_nm2type    *nm2t = nullptr;
 
-    fp = fflib_open(fn);
+    fp = fflib_open(filename);
     if (nullptr == fp)
     {
-        gmx_fatal(FARGS, "Can not find %s in library directory", fn);
+        gmx_fatal(FARGS, "Can not find %s in library directory", filename.c_str());
     }
 
     nnnm = *nnm;
@@ -132,20 +134,13 @@ static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
 
 t_nm2type *rd_nm2type(const char *ffdir, int *nnm)
 {
-    int        nff, f;
-    char     **ff;
-    t_nm2type *nm;
-
-    nff  = fflib_search_file_end(ffdir, ".n2t", FALSE, &ff);
+    std::vector<std::string> ff  = fflib_search_file_end(ffdir, ".n2t", FALSE);
     *nnm = 0;
-    nm   = nullptr;
-    for (f = 0; f < nff; f++)
+    t_nm2type               *nm = nullptr;
+    for (const auto &filename : ff)
     {
-        rd_nm2type_file(ff[f], nnm, &nm);
-        sfree(ff[f]);
+        rd_nm2type_file(filename, nnm, &nm);
     }
-    sfree(ff);
-
     return nm;
 }
 
@@ -343,7 +338,7 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
                 atoms->atom[i].qB = alpha;
                 atoms->atom[i].m  = atoms->atom[i].mB = mm;
                 k                 = add_atomtype(atype, tab, &(atoms->atom[i]), type, param,
-                                                 atoms->atom[i].type, 0, 0, 0, atomnr, 0, 0);
+                                                 atoms->atom[i].type, atomnr);
             }
             atoms->atom[i].type  = k;
             atoms->atom[i].typeB = k;

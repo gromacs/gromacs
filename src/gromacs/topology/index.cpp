@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,10 +38,10 @@
 
 #include "index.h"
 
-#include <assert.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cassert>
+#include <cctype>
+#include <cstdlib>
+#include <cstring>
 
 #include <algorithm>
 
@@ -113,7 +113,7 @@ void write_index(const char *outf, t_blocka *b, char **gnames, gmx_bool bDuplica
     gmx_ffclose(out);
 }
 
-void add_grp(t_blocka *b, char ***gnames, int nra, int a[], const char *name)
+void add_grp(t_blocka *b, char ***gnames, int nra, const int a[], const char *name)
 {
     int i;
 
@@ -132,7 +132,7 @@ void add_grp(t_blocka *b, char ***gnames, int nra, int a[], const char *name)
 
 /* compare index in `a' with group in `b' at `index',
    when `index'<0 it is relative to end of `b' */
-static gmx_bool grp_cmp(t_blocka *b, int nra, int a[], int index)
+static gmx_bool grp_cmp(t_blocka *b, int nra, const int a[], int index)
 {
     int i;
 
@@ -200,14 +200,14 @@ mk_aid(const t_atoms *atoms, const char ** restype, const char * typestring, int
 {
     int     *a;
     int      i;
-    int      res;
+    bool     res;
 
     snew(a, atoms->nr);
     *nra = 0;
     for (i = 0; (i < atoms->nr); i++)
     {
-        res = !gmx_strcasecmp(restype[atoms->atom[i].resind], typestring);
-        if (bMatch == FALSE)
+        res = gmx_strcasecmp(restype[atoms->atom[i].resind], typestring) == 0;
+        if (!bMatch)
         {
             res = !res;
         }
@@ -343,10 +343,10 @@ static void analyse_other(const char ** restype, const t_atoms *atoms,
 }
 
 /*! \brief
- * Cata necessary to construct a single (protein) index group in
+ * Data necessary to construct a single (protein) index group in
  * analyse_prot().
  */
-typedef struct gmx_help_make_index_group
+typedef struct gmx_help_make_index_group // NOLINT(clang-analyzer-optin.performance.Padding)
 {
     /** The set of atom names that will be used to form this index group */
     const char **defining_atomnames;
@@ -423,7 +423,7 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
         }
     }
     /* find matching or complement atoms */
-    for (i = 0; (i < (int)num_index_groups); i++)
+    for (i = 0; (i < num_index_groups); i++)
     {
         nra = 0;
         for (n = 0; (n < atoms->nr); n++)
@@ -470,7 +470,7 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
 
     if (bASK)
     {
-        for (i = 0; (i < (int)num_index_groups); i++)
+        for (i = 0; (i < num_index_groups); i++)
         {
             printf("Split %12s into %5d residues (y/n) ? ", constructing_data[i].group_name, npres);
             if (gmx_ask_yesno(bASK))
@@ -579,7 +579,7 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
     char           ** p_typename;
     int               iwater, iion;
     int               nwater, nion;
-    int               found;
+    bool              found;
 
     if (bVerb)
     {
@@ -619,10 +619,10 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
             /* Note that this does not lead to a N*N loop, but N*K, where
              * K is the number of residue _types_, which is small and independent of N.
              */
-            found = 0;
+            found = false;
             for (k = 0; k < ntypes && !found; k++)
             {
-                found = !strcmp(restype[i], p_typename[k]);
+                found = strcmp(restype[i], p_typename[k]) == 0;
             }
             if (!found)
             {
@@ -734,7 +734,7 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
 }
 
 
-void check_index(char *gname, int n, int index[], char *traj, int natoms)
+void check_index(const char *gname, int n, int index[], const char *traj, int natoms)
 {
     int i;
 
@@ -799,7 +799,7 @@ t_blocka *init_index(const char *gfile, char ***grpname)
                     maxentries += 1024;
                     srenew(b->a, maxentries);
                 }
-                assert(b->a != NULL); // for clang analyzer
+                assert(b->a != nullptr); // for clang analyzer
                 b->a[i] = strtol(str, nullptr, 10)-1;
                 b->index[b->nr]++;
                 (b->nra)++;
@@ -811,7 +811,7 @@ t_blocka *init_index(const char *gfile, char ***grpname)
 
     for (i = 0; (i < b->nr); i++)
     {
-        assert(b->a != NULL); // for clang analyzer
+        assert(b->a != nullptr); // for clang analyzer
         for (j = b->index[i]; (j < b->index[i+1]); j++)
         {
             if (b->a[j] < 0)
@@ -829,7 +829,7 @@ static void minstring(char *str)
 {
     int i;
 
-    for (i = 0; (i < (int)strlen(str)); i++)
+    for (i = 0; (i < static_cast<int>(strlen(str))); i++)
     {
         if (str[i] == '-')
         {
@@ -999,21 +999,14 @@ void rd_index(const char *statfile, int ngrps, int isize[],
     }
     grps = init_index(statfile, &gnames);
     rd_groups(grps, gnames, grpnames, ngrps, isize, index, grpnr);
-}
-
-void rd_index_nrs(char *statfile, int ngrps, int isize[],
-                  int *index[], char *grpnames[], int grpnr[])
-{
-    char    **gnames;
-    t_blocka *grps;
-
-    if (!statfile)
+    for (int i = 0; i < grps->nr; i++)
     {
-        gmx_fatal(FARGS, "No index file specified");
+        sfree(gnames[i]);
     }
-    grps = init_index(statfile, &gnames);
-
-    rd_groups(grps, gnames, grpnames, ngrps, isize, index, grpnr);
+    sfree(gnames);
+    sfree(grpnr);
+    done_blocka(grps);
+    sfree(grps);
 }
 
 void get_index(const t_atoms *atoms, const char *fnm, int ngrps,
@@ -1041,6 +1034,15 @@ void get_index(const t_atoms *atoms, const char *fnm, int ngrps,
     }
 
     rd_groups(grps, *gnames, grpnames, ngrps, isize, index, grpnr);
+    for (int i = 0; i < grps->nr; ++i)
+    {
+        sfree((*gnames)[i]);
+    }
+    sfree(*gnames);
+    sfree(gnames);
+    sfree(grpnr);
+    done_blocka(grps);
+    sfree(grps);
 }
 
 t_cluster_ndx *cluster_index(FILE *fplog, const char *ndx)

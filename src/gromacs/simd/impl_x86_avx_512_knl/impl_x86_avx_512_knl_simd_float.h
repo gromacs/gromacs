@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,7 @@
 
 #include <immintrin.h>
 
+#include "gromacs/math/utilities.h"
 #include "gromacs/simd/impl_x86_avx_512/impl_x86_avx_512_simd_float.h"
 
 namespace gmx
@@ -77,6 +78,7 @@ maskzRcp(SimdFloat x, SimdFBool m)
     };
 }
 
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall
 exp2(SimdFloat x)
 {
@@ -85,14 +87,24 @@ exp2(SimdFloat x)
     };
 }
 
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall
 exp(SimdFloat x)
 {
     const __m512     argscale    = _mm512_set1_ps(1.44269504088896341f);
     const __m512     invargscale = _mm512_set1_ps(-0.69314718055994528623f);
 
-    __m512           xscaled     = _mm512_mul_ps(x.simdInternal_, argscale);
-    __m512           r           = _mm512_exp2a23_ps(xscaled);
+    if (opt == MathOptimization::Safe)
+    {
+        // Set the limit to gurantee flush to zero
+        const SimdFloat smallArgLimit(-88.f);
+        // Since we multiply the argument by 1.44, for the safe version we need to make
+        // sure this doesn't result in overflow
+        x = max(x, smallArgLimit);
+    }
+
+    __m512 xscaled = _mm512_mul_ps(x.simdInternal_, argscale);
+    __m512 r       = _mm512_exp2a23_ps(xscaled);
 
     // exp2a23_ps provides 23 bits of accuracy, but we ruin some of that with our argument
     // scaling. To correct this, we find the difference between the scaled argument and

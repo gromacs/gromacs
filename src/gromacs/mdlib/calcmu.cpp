@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,15 +39,15 @@
 
 #include "calcmu.h"
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 
-void calc_mu(int start, int homenr, rvec x[], real q[], real qB[],
+void calc_mu(int start, int homenr, gmx::ArrayRef<gmx::RVec> x, const real q[], const real qB[],
              int nChargePerturbed,
              dvec mu, dvec mu_B)
 {
@@ -102,7 +102,7 @@ gmx_bool read_mu(FILE *fp, rvec mu, real *vol)
     /* For backward compatibility */
     real mmm[4];
 
-    if (fread(mmm, (size_t)(4*sizeof(real)), 1, fp) != 1)
+    if (fread(mmm, static_cast<size_t>(4*sizeof(real)), 1, fp) != 1)
     {
         return FALSE;
     }

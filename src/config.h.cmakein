@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,9 +65,6 @@
 /* Target platform is x86 or x86_64 */
 #cmakedefine01 GMX_TARGET_X86
 
-/* Target platform is BlueGene/Q */
-#cmakedefine01 GMX_TARGET_BGQ
-
 /** Define if we are building natively on Windows */
 #cmakedefine01 GMX_NATIVE_WINDOWS
 
@@ -89,6 +86,9 @@
 /* AVX2 256-bit SIMD instruction set level was selected */
 #cmakedefine01 GMX_SIMD_X86_AVX2_256
 
+/* AVX2 128-bit SIMD instruction set level was selected */
+#cmakedefine01 GMX_SIMD_X86_AVX2_128
+
 /* MIC (Xeon Phi) SIMD instruction set level was selected */
 #cmakedefine01 GMX_SIMD_X86_MIC
 
@@ -104,9 +104,6 @@
 /* ARM (AArch64) NEON Advanced SIMD instruction set level was selected */
 #cmakedefine01 GMX_SIMD_ARM_NEON_ASIMD
 
-/* IBM QPX was selected as SIMD instructions (e.g. BlueGene/Q) */
-#cmakedefine01 GMX_SIMD_IBM_QPX
-
 /* IBM VMX was selected as SIMD instructions (Power 6 and later) */
 #cmakedefine01 GMX_SIMD_IBM_VMX
 
@@ -120,7 +117,7 @@
 #cmakedefine01 GMX_SIMD_REFERENCE
 
 /* String for SIMD instruction choice (for writing to log files and stdout) */
-#define GMX_SIMD_STRING "@GMX_SIMD@"
+#define GMX_SIMD_STRING "@GMX_SIMD_ACTIVE@"
 
 /* Calling convention string (if any) for routines with SIMD variable args */
 #define gmx_simdcall @GMX_SIMD_CALLING_CONVENTION@
@@ -130,6 +127,9 @@
 
 /* Target mantissa accuracy for SIMD double precision math */
 #define GMX_SIMD_ACCURACY_BITS_DOUBLE @GMX_SIMD_ACCURACY_BITS_DOUBLE@
+
+/* Enable code that requires AVX-512 instruction support, without GMX_SIMD=AVX_512 */
+#cmakedefine01 SIMD_AVX_512_CXX_SUPPORTED
 
 /* Whether a double-precision configuration may target accuracy equivalent to single precision */
 #cmakedefine01 GMX_RELAXED_DOUBLE_PRECISION
@@ -163,7 +163,7 @@
 #cmakedefine01 GMX_OPENMP
 
 /* Use the Portable Hardware Locality package (hwloc) */
-#cmakedefine01 GMX_HWLOC
+#cmakedefine01 GMX_USE_HWLOC
 
 /* Can and should use nice(3) to set priority */
 #cmakedefine01 GMX_USE_NICE
@@ -204,13 +204,10 @@
 /* Define when Windows threads are used */
 #cmakedefine THREAD_WINDOWS
 
-/* Define native atomic operations are found */
-#cmakedefine TMPI_ATOMICS
-
 /* Define for busy wait option  */
-/* See gmxpre-config.h.cmakein for explanation for the #ifdef */
+/* See gmxpre-config.h.cmakein for explanation for the #ifndef */
 #ifndef TMPI_WAIT_FOR_NO_ONE
-#cmakedefine TMPI_WAIT_FOR_NO_ONE
+#cmakedefine01 TMPI_WAIT_FOR_NO_ONE
 #endif
 
 /* Define for copy buffer option */
@@ -244,11 +241,11 @@
 /* Use a single compilation unit when compiling the CUDA (non-bonded) kernels.  */
 #cmakedefine01 GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
 
-/* Use NVML */
-#cmakedefine01 HAVE_NVML
+/* Cluster size used by nonbonded OpenCL kernel. Should be 8 for NVIDIA/AMD and 4 for Intel */
+#define GMX_OCL_NB_CLUSTER_SIZE @GMX_OCL_NB_CLUSTER_SIZE@
 
 /* Define relative path to OpenCL kernels */
-#define OCL_INSTALL_DIR "@OCL_INSTALL_DIR@"
+#define GMX_INSTALL_OCLDIR "@GMX_INSTALL_OCLDIR@"
 
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #cmakedefine01 HAVE_FSEEKO
@@ -293,7 +290,7 @@
 #cmakedefine01 HAVE_GETTIMEOFDAY
 
 /* Define to 1 if you have the rdtscp instruction. */
-#cmakedefine HAVE_RDTSCP
+#cmakedefine01 HAVE_RDTSCP
 
 /* Define to 1 if you have the fsync() function. */
 #cmakedefine01 HAVE_FSYNC
@@ -330,6 +327,13 @@
 
 /* Define to 1 if yo have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H
+#  ifdef __APPLE__
+// Mac OS 13.x has a bug where dispatch.h generates an error for OpenCL builds if
+// HAVE_UNISTD_H is merely defined, but not set to 1. Since unistd.h should always
+// be available on this platform we simply undefine and redefine it to 1 for now
+#    undef  HAVE_UNISTD_H
+#    define HAVE_UNISTD_H 1
+#endif
 
 /* Define to 1 if yo have the <pwd.h> header file. */
 #cmakedefine01 HAVE_PWD_H
@@ -384,6 +388,15 @@
 
 /* Define if we have feenableexcept */
 #cmakedefine01 HAVE_FEENABLEEXCEPT
+
+/* Define if we have fedisableexcept */
+#cmakedefine01 HAVE_FEDISABLEEXCEPT
+
+/* Define if we have lmfit support */
+#cmakedefine01 HAVE_LMFIT
+
+/* Build using clang analyzer */
+#cmakedefine01 GMX_CLANG_ANALYZER
 
 /*! \endcond */
 

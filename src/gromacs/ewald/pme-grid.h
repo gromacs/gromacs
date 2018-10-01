@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,8 +41,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#include "pme-internal.h"
-
+struct gmx_pme_t;
 
 /*! \brief
  * We allow coordinates to be out the unit-cell by up to 2 box lengths,
@@ -56,24 +55,26 @@ constexpr int c_pmeMaxUnitcellShift = 2;
  */
 constexpr int c_pmeNeighborUnitcellCount = 2*c_pmeMaxUnitcellShift + 1;
 
+struct pmegrid_t;
+struct pmegrids_t;
 
 #if GMX_MPI
 void
-gmx_sum_qgrid_dd(struct gmx_pme_t *pme, real *grid, int direction);
+gmx_sum_qgrid_dd(gmx_pme_t *pme, real *grid, int direction);
 #endif
 
 int
-copy_pmegrid_to_fftgrid(const gmx_pme_t *pme, real *pmegrid, real *fftgrid, int grid_index);
+copy_pmegrid_to_fftgrid(const gmx_pme_t *pme, const real *pmegrid, real *fftgrid, int grid_index);
 
 int
-copy_fftgrid_to_pmegrid(struct gmx_pme_t *pme, const real *fftgrid, real *pmegrid, int grid_index,
+copy_fftgrid_to_pmegrid(gmx_pme_t *pme, const real *fftgrid, real *pmegrid, int grid_index,
                         int nthread, int thread);
 
 void
 wrap_periodic_pmegrid(const gmx_pme_t *pme, real *pmegrid);
 
 void
-unwrap_periodic_pmegrid(struct gmx_pme_t *pme, real *pmegrid);
+unwrap_periodic_pmegrid(gmx_pme_t *pme, real *pmegrid);
 
 void
 pmegrid_init(pmegrid_t *grid,
@@ -106,10 +107,5 @@ set_grid_alignment(int *pmegrid_nz, int pme_order);
 
 void
 reuse_pmegrids(const pmegrids_t *oldgrid, pmegrids_t *newgrid);
-
-/* This function is called from gmx_pme_do() only from debugging code
-   that is commented out. */
-void
-dump_local_fftgrid(struct gmx_pme_t *pme, const real *fftgrid);
 
 #endif

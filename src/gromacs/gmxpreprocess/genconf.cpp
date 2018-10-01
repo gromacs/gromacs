@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,7 @@
 #include "gromacs/utility/smalloc.h"
 
 static void rand_rot(int natoms, rvec x[], rvec v[], vec4 xrot[], vec4 vrot[],
-                     gmx::DefaultRandomEngine * rng, rvec max_rot)
+                     gmx::DefaultRandomEngine * rng, const rvec max_rot)
 {
     mat4 mt1, mt2, mr[DIM], mtemp1, mtemp2, mtemp3, mxtot, mvtot;
     rvec xcm;
@@ -131,7 +131,7 @@ int gmx_genconf(int argc, char *argv[])
     int               nres;      /* number of molecules? */
     int               i, j, k, l, m, ndx, nrdx, nx, ny, nz;
     t_trxstatus      *status;
-    gmx_bool          bTRX;
+    bool              bTRX;
     gmx_output_env_t *oenv;
 
     t_filenm          fnm[] = {
@@ -140,12 +140,12 @@ int gmx_genconf(int argc, char *argv[])
         { efTRX, "-trj", nullptr,  ffOPTRD }
     };
 #define NFILE asize(fnm)
-    static rvec       nrbox    = {1, 1, 1};
-    static int        seed     = 0;               /* seed for random number generator */
-    static gmx_bool   bRandom  = FALSE;           /* False: no random rotations */
-    static gmx_bool   bRenum   = TRUE;            /* renumber residues */
-    static rvec       dist     = {0, 0, 0};       /* space added between molecules ? */
-    static rvec       max_rot  = {180, 180, 180}; /* maximum rotation */
+    rvec              nrbox    = {1, 1, 1};
+    int               seed     = 0;               /* seed for random number generator */
+    gmx_bool          bRandom  = FALSE;           /* False: no random rotations */
+    gmx_bool          bRenum   = TRUE;            /* renumber residues */
+    rvec              dist     = {0, 0, 0};       /* space added between molecules ? */
+    rvec              max_rot  = {180, 180, 180}; /* maximum rotation */
     t_pargs           pa[]     = {
         { "-nbox",   FALSE, etRVEC, {nrbox},   "Number of boxes" },
         { "-dist",   FALSE, etRVEC, {dist},    "Distance between boxes" },
@@ -169,9 +169,9 @@ int gmx_genconf(int argc, char *argv[])
     gmx::DefaultRandomEngine rng(seed);
 
     bTRX = ftp2bSet(efTRX, NFILE, fnm);
-    nx   = (int)(nrbox[XX]+0.5);
-    ny   = (int)(nrbox[YY]+0.5);
-    nz   = (int)(nrbox[ZZ]+0.5);
+    nx   = gmx::roundToInt(nrbox[XX]);
+    ny   = gmx::roundToInt(nrbox[YY]);
+    nz   = gmx::roundToInt(nrbox[ZZ]);
 
     if ((nx <= 0) || (ny <= 0) || (nz <= 0))
     {
@@ -284,7 +284,7 @@ int gmx_genconf(int argc, char *argv[])
     }
     if (bTRX)
     {
-        close_trj(status);
+        close_trx(status);
     }
 
     /* make box bigger */
@@ -319,7 +319,6 @@ int gmx_genconf(int argc, char *argv[])
     sfree(xx);
     done_top(top);
     sfree(top);
-    done_filenms(NFILE, fnm);
     output_env_done(oenv);
 
     return 0;

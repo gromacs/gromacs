@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2004 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1376,7 +1376,7 @@ F77_FUNC(dsconv, DSCONV) (int *     n,
                           double *  tol,
                           int *     nconv)
 {
-    double c_b3 = 2/3;
+    double c_b3 = 2/3.;
     int    i__1;
     double d__2, d__3;
 
@@ -1833,7 +1833,7 @@ F77_FUNC(dsaup2, DSAUP2) (int *     ido,
                           int *     iwork,
                           int *     info)
 {
-    double c_b3 = 2/3;
+    double c_b3 = 2/3.;
     int    c__1 = 1;
     int    c__0 = 0;
 
@@ -2400,7 +2400,7 @@ F77_FUNC(dseupd, DSEUPD) (int *     rvec,
                           int *     lworkl,
                           int *     info)
 {
-    double c_b21  = 2/3;
+    double c_b21  = 2/3.;
     int    c__1   = 1;
     double c_b102 = 1.;
     int    v_dim1, v_offset, z_dim1, z_offset, i__1;
@@ -4239,7 +4239,7 @@ F77_FUNC(ssconv, SSCONV) (int *     n,
                           float *  tol,
                           int *     nconv)
 {
-    float c_b3 = 2/3;
+    float c_b3 = 2/3.;
     int   i__1;
     float d__2, d__3;
 
@@ -4696,7 +4696,7 @@ F77_FUNC(ssaup2, SSAUP2) (int *     ido,
                           int *     iwork,
                           int *     info)
 {
-    float c_b3 = 2/3;
+    float c_b3 = 2/3.;
     int   c__1 = 1;
     int   c__0 = 0;
 
@@ -5264,7 +5264,7 @@ F77_FUNC(sseupd, SSEUPD) (int *     rvec,
                           int *     lworkl,
                           int *     info)
 {
-    float c_b21  = 2/3;
+    float c_b21  = 2/3.;
     int   c__1   = 1;
     float c_b102 = 1.;
     int   v_dim1, v_offset, z_dim1, z_offset, i__1;

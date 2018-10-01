@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,11 +76,6 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
               char *plines, int nb_funct,
               warninp_t wi);
 
-void
-push_gb_params(gpp_atomtype_t atype,
-               char          *line,
-               warninp_t      wi);
-
 void push_atom(struct t_symtab *symtab,
                t_block         *cgs,
                t_atoms         *at,
@@ -91,8 +86,8 @@ void push_atom(struct t_symtab *symtab,
 
 void push_bond(directive d, t_params bondtype[], t_params bond[],
                t_atoms *at, gpp_atomtype_t atype, char *line,
-               gmx_bool bBonded, gmx_bool bGenPairs, real fudgeQQ,
-               gmx_bool bZero, gmx_bool *bWarn_copy_A_B,
+               bool bBonded, bool bGenPairs, real fudgeQQ,
+               bool bZero, bool *bWarn_copy_A_B,
                warninp_t wi);
 
 void push_cmap(directive d, t_params bondtype[], t_params bond[],
@@ -131,7 +126,7 @@ int add_atomtype_decoupled(struct t_symtab *symtab, gpp_atomtype_t at,
 void convert_moltype_couple(t_molinfo *mol, int atomtype_decouple,
                             real fudgeQQ,
                             int couple_lam0, int couple_lam1,
-                            gmx_bool bCoupleIntra,
+                            bool bCoupleIntra,
                             int nb_funct, t_params *nbp,
                             warninp_t wi);
 /* Setup mol such that the B-state has no interaction with the rest

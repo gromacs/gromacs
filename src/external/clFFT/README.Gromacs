@@ -1,0 +1,29 @@
+This directory contains source code for clFFT library.
+
+The code has been copied verbatim from the source distribution for clFFT 
+(https://github.com/clMathLibraries/clFFT) master branch commit c59712e (on Aug 11, 2017),
+which is derived from clFFT release 2.12.2,
+
+by copying the following files/directories recursively:
+
+LICENSE
+NOTICE
+ReleaseNotes.txt
+src/include/
+src/library/
+src/statTimer/
+src/clFFTConfig.cmake.in
+src/clFFTConfigVersion.cmake.in
+src/CMakeLists.txt
+
+The file src/CMakeLists.txt is part of the GROMACS build system and
+has been written from scratch to produce a static build of clFFT.
+
+The GROMACS top-level cmake/FindclFFT.cmake has been written to
+conform to modern CMake standards and provide a simple implementation
+of our default behaviour to link to external clFFT if it is found.
+The version of this file from the git repo has been omitted.
+
+The file src/include/clFFT.version.h is copied from src/include/clFFT.version.h.in,
+substituting the version number placeholders with version 2.14.0
+(as in the original build script), and defining a static build option.

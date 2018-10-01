@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,14 +38,17 @@
 
 #include "atomprop.h"
 
-#include <ctype.h>
-#include <stdio.h>
-#include <string.h>
-
+#include <cctype>
 #include <cmath>
+#include <cstdio>
+#include <cstring>
 
+<<<<<<< HEAD
 #include <algorithm>
 
+=======
+#include "gromacs/math/functions.h"
+>>>>>>> master
 #include "gromacs/math/utilities.h"
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/utility/cstringutil.h"
@@ -82,7 +85,7 @@ enum {
 
 /* return number of matching characters,
    or NOTFOUND if not at least all characters in char *database match */
-static int dbcmp_len(char *search, char *database)
+static int dbcmp_len(const char *search, const char *database)
 {
     int i;
 
@@ -140,8 +143,8 @@ static int get_prop_index(aprop_t *ap, gmx_residuetype_t *restype,
         }
     }
 
-    *bExact = ((malen == (long int)strlen(atomnm)) &&
-               ((mrlen == (long int)strlen(resnm)) ||
+    *bExact = ((malen == static_cast<long int>(strlen(atomnm))) &&
+               ((mrlen == static_cast<long int>(strlen(resnm))) ||
                 ((mrlen == WILDPROT) && bProtWild) ||
                 ((mrlen == WILDCARD) && !bProtein && !bProtWild)));
 
@@ -215,8 +218,7 @@ static void add_prop(aprop_t *ap, gmx_residuetype_t *restype,
 
 static void read_prop(gmx_atomprop_t aps, int eprop, double factor)
 {
-    gmx_atomprop *ap2 = (gmx_atomprop*) aps;
-    FILE         *fp;
+    gmx_atomprop *ap2 = static_cast<gmx_atomprop*>(aps);
     char          line[STRLEN], resnm[32], atomnm[32];
     double        pp;
     int           line_no;
@@ -224,9 +226,9 @@ static void read_prop(gmx_atomprop_t aps, int eprop, double factor)
 
     ap = &ap2->prop[eprop];
 
-    fp      = libopen(ap->db);
+    gmx::FilePtr fp = gmx::openLibraryFile(ap->db);
     line_no = 0;
-    while (get_a_line(fp, line, STRLEN))
+    while (get_a_line(fp.get(), line, STRLEN))
     {
         line_no++;
         if (sscanf(line, "%31s %31s %20lf", resnm, atomnm, &pp) == 3)
@@ -240,19 +242,22 @@ static void read_prop(gmx_atomprop_t aps, int eprop, double factor)
                     ap->db, line_no);
         }
     }
-
-    /* for libraries we can use the low-level close routines */
-    gmx_ffclose(fp);
-
     ap->bSet = TRUE;
 }
 
 static void set_prop(gmx_atomprop_t aps, int eprop)
 {
+<<<<<<< HEAD
     gmx_atomprop *ap2           = (gmx_atomprop*) aps;
     const char   *fns[epropNR]  = { "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat", "atomization-energy.dat", "elements.dat" };
     double        fac[epropNR]  = { 1.0,    1.0,  418.4, 1.0, 1.0, 1.0 };
     double        def[epropNR]  = { 12.011, 0.14, 0.0, 2.2, 0, -1 };
+=======
+    gmx_atomprop *ap2           = static_cast<gmx_atomprop*>(aps);
+    const char   *fns[epropNR]  = { "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat", "elements.dat" };
+    double        fac[epropNR]  = { 1.0,    1.0,  418.4, 1.0, 1.0 };
+    double        def[epropNR]  = { 12.011, 0.14, 0.0, 2.2, -1 };
+>>>>>>> master
     aprop_t      *ap;
 
     ap = &ap2->prop[eprop];
@@ -281,7 +286,7 @@ static void set_prop(gmx_atomprop_t aps, int eprop)
     }
 }
 
-gmx_atomprop_t gmx_atomprop_init(void)
+gmx_atomprop_t gmx_atomprop_init()
 {
     gmx_atomprop *aps;
 
@@ -291,7 +296,7 @@ gmx_atomprop_t gmx_atomprop_init(void)
     aps->bWarned  = FALSE;
     aps->bWarnVDW = FALSE;
 
-    return (gmx_atomprop_t)aps;
+    return static_cast<gmx_atomprop_t>(aps);
 }
 
 static void destroy_prop(aprop_t *ap)
@@ -316,7 +321,7 @@ static void destroy_prop(aprop_t *ap)
 
 void gmx_atomprop_destroy(gmx_atomprop_t aps)
 {
-    gmx_atomprop *ap = (gmx_atomprop*) aps;
+    gmx_atomprop *ap = static_cast<gmx_atomprop*>(aps);
     int           p;
 
     if (aps == nullptr)
@@ -351,7 +356,7 @@ gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
                             int eprop, const char *resnm, const char *atomnm,
                             real *value)
 {
-    gmx_atomprop *ap = (gmx_atomprop*) aps;
+    gmx_atomprop *ap = static_cast<gmx_atomprop*>(aps);
     int           j;
 #define MAXQ 32
     char          atomname[MAXQ], resname[MAXQ];
@@ -439,7 +444,7 @@ gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
 
 char *gmx_atomprop_element(gmx_atomprop_t aps, int atomnumber)
 {
-    gmx_atomprop *ap = (gmx_atomprop*) aps;
+    gmx_atomprop *ap = static_cast<gmx_atomprop*>(aps);
     int           i;
 
     set_prop(aps, epropElement);
@@ -455,7 +460,7 @@ char *gmx_atomprop_element(gmx_atomprop_t aps, int atomnumber)
 
 int gmx_atomprop_atomnumber(gmx_atomprop_t aps, const char *elem)
 {
-    gmx_atomprop *ap = (gmx_atomprop*) aps;
+    gmx_atomprop *ap = static_cast<gmx_atomprop*>(aps);
     int           i;
 
     set_prop(aps, epropElement);
@@ -463,7 +468,7 @@ int gmx_atomprop_atomnumber(gmx_atomprop_t aps, const char *elem)
     {
         if (gmx_strcasecmp(ap->prop[epropElement].atomnm[i], elem) == 0)
         {
-            return std::round(ap->prop[epropElement].value[i]);
+            return gmx::roundToInt(ap->prop[epropElement].value[i]);
         }
     }
     return -1;

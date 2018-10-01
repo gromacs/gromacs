@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,7 +48,7 @@
 
 static int gmx_dnint(double x)
 {
-    return static_cast<int>(x+0.5);
+    return gmx::roundToInt(x);
 }
 
 typedef struct gmx_stats {
@@ -65,12 +65,12 @@ gmx_stats_t gmx_stats_init()
 
     snew(stats, 1);
 
-    return (gmx_stats_t) stats;
+    return static_cast<gmx_stats_t>(stats);
 }
 
 int gmx_stats_get_npoints(gmx_stats_t gstats, int *N)
 {
-    gmx_stats *stats = (gmx_stats *) gstats;
+    gmx_stats *stats = static_cast<gmx_stats *>(gstats);
 
     *N = stats->np;
 
@@ -79,7 +79,7 @@ int gmx_stats_get_npoints(gmx_stats_t gstats, int *N)
 
 void gmx_stats_free(gmx_stats_t gstats)
 {
-    gmx_stats *stats = (gmx_stats *) gstats;
+    gmx_stats *stats = static_cast<gmx_stats *>(gstats);
 
     sfree(stats->x);
     sfree(stats->y);
@@ -145,7 +145,7 @@ int gmx_stats_get_point(gmx_stats_t gstats, real *x, real *y,
     while ((outlier == 0) && (stats->np_c < stats->np))
     {
         r       = std::abs(stats->x[stats->np_c] - stats->y[stats->np_c]);
-        outlier = (r > rmsd*level);
+        outlier = static_cast<int>(r > rmsd*level);
         if (outlier)
         {
             if (nullptr != x)
@@ -219,12 +219,17 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
         double mae = 0, mse = 0;
         for (int i = 0; (i < N); i++)
         {
+<<<<<<< HEAD
             double dd = stats->y[i]-stats->x[i];
             d2 += gmx::square(dd);
             
             mae += fabs(dd);
             mse += dd;
             if ((stats->dy[i]) && (weight == elsqWEIGHT_Y))
+=======
+            d2 += gmx::square(stats->x[i]-stats->y[i]);
+            if (((stats->dy[i]) != 0.0) && (weight == elsqWEIGHT_Y))
+>>>>>>> master
             {
                 w = 1/gmx::square(stats->dy[i]);
             }
@@ -720,7 +725,7 @@ int lsq_y_ax(int n, real x[], real y[], real *a)
     return ok;
 }
 
-static int low_lsq_y_ax_b(int n, real *xr, double *xd, real yr[],
+static int low_lsq_y_ax_b(int n, const real *xr, const double *xd, real yr[],
                           real *a, real *b, real *r, real *chi2)
 {
     gmx_stats_t lsq = gmx_stats_init();

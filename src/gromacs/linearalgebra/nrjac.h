@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,10 +39,6 @@
 
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void jacobi(double **a, int n, double d[], double **v, int *nrot);
 /*
  * real   **omega = input matrix a[0..n-1][0..n-1] must be symmetric
@@ -53,17 +49,13 @@ void jacobi(double **a, int n, double d[], double **v, int *nrot);
  * int      *irot = number of jacobi rotations
  */
 
-int m_inv_gen(real **m, int n, real **minv);
-/* Produces minv, a generalized inverse of m.
+int m_inv_gen(real *m, int n, real *minv);
+/* Produces minv, a generalized inverse of m, both stored as linear arrays.
  * Inversion is done via diagonalization,
  * eigenvalues smaller than 1e-6 times the average diagonal element
  * are assumed to be zero.
  * For zero eigenvalues 1/eigenvalue is set to zero for the inverse matrix.
  * Returns the number of zero eigenvalues.
  */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

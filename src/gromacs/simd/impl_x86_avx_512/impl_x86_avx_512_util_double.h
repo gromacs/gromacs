@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,15 +63,15 @@ SimdDInt32 fastMultiply(SimdDInt32 x)
 {
     if (n == 2)
     {
-        return x << 1;
+        return _mm256_slli_epi32(x.simdInternal_, 1);
     }
     else if (n == 4)
     {
-        return x << 2;
+        return _mm256_slli_epi32(x.simdInternal_, 2);
     }
     else if (n == 8)
     {
-        return x << 3;
+        return _mm256_slli_epi32(x.simdInternal_, 3);
     }
     else
     {
@@ -96,29 +96,30 @@ gatherLoadBySimdIntTranspose(const double * base, SimdDInt32 offset, SimdDouble 
     {
         offset = fastMultiply<align>(offset);
     }
-    v->simdInternal_ = _mm512_i32gather_pd(offset.simdInternal_, base, sizeof(double));
+    constexpr size_t scale = sizeof(double);
+    v->simdInternal_ = _mm512_i32gather_pd(offset.simdInternal_, base, scale);
     gatherLoadBySimdIntTranspose<1>(base+1, offset, Fargs ...);
 }
 
 template <int align, typename ... Targs>
 static inline void gmx_simdcall
-gatherLoadUBySimdIntTranspose(const double *base, SimdDInt32 offset, Targs... Fargs)
+gatherLoadUBySimdIntTranspose(const double *base, SimdDInt32 offset, SimdDouble *v, Targs... Fargs)
 {
-    gatherLoadBySimdIntTranspose<align>(base, offset, Fargs ...);
+    gatherLoadBySimdIntTranspose<align>(base, offset, v, Fargs ...);
 }
 
 template <int align, typename ... Targs>
 static inline void gmx_simdcall
-gatherLoadTranspose(const double *base, const std::int32_t offset[], Targs... Fargs)
+gatherLoadTranspose(const double *base, const std::int32_t offset[], SimdDouble *v, Targs... Fargs)
 {
-    gatherLoadBySimdIntTranspose<align>(base, simdLoadDI(offset), Fargs ...);
+    gatherLoadBySimdIntTranspose<align>(base, simdLoad(offset, SimdDInt32Tag()), v, Fargs ...);
 }
 
 template <int align, typename ... Targs>
 static inline void gmx_simdcall
-gatherLoadUTranspose(const double *base, const std::int32_t offset[], Targs... Fargs)
+gatherLoadUTranspose(const double *base, const std::int32_t offset[], SimdDouble *v, Targs... Fargs)
 {
-    gatherLoadTranspose<align>(base, offset, Fargs ...);
+    gatherLoadBySimdIntTranspose<align>(base, simdLoad(offset, SimdDInt32Tag()), v, Fargs ...);
 }
 
 template <int align>
@@ -129,14 +130,16 @@ transposeScatterStoreU(double *             base,
                        SimdDouble           v1,
                        SimdDouble           v2)
 {
-    SimdDInt32 simdoffset = simdLoadDI(offset);
+    SimdDInt32 simdoffset = simdLoad(offset, SimdDInt32Tag());
+
     if (align > 1)
     {
         simdoffset = fastMultiply<align>(simdoffset);;
     }
-    _mm512_i32scatter_pd(base,   simdoffset.simdInternal_, v0.simdInternal_, sizeof(double));
-    _mm512_i32scatter_pd(base+1, simdoffset.simdInternal_, v1.simdInternal_, sizeof(double));
-    _mm512_i32scatter_pd(base+2, simdoffset.simdInternal_, v2.simdInternal_, sizeof(double));
+    constexpr size_t scale = sizeof(double);
+    _mm512_i32scatter_pd(base,   simdoffset.simdInternal_, v0.simdInternal_, scale);
+    _mm512_i32scatter_pd(&(base[1]), simdoffset.simdInternal_, v1.simdInternal_, scale);
+    _mm512_i32scatter_pd(&(base[2]), simdoffset.simdInternal_, v2.simdInternal_, scale);
 }
 
 template <int align>
@@ -148,7 +151,7 @@ transposeScatterIncrU(double *            base,
                       SimdDouble          v2)
 {
     __m512d t[4], t5, t6, t7, t8;
-    GMX_ALIGNED(std::int64_t, 8)    o[8];
+    alignas(GMX_SIMD_ALIGNMENT) std::int64_t    o[8];
     //TODO: should use fastMultiply
     _mm512_store_epi64(o, _mm512_cvtepi32_epi64(_mm256_mullo_epi32(_mm256_load_si256((const __m256i*)(offset  )), _mm256_set1_epi32(align))));
     t5   = _mm512_unpacklo_pd(v0.simdInternal_, v1.simdInternal_);
@@ -203,7 +206,7 @@ transposeScatterDecrU(double *            base,
                       SimdDouble          v2)
 {
     __m512d t[4], t5, t6, t7, t8;
-    GMX_ALIGNED(std::int64_t, 8)    o[8];
+    alignas(GMX_SIMD_ALIGNMENT) std::int64_t    o[8];
     //TODO: should use fastMultiply
     _mm512_store_epi64(o, _mm512_cvtepi32_epi64(_mm256_mullo_epi32(_mm256_load_si256((const __m256i*)(offset  )), _mm256_set1_epi32(align))));
     t5   = _mm512_unpacklo_pd(v0.simdInternal_, v1.simdInternal_);
@@ -290,10 +293,10 @@ reduceIncr4ReturnSum(double *    m,
     t4 = _mm256_add_pd(t4, t3);
     _mm256_store_pd(m, t4);
 
-    t3 = _mm256_add_pd(t3, _mm256_permutex_pd(t3, 0x4E));
-    t3 = _mm256_add_pd(t3, _mm256_permutex_pd(t3, 0xB1));
+    t0 = _mm512_add_pd(t0, _mm512_permutex_pd(t0, 0x4E));
+    t0 = _mm512_add_pd(t0, _mm512_permutex_pd(t0, 0xB1));
 
-    return _mm_cvtsd_f64(_mm256_castpd256_pd128(t3));
+    return _mm_cvtsd_f64(_mm512_castpd512_pd128(t0));
 }
 
 static inline SimdDouble gmx_simdcall
@@ -320,7 +323,7 @@ loadDuplicateHsimd(const double * m)
 }
 
 static inline SimdDouble gmx_simdcall
-load1DualHsimd(const double * m)
+loadU1DualHsimd(const double * m)
 {
     return {
                _mm512_insertf64x4(_mm512_broadcastsd_pd(_mm_load_sd(m)),
@@ -402,8 +405,9 @@ gatherLoadTransposeHsimd(const double *       base0,
 
     idx = _mm256_inserti128_si256(_mm256_castsi128_si256(idx0), idx1, 1);
 
-    tmp1 = _mm512_i32gather_pd(idx, base0, sizeof(double)); //TODO: Might be faster to use invidual loads
-    tmp2 = _mm512_i32gather_pd(idx, base1, sizeof(double));
+    constexpr size_t scale = sizeof(double);
+    tmp1 = _mm512_i32gather_pd(idx, base0, scale); //TODO: Might be faster to use invidual loads
+    tmp2 = _mm512_i32gather_pd(idx, base1, scale);
 
     v0->simdInternal_ = _mm512_shuffle_f64x2(tmp1, tmp2, 0x44 );
     v1->simdInternal_ = _mm512_shuffle_f64x2(tmp1, tmp2, 0xEE );
@@ -429,10 +433,19 @@ reduceIncr4ReturnSumHsimd(double *     m,
     t3 = _mm256_add_pd(t3, t2);
     _mm256_store_pd(m, t3);
 
-    t2 = _mm256_add_pd(t2, _mm256_permutex_pd(t2, 0x4E));
-    t2 = _mm256_add_pd(t2, _mm256_permutex_pd(t2, 0xB1));
+    t0 = _mm512_add_pd(t0, _mm512_permutex_pd(t0, 0x4E));
+    t0 = _mm512_add_pd(t0, _mm512_permutex_pd(t0, 0xB1));
 
-    return _mm_cvtsd_f64(_mm256_castpd256_pd128(t2));
+    return _mm_cvtsd_f64(_mm512_castpd512_pd128(t0));
+}
+
+static inline SimdDouble gmx_simdcall
+loadU4NOffset(const double *m, int offset)
+{
+    return {
+               _mm512_insertf64x4(_mm512_castpd256_pd512(_mm256_loadu_pd(m)),
+                                  _mm256_loadu_pd(m+offset), 1)
+    };
 }
 
 }      // namespace gmx

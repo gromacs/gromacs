@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,12 +52,8 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
-struct gmx_ga2la_t;
+class gmx_ga2la_t;
 struct t_commrec;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /*! \brief Select local atoms of a group.
  *
@@ -78,8 +74,8 @@ extern "C" {
  *                            in the communicate_group_positions routine.
  */
 
-extern void dd_make_local_group_indices(gmx_ga2la_t *ga2la,
-                                        const int nr, int anrs[], int *nr_loc,
+extern void dd_make_local_group_indices(const gmx_ga2la_t *ga2la,
+                                        int nr, int anrs[], int *nr_loc,
                                         int *anrs_loc[], int *nalloc_loc,
                                         int coll_ind[]);
 
@@ -127,11 +123,11 @@ extern void dd_make_local_group_indices(gmx_ga2la_t *ga2la,
  * \param[in]     box          Simulation box matrix, needed to shift xcoll such that
  *                             the group becomes whole (optional).
  */
-extern void communicate_group_positions(t_commrec *cr, rvec *xcoll, ivec *shifts,
-                                        ivec *extra_shifts, const gmx_bool bNS,
-                                        rvec *x_loc, const int nr, const int nr_loc,
-                                        int *anrs_loc, int *coll_ind, rvec *xcoll_old,
-                                        matrix box);
+extern void communicate_group_positions(const t_commrec *cr, rvec *xcoll, ivec *shifts,
+                                        ivec *extra_shifts, gmx_bool bNS,
+                                        const rvec *x_loc, int nr, int nr_loc,
+                                        const int *anrs_loc, const int *coll_ind, rvec *xcoll_old,
+                                        const matrix box);
 
 /*! \brief Calculates the center of the positions x locally.
  *
@@ -145,7 +141,7 @@ extern void communicate_group_positions(t_commrec *cr, rvec *xcoll, ivec *shifts
  * \param[out]  center       The (weighted) center of the positions.
  *
  */
-extern void get_center(rvec x[], real weight[], const int nr, rvec center);
+extern void get_center(rvec x[], real weight[], int nr, rvec center);
 
 
 /*! \brief Calculates the sum of the positions x locally.
@@ -161,7 +157,7 @@ extern void get_center(rvec x[], real weight[], const int nr, rvec center);
  * \return Sum of weights.
  *
  */
-extern double get_sum_of_positions(rvec x[], real weight[], const int nr, dvec dsumvec);
+extern double get_sum_of_positions(rvec x[], real weight[], int nr, dvec dsumvec);
 
 
 /*! \brief Calculates the global center of all local arrays x.
@@ -182,7 +178,7 @@ extern double get_sum_of_positions(rvec x[], real weight[], const int nr, dvec d
  * \param[out]  center       The (weighted) center of all x_loc from all the
  *                           nodes.
  */
-extern void get_center_comm(t_commrec *cr, rvec x_loc[], real weight_loc[],
+extern void get_center_comm(const t_commrec *cr, rvec x_loc[], real weight_loc[],
                             int nr_loc, int nr_group, rvec center);
 
 
@@ -195,7 +191,7 @@ extern void get_center_comm(t_commrec *cr, rvec x_loc[], real weight_loc[],
  * \param[in]     transvec   Translation vector to be added to all positions.
  *
  */
-extern void translate_x(rvec x[], const int nr, const rvec transvec);
+extern void translate_x(rvec x[], int nr, const rvec transvec);
 
 
 /*! \brief Rotate positions.
@@ -207,8 +203,4 @@ extern void translate_x(rvec x[], const int nr, const rvec transvec);
  * \param[in]     rmat       Rotation matrix to operate on all positions.
  *
  */
-extern void rotate_x(rvec x[], const int nr, matrix rmat);
-
-#ifdef __cplusplus
-}
-#endif
+extern void rotate_x(rvec x[], int nr, matrix rmat);

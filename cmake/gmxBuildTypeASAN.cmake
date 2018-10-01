@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2016, by the GROMACS development team, led by
+# Copyright (c) 2014,2016,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,6 @@ set(_flags "-O1 -g -fsanitize=address -fno-omit-frame-pointer")
 
 foreach(_language C CXX)
     string(REPLACE "X" "+" _human_readable_language ${_language})
-    set(CMAKE_${_language}_FLAGS_ASAN ${_flags} CACHE STRING "${_human_readable_language} flags for address sanitizer")
+    set(CMAKE_${_language}_FLAGS_ASAN ${_flags} CACHE STRING "${_human_readable_language} flags for address sanitizer" FORCE)
     mark_as_advanced(CMAKE_${_language}_FLAGS_ASAN)
 endforeach()

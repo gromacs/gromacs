@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -58,17 +58,24 @@ mark_as_advanced(SOURCE_MD5SUM)
 
 set(EXPECTED_DOXYGEN_VERSION 1.8.5)
 
+set(EXPECTED_SPHINX_VERSION 1.6.1)
+
 if (DEFINED PYTHON_EXECUTABLE)
     # Keep quiet on subsequent runs of cmake
     set(PythonInterp_FIND_QUIETLY ON)
 endif()
 find_package(PythonInterp 2.7)
-find_package(Sphinx 1.3 QUIET COMPONENTS pygments)
+find_package(Sphinx ${EXPECTED_SPHINX_VERSION} QUIET COMPONENTS pygments)
 
 # Even if we aren't going to make the full webpage, set up to put all
 # the documentation output in the same place, for convenience
 set(HTML_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/html")
 file(MAKE_DIRECTORY ${HTML_OUTPUT_DIR})
+
+# Prepare directories for pdf/tex output
+set(TEX_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/manual")
+set(SPHINX_LATEX_FILE "${TEX_OUTPUT_DIR}/gromacs.tex")
+file(MAKE_DIRECTORY ${TEX_OUTPUT_DIR})
 
 # The directory from which man pages will be installed; if it remains
 # empty, they will be silently skipped.
@@ -80,14 +87,15 @@ if (SOURCE_IS_SOURCE_DISTRIBUTION)
 endif()
 
 add_subdirectory(doxygen)
-add_subdirectory(manual)
-
 if (SPHINX_FOUND)
     # We need to have all the Sphinx input files in a single directory, and
     # since some of them are generated, we copy everything into the build tree,
     # to this directory.
     set(SPHINX_INPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/sphinx-input)
     set(SPHINX_EXTENSION_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+    # As the manual build now depends also on Sphinx, the inclusion path needs
+    # to be set after we know the basic information for Sphinx.
+    add_subdirectory(manual)
     if (SOURCE_MD5SUM STREQUAL "unknown")
         # But for testing the webpage build (e.g. from the repo) we
         # need a default value.
@@ -97,41 +105,271 @@ if (SPHINX_FOUND)
         # this should be set to the matching MD5 sum.
         set(REGRESSIONTEST_MD5SUM_STRING "${REGRESSIONTEST_MD5SUM}")
     endif()
+    # The reference manual still contains the individual sections from the
+    # LaTeX document, with the files below grouped and annotated by chapter.
+    set(REFERENCEMANUAL_SPHINX_FILES
+        # Main index file, preface and introduction.
+        reference-manual/index.rst
+        reference-manual/preface.rst
+        reference-manual/introduction.rst
+        # Definitions and Units chapter
+        reference-manual/definitions.rst
+        # Algorithms chapter
+        reference-manual/algorithms.rst
+        reference-manual/algorithms/periodic-boundary-conditions.rst
+        reference-manual/algorithms/group-concept.rst
+        reference-manual/algorithms/molecular-dynamics.rst
+        reference-manual/algorithms/shell-molecular-dynamics.rst
+        reference-manual/algorithms/constraint-algorithms.rst
+        reference-manual/algorithms/simulated-annealing.rst
+        reference-manual/algorithms/stochastic-dynamics.rst
+        reference-manual/algorithms/brownian-dynamics.rst
+        reference-manual/algorithms/energy-minimization.rst
+        reference-manual/algorithms/normal-mode-analysis.rst
+        reference-manual/algorithms/free-energy-calculations.rst
+        reference-manual/algorithms/replica-exchange.rst
+        reference-manual/algorithms/essential-dynamics.rst
+        reference-manual/algorithms/expanded-ensemble.rst
+        reference-manual/algorithms/parallelization-domain-decomp.rst
+        # Interaction functions and force fields chapter
+        reference-manual/functions.rst
+        reference-manual/functions/bonded-interactions.rst
+        reference-manual/functions/force-field.rst
+        reference-manual/functions/free-energy-interactions.rst
+        reference-manual/functions/interaction-methods.rst
+        reference-manual/functions/long-range-electrostatics.rst
+        reference-manual/functions/long-range-vdw.rst
+        reference-manual/functions/nonbonded-interactions.rst
+        reference-manual/functions/polarization.rst
+        reference-manual/functions/restraints.rst
+        # Topologies chapter
+        reference-manual/topologies.rst
+        reference-manual/topologies/particle-type.rst
+        reference-manual/topologies/parameter-files.rst
+        reference-manual/topologies/molecule-definition.rst
+        reference-manual/topologies/constraint-algorithm-section.rst
+        reference-manual/topologies/pdb2gmx-input-files.rst
+        reference-manual/topologies/topology-file-formats.rst
+        reference-manual/topologies/force-field-organization.rst
+        # File formats chapter
+        reference-manual/file-formats.rst
+        # Special topics chapter
+        reference-manual/special.rst
+        reference-manual/special/free-energy-implementation.rst
+        reference-manual/special/pulling.rst
+        reference-manual/special/awh.rst
+        reference-manual/special/enforced-rotation.rst
+        reference-manual/special/electric-fields.rst
+        reference-manual/special/comp-electrophys.rst
+        reference-manual/special/free-energy-pmf.rst
+        reference-manual/special/remove-fast-dgf.rst
+        reference-manual/special/viscosity-calculation.rst
+        reference-manual/special/tabulated-interaction-functions.rst
+        reference-manual/special/qmmm.rst
+        reference-manual/special/vmd-imd.rst
+        reference-manual/special/membrane-embedding.rst
+        # Run parameters and programs chapter
+        reference-manual/run-parameters.rst
+        # Analysis chapter
+        reference-manual/analysis.rst
+        reference-manual/analysis/using-groups.rst
+        reference-manual/analysis/looking-at-trajectory.rst
+        reference-manual/analysis/general-properties.rst
+        reference-manual/analysis/radial-distribution-function.rst
+        reference-manual/analysis/correlation-function.rst
+        reference-manual/analysis/curve-fitting.rst
+        reference-manual/analysis/mean-square-displacement.rst
+        reference-manual/analysis/bond-angle-dihedral.rst
+        reference-manual/analysis/radius-of-gyration.rst
+        reference-manual/analysis/rmsd.rst
+        reference-manual/analysis/covariance-analysis.rst
+        reference-manual/analysis/dihedral-pca.rst
+        reference-manual/analysis/protein-related.rst
+        reference-manual/analysis/interface-related.rst
+        # Implementation details chapter
+        reference-manual/details.rst
+        # Averages and fluctations chapter
+        reference-manual/averages.rst
+        # References
+        reference-manual/references.rst
+        # PNG formated plot files that don't need to be converted into PNG
+        # for the web page.
+        reference-manual/plots/peregrine.png
+        reference-manual/plots/adress.png
+        reference-manual/plots/plotje.png
+        reference-manual/plots/xvgr.png
+        )
+    # The image files have also been ordered by the respective
+    # chapter they are included in in the reference manual
+    set(REFERENCEMANUAL_IMAGE_FILES
+        # General folder
+        reference-manual/plots/decomp.pdf
+        reference-manual/plots/dih.pdf
+        reference-manual/plots/drift-all.pdf
+        reference-manual/plots/f-angle.pdf
+        reference-manual/plots/f-bond.pdf
+        reference-manual/plots/fp-highres.pdf
+        reference-manual/plots/int-mat.pdf
+        reference-manual/plots/mdpar.pdf
+        reference-manual/plots/parsort.pdf
+        reference-manual/plots/ring.pdf
+        reference-manual/plots/shiftf.pdf
+        # Algorithms chapter
+        reference-manual/algorithms/plots/dd-cells.pdf
+        reference-manual/algorithms/plots/dd-tric.pdf
+        reference-manual/algorithms/plots/flowchart.pdf
+        reference-manual/algorithms/plots/free1.pdf
+        reference-manual/algorithms/plots/free2.pdf
+        reference-manual/algorithms/plots/leapfrog.pdf
+        reference-manual/algorithms/plots/lincs.pdf
+        reference-manual/algorithms/plots/maxwell.pdf
+        reference-manual/algorithms/plots/mpmd-pme.pdf
+        reference-manual/algorithms/plots/nstric.pdf
+        reference-manual/algorithms/plots/par-lincs2.pdf
+        reference-manual/algorithms/plots/pbctric.pdf
+        reference-manual/algorithms/plots/rhododec.pdf
+        reference-manual/algorithms/plots/truncoct.pdf
+        reference-manual/algorithms/plots/verlet-drift.pdf
+        # Interaction functions chapter
+        reference-manual/functions/plots/angle.pdf
+        reference-manual/functions/plots/bstretch.pdf
+        reference-manual/functions/plots/chain.pdf
+        reference-manual/functions/plots/dummies.pdf
+        reference-manual/functions/plots/f-bham.pdf
+        reference-manual/functions/plots/fbposres.pdf
+        reference-manual/functions/plots/f-dih.pdf
+        reference-manual/functions/plots/f-dr.pdf
+        reference-manual/functions/plots/fig-02.pdf
+        reference-manual/functions/plots/fig-04.pdf
+        reference-manual/functions/plots/f-imps.pdf
+        reference-manual/functions/plots/f-lj.pdf
+        reference-manual/functions/plots/f-morse.pdf
+        reference-manual/functions/plots/f-pr.pdf
+        reference-manual/functions/plots/f-rbs.pdf
+        reference-manual/functions/plots/ring-imp.pdf
+        reference-manual/functions/plots/softcore.pdf
+        reference-manual/functions/plots/subst-im.pdf
+        reference-manual/functions/plots/tetra-im.pdf
+        reference-manual/functions/plots/vcrf.pdf
+        reference-manual/functions/plots/vsite-4fdn.pdf
+        # Special topics chapter
+        reference-manual/special/plots/awh-invN.pdf
+        reference-manual/special/plots/awh-pmfs.pdf
+        reference-manual/special/plots/awh-sampleweights.pdf
+        reference-manual/special/plots/awh-traj.pdf
+        reference-manual/special/plots/compelsetup.pdf
+        reference-manual/special/plots/dumaro.pdf
+        reference-manual/special/plots/dumtypes.pdf
+        reference-manual/special/plots/equipotential.pdf
+        reference-manual/special/plots/field.pdf
+        reference-manual/special/plots/gaussians.pdf
+        reference-manual/special/plots/pulldirrel.pdf
+        reference-manual/special/plots/pull.pdf
+        reference-manual/special/plots/pullref.pdf
+        reference-manual/special/plots/rotation.pdf
+        # Analysis chapter
+        reference-manual/analysis/plots/dih-def.pdf
+        reference-manual/analysis/plots/distm.pdf
+        reference-manual/analysis/plots/dssp.pdf
+        reference-manual/analysis/plots/hbond-insert.pdf
+        reference-manual/analysis/plots/hbond.pdf
+        reference-manual/analysis/plots/hpr-wheel.pdf
+        reference-manual/analysis/plots/msdwater.pdf
+        reference-manual/analysis/plots/ngmxdump.pdf
+        reference-manual/analysis/plots/phipsi.pdf
+        reference-manual/analysis/plots/rama.pdf
+        reference-manual/analysis/plots/rdfO-O.pdf
+        reference-manual/analysis/plots/rdf.pdf
+        reference-manual/analysis/plots/sgangle.pdf 
+        )
     set(SPHINX_SOURCE_FILES
         index.rst
         download.rst
-        dev-manual/index.rst
+        conf.py
+        links.dat
         dev-manual/build-system.rst
+        dev-manual/change-management.rst
+        dev-manual/commitstyle.rst
+        dev-manual/documentation-generation.rst
+        dev-manual/contribute.rst
         dev-manual/doxygen.rst
+        dev-manual/error-handling.rst
         dev-manual/formatting.rst
         dev-manual/gmxtree.rst
         dev-manual/includestyle.rst
+        dev-manual/index.rst
         dev-manual/jenkins.rst
         dev-manual/language-features.rst
         dev-manual/naming.rst
         dev-manual/overview.rst
+        dev-manual/physical_validation.rst
+        dev-manual/redmine-states.png
         dev-manual/relocatable-binaries.rst
+        dev-manual/reportstyle.rst
         dev-manual/style.rst
         dev-manual/testutils.rst
         dev-manual/tools.rst
         dev-manual/uncrustify.rst
         fragments/doxygen-links.rst
+        how-to/index.rst
+        how-to/beginners.rst
+        how-to/topology.rst
+        how-to/special.rst
+        how-to/visualize.rst
         install-guide/index.rst
-        user-guide/index.rst
-        user-guide/getting-started.rst
-        user-guide/flow.rst
-        user-guide/system-preparation.rst
+        release-notes/index.rst
+        release-notes/highlights.rst
+        release-notes/features.rst
+        release-notes/performance.rst
+        release-notes/tools.rst
+        release-notes/bugs-fixed.rst
+        release-notes/removed-features.rst
+        release-notes/portability.rst
+        release-notes/miscellaneous.rst
+        release-notes/2018/2018.4.rst
+        release-notes/2018/2018.3.rst
+        release-notes/2018/2018.2.rst
+        release-notes/2018/2018.1.rst
+        release-notes/2018/major/highlights.rst
+        release-notes/2018/major/features.rst
+        release-notes/2018/major/performance.rst
+        release-notes/2018/major/tools.rst
+        release-notes/2018/major/bugs-fixed.rst
+        release-notes/2018/major/removed-features.rst
+        release-notes/2018/major/portability.rst
+        release-notes/2018/major/miscellaneous.rst
+        release-notes/2016/2016.5.rst
+        release-notes/2016/2016.4.rst
+        release-notes/2016/2016.3.rst
+        release-notes/2016/2016.2.rst
+        release-notes/2016/2016.1.rst
+        release-notes/2016/major/highlights.rst
+        release-notes/2016/major/new-features.rst
+        release-notes/2016/major/performance.rst
+        release-notes/2016/major/tools.rst
+        release-notes/2016/major/bugs-fixed.rst
+        release-notes/2016/major/removed-features.rst
+        release-notes/2016/major/miscellaneous.rst
+        release-notes/older/index.rst
+        # the entry for user-guide/index.rst should not appear here,
+        # as it will be included conditionally further down depending on
+        # if the documentation will be build with the full reference
+        # manual or without.
+        user-guide/cmdline.rst
         user-guide/cutoff-schemes.rst
+        user-guide/environment-variables.rst
+        user-guide/faq.rst
+        user-guide/floating-point.rst
+        user-guide/system-preparation.rst
+        user-guide/force-fields.rst
+        user-guide/getting-started.rst
+        user-guide/managing-simulations.rst
+        user-guide/mdp-options.rst
         user-guide/mdrun-features.rst
         user-guide/mdrun-performance.rst
-        user-guide/mdp-options.rst
-        user-guide/file-formats.rst
-        user-guide/cmdline.rst
-        user-guide/environment-variables.rst
-        user-guide/plotje.gif
-        user-guide/xvgr.gif
-        conf.py
-        links.dat
+        user-guide/run-time-errors.rst
+        user-guide/system-preparation.rst
+        user-guide/terminology.rst
         )
 
     include(SphinxMacros.cmake)
@@ -142,12 +380,13 @@ if (SPHINX_FOUND)
         EXTRA_VARS
             SPHINX_EXTENSION_PATH RELENG_PATH
             EXPECTED_DOXYGEN_VERSION
+            EXPECTED_SPHINX_VERSION
             CMAKE_MINIMUM_REQUIRED_VERSION REQUIRED_CUDA_VERSION
             REQUIRED_OPENCL_MIN_VERSION
             REQUIRED_CUDA_COMPUTE_CAPABILITY REGRESSIONTEST_VERSION
             SOURCE_MD5SUM REGRESSIONTEST_MD5SUM_STRING
             GMX_TNG_MINIMUM_REQUIRED_VERSION
-            GMX_LMFIT_MINIMUM_REQUIRED_VERSION
+            GMX_LMFIT_REQUIRED_VERSION
         COMMENT "Configuring Sphinx configuration file")
     gmx_add_sphinx_input_file(${SPHINX_CONFIG_VARS_FILE})
     gmx_add_sphinx_source_files(FILES ${SPHINX_SOURCE_FILES})
@@ -163,7 +402,39 @@ if (SPHINX_FOUND)
             dev-manual/releng/jenkins-ui.rst
             )
     endif()
-    gmx_add_sphinx_input_target(sphinx-input)
+    if (IMAGE_CONVERT_POSSIBLE)
+        gmx_add_sphinx_source_files(
+            FILES
+            ${REFERENCEMANUAL_SPHINX_FILES}
+            user-guide/index.rst
+            user-guide/flow.rst)
+        gmx_add_sphinx_source_files(
+            FILES
+            ${REFERENCEMANUAL_IMAGE_FILES})
+        gmx_add_sphinx_image_conversion_files(
+            FILES
+            ${REFERENCEMANUAL_IMAGE_FILES})
+    else()
+        gmx_add_sphinx_source_files(
+            FROM ${CMAKE_CURRENT_SOURCE_DIR}/reference-manual TO user-guide
+            FILES
+            file-formats.rst
+            plots/plotje.png
+            plots/xvgr.png)
+        gmx_add_sphinx_source_files(
+            FROM ${CMAKE_CURRENT_SOURCE_DIR}/reference-manual-minimal TO reference-manual
+            FILES
+            index.rst)
+        gmx_add_sphinx_source_files(
+            FROM ${CMAKE_CURRENT_SOURCE_DIR}/user-guide-old TO user-guide
+            FILES
+            index.rst
+            flow.rst)
+    endif()
+    gmx_add_sphinx_input_target(sphinx-input-rst)
+    gmx_add_sphinx_image_conversion_target(sphinx-image-conversion)
+    add_custom_target(sphinx-input)
+    add_dependencies(sphinx-input sphinx-input-rst sphinx-image-conversion)
     # Remove other rst files from the build tree, since they confuse Sphinx.
     # Skip generated files in onlinehelp/, and fragments.
     # The latter do not cause issues with obsolete files, as they
@@ -191,7 +462,7 @@ if (SPHINX_FOUND)
     add_custom_target(install-guide
         COMMAND
             ${SPHINX_EXECUTABLE}
-            -q -b text
+            -q -E -b text
             -w sphinx-install.log
             -d ${CMAKE_CURRENT_BINARY_DIR}/install-guide/_doctrees
             -c ${SPHINX_INPUT_DIR}
@@ -211,13 +482,15 @@ if (SPHINX_FOUND)
 
     # Sphinx cache with pickled ReST documents
     set(SPHINX_CACHE_DIR "${CMAKE_CURRENT_BINARY_DIR}/_doctrees")
-
     add_custom_target(webpage-sphinx
+        DEPENDS sphinx-programs
+        DEPENDS sphinx-input
+        DEPENDS sphinx-image-conversion 
         COMMAND
             ${CMAKE_COMMAND} -E make_directory ${SPHINX_INPUT_DIR}/_static
         COMMAND
             ${SPHINX_EXECUTABLE}
-            -q -b html
+            -q -E -b html
             -w sphinx-html.log
             -d "${SPHINX_CACHE_DIR}"
             "${SPHINX_INPUT_DIR}"
@@ -227,12 +500,11 @@ if (SPHINX_FOUND)
         COMMENT "Building HTML documentation with Sphinx"
         VERBATIM
         )
-    add_dependencies(webpage-sphinx sphinx-input sphinx-programs)
 
     add_custom_target(man
         COMMAND
             ${SPHINX_EXECUTABLE}
-            -q -b man
+            -q -E -b man
             -w sphinx-man.log
             -d ${SPHINX_CACHE_DIR}
             -t do_man
@@ -247,18 +519,26 @@ if (SPHINX_FOUND)
         # manually build the target.
         set(MAN_PAGE_DIR ${CMAKE_CURRENT_BINARY_DIR})
     endif()
+
 else()
+    set(MANUAL_BUILD_IS_POSSIBLE OFF)
+    set(MANUAL_BUILD_NOT_POSSIBLE_REASON "Sphinx version ${EXPECTED_SPHINX_VERSION} is not available")
+
     add_custom_target(webpage-sphinx
         COMMAND ${CMAKE_COMMAND} -E echo
-            "HTML pages cannot be built because Sphinx is not available"
+            "HTML pages cannot be built because Sphinx version ${EXPECTED_SPHINX_VERSION} is not available"
         VERBATIM)
     add_custom_target(install-guide
         COMMAND ${CMAKE_COMMAND} -E echo
-            "INSTALL cannot be built because Sphinx is not available"
+            "INSTALL cannot be built because Sphinx version ${EXPECTED_SPHINX_VERSION} is not available"
         VERBATIM)
     add_custom_target(man
         COMMAND ${CMAKE_COMMAND} -E echo
-            "man pages cannot be built because Sphinx is not available"
+            "man pages cannot be built because Sphinx version ${EXPECTED_SPHINX_VERSION} is not available"
+        VERBATIM)
+    add_custom_target(sphinx-create-texman
+        COMMAND ${CMAKE_COMMAND} -E echo
+            "Cannot prepare LaTeX input files because Sphinx version ${EXPECTED_SPHINX_VERSION} is not available"
         VERBATIM)
 endif()
 
@@ -267,7 +547,7 @@ if (MAN_PAGE_DIR)
     # Trailing slash on directory is significant for
     # install(DIRECTORY). See CMake docs.
     install(DIRECTORY ${MAN_PAGE_DIR}/
-        DESTINATION ${MAN_INSTALL_DIR}/man1
+        DESTINATION ${CMAKE_INSTALL_MANDIR}/man1
         COMPONENT man OPTIONAL
         FILES_MATCHING PATTERN "*.1")
 endif()
@@ -288,7 +568,7 @@ if (NOT PYTHON_EXECUTABLE)
 elseif (NOT SPHINX_FOUND)
     # Hardly anything gets built if Sphinx is not available, so don't bother.
     set(HTML_BUILD_IS_POSSIBLE OFF)
-    set(HTML_BUILD_NOT_POSSIBLE_REASON "Sphinx is required")
+    set(HTML_BUILD_NOT_POSSIBLE_REASON "Sphinx version ${EXPECTED_SPHINX_VERSION} is required")
 endif()
 if (NOT MANUAL_BUILD_IS_POSSIBLE)
     list(APPEND HTML_BUILD_WARNINGS

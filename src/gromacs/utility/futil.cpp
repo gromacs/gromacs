@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,10 +40,10 @@
 
 #include "config.h"
 
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -114,7 +114,7 @@ void setLibraryFileFinder(const DataFileFinder *finder)
 
 } // namespace gmx
 
-void gmx_disable_file_buffering(void)
+void gmx_disable_file_buffering()
 {
     bUnbuffered = true;
 }
@@ -144,7 +144,7 @@ void gmx_set_max_backup_count(int count)
     s_maxBackupCount = count;
 }
 
-void push_ps(FILE *fp)
+static void push_ps(FILE *fp)
 {
     t_pstack *ps;
 
@@ -156,7 +156,7 @@ void push_ps(FILE *fp)
     pstack   = ps;
 }
 
-#ifdef GMX_FAHCORE
+#if GMX_FAHCORE
 /* don't use pipes!*/
 #define popen fah_fopen
 #define pclose fah_fclose
@@ -441,8 +441,8 @@ FILE *gmx_ffopen(const char *file, const char *mode)
 #ifdef SKIP_FFOPS
     return fopen(file, mode);
 #else
-    FILE    *ff = nullptr;
-    char     buf[256], *bufsize = nullptr, *ptr;
+    FILE    *ff      = nullptr;
+    char    *bufsize = nullptr, *ptr;
     gmx_bool bRead;
     int      bs;
 
@@ -455,17 +455,14 @@ FILE *gmx_ffopen(const char *file, const char *mode)
     {
         make_backup(file);
     }
-    where();
 
     bRead = (mode[0] == 'r' && mode[1] != '+');
-    strcpy(buf, file);
-    if (!bRead || gmx_fexist(buf))
+    if (!bRead || gmx_fexist(file))
     {
-        if ((ff = fopen(buf, mode)) == nullptr)
+        if ((ff = fopen(file, mode)) == nullptr)
         {
-            gmx_file(buf);
+            gmx_file(file);
         }
-        where();
         /* Check whether we should be using buffering (default) or not
          * (for debugging)
          */
@@ -493,21 +490,22 @@ FILE *gmx_ffopen(const char *file, const char *mode)
                 }
             }
         }
-        where();
     }
     else
     {
-        sprintf(buf, "%s.Z", file);
-        if (gmx_fexist(buf))
+        std::string compressedFileName = file;
+        compressedFileName += ".Z";
+        if (gmx_fexist(compressedFileName.c_str()))
         {
-            ff = uncompress(buf, mode);
+            ff = uncompress(compressedFileName.c_str(), mode);
         }
         else
         {
-            sprintf(buf, "%s.gz", file);
-            if (gmx_fexist(buf))
+            compressedFileName  = file;
+            compressedFileName += ".gz";
+            if (gmx_fexist(compressedFileName.c_str()))
             {
-                ff = gunzip(buf, mode);
+                ff = gunzip(compressedFileName.c_str(), mode);
             }
             {
                 gmx_file(file);
@@ -518,49 +516,48 @@ FILE *gmx_ffopen(const char *file, const char *mode)
 #endif
 }
 
-
-char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal)
+namespace gmx
 {
+
+std::string findLibraryFile(const std::string &filename, bool bAddCWD, bool bFatal)
+{
+    std::string result;
     try
     {
-        const gmx::DataFileFinder &finder = gmx::getLibraryFileFinder();
-        std::string                result =
-            finder.findFile(gmx::DataFileOptions(file)
-                                .includeCurrentDir(bAddCWD)
-                                .throwIfNotFound(bFatal));
-        if (!result.empty())
-        {
-            return gmx_strdup(result.c_str());
-        }
+        const DataFileFinder &finder = getLibraryFileFinder();
+        result = finder.findFile(DataFileOptions(filename)
+                                     .includeCurrentDir(bAddCWD)
+                                     .throwIfNotFound(bFatal));
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    return nullptr;
+    return result;
 }
 
-FILE *low_libopen(const char *file, gmx_bool bFatal)
+std::string findLibraryFile(const char *filename, bool bAddCWD, bool bFatal)
 {
+    return findLibraryFile(std::string(filename), bAddCWD, bFatal);
+}
+
+FilePtr openLibraryFile(const std::string &filename, bool bAddCWD, bool bFatal)
+{
+    FilePtr fp;
     try
     {
-        const gmx::DataFileFinder &finder = gmx::getLibraryFileFinder();
-        FILE *fp =
-            finder.openFile(gmx::DataFileOptions(file)
-                                .includeCurrentDir(true)
-                                .throwIfNotFound(bFatal));
-        return fp;
+        const DataFileFinder &finder = getLibraryFileFinder();
+        fp = finder.openFile(DataFileOptions(filename)
+                                 .includeCurrentDir(bAddCWD)
+                                 .throwIfNotFound(bFatal));
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    return nullptr;
+    return fp;
 }
 
-char *gmxlibfn(const char *file)
+FilePtr openLibraryFile(const char *filename, bool bAddCWD, bool bFatal)
 {
-    return low_gmxlibfn(file, TRUE, TRUE);
+    return openLibraryFile(std::string(filename), bAddCWD, bFatal);
 }
 
-FILE *libopen(const char *file)
-{
-    return low_libopen(file, TRUE);
-}
+} // namespace gmx
 
 void gmx_tmpnam(char *buf)
 {
@@ -594,12 +591,8 @@ void gmx_tmpnam(char *buf)
                   strerror(errno));
     }
     close(fd);
-
 #endif
-
     /* name in Buf should now be OK and file is CLOSED */
-
-    return;
 }
 
 FILE *gmx_fopen_temporary(char *buf)
@@ -667,36 +660,33 @@ int gmx_file_rename(const char *oldname, const char *newname)
 
 int gmx_file_copy(const char *oldname, const char *newname, gmx_bool copy_if_empty)
 {
-/* the full copy buffer size: */
-#define FILECOPY_BUFSIZE (1<<16)
-    FILE *in  = nullptr;
-    FILE *out = nullptr;
-    char *buf;
-
-    snew(buf, FILECOPY_BUFSIZE);
-
-    in = fopen(oldname, "rb");
+    gmx::FilePtr in(fopen(oldname, "rb"));
     if (!in)
     {
-        goto error;
+        return 1;
     }
 
     /* If we don't copy when empty, we postpone opening the file
        until we're actually ready to write. */
+    gmx::FilePtr out;
     if (copy_if_empty)
     {
-        out = fopen(newname, "wb");
+        out.reset(fopen(newname, "wb"));
         if (!out)
         {
-            goto error;
+            return 1;
         }
     }
 
-    while (!feof(in))
+    /* the full copy buffer size: */
+    constexpr int     FILECOPY_BUFSIZE = 1<<16;
+    std::vector<char> buf(FILECOPY_BUFSIZE);
+
+    while (!feof(in.get()))
     {
         size_t nread;
 
-        nread = fread(buf, sizeof(char), FILECOPY_BUFSIZE, in);
+        nread = fread(buf.data(), sizeof(char), FILECOPY_BUFSIZE, in.get());
         if (nread > 0)
         {
             size_t ret;
@@ -704,39 +694,24 @@ int gmx_file_copy(const char *oldname, const char *newname, gmx_bool copy_if_emp
             {
                 /* so this is where we open when copy_if_empty is false:
                    here we know we read something. */
-                out = fopen(newname, "wb");
+                out.reset(fopen(newname, "wb"));
                 if (!out)
                 {
-                    goto error;
+                    return 1;
                 }
             }
-            ret = fwrite(buf, sizeof(char), nread, out);
+            ret = fwrite(buf.data(), sizeof(char), nread, out.get());
             if (ret != nread)
             {
-                goto error;
+                return 1;
             }
         }
-        if (ferror(in))
+        if (ferror(in.get()))
         {
-            goto error;
+            return 1;
         }
     }
-    sfree(buf);
-    fclose(in);
-    fclose(out);
     return 0;
-error:
-    sfree(buf);
-    if (in)
-    {
-        fclose(in);
-    }
-    if (out)
-    {
-        fclose(out);
-    }
-    return 1;
-#undef FILECOPY_BUFSIZE
 }
 
 
@@ -744,7 +719,7 @@ int gmx_fsync(FILE *fp)
 {
     int rc = 0;
 
-#ifdef GMX_FAHCORE
+#if GMX_FAHCORE
     /* the fahcore defines its own os-independent fsync */
     rc = fah_fsync(fp);
 #else /* GMX_FAHCORE */

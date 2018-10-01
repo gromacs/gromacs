@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,6 +51,7 @@
 #include "poscalc.h"
 #include "selelem.h"
 #include "selmethod.h"
+#include "selmethod-impl.h"
 
 /*! \internal \brief
  * Data structure for position keyword evaluation.
@@ -223,7 +224,7 @@ init_data_pos(int npar, gmx_ana_selparam_t *param)
 static void
 set_poscoll_pos(gmx::PositionCalculationCollection *pcc, void *data)
 {
-    ((t_methoddata_pos *)data)->pcc = pcc;
+    (static_cast<t_methoddata_pos *>(data))->pcc = pcc;
 }
 
 bool
@@ -248,12 +249,13 @@ _gmx_selelem_is_default_kwpos(const gmx::SelectionTreeElement &sel)
 static void set_pos_method_flags(gmx_ana_selmethod_t *method,
                                  t_methoddata_pos    *d)
 {
-    const bool forces = (d->flags != -1 && (d->flags & POS_FORCES));
+    const bool forces = (d->flags != -1 && ((d->flags & POS_FORCES) != 0));
     switch (gmx::PositionCalculationCollection::requiredTopologyInfoForType(d->type, forces))
     {
         case gmx::PositionCalculationCollection::RequiredTopologyInfo::TopologyAndMasses:
             method->flags |= SMETH_REQMASS;
-        // fallthrough
+            method->flags |= SMETH_REQTOP;
+            break;
         case gmx::PositionCalculationCollection::RequiredTopologyInfo::Topology:
             method->flags |= SMETH_REQTOP;
             break;
@@ -274,7 +276,7 @@ static void set_pos_method_flags(gmx_ana_selmethod_t *method,
 void
 _gmx_selelem_set_kwpos_type(gmx::SelectionTreeElement *sel, const char *type)
 {
-    t_methoddata_pos *d = (t_methoddata_pos *)sel->u.expr.mdata;
+    t_methoddata_pos *d = static_cast<t_methoddata_pos *>(sel->u.expr.mdata);
 
     if (sel->type != SEL_EXPRESSION || !sel->u.expr.method
         || sel->u.expr.method->name != sm_keyword_pos.name)
@@ -300,7 +302,7 @@ _gmx_selelem_set_kwpos_type(gmx::SelectionTreeElement *sel, const char *type)
 void
 _gmx_selelem_set_kwpos_flags(gmx::SelectionTreeElement *sel, int flags)
 {
-    t_methoddata_pos *d = (t_methoddata_pos *)sel->u.expr.mdata;
+    t_methoddata_pos *d = static_cast<t_methoddata_pos *>(sel->u.expr.mdata);
 
     if (sel->type != SEL_EXPRESSION || !sel->u.expr.method
         || sel->u.expr.method->name != sm_keyword_pos.name)
@@ -319,7 +321,7 @@ _gmx_selelem_set_kwpos_flags(gmx::SelectionTreeElement *sel, int flags)
 static void
 init_kwpos(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
-    t_methoddata_pos *d = (t_methoddata_pos *)data;
+    t_methoddata_pos *d = static_cast<t_methoddata_pos *>(data);
 
     if (!(param[0].flags & SPAR_DYNAMIC))
     {
@@ -336,7 +338,7 @@ init_kwpos(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *par
 static void
 init_cog(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
-    t_methoddata_pos *d = (t_methoddata_pos *)data;
+    t_methoddata_pos *d = static_cast<t_methoddata_pos *>(data);
 
     d->flags = (param[0].flags & SPAR_DYNAMIC) ? POS_DYNAMIC : 0;
     d->pc    = d->pcc->createCalculation(d->bPBC ? POS_ALL_PBC : POS_ALL, d->flags);
@@ -346,7 +348,7 @@ init_cog(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param
 static void
 init_com(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
-    t_methoddata_pos *d = (t_methoddata_pos *)data;
+    t_methoddata_pos *d = static_cast<t_methoddata_pos *>(data);
 
     d->flags  = (param[0].flags & SPAR_DYNAMIC) ? POS_DYNAMIC : 0;
     d->flags |= POS_MASS;
@@ -357,7 +359,7 @@ init_com(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param
 static void
 init_output_pos(const gmx_mtop_t * /* top */, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_pos *d = (t_methoddata_pos *)data;
+    t_methoddata_pos *d = static_cast<t_methoddata_pos *>(data);
 
     gmx_ana_poscalc_init_pos(d->pc, out->u.p);
 }
@@ -371,7 +373,7 @@ init_output_pos(const gmx_mtop_t * /* top */, gmx_ana_selvalue_t *out, void *dat
 static void
 free_data_pos(void *data)
 {
-    t_methoddata_pos *d = (t_methoddata_pos *)data;
+    t_methoddata_pos *d = static_cast<t_methoddata_pos *>(data);
 
     sfree(d->type);
     gmx_ana_poscalc_free(d->pc);
@@ -389,7 +391,7 @@ static void
 evaluate_pos(const gmx::SelMethodEvalContext &context,
              gmx_ana_index_t * /* g */, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_pos *d = (t_methoddata_pos *)data;
+    t_methoddata_pos *d = static_cast<t_methoddata_pos *>(data);
 
     gmx_ana_poscalc_update(d->pc, out->u.p, &d->g, context.fr, context.pbc);
 }

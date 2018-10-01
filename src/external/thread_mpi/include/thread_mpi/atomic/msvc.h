@@ -42,11 +42,6 @@
 #include <windows.h>
 #undef WIN32_LEAN_AND_MEAN
 
-#if (!defined(inline)) && (!defined(__cplusplus))
-#define inline_defined_in_atomic 1
-#define inline __inline
-#endif
-
 #define tMPI_Atomic_memory_barrier()
 
 

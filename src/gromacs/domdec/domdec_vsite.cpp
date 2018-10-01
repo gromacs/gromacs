@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2006,2007,2008,2009,2010,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2006,2007,2008,2009,2010,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,23 +46,23 @@
 
 #include "domdec_vsite.h"
 
-#include <assert.h>
+#include <cassert>
 
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
+#include "gromacs/domdec/hashedmap.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "domdec_specatomcomm.h"
-#include "hash.h"
 
 void dd_move_f_vsites(gmx_domdec_t *dd, rvec *f, rvec *fshift)
 {
@@ -85,7 +85,7 @@ void dd_clear_f_vsites(gmx_domdec_t *dd, rvec *f)
     }
 }
 
-void dd_move_x_vsites(gmx_domdec_t *dd, matrix box, rvec *x)
+void dd_move_x_vsites(gmx_domdec_t *dd, const matrix box, rvec *x)
 {
     if (dd->vsite_comm)
     {
@@ -93,54 +93,48 @@ void dd_move_x_vsites(gmx_domdec_t *dd, matrix box, rvec *x)
     }
 }
 
+void dd_clear_local_vsite_indices(gmx_domdec_t *dd)
+{
+    if (dd->vsite_comm)
+    {
+        dd->ga2la_vsite->clear();
+    }
+}
+
 int dd_make_local_vsites(gmx_domdec_t *dd, int at_start, t_ilist *lil)
 {
-    gmx_domdec_specat_comm_t   *spac;
-    ind_req_t                  *ireq;
-    gmx_hash_t                 *ga2la_specat;
-    int  ftype, nral, i, j, a;
-    t_ilist                    *lilf;
-    t_iatom                    *iatoms;
-    int  at_end;
+    std::vector<int>    &ireq         = dd->vsite_requestedGlobalAtomIndices;
+    gmx::HashedMap<int> *ga2la_specat = dd->ga2la_vsite;
 
-    spac         = dd->vsite_comm;
-    ireq         = &spac->ireq[0];
-    ga2la_specat = dd->ga2la_vsite;
-
-    ireq->n = 0;
+    ireq.clear();
     /* Loop over all the home vsites */
-    for (ftype = 0; ftype < F_NRE; ftype++)
+    for (int ftype = 0; ftype < F_NRE; ftype++)
     {
         if (interaction_function[ftype].flags & IF_VSITE)
         {
-            nral = NRAL(ftype);
-            lilf = &lil[ftype];
-            for (i = 0; i < lilf->nr; i += 1+nral)
+            const int      nral = NRAL(ftype);
+            const t_ilist &lilf = lil[ftype];
+            for (int i = 0; i < lilf.nr; i += 1 + nral)
             {
-                iatoms = lilf->iatoms + i;
+                const t_iatom *iatoms = lilf.iatoms + i;
                 /* Check if we have the other atoms */
-                for (j = 1; j < 1+nral; j++)
+                for (int j = 1; j < 1 + nral; j++)
                 {
                     if (iatoms[j] < 0)
                     {
                         /* This is not a home atom,
                          * we need to ask our neighbors.
                          */
-                        a = -iatoms[j] - 1;
+                        int a = -iatoms[j] - 1;
                         /* Check to not ask for the same atom more than once */
-                        if (gmx_hash_get_minone(dd->ga2la_vsite, a) == -1)
+                        if (!dd->ga2la_vsite->find(a))
                         {
                             /* Add this non-home atom to the list */
-                            if (ireq->n+1 > ireq->nalloc)
-                            {
-                                ireq->nalloc = over_alloc_large(ireq->n+1);
-                                srenew(ireq->ind, ireq->nalloc);
-                            }
-                            ireq->ind[ireq->n++] = a;
+                            ireq.push_back(a);
                             /* Temporarily mark with -2,
                              * we get the index later.
                              */
-                            gmx_hash_set(ga2la_specat, a, -2);
+                            ga2la_specat->insert(a, -2);
                         }
                     }
                 }
@@ -148,24 +142,27 @@ int dd_make_local_vsites(gmx_domdec_t *dd, int at_start, t_ilist *lil)
         }
     }
 
-    at_end = setup_specat_communication(dd, ireq, dd->vsite_comm, ga2la_specat,
-                                        at_start, 1, "vsite", "");
+    int at_end =
+        setup_specat_communication(dd, &ireq, dd->vsite_comm, ga2la_specat,
+                                   at_start, 1, "vsite", "");
 
     /* Fill in the missing indices */
-    for (ftype = 0; ftype < F_NRE; ftype++)
+    for (int ftype = 0; ftype < F_NRE; ftype++)
     {
         if (interaction_function[ftype].flags & IF_VSITE)
         {
-            nral = NRAL(ftype);
-            lilf = &lil[ftype];
-            for (i = 0; i < lilf->nr; i += 1+nral)
+            const int  nral = NRAL(ftype);
+            t_ilist   &lilf = lil[ftype];
+            for (int i = 0; i < lilf.nr; i += 1 + nral)
             {
-                iatoms = lilf->iatoms + i;
-                for (j = 1; j < 1+nral; j++)
+                t_iatom *iatoms = lilf.iatoms + i;
+                for (int j = 1; j < 1 + nral; j++)
                 {
                     if (iatoms[j] < 0)
                     {
-                        iatoms[j] = gmx_hash_get_minone(ga2la_specat, -iatoms[j]-1);
+                        const int *a = ga2la_specat->find(-iatoms[j] - 1);
+                        GMX_ASSERT(a, "We have checked before that this atom index has been set");
+                        iatoms[j] = *a;
                     }
                 }
             }
@@ -185,8 +182,9 @@ void init_domdec_vsites(gmx_domdec_t *dd, int n_intercg_vsite)
     /* Use a hash table for the global to local index.
      * The number of keys is a rough estimate, it will be optimized later.
      */
-    dd->ga2la_vsite = gmx_hash_init(std::min(n_intercg_vsite/20,
-                                             n_intercg_vsite/(2*dd->nnodes)));
+    int numKeysEstimate = std::min(n_intercg_vsite/20,
+                                   n_intercg_vsite/(2*dd->nnodes));
+    dd->ga2la_vsite = new gmx::HashedMap<int>(numKeysEstimate);
 
-    dd->vsite_comm = specat_comm_init(1);
+    dd->vsite_comm = new gmx_domdec_specat_comm_t;
 }

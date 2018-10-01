@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 
 #include <cstdlib>
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -82,7 +83,7 @@ std::string DataFileFinder::Impl::getDefaultPath()
     if (!isNullOrEmpty(installPrefix.path))
     {
         const char *const dataPath
-            = installPrefix.bSourceLayout ? "share" : DATA_INSTALL_DIR;
+            = installPrefix.bSourceLayout ? "share" : GMX_INSTALL_GMXDATADIR;
         return Path::join(installPrefix.path, dataPath, "top");
     }
     return std::string();
@@ -103,7 +104,7 @@ DataFileFinder::~DataFileFinder()
 
 void DataFileFinder::setSearchPathFromEnv(const char *envVarName)
 {
-    if (!impl_.get())
+    if (!impl_)
     {
         impl_.reset(new Impl());
     }
@@ -111,12 +112,25 @@ void DataFileFinder::setSearchPathFromEnv(const char *envVarName)
     const char *const lib = getenv(envVarName);
     if (!isNullOrEmpty(lib))
     {
+        std::vector<std::string>   &path        = impl_->searchPath_; // convenience
+        const std::string           defaultPath = impl_->getDefaultPath();
+        std::vector<std::string>    tmpPath;
+        Path::splitPathEnvironment(lib, &tmpPath);
+        std::set<std::string>       pathsSeen;
+        pathsSeen.insert(defaultPath);
+        for (auto &d : tmpPath)
+        {
+            if (!pathsSeen.count(d))
+            {
+                path.push_back(d);
+                pathsSeen.insert(d);
+            }
+        }
         impl_->bEnvIsSet_ = true;
-        Path::splitPathEnvironment(lib, &impl_->searchPath_);
     }
 }
 
-FILE *DataFileFinder::openFile(const DataFileOptions &options) const
+FilePtr DataFileFinder::openFile(const DataFileOptions &options) const
 {
     // TODO: There is a small race here, since there is some time between
     // the exists() calls and actually opening the file.  It would be better

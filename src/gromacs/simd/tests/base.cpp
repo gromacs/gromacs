@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,7 +97,7 @@ SimdBaseTest::compareVectorRealUlp(const char * refExpr,   const char * tstExpr,
 
     for (i = 0, allOk = true; i < tst.size(); i++)
     {
-        absDiff[i]  = fabs(ref[i]-tst[i]);
+        absDiff[i]  = std::abs(ref[i]-tst[i]);
         conv0.r     = ref[i];
         conv1.r     = tst[i];
         ulpDiff[i]  = llabs(conv0.i-conv1.i);
@@ -106,7 +106,7 @@ SimdBaseTest::compareVectorRealUlp(const char * refExpr,   const char * tstExpr,
         allOk       = allOk && ( ( absDiff[i] < absTol_ ) || ( ( ref[i]*tst[i] >= 0 ) && (ulpDiff[i] <= ulpTol_) ) );
     }
 
-    if (allOk == true)
+    if (allOk)
     {
         return ::testing::AssertionSuccess();
     }
@@ -127,5 +127,5 @@ SimdBaseTest::compareVectorRealUlp(const char * refExpr,   const char * tstExpr,
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace
+}  // namespace test
+}  // namespace gmx

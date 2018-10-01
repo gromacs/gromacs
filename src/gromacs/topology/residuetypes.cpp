@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,7 +57,6 @@ struct gmx_residuetype_t
 int
 gmx_residuetype_init(gmx_residuetype_t **prt)
 {
-    FILE                 *  db;
     char                    line[STRLEN];
     char                    resname[STRLEN], restype[STRLEN], dum[STRLEN];
     gmx_residuetype_t      *rt;
@@ -69,9 +68,9 @@ gmx_residuetype_init(gmx_residuetype_t **prt)
     rt->resname  = nullptr;
     rt->restype  = nullptr;
 
-    db = libopen("residuetypes.dat");
+    gmx::FilePtr db = gmx::openLibraryFile("residuetypes.dat");
 
-    while (get_a_line(db, line, STRLEN))
+    while (get_a_line(db.get(), line, STRLEN))
     {
         strip_comment(line);
         trim(line);
@@ -84,8 +83,6 @@ gmx_residuetype_init(gmx_residuetype_t **prt)
             gmx_residuetype_add(rt, resname, restype);
         }
     }
-
-    fclose(db);
 
     return 0;
 }
@@ -129,10 +126,10 @@ gmx_residuetype_get_type(gmx_residuetype_t *rt, const char * resname, const char
 int
 gmx_residuetype_add(gmx_residuetype_t *rt, const char *newresname, const char *newrestype)
 {
-    int           found;
+    bool          found;
     const char *  p_oldtype;
 
-    found = !gmx_residuetype_get_type(rt, newresname, &p_oldtype);
+    found = (gmx_residuetype_get_type(rt, newresname, &p_oldtype) == 0);
 
     if (found && gmx_strcasecmp(p_oldtype, newrestype))
     {
@@ -140,7 +137,7 @@ gmx_residuetype_add(gmx_residuetype_t *rt, const char *newresname, const char *n
                 newresname, p_oldtype, newrestype);
     }
 
-    if (found == 0)
+    if (!found)
     {
         srenew(rt->resname, rt->n+1);
         srenew(rt->restype, rt->n+1);
@@ -174,7 +171,7 @@ gmx_residuetype_get_alltypes(gmx_residuetype_t   *rt,
             bool bFound = false;
             for (int j = 0; j < n && !bFound; j++)
             {
-                bFound = !gmx_strcasecmp(p, my_typename[j]);
+                bFound = (gmx_strcasecmp(p, my_typename[j]) == 0);
             }
             if (!bFound)
             {
@@ -196,15 +193,8 @@ gmx_residuetype_is_protein(gmx_residuetype_t *rt, const char *resnm)
     gmx_bool    rc;
     const char *p_type;
 
-    if (gmx_residuetype_get_type(rt, resnm, &p_type) == 0 &&
-        gmx_strcasecmp(p_type, "Protein") == 0)
-    {
-        rc = TRUE;
-    }
-    else
-    {
-        rc = FALSE;
-    }
+    rc = gmx_residuetype_get_type(rt, resnm, &p_type) == 0 &&
+        gmx_strcasecmp(p_type, "Protein") == 0;
     return rc;
 }
 
@@ -214,15 +204,8 @@ gmx_residuetype_is_dna(gmx_residuetype_t *rt, const char *resnm)
     gmx_bool    rc;
     const char *p_type;
 
-    if (gmx_residuetype_get_type(rt, resnm, &p_type) == 0 &&
-        gmx_strcasecmp(p_type, "DNA") == 0)
-    {
-        rc = TRUE;
-    }
-    else
-    {
-        rc = FALSE;
-    }
+    rc = gmx_residuetype_get_type(rt, resnm, &p_type) == 0 &&
+        gmx_strcasecmp(p_type, "DNA") == 0;
     return rc;
 }
 
@@ -232,15 +215,8 @@ gmx_residuetype_is_rna(gmx_residuetype_t *rt, const char *resnm)
     gmx_bool    rc;
     const char *p_type;
 
-    if (gmx_residuetype_get_type(rt, resnm, &p_type) == 0 &&
-        gmx_strcasecmp(p_type, "RNA") == 0)
-    {
-        rc = TRUE;
-    }
-    else
-    {
-        rc = FALSE;
-    }
+    rc = gmx_residuetype_get_type(rt, resnm, &p_type) == 0 &&
+        gmx_strcasecmp(p_type, "RNA") == 0;
     return rc;
 }
 

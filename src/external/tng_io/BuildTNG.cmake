@@ -5,12 +5,13 @@ if ("${TNG_ROOT_BINARY_DIR}" MATCHES "^\.\.")
 endif()
 set(TNG_ROOT_BINARY_DIR ${CMAKE_BINARY_DIR}/${TNG_ROOT_BINARY_DIR})
 
+set(TNG_MAJOR_VERSION "1")
+set(TNG_MINOR_VERSION "8")
+set(TNG_VERSION_PATCH_LEVEL "1")
+set(TNG_IO_VERSION "${TNG_MAJOR_VERSION}.${TNG_MINOR_VERSION}.${TNG_VERSION_PATCH_LEVEL}")
+
 function (TNG_GENERATE_VERSION_H)
-    set(TNG_MAJOR_VERSION "1")
-    set(TNG_MINOR_VERSION "7")
-    set(TNG_VERSION_PATCH_LEVEL "9")
-    set(TNG_IO_VERSION "${TNG_MAJOR_VERSION}.${TNG_MINOR_VERSION}.${TNG_VERSION_PATCH_LEVEL}")
-    set(TNG_API_VERSION "7")
+    set(TNG_API_VERSION "8")
     configure_file(${TNG_ROOT_SOURCE_DIR}/include/tng/version.h.in
                    ${TNG_ROOT_BINARY_DIR}/include/tng/version.h)
 
@@ -70,7 +71,7 @@ function(add_tng_io_library NAME)
     target_include_directories(${_build_target} PRIVATE
                                $<BUILD_INTERFACE:${TNG_ROOT_SOURCE_DIR}/include>
                                $<BUILD_INTERFACE:${TNG_ROOT_BINARY_DIR}/include>)
-    target_include_directories(${NAME} INTERFACE
+    target_include_directories(${NAME} SYSTEM INTERFACE
                                $<BUILD_INTERFACE:${TNG_ROOT_SOURCE_DIR}/include>
                                $<BUILD_INTERFACE:${TNG_ROOT_BINARY_DIR}/include>)
 

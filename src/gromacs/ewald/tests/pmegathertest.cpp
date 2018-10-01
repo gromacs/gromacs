@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,6 @@
 
 #include <gmock/gmock.h>
 
-#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -65,7 +64,7 @@ namespace
 /* Valid input instances */
 
 //! A couple of valid inputs for boxes.
-static std::vector<Matrix3x3> const c_sampleBoxes
+std::vector<Matrix3x3> const c_sampleBoxes
 {
     // normal box
     Matrix3x3 {{
@@ -82,7 +81,7 @@ static std::vector<Matrix3x3> const c_sampleBoxes
 };
 
 //! A couple of valid inputs for grid sizes
-static std::vector<IVec> const c_sampleGridSizes
+std::vector<IVec> const c_sampleGridSizes
 {
     IVec {
         16, 12, 14
@@ -92,13 +91,13 @@ static std::vector<IVec> const c_sampleGridSizes
     }
 };
 //! Random charges
-static std::vector<real> const c_sampleChargesFull
+std::vector<real> const c_sampleChargesFull
 {
     4.95f, 3.11f, 3.97f, 1.08f, 2.09f, 1.1f, 4.13f, 3.31f, 2.8f, 5.83f, 5.09f, 6.1f, 2.86f, 0.24f, 5.76f, 5.19f, 0.72f
 };
 
 //! All the input atom gridline indices
-static std::vector<IVec> const c_sampleGridLineIndicesFull
+std::vector<IVec> const c_sampleGridLineIndicesFull
 {
     IVec {
         4, 2, 6
@@ -157,7 +156,7 @@ static std::vector<IVec> const c_sampleGridLineIndicesFull
 // but that should not affect the reproducibility, which we're after
 
 //! A lot of bogus input spline values - should have at list (max PME order = 5) * (DIM = 3) * (total unique atom number in all test cases = 16) values
-static std::vector<real> const c_sampleSplineValuesFull
+std::vector<real> const c_sampleSplineValuesFull
 {
     0.12f, 0.81f, 0.29f, 0.22f, 0.13f, 0.19f, 0.12f, 0.8f, 0.44f, 0.38f, 0.32f, 0.36f, 0.27f, 0.11f, 0.17f, 0.94f, 0.07f, 0.9f, 0.98f, 0.96f, 0.07f, 0.94f, 0.77f, 0.24f, 0.84f, 0.16f, 0.77f, 0.57f, 0.52f, 0.27f, 0.39f, 0.45f, 0.6f, 0.59f, 0.44f, 0.91f, 0.97f, 0.43f, 0.24f, 0.52f, 0.73f, 0.55f, 0.99f, 0.39f, 0.97f, 0.35f, 0.1f, 0.68f, 0.19f, 0.1f, 0.77f, 0.2f, 0.43f, 0.69f, 0.76f, 0.32f, 0.31f, 0.94f, 0.53f, 0.6f, 0.93f, 0.57f, 0.94f, 0.88f, 0.75f, 0.77f, 0.91f, 0.72f, 0.07f, 0.78f, 0.09f, 0.02f, 0.48f, 0.97f, 0.89f, 0.39f, 0.48f, 0.19f, 0.02f, 0.92f, 0.8f, 0.41f, 0.53f, 0.32f, 0.38f, 0.58f, 0.36f, 0.46f, 0.92f, 0.91f, 0.01f, 0.86f, 0.54f, 0.86f, 0.94f, 0.37f, 0.35f, 0.81f, 0.89f, 0.48f,
     0.34f, 0.18f, 0.11f, 0.02f, 0.87f, 0.95f, 0.66f, 0.67f, 0.38f, 0.45f, 0.04f, 0.94f, 0.54f, 0.76f, 0.58f, 0.83f, 0.31f, 0.73f, 0.71f, 0.06f, 0.35f, 0.32f, 0.35f, 0.61f, 0.27f, 0.98f, 0.83f, 0.11f, 0.3f, 0.42f, 0.95f, 0.69f, 0.58f, 0.29f, 0.1f, 0.68f, 0.94f, 0.62f, 0.51f, 0.47f, 0.04f, 0.47f, 0.34f, 0.71f, 0.52f, 0.19f, 0.69f, 0.5f, 0.59f, 0.05f, 0.74f, 0.11f, 0.4f, 0.81f, 0.24f, 0.53f, 0.71f, 0.07f, 0.17f, 0.41f, 0.23f, 0.78f, 0.27f, 0.1f, 0.71f, 0.36f, 0.67f, 0.6f, 0.94f, 0.69f, 0.19f, 0.58f, 0.68f, 0.5f, 0.62f, 0.38f, 0.29f, 0.44f, 0.04f, 0.89f, 0.0f, 0.76f, 0.22f, 0.16f, 0.08f, 0.62f, 0.51f, 0.62f, 0.83f, 0.72f, 0.96f, 0.99f, 0.4f, 0.79f, 0.83f, 0.21f, 0.43f, 0.32f, 0.44f, 0.72f,
@@ -166,7 +165,7 @@ static std::vector<real> const c_sampleSplineValuesFull
 };
 
 //! A lot of bogus input spline derivatives - should have at list (max PME order = 5) * (DIM = 3) * (total unique atom number in all test cases = 16) values
-static std::vector<real> const c_sampleSplineDerivativesFull
+std::vector<real> const c_sampleSplineDerivativesFull
 {
     0.82f, 0.88f, 0.83f, 0.11f, 0.93f, 0.32f, 0.71f, 0.37f, 0.69f, 0.88f, 0.11f, 0.38f, 0.25f, 0.5f, 0.36f, 0.81f, 0.78f, 0.31f, 0.66f, 0.32f, 0.27f, 0.35f, 0.53f, 0.83f, 0.08f, 0.08f, 0.94f, 0.71f, 0.65f, 0.24f, 0.13f, 0.01f, 0.33f, 0.65f, 0.24f, 0.53f, 0.45f, 0.84f, 0.33f, 0.97f, 0.31f, 0.7f, 0.03f, 0.31f, 0.41f, 0.76f, 0.12f, 0.3f, 0.57f, 0.65f, 0.87f, 0.99f, 0.42f, 0.97f, 0.32f, 0.39f, 0.73f, 0.23f, 0.03f, 0.67f, 0.97f, 0.57f, 0.42f, 0.38f, 0.54f, 0.17f, 0.53f, 0.54f, 0.18f, 0.8f, 0.76f, 0.13f, 0.29f, 0.83f, 0.77f, 0.56f, 0.4f, 0.87f, 0.36f, 0.18f, 0.59f, 0.04f, 0.05f, 0.61f, 0.26f, 0.91f, 0.62f, 0.16f, 0.89f, 0.23f, 0.26f, 0.59f, 0.33f, 0.2f, 0.49f, 0.41f, 0.25f, 0.4f, 0.16f, 0.83f,
     0.44f, 0.82f, 0.21f, 0.95f, 0.14f, 0.8f, 0.37f, 0.31f, 0.41f, 0.53f, 0.15f, 0.85f, 0.78f, 0.17f, 0.92f, 0.03f, 0.13f, 0.2f, 0.03f, 0.33f, 0.87f, 0.38f, 0, 0.08f, 0.79f, 0.36f, 0.53f, 0.05f, 0.07f, 0.94f, 0.23f, 0.85f, 0.13f, 0.27f, 0.23f, 0.22f, 0.26f, 0.38f, 0.15f, 0.48f, 0.18f, 0.33f, 0.23f, 0.62f, 0.1f, 0.36f, 0.99f, 0.07f, 0.02f, 0.04f, 0.09f, 0.29f, 0.52f, 0.29f, 0.83f, 0.97f, 0.61f, 0.81f, 0.49f, 0.56f, 0.08f, 0.09f, 0.03f, 0.65f, 0.46f, 0.1f, 0.06f, 0.06f, 0.39f, 0.29f, 0.04f, 0.03f, 0.1f, 0.83f, 0.94f, 0.59f, 0.97f, 0.82f, 0.2f, 0.66f, 0.23f, 0.11f, 0.03f, 0.16f, 0.27f, 0.53f, 0.94f, 0.46f, 0.43f, 0.29f, 0.97f, 0.64f, 0.46f, 0.37f, 0.43f, 0.48f, 0.37f, 0.93f, 0.5f, 0.2f,
@@ -175,7 +174,7 @@ static std::vector<real> const c_sampleSplineDerivativesFull
 };
 
 //! 2 c_sample grids - only non-zero values have to be listed
-static std::vector<SparseRealGridValuesInput> const c_sampleGrids
+std::vector<SparseRealGridValuesInput> const c_sampleGrids
 {
     SparseRealGridValuesInput {{
                                    IVec {
@@ -249,7 +248,7 @@ static std::vector<SparseRealGridValuesInput> const c_sampleGrids
 };
 
 //! Input forces for reduction
-static std::vector<RVec> const c_sampleForcesFull {
+std::vector<RVec> const c_sampleForcesFull {
     RVec {
         0.02f, 0.87f, 0.95f
     }, RVec {
@@ -285,11 +284,11 @@ static std::vector<RVec> const c_sampleForcesFull {
 };
 
 //! PME orders to test
-static std::vector<int> const pmeOrders {
+std::vector<int> const pmeOrders {
     3, 4, 5
 };
 //! Atom counts to test
-static std::vector<size_t> const atomCounts {
+std::vector<size_t> const atomCounts {
     1, 2, 13
 };
 
@@ -326,33 +325,27 @@ typedef std::map<size_t, AtomSizedData> InputDataByAtomCount;
  * The rest of the atom-related input data - gridline indices, spline theta values, spline dtheta values, atom charges -
  * is looked up in the inputAtomDataSets_ test fixture variable.
  */
-typedef std::tuple<Matrix3x3, int, IVec, SparseRealGridValuesInput, PmeGatherInputHandling, size_t> GatherInputParameters;
+typedef std::tuple<Matrix3x3, int, IVec, SparseRealGridValuesInput, PmeForceOutputHandling, size_t> GatherInputParameters;
 
 //! Test fixture
 class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
 {
     private:
-        //! Environment for getting the t_inputrec structure easily
-        MDModules mdModules_;
-
         //! Storage of all the input atom datasets
         static InputDataByAtomCount s_inputAtomDataSets_;
 
     public:
-        //! Default constructor
         PmeGatherTest()  = default;
         //! Sets the input atom data references once
         static void SetUpTestCase()
         {
-            auto                gridLineIndicesIt = c_sampleGridLineIndicesFull.begin();
-            auto                chargesIt         = c_sampleChargesFull.begin();
+            size_t start = 0;
             for (auto atomCount : atomCounts)
             {
                 AtomSizedData atomData;
-                atomData.gridLineIndices = GridLineIndicesVector::fromVector(gridLineIndicesIt, gridLineIndicesIt + atomCount);
-                gridLineIndicesIt       += atomCount;
-                atomData.charges         = ChargesVector::fromVector(chargesIt, chargesIt + atomCount);
-                chargesIt               += atomCount;
+                atomData.gridLineIndices = GridLineIndicesVector(c_sampleGridLineIndicesFull).subArray(start, atomCount);
+                atomData.charges         = ChargesVector(c_sampleChargesFull).subArray(start, atomCount);
+                start                   += atomCount;
                 atomData.coordinates.resize(atomCount, RVec {1e6, 1e7, -1e8});
                 /* The coordinates are intentionally bogus in this test - only the size matters; the gridline indices are fed directly as inputs */
                 for (auto pmeOrder : pmeOrders)
@@ -361,10 +354,8 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
                     const size_t             dimSize = atomCount * pmeOrder;
                     for (int dimIndex = 0; dimIndex < DIM; dimIndex++)
                     {
-                        splineData.splineValues[dimIndex] = SplineParamsDimVector::fromVector(c_sampleSplineValuesFull.begin() + dimIndex * dimSize,
-                                                                                              c_sampleSplineValuesFull.begin() + (dimIndex + 1) * dimSize);
-                        splineData.splineDerivatives[dimIndex] = SplineParamsDimVector::fromVector(c_sampleSplineDerivativesFull.begin() + dimIndex * dimSize,
-                                                                                                   c_sampleSplineDerivativesFull.begin() + (dimIndex + 1) * dimSize);
+                        splineData.splineValues[dimIndex]      = SplineParamsDimVector(c_sampleSplineValuesFull).subArray(dimIndex * dimSize, dimSize);
+                        splineData.splineDerivatives[dimIndex] = SplineParamsDimVector(c_sampleSplineDerivativesFull).subArray(dimIndex * dimSize, dimSize);
                     }
                     atomData.splineDataByPmeOrder[pmeOrder] = splineData;
                 }
@@ -380,53 +371,62 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
             IVec                      gridSize;
             size_t                    atomCount;
             SparseRealGridValuesInput nonZeroGridValues;
-            PmeGatherInputHandling    inputForceTreatment;
+            PmeForceOutputHandling    inputForceTreatment;
             std::tie(box, pmeOrder, gridSize, nonZeroGridValues, inputForceTreatment, atomCount) = GetParam();
             auto inputAtomData       = s_inputAtomDataSets_[atomCount];
             auto inputAtomSplineData = inputAtomData.splineDataByPmeOrder[pmeOrder];
 
             /* Storing the input where it's needed, running the test */
-            t_inputrec *inputRec  = mdModules_.inputrec();
-            inputRec->nkx         = gridSize[XX];
-            inputRec->nky         = gridSize[YY];
-            inputRec->nkz         = gridSize[ZZ];
-            inputRec->pme_order   = pmeOrder;
-            inputRec->coulombtype = eelPME;
+            t_inputrec inputRec;
+            inputRec.nkx         = gridSize[XX];
+            inputRec.nky         = gridSize[YY];
+            inputRec.nkz         = gridSize[ZZ];
+            inputRec.pme_order   = pmeOrder;
+            inputRec.coulombtype = eelPME;
+            inputRec.epsilon_r   = 1.0;
 
-            TestReferenceData                     refData;
-            const std::map<CodePath, std::string> modesToTest = {{CodePath::CPU, "CPU"}};
-            for (const auto &mode : modesToTest)
+            TestReferenceData refData;
+            for (const auto &context : getPmeTestEnv()->getHardwareContexts())
             {
+                CodePath   codePath       = context->getCodePath();
+                const bool supportedInput = pmeSupportsInputForMode(&inputRec, codePath);
+                if (!supportedInput)
+                {
+                    /* Testing the failure for the unsupported input */
+                    EXPECT_THROW(pmeInitAtoms(&inputRec, codePath, nullptr, nullptr, inputAtomData.coordinates, inputAtomData.charges, box), NotImplementedError);
+                    continue;
+                }
+
                 /* Describing the test uniquely */
-                SCOPED_TRACE(formatString("Testing force gathering with %s for PME grid size %d %d %d"
+                SCOPED_TRACE(formatString("Testing force gathering with %s %sfor PME grid size %d %d %d"
                                           ", order %d, %zu atoms, %s",
-                                          mode.second.c_str(),
+                                          codePathToString(codePath), context->getDescription().c_str(),
                                           gridSize[XX], gridSize[YY], gridSize[ZZ],
                                           pmeOrder,
                                           atomCount,
-                                          (inputForceTreatment == PmeGatherInputHandling::ReduceWith) ? "with reduction" : "without reduction"
+                                          (inputForceTreatment == PmeForceOutputHandling::ReduceWithInput) ? "with reduction" : "without reduction"
                                           ));
 
-                PmeSafePointer pmeSafe = pmeInitWithAtoms(inputRec, inputAtomData.coordinates, inputAtomData.charges, box);
+                PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, codePath, context->getDeviceInfo(),
+                                                      context->getPmeGpuProgram(), inputAtomData.coordinates, inputAtomData.charges, box);
 
                 /* Setting some more inputs */
-                pmeSetRealGrid(pmeSafe.get(), mode.first, nonZeroGridValues);
-
-                pmeSetGridLineIndices(pmeSafe.get(), mode.first, inputAtomData.gridLineIndices);
-
+                pmeSetRealGrid(pmeSafe.get(), codePath, nonZeroGridValues);
+                pmeSetGridLineIndices(pmeSafe.get(), codePath, inputAtomData.gridLineIndices);
                 for (int dimIndex = 0; dimIndex < DIM; dimIndex++)
                 {
-                    pmeSetSplineData(pmeSafe.get(), mode.first, inputAtomSplineData.splineValues[dimIndex], PmeSplineDataType::Values, dimIndex);
-                    pmeSetSplineData(pmeSafe.get(), mode.first, inputAtomSplineData.splineDerivatives[dimIndex], PmeSplineDataType::Derivatives, dimIndex);
+                    pmeSetSplineData(pmeSafe.get(), codePath, inputAtomSplineData.splineValues[dimIndex], PmeSplineDataType::Values, dimIndex);
+                    pmeSetSplineData(pmeSafe.get(), codePath, inputAtomSplineData.splineDerivatives[dimIndex], PmeSplineDataType::Derivatives, dimIndex);
                 }
 
-                /* Explicitly copying the c_sample forces to be able to modify them */
+                /* Explicitly copying the sample forces to be able to modify them */
                 auto inputForcesFull(c_sampleForcesFull);
                 GMX_RELEASE_ASSERT(inputForcesFull.size() >= atomCount, "Bad input forces size");
-                auto forces = ForcesVector::fromVector(inputForcesFull.begin(), inputForcesFull.begin() + atomCount);
+                auto forces = ForcesVector(inputForcesFull).subArray(0, atomCount);
 
                 /* Running the force gathering itself */
-                pmePerformGather(pmeSafe.get(), mode.first, inputForceTreatment, forces);
+                pmePerformGather(pmeSafe.get(), codePath, inputForceTreatment, forces);
+                pmeFinalizeTest(pmeSafe.get(), codePath);
 
                 /* Check the output forces correctness */
                 TestReferenceChecker forceChecker(refData.rootChecker());
@@ -451,9 +451,9 @@ INSTANTIATE_TEST_CASE_P(SaneInput, PmeGatherTest, ::testing::Combine(::testing::
                                                                          ::testing::ValuesIn(pmeOrders),
                                                                          ::testing::ValuesIn(c_sampleGridSizes),
                                                                          ::testing::ValuesIn(c_sampleGrids),
-                                                                         ::testing::Values(PmeGatherInputHandling::Overwrite, PmeGatherInputHandling::ReduceWith),
+                                                                         ::testing::Values(PmeForceOutputHandling::Set, PmeForceOutputHandling::ReduceWithInput),
                                                                          ::testing::ValuesIn(atomCounts)));
 
-}
-}
-}
+}  // namespace
+}  // namespace test
+}  // namespace gmx

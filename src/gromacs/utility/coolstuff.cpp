@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,7 +58,7 @@ namespace
 {
 
 //! Whether printing of cool quotes is enabled
-bool beCool(void)
+bool beCool()
 {
     /* Yes, it is bad to check the environment variable every call,
      * but we dont call this routine often, and it avoids using
@@ -74,7 +74,7 @@ bool beCool(void)
 
 //! Return a valid random index into \c arrayRef
 template <typename T>
-const T &getRandomElement(gmx::ConstArrayRef<T> arrayRef)
+const T &getRandomElement(gmx::ArrayRef<const T> arrayRef)
 {
     std::random_device                    generator;
     std::uniform_int_distribution<size_t> distribution(0, arrayRef.size()-1);
@@ -629,7 +629,7 @@ std::string getCoolQuote()
         { "I was told I'd never make it to VP rank because I was too outspoken. Maybe so, but I think men will always find an excuse for keeping women in their 'place.' So, let's make that place the executive suite and start more of our own companies.", "Jean Bartik, ENIAC developer" },
         { "If it's a good idea, go ahead and do it. It's much easier to apologize than it is to get permission.", "Grace Hopper, developer of COBOL" },
         { "This isn't right. This isn't even wrong.", "Wolfgang Pauli" },
-        { "Louis Pasteur's theory of germs is ridicolous fiction.", "Pierre Pachet, Professor of Physiology at Toulouse, 1872" },
+        { "Louis Pasteur's theory of germs is ridiculous fiction.", "Pierre Pachet, Professor of Physiology at Toulouse, 1872" },
         { "Research ! A mere excuse for idleness; it has never achieved, and will never achieve any results of the slightest value.", "Benjamin Jowett, British theologian, 1817-93" },
         { "Problems worthy of attack prove their worth by hitting back.", "Piet Hein" },
         { "You should never bet against anything in science at odds of more than about 10^12 to 1.", "Ernest Rutherford" },
@@ -711,7 +711,7 @@ std::string getCoolQuote()
         { "Sir, spare your threats: The bug which you would fright me with I seek.", "Hermione, Act III, scene II of Shakespeare's Winter's Tale" },
         { "Erwin with his psi can do / Calculations quite a few. / But one thing has not been seen / Just what psi really mean.", "Felix Bloch" },
         { "Only entropy comes easy.", "Anton Chekov" },
-        { "The lovliest theories are being overthrown by these damned experiments; it is no fun being a chemist any more.", "Justus von Liebig, letter to J.J. Berzelius 1834" },
+        { "The loveliest theories are being overthrown by these damned experiments; it is no fun being a chemist any more.", "Justus von Liebig, letter to J.J. Berzelius 1834" },
         { "If all else fails, immortality can always be assured by spectacular error.", "John Kenneth Galbraith" },
         { "Always code as if the person who ends up maintaining your code is a violent psychopath who knows where you live.", "Martin Golding" },
         { "If I have not seen as far as others, it is because giants were standing on my shoulders.", "Hal Abelson" },
@@ -736,12 +736,84 @@ std::string getCoolQuote()
         { "They don't have half hours in the north", "Carl Caleman" },
         { "Safety lights are for dudes", "Ghostbusters 2016" },
         { "It's 2040 now. Our President is a plant.",  "Ghostbusters 2016" },
-        { "It's just B I O L O G Y, can't you see?" "Joe Jackson" },
+        { "It's just B I O L O G Y, can't you see?", "Joe Jackson" },
         { "Input, output, electricity", "Joni Mitchell" },
         { "Your daddy ain't your daddy but your daddy don't know", "Dalahan" },
         { "Why is the Earth moving 'round the sun? Floating in the vacuum with no purpose, not a one", "Fleet Foxes" },
-        { "If you leave markets to act as governments, then sure as night follows day, the market will make people suffer and it will turn the world into a wilderness", "Ann Pettifor" },
-        { "If you look back to the fifties, what all economist call the golden age of economics, 1945-1970 was a period of economic stability, economic activity, pretty much full employment because we managed capital flows, we managed interest rates, we managed exchange rates. We coordinated at an international level to maintain balance in the global economy, we had a golden age. And now we're being told, you can't have another golden age, now we have to go through a period of fascism, this is necessary. Excuse me?", "Ann Pettifor" },
+        { "Everybody has a plan until they get punched in the mouth", "Mike Tyson" },
+        { "Sacrifices must be made", "Otto Lilienthal, dying after having crashed with his glider in 1896" },
+        { "The secret to getting ahead is getting started", "Mark Twain" },
+        { "Water is just water", "Berk Hess" },
+        { "GROMACS First : Making MD Great Again", "Vedran Miletic" },
+        { "You still have to climb to the shoulders of the giants", "Vedran Miletic" },
+        { "The road to openness is paved with git commits", "Vedran Miletic" },
+        { "Performance and power are great targets for tuning, but really you want to tune for money!", "Erik Lindahl" },
+        { "Here are all the 'gmx' tools... but no gmx writethesis", "Christian Blau" },
+        { "The best part of winter in Stockholm is going to Australia", "Mark Abraham" },
+        { "If you don't know what you're doing, use a (M)BAR-based method", "Erik Lindahl" },
+        { "All models are wrong, but some are useful.", "George Box" },
+        { "If your experiment needs a statistician, you need a better experiment.", "Ernest Rutherford" },
+        { "Facts are stubborn things, but statistics are more pliable.", "Laurence Peter" },
+        { "In ancient times they had no statistics so they had to fall back on lies.", "Stephen Leacock" },
+        { "If at first you don't succeed, try two more times so that your failure is statistically significant.", "Dallas Warren" },
+        { "Your theory is crazy, but it's not crazy enough to be true.", "Niels Bohr" },
+        { "Science may never come up with a better office communication system than the coffee break.", "Earl Wilson" },
+        { "A scientific truth does not triumph by convincing its opponents and making them see the light, but rather because its opponents eventually die and a new generation grows up that is familiar with it.", "Max Planck" },
+        { "Computer science is no more about computers than astronomy is about telescopes", "Edsger Dijkstra" },
+        { "If we knew what it was we were doing, it would not be called research, would it?", "Albert Einstein" },
+        { "I have not failed. I've just found 10,000 ways that won't work", "Thomas Alva Edison" },
+        { "The public have an insatiable curiosity to know everything, except what is worth knowing.", "Oscar Wilde" },
+        { "Philosophy of science is about as useful to scientists as ornithology is to birds.", "Richard Feynman" },
+        { "I had trouble with physics in college. When I signed up I thought it said psychics.", "Greg Tamblyn" },
+        { "There’s an old saying among scientific guys: “You can’t make an omelet without breaking eggs, ideally by dropping a cement truck on them from a crane.", "Dave Barry" },
+        { "Occams Razor is the scientific principle that, all things being equal, the simplest explanation is always the dog ate my homework.", "Greg Tamblyn" },
+        { "When you get right down to it, almost every explanation Man came up with for anything until about 1926 was stupid.", "Dave Barry" },
+        { "We all understand the twinge of discomfort at the thought that we share a common ancestor with the apes. No one can embarrass you like a relative.", "Neal DeGrasse Tyson" },
+        { "In physics, you don't have to go around making trouble for yourself. Nature does it for you.", "Frank Wilczek" },
+        { "Every revolutionary idea seems to evoke three stages of reaction. They may be summed up by the phrases: (1) It's completely impossible. (2) It's possible, but not worth doing. (3) I said it was a good idea all along.", "Arthur C. Clarke" },
+        { "Computers are like humans - they do everything except think.", "John von Neumann" },
+        { "With four parameters I can fit an elephant, and with five I can make him wiggle his trunk.", "John von Neumann" },
+        { "Christianity may be OK between consenting adults in private but should not be taught to young children.", "Francis Crick" },
+        { "All approaches at a higher level are suspect until confirmed at the molecular level.", "Francis Crick" },
+        { "We haven’t the money, so we’ve got to think.", "Ernest Rutherford" },
+        { "Furious activity is no substitute for understanding.", "H.H. Williams" },
+        { "Discovery: A couple of months in the laboratory can frequently save a couple of hours in the library.", "Anonymous" },
+        { "Never replicate a successful experiment.", "Fett's law." },
+        { "Raw data is like raw sewage, it requires some processing before it can be spread around. The opposite is true of theories.", "Jim Carr" },
+        { "A university faculty is 500 egotists with a common parking problem.", "Keith Sullivan" },
+        { "Studying expands knowledge. Knowledge is power. Power corrupts. Corruption is a crime. Crime doesn't pay.", "Anonymous" },
+        { "A professor is one who talks in someone else's sleep.", "W.H. Auden" },
+        { "A tidy laboratory means a lazy chemist.", "J.J. Berzelius" },
+        { "Microbiology Lab - Staph Only.", "Anonymous" },
+        { "I can’t go to a restaurant and order food because I keep looking at the fonts on the menu. Five minutes later I realize that it’s also talking about food.", "Donald Knuth" },
+        { "Physics is like sex: sure, it may give some practical results, but that’s not why we do it", "Richard P. Feynman" },
+        { "Statistics: The only science that enables different experts using the same figures to draw different conclusions.", "Evan Esar" },
+        { "If I could remember the names of all these particles, I’d be a botanist.", "Albert Einstein" },
+        { "Science... never solves a problem without creating ten more.", "George Bernard Shaw" },
+        { "A mathematician is a blind man in a dark room looking for a black cat which isn't there.", "Charles Darwin" },
+        { "Nothing shocks me. I'm a scientist.", "Harrison Ford as Indiana Jones" },
+        { "There is an infinite set A that is not too big.", "John von Neumann" },
+        { "If it's all right with Dirac, it's all right with me.", "Enrico Fermi, on being told that there was experimental evidence He-3 nuclei obey Fermi-Dirac statistics." },
+        { "I cannot think of a single one, not even intelligence.", "Enrico Fermi, when asked what characteristics physics Nobel laureates had in common." },
+        { "Heavier-than-air flying machines are impossible.", "Lord Kelvin, President of Royal Society, 1895." },
+        { "All that glitters may not be gold, but at least it contains free electrons.", "John Desmond Baernal" },
+        { "It is disconcerting to reflect on the number of students we have flunked in chemistry for not knowing what we later found to be untrue.", "Robert L. Weber" },
+        { "People are DNA's way of making more DNA.", "Edward O. Wilson" },
+        { "The best model of a cat is another cat..., specially the same cat.", "Arturo Rosenblueth" },
+        { "Computer dating is fine, if you are a computer.", "Rita May Brown" },
+        { "The most likely way for the world to be destroyed, most experts agree, is by accident. That’s where we come in; we’re computer professionals. We cause accidents.", "Nathaniel Borenstein" },
+        { "An intellectual is someone who has found something more interesting than sex.", "Edgar Wallace" },
+        { "Base eight is just like base ten really, if you’re missing two fingers.", "Tom Lehrer" },
+        { "If 10 years from now, when you are doing something quick and dirty, you suddenly visualize that I am looking over your shoulders and say to yourself: ‘Dijkstra would not have liked this’, well that would be enough immortality for me.", "Edsger Dijkstra" },
+        { "Memory is like an orgasm. It’s a lot better if you don’t have to fake it.", "Seymour Cray, on virtual memory" },
+        { "A computer once beat me at chess, but it was no match for me at kick boxing.", "Emo Philips" },
+        { "Home computers are being called upon to perform many new functions, including the consumption of homework formerly eaten by the dog.", "Doug Larson" },
+        { "Forcefields are like dating; things go fine for a while and then sometimes it goes really bad.", "Alex MacKerell" },
+        { "This type of advanced sampling techniques... which are not so advanced, really.", "Viveca Lindahl, on AWH, at her thesis defense." },
+        { "C++ is tricky. You can do everything. You can even make every mistake.", "Nicolai Josuttis, CppCon2017" },
+        { "Why would the backup server database get corrupted anyway?", "Stefan Fleischmann -- system administrator, physicist, optimist." },
+        { "Teaching quantum computing is like teaching computer science at Hogwarts.", "Thomas Sterling, ISC2018 keynote" },
+        { "It is unfortunate that the authors did not make better use of all the electric power energy that went into these massive computations.", "An anonymous referee" },
     };
 
     if (beCool())
@@ -755,4 +827,4 @@ std::string getCoolQuote()
     }
 }
 
-} // namespace
+}  // namespace gmx

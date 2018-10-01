@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,8 +38,8 @@
 
 #include "symtab.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include <algorithm>
 
@@ -64,9 +64,9 @@ static char *trim_string(const char *s, char *out, int maxlen)
 {
     int len, i;
 
-    if (strlen(s) > (size_t)(maxlen-1))
+    if (strlen(s) > static_cast<size_t>(maxlen-1))
     {
-        gmx_fatal(FARGS, "String '%s' (%d) is longer than buffer (%d).\n",
+        gmx_fatal(FARGS, "String '%s' (%zu) is longer than buffer (%d).\n",
                   s, strlen(s), maxlen-1);
     }
 
@@ -114,7 +114,6 @@ int lookup_symtab(t_symtab *symtab, char **name)
         }
     }
     gmx_fatal(FARGS, "symtab lookup \"%s\" not found", *name);
-    return -1;
 }
 
 char **get_symtab_handle(t_symtab *symtab, int name)
@@ -135,10 +134,9 @@ char **get_symtab_handle(t_symtab *symtab, int name)
         }
     }
     gmx_fatal(FARGS, "symtab get_symtab_handle %d not found", name);
-    return nullptr;
 }
 
-static t_symbuf *new_symbuf(void)
+static t_symbuf *new_symbuf()
 {
     t_symbuf *symbuf;
 
@@ -212,6 +210,41 @@ void open_symtab(t_symtab *symtab)
 
 void close_symtab(t_symtab gmx_unused *symtab)
 {
+}
+
+// TODO this will go away when we use a
+// std::list<std::vector<std::string>>> for t_symtab.
+t_symtab *duplicateSymtab(const t_symtab *symtab)
+{
+    t_symtab *copySymtab;
+    snew(copySymtab, 1);
+    open_symtab(copySymtab);
+    t_symbuf *symbuf = symtab->symbuf;
+    if (symbuf != nullptr)
+    {
+        snew(copySymtab->symbuf, 1);
+    }
+    t_symbuf *copySymbuf = copySymtab->symbuf;
+    while (symbuf != nullptr)
+    {
+        snew(copySymbuf->buf, symbuf->bufsize);
+        copySymbuf->bufsize = symbuf->bufsize;
+        for (int i = 0; (i < symbuf->bufsize) && (i < symtab->nr); i++)
+        {
+            if (symbuf->buf[i])
+            {
+                copySymbuf->buf[i] = gmx_strdup(symbuf->buf[i]);
+            }
+        }
+        symbuf = symbuf->next;
+        if (symbuf != nullptr)
+        {
+            snew(copySymbuf->next, 1);
+            copySymbuf = copySymbuf->next;
+        }
+    }
+    copySymtab->nr = symtab->nr;
+    return copySymtab;
 }
 
 void done_symtab(t_symtab *symtab)

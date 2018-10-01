@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,7 +57,7 @@ namespace test
 {
 
 //! Format string for building a configurable .top file
-const char *g_butaneTopFileFormatString = "\
+static const char *g_butaneTopFileFormatString = "\
 [ defaults ]\n\
 ; nbfunc	comb-rule	gen-pairs	fudgeLJ	fudgeQQ\n\
   1		1		no		1.0	1.0\n\
@@ -98,8 +98,8 @@ class BondedInteractionsTest : public gmx::test::MdrunTestFixture
         {
             runner_.topFileName_ = fileManager_.getTemporaryFilePath("butane1.top");
             TextWriter::writeFileFromString(runner_.topFileName_, formatString(g_butaneTopFileFormatString, interaction));
-            runner_.groFileName_ = fileManager_.getInputFilePath("butane1.gro");
-            runner_.ndxFileName_ = fileManager_.getInputFilePath("butane1.ndx");
+            runner_.groFileName_ = gmx::test::TestFileManager::getInputFilePath("butane1.gro");
+            runner_.ndxFileName_ = gmx::test::TestFileManager::getInputFilePath("butane1.ndx");
             /* TODO Now that Verlet is the default, change the implementation
                of useEmptyMdpFile() to do that. */
             runner_.useStringAsMdpFile("");
@@ -142,7 +142,7 @@ TEST_F(BondedInteractionsTest, TabulatedBondWorks)
     EXPECT_EQ(0, runner_.callGrompp());
 
     test::CommandLine rerunCaller   = setupMdrun();
-    std::string       tableFileName = fileManager_.getInputFilePath("butane_b0.xvg");
+    std::string       tableFileName = gmx::test::TestFileManager::getInputFilePath("butane_b0.xvg");
     rerunCaller.addOption("-tableb", tableFileName);
     ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
     checkMdrun();
@@ -170,7 +170,7 @@ TEST_F(BondedInteractionsTest, TabulatedAngleWorks)
     EXPECT_EQ(0, runner_.callGrompp());
 
     test::CommandLine rerunCaller   = setupMdrun();
-    std::string       tableFileName = fileManager_.getInputFilePath("butane_a0.xvg");
+    std::string       tableFileName = gmx::test::TestFileManager::getInputFilePath("butane_a0.xvg");
     rerunCaller.addOption("-tableb", tableFileName);
     ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
     checkMdrun();
@@ -198,12 +198,12 @@ TEST_F(BondedInteractionsTest, TabulatedDihedralWorks)
     EXPECT_EQ(0, runner_.callGrompp());
 
     test::CommandLine rerunCaller   = setupMdrun();
-    std::string       tableFileName = fileManager_.getInputFilePath("butane_d0.xvg");
+    std::string       tableFileName = gmx::test::TestFileManager::getInputFilePath("butane_d0.xvg");
     rerunCaller.addOption("-tableb", tableFileName);
     ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
     checkMdrun();
 }
 
-} // namespace
+}  // namespace test
 
-} // namespace
+}  // namespace gmx

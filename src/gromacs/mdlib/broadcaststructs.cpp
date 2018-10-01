@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,17 +39,20 @@
 
 #include "broadcaststructs.h"
 
-#include <string.h>
+#include <cstring>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/tgroup.h"
+#include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
@@ -258,87 +261,55 @@ static void bc_groups(const t_commrec *cr, t_symtab *symtab,
     }
 }
 
-static void bcastPaddedRVecVector(const t_commrec *cr, PaddedRVecVector *v, unsigned int n)
+template <typename AllocatorType>
+static void bcastPaddedRVecVector(const t_commrec *cr, std::vector<gmx::RVec, AllocatorType> *v, int numAtoms)
 {
-    /* We need to allocate one element extra, since we might use
-     * (unaligned) 4-wide SIMD loads to access rvec entries.
-     */
-    (*v).resize(n + 1);
-    nblock_bc(cr, n, as_rvec_array(v->data()));
+    v->resize(gmx::paddedRVecVectorSize(numAtoms));
+    nblock_bc(cr, numAtoms, as_rvec_array(v->data()));
 }
 
-void bcast_state(const t_commrec *cr, t_state *state)
+void broadcastStateWithoutDynamics(const t_commrec *cr, t_state *state)
 {
-    int      i, nnht, nnhtp;
+    GMX_RELEASE_ASSERT(!DOMAINDECOMP(cr), "broadcastStateWithoutDynamics should only be used for special cases without domain decomposition");
 
-    if (!PAR(cr) || (cr->nnodes - cr->npmenodes <= 1))
+    if (!PAR(cr))
     {
         return;
     }
 
-    /* Broadcasts the state sizes and flags from the master to all nodes
-     * in cr->mpi_comm_mygroup. The arrays are not broadcasted. */
+    /* Broadcasts the state sizes and flags from the master to all ranks
+     * in cr->mpi_comm_mygroup.
+     */
     block_bc(cr, state->natoms);
-    block_bc(cr, state->ngtc);
-    block_bc(cr, state->nnhpres);
-    block_bc(cr, state->nhchainlength);
     block_bc(cr, state->flags);
 
-    if (cr->dd)
+    for (int i = 0; i < estNR; i++)
     {
-        /* We allocate dynamically in dd_partition_system. */
-        return;
-    }
-    /* The code below is reachable only by TPI and NM, so it is not
-       tested by anything. */
-
-    nnht  = (state->ngtc)*(state->nhchainlength);
-    nnhtp = (state->nnhpres)*(state->nhchainlength);
-
-    for (i = 0; i < estNR; i++)
-    {
-        if (state->flags & (1<<i))
+        if (state->flags & (1 << i))
         {
             switch (i)
             {
-                case estLAMBDA:  nblock_bc(cr, efptNR, state->lambda.data()); break;
-                case estFEPSTATE: block_bc(cr, state->fep_state); break;
-                case estBOX:     block_bc(cr, state->box); break;
-                case estBOX_REL: block_bc(cr, state->box_rel); break;
-                case estBOXV:    block_bc(cr, state->boxv); break;
-                case estPRES_PREV: block_bc(cr, state->pres_prev); break;
-                case estSVIR_PREV: block_bc(cr, state->svir_prev); break;
-                case estFVIR_PREV: block_bc(cr, state->fvir_prev); break;
-                case estNH_XI:   nblock_abc(cr, nnht, &state->nosehoover_xi); break;
-                case estNH_VXI:  nblock_abc(cr, nnht, &state->nosehoover_vxi); break;
-                case estNHPRES_XI:   nblock_abc(cr, nnhtp, &state->nhpres_xi); break;
-                case estNHPRES_VXI:  nblock_abc(cr, nnhtp, &state->nhpres_vxi); break;
-                case estTC_INT:  nblock_abc(cr, state->ngtc, &state->therm_integral); break;
-                case estVETA:    block_bc(cr, state->veta); break;
-                case estVOL0:    block_bc(cr, state->vol0); break;
-                case estX:       bcastPaddedRVecVector(cr, &state->x, state->natoms); break;
-                case estV:       bcastPaddedRVecVector(cr, &state->v, state->natoms); break;
-                case estCGP:     bcastPaddedRVecVector(cr, &state->cg_p, state->natoms); break;
-                case estDISRE_INITF: block_bc(cr, state->hist.disre_initf); break;
-                case estDISRE_RM3TAV:
-                    block_bc(cr, state->hist.ndisrepairs);
-                    nblock_abc(cr, state->hist.ndisrepairs, &state->hist.disre_rm3tav);
+                case estLAMBDA:
+                    nblock_bc(cr, efptNR, state->lambda.data());
                     break;
-                case estORIRE_INITF: block_bc(cr, state->hist.orire_initf); break;
-                case estORIRE_DTAV:
-                    block_bc(cr, state->hist.norire_Dtav);
-                    nblock_abc(cr, state->hist.norire_Dtav, &state->hist.orire_Dtav);
+                case estFEPSTATE:
+                    block_bc(cr, state->fep_state);
+                    break;
+                case estBOX:
+                    block_bc(cr, state->box);
+                    break;
+                case estX:
+                    bcastPaddedRVecVector(cr, &state->x, state->natoms);
                     break;
                 default:
-                    gmx_fatal(FARGS,
-                              "Communication is not implemented for %s in bcast_state",
-                              est_names[i]);
+                    GMX_RELEASE_ASSERT(false, "The state has a dynamic entry, while no dynamic entries should be present");
+                    break;
             }
         }
     }
 }
 
-static void bc_ilists(const t_commrec *cr, t_ilist *ilist)
+static void bc_ilists(const t_commrec *cr, InteractionLists *ilist)
 {
     int ftype;
 
@@ -347,11 +318,12 @@ static void bc_ilists(const t_commrec *cr, t_ilist *ilist)
     {
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
-            if (ilist[ftype].nr > 0)
+            if ((*ilist)[ftype].size() > 0)
             {
                 block_bc(cr, ftype);
-                block_bc(cr, ilist[ftype].nr);
-                nblock_bc(cr, ilist[ftype].nr, ilist[ftype].iatoms);
+                int nr = (*ilist)[ftype].size();
+                block_bc(cr, nr);
+                nblock_bc(cr, nr, (*ilist)[ftype].iatoms.data());
             }
         }
         ftype = -1;
@@ -361,16 +333,17 @@ static void bc_ilists(const t_commrec *cr, t_ilist *ilist)
     {
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
-            ilist[ftype].nr = 0;
+            (*ilist)[ftype].iatoms.clear();
         }
         do
         {
             block_bc(cr, ftype);
             if (ftype >= 0)
             {
-                block_bc(cr, ilist[ftype].nr);
-                snew_bc(cr, ilist[ftype].iatoms, ilist[ftype].nr);
-                nblock_bc(cr, ilist[ftype].nr, ilist[ftype].iatoms);
+                int nr;
+                block_bc(cr, nr);
+                (*ilist)[ftype].iatoms.resize(nr);
+                nblock_bc(cr, nr, (*ilist)[ftype].iatoms.data());
             }
         }
         while (ftype >= 0);
@@ -384,34 +357,33 @@ static void bc_ilists(const t_commrec *cr, t_ilist *ilist)
 
 static void bc_cmap(const t_commrec *cr, gmx_cmap_t *cmap_grid)
 {
-    int i, nelem, ngrid;
-
-    block_bc(cr, cmap_grid->ngrid);
+    int ngrid = cmap_grid->cmapdata.size();
+    block_bc(cr, ngrid);
     block_bc(cr, cmap_grid->grid_spacing);
 
-    ngrid = cmap_grid->ngrid;
-    nelem = cmap_grid->grid_spacing * cmap_grid->grid_spacing;
+    int nelem = cmap_grid->grid_spacing * cmap_grid->grid_spacing;
 
     if (ngrid > 0)
     {
-        snew_bc(cr, cmap_grid->cmapdata, ngrid);
-
-        for (i = 0; i < ngrid; i++)
+        if (!MASTER(cr))
         {
-            snew_bc(cr, cmap_grid->cmapdata[i].cmap, 4*nelem);
-            nblock_bc(cr, 4*nelem, cmap_grid->cmapdata[i].cmap);
+            cmap_grid->cmapdata.resize(ngrid);
+        }
+
+        for (int i = 0; i < ngrid; i++)
+        {
+            nblock_abc(cr, 4*nelem, &cmap_grid->cmapdata[i].cmap);
         }
     }
 }
 
 static void bc_ffparams(const t_commrec *cr, gmx_ffparams_t *ffp)
 {
-    block_bc(cr, ffp->ntypes);
+    int numTypes = ffp->numTypes();
+    block_bc(cr, numTypes);
     block_bc(cr, ffp->atnr);
-    snew_bc(cr, ffp->functype, ffp->ntypes);
-    snew_bc(cr, ffp->iparams, ffp->ntypes);
-    nblock_bc(cr, ffp->ntypes, ffp->functype);
-    nblock_bc(cr, ffp->ntypes, ffp->iparams);
+    nblock_abc(cr, numTypes, &ffp->functype);
+    nblock_abc(cr, numTypes, &ffp->iparams);
     block_bc(cr, ffp->reppow);
     block_bc(cr, ffp->fudgeQQ);
     bc_cmap(cr, &ffp->cmap_grid);
@@ -482,6 +454,26 @@ static void bc_grpopts(const t_commrec *cr, t_grpopts *g)
         nblock_bc(cr, g->ngQM, g->SAoff);
         nblock_bc(cr, g->ngQM, g->SAsteps);
         /* end of QMMM stuff */
+    }
+}
+
+static void bc_awhBias(const t_commrec *cr, gmx::AwhBiasParams *awhBiasParams)
+{
+    block_bc(cr, *awhBiasParams);
+
+    snew_bc(cr, awhBiasParams->dimParams, awhBiasParams->ndim);
+    nblock_bc(cr, awhBiasParams->ndim, awhBiasParams->dimParams);
+}
+
+static void bc_awh(const t_commrec *cr, gmx::AwhParams *awhParams)
+{
+    int k;
+
+    block_bc(cr, *awhParams);
+    snew_bc(cr, awhParams->awhBiasParams, awhParams->numBias);
+    for (k = 0; k < awhParams->numBias; k++)
+    {
+        bc_awhBias(cr, &awhParams->awhBiasParams[k]);
     }
 }
 
@@ -667,13 +659,9 @@ static void bc_swapions(const t_commrec *cr, t_swapcoords *swap)
 
 static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
 {
-    /* The statement below is dangerous. It overwrites all structures in inputrec.
-     * If something is added to inputrec, like efield it will need to be
-     * treated here.
-     */
-    gmx::IInputRecExtension *eptr = inputrec->efield;
+    // Note that this overwrites pointers in inputrec, so all pointer fields
+    // Must be initialized separately below.
     block_bc(cr, *inputrec);
-    inputrec->efield = eptr;
     if (SIMMASTER(cr))
     {
         gmx::InMemorySerializer serializer;
@@ -687,14 +675,12 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
     {
         // block_bc() above overwrites the old pointer, so set it to a
         // reasonable value in case code below throws.
-        // cppcheck-suppress redundantAssignment
         inputrec->params = nullptr;
         std::vector<char> buffer;
         size_t            size;
         block_bc(cr, size);
         nblock_abc(cr, size, &buffer);
         gmx::InMemoryDeserializer serializer(buffer);
-        // cppcheck-suppress redundantAssignment
         inputrec->params = new gmx::KeyValueTreeObject(
                     gmx::deserializeKeyValueTree(&serializer));
     }
@@ -725,6 +711,12 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
         snew_bc(cr, inputrec->pull, 1);
         bc_pull(cr, inputrec->pull);
     }
+    if (inputrec->bDoAwh)
+    {
+        snew_bc(cr, inputrec->awhParams, 1);
+        bc_awh(cr, inputrec->awhParams);
+    }
+
     if (inputrec->bRot)
     {
         snew_bc(cr, inputrec->rot, 1);
@@ -752,24 +744,31 @@ static void bc_moltype(const t_commrec *cr, t_symtab *symtab,
         fprintf(debug, "after bc_atoms\n");
     }
 
-    bc_ilists(cr, moltype->ilist);
+    bc_ilists(cr, &moltype->ilist);
     bc_block(cr, &moltype->cgs);
     bc_blocka(cr, &moltype->excls);
 }
 
+static void bc_vector_of_rvec(const t_commrec *cr, std::vector<gmx::RVec> *vec)
+{
+    int numElements = vec->size();
+    block_bc(cr, numElements);
+    if (!MASTER(cr))
+    {
+        vec->resize(numElements);
+    }
+    if (numElements > 0)
+    {
+        nblock_bc(cr, numElements, as_rvec_array(vec->data()));
+    }
+}
+
 static void bc_molblock(const t_commrec *cr, gmx_molblock_t *molb)
 {
-    block_bc(cr, *molb);
-    if (molb->nposres_xA > 0)
-    {
-        snew_bc(cr, molb->posres_xA, molb->nposres_xA);
-        nblock_bc(cr, molb->nposres_xA*DIM, molb->posres_xA[0]);
-    }
-    if (molb->nposres_xB > 0)
-    {
-        snew_bc(cr, molb->posres_xB, molb->nposres_xB);
-        nblock_bc(cr, molb->nposres_xB*DIM, molb->posres_xB[0]);
-    }
+    block_bc(cr, molb->type);
+    block_bc(cr, molb->nmol);
+    bc_vector_of_rvec(cr, &molb->posres_xA);
+    bc_vector_of_rvec(cr, &molb->posres_xB);
     if (debug)
     {
         fprintf(debug, "after bc_molblock\n");
@@ -778,23 +777,7 @@ static void bc_molblock(const t_commrec *cr, gmx_molblock_t *molb)
 
 static void bc_atomtypes(const t_commrec *cr, t_atomtypes *atomtypes)
 {
-    int nr;
-
     block_bc(cr, atomtypes->nr);
-
-    nr = atomtypes->nr;
-
-    snew_bc(cr, atomtypes->radius, nr);
-    snew_bc(cr, atomtypes->vol, nr);
-    snew_bc(cr, atomtypes->surftens, nr);
-    snew_bc(cr, atomtypes->gb_radius, nr);
-    snew_bc(cr, atomtypes->S_hct, nr);
-
-    nblock_bc(cr, nr, atomtypes->radius);
-    nblock_bc(cr, nr, atomtypes->vol);
-    nblock_bc(cr, nr, atomtypes->surftens);
-    nblock_bc(cr, nr, atomtypes->gb_radius);
-    nblock_bc(cr, nr, atomtypes->S_hct);
 }
 
 /*! \brief Broadcasts ir and mtop from the master to all nodes in
@@ -802,7 +785,6 @@ static void bc_atomtypes(const t_commrec *cr, t_atomtypes *atomtypes)
 static
 void bcast_ir_mtop(const t_commrec *cr, t_inputrec *inputrec, gmx_mtop_t *mtop)
 {
-    int i;
     if (debug)
     {
         fprintf(debug, "in bc_data\n");
@@ -825,33 +807,42 @@ void bcast_ir_mtop(const t_commrec *cr, t_inputrec *inputrec, gmx_mtop_t *mtop)
 
     bc_ffparams(cr, &mtop->ffparams);
 
-    block_bc(cr, mtop->nmoltype);
-    snew_bc(cr, mtop->moltype, mtop->nmoltype);
-    for (i = 0; i < mtop->nmoltype; i++)
+    int nmoltype = mtop->moltype.size();
+    block_bc(cr, nmoltype);
+    mtop->moltype.resize(nmoltype);
+    for (gmx_moltype_t &moltype : mtop->moltype)
     {
-        bc_moltype(cr, &mtop->symtab, &mtop->moltype[i]);
+        bc_moltype(cr, &mtop->symtab, &moltype);
     }
 
     block_bc(cr, mtop->bIntermolecularInteractions);
     if (mtop->bIntermolecularInteractions)
     {
-        snew_bc(cr, mtop->intermolecular_ilist, F_NRE);
-        bc_ilists(cr, mtop->intermolecular_ilist);
+        mtop->intermolecular_ilist = gmx::compat::make_unique<InteractionLists>();
+        bc_ilists(cr, mtop->intermolecular_ilist.get());
     }
 
-    block_bc(cr, mtop->nmolblock);
-    snew_bc(cr, mtop->molblock, mtop->nmolblock);
-    for (i = 0; i < mtop->nmolblock; i++)
+    int nmolblock = mtop->molblock.size();
+    block_bc(cr, nmolblock);
+    mtop->molblock.resize(nmolblock);
+    for (gmx_molblock_t &molblock : mtop->molblock)
     {
-        bc_molblock(cr, &mtop->molblock[i]);
+        bc_molblock(cr, &molblock);
     }
 
     block_bc(cr, mtop->natoms);
 
     bc_atomtypes(cr, &mtop->atomtypes);
 
-    bc_block(cr, &mtop->mols);
     bc_groups(cr, &mtop->symtab, mtop->natoms, &mtop->groups);
+
+    GMX_RELEASE_ASSERT(!MASTER(cr) || mtop->haveMoleculeIndices, "mtop should have valid molecule indices");
+    if (!MASTER(cr))
+    {
+        mtop->haveMoleculeIndices = true;
+
+        gmx_mtop_finalize(mtop);
+    }
 }
 
 void init_parallel(t_commrec *cr, t_inputrec *inputrec,

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -105,14 +105,14 @@ typedef struct edipar
 
 
 
-void make_t_edx(struct edix *edx, int natoms, rvec *pos, int index[])
+static void make_t_edx(struct edix *edx, int natoms, rvec *pos, int index[])
 {
     edx->nr   = natoms;
     edx->anrs = index;
     edx->x    = pos;
 }
 
-void write_t_edx(FILE *fp, struct edix edx, const char *comment)
+static void write_t_edx(FILE *fp, struct edix edx, const char *comment)
 {
     /*here we copy only the pointers into the t_edx struct
        no data is copied and edx.box is ignored  */
@@ -124,7 +124,7 @@ void write_t_edx(FILE *fp, struct edix edx, const char *comment)
     }
 }
 
-int sscan_list(int *list[], const char *str, const char *listname)
+static int sscan_list(int *list[], const char *str, const char *listname)
 {
     /*this routine scans a string of the form 1,3-6,9 and returns the
        selected numbers (in this case 1 3 4 5 6 9) in NULL-terminated array of integers.
@@ -168,7 +168,8 @@ int sscan_list(int *list[], const char *str, const char *listname)
         switch (status)
         {
             /* expect a number */
-            case sBefore: if (std::isdigit(c))
+            case sBefore:
+                if (std::isdigit(c))
                 {
                     start  = pos;
                     status = sNumber;
@@ -177,10 +178,12 @@ int sscan_list(int *list[], const char *str, const char *listname)
                 else
                 {
                     status = sError;
-                } break;
+                }
+                break;
 
             /* have read a number, expect ',' or '-' */
-            case sNumber: if (c == ',')
+            case sNumber:
+                if (c == ',')
                 {
                     /*store number*/
                     srenew(*list, nvecs+1);
@@ -203,7 +206,8 @@ int sscan_list(int *list[], const char *str, const char *listname)
                 else
                 {
                     status = sError;
-                } break;
+                }
+                break;
 
             /* have read a '-' -> expect a number */
             case sMinus:
@@ -215,7 +219,8 @@ int sscan_list(int *list[], const char *str, const char *listname)
                 else
                 {
                     status = sError;
-                } break;
+                }
+                break;
 
             case sSteppedRange:
                 if (std::isdigit(c))
@@ -234,7 +239,8 @@ int sscan_list(int *list[], const char *str, const char *listname)
                 else
                 {
                     status = sError;
-                } break;
+                }
+                break;
 
             /* have read the number after a minus, expect ',' or ':' */
             case sRange:
@@ -280,19 +286,17 @@ int sscan_list(int *list[], const char *str, const char *listname)
                 else
                 {
                     status = sError;
-                } break;
+                }
+                break;
 
             /* format error occured */
             case sError:
-                gmx_fatal(FARGS, "Error in the list of eigenvectors for %s at pos %d with char %c", listname, pos-startpos, *(pos-1));
-                break;
+                gmx_fatal(FARGS, "Error in the list of eigenvectors for %s at pos %td with char %c", listname, pos-startpos, *(pos-1));
             /* logical error occured */
             case sZero:
-                gmx_fatal(FARGS, "Error in the list of eigenvectors for %s at pos %d: eigenvector 0 is not valid", listname, pos-startpos);
-                break;
+                gmx_fatal(FARGS, "Error in the list of eigenvectors for %s at pos %td: eigenvector 0 is not valid", listname, pos-startpos);
             case sSmaller:
-                gmx_fatal(FARGS, "Error in the list of eigenvectors for %s at pos %d: second index %d is not bigger than %d", listname, pos-startpos, end_number, number);
-                break;
+                gmx_fatal(FARGS, "Error in the list of eigenvectors for %s at pos %td: second index %d is not bigger than %d", listname, pos-startpos, end_number, number);
         }
         ++pos; /* read next character */
     }          /*scanner has finished */
@@ -304,7 +308,7 @@ int sscan_list(int *list[], const char *str, const char *listname)
     return nvecs;
 } /*sscan_list*/
 
-void write_eigvec(FILE* fp, int natoms, int eig_list[], rvec** eigvecs, int nvec, const char *grouptitle, real steps[])
+static void write_eigvec(FILE* fp, int natoms, int eig_list[], rvec** eigvecs, int nvec, const char *grouptitle, real steps[])
 {
 /* eig_list is a zero-terminated list of indices into the eigvecs array.
    eigvecs are coordinates of eigenvectors
@@ -359,19 +363,19 @@ enum {
 #define MAGIC 670
 
 
-void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs,
-                           int nvec, int *eig_listen[], real* evStepList[])
+static void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs,
+                                  int nvec, int *eig_listen[], real* evStepList[])
 {
 /* write edi-file */
 
     /*Header*/
     fprintf(fp, "#MAGIC\n %d \n#NINI\n %d\n#FITMAS\n %d\n#ANALYSIS_MAS\n %d\n",
-            MAGIC, edpars->nini, edpars->fitmas, edpars->pcamas);
+            MAGIC, edpars->nini, int(edpars->fitmas), int(edpars->pcamas));
     fprintf(fp, "#OUTFRQ\n %d\n#MAXLEN\n %d\n#SLOPECRIT\n %f\n",
             edpars->outfrq, edpars->maxedsteps, edpars->slope);
     fprintf(fp, "#PRESTEPS\n %d\n#DELTA_F0\n %f\n#INIT_DELTA_F\n %f\n#TAU\n %f\n#EFL_NULL\n %f\n#ALPHA2\n %f\n#KT\n %f\n#HARMONIC\n %d\n#CONST_FORCE_FLOODING\n %d\n",
             edpars->presteps, edpars->flood.deltaF0, edpars->flood.deltaF, edpars->flood.tau, edpars->flood.constEfl,
-            edpars->flood.alpha2, edpars->flood.kT, edpars->flood.bHarmonic, edpars->flood.bConstForce);
+            edpars->flood.alpha2, edpars->flood.kT, int(edpars->flood.bHarmonic), int(edpars->flood.bConstForce));
 
     /* Average and reference positions */
     write_t_edx(fp, edpars->sref, "NREF, XREF");
@@ -393,7 +397,7 @@ void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs,
     write_t_edx(fp, edpars->sori, "NORIGIN, XORIGIN");
 }
 
-int read_conffile(const char *confin, rvec **x)
+static int read_conffile(const char *confin, rvec **x)
 {
     t_topology  top;
     matrix      box;
@@ -404,8 +408,8 @@ int read_conffile(const char *confin, rvec **x)
 }
 
 
-void read_eigenvalues(int vecs[], const char *eigfile, real values[],
-                      gmx_bool bHesse, real kT)
+static void read_eigenvalues(const int vecs[], const char *eigfile, real values[],
+                             gmx_bool bHesse, real kT, int natoms_average_struct)
 {
     int      neig, nrow, i;
     double **eigval;
@@ -441,7 +445,20 @@ void read_eigenvalues(int vecs[], const char *eigfile, real values[],
     {
         for (i = 0; vecs[i]; i++)
         {
-            if (vecs[i] > (neig-6))
+            /* Make sure this eigenvalue does not correspond to one of the last 6 eigenvectors of the
+             * covariance matrix. These correspond to the rotational and translational degrees of
+             * freedom and will be zero within numerical accuracy.
+             *
+             * Note that the total number of eigenvectors produced by gmx covar depends on:
+             * 1) the total number of degrees of freedom of the system (3N, with N the number of atoms)
+             * 2) the number S of independent configurations fed into gmx covar.
+             * For long trajectories with lots of frames, usually S >= 3N + 1, so that one indeed gets
+             * 3N eigenvalues (of which the last 6 will have zero eigenvalues).
+             * For S < 3N + 1, however, the covariance matrix becomes rank deficient, and the number
+             * of possible eigenvalues is just S - 1. Since in make_edi we only know N but not S, we can
+             * only warn the user if he picked one of the last 6 of 3N.
+             */
+            if (vecs[i] > ( 3 * natoms_average_struct - 6 ))
             {
                 gmx_fatal(FARGS, "ERROR: You have chosen one of the last 6 eigenvectors of the COVARIANCE Matrix. That does not make sense, since they correspond to the 6 rotational and translational degrees of freedom.\n\n");
             }
@@ -484,15 +501,15 @@ static real *scan_vecparams(const char *str, const char * par, int nvecs)
 }
 
 
-void init_edx(struct edix *edx)
+static void init_edx(struct edix *edx)
 {
     edx->nr = 0;
     snew(edx->x, 1);
     snew(edx->anrs, 1);
 }
 
-void filter2edx(struct edix *edx, int nindex, int index[], int ngro,
-                int igro[], const rvec *x, const char* structure)
+static void filter2edx(struct edix *edx, int nindex, int index[], int ngro,
+                       const int igro[], const rvec *x, const char* structure)
 {
 /* filter2edx copies coordinates from x to edx which are given in index
  */
@@ -517,9 +534,9 @@ void filter2edx(struct edix *edx, int nindex, int index[], int ngro,
     }
 }
 
-void get_structure(const t_atoms *atoms, const char *IndexFile,
-                   const char *StructureFile, struct edix *edx, int nfit,
-                   int ifit[], int nav, int index[])
+static void get_structure(const t_atoms *atoms, const char *IndexFile,
+                          const char *StructureFile, struct edix *edx, int nfit,
+                          int ifit[], int nav, int index[])
 {
     int     *igro; /*index corresponding to target or origin structure*/
     int      ngro;
@@ -846,7 +863,7 @@ int gmx_make_edi(int argc, char *argv[])
                       &xref1, &edi_params.fitmas, &xav1, &edi_params.pcamas, &nvec1, &eignr1, &eigvec1, &eigval1);
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm),
-                  &top, &ePBC, &xtop, nullptr, topbox, 0);
+                  &top, &ePBC, &xtop, nullptr, topbox, false);
     atoms = &top.atoms;
 
 
@@ -899,7 +916,7 @@ int gmx_make_edi(int argc, char *argv[])
 
         if (listen[evFLOOD][0] != 0)
         {
-            read_eigenvalues(listen[evFLOOD], opt2fn("-eig", NFILE, fnm), evStepList[evFLOOD], bHesse, kB*T);
+            read_eigenvalues(listen[evFLOOD], opt2fn("-eig", NFILE, fnm), evStepList[evFLOOD], bHesse, kB*T, nav);
         }
 
         edi_params.flood.tau       = tau;

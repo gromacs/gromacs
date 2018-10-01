@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,26 +42,31 @@
  * \see gmxpre.h
  */
 
-/* Define to 1 to make fseeko visible on some hosts (e.g. glibc 2.2). */
+/* Define to 1 to make fseeko visible on some hosts (e.g. glibc
+ * 2.2). This symbol affects non-GROMACS code, so is not subject to
+ * our no-undefined-preprocessor-symbols policy. */
 #cmakedefine _LARGEFILE_SOURCE
 
-/* Define for large files, on AIX-style hosts. */
+/* Define for large files, on AIX-style hosts. This symbol affects
+ * non-GROMACS code, so is not subject to our
+ * no-undefined-preprocessor-symbols policy. */
 #cmakedefine _LARGE_FILES
 
-/* Some systems requires this to be set to 64 for large file support */
+/* Some systems requires this to be set to 64 for large file support.
+ * This symbol affects non-GROMACS code, so is not subject to our
+ * no-undefined-preprocessor-symbols policy. */
 #cmakedefine _FILE_OFFSET_BITS @_FILE_OFFSET_BITS@
 
 /* Build special-purpose mdrun library */
-#cmakedefine GMX_FAHCORE
+#cmakedefine01 GMX_FAHCORE
 
 /* This is here for simplicity, since the layout for some thread-MPI structs
  * declared in headers depend on this being consistently defined.
  * But thread-MPI itself does not include gmxpre.h, so the same define is also
  * set in config.h (which gets included by thread-MPI, but only in the source
  * files). There are some other config.h defines that appear in thread-MPI
- * headers, but currently Gromacs does not use any code that would depend on
+ * headers, but currently GROMACS does not use any code that would depend on
  * those, and for thread-MPI, config.h provides the definitions wherever
  * required. */
 /* Define for busy wait option  */
-#cmakedefine TMPI_WAIT_FOR_NO_ONE
-
+#cmakedefine01 TMPI_WAIT_FOR_NO_ONE

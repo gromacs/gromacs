@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,6 +64,7 @@ TEST(NormalDistributionTest, Output)
     gmx::NormalDistribution<real>       dist(2.0, 5.0);
     std::vector<real>                   result;
 
+    result.reserve(10);
     for (int i = 0; i < 10; i++)
     {
         result.push_back(dist(rng));
@@ -131,6 +132,6 @@ TEST(NormalDistributionTest, AltParam)
     EXPECT_REAL_EQ_TOL(valA, valB, gmx::test::ulpTolerance(0));
 }
 
-}      // namespace anonymous
+}  // namespace
 
-}      // namespace gmx
+}  // namespace gmx

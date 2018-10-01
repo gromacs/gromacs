@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,18 +38,20 @@
 
 #include "readir.h"
 
-#include <ctype.h>
-#include <limits.h>
-#include <stdlib.h>
-
+#include <cctype>
+#include <climits>
 #include <cmath>
+#include <cstdlib>
 
 #include <algorithm>
+#include <string>
 
+#include "gromacs/awh/read-params.h"
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/gmxpreprocess/keyvaluetreemdpwriter.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
@@ -71,13 +73,17 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/filestream.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/ikeyvaluetreeerror.h"
 #include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringcompare.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 #define MAXPTR 254
 #define NOGID  255
@@ -105,7 +111,7 @@ typedef struct t_inputrec_strings
            anneal_time[STRLEN], anneal_temp[STRLEN];
     char   QMmethod[STRLEN], QMbasis[STRLEN], QMcharge[STRLEN], QMmult[STRLEN],
            bSH[STRLEN], CASorbitals[STRLEN], CASelectrons[STRLEN], SAon[STRLEN],
-           SAoff[STRLEN], SAsteps[STRLEN], bTS[STRLEN], bOPT[STRLEN];
+           SAoff[STRLEN], SAsteps[STRLEN];
 
 } gmx_inputrec_strings;
 
@@ -169,14 +175,14 @@ static void GetSimTemps(int ntemps, t_simtemp *simtemp, double *temperature_lamb
         {
             char errorstr[128];
             sprintf(errorstr, "eSimTempScale=%d not defined", simtemp->eSimTempScale);
-            gmx_fatal(FARGS, errorstr);
+            gmx_fatal(FARGS, "%s", errorstr);
         }
     }
 }
 
 
 
-static void _low_check(gmx_bool b, const char *s, warninp_t wi)
+static void _low_check(bool b, const char *s, warninp_t wi)
 {
     if (b)
     {
@@ -200,7 +206,7 @@ static void check_nst(const char *desc_nst, int nst,
     }
 }
 
-static gmx_bool ir_NVE(const t_inputrec *ir)
+static bool ir_NVE(const t_inputrec *ir)
 {
     return (EI_MD(ir->eI) && ir->etc == etcNO);
 }
@@ -364,9 +370,10 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             warning_error(wi, warn_buf);
         }
 
-        if (ir->implicit_solvent != eisNO)
+        if (EEL_USER(ir->coulombtype))
         {
-            warning_error(wi, "Implicit solvent is not (yet) supported with the with Verlet lists.");
+            sprintf(warn_buf, "Coulomb type %s is not supported with the verlet scheme", eel_names[ir->coulombtype]);
+            warning_error(wi, warn_buf);
         }
 
         if (ir->nstlist <= 0)
@@ -577,7 +584,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
     if (ir->bSimTemp)
     {
-        gmx_bool bAllTempZero = TRUE;
+        bool bAllTempZero = TRUE;
         for (i = 0; i < fep->n_lambda; i++)
         {
             sprintf(err_buf, "Entry %d for %s must be between 0 and 1, instead is %g", i, efpt_names[efptTEMPERATURE], fep->all_lambda[efptTEMPERATURE][i]);
@@ -623,7 +630,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         CHECK(fep->sc_alpha != 0 && fep->sc_power != 1 && fep->sc_power != 2);
 
         sprintf(err_buf, "The soft-core sc-r-power is %d and can only be 6 or 48",
-                (int)fep->sc_r_power);
+                static_cast<int>(fep->sc_r_power));
         CHECK(fep->sc_alpha != 0 && fep->sc_r_power != 6.0 && fep->sc_r_power != 48.0);
 
         sprintf(err_buf, "Can't use positive delta-lambda (%g) if initial state/lambda does not start at zero", fep->delta_lambda);
@@ -806,11 +813,15 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         CHECK((expand->wl_scale <= 0) || (expand->wl_scale >= 1));
 
         /* if there is no temperature control, we need to specify an MC temperature */
-        sprintf(err_buf, "If there is no temperature control, and lmc-mcmove!= 'no',mc_temperature must be set to a positive number");
+        if (!integratorHasReferenceTemperature(ir) && (expand->elmcmove != elmcmoveNO) && (expand->mc_temp <= 0.0))
+        {
+            sprintf(err_buf, "If there is no temperature control, and lmc-mcmove!='no', mc_temp must be set to a positive number");
+            warning_error(wi, err_buf);
+        }
         if (expand->nstTij > 0)
         {
             sprintf(err_buf, "nstlog must be non-zero");
-            CHECK(ir->nstlog != 0);
+            CHECK(ir->nstlog == 0);
             sprintf(err_buf, "nst-transition-matrix (%d) must be an integer multiple of nstlog (%d)",
                     expand->nstTij, ir->nstlog);
             CHECK((expand->nstTij % ir->nstlog) != 0);
@@ -893,9 +904,10 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
     }
 
-    if (EI_STATE_VELOCITY(ir->eI) && ir->ePBC == epbcNONE && ir->comm_mode != ecmANGULAR)
+    if (EI_STATE_VELOCITY(ir->eI) && !EI_SD(ir->eI) && ir->ePBC == epbcNONE && ir->comm_mode != ecmANGULAR)
     {
-        warning_note(wi, "Tumbling and or flying ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should probably set comm_mode = ANGULAR.");
+        sprintf(warn_buf, "Tumbling and flying ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should probably set comm_mode = ANGULAR or use integrator = %s.", ei_names[eiSD1]);
+        warning_note(wi, warn_buf);
     }
 
     /* TEMPERATURE COUPLING */
@@ -1037,12 +1049,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         warning(wi, warn_buf);
     }
 
-    if (ir->epsilon_r != 1 && ir->implicit_solvent == eisGBSA)
-    {
-        sprintf(warn_buf, "epsilon-r = %g with GB implicit solvent, will use this value for inner dielectric", ir->epsilon_r);
-        warning_note(wi, warn_buf);
-    }
-
     if (EEL_RF(ir->coulombtype) && ir->epsilon_rf == 1 && ir->epsilon_r != 1)
     {
         sprintf(warn_buf, "epsilon-r = %g and epsilon-rf = 1 with reaction field, proceeding assuming old format and exchanging epsilon-r and epsilon-rf", ir->epsilon_r);
@@ -1054,9 +1060,9 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     if (ir->epsilon_r == 0)
     {
         sprintf(err_buf,
-                "It is pointless to use long-range or Generalized Born electrostatics with infinite relative permittivity."
+                "It is pointless to use long-range electrostatics with infinite relative permittivity."
                 "Since you are effectively turning of electrostatics, a plain cutoff will be much faster.");
-        CHECK(EEL_FULL(ir->coulombtype) || ir->implicit_solvent == eisGBSA);
+        CHECK(EEL_FULL(ir->coulombtype));
     }
 
     if (getenv("GMX_DO_GALACTIC_DYNAMICS") == nullptr)
@@ -1252,6 +1258,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
                     evdw_names[ir->vdwtype],
                     eintmod_names[eintmodPOTSHIFT],
                     eintmod_names[eintmodNONE]);
+            warning_error(wi, err_buf);
         }
     }
 
@@ -1319,60 +1326,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         warning_error(wi, warn_buf);
     }
 
-    if (ir->sa_algorithm == esaSTILL)
-    {
-        sprintf(err_buf, "Still SA algorithm not available yet, use %s or %s instead\n", esa_names[esaAPPROX], esa_names[esaNO]);
-        CHECK(ir->sa_algorithm == esaSTILL);
-    }
-
-    if (ir->implicit_solvent == eisGBSA)
-    {
-        sprintf(err_buf, "With GBSA implicit solvent, rgbradii must be equal to rlist.");
-        CHECK(ir->rgbradii != ir->rlist);
-
-        if (ir->coulombtype != eelCUT)
-        {
-            sprintf(err_buf, "With GBSA, coulombtype must be equal to %s\n", eel_names[eelCUT]);
-            CHECK(ir->coulombtype != eelCUT);
-        }
-        if (ir->vdwtype != evdwCUT)
-        {
-            sprintf(err_buf, "With GBSA, vdw-type must be equal to %s\n", evdw_names[evdwCUT]);
-            CHECK(ir->vdwtype != evdwCUT);
-        }
-        if (ir->nstgbradii < 1)
-        {
-            sprintf(warn_buf, "Using GBSA with nstgbradii<1, setting nstgbradii=1");
-            warning_note(wi, warn_buf);
-            ir->nstgbradii = 1;
-        }
-        if (ir->sa_algorithm == esaNO)
-        {
-            sprintf(warn_buf, "No SA (non-polar) calculation requested together with GB. Are you sure this is what you want?\n");
-            warning_note(wi, warn_buf);
-        }
-        if (ir->sa_surface_tension < 0 && ir->sa_algorithm != esaNO)
-        {
-            sprintf(warn_buf, "Value of sa_surface_tension is < 0. Changing it to 2.05016 or 2.25936 kJ/nm^2/mol for Still and HCT/OBC respectively\n");
-            warning_note(wi, warn_buf);
-
-            if (ir->gb_algorithm == egbSTILL)
-            {
-                ir->sa_surface_tension = 0.0049 * CAL2JOULE * 100;
-            }
-            else
-            {
-                ir->sa_surface_tension = 0.0054 * CAL2JOULE * 100;
-            }
-        }
-        if (ir->sa_surface_tension == 0 && ir->sa_algorithm != esaNO)
-        {
-            sprintf(err_buf, "Surface tension set to 0 while SA-calculation requested\n");
-            CHECK(ir->sa_surface_tension == 0 && ir->sa_algorithm != esaNO);
-        }
-
-    }
-
     if (ir->bQMMM)
     {
         if (ir->cutoff_scheme != ecutsGROUP)
@@ -1393,50 +1346,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     }
 }
 
-/* count the number of text elemets separated by whitespace in a string.
-    str = the input string
-    maxptr = the maximum number of allowed elements
-    ptr = the output array of pointers to the first character of each element
-    returns: the number of elements. */
-int str_nelem(const char *str, int maxptr, char *ptr[])
-{
-    int   np = 0;
-    char *copy0, *copy;
-
-    copy0 = gmx_strdup(str);
-    copy  = copy0;
-    ltrim(copy);
-    while (*copy != '\0')
-    {
-        if (np >= maxptr)
-        {
-            gmx_fatal(FARGS, "Too many groups on line: '%s' (max is %d)",
-                      str, maxptr);
-        }
-        if (ptr)
-        {
-            ptr[np] = copy;
-        }
-        np++;
-        while ((*copy != '\0') && !isspace(*copy))
-        {
-            copy++;
-        }
-        if (*copy != '\0')
-        {
-            *copy = '\0';
-            copy++;
-        }
-        ltrim(copy);
-    }
-    if (ptr == nullptr)
-    {
-        sfree(copy0);
-    }
-
-    return np;
-}
-
 /* interpret a number of doubles from a string and put them in an array,
    after allocating space for them.
    str = the input string
@@ -1444,24 +1353,23 @@ int str_nelem(const char *str, int maxptr, char *ptr[])
    r = the output array of doubles. */
 static void parse_n_real(char *str, int *n, real **r, warninp_t wi)
 {
-    char *ptr[MAXPTR];
-    char *endptr;
-    int   i;
-    char  warn_buf[STRLEN];
-
-    *n = str_nelem(str, MAXPTR, ptr);
+    auto values = gmx::splitString(str);
+    *n = values.size();
 
     snew(*r, *n);
-    for (i = 0; i < *n; i++)
+    for (int i = 0; i < *n; i++)
     {
-        (*r)[i] = strtod(ptr[i], &endptr);
-        if (*endptr != 0)
+        try
         {
-            sprintf(warn_buf, "Invalid value %s in string in mdp file. Expected a real number.", ptr[i]);
-            warning_error(wi, warn_buf);
+            (*r)[i] = gmx::fromString<real>(values[i]);
+        }
+        catch (gmx::GromacsException &)
+        {
+            warning_error(wi, "Invalid value " + values[i] + " in string in mdp file. Expected a real number.");
         }
     }
 }
+
 
 static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN], char weights[STRLEN], warninp_t wi)
 {
@@ -1470,7 +1378,7 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN], char weight
     t_lambda   *fep    = ir->fepvals;
     t_expanded *expand = ir->expandedvals;
     real      **count_fep_lambdas;
-    gmx_bool    bOneLambda = TRUE;
+    bool        bOneLambda = TRUE;
 
     snew(count_fep_lambdas, efptNR);
 
@@ -1539,7 +1447,7 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN], char weight
         {
             for (j = 0; j < fep->n_lambda; j++)
             {
-                fep->all_lambda[i][j] = (double)count_fep_lambdas[i][j];
+                fep->all_lambda[i][j] = static_cast<double>(count_fep_lambdas[i][j]);
             }
             sfree(count_fep_lambdas[i]);
         }
@@ -1622,7 +1530,7 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN], char weight
     }
     if ((expand->nstexpanded < 0) && ir->bSimTemp)
     {
-        expand->nstexpanded = 2*(int)(ir->opts.tau_t[0]/ir->delta_t);
+        expand->nstexpanded = 2*static_cast<int>(ir->opts.tau_t[0]/ir->delta_t);
         /* if you don't specify nstexpanded when doing expanded ensemble simulated tempering, it is set to
            2*tau_t just to be careful so it's not to frequent  */
     }
@@ -1634,18 +1542,89 @@ static void do_simtemp_params(t_inputrec *ir)
 
     snew(ir->simtempvals->temperatures, ir->fepvals->n_lambda);
     GetSimTemps(ir->fepvals->n_lambda, ir->simtempvals, ir->fepvals->all_lambda[efptTEMPERATURE]);
+}
 
-    return;
+static void
+convertYesNos(warninp_t /*wi*/, gmx::ArrayRef<const std::string> inputs, const char * /*name*/, gmx_bool *outputs)
+{
+    int i = 0;
+    for (const auto &input : inputs)
+    {
+        outputs[i] = (gmx_strncasecmp(input.c_str(), "Y", 1) == 0);
+        ++i;
+    }
+}
+
+template <typename T> void
+convertInts(warninp_t wi, gmx::ArrayRef<const std::string> inputs, const char *name, T *outputs)
+{
+    int i = 0;
+    for (const auto &input : inputs)
+    {
+        try
+        {
+            outputs[i] = gmx::fromStdString<T>(input);
+        }
+        catch (gmx::GromacsException &)
+        {
+            auto message = gmx::formatString("Invalid value for mdp option %s. %s should only consist of integers separated by spaces.",
+                                             name, name);
+            warning_error(wi, message);
+        }
+        ++i;
+    }
+}
+
+static void
+convertReals(warninp_t wi, gmx::ArrayRef<const std::string> inputs, const char *name, real *outputs)
+{
+    int i = 0;
+    for (const auto &input : inputs)
+    {
+        try
+        {
+            outputs[i] = gmx::fromString<real>(input);
+        }
+        catch (gmx::GromacsException &)
+        {
+            auto message = gmx::formatString("Invalid value for mdp option %s. %s should only consist of real numbers separated by spaces.",
+                                             name, name);
+            warning_error(wi, message);
+        }
+        ++i;
+    }
+}
+
+static void
+convertRvecs(warninp_t wi, gmx::ArrayRef<const std::string> inputs, const char *name, rvec *outputs)
+{
+    int i = 0, d = 0;
+    for (const auto &input : inputs)
+    {
+        try
+        {
+            outputs[i][d] = gmx::fromString<real>(input);
+        }
+        catch (gmx::GromacsException &)
+        {
+            auto message = gmx::formatString("Invalid value for mdp option %s. %s should only consist of real numbers separated by spaces.",
+                                             name, name);
+            warning_error(wi, message);
+        }
+        ++d;
+        if (d == DIM)
+        {
+            d = 0;
+            ++i;
+        }
+    }
 }
 
 static void do_wall_params(t_inputrec *ir,
                            char *wall_atomtype, char *wall_density,
-                           t_gromppopts *opts)
+                           t_gromppopts *opts,
+                           warninp_t wi)
 {
-    int    nstr, i;
-    char  *names[MAXPTR];
-    double dbl;
-
     opts->wall_atomtype[0] = nullptr;
     opts->wall_atomtype[1] = nullptr;
 
@@ -1656,35 +1635,31 @@ static void do_wall_params(t_inputrec *ir,
 
     if (ir->nwall > 0)
     {
-        nstr = str_nelem(wall_atomtype, MAXPTR, names);
-        if (nstr != ir->nwall)
+        auto wallAtomTypes = gmx::splitString(wall_atomtype);
+        if (wallAtomTypes.size() != size_t(ir->nwall))
         {
-            gmx_fatal(FARGS, "Expected %d elements for wall_atomtype, found %d",
-                      ir->nwall, nstr);
+            gmx_fatal(FARGS, "Expected %d elements for wall_atomtype, found %zu",
+                      ir->nwall, wallAtomTypes.size());
         }
-        for (i = 0; i < ir->nwall; i++)
+        for (int i = 0; i < ir->nwall; i++)
         {
-            opts->wall_atomtype[i] = gmx_strdup(names[i]);
+            opts->wall_atomtype[i] = gmx_strdup(wallAtomTypes[i].c_str());
         }
 
         if (ir->wall_type == ewt93 || ir->wall_type == ewt104)
         {
-            nstr = str_nelem(wall_density, MAXPTR, names);
-            if (nstr != ir->nwall)
+            auto wallDensity = gmx::splitString(wall_density);
+            if (wallDensity.size() != size_t(ir->nwall))
             {
-                gmx_fatal(FARGS, "Expected %d elements for wall-density, found %d", ir->nwall, nstr);
+                gmx_fatal(FARGS, "Expected %d elements for wall-density, found %zu", ir->nwall, wallDensity.size());
             }
-            for (i = 0; i < ir->nwall; i++)
+            convertReals(wi, wallDensity, "wall-density", ir->wall_density);
+            for (int i = 0; i < ir->nwall; i++)
             {
-                if (sscanf(names[i], "%lf", &dbl) != 1)
+                if (ir->wall_density[i] <= 0)
                 {
-                    gmx_fatal(FARGS, "Could not parse wall-density value from string '%s'", names[i]);
+                    gmx_fatal(FARGS, "wall-density[%d] = %f\n", i, ir->wall_density[i]);
                 }
-                if (dbl <= 0)
-                {
-                    gmx_fatal(FARGS, "wall-density[%d] = %f\n", i, dbl);
-                }
-                ir->wall_density[i] = dbl;
             }
         }
     }
@@ -1710,45 +1685,34 @@ static void add_wall_energrps(gmx_groups_t *groups, int nwall, t_symtab *symtab)
     }
 }
 
-void read_expandedparams(int *ninp_p, t_inpfile **inp_p,
-                         t_expanded *expand, warninp_t wi)
+static void read_expandedparams(std::vector<t_inpfile> *inp,
+                                t_expanded *expand, warninp_t wi)
 {
-    int        ninp;
-    t_inpfile *inp;
-
-    ninp   = *ninp_p;
-    inp    = *inp_p;
-
     /* read expanded ensemble parameters */
-    CCTYPE ("expanded ensemble variables");
-    ITYPE ("nstexpanded", expand->nstexpanded, -1);
-    EETYPE("lmc-stats", expand->elamstats, elamstats_names);
-    EETYPE("lmc-move", expand->elmcmove, elmcmove_names);
-    EETYPE("lmc-weights-equil", expand->elmceq, elmceq_names);
-    ITYPE ("weight-equil-number-all-lambda", expand->equil_n_at_lam, -1);
-    ITYPE ("weight-equil-number-samples", expand->equil_samples, -1);
-    ITYPE ("weight-equil-number-steps", expand->equil_steps, -1);
-    RTYPE ("weight-equil-wl-delta", expand->equil_wl_delta, -1);
-    RTYPE ("weight-equil-count-ratio", expand->equil_ratio, -1);
-    CCTYPE("Seed for Monte Carlo in lambda space");
-    ITYPE ("lmc-seed", expand->lmc_seed, -1);
-    RTYPE ("mc-temperature", expand->mc_temp, -1);
-    ITYPE ("lmc-repeats", expand->lmc_repeats, 1);
-    ITYPE ("lmc-gibbsdelta", expand->gibbsdeltalam, -1);
-    ITYPE ("lmc-forced-nstart", expand->lmc_forced_nstart, 0);
-    EETYPE("symmetrized-transition-matrix", expand->bSymmetrizedTMatrix, yesno_names);
-    ITYPE("nst-transition-matrix", expand->nstTij, -1);
-    ITYPE ("mininum-var-min", expand->minvarmin, 100); /*default is reasonable */
-    ITYPE ("weight-c-range", expand->c_range, 0);      /* default is just C=0 */
-    RTYPE ("wl-scale", expand->wl_scale, 0.8);
-    RTYPE ("wl-ratio", expand->wl_ratio, 0.8);
-    RTYPE ("init-wl-delta", expand->init_wl_delta, 1.0);
-    EETYPE("wl-oneovert", expand->bWLoneovert, yesno_names);
-
-    *ninp_p   = ninp;
-    *inp_p    = inp;
-
-    return;
+    printStringNewline(inp, "expanded ensemble variables");
+    expand->nstexpanded    = get_eint(inp, "nstexpanded", -1, wi);
+    expand->elamstats      = get_eeenum(inp, "lmc-stats", elamstats_names, wi);
+    expand->elmcmove       = get_eeenum(inp, "lmc-move", elmcmove_names, wi);
+    expand->elmceq         = get_eeenum(inp, "lmc-weights-equil", elmceq_names, wi);
+    expand->equil_n_at_lam = get_eint(inp, "weight-equil-number-all-lambda", -1, wi);
+    expand->equil_samples  = get_eint(inp, "weight-equil-number-samples", -1, wi);
+    expand->equil_steps    = get_eint(inp, "weight-equil-number-steps", -1, wi);
+    expand->equil_wl_delta = get_ereal(inp, "weight-equil-wl-delta", -1, wi);
+    expand->equil_ratio    = get_ereal(inp, "weight-equil-count-ratio", -1, wi);
+    printStringNewline(inp, "Seed for Monte Carlo in lambda space");
+    expand->lmc_seed            = get_eint(inp, "lmc-seed", -1, wi);
+    expand->mc_temp             = get_ereal(inp, "mc-temperature", -1, wi);
+    expand->lmc_repeats         = get_eint(inp, "lmc-repeats", 1, wi);
+    expand->gibbsdeltalam       = get_eint(inp, "lmc-gibbsdelta", -1, wi);
+    expand->lmc_forced_nstart   = get_eint(inp, "lmc-forced-nstart", 0, wi);
+    expand->bSymmetrizedTMatrix = (get_eeenum(inp, "symmetrized-transition-matrix", yesno_names, wi) != 0);
+    expand->nstTij              = get_eint(inp, "nst-transition-matrix", -1, wi);
+    expand->minvarmin           = get_eint(inp, "mininum-var-min", 100, wi); /*default is reasonable */
+    expand->c_range             = get_eint(inp, "weight-c-range", 0, wi);    /* default is just C=0 */
+    expand->wl_scale            = get_ereal(inp, "wl-scale", 0.8, wi);
+    expand->wl_ratio            = get_ereal(inp, "wl-ratio", 0.8, wi);
+    expand->init_wl_delta       = get_ereal(inp, "init-wl-delta", 1.0, wi);
+    expand->bWLoneovert         = (get_eeenum(inp, "wl-oneovert", yesno_names, wi) != 0);
 }
 
 /*! \brief Return whether an end state with the given coupling-lambda
@@ -1757,33 +1721,80 @@ void read_expandedparams(int *ninp_p, t_inpfile **inp_p,
  * \param[in]  couple_lambda_value  Enumeration ecouplam value describing the end state
  * \return                          Whether VDW is on (i.e. the user chose vdw or vdw-q in the .mdp file)
  */
-static gmx_bool couple_lambda_has_vdw_on(int couple_lambda_value)
+static bool couple_lambda_has_vdw_on(int couple_lambda_value)
 {
     return (couple_lambda_value == ecouplamVDW ||
             couple_lambda_value == ecouplamVDWQ);
 }
 
-void get_ir(const char *mdparin, const char *mdparout,
-            gmx::MDModules *mdModules, t_gromppopts *opts,
-            warninp_t wi)
+<<<<<<< HEAD
+=======
+namespace
 {
-    char       *dumstr[2];
-    double      dumdub[2][6];
-    t_inpfile  *inp;
-    const char *tmp;
-    int         i, j, m, ninp;
-    char        warn_buf[STRLEN];
-    t_inputrec *ir     = mdModules->inputrec();
-    t_lambda   *fep    = ir->fepvals;
-    t_expanded *expand = ir->expandedvals;
+
+class MdpErrorHandler : public gmx::IKeyValueTreeErrorHandler
+{
+    public:
+        explicit MdpErrorHandler(warninp_t wi)
+            : wi_(wi), mapping_(nullptr)
+        {
+        }
+
+        void setBackMapping(const gmx::IKeyValueTreeBackMapping &mapping)
+        {
+            mapping_ = &mapping;
+        }
+
+        bool onError(gmx::UserInputError *ex, const gmx::KeyValueTreePath &context) override
+        {
+            ex->prependContext(gmx::formatString("Error in mdp option \"%s\":",
+                                                 getOptionName(context).c_str()));
+            std::string message = gmx::formatExceptionMessageToString(*ex);
+            warning_error(wi_, message.c_str());
+            return true;
+        }
+
+    private:
+        std::string getOptionName(const gmx::KeyValueTreePath &context)
+        {
+            if (mapping_ != nullptr)
+            {
+                gmx::KeyValueTreePath path = mapping_->originalPath(context);
+                GMX_ASSERT(path.size() == 1, "Inconsistent mapping back to mdp options");
+                return path[0];
+            }
+            GMX_ASSERT(context.size() == 1, "Inconsistent context for mdp option parsing");
+            return context[0];
+        }
+
+        warninp_t                            wi_;
+        const gmx::IKeyValueTreeBackMapping *mapping_;
+};
+
+} // namespace
+
+>>>>>>> master
+void get_ir(const char *mdparin, const char *mdparout,
+            gmx::MDModules *mdModules, t_inputrec *ir, t_gromppopts *opts,
+            WriteMdpHeader writeMdpHeader, warninp_t wi)
+{
+    char                  *dumstr[2];
+    double                 dumdub[2][6];
+    int                    i, j, m;
+    char                   warn_buf[STRLEN];
+    t_lambda              *fep    = ir->fepvals;
+    t_expanded            *expand = ir->expandedvals;
+
+    const char            *no_names[] = { "no", nullptr };
 
     init_inputrec_strings();
-    inp = read_inpfile(mdparin, &ninp, wi);
+    gmx::TextInputFile     stream(mdparin);
+    std::vector<t_inpfile> inp = read_inpfile(&stream, mdparin, wi);
 
     snew(dumstr[0], STRLEN);
     snew(dumstr[1], STRLEN);
 
-    if (-1 == search_einp(ninp, inp, "cutoff-scheme"))
+    if (-1 == search_einp(inp, "cutoff-scheme"))
     {
         sprintf(warn_buf,
                 "%s did not specify a value for the .mdp option "
@@ -1796,315 +1807,319 @@ void get_ir(const char *mdparin, const char *mdparout,
     }
 
     /* ignore the following deprecated commands */
-    REM_TYPE("title");
-    REM_TYPE("cpp");
-    REM_TYPE("domain-decomposition");
-    REM_TYPE("andersen-seed");
-    REM_TYPE("dihre");
-    REM_TYPE("dihre-fc");
-    REM_TYPE("dihre-tau");
-    REM_TYPE("nstdihreout");
-    REM_TYPE("nstcheckpoint");
-    REM_TYPE("optimize-fft");
-    REM_TYPE("adress_type");
-    REM_TYPE("adress_const_wf");
-    REM_TYPE("adress_ex_width");
-    REM_TYPE("adress_hy_width");
-    REM_TYPE("adress_ex_forcecap");
-    REM_TYPE("adress_interface_correction");
-    REM_TYPE("adress_site");
-    REM_TYPE("adress_reference_coords");
-    REM_TYPE("adress_tf_grp_names");
-    REM_TYPE("adress_cg_grp_names");
-    REM_TYPE("adress_do_hybridpairs");
-    REM_TYPE("rlistlong");
-    REM_TYPE("nstcalclr");
-    REM_TYPE("pull-print-com2");
+    replace_inp_entry(inp, "title", nullptr);
+    replace_inp_entry(inp, "cpp", nullptr);
+    replace_inp_entry(inp, "domain-decomposition", nullptr);
+    replace_inp_entry(inp, "andersen-seed", nullptr);
+    replace_inp_entry(inp, "dihre", nullptr);
+    replace_inp_entry(inp, "dihre-fc", nullptr);
+    replace_inp_entry(inp, "dihre-tau", nullptr);
+    replace_inp_entry(inp, "nstdihreout", nullptr);
+    replace_inp_entry(inp, "nstcheckpoint", nullptr);
+    replace_inp_entry(inp, "optimize-fft", nullptr);
+    replace_inp_entry(inp, "adress_type", nullptr);
+    replace_inp_entry(inp, "adress_const_wf", nullptr);
+    replace_inp_entry(inp, "adress_ex_width", nullptr);
+    replace_inp_entry(inp, "adress_hy_width", nullptr);
+    replace_inp_entry(inp, "adress_ex_forcecap", nullptr);
+    replace_inp_entry(inp, "adress_interface_correction", nullptr);
+    replace_inp_entry(inp, "adress_site", nullptr);
+    replace_inp_entry(inp, "adress_reference_coords", nullptr);
+    replace_inp_entry(inp, "adress_tf_grp_names", nullptr);
+    replace_inp_entry(inp, "adress_cg_grp_names", nullptr);
+    replace_inp_entry(inp, "adress_do_hybridpairs", nullptr);
+    replace_inp_entry(inp, "rlistlong", nullptr);
+    replace_inp_entry(inp, "nstcalclr", nullptr);
+    replace_inp_entry(inp, "pull-print-com2", nullptr);
+    replace_inp_entry(inp, "gb-algorithm", nullptr);
+    replace_inp_entry(inp, "nstgbradii", nullptr);
+    replace_inp_entry(inp, "rgbradii", nullptr);
+    replace_inp_entry(inp, "gb-epsilon-solvent", nullptr);
+    replace_inp_entry(inp, "gb-saltconc", nullptr);
+    replace_inp_entry(inp, "gb-obc-alpha", nullptr);
+    replace_inp_entry(inp, "gb-obc-beta", nullptr);
+    replace_inp_entry(inp, "gb-obc-gamma", nullptr);
+    replace_inp_entry(inp, "gb-dielectric-offset", nullptr);
+    replace_inp_entry(inp, "sa-algorithm", nullptr);
+    replace_inp_entry(inp, "sa-surface-tension", nullptr);
 
     /* replace the following commands with the clearer new versions*/
-    REPL_TYPE("unconstrained-start", "continuation");
-    REPL_TYPE("foreign-lambda", "fep-lambdas");
-    REPL_TYPE("verlet-buffer-drift", "verlet-buffer-tolerance");
-    REPL_TYPE("nstxtcout", "nstxout-compressed");
-    REPL_TYPE("xtc-grps", "compressed-x-grps");
-    REPL_TYPE("xtc-precision", "compressed-x-precision");
-    REPL_TYPE("pull-print-com1", "pull-print-com");
+    replace_inp_entry(inp, "unconstrained-start", "continuation");
+    replace_inp_entry(inp, "foreign-lambda", "fep-lambdas");
+    replace_inp_entry(inp, "verlet-buffer-drift", "verlet-buffer-tolerance");
+    replace_inp_entry(inp, "nstxtcout", "nstxout-compressed");
+    replace_inp_entry(inp, "xtc-grps", "compressed-x-grps");
+    replace_inp_entry(inp, "xtc-precision", "compressed-x-precision");
+    replace_inp_entry(inp, "pull-print-com1", "pull-print-com");
 
-    CCTYPE ("VARIOUS PREPROCESSING OPTIONS");
-    CTYPE ("Preprocessor information: use cpp syntax.");
-    CTYPE ("e.g.: -I/home/joe/doe -I/home/mary/roe");
-    STYPE ("include", opts->include,  nullptr);
-    CTYPE ("e.g.: -DPOSRES -DFLEXIBLE (note these variable names are case sensitive)");
-    STYPE ("define",  opts->define,   nullptr);
+    printStringNewline(&inp, "VARIOUS PREPROCESSING OPTIONS");
+    printStringNoNewline(&inp, "Preprocessor information: use cpp syntax.");
+    printStringNoNewline(&inp, "e.g.: -I/home/joe/doe -I/home/mary/roe");
+    setStringEntry(&inp, "include", opts->include,  nullptr);
+    printStringNoNewline(&inp, "e.g.: -DPOSRES -DFLEXIBLE (note these variable names are case sensitive)");
+    setStringEntry(&inp, "define",  opts->define,   nullptr);
 
-    CCTYPE ("RUN CONTROL PARAMETERS");
-    EETYPE("integrator",  ir->eI,         ei_names);
-    CTYPE ("Start time and timestep in ps");
-    RTYPE ("tinit",   ir->init_t, 0.0);
-    RTYPE ("dt",      ir->delta_t,    0.001);
-    STEPTYPE ("nsteps",   ir->nsteps,     0);
-    CTYPE ("For exact run continuation or redoing part of a run");
-    STEPTYPE ("init-step", ir->init_step,  0);
-    CTYPE ("Part index is updated automatically on checkpointing (keeps files separate)");
-    ITYPE ("simulation-part", ir->simulation_part, 1);
-    CTYPE ("mode for center of mass motion removal");
-    EETYPE("comm-mode",   ir->comm_mode,  ecm_names);
-    CTYPE ("number of steps for center of mass motion removal");
-    ITYPE ("nstcomm", ir->nstcomm,    100);
-    CTYPE ("group(s) for center of mass motion removal");
-    STYPE ("comm-grps",   is->vcm,            nullptr);
+    printStringNewline(&inp, "RUN CONTROL PARAMETERS");
+    ir->eI = get_eeenum(&inp, "integrator",         ei_names, wi);
+    printStringNoNewline(&inp, "Start time and timestep in ps");
+    ir->init_t  = get_ereal(&inp, "tinit", 0.0, wi);
+    ir->delta_t = get_ereal(&inp, "dt",    0.001, wi);
+    ir->nsteps  = get_eint64(&inp, "nsteps",     0, wi);
+    printStringNoNewline(&inp, "For exact run continuation or redoing part of a run");
+    ir->init_step = get_eint64(&inp, "init-step",  0, wi);
+    printStringNoNewline(&inp, "Part index is updated automatically on checkpointing (keeps files separate)");
+    ir->simulation_part = get_eint(&inp, "simulation-part", 1, wi);
+    printStringNoNewline(&inp, "mode for center of mass motion removal");
+    ir->comm_mode = get_eeenum(&inp, "comm-mode",  ecm_names, wi);
+    printStringNoNewline(&inp, "number of steps for center of mass motion removal");
+    ir->nstcomm = get_eint(&inp, "nstcomm",    100, wi);
+    printStringNoNewline(&inp, "group(s) for center of mass motion removal");
+    setStringEntry(&inp, "comm-grps",   is->vcm,            nullptr);
 
-    CCTYPE ("LANGEVIN DYNAMICS OPTIONS");
-    CTYPE ("Friction coefficient (amu/ps) and random seed");
-    RTYPE ("bd-fric",     ir->bd_fric,    0.0);
-    STEPTYPE ("ld-seed",  ir->ld_seed,    -1);
+    printStringNewline(&inp, "LANGEVIN DYNAMICS OPTIONS");
+    printStringNoNewline(&inp, "Friction coefficient (amu/ps) and random seed");
+    ir->bd_fric = get_ereal(&inp, "bd-fric",    0.0, wi);
+    ir->ld_seed = get_eint64(&inp, "ld-seed",    -1, wi);
 
     /* Em stuff */
-    CCTYPE ("ENERGY MINIMIZATION OPTIONS");
-    CTYPE ("Force tolerance and initial step-size");
-    RTYPE ("emtol",       ir->em_tol,     10.0);
-    RTYPE ("emstep",      ir->em_stepsize, 0.01);
-    CTYPE ("Max number of iterations in relax-shells");
-    ITYPE ("niter",       ir->niter,      20);
-    CTYPE ("Step size (ps^2) for minimization of flexible constraints");
-    RTYPE ("fcstep",      ir->fc_stepsize, 0);
-    CTYPE ("Frequency of steepest descents steps when doing CG");
-    ITYPE ("nstcgsteep",  ir->nstcgsteep, 1000);
-    ITYPE ("nbfgscorr",   ir->nbfgscorr,  10);
+    printStringNewline(&inp, "ENERGY MINIMIZATION OPTIONS");
+    printStringNoNewline(&inp, "Force tolerance and initial step-size");
+    ir->em_tol      = get_ereal(&inp, "emtol",     10.0, wi);
+    ir->em_stepsize = get_ereal(&inp, "emstep", 0.01, wi);
+    printStringNoNewline(&inp, "Max number of iterations in relax-shells");
+    ir->niter = get_eint(&inp, "niter",      20, wi);
+    printStringNoNewline(&inp, "Step size (ps^2) for minimization of flexible constraints");
+    ir->fc_stepsize = get_ereal(&inp, "fcstep", 0, wi);
+    printStringNoNewline(&inp, "Frequency of steepest descents steps when doing CG");
+    ir->nstcgsteep = get_eint(&inp, "nstcgsteep", 1000, wi);
+    ir->nbfgscorr  = get_eint(&inp, "nbfgscorr",  10, wi);
 
-    CCTYPE ("TEST PARTICLE INSERTION OPTIONS");
-    RTYPE ("rtpi",    ir->rtpi,   0.05);
+    printStringNewline(&inp, "TEST PARTICLE INSERTION OPTIONS");
+    ir->rtpi = get_ereal(&inp, "rtpi",   0.05, wi);
 
     /* Output options */
-    CCTYPE ("OUTPUT CONTROL OPTIONS");
-    CTYPE ("Output frequency for coords (x), velocities (v) and forces (f)");
-    ITYPE ("nstxout", ir->nstxout,    0);
-    ITYPE ("nstvout", ir->nstvout,    0);
-    ITYPE ("nstfout", ir->nstfout,    0);
-    CTYPE ("Output frequency for energies to log file and energy file");
-    ITYPE ("nstlog",  ir->nstlog, 1000);
-    ITYPE ("nstcalcenergy", ir->nstcalcenergy, 100);
-    ITYPE ("nstenergy",   ir->nstenergy,  1000);
-    CTYPE ("Output frequency and precision for .xtc file");
-    ITYPE ("nstxout-compressed", ir->nstxout_compressed,  0);
-    RTYPE ("compressed-x-precision", ir->x_compression_precision, 1000.0);
-    CTYPE ("This selects the subset of atoms for the compressed");
-    CTYPE ("trajectory file. You can select multiple groups. By");
-    CTYPE ("default, all atoms will be written.");
-    STYPE ("compressed-x-grps", is->x_compressed_groups, nullptr);
-    CTYPE ("Selection of energy groups");
-    STYPE ("energygrps",  is->energy,         nullptr);
+    printStringNewline(&inp, "OUTPUT CONTROL OPTIONS");
+    printStringNoNewline(&inp, "Output frequency for coords (x), velocities (v) and forces (f)");
+    ir->nstxout = get_eint(&inp, "nstxout",    0, wi);
+    ir->nstvout = get_eint(&inp, "nstvout",    0, wi);
+    ir->nstfout = get_eint(&inp, "nstfout",    0, wi);
+    printStringNoNewline(&inp, "Output frequency for energies to log file and energy file");
+    ir->nstlog        = get_eint(&inp, "nstlog", 1000, wi);
+    ir->nstcalcenergy = get_eint(&inp, "nstcalcenergy", 100, wi);
+    ir->nstenergy     = get_eint(&inp, "nstenergy",  1000, wi);
+    printStringNoNewline(&inp, "Output frequency and precision for .xtc file");
+    ir->nstxout_compressed      = get_eint(&inp, "nstxout-compressed",  0, wi);
+    ir->x_compression_precision = get_ereal(&inp, "compressed-x-precision", 1000.0, wi);
+    printStringNoNewline(&inp, "This selects the subset of atoms for the compressed");
+    printStringNoNewline(&inp, "trajectory file. You can select multiple groups. By");
+    printStringNoNewline(&inp, "default, all atoms will be written.");
+    setStringEntry(&inp, "compressed-x-grps", is->x_compressed_groups, nullptr);
+    printStringNoNewline(&inp, "Selection of energy groups");
+    setStringEntry(&inp, "energygrps",  is->energy,         nullptr);
 
     /* Neighbor searching */
-    CCTYPE ("NEIGHBORSEARCHING PARAMETERS");
-    CTYPE ("cut-off scheme (Verlet: particle based cut-offs, group: using charge groups)");
-    EETYPE("cutoff-scheme",     ir->cutoff_scheme,    ecutscheme_names);
-    CTYPE ("nblist update frequency");
-    ITYPE ("nstlist", ir->nstlist,    10);
-    CTYPE ("ns algorithm (simple or grid)");
-    EETYPE("ns-type",     ir->ns_type,    ens_names);
-    CTYPE ("Periodic boundary conditions: xyz, no, xy");
-    EETYPE("pbc",         ir->ePBC,       epbc_names);
-    EETYPE("periodic-molecules", ir->bPeriodicMols, yesno_names);
-    CTYPE ("Allowed energy error due to the Verlet buffer in kJ/mol/ps per atom,");
-    CTYPE ("a value of -1 means: use rlist");
-    RTYPE("verlet-buffer-tolerance", ir->verletbuf_tol,    0.005);
-    CTYPE ("nblist cut-off");
-    RTYPE ("rlist",   ir->rlist,  1.0);
-    CTYPE ("long-range cut-off for switched potentials");
+    printStringNewline(&inp, "NEIGHBORSEARCHING PARAMETERS");
+    printStringNoNewline(&inp, "cut-off scheme (Verlet: particle based cut-offs, group: using charge groups)");
+    ir->cutoff_scheme = get_eeenum(&inp, "cutoff-scheme",    ecutscheme_names, wi);
+    printStringNoNewline(&inp, "nblist update frequency");
+    ir->nstlist = get_eint(&inp, "nstlist",    10, wi);
+    printStringNoNewline(&inp, "ns algorithm (simple or grid)");
+    ir->ns_type = get_eeenum(&inp, "ns-type",    ens_names, wi);
+    printStringNoNewline(&inp, "Periodic boundary conditions: xyz, no, xy");
+    ir->ePBC          = get_eeenum(&inp, "pbc",       epbc_names, wi);
+    ir->bPeriodicMols = get_eeenum(&inp, "periodic-molecules", yesno_names, wi) != 0;
+    printStringNoNewline(&inp, "Allowed energy error due to the Verlet buffer in kJ/mol/ps per atom,");
+    printStringNoNewline(&inp, "a value of -1 means: use rlist");
+    ir->verletbuf_tol = get_ereal(&inp, "verlet-buffer-tolerance",    0.005, wi);
+    printStringNoNewline(&inp, "nblist cut-off");
+    ir->rlist = get_ereal(&inp, "rlist",  1.0, wi);
+    printStringNoNewline(&inp, "long-range cut-off for switched potentials");
 
     /* Electrostatics */
-    CCTYPE ("OPTIONS FOR ELECTROSTATICS AND VDW");
-    CTYPE ("Method for doing electrostatics");
-    EETYPE("coulombtype", ir->coulombtype,    eel_names);
-    EETYPE("coulomb-modifier",    ir->coulomb_modifier,    eintmod_names);
-    CTYPE ("cut-off lengths");
-    RTYPE ("rcoulomb-switch", ir->rcoulomb_switch,    0.0);
-    RTYPE ("rcoulomb",    ir->rcoulomb,   1.0);
-    CTYPE ("Relative dielectric constant for the medium and the reaction field");
-    RTYPE ("epsilon-r",   ir->epsilon_r,  1.0);
-    RTYPE ("epsilon-rf",  ir->epsilon_rf, 0.0);
-    CTYPE ("Method for doing Van der Waals");
-    EETYPE("vdw-type",    ir->vdwtype,    evdw_names);
-    EETYPE("vdw-modifier",    ir->vdw_modifier,    eintmod_names);
-    CTYPE ("cut-off lengths");
-    RTYPE ("rvdw-switch", ir->rvdw_switch,    0.0);
-    RTYPE ("rvdw",    ir->rvdw,   1.0);
-    CTYPE ("Apply long range dispersion corrections for Energy and Pressure");
-    EETYPE("DispCorr",    ir->eDispCorr,  edispc_names);
-    CTYPE ("Extension of the potential lookup tables beyond the cut-off");
-    RTYPE ("table-extension", ir->tabext, 1.0);
-    CTYPE ("Separate tables between energy group pairs");
-    STYPE ("energygrp-table", is->egptable,   nullptr);
-    CTYPE ("Spacing for the PME/PPPM FFT grid");
-    RTYPE ("fourierspacing", ir->fourier_spacing, 0.12);
-    CTYPE ("FFT grid size, when a value is 0 fourierspacing will be used");
-    ITYPE ("fourier-nx",  ir->nkx,         0);
-    ITYPE ("fourier-ny",  ir->nky,         0);
-    ITYPE ("fourier-nz",  ir->nkz,         0);
-    CTYPE ("EWALD/PME/PPPM parameters");
-    ITYPE ("pme-order",   ir->pme_order,   4);
-    RTYPE ("ewald-rtol",  ir->ewald_rtol, 0.00001);
-    RTYPE ("ewald-rtol-lj", ir->ewald_rtol_lj, 0.001);
-    EETYPE("lj-pme-comb-rule", ir->ljpme_combination_rule, eljpme_names);
-    EETYPE("ewald-geometry", ir->ewald_geometry, eewg_names);
-    RTYPE ("epsilon-surface", ir->epsilon_surface, 0.0);
+    printStringNewline(&inp, "OPTIONS FOR ELECTROSTATICS AND VDW");
+    printStringNoNewline(&inp, "Method for doing electrostatics");
+    ir->coulombtype      = get_eeenum(&inp, "coulombtype",    eel_names, wi);
+    ir->coulomb_modifier = get_eeenum(&inp, "coulomb-modifier",    eintmod_names, wi);
+    printStringNoNewline(&inp, "cut-off lengths");
+    ir->rcoulomb_switch = get_ereal(&inp, "rcoulomb-switch",    0.0, wi);
+    ir->rcoulomb        = get_ereal(&inp, "rcoulomb",   1.0, wi);
+    printStringNoNewline(&inp, "Relative dielectric constant for the medium and the reaction field");
+    ir->epsilon_r  = get_ereal(&inp, "epsilon-r",  1.0, wi);
+    ir->epsilon_rf = get_ereal(&inp, "epsilon-rf", 0.0, wi);
+    printStringNoNewline(&inp, "Method for doing Van der Waals");
+    ir->vdwtype      = get_eeenum(&inp, "vdw-type",    evdw_names, wi);
+    ir->vdw_modifier = get_eeenum(&inp, "vdw-modifier",    eintmod_names, wi);
+    printStringNoNewline(&inp, "cut-off lengths");
+    ir->rvdw_switch = get_ereal(&inp, "rvdw-switch",    0.0, wi);
+    ir->rvdw        = get_ereal(&inp, "rvdw",   1.0, wi);
+    printStringNoNewline(&inp, "Apply long range dispersion corrections for Energy and Pressure");
+    ir->eDispCorr = get_eeenum(&inp, "DispCorr",  edispc_names, wi);
+    printStringNoNewline(&inp, "Extension of the potential lookup tables beyond the cut-off");
+    ir->tabext = get_ereal(&inp, "table-extension", 1.0, wi);
+    printStringNoNewline(&inp, "Separate tables between energy group pairs");
+    setStringEntry(&inp, "energygrp-table", is->egptable,   nullptr);
+    printStringNoNewline(&inp, "Spacing for the PME/PPPM FFT grid");
+    ir->fourier_spacing = get_ereal(&inp, "fourierspacing", 0.12, wi);
+    printStringNoNewline(&inp, "FFT grid size, when a value is 0 fourierspacing will be used");
+    ir->nkx = get_eint(&inp, "fourier-nx",         0, wi);
+    ir->nky = get_eint(&inp, "fourier-ny",         0, wi);
+    ir->nkz = get_eint(&inp, "fourier-nz",         0, wi);
+    printStringNoNewline(&inp, "EWALD/PME/PPPM parameters");
+    ir->pme_order              = get_eint(&inp, "pme-order",   4, wi);
+    ir->ewald_rtol             = get_ereal(&inp, "ewald-rtol", 0.00001, wi);
+    ir->ewald_rtol_lj          = get_ereal(&inp, "ewald-rtol-lj", 0.001, wi);
+    ir->ljpme_combination_rule = get_eeenum(&inp, "lj-pme-comb-rule", eljpme_names, wi);
+    ir->ewald_geometry         = get_eeenum(&inp, "ewald-geometry", eewg_names, wi);
+    ir->epsilon_surface        = get_ereal(&inp, "epsilon-surface", 0.0, wi);
 
-    CCTYPE("IMPLICIT SOLVENT ALGORITHM");
-    EETYPE("implicit-solvent", ir->implicit_solvent, eis_names);
-
-    CCTYPE ("GENERALIZED BORN ELECTROSTATICS");
-    CTYPE ("Algorithm for calculating Born radii");
-    EETYPE("gb-algorithm", ir->gb_algorithm, egb_names);
-    CTYPE ("Frequency of calculating the Born radii inside rlist");
-    ITYPE ("nstgbradii", ir->nstgbradii, 1);
-    CTYPE ("Cutoff for Born radii calculation; the contribution from atoms");
-    CTYPE ("between rlist and rgbradii is updated every nstlist steps");
-    RTYPE ("rgbradii",  ir->rgbradii, 1.0);
-    CTYPE ("Dielectric coefficient of the implicit solvent");
-    RTYPE ("gb-epsilon-solvent", ir->gb_epsilon_solvent, 80.0);
-    CTYPE ("Salt concentration in M for Generalized Born models");
-    RTYPE ("gb-saltconc",  ir->gb_saltconc, 0.0);
-    CTYPE ("Scaling factors used in the OBC GB model. Default values are OBC(II)");
-    RTYPE ("gb-obc-alpha", ir->gb_obc_alpha, 1.0);
-    RTYPE ("gb-obc-beta", ir->gb_obc_beta, 0.8);
-    RTYPE ("gb-obc-gamma", ir->gb_obc_gamma, 4.85);
-    RTYPE ("gb-dielectric-offset", ir->gb_dielectric_offset, 0.009);
-    EETYPE("sa-algorithm", ir->sa_algorithm, esa_names);
-    CTYPE ("Surface tension (kJ/mol/nm^2) for the SA (nonpolar surface) part of GBSA");
-    CTYPE ("The value -1 will set default value for Still/HCT/OBC GB-models.");
-    RTYPE ("sa-surface-tension", ir->sa_surface_tension, -1);
+    /* Implicit solvation is no longer supported, but we need grompp
+       to be able to refuse old .mdp files that would have built a tpr
+       to run it. Thus, only "no" is accepted. */
+    ir->implicit_solvent = (get_eeenum(&inp, "implicit-solvent", no_names, wi) != 0);
 
     /* Coupling stuff */
-    CCTYPE ("OPTIONS FOR WEAK COUPLING ALGORITHMS");
-    CTYPE ("Temperature coupling");
-    EETYPE("tcoupl",  ir->etc,        etcoupl_names);
-    ITYPE ("nsttcouple", ir->nsttcouple,  -1);
-    ITYPE("nh-chain-length",     ir->opts.nhchainlength, 10);
-    EETYPE("print-nose-hoover-chain-variables", ir->bPrintNHChains, yesno_names);
-    CTYPE ("Groups to couple separately");
-    STYPE ("tc-grps",     is->tcgrps,         nullptr);
-    CTYPE ("Time constant (ps) and reference temperature (K)");
-    STYPE ("tau-t",   is->tau_t,      nullptr);
-    STYPE ("ref-t",   is->ref_t,      nullptr);
-    CTYPE ("pressure coupling");
-    EETYPE("pcoupl",  ir->epc,        epcoupl_names);
-    EETYPE("pcoupltype",  ir->epct,       epcoupltype_names);
-    ITYPE ("nstpcouple", ir->nstpcouple,  -1);
-    CTYPE ("Time constant (ps), compressibility (1/bar) and reference P (bar)");
-    RTYPE ("tau-p",   ir->tau_p,  1.0);
-    STYPE ("compressibility", dumstr[0],  nullptr);
-    STYPE ("ref-p",       dumstr[1],      nullptr);
-    CTYPE ("Scaling of reference coordinates, No, All or COM");
-    EETYPE ("refcoord-scaling", ir->refcoord_scaling, erefscaling_names);
+    printStringNewline(&inp, "OPTIONS FOR WEAK COUPLING ALGORITHMS");
+    printStringNoNewline(&inp, "Temperature coupling");
+    ir->etc                = get_eeenum(&inp, "tcoupl",        etcoupl_names, wi);
+    ir->nsttcouple         = get_eint(&inp, "nsttcouple",  -1, wi);
+    ir->opts.nhchainlength = get_eint(&inp, "nh-chain-length", 10, wi);
+    ir->bPrintNHChains     = (get_eeenum(&inp, "print-nose-hoover-chain-variables", yesno_names, wi) != 0);
+    printStringNoNewline(&inp, "Groups to couple separately");
+    setStringEntry(&inp, "tc-grps",     is->tcgrps,         nullptr);
+    printStringNoNewline(&inp, "Time constant (ps) and reference temperature (K)");
+    setStringEntry(&inp, "tau-t",   is->tau_t,      nullptr);
+    setStringEntry(&inp, "ref-t",   is->ref_t,      nullptr);
+    printStringNoNewline(&inp, "pressure coupling");
+    ir->epc        = get_eeenum(&inp, "pcoupl",        epcoupl_names, wi);
+    ir->epct       = get_eeenum(&inp, "pcoupltype",       epcoupltype_names, wi);
+    ir->nstpcouple = get_eint(&inp, "nstpcouple",  -1, wi);
+    printStringNoNewline(&inp, "Time constant (ps), compressibility (1/bar) and reference P (bar)");
+    ir->tau_p = get_ereal(&inp, "tau-p",  1.0, wi);
+    setStringEntry(&inp, "compressibility", dumstr[0],  nullptr);
+    setStringEntry(&inp, "ref-p",       dumstr[1],      nullptr);
+    printStringNoNewline(&inp, "Scaling of reference coordinates, No, All or COM");
+    ir->refcoord_scaling = get_eeenum(&inp, "refcoord-scaling", erefscaling_names, wi);
 
     /* QMMM */
-    CCTYPE ("OPTIONS FOR QMMM calculations");
-    EETYPE("QMMM", ir->bQMMM, yesno_names);
-    CTYPE ("Groups treated Quantum Mechanically");
-    STYPE ("QMMM-grps",  is->QMMM,          nullptr);
-    CTYPE ("QM method");
-    STYPE("QMmethod",     is->QMmethod, nullptr);
-    CTYPE ("QMMM scheme");
-    EETYPE("QMMMscheme",  ir->QMMMscheme,    eQMMMscheme_names);
-    CTYPE ("QM basisset");
-    STYPE("QMbasis",      is->QMbasis, nullptr);
-    CTYPE ("QM charge");
-    STYPE ("QMcharge",    is->QMcharge, nullptr);
-    CTYPE ("QM multiplicity");
-    STYPE ("QMmult",      is->QMmult, nullptr);
-    CTYPE ("Surface Hopping");
-    STYPE ("SH",          is->bSH, nullptr);
-    CTYPE ("CAS space options");
-    STYPE ("CASorbitals",      is->CASorbitals,   nullptr);
-    STYPE ("CASelectrons",     is->CASelectrons,  nullptr);
-    STYPE ("SAon", is->SAon, nullptr);
-    STYPE ("SAoff", is->SAoff, nullptr);
-    STYPE ("SAsteps", is->SAsteps, nullptr);
-    CTYPE ("Scale factor for MM charges");
-    RTYPE ("MMChargeScaleFactor", ir->scalefactor, 1.0);
-    CTYPE ("Optimization of QM subsystem");
-    STYPE ("bOPT",          is->bOPT, nullptr);
-    STYPE ("bTS",          is->bTS, nullptr);
+    printStringNewline(&inp, "OPTIONS FOR QMMM calculations");
+    ir->bQMMM = (get_eeenum(&inp, "QMMM", yesno_names, wi) != 0);
+    printStringNoNewline(&inp, "Groups treated Quantum Mechanically");
+    setStringEntry(&inp, "QMMM-grps",  is->QMMM,          nullptr);
+    printStringNoNewline(&inp, "QM method");
+    setStringEntry(&inp, "QMmethod",     is->QMmethod, nullptr);
+    printStringNoNewline(&inp, "QMMM scheme");
+    ir->QMMMscheme = get_eeenum(&inp, "QMMMscheme",    eQMMMscheme_names, wi);
+    printStringNoNewline(&inp, "QM basisset");
+    setStringEntry(&inp, "QMbasis",      is->QMbasis, nullptr);
+    printStringNoNewline(&inp, "QM charge");
+    setStringEntry(&inp, "QMcharge",    is->QMcharge, nullptr);
+    printStringNoNewline(&inp, "QM multiplicity");
+    setStringEntry(&inp, "QMmult",      is->QMmult, nullptr);
+    printStringNoNewline(&inp, "Surface Hopping");
+    setStringEntry(&inp, "SH",          is->bSH, nullptr);
+    printStringNoNewline(&inp, "CAS space options");
+    setStringEntry(&inp, "CASorbitals",      is->CASorbitals,   nullptr);
+    setStringEntry(&inp, "CASelectrons",     is->CASelectrons,  nullptr);
+    setStringEntry(&inp, "SAon", is->SAon, nullptr);
+    setStringEntry(&inp, "SAoff", is->SAoff, nullptr);
+    setStringEntry(&inp, "SAsteps", is->SAsteps, nullptr);
+    printStringNoNewline(&inp, "Scale factor for MM charges");
+    ir->scalefactor = get_ereal(&inp, "MMChargeScaleFactor", 1.0, wi);
 
     /* Simulated annealing */
-    CCTYPE("SIMULATED ANNEALING");
-    CTYPE ("Type of annealing for each temperature group (no/single/periodic)");
-    STYPE ("annealing",   is->anneal,      nullptr);
-    CTYPE ("Number of time points to use for specifying annealing in each group");
-    STYPE ("annealing-npoints", is->anneal_npoints, nullptr);
-    CTYPE ("List of times at the annealing points for each group");
-    STYPE ("annealing-time",       is->anneal_time,       nullptr);
-    CTYPE ("Temp. at each annealing point, for each group.");
-    STYPE ("annealing-temp",  is->anneal_temp,  nullptr);
+    printStringNewline(&inp, "SIMULATED ANNEALING");
+    printStringNoNewline(&inp, "Type of annealing for each temperature group (no/single/periodic)");
+    setStringEntry(&inp, "annealing",   is->anneal,      nullptr);
+    printStringNoNewline(&inp, "Number of time points to use for specifying annealing in each group");
+    setStringEntry(&inp, "annealing-npoints", is->anneal_npoints, nullptr);
+    printStringNoNewline(&inp, "List of times at the annealing points for each group");
+    setStringEntry(&inp, "annealing-time",       is->anneal_time,       nullptr);
+    printStringNoNewline(&inp, "Temp. at each annealing point, for each group.");
+    setStringEntry(&inp, "annealing-temp",  is->anneal_temp,  nullptr);
 
     /* Startup run */
-    CCTYPE ("GENERATE VELOCITIES FOR STARTUP RUN");
-    EETYPE("gen-vel",     opts->bGenVel,  yesno_names);
-    RTYPE ("gen-temp",    opts->tempi,    300.0);
-    ITYPE ("gen-seed",    opts->seed,     -1);
+    printStringNewline(&inp, "GENERATE VELOCITIES FOR STARTUP RUN");
+    opts->bGenVel = (get_eeenum(&inp, "gen-vel",  yesno_names, wi) != 0);
+    opts->tempi   = get_ereal(&inp, "gen-temp",    300.0, wi);
+    opts->seed    = get_eint(&inp, "gen-seed",     -1, wi);
 
     /* Shake stuff */
-    CCTYPE ("OPTIONS FOR BONDS");
-    EETYPE("constraints", opts->nshake,   constraints);
-    CTYPE ("Type of constraint algorithm");
-    EETYPE("constraint-algorithm",  ir->eConstrAlg, econstr_names);
-    CTYPE ("Do not constrain the start configuration");
-    EETYPE("continuation", ir->bContinuation, yesno_names);
-    CTYPE ("Use successive overrelaxation to reduce the number of shake iterations");
-    EETYPE("Shake-SOR", ir->bShakeSOR, yesno_names);
-    CTYPE ("Relative tolerance of shake");
-    RTYPE ("shake-tol", ir->shake_tol, 0.0001);
-    CTYPE ("Highest order in the expansion of the constraint coupling matrix");
-    ITYPE ("lincs-order", ir->nProjOrder, 4);
-    CTYPE ("Number of iterations in the final step of LINCS. 1 is fine for");
-    CTYPE ("normal simulations, but use 2 to conserve energy in NVE runs.");
-    CTYPE ("For energy minimization with constraints it should be 4 to 8.");
-    ITYPE ("lincs-iter", ir->nLincsIter, 1);
-    CTYPE ("Lincs will write a warning to the stderr if in one step a bond");
-    CTYPE ("rotates over more degrees than");
-    RTYPE ("lincs-warnangle", ir->LincsWarnAngle, 30.0);
-    CTYPE ("Convert harmonic bonds to morse potentials");
-    EETYPE("morse",       opts->bMorse, yesno_names);
+    printStringNewline(&inp, "OPTIONS FOR BONDS");
+    opts->nshake = get_eeenum(&inp, "constraints",   constraints, wi);
+    printStringNoNewline(&inp, "Type of constraint algorithm");
+    ir->eConstrAlg = get_eeenum(&inp, "constraint-algorithm", econstr_names, wi);
+    printStringNoNewline(&inp, "Do not constrain the start configuration");
+    ir->bContinuation = (get_eeenum(&inp, "continuation", yesno_names, wi) != 0);
+    printStringNoNewline(&inp, "Use successive overrelaxation to reduce the number of shake iterations");
+    ir->bShakeSOR = (get_eeenum(&inp, "Shake-SOR", yesno_names, wi) != 0);
+    printStringNoNewline(&inp, "Relative tolerance of shake");
+    ir->shake_tol = get_ereal(&inp, "shake-tol", 0.0001, wi);
+    printStringNoNewline(&inp, "Highest order in the expansion of the constraint coupling matrix");
+    ir->nProjOrder = get_eint(&inp, "lincs-order", 4, wi);
+    printStringNoNewline(&inp, "Number of iterations in the final step of LINCS. 1 is fine for");
+    printStringNoNewline(&inp, "normal simulations, but use 2 to conserve energy in NVE runs.");
+    printStringNoNewline(&inp, "For energy minimization with constraints it should be 4 to 8.");
+    ir->nLincsIter = get_eint(&inp, "lincs-iter", 1, wi);
+    printStringNoNewline(&inp, "Lincs will write a warning to the stderr if in one step a bond");
+    printStringNoNewline(&inp, "rotates over more degrees than");
+    ir->LincsWarnAngle = get_ereal(&inp, "lincs-warnangle", 30.0, wi);
+    printStringNoNewline(&inp, "Convert harmonic bonds to morse potentials");
+    opts->bMorse = (get_eeenum(&inp, "morse", yesno_names, wi) != 0);
 
     /* Energy group exclusions */
-    CCTYPE ("ENERGY GROUP EXCLUSIONS");
-    CTYPE ("Pairs of energy groups for which all non-bonded interactions are excluded");
-    STYPE ("energygrp-excl", is->egpexcl,     nullptr);
+    printStringNewline(&inp, "ENERGY GROUP EXCLUSIONS");
+    printStringNoNewline(&inp, "Pairs of energy groups for which all non-bonded interactions are excluded");
+    setStringEntry(&inp, "energygrp-excl", is->egpexcl,     nullptr);
 
     /* Walls */
-    CCTYPE ("WALLS");
-    CTYPE ("Number of walls, type, atom types, densities and box-z scale factor for Ewald");
-    ITYPE ("nwall", ir->nwall, 0);
-    EETYPE("wall-type",     ir->wall_type,   ewt_names);
-    RTYPE ("wall-r-linpot", ir->wall_r_linpot, -1);
-    STYPE ("wall-atomtype", is->wall_atomtype, nullptr);
-    STYPE ("wall-density",  is->wall_density,  nullptr);
-    RTYPE ("wall-ewald-zfac", ir->wall_ewald_zfac, 3);
+    printStringNewline(&inp, "WALLS");
+    printStringNoNewline(&inp, "Number of walls, type, atom types, densities and box-z scale factor for Ewald");
+    ir->nwall         = get_eint(&inp, "nwall", 0, wi);
+    ir->wall_type     = get_eeenum(&inp, "wall-type",   ewt_names, wi);
+    ir->wall_r_linpot = get_ereal(&inp, "wall-r-linpot", -1, wi);
+    setStringEntry(&inp, "wall-atomtype", is->wall_atomtype, nullptr);
+    setStringEntry(&inp, "wall-density",  is->wall_density,  nullptr);
+    ir->wall_ewald_zfac = get_ereal(&inp, "wall-ewald-zfac", 3, wi);
 
     /* COM pulling */
-    CCTYPE("COM PULLING");
-    EETYPE("pull",          ir->bPull, yesno_names);
+    printStringNewline(&inp, "COM PULLING");
+    ir->bPull = (get_eeenum(&inp, "pull", yesno_names, wi) != 0);
     if (ir->bPull)
     {
         snew(ir->pull, 1);
-        is->pull_grp = read_pullparams(&ninp, &inp, ir->pull, wi);
+        is->pull_grp = read_pullparams(&inp, ir->pull, wi);
+    }
+
+    /* AWH biasing
+       NOTE: needs COM pulling input */
+    printStringNewline(&inp, "AWH biasing");
+    ir->bDoAwh = (get_eeenum(&inp, "awh", yesno_names, wi) != 0);
+    if (ir->bDoAwh)
+    {
+        if (ir->bPull)
+        {
+            ir->awhParams = gmx::readAndCheckAwhParams(&inp, ir, wi);
+        }
+        else
+        {
+            gmx_fatal(FARGS, "AWH biasing is only compatible with COM pulling turned on");
+        }
     }
 
     /* Enforced rotation */
-    CCTYPE("ENFORCED ROTATION");
-    CTYPE("Enforced rotation: No or Yes");
-    EETYPE("rotation",       ir->bRot, yesno_names);
+    printStringNewline(&inp, "ENFORCED ROTATION");
+    printStringNoNewline(&inp, "Enforced rotation: No or Yes");
+    ir->bRot = (get_eeenum(&inp, "rotation", yesno_names, wi) != 0);
     if (ir->bRot)
     {
         snew(ir->rot, 1);
-        is->rot_grp = read_rotparams(&ninp, &inp, ir->rot, wi);
+        is->rot_grp = read_rotparams(&inp, ir->rot, wi);
     }
 
     /* Interactive MD */
     ir->bIMD = FALSE;
-    CCTYPE("Group to display and/or manipulate in interactive MD session");
-    STYPE ("IMD-group", is->imd_grp, nullptr);
+    printStringNewline(&inp, "Group to display and/or manipulate in interactive MD session");
+    setStringEntry(&inp, "IMD-group", is->imd_grp, nullptr);
     if (is->imd_grp[0] != '\0')
     {
         snew(ir->imd, 1);
@@ -2112,88 +2127,87 @@ void get_ir(const char *mdparin, const char *mdparout,
     }
 
     /* Refinement */
-    CCTYPE("NMR refinement stuff");
-    CTYPE ("Distance restraints type: No, Simple or Ensemble");
-    EETYPE("disre",       ir->eDisre,     edisre_names);
-    CTYPE ("Force weighting of pairs in one distance restraint: Conservative or Equal");
-    EETYPE("disre-weighting", ir->eDisreWeighting, edisreweighting_names);
-    CTYPE ("Use sqrt of the time averaged times the instantaneous violation");
-    EETYPE("disre-mixed", ir->bDisreMixed, yesno_names);
-    RTYPE ("disre-fc",    ir->dr_fc,  1000.0);
-    RTYPE ("disre-tau",   ir->dr_tau, 0.0);
-    CTYPE ("Output frequency for pair distances to energy file");
-    ITYPE ("nstdisreout", ir->nstdisreout, 100);
-    CTYPE ("Orientation restraints: No or Yes");
-    EETYPE("orire",       opts->bOrire,   yesno_names);
-    CTYPE ("Orientation restraints force constant and tau for time averaging");
-    RTYPE ("orire-fc",    ir->orires_fc,  0.0);
-    RTYPE ("orire-tau",   ir->orires_tau, 0.0);
-    STYPE ("orire-fitgrp", is->orirefitgrp,    nullptr);
-    CTYPE ("Output frequency for trace(SD) and S to energy file");
-    ITYPE ("nstorireout", ir->nstorireout, 100);
+    printStringNewline(&inp, "NMR refinement stuff");
+    printStringNoNewline(&inp, "Distance restraints type: No, Simple or Ensemble");
+    ir->eDisre = get_eeenum(&inp, "disre",     edisre_names, wi);
+    printStringNoNewline(&inp, "Force weighting of pairs in one distance restraint: Conservative or Equal");
+    ir->eDisreWeighting = get_eeenum(&inp, "disre-weighting", edisreweighting_names, wi);
+    printStringNoNewline(&inp, "Use sqrt of the time averaged times the instantaneous violation");
+    ir->bDisreMixed = (get_eeenum(&inp, "disre-mixed", yesno_names, wi) != 0);
+    ir->dr_fc       = get_ereal(&inp, "disre-fc",  1000.0, wi);
+    ir->dr_tau      = get_ereal(&inp, "disre-tau", 0.0, wi);
+    printStringNoNewline(&inp, "Output frequency for pair distances to energy file");
+    ir->nstdisreout = get_eint(&inp, "nstdisreout", 100, wi);
+    printStringNoNewline(&inp, "Orientation restraints: No or Yes");
+    opts->bOrire = (get_eeenum(&inp, "orire",   yesno_names, wi) != 0);
+    printStringNoNewline(&inp, "Orientation restraints force constant and tau for time averaging");
+    ir->orires_fc  = get_ereal(&inp, "orire-fc",  0.0, wi);
+    ir->orires_tau = get_ereal(&inp, "orire-tau", 0.0, wi);
+    setStringEntry(&inp, "orire-fitgrp", is->orirefitgrp,    nullptr);
+    printStringNoNewline(&inp, "Output frequency for trace(SD) and S to energy file");
+    ir->nstorireout = get_eint(&inp, "nstorireout", 100, wi);
 
     /* free energy variables */
-    CCTYPE ("Free energy variables");
-    EETYPE("free-energy", ir->efep, efep_names);
-    STYPE ("couple-moltype",  is->couple_moltype,  nullptr);
-    EETYPE("couple-lambda0", opts->couple_lam0, couple_lam);
-    EETYPE("couple-lambda1", opts->couple_lam1, couple_lam);
-    EETYPE("couple-intramol", opts->bCoupleIntra, yesno_names);
+    printStringNewline(&inp, "Free energy variables");
+    ir->efep = get_eeenum(&inp, "free-energy", efep_names, wi);
+    setStringEntry(&inp, "couple-moltype",  is->couple_moltype,  nullptr);
+    opts->couple_lam0  = get_eeenum(&inp, "couple-lambda0", couple_lam, wi);
+    opts->couple_lam1  = get_eeenum(&inp, "couple-lambda1", couple_lam, wi);
+    opts->bCoupleIntra = (get_eeenum(&inp, "couple-intramol", yesno_names, wi) != 0);
 
-    RTYPE ("init-lambda", fep->init_lambda, -1); /* start with -1 so
-                                                    we can recognize if
-                                                    it was not entered */
-    ITYPE ("init-lambda-state", fep->init_fep_state, -1);
-    RTYPE ("delta-lambda", fep->delta_lambda, 0.0);
-    ITYPE ("nstdhdl", fep->nstdhdl, 50);
-    STYPE ("fep-lambdas", is->fep_lambda[efptFEP], nullptr);
-    STYPE ("mass-lambdas", is->fep_lambda[efptMASS], nullptr);
-    STYPE ("coul-lambdas", is->fep_lambda[efptCOUL], nullptr);
-    STYPE ("vdw-lambdas", is->fep_lambda[efptVDW], nullptr);
-    STYPE ("bonded-lambdas", is->fep_lambda[efptBONDED], nullptr);
-    STYPE ("restraint-lambdas", is->fep_lambda[efptRESTRAINT], nullptr);
-    STYPE ("temperature-lambdas", is->fep_lambda[efptTEMPERATURE], nullptr);
-    ITYPE ("calc-lambda-neighbors", fep->lambda_neighbors, 1);
-    STYPE ("init-lambda-weights", is->lambda_weights, nullptr);
-    EETYPE("dhdl-print-energy", fep->edHdLPrintEnergy, edHdLPrintEnergy_names);
-    RTYPE ("sc-alpha", fep->sc_alpha, 0.0);
-    ITYPE ("sc-power", fep->sc_power, 1);
-    RTYPE ("sc-r-power", fep->sc_r_power, 6.0);
-    RTYPE ("sc-sigma", fep->sc_sigma, 0.3);
-    EETYPE("sc-coul", fep->bScCoul, yesno_names);
-    ITYPE ("dh_hist_size", fep->dh_hist_size, 0);
-    RTYPE ("dh_hist_spacing", fep->dh_hist_spacing, 0.1);
-    EETYPE("separate-dhdl-file", fep->separate_dhdl_file,
-           separate_dhdl_file_names);
-    EETYPE("dhdl-derivatives", fep->dhdl_derivatives, dhdl_derivatives_names);
-    ITYPE ("dh_hist_size", fep->dh_hist_size, 0);
-    RTYPE ("dh_hist_spacing", fep->dh_hist_spacing, 0.1);
+    fep->init_lambda    = get_ereal(&inp, "init-lambda", -1, wi); /* start with -1 so
+                                                                            we can recognize if
+                                                                            it was not entered */
+    fep->init_fep_state = get_eint(&inp, "init-lambda-state", -1, wi);
+    fep->delta_lambda   = get_ereal(&inp, "delta-lambda", 0.0, wi);
+    fep->nstdhdl        = get_eint(&inp, "nstdhdl", 50, wi);
+    setStringEntry(&inp, "fep-lambdas", is->fep_lambda[efptFEP], nullptr);
+    setStringEntry(&inp, "mass-lambdas", is->fep_lambda[efptMASS], nullptr);
+    setStringEntry(&inp, "coul-lambdas", is->fep_lambda[efptCOUL], nullptr);
+    setStringEntry(&inp, "vdw-lambdas", is->fep_lambda[efptVDW], nullptr);
+    setStringEntry(&inp, "bonded-lambdas", is->fep_lambda[efptBONDED], nullptr);
+    setStringEntry(&inp, "restraint-lambdas", is->fep_lambda[efptRESTRAINT], nullptr);
+    setStringEntry(&inp, "temperature-lambdas", is->fep_lambda[efptTEMPERATURE], nullptr);
+    fep->lambda_neighbors = get_eint(&inp, "calc-lambda-neighbors", 1, wi);
+    setStringEntry(&inp, "init-lambda-weights", is->lambda_weights, nullptr);
+    fep->edHdLPrintEnergy   = get_eeenum(&inp, "dhdl-print-energy", edHdLPrintEnergy_names, wi);
+    fep->sc_alpha           = get_ereal(&inp, "sc-alpha", 0.0, wi);
+    fep->sc_power           = get_eint(&inp, "sc-power", 1, wi);
+    fep->sc_r_power         = get_ereal(&inp, "sc-r-power", 6.0, wi);
+    fep->sc_sigma           = get_ereal(&inp, "sc-sigma", 0.3, wi);
+    fep->bScCoul            = (get_eeenum(&inp, "sc-coul", yesno_names, wi) != 0);
+    fep->dh_hist_size       = get_eint(&inp, "dh_hist_size", 0, wi);
+    fep->dh_hist_spacing    = get_ereal(&inp, "dh_hist_spacing", 0.1, wi);
+    fep->separate_dhdl_file = get_eeenum(&inp, "separate-dhdl-file", separate_dhdl_file_names, wi);
+    fep->dhdl_derivatives   = get_eeenum(&inp, "dhdl-derivatives", dhdl_derivatives_names, wi);
+    fep->dh_hist_size       = get_eint(&inp, "dh_hist_size", 0, wi);
+    fep->dh_hist_spacing    = get_ereal(&inp, "dh_hist_spacing", 0.1, wi);
 
     /* Non-equilibrium MD stuff */
-    CCTYPE("Non-equilibrium MD stuff");
-    STYPE ("acc-grps",    is->accgrps,        nullptr);
-    STYPE ("accelerate",  is->acc,            nullptr);
-    STYPE ("freezegrps",  is->freeze,         nullptr);
-    STYPE ("freezedim",   is->frdim,          nullptr);
-    RTYPE ("cos-acceleration", ir->cos_accel, 0);
-    STYPE ("deform",      is->deform,         nullptr);
+    printStringNewline(&inp, "Non-equilibrium MD stuff");
+    setStringEntry(&inp, "acc-grps",    is->accgrps,        nullptr);
+    setStringEntry(&inp, "accelerate",  is->acc,            nullptr);
+    setStringEntry(&inp, "freezegrps",  is->freeze,         nullptr);
+    setStringEntry(&inp, "freezedim",   is->frdim,          nullptr);
+    ir->cos_accel = get_ereal(&inp, "cos-acceleration", 0, wi);
+    setStringEntry(&inp, "deform",      is->deform,         nullptr);
 
     /* simulated tempering variables */
-    CCTYPE("simulated tempering variables");
-    EETYPE("simulated-tempering", ir->bSimTemp, yesno_names);
-    EETYPE("simulated-tempering-scaling", ir->simtempvals->eSimTempScale, esimtemp_names);
-    RTYPE("sim-temp-low", ir->simtempvals->simtemp_low, 300.0);
-    RTYPE("sim-temp-high", ir->simtempvals->simtemp_high, 300.0);
+    printStringNewline(&inp, "simulated tempering variables");
+    ir->bSimTemp                   = (get_eeenum(&inp, "simulated-tempering", yesno_names, wi) != 0);
+    ir->simtempvals->eSimTempScale = get_eeenum(&inp, "simulated-tempering-scaling", esimtemp_names, wi);
+    ir->simtempvals->simtemp_low   = get_ereal(&inp, "sim-temp-low", 300.0, wi);
+    ir->simtempvals->simtemp_high  = get_ereal(&inp, "sim-temp-high", 300.0, wi);
 
     /* expanded ensemble variables */
     if (ir->efep == efepEXPANDED || ir->bSimTemp)
     {
-        read_expandedparams(&ninp, &inp, expand, wi);
+        read_expandedparams(&inp, expand, wi);
     }
 
     /* Electric fields */
     {
-        gmx::KeyValueTreeObject      convertedValues = flatKeyValueTreeFromInpFile(ninp, inp);
+        gmx::KeyValueTreeObject      convertedValues = flatKeyValueTreeFromInpFile(inp);
         gmx::KeyValueTreeTransformer transform;
         transform.rules()->addRule()
             .keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
@@ -2201,19 +2215,21 @@ void get_ir(const char *mdparin, const char *mdparout,
         for (const auto &path : transform.mappedPaths())
         {
             GMX_ASSERT(path.size() == 1, "Inconsistent mapping back to mdp options");
-            mark_einp_set(ninp, inp, path[0].c_str());
+            mark_einp_set(inp, path[0].c_str());
         }
         gmx::MdpErrorHandler              errorHandler(wi);
         auto                         result
-            = transform.transform(convertedValues, &errorHandler);
+                   = transform.transform(convertedValues, &errorHandler);
+        ir->params = new gmx::KeyValueTreeObject(result.object());
+        mdModules->adjustInputrecBasedOnModules(ir);
         errorHandler.setBackMapping(result.backMapping());
-        mdModules->assignOptionsToModulesFromMdp(result.object(), &errorHandler);
+        mdModules->assignOptionsToModules(*ir->params, &errorHandler);
     }
 
     /* Ion/water position swapping ("computational electrophysiology") */
-    CCTYPE("Ion/water position swapping for computational electrophysiology setups");
-    CTYPE("Swap positions along direction: no, X, Y, Z");
-    EETYPE("swapcoords", ir->eSwapCoords, eSwapTypes_names);
+    printStringNewline(&inp, "Ion/water position swapping for computational electrophysiology setups");
+    printStringNoNewline(&inp, "Swap positions along direction: no, X, Y, Z");
+    ir->eSwapCoords = get_eeenum(&inp, "swapcoords", eSwapTypes_names, wi);
     if (ir->eSwapCoords != eswapNO)
     {
         char buf[STRLEN];
@@ -2221,10 +2237,10 @@ void get_ir(const char *mdparin, const char *mdparout,
 
 
         snew(ir->swap, 1);
-        CTYPE("Swap attempt frequency");
-        ITYPE("swap-frequency", ir->swap->nstswap, 1);
-        CTYPE("Number of ion types to be controlled");
-        ITYPE("iontypes", nIonTypes, 1);
+        printStringNoNewline(&inp, "Swap attempt frequency");
+        ir->swap->nstswap = get_eint(&inp, "swap-frequency", 1, wi);
+        printStringNoNewline(&inp, "Number of ion types to be controlled");
+        nIonTypes = get_eint(&inp, "iontypes", 1, wi);
         if (nIonTypes < 1)
         {
             warning_error(wi, "You need to provide at least one ion type for position exchanges.");
@@ -2235,84 +2251,92 @@ void get_ir(const char *mdparin, const char *mdparout,
         {
             snew(ir->swap->grp[i].molname, STRLEN);
         }
-        CTYPE("Two index groups that contain the compartment-partitioning atoms");
-        STYPE("split-group0", ir->swap->grp[eGrpSplit0].molname, nullptr);
-        STYPE("split-group1", ir->swap->grp[eGrpSplit1].molname, nullptr);
-        CTYPE("Use center of mass of split groups (yes/no), otherwise center of geometry is used");
-        EETYPE("massw-split0", ir->swap->massw_split[0], yesno_names);
-        EETYPE("massw-split1", ir->swap->massw_split[1], yesno_names);
+        printStringNoNewline(&inp, "Two index groups that contain the compartment-partitioning atoms");
+        setStringEntry(&inp, "split-group0", ir->swap->grp[eGrpSplit0].molname, nullptr);
+        setStringEntry(&inp, "split-group1", ir->swap->grp[eGrpSplit1].molname, nullptr);
+        printStringNoNewline(&inp, "Use center of mass of split groups (yes/no), otherwise center of geometry is used");
+        ir->swap->massw_split[0] = (get_eeenum(&inp, "massw-split0", yesno_names, wi) != 0);
+        ir->swap->massw_split[1] = (get_eeenum(&inp, "massw-split1", yesno_names, wi) != 0);
 
-        CTYPE("Name of solvent molecules");
-        STYPE("solvent-group", ir->swap->grp[eGrpSolvent].molname, nullptr);
+        printStringNoNewline(&inp, "Name of solvent molecules");
+        setStringEntry(&inp, "solvent-group", ir->swap->grp[eGrpSolvent].molname, nullptr);
 
-        CTYPE("Split cylinder: radius, upper and lower extension (nm) (this will define the channels)");
-        CTYPE("Note that the split cylinder settings do not have an influence on the swapping protocol,");
-        CTYPE("however, if correctly defined, the permeation events are recorded per channel");
-        RTYPE("cyl0-r", ir->swap->cyl0r, 2.0);
-        RTYPE("cyl0-up", ir->swap->cyl0u, 1.0);
-        RTYPE("cyl0-down", ir->swap->cyl0l, 1.0);
-        RTYPE("cyl1-r", ir->swap->cyl1r, 2.0);
-        RTYPE("cyl1-up", ir->swap->cyl1u, 1.0);
-        RTYPE("cyl1-down", ir->swap->cyl1l, 1.0);
+        printStringNoNewline(&inp, "Split cylinder: radius, upper and lower extension (nm) (this will define the channels)");
+        printStringNoNewline(&inp, "Note that the split cylinder settings do not have an influence on the swapping protocol,");
+        printStringNoNewline(&inp, "however, if correctly defined, the permeation events are recorded per channel");
+        ir->swap->cyl0r = get_ereal(&inp, "cyl0-r", 2.0, wi);
+        ir->swap->cyl0u = get_ereal(&inp, "cyl0-up", 1.0, wi);
+        ir->swap->cyl0l = get_ereal(&inp, "cyl0-down", 1.0, wi);
+        ir->swap->cyl1r = get_ereal(&inp, "cyl1-r", 2.0, wi);
+        ir->swap->cyl1u = get_ereal(&inp, "cyl1-up", 1.0, wi);
+        ir->swap->cyl1l = get_ereal(&inp, "cyl1-down", 1.0, wi);
 
-        CTYPE("Average the number of ions per compartment over these many swap attempt steps");
-        ITYPE("coupl-steps", ir->swap->nAverage, 10);
+        printStringNoNewline(&inp, "Average the number of ions per compartment over these many swap attempt steps");
+        ir->swap->nAverage = get_eint(&inp, "coupl-steps", 10, wi);
 
-        CTYPE("Names of the ion types that can be exchanged with solvent molecules,");
-        CTYPE("and the requested number of ions of this type in compartments A and B");
-        CTYPE("-1 means fix the numbers as found in step 0");
+        printStringNoNewline(&inp, "Names of the ion types that can be exchanged with solvent molecules,");
+        printStringNoNewline(&inp, "and the requested number of ions of this type in compartments A and B");
+        printStringNoNewline(&inp, "-1 means fix the numbers as found in step 0");
         for (i = 0; i < nIonTypes; i++)
         {
             int ig = eSwapFixedGrpNR + i;
 
             sprintf(buf, "iontype%d-name", i);
-            STYPE(buf, ir->swap->grp[ig].molname, nullptr);
+            setStringEntry(&inp, buf, ir->swap->grp[ig].molname, nullptr);
             sprintf(buf, "iontype%d-in-A", i);
-            ITYPE(buf, ir->swap->grp[ig].nmolReq[0], -1);
+            ir->swap->grp[ig].nmolReq[0] = get_eint(&inp, buf, -1, wi);
             sprintf(buf, "iontype%d-in-B", i);
-            ITYPE(buf, ir->swap->grp[ig].nmolReq[1], -1);
+            ir->swap->grp[ig].nmolReq[1] = get_eint(&inp, buf, -1, wi);
         }
 
-        CTYPE("By default (i.e. bulk offset = 0.0), ion/water exchanges happen between layers");
-        CTYPE("at maximum distance (= bulk concentration) to the split group layers. However,");
-        CTYPE("an offset b (-1.0 < b < +1.0) can be specified to offset the bulk layer from the middle at 0.0");
-        CTYPE("towards one of the compartment-partitioning layers (at +/- 1.0).");
-        RTYPE("bulk-offsetA", ir->swap->bulkOffset[0], 0.0);
-        RTYPE("bulk-offsetB", ir->swap->bulkOffset[1], 0.0);
+        printStringNoNewline(&inp, "By default (i.e. bulk offset = 0.0), ion/water exchanges happen between layers");
+        printStringNoNewline(&inp, "at maximum distance (= bulk concentration) to the split group layers. However,");
+        printStringNoNewline(&inp, "an offset b (-1.0 < b < +1.0) can be specified to offset the bulk layer from the middle at 0.0");
+        printStringNoNewline(&inp, "towards one of the compartment-partitioning layers (at +/- 1.0).");
+        ir->swap->bulkOffset[0] = get_ereal(&inp, "bulk-offsetA", 0.0, wi);
+        ir->swap->bulkOffset[1] = get_ereal(&inp, "bulk-offsetB", 0.0, wi);
         if (!(ir->swap->bulkOffset[0] > -1.0 && ir->swap->bulkOffset[0] < 1.0)
             || !(ir->swap->bulkOffset[1] > -1.0 && ir->swap->bulkOffset[1] < 1.0) )
         {
             warning_error(wi, "Bulk layer offsets must be > -1.0 and < 1.0 !");
         }
 
-        CTYPE("Start to swap ions if threshold difference to requested count is reached");
-        RTYPE("threshold", ir->swap->threshold, 1.0);
+        printStringNoNewline(&inp, "Start to swap ions if threshold difference to requested count is reached");
+        ir->swap->threshold = get_ereal(&inp, "threshold", 1.0, wi);
     }
 
-    /* AdResS is no longer supported, but we need mdrun to be able to refuse to run old AdResS .tpr files */
-    EETYPE("adress", ir->bAdress, yesno_names);
+    /* AdResS is no longer supported, but we need grompp to be able to
+       refuse to process old .mdp files that used it. */
+    ir->bAdress = (get_eeenum(&inp, "adress", no_names, wi) != 0);
 
     /* User defined thingies */
-    CCTYPE ("User defined thingies");
-    STYPE ("user1-grps",  is->user1,          nullptr);
-    STYPE ("user2-grps",  is->user2,          nullptr);
-    ITYPE ("userint1",    ir->userint1,   0);
-    ITYPE ("userint2",    ir->userint2,   0);
-    ITYPE ("userint3",    ir->userint3,   0);
-    ITYPE ("userint4",    ir->userint4,   0);
-    RTYPE ("userreal1",   ir->userreal1,  0);
-    RTYPE ("userreal2",   ir->userreal2,  0);
-    RTYPE ("userreal3",   ir->userreal3,  0);
-    RTYPE ("userreal4",   ir->userreal4,  0);
+    printStringNewline(&inp, "User defined thingies");
+    setStringEntry(&inp, "user1-grps",  is->user1,          nullptr);
+    setStringEntry(&inp, "user2-grps",  is->user2,          nullptr);
+    ir->userint1  = get_eint(&inp, "userint1",   0, wi);
+    ir->userint2  = get_eint(&inp, "userint2",   0, wi);
+    ir->userint3  = get_eint(&inp, "userint3",   0, wi);
+    ir->userint4  = get_eint(&inp, "userint4",   0, wi);
+    ir->userreal1 = get_ereal(&inp, "userreal1",  0, wi);
+    ir->userreal2 = get_ereal(&inp, "userreal2",  0, wi);
+    ir->userreal3 = get_ereal(&inp, "userreal3",  0, wi);
+    ir->userreal4 = get_ereal(&inp, "userreal4",  0, wi);
 #undef CTYPE
 
-    write_inpfile(mdparout, ninp, inp, FALSE, wi);
-    for (i = 0; (i < ninp); i++)
     {
-        sfree(inp[i].name);
-        sfree(inp[i].value);
+        gmx::TextOutputFile stream(mdparout);
+        write_inpfile(&stream, mdparout, &inp, FALSE, writeMdpHeader, wi);
+
+        // Transform module data into a flat key-value tree for output.
+        gmx::KeyValueTreeBuilder       builder;
+        gmx::KeyValueTreeObjectBuilder builderObject = builder.rootObject();
+        mdModules->buildMdpOutput(&builderObject);
+        {
+            gmx::TextWriter writer(&stream);
+            writeKeyValueTreeAsMdp(&writer, builder.build());
+        }
+        stream.close();
     }
-    sfree(inp);
 
     /* Process options if necessary */
     for (m = 0; m < 2; m++)
@@ -2473,11 +2497,11 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     /* WALL PARAMETERS */
 
-    do_wall_params(ir, is->wall_atomtype, is->wall_density, opts);
+    do_wall_params(ir, is->wall_atomtype, is->wall_density, opts, wi);
 
     /* ORIENTATION RESTRAINT PARAMETERS */
 
-    if (opts->bOrire && str_nelem(is->orirefitgrp, MAXPTR, nullptr) != 1)
+    if (opts->bOrire && gmx::splitString(is->orirefitgrp).size() != 1)
     {
         warning_error(wi, "ERROR: Need one orientation restraint fit group\n");
     }
@@ -2497,8 +2521,7 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     if (strlen(is->deform) > 0 && ndeform != 6)
     {
-        sprintf(warn_buf, "Cannot parse exactly 6 box deformation velocities from string '%s'", is->deform);
-        warning_error(wi, warn_buf);
+        warning_error(wi, gmx::formatString("Cannot parse exactly 6 box deformation velocities from string '%s'", is->deform).c_str());
     }
     for (i = 0; i < 3; i++)
     {
@@ -2573,9 +2596,6 @@ static int search_QMstring(const char *s, int ng, const char *gn[])
     }
 
     gmx_fatal(FARGS, "this QM method or basisset (%s) is not implemented\n!", s);
-
-    return -1;
-
 } /* search_QMstring */
 
 /* We would like gn to be const as well, but C doesn't allow this */
@@ -2600,49 +2620,39 @@ int search_string(const char *s, int ng, char *gn[])
               "names, in which case you must supply an index file to the '-n' option\n"
               "of grompp.",
               s);
-
-    return -1;
 }
 
-static gmx_bool do_numbering(int natoms, gmx_groups_t *groups, int ng, char *ptrs[],
-                             t_blocka *block, char *gnames[],
-                             int gtype, int restnm,
-                             int grptp, gmx_bool bVerbose,
-                             warninp_t wi)
+static bool do_numbering(int natoms, gmx_groups_t *groups,
+                         gmx::ArrayRef<std::string> groupsFromMdpFile,
+                         t_blocka *block, char *gnames[],
+                         int gtype, int restnm,
+                         int grptp, bool bVerbose,
+                         warninp_t wi)
 {
     unsigned short *cbuf;
     t_grps         *grps = &(groups->grps[gtype]);
-    int             i, j, gid, aj, ognr, ntot = 0;
+    int             j, gid, aj, ognr, ntot = 0;
     const char     *title;
-    gmx_bool        bRest;
+    bool            bRest;
     char            warn_buf[STRLEN];
-
-    if (debug)
-    {
-        fprintf(debug, "Starting numbering %d groups of type %d\n", ng, gtype);
-    }
 
     title = gtypes[gtype];
 
     snew(cbuf, natoms);
     /* Mark all id's as not set */
-    for (i = 0; (i < natoms); i++)
+    for (int i = 0; (i < natoms); i++)
     {
         cbuf[i] = NOGID;
     }
 
-    snew(grps->nm_ind, ng+1); /* +1 for possible rest group */
-    for (i = 0; (i < ng); i++)
+    snew(grps->nm_ind, groupsFromMdpFile.size()+1); /* +1 for possible rest group */
+    for (int i = 0; i != groupsFromMdpFile.size(); ++i)
     {
         /* Lookup the group name in the block structure */
-        gid = search_string(ptrs[i], block->nr, gnames);
+        gid = search_string(groupsFromMdpFile[i].c_str(), block->nr, gnames);
         if ((grptp != egrptpONE) || (i == 0))
         {
             grps->nm_ind[grps->nr++] = gid;
-        }
-        if (debug)
-        {
-            fprintf(debug, "Found gid %d for group %s\n", gid, ptrs[i]);
         }
 
         /* Now go over the atoms in the group */
@@ -2747,20 +2757,17 @@ static gmx_bool do_numbering(int natoms, gmx_groups_t *groups, int ng, char *ptr
     return (bRest && grptp == egrptpPART);
 }
 
-static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
+static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
 {
     t_grpopts              *opts;
-    gmx_groups_t           *groups;
+    const gmx_groups_t     *groups;
     pull_params_t          *pull;
     int                     natoms, ai, aj, i, j, d, g, imin, jmin;
-    t_iatom                *ia;
     int                    *nrdf2, *na_vcm, na_tot;
     double                 *nrdf_tc, *nrdf_vcm, nrdf_uc, *nrdf_vcm_sub;
     ivec                   *dof_vcm;
     gmx_mtop_atomloop_all_t aloop;
-    int                     mb, mol, ftype, as;
-    gmx_molblock_t         *molb;
-    gmx_moltype_t          *molt;
+    int                     mol, ftype, as;
 
     /* Calculate nrdf.
      * First calc 3xnr-atoms for each group
@@ -2804,7 +2811,7 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
         nrdf2[i] = 0;
         if (atom->ptype == eptAtom || atom->ptype == eptNucleus)
         {
-            g = ggrpnr(groups, egcFREEZE, i);
+            g = getGroupType(groups, egcFREEZE, i);
             for (d = 0; d < DIM; d++)
             {
                 if (opts->nFreeze[g][d] == 0)
@@ -2812,26 +2819,25 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                     /* Add one DOF for particle i (counted as 2*1) */
                     nrdf2[i]                              += 2;
                     /* VCM group i has dim d as a DOF */
-                    dof_vcm[ggrpnr(groups, egcVCM, i)][d]  = 1;
+                    dof_vcm[getGroupType(groups, egcVCM, i)][d]  = 1;
                 }
             }
-            nrdf_tc [ggrpnr(groups, egcTC, i)]  += 0.5*nrdf2[i];
-            nrdf_vcm[ggrpnr(groups, egcVCM, i)] += 0.5*nrdf2[i];
+            nrdf_tc [getGroupType(groups, egcTC, i)]  += 0.5*nrdf2[i];
+            nrdf_vcm[getGroupType(groups, egcVCM, i)] += 0.5*nrdf2[i];
         }
     }
 
     as = 0;
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        molb = &mtop->molblock[mb];
-        molt = &mtop->moltype[molb->type];
-        atom = molt->atoms.atom;
-        for (mol = 0; mol < molb->nmol; mol++)
+        const gmx_moltype_t &molt = mtop->moltype[molb.type];
+        atom = molt.atoms.atom;
+        for (mol = 0; mol < molb.nmol; mol++)
         {
             for (ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
             {
-                ia = molt->ilist[ftype].iatoms;
-                for (i = 0; i < molt->ilist[ftype].nr; )
+                gmx::ArrayRef<const int> ia = molt.ilist[ftype].iatoms;
+                for (i = 0; i < molt.ilist[ftype].size(); )
                 {
                     /* Subtract degrees of freedom for the constraints,
                      * if the particles still have degrees of freedom left.
@@ -2840,12 +2846,12 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                      * contribute to the constraints the degrees of freedom do not
                      * change.
                      */
-                    ai = as + ia[1];
-                    aj = as + ia[2];
-                    if (((atom[ia[1]].ptype == eptNucleus) ||
-                         (atom[ia[1]].ptype == eptAtom)) &&
-                        ((atom[ia[2]].ptype == eptNucleus) ||
-                         (atom[ia[2]].ptype == eptAtom)))
+                    ai = as + ia[i + 1];
+                    aj = as + ia[i + 2];
+                    if (((atom[ia[i + 1]].ptype == eptNucleus) ||
+                         (atom[ia[i + 1]].ptype == eptAtom)) &&
+                        ((atom[ia[i + 2]].ptype == eptNucleus) ||
+                         (atom[ia[i + 2]].ptype == eptAtom)))
                     {
                         if (nrdf2[ai] > 0)
                         {
@@ -2867,31 +2873,29 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                         jmin       = std::min(jmin, nrdf2[aj]);
                         nrdf2[ai] -= imin;
                         nrdf2[aj] -= jmin;
-                        nrdf_tc [ggrpnr(groups, egcTC, ai)]  -= 0.5*imin;
-                        nrdf_tc [ggrpnr(groups, egcTC, aj)]  -= 0.5*jmin;
-                        nrdf_vcm[ggrpnr(groups, egcVCM, ai)] -= 0.5*imin;
-                        nrdf_vcm[ggrpnr(groups, egcVCM, aj)] -= 0.5*jmin;
+                        nrdf_tc [getGroupType(groups, egcTC, ai)]  -= 0.5*imin;
+                        nrdf_tc [getGroupType(groups, egcTC, aj)]  -= 0.5*jmin;
+                        nrdf_vcm[getGroupType(groups, egcVCM, ai)] -= 0.5*imin;
+                        nrdf_vcm[getGroupType(groups, egcVCM, aj)] -= 0.5*jmin;
                     }
-                    ia += interaction_function[ftype].nratoms+1;
                     i  += interaction_function[ftype].nratoms+1;
                 }
             }
-            ia = molt->ilist[F_SETTLE].iatoms;
-            for (i = 0; i < molt->ilist[F_SETTLE].nr; )
+            gmx::ArrayRef<const int> ia = molt.ilist[F_SETTLE].iatoms;
+            for (i = 0; i < molt.ilist[F_SETTLE].size(); )
             {
                 /* Subtract 1 dof from every atom in the SETTLE */
                 for (j = 0; j < 3; j++)
                 {
-                    ai         = as + ia[1+j];
+                    ai         = as + ia[i + 1 + j];
                     imin       = std::min(2, nrdf2[ai]);
                     nrdf2[ai] -= imin;
-                    nrdf_tc [ggrpnr(groups, egcTC, ai)]  -= 0.5*imin;
-                    nrdf_vcm[ggrpnr(groups, egcVCM, ai)] -= 0.5*imin;
+                    nrdf_tc [getGroupType(groups, egcTC, ai)]  -= 0.5*imin;
+                    nrdf_vcm[getGroupType(groups, egcVCM, ai)] -= 0.5*imin;
                 }
-                ia += 4;
                 i  += 4;
             }
-            as += molt->atoms.nr;
+            as += molt.atoms.nr;
         }
     }
 
@@ -2924,11 +2928,11 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                 {
                     /* Subtract 1/2 dof from each group */
                     ai = pgrp->ind[0];
-                    nrdf_tc [ggrpnr(groups, egcTC, ai)]  -= 0.5*imin;
-                    nrdf_vcm[ggrpnr(groups, egcVCM, ai)] -= 0.5*imin;
-                    if (nrdf_tc[ggrpnr(groups, egcTC, ai)] < 0)
+                    nrdf_tc [getGroupType(groups, egcTC, ai)]  -= 0.5*imin;
+                    nrdf_vcm[getGroupType(groups, egcVCM, ai)] -= 0.5*imin;
+                    if (nrdf_tc[getGroupType(groups, egcTC, ai)] < 0)
                     {
-                        gmx_fatal(FARGS, "Center of mass pulling constraints caused the number of degrees of freedom for temperature coupling group %s to be negative", gnames[groups->grps[egcTC].nm_ind[ggrpnr(groups, egcTC, ai)]]);
+                        gmx_fatal(FARGS, "Center of mass pulling constraints caused the number of degrees of freedom for temperature coupling group %s to be negative", gnames[groups->grps[egcTC].nm_ind[getGroupType(groups, egcTC, ai)]]);
                     }
                 }
                 else
@@ -2956,6 +2960,7 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
             switch (ir->comm_mode)
             {
                 case ecmLINEAR:
+                case ecmLINEAR_ACCELERATION_CORRECTION:
                     nrdf_vcm_sub[j] = 0;
                     for (d = 0; d < ndim_rm_vcm; d++)
                     {
@@ -2983,32 +2988,23 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
             na_tot = 0;
             for (ai = 0; ai < natoms; ai++)
             {
-                if (ggrpnr(groups, egcTC, ai) == i)
+                if (getGroupType(groups, egcTC, ai) == i)
                 {
-                    na_vcm[ggrpnr(groups, egcVCM, ai)]++;
+                    na_vcm[getGroupType(groups, egcVCM, ai)]++;
                     na_tot++;
                 }
             }
             /* Correct for VCM removal according to the fraction of each VCM
              * group present in this TC group.
              */
-            nrdf_uc = nrdf_tc[i];
-            if (debug)
-            {
-                fprintf(debug, "T-group[%d] nrdf_uc = %g\n", i, nrdf_uc);
-            }
+            nrdf_uc    = nrdf_tc[i];
             nrdf_tc[i] = 0;
             for (j = 0; j < groups->grps[egcVCM].nr+1; j++)
             {
                 if (nrdf_vcm[j] > nrdf_vcm_sub[j])
                 {
-                    nrdf_tc[i] += nrdf_uc*((double)na_vcm[j]/(double)na_tot)*
+                    nrdf_tc[i] += nrdf_uc*(static_cast<double>(na_vcm[j])/static_cast<double>(na_tot))*
                         (nrdf_vcm[j] - nrdf_vcm_sub[j])/nrdf_vcm[j];
-                }
-                if (debug)
-                {
-                    fprintf(debug, "  nrdf_vcm[%d] = %g, nrdf = %g\n",
-                            j, nrdf_vcm[j], nrdf_tc[i]);
                 }
             }
         }
@@ -3033,51 +3029,50 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     sfree(nrdf_vcm_sub);
 }
 
-static gmx_bool do_egp_flag(t_inputrec *ir, gmx_groups_t *groups,
-                            const char *option, const char *val, int flag)
+static bool do_egp_flag(t_inputrec *ir, gmx_groups_t *groups,
+                        const char *option, const char *val, int flag)
 {
     /* The maximum number of energy group pairs would be MAXPTR*(MAXPTR+1)/2.
      * But since this is much larger than STRLEN, such a line can not be parsed.
      * The real maximum is the number of names that fit in a string: STRLEN/2.
      */
 #define EGP_MAX (STRLEN/2)
-    int      nelem, i, j, k, nr;
-    char    *names[EGP_MAX];
+    int      j, k, nr;
     char  ***gnames;
-    gmx_bool bSet;
+    bool     bSet;
 
     gnames = groups->grpname;
 
-    nelem = str_nelem(val, EGP_MAX, names);
-    if (nelem % 2 != 0)
+    auto names = gmx::splitString(val);
+    if (names.size() % 2 != 0)
     {
         gmx_fatal(FARGS, "The number of groups for %s is odd", option);
     }
     nr   = groups->grps[egcENER].nr;
     bSet = FALSE;
-    for (i = 0; i < nelem/2; i++)
+    for (size_t i = 0; i < names.size() / 2; i++)
     {
         j = 0;
         while ((j < nr) &&
-               gmx_strcasecmp(names[2*i], *(gnames[groups->grps[egcENER].nm_ind[j]])))
+               gmx_strcasecmp(names[2*i].c_str(), *(gnames[groups->grps[egcENER].nm_ind[j]])))
         {
             j++;
         }
         if (j == nr)
         {
             gmx_fatal(FARGS, "%s in %s is not an energy group\n",
-                      names[2*i], option);
+                      names[2*i].c_str(), option);
         }
         k = 0;
         while ((k < nr) &&
-               gmx_strcasecmp(names[2*i+1], *(gnames[groups->grps[egcENER].nm_ind[k]])))
+               gmx_strcasecmp(names[2*i+1].c_str(), *(gnames[groups->grps[egcENER].nm_ind[k]])))
         {
             k++;
         }
         if (k == nr)
         {
             gmx_fatal(FARGS, "%s in %s is not an energy group\n",
-                      names[2*i+1], option);
+                      names[2*i+1].c_str(), option);
         }
         if ((j < nr) && (k < nr))
         {
@@ -3132,7 +3127,7 @@ static void make_swap_groups(
 }
 
 
-void make_IMD_group(t_IMD *IMDgroup, char *IMDgname, t_blocka *grps, char **gnames)
+static void make_IMD_group(t_IMD *IMDgroup, char *IMDgname, t_blocka *grps, char **gnames)
 {
     int      ig, i;
 
@@ -3152,10 +3147,9 @@ void make_IMD_group(t_IMD *IMDgroup, char *IMDgname, t_blocka *grps, char **gnam
     }
 }
 
-
 void do_index(const char* mdparin, const char *ndx,
               gmx_mtop_t *mtop,
-              gmx_bool bVerbose,
+              bool bVerbose,
               t_inputrec *ir,
               warninp_t wi)
 {
@@ -3165,16 +3159,12 @@ void do_index(const char* mdparin, const char *ndx,
     t_symtab     *symtab;
     t_atoms       atoms_all;
     char          warnbuf[STRLEN], **gnames;
-    int           nr, ntcg, ntau_t, nref_t, nacc, nofg, nSA, nSA_points, nSA_time, nSA_temp;
+    int           nr;
     real          tau_min;
     int           nstcmin;
-    int           nacg, nfreeze, nfrdim, nenergy, nvcm, nuser;
-    char         *ptr1[MAXPTR], *ptr2[MAXPTR], *ptr3[MAXPTR];
     int           i, j, k, restnm;
-    gmx_bool      bExcl, bTable, bSetTCpar, bAnneal, bRest;
-    int           nQMmethod, nQMbasis, nQMg;
+    bool          bExcl, bTable, bAnneal, bRest;
     char          warn_buf[STRLEN];
-    char*         endptr;
 
     if (bVerbose)
     {
@@ -3212,18 +3202,22 @@ void do_index(const char* mdparin, const char *ndx,
 
     set_warning_line(wi, mdparin, -1);
 
-    ntau_t = str_nelem(is->tau_t, MAXPTR, ptr1);
-    nref_t = str_nelem(is->ref_t, MAXPTR, ptr2);
-    ntcg   = str_nelem(is->tcgrps, MAXPTR, ptr3);
-    if ((ntau_t != ntcg) || (nref_t != ntcg))
+    auto temperatureCouplingTauValues       = gmx::splitString(is->tau_t);
+    auto temperatureCouplingReferenceValues = gmx::splitString(is->ref_t);
+    auto temperatureCouplingGroupNames      = gmx::splitString(is->tcgrps);
+    if (temperatureCouplingTauValues.size() != temperatureCouplingGroupNames.size() ||
+        temperatureCouplingReferenceValues.size() != temperatureCouplingGroupNames.size())
     {
-        gmx_fatal(FARGS, "Invalid T coupling input: %d groups, %d ref-t values and "
-                  "%d tau-t values", ntcg, nref_t, ntau_t);
+        gmx_fatal(FARGS, "Invalid T coupling input: %zu groups, %zu ref-t values and "
+                  "%zu tau-t values",
+                  temperatureCouplingGroupNames.size(),
+                  temperatureCouplingReferenceValues.size(),
+                  temperatureCouplingTauValues.size());
     }
 
-    bSetTCpar = (ir->etc || EI_SD(ir->eI) || ir->eI == eiBD || EI_TPI(ir->eI));
-    do_numbering(natoms, groups, ntcg, ptr3, grps, gnames, egcTC,
-                 restnm, bSetTCpar ? egrptpALL : egrptpALL_GENREST, bVerbose, wi);
+    const bool useReferenceTemperature = integratorHasReferenceTemperature(ir);
+    do_numbering(natoms, groups, temperatureCouplingGroupNames, grps, gnames, egcTC,
+                 restnm, useReferenceTemperature ? egrptpALL : egrptpALL_GENREST, bVerbose, wi);
     nr            = groups->grps[egcTC].nr;
     ir->opts.ngtc = nr;
     snew(ir->opts.nrdf, nr);
@@ -3234,21 +3228,17 @@ void do_index(const char* mdparin, const char *ndx,
         fprintf(stderr, "bd-fric=0, so tau-t will be used as the inverse friction constant(s)\n");
     }
 
-    if (bSetTCpar)
+    if (useReferenceTemperature)
     {
-        if (nr != nref_t)
+        if (size_t(nr) != temperatureCouplingReferenceValues.size())
         {
             gmx_fatal(FARGS, "Not enough ref-t and tau-t values!");
         }
 
         tau_min = 1e20;
+        convertReals(wi, temperatureCouplingTauValues, "tau-t", ir->opts.tau_t);
         for (i = 0; (i < nr); i++)
         {
-            ir->opts.tau_t[i] = strtod(ptr1[i], &endptr);
-            if (*endptr != 0)
-            {
-                warning_error(wi, "Invalid value for mdp option tau-t. tau-t should only consist of real numbers separated by spaces.");
-            }
             if ((ir->eI == eiBD) && ir->opts.tau_t[i] <= 0)
             {
                 sprintf(warn_buf, "With integrator %s tau-t should be larger than 0", ei_names[ir->eI]);
@@ -3318,13 +3308,9 @@ void do_index(const char* mdparin, const char *ndx,
                 warning(wi, warn_buf);
             }
         }
+        convertReals(wi, temperatureCouplingReferenceValues, "ref-t", ir->opts.ref_t);
         for (i = 0; (i < nr); i++)
         {
-            ir->opts.ref_t[i] = strtod(ptr2[i], &endptr);
-            if (*endptr != 0)
-            {
-                warning_error(wi, "Invalid value for mdp option ref-t. ref-t should only consist of real numbers separated by spaces.");
-            }
             if (ir->opts.ref_t[i] < 0)
             {
                 gmx_fatal(FARGS, "ref-t for group %d negative", i);
@@ -3339,14 +3325,17 @@ void do_index(const char* mdparin, const char *ndx,
     }
 
     /* Simulated annealing for each group. There are nr groups */
-    nSA = str_nelem(is->anneal, MAXPTR, ptr1);
-    if (nSA == 1 && (ptr1[0][0] == 'n' || ptr1[0][0] == 'N'))
+    auto simulatedAnnealingGroupNames = gmx::splitString(is->anneal);
+    if (simulatedAnnealingGroupNames.size() == 1 &&
+        gmx_strncasecmp(simulatedAnnealingGroupNames[0].c_str(), "N", 1) == 0)
     {
-        nSA = 0;
+        simulatedAnnealingGroupNames.resize(0);
     }
-    if (nSA > 0 && nSA != nr)
+    if (!simulatedAnnealingGroupNames.empty() &&
+        simulatedAnnealingGroupNames.size() != size_t(nr))
     {
-        gmx_fatal(FARGS, "Not enough annealing values: %d (for %d groups)\n", nSA, nr);
+        gmx_fatal(FARGS, "Not enough annealing values: %zu (for %d groups)\n",
+                  simulatedAnnealingGroupNames.size(), nr);
     }
     else
     {
@@ -3361,21 +3350,21 @@ void do_index(const char* mdparin, const char *ndx,
             ir->opts.anneal_time[i]    = nullptr;
             ir->opts.anneal_temp[i]    = nullptr;
         }
-        if (nSA > 0)
+        if (!simulatedAnnealingGroupNames.empty())
         {
             bAnneal = FALSE;
             for (i = 0; i < nr; i++)
             {
-                if (ptr1[i][0] == 'n' || ptr1[i][0] == 'N')
+                if (gmx_strncasecmp(simulatedAnnealingGroupNames[i].c_str(), "N", 1) == 0)
                 {
                     ir->opts.annealing[i] = eannNO;
                 }
-                else if (ptr1[i][0] == 's' || ptr1[i][0] == 'S')
+                else if (gmx_strncasecmp(simulatedAnnealingGroupNames[i].c_str(), "S", 1) == 0)
                 {
                     ir->opts.annealing[i] = eannSINGLE;
                     bAnneal               = TRUE;
                 }
-                else if (ptr1[i][0] == 'p' || ptr1[i][0] == 'P')
+                else if (gmx_strncasecmp(simulatedAnnealingGroupNames[i].c_str(), "P", 1) == 0)
                 {
                     ir->opts.annealing[i] = eannPERIODIC;
                     bAnneal               = TRUE;
@@ -3384,18 +3373,15 @@ void do_index(const char* mdparin, const char *ndx,
             if (bAnneal)
             {
                 /* Read the other fields too */
-                nSA_points = str_nelem(is->anneal_npoints, MAXPTR, ptr1);
-                if (nSA_points != nSA)
+                auto simulatedAnnealingPoints = gmx::splitString(is->anneal_npoints);
+                if (simulatedAnnealingPoints.size() != simulatedAnnealingGroupNames.size())
                 {
-                    gmx_fatal(FARGS, "Found %d annealing-npoints values for %d groups\n", nSA_points, nSA);
+                    gmx_fatal(FARGS, "Found %zu annealing-npoints values for %zu groups\n",
+                              simulatedAnnealingPoints.size(), simulatedAnnealingGroupNames.size());
                 }
+                convertInts(wi, simulatedAnnealingPoints, "annealing points", ir->opts.anneal_npoints);
                 for (k = 0, i = 0; i < nr; i++)
                 {
-                    ir->opts.anneal_npoints[i] = strtol(ptr1[i], &endptr, 10);
-                    if (*endptr != 0)
-                    {
-                        warning_error(wi, "Invalid value for mdp option annealing-npoints. annealing should only consist of integers separated by spaces.");
-                    }
                     if (ir->opts.anneal_npoints[i] == 1)
                     {
                         gmx_fatal(FARGS, "Please specify at least a start and an end point for annealing\n");
@@ -3405,32 +3391,25 @@ void do_index(const char* mdparin, const char *ndx,
                     k += ir->opts.anneal_npoints[i];
                 }
 
-                nSA_time = str_nelem(is->anneal_time, MAXPTR, ptr1);
-                if (nSA_time != k)
+                auto simulatedAnnealingTimes = gmx::splitString(is->anneal_time);
+                if (simulatedAnnealingTimes.size() != size_t(k))
                 {
-                    gmx_fatal(FARGS, "Found %d annealing-time values, wanted %d\n", nSA_time, k);
+                    gmx_fatal(FARGS, "Found %zu annealing-time values, wanted %d\n",
+                              simulatedAnnealingTimes.size(), k);
                 }
-                nSA_temp = str_nelem(is->anneal_temp, MAXPTR, ptr2);
-                if (nSA_temp != k)
+                auto simulatedAnnealingTemperatures = gmx::splitString(is->anneal_temp);
+                if (simulatedAnnealingTemperatures.size() != size_t(k))
                 {
-                    gmx_fatal(FARGS, "Found %d annealing-temp values, wanted %d\n", nSA_temp, k);
+                    gmx_fatal(FARGS, "Found %zu annealing-temp values, wanted %d\n",
+                              simulatedAnnealingTemperatures.size(), k);
                 }
 
+                convertReals(wi, simulatedAnnealingTimes, "anneal-time", ir->opts.anneal_time[i]);
+                convertReals(wi, simulatedAnnealingTemperatures, "anneal-temp", ir->opts.anneal_temp[i]);
                 for (i = 0, k = 0; i < nr; i++)
                 {
-
                     for (j = 0; j < ir->opts.anneal_npoints[i]; j++)
                     {
-                        ir->opts.anneal_time[i][j] = strtod(ptr1[k], &endptr);
-                        if (*endptr != 0)
-                        {
-                            warning_error(wi, "Invalid value for mdp option anneal-time. anneal-time should only consist of real numbers separated by spaces.");
-                        }
-                        ir->opts.anneal_temp[i][j] = strtod(ptr2[k], &endptr);
-                        if (*endptr != 0)
-                        {
-                            warning_error(wi, "Invalid value for anneal-temp. anneal-temp should only consist of real numbers separated by spaces.");
-                        }
                         if (j == 0)
                         {
                             if (ir->opts.anneal_time[i][0] > (ir->init_t+GMX_REAL_EPS))
@@ -3479,7 +3458,7 @@ void do_index(const char* mdparin, const char *ndx,
                         else
                         {
                             fprintf(stderr, "%9.1f      %5.1f\n", ir->opts.anneal_time[i][j], ir->opts.anneal_temp[i][j]);
-                            if (fabs(ir->opts.anneal_temp[i][j]-ir->opts.anneal_temp[i][0]) > GMX_REAL_EPS)
+                            if (std::fabs(ir->opts.anneal_temp[i][j]-ir->opts.anneal_temp[i][0]) > GMX_REAL_EPS)
                             {
                                 warning_note(wi, "There is a temperature jump when your annealing loops back.\n");
                             }
@@ -3513,61 +3492,44 @@ void do_index(const char* mdparin, const char *ndx,
         make_IMD_group(ir->imd, is->imd_grp, grps, gnames);
     }
 
-    nacc = str_nelem(is->acc, MAXPTR, ptr1);
-    nacg = str_nelem(is->accgrps, MAXPTR, ptr2);
-    if (nacg*DIM != nacc)
+    auto accelerations          = gmx::splitString(is->acc);
+    auto accelerationGroupNames = gmx::splitString(is->accgrps);
+    if (accelerationGroupNames.size() * DIM != accelerations.size())
     {
-        gmx_fatal(FARGS, "Invalid Acceleration input: %d groups and %d acc. values",
-                  nacg, nacc);
+        gmx_fatal(FARGS, "Invalid Acceleration input: %zu groups and %zu acc. values",
+                  accelerationGroupNames.size(), accelerations.size());
     }
-    do_numbering(natoms, groups, nacg, ptr2, grps, gnames, egcACC,
+    do_numbering(natoms, groups, accelerationGroupNames, grps, gnames, egcACC,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
     nr = groups->grps[egcACC].nr;
     snew(ir->opts.acc, nr);
     ir->opts.ngacc = nr;
 
-    for (i = k = 0; (i < nacg); i++)
-    {
-        for (j = 0; (j < DIM); j++, k++)
-        {
-            ir->opts.acc[i][j] = strtod(ptr1[k], &endptr);
-            if (*endptr != 0)
-            {
-                warning_error(wi, "Invalid value for mdp option accelerate. accelerate should only consist of real numbers separated by spaces.");
-            }
-        }
-    }
-    for (; (i < nr); i++)
-    {
-        for (j = 0; (j < DIM); j++)
-        {
-            ir->opts.acc[i][j] = 0;
-        }
-    }
+    convertRvecs(wi, accelerations, "anneal-time", ir->opts.acc);
 
-    nfrdim  = str_nelem(is->frdim, MAXPTR, ptr1);
-    nfreeze = str_nelem(is->freeze, MAXPTR, ptr2);
-    if (nfrdim != DIM*nfreeze)
+    auto freezeDims       = gmx::splitString(is->frdim);
+    auto freezeGroupNames = gmx::splitString(is->freeze);
+    if (freezeDims.size() != DIM * freezeGroupNames.size())
     {
-        gmx_fatal(FARGS, "Invalid Freezing input: %d groups and %d freeze values",
-                  nfreeze, nfrdim);
+        gmx_fatal(FARGS, "Invalid Freezing input: %zu groups and %zu freeze values",
+                  freezeGroupNames.size(), freezeDims.size());
     }
-    do_numbering(natoms, groups, nfreeze, ptr2, grps, gnames, egcFREEZE,
+    do_numbering(natoms, groups, freezeGroupNames, grps, gnames, egcFREEZE,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
     nr             = groups->grps[egcFREEZE].nr;
     ir->opts.ngfrz = nr;
     snew(ir->opts.nFreeze, nr);
-    for (i = k = 0; (i < nfreeze); i++)
+    for (i = k = 0; (size_t(i) < freezeGroupNames.size()); i++)
     {
         for (j = 0; (j < DIM); j++, k++)
         {
-            ir->opts.nFreeze[i][j] = (gmx_strncasecmp(ptr1[k], "Y", 1) == 0);
+            ir->opts.nFreeze[i][j] = static_cast<int>(gmx_strncasecmp(freezeDims[k].c_str(), "Y", 1) == 0);
             if (!ir->opts.nFreeze[i][j])
             {
-                if (gmx_strncasecmp(ptr1[k], "N", 1) != 0)
+                if (gmx_strncasecmp(freezeDims[k].c_str(), "N", 1) != 0)
                 {
                     sprintf(warnbuf, "Please use Y(ES) or N(O) for freezedim only "
-                            "(not %s)", ptr1[k]);
+                            "(not %s)", freezeDims[k].c_str());
                     warning(wi, warn_buf);
                 }
             }
@@ -3581,15 +3543,15 @@ void do_index(const char* mdparin, const char *ndx,
         }
     }
 
-    nenergy = str_nelem(is->energy, MAXPTR, ptr1);
-    do_numbering(natoms, groups, nenergy, ptr1, grps, gnames, egcENER,
+    auto energyGroupNames = gmx::splitString(is->energy);
+    do_numbering(natoms, groups, energyGroupNames, grps, gnames, egcENER,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
     add_wall_energrps(groups, ir->nwall, symtab);
     ir->opts.ngener = groups->grps[egcENER].nr;
-    nvcm            = str_nelem(is->vcm, MAXPTR, ptr1);
+    auto vcmGroupNames = gmx::splitString(is->vcm);
     bRest           =
-        do_numbering(natoms, groups, nvcm, ptr1, grps, gnames, egcVCM,
-                     restnm, nvcm == 0 ? egrptpALL_GENREST : egrptpPART, bVerbose, wi);
+        do_numbering(natoms, groups, vcmGroupNames, grps, gnames, egcVCM,
+                     restnm, vcmGroupNames.empty() ? egrptpALL_GENREST : egrptpPART, bVerbose, wi);
     if (bRest)
     {
         warning(wi, "Some atoms are not part of any center of mass motion removal group.\n"
@@ -3600,33 +3562,35 @@ void do_index(const char* mdparin, const char *ndx,
     /* Now we have filled the freeze struct, so we can calculate NRDF */
     calc_nrdf(mtop, ir, gnames);
 
-    nuser = str_nelem(is->user1, MAXPTR, ptr1);
-    do_numbering(natoms, groups, nuser, ptr1, grps, gnames, egcUser1,
+    auto user1GroupNames = gmx::splitString(is->user1);
+    do_numbering(natoms, groups, user1GroupNames, grps, gnames, egcUser1,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
-    nuser = str_nelem(is->user2, MAXPTR, ptr1);
-    do_numbering(natoms, groups, nuser, ptr1, grps, gnames, egcUser2,
+    auto user2GroupNames = gmx::splitString(is->user2);
+    do_numbering(natoms, groups, user2GroupNames, grps, gnames, egcUser2,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
-    nuser = str_nelem(is->x_compressed_groups, MAXPTR, ptr1);
-    do_numbering(natoms, groups, nuser, ptr1, grps, gnames, egcCompressedX,
+    auto compressedXGroupNames = gmx::splitString(is->x_compressed_groups);
+    do_numbering(natoms, groups, compressedXGroupNames, grps, gnames, egcCompressedX,
                  restnm, egrptpONE, bVerbose, wi);
-    nofg = str_nelem(is->orirefitgrp, MAXPTR, ptr1);
-    do_numbering(natoms, groups, nofg, ptr1, grps, gnames, egcORFIT,
+    auto orirefFitGroupNames = gmx::splitString(is->orirefitgrp);
+    do_numbering(natoms, groups, orirefFitGroupNames, grps, gnames, egcORFIT,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
 
     /* QMMM input processing */
-    nQMg          = str_nelem(is->QMMM, MAXPTR, ptr1);
-    nQMmethod     = str_nelem(is->QMmethod, MAXPTR, ptr2);
-    nQMbasis      = str_nelem(is->QMbasis, MAXPTR, ptr3);
-    if ((nQMmethod != nQMg) || (nQMbasis != nQMg))
+    auto qmGroupNames = gmx::splitString(is->QMMM);
+    auto qmMethods    = gmx::splitString(is->QMmethod);
+    auto qmBasisSets  = gmx::splitString(is->QMbasis);
+    if (qmMethods.size() != qmGroupNames.size() ||
+        qmBasisSets.size() != qmGroupNames.size())
     {
-        gmx_fatal(FARGS, "Invalid QMMM input: %d groups %d basissets"
-                  " and %d methods\n", nQMg, nQMbasis, nQMmethod);
+        gmx_fatal(FARGS, "Invalid QMMM input: %zu groups %zu basissets"
+                  " and %zu methods\n", qmGroupNames.size(),
+                  qmBasisSets.size(), qmMethods.size());
     }
     /* group rest, if any, is always MM! */
-    do_numbering(natoms, groups, nQMg, ptr1, grps, gnames, egcQMMM,
+    do_numbering(natoms, groups, qmGroupNames, grps, gnames, egcQMMM,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
-    nr            = nQMg; /*atoms->grps[egcQMMM].nr;*/
-    ir->opts.ngQM = nQMg;
+    nr            = qmGroupNames.size(); /*atoms->grps[egcQMMM].nr;*/
+    ir->opts.ngQM = qmGroupNames.size();
     snew(ir->opts.QMmethod, nr);
     snew(ir->opts.QMbasis, nr);
     for (i = 0; i < nr; i++)
@@ -3634,87 +3598,39 @@ void do_index(const char* mdparin, const char *ndx,
         /* input consists of strings: RHF CASSCF PM3 .. These need to be
          * converted to the corresponding enum in names.c
          */
-        ir->opts.QMmethod[i] = search_QMstring(ptr2[i], eQMmethodNR,
+        ir->opts.QMmethod[i] = search_QMstring(qmMethods[i].c_str(), eQMmethodNR,
                                                eQMmethod_names);
-        ir->opts.QMbasis[i]  = search_QMstring(ptr3[i], eQMbasisNR,
+        ir->opts.QMbasis[i]  = search_QMstring(qmBasisSets[i].c_str(), eQMbasisNR,
                                                eQMbasis_names);
 
     }
-    str_nelem(is->QMmult, MAXPTR, ptr1);
-    str_nelem(is->QMcharge, MAXPTR, ptr2);
-    str_nelem(is->bSH, MAXPTR, ptr3);
+    auto qmMultiplicities = gmx::splitString(is->QMmult);
+    auto qmCharges        = gmx::splitString(is->QMcharge);
+    auto qmbSH            = gmx::splitString(is->bSH);
     snew(ir->opts.QMmult, nr);
     snew(ir->opts.QMcharge, nr);
     snew(ir->opts.bSH, nr);
+    convertInts(wi, qmMultiplicities, "QMmult", ir->opts.QMmult);
+    convertInts(wi, qmCharges, "QMcharge", ir->opts.QMcharge);
+    convertYesNos(wi, qmbSH, "bSH", ir->opts.bSH);
 
-    for (i = 0; i < nr; i++)
-    {
-        ir->opts.QMmult[i]   = strtol(ptr1[i], &endptr, 10);
-        if (*endptr != 0)
-        {
-            warning_error(wi, "Invalid value for mdp option QMmult. QMmult should only consist of integers separated by spaces.");
-        }
-        ir->opts.QMcharge[i] = strtol(ptr2[i], &endptr, 10);
-        if (*endptr != 0)
-        {
-            warning_error(wi, "Invalid value for mdp option QMcharge. QMcharge should only consist of integers separated by spaces.");
-        }
-        ir->opts.bSH[i]      = (gmx_strncasecmp(ptr3[i], "Y", 1) == 0);
-    }
-
-    str_nelem(is->CASelectrons, MAXPTR, ptr1);
-    str_nelem(is->CASorbitals, MAXPTR, ptr2);
+    auto CASelectrons = gmx::splitString(is->CASelectrons);
+    auto CASorbitals  = gmx::splitString(is->CASorbitals);
     snew(ir->opts.CASelectrons, nr);
     snew(ir->opts.CASorbitals, nr);
-    for (i = 0; i < nr; i++)
-    {
-        ir->opts.CASelectrons[i] = strtol(ptr1[i], &endptr, 10);
-        if (*endptr != 0)
-        {
-            warning_error(wi, "Invalid value for mdp option CASelectrons. CASelectrons should only consist of integers separated by spaces.");
-        }
-        ir->opts.CASorbitals[i]  = strtol(ptr2[i], &endptr, 10);
-        if (*endptr != 0)
-        {
-            warning_error(wi, "Invalid value for mdp option CASorbitals. CASorbitals should only consist of integers separated by spaces.");
-        }
-    }
-    /* special optimization options */
+    convertInts(wi, CASelectrons, "CASelectrons", ir->opts.CASelectrons);
+    convertInts(wi, CASorbitals, "CASOrbitals", ir->opts.CASorbitals);
 
-    str_nelem(is->bOPT, MAXPTR, ptr1);
-    str_nelem(is->bTS, MAXPTR, ptr2);
-    snew(ir->opts.bOPT, nr);
-    snew(ir->opts.bTS, nr);
-    for (i = 0; i < nr; i++)
-    {
-        ir->opts.bOPT[i] = (gmx_strncasecmp(ptr1[i], "Y", 1) == 0);
-        ir->opts.bTS[i]  = (gmx_strncasecmp(ptr2[i], "Y", 1) == 0);
-    }
-    str_nelem(is->SAon, MAXPTR, ptr1);
-    str_nelem(is->SAoff, MAXPTR, ptr2);
-    str_nelem(is->SAsteps, MAXPTR, ptr3);
+    auto SAon    = gmx::splitString(is->SAon);
+    auto SAoff   = gmx::splitString(is->SAoff);
+    auto SAsteps = gmx::splitString(is->SAsteps);
     snew(ir->opts.SAon, nr);
     snew(ir->opts.SAoff, nr);
     snew(ir->opts.SAsteps, nr);
+    convertInts(wi, SAon, "SAon", ir->opts.SAon);
+    convertInts(wi, SAoff, "SAoff", ir->opts.SAoff);
+    convertInts(wi, SAsteps, "SAsteps", ir->opts.SAsteps);
 
-    for (i = 0; i < nr; i++)
-    {
-        ir->opts.SAon[i]    = strtod(ptr1[i], &endptr);
-        if (*endptr != 0)
-        {
-            warning_error(wi, "Invalid value for mdp option SAon. SAon should only consist of real numbers separated by spaces.");
-        }
-        ir->opts.SAoff[i]   = strtod(ptr2[i], &endptr);
-        if (*endptr != 0)
-        {
-            warning_error(wi, "Invalid value for mdp option SAoff. SAoff should only consist of real numbers separated by spaces.");
-        }
-        ir->opts.SAsteps[i] = strtol(ptr3[i], &endptr, 10);
-        if (*endptr != 0)
-        {
-            warning_error(wi, "Invalid value for mdp option SAsteps. SAsteps should only consist of integers separated by spaces.");
-        }
-    }
     /* end of QMMM input */
 
     if (bVerbose)
@@ -3763,27 +3679,19 @@ void do_index(const char* mdparin, const char *ndx,
 
 
 
-static void check_disre(gmx_mtop_t *mtop)
+static void check_disre(const gmx_mtop_t *mtop)
 {
-    gmx_ffparams_t *ffparams;
-    t_functype     *functype;
-    t_iparams      *ip;
-    int             i, ndouble, ftype;
-    int             label, old_label;
-
     if (gmx_mtop_ftype_count(mtop, F_DISRES) > 0)
     {
-        ffparams  = &mtop->ffparams;
-        functype  = ffparams->functype;
-        ip        = ffparams->iparams;
-        ndouble   = 0;
-        old_label = -1;
-        for (i = 0; i < ffparams->ntypes; i++)
+        const gmx_ffparams_t &ffparams  = mtop->ffparams;
+        int                   ndouble   = 0;
+        int                   old_label = -1;
+        for (int i = 0; i < ffparams.numTypes(); i++)
         {
-            ftype = functype[i];
+            int ftype = ffparams.functype[i];
             if (ftype == F_DISRES)
             {
-                label = ip[i].disres.label;
+                int label = ffparams.iparams[i].disres.label;
                 if (label == old_label)
                 {
                     fprintf(stderr, "Distance restraint index %d occurs twice\n", label);
@@ -3801,15 +3709,14 @@ static void check_disre(gmx_mtop_t *mtop)
     }
 }
 
-static gmx_bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
-                                   gmx_bool posres_only,
-                                   ivec AbsRef)
+static bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
+                               bool posres_only,
+                               ivec AbsRef)
 {
-    int                  d, g, i;
-    gmx_mtop_ilistloop_t iloop;
-    t_ilist             *ilist;
-    int                  nmol;
-    t_iparams           *pr;
+    int                    d, g, i;
+    gmx_mtop_ilistloop_t   iloop;
+    int                    nmol;
+    t_iparams             *pr;
 
     clear_ivec(AbsRef);
 
@@ -3835,14 +3742,14 @@ static gmx_bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
 
     /* Check for position restraints */
     iloop = gmx_mtop_ilistloop_init(sys);
-    while (gmx_mtop_ilistloop_next(iloop, &ilist, &nmol))
+    while (const InteractionLists *ilist = gmx_mtop_ilistloop_next(iloop, &nmol))
     {
         if (nmol > 0 &&
             (AbsRef[XX] == 0 || AbsRef[YY] == 0 || AbsRef[ZZ] == 0))
         {
-            for (i = 0; i < ilist[F_POSRES].nr; i += 2)
+            for (i = 0; i < (*ilist)[F_POSRES].size(); i += 2)
             {
-                pr = &sys->ffparams.iparams[ilist[F_POSRES].iatoms[i]];
+                pr = &sys->ffparams.iparams[(*ilist)[F_POSRES].iatoms[i]];
                 for (d = 0; d < DIM; d++)
                 {
                     if (pr->posres.fcA[d] != 0)
@@ -3851,10 +3758,10 @@ static gmx_bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
                     }
                 }
             }
-            for (i = 0; i < ilist[F_FBPOSRES].nr; i += 2)
+            for (i = 0; i < (*ilist)[F_FBPOSRES].size(); i += 2)
             {
                 /* Check for flat-bottom posres */
-                pr = &sys->ffparams.iparams[ilist[F_FBPOSRES].iatoms[i]];
+                pr = &sys->ffparams.iparams[(*ilist)[F_FBPOSRES].iatoms[i]];
                 if (pr->fbposres.k != 0)
                 {
                     switch (pr->fbposres.geom)
@@ -3894,9 +3801,9 @@ static gmx_bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
 
 static void
 check_combination_rule_differences(const gmx_mtop_t *mtop, int state,
-                                   gmx_bool *bC6ParametersWorkWithGeometricRules,
-                                   gmx_bool *bC6ParametersWorkWithLBRules,
-                                   gmx_bool *bLBRulesPossible)
+                                   bool *bC6ParametersWorkWithGeometricRules,
+                                   bool *bC6ParametersWorkWithLBRules,
+                                   bool *bLBRulesPossible)
 {
     int           ntypes, tpi, tpj;
     int          *typecount;
@@ -3904,7 +3811,7 @@ check_combination_rule_differences(const gmx_mtop_t *mtop, int state,
     double        c6i, c6j, c12i, c12j;
     double        c6, c6_geometric, c6_LB;
     double        sigmai, sigmaj, epsi, epsj;
-    gmx_bool      bCanDoLBRules, bCanDoGeometricRules;
+    bool          bCanDoLBRules, bCanDoGeometricRules;
     const char   *ptr;
 
     /* A tolerance of 1e-5 seems reasonable for (possibly hand-typed)
@@ -3959,14 +3866,14 @@ check_combination_rule_differences(const gmx_mtop_t *mtop, int state,
                 bCanDoLBRules = gmx_within_tol(c6_LB, c6, tol);
             }
 
-            if (FALSE == bCanDoLBRules)
+            if (!bCanDoLBRules)
             {
                 *bC6ParametersWorkWithLBRules = FALSE;
             }
 
             bCanDoGeometricRules = gmx_within_tol(c6_geometric, c6, tol);
 
-            if (FALSE == bCanDoGeometricRules)
+            if (!bCanDoGeometricRules)
             {
                 *bC6ParametersWorkWithGeometricRules = FALSE;
             }
@@ -3979,7 +3886,7 @@ static void
 check_combination_rules(const t_inputrec *ir, const gmx_mtop_t *mtop,
                         warninp_t wi)
 {
-    gmx_bool bLBRulesPossible, bC6ParametersWorkWithGeometricRules, bC6ParametersWorkWithLBRules;
+    bool bLBRulesPossible, bC6ParametersWorkWithGeometricRules, bC6ParametersWorkWithLBRules;
 
     check_combination_rule_differences(mtop, 0,
                                        &bC6ParametersWorkWithGeometricRules,
@@ -3987,7 +3894,7 @@ check_combination_rules(const t_inputrec *ir, const gmx_mtop_t *mtop,
                                        &bLBRulesPossible);
     if (ir->ljpme_combination_rule == eljpmeLB)
     {
-        if (FALSE == bC6ParametersWorkWithLBRules || FALSE == bLBRulesPossible)
+        if (!bC6ParametersWorkWithLBRules || !bLBRulesPossible)
         {
             warning(wi, "You are using arithmetic-geometric combination rules "
                     "in LJ-PME, but your non-bonded C6 parameters do not "
@@ -3996,7 +3903,7 @@ check_combination_rules(const t_inputrec *ir, const gmx_mtop_t *mtop,
     }
     else
     {
-        if (FALSE == bC6ParametersWorkWithGeometricRules)
+        if (!bC6ParametersWorkWithGeometricRules)
         {
             if (ir->eDispCorr != edispcNO)
             {
@@ -4025,7 +3932,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
 {
     char                      err_buf[STRLEN];
     int                       i, m, c, nmol;
-    gmx_bool                  bCharge, bAcc;
+    bool                      bCharge, bAcc;
     real                     *mgrp, mt;
     rvec                      acc;
     gmx_mtop_atomloop_block_t aloopb;
@@ -4092,11 +3999,14 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
             CHECK(ir->opts.tau_t[i] < 0);
         }
 
-        for (i = 0; i < ir->opts.ngtc; i++)
+        if (ir->etc == etcANDERSENMASSIVE && ir->comm_mode != ecmNO)
         {
-            int nsteps = (int)(ir->opts.tau_t[i]/ir->delta_t);
-            sprintf(err_buf, "tau_t/delta_t for group %d for temperature control method %s must be a multiple of nstcomm (%d), as velocities of atoms in coupled groups are randomized every time step. The input tau_t (%8.3f) leads to %d steps per randomization", i, etcoupl_names[ir->etc], ir->nstcomm, ir->opts.tau_t[i], nsteps);
-            CHECK((nsteps % ir->nstcomm) && (ir->etc == etcANDERSENMASSIVE));
+            for (i = 0; i < ir->opts.ngtc; i++)
+            {
+                int nsteps = gmx::roundToInt(ir->opts.tau_t[i]/ir->delta_t);
+                sprintf(err_buf, "tau_t/delta_t for group %d for temperature control method %s must be a multiple of nstcomm (%d), as velocities of atoms in coupled groups are randomized every time step. The input tau_t (%8.3f) leads to %d steps per randomization", i, etcoupl_names[ir->etc], ir->nstcomm, ir->opts.tau_t[i], nsteps);
+                CHECK(nsteps % ir->nstcomm != 0);
+            }
         }
     }
 
@@ -4148,7 +4058,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
     }
     else
     {
-        if (ir->coulombtype == eelCUT && ir->rcoulomb > 0 && !ir->implicit_solvent)
+        if (ir->coulombtype == eelCUT && ir->rcoulomb > 0)
         {
             sprintf(err_buf,
                     "You are using a plain Coulomb cut-off, which might produce artifacts.\n"
@@ -4198,7 +4108,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
         const t_atom *atom;
         while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
         {
-            mgrp[ggrpnr(&sys->groups, egcACC, i)] += atom->m;
+            mgrp[getGroupType(&sys->groups, egcACC, i)] += atom->m;
         }
         mt = 0.0;
         for (i = 0; (i < sys->groups.grps[egcACC].nr); i++)
@@ -4238,7 +4148,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
 
     if (ir->bPull)
     {
-        gmx_bool bWarned;
+        bool bWarned;
 
         bWarned = FALSE;
         for (i = 0; i < ir->pull->ncoord && !bWarned; i++)
@@ -4283,8 +4193,8 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
 }
 
 void double_check(t_inputrec *ir, matrix box,
-                  gmx_bool bHasNormalConstraints,
-                  gmx_bool bHasAnyConstraints,
+                  bool bHasNormalConstraints,
+                  bool bHasAnyConstraints,
                   warninp_t wi)
 {
     real        min_size;

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,7 +39,7 @@
 
 #include "hackblock.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/math/vec.h"
@@ -169,7 +169,7 @@ void clear_t_hack(t_hack *hack)
     }
 }
 
-#define safe_strdup(str) ((str != NULL) ? gmx_strdup(str) : NULL)
+#define safe_strdup(str) (((str) != NULL) ? gmx_strdup(str) : NULL)
 
 static void copy_t_rbonded(t_rbonded *s, t_rbonded *d)
 {
@@ -183,10 +183,10 @@ static void copy_t_rbonded(t_rbonded *s, t_rbonded *d)
     d->match = s->match;
 }
 
-static gmx_bool contains_char(t_rbonded *s, char c)
+static bool contains_char(t_rbonded *s, char c)
 {
     int      i;
-    gmx_bool bRet;
+    bool     bRet;
 
     bRet = FALSE;
     for (i = 0; i < MAXATOMLIST; i++)
@@ -200,19 +200,19 @@ static gmx_bool contains_char(t_rbonded *s, char c)
     return bRet;
 }
 
-int
+static int
 rbonded_find_atoms_in_list(t_rbonded *b, t_rbonded blist[], int nlist, int natoms)
 {
     int      i, k;
     int      foundPos = -1;
-    gmx_bool atomsMatch;
+    bool     atomsMatch;
 
     for (i = 0; i < nlist && foundPos < 0; i++)
     {
         atomsMatch = TRUE;
         for (k = 0; k < natoms && atomsMatch; k++)
         {
-            atomsMatch = atomsMatch && !strcmp(b->a[k], blist[i].a[k]);
+            atomsMatch = atomsMatch && (strcmp(b->a[k], blist[i].a[k]) == 0);
         }
         /* Try reverse if forward match did not work */
         if (!atomsMatch)
@@ -220,7 +220,7 @@ rbonded_find_atoms_in_list(t_rbonded *b, t_rbonded blist[], int nlist, int natom
             atomsMatch = TRUE;
             for (k = 0; k < natoms && atomsMatch; k++)
             {
-                atomsMatch = atomsMatch && !strcmp(b->a[k], blist[i].a[natoms-1-k]);
+                atomsMatch = atomsMatch && (strcmp(b->a[k], blist[i].a[natoms-1-k]) == 0);
             }
         }
         if (atomsMatch)
@@ -241,10 +241,10 @@ rbonded_find_atoms_in_list(t_rbonded *b, t_rbonded blist[], int nlist, int natom
     return foundPos;
 }
 
-gmx_bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], gmx_bool bMin, gmx_bool bPlus)
+bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], bool bMin, bool bPlus)
 {
     int      i, j;
-    gmx_bool bBondsRemoved;
+    bool     bBondsRemoved;
     int      nbHackblockStart;
     int      index;
 

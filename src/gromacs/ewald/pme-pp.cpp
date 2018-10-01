@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,9 +48,8 @@
 
 #include "config.h"
 
-#include <math.h>
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -58,163 +57,52 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/forceoutput.h"
+#include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "pme-internal.h"
-
-/*! \brief MPI Tags used to separate communication of different types of quantities */
-enum {
-    eCommType_ChargeA, eCommType_ChargeB, eCommType_SQRTC6A, eCommType_SQRTC6B,
-    eCommType_SigmaA, eCommType_SigmaB, eCommType_NR, eCommType_COORD,
-    eCommType_CNB
-};
-
-//@{
-/*! \brief Flags used to coordinate PP-PME communication and computation phases
- *
- * Some parts of the code(gmx_pme_send_q, gmx_pme_recv_q_x) assume
- * that the six first flags are exactly in this order.
- */
-
-#define PP_PME_CHARGE         (1<<0)
-#define PP_PME_CHARGEB        (1<<1)
-#define PP_PME_SQRTC6         (1<<2)
-#define PP_PME_SQRTC6B        (1<<3)
-#define PP_PME_SIGMA          (1<<4)
-#define PP_PME_SIGMAB         (1<<5)
-#define PP_PME_COORD          (1<<6)
-#define PP_PME_ENER_VIR       (1<<9)
-#define PP_PME_FINISH         (1<<10)
-#define PP_PME_SWITCHGRID     (1<<11)
-#define PP_PME_RESETCOUNTERS  (1<<12)
-
-#define PME_PP_SIGSTOP        (1<<0)
-#define PME_PP_SIGSTOPNSS     (1<<1)
-//@}
-
-/*! \brief Master PP-PME communication data structure */
-struct gmx_pme_pp {
-#if GMX_MPI
-    MPI_Comm     mpi_comm_mysim; /**< MPI communicator for this simulation */
-#endif
-    int          nnode;          /**< The number of PP node to communicate with  */
-    int         *node;           /**< The PP node ranks                          */
-    int          node_peer;      /**< The peer PP node rank                      */
-    int         *nat;            /**< The number of atom for each PP node        */
-    //@{
-    /**< Vectors of A- and B-state parameters used to transfer vectors to PME ranks  */
-    real        *chargeA;
-    real        *chargeB;
-    real        *sqrt_c6A;
-    real        *sqrt_c6B;
-    real        *sigmaA;
-    real        *sigmaB;
-    //@}
-    rvec        *x;             /**< Vector of atom coordinates to transfer to PME ranks */
-    rvec        *f;             /**< Vector of atom forces received from PME ranks */
-    int          nalloc;        /**< Allocation size of transfer vectors (>= \p nat) */
-#if GMX_MPI
-    //@{
-    /**< Vectors of MPI objects used in non-blocking communication between multiple PP ranks per PME rank */
-    MPI_Request *req;
-    MPI_Status  *stat;
-    //@}
-#endif
-};
-
-/*! \brief Helper struct for PP-PME communication of parameters */
-struct gmx_pme_comm_n_box_t {
-    int             natoms;     /**< Number of atoms */
-    matrix          box;        /**< Box */
-    int             maxshift_x; /**< Maximum shift in x direction */
-    int             maxshift_y; /**< Maximum shift in y direction */
-    real            lambda_q;   /**< Free-energy lambda for electrostatics */
-    real            lambda_lj;  /**< Free-energy lambda for Lennard-Jones */
-    unsigned int    flags;      /**< Control flags */
-    gmx_int64_t     step;       /**< MD integration step number */
-    //@{
-    /*! \brief Used in PME grid tuning */
-    ivec            grid_size;
-    real            ewaldcoeff_q;
-    real            ewaldcoeff_lj;
-    //@}
-};
-
-/*! \brief Helper struct for PP-PME communication of virial and energy */
-typedef struct {
-    //@{
-    /*! \brief Virial, energy, and derivative of potential w.r.t. lambda for charge and Lennard-Jones */
-    matrix          vir_q;
-    matrix          vir_lj;
-    real            energy_q;
-    real            energy_lj;
-    real            dvdlambda_q;
-    real            dvdlambda_lj;
-    //@}
-    float           cycles;     /**< Counter of CPU cycles used */
-    gmx_stop_cond_t stop_cond;  /**< Flag used in responding to an external signal to terminate */
-} gmx_pme_comm_vir_ene_t;
-
-gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr)
-{
-    struct gmx_pme_pp *pme_pp;
-
-    snew(pme_pp, 1);
-
-#if GMX_MPI
-    int rank;
-
-    pme_pp->mpi_comm_mysim = cr->mpi_comm_mysim;
-    MPI_Comm_rank(cr->mpi_comm_mygroup, &rank);
-    get_pme_ddnodes(cr, rank, &pme_pp->nnode, &pme_pp->node, &pme_pp->node_peer);
-    snew(pme_pp->nat, pme_pp->nnode);
-    snew(pme_pp->req, eCommType_NR*pme_pp->nnode);
-    snew(pme_pp->stat, eCommType_NR*pme_pp->nnode);
-    pme_pp->nalloc       = 0;
-#else
-    GMX_UNUSED_VALUE(cr);
-#endif
-
-    return pme_pp;
-}
+#include "pme-pp-communication.h"
 
 /*! \brief Block to wait for communication to PME ranks to complete
  *
- * This should be faster with a real non-blocking MPI implementation */
-/* #define GMX_PME_DELAYED_WAIT */
+ * This should be faster with a real non-blocking MPI implementation
+ */
+static constexpr bool c_useDelayedWait = false;
 
-static void gmx_pme_send_coeffs_coords_wait(gmx_domdec_t gmx_unused *dd)
+/*! \brief Wait for the pending data send requests to PME ranks to complete */
+static void gmx_pme_send_coeffs_coords_wait(gmx_domdec_t *dd)
 {
-#if GMX_MPI
     if (dd->nreq_pme)
     {
+#if GMX_MPI
         MPI_Waitall(dd->nreq_pme, dd->req_pme, MPI_STATUSES_IGNORE);
+#endif
         dd->nreq_pme = 0;
     }
-#endif
 }
 
 /*! \brief Send data to PME ranks */
-static void gmx_pme_send_coeffs_coords(t_commrec *cr, unsigned int flags,
+static void gmx_pme_send_coeffs_coords(const t_commrec *cr, unsigned int flags,
                                        real gmx_unused *chargeA, real gmx_unused *chargeB,
                                        real gmx_unused *c6A, real gmx_unused *c6B,
                                        real gmx_unused *sigmaA, real gmx_unused *sigmaB,
                                        matrix box, rvec gmx_unused *x,
                                        real lambda_q, real lambda_lj,
                                        int maxshift_x, int maxshift_y,
-                                       gmx_int64_t step)
+                                       int64_t step)
 {
     gmx_domdec_t         *dd;
     gmx_pme_comm_n_box_t *cnb;
     int                   n;
 
     dd = cr->dd;
-    n  = dd->nat_home;
+    n  = dd_numHomeAtoms(*dd);
 
     if (debug)
     {
@@ -226,10 +114,11 @@ static void gmx_pme_send_coeffs_coords(t_commrec *cr, unsigned int flags,
                 (flags & PP_PME_COORD)  ? " coordinates" : "");
     }
 
-#ifdef GMX_PME_DELAYED_WAIT
-    /* When can not use cnb until pending communication has finished */
-    gmx_pme_send_coeffs_coords_wait(dd);
-#endif
+    if (c_useDelayedWait)
+    {
+        /* We can not use cnb until pending communication has finished */
+        gmx_pme_send_coeffs_coords_wait(dd);
+    }
 
     if (dd->pme_receive_vir_ener)
     {
@@ -313,18 +202,18 @@ static void gmx_pme_send_coeffs_coords(t_commrec *cr, unsigned int flags,
                       &dd->req_pme[dd->nreq_pme++]);
         }
     }
-
-#ifndef GMX_PME_DELAYED_WAIT
-    /* Wait for the data to arrive */
-    /* We can skip this wait as we are sure x and q will not be modified
-     * before the next call to gmx_pme_send_x_q or gmx_pme_receive_f.
-     */
-    gmx_pme_send_coeffs_coords_wait(dd);
 #endif
-#endif
+    if (!c_useDelayedWait)
+    {
+        /* Wait for the data to arrive */
+        /* We can skip this wait as we are sure x and q will not be modified
+         * before the next call to gmx_pme_send_x_q or gmx_pme_receive_f.
+         */
+        gmx_pme_send_coeffs_coords_wait(dd);
+    }
 }
 
-void gmx_pme_send_parameters(t_commrec *cr,
+void gmx_pme_send_parameters(const t_commrec *cr,
                              const interaction_const_t *ic,
                              gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                              real *chargeA, real *chargeB,
@@ -355,11 +244,13 @@ void gmx_pme_send_parameters(t_commrec *cr,
                                nullptr, nullptr, 0, 0, maxshift_x, maxshift_y, -1);
 }
 
-void gmx_pme_send_coordinates(t_commrec *cr, matrix box, rvec *x,
+void gmx_pme_send_coordinates(const t_commrec *cr, matrix box, rvec *x,
                               real lambda_q, real lambda_lj,
                               gmx_bool bEnerVir,
-                              gmx_int64_t step)
+                              int64_t step, gmx_wallcycle *wcycle)
 {
+    wallcycle_start(wcycle, ewcPP_PMESENDX);
+
     unsigned int flags = PP_PME_COORD;
     if (bEnerVir)
     {
@@ -367,19 +258,21 @@ void gmx_pme_send_coordinates(t_commrec *cr, matrix box, rvec *x,
     }
     gmx_pme_send_coeffs_coords(cr, flags, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
                                box, x, lambda_q, lambda_lj, 0, 0, step);
+
+    wallcycle_stop(wcycle, ewcPP_PMESENDX);
 }
 
-void gmx_pme_send_finish(t_commrec *cr)
+void gmx_pme_send_finish(const t_commrec *cr)
 {
     unsigned int flags = PP_PME_FINISH;
 
     gmx_pme_send_coeffs_coords(cr, flags, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, -1);
 }
 
-void gmx_pme_send_switchgrid(t_commrec gmx_unused *cr,
-                             ivec gmx_unused       grid_size,
-                             real gmx_unused       ewaldcoeff_q,
-                             real gmx_unused       ewaldcoeff_lj)
+void gmx_pme_send_switchgrid(const t_commrec *cr,
+                             ivec             grid_size,
+                             real             ewaldcoeff_q,
+                             real             ewaldcoeff_lj)
 {
 #if GMX_MPI
     gmx_pme_comm_n_box_t cnb;
@@ -396,10 +289,15 @@ void gmx_pme_send_switchgrid(t_commrec gmx_unused *cr,
         MPI_Send(&cnb, sizeof(cnb), MPI_BYTE,
                  cr->dd->pme_nodeid, eCommType_CNB, cr->mpi_comm_mysim);
     }
+#else
+    GMX_UNUSED_VALUE(cr);
+    GMX_UNUSED_VALUE(grid_size);
+    GMX_UNUSED_VALUE(ewaldcoeff_q);
+    GMX_UNUSED_VALUE(ewaldcoeff_lj);
 #endif
 }
 
-void gmx_pme_send_resetcounters(t_commrec gmx_unused *cr, gmx_int64_t gmx_unused step)
+void gmx_pme_send_resetcounters(const t_commrec gmx_unused *cr, int64_t gmx_unused step)
 {
 #if GMX_MPI
     gmx_pme_comm_n_box_t cnb;
@@ -417,256 +315,10 @@ void gmx_pme_send_resetcounters(t_commrec gmx_unused *cr, gmx_int64_t gmx_unused
 #endif
 }
 
-int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp *pme_pp,
-                               int               *natoms,
-                               real             **chargeA,
-                               real             **chargeB,
-                               real             **sqrt_c6A,
-                               real             **sqrt_c6B,
-                               real             **sigmaA,
-                               real             **sigmaB,
-                               matrix             box,
-                               rvec             **x,
-                               rvec             **f,
-                               int               *maxshift_x,
-                               int               *maxshift_y,
-                               real              *lambda_q,
-                               real              *lambda_lj,
-                               gmx_bool          *bEnerVir,
-                               gmx_int64_t       *step,
-                               ivec               grid_size,
-                               real              *ewaldcoeff_q,
-                               real              *ewaldcoeff_lj)
-{
-    int status = -1;
-    int nat    = 0;
-
-#if GMX_MPI
-    unsigned int flags    = 0;
-    int          messages = 0;
-
-    do
-    {
-        gmx_pme_comm_n_box_t cnb;
-        cnb.flags = 0;
-
-        /* Receive the send count, box and time step from the peer PP node */
-        MPI_Recv(&cnb, sizeof(cnb), MPI_BYTE,
-                 pme_pp->node_peer, eCommType_CNB,
-                 pme_pp->mpi_comm_mysim, MPI_STATUS_IGNORE);
-
-        /* We accumulate all received flags */
-        flags |= cnb.flags;
-
-        *step  = cnb.step;
-
-        if (debug)
-        {
-            fprintf(debug, "PME only rank receiving:%s%s%s%s%s\n",
-                    (cnb.flags & PP_PME_CHARGE)        ? " charges" : "",
-                    (cnb.flags & PP_PME_COORD )        ? " coordinates" : "",
-                    (cnb.flags & PP_PME_FINISH)        ? " finish" : "",
-                    (cnb.flags & PP_PME_SWITCHGRID)    ? " switch grid" : "",
-                    (cnb.flags & PP_PME_RESETCOUNTERS) ? " reset counters" : "");
-        }
-
-        if (cnb.flags & PP_PME_FINISH)
-        {
-            status = pmerecvqxFINISH;
-        }
-
-        if (cnb.flags & PP_PME_SWITCHGRID)
-        {
-            /* Special case, receive the new parameters and return */
-            copy_ivec(cnb.grid_size, grid_size);
-            *ewaldcoeff_q  = cnb.ewaldcoeff_q;
-            *ewaldcoeff_lj = cnb.ewaldcoeff_lj;
-
-            status         = pmerecvqxSWITCHGRID;
-        }
-
-        if (cnb.flags & PP_PME_RESETCOUNTERS)
-        {
-            /* Special case, receive the step (set above) and return */
-            status = pmerecvqxRESETCOUNTERS;
-        }
-
-        if (cnb.flags & (PP_PME_CHARGE | PP_PME_SQRTC6 | PP_PME_SIGMA))
-        {
-            /* Receive the send counts from the other PP nodes */
-            for (int sender = 0; sender < pme_pp->nnode; sender++)
-            {
-                if (pme_pp->node[sender] == pme_pp->node_peer)
-                {
-                    pme_pp->nat[sender] = cnb.natoms;
-                }
-                else
-                {
-                    MPI_Irecv(&(pme_pp->nat[sender]), sizeof(pme_pp->nat[0]),
-                              MPI_BYTE,
-                              pme_pp->node[sender], eCommType_CNB,
-                              pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
-                }
-            }
-            MPI_Waitall(messages, pme_pp->req, pme_pp->stat);
-            messages = 0;
-
-            nat = 0;
-            for (int sender = 0; sender < pme_pp->nnode; sender++)
-            {
-                nat += pme_pp->nat[sender];
-            }
-
-            if (nat > pme_pp->nalloc)
-            {
-                pme_pp->nalloc = over_alloc_dd(nat);
-                if (cnb.flags & PP_PME_CHARGE)
-                {
-                    srenew(pme_pp->chargeA, pme_pp->nalloc);
-                }
-                if (cnb.flags & PP_PME_CHARGEB)
-                {
-                    srenew(pme_pp->chargeB, pme_pp->nalloc);
-                }
-                if (cnb.flags & PP_PME_SQRTC6)
-                {
-                    srenew(pme_pp->sqrt_c6A, pme_pp->nalloc);
-                }
-                if (cnb.flags & PP_PME_SQRTC6B)
-                {
-                    srenew(pme_pp->sqrt_c6B, pme_pp->nalloc);
-                }
-                if (cnb.flags & PP_PME_SIGMA)
-                {
-                    srenew(pme_pp->sigmaA, pme_pp->nalloc);
-                }
-                if (cnb.flags & PP_PME_SIGMAB)
-                {
-                    srenew(pme_pp->sigmaB, pme_pp->nalloc);
-                }
-                srenew(pme_pp->x, pme_pp->nalloc);
-                srenew(pme_pp->f, pme_pp->nalloc);
-            }
-
-            /* maxshift is sent when the charges are sent */
-            *maxshift_x = cnb.maxshift_x;
-            *maxshift_y = cnb.maxshift_y;
-
-            /* Receive the charges in place */
-            for (int q = 0; q < eCommType_NR; q++)
-            {
-                real *charge_pp;
-
-                if (!(cnb.flags & (PP_PME_CHARGE<<q)))
-                {
-                    continue;
-                }
-                switch (q)
-                {
-                    case eCommType_ChargeA: charge_pp = pme_pp->chargeA;  break;
-                    case eCommType_ChargeB: charge_pp = pme_pp->chargeB;  break;
-                    case eCommType_SQRTC6A: charge_pp = pme_pp->sqrt_c6A; break;
-                    case eCommType_SQRTC6B: charge_pp = pme_pp->sqrt_c6B; break;
-                    case eCommType_SigmaA:  charge_pp = pme_pp->sigmaA;   break;
-                    case eCommType_SigmaB:  charge_pp = pme_pp->sigmaB;   break;
-                    default: gmx_incons("Wrong eCommType");
-                }
-                nat = 0;
-                for (int sender = 0; sender < pme_pp->nnode; sender++)
-                {
-                    if (pme_pp->nat[sender] > 0)
-                    {
-                        MPI_Irecv(charge_pp+nat,
-                                  pme_pp->nat[sender]*sizeof(real),
-                                  MPI_BYTE,
-                                  pme_pp->node[sender], q,
-                                  pme_pp->mpi_comm_mysim,
-                                  &pme_pp->req[messages++]);
-                        nat += pme_pp->nat[sender];
-                        if (debug)
-                        {
-                            fprintf(debug, "Received from PP rank %d: %d %s\n",
-                                    pme_pp->node[sender], pme_pp->nat[sender],
-                                    (q == eCommType_ChargeA ||
-                                     q == eCommType_ChargeB) ? "charges" : "params");
-                        }
-                    }
-                }
-            }
-        }
-
-        if (cnb.flags & PP_PME_COORD)
-        {
-            /* The box, FE flag and lambda are sent along with the coordinates
-             *  */
-            copy_mat(cnb.box, box);
-            *lambda_q       = cnb.lambda_q;
-            *lambda_lj      = cnb.lambda_lj;
-            *bEnerVir       = (cnb.flags & PP_PME_ENER_VIR);
-            *step           = cnb.step;
-
-            /* Receive the coordinates in place */
-            nat = 0;
-            for (int sender = 0; sender < pme_pp->nnode; sender++)
-            {
-                if (pme_pp->nat[sender] > 0)
-                {
-                    MPI_Irecv(pme_pp->x[nat], pme_pp->nat[sender]*sizeof(rvec),
-                              MPI_BYTE,
-                              pme_pp->node[sender], eCommType_COORD,
-                              pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
-                    nat += pme_pp->nat[sender];
-                    if (debug)
-                    {
-                        fprintf(debug, "Received from PP rank %d: %d "
-                                "coordinates\n",
-                                pme_pp->node[sender], pme_pp->nat[sender]);
-                    }
-                }
-            }
-
-            status = pmerecvqxX;
-        }
-
-        /* Wait for the coordinates and/or charges to arrive */
-        MPI_Waitall(messages, pme_pp->req, pme_pp->stat);
-        messages = 0;
-    }
-    while (status == -1);
-#else
-    GMX_UNUSED_VALUE(box);
-    GMX_UNUSED_VALUE(maxshift_x);
-    GMX_UNUSED_VALUE(maxshift_y);
-    GMX_UNUSED_VALUE(lambda_q);
-    GMX_UNUSED_VALUE(lambda_lj);
-    GMX_UNUSED_VALUE(bEnerVir);
-    GMX_UNUSED_VALUE(step);
-    GMX_UNUSED_VALUE(grid_size);
-    GMX_UNUSED_VALUE(ewaldcoeff_q);
-    GMX_UNUSED_VALUE(ewaldcoeff_lj);
-
-    status = pmerecvqxX;
-#endif
-
-    if (status == pmerecvqxX)
-    {
-        *natoms   = nat;
-        *chargeA  = pme_pp->chargeA;
-        *chargeB  = pme_pp->chargeB;
-        *sqrt_c6A = pme_pp->sqrt_c6A;
-        *sqrt_c6B = pme_pp->sqrt_c6B;
-        *sigmaA   = pme_pp->sigmaA;
-        *sigmaB   = pme_pp->sigmaB;
-        *x        = pme_pp->x;
-        *f        = pme_pp->f;
-    }
-
-    return status;
-}
 /*! \brief Receive virial and energy from PME rank */
-static void receive_virial_energy(t_commrec *cr,
-                                  matrix vir_q, real *energy_q,
-                                  matrix vir_lj, real *energy_lj,
+static void receive_virial_energy(const t_commrec *cr,
+                                  gmx::ForceWithVirial *forceWithVirial,
+                                  real *energy_q, real *energy_lj,
                                   real *dvdlambda_q, real *dvdlambda_lj,
                                   float *pme_cycles)
 {
@@ -687,8 +339,8 @@ static void receive_virial_energy(t_commrec *cr,
         memset(&cve, 0, sizeof(cve));
 #endif
 
-        m_add(vir_q, cve.vir_q, vir_q);
-        m_add(vir_lj, cve.vir_lj, vir_lj);
+        forceWithVirial->addVirialContribution(cve.vir_q);
+        forceWithVirial->addVirialContribution(cve.vir_lj);
         *energy_q      = cve.energy_q;
         *energy_lj     = cve.energy_lj;
         *dvdlambda_q  += cve.dvdlambda_q;
@@ -708,18 +360,19 @@ static void receive_virial_energy(t_commrec *cr,
     }
 }
 
-void gmx_pme_receive_f(t_commrec *cr,
-                       rvec f[], matrix vir_q, real *energy_q,
-                       matrix vir_lj, real *energy_lj,
+void gmx_pme_receive_f(const t_commrec *cr,
+                       gmx::ForceWithVirial *forceWithVirial,
+                       real *energy_q, real *energy_lj,
                        real *dvdlambda_q, real *dvdlambda_lj,
                        float *pme_cycles)
 {
-#ifdef GMX_PME_DELAYED_WAIT
-    /* Wait for the x request to finish */
-    gmx_pme_send_coeffs_coords_wait(cr->dd);
-#endif
+    if (c_useDelayedWait)
+    {
+        /* Wait for the x request to finish */
+        gmx_pme_send_coeffs_coords_wait(cr->dd);
+    }
 
-    int natoms = cr->dd->nat_home;
+    int natoms = dd_numHomeAtoms(*cr->dd);
 
     if (natoms > cr->dd->pme_recv_f_alloc)
     {
@@ -735,6 +388,8 @@ void gmx_pme_receive_f(t_commrec *cr,
 #endif
 
     int nt = gmx_omp_nthreads_get_simple_rvec_task(emntDefault, natoms);
+
+    gmx::ArrayRef<gmx::RVec> f = forceWithVirial->force_;
 
     /* Note that we would like to avoid this conditional by putting it
      * into the omp pragma instead, but then we still take the full
@@ -756,69 +411,5 @@ void gmx_pme_receive_f(t_commrec *cr,
         }
     }
 
-    receive_virial_energy(cr, vir_q, energy_q, vir_lj, energy_lj, dvdlambda_q, dvdlambda_lj, pme_cycles);
-}
-
-void gmx_pme_send_force_vir_ener(struct gmx_pme_pp *pme_pp,
-                                 rvec gmx_unused *f,
-                                 matrix vir_q, real energy_q,
-                                 matrix vir_lj, real energy_lj,
-                                 real dvdlambda_q, real dvdlambda_lj,
-                                 float cycles)
-{
-#if GMX_MPI
-    gmx_pme_comm_vir_ene_t cve;
-    int                    messages, ind_start, ind_end;
-    cve.cycles = cycles;
-
-    /* Now the evaluated forces have to be transferred to the PP nodes */
-    messages = 0;
-    ind_end  = 0;
-    for (int receiver = 0; receiver < pme_pp->nnode; receiver++)
-    {
-        ind_start = ind_end;
-        ind_end   = ind_start + pme_pp->nat[receiver];
-        if (MPI_Isend(f[ind_start], (ind_end-ind_start)*sizeof(rvec), MPI_BYTE,
-                      pme_pp->node[receiver], 0,
-                      pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]) != 0)
-        {
-            gmx_comm("MPI_Isend failed in do_pmeonly");
-        }
-    }
-
-    /* send virial and energy to our last PP node */
-    copy_mat(vir_q, cve.vir_q);
-    copy_mat(vir_lj, cve.vir_lj);
-    cve.energy_q     = energy_q;
-    cve.energy_lj    = energy_lj;
-    cve.dvdlambda_q  = dvdlambda_q;
-    cve.dvdlambda_lj = dvdlambda_lj;
-    /* check for the signals to send back to a PP node */
-    cve.stop_cond = gmx_get_stop_condition();
-
-    cve.cycles = cycles;
-
-    if (debug)
-    {
-        fprintf(debug, "PME rank sending to PP rank %d: virial and energy\n",
-                pme_pp->node_peer);
-    }
-    MPI_Isend(&cve, sizeof(cve), MPI_BYTE,
-              pme_pp->node_peer, 1,
-              pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
-
-    /* Wait for the forces to arrive */
-    MPI_Waitall(messages, pme_pp->req, pme_pp->stat);
-#else
-    gmx_call("MPI not enabled");
-    GMX_UNUSED_VALUE(pme_pp);
-    GMX_UNUSED_VALUE(f);
-    GMX_UNUSED_VALUE(vir_q);
-    GMX_UNUSED_VALUE(energy_q);
-    GMX_UNUSED_VALUE(vir_lj);
-    GMX_UNUSED_VALUE(energy_lj);
-    GMX_UNUSED_VALUE(dvdlambda_q);
-    GMX_UNUSED_VALUE(dvdlambda_lj);
-    GMX_UNUSED_VALUE(cycles);
-#endif
+    receive_virial_energy(cr, forceWithVirial, energy_q, energy_lj, dvdlambda_q, dvdlambda_lj, pme_cycles);
 }

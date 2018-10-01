@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,7 @@ void init_df_history(df_history_t *dfhist, int nlambda)
     int i;
 
     dfhist->nlambda  = nlambda;
-    dfhist->bEquil   = 0;
+    dfhist->bEquil   = false;
     dfhist->wl_delta = 0;
 
     if (nlambda > 0)
@@ -137,7 +137,7 @@ void done_df_history(df_history_t *dfhist)
             sfree(dfhist->accum_m2[i]);
         }
     }
-    dfhist->bEquil   = 0;
+    dfhist->bEquil   = false;
     dfhist->nlambda  = 0;
     dfhist->wl_delta = 0;
 }

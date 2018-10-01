@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,11 +46,15 @@
 #include <map>
 #include <vector>
 
+#include <gtest/gtest.h>
+
 #include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme-gpu-internal.h"
+#include "gromacs/math/gmxcomplex.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/unique_cptr.h"
 
-struct t_inputrec;
+#include "testhardwarecontexts.h"
 
 namespace gmx
 {
@@ -61,23 +65,17 @@ namespace test
 //! A safe pointer type for PME.
 typedef gmx::unique_cptr<gmx_pme_t, gmx_pme_destroy> PmeSafePointer;
 //! Charges
-typedef ConstArrayRef<real> ChargesVector;
+typedef ArrayRef<const real> ChargesVector;
 //! Coordinates
 typedef std::vector<RVec> CoordinatesVector;
 //! Forces
 typedef ArrayRef<RVec> ForcesVector;
 //! Gridline indices
-typedef ConstArrayRef<IVec> GridLineIndicesVector;
-//! Type of spline data
-enum class PmeSplineDataType
-{
-    Values,      // theta
-    Derivatives, //dtheta
-};
+typedef ArrayRef<const IVec> GridLineIndicesVector;
 /*! \brief Spline parameters (theta or dtheta).
  * A reference to a single dimension's spline data; this means (atomCount * pmeOrder) values or derivatives.
  */
-typedef ConstArrayRef<real> SplineParamsDimVector;
+typedef ArrayRef<const real> SplineParamsDimVector;
 /*! \brief Spline parameters (theta or dtheta) in all 3 dimensions
  */
 typedef std::array<SplineParamsDimVector, DIM> SplineParamsVector;
@@ -86,41 +84,67 @@ typedef std::array<SplineParamsDimVector, DIM> SplineParamsVector;
 template<typename ValueType>using SparseGridValuesInput = std::map<IVec, ValueType>;
 //! Non-zero real grid values
 typedef SparseGridValuesInput<real> SparseRealGridValuesInput;
+//! Non-zero complex grid values
+typedef SparseGridValuesInput<t_complex> SparseComplexGridValuesInput;
 //! Non-zero grid values for test output; keys are string representations of the cells' 3d indices (IVec); this allows for better sorting.
 template<typename ValueType>using SparseGridValuesOutput = std::map<std::string, ValueType>;
 //! Non-zero real grid values
 typedef SparseGridValuesOutput<real> SparseRealGridValuesOutput;
-
+//! Non-zero complex grid values
+typedef SparseGridValuesOutput<t_complex> SparseComplexGridValuesOutput;
 //! TODO: make proper C++ matrix for the whole Gromacs, get rid of this
 typedef std::array<real, DIM * DIM> Matrix3x3;
-//! PME code path being tested
-enum class CodePath
+//! PME solver type
+enum class PmeSolveAlgorithm
 {
-    CPU,    // serial CPU code
+    Coulomb,
+    LennardJones,
 };
-//! PME gathering input forces treatment
-enum class PmeGatherInputHandling
-{
-    Overwrite,
-    ReduceWith,
-};
+//! PME solver results - reciprocal energy and virial
+typedef std::tuple<real, Matrix3x3> PmeSolveOutput;
+
+// Misc.
+
+//! Tells if this generally valid PME input is supported for this mode
+bool pmeSupportsInputForMode(const t_inputrec *inputRec, CodePath mode);
+
+//! Spline moduli are computed in double precision, so they're very good in single precision
+constexpr int64_t c_splineModuliSinglePrecisionUlps = 1;
+/*! \brief For double precision checks, the recursive interpolation
+ * and use of trig functions in make_dft_mod require a lot more flops,
+ * and thus opportunity for deviation between implementations. */
+uint64_t getSplineModuliDoublePrecisionUlps(int splineOrder);
 
 // PME stages
 
-//! Simple PME initialization based on input, no atom data; only good for testing the initialization stage
-PmeSafePointer pmeInitEmpty(const t_inputrec *inputRec);
+//! Simple PME initialization (no atom data)
+PmeSafePointer pmeInitEmpty(const t_inputrec *inputRec,
+                            CodePath mode = CodePath::CPU,
+                            const gmx_device_info_t *gpuInfo = nullptr,
+                            PmeGpuProgramHandle pmeGpuProgram = nullptr,
+                            const Matrix3x3 &box = {{1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}},
+                            real ewaldCoeff_q = 0.0f, real ewaldCoeff_lj = 0.0f);
 //! PME initialization with atom data and system box
-PmeSafePointer pmeInitWithAtoms(const t_inputrec        *inputRec,
-                                const CoordinatesVector &coordinates,
-                                const ChargesVector     &charges,
-                                const Matrix3x3          box
-                                );
+PmeSafePointer pmeInitAtoms(const t_inputrec         *inputRec,
+                            CodePath                  mode,
+                            const gmx_device_info_t  *gpuInfo,
+                            PmeGpuProgramHandle       pmeGpuProgram,
+                            const CoordinatesVector  &coordinates,
+                            const ChargesVector      &charges,
+                            const Matrix3x3          &box
+                            );
 //! PME spline computation and charge spreading
 void pmePerformSplineAndSpread(gmx_pme_t *pme, CodePath mode,
                                bool computeSplines, bool spreadCharges);
+//! PME solving
+void pmePerformSolve(const gmx_pme_t *pme, CodePath mode,
+                     PmeSolveAlgorithm method, real cellVolume,
+                     GridOrdering gridOrdering, bool computeEnergyAndVirial);
 //! PME force gathering
 void pmePerformGather(gmx_pme_t *pme, CodePath mode,
-                      PmeGatherInputHandling inputTreatment, ForcesVector &forces);
+                      PmeForceOutputHandling inputTreatment, ForcesVector &forces); //NOLINT(google-runtime-references)
+//! PME test finalization before fetching the outputs
+void pmeFinalizeTest(const gmx_pme_t *pme, CodePath mode);
 
 // PME state setters
 
@@ -133,6 +157,8 @@ void pmeSetGridLineIndices(const gmx_pme_t *pme, CodePath mode,
 //! Setting real grid to be used in gather
 void pmeSetRealGrid(const gmx_pme_t *pme, CodePath mode,
                     const SparseRealGridValuesInput &gridValues);
+void pmeSetComplexGrid(const gmx_pme_t *pme, CodePath mode, GridOrdering gridOrdering,
+                       const SparseComplexGridValuesInput &gridValues);
 
 // PME state getters
 
@@ -141,10 +167,15 @@ SplineParamsDimVector pmeGetSplineData(const gmx_pme_t *pme, CodePath mode,
                                        PmeSplineDataType type, int dimIndex);
 //! Getting the gridline indices
 GridLineIndicesVector pmeGetGridlineIndices(const gmx_pme_t *pme, CodePath mode);
-//! Getting the real grid (spreading output of PmePerformSplineAndSpread())
+//! Getting the real grid (spreading output of pmePerformSplineAndSpread())
 SparseRealGridValuesOutput pmeGetRealGrid(const gmx_pme_t *pme, CodePath mode);
-
-}
-}
+//! Getting the complex grid output of pmePerformSolve()
+SparseComplexGridValuesOutput pmeGetComplexGrid(const gmx_pme_t *pme, CodePath mode,
+                                                GridOrdering gridOrdering);
+//! Getting the reciprocal energy and virial
+PmeSolveOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t *pme, CodePath mode,
+                                               PmeSolveAlgorithm method);
+}  // namespace test
+}  // namespace gmx
 
 #endif

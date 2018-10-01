@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -106,17 +106,16 @@ class BondedTest : public ::testing::Test
         void testDihedralAngle(int epbc)
         {
             rvec  r_ij, r_kj, r_kl, m, n;
-            real  cosine_angle, angle;
+            real  angle;
             int   t1, t2, t3;
             t_pbc pbc;
 
             set_pbc(&pbc, epbc, box);
             angle = dih_angle(x[0], x[1], x[2], x[3], &pbc,
-                              r_ij, r_kj, r_kl, m, n, &cosine_angle,
+                              r_ij, r_kj, r_kl, m, n,
                               &t1, &t2, &t3);
 
             checker_.checkReal(angle, "angle");
-            checker_.checkReal(cosine_angle, "cosine_angle");
             checker_.checkInteger(t1, "t1");
             checker_.checkInteger(t2, "t2");
             checker_.checkInteger(t3, "t3");
@@ -274,6 +273,6 @@ TEST_F (BondedTest, IfuncProperDihedralsPbcXyz)
     testIfunc(F_PDIHS, iatoms, &iparams, epbcXYZ);
 }
 
-}
+}  // namespace
 
-}
+}  // namespace gmx

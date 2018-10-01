@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,7 +43,9 @@
 #include <cstdlib>
 
 #include <array>
+#include <vector>
 
+#include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/gpu_timing.h"
@@ -74,7 +76,7 @@ typedef struct
     gmx_cycles_t start;
 } wallcc_t;
 
-typedef struct gmx_wallcycle
+struct gmx_wallcycle
 {
     wallcc_t        *wcc;
     /* did we detect one or more invalid cycle counts */
@@ -90,12 +92,12 @@ typedef struct gmx_wallcycle
 #endif
     int               ewc_prev;
     gmx_cycles_t      cycle_prev;
-    gmx_int64_t       reset_counters;
+    int64_t           reset_counters;
 #if GMX_MPI
     MPI_Comm          mpi_comm_mygroup;
 #endif
     wallcc_t         *wcsc;
-} gmx_wallcycle_t_t;
+};
 
 /* Each name should not exceed 19 printing characters
    (ie. terminating null can be twentieth) */
@@ -103,10 +105,13 @@ static const char *wcn[ewcNR] =
 {
     "Run", "Step", "PP during PME", "Domain decomp.", "DD comm. load",
     "DD comm. bounds", "Vsite constr.", "Send X to PME", "Neighbor search", "Launch GPU ops.",
-    "Comm. coord.", "Born radii", "Force", "Wait + Comm. F", "PME mesh",
-    "PME redist. X/F", "PME spread/gather", "PME 3D-FFT", "PME 3D-FFT Comm.", "PME solve LJ", "PME solve Elec",
-    "PME wait for PP", "Wait + Recv. PME F", "Wait GPU nonlocal", "Wait GPU local", "NB X/F buffer ops.",
-    "Vsite spread", "COM pull force",
+    "Comm. coord.", "Force", "Wait + Comm. F", "PME mesh",
+    "PME redist. X/F", "PME spread", "PME gather", "PME 3D-FFT", "PME 3D-FFT Comm.", "PME solve LJ", "PME solve Elec",
+    "PME wait for PP", "Wait + Recv. PME F",
+    "Wait PME GPU spread", "PME 3D-FFT", "PME solve", /* the strings for FFT/solve are repeated here for mixed mode counters */
+    "Wait PME GPU gather", "Reduce GPU PME F",
+    "Wait GPU NB nonloc.", "Wait GPU NB local", "NB X/F buffer ops.",
+    "Vsite spread", "COM pull force", "AWH",
     "Write traj.", "Update", "Constraints", "Comm. energies",
     "Enforced rotation", "Add rot. forces", "Position swapping", "IMD", "Test"
 };
@@ -120,13 +125,28 @@ static const char *wcsn[ewcsNR] =
     "Bonded-FEP F",
     "Restraints F",
     "Listed buffer ops.",
+    "Nonbonded pruning",
     "Nonbonded F",
+    "Launch NB GPU tasks",
+    "Launch PME GPU tasks",
     "Ewald F correction",
     "NB X buffer ops.",
     "NB F buffer ops.",
 };
 
-gmx_bool wallcycle_have_counter(void)
+/* PME GPU timing events' names - correspond to the enum in the gpu_timing.h */
+static const char *PMEStageNames[] =
+{
+    "PME spline",
+    "PME spread",
+    "PME spline + spread",
+    "PME 3D-FFT r2c",
+    "PME solve",
+    "PME 3D-FFT c2r",
+    "PME gather",
+};
+
+gmx_bool wallcycle_have_counter()
 {
     return gmx_cycles_have_counter();
 }
@@ -184,8 +204,9 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec gmx_unused 
     return wc;
 }
 
-void wallcycle_destroy(gmx_wallcycle_t wc)
-{
+/* TODO: Should be called from finish_run() or runner()
+   void wallcycle_destroy(gmx_wallcycle_t wc)
+   {
     if (wc == nullptr)
     {
         return;
@@ -204,7 +225,8 @@ void wallcycle_destroy(gmx_wallcycle_t wc)
         sfree(wc->wcsc);
     }
     sfree(wc);
-}
+   }
+ */
 
 static void wallcycle_all_start(gmx_wallcycle_t wc, int ewc, gmx_cycles_t cycle)
 {
@@ -476,7 +498,7 @@ void wallcycle_scale_by_num_threads(gmx_wallcycle_t wc, bool isPmeRank, int nthr
  * wcc_all are unused by the GPU reporting, but it is not satisfactory
  * for the future. Also, there's no need for MPI_Allreduce, since
  * only MASTERRANK uses any of the results. */
-WallcycleCounts wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
+WallcycleCounts wallcycle_sum(const t_commrec *cr, gmx_wallcycle_t wc)
 {
     WallcycleCounts cycles_sum;
     wallcc_t       *wcc;
@@ -548,20 +570,20 @@ WallcycleCounts wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
         // TODO this code is used only at the end of the run, so we
         // can just do a simple reduce of haveInvalidCount in
         // wallcycle_print, and avoid bugs
-        cycles_n[nsum] = (wc->haveInvalidCount > 0 ? 1 : 0);
+        cycles_n[nsum] = (wc->haveInvalidCount ? 1 : 0);
         // TODO Use MPI_Reduce
         MPI_Allreduce(cycles_n, buf, nsum + 1, MPI_DOUBLE, MPI_MAX,
                       cr->mpi_comm_mysim);
         for (i = 0; i < ewcNR; i++)
         {
-            wcc[i].n = static_cast<int>(buf[i] + 0.5);
+            wcc[i].n = gmx::roundToInt(buf[i]);
         }
         wc->haveInvalidCount = (buf[nsum] > 0);
         if (wc->wcsc)
         {
             for (i = 0; i < ewcsNR; i++)
             {
-                wc->wcsc[i].n = static_cast<int>(buf[ewcNR+i] + 0.5);
+                wc->wcsc[i].n = gmx::roundToInt(buf[ewcNR+i]);
             }
         }
 
@@ -606,9 +628,9 @@ static void print_cycles(FILE *fplog, double c2t, const char *name,
                          int nnodes, int nthreads,
                          int ncalls, double c_sum, double tot)
 {
-    char   nnodes_str[6];
-    char   nthreads_str[6];
-    char   ncalls_str[11];
+    char   nnodes_str[STRLEN];
+    char   nthreads_str[STRLEN];
+    char   ncalls_str[STRLEN];
     double wallt;
     double percentage = (tot > 0.) ? (100. * c_sum / tot) : 0.;
 
@@ -713,9 +735,10 @@ static void print_header(FILE *fplog, int nrank_pp, int nth_pp, int nrank_pme, i
 void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int npme,
                      int nth_pp, int nth_pme, double realtime,
                      gmx_wallcycle_t wc, const WallcycleCounts &cyc_sum,
-                     struct gmx_wallclock_gpu_t *gpu_t)
+                     const gmx_wallclock_gpu_nbnxn_t *gpu_nbnxn_t,
+                     const gmx_wallclock_gpu_pme_t *gpu_pme_t)
 {
-    double      tot, tot_for_pp, tot_for_rest, tot_gpu, tot_cpu_overlap, gpu_cpu_ratio, tot_k;
+    double      tot, tot_for_pp, tot_for_rest, tot_cpu_overlap, gpu_cpu_ratio;
     double      c2t, c2t_pp, c2t_pme = 0;
     int         i, j, npp, nth_tot;
     char        buf[STRLEN];
@@ -844,18 +867,29 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
 
     if (wc->wcc[ewcPMEMESH].n > 0)
     {
-        fprintf(fplog, " Breakdown of PME mesh computation\n");
-        fprintf(fplog, "%s\n", hline);
+        // A workaround to not print breakdown when no subcounters were recorded.
+        // TODO: figure out and record PME GPU counters (what to do with the waiting ones?)
+        std::vector<int> validPmeSubcounterIndices;
         for (i = ewcPPDURINGPME+1; i < ewcNR; i++)
         {
-            if (is_pme_subcounter(i))
+            if (is_pme_subcounter(i) && wc->wcc[i].n > 0)
+            {
+                validPmeSubcounterIndices.push_back(i);
+            }
+        }
+
+        if (!validPmeSubcounterIndices.empty())
+        {
+            fprintf(fplog, " Breakdown of PME mesh computation\n");
+            fprintf(fplog, "%s\n", hline);
+            for (auto i : validPmeSubcounterIndices)
             {
                 print_cycles(fplog, npme > 0 ? c2t_pme : c2t_pp, wcn[i],
                              npme > 0 ? npme : npp, nth_pme,
                              wc->wcc[i].n, cyc_sum[i], tot);
             }
+            fprintf(fplog, "%s\n", hline);
         }
-        fprintf(fplog, "%s\n", hline);
     }
 
     if (useCycleSubcounters && wc->wcsc)
@@ -872,25 +906,31 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
     }
 
     /* print GPU timing summary */
-    if (gpu_t)
+    double tot_gpu = 0.0;
+    if (gpu_pme_t)
+    {
+        for (size_t k = 0; k < gtPME_EVENT_COUNT; k++)
+        {
+            tot_gpu += gpu_pme_t->timing[k].t;
+        }
+    }
+    if (gpu_nbnxn_t)
     {
         const char *k_log_str[2][2] = {
             {"Nonbonded F kernel", "Nonbonded F+ene k."},
             {"Nonbonded F+prune k.", "Nonbonded F+ene+prune k."}
         };
-
-        tot_gpu = gpu_t->pl_h2d_t + gpu_t->nb_h2d_t + gpu_t->nb_d2h_t;
+        tot_gpu += gpu_nbnxn_t->pl_h2d_t + gpu_nbnxn_t->nb_h2d_t + gpu_nbnxn_t->nb_d2h_t;
 
         /* add up the kernel timings */
-        tot_k = 0.0;
         for (i = 0; i < 2; i++)
         {
             for (j = 0; j < 2; j++)
             {
-                tot_k += gpu_t->ktime[i][j].t;
+                tot_gpu += gpu_nbnxn_t->ktime[i][j].t;
             }
         }
-        tot_gpu += tot_k;
+        tot_gpu += gpu_nbnxn_t->pruneTime.t;
 
         tot_cpu_overlap = wc->wcc[ewcFORCE].c;
         if (wc->wcc[ewcPMEMESH].n > 0)
@@ -903,46 +943,70 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
         fprintf(fplog, " Computing:                         Count  Wall t (s)      ms/step       %c\n", '%');
         fprintf(fplog, "%s\n", hline);
         print_gputimes(fplog, "Pair list H2D",
-                       gpu_t->pl_h2d_c, gpu_t->pl_h2d_t, tot_gpu);
+                       gpu_nbnxn_t->pl_h2d_c, gpu_nbnxn_t->pl_h2d_t, tot_gpu);
         print_gputimes(fplog, "X / q H2D",
-                       gpu_t->nb_c, gpu_t->nb_h2d_t, tot_gpu);
+                       gpu_nbnxn_t->nb_c, gpu_nbnxn_t->nb_h2d_t, tot_gpu);
 
         for (i = 0; i < 2; i++)
         {
             for (j = 0; j < 2; j++)
             {
-                if (gpu_t->ktime[i][j].c)
+                if (gpu_nbnxn_t->ktime[i][j].c)
                 {
                     print_gputimes(fplog, k_log_str[i][j],
-                                   gpu_t->ktime[i][j].c, gpu_t->ktime[i][j].t, tot_gpu);
+                                   gpu_nbnxn_t->ktime[i][j].c, gpu_nbnxn_t->ktime[i][j].t, tot_gpu);
                 }
             }
         }
-
-        print_gputimes(fplog, "F D2H",  gpu_t->nb_c, gpu_t->nb_d2h_t, tot_gpu);
+        if (gpu_pme_t)
+        {
+            for (size_t k = 0; k < gtPME_EVENT_COUNT; k++)
+            {
+                if (gpu_pme_t->timing[k].c)
+                {
+                    print_gputimes(fplog, PMEStageNames[k],
+                                   gpu_pme_t->timing[k].c,
+                                   gpu_pme_t->timing[k].t,
+                                   tot_gpu);
+                }
+            }
+        }
+        if (gpu_nbnxn_t->pruneTime.c)
+        {
+            print_gputimes(fplog, "Pruning kernel", gpu_nbnxn_t->pruneTime.c, gpu_nbnxn_t->pruneTime.t, tot_gpu);
+        }
+        print_gputimes(fplog, "F D2H",  gpu_nbnxn_t->nb_c, gpu_nbnxn_t->nb_d2h_t, tot_gpu);
         fprintf(fplog, "%s\n", hline);
-        print_gputimes(fplog, "Total ", gpu_t->nb_c, tot_gpu, tot_gpu);
+        print_gputimes(fplog, "Total ", gpu_nbnxn_t->nb_c, tot_gpu, tot_gpu);
         fprintf(fplog, "%s\n", hline);
-
+        if (gpu_nbnxn_t->dynamicPruneTime.c)
+        {
+            /* We print the dynamic pruning kernel timings after a separator
+             * and avoid adding it to tot_gpu as this is not in the force
+             * overlap. We print the fraction as relative to the rest.
+             */
+            print_gputimes(fplog, "*Dynamic pruning", gpu_nbnxn_t->dynamicPruneTime.c, gpu_nbnxn_t->dynamicPruneTime.t, tot_gpu);
+            fprintf(fplog, "%s\n", hline);
+        }
         gpu_cpu_ratio = tot_gpu/tot_cpu_overlap;
-        if (gpu_t->nb_c > 0 && wc->wcc[ewcFORCE].n > 0)
+        if (gpu_nbnxn_t->nb_c > 0 && wc->wcc[ewcFORCE].n > 0)
         {
             fprintf(fplog, "\nAverage per-step force GPU/CPU evaluation time ratio: %.3f ms/%.3f ms = %.3f\n",
-                    tot_gpu/gpu_t->nb_c, tot_cpu_overlap/wc->wcc[ewcFORCE].n,
+                    tot_gpu/gpu_nbnxn_t->nb_c, tot_cpu_overlap/wc->wcc[ewcFORCE].n,
                     gpu_cpu_ratio);
         }
 
         /* only print notes related to CPU-GPU load balance with PME */
         if (wc->wcc[ewcPMEMESH].n > 0)
         {
-            fprintf(fplog, "For optimal performance this ratio should be close to 1!\n");
+            fprintf(fplog, "For optimal resource utilization this ratio should be close to 1\n");
 
             /* print note if the imbalance is high with PME case in which
              * CPU-GPU load balancing is possible */
-            if (gpu_cpu_ratio < 0.75 || gpu_cpu_ratio > 1.2)
+            if (gpu_cpu_ratio < 0.8 || gpu_cpu_ratio > 1.25)
             {
                 /* Only the sim master calls this function, so always print to stderr */
-                if (gpu_cpu_ratio < 0.75)
+                if (gpu_cpu_ratio < 0.8)
                 {
                     if (npp > 1)
                     {
@@ -950,8 +1014,8 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
                          * but we currently can't check that here.
                          */
                         GMX_LOG(mdlog.warning).asParagraph().appendText(
-                                "NOTE: The GPU has >25% less load than the CPU. This imbalance causes\n"
-                                "      performance loss. Maybe the domain decomposition limits the PME tuning.\n"
+                                "NOTE: The CPU has >25% more load than the GPU. This imbalance wastes\n"
+                                "      GPU resources. Maybe the domain decomposition limits the PME tuning.\n"
                                 "      In that case, try setting the DD grid manually (-dd) or lowering -dds.");
                     }
                     else
@@ -960,15 +1024,15 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
                          * too small for increasing the cut-off for PME tuning.
                          */
                         GMX_LOG(mdlog.warning).asParagraph().appendText(
-                                "NOTE: The GPU has >25% less load than the CPU. This imbalance causes\n"
-                                "      performance loss.");
+                                "NOTE: The CPU has >25% more load than the GPU. This imbalance wastes\n"
+                                "      GPU resources.");
                     }
                 }
-                if (gpu_cpu_ratio > 1.2)
+                if (gpu_cpu_ratio > 1.25)
                 {
                     GMX_LOG(mdlog.warning).asParagraph().appendText(
-                            "NOTE: The GPU has >20% more load than the CPU. This imbalance causes\n"
-                            "      performance loss, consider using a shorter cut-off and a finer PME grid.");
+                            "NOTE: The GPU has >25% more load than the CPU. This imbalance wastes\n"
+                            "      CPU resources.");
                 }
             }
         }
@@ -991,7 +1055,7 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
             GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                     "NOTE: %d %% of the run time was spent in pair search,\n"
                     "      you might want to increase nstlist (this has no effect on accuracy)\n",
-                    (int)(100*cyc_sum[ewcNS]/tot+0.5));
+                    gmx::roundToInt(100*cyc_sum[ewcNS]/tot));
         }
         else
         {
@@ -999,8 +1063,8 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
                     "NOTE: %d %% of the run time was spent in domain decomposition,\n"
                     "      %d %% of the run time was spent in pair search,\n"
                     "      you might want to increase nstlist (this has no effect on accuracy)\n",
-                    (int)(100*cyc_sum[ewcDOMDEC]/tot+0.5),
-                    (int)(100*cyc_sum[ewcNS]/tot+0.5));
+                    gmx::roundToInt(100*cyc_sum[ewcDOMDEC]/tot),
+                    gmx::roundToInt(100*cyc_sum[ewcNS]/tot));
         }
     }
 
@@ -1009,11 +1073,11 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
         GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                 "NOTE: %d %% of the run time was spent communicating energies,\n"
                 "      you might want to use the -gcom option of mdrun\n",
-                (int)(100*cyc_sum[ewcMoveE]/tot+0.5));
+                gmx::roundToInt(100*cyc_sum[ewcMoveE]/tot));
     }
 }
 
-extern gmx_int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc)
+extern int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc)
 {
     if (wc == nullptr)
     {
@@ -1023,7 +1087,7 @@ extern gmx_int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc)
     return wc->reset_counters;
 }
 
-extern void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_int64_t reset_counters)
+extern void wcycle_set_reset_counters(gmx_wallcycle_t wc, int64_t reset_counters)
 {
     if (wc == nullptr)
     {

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,11 +39,10 @@
 
 #include "tomorse.h"
 
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include <cctype>
 #include <cmath>
+#include <cstdlib>
+#include <cstring>
 
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
@@ -61,7 +60,6 @@ typedef struct {
 
 static t_2morse *read_dissociation_energies(int *n2morse)
 {
-    FILE       *fp;
     char        ai[32], aj[32];
     double      e_diss;
     const char *fn     = "edissoc.dat";
@@ -70,11 +68,11 @@ static t_2morse *read_dissociation_energies(int *n2morse)
     int         nread;
 
     /* Open the file with dissociation energies */
-    fp = libopen(fn);
+    gmx::FilePtr fp = gmx::openLibraryFile(fn);
     do
     {
         /* Try and read two atom names and an energy term from it */
-        nread = fscanf(fp, "%s%s%lf", ai, aj, &e_diss);
+        nread = fscanf(fp.get(), "%s%s%lf", ai, aj, &e_diss);
         if (nread == 3)
         {
             /* If we got three terms, it probably was OK, no further checking */
@@ -94,7 +92,6 @@ static t_2morse *read_dissociation_energies(int *n2morse)
         /* If we did not read three items, quit reading */
     }
     while (nread == 3);
-    gmx_ffclose(fp);
 
     /* Set the return values */
     *n2morse = n2m;
@@ -178,23 +175,14 @@ static real search_e_diss(int n2m, t_2morse t2m[], char *ai, char *aj)
         }
     }
     /* Return the dissocation energy corresponding to the best match, if we have
-     * found one. Do some debug output anyway.
+     * found one.
      */
     if (ibest == -1)
     {
-        if (debug)
-        {
-            fprintf(debug, "MORSE: Couldn't find E_diss for bond %s - %s, using default %g\n", ai, aj, ediss);
-        }
         return ediss;
     }
     else
     {
-        if (debug)
-        {
-            fprintf(debug, "MORSE: Dissoc. E (%10.3f) for bond %4s-%4s taken from bond %4s-%4s\n",
-                    t2m[ibest].e_diss, ai, aj, t2m[ibest].ai, t2m[ibest].aj);
-        }
         return t2m[ibest].e_diss;
     }
 }
@@ -207,14 +195,10 @@ void convert_harmonics(int nrmols, t_molinfo mols[], gpp_atomtype_t atype)
     int       i, j, k, last, ni, nj;
     int       nrharm, nrmorse, bb;
     real      edis, kb, b0, beta;
-    gmx_bool *bRemoveHarm;
+    bool     *bRemoveHarm;
 
     /* First get the data */
     t2m = read_dissociation_energies(&n2m);
-    if (debug)
-    {
-        fprintf(debug, "MORSE: read %d dissoc energies\n", n2m);
-    }
     if (n2m <= 0)
     {
         fprintf(stderr, "No dissocation energies read\n");

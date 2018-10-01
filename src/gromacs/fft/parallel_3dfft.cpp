@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2005 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2013,2014,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,9 +37,9 @@
 
 #include "parallel_3dfft.h"
 
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cerrno>
+#include <cstdlib>
+#include <cstring>
 
 #include "gromacs/fft/fft.h"
 #include "gromacs/fft/fft5d.h"
@@ -53,13 +53,14 @@ struct gmx_parallel_3dfft  {
 };
 
 int
-gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t     *    pfft_setup,
-                           ivec                          ndata,
-                           real     **                   real_data,
-                           t_complex     **              complex_data,
-                           MPI_Comm                      comm[2],
-                           gmx_bool                      bReproducible,
-                           int                           nthreads)
+gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t           *    pfft_setup,
+                           const ivec                          ndata,
+                           real           **                   real_data,
+                           t_complex           **              complex_data,
+                           MPI_Comm                            comm[2],
+                           gmx_bool                            bReproducible,
+                           int                                 nthreads,
+                           gmx::PinningPolicy                  realGridAllocation)
 {
     int        rN      = ndata[2], M = ndata[1], K = ndata[0];
     int        flags   = FFT5D_REALCOMPLEX | FFT5D_ORDER_YZ; /* FFT5D_DEBUG */
@@ -82,12 +83,12 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t     *    pfft_setup,
         Nb = K; Mb = rN; Kb = M;  /* currently always true because ORDER_YZ always set */
     }
 
-    (*pfft_setup)->p1 = fft5d_plan_3d(rN, M, K, rcomm, flags, (t_complex**)real_data, complex_data, &buf1, &buf2, nthreads);
+    (*pfft_setup)->p1 = fft5d_plan_3d(rN, M, K, rcomm, flags, reinterpret_cast<t_complex**>(real_data), complex_data, &buf1, &buf2, nthreads, realGridAllocation);
 
     (*pfft_setup)->p2 = fft5d_plan_3d(Nb, Mb, Kb, rcomm,
-                                      (flags|FFT5D_BACKWARD|FFT5D_NOMALLOC)^FFT5D_ORDER_YZ, complex_data, (t_complex**)real_data, &buf1, &buf2, nthreads);
+                                      (flags|FFT5D_BACKWARD|FFT5D_NOMALLOC)^FFT5D_ORDER_YZ, complex_data, reinterpret_cast<t_complex**>(real_data), &buf1, &buf2, nthreads);
 
-    return (*pfft_setup)->p1 != nullptr && (*pfft_setup)->p2 != nullptr;
+    return static_cast<int>((*pfft_setup)->p1 != nullptr && (*pfft_setup)->p2 != nullptr);
 }
 
 
@@ -168,7 +169,7 @@ gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
                            int                     thread,
                            gmx_wallcycle_t         wcycle)
 {
-    if ((!(pfft_setup->p1->flags&FFT5D_REALCOMPLEX)) ^ (dir == GMX_FFT_FORWARD || dir == GMX_FFT_BACKWARD))
+    if (((pfft_setup->p1->flags&FFT5D_REALCOMPLEX) == 0) ^ (dir == GMX_FFT_FORWARD || dir == GMX_FFT_BACKWARD))
     {
         gmx_fatal(FARGS, "Invalid transform. Plan and execution don't match regarding reel/complex");
     }

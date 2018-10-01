@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,14 +38,13 @@
 
 #include "gmxcpp.h"
 
-#include <ctype.h>
-#include <errno.h>
-#include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include <cctype>
+#include <cerrno>
+#include <climits>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include <algorithm>
 
@@ -55,6 +54,7 @@
 #include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 typedef struct {
@@ -84,9 +84,9 @@ typedef struct gmx_cpp {
     struct   gmx_cpp *child, *parent;
 } gmx_cpp;
 
-static gmx_bool is_word_end(char c)
+static bool is_word_end(char c)
 {
-    return !(isalnum(c) || c == '_');
+    return !((isalnum(c) != 0) || c == '_');
 }
 
 static const char *strstrw(const char *buf, const char *word)
@@ -108,7 +108,10 @@ static const char *strstrw(const char *buf, const char *word)
     return nullptr;
 }
 
-static gmx_bool find_directive(char *buf, char **name, char **val)
+/* Finds a preprocessor directive, whose name (after the '#') is
+ * returned in *name, and the remainder of the line after leading
+ * whitespace is returned in *val (which can be nullptr). */
+static bool find_directive(char *buf, char **name, char **val)
 {
     /* Skip initial whitespace */
     while (isspace(*buf))
@@ -147,7 +150,7 @@ static gmx_bool find_directive(char *buf, char **name, char **val)
     return TRUE;
 }
 
-static gmx_bool is_ifdeffed_out(gmx_cpp_t handle)
+static bool is_ifdeffed_out(gmx_cpp_t handle)
 {
     return ((handle->nifdef > 0) && (handle->ifdefs[handle->nifdef-1] != eifTRUE));
 }
@@ -208,10 +211,6 @@ static void add_define(const char *name, const char *value)
     }
     else if (defs[i].def)
     {
-        if (debug)
-        {
-            fprintf(debug, "Overriding define %s\n", name);
-        }
         sfree(defs[i].def);
     }
     if (value && strlen(value) > 0)
@@ -275,10 +274,6 @@ int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
             i++;
         }
     }
-    if (debug)
-    {
-        fprintf(debug, "GMXCPP: added %d command line arguments\n", i);
-    }
 
     snew(cpp, 1);
     *handle      = cpp;
@@ -305,16 +300,12 @@ int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
         /* If still not found, check the Gromacs library search path. */
         if (!cpp->fn)
         {
-            cpp->fn = low_gmxlibfn(filenm, FALSE, FALSE);
+            cpp->fn = gmx_strdup(gmx::findLibraryFile(filenm, false, false).c_str());
         }
     }
     if (!cpp->fn)
     {
         gmx_fatal(FARGS, "Topology include file \"%s\" not found", filenm);
-    }
-    if (nullptr != debug)
-    {
-        fprintf(debug, "GMXCPP: cpp file open %s\n", cpp->fn);
     }
     /* If the file name has a path component, we need to change to that
      * directory. Note that we - just as C - always use UNIX path separators
@@ -340,16 +331,7 @@ int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
         snew(cpp->cwd, STRLEN);
 
         gmx_getcwd(cpp->cwd, STRLEN);
-        if (nullptr != debug)
-        {
-            fprintf(debug, "GMXCPP: cwd %s\n", cpp->cwd);
-        }
         gmx_chdir(cpp->path);
-
-        if (nullptr != debug)
-        {
-            fprintf(debug, "GMXCPP: chdir to %s\n", cpp->path);
-        }
     }
     cpp->line_len = 0;
     cpp->line     = nullptr;
@@ -360,10 +342,6 @@ int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
     cpp->parent   = nullptr;
     if (cpp->fp == nullptr)
     {
-        if (nullptr != debug)
-        {
-            fprintf(debug, "GMXCPP: opening file %s\n", cpp->fn);
-        }
         cpp->fp = fopen(cpp->fn, "r");
     }
     if (cpp->fp == nullptr)
@@ -378,21 +356,23 @@ int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
     return eCPP_OK;
 }
 
+/* Note that dval might be null, e.g. when handling a line like '#define */
 static int
 process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
 {
-    gmx_cpp_t    handle = (gmx_cpp_t)*handlep;
+    gmx_cpp_t    handle = *handlep;
     int          i, i0, len, status;
     unsigned int i1;
     char        *inc_fn, *name;
     const char  *ptr;
-    int          bIfdef, bIfndef;
+    bool         bIfdef, bIfndef;
 
     /* #ifdef or ifndef statement */
-    bIfdef  = (strcmp(dname, "ifdef") == 0);
-    bIfndef = (strcmp(dname, "ifndef") == 0);
+    bIfdef  = strcmp(dname, "ifdef") == 0;
+    bIfndef = strcmp(dname, "ifndef") == 0;
     if (bIfdef || bIfndef)
     {
+        GMX_RELEASE_ASSERT(dval, "#ifdef/#ifndef requires an argument");
         if ((handle->nifdef > 0) && (handle->ifdefs[handle->nifdef-1] != eifTRUE))
         {
             handle->nifdef++;
@@ -401,6 +381,11 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
         }
         else
         {
+            // A bare '#ifdef' or '#ifndef' is invalid
+            if (dval == nullptr)
+            {
+                return eCPP_SYNTAX;
+            }
             snew(name, strlen(dval)+1);
             sscanf(dval, "%s", name);
             for (i = 0; (i < ndef); i++)
@@ -465,8 +450,14 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
     /* Check for include statements */
     if (strcmp(dname, "include") == 0)
     {
+        GMX_RELEASE_ASSERT(dval, "#include requires an argument");
         len = -1;
         i0  = 0;
+        // A bare '#include' is an invalid line
+        if (dval == nullptr)
+        {
+            return eCPP_SYNTAX;
+        }
         for (i1 = 0; (i1 < strlen(dval)); i1++)
         {
             if ((dval[i1] == '"') || (dval[i1] == '<') || (dval[i1] == '>'))
@@ -494,11 +485,6 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
         strncpy(inc_fn, dval+i0, len);
         inc_fn[len] = '\0';
 
-        if (debug)
-        {
-            fprintf(debug, "Going to open include file '%s' i0 = %d, strlen = %d\n",
-                    inc_fn, i0, len);
-        }
         /* Open include file and store it as a child in the handle structure */
         status = cpp_open_file(inc_fn, &(handle->child), nullptr);
         sfree(inc_fn);
@@ -516,6 +502,11 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
     /* #define statement */
     if (strcmp(dname, "define") == 0)
     {
+        // A bare '#define' is an invalid line
+        if (dval == nullptr)
+        {
+            return eCPP_SYNTAX;
+        }
         /* Split it into name and value. */
         ptr = dval;
         while ((*ptr != '\0') && !isspace(*ptr))
@@ -537,6 +528,11 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
     /* #undef statement */
     if (strcmp(dname, "undef") == 0)
     {
+        // A bare '#undef' is an invalid line
+        if (dval == nullptr)
+        {
+            return eCPP_SYNTAX;
+        }
         snew(name, strlen(dval)+1);
         sscanf(dval, "%s", name);
         for (i = 0; (i < ndef); i++)
@@ -570,12 +566,12 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
    recursively and no cpp directives are printed. */
 int cpp_read_line(gmx_cpp_t *handlep, int n, char buf[])
 {
-    gmx_cpp_t   handle = (gmx_cpp_t)*handlep;
+    gmx_cpp_t   handle = *handlep;
     int         i, nn, len, status;
     const char *ptr, *ptr2;
     char       *name;
     char       *dname, *dval;
-    gmx_bool    bEOF;
+    bool        bEOF;
 
     if (!handle)
     {
@@ -586,7 +582,7 @@ int cpp_read_line(gmx_cpp_t *handlep, int n, char buf[])
         return eCPP_FILE_NOT_OPEN;
     }
 
-    bEOF = feof(handle->fp);
+    bEOF = (feof(handle->fp) != 0);
     if (!bEOF)
     {
         /* Read the actual line now. */
@@ -595,7 +591,7 @@ int cpp_read_line(gmx_cpp_t *handlep, int n, char buf[])
             /* Recheck EOF, since we could have been at the end before
              * the fgets2 call, but we need to read past the end to know.
              */
-            bEOF = feof(handle->fp);
+            bEOF = (feof(handle->fp) != 0);
             if (!bEOF)
             {
                 /* Something strange happened, fgets returned NULL,
@@ -615,6 +611,7 @@ int cpp_read_line(gmx_cpp_t *handlep, int n, char buf[])
         cpp_close_file(handlep);
         *handlep      = handle->parent;
         handle->child = nullptr;
+        sfree(handle);
         return cpp_read_line(handlep, n, buf);
     }
     else
@@ -626,12 +623,7 @@ int cpp_read_line(gmx_cpp_t *handlep, int n, char buf[])
         }
         strcpy(handle->line, buf);
         handle->line_nr++;
-    }
-    /* Now we've read a line! */
-    if (debug)
-    {
-        fprintf(debug, "%s : %4d : %s\n", handle->fn, handle->line_nr, buf);
-    }
+    } /* Now we've read a line! */
 
     /* Process directives if this line contains one */
     if (find_directive(buf, &dname, &dval))
@@ -677,7 +669,7 @@ int cpp_read_line(gmx_cpp_t *handlep, int n, char buf[])
                 ptr = buf;
                 while ((ptr2 = strstrw(ptr, defs[i].name)) != nullptr)
                 {
-                    strncat(name, ptr, (int)(ptr2-ptr));
+                    strncat(name, ptr, static_cast<int>(ptr2-ptr));
                     strcat(name, defs[i].def);
                     ptr = ptr2 + strlen(defs[i].name);
                 }
@@ -704,7 +696,7 @@ int cpp_cur_linenr(const gmx_cpp_t *handlep)
 /* Close the file! Return integer status. */
 int cpp_close_file(gmx_cpp_t *handlep)
 {
-    gmx_cpp_t handle = (gmx_cpp_t)*handlep;
+    gmx_cpp_t handle = *handlep;
 
     if (!handle)
     {
@@ -714,40 +706,12 @@ int cpp_close_file(gmx_cpp_t *handlep)
     {
         return eCPP_FILE_NOT_OPEN;
     }
-    if (debug)
-    {
-        fprintf(debug, "GMXCPP: closing file %s\n", handle->fn);
-    }
     fclose(handle->fp);
     if (nullptr != handle->cwd)
     {
-        if (nullptr != debug)
-        {
-            fprintf(debug, "GMXCPP: chdir to %s\n", handle->cwd);
-        }
         gmx_chdir(handle->cwd);
     }
 
-    if (0)
-    {
-        switch (errno)
-        {
-            case 0:
-                break;
-            case ENOENT:
-                return eCPP_FILE_NOT_FOUND;
-            case EBADF:
-                return eCPP_FILE_NOT_OPEN;
-            case EINTR:
-                return eCPP_INTERRUPT;
-            default:
-                if (debug)
-                {
-                    fprintf(debug, "Strange stuff closing file, errno = %d", errno);
-                }
-                return eCPP_UNKNOWN;
-        }
-    }
     handle->fp      = nullptr;
     handle->line_nr = 0;
     if (nullptr != handle->fn)
@@ -777,10 +741,17 @@ int cpp_close_file(gmx_cpp_t *handlep)
     return eCPP_OK;
 }
 
-void cpp_done()
+void cpp_done(gmx_cpp_t handle)
 {
     done_includes();
     done_defines();
+
+    int status = cpp_close_file(&handle);
+    if (status != eCPP_OK)
+    {
+        gmx_fatal(FARGS, "%s", cpp_error(&handle, status));
+    }
+    sfree(handle);
 }
 
 /* Return a string containing the error message coresponding to status
@@ -793,11 +764,11 @@ char *cpp_error(gmx_cpp_t *handlep, int status)
         "Invalid file handle",
         "File not open", "Unknown error", "Error status out of range"
     };
-    gmx_cpp_t   handle = (gmx_cpp_t)*handlep;
+    gmx_cpp_t   handle = *handlep;
 
     if (!handle)
     {
-        return (char *)ecpp[eCPP_INVALID_HANDLE];
+        return const_cast<char *>(ecpp[eCPP_INVALID_HANDLE]);
     }
 
     if ((status < 0) || (status >= eCPP_NR))

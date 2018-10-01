@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,21 +66,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-char atp[7] = "HCNOSX";
-#define NATP (asize(atp)-1)
-
-double blen[NATP][NATP] = {
-    {  0.00,  0.108, 0.105, 0.10, 0.10, 0.10 },
-    {  0.108, 0.15,  0.14,  0.14, 0.16, 0.14 },
-    {  0.105, 0.14,  0.14,  0.14, 0.16, 0.14 },
-    {  0.10,  0.14,  0.14,  0.14, 0.17, 0.14 },
-    {  0.10,  0.16,  0.16,  0.17, 0.20, 0.17 },
-    {  0.10,  0.14,  0.14,  0.14, 0.17, 0.17 }
-};
-
 #define MARGIN_FAC 1.1
 
-static gmx_bool is_bond(int nnm, t_nm2type nmt[], char *ai, char *aj, real blen)
+static bool is_bond(int nnm, t_nm2type nmt[], char *ai, char *aj, real blen)
 {
     int i, j;
 
@@ -101,9 +89,9 @@ static gmx_bool is_bond(int nnm, t_nm2type nmt[], char *ai, char *aj, real blen)
     return FALSE;
 }
 
-void mk_bonds(int nnm, t_nm2type nmt[],
-              t_atoms *atoms, const rvec x[], t_params *bond, int nbond[],
-              gmx_bool bPBC, matrix box)
+static void mk_bonds(int nnm, t_nm2type nmt[],
+                     t_atoms *atoms, const rvec x[], t_params *bond, int nbond[],
+                     bool bPBC, matrix box)
 {
     t_param b;
     int     i, j;
@@ -152,11 +140,6 @@ void mk_bonds(int nnm, t_nm2type nmt[],
                 add_param_to_list (bond, &b);
                 nbond[i]++;
                 nbond[j]++;
-                if (debug)
-                {
-                    fprintf(debug, "Bonding atoms %s-%d and %s-%d\n",
-                            *atoms->atomname[i], i+1, *atoms->atomname[j], j+1);
-                }
             }
         }
     }
@@ -164,7 +147,7 @@ void mk_bonds(int nnm, t_nm2type nmt[],
     fflush(stderr);
 }
 
-int *set_cgnr(t_atoms *atoms, gmx_bool bUsePDBcharge, real *qtot, real *mtot)
+static int *set_cgnr(t_atoms *atoms, bool bUsePDBcharge, real *qtot, real *mtot)
 {
     int     i, n = 1;
     int    *cgnr;
@@ -191,8 +174,8 @@ int *set_cgnr(t_atoms *atoms, gmx_bool bUsePDBcharge, real *qtot, real *mtot)
     return cgnr;
 }
 
-gpp_atomtype_t set_atom_type(t_symtab *tab, t_atoms *atoms, t_params *bonds,
-                             int *nbonds, int nnm, t_nm2type nm2t[])
+static gpp_atomtype_t set_atom_type(t_symtab *tab, t_atoms *atoms, t_params *bonds,
+                                    int *nbonds, int nnm, t_nm2type nm2t[])
 {
     gpp_atomtype_t atype;
     int            nresolved;
@@ -212,8 +195,8 @@ gpp_atomtype_t set_atom_type(t_symtab *tab, t_atoms *atoms, t_params *bonds,
     return atype;
 }
 
-void lo_set_force_const(t_params *plist, real c[], int nrfp, gmx_bool bRound,
-                        gmx_bool bDih, gmx_bool bParam)
+static void lo_set_force_const(t_params *plist, real c[], int nrfp, bool bRound,
+                               bool bDih, bool bParam)
 {
     int    i, j;
     double cc;
@@ -243,7 +226,7 @@ void lo_set_force_const(t_params *plist, real c[], int nrfp, gmx_bool bRound,
             if (bDih)
             {
                 c[0] *= c[2];
-                c[0]  = ((int)(c[0] + 3600)) % 360;
+                c[0]  = (static_cast<int>(c[0] + 3600)) % 360;
                 if (c[0] > 180)
                 {
                     c[0] -= 360;
@@ -262,8 +245,8 @@ void lo_set_force_const(t_params *plist, real c[], int nrfp, gmx_bool bRound,
     }
 }
 
-void set_force_const(t_params plist[], real kb, real kt, real kp, gmx_bool bRound,
-                     gmx_bool bParam)
+static void set_force_const(t_params plist[], real kb, real kt, real kp, bool bRound,
+                            bool bParam)
 {
     real c[MAXFORCEPARAM];
 
@@ -277,21 +260,17 @@ void set_force_const(t_params plist[], real kb, real kt, real kp, gmx_bool bRoun
     lo_set_force_const(&plist[F_PDIHS], c, 3, bRound, TRUE, bParam);
 }
 
-void calc_angles_dihs(t_params *ang, t_params *dih, const rvec x[], gmx_bool bPBC,
-                      matrix box)
+static void calc_angles_dihs(t_params *ang, t_params *dih, const rvec x[], bool bPBC,
+                             matrix box)
 {
     int    i, ai, aj, ak, al, t1, t2, t3;
     rvec   r_ij, r_kj, r_kl, m, n;
-    real   sign, th, costh, ph;
+    real   th, costh, ph;
     t_pbc  pbc;
 
     if (bPBC)
     {
         set_pbc(&pbc, epbcXYZ, box);
-    }
-    if (debug)
-    {
-        pr_rvecs(debug, 0, "X2TOP", box, DIM);
     }
     for (i = 0; (i < ang->nr); i++)
     {
@@ -300,11 +279,6 @@ void calc_angles_dihs(t_params *ang, t_params *dih, const rvec x[], gmx_bool bPB
         ak = ang->param[i].ak();
         th = RAD2DEG*bond_angle(x[ai], x[aj], x[ak], bPBC ? &pbc : nullptr,
                                 r_ij, r_kj, &costh, &t1, &t2);
-        if (debug)
-        {
-            fprintf(debug, "X2TOP: ai=%3d aj=%3d ak=%3d r_ij=%8.3f r_kj=%8.3f th=%8.3f\n",
-                    ai, aj, ak, norm(r_ij), norm(r_kj), th);
-        }
         ang->param[i].c0() = th;
     }
     for (i = 0; (i < dih->nr); i++)
@@ -314,12 +288,7 @@ void calc_angles_dihs(t_params *ang, t_params *dih, const rvec x[], gmx_bool bPB
         ak = dih->param[i].ak();
         al = dih->param[i].al();
         ph = RAD2DEG*dih_angle(x[ai], x[aj], x[ak], x[al], bPBC ? &pbc : nullptr,
-                               r_ij, r_kj, r_kl, m, n, &sign, &t1, &t2, &t3);
-        if (debug)
-        {
-            fprintf(debug, "X2TOP: ai=%3d aj=%3d ak=%3d al=%3d r_ij=%8.3f r_kj=%8.3f r_kl=%8.3f ph=%8.3f\n",
-                    ai, aj, ak, al, norm(r_ij), norm(r_kj), norm(r_kl), ph);
-        }
+                               r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
         dih->param[i].c0() = ph;
     }
 }
@@ -439,7 +408,7 @@ int gmx_x2top(int argc, char *argv[])
     matrix             box;    /* box length matrix */
     int                natoms; /* number of atoms in one molecule  */
     int                epbc;
-    gmx_bool           bRTP, bTOP, bOPLS;
+    bool               bRTP, bTOP, bOPLS;
     t_symtab           symtab;
     real               qtot, mtot;
     char               n2t[STRLEN];
@@ -451,17 +420,17 @@ int gmx_x2top(int argc, char *argv[])
         { efRTP, "-r", "out",  ffOPTWR }
     };
 #define NFILE asize(fnm)
-    static real        kb = 4e5, kt = 400, kp = 5;
-    static t_restp     rtp_header_settings;
-    static gmx_bool    bRemoveDihedralIfWithImproper = FALSE;
-    static gmx_bool    bGenerateHH14Interactions     = TRUE;
-    static gmx_bool    bKeepAllGeneratedDihedrals    = FALSE;
-    static int         nrexcl                        = 3;
-    static gmx_bool    bParam                        = TRUE, bRound = TRUE;
-    static gmx_bool    bPairs                        = TRUE, bPBC = TRUE;
-    static gmx_bool    bUsePDBcharge                 = FALSE, bVerbose = FALSE;
-    static const char *molnm                         = "ICE";
-    static const char *ff                            = "oplsaa";
+    real               kb                            = 4e5, kt = 400, kp = 5;
+    t_restp            rtp_header_settings           = { nullptr };
+    bool               bRemoveDihedralIfWithImproper = FALSE;
+    bool               bGenerateHH14Interactions     = TRUE;
+    bool               bKeepAllGeneratedDihedrals    = FALSE;
+    int                nrexcl                        = 3;
+    bool               bParam                        = TRUE, bRound = TRUE;
+    bool               bPairs                        = TRUE, bPBC = TRUE;
+    bool               bUsePDBcharge                 = FALSE, bVerbose = FALSE;
+    const char        *molnm                         = "ICE";
+    const char        *ff                            = "oplsaa";
     t_pargs            pa[]                          = {
         { "-ff",     FALSE, etSTR, {&ff},
           "Force field for your simulation. Type \"select\" for interactive selection." },

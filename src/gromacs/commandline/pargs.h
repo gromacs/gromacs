@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,13 +50,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-struct t_commrec;
 struct gmx_output_env_t;
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 
 /*! \addtogroup module_commandline
  * \{
@@ -100,7 +94,7 @@ typedef struct
         /** Integer value for etINT. */
         int             *i;
         /** Integer value for etINT64. */
-        gmx_int64_t     *is;
+        int64_t         *is;
         /** Real value for etREAL and etTIME. */
         real            *r;
         /*! \brief
@@ -214,7 +208,7 @@ const char *opt2parg_enum(const char *option, int nparg, t_pargs pa[]);
  *
  * \p option must specify a valid argument in \p pa.
  */
-gmx_bool opt2parg_bSet(const char *option, int nparg, t_pargs pa[]);
+gmx_bool opt2parg_bSet(const char *option, int nparg, const t_pargs *pa);
 
 
 /** Add option -w to view output files (must be implemented in program). */
@@ -233,8 +227,6 @@ gmx_bool opt2parg_bSet(const char *option, int nparg, t_pargs pa[]);
 #define PCA_CAN_SET_DEFFNM (1<<10)
 /** Do not raise a fatal error when invalid options are encountered. */
 #define PCA_NOEXIT_ON_ARGS (1<<11)
-/** Is this node not reading: for parallel all nodes but the master */
-#define PCA_NOT_READ_NODE  (1<<16)
 /** Don't do any special processing for ffREAD files */
 #define PCA_DISABLE_INPUT_FILE_CHECKING (1<<17)
 
@@ -265,9 +257,5 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                            gmx_output_env_t **oenv);
 
 /*! \} */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

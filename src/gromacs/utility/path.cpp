@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,7 +94,7 @@ const char cPathSeparator = ':';
 //! Check whether a given character is a directory separator.
 bool isDirSeparator(char chr)
 {
-    return std::strchr(cDirSeparators, chr);
+    return std::strchr(cDirSeparators, chr) != nullptr;
 }
 
 } // namespace
@@ -117,14 +117,10 @@ bool Path::containsDirectory(const std::string &path)
  */
 bool Path::isAbsolute(const char *path)
 {
-    if (isDirSeparator(path[0]))
-    {
-        return true;
-    }
 #if GMX_NATIVE_WINDOWS
     return path[0] != '\0' && path[1] == ':' && isDirSeparator(path[2]);
 #else
-    return false;
+    return isDirSeparator(path[0]);
 #endif
 }
 
@@ -335,10 +331,9 @@ std::string Path::concatenateBeforeExtension(const std::string &input, const std
 std::string Path::normalize(const std::string &path)
 {
     std::string result(path);
-    if (DIR_SEPARATOR != '/')
-    {
-        std::replace(result.begin(), result.end(), '/', DIR_SEPARATOR);
-    }
+#if DIR_SEPARATOR != '/'
+    std::replace(result.begin(), result.end(), '/', DIR_SEPARATOR);
+#endif
     return result;
 }
 

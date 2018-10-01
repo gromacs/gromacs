@@ -4,13 +4,13 @@
   <Sequence Name="InvsixthrootFloat">
     <Int Name="Length">9</Int>
     <Real>1</Real>
-    <Real>1.122462</Real>
-    <Real>1.2009369</Real>
-    <Real>1.2599211</Real>
-    <Real>1.3076605</Real>
-    <Real>1.3480061</Real>
-    <Real>1.3830875</Real>
-    <Real>1.4142135</Real>
-    <Real>1.4422495</Real>
+    <Real>0.8908987</Real>
+    <Real>0.83268321</Real>
+    <Real>0.79370052</Real>
+    <Real>0.76472449</Real>
+    <Real>0.74183637</Real>
+    <Real>0.72302002</Real>
+    <Real>0.70710677</Real>
+    <Real>0.69336128</Real>
   </Sequence>
 </ReferenceData>

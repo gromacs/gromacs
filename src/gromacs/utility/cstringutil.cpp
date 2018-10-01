@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,14 +39,12 @@
 
 #include "cstringutil.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <cassert>
 #include <cctype>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -54,7 +52,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/sysinfo.h"
+
+//! Comment sign to use.
+#define COMMENTSIGN ';'
 
 int continuing(char *s)
 {
@@ -126,7 +126,7 @@ void upstring (char *str)
 {
     int i;
 
-    for (i = 0; (i < (int)strlen(str)); i++)
+    for (i = 0; (i < static_cast<int>(strlen(str))); i++)
     {
         str[i] = toupper(str[i]);
     }
@@ -179,28 +179,6 @@ void trim (char *str)
     rtrim (str);
 }
 
-void nice_header(FILE *out, const char *fn)
-{
-    int            uid;
-    char           userbuf[256];
-    char           hostbuf[256];
-    char           timebuf[STRLEN];
-
-    /* Print a nice header above the file */
-    fprintf(out, "%c\n", COMMENTSIGN);
-    fprintf(out, "%c\tFile '%s' was generated\n", COMMENTSIGN, fn ? fn : "unknown");
-
-    uid  = gmx_getuid();
-    gmx_getusername(userbuf, 256);
-    gmx_gethostname(hostbuf, 256);
-    gmx_format_current_time(timebuf, STRLEN);
-
-    fprintf(out, "%c\tBy user: %s (%d)\n", COMMENTSIGN, userbuf, uid);
-    fprintf(out, "%c\tOn host: %s\n", COMMENTSIGN, hostbuf);
-    fprintf(out, "%c\tAt date: %s\n", COMMENTSIGN, timebuf);
-    fprintf(out, "%c\n", COMMENTSIGN);
-}
-
 int gmx_strcasecmp_min(const char *str1, const char *str2)
 {
     char ch1, ch2;
@@ -223,7 +201,7 @@ int gmx_strcasecmp_min(const char *str1, const char *str2)
             return (ch1-ch2);
         }
     }
-    while (ch1);
+    while (ch1 != 0);
     return 0;
 }
 
@@ -232,8 +210,8 @@ int gmx_strncasecmp_min(const char *str1, const char *str2, int n)
     char  ch1, ch2;
     char *stri1, *stri2;
 
-    stri1 = (char *)str1;
-    stri2 = (char *)str2;
+    stri1 = const_cast<char *>(str1);
+    stri2 = const_cast<char *>(str2);
     do
     {
         do
@@ -252,7 +230,7 @@ int gmx_strncasecmp_min(const char *str1, const char *str2, int n)
             return (ch1-ch2);
         }
     }
-    while (ch1 && (str1-stri1 < n) && (str2-stri2 < n));
+    while ((ch1 != 0) && (str1-stri1 < n) && (str2-stri2 < n));
     return 0;
 }
 
@@ -269,7 +247,7 @@ int gmx_strcasecmp(const char *str1, const char *str2)
             return (ch1-ch2);
         }
     }
-    while (ch1);
+    while (ch1 != 0);
     return 0;
 }
 
@@ -292,7 +270,7 @@ int gmx_strncasecmp(const char *str1, const char *str2, int n)
         }
         n--;
     }
-    while (ch1 && n);
+    while ((ch1 != 0) && (n != 0));
     return 0;
 }
 
@@ -519,13 +497,13 @@ char *wrap_lines(const char *buf, int line_width, int indent, gmx_bool bIndentFi
             }
         }
     }
-    while (buf[i]);
+    while (buf[i] != 0);
     b2[i2] = '\0';
 
     return b2;
 }
 
-gmx_int64_t
+int64_t
 str_to_int64_t(const char *str, char **endptr)
 {
 #ifndef _MSC_VER
@@ -535,6 +513,7 @@ str_to_int64_t(const char *str, char **endptr)
 #endif
 }
 
+<<<<<<< HEAD
 char *gmx_strsep(char **stringp, const char *delim)
 {
     char *ret;
@@ -573,84 +552,10 @@ char *gmx_strsep(char **stringp, const char *delim)
 }
 
 char *gmx_step_str(gmx_int64_t i, char *buf)
+=======
+char *gmx_step_str(int64_t i, char *buf)
+>>>>>>> master
 {
-    sprintf(buf, "%" GMX_PRId64, i);
+    sprintf(buf, "%" PRId64, i);
     return buf;
-}
-
-void parse_digits_from_string(const char *digitstring, int *ndigits, int **digitlist)
-{
-    /* TODO use std::string, once gmx_gpu_opt_t is ready for it */
-    if (nullptr == digitstring)
-    {
-        *ndigits   = 0;
-        *digitlist = nullptr;
-        return;
-    }
-
-    if (strstr(digitstring, ",") != nullptr)
-    {
-        parse_digits_from_csv_string(digitstring, ndigits, digitlist);
-    }
-    else
-    {
-        parse_digits_from_plain_string(digitstring, ndigits, digitlist);
-    }
-}
-
-void parse_digits_from_plain_string(const char *digitstring, int *ndigits, int **digitlist)
-{
-    int i;
-
-    if (nullptr == digitstring)
-    {
-        *ndigits   = 0;
-        *digitlist = nullptr;
-        return;
-    }
-
-    *ndigits = strlen(digitstring);
-
-    snew(*digitlist, *ndigits);
-
-    for (i = 0; i < *ndigits; i++)
-    {
-        if (digitstring[i] < '0' || digitstring[i] > '9')
-        {
-            gmx_fatal(FARGS, "Invalid character in digit-only string: '%c'\n",
-                      digitstring[i]);
-        }
-        (*digitlist)[i] = digitstring[i] - '0';
-    }
-}
-
-void parse_digits_from_csv_string(const char *digitstring, int *ndigits, int **digitlist)
-{
-    if (nullptr == digitstring)
-    {
-        *ndigits   = 0;
-        *digitlist = nullptr;
-        return;
-    }
-
-    std::vector<int>   digits;
-    std::istringstream ss(digitstring);
-    std::string        token;
-    while (std::getline(ss, token, ','))
-    {
-        if (token.find_first_not_of("0123456789") != std::string::npos)
-        {
-            gmx_fatal(FARGS, "Invalid token in digit-only string: \"%s\"\n",
-                      token.c_str());
-        }
-        int number = static_cast<int>(str_to_int64_t(token.c_str(), nullptr));
-        digits.push_back(number);
-    }
-
-    *ndigits = digits.size();
-    snew(*digitlist, *ndigits);
-    for (size_t i = 0; i < digits.size(); i++)
-    {
-        (*digitlist)[i] = digits[i];
-    }
 }

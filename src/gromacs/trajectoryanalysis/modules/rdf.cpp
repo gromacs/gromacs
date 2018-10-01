@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,6 +70,7 @@
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/trajectoryanalysis/topologyinformation.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -116,22 +117,22 @@ class Rdf : public TrajectoryAnalysisModule
     public:
         Rdf();
 
-        virtual void initOptions(IOptionsContainer          *options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation        &top);
-        virtual void initAfterFirstFrame(const TrajectoryAnalysisSettings &settings,
-                                         const t_trxframe                 &fr);
+        void initOptions(IOptionsContainer          *options,
+                         TrajectoryAnalysisSettings *settings) override;
+        void optionsFinished(TrajectoryAnalysisSettings *settings) override;
+        void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                          const TopologyInformation        &top) override;
+        void initAfterFirstFrame(const TrajectoryAnalysisSettings &settings,
+                                 const t_trxframe                 &fr) override;
 
-        virtual TrajectoryAnalysisModuleDataPointer startFrames(
+        TrajectoryAnalysisModuleDataPointer startFrames(
             const AnalysisDataParallelOptions &opt,
-            const SelectionCollection         &selections);
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+            const SelectionCollection         &selections) override;
+        void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                          TrajectoryAnalysisModuleData *pdata) override;
 
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
+        void finishAnalysis(int nframes) override;
+        void writeOutput() override;
 
     private:
         std::string                               fnRdf_;
@@ -184,6 +185,8 @@ class Rdf : public TrajectoryAnalysisModule
         AnalysisDataAverageModulePointer          normAve_;
         //! Neighborhood search with `refSel_` as the reference positions.
         AnalysisNeighborhood                      nb_;
+        //! Topology exclusions used by neighborhood searching.
+        const gmx_localtop_t                     *localTop_;
 
         // User input options.
         double                                    binwidth_;
@@ -206,6 +209,7 @@ Rdf::Rdf()
     : surface_(SurfaceType_None),
       pairCounts_(new AnalysisDataSimpleHistogramModule()),
       normAve_(new AnalysisDataAverageModule()),
+      localTop_(nullptr),
       binwidth_(0.002), cutoff_(0.0), rmax_(0.0),
       normalization_(Normalization_Rdf), bNormalizationSet_(false), bXY_(false),
       bExclusions_(false),
@@ -374,12 +378,12 @@ Rdf::initAnalysis(const TrajectoryAnalysisSettings &settings,
                 GMX_THROW(InconsistentInputError("-excl only works with selections that consist of atoms"));
             }
         }
-        const t_topology *topology = top.topology();
-        if (topology->excls.nr == 0)
+        localTop_ = top.expandedTopology();
+        if (localTop_->excls.nr == 0)
         {
             GMX_THROW(InconsistentInputError("-excl is set, but the file provided to -s does not define exclusions"));
         }
-        nb_.setTopologyExclusions(&topology->excls);
+        nb_.setTopologyExclusions(&localTop_->excls);
     }
 }
 
@@ -437,7 +441,7 @@ class RdfModuleData : public TrajectoryAnalysisModuleData
             surfaceDist2_.resize(surfaceGroupCount);
         }
 
-        virtual void finish() { finishDataHandles(); }
+        void finish() override { finishDataHandles(); }
 
         /*! \brief
          * Minimum distance to each surface group.

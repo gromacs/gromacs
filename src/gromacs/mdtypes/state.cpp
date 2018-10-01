@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,11 +43,16 @@
 
 #include <algorithm>
 
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/veccompare.h"
+#include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/swaphistory.h"
+#include "gromacs/pbcutil/boxutilities.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/compare.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -70,32 +75,12 @@ ekinstate_t::ekinstate_t() : bUpToDate(FALSE),
                              ekinf(nullptr),
                              ekinh_old(nullptr),
                              ekin_total(),
-                             ekinscalef_nhc(),
-                             ekinscaleh_nhc(),
-                             vscale_nhc(),
+
                              dekindl(0),
                              mvcos(0)
 {
     clear_mat(ekin_total);
 };
-
-static void init_swapstate(swapstate_t *swapstate)
-{
-    /* Ion/water position swapping */
-    swapstate->eSwapCoords            = 0;
-    swapstate->nIonTypes              = 0;
-    swapstate->nAverage               = 0;
-    swapstate->fluxleak               = 0;
-    swapstate->fluxleak_p             = nullptr;
-    swapstate->bFromCpt               = 0;
-    swapstate->nat[eChan0]            = 0;
-    swapstate->nat[eChan1]            = 0;
-    swapstate->xc_old_whole[eChan0]   = nullptr;
-    swapstate->xc_old_whole[eChan1]   = nullptr;
-    swapstate->xc_old_whole_p[eChan0] = nullptr;
-    swapstate->xc_old_whole_p[eChan1] = nullptr;
-    swapstate->ionType                = nullptr;
-}
 
 void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
 {
@@ -105,6 +90,7 @@ void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
     state->nosehoover_xi.resize(state->nhchainlength*state->ngtc, 0);
     state->nosehoover_vxi.resize(state->nhchainlength*state->ngtc, 0);
     state->therm_integral.resize(state->ngtc, 0);
+    state->baros_integral = 0.0;
     state->nhpres_xi.resize(state->nhchainlength*nnhpres, 0);
     state->nhpres_vxi.resize(state->nhchainlength*nnhpres, 0);
 }
@@ -115,29 +101,21 @@ void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
 void state_change_natoms(t_state *state, int natoms)
 {
     state->natoms = natoms;
-    if (state->natoms > 0)
+
+    /* We need padding, since we might use SIMD access */
+    const size_t paddedSize = gmx::paddedRVecVectorSize(state->natoms);
+
+    if (state->flags & (1 << estX))
     {
-        /* We need to allocate one element extra, since we might use
-         * (unaligned) 4-wide SIMD loads to access rvec entries.
-         */
-        if (state->flags & (1 << estX))
-        {
-            state->x.resize(state->natoms + 1);
-        }
-        if (state->flags & (1 << estV))
-        {
-            state->v.resize(state->natoms + 1);
-        }
-        if (state->flags & (1 << estCGP))
-        {
-            state->cg_p.resize(state->natoms + 1);
-        }
+        state->x.resize(paddedSize);
     }
-    else
+    if (state->flags & (1 << estV))
     {
-        state->x.resize(0);
-        state->v.resize(0);
-        state->cg_p.resize(0);
+        state->v.resize(paddedSize);
+    }
+    if (state->flags & (1 << estCGP))
+    {
+        state->cg_p.resize(paddedSize);
     }
 }
 
@@ -226,17 +204,17 @@ void comp_state(const t_state *st1, const t_state *st2,
     }
 }
 
-rvec *getRvecArrayFromPaddedRVecVector(const PaddedRVecVector *v,
-                                       unsigned int            n)
+rvec *makeRvecArray(gmx::ArrayRef<const gmx::RVec> v,
+                    gmx::index                     n)
 {
-    GMX_ASSERT(v->size() >= n, "We can't copy more elements than the vector size");
+    GMX_ASSERT(v.size() >= n, "We can't copy more elements than the vector size");
 
     rvec *dest;
 
     snew(dest, n);
 
-    const rvec *vPtr = as_rvec_array(v->data());
-    for (unsigned int i = 0; i < n; i++)
+    const rvec *vPtr = as_rvec_array(v.data());
+    for (gmx::index i = 0; i < n; i++)
     {
         copy_rvec(vPtr[i], dest[i]);
     }
@@ -251,30 +229,23 @@ t_state::t_state() : natoms(0),
                      flags(0),
                      fep_state(0),
                      lambda(),
-                     nosehoover_xi(),
-                     nosehoover_vxi(),
-                     nhpres_xi(),
-                     nhpres_vxi(),
-                     therm_integral(),
+
+                     baros_integral(0),
                      veta(0),
                      vol0(0),
-                     x(),
-                     v(),
-                     cg_p(),
+
                      ekinstate(),
                      hist(),
-                     swapstate(nullptr),
                      dfhist(nullptr),
-                     edsamstate(nullptr),
+                     awhHistory(nullptr),
                      ddp_count(0),
-                     ddp_count_cg_gl(0),
-                     cg_gl()
+                     ddp_count_cg_gl(0)
+
 {
     // It would be nicer to initialize these with {} or {{0}} in the
     // above initialization list, but uncrustify doesn't understand
     // that.
     // TODO Fix this if we switch to clang-format some time.
-    // cppcheck-suppress useInitializationList
     lambda = {{ 0 }};
     clear_mat(box);
     clear_mat(box_rel);
@@ -282,4 +253,27 @@ t_state::t_state() : natoms(0),
     clear_mat(pres_prev);
     clear_mat(svir_prev);
     clear_mat(fvir_prev);
+}
+
+void set_box_rel(const t_inputrec *ir, t_state *state)
+{
+    /* Make sure the box obeys the restrictions before we fix the ratios */
+    correct_box(nullptr, 0, state->box, nullptr);
+
+    clear_mat(state->box_rel);
+
+    if (inputrecPreserveShape(ir))
+    {
+        const int ndim = ir->epct == epctSEMIISOTROPIC ? 2 : 3;
+        do_box_rel(ndim, ir->deform, state->box_rel, state->box, true);
+    }
+}
+
+void preserve_box_shape(const t_inputrec *ir, matrix box_rel, matrix box)
+{
+    if (inputrecPreserveShape(ir))
+    {
+        const int ndim = ir->epct == epctSEMIISOTROPIC ? 2 : 3;
+        do_box_rel(ndim, ir->deform, box_rel, box, false);
+    }
 }

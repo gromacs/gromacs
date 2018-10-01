@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Object Name="Input"></Object>
+  <Object Name="Adjusted">
+    <String Name="a">foo</String>
+  </Object>
+  <String Name="Dumped"><![CDATA[
+a                                 = foo
+]]></String>
+  <String Name="Compared"><![CDATA[
+]]></String>
+  <String Name="ComparedAgainstEmpty"><![CDATA[
+/a (foo - missing)
+]]></String>
+</ReferenceData>

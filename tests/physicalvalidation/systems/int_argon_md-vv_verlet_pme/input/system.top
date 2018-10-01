@@ -1,0 +1,31 @@
+; Argon force field and topology
+;
+; Lennard-Jones parameters for liquid argon taken from
+; White, J.A., Lennard-Jones as a model for argon and test of extended
+; renormalization group calculations. J. Chem. Phys. 111, 9352 (1999)
+;
+
+[ defaults ]
+; nbfunc comb-rule
+  1      3
+
+[ atomtypes ]
+; full atom descriptions are available in ffoplsaa.atp
+; name  bond_type    mass    charge   ptype     sigma      epsilon
+  Ar    Ar           39.948  0.0      A         0.3345     1.045128
+
+[ moleculetype ]
+Argon    1
+
+[ atoms ]
+;   nr   type  resnr residue  atom   cgnr     charge
+     1     Ar      1      Ar    Ar      1     0
+
+
+[ system ]
+; Name
+Argon
+
+[ molecules ]
+; Compound        #mols
+Argon             1000

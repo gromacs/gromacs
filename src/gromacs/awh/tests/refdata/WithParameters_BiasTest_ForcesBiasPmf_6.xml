@@ -1,0 +1,130 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Properties">
+    <Int Name="Length">3</Int>
+    <String>stage:           initial</String>
+    <String>convolve forces: yes</String>
+    <String>skip updates:    no</String>
+  </Sequence>
+  <Sequence Name="Force">
+    <Int Name="Length">21</Int>
+    <Real>0.21526724902654029</Real>
+    <Real>0.00037168043378189554</Real>
+    <Real>0.0023506021278633634</Real>
+    <Real>1.8322908294787776e-14</Real>
+    <Real>1.8182159860257569e-05</Real>
+    <Real>-1.8182159861071263e-05</Real>
+    <Real>-6.7883759693111072e-06</Real>
+    <Real>6.7883758926473613e-06</Real>
+    <Real>-4.5547116425681544e-14</Real>
+    <Real>6.7883759521357456e-06</Real>
+    <Real>-6.7883759527878661e-06</Real>
+    <Real>-3.5538537690811558</Real>
+    <Real>-2.0147107048387825</Real>
+    <Real>-2.7052521678814725</Real>
+    <Real>-1.0406813794780787</Real>
+    <Real>-3.967066260592369</Real>
+    <Real>-0.87907598448922164</Real>
+    <Real>-1.6612940249811217</Real>
+    <Real>-2.6184399315060456</Real>
+    <Real>-1.2743003165852991</Real>
+    <Real>-0.86472575028406273</Real>
+  </Sequence>
+  <Sequence Name="Potential">
+    <Int Name="Length">21</Int>
+    <Real>5.3171052747656216</Real>
+    <Real>5.3139634951471235</Real>
+    <Real>5.3139852805648378</Real>
+    <Real>5.3139597783455503</Real>
+    <Real>5.313959928304433</Real>
+    <Real>5.313959928304433</Real>
+    <Real>5.3139598111771384</Real>
+    <Real>5.3139598111771384</Real>
+    <Real>5.3139597783455486</Real>
+    <Real>5.3139598111771358</Real>
+    <Real>5.3139598111771358</Real>
+    <Real>5.8523574407739236</Real>
+    <Real>5.909517708141518</Real>
+    <Real>5.5891055083437386</Real>
+    <Real>5.5179043538034485</Real>
+    <Real>5.6909400832286146</Real>
+    <Real>5.5084236091309347</Real>
+    <Real>5.4647638463620405</Real>
+    <Real>5.4221743541770948</Real>
+    <Real>5.4793615522962513</Real>
+    <Real>5.4998305387193387</Real>
+  </Sequence>
+  <Sequence Name="PotentialJump">
+    <Int Name="Length">21</Int>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0.60502446654887354</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0.93416481023846032</Real>
+  </Sequence>
+  <Sequence Name="PointBias">
+    <Int Name="Length">21</Int>
+    <Real>-2.7252571125147735</Real>
+    <Real>-2.7406945936944584</Real>
+    <Real>-2.8751558537650319</Real>
+    <Real>-3.2406864635799923</Real>
+    <Real>-3.5460149559446359</Real>
+    <Real>-3.5687884755542472</Real>
+    <Real>-3.4901303714495153</Real>
+    <Real>-3.4970015262603624</Real>
+    <Real>-3.4496621504416853</Real>
+    <Real>-3.2125376886451624</Real>
+    <Real>-2.91505863813991</Real>
+    <Real>-2.7962936950351538</Real>
+    <Real>-2.8888307484050659</Real>
+    <Real>-2.9753285114361296</Real>
+    <Real>-2.8869539267116591</Real>
+    <Real>-2.7654523327441973</Real>
+    <Real>-2.7283623342197525</Real>
+    <Real>-2.7247454958847039</Real>
+    <Real>-2.7246193286548039</Real>
+    <Real>-2.7246176904526385</Real>
+    <Real>-2.7246176904526385</Real>
+  </Sequence>
+  <Sequence Name="PointLogPmfsum">
+    <Int Name="Length">21</Int>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>4.3399332371624695</Real>
+    <Real>4.1747174038020365</Real>
+    <Real>4.1623670231442622</Real>
+    <Real>4.0396595028897746</Real>
+    <Real>4.1446557041188061</Real>
+    <Real>3.9896509587172271</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.9896509549207697</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+  </Sequence>
+</ReferenceData>

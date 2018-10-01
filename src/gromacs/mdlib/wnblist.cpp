@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,8 +37,8 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include <algorithm>
 
@@ -46,9 +46,9 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/utility/fatalerror.h"
@@ -75,7 +75,7 @@ static void write_nblist(FILE *out, gmx_domdec_t *dd, t_nblist *nblist, int nDNL
 
             for (zi = 0; zi < dd_zones->n; zi++)
             {
-                ca1[zi] = dd->cgindex[dd_zones->cg_range[zi+1]];
+                ca1[zi] = dd->atomGrouping().block(dd_zones->cg_range[zi + 1]).begin();
             }
             i = 0;
             for (zi = 0; zi < dd_zones->nizone && zi < dd_zones->n; zi++)
@@ -138,7 +138,7 @@ static void write_nblist(FILE *out, gmx_domdec_t *dd, t_nblist *nblist, int nDNL
 
 
 
-void dump_nblist(FILE *out, t_commrec *cr, t_forcerec *fr, int nDNL)
+void dump_nblist(FILE *out, const t_commrec *cr, t_forcerec *fr, int nDNL)
 {
     int  n, i;
 

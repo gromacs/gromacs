@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,33 +39,40 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_internal.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_domdec_zones_t;
-
-/* Allocate and initialize ngrid pair search grids in nbs */
-void nbnxn_grids_init(nbnxn_search_t nbs, int ngrid);
+namespace gmx
+{
+class UpdateGroupsCog;
+}
 
 /* Put the atoms on the pair search grid.
- * Only atoms a0 to a1 in x are put on the grid.
+ * Only atoms atomStart to atomEnd in x are put on the grid.
  * The atom_density is used to determine the grid size.
- * When atom_density<=0, the density is determined from a1-a0 and the corners.
+ * When atomDensity<=0, the density is determined from atomEnd-atomStart and the corners.
  * With domain decomposition part of the n particles might have migrated,
  * but have not been removed yet. This count is given by nmoved.
  * When move[i] < 0 particle i has migrated and will not be put on the grid.
  * Without domain decomposition move will be NULL.
  */
-void nbnxn_put_on_grid(nbnxn_search_t nbs,
-                       int ePBC, matrix box,
-                       int dd_zone,
-                       rvec corner0, rvec corner1,
-                       int a0, int a1,
-                       real atom_density,
-                       const int *atinfo,
-                       rvec *x,
-                       int nmoved, int *move,
-                       int nb_kernel_type,
-                       nbnxn_atomdata_t *nbat);
+void nbnxn_put_on_grid(nbnxn_search_t                  nbs,
+                       int                             ePBC,
+                       const matrix                    box,
+                       int                             ddZone,
+                       const rvec                      lowerCorner,
+                       const rvec                      upperCorner,
+                       const gmx::UpdateGroupsCog     *updateGroupsCog,
+                       int                             atomStart,
+                       int                             atomEnd,
+                       real                            atomDensity,
+                       const int                      *atinfo,
+                       gmx::ArrayRef<const gmx::RVec>  x,
+                       int                             numAtomsMoved,
+                       const int                      *move,
+                       int                             nb_kernel_type,
+                       nbnxn_atomdata_t               *nbat);
 
 /* As nbnxn_put_on_grid, but for the non-local atoms
  * with domain decomposition. Should be called after calling
@@ -74,19 +81,15 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
 void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
                                 const struct gmx_domdec_zones_t *zones,
                                 const int                       *atinfo,
-                                rvec                            *x,
+                                gmx::ArrayRef<const gmx::RVec>   x,
                                 int                              nb_kernel_type,
                                 nbnxn_atomdata_t                *nbat);
-
-/* Add simple grid type information to the local super/sub grid */
-void nbnxn_grid_add_simple(nbnxn_search_t    nbs,
-                           nbnxn_atomdata_t *nbat);
 
 /* Return the number of x and y cells in the local grid */
 void nbnxn_get_ncells(nbnxn_search_t nbs, int *ncx, int *ncy);
 
-/* Return the order indices *a of the atoms on the ns grid, size n */
-void nbnxn_get_atomorder(const nbnxn_search_t nbs, const int **a, int *n);
+/* Return the order indices of the atoms on the pairlist search grid */
+gmx::ArrayRef<const int> nbnxn_get_atomorder(const nbnxn_search* nbs);
 
 /* Renumber the atom indices on the grid to consecutive order */
 void nbnxn_set_atomorder(nbnxn_search_t nbs);

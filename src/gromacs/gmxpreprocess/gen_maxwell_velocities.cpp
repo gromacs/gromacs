@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -115,7 +115,7 @@ void maxwell_speed(real tempi, unsigned int seed, gmx_mtop_t *mtop, rvec v[])
     low_mspeed(tempi, mtop, v, &rng);
 }
 
-static real calc_cm(int natoms, real mass[], rvec x[], rvec v[],
+static real calc_cm(int natoms, const real mass[], rvec x[], rvec v[],
                     rvec xcm, rvec vcm, rvec acm, matrix L)
 {
     rvec dx, a0;
@@ -148,7 +148,7 @@ static real calc_cm(int natoms, real mass[], rvec x[], rvec v[],
 
 #define PVEC(str, v) fprintf(log, \
                              "%s[X]: %10.5e  %s[Y]: %10.5e  %s[Z]: %10.5e\n", \
-                             str, v[0], str, v[1], str, v[2])
+                             str, (v)[0], str, (v)[1], str, (v)[2])
 #ifdef DEBUG
     PVEC("xcm", xcm);
     PVEC("acm", acm);

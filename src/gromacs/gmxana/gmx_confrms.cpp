@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,7 +63,7 @@
 
 static const int NOTSET = -9368163;
 
-void calc_rm_cm(int isize, int index[], const t_atoms *atoms, rvec x[], rvec xcm)
+static void calc_rm_cm(int isize, const int index[], const t_atoms *atoms, rvec x[], rvec xcm)
 {
     int  i, d;
     real tm, m;
@@ -87,7 +87,7 @@ void calc_rm_cm(int isize, int index[], const t_atoms *atoms, rvec x[], rvec xcm
     }
 }
 
-int build_res_index(int isize, int index[], t_atom atom[], int rindex[])
+static int build_res_index(int isize, const int index[], t_atom atom[], int rindex[])
 {
     int i, r;
 
@@ -106,7 +106,7 @@ int build_res_index(int isize, int index[], t_atom atom[], int rindex[])
     return r;
 }
 
-int find_res_end(int i, int isize, int index[], const t_atoms *atoms)
+static int find_res_end(int i, int isize, const int index[], const t_atoms *atoms)
 {
     int rnr;
 
@@ -118,7 +118,7 @@ int find_res_end(int i, int isize, int index[], const t_atoms *atoms)
     return i;
 }
 
-int debug_strcmp(char s1[], char s2[])
+static int debug_strcmp(char s1[], char s2[])
 {
     if (debug)
     {
@@ -127,10 +127,10 @@ int debug_strcmp(char s1[], char s2[])
     return std::strcmp(s1, s2);
 }
 
-int find_next_match_atoms_in_res(int *i1, int index1[],
-                                 int m1, char **atnms1[],
-                                 int *i2, int index2[],
-                                 int m2, char **atnms2[])
+static int find_next_match_atoms_in_res(int *i1, const int index1[],
+                                        int m1, char **atnms1[],
+                                        int *i2, const int index2[],
+                                        int m2, char **atnms2[])
 {
     int      dx, dy, dmax, cmp;
     gmx_bool bFW = FALSE;
@@ -195,11 +195,11 @@ int find_next_match_atoms_in_res(int *i1, int index1[],
 }
 
 static int find_next_match_res(int *rnr1, int isize1,
-                               int index1[], t_resinfo *resinfo1,
+                               const int index1[], t_resinfo *resinfo1,
                                int *rnr2, int isize2,
-                               int index2[], t_resinfo *resinfo2)
+                               const int index2[], t_resinfo *resinfo2)
 {
-    int      dx, dy, dmax, cmp, rr1, rr2;
+    int      dmax, cmp, rr1, rr2;
     gmx_bool bFW = FALSE, bFF = FALSE;
 
     rr1 = 0;
@@ -220,7 +220,8 @@ static int find_next_match_res(int *rnr1, int isize1,
         fprintf(debug, " R:%d-%d:%d-%d:%d ",
                 rr1, isize1, rr2, isize2, dmax);
     }
-    for (dx = 0; dx < dmax && cmp != 0; dx++)
+    int dx = 0, dy = 0;
+    for (; dx < dmax && cmp != 0; dx++)
     {
         for (dy = 0; dy <= dx && cmp != 0; dy++)
         {
@@ -263,11 +264,11 @@ static int find_next_match_res(int *rnr1, int isize1,
                 }
             }
         }
+        /* apparently, dx and dy are incremented one more time
+           as the loops terminate: we correct this here */
+        dy--;
     }
-    /* apparently, dx and dy are incremented one more time
-       as the loops terminate: we correct this here */
     dx--;
-    dy--;
     /* if we skipped equal on both sides, only skip one residue
        to allow for single mutations of residues... */
     if (bFF)
@@ -291,8 +292,7 @@ static int find_next_match_res(int *rnr1, int isize1,
             rr1 += dx;
             rr2 += dx;
         }
-        else
-        if (bFW)
+        else if (bFW)
         {
             rr1 += dx;
             rr2 += dy;
@@ -309,7 +309,7 @@ static int find_next_match_res(int *rnr1, int isize1,
     return cmp;
 }
 
-int find_first_atom_in_res(int rnr, int isize, int index[], t_atom atom[])
+static int find_first_atom_in_res(int rnr, int isize, const int index[], t_atom atom[])
 {
     int i;
 
@@ -329,8 +329,8 @@ int find_first_atom_in_res(int rnr, int isize, int index[], t_atom atom[])
     }
 }
 
-void find_matching_names(int *isize1, int index1[], const t_atoms *atoms1,
-                         int *isize2, int index2[], const t_atoms *atoms2)
+static void find_matching_names(int *isize1, int index1[], const t_atoms *atoms1,
+                                int *isize2, int index2[], const t_atoms *atoms2)
 {
     int        i1, i2, ii1, ii2, m1, m2;
     int        atcmp, rescmp;
@@ -633,7 +633,7 @@ int gmx_confrms(int argc, char *argv[])
     {
         name1 = *atoms1->atomname[index1[i]];
         name2 = *atoms2->atomname[index2[i]];
-        if (std::strcmp(name1, name2))
+        if (std::strcmp(name1, name2) != 0)
         {
             if (warn < 20)
             {

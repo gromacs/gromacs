@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,7 +57,7 @@
 #include "gromacs/utility/smalloc.h"
 
 static void calc_com_pbc(int nrefat, t_topology *top, rvec x[], t_pbc *pbc,
-                         int index[], rvec xref, gmx_bool bPBC)
+                         const int index[], rvec xref, gmx_bool bPBC)
 {
     const real tol = 1e-4;
     gmx_bool   bChanged;
@@ -255,8 +255,8 @@ int gmx_sorient(int argc, char *argv[])
     rcut2 = gmx::square(rcut);
 
     invbw = 1/binwidth;
-    nbin1 = 1+static_cast<int>(2*invbw + 0.5);
-    nbin2 = 1+static_cast<int>(invbw + 0.5);
+    nbin1 = 1+gmx::roundToInt(2*invbw);
+    nbin2 = 1+gmx::roundToInt(invbw);
 
     invrbw = 1/rbinw;
 
@@ -368,7 +368,7 @@ int gmx_sorient(int argc, char *argv[])
 
     /* clean up */
     sfree(x);
-    close_trj(status);
+    close_trx(status);
     gmx_rmpbc_done(gpbc);
 
     /* Add the bin for the exact maximum to the previous bin */

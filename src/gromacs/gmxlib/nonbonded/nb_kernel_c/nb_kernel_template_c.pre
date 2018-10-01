@@ -2,7 +2,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -143,18 +143,13 @@ void
     real             velec,felec,velecsum,facel,crf,krf,krf2;
     real             *charge;
     /* #endif */
-    /* #if 'GeneralizedBorn' in KERNEL_ELEC */
-    int              gbitab;
-    real             vgb,fgb,vgbsum,dvdasum,gbscale,gbtabscale,isaprod,gbqqfactor,gbinvepsdiff,dvdaj,gbeps,dvdatmp;
-    real             *invsqrta,*dvda,*gbtab;
-    /* #endif */
     /* #if KERNEL_VDW != 'None' */
     int              nvdwtype;
     real             rinvsix,rvdw,vvdw,vvdw6,vvdw12,fvdw,fvdw6,fvdw12,vvdwsum,br,vvdwexp,sh_vdw_invrcut6;
     int              *vdwtype;
     real             *vdwparam;
     /* #endif */
-    /* #if 'Table' in KERNEL_ELEC or 'GeneralizedBorn' in KERNEL_ELEC or 'Table' in KERNEL_VDW */
+    /* #if 'Table' in KERNEL_ELEC or 'Table' in KERNEL_VDW */
     int              vfitab;
     real             rt,vfeps,vftabscale,Y,F,Geps,Heps2,Fp,VV,FF;
     real             *vftab;
@@ -187,7 +182,7 @@ void
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
     /* #if KERNEL_ELEC != 'None' */
-    facel            = fr->epsfac;
+    facel            = fr->ic->epsfac;
     charge           = mdatoms->chargeA;
     /*     #if 'ReactionField' in KERNEL_ELEC */
     krf              = fr->ic->k_rf;
@@ -202,7 +197,7 @@ void
     /* #endif */
     /* #if 'LJEwald' in KERNEL_VDW */
     vdwgridparam     = fr->ljpme_c6grid;
-    ewclj            = fr->ewaldcoeff_lj;
+    ewclj            = fr->ic->ewaldcoeff_lj;
     sh_lj_ewald	     = fr->ic->sh_lj_ewald;
     ewclj2           = ewclj*ewclj;
     ewclj6           = ewclj2*ewclj2*ewclj2;
@@ -230,14 +225,6 @@ void
     ewtabscale       = fr->ic->tabq_scale;
     ewtabhalfspace   = 0.5/ewtabscale;
      /*     #endif */
-    /* #endif */
-
-    /* #if KERNEL_ELEC=='GeneralizedBorn' */
-    invsqrta         = fr->invsqrta;
-    dvda             = fr->dvda;
-    gbtabscale       = fr->gbtab->scale;
-    gbtab            = fr->gbtab->data;
-    gbinvepsdiff     = (1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent);
     /* #endif */
 
     /* #if 'Water' in GEOMETRY_I */
@@ -282,23 +269,23 @@ void
     /* #if KERNEL_MOD_ELEC!='None' or KERNEL_MOD_VDW!='None' */
     /*     #if KERNEL_ELEC!='None' */
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = fr->ic->rcoulomb;
     /*     #else */
-    rcutoff          = fr->rvdw;
+    rcutoff          = fr->ic->rvdw;
     /*     #endif */
     rcutoff2         = rcutoff*rcutoff;
     /* #endif */
 
     /* #if KERNEL_MOD_VDW=='PotentialShift' */
     sh_vdw_invrcut6  = fr->ic->sh_invrc6;
-    rvdw             = fr->rvdw;
+    rvdw             = fr->ic->rvdw;
     /* #endif */
 
     /* #if 'PotentialSwitch' in [KERNEL_MOD_ELEC,KERNEL_MOD_VDW] */
     /*     #if KERNEL_MOD_ELEC=='PotentialSwitch'  */
-    rswitch          = fr->rcoulomb_switch;
+    rswitch          = fr->ic->rcoulomb_switch;
     /*     #else */
-    rswitch          = fr->rvdw_switch;
+    rswitch          = fr->ic->rvdw_switch;
     /*     #endif */
     /* Setup switch parameters */
     d                = rcutoff-rswitch;
@@ -358,9 +345,6 @@ void
         /*     #for I in PARTICLES_ELEC_I */
         iq{I}              = facel*charge[inr+{I}];
         /*         #define OUTERFLOPS OUTERFLOPS+1 */
-        /*         #if KERNEL_ELEC=='GeneralizedBorn' */
-        isai{I}            = invsqrta[inr+{I}];
-        /*         #endif */
         /*     #endfor */
         /*     #for I in PARTICLES_VDW_I */
         vdwioffset{I}      = {NVDWPARAM}*nvdwtype*vdwtype[inr+{I}];
@@ -372,16 +356,10 @@ void
         /*     #if KERNEL_ELEC != 'None' */
         velecsum         = 0.0;
         /*     #endif */
-        /*     #if 'GeneralizedBorn' in KERNEL_ELEC */
-        vgbsum           = 0.0;
-        /*     #endif */
         /*     #if KERNEL_VDW != 'None' */
         vvdwsum          = 0.0;
         /*     #endif */
         /* #endif */
-        /*     #if 'GeneralizedBorn' in KERNEL_ELEC and 'Force' in KERNEL_VF */
-        dvdasum          = 0.0;
-        /*     #endif */
 
         /* Start inner kernel loop */
         for(jidx=j_index_start; jidx<j_index_end; jidx++)
@@ -434,9 +412,6 @@ void
             /* Load parameters for j particles */
             /*     #for J in PARTICLES_ELEC_J */
             jq{J}              = charge[jnr+{J}];
-            /*         #if KERNEL_ELEC=='GeneralizedBorn' */
-            isaj{J}           = invsqrta[jnr+{J}];
-            /*         #endif */
             /*     #endfor */
             /*     #for J in PARTICLES_VDW_J */
             vdwjidx{J}         = {NVDWPARAM}*vdwtype[jnr+{J}];
@@ -517,47 +492,6 @@ void
             /*             #endif */
             /*             #if 'Force' in KERNEL_VF */
             felec            = qq{I}{J}*(rinv{I}{J}*rinvsq{I}{J}-krf2);
-            /*                 #define INNERFLOPS INNERFLOPS+3 */
-            /*             #endif */
-
-            /*         #elif KERNEL_ELEC=='GeneralizedBorn' */
-
-            /* GENERALIZED BORN AND COULOMB ELECTROSTATICS */
-            isaprod          = isai{I}*isaj{J};
-            gbqqfactor       = isaprod*(-qq{I}{J})*gbinvepsdiff;
-            gbscale          = isaprod*gbtabscale;
-            dvdaj            = dvda[jnr+{J}];
-            /*             #define INNERFLOPS INNERFLOPS+5 */
-
-            /* Calculate generalized born table index - this is a separate table from the normal one,
-             * but we use the same procedure by multiplying r with scale and truncating to integer.
-             */
-            rt               = r{I}{J}*gbscale;
-            gbitab           = rt;
-            gbeps            = rt-gbitab;
-            gbitab           = 4*gbitab;
-
-            Y                = gbtab[gbitab];
-            F                = gbtab[gbitab+1];
-            Geps             = gbeps*gbtab[gbitab+2];
-            Heps2            = gbeps*gbeps*gbtab[gbitab+3];
-            Fp               = F+Geps+Heps2;
-            VV               = Y+gbeps*Fp;
-            vgb              = gbqqfactor*VV;
-            /*             #define INNERFLOPS INNERFLOPS+10 */
-
-            /*             #if 'Force' in KERNEL_VF */
-            FF               = Fp+Geps+2.0*Heps2;
-            fgb              = gbqqfactor*FF*gbscale;
-            dvdatmp          = -0.5*(vgb+fgb*r{I}{J});
-            dvdasum          = dvdasum + dvdatmp;
-            dvda[jnr]        = dvdaj+dvdatmp*isaj{J}*isaj{J};
-            /*                 #define INNERFLOPS INNERFLOPS+13 */
-            /*             #endif */
-            velec            = qq{I}{J}*rinv{I}{J};
-            /*                 #define INNERFLOPS INNERFLOPS+1 */
-            /*             #if 'Force' in KERNEL_VF */
-            felec            = (velec*rinv{I}{J}-fgb)*rinv{I}{J};
             /*                 #define INNERFLOPS INNERFLOPS+3 */
             /*             #endif */
 
@@ -794,10 +728,6 @@ void
             /*         #if 'electrostatics' in INTERACTION_FLAGS[I][J] */
             velecsum        += velec;
             /*             #define INNERFLOPS INNERFLOPS+1 */
-            /*             #if KERNEL_ELEC=='GeneralizedBorn' */
-            vgbsum          += vgb;
-            /*                 #define INNERFLOPS INNERFLOPS+1 */
-            /*             #endif */
             /*         #endif */
             /*         #if 'vdw' in INTERACTION_FLAGS[I][J] */
             vvdwsum         += vvdw;
@@ -872,18 +802,11 @@ void
         kernel_data->energygrp_elec[ggid] += velecsum;
         /*         #define OUTERFLOPS OUTERFLOPS+1 */
         /*     #endif */
-        /*     #if 'GeneralizedBorn' in KERNEL_ELEC */
-        kernel_data->energygrp_polarization[ggid] += vgbsum;
-        /*         #define OUTERFLOPS OUTERFLOPS+1 */
-        /*     #endif */
         /*     #if KERNEL_VDW != 'None' */
         kernel_data->energygrp_vdw[ggid] += vvdwsum;
         /*         #define OUTERFLOPS OUTERFLOPS+1 */
         /*     #endif */
         /* #endif */
-        /*     #if 'GeneralizedBorn' in KERNEL_ELEC and 'Force' in KERNEL_VF */
-        dvda[inr]                   = dvda[inr] + dvdasum*isai{I}*isai{I};
-        /*     #endif */
 
         /* Increment number of inner iterations */
         inneriter                  += j_index_end - j_index_start;

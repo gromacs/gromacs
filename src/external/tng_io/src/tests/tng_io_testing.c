@@ -452,14 +452,17 @@ static tng_function_status tng_test_write_and_read_traj(tng_trajectory_t *traj,
                                                         const char hash_mode)
 {
     int i, j, k, nr, cnt, dependency;
-    float *data, *molpos, *charges;
-    int64_t mapping[300], n_particles, n_frames_per_frame_set, tot_n_mols;
+    float *data, *molpos, *charges, *masses;
+    int64_t mapping[300], n_particles;
+    int64_t read_n_frames, read_stride_length, read_n_particles, read_n_values_per_frame;
+    int64_t n_frames_per_frame_set, tot_n_mols;
     int64_t codec_id;
     int64_t dist_exp = -9, temp_int, temp_int2;
 //     int64_t frame_nr;
     double box_shape[9], temp_double;
     char atom_type[16], annotation[128];
     char temp_str[TNG_MAX_STR_LEN];
+    char read_data_type;
     tng_trajectory_frame_set_t frame_set;
     tng_function_status stat = TNG_SUCCESS;
 
@@ -498,7 +501,7 @@ static tng_function_status tng_test_write_and_read_traj(tng_trajectory_t *traj,
         exit(1);
     }
 
-    /* Set partial charges (treat the water as TIP3P. */
+    /* Set partial charges (treat the water as TIP3P). */
     tng_num_particles_get(*traj, &n_particles);
     charges = malloc(sizeof(float) * n_particles);
     for(i = 0; i < n_particles; i++)
@@ -509,13 +512,21 @@ static tng_function_status tng_test_write_and_read_traj(tng_trajectory_t *traj,
         {
             break;
         }
-        if(atom_type[0] == 'O')
+        /* We only have water in the system. If the atom is oxygen set its
+         * partial charge to -0.834, if it's a hydrogen set its partial charge to
+         * 0.417. */
+        switch(atom_type[0])
         {
-            charges[i] = -0.834;
-        }
-        else if(atom_type[0] == 'H')
-        {
-            charges[i] = 0.417;
+            case 'O':
+                charges[i] = -0.834;
+                break;
+            case 'H':
+                charges[i] = 0.417;
+                break;
+            default:
+                printf("Failed setting partial charges. %s: %d\n",
+                       __FILE__, __LINE__);
+                return(TNG_CRITICAL);
         }
     }
     if(stat == TNG_CRITICAL)
@@ -531,6 +542,7 @@ static tng_function_status tng_test_write_and_read_traj(tng_trajectory_t *traj,
                                        1, 1, 1, 0, n_particles,
                                        TNG_UNCOMPRESSED, charges);
     free(charges);
+    charges = 0;
     if(stat != TNG_SUCCESS)
     {
         printf("Failed adding partial charges. %s: %d\n",
@@ -538,6 +550,53 @@ static tng_function_status tng_test_write_and_read_traj(tng_trajectory_t *traj,
         return(TNG_CRITICAL);
     }
 
+    /* Set atom masses. */
+    masses = malloc(sizeof(float) * n_particles);
+    for(i = 0; i < n_particles; i++)
+    {
+        stat = tng_atom_type_of_particle_nr_get(*traj, i, atom_type,
+                                                sizeof(atom_type));
+        if(stat == TNG_CRITICAL)
+        {
+            break;
+        }
+        /* We only have water in the system. If the atom is oxygen set its
+         * mass to 16.00000, if it's a hydrogen set its mass to
+         * 1.00800. */
+        switch(atom_type[0])
+        {
+            case 'O':
+                masses[i] = 16.00000;
+                break;
+            case 'H':
+                masses[i] = 1.00800;
+                break;
+            default:
+                printf("Failed setting atom masses. %s: %d\n",
+                       __FILE__, __LINE__);
+                return(TNG_CRITICAL);
+        }
+    }
+    if(stat == TNG_CRITICAL)
+    {
+        free(masses);
+        printf("Failed setting atom masses. %s: %d\n",
+               __FILE__, __LINE__);
+        return(TNG_CRITICAL);
+    }
+
+    stat = tng_particle_data_block_add(*traj, TNG_TRAJ_MASSES, "ATOM MASSES",
+                                       TNG_FLOAT_DATA, TNG_NON_TRAJECTORY_BLOCK,
+                                       1, 1, 1, 0, n_particles,
+                                       TNG_GZIP_COMPRESSION, masses);
+    free(masses);
+    masses = 0;
+    if(stat != TNG_SUCCESS)
+    {
+        printf("Failed adding atom masses. %s: %d\n",
+               __FILE__, __LINE__);
+        return(TNG_CRITICAL);
+    }
 
     /* Generate a custom annotation data block */
     strcpy(annotation, "This trajectory was generated from tng_io_testing. "
@@ -784,6 +843,33 @@ static tng_function_status tng_test_write_and_read_traj(tng_trajectory_t *traj,
         return(stat);
     }
 
+    stat = tng_particle_data_vector_get(*traj, TNG_TRAJ_MASSES, (void **)&masses, &read_n_frames,
+                                        &read_stride_length, &read_n_particles,
+                                        &read_n_values_per_frame, &read_data_type);
+    if(stat != TNG_SUCCESS)
+    {
+        free(masses);
+        return(stat);
+    }
+    if(read_n_particles != n_particles)
+    {
+        printf("Number of particles does not match when reading atom masses. %s: %d\n",
+               __FILE__, __LINE__);
+        return(TNG_FAILURE);
+    }
+
+    /* Above we have written only water molecules (in the order oxygen, hydrogen, hydrogen ...).
+     * Test that the first and second as well as the very last atoms (oxygen, hydrogen and hydrogen)
+     * have the correct atom masses. */
+    if(fabs(masses[0] - 16.00000) > 0.0001 || fabs(masses[1] - 1.00800) > 0.0001 ||
+       fabs(masses[read_n_particles-1] - 1.00800) > 0.0001)
+    {
+        printf("Atom masses do not match when reading written file. %s: %d\n",
+               __FILE__, __LINE__);
+        return(TNG_FAILURE);
+    }
+    free(masses);
+    
     i = 0;
     while(stat == TNG_SUCCESS)
     {
@@ -1275,7 +1361,7 @@ tng_function_status tng_test_copy_container(tng_trajectory_t traj, const char ha
 
 int main()
 {
-    tng_trajectory_t traj;
+    tng_trajectory_t traj = 0;
     char time_str[TNG_MAX_DATE_STR_LEN];
     char version_str[TNG_MAX_STR_LEN];
     char hash_mode = TNG_USE_HASH;

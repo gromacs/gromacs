@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -130,20 +130,40 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
         ewtabscale          = fr->ic->tabq_scale;
         ewtabhalfspace      = 0.5/ewtabscale;
     }
+<<<<<<< HEAD
     rcoulomb2           = fr->rcoulomb*fr->rcoulomb;
     rvdw                = fr->rvdw;
-    rvdw2               = rvdw*rvdw;
-    sh_dispersion       = fr->ic->dispersion_shift.cpot;
-    sh_repulsion        = fr->ic->repulsion_shift.cpot;
-    sh_lj_ewald         = fr->ic->sh_lj_ewald;
+=======
 
-    ewclj               = fr->ewaldcoeff_lj;
+    const interaction_const_t *ic = fr->ic;
+
+    if (ielec == GMX_NBKERNEL_ELEC_EWALD)
+    {
+        ewtab               = ic->tabq_coul_FDV0;
+        ewtabscale          = ic->tabq_scale;
+        ewtabhalfspace      = 0.5/ewtabscale;
+    }
+    else
+    {
+        ewtab          = nullptr;
+        ewtabhalfspace = ewtabscale = 0;
+    }
+
+    rcoulomb2           = ic->rcoulomb*ic->rcoulomb;
+    rvdw                = ic->rvdw;
+>>>>>>> master
+    rvdw2               = rvdw*rvdw;
+    sh_dispersion       = ic->dispersion_shift.cpot;
+    sh_repulsion        = ic->repulsion_shift.cpot;
+    sh_lj_ewald         = ic->sh_lj_ewald;
+
+    ewclj               = ic->ewaldcoeff_lj;
     ewclj2              = ewclj*ewclj;
     ewclj6              = ewclj2*ewclj2*ewclj2;
 
-    if (fr->coulomb_modifier == eintmodPOTSWITCH)
+    if (ic->coulomb_modifier == eintmodPOTSWITCH)
     {
-        d               = fr->rcoulomb-fr->rcoulomb_switch;
+        d               = ic->rcoulomb - ic->rcoulomb_switch;
         elec_swV3       = -10.0/(d*d*d);
         elec_swV4       =  15.0/(d*d*d*d);
         elec_swV5       =  -6.0/(d*d*d*d*d);
@@ -156,9 +176,9 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
         /* Avoid warnings from stupid compilers (looking at you, Clang!) */
         elec_swV3 = elec_swV4 = elec_swV5 = elec_swF2 = elec_swF3 = elec_swF4 = 0.0;
     }
-    if (fr->vdw_modifier == eintmodPOTSWITCH)
+    if (ic->vdw_modifier == eintmodPOTSWITCH)
     {
-        d               = fr->rvdw-fr->rvdw_switch;
+        d               = ic->rvdw - ic->rvdw_switch;
         vdw_swV3        = -10.0/(d*d*d);
         vdw_swV4        =  15.0/(d*d*d*d);
         vdw_swV5        =  -6.0/(d*d*d*d*d);
@@ -172,13 +192,13 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
         vdw_swV3 = vdw_swV4 = vdw_swV5 = vdw_swF2 = vdw_swF3 = vdw_swF4 = 0.0;
     }
 
-    bExactElecCutoff    = (fr->coulomb_modifier != eintmodNONE) || fr->eeltype == eelRF_ZERO;
-    bExactVdwCutoff     = (fr->vdw_modifier != eintmodNONE);
+    bExactElecCutoff    = (ic->coulomb_modifier != eintmodNONE) || ic->eeltype == eelRF_ZERO;
+    bExactVdwCutoff     = (ic->vdw_modifier != eintmodNONE);
     bExactCutoff        = bExactElecCutoff && bExactVdwCutoff;
 
     if (bExactCutoff)
     {
-        rcutoff  = ( fr->rcoulomb > fr->rvdw ) ? fr->rcoulomb : fr->rvdw;
+        rcutoff  = ( ic->rcoulomb > ic->rvdw ) ? ic->rcoulomb : ic->rvdw;
         rcutoff2 = rcutoff*rcutoff;
     }
     else
@@ -200,7 +220,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     zeta                = mdatoms->zetaA;
     row                 = mdatoms->row;
     type                = mdatoms->typeA;
-    facel               = fr->epsfac;
+    facel               = fr->ic->epsfac;
     shiftvec            = fr->shift_vec[0];
     vdwparam            = fr->nbfp;
     ntype               = fr->ntype;
@@ -310,13 +330,13 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         /* The shift for the Coulomb potential is stored in
                          * the RF parameter c_rf, which is 0 without shift
                          */
-                        velec           -= qq*fr->ic->c_rf;
+                        velec           -= qq*ic->c_rf;
                         break;
 
                     case GMX_NBKERNEL_ELEC_REACTIONFIELD:
                         /* Reaction-field */
-                        velec            = qq*(rinv+fr->k_rf*rsq-fr->c_rf);
-                        felec            = qq*(rinv*rinvsq-2.0*fr->k_rf);
+                        velec            = qq*(rinv + ic->k_rf*rsq-ic->c_rf);
+                        felec            = qq*(rinv*rinvsq - 2.0*ic->k_rf);
                         break;
 
                     case GMX_NBKERNEL_ELEC_CUBICSPLINETABLE:
@@ -332,29 +352,23 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         felec            = -qq*FF*tabscale*rinv;
                         break;
 
-                    case GMX_NBKERNEL_ELEC_GENERALIZEDBORN:
-                        /* GB */
-                        gmx_fatal(FARGS, "Death & horror! GB generic interaction not implemented.\n");
-                        break;
-
                     case GMX_NBKERNEL_ELEC_EWALD:
                         ewrt             = rsq*rinv*ewtabscale;
                         ewitab           = ewrt;
                         eweps            = ewrt-ewitab;
                         ewitab           = 4*ewitab;
                         felec            = ewtab[ewitab]+eweps*ewtab[ewitab+1];
-                        rinvcorr         = (fr->coulomb_modifier == eintmodPOTSHIFT) ? rinv-fr->ic->sh_ewald : rinv;
+                        rinvcorr         = (ic->coulomb_modifier == eintmodPOTSHIFT) ? rinv - ic->sh_ewald : rinv;
                         velec            = qq*(rinvcorr-(ewtab[ewitab+2]-ewtabhalfspace*eweps*(ewtab[ewitab]+felec)));
                         felec            = qq*rinv*(rinvsq-felec);
                         break;
 
                     default:
                         gmx_fatal(FARGS, "Death & horror! No generic coulomb interaction for ielec=%d.\n", ielec);
-                        break;
                 }
-                if (fr->coulomb_modifier == eintmodPOTSWITCH)
+                if (ic->coulomb_modifier == eintmodPOTSWITCH)
                 {
-                    d                = rsq*rinv-fr->rcoulomb_switch;
+                    d                = rsq*rinv - ic->rcoulomb_switch;
                     d                = (d > 0.0) ? d : 0.0;
                     d2               = d*d;
                     sw               = 1.0+d2*d*(elec_swV3+d*(elec_swV4+d*elec_swV5));
@@ -397,7 +411,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         vvdw_disp        = c6*rinvsix;
                         vvdw_rep         = c12*rinvsix*rinvsix;
                         fvdw             = (vvdw_rep-vvdw_disp)*rinvsq;
-                        if (fr->vdw_modifier == eintmodPOTSHIFT)
+                        if (ic->vdw_modifier == eintmodPOTSHIFT)
                         {
                             vvdw             = (vvdw_rep + c12*sh_repulsion)/12.0 - (vvdw_disp + c6*sh_dispersion)/6.0;
                         }
@@ -412,6 +426,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         break;
 
                     case GMX_NBKERNEL_VDW_BUCKINGHAM:
+<<<<<<< HEAD
                         /* Modiefied Buckingham: JCTC  Volume: 9  Page: 452  Year: 2012 */
                         c                = vdwparam[tj+1];   /*sigma*/
                         cexp1            = vdwparam[tj+2];   /*epsilon*/
@@ -433,6 +448,19 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         fvdw             = fvdw_rep - fvdw_disp;
                         
                         if (fr->vdw_modifier == eintmodPOTSHIFT)
+=======
+                        /* Buckingham */
+                        c6               = vdwparam[tj];
+                        cexp1            = vdwparam[tj+1];
+                        cexp2            = vdwparam[tj+2];
+
+                        rinvsix          = rinvsq*rinvsq*rinvsq;
+                        vvdw_disp        = c6*rinvsix;
+                        br               = cexp2*rsq*rinv;
+                        vvdw_rep         = cexp1*std::exp(-br);
+                        fvdw             = (br*vvdw_rep-vvdw_disp)*rinvsq;
+                        if (ic->vdw_modifier == eintmodPOTSHIFT)
+>>>>>>> master
                         {
                             vvdw             = (vvdw_rep-cexp1*std::exp(-cexp2*rvdw))-(vvdw_disp + c6*sh_dispersion)/6.0;
                         }
@@ -485,7 +513,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         vvdw_disp        = (c6-c6grid*(1.0-poly))*rinvsix;
                         vvdw_rep         = c12*rinvsix*rinvsix;
                         fvdw             = (vvdw_rep - vvdw_disp - c6grid*(1.0/6.0)*exponent*ewclj6)*rinvsq;
-                        if (fr->vdw_modifier == eintmodPOTSHIFT)
+                        if (ic->vdw_modifier == eintmodPOTSHIFT)
                         {
                             vvdw             = (vvdw_rep + c12*sh_repulsion)/12.0 - (vvdw_disp + c6*sh_dispersion - c6grid*sh_lj_ewald)/6.0;
                         }
@@ -497,11 +525,10 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
 
                     default:
                         gmx_fatal(FARGS, "Death & horror! No generic VdW interaction for ivdw=%d.\n", ivdw);
-                        break;
                 }
-                if (fr->vdw_modifier == eintmodPOTSWITCH)
+                if (ic->vdw_modifier == eintmodPOTSWITCH)
                 {
-                    d                = rsq*rinv-fr->rvdw_switch;
+                    d                = rsq*rinv - ic->rvdw_switch;
                     d                = (d > 0.0) ? d : 0.0;
                     d2               = d*d;
                     sw               = 1.0+d2*d*(vdw_swV3+d*(vdw_swV4+d*vdw_swV5));

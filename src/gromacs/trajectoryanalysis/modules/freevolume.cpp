@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,9 +61,11 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/trajectoryanalysis/topologyinformation.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/pleasecite.h"
@@ -89,16 +91,16 @@ class FreeVolume : public TrajectoryAnalysisModule
 {
     public:
         FreeVolume();
-        virtual ~FreeVolume() {};
+        ~FreeVolume() override {}
 
-        virtual void initOptions(IOptionsContainer          *options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation        &top);
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
+        void initOptions(IOptionsContainer          *options,
+                         TrajectoryAnalysisSettings *settings) override;
+        void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                          const TopologyInformation        &top) override;
+        void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                          TrajectoryAnalysisModuleData *pdata) override;
+        void finishAnalysis(int nframes) override;
+        void writeOutput() override;
 
     private:
         std::string                       fnFreevol_;
@@ -233,7 +235,7 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
     cutoff_               = 0;
     int            nnovdw = 0;
     gmx_atomprop_t aps    = gmx_atomprop_init();
-    t_atoms       *atoms  = &(top.topology()->atoms);
+    auto           atoms  = top.copyAtoms();
 
     // Compute total mass
     mtot_ = 0;
@@ -243,12 +245,12 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
 
     // Extracts number of molecules
-    nmol_ = top.topology()->mols.nr;
+    nmol_ = gmx_mtop_num_molecules(*top.mtop());
 
     // Loop over atoms in the selection using an iterator
-    const int          maxnovdw = 10;
-    ConstArrayRef<int> atomind  = sel_.atomIndices();
-    for (ConstArrayRef<int>::iterator ai = atomind.begin(); (ai < atomind.end()); ++ai)
+    const int           maxnovdw = 10;
+    ArrayRef<const int> atomind  = sel_.atomIndices();
+    for (ArrayRef<const int>::iterator ai = atomind.begin(); (ai < atomind.end()); ++ai)
     {
         // Dereference the iterator to obtain an atom number
         int  i = *ai;
@@ -256,10 +258,10 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
         // Lookup the Van der Waals radius of this atom
         int resnr = atoms->atom[i].resind;
-        if (TRUE == gmx_atomprop_query(aps, epropVDW,
-                                       *(atoms->resinfo[resnr].name),
-                                       *(atoms->atomname[i]),
-                                       &value))
+        if (gmx_atomprop_query(aps, epropVDW,
+                               *(atoms->resinfo[resnr].name),
+                               *(atoms->atomname[i]),
+                               &value))
         {
             vdw_radius_.push_back(value);
             if (value > cutoff_)
@@ -338,7 +340,6 @@ FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         for (int m = 0; (m < DIM); m++)
         {
             // Generate random number between 0 and 1
-            // cppcheck-suppress uninitvar
             rand[m] = dist(rng_);
         }
         // Generate random 3D position within the box

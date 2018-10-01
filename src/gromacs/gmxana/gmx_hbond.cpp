@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,7 +59,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/ifunc.h"
@@ -79,7 +78,7 @@
 #define max_hx 7
 typedef int t_hx[max_hx];
 #define NRHXTYPES max_hx
-const char *hxtypenames[NRHXTYPES] =
+static const char *hxtypenames[NRHXTYPES] =
 {"n-n", "n-n+1", "n-n+2", "n-n+3", "n-n+4", "n-n+5", "n-n>6"};
 #define MAXHH 4
 
@@ -105,7 +104,7 @@ static gmx_bool    bDebug = FALSE;
 #define HB_NO 0
 #define HB_YES 1<<0
 #define HB_INS 1<<1
-#define HB_YESINS HB_YES|HB_INS
+#define HB_YESINS (HB_YES|HB_INS)
 #define HB_NR (1<<2)
 #define MAXHYDRO 4
 
@@ -221,7 +220,7 @@ static void mk_hbmap(t_hbdata *hb)
         {
             gmx_fatal(FARGS, "Could not allocate enough memory for hbmap");
         }
-        for (j = 0; (j > hb->a.nra); j++)
+        for (j = 0; j < hb->a.nra; j++)
         {
             hb->hbmap[i][j] = nullptr;
         }
@@ -246,8 +245,8 @@ static void add_frames(t_hbdata *hb, int nframes)
     hb->nframes = nframes;
 }
 
-#define OFFSET(frame) (frame / 32)
-#define MASK(frame)   (1 << (frame % 32))
+#define OFFSET(frame) ((frame) / 32)
+#define MASK(frame)   (1 << ((frame) % 32))
 
 static void _set_hb(unsigned int hbexist[], unsigned int frame, gmx_bool bValue)
 {
@@ -261,9 +260,9 @@ static void _set_hb(unsigned int hbexist[], unsigned int frame, gmx_bool bValue)
     }
 }
 
-static gmx_bool is_hb(unsigned int hbexist[], int frame)
+static gmx_bool is_hb(const unsigned int hbexist[], int frame)
 {
-    return ((hbexist[OFFSET(frame)] & MASK(frame)) != 0) ? 1 : 0;
+    return (hbexist[OFFSET(frame)] & MASK(frame)) != 0;
 }
 
 static void set_hb(t_hbdata *hb, int id, int ih, int ia, int frame, int ihb)
@@ -424,7 +423,7 @@ static void add_hbond(t_hbdata *hb, int d, int a, int h, int grpd, int grpa,
     }
     else if (grpd != hb->d.grp[id])
     {
-        gmx_fatal(FARGS, "Inconsistent donor groups, %d iso %d, atom %d",
+        gmx_fatal(FARGS, "Inconsistent donor groups, %d instead of %d, atom %d",
                   grpd, hb->d.grp[id], d+1);
     }
     if ((ia = hb->a.aptr[a]) == NOTSET)
@@ -433,7 +432,7 @@ static void add_hbond(t_hbdata *hb, int d, int a, int h, int grpd, int grpa,
     }
     else if (grpa != hb->a.grp[ia])
     {
-        gmx_fatal(FARGS, "Inconsistent acceptor groups, %d iso %d, atom %d",
+        gmx_fatal(FARGS, "Inconsistent acceptor groups, %d instead of %d, atom %d",
                   grpa, hb->a.grp[ia], a+1);
     }
 
@@ -458,7 +457,7 @@ static void add_hbond(t_hbdata *hb, int d, int a, int h, int grpd, int grpa,
             }
             else if (grpd != hb->d.grp[id])
             {
-                gmx_fatal(FARGS, "Inconsistent donor groups, %d iso %d, atom %d",
+                gmx_fatal(FARGS, "Inconsistent donor groups, %d instead of %d, atom %d",
                           grpd, hb->d.grp[id], d+1);
             }
             if ((ia = hb->a.aptr[a]) == NOTSET)
@@ -467,7 +466,7 @@ static void add_hbond(t_hbdata *hb, int d, int a, int h, int grpd, int grpa,
             }
             else if (grpa != hb->a.grp[ia])
             {
-                gmx_fatal(FARGS, "Inconsistent acceptor groups, %d iso %d, atom %d",
+                gmx_fatal(FARGS, "Inconsistent acceptor groups, %d instead of %d, atom %d",
                           grpa, hb->a.grp[ia], a+1);
             }
         }
@@ -683,7 +682,7 @@ static void add_h2d(int id, int ih, t_donors *ddd)
     }
 }
 
-static void add_dh(t_donors *ddd, int id, int ih, int grp, unsigned char *datable)
+static void add_dh(t_donors *ddd, int id, int ih, int grp, const unsigned char *datable)
 {
     int i;
 
@@ -913,7 +912,7 @@ static void reset_nhbonds(t_donors *ddd)
     }
 }
 
-static void pbc_correct_gem(rvec dx, matrix box, rvec hbox);
+static void pbc_correct_gem(rvec dx, matrix box, const rvec hbox);
 static void pbc_in_gridbox(rvec dx, matrix box);
 
 static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
@@ -926,7 +925,7 @@ static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
     ivec        grididx;
     rvec        invdelta, dshell;
     t_ncell    *newgrid;
-    gmx_bool    bDoRshell, bInShell, bAcc;
+    gmx_bool    bDoRshell, bInShell;
     real        rshell2 = 0;
     int         gx, gy, gz;
     int         dum = -1;
@@ -976,9 +975,9 @@ static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
         DBB(dum);
 
         /* put atoms in grid cells */
-        for (bAcc = FALSE; (bAcc <= TRUE); bAcc++)
+        for (int acc = 0; acc < 2; acc++)
         {
-            if (bAcc)
+            if (acc == 1)
             {
                 nr = hb->a.nra;
                 ad = hb->a.acc;
@@ -988,7 +987,7 @@ static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
                 nr = hb->d.nrd;
                 ad = hb->d.don;
             }
-            DBB(bAcc);
+            DBB(acc);
             for (i = 0; (i < nr); i++)
             {
                 /* check if we are inside the shell */
@@ -1057,7 +1056,7 @@ static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
                     DBB(gy);
                     DBB(gz);
                     /* add atom to grid cell */
-                    if (bAcc)
+                    if (acc == 1)
                     {
                         newgrid = &(grid[gz][gy][gx].a[gr]);
                     }
@@ -1080,7 +1079,7 @@ static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
     }
 }
 
-static void count_da_grid(ivec ngrid, t_gridcell ***grid, t_icell danr)
+static void count_da_grid(const ivec ngrid, t_gridcell ***grid, t_icell danr)
 {
     int gr, xi, yi, zi;
 
@@ -1109,15 +1108,15 @@ static void count_da_grid(ivec ngrid, t_gridcell ***grid, t_icell danr)
  * This could be implemented slightly more efficient, but the code
  * would get much more complicated.
  */
-static gmx_inline gmx_bool grid_loop_begin(int n, int x, gmx_bool bTric, gmx_bool bEdge)
+static inline int grid_loop_begin(int n, int x, gmx_bool bTric, gmx_bool bEdge)
 {
     return ((n == 1) ? x : bTric && bEdge ? 0     : (x-1));
 }
-static gmx_inline gmx_bool grid_loop_end(int n, int x, gmx_bool bTric, gmx_bool bEdge)
+static inline int grid_loop_end(int n, int x, gmx_bool bTric, gmx_bool bEdge)
 {
     return ((n == 1) ? x : bTric && bEdge ? (n-1) : (x+1));
 }
-static gmx_inline int grid_mod(int j, int n)
+static inline int grid_mod(int j, int n)
 {
     return (j+n) % (n);
 }
@@ -1170,7 +1169,7 @@ static void dump_grid(FILE *fp, ivec ngrid, t_gridcell ***grid)
 /* New GMX record! 5 * in a row. Congratulations!
  * Sorry, only four left.
  */
-static void free_grid(ivec ngrid, t_gridcell ****grid)
+static void free_grid(const ivec ngrid, t_gridcell ****grid)
 {
     int           y, z;
     t_gridcell ***g = *grid;
@@ -1187,7 +1186,7 @@ static void free_grid(ivec ngrid, t_gridcell ****grid)
     g = nullptr;
 }
 
-static void pbc_correct_gem(rvec dx, matrix box, rvec hbox)
+static void pbc_correct_gem(rvec dx, matrix box, const rvec hbox)
 {
     int      m;
     gmx_bool bDone = FALSE;
@@ -1358,7 +1357,7 @@ static int is_hbond(t_hbdata *hb, int grpd, int grpa, int d, int a,
  * Will do some more testing before removing the function entirely.
  * - Erik Marklund, MAY 10 2010 */
 static void do_merge(t_hbdata *hb, int ntmp,
-                     unsigned int htmp[], unsigned int gtmp[],
+                     bool htmp[], bool gtmp[],
                      t_hbond *hb0, t_hbond *hb1)
 {
     /* Here we need to make sure we're treating periodicity in
@@ -1374,8 +1373,8 @@ static void do_merge(t_hbdata *hb, int ntmp,
     /* Initiate tmp arrays */
     for (m = 0; (m < ntmp); m++)
     {
-        htmp[m] = 0;
-        gtmp[m] = 0;
+        htmp[m] = false;
+        gtmp[m] = false;
     }
     /* Fill tmp arrays with values due to first HB */
     /* Once again '<' had to be replaced with '<='
@@ -1421,7 +1420,7 @@ static void do_merge(t_hbdata *hb, int ntmp,
 static void merge_hb(t_hbdata *hb, gmx_bool bTwo, gmx_bool bContact)
 {
     int           i, inrnew, indnew, j, ii, jj, id, ia, ntmp;
-    unsigned int *htmp, *gtmp;
+    bool         *htmp, *gtmp;
     t_hbond      *hb0, *hb1;
 
     inrnew = hb->nrhb;
@@ -1566,7 +1565,7 @@ static void do_hblife(const char *fn, t_hbdata *hb, gmx_bool bMerge, gmx_bool bC
 
                     for (j = 0; (j <= hbh->nframes); j++)
                     {
-                        ihb      = is_hb(h[nh], j);
+                        ihb      = static_cast<int>(is_hb(h[nh], j));
                         if (debug && (ndump < 10))
                         {
                             fprintf(debug, "%5d  %5d\n", j, ihb);
@@ -1658,8 +1657,8 @@ static void dump_ac(t_hbdata *hb, gmx_bool oneHB, int nDump)
                 {
                     if (hbh->h[0])
                     {
-                        ihb    = is_hb(hbh->h[0], j);
-                        idist  = is_hb(hbh->g[0], j);
+                        ihb    = static_cast<int>(is_hb(hbh->h[0], j));
+                        idist  = static_cast<int>(is_hb(hbh->g[0], j));
                         bPrint = TRUE;
                     }
                 }
@@ -1667,8 +1666,8 @@ static void dump_ac(t_hbdata *hb, gmx_bool oneHB, int nDump)
                 {
                     for (m = 0; (m < hb->maxhydro) && !ihb; m++)
                     {
-                        ihb   = ihb   || ((hbh->h[m]) && is_hb(hbh->h[m], j));
-                        idist = idist || ((hbh->g[m]) && is_hb(hbh->g[m], j));
+                        ihb   = static_cast<int>((ihb != 0)   || (((hbh->h[m]) != nullptr) && is_hb(hbh->h[m], j)));
+                        idist = static_cast<int>((idist != 0) || (((hbh->g[m]) != nullptr) && is_hb(hbh->g[m], j)));
                     }
                     /* This is not correct! */
                     /* What isn't correct? -Erik M */
@@ -1870,7 +1869,7 @@ void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
     }
 }
 
-void compute_derivative(int nn, real x[], real y[], real dydx[])
+void compute_derivative(int nn, const real x[], const real y[], real dydx[])
 {
     int j;
 
@@ -2050,8 +2049,8 @@ static void do_hbac(const char *fn, t_hbdata *hb,
                     {
                         if (j <= nf)
                         {
-                            ihb   = is_hb(h[nh], j);
-                            idist = is_hb(g[nh], j);
+                            ihb   = static_cast<int>(is_hb(h[nh], j));
+                            idist = static_cast<int>(is_hb(g[nh], j));
                         }
                         else
                         {
@@ -2107,8 +2106,8 @@ static void do_hbac(const char *fn, t_hbdata *hb,
         tail  += ct[j];
         tail2 += ct[j]*ct[j];
     }
-    tail  /= (nn - nn/2);
-    tail2 /= (nn - nn/2);
+    tail  /= (nn - int{nn/2});
+    tail2 /= (nn - int{nn/2});
     dtail  = std::sqrt(tail2-tail*tail);
 
     /* Check whether the ACF is long enough */
@@ -2227,7 +2226,7 @@ static void analyse_donor_properties(FILE *fp, t_hbdata *hb, int nframes, real t
 
 static void dump_hbmap(t_hbdata *hb,
                        int nfile, t_filenm fnm[], gmx_bool bTwo,
-                       gmx_bool bContact, int isize[], int *index[], char *grpnames[],
+                       gmx_bool bContact, const int isize[], int *index[], char *grpnames[],
                        const t_atoms *atoms)
 {
     FILE    *fp, *fplog;
@@ -2388,7 +2387,7 @@ int gmx_hbond(int argc, char *argv[])
         "n(t) can be defined as either all pairs that are not within contact distance r at time t",
         "(corresponding to leaving the -r2 option at the default value 0) or all pairs that",
         "are within distance r2 (corresponding to setting a second cut-off value with option -r2).",
-        "See mentioned literature for more details and definitions."
+        "See mentioned literature for more details and definitions.",
         "[PAR]",
 
         /*    "It is also possible to analyse specific hydrogen bonds with",
@@ -2508,7 +2507,7 @@ int gmx_hbond(int argc, char *argv[])
     t_rgb                 hbrgb [HB_NR] = { {1, 1, 1}, {1, 0, 0},   {0, 0, 1},    {1, 0, 1} };
 
     t_trxstatus          *status;
-    int                   trrStatus = 1;
+    bool                  trrStatus = true;
     t_topology            top;
     t_pargs              *ppa;
     int                   npargs, natoms, nframes = 0, shatom;
@@ -2586,8 +2585,8 @@ int gmx_hbond(int argc, char *argv[])
     hb = mk_hbdata(bHBmap, opt2bSet("-dan", NFILE, fnm), bMerge || bContact);
 
     /* get topology */
-    gmx::MDModules  mdModules;
-    t_inputrec     *ir = mdModules.inputrec();
+    t_inputrec      irInstance;
+    t_inputrec     *ir = &irInstance;
     read_tpx_top(ftp2fn(efTPR, NFILE, fnm), ir, box, &natoms, nullptr, nullptr, &top);
 
     snew(grpnames, grNR);
@@ -2849,10 +2848,10 @@ int gmx_hbond(int argc, char *argv[])
     bEdge_xjj, bEdge_yjj) \
     default(shared)
     {                           /* Start of parallel region */
-#if !defined __clang_analyzer__ // clang complains about unused value.
-        threadNr = gmx_omp_get_thread_num();
-#endif
-
+        if (bOMP)
+        {
+            threadNr = gmx_omp_get_thread_num();
+        }
         do
         {
 
@@ -3157,7 +3156,7 @@ int gmx_hbond(int argc, char *argv[])
 
     free_grid(ngrid, &grid);
 
-    close_trj(status);
+    close_trx(status);
 
     if (donor_properties)
     {
@@ -3217,7 +3216,7 @@ int gmx_hbond(int argc, char *argv[])
     snew(leg[1], STRLEN);
     sprintf(leg[0], "%s", bContact ? "Contacts" : "Hydrogen bonds");
     sprintf(leg[1], "Pairs within %g nm", (r2cut > 0) ? r2cut : rcut);
-    xvgr_legend(fp, 2, (const char**)leg, oenv);
+    xvgr_legend(fp, 2, leg, oenv);
     sfree(leg[1]);
     sfree(leg[0]);
     sfree(leg);
@@ -3348,7 +3347,7 @@ int gmx_hbond(int argc, char *argv[])
                                     {
                                         int nn0 = hb->hbmap[id][ia]->n0;
                                         range_check(y, 0, mat.ny);
-                                        mat.matrix[x+nn0][y] = is_hb(hb->hbmap[id][ia]->h[hh], x);
+                                        mat.matrix[x+nn0][y] = static_cast<t_matelmt>(is_hb(hb->hbmap[id][ia]->h[hh], x));
                                     }
                                     y++;
                                 }
@@ -3365,7 +3364,7 @@ int gmx_hbond(int argc, char *argv[])
                 sprintf(mat.title, bContact ? "Contact Existence Map" :
                         "Hydrogen Bond Existence Map");
                 sprintf(mat.legend, bContact ? "Contacts" : "Hydrogen Bonds");
-                sprintf(mat.label_x, "%s", output_env_get_xvgr_tlabel(oenv));
+                sprintf(mat.label_x, "%s", output_env_get_xvgr_tlabel(oenv).c_str());
                 sprintf(mat.label_y, bContact ? "Contact Index" : "Hydrogen Bond Index");
                 mat.bDiscrete = TRUE;
                 mat.nmap      = 2;
@@ -3400,7 +3399,7 @@ int gmx_hbond(int argc, char *argv[])
         char **legnames;
         char   buf[STRLEN];
 
-#define USE_THIS_GROUP(j) ( (j == gr0) || (bTwo && (j == gr1)) )
+#define USE_THIS_GROUP(j) ( ((j) == gr0) || (bTwo && ((j) == gr1)) )
 
         fp = xvgropen(opt2fn("-dan", NFILE, fnm),
                       "Donors and Acceptors", output_env_get_xvgr_tlabel(oenv), "Count", oenv);
@@ -3421,7 +3420,7 @@ int gmx_hbond(int argc, char *argv[])
         {
             gmx_incons("number of legend entries");
         }
-        xvgr_legend(fp, nleg, (const char**)legnames, oenv);
+        xvgr_legend(fp, nleg, legnames, oenv);
         for (i = 0; i < nframes; i++)
         {
             fprintf(fp, "%10g", hb->time[i]);

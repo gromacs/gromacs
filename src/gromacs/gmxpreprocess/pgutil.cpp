@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,7 +40,7 @@
 
 #include "pgutil.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/cstringutil.h"
@@ -51,7 +51,7 @@
 static void atom_not_found(int fatal_errno, const char *file, int line,
                            const char *atomname, int resind,
                            const char *resname,
-                           const char *bondtype, gmx_bool bAllowMissing)
+                           const char *bondtype, bool bAllowMissing)
 {
     char message_buffer[BUFSIZE];
     if (strcmp(bondtype, "check") != 0)
@@ -81,17 +81,17 @@ static void atom_not_found(int fatal_errno, const char *file, int line,
         }
         else
         {
-            gmx_fatal(fatal_errno, file, line, message_buffer);
+            gmx_fatal(fatal_errno, file, line, "%s", message_buffer);
         }
     }
 }
 
 int search_atom(const char *type, int start,
                 t_atoms *atoms,
-                const char *bondtype, gmx_bool bAllowMissing)
+                const char *bondtype, bool bAllowMissing)
 {
     int             i, resind = -1;
-    gmx_bool        bPrevious, bNext;
+    bool            bPrevious, bNext;
     int             natoms = atoms->nr;
     t_atom         *at     = atoms->atom;
     char ** const * anm    = atoms->atomname;
@@ -120,7 +120,7 @@ int search_atom(const char *type, int start,
         {
             if (anm[i] && gmx_strcasecmp(type, *(anm[i])) == 0)
             {
-                return (int) i;
+                return i;
             }
         }
         if (!(bNext && at[start].resind == at[natoms-1].resind))
@@ -140,7 +140,7 @@ int search_atom(const char *type, int start,
         {
             if (gmx_strcasecmp(type, *(anm[i])) == 0)
             {
-                return (int) i;
+                return i;
             }
         }
         if (start > 0)
@@ -154,7 +154,7 @@ int search_atom(const char *type, int start,
 int
 search_res_atom(const char *type, int resind,
                 t_atoms *atoms,
-                const char *bondtype, gmx_bool bAllowMissing)
+                const char *bondtype, bool bAllowMissing)
 {
     int i;
 

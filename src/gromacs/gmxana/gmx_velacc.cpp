@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -121,7 +121,7 @@ static void precalc(const t_topology &top, real normm[])
 
 }
 
-static void calc_spectrum(int n, real c[], real dt, const char *fn,
+static void calc_spectrum(int n, const real c[], real dt, const char *fn,
                           gmx_output_env_t *oenv, gmx_bool bRecip)
 {
     FILE     *fp;
@@ -185,6 +185,9 @@ int gmx_velacc(int argc, char *argv[])
         "With option [TT]-mol[tt] the velocity autocorrelation function of",
         "molecules is calculated. In this case the index group should consist",
         "of molecule numbers instead of atom numbers.[PAR]",
+        "By using option [TT]-os[tt] you can also extract the estimated",
+        "(vibrational) power spectrum, which is the Fourier transform of the",
+        "velocity autocorrelation function.",
         "Be sure that your trajectory contains frames with velocity information",
         "(i.e. [TT]nstvout[tt] was set in your original [REF].mdp[ref] file),",
         "and that the time interval between data collection points is",
@@ -343,7 +346,7 @@ int gmx_velacc(int argc, char *argv[])
     }
     while (read_next_frame(oenv, status, &fr));
 
-    close_trj(status);
+    close_trx(status);
 
     if (counter >= 4)
     {
@@ -359,7 +362,7 @@ int gmx_velacc(int argc, char *argv[])
 
         if (opt2bSet("-os", NFILE, fnm))
         {
-            calc_spectrum(counter/2, (real *) (c1[0]), (t1-t0)/2, opt2fn("-os", NFILE, fnm),
+            calc_spectrum(counter/2, (c1[0]), (t1-t0)/2, opt2fn("-os", NFILE, fnm),
                           oenv, bRecip);
             do_view(oenv, opt2fn("-os", NFILE, fnm), "-nxy");
         }

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,7 @@ endfunction ()
 
 function (gmx_add_gtest_executable EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
-        set(_options MPI)
+        set(_options MPI HARDWARE_DETECTION)
         cmake_parse_arguments(ARG "${_options}" "" "" ${ARGN})
         set(_source_files ${ARG_UNPARSED_ARGUMENTS})
 
@@ -66,6 +66,10 @@ function (gmx_add_gtest_executable EXENAME)
             list(APPEND EXTRA_COMPILE_DEFINITIONS
                  TEST_USES_MPI=true)
         endif()
+        if (ARG_HARDWARE_DETECTION)
+            list(APPEND EXTRA_COMPILE_DEFINITIONS
+                 TEST_USES_HARDWARE_DETECTION=true)
+        endif()
 
         include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
         add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS}
@@ -79,27 +83,46 @@ function (gmx_add_gtest_executable EXENAME)
             APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
         set_property(TARGET ${EXENAME}
             APPEND PROPERTY COMPILE_DEFINITIONS "${EXTRA_COMPILE_DEFINITIONS}")
+        if(GMX_CLANG_TIDY)
+            set_target_properties(${EXENAME} PROPERTIES CXX_CLANG_TIDY
+                "${CLANG_TIDY_EXE};-warnings-as-errors=*;-header-filter=.*")
+        endif()
+        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^6\.0")
+            target_compile_options(${EXENAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Weverything ${IGNORED_CLANG_ALL_WARNINGS} -Wno-gnu-zero-variadic-macro-arguments -Wno-zero-as-null-pointer-constant -Wno-missing-variable-declarations>)
+        endif()
     endif()
 endfunction()
 
-# Use this function with MPI_RANKS <N> INTEGRATION_TEST to register a test
-# binary as an integration test that requires MPI. The intended number of MPI
-# ranks is also passed
+# This function can be called with extra options and arguments:
+#   MPI_RANKS <N>     declares the requirement to run the test binary with N ranks
+#   INTEGRATION_TEST  requires the use of the IntegrationTest label in CTest
+#   OCL_INTEGRATION_TEST requires the use of the IntegrationTest label in CTest,
+#                        only difference is 2x longer timeout as OpenCL JIT can be slow
+#   SLOW_TEST         requires the use of the SlowTest label in CTest, and
+#                     increase the length of the ctest timeout.
 #
 # TODO When a test case needs it, generalize the MPI_RANKS mechanism so
 # that ctest can run the test binary over a range of numbers of MPI
 # ranks.
 function (gmx_register_gtest_test NAME EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
-        set(_options INTEGRATION_TEST)
+        set(_options INTEGRATION_TEST OCL_INTEGRATION_TEST SLOW_TEST)
         set(_one_value_args MPI_RANKS)
         cmake_parse_arguments(ARG "${_options}" "${_one_value_args}" "" ${ARGN})
         set(_xml_path ${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
         set(_labels GTest)
         set(_timeout 30)
-        if (ARG_INTEGRATION_TEST)
+        if (ARG_INTEGRATION_TEST OR ARG_OCL_INTEGRATION_TEST)
             list(APPEND _labels IntegrationTest)
-            set(_timeout 120)
+            if (ARG_OCL_INTEGRATION_TEST)
+                set(_timeout 240)
+            else()
+                set(_timeout 120)
+            endif()
+            gmx_get_test_prefix_cmd(_prefix_cmd IGNORE_LEAKS)
+        elseif (ARG_SLOW_TEST)
+            list(APPEND _labels SlowTest)
+            set(_timeout 480)
             gmx_get_test_prefix_cmd(_prefix_cmd IGNORE_LEAKS)
         else()
             list(APPEND _labels UnitTest)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,7 @@
 #include "nbnxn_kernel_common.h"
 
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/utility/gmxassert.h"
 
 static void
 clear_f_all(const nbnxn_atomdata_t *nbat, real *f)
@@ -52,21 +53,19 @@ clear_f_all(const nbnxn_atomdata_t *nbat, real *f)
 static void
 clear_f_flagged(const nbnxn_atomdata_t *nbat, int output_index, real *f)
 {
-    const nbnxn_buffer_flags_t *flags;
+    GMX_ASSERT(nbat->fstride == DIM, "For performance we use compile time constant DIM instead of nbat->fstride");
+
+    const nbnxn_buffer_flags_t &flags = nbat->buffer_flags;
     gmx_bitmask_t               our_flag;
-    int                         b, a0, a1, i;
-
-    flags = &nbat->buffer_flags;
-
     bitmask_init_bit(&our_flag, output_index);
 
-    for (b = 0; b < flags->nflag; b++)
+    for (int b = 0; b < flags.nflag; b++)
     {
-        if (!bitmask_is_disjoint(flags->flag[b], our_flag))
+        if (!bitmask_is_disjoint(flags.flag[b], our_flag))
         {
-            a0 = b*NBNXN_BUFFERFLAG_SIZE;
-            a1 = a0 + NBNXN_BUFFERFLAG_SIZE;
-            for (i = a0*nbat->fstride; i < a1*nbat->fstride; i++)
+            int a0 = b*NBNXN_BUFFERFLAG_SIZE;
+            int a1 = a0 + NBNXN_BUFFERFLAG_SIZE;
+            for (int i = a0*DIM; i < a1*DIM; i++)
             {
                 f[i] = 0;
             }

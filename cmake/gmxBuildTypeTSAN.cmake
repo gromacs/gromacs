@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014, by the GROMACS development team, led by
+# Copyright (c) 2014,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -73,15 +73,14 @@ foreach(_language C CXX)
     string(REPLACE "X" "+" _human_readable_language ${_language})
 
     if (CMAKE_${_language}_COMPILER_ID MATCHES "GNU")
-        set(CMAKE_${_language}_FLAGS_TSAN "${_flags} -pie -fPIE" CACHE STRING "${_human_readable_language} flags for thread sanitizer")
+        set(CMAKE_${_language}_FLAGS_TSAN "${_flags} -pie -fPIE" CACHE STRING "${_human_readable_language} flags for thread sanitizer" FORCE)
     else()
-        set(CMAKE_${_language}_FLAGS_TSAN ${_flags} CACHE STRING "${_human_readable_language} flags for thread sanitizer")
+        set(CMAKE_${_language}_FLAGS_TSAN ${_flags} CACHE STRING "${_human_readable_language} flags for thread sanitizer" FORCE)
     endif()
     mark_as_advanced(CMAKE_${_language}_FLAGS_TSAN)
     string(TOUPPER "${CMAKE_BUILD_TYPE}" _cmake_build_type)
     if (_cmake_build_type STREQUAL TSAN)
         set(TMPI_ATOMICS_DISABLED 1)
-        set(TMPI_ATOMICS 0)
         if (NOT((CMAKE_${_language}_COMPILER_ID MATCHES "Clang" AND
                     CMAKE_${_language}_COMPILER_VERSION VERSION_GREATER 3.2.999)
              OR (CMAKE_${_language}_COMPILER_ID MATCHES "GNU" AND

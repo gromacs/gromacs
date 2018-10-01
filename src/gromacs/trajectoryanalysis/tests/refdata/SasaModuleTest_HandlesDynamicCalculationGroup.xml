@@ -21,7 +21,7 @@
       <DataFrame Name="Frame0">
         <Real Name="X">0</Real>
         <DataValues>
-          <Int Name="Count">155</Int>
+          <Int Name="Count">156</Int>
           <Int Name="DataSet">0</Int>
           <DataValue>
             <Real Name="Value">0.034174637584831476</Real>
@@ -396,6 +396,10 @@
             <Bool Name="Present">false</Bool>
           </DataValue>
           <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
             <Real Name="Value">0.11321514525374221</Real>
           </DataValue>
           <DataValue>
@@ -543,8 +547,12 @@
           </DataValue>
         </DataValues>
         <DataValues>
-          <Int Name="Count">155</Int>
+          <Int Name="Count">156</Int>
           <Int Name="DataSet">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
             <Bool Name="Present">false</Bool>

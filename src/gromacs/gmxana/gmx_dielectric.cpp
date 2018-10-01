@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,7 +59,7 @@
 #include "gromacs/utility/smalloc.h"
 
 /* Determines at which point in the array the fit should start */
-int calc_nbegin(int nx, real x[], real tbegin)
+static int calc_nbegin(int nx, real x[], real tbegin)
 {
     int  nbegin;
 
@@ -86,8 +86,8 @@ int calc_nbegin(int nx, real x[], real tbegin)
     return nbegin;
 }
 
-real numerical_deriv(int nx, real x[], real y[], real fity[], real combined[], real dy[],
-                     real tendInt, int nsmooth)
+static real numerical_deriv(int nx, real x[], const real y[], const real fity[], real combined[], real dy[],
+                            real tendInt, int nsmooth)
 {
     FILE *tmpfp;
     int   i, nbegin, i0, i1;
@@ -151,8 +151,8 @@ real numerical_deriv(int nx, real x[], real y[], real fity[], real combined[], r
     return integralSmth;
 }
 
-void do_four(const char *fn, const char *cn, int nx, real x[], real dy[],
-             real eps0, real epsRF, const gmx_output_env_t *oenv)
+static void do_four(const char *fn, const char *cn, int nx, const real x[], const real dy[],
+                    real eps0, real epsRF, const gmx_output_env_t *oenv)
 {
     FILE      *fp, *cp;
     t_complex *tmp, gw, hw, kw;
@@ -187,7 +187,7 @@ void do_four(const char *fn, const char *cn, int nx, real x[], real dy[],
         gmx_fatal(FARGS, "gmx_fft_init_1d_real returned %d", fftcode);
     }
     if ((fftcode = gmx_fft_1d_real(fft, GMX_FFT_COMPLEX_TO_REAL,
-                                   (void *)tmp, (void *)tmp)) != 0)
+                                   tmp, tmp)) != 0)
     {
         gmx_fatal(FARGS, "gmx_fft_1d_real returned %d", fftcode);
     }

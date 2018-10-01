@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,7 +83,7 @@ fillSingleQuadraticSplineTableData(const std::function<double(double)>   &functi
                                    std::vector<real>                     *functionTableData,
                                    std::vector<real>                     *derivativeTableData)
 {
-    std::size_t  endIndex   = range.second / spacing + 2;
+    std::size_t  endIndex   = static_cast<std::size_t>(range.second / spacing + 2);
 
     functionTableData->resize(endIndex);
     derivativeTableData->resize(endIndex);
@@ -154,15 +154,15 @@ fillSingleQuadraticSplineTableData(const std::function<double(double)>   &functi
  * \param[out] derivativeTableData  OUtput table with (adjusted) derivative data
  */
 void
-fillSingleQuadraticSplineTableData(ConstArrayRef<double>                  function,
-                                   ConstArrayRef<double>                  derivative,
+fillSingleQuadraticSplineTableData(ArrayRef<const double>                 function,
+                                   ArrayRef<const double>                 derivative,
                                    double                                 inputSpacing,
                                    const std::pair<real, real>           &range,
                                    double                                 spacing,
                                    std::vector<real>                     *functionTableData,
                                    std::vector<real>                     *derivativeTableData)
 {
-    std::size_t  endIndex   = range.second / spacing + 2;
+    std::size_t  endIndex   = static_cast<std::size_t>(range.second / spacing + 2);
 
     functionTableData->resize(endIndex);
     derivativeTableData->resize(endIndex);
@@ -190,7 +190,7 @@ fillSingleQuadraticSplineTableData(ConstArrayRef<double>                  functi
         {
             // Step 1: Interpolate the function value at x from input table.
             double inputXTab  = x / inputSpacing;
-            int    inputIndex = inputXTab;
+            int    inputIndex = static_cast<std::size_t>(inputXTab);
             double inputEps   = inputXTab - inputIndex;
 
             // Linear interpolation of input derivative and third derivative
@@ -261,7 +261,7 @@ fillDdfzTableData(const std::vector<real>    &functionTableData,
     }
 }
 
-}   // namespace anonymous
+}   // namespace
 
 
 
@@ -288,7 +288,7 @@ QuadraticSplineTable::QuadraticSplineTable(std::initializer_list<AnalyticalSplin
     double minQuotient = GMX_REAL_MAX;
 
     // loop over all functions to find smallest spacing
-    for (auto thisFuncInput : analyticalInputList)
+    for (const auto &thisFuncInput : analyticalInputList)
     {
         try
         {
@@ -324,7 +324,7 @@ QuadraticSplineTable::QuadraticSplineTable(std::initializer_list<AnalyticalSplin
     // combine them into a multiplexed table function.
     std::size_t funcIndex = 0;
 
-    for (auto thisFuncInput : analyticalInputList)
+    for (const auto &thisFuncInput : analyticalInputList)
     {
         try
         {
@@ -404,6 +404,9 @@ QuadraticSplineTable::QuadraticSplineTable(std::initializer_list<NumericalSpline
         // of the derivative will be described by the third-derivative correction term.
         // This means we can compute the required spacing as h = sqrt(12*tolerance*min(f'/f''')),
         // where f'/f''' is the first and third derivative of the function, respectively.
+        // Since we already have an analytical form of the derivative, we reduce the numerical
+        // errors by calculating the quotient of the function and second derivative of the
+        // input-derivative-analytical function instead.
 
         double thisMinQuotient = internal::findSmallestQuotientOfFunctionAndSecondDerivative(thisFuncInput.derivative, thisFuncInput.spacing, range_);
 

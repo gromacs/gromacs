@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -126,17 +126,16 @@ class AbstractPlotModule::Impl
         std::string               xlabel_;
         std::string               ylabel_;
         std::vector<std::string>  legend_;
-        char                      xformat_[15];
-        char                      yformat_[15];
+        std::string               xformat_;
+        std::string               yformat_;
         real                      xscale_;
 };
 
 AbstractPlotModule::Impl::Impl(const AnalysisDataPlotSettings &settings)
     : settings_(settings), fp_(nullptr), bPlain_(false), bOmitX_(false),
-      bErrorsAsSeparateColumn_(false), xscale_(1.0)
+      bErrorsAsSeparateColumn_(false),
+      xformat_("%11.3f"), yformat_(" %8.3f"), xscale_(1.0)
 {
-    strcpy(xformat_, "%11.3f");
-    strcpy(yformat_, " %8.3f");
 }
 
 AbstractPlotModule::Impl::~Impl()
@@ -301,7 +300,7 @@ AbstractPlotModule::setXFormat(int width, int precision, char format)
                        "Invalid width or precision");
     GMX_RELEASE_ASSERT(strchr("eEfFgG", format) != nullptr,
                        "Invalid format specifier");
-    sprintf(impl_->xformat_, "%%%d.%d%c", width, precision, format);
+    impl_->xformat_ = formatString("%%%d.%d%c", width, precision, format);
 }
 
 
@@ -313,7 +312,7 @@ AbstractPlotModule::setYFormat(int width, int precision, char format)
                        "Invalid width or precision");
     GMX_RELEASE_ASSERT(strchr("eEfFgG", format) != nullptr,
                        "Invalid format specifier");
-    sprintf(impl_->yformat_, " %%%d.%d%c", width, precision, format);
+    impl_->yformat_ = formatString(" %%%d.%d%c", width, precision, format);
 }
 
 
@@ -337,7 +336,7 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
         else
         {
             time_unit_t  time_unit
-                = static_cast<time_unit_t>(impl_->settings_.timeUnit() + 1);
+                = static_cast<time_unit_t>(impl_->settings_.timeUnit() + 1); // NOLINT(bugprone-misplaced-widening-cast)
             xvg_format_t xvg_format
                 = (impl_->settings_.plotFormat() > 0
                    ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())
@@ -346,7 +345,7 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
             output_env_init(&oenv, getProgramContext(), time_unit, FALSE, xvg_format, 0);
             const unique_cptr<gmx_output_env_t, output_env_done> oenvGuard(oenv);
             impl_->fp_ = xvgropen(impl_->filename_.c_str(), impl_->title_.c_str(),
-                                  impl_->xlabel_.c_str(), impl_->ylabel_.c_str(),
+                                  impl_->xlabel_, impl_->ylabel_,
                                   oenv);
             const SelectionCollection *selections
                 = impl_->settings_.selectionCollection();
@@ -375,7 +374,7 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
 
 
 void
-AbstractPlotModule::frameStarted(const AnalysisDataFrameHeader &frame)
+AbstractPlotModule::frameStarted(const AnalysisDataFrameHeader &header)
 {
     if (!isFileOpen())
     {
@@ -383,7 +382,7 @@ AbstractPlotModule::frameStarted(const AnalysisDataFrameHeader &frame)
     }
     if (!impl_->bOmitX_)
     {
-        std::fprintf(impl_->fp_, impl_->xformat_, frame.x() * impl_->xscale_);
+        std::fprintf(impl_->fp_, impl_->xformat_.c_str(), header.x() * impl_->xscale_);
     }
 }
 
@@ -418,11 +417,11 @@ AbstractPlotModule::writeValue(const AnalysisDataValue &value) const
 {
     GMX_ASSERT(isFileOpen(), "File not opened, but write attempted");
     const real y = value.isSet() ? value.value() : 0.0;
-    std::fprintf(impl_->fp_, impl_->yformat_, y);
+    std::fprintf(impl_->fp_, impl_->yformat_.c_str(), y);
     if (impl_->bErrorsAsSeparateColumn_)
     {
         const real dy = value.isSet() ? value.error() : 0.0;
-        std::fprintf(impl_->fp_, impl_->yformat_, dy);
+        std::fprintf(impl_->fp_, impl_->yformat_.c_str(), dy);
     }
 }
 //! \endcond
@@ -461,24 +460,16 @@ AnalysisDataPlotModule::pointsAdded(const AnalysisDataPointSetRef &points)
  */
 
 AnalysisDataVectorPlotModule::AnalysisDataVectorPlotModule()
+    : bWrite_ {true, true, true, false}
 {
-    for (int i = 0; i < DIM; ++i)
-    {
-        bWrite_[i] = true;
-    }
-    bWrite_[DIM] = false;
 }
 
 
 AnalysisDataVectorPlotModule::AnalysisDataVectorPlotModule(
         const AnalysisDataPlotSettings &settings)
-    : AbstractPlotModule(settings)
+    : AbstractPlotModule(settings),
+      bWrite_ {true, true, true, false}
 {
-    for (int i = 0; i < DIM; ++i)
-    {
-        bWrite_[i] = true;
-    }
-    bWrite_[DIM] = false;
 }
 
 
@@ -511,7 +502,7 @@ AnalysisDataVectorPlotModule::setWriteNorm(bool bWrite)
 
 
 void
-AnalysisDataVectorPlotModule::setWriteMask(bool bWrite[DIM + 1])
+AnalysisDataVectorPlotModule::setWriteMask(const bool bWrite[DIM + 1])
 {
     for (int i = 0; i < DIM + 1; ++i)
     {

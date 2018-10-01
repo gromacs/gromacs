@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,7 @@
 #include "md_support.h"
 
 #include <climits>
+#include <cmath>
 
 #include <algorithm>
 
@@ -56,6 +57,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/energyhistory.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -74,10 +76,10 @@
 
 // TODO move this to multi-sim module
 bool multisim_int_all_are_equal(const gmx_multisim_t *ms,
-                                gmx_int64_t           value)
+                                int64_t               value)
 {
     bool         allValuesAreEqual = true;
-    gmx_int64_t *buf;
+    int64_t     *buf;
 
     GMX_RELEASE_ASSERT(ms, "Invalid use of multi-simulation pointer");
 
@@ -153,7 +155,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
                      t_state *state, t_mdatoms *mdatoms,
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
-                     tensor pres, rvec mu_tot, gmx_constr_t constr,
+                     tensor pres, rvec mu_tot, gmx::Constraints *constr,
                      gmx::SimulationSignaller *signalCoordinator,
                      matrix box, int *totalNumberOfBondedInteractions,
                      gmx_bool *bSumEkinhOld, int flags)
@@ -162,17 +164,19 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
     gmx_bool bEner, bPres, bTemp;
     gmx_bool bStopCM, bGStat,
              bReadEkin, bEkinAveVel, bScaleEkin, bConstrain;
+    gmx_bool bCheckNumberOfBondedInteractions;
     real     prescorr, enercorr, dvdlcorr, dvdl_ekin;
 
     /* translate CGLO flags to gmx_booleans */
-    bStopCM       = flags & CGLO_STOPCM;
-    bGStat        = flags & CGLO_GSTAT;
-    bReadEkin     = (flags & CGLO_READEKIN);
-    bScaleEkin    = (flags & CGLO_SCALEEKIN);
-    bEner         = flags & CGLO_ENERGY;
-    bTemp         = flags & CGLO_TEMPERATURE;
-    bPres         = (flags & CGLO_PRESSURE);
-    bConstrain    = (flags & CGLO_CONSTRAINT);
+    bStopCM                          = ((flags & CGLO_STOPCM) != 0);
+    bGStat                           = ((flags & CGLO_GSTAT) != 0);
+    bReadEkin                        = ((flags & CGLO_READEKIN) != 0);
+    bScaleEkin                       = ((flags & CGLO_SCALEEKIN) != 0);
+    bEner                            = ((flags & CGLO_ENERGY) != 0);
+    bTemp                            = ((flags & CGLO_TEMPERATURE) != 0);
+    bPres                            = ((flags & CGLO_PRESSURE) != 0);
+    bConstrain                       = ((flags & CGLO_CONSTRAINT) != 0);
+    bCheckNumberOfBondedInteractions = ((flags & CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS) != 0);
 
     /* we calculate a full state kinetic energy either with full-step velocity verlet
        or half step where we need the pressure */
@@ -207,7 +211,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
                      as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), vcm);
     }
 
-    if (bTemp || bStopCM || bPres || bEner || bConstrain)
+    if (bTemp || bStopCM || bPres || bEner || bConstrain || bCheckNumberOfBondedInteractions)
     {
         if (!bGStat)
         {
@@ -235,20 +239,20 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
         }
     }
 
-    if (!ekind->bNEMD && debug && bTemp && (vcm->nr > 0))
-    {
-        correct_ekin(debug,
-                     0, mdatoms->homenr,
-                     as_rvec_array(state->v.data()), vcm->group_p[0],
-                     mdatoms->massT, mdatoms->tmass, ekind->ekin);
-    }
-
     /* Do center of mass motion removal */
     if (bStopCM)
     {
         check_cm_grp(fplog, vcm, ir, 1);
-        do_stopcm_grp(0, mdatoms->homenr, mdatoms->cVCM,
-                      as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), vcm);
+        /* At initialization, do not pass x with acceleration-correction mode
+         * to avoid (incorrect) correction of the initial coordinates.
+         */
+        rvec *xPtr = nullptr;
+        if (vcm->mode == ecmANGULAR || (vcm->mode == ecmLINEAR_ACCELERATION_CORRECTION && !(flags & CGLO_INITIALIZATION)))
+        {
+            xPtr = as_rvec_array(state->x.data());
+        }
+        do_stopcm_grp(*mdatoms,
+                      xPtr, as_rvec_array(state->v.data()), *vcm);
         inc_nrnb(nrnb, eNR_STOPCM, mdatoms->homenr);
     }
 
@@ -269,7 +273,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
          */
         enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, &dvdl_ekin,
                                        bEkinAveVel, bScaleEkin);
-        enerd->dvdl_lin[efptMASS] = (double) dvdl_ekin;
+        enerd->dvdl_lin[efptMASS] = static_cast<double>(dvdl_ekin);
 
         enerd->term[F_EKIN] = trace(ekind->ekin);
     }
@@ -328,94 +332,82 @@ static void check_nst_param(const gmx::MDLogger &mdlog,
     }
 }
 
-void set_current_lambdas(gmx_int64_t step, t_lambda *fepvals, gmx_bool bRerunMD,
-                         t_trxframe *rerun_fr, t_state *state_global, t_state *state, double lam0[])
+void setCurrentLambdasRerun(int64_t step, const t_lambda *fepvals,
+                            const t_trxframe *rerun_fr, const double *lam0,
+                            t_state *globalState)
+{
+    GMX_RELEASE_ASSERT(globalState != nullptr, "setCurrentLambdasGlobalRerun should be called with a valid state object");
+
+    if (rerun_fr->bLambda)
+    {
+        if (fepvals->delta_lambda == 0)
+        {
+            globalState->lambda[efptFEP] = rerun_fr->lambda;
+        }
+        else
+        {
+            /* find out between which two value of lambda we should be */
+            real frac      = step*fepvals->delta_lambda;
+            int  fep_state = static_cast<int>(std::floor(frac*fepvals->n_lambda));
+            /* interpolate between this state and the next */
+            /* this assumes that the initial lambda corresponds to lambda==0, which is verified in grompp */
+            frac           = frac*fepvals->n_lambda - fep_state;
+            for (int i = 0; i < efptNR; i++)
+            {
+                globalState->lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state]) +
+                    frac*(fepvals->all_lambda[i][fep_state+1] - fepvals->all_lambda[i][fep_state]);
+            }
+        }
+    }
+    else if (rerun_fr->bFepState)
+    {
+        globalState->fep_state = rerun_fr->fep_state;
+        for (int i = 0; i < efptNR; i++)
+        {
+            globalState->lambda[i] = fepvals->all_lambda[i][globalState->fep_state];
+        }
+    }
+}
+
+void setCurrentLambdasLocal(int64_t step, const t_lambda *fepvals,
+                            const double *lam0, t_state *state)
 /* find the current lambdas.  If rerunning, we either read in a state, or a lambda value,
    requiring different logic. */
 {
-    real frac;
-    int  i, fep_state = 0;
-    if (bRerunMD)
+    if (fepvals->delta_lambda != 0)
     {
-        if (rerun_fr->bLambda)
+        /* find out between which two value of lambda we should be */
+        real frac = step*fepvals->delta_lambda;
+        if (fepvals->n_lambda > 0)
         {
-            if (fepvals->delta_lambda == 0)
+            int fep_state = static_cast<int>(std::floor(frac*fepvals->n_lambda));
+            /* interpolate between this state and the next */
+            /* this assumes that the initial lambda corresponds to lambda==0, which is verified in grompp */
+            frac          = frac*fepvals->n_lambda - fep_state;
+            for (int i = 0; i < efptNR; i++)
             {
-                state_global->lambda[efptFEP] = rerun_fr->lambda;
-                for (i = 0; i < efptNR; i++)
-                {
-                    if (i != efptFEP)
-                    {
-                        state->lambda[i] = state_global->lambda[i];
-                    }
-                }
-            }
-            else
-            {
-                /* find out between which two value of lambda we should be */
-                frac      = (step*fepvals->delta_lambda);
-                fep_state = static_cast<int>(floor(frac*fepvals->n_lambda));
-                /* interpolate between this state and the next */
-                /* this assumes that the initial lambda corresponds to lambda==0, which is verified in grompp */
-                frac = (frac*fepvals->n_lambda)-fep_state;
-                for (i = 0; i < efptNR; i++)
-                {
-                    state_global->lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state]) +
-                        frac*(fepvals->all_lambda[i][fep_state+1]-fepvals->all_lambda[i][fep_state]);
-                }
+                state->lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state]) +
+                    frac*(fepvals->all_lambda[i][fep_state + 1] - fepvals->all_lambda[i][fep_state]);
             }
         }
-        else if (rerun_fr->bFepState)
+        else
         {
-            state_global->fep_state = rerun_fr->fep_state;
-            for (i = 0; i < efptNR; i++)
+            for (int i = 0; i < efptNR; i++)
             {
-                state_global->lambda[i] = fepvals->all_lambda[i][fep_state];
+                state->lambda[i] = lam0[i] + frac;
             }
         }
     }
     else
     {
-        if (fepvals->delta_lambda != 0)
+        /* if < 0, fep_state was never defined, and we should not set lambda from the state */
+        if (state->fep_state > -1)
         {
-            /* find out between which two value of lambda we should be */
-            frac = (step*fepvals->delta_lambda);
-            if (fepvals->n_lambda > 0)
+            for (int i = 0; i < efptNR; i++)
             {
-                fep_state = static_cast<int>(floor(frac*fepvals->n_lambda));
-                /* interpolate between this state and the next */
-                /* this assumes that the initial lambda corresponds to lambda==0, which is verified in grompp */
-                frac = (frac*fepvals->n_lambda)-fep_state;
-                for (i = 0; i < efptNR; i++)
-                {
-                    state_global->lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state]) +
-                        frac*(fepvals->all_lambda[i][fep_state+1]-fepvals->all_lambda[i][fep_state]);
-                }
-            }
-            else
-            {
-                for (i = 0; i < efptNR; i++)
-                {
-                    state_global->lambda[i] = lam0[i] + frac;
-                }
+                state->lambda[i] = fepvals->all_lambda[i][state->fep_state];
             }
         }
-        else
-        {
-            /* if < 0, fep_state was never defined, and we should not set lambda from the state */
-            if (state_global->fep_state > -1)
-            {
-                state_global->fep_state = state->fep_state; /* state->fep_state is the one updated by bExpanded */
-                for (i = 0; i < efptNR; i++)
-                {
-                    state_global->lambda[i] = fepvals->all_lambda[i][state_global->fep_state];
-                }
-            }
-        }
-    }
-    for (i = 0; i < efptNR; i++)
-    {
-        state->lambda[i] = state_global->lambda[i];
     }
 }
 
@@ -601,6 +593,10 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
             state->flags  |= (1<<estVETA);
             state->flags  |= (1<<estVOL0);
         }
+        if (ir->epc == epcBERENDSEN)
+        {
+            state->flags  |= (1<<estBAROS_INT);
+        }
     }
 
     if (ir->etc == etcNOSEHOOVER)
@@ -609,9 +605,9 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
         state->flags |= (1<<estNH_VXI);
     }
 
-    if (ir->etc == etcVRESCALE)
+    if (ir->etc == etcVRESCALE || ir->etc == etcBERENDSEN)
     {
-        state->flags |= (1<<estTC_INT);
+        state->flags |= (1<<estTHERM_INT);
     }
 
     init_gtc_state(state, state->ngtc, state->nnhpres, ir->opts.nhchainlength); /* allocate the space for nose-hoover chains */
@@ -621,13 +617,5 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
     {
         snew(state->dfhist, 1);
         init_df_history(state->dfhist, ir->fepvals->n_lambda);
-    }
-    if (ir->eSwapCoords != eswapNO)
-    {
-        if (state->swapstate == nullptr)
-        {
-            snew(state->swapstate, 1);
-        }
-        state->swapstate->eSwapCoords = ir->eSwapCoords;
     }
 }

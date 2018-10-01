@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -45,8 +45,7 @@ endif()
 set(LINEARALGEBRA_SOURCES
     ${LINEARALGEBRA_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES})
 
-set(LIBGROMACS_SOURCES
-    ${LIBGROMACS_SOURCES} ${LINEARALGEBRA_SOURCES} PARENT_SCOPE)
+target_sources(libgromacs_external PRIVATE ${LINEARALGEBRA_SOURCES})
 
 gmx_install_headers(
     eigensolver.h

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,8 +50,6 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 
-using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
-
 struct gmx_domdec_t;
 
 /*! \brief Set the SIMD PBC data from a normal t_pbc struct.
@@ -83,25 +81,26 @@ void set_pbc_simd(const t_pbc *pbc,
  * without PBC. But on modern processors the overhead of this, often called,
  * routine should be low. On e.g. Intel Haswell/Broadwell it takes 8 cycles.
  */
-static gmx_inline void gmx_simdcall
-pbc_correct_dx_simd(SimdReal         *dx,
-                    SimdReal         *dy,
-                    SimdReal         *dz,
-                    const real       *pbc_simd)
+static inline void gmx_simdcall
+pbc_correct_dx_simd(gmx::SimdReal         *dx,
+                    gmx::SimdReal         *dy,
+                    gmx::SimdReal         *dz,
+                    const real            *pbc_simd)
 {
+    using namespace gmx;
     SimdReal shz, shy, shx;
 
-    shz = round(*dz * load(pbc_simd+0*GMX_SIMD_REAL_WIDTH)); // load inv_bzz
-    *dx = *dx - shz * load(pbc_simd+1*GMX_SIMD_REAL_WIDTH);  // load bzx
-    *dy = *dy - shz * load(pbc_simd+2*GMX_SIMD_REAL_WIDTH);  // load bzy
-    *dz = *dz - shz * load(pbc_simd+3*GMX_SIMD_REAL_WIDTH);  // load bzz
+    shz = round(*dz * load<SimdReal>(pbc_simd+0*GMX_SIMD_REAL_WIDTH)); // load inv_bzz
+    *dx = *dx - shz * load<SimdReal>(pbc_simd+1*GMX_SIMD_REAL_WIDTH);  // load bzx
+    *dy = *dy - shz * load<SimdReal>(pbc_simd+2*GMX_SIMD_REAL_WIDTH);  // load bzy
+    *dz = *dz - shz * load<SimdReal>(pbc_simd+3*GMX_SIMD_REAL_WIDTH);  // load bzz
 
-    shy = round(*dy * load(pbc_simd+4*GMX_SIMD_REAL_WIDTH)); // load inv_byy
-    *dx = *dx - shy * load(pbc_simd+5*GMX_SIMD_REAL_WIDTH);  // load byx
-    *dy = *dy - shy * load(pbc_simd+6*GMX_SIMD_REAL_WIDTH);  // load byy
+    shy = round(*dy * load<SimdReal>(pbc_simd+4*GMX_SIMD_REAL_WIDTH)); // load inv_byy
+    *dx = *dx - shy * load<SimdReal>(pbc_simd+5*GMX_SIMD_REAL_WIDTH);  // load byx
+    *dy = *dy - shy * load<SimdReal>(pbc_simd+6*GMX_SIMD_REAL_WIDTH);  // load byy
 
-    shx = round(*dx * load(pbc_simd+7*GMX_SIMD_REAL_WIDTH)); // load inv_bxx
-    *dx = *dx - shx * load(pbc_simd+8*GMX_SIMD_REAL_WIDTH);  // load bxx
+    shx = round(*dx * load<SimdReal>(pbc_simd+7*GMX_SIMD_REAL_WIDTH)); // load inv_bxx
+    *dx = *dx - shx * load<SimdReal>(pbc_simd+8*GMX_SIMD_REAL_WIDTH);  // load bxx
 
 }
 
@@ -116,11 +115,11 @@ pbc_correct_dx_simd(SimdReal         *dx,
  * when all atoms are in the unit-cell (aiuc).
  * This is the SIMD equivalent of the scalar version declared in pbc.h.
  */
-static gmx_inline void gmx_simdcall
-pbc_dx_aiuc(const real       *pbc_simd,
-            const SimdReal   *x1,
-            const SimdReal   *x2,
-            SimdReal         *dx)
+static inline void gmx_simdcall
+pbc_dx_aiuc(const real            *pbc_simd,
+            const gmx::SimdReal   *x1,
+            const gmx::SimdReal   *x2,
+            gmx::SimdReal         *dx)
 {
     for (int d = 0; d < DIM; d++)
     {

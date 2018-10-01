@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,12 +32,42 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-if (GMX_USE_OPENCL)
-    gmx_add_libgromacs_sources(gpu_utils_ocl.cpp ocl_compiler.cpp ocl_caching.cpp oclutils.cpp)
+# Note, source files should be listed in alphabetical order, to reduce
+# the incidence of textual clashes when adding/moving files that
+# otherwise make the end of the list a hotspot.
+
+gmx_add_libgromacs_sources(
+        clfftinitializer.cpp
+        hostallocator.cpp
+        gpu_utils.cpp
+        )
+if(GMX_USE_OPENCL)
+    gmx_add_libgromacs_sources(
+        gpu_utils_ocl.cpp
+        ocl_compiler.cpp
+        ocl_caching.cpp
+        oclutils.cpp
+        )
+elseif(GMX_USE_CUDA)
+    gmx_add_libgromacs_sources(
+        cudautils.cu
+        gpu_utils.cu
+        pinning.cu
+        pmalloc_cuda.cu
+        )
 endif()
-if (GMX_USE_CUDA)
-    gmx_add_libgromacs_sources(cudautils.cu gpu_utils.cu pmalloc_cuda.cu)
+
+if(GMX_USE_OPENCL)
+    file(GLOB OPENCL_COMMON_HEADERS
+            vectype_ops.clh
+            device_utils.clh
+        )
+    set(MDLIB_OPENCL_KERNELS ${MDLIB_OPENCL_KERNELS} ${OPENCL_COMMON_HEADERS} PARENT_SCOPE)
 endif()
-if (NOT GMX_USE_OPENCL AND NOT GMX_USE_CUDA)
-    gmx_add_libgromacs_sources(gpu_utils.cpp)
+
+# workaround for the state - host allocator dependency
+gmx_install_headers(hostallocator.h)
+
+if (BUILD_TESTING)
+    add_subdirectory(tests)
 endif()

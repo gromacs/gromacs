@@ -1,3 +1,11 @@
+.. NOTE: Below is a useful bash one-liner to verify whether there are variables in this file
+..        no longer present in the code.
+.. ( export INPUT_FILE='docs/user-guide/environment-variables.rst' GIT_PAGER="cat "; for s in $(grep '^`'  $INPUT_FILE | sed 's/`//g' | sed 's/,/ /g'); do count=$(git grep $s | grep -v $INPUT_FILE | wc -l); [ $count -eq 0 ] && printf "%-30s%s\n" $s $count; done ; )
+.. Another useful one-liner to find undocumentedvariables:
+..  ( export INPUT_FILE=docs/user-guide/environment-variables.rst; GIT_PAGER="cat ";   for ss in `for s in $(git grep getenv |  sed 's/.*getenv("\(.*\)".*/\1/' | sort -u  | grep '^[A-Z]'); do [ $(grep $s $INPUT_FILE -c) -eq 0 ] && echo $s; done `; do git grep $ss ; done )
+
+.. TODO: still undocumented GMX_QM_GAUSSIAN_NCPUS
+
 Environment Variables
 =====================
 
@@ -18,6 +26,9 @@ Output Control
 --------------
 ``GMX_CONSTRAINTVIR``
         Print constraint virial and force virial energy terms.
+
+``GMX_DUMP_NL``
+        Neighbour list dump level; default 0.
 
 ``GMX_MAXBACKUP``
         |Gromacs| automatically backs up old
@@ -52,9 +63,6 @@ Output Control
         Be careful not to use a command which blocks the terminal
         (e.g. ``vi``), since multiple instances might be run.
 
-``GMX_VIRIAL_TEMPERATURE``
-        print virial temperature energy term
-
 ``GMX_LOG_BUFFER``
         the size of the buffer for file I/O. When set
         to 0, all file I/O will be unbuffered and therefore very slow.
@@ -73,6 +81,19 @@ Output Control
         only (see reference manual). The initial structure gets dumped to
         :ref:`pdb` file, which allows to check whether multimeric channels have
         the correct PBC representation.
+
+``GMX_TRAJECTORY_IO_VERBOSITY``
+        Defaults to 1, which prints frame count e.g. when reading trajectory
+        files. Set to 0 for quiet operation.
+
+``GMX_ENABLE_GPU_TIMING``
+        Enables GPU timings in the log file for CUDA. Note that CUDA timings
+        are incorrect with multiple streams, as happens with domain
+        decomposition or with both non-bondeds and PME on the GPU (this is
+        also the main reason why they are not turned on by default).
+
+``GMX_DISABLE_GPU_TIMING``
+        Disables GPU timings in the log file for OpenCL.
 
 Debugging
 ---------
@@ -100,6 +121,12 @@ Debugging
         over-ride the number of DD pulses used
         (default 0, meaning no over-ride). Normally 1 or 2.
 
+``GMX_DISABLE_ALTERNATING_GPU_WAIT``
+        disables the specialized polling wait path used to wait for the PME and nonbonded
+        GPU tasks completion to overlap to do the reduction of the resulting forces that
+        arrive first. Setting this variable switches to the generic path with fixed waiting
+        order.
+
 There are a number of extra environment variables like these
 that are used in debugging - check the code!
 
@@ -111,10 +138,10 @@ Performance and Run Control
         file. Normally, :mdp:`epsilon-r` must be greater than zero to prevent a fatal error.
         See webpage_ for example input files for a planetary simulation.
 
-``GMX_ALLOW_CPT_MISMATCH``
-        when set, runs will not exit if the
-        ensemble set in the :ref:`tpr` file does not match that of the
-        :ref:`cpt` file.
+``GMX_BONDED_NTHREAD_UNIFORM``
+        Value of the number of threads per rank from which to switch from uniform
+        to localized bonded interaction distribution; optimal value dependent on
+        system and hardware, default value is 4.
 
 ``GMX_CUDA_NB_EWALD_TWINCUT``
         force the use of twin-range cutoff kernel even if :mdp:`rvdw` equals
@@ -127,17 +154,8 @@ Performance and Run Control
 ``GMX_CUDA_NB_TAB_EWALD``
         force the use of tabulated Ewald kernels. Should be used only for benchmarking.
 
-``GMX_CUDA_STREAMSYNC``
-        force the use of cudaStreamSynchronize on ECC-enabled GPUs, which leads
-        to performance loss due to a known CUDA driver bug present in API v5.0 NVIDIA drivers (pre-30x.xx).
-        Cannot be set simultaneously with ``GMX_NO_CUDA_STREAMSYNC``.
-
-``GMX_DISABLE_CUDALAUNCH``
-        disable the use of the lower-latency cudaLaunchKernel API even when supported (CUDA >=v7.0).
-        Should only be used for benchmarking purposes.
-
 ``GMX_DISABLE_CUDA_TIMING``
-        Disables GPU timing of CUDA tasks; synonymous with ``GMX_DISABLE_GPU_TIMING``.
+        Deprecated. Use ``GMX_DISABLE_GPU_TIMING`` instead.
 
 ``GMX_CYCLE_ALL``
         times all code during runs.  Incompatible with threads.
@@ -195,8 +213,6 @@ Performance and Run Control
 ``GMX_EMULATE_GPU``
         emulate GPU runs by using algorithmically equivalent CPU reference code instead of
         GPU-accelerated functions. As the CPU code is slow, it is intended to be used only for debugging purposes.
-        The behavior is automatically triggered if non-bonded calculations are turned off using ``GMX_NO_NONBONDED``
-        case in which the non-bonded calculations will not be called, but the CPU-GPU transfer will also be skipped.
 
 ``GMX_ENX_NO_FATAL``
         disable exiting upon encountering a corrupted frame in an :ref:`edr`
@@ -207,8 +223,14 @@ Performance and Run Control
 
 ``GMX_GPU_ID``
         set in the same way as ``mdrun -gpu_id``, ``GMX_GPU_ID``
-        allows the user to specify different GPU id-s, which can be useful for selecting different
+        allows the user to specify different GPU IDs for different ranks, which can be useful for selecting different
         devices on different compute nodes in a cluster.  Cannot be used in conjunction with ``mdrun -gpu_id``.
+
+``GMX_GPUTASKS``
+        set in the same way as ``mdrun -gputasks``, ``GMX_GPUTASKS`` allows the mapping
+        of GPU tasks to GPU device IDs to be different on different ranks, if e.g. the MPI
+        runtime permits this variable to be different for different ranks. Cannot be used
+        in conjunction with ``mdrun -gputasks``. Has all the same requirements as ``mdrun -gputasks``.
 
 ``GMX_IGNORE_FSYNC_FAILURE_ENV``
         allow :ref:`gmx mdrun` to continue even if
@@ -257,6 +279,9 @@ Performance and Run Control
         force the use of 4xN SIMD CPU non-bonded kernels,
         mutually exclusive of ``GMX_NBNXN_SIMD_2XNN``.
 
+``GMX_NOOPTIMIZEDKERNELS``
+        deprecated, use ``GMX_DISABLE_SIMD_KERNELS`` instead.
+
 ``GMX_NO_ALLVSALL``
         disables optimized all-vs-all kernels.
 
@@ -267,11 +292,6 @@ Performance and Run Control
 ``GMX_NO_LJ_COMB_RULE``
         force the use of LJ paremeter lookup instead of using combination rules
         in the non-bonded kernels.
-
-``GMX_NO_CUDA_STREAMSYNC``
-        the opposite of ``GMX_CUDA_STREAMSYNC``. Disables the use of the
-        standard cudaStreamSynchronize-based GPU waiting to improve performance when using CUDA driver API
-        ealier than v5.0 with ECC-enabled GPUs.
 
 ``GMX_NO_INT``, ``GMX_NO_TERM``, ``GMX_NO_USR1``
         disable signal handlers for SIGINT,
@@ -284,9 +304,10 @@ Performance and Run Control
         skip non-bonded calculations; can be used to estimate the possible
         performance gain from adding a GPU accelerator to the current hardware setup -- assuming that this is
         fast enough to complete the non-bonded calculations while the CPU does bonded force and PME computation.
+        Freezing the particles will be required to stop the system blowing up.
 
-``GMX_NO_PULLVIR``
-        when set, do not add virial contribution to COM pull forces.
+``GMX_PULL_PARTICIPATE_ALL``
+        disable the default heuristic for when to use a separate pull MPI communicator (at >=32 ranks).
 
 ``GMX_NOPREDICT``
         shell positions are not predicted.
@@ -300,9 +321,10 @@ Performance and Run Control
         to a value of 10. Setting this environment variable to any other integer value overrides this hard-coded
         value.
 
-``GMX_PME_NTHREADS``
-        set the number of OpenMP or PME threads (overrides the number guessed by
-        :ref:`gmx mdrun`.
+``GMX_PME_NUM_THREADS``
+        set the number of OpenMP or PME threads; overrides the default set by
+        :ref:`gmx mdrun`; can be used instead of the `-npme` command line option,
+        also useful to set heterogeneous per-process/-node thread count.
 
 ``GMX_PME_P3M``
         use P3M-optimized influence function instead of smooth PME B-spline interpolation.
@@ -352,9 +374,15 @@ Performance and Run Control
 ``MDRUN``
         the :ref:`gmx mdrun` command used by :ref:`gmx tune_pme`.
 
-``GMX_NSTLIST``
-        sets the default value for :mdp:`nstlist`, preventing it from being tuned during
-        :ref:`gmx mdrun` startup when using the Verlet cutoff scheme.
+``GMX_DISABLE_DYNAMICPRUNING``
+        disables dynamic pair-list pruning. Note that :ref:`gmx mdrun` will
+        still tune nstlist to the optimal value picked assuming dynamic pruning. Thus
+        for good performance the -nstlist option should be used.
+
+``GMX_NSTLIST_DYNAMICPRUNING``
+        overrides the dynamic pair-list pruning interval chosen heuristically
+        by mdrun. Values should be between the pruning frequency value
+        (1 for CPU and 2 for GPU) and :mdp:`nstlist` ``- 1``.
 
 ``GMX_USE_TREEREDUCE``
         use tree reduction for nbnxn force reduction. Potentially faster for large number of
@@ -426,11 +454,11 @@ compilation of OpenCL kernels, but they are also used in device selection.
         simplicity of stepping in a kernel and see what is happening.
 
 ``GMX_OCL_DISABLE_I_PREFETCH``
-        Disables i-atom data (type or LJ parameter) prefetch allowig
+        Disables i-atom data (type or LJ parameter) prefetch allowing
         testing.
 
 ``GMX_OCL_ENABLE_I_PREFETCH``
-        Enables i-atom data (type or LJ parameter) prefetch allowig
+        Enables i-atom data (type or LJ parameter) prefetch allowing
         testing on platforms where this behavior is not default.
 
 ``GMX_OCL_NB_ANA_EWALD``
@@ -445,14 +473,16 @@ compilation of OpenCL kernels, but they are also used in device selection.
         Forces the use of twin-range cutoff kernel. Equivalent of
         CUDA environment variable ``GMX_CUDA_NB_EWALD_TWINCUT``
 
-``GMX_DISABLE_OCL_TIMING``
-        Disables timing for OpenCL operations
-
 ``GMX_OCL_FILE_PATH``
         Use this parameter to force |Gromacs| to load the OpenCL
         kernels from a custom location. Use it only if you want to
         override |Gromacs| default behavior, or if you want to test
         your own kernels.
+
+``GMX_OCL_DISABLE_COMPATIBILITY_CHECK``
+        Disables the hardware compatibility check. Useful for developers
+        and allows testing the OpenCL kernels on non-supported platforms
+        (like Intel iGPUs) without source code modification.
 
 Analysis and Core Functions
 ---------------------------
@@ -487,7 +517,7 @@ Analysis and Core Functions
         sets the maximum number of residues to be renumbered by
         :ref:`gmx grompp`. A value of -1 indicates all residues should be renumbered.
 
-``GMX_FFRTP_TER_RENAME``
+``GMX_NO_FFRTP_TER_RENAME``
         Some force fields (like AMBER) use specific names for N- and C-
         terminal residues (NXXX and CXXX) as :ref:`rtp` entries that are normally renamed. Setting
         this environment variable disables this renaming.

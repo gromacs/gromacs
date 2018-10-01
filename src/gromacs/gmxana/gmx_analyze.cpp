@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -111,7 +111,7 @@ static void power_fit(int n, int nset, real **val, real *t)
     sfree(x);
 }
 
-static real cosine_content(int nhp, int n, real *y)
+static real cosine_content(int nhp, int n, const real *y)
 /* Assumes n equidistant points */
 {
     double fac, cosyint, yyint;
@@ -237,14 +237,14 @@ static void regression_analysis(int n, gmx_bool bXYdy,
     }
 }
 
-void histogram(const char *distfile, real binwidth, int n, int nset, real **val,
-               const gmx_output_env_t *oenv)
+static void histogram(const char *distfile, real binwidth, int n, int nset, real **val,
+                      const gmx_output_env_t *oenv)
 {
     FILE          *fp;
     int            i, s;
     double         minval, maxval;
     int            nbin;
-    gmx_int64_t   *histo;
+    int64_t       *histo;
 
     minval = val[0][0];
     maxval = val[0][0];
@@ -271,7 +271,7 @@ void histogram(const char *distfile, real binwidth, int n, int nset, real **val,
     }
     maxval += binwidth;
 
-    nbin = static_cast<int>(((maxval - minval)/binwidth + 0.5) + 1);
+    nbin = gmx::roundToInt(((maxval - minval)/binwidth) + 1);
     fprintf(stderr, "Making distributions with %d bins\n", nbin);
     snew(histo, nbin);
     fp = xvgropen(distfile, "Distribution", "", "", oenv);
@@ -283,7 +283,7 @@ void histogram(const char *distfile, real binwidth, int n, int nset, real **val,
         }
         for (i = 0; i < n; i++)
         {
-            histo[static_cast<int>((val[s][i] - minval)/binwidth + 0.5)]++;
+            histo[gmx::roundToInt((val[s][i] - minval)/binwidth)]++;
         }
         for (i = 0; i < nbin; i++)
         {
@@ -299,7 +299,7 @@ void histogram(const char *distfile, real binwidth, int n, int nset, real **val,
 
 static int real_comp(const void *a, const void *b)
 {
-    real dif = *(real *)a - *(real *)b;
+    real dif = *reinterpret_cast<const real*>(a) - *reinterpret_cast<const real*>(b);
 
     if (dif < 0)
     {
@@ -334,9 +334,9 @@ static void average(const char *avfile, int avbar_opt,
         {
             snew(tmp, nset);
             fprintf(fp, "@TYPE xydydy\n");
-            edge = static_cast<int>(nset*0.05+0.5);
+            edge = gmx::roundToInt(nset*0.05);
             fprintf(stdout, "Errorbars: discarding %d points on both sides: %d%%"
-                    " interval\n", edge, static_cast<int>(100*(nset-2*edge)/nset+0.5));
+                    " interval\n", edge, gmx::roundToInt(100.*(nset-2*edge)/nset));
         }
         else
         {
@@ -396,7 +396,7 @@ static void average(const char *avfile, int avbar_opt,
  *
  * See Eqn A17, Hess, JCP 116 (2002) 209-217 for details.
  */
-static real optimal_error_estimate(double sigma, double fitparm[], real tTotal)
+static real optimal_error_estimate(double sigma, const double fitparm[], real tTotal)
 {
     double ss = fitparm[1]*fitparm[0]+(1-fitparm[1])*fitparm[2];
     if ((tTotal <= 0) || (ss <= 0))
@@ -440,7 +440,7 @@ static void estimate_error(const char *eefile, int nb_min, int resol, int n,
                 (n-1)*dt, n);
     }
     snew(leg, 2*nset);
-    xvgr_legend(fp, 2*nset, (const char**)leg, oenv);
+    xvgr_legend(fp, 2*nset, leg, oenv);
     sfree(leg);
 
     spacing = std::pow(2.0, 1.0/resol);
@@ -1020,7 +1020,7 @@ int gmx_analyze(int argc, char *argv[])
 
         "Option [TT]-power[tt] fits the data to [MATH]b t^a[math], which is accomplished",
         "by fitting to [MATH]a t + b[math] on log-log scale. All points after the first",
-        "zero or with a negative value are ignored.[PAR]"
+        "zero or with a negative value are ignored.[PAR]",
 
         "Option [TT]-luzar[tt] performs a Luzar & Chandler kinetics analysis",
         "on output from [gmx-hbond]. The input file can be taken directly",
@@ -1240,12 +1240,12 @@ int gmx_analyze(int argc, char *argv[])
         }
         printf("SS%d  %13.6e   %12.6e   %12.6e      %6.3f   %6.3f\n",
                s+1, av[s], sig[s], error,
-               sig[s] ? cum3/(sig[s]*sig[s]*sig[s]*std::sqrt(8/M_PI)) : 0,
-               sig[s] ? cum4/(sig[s]*sig[s]*sig[s]*sig[s]*3)-1 : 0);
+               sig[s] != 0.0 ? cum3/(sig[s]*sig[s]*sig[s]*std::sqrt(8/M_PI)) : 0,
+               sig[s] != 0.0 ? cum4/(sig[s]*sig[s]*sig[s]*sig[s]*3)-1 : 0);
     }
     printf("\n");
 
-    if (filtlen)
+    if (filtlen != 0.0f)
     {
         filter(filtlen, n, nset, val, dt);
     }

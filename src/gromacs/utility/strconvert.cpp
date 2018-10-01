@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,11 +94,11 @@ int intFromString(const char *str)
     return value;
 }
 
-gmx_int64_t int64FromString(const char *str)
+int64_t int64FromString(const char *str)
 {
     errno = 0;
     char              *endptr;
-    const gmx_int64_t  value = str_to_int64_t(str, &endptr);
+    const int64_t      value = str_to_int64_t(str, &endptr);
     if (errno == ERANGE)
     {
         GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str)

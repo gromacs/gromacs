@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -88,7 +88,7 @@ AnalysisDataPointSetRef::AnalysisDataPointSetRef(
         const AnalysisDataFrameHeader        &header,
         const std::vector<AnalysisDataValue> &values)
     : header_(header), dataSetIndex_(0), firstColumn_(0),
-      values_(constArrayRefFromVector<AnalysisDataValue>(values.begin(), values.end()))
+      values_(values)
 {
     GMX_ASSERT(header_.isValid(),
                "Invalid point set reference should not be constructed");
@@ -168,8 +168,8 @@ AnalysisDataFrameRef::AnalysisDataFrameRef(
         const AnalysisDataFrameHeader               &header,
         const std::vector<AnalysisDataValue>        &values,
         const std::vector<AnalysisDataPointSetInfo> &pointSets)
-    : header_(header), values_(constArrayRefFromVector<AnalysisDataValue>(values.begin(), values.end())),
-      pointSets_(constArrayRefFromVector<AnalysisDataPointSetInfo>(pointSets.begin(), pointSets.end()))
+    : header_(header), values_(values),
+      pointSets_(pointSets)
 {
     GMX_ASSERT(!pointSets_.empty(), "There must always be a point set");
 }

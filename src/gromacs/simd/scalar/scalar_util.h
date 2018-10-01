@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -629,7 +629,7 @@ gatherLoadBySimdIntTranspose(const double *      base,
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
+static inline double
 reduceIncr4ReturnSum(double *           m,
                      double             v0,
                      double             v1,

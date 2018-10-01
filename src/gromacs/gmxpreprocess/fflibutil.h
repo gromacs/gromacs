@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,7 @@
 
 #include <stdio.h>
 
+#include <string>
 #include <vector>
 
 #include "gromacs/utility/basedefinitions.h"
@@ -63,19 +64,18 @@ void fflib_filename_base(const char *filename, char *filebase, int maxlen);
  * base should be at least of size maxlen.
  */
 
-int fflib_search_file_end(const char *ffdir,
-                          const char *file_end,
-                          gmx_bool    bFatalError,
-                          char     ***filenames);
+std::vector<std::string> fflib_search_file_end(const char *ffdir,
+                                               const char *file_end,
+                                               bool        bFatalError);
 /* Search for files ending on file_end in the force field directory fflib.
  * fflib should be in the GROMACS lib.path.
  * Return the number of files and the file names in filenames.
  */
 
-gmx_bool fflib_fexist(const char *file);
+bool fflib_fexist(const std::string &file);
 /* Check if a file exists in the force field library */
 
-FILE *fflib_open(const char *file);
+FILE *fflib_open(const std::string &file);
 /* Open force field library file "file" for reading.
  * "file" should contain the whole path to the force field library,
  * either absolute or relative to the current dir.

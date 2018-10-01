@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,19 +59,19 @@
 #include "gromacs/utility/smalloc.h"
 
 
-static int index2(int *ibox, int x, int y)
+static int index2(const int *ibox, int x, int y)
 {
     return (ibox[1]*x+y);
 }
 
-static int index3(int *ibox, int x, int y, int z)
+static int index3(const int *ibox, int x, int y, int z)
 {
     return (ibox[2]*(ibox[1]*x+y)+z);
 }
 
-static gmx_int64_t indexn(int ndim, const int *ibox, const int *nxyz)
+static int64_t indexn(int ndim, const int *ibox, const int *nxyz)
 {
-    gmx_int64_t     d, dd;
+    int64_t         d, dd;
     int             k, kk;
 
     /* Compute index in 1-D array */
@@ -139,7 +139,7 @@ static void lo_write_xplor(XplorMap * map, const char * file)
     gmx_ffclose(fp);
 }
 
-static void write_xplor(const char *file, real *data, int *ibox, real dmin[], real dmax[])
+static void write_xplor(const char *file, const real *data, int *ibox, const real dmin[], const real dmax[])
 {
     XplorMap *xm;
     int       i, j, k, n;
@@ -176,7 +176,7 @@ static void write_xplor(const char *file, real *data, int *ibox, real dmin[], re
     sfree(xm);
 }
 
-static void normalize_p_e(int len, double *P, int *nbin, real *E, real pmin)
+static void normalize_p_e(int len, double *P, const int *nbin, real *E, real pmin)
 {
     int    i;
     double Ptot = 0;
@@ -204,14 +204,14 @@ static void normalize_p_e(int len, double *P, int *nbin, real *E, real pmin)
 }
 
 typedef struct {
-    gmx_int64_t     index;
+    int64_t         index;
     real            ener;
 } t_minimum;
 
 static int comp_minima(const void *a, const void *b)
 {
-    t_minimum *ma = (t_minimum *) a;
-    t_minimum *mb = (t_minimum *) b;
+    const t_minimum *ma = reinterpret_cast<const t_minimum*>(a);
+    const t_minimum *mb = reinterpret_cast<const t_minimum*>(b);;
 
     if (ma->ener < mb->ener)
     {
@@ -227,15 +227,15 @@ static int comp_minima(const void *a, const void *b)
     }
 }
 
-static gmx_inline
+static inline
 void print_minimum(FILE *fp, int num, const t_minimum *min)
 {
     fprintf(fp,
-            "Minimum %d at index " "%" GMX_PRId64 " energy %10.3f\n",
+            "Minimum %d at index " "%" PRId64 " energy %10.3f\n",
             num, min->index, min->ener);
 }
 
-static gmx_inline
+static inline
 void add_minimum(FILE *fp, int num, const t_minimum *min, t_minimum *mm)
 {
     print_minimum(fp, num, min);
@@ -243,12 +243,12 @@ void add_minimum(FILE *fp, int num, const t_minimum *min, t_minimum *mm)
     mm[num].ener  = min->ener;
 }
 
-static gmx_inline
-gmx_bool is_local_minimum_from_below(const t_minimum *this_min,
-                                     int              dimension_index,
-                                     int              dimension_min,
-                                     int              neighbour_index,
-                                     real            *W)
+static inline
+gmx_bool is_local_minimum_from_below(const t_minimum       *this_min,
+                                     int                    dimension_index,
+                                     int                    dimension_min,
+                                     int                    neighbour_index,
+                                     const real            *W)
 {
     return ((dimension_index == dimension_min) ||
             ((dimension_index > dimension_min) &&
@@ -256,12 +256,12 @@ gmx_bool is_local_minimum_from_below(const t_minimum *this_min,
     /* Note over/underflow within W cannot occur. */
 }
 
-static gmx_inline
-gmx_bool is_local_minimum_from_above(const t_minimum *this_min,
-                                     int              dimension_index,
-                                     int              dimension_max,
-                                     int              neighbour_index,
-                                     real            *W)
+static inline
+gmx_bool is_local_minimum_from_above(const t_minimum       *this_min,
+                                     int                    dimension_index,
+                                     int                    dimension_max,
+                                     int                    neighbour_index,
+                                     const real            *W)
 {
     return ((dimension_index == dimension_max) ||
             ((dimension_index < dimension_max) &&
@@ -419,8 +419,8 @@ static void do_sham(const char *fn, const char *ndx,
                     gmx_bool bGE, int nenerT, real **enerT,
                     real Tref,
                     real pmax, real gmax,
-                    real *emin, real *emax, int nlevels, real pmin,
-                    int *idim, int *ibox,
+                    const real *emin, const real *emax, int nlevels, real pmin,
+                    const int *idim, int *ibox,
                     gmx_bool bXmin, real *xmin, gmx_bool bXmax, real *xmax)
 {
     FILE        *fp;
@@ -749,13 +749,13 @@ static void do_sham(const char *fn, const char *ndx,
         fp = gmx_ffopen(pdb, "w");
         for (i = 0; (i < ibox[0]); i++)
         {
-            xxx[XX] = 3*(i+0.5-ibox[0]/2);
+            xxx[XX] = 3*i+1.5*(1-ibox[0]);
             for (j = 0; (j < ibox[1]); j++)
             {
-                xxx[YY] = 3*(j+0.5-ibox[1]/2);
+                xxx[YY] = 3*j+1.5*(1-ibox[1]);
                 for (k = 0; (k < ibox[2]); k++)
                 {
-                    xxx[ZZ] = 3*(k+0.5-ibox[2]/2);
+                    xxx[ZZ] = 3*k+1.5*(1-ibox[2]);
                     index   = index3(ibox, i, j, k);
                     if (P[index] > 0)
                     {
@@ -967,7 +967,7 @@ int gmx_sham(int argc, char *argv[])
     real             *rmin, *rmax;
     const char       *fn_ge, *fn_ene;
     gmx_output_env_t *oenv;
-    gmx_int64_t       num_grid_points;
+    int64_t           num_grid_points;
 
     t_filenm          fnm[] = {
         { efXVG, "-f",    "graph",    ffREAD   },
@@ -1068,7 +1068,7 @@ int gmx_sham(int argc, char *argv[])
     num_grid_points = ibox[0];
     for (i = 1; i < nset; i++)
     {
-        gmx_int64_t result;
+        int64_t result;
         if (!check_int_multiply_for_overflow(num_grid_points, ibox[i], &result))
         {
             gmx_fatal(FARGS,
@@ -1076,7 +1076,7 @@ int gmx_sham(int argc, char *argv[])
         }
         num_grid_points = result;
     }
-    /* The number of grid points fits in a gmx_int64_t. */
+    /* The number of grid points fits in a int64_t. */
 
     do_sham(opt2fn("-dist", NFILE, fnm), opt2fn("-bin", NFILE, fnm),
             opt2fn("-lp", NFILE, fnm),

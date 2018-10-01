@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,7 +42,7 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
-#define eNR_NBKERNEL_NONE -1
+#define eNR_NBKERNEL_NONE (-1)
 
 enum
 {
@@ -75,8 +75,8 @@ enum
     eNR_NBKERNEL_GENERIC_CG,
     eNR_NBKERNEL_FREE_ENERGY,               /* Add other generic kernels _before_ the free energy one */
 
-    eNR_NBKERNEL_ALLVSALL,
-    eNR_NBKERNEL_ALLVSALLGB,
+    eNR_NBKERNEL_TOTAL_NR,
+    eNR_NBKERNEL_ALLVSALL = eNR_NBKERNEL_TOTAL_NR, // Reuse the symbolic constant that indicates the last kernel
 
     eNR_NBNXN_DIST2,
     eNR_NBNXN_LJ_RF,          eNR_NBNXN_LJ_RF_E,
@@ -90,10 +90,6 @@ enum
     eNR_NBNXN_ADD_LJ_PSW,     eNR_NBNXN_ADD_LJ_PSW_E,
     eNR_NBNXN_ADD_LJ_EWALD,   eNR_NBNXN_ADD_LJ_EWALD_E,
     eNR_NB14,
-    eNR_BORN_RADII_STILL,     eNR_BORN_RADII_HCT_OBC,
-    eNR_BORN_CHAINRULE,
-    eNR_BORN_AVA_RADII_STILL, eNR_BORN_AVA_RADII_HCT_OBC,
-    eNR_BORN_AVA_CHAINRULE,
     eNR_WEIGHTS,              eNR_SPREAD,               eNR_SPREADBSP,
     eNR_GATHERF,              eNR_GATHERFBSP,           eNR_FFT,
     eNR_CONV,                 eNR_SOLVEPME, eNR_NS,      eNR_RESETX,
@@ -115,8 +111,9 @@ enum
     eNR_SHAKE_RIJ,            eNR_CONSTR_VIR,           eNR_SETTLE,
     eNR_VSITE2,               eNR_VSITE3,               eNR_VSITE3FD,
     eNR_VSITE3FAD,            eNR_VSITE3OUT,            eNR_VSITE4FD,
-    eNR_VSITE4FDN,            eNR_VSITEN,               eNR_GB,
-    eNR_CMAP,
+    eNR_VSITE4FDN,            eNR_VSITEN,
+    eNR_CMAP,                 eNR_UREY_BRADLEY,         eNR_CROSS_BOND_BOND,
+    eNR_CROSS_BOND_ANGLE,
     eNRNB
 };
 
@@ -128,10 +125,6 @@ typedef struct t_nrnb
 t_nrnb;
 struct t_commrec;
 struct t_nrnb;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 void init_nrnb(t_nrnb *nrnb);
 
@@ -156,7 +149,7 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop);
  */
 
 void print_perf(FILE *out, double nodetime, double realtime,
-                gmx_int64_t nsteps, double delta_t,
+                int64_t nsteps, double delta_t,
                 double nbfs, double mflop);
 /* Prints the performance, nbfs and mflop come from print_flop */
 
@@ -168,9 +161,5 @@ int cost_nrnb(int enr);
 
 const char *nrnb_str(int enr);
 /* Name of this component */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif  /* GMX_GMXLIB_NRNB_H */

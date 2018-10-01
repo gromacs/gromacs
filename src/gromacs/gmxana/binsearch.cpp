@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,7 @@ void rangeArray(int *ar, int size)
     }
 }
 
-void pswap(int *v1, int *v2)
+static void pswap(int *v1, int *v2)
 {
     int temp;
     temp = *v1;
@@ -60,7 +60,7 @@ void pswap(int *v1, int *v2)
 }
 
 
-void Swap (real *v1, real *v2)
+static void Swap (real *v1, real *v2)
 {
     real temp;
     temp = *v1;
@@ -109,7 +109,7 @@ void insertionSort(real *arr, int *perm, int startndx, int endndx, int direction
 }
 
 
-int BinarySearch (real *array, int low, int high, real key, int direction)
+int BinarySearch (const real *array, int low, int high, real key, int direction)
 {
     int iMid, iMax, iMin;
     iMax = high+2;
@@ -159,7 +159,7 @@ int start_binsearch(real *array, int *perm, int low, int high,
     return BinarySearch(array, low, high, key, direction);
 }
 
-int LinearSearch (double *array, int startindx, int stopindx,
+int LinearSearch (const double *array, int startindx, int stopindx,
                   double key, int *count, int direction)
 {
     /*Iterative implementation - assume elements sorted*/

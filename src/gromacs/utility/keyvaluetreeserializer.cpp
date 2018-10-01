@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,7 +56,7 @@ class ValueSerializer
         static KeyValueTreeValue deserialize(ISerializer *serializer);
 
     private:
-        ValueSerializer();
+        ValueSerializer() = delete;
 
         typedef void (*SerializerFunction)(const KeyValueTreeValue &value, ISerializer *serializer);
         typedef void (*DeserializerFunction)(KeyValueTreeValueBuilder *builder, ISerializer *serializer);
@@ -153,6 +153,21 @@ struct SerializationTraits<std::string>
 };
 
 template <>
+struct SerializationTraits<bool>
+{
+    static void serialize(bool value, ISerializer *serializer)
+    {
+        serializer->doBool(&value);
+    }
+    static void deserialize(KeyValueTreeValueBuilder *builder, ISerializer *serializer)
+    {
+        bool value;
+        serializer->doBool(&value);
+        builder->setValue<bool>(value);
+    }
+};
+
+template <>
 struct SerializationTraits<int>
 {
     static void serialize(int value, ISerializer *serializer)
@@ -168,17 +183,17 @@ struct SerializationTraits<int>
 };
 
 template <>
-struct SerializationTraits<gmx_int64_t>
+struct SerializationTraits<int64_t>
 {
-    static void serialize(gmx_int64_t value, ISerializer *serializer)
+    static void serialize(int64_t value, ISerializer *serializer)
     {
         serializer->doInt64(&value);
     }
     static void deserialize(KeyValueTreeValueBuilder *builder, ISerializer *serializer)
     {
-        gmx_int64_t value;
+        int64_t value;
         serializer->doInt64(&value);
-        builder->setValue<gmx_int64_t>(value);
+        builder->setValue<int64_t>(value);
     }
 };
 
@@ -236,12 +251,13 @@ void ValueSerializer::initSerializers()
         SERIALIZER('O', KeyValueTreeObject),
         SERIALIZER('A', KeyValueTreeArray),
         SERIALIZER('s', std::string),
+        SERIALIZER('b', bool),
         SERIALIZER('i', int),
-        SERIALIZER('l', gmx_int64_t),
+        SERIALIZER('l', int64_t),
         SERIALIZER('f', float),
         SERIALIZER('d', double),
     };
-    for (const auto item : s_serializers)
+    for (const auto &item : s_serializers)
     {
         s_deserializers[item.second.typeTag] = item.second.deserialize;
     }

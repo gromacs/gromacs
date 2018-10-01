@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,12 +69,12 @@ void get_pme_ener_vir_q(struct pme_solve_work_t *work, int nthread,
 void get_pme_ener_vir_lj(struct pme_solve_work_t *work, int nthread,
                          real *mesh_energy, matrix vir);
 
-int solve_pme_yzx(struct gmx_pme_t *pme, t_complex *grid,
+int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid,
                   real vol,
                   gmx_bool bEnerVir,
                   int nthread, int thread);
 
-int solve_pme_lj_yzx(struct gmx_pme_t *pme, t_complex **grid, gmx_bool bLB,
+int solve_pme_lj_yzx(const gmx_pme_t *pme, t_complex **grid, gmx_bool bLB,
                      real vol,
                      gmx_bool bEnerVir, int nthread, int thread);
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,7 @@
 #ifndef GMX_LISTED_FORCES_BONDED_H
 #define GMX_LISTED_FORCES_BONDED_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
@@ -59,11 +59,7 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
-struct gmx_wallcycle;
 struct t_graph;
 struct t_pbc;
 
@@ -77,7 +73,6 @@ real bond_angle(const rvec xi, const rvec xj, const rvec xk,
 real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
                const struct t_pbc *pbc,
                rvec r_ij, rvec r_kj, rvec r_kl, rvec m, rvec n, /* out */
-               real *sign,
                int *t1, int *t2, int *t3);
 
 /*! \brief Do an update of the forces for dihedral potentials */
@@ -142,6 +137,17 @@ void
                        const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
                        int gmx_unused *global_atom_index);
 
+/* As urey_bradley, but using SIMD to calculate many potentials at once.
+ * This routines does not calculate energies and shift forces.
+ */
+void urey_bradley_noener_simd(int nbonds,
+                              const t_iatom forceatoms[], const t_iparams forceparams[],
+                              const rvec x[], rvec4 f[],
+                              const t_pbc *pbc, const t_graph gmx_unused *g,
+                              real gmx_unused lambda,
+                              const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                              int gmx_unused *global_atom_index);
+
 /* As pdihs_noener(), but using SIMD to calculate many dihedrals at once. */
 void
     pdihs_noener_simd(int nbonds,
@@ -165,9 +171,5 @@ void
                        int gmx_unused *global_atom_index);
 
 //! \endcond
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

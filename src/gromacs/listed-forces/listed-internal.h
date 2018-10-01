@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,7 @@
 #define GMX_LISTED_FORCES_LISTED_INTERNAL_H
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/bitmask.h"
@@ -89,7 +89,14 @@ struct bonded_threading_t
     /* There are two different ways to distribute the bonded force calculation
      * over the threads. We dedice which to use based on the number of threads.
      */
-    int bonded_max_nthread_uniform; /**< Maximum thread count for uniform distribution of bondeds over threads */
+    int  max_nthread_uniform;       /**< Maximum thread count for uniform distribution of bondeds over threads */
+
+    int *il_thread_division;        /**< Stores the division of work in the t_list over threads.
+                                     *
+                                     * The division of the normal bonded interactions of threads.
+                                     * il_thread_division[ftype*(nthreads+1)+t] contains an index
+                                     * into il[ftype].iatoms; thread th operates on t=th to t=th+1. */
+    int  il_thread_division_nalloc; /**< Allocation size of the work division, at least F_NRE*(nthreads+1). */
 };
 
 
@@ -100,6 +107,6 @@ struct bonded_threading_t
  * numbers starting at 1.  When global_atom_index=NULL returns i+1.
  */
 int
-glatnr(int *global_atom_index, int i);
+glatnr(const int *global_atom_index, int i);
 
 #endif

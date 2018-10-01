@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,6 +33,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 #include "gmxpre.h"
+
+#include <array>
 
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -104,15 +106,6 @@ TEST_F(SimdIntegerTest, mul)
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(268435456), SimdInt32(16384) * SimdInt32(16384) ); // 16384*16384 = 268435456 (long mul)
 }
 
-TEST_F(SimdIntegerTest, slli)
-{
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(4194304), SimdInt32(2) << 21); // 2 << 21 = 4194304
-}
-
-TEST_F(SimdIntegerTest, srli)
-{
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(4), SimdInt32(4194304) >> 20); // 4194304 >> 20 = 4
-}
 #endif                                                                     // GMX_SIMD_HAVE_INT32_ARITHMETICS
 
 #if GMX_SIMD_HAVE_INT32_LOGICAL
@@ -140,14 +133,14 @@ TEST_F(SimdIntegerTest, xor)
 #if GMX_SIMD_HAVE_INT32_EXTRACT
 TEST_F(SimdIntegerTest, extract)
 {
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)  idata[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t  idata[GMX_SIMD_REAL_WIDTH];
     SimdInt32 simd;
 
     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
         idata[i] = i+1;
     }
-    simd = load(idata);
+    simd = load<SimdInt32>(idata);
 
     /* We cannot do a loop here, since
      * - C++ gets confused about signed/unsigned if SSE macros are used in EXPECT_EQ()
@@ -283,16 +276,18 @@ TEST_F(SimdIntegerTest, orB)
 
 TEST_F(SimdIntegerTest, anyTrue)
 {
-    SimdIBool eq;
+    alignas(GMX_SIMD_ALIGNMENT) std::array<std::int32_t, GMX_SIMD_REAL_WIDTH> mem {};
 
-    /* See comment in floatingpoint.cpp. We should only check the first element here,
-     * since the SIMD width could be 1 as a special case.
-     */
-    eq = (iSimd_5_7_9 == setSimdIntFrom3I(5, 0, 0));
-    EXPECT_TRUE(anyTrue(eq));
+    // Test the false case
+    EXPECT_FALSE(anyTrue(setZero() < load<SimdInt32>(mem.data())));
 
-    eq = (iSimd_1_2_3 == iSimd_4_5_6);
-    EXPECT_FALSE(anyTrue(eq));
+    // Test each bit (these should all be true)
+    for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        mem.fill(0);
+        mem[i] = 1;
+        EXPECT_TRUE(anyTrue(setZero() < load<SimdInt32>(mem.data()))) << "Not detecting true in element " << i;
+    }
 }
 
 TEST_F(SimdIntegerTest, blend)
@@ -305,7 +300,7 @@ TEST_F(SimdIntegerTest, blend)
 #if GMX_SIMD_HAVE_REAL && GMX_SIMD_HAVE_INT32_ARITHMETICS
 TEST_F(SimdIntegerTest, cvtB2IB)
 {
-    SimdBool  eq   = (rSimd_5_7_9 == setSimdRealFrom3R(5, 0, 0));  // eq should be T,F,F
+    SimdBool  eq   = (rSimd_c3c4c5 == rSimd_c3c0c4);  // eq should be T,F,F
     SimdIBool eqi  = cvtB2IB(eq);
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(1, 0, 0), selectByMask(iSimd_1_2_3, eqi));
 
@@ -315,7 +310,7 @@ TEST_F(SimdIntegerTest, cvtIB2B)
 {
     SimdIBool eqi  = (iSimd_5_7_9 == setSimdIntFrom3I(5, 0, 0));  // eq should be T,F,F
     SimdBool  eq   = cvtIB2B(eqi);
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1.0, 0, 0), selectByMask(rSimd_1_2_3, eq));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(c0, 0, 0), selectByMask(rSimd_c0c1c2, eq));
 }
 #endif      // GMX_SIMD_HAVE_REAL && GMX_SIMD_HAVE_INT32_ARITHMETICS
 
@@ -323,7 +318,7 @@ TEST_F(SimdIntegerTest, cvtIB2B)
 /*! \endcond */
 
 }      // namespace
-}      // namespace
-}      // namespace
+}      // namespace test
+}      // namespace gmx
 
 #endif // GMX_SIMD

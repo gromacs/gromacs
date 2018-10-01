@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -337,7 +337,7 @@ class Selection
             return data().rawPositions_.m.mapb.nra;
         }
         //! Returns atom indices of all atoms in the selection.
-        ConstArrayRef<int> atomIndices() const
+        ArrayRef<const int> atomIndices() const
         {
             return constArrayRefFromArray(sel_->rawPositions_.m.mapb.a,
                                           sel_->rawPositions_.m.mapb.nra);
@@ -347,7 +347,7 @@ class Selection
         //! Access a single position.
         SelectionPosition position(int i) const;
         //! Returns coordinates for this selection as a continuous array.
-        ConstArrayRef<rvec> coordinates() const
+        ArrayRef<const rvec> coordinates() const
         {
             return constArrayRefFromArray(data().rawPositions_.x, posCount());
         }
@@ -358,7 +358,7 @@ class Selection
          *
          * Must not be called if hasVelocities() returns false.
          */
-        ConstArrayRef<rvec> velocities() const
+        ArrayRef<const rvec> velocities() const
         {
             GMX_ASSERT(hasVelocities(), "Velocities accessed, but unavailable");
             return constArrayRefFromArray(data().rawPositions_.v, posCount());
@@ -370,39 +370,37 @@ class Selection
          *
          * Must not be called if hasForces() returns false.
          */
-        ConstArrayRef<rvec> forces() const
+        ArrayRef<const rvec> forces() const
         {
             GMX_ASSERT(hasForces(), "Forces accessed, but unavailable");
             return constArrayRefFromArray(data().rawPositions_.f, posCount());
         }
         //! Returns masses for this selection as a continuous array.
-        ConstArrayRef<real> masses() const
+        ArrayRef<const real> masses() const
         {
             // posMass_ may have more entries than posCount() in the case of
             // dynamic selections that don't have a topology
             // (and thus the masses and charges are fixed).
             GMX_ASSERT(data().posMass_.size() >= static_cast<size_t>(posCount()),
                        "Internal inconsistency");
-            return constArrayRefFromVector<real>(data().posMass_.begin(),
-                                                 data().posMass_.begin() + posCount());
+            return makeArrayRef(data().posMass_).subArray(0, posCount());
         }
         //! Returns charges for this selection as a continuous array.
-        ConstArrayRef<real> charges() const
+        ArrayRef<const real> charges() const
         {
             // posCharge_ may have more entries than posCount() in the case of
             // dynamic selections that don't have a topology
             // (and thus the masses and charges are fixed).
             GMX_ASSERT(data().posCharge_.size() >= static_cast<size_t>(posCount()),
                        "Internal inconsistency");
-            return constArrayRefFromVector<real>(data().posCharge_.begin(),
-                                                 data().posCharge_.begin() + posCount());
+            return makeArrayRef(data().posCharge_).subArray(0, posCount());
         }
         /*! \brief
          * Returns reference IDs for this selection as a continuous array.
          *
          * \see SelectionPosition::refId()
          */
-        ConstArrayRef<int> refIds() const
+        ArrayRef<const int> refIds() const
         {
             return constArrayRefFromArray(data().rawPositions_.m.refid, posCount());
         }
@@ -411,7 +409,7 @@ class Selection
          *
          * \see SelectionPosition::mappedId()
          */
-        ConstArrayRef<int> mappedIds() const
+        ArrayRef<const int> mappedIds() const
         {
             return constArrayRefFromArray(data().rawPositions_.m.mapid, posCount());
         }
@@ -556,13 +554,13 @@ class Selection
     private:
         internal::SelectionData &data()
         {
-            GMX_ASSERT(sel_ != NULL,
+            GMX_ASSERT(sel_ != nullptr,
                        "Attempted to access uninitialized selection");
             return *sel_;
         }
         const internal::SelectionData &data() const
         {
-            GMX_ASSERT(sel_ != NULL,
+            GMX_ASSERT(sel_ != nullptr,
                        "Attempted to access uninitialized selection");
             return *sel_;
         }
@@ -644,7 +642,7 @@ class SelectionPosition
          */
         const rvec &v() const
         {
-            GMX_ASSERT(sel_->rawPositions_.v != NULL,
+            GMX_ASSERT(sel_->rawPositions_.v != nullptr,
                        "Velocities accessed, but unavailable");
             return sel_->rawPositions_.v[i_];
         }
@@ -655,7 +653,7 @@ class SelectionPosition
          */
         const rvec &f() const
         {
-            GMX_ASSERT(sel_->rawPositions_.f != NULL,
+            GMX_ASSERT(sel_->rawPositions_.f != nullptr,
                        "Velocities accessed, but unavailable");
             return sel_->rawPositions_.f[i_];
         }
@@ -688,12 +686,12 @@ class SelectionPosition
                    - sel_->rawPositions_.m.mapb.index[i_];
         }
         //! Return atom indices that make up this position.
-        ConstArrayRef<int> atomIndices() const
+        ArrayRef<const int> atomIndices() const
         {
             const int *atoms = sel_->rawPositions_.m.mapb.a;
             if (atoms == nullptr)
             {
-                return ConstArrayRef<int>();
+                return ArrayRef<const int>();
             }
             const int first = sel_->rawPositions_.m.mapb.index[i_];
             return constArrayRefFromArray(&atoms[first], atomCount());

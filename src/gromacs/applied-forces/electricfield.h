@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,7 +40,7 @@
 namespace gmx
 {
 
-class IInputRecExtension;
+class IMDModule;
 
 /*! \brief
  * Creates a module for an external electric field.
@@ -63,7 +63,7 @@ class IInputRecExtension;
  * the error can be significant when the field is high.
  * Solution: implement a self-consistent electric field into PME.
  */
-std::unique_ptr<IInputRecExtension> createElectricFieldModule();
+std::unique_ptr<IMDModule> createElectricFieldModule();
 
 } // namespace gmx
 

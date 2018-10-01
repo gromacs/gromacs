@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -67,7 +67,7 @@ function(gmxManageMsanBuild)
         return()
     endif()
 
-    set(_flags "-O2 -g -fsanitize=memory -fno-omit-frame-pointer")
+    set(_flags "-O1 -g -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
 
     foreach(_language C CXX)
         string(REPLACE "X" "+" _human_readable_language ${_language})
@@ -76,14 +76,14 @@ function(gmxManageMsanBuild)
             # Can't do Memory Sanitizer build with this compiler, so don't
             # set up flags for it
 	    if(${_language} MATCHES CXX)
-                set(_language_flags "${_flags} -stdlib=libc++")
+                set(_language_flags "${_flags} -nostdinc++")
 		if(GMX_MSAN_PATH)
-                    set(_language_flags "${_language_flags} -I${GMX_MSAN_PATH}/include -I${GMX_MSAN_PATH}/include/c++/v1")
+                    set(_language_flags "${_language_flags} -isystem ${GMX_MSAN_PATH}/include -isystem ${GMX_MSAN_PATH}/include/c++/v1")
 		endif()
 	    else()
                 set(_language_flags "${_flags}")
             endif()
-            set(CMAKE_${_language}_FLAGS_MSAN ${_language_flags} CACHE STRING "${_human_readable_language} flags for Memory Sanitizer")
+            set(CMAKE_${_language}_FLAGS_MSAN ${_language_flags} CACHE STRING "${_human_readable_language} flags for Memory Sanitizer" FORCE)
             mark_as_advanced(CMAKE_${_language}_FLAGS_MSAN)
 	else()
             message(FATAL_ERROR "The Memory Sanitizer build is only available with clang ${_human_readable_language} compiler >= 3.4, but it was ${CMAKE_${_language}_COMPILER_ID} and ${CMAKE_${_language}_COMPILER_VERSION}.")
@@ -93,9 +93,9 @@ function(gmxManageMsanBuild)
     # Per-build-type linker flags like CMAKE_EXE_LINKER_FLAGS_MSAN
     # only seem to be supported by CMake on Windows, so we can't use
     # that.
-    set(_linker_flags "-fsanitize=memory -stdlib=libc++")
+    set(_linker_flags "-fsanitize=memory -fsanitize-memory-track-origins")
     if(GMX_MSAN_PATH)
-        set(_linker_flags "${_linker_flags} -L${GMX_MSAN_PATH}/lib -lc++abi -I${GMX_MSAN_PATH}/include -I${GMX_MSAN_PATH}/include/c++/v1 -Wl,-rpath,${GMX_MSAN_PATH}/lib")
+        set(_linker_flags "${_linker_flags} -lc++abi -lc++ -Wl,-rpath,${GMX_MSAN_PATH}/lib -L${GMX_MSAN_PATH}/lib")
     endif()
     set(CMAKE_EXE_LINKER_FLAGS "${_linker_flags} ${CMAKE_EXE_LINKER_FLAGS}" PARENT_SCOPE)
     set(CMAKE_SHARED_LINKER_FLAGS "${_linker_flags} ${CMAKE_SHARED_LINKER_FLAGS}" PARENT_SCOPE)

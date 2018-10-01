@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,7 +91,7 @@ static void dump_dih_trr(int nframes, int nangles, real **dih, const char *fn,
                 // know that dih[j][i] is always valid. Since it occurs in the innermost
                 // loop over angles and will only trigger on coding errors, we
                 // only enable it for debug builds.
-                GMX_ASSERT(dih != NULL && dih[j] != NULL, "Incorrect dihedral array data");
+                GMX_ASSERT(dih != nullptr && dih[j] != nullptr, "Incorrect dihedral array data");
                 x[k][l] = (m == 0) ? std::cos(dih[j][i]) : std::sin(dih[j][i]);
                 l++;
                 if (l == DIM)
@@ -229,7 +229,7 @@ int gmx_g_angle(int argc, char *argv[])
     }
 
     /* Calculate bin size */
-    maxangstat = static_cast<int>(maxang/binwidth+0.5);
+    maxangstat = gmx::roundToInt(maxang/binwidth);
     binwidth   = maxang/maxangstat;
 
     rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);

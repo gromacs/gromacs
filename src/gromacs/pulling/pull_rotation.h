@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,21 +48,46 @@
 #ifndef GMX_PULLING_PULL_ROTATION_H
 #define GMX_PULLING_PULL_ROTATION_H
 
+#include <stdio.h>
+
+#include <memory>
+
 #include "gromacs/math/vectypes.h"
-#include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/classhelpers.h"
 
 struct gmx_domdec_t;
+struct gmx_enfrot;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
+struct MdrunOptions;
 struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
 struct t_rot;
+class t_state;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+namespace gmx
+{
+class LocalAtomSetManager;
+class EnforcedRotation
+{
+    public:
+        EnforcedRotation();
+        ~EnforcedRotation();
 
+        /*! \brief Getter for working data
+         *
+         * This is needed while the module is still under
+         * construction. */
+        gmx_enfrot *getLegacyEnfrot();
+    private:
+        class Impl;
+
+        PrivateImplPointer<Impl> impl_;
+};
+
+}  // namespace gmx
 
 /*! \brief Initializes the enforced rotation groups.
  *
@@ -75,30 +100,18 @@ extern "C" {
  * \param nfile    Number of entries in the fnm structure.
  * \param fnm      The filenames struct containing also the names
  *                 of the rotation output files.
+ * \param atomSets Tracks indices of atoms subject to enforced rotation for each DD rank.
  * \param cr       Pointer to MPI communication data.
- * \param x        The positions of all MD particles.
- * \param box      The simulation box.
+ * \param globalState  The global state, only used on the master rank.
  * \param mtop     Molecular topology.
  * \param oenv     Needed to open the rotation output xvgr file.
- * \param bVerbose Whether to print extra status information.
- * \param Flags    Flags passed over from main, used to determine
- *                 whether or not we are doing a rerun.
+ * \param mdrunOptions  Options for mdrun.
+ * \return         An enforced rotation module.
  */
-extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
-                     struct t_commrec *cr, rvec *x, matrix box, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
-                     gmx_bool bVerbose, unsigned long Flags);
-
-
-/*! \brief Make a selection of the home atoms for all enforced rotation groups.
- *
- * This routine is similar to \ref dd_make_local_pull_groups, but works only with
- * domain decomposition. It should be called at every domain decomposition.
- *
- * \param dd      Structure containing domain decomposition data.
- * \param rot     Pointer to all the enforced rotation data.
- */
-extern void dd_make_local_rotation_groups(struct gmx_domdec_t *dd, t_rot *rot);
-
+std::unique_ptr<gmx::EnforcedRotation>
+init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
+         const t_commrec *cr, gmx::LocalAtomSetManager * atomSets, const t_state *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
+         const MdrunOptions &mdrunOptions);
 
 /*! \brief Calculates the enforced rotation potential(s).
  *
@@ -107,18 +120,21 @@ extern void dd_make_local_rotation_groups(struct gmx_domdec_t *dd, t_rot *rot);
  * calculated.
  *
  * \param cr      Pointer to MPI communication data.
- * \param ir      Struct containing MD input parameters, among those
+ * \param er      Pointer to the enforced rotation working data.
  * \param box     Simulation box, needed to make group whole.
  * \param x       The positions of all the local particles.
  * \param t       Time.
  * \param step    The time step.
- * \param wcycle  During the potential calculation the wallcycles are
- *                counted. Later they enter the dynamic load balancing.
  * \param bNS     After domain decomposition / neighbor searching several
  *                local arrays have to be updated (masses, shifts)
  */
-extern void do_rotation(struct t_commrec *cr, t_inputrec *ir, matrix box, rvec x[], real t,
-                        gmx_int64_t step, gmx_wallcycle_t wcycle, gmx_bool bNS);
+void do_rotation(const t_commrec  *cr,
+                 gmx_enfrot       *er,
+                 matrix            box,
+                 rvec              x[],
+                 real              t,
+                 int64_t           step,
+                 gmx_bool          bNS);
 
 
 /*! \brief Add the enforced rotation forces to the official force array.
@@ -130,7 +146,7 @@ extern void do_rotation(struct t_commrec *cr, t_inputrec *ir, matrix box, rvec x
  * This routine also outputs data to the rotation output files (e.g.
  * the potential, the angle of the group(s), and torques).
  *
- * \param rot     Pointer to all the enforced rotation data.
+ * \param er      Pointer to the enforced rotation working data.
  * \param f       The local forces to which the rotational forces have
  *                to be added.
  * \param cr      Pointer to MPI communication data.
@@ -138,19 +154,8 @@ extern void do_rotation(struct t_commrec *cr, t_inputrec *ir, matrix box, rvec x
  * \param t       Time, used for output.
  * \returns       The potential energy of the rotation potentials.
  */
-extern real add_rot_forces(t_rot *rot, rvec f[], struct t_commrec *cr, gmx_int64_t step, real t);
-
-
-/*! \brief Close the enforced rotation output files.
- *
- * \param rot     Pointer to all the enforced rotation data.
- */
-extern void finish_rot(t_rot *rot);
-
-
-#ifdef __cplusplus
-}
-#endif
+real add_rot_forces(gmx_enfrot *er,
+                    rvec f[], const t_commrec *cr, int64_t step, real t);
 
 
 #endif

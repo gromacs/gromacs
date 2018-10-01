@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,7 +62,7 @@
 #include "gromacs/utility/strdb.h"
 
 
-static void calc_dist(int nind, int index[], const rvec x[], int ePBC, matrix box,
+static void calc_dist(int nind, const int index[], const rvec x[], int ePBC, matrix box,
                       real **d)
 {
     int      i, j;
@@ -83,7 +83,7 @@ static void calc_dist(int nind, int index[], const rvec x[], int ePBC, matrix bo
     }
 }
 
-static void calc_dist_tot(int nind, int index[], rvec x[],
+static void calc_dist_tot(int nind, const int index[], rvec x[],
                           int ePBC, matrix box,
                           real **d, real **dtot, real **dtot2,
                           gmx_bool bNMR, real **dtot1_3, real **dtot1_6)
@@ -281,7 +281,7 @@ static gmx_bool is_equiv(int neq, t_equiv **equiv, char **nname,
 }
 
 static int analyze_noe_equivalent(const char *eq_fn,
-                                  const t_atoms *atoms, int isize, int *index,
+                                  const t_atoms *atoms, int isize, const int *index,
                                   gmx_bool bSumH,
                                   int *noe_index, t_noe_gr *noe_gr)
 {
@@ -465,7 +465,7 @@ static char *noe2scale(real r3, real r6, real rmax)
     return buf;
 }
 
-static void calc_noe(int isize, int *noe_index,
+static void calc_noe(int isize, const int *noe_index,
                      real **dtot1_3, real **dtot1_6, int gnr, t_noe **noe)
 {
     int i, j, gi, gj;
@@ -547,7 +547,7 @@ static void write_noe(FILE *fp, int gnr, t_noe **noe, t_noe_gr *noe_gr, real rma
                         "%4d %4d %4s %4s%3d %4d %4d %4s %4s%3d %5s %5s %8d %2d %2s %s\n",
                         gri.ianr+1, gri.anr+1, gri.aname, gri.rname, gri.rnr+1,
                         grj.ianr+1, grj.anr+1, grj.aname, grj.rname, grj.rnr+1,
-                        b3, b6, static_cast<int>(noe[i][j].i_6+0.5), grj.rnr-gri.rnr, buf,
+                        b3, b6, gmx::roundToInt(noe[i][j].i_6), grj.rnr-gri.rnr, buf,
                         noe2scale(r3, r6, rmax));
             }
         }
@@ -590,7 +590,7 @@ static void calc_rms(int nind, int nframes,
         {
             mean  = dtot[i][j]/nframes;
             mean2 = dtot2[i][j]/nframes;
-            rms   = std::sqrt(std::max(static_cast<real>(0.0), mean2-mean*mean));
+            rms   = std::sqrt(std::max(0.0_real, mean2-mean*mean));
             rmsc  = rms/mean;
             if (mean > *meanmax)
             {
@@ -611,7 +611,7 @@ static void calc_rms(int nind, int nframes,
     }
 }
 
-real rms_diff(int natom, real **d, real **d_r)
+static real rms_diff(int natom, real **d, real **d_r)
 {
     int  i, j;
     real r, r2;
@@ -625,7 +625,7 @@ real rms_diff(int natom, real **d, real **d_r)
             r2 += r*r;
         }
     }
-    r2 /= (natom*(natom-1))/2;
+    r2 /= gmx::exactDiv(natom*(natom-1), 2);
 
     return std::sqrt(r2);
 }
@@ -806,7 +806,7 @@ int gmx_rmsdist(int argc, char *argv[])
 
     xvgrclose(fp);
 
-    close_trj(status);
+    close_trx(status);
 
     calc_rms(isize, teller, dtot, dtot2, rms, &rmsmax, rmsc, &rmscmax, mean, &meanmax);
     fprintf(stderr, "rmsmax = %g, rmscmax = %g\n", rmsmax, rmscmax);
@@ -843,8 +843,8 @@ int gmx_rmsdist(int argc, char *argv[])
         calc_noe(isize, noe_index, dtot1_3, dtot1_6, gnr, noe);
     }
 
-    rlo.r = 1.0, rlo.g = 1.0, rlo.b = 1.0;
-    rhi.r = 0.0, rhi.g = 0.0, rhi.b = 0.0;
+    rlo.r = 1.0; rlo.g = 1.0; rlo.b = 1.0;
+    rhi.r = 0.0; rhi.g = 0.0; rhi.b = 0.0;
 
     if (bRMS)
     {

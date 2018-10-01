@@ -2,10 +2,10 @@
 *.c     filter=uncrustify gmx-doxygen
 *.cpp   filter=uncrustify gmx-doxygen
 *.cu    filter=uncrustify
-*.cl    filter=copyright
+*.cl    filter=uncrustify
 *.h     filter=uncrustify gmx-doxygen
 *.cuh   filter=uncrustify
-*.clh   filter=copyright
+*.clh   filter=uncrustify
 CMakeLists.txt  filter=copyright
 *.cmake         filter=copyright
 *.cmakein       filter=copyright
@@ -24,10 +24,13 @@ cmake/CheckC*CompilerFlag.cmake         !filter
 cmake/FindBLAS.cmake                    !filter
 cmake/FindLAPACK.cmake                  !filter
 cmake/ThreadMPI.cmake                   !filter
-cmake/Platform/BluegeneQ*.cmake         !filter
 cmake/*.c                               -filter -gmx-doxygen
 cmake/*.cpp                             -filter -gmx-doxygen
 cmake/*.c.cmakein                       !filter
+cmake/*.h                               !filter
+cmake/*.cu                              !filter
+cmake/*.cuh                             !filter
+cmake/FindCUDA/*.cmake                  !filter
 docs/doxygen/Doxyfile-*.cmakein         !filter
 docs/doxygen/*.cpp                      !filter
 docs/doxygen/examples/*.cpp             filter=uncrustify_only
@@ -35,8 +38,8 @@ docs/doxygen/examples/*.c               filter=uncrustify_only
 docs/manual/UseLATEX.cmake              !filter
 scripts/GMXRC.*                         !filter
 scripts/make_gromos_rtp.py              !filter
+share/template/template.cpp             filter=copyright
 share/template/README.cmakein           !filter
-src/contrib/*                           -filter -gmx-doxygen
 src/gromacs/gmxlib/nonbonded/preprocessor/gmxpreprocess.py !filter
 src/gromacs/linearalgebra/gmx_blas/*    !filter
 src/gromacs/linearalgebra/gmx_lapack/*  !filter

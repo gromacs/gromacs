@@ -119,15 +119,6 @@ nb_kernel_list_hash_init(void)
     return 0;
 }
 
-void
-nb_kernel_list_hash_destroy()
-{
-    sfree(kernel_list_hash);
-    kernel_list_hash      = nullptr;
-    kernel_list_hash_size = 0;
-}
-
-
 nb_kernel_t *
 nb_kernel_list_findkernel(FILE gmx_unused *   log,
                           const char *        arch,

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,10 +38,6 @@
 #ifndef _gmx_ana_h
 #define _gmx_ana_h
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 int
 gmx_anadock(int argc, char *argv[]);
 
@@ -50,6 +46,9 @@ gmx_analyze(int argc, char *argv[]);
 
 int
 gmx_anaeig(int argc, char *argv[]);
+
+int
+gmx_awh(int argc, char *argv[]);
 
 int
 gmx_g_angle(int argc, char *argv[]);
@@ -172,6 +171,9 @@ int
 gmx_nmens(int argc, char *argv[]);
 
 int
+gmx_nmr(int argc, char *argv[]);
+
+int
 gmx_nmtraj(int argc, char *argv[]);
 
 int
@@ -272,10 +274,6 @@ gmx_sans(int argc, char *argv[]);
 
 int
 gmx_saxs(int argc, char *argv[]);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
 /* _gmx_ana_h */

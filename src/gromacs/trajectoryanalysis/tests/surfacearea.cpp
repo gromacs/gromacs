@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,12 +70,11 @@ class SurfaceAreaTest : public ::testing::Test
 {
     public:
         SurfaceAreaTest()
-            : rng_(12345), area_(0.0), volume_(0.0),
+            : box_(), rng_(12345), area_(0.0), volume_(0.0),
               atomArea_(nullptr), dotCount_(0), dots_(nullptr)
         {
-            clear_mat(box_);
         }
-        ~SurfaceAreaTest()
+        ~SurfaceAreaTest() override
         {
             sfree(atomArea_);
             sfree(dots_);
@@ -102,17 +101,6 @@ class SurfaceAreaTest : public ::testing::Test
             fx[ZZ]  = dist(rng_);
             mvmul(box_, fx, x);
             *radius = 1.5*dist(rng_) + 0.5;
-        }
-
-        void addDummySpheres(int count)
-        {
-            for (int i = 0; i < count; ++i)
-            {
-                rvec x;
-                real radius;
-                generateRandomPosition(x, &radius);
-                addSphere(x[XX], x[YY], x[ZZ], radius, false);
-            }
         }
 
         void generateRandomPositions(int count)

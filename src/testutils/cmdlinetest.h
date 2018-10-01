@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,7 +50,7 @@
 #include <gtest/gtest.h>
 
 // arrayref.h is not strictly necessary for this header, but nearly all
-// callers will need it to use the constructor that takes ConstArrayRef.
+// callers will need it to use the constructor that takes ArrayRef.
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 
@@ -63,6 +63,8 @@ class ICommandLineOptionsModule;
 namespace test
 {
 
+class FloatingPointTolerance;
+class IFileMatcherSettings;
 class ITextBlockMatcherSettings;
 class TestFileManager;
 class TestReferenceChecker;
@@ -110,7 +112,9 @@ class CommandLine
          * This constructor is not explicit to make it possible to create a
          * CommandLine object directly from a C array.
          */
-        CommandLine(const ConstArrayRef<const char *> &cmdline);
+        CommandLine(const ArrayRef<const char *const> &cmdline);
+        //! \copydoc CommandLine(const ArrayRef<const char *const> &)
+        CommandLine(const ArrayRef<const std::string> &cmdline);
         //! Creates a deep copy of a command-line object.
         CommandLine(const CommandLine &other);
         ~CommandLine();
@@ -124,11 +128,11 @@ class CommandLine
          * that is desired in the output.
          *
          * This function does the same as the constructor that takes a
-         * ConstArrayRef.  Any earlier contents of the object are discarded.
+         * ArrayRef.  Any earlier contents of the object are discarded.
          *
          * Strong exception safety.
          */
-        void initFromArray(const ConstArrayRef<const char *> &cmdline);
+        void initFromArray(const ArrayRef<const char *const> &cmdline);
 
         /*! \brief
          * Appends an argument to the command line.
@@ -140,6 +144,13 @@ class CommandLine
         void append(const char *arg);
         //! Convenience overload taking a std::string.
         void append(const std::string &arg) { append(arg.c_str()); }
+        /*! \brief
+         * Adds an option to the command line, typically a boolean.
+         *
+         * \param[in] name   Name of the option to append, which
+         *                   should start with "-".
+         */
+        void addOption(const char *name);
         /*! \brief
          * Adds an option-value pair to the command line.
          *
@@ -175,6 +186,9 @@ class CommandLine
 
         //! Returns the command line formatted as a single string.
         std::string toString() const;
+
+        //! Whether the command line contains the given option.
+        bool contains(const char *name) const;
 
     private:
         class Impl;
@@ -244,8 +258,8 @@ class CommandLineTestHelper
          *     module.
          */
         static int
-        runModuleFactory(std::function<std::unique_ptr<ICommandLineOptionsModule>()>  factory,
-                         CommandLine                                                 *commandLine);
+        runModuleFactory(const std::function<std::unique_ptr<ICommandLineOptionsModule>()> &factory,
+                         CommandLine                                                       *commandLine);
 
         /*! \brief
          * Initializes an instance.
@@ -284,7 +298,7 @@ class CommandLineTestHelper
          */
         void setInputFileContents(CommandLine *args, const char *option,
                                   const char *extension,
-                                  const ConstArrayRef<const char *> &contents);
+                                  const ArrayRef<const char *const> &contents);
         /*! \brief
          * Sets an output file parameter and adds it to the set of tested files.
          *
@@ -309,11 +323,16 @@ class CommandLineTestHelper
          *
          * If the output file is needed to trigger some computation, or is
          * unconditionally produced by the code under test, but the contents
-         * are not interesting for the test, use NoTextMatch as the matcher.
+         * are not interesting for the test, use NoContentsMatch as the matcher.
+         * Note that the existence of the output file is still verified.
          */
         void setOutputFile(CommandLine *args, const char *option,
                            const char *filename,
                            const ITextBlockMatcherSettings &matcher);
+        //! \copydoc setOutputFile(CommandLine *, const char *, const char *, const ITextBlockMatcherSettings &)
+        void setOutputFile(CommandLine *args, const char *option,
+                           const char *filename,
+                           const IFileMatcherSettings &matcher);
 
         /*! \brief
          * Checks output files added with setOutputFile() against reference
@@ -357,7 +376,7 @@ class CommandLineTestBase : public ::testing::Test
 {
     public:
         CommandLineTestBase();
-        ~CommandLineTestBase();
+        ~CommandLineTestBase() override;
 
         /*! \brief
          * Sets an input file.
@@ -368,6 +387,8 @@ class CommandLineTestBase : public ::testing::Test
          * \see TestFileManager::getInputFilePath()
          */
         void setInputFile(const char *option, const char *filename);
+        //! \copydoc setInputFile(const char *, const char *);
+        void setInputFile(const char *option, const std::string &filename);
         /*! \brief
          * Generates and sets an input file.
          *
@@ -383,7 +404,7 @@ class CommandLineTestBase : public ::testing::Test
          */
         void setInputFileContents(const char                        *option,
                                   const char                        *extension,
-                                  const ConstArrayRef<const char *> &contents);
+                                  const ArrayRef<const char *const> &contents);
         /*! \brief
          * Sets an output file parameter and adds it to the set of tested files.
          *
@@ -391,6 +412,13 @@ class CommandLineTestBase : public ::testing::Test
          */
         void setOutputFile(const char *option, const char *filename,
                            const ITextBlockMatcherSettings &matcher);
+        /*! \brief
+         * Sets an output file parameter and adds it to the set of tested files.
+         *
+         * \see CommandLineTestHelper::setOutputFile()
+         */
+        void setOutputFile(const char *option, const char *filename,
+                           const IFileMatcherSettings &matcher);
 
         /*! \brief
          * Returns the internal CommandLine object used to construct the
@@ -420,7 +448,15 @@ class CommandLineTestBase : public ::testing::Test
          * file contents.
          */
         TestReferenceChecker rootChecker();
-
+        /*! \brief
+         * Sets the tolerance for floating-point comparisons.
+         *
+         * All following floating-point comparisons using the checker will use
+         * the new tolerance.
+         *
+         * Does not throw.
+         */
+        void setDefaultTolerance(const FloatingPointTolerance &tolerance);
         /*! \brief
          * Checks the output of writeHelp() against reference data.
          */

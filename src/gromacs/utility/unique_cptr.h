@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \file
  * \brief
  * Declares gmx::unique_cptr and gmx::sfree_guard.
  *
@@ -43,12 +43,23 @@
 #ifndef GMX_UTILITY_UNIQUE_PTR_SFREE_H
 #define GMX_UTILITY_UNIQUE_PTR_SFREE_H
 
+#include <cstdlib>
+
 #include <memory>
 
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx
 {
+
+/*! \brief Wrapper of standard library free(), to be used as
+ * unique_cptr deleter for memory allocated by malloc, e.g. by an
+ * external library such as TNG. */
+template <class T>
+inline void free_wrapper(T *p)
+{
+    free(p);
+}
 
 //! sfree wrapper to be used as unique_cptr deleter
 template <class T>

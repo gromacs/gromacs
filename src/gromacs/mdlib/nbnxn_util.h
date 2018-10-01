@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,7 +36,7 @@
 #ifndef GMX_MDLIB_NBNXN_UTIL_H
 #define GMX_MDLIB_NBNXN_UTIL_H
 
-#include <math.h>
+#include <cmath>
 
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
@@ -44,15 +44,11 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/fatalerror.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 
 /* Returns the base-2 log of n.
  * Generates a fatal error when n is not an integer power of 2.
  */
-static gmx_inline int get_2log(int n)
+static inline int get_2log(int n)
 {
     int log2;
 
@@ -70,7 +66,7 @@ static gmx_inline int get_2log(int n)
 }
 
 /* Returns the nbnxn i-cluster size in atoms for the nbnxn kernel type */
-static gmx_inline int nbnxn_kernel_to_cluster_i_size(int nb_kernel_type)
+static inline int nbnxn_kernel_to_cluster_i_size(int nb_kernel_type)
 {
     switch (nb_kernel_type)
     {
@@ -93,7 +89,7 @@ static gmx_inline int nbnxn_kernel_to_cluster_i_size(int nb_kernel_type)
 }
 
 /* Returns the nbnxn i-cluster size in atoms for the nbnxn kernel type */
-static gmx_inline int nbnxn_kernel_to_cluster_j_size(int nb_kernel_type)
+static inline int nbnxn_kernel_to_cluster_j_size(int nb_kernel_type)
 {
     int nbnxn_simd_width = 0;
     int cj_size          = 0;
@@ -124,9 +120,5 @@ static gmx_inline int nbnxn_kernel_to_cluster_j_size(int nb_kernel_type)
     return cj_size;
 }
 
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

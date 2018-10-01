@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,9 +34,10 @@
  */
 #include "gmxpre.h"
 
-#include <stdio.h>
+#include "expanded.h"
 
 #include <cmath>
+#include <cstdio>
 
 #include <algorithm>
 
@@ -55,10 +56,12 @@
 #include "gromacs/mdlib/calcmu.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/force.h"
-#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/update.h"
+#include "gromacs/mdtypes/enerdata.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/random/threefry.h"
 #include "gromacs/random/uniformrealdistribution.h"
@@ -67,7 +70,7 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 
-static void init_df_history_weights(df_history_t *dfhist, t_expanded *expand, int nlim)
+static void init_df_history_weights(df_history_t *dfhist, const t_expanded *expand, int nlim)
 {
     int i;
     dfhist->wl_delta = expand->init_wl_delta;
@@ -80,7 +83,7 @@ static void init_df_history_weights(df_history_t *dfhist, t_expanded *expand, in
 
 /* Eventually should contain all the functions needed to initialize expanded ensemble
    before the md loop starts */
-extern void init_expanded_ensemble(gmx_bool bStateFromCP, t_inputrec *ir, df_history_t *dfhist)
+void init_expanded_ensemble(gmx_bool bStateFromCP, const t_inputrec *ir, df_history_t *dfhist)
 {
     if (!bStateFromCP)
     {
@@ -88,7 +91,7 @@ extern void init_expanded_ensemble(gmx_bool bStateFromCP, t_inputrec *ir, df_his
     }
 }
 
-static void GenerateGibbsProbabilities(real *ene, double *p_k, double *pks, int minfep, int maxfep)
+static void GenerateGibbsProbabilities(const real *ene, double *p_k, double *pks, int minfep, int maxfep)
 {
 
     int  i;
@@ -116,7 +119,7 @@ static void GenerateGibbsProbabilities(real *ene, double *p_k, double *pks, int 
     }
 }
 
-static void GenerateWeightedGibbsProbabilities(real *ene, double *p_k, double *pks, int nlim, real *nvals, real delta)
+static void GenerateWeightedGibbsProbabilities(const real *ene, double *p_k, double *pks, int nlim, real *nvals, real delta)
 {
 
     int   i;
@@ -169,36 +172,7 @@ static void GenerateWeightedGibbsProbabilities(real *ene, double *p_k, double *p
     sfree(nene);
 }
 
-real do_logsum(int N, real *a_n)
-{
-
-    /*     RETURN VALUE */
-    /* log(\sum_{i=0}^(N-1) exp[a_n]) */
-    real maxarg;
-    real sum;
-    int  i;
-    real logsum;
-    /*     compute maximum argument to exp(.) */
-
-    maxarg = a_n[0];
-    for (i = 1; i < N; i++)
-    {
-        maxarg = std::max(maxarg, a_n[i]);
-    }
-
-    /* compute sum of exp(a_n - maxarg) */
-    sum = 0.0;
-    for (i = 0; i < N; i++)
-    {
-        sum = sum + std::exp(a_n[i] - maxarg);
-    }
-
-    /*     compute log sum */
-    logsum = std::log(sum) + maxarg;
-    return logsum;
-}
-
-int FindMinimum(real *min_metric, int N)
+static int FindMinimum(const real *min_metric, int N)
 {
 
     real min_val;
@@ -218,7 +192,7 @@ int FindMinimum(real *min_metric, int N)
     return min_nval;
 }
 
-static gmx_bool CheckHistogramRatios(int nhisto, real *histo, real ratio)
+static gmx_bool CheckHistogramRatios(int nhisto, const real *histo, real ratio)
 {
 
     int      i;
@@ -237,7 +211,7 @@ static gmx_bool CheckHistogramRatios(int nhisto, real *histo, real ratio)
         bIfFlat = FALSE;
         return bIfFlat;
     }
-    nmean /= (real)nhisto;
+    nmean /= static_cast<real>(nhisto);
 
     bIfFlat = TRUE;
     for (i = 0; i < nhisto; i++)
@@ -252,7 +226,7 @@ static gmx_bool CheckHistogramRatios(int nhisto, real *histo, real ratio)
     return bIfFlat;
 }
 
-static gmx_bool CheckIfDoneEquilibrating(int nlim, t_expanded *expand, df_history_t *dfhist, gmx_int64_t step)
+static gmx_bool CheckIfDoneEquilibrating(int nlim, const t_expanded *expand, const df_history_t *dfhist, int64_t step)
 {
 
     int      i, totalsamples;
@@ -361,7 +335,7 @@ static gmx_bool CheckIfDoneEquilibrating(int nlim, t_expanded *expand, df_histor
 }
 
 static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist,
-                              int fep_state, real *scaled_lamee, real *weighted_lamee, gmx_int64_t step)
+                              int fep_state, const real *scaled_lamee, const real *weighted_lamee, int64_t step)
 {
     gmx_bool  bSufficientSamples;
     int       i;
@@ -412,7 +386,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
             GenerateGibbsProbabilities(weighted_lamee, p_k, &pks, 0, nlim-1);
             for (i = 0; i < nlim; i++)
             {
-                dfhist->wl_histo[i] += (real)p_k[i];
+                dfhist->wl_histo[i] += static_cast<real>(p_k[i]);
             }
 
             /* then increment weights (uses count) */
@@ -421,7 +395,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
 
             for (i = 0; i < nlim; i++)
             {
-                dfhist->sum_weights[i] -= dfhist->wl_delta*(real)p_k[i];
+                dfhist->sum_weights[i] -= dfhist->wl_delta*static_cast<real>(p_k[i]);
             }
             /* Alternate definition, using logarithms. Shouldn't make very much difference! */
             /*
@@ -473,7 +447,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
         for (nval = 0; nval < maxc; nval++)
         {
             /* constants for later use */
-            cnval = (real)(nval-expand->c_range);
+            cnval = static_cast<real>(nval-expand->c_range);
             /* actually, should be able to rewrite it w/o exponential, for better numerical stability */
             if (fep_state > 0)
             {
@@ -613,7 +587,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
             }
             else
             {
-                dwm_array[nval]  = fabs( cnval - lam_dg[fep_state-1] );
+                dwm_array[nval]  = std::fabs( cnval - lam_dg[fep_state-1] );
             }
 
             if (n0 > 0)
@@ -632,7 +606,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
             }
             else
             {
-                dwp_array[nval]  = fabs( cnval - lam_dg[fep_state] );
+                dwp_array[nval]  = std::fabs( cnval - lam_dg[fep_state] );
             }
 
         }
@@ -726,8 +700,9 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
     return FALSE;
 }
 
-static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, int fep_state, real *weighted_lamee, double *p_k,
-                           gmx_int64_t seed, gmx_int64_t step)
+static int ChooseNewLambda(int nlim, const t_expanded *expand, df_history_t *dfhist, int fep_state,
+                           const real *weighted_lamee, double *p_k,
+                           int64_t seed, int64_t step)
 {
     /* Choose new lambda value, and update transition matrix */
 
@@ -931,7 +906,7 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
                     {
                         loc += sprintf(&errorstr[loc], "%3d %17.10e%17.10e%17.10e\n", ifep, weighted_lamee[ifep], p_k[ifep], dfhist->sum_weights[ifep]);
                     }
-                    gmx_fatal(FARGS, errorstr);
+                    gmx_fatal(FARGS, "%s", errorstr);
                 }
             }
         }
@@ -1016,8 +991,9 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
 }
 
 /* print out the weights to the log, along with current state */
-extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, t_simtemp *simtemp, df_history_t *dfhist,
-                                      int fep_state, int frequency, gmx_int64_t step)
+void PrintFreeEnergyInfoToFile(FILE *outfile, const t_lambda *fep, const t_expanded *expand,
+                               const t_simtemp *simtemp, const df_history_t *dfhist,
+                               int fep_state, int frequency, int64_t step)
 {
     int         nlim, i, ifep, jfep;
     real        dw, dg, dv, Tprint;
@@ -1088,7 +1064,7 @@ extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *
             {
                 if (expand->elamstats == elamstatsWL)
                 {
-                    fprintf(outfile, " %8d", (int)dfhist->wl_histo[ifep]);
+                    fprintf(outfile, " %8d", static_cast<int>(dfhist->wl_histo[ifep]));
                 }
                 else
                 {
@@ -1183,10 +1159,10 @@ extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *
     }
 }
 
-extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
-                                    t_state *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
-                                    gmx_int64_t step,
-                                    rvec *v, t_mdatoms *mdatoms)
+int ExpandedEnsembleDynamics(FILE *log, const t_inputrec *ir, const gmx_enerdata_t *enerd,
+                             t_state *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
+                             int64_t step,
+                             rvec *v, const t_mdatoms *mdatoms)
 /* Note that the state variable is only needed for simulated tempering, not
    Hamiltonian expanded ensemble.  May be able to remove it after integrator refactoring. */
 {
@@ -1293,7 +1269,7 @@ extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *e
     {
         if (log)
         {
-            fprintf(log, "\nStep %d: Weights have equilibrated, using criteria: %s\n", (int)step, elmceq_names[expand->elmceq]);
+            fprintf(log, "\nStep %" PRId64 ": Weights have equilibrated, using criteria: %s\n", step, elmceq_names[expand->elmceq]);
         }
     }
 
@@ -1395,7 +1371,7 @@ extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *e
                 dfhist->wl_delta *= expand->wl_scale;
                 if (log)
                 {
-                    fprintf(log, "\nStep %d: weights are now:", (int)step);
+                    fprintf(log, "\nStep %d: weights are now:", static_cast<int>(step));
                     for (i = 0; i < nlim; i++)
                     {
                         fprintf(log, " %.5f", dfhist->sum_weights[i]);

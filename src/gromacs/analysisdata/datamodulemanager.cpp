@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,7 @@
 
 #include "datamodulemanager.h"
 
+#include <utility>
 #include <vector>
 
 #include "gromacs/analysisdata/abstractdata.h"
@@ -72,7 +73,7 @@ class AnalysisDataModuleManager::Impl
         {
             //! Initializes the module information.
             explicit ModuleInfo(AnalysisDataModulePointer module)
-                : module(module), bParallel(false)
+                : module(std::move(module)), bParallel(false)
             {
             }
 
@@ -162,15 +163,11 @@ class AnalysisDataModuleManager::Impl
 };
 
 AnalysisDataModuleManager::Impl::Impl()
-    : bAllowMissing_(true), bSerialModules_(false), bParallelModules_(false),
+    : bDataProperty_(), // This must be in sync with how AbstractAnalysisData
+                        // is actually initialized.
+      bAllowMissing_(true), bSerialModules_(false), bParallelModules_(false),
       state_(eNotStarted), currIndex_(0)
 {
-    // This must be in sync with how AbstractAnalysisData is actually
-    // initialized.
-    for (int i = 0; i < eDataPropertyNR; ++i)
-    {
-        bDataProperty_[i] = false;
-    }
 }
 
 void
@@ -232,7 +229,7 @@ AnalysisDataModuleManager::Impl::presentData(AbstractAnalysisData *data,
                        "Cannot apply a modules in mid-frame");
     module->dataStarted(data);
     const bool bCheckMissing = bAllowMissing_
-        && !(module->flags() & IAnalysisDataModule::efAllowMissing);
+        && ((module->flags() & IAnalysisDataModule::efAllowMissing) == 0);
     for (int i = 0; i < data->frameCount(); ++i)
     {
         AnalysisDataFrameRef frame = data->getDataFrame(i);

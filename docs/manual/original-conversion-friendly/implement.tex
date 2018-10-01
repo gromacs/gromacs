@@ -1,0 +1,259 @@
+%
+% This file is part of the GROMACS molecular simulation package.
+%
+% Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+% Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+% and including many others, as listed in the AUTHORS file in the
+% top-level source directory and at http://www.gromacs.org.
+%
+% GROMACS is free software; you can redistribute it and/or
+% modify it under the terms of the GNU Lesser General Public License
+% as published by the Free Software Foundation; either version 2.1
+% of the License, or (at your option) any later version.
+%
+% GROMACS is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+% Lesser General Public License for more details.
+%
+% You should have received a copy of the GNU Lesser General Public
+% License along with GROMACS; if not, see
+% http://www.gnu.org/licenses, or write to the Free Software Foundation,
+% Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+%
+% If you want to redistribute modifications to GROMACS, please
+% consider that scientific software is very special. Version
+% control is crucial - bugs must be traceable. We will be happy to
+% consider code for inclusion in the official distribution, but
+% derived work must not be called official GROMACS. Details are found
+% in the README & COPYING files - if they are missing, get the
+% official version at http://www.gromacs.org.
+%
+% To help us fund GROMACS development, we humbly ask that you cite
+% the research papers on the package. Check out http://www.gromacs.org.
+
+\chapter{Some implementation details}
+In this chapter we will present some implementation details. This is
+far from complete, but we deemed it necessary to clarify some things
+that would otherwise be hard to understand.
+
+\section{Single Sum Virial in {\gromacs}}
+\label{sec:virial}
+The \normindex{virial} $\Xi$ can be written in full tensor form as:
+\begin{equation}
+\Xi~=~-\half~\sum_{i < j}^N~\rvij\otimes\Fvij
+\end{equation}
+where $\otimes$ denotes the {\em direct product} of two vectors.\footnote
+{$({\bf u}\otimes{\bf v})^{\ab}~=~{\bf u}_{\al}{\bf v}_{\be}$} When this is 
+computed in the inner loop of an MD program 9 multiplications and 9
+additions are needed.\footnote{The calculation of 
+Lennard-Jones and Coulomb forces is about 50 floating point operations.}
+
+Here it is shown how it is possible to extract the virial calculation
+from the inner loop~\cite{Bekker93b}.
+
+\subsection{Virial}
+In a system with periodic boundary conditions\index{periodic boundary 
+conditions}, the
+periodicity must be taken into account for the virial:
+\begin{equation}
+\Xi~=~-\half~\sum_{i < j}^{N}~\rnij\otimes\Fvij
+\end{equation}
+where $\rnij$ denotes the distance vector of the
+{\em nearest image} of atom $i$ from atom $j$. In this definition we add
+a {\em shift vector} $\delta_i$ to the position vector $\rvi$ 
+of atom $i$. The difference vector $\rnij$ is thus equal to:
+\begin{equation}
+\rnij~=~\rvi+\delta_i-\rvj
+\end{equation}
+or in shorthand:
+\begin{equation}
+\rnij~=~\rni-\rvj
+\end{equation}
+In a triclinic system, there are 27 possible images of $i$; when a truncated 
+octahedron is used, there are 15 possible images.
+
+\subsection{Virial from non-bonded forces}
+Here the derivation for the single sum virial in the {\em non-bonded force} 
+routine is given. There are a couple of considerations that are special
+to {\gromacs} that we take into account:
+\begin{itemize}
+\item When calculating short-range interactions, we apply the 
+{\em minimum image convention} and only consider the closest 
+image of each neighbor - and in particular we never allow interactions
+between a particle and any of its periodic images. For all the 
+equations below, this means $i \neq j$.
+\item In general, either the $i$ or $j$ particle might be shifted to a neighbor
+cell to get the closest interaction (shift $\delta_{ij}$). However, with minimum image
+convention there can be at most 27 different shifts for particles in the central cell,
+and for typical (very short-ranged) biomolecular interactions there are typically only a few
+different shifts involved for each particle, not to mention that each interaction can
+only be present for one shift. 
+\item For the {\gromacs} nonbonded interactions
+we use this to split the neighborlist of each $i$ particle into multiple 
+separate lists, where each list has a constant shift $\delta_i$ for the $i$ partlcle. We
+can represent this as a sum over shifts (for which we use index $s$), with the constraint that
+each particle interaction can only contribute to one of the terms in this sum, and the
+shift is no longer dependent on the $j$ particles. For any sum that does not contain
+complex dependence on $s$, this means the sum trivially reduces to just the sum
+over $i$ and/or $j$.
+\item To simplify some of the sums, we replace sums over $j<i$ with double sums over
+all particles (remember, $i \neq j$) and divide by 2.
+\end{itemize}
+
+Starting from the above definition of the virial, we then get
+\newcommand{\di}{\delta_{i}}
+\newcommand{\qrt}{\frac{1}{4}}
+\begin{eqnarray}
+\Xi
+&~=~&-\half~\sum_{i < j}^{N}~{\mathbf r}^n_{ij} \otimes {\mathbf F}_{ij} \nonumber \\
+&~=~&-\half~\sum_{i < j}^{N}~\left( {\mathbf r}_i + \delta_{ij} - {\mathbf r}_j \right) \otimes {\mathbf F}_{ij} \nonumber \\
+&~=~&-\qrt~\sum_{i=1}^{N}~\sum_{j=1}^{N}~\left( {\mathbf r}_i + \delta_{ij} - {\mathbf r}_j \right) \otimes {\mathbf F}_{ij} \nonumber \\
+&~=~&-\qrt~\sum_{i=1}^{N}~\sum_{s}~\sum_{j=1}^{N}~\left( {\mathbf r}_i + \delta_{i,s} - {\mathbf r}_j \right) \otimes {\mathbf F}_{ij,s} \nonumber \\
+&~=~&-\qrt~\sum_{i=}^{N}~\sum_{s}~\sum_{j=1}^{N}~\left( \left( {\mathbf r}_i + \delta_{i,s} \right) \otimes {\mathbf F}_{ij,s} -{\mathbf r}_j \otimes {\mathbf F}_{ij,s} \right) \nonumber \\
+&~=~&-\qrt~\sum_{i=1}^{N}~\sum_{s}~\sum_{j=1}^N ~\left( {\mathbf r}_i + \delta_{i,s} \right) \otimes {\mathbf F}_{ij,s} + \qrt \sum_{i=1}^{N}~\sum_{s}~\sum_{j=1}^{N} {\mathbf r}_j \otimes {\mathbf F}_{ij,s} \nonumber \\
+&~=~&-\qrt~\sum_{i=1}^{N}~\sum_{s}~\sum_{j=1}^N ~\left( {\mathbf r}_i + \delta_{i,s} \right) \otimes {\mathbf F}_{ij,s} + \qrt \sum_{i=1}^{N}~\sum_{j=1}^{N} {\mathbf r}_j \otimes {\mathbf F}_{ij} \nonumber \\
+&~=~&-\qrt~\sum_{s}~\sum_{i=1}^{N}~\left( {\mathbf r}_i + \delta_{i,s} \right) \otimes ~\sum_{j=1}^N {\mathbf F}_{ij,s} + \qrt \sum_{j=1}^N {\mathbf r}_j \otimes \sum_{i=1}^{N} {\mathbf F}_{ij} \nonumber \\
+&~=~&-\qrt~\sum_{s}~\sum_{i=1}^{N}~\left( {\mathbf r}_i + \delta_{i,s} \right) \otimes ~\sum_{j=1}^N {\mathbf F}_{ij,s} - \qrt \sum_{j=1}^N {\mathbf r}_j \otimes \sum_{i=1}^{N} {\mathbf F}_{ji} \nonumber \\
+&~=~&-\qrt~\sum_{s}~\sum_{i=1}^{N}~\left( {\mathbf r}_i + \delta_{i,s} \right) \otimes {\mathbf F}_{i,s} - \qrt \sum_{j=1}^N~{\mathbf r}_j \otimes {\mathbf F}_{j}  \nonumber \\
+&~=~&-\qrt~\left(\sum_{i=1}^{N}~{\mathbf r}_i  \otimes {\mathbf F}_{i} + \sum_{j=1}^N~{\mathbf r}_j \otimes {\mathbf F}_{j} \right) - \qrt \sum_{s}~\sum_{i=1}^{N} \delta_{i,s} \otimes {\mathbf F}_{i,s}  \nonumber \\
+&~=~&-\half \sum_{i=1}^{N}~{\mathbf r}_i \otimes {\mathbf F}_{i} -\qrt \sum_{s}~\sum_{i=1}^{N}~\delta_{i,s} \otimes {\mathbf F}_{i,s} \nonumber \\
+&~=~&-\half \sum_{i=1}^{N}~{\mathbf r}_i \otimes {\mathbf F}_{i} -\qrt \sum_{s}~\delta_{s} \otimes {\mathbf F}_{s} \nonumber \\
+&~=~&\Xi_0 + \Xi_1
+\end{eqnarray}
+In the second-last stage, we have used the property that each shift vector itself does not depend on the coordinates of particle $i$, so it is possible to sum
+up all forces corresponding to each shift vector (in the nonbonded kernels), and then just use a sum over the different shift vectors outside the kernels.
+We have also used
+\begin{eqnarray}
+\Fvi&~=~&\sum_{j=1}^N~\Fvij					\\
+\Fvj&~=~&\sum_{i=1}^N~\Fvji
+\end{eqnarray}
+which is the total force on $i$ with respect to $j$. Because we use Newton's Third Law:
+\begin{equation}
+\Fvij~=~-\Fvji
+\end{equation}
+we must, in the implementation, double the term containing the shift $\delta_i$. Similarly, in a few places we have summed the shift-dependent force
+over all shifts to come up with the total force per interaction or particle.
+
+This separates the total virial $\Xi$ into a component $\Xi_0$ that is a single sum over particles, and a second component $\Xi_1$ that describes the influence of
+the particle shifts, and that is only a sum over the different shift vectors.
+
+\subsection{The intra-molecular shift (mol-shift)}
+For the bonded forces and SHAKE it is possible to make a {\em mol-shift}
+list, in which the periodicity is stored. We simple have an array {\tt mshift}
+in which for each atom an index in the {\tt shiftvec} array is stored.
+
+The algorithm to generate such a list can be derived from graph theory,
+considering each particle in a molecule as a begin{eqnarray}d in a graph, the bonds 
+as edges.
+\begin{enumerate}
+\item[1]	Represent the bonds and atoms as bidirectional graph
+\item[2]	Make all atoms white
+\item[3]	Make one of the white atoms black (atom $i$) and put it in the
+		central box
+\item[4]	Make all of the neighbors of $i$ that are currently 
+		white, gray 
+\item[5]	Pick one of the gray atoms (atom $j$), give it the
+		correct periodicity with respect to any of 
+		its black neighbors
+		and make it black
+\item[6]	Make all of the neighbors of $j$ that are currently 
+		white, gray
+\item[7]	If any gray atom remains, go to [5]
+\item[8]	If any white atom remains, go to [3]
+\end{enumerate}
+Using this algorithm we can 
+\begin{itemize}
+\item	optimize the bonded force calculation as well as SHAKE 
+\item	calculate the virial from the bonded forces
+	in the single sum method again
+\end{itemize}
+
+Find a representation of the bonds as a bidirectional graph.
+
+\subsection{Virial from Covalent Bonds}
+Since the covalent bond force gives a contribution to the virial, we have:
+\begin{eqnarray}
+b	&~=~&	\|\rnij\|					\\
+V_b	&~=~&	\half k_b(b-b_0)^2				\\
+\Fvi	&~=~&	-\nabla V_b					\\
+	&~=~&	k_b(b-b_0)\frac{\rnij}{b}			\\
+\Fvj	&~=~&	-\Fvi
+\end{eqnarray}
+The virial contribution from the bonds then is:
+\begin{eqnarray}
+\Xi_b	&~=~&	-\half(\rni\otimes\Fvi~+~\rvj\otimes\Fvj)	\\
+	&~=~&	-\half\rnij\otimes\Fvi
+\end{eqnarray}
+
+\subsection{Virial from SHAKE}
+An important contribution to the virial comes from shake. Satisfying 
+the constraints a force {\bf G} that is exerted on the particles ``shaken.'' If this
+force does not come out of the algorithm (as in standard SHAKE) it can be
+calculated afterward (when using {\em leap-frog}) by:
+\begin{eqnarray}
+\Delta\rvi&~=~&\rvi(t+\Dt)-
+[\rvi(t)+{\bf v}_i(t-\frac{\Dt}{2})\Dt+\frac{\Fvi}{m_i}\Dt^2]	\\
+{\bf G}_i&~=~&\frac{m_i\Delta\rvi}{\Dt^2}
+\end{eqnarray}
+This does not help us in the general case. Only when no periodicity
+is needed (like in rigid water) this can be used, otherwise
+we must add the virial calculation in the inner loop of SHAKE.
+
+When it {\em is} applicable the virial can be calculated in the single sum way:
+\begin{equation}
+\Xi~=~-\half\sum_i^{N_c}~\rvi\otimes\Fvi
+\end{equation}
+where $N_c$ is the number of constrained atoms.
+
+%Another method is the Non-Iterative shake as proposed (and implemented)
+%by Yoneya. In this algorithm the Lagrangian multipliers are solved in a 
+%matrix equation, and given these multipliers it is easy to get the periodicity
+%in the virial afterwards. 
+
+%More...
+
+
+\section{Optimizations}
+Here we describe some of the algorithmic optimizations used 
+in {\gromacs}, apart from parallelism. 
+
+\subsection{Inner Loops for Water}
+\label{sec:waterloops}
+{\gromacs} uses special inner loops to calculate non-bonded
+interactions for water molecules with other atoms, and yet
+another set of loops for interactions between pairs of
+water molecules. There highly optimized loops for two types of water models.
+For three site models similar to
+SPC~\cite{Berendsen81}, {\ie}:
+\begin{enumerate}
+\item   There are three atoms in the molecule.
+\item   The whole molecule is a single charge group.
+\item   The first atom has Lennard-Jones (\secref{lj}) and 
+        Coulomb (\secref{coul}) interactions.
+\item   Atoms two and three have only Coulomb interactions, 
+        and equal charges.
+\end{enumerate}
+These loops also works for the SPC/E~\cite{Berendsen87} and 
+TIP3P~\cite{Jorgensen83} water models.
+And for four site water models similar to TIP4P~\cite{Jorgensen83}:
+\begin{enumerate}
+\item   There are four atoms in the molecule.
+\item   The whole molecule is a single charge group.
+\item   The first atom has only Lennard-Jones (\secref{lj}) interactions.
+\item   Atoms two and three have only Coulomb (\secref{coul}) interactions, 
+        and equal charges.
+\item   Atom four has only Coulomb interactions.
+\end{enumerate}
+
+The benefit of these implementations is that there are more floating-point
+operations in a single loop, which implies that some compilers
+can schedule the code better. However, it turns out that even
+some of the most advanced compilers have problems with scheduling, 
+implying that manual tweaking is necessary to get optimum 
+\normindex{performance}.
+This may include common-sub-expression elimination, or moving
+code around. 
+
+% LocalWords:  Virial virial triclinic intra mol mshift shiftvec sqrt SPC lj yf
+% LocalWords:  coul

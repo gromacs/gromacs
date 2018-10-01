@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -49,7 +49,8 @@ def do_build(context):
             'CMAKE_BUILD_TYPE': 'Debug',
             'GMX_GPU': 'OFF',
             'GMX_OPENMP': 'OFF',
-            'GMX_SIMD': 'None'
+            'GMX_SIMD': 'None',
+            'GMX_USE_RDTSCP': 'OFF'
         }
     release = (context.job_type == JobType.RELEASE)
     if release:
@@ -57,12 +58,22 @@ def do_build(context):
     elif context.job_type == JobType.GERRIT:
         cmake_opts['GMX_COMPACT_DOXYGEN'] = 'ON'
     cmake_opts.update(context.get_doc_cmake_options(
-        doxygen_version='1.8.5', sphinx_version='1.4'))
+        doxygen_version='1.8.5', sphinx_version='1.6.1'))
     context.run_cmake(cmake_opts);
-    context.build_target(target='gmx', parallel=True,
+
+    # we keep the individual build targets here to ensure some
+    # granularity of the resulting error messages (if any).
+    # it would be possible to run everything at once with
+    # target=webpage, but then debugging a failed build would
+    # become exceedingly tedious
+    context.build_target(target='sphinx-input', parallel=True,
+            failure_string='Generating Sphinx input failed',
+            continue_on_failure=True)
+    context.build_target(target='sphinx-programs', parallel=True,
+            failure_string='Running gmx help -export rst failed',
             continue_on_failure=True)
 
-    context.build_target(target='manual', parallel=False,
+    context.build_target(target='manual', parallel=True,
             target_descr='PDF manual', continue_on_failure=True)
     logfile = os.path.join(context.workspace.build_dir, 'docs/manual/gromacs.log')
     if os.path.isfile(logfile):
@@ -76,9 +87,9 @@ def do_build(context):
     # separately causes many of the Doxygen targets to get built twice if run
     # from a tarball.
     if not release:
-        context.build_target(target='doxygen-all', parallel=False,
+        context.build_target(target='doxygen-all', parallel=True,
                 target_descr='Doxygen documentation', continue_on_failure=True)
-        context.build_target(target='check-source', parallel=False,
+        context.build_target(target='check-source', parallel=True,
                 failure_string='check-source failed to run', continue_on_failure=True)
         logs = []
         for target in ('check-source', 'doxygen-xml', 'doxygen-user',
@@ -92,12 +103,6 @@ def do_build(context):
         if context.failed:
             return
 
-    context.build_target(target='sphinx-input', parallel=False,
-            failure_string='Generating Sphinx input failed',
-            continue_on_failure=True)
-    context.build_target(target='sphinx-programs', parallel=False,
-            failure_string='Running gmx help -export rst failed',
-            continue_on_failure=True)
     if context.failed:
         return
 
@@ -109,7 +114,7 @@ def do_build(context):
             ))
     logs = []
     for target, log, descr in sphinx_targets:
-        context.build_target(target=target, parallel=False,
+        context.build_target(target=target, parallel=True,
                 failure_string='Sphinx: {0} generation failed'.format(descr),
                 continue_on_failure=True)
         logfile = os.path.join(context.workspace.build_dir,
@@ -121,17 +126,32 @@ def do_build(context):
     if context.failed:
         return
 
-    context.build_target(target='webpage', parallel=False)
+    context.build_target(target='webpage', parallel=True)
     if context.failed:
         return
 
     ignore_urls = ['html-full', 'html-user', 'html-lib', '.tar.gz', '_sources']
     cmd = ['linkchecker', 'docs/html/index.html', '-f',
-            context.workspace.get_project_dir(Project.GROMACS) + '/docs/linkcheckerrc']
+            context.workspace.get_project_dir(Project.GROMACS) + '/docs/linkcheckerrc',
+            '-Fxml']
     for url in ignore_urls:
         cmd.extend(['--ignore-url', url])
-    # TODO: Actually check the linkchecker results
-    context.run_cmd(cmd, ignore_failure=True)
+
+    context.run_cmd(cmd, ignore_failure=False)
+
+    logfile = os.path.join(context.workspace.build_dir,
+        'docs/linkchecker-out.xml')
+    if os.path.isfile(logfile):
+        with open(logfile, 'r') as f:
+            manual_log = f.read()
+            if re.search(r'URLError:', manual_log):
+                context.mark_unstable('non resolvable URL in webpage')
+            if re.search(r'warnings', manual_log):
+                context.mark_unstable('empty pages in web documentation')
+        context.publish_logs([logfile], category='webpage')
+
+    if context.failed:
+        return
 
     if release:
         version_info = context.read_cmake_variable_file('VersionInfo.cmake')

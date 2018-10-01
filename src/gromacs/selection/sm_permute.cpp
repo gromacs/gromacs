@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "selmethod.h"
+#include "selmethod-impl.h"
 
 /*! \internal \brief
  * Data structure for the \p permute selection modifier.
@@ -170,7 +171,7 @@ init_data_permute(int /* npar */, gmx_ana_selparam_t *param)
 static void
 init_permute(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
-    t_methoddata_permute *d = (t_methoddata_permute *)data;
+    t_methoddata_permute *d = static_cast<t_methoddata_permute *>(data);
     int                   i;
 
     d->n    = param[1].val.nr;
@@ -203,7 +204,7 @@ init_permute(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *p
 static void
 init_output_permute(const gmx_mtop_t * /* top */, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_permute *d = (t_methoddata_permute *)data;
+    t_methoddata_permute *d = static_cast<t_methoddata_permute *>(data);
     int                   i, j, b;
 
     out->u.p->m.type = d->p.m.type;
@@ -228,7 +229,7 @@ init_output_permute(const gmx_mtop_t * /* top */, gmx_ana_selvalue_t *out, void 
 static void
 free_data_permute(void *data)
 {
-    t_methoddata_permute *d = (t_methoddata_permute *)data;
+    t_methoddata_permute *d = static_cast<t_methoddata_permute *>(data);
 
     sfree(d->rperm);
     delete d;
@@ -238,7 +239,7 @@ static void
 evaluate_permute(const gmx::SelMethodEvalContext & /*context*/,
                  gmx_ana_pos_t * /*p*/, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_permute *d = (t_methoddata_permute *)data;
+    t_methoddata_permute *d = static_cast<t_methoddata_permute *>(data);
     int                   i, j, b;
     int                   refid;
 

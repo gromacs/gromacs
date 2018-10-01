@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,188 +34,178 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \libinternal \file
+ * \brief Declares interface to constraint code.
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_mdlib
+ * \inlibraryapi
+ */
 
-#ifndef GMX_MBLIB_CONSTR_H
-#define GMX_MBLIB_CONSTR_H
+#ifndef GMX_MDLIB_CONSTR_H
+#define GMX_MDLIB_CONSTR_H
 
-#include "gromacs/essentialdynamics/edsam.h"
-#include "gromacs/gmxlib/nrnb.h"
+#include <cstdio>
+
+#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
-#include "gromacs/topology/ifunc.h"
-#include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
+struct gmx_edsam;
+struct gmx_localtop_t;
+struct gmx_moltype_t;
+struct gmx_mtop_t;
+struct gmx_multisim_t;
+struct gmx_wallcycle;
+struct t_blocka;
+struct t_commrec;
+struct t_ilist;
 struct t_inputrec;
-
-/* Abstract type for LINCS that is defined only in the file that uses it */
-typedef struct gmx_lincsdata *gmx_lincsdata_t;
-
-/* Abstract type for SHAKE that is defined only in the file that uses it */
-typedef struct gmx_shakedata *gmx_shakedata_t;
-
-/* Abstract type for SETTLE that is defined only in the file that uses it */
-typedef struct gmx_settledata *gmx_settledata_t;
-
-/* Abstract type for constraints */
-typedef struct gmx_constr *gmx_constr_t;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+struct t_mdatoms;
+struct t_nrnb;
 struct t_pbc;
 class t_state;
 
-enum
+namespace gmx
 {
-    econqCoord,         /* Constrain coordinates (mass weighted)           */
-    econqVeloc,         /* Constrain velocities (mass weighted)            */
-    econqDeriv,         /* Constrain a derivative (mass weighted),         *
-                         * for instance velocity or acceleration,          *
-                         * constraint virial can not be calculated.        */
-    econqDeriv_FlexCon, /* As econqDeriv, but only output flex. con.       */
-    econqForce,         /* Constrain forces (non mass-weighted)            */
-    econqForceDispl     /* Constrain forces (mass-weighted 1/0 for freeze) */
+
+//! Describes supported flavours of constrained updates.
+enum class ConstraintVariable : int
+{
+    Positions,         /* Constrain positions (mass weighted)             */
+    Velocities,        /* Constrain velocities (mass weighted)            */
+    Derivative,        /* Constrain a derivative (mass weighted),         *
+                        * for instance velocity or acceleration,          *
+                        * constraint virial can not be calculated.        */
+    Deriv_FlexCon,     /* As Derivative, but only output flex. con.       */
+    Force,             /* Constrain forces (non mass-weighted)            */
+    // TODO What does this do? Improve the comment.
+    ForceDispl         /* Like Force, but free particles will have mass
+                        * 1 and frozen particles mass 0                   */
 };
 
-int n_flexible_constraints(struct gmx_constr *constr);
-/* Returns the total number of flexible constraints in the system */
+/*! \libinternal
+ * \brief Handles constraints */
+class Constraints
+{
+    private:
+        /*! \brief Constructor
+         *
+         * Private to enforce use of makeConstraints() factory
+         * function. */
+        Constraints(const gmx_mtop_t     &mtop,
+                    const t_inputrec     &ir,
+                    FILE                 *log,
+                    const t_mdatoms      &md,
+                    const t_commrec      *cr,
+                    const gmx_multisim_t &ms,
+                    t_nrnb               *nrnb,
+                    gmx_wallcycle        *wcycle,
+                    bool                  pbcHandlingRequired,
+                    int                   numConstraints,
+                    int                   numSettles);
+    public:
+        /*! \brief This member type helps implement a factory
+         * function, because its objects can access the private
+         * constructor. */
+        struct CreationHelper;
 
-void too_many_constraint_warnings(int eConstrAlg, int warncount);
-/* Generate a fatal error because of too many LINCS/SETTLE warnings */
+        ~Constraints();
 
-gmx_shakedata_t shake_init();
-/* Initializes and return the SHAKE data structure */
+        /*! \brief Returns the total number of flexible constraints in the system. */
+        int numFlexibleConstraints() const;
 
-gmx_bool bshakef(FILE           *log,          /* Log file			*/
-                 gmx_shakedata_t shaked,       /* Total number of atoms	*/
-                 real            invmass[],    /* Atomic masses		*/
-                 int             nblocks,      /* The number of shake blocks	*/
-                 int             sblock[],     /* The shake blocks             */
-                 t_idef         *idef,         /* The interaction def		*/
-                 t_inputrec     *ir,           /* Input record		        */
-                 rvec            x_s[],        /* Coords before update		*/
-                 rvec            prime[],      /* Output coords		*/
-                 t_nrnb         *nrnb,         /* Performance measure          */
-                 real           *lagr,         /* The Lagrange multipliers     */
-                 real            lambda,       /* FEP lambda                   */
-                 real           *dvdlambda,    /* FEP force                    */
-                 real            invdt,        /* 1/delta_t                    */
-                 rvec           *v,            /* Also constrain v if v!=NULL  */
-                 gmx_bool        bCalcVir,     /* Calculate r x m delta_r      */
-                 tensor          vir_r_m_dr,   /* sum r x m delta_r            */
-                 gmx_bool        bDumpOnError, /* Dump debugging stuff on error*/
-                 int             econq);       /* which type of constraint is occurring */
-/* Shake all the atoms blockwise. It is assumed that all the constraints
- * in the idef->shakes field are sorted, to ascending block nr. The
- * sblock array points into the idef->shakes.iatoms field, with block 0
- * starting
- * at sblock[0] and running to ( < ) sblock[1], block n running from
- * sblock[n] to sblock[n+1]. Array sblock should be large enough.
- * Return TRUE when OK, FALSE when shake-error
- */
+        /*! \brief Set up all the local constraints for the domain.
+         *
+         * \todo Make this a callback that is called automatically
+         * once a new domain has been made. */
+        void setConstraints(const gmx_localtop_t &top,
+                            const t_mdatoms      &md);
 
-gmx_settledata_t settle_init(const gmx_mtop_t *mtop);
-/* Initializes and returns a structure with SETTLE parameters */
+        /*! \brief Applies constraints to coordinates.
+         *
+         * When econq=ConstraintVariable::Positions constrains
+         * coordinates xprime using th directions in x, min_proj is
+         * not used.
+         *
+         * When econq=ConstraintVariable::Derivative, calculates the
+         * components xprime in the constraint directions and
+         * subtracts these components from min_proj.  So when
+         * min_proj=xprime, the constraint components are projected
+         * out.
+         *
+         * When econq=ConstraintVariable::Deriv_FlexCon, the same is
+         * done as with ConstraintVariable::Derivative, but only the
+         * components of the flexible constraints are stored.
+         *
+         * delta_step is used for determining the constraint reference lengths
+         * when lenA != lenB or will the pull code with a pulling rate.
+         * step + delta_step is the step at which the final configuration
+         * is meant to be; for update delta_step = 1.
+         *
+         * step_scaling can be used to update coordinates based on the time
+         * step multiplied by this factor. Thus, normally 1.0 is passed. The
+         * SD1 integrator uses 0.5 in one of its calls, to correct positions
+         * for half a step of changed velocities.
+         *
+         * If v!=NULL also constrain v by adding the constraint corrections / dt.
+         *
+         * If vir!=NULL calculate the constraint virial.
+         *
+         * Return whether the application of constraints succeeded without error.
+         */
+        bool apply(bool                  bLog,
+                   bool                  bEner,
+                   int64_t               step,
+                   int                   delta_step,
+                   real                  step_scaling,
+                   rvec                 *x,
+                   rvec                 *xprime,
+                   rvec                 *min_proj,
+                   matrix                box,
+                   real                  lambda,
+                   real                 *dvdlambda,
+                   rvec                 *v,
+                   tensor               *vir,
+                   ConstraintVariable    econq);
+        //! Links the essentialdynamics and constraint code.
+        void saveEdsamPointer(gmx_edsam *ed);
+        //! Getter for use by domain decomposition.
+        const ArrayRef<const t_blocka> atom2constraints_moltype() const;
+        //! Getter for use by domain decomposition.
+        ArrayRef < const std::vector < int>> atom2settle_moltype() const;
 
-void settle_free(gmx_settledata_t settled);
+        /*! \brief Return the data for reduction for determining
+         * constraint RMS relative deviations, or an empty ArrayRef
+         * when not supported for any active constraints. */
+        ArrayRef<real> rmsdData() const;
+        /*! \brief Return the RMSD of the constraints when available. */
+        real rmsd() const;
 
-void settle_set_constraints(gmx_settledata_t  settled,
-                            const t_ilist    *il_settle,
-                            const t_mdatoms  *mdatoms);
-/* Set up the indices for the settle constraints */
+    private:
+        //! Implementation type.
+        class Impl;
+        //! Implementation object.
+        PrivateImplPointer<Impl> impl_;
+};
 
-void csettle(gmx_settledata_t    settled,          /* The SETTLE structure */
-             int                 nthread,          /* The number of threads used */
-             int                 thread,           /* Our thread index */
-             const struct t_pbc *pbc,              /* PBC data pointer, can be NULL */
-             const real          x[],              /* Reference coordinates */
-             real                xprime[],         /* New coords, to be settled */
-             real                invdt,            /* 1/delta_t */
-             real               *v,                /* Also constrain v if v!=NULL */
-             bool                bCalcVirial,      /* Calculate the virial contribution */
-             tensor              vir_r_m_dr,       /* sum r x m delta_r */
-             bool               *bErrorHasOccurred /* True if a settle error occurred */
-             );
-/* Constrain coordinates using SETTLE.
- * Can be called on any number of threads.
- */
+/*! \brief Generate a fatal error because of too many LINCS/SETTLE warnings. */
+[[ noreturn ]] void too_many_constraint_warnings(int eConstrAlg, int warncount);
 
-void settle_proj(gmx_settledata_t settled, int econq,
-                 int nsettle, t_iatom iatoms[],
-                 const struct t_pbc *pbc,   /* PBC data pointer, can be NULL  */
-                 rvec x[],
-                 rvec *der, rvec *derp,
-                 int CalcVirAtomEnd, tensor vir_r_m_dder);
-/* Analytical algorithm to subtract the components of derivatives
- * of coordinates working on settle type constraint.
- */
+/*! \brief Returns whether constraint with parameter \p iparamsIndex is a flexible constraint */
+static inline bool isConstraintFlexible(const t_iparams *iparams,
+                                        int              iparamsIndex)
+{
+    GMX_ASSERT(iparams != nullptr, "Need a valid iparams array");
 
-void cshake(const int iatom[], int ncon, int *nnit, int maxnit,
-            const real dist2[], real xp[], const real rij[], const real m2[], real omega,
-            const real invmass[], const real tt[], real lagr[], int *nerror);
-/* Regular iterative shake */
-
-void crattle(int iatom[], int ncon, int *nnit, int maxnit,
-             real dist2[], real vp[], real rij[], real m2[], real omega,
-             real invmass[], real tt[], real lagr[], int *nerror, real invdt);
-
-gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
-                   gmx_constr_t constr,
-                   t_idef *idef,
-                   t_inputrec *ir,
-                   struct t_commrec *cr,
-                   gmx_int64_t step, int delta_step,
-                   real step_scaling,
-                   t_mdatoms *md,
-                   rvec *x, rvec *xprime, rvec *min_proj,
-                   gmx_bool bMolPBC, matrix box,
-                   real lambda, real *dvdlambda,
-                   rvec *v, tensor *vir,
-                   t_nrnb *nrnb, int econq);
-/*
- * When econq=econqCoord constrains coordinates xprime using th
- * directions in x, min_proj is not used.
- *
- * When econq=econqDeriv, calculates the components xprime in
- * the constraint directions and subtracts these components from min_proj.
- * So when min_proj=xprime, the constraint components are projected out.
- *
- * When econq=econqDeriv_FlexCon, the same is done as with econqDeriv,
- * but only the components of the flexible constraints are stored.
- *
- * When bMolPBC=TRUE, assume that molecules might be broken: correct PBC.
- *
- * delta_step is used for determining the constraint reference lengths
- * when lenA != lenB or will the pull code with a pulling rate.
- * step + delta_step is the step at which the final configuration
- * is meant to be; for update delta_step = 1.
- *
- * step_scaling can be used to update coordinates based on the time
- * step multiplied by this factor. Thus, normally 1.0 is passed. The
- * SD1 integrator uses 0.5 in one of its calls, to correct positions
- * for half a step of changed velocities.
- *
- * If v!=NULL also constrain v by adding the constraint corrections / dt.
- *
- * If vir!=NULL calculate the constraint virial.
- *
- * Return TRUE if OK, FALSE in case of shake error
- *
- */
-
-gmx_constr_t init_constraints(FILE *log,
-                              const gmx_mtop_t *mtop, const t_inputrec *ir,
-                              gmx_edsam_t ed, t_state *state,
-                              struct t_commrec *cr);
-/* Initialize constraints stuff */
-
-void set_constraints(gmx_constr_t             constr,
-                     gmx_localtop_t          *top,
-                     const t_inputrec        *ir,
-                     const t_mdatoms         *md,
-                     struct t_commrec        *cr);
-/* Set up all the local constraints for the node */
+    return (iparams[iparamsIndex].constr.dA == 0 &&
+            iparams[iparamsIndex].constr.dB == 0);
+};
 
 /* The at2con t_blocka struct returned by the routines below
  * contains a list of constraints per atom.
@@ -223,87 +213,80 @@ void set_constraints(gmx_constr_t             constr,
  * after the F_CONSTR constraints.
  */
 
-t_blocka make_at2con(int start, int natoms,
-                     const t_ilist *ilist, const t_iparams *iparams,
-                     gmx_bool bDynamics, int *nflexiblecons);
-/* Returns a block struct to go from atoms to constraints */
+/*! \brief Tells make_at2con how to treat flexible constraints */
+enum class FlexibleConstraintTreatment
+{
+    Include, //!< Include all flexible constraints
+    Exclude  //!< Exclude all flexible constraints
+};
 
-const t_blocka *atom2constraints_moltype(gmx_constr_t constr);
-/* Returns the an array of atom to constraints lists for the moltypes */
+/*! \brief Returns the flexible constraint treatment depending on whether the integrator is dynamic */
+FlexibleConstraintTreatment
+flexibleConstraintTreatment(bool haveDynamicsIntegrator);
 
-const int **atom2settle_moltype(gmx_constr_t constr);
-/* Returns the an array of atom to settle for the moltypes */
+/*! \brief Returns a block struct to go from atoms to constraints
+ *
+ * The block struct will contain constraint indices with lower indices
+ * directly matching the order in F_CONSTR and higher indices matching
+ * the order in F_CONSTRNC offset by the number of constraints in F_CONSTR.
+ *
+ * \param[in]  moltype   The molecule data
+ * \param[in]  iparams   Interaction parameters, can be null when flexibleConstraintTreatment=Include
+ * \param[in]  flexibleConstraintTreatment  The flexible constraint treatment, see enum above
+ * \returns a block struct with all constraints for each atom
+ */
+t_blocka make_at2con(const gmx_moltype_t            &moltype,
+                     gmx::ArrayRef<const t_iparams>  iparams,
+                     FlexibleConstraintTreatment     flexibleConstraintTreatment);
 
-#define constr_iatomptr(nconstr, iatom_constr, iatom_constrnc, con) ((con) < (nconstr) ? (iatom_constr)+(con)*3 : (iatom_constrnc)+(con-nconstr)*3)
-/* Macro for getting the constraint iatoms for a constraint number con
+/*! \brief Returns a block struct to go from atoms to constraints
+ *
+ * The block struct will contain constraint indices with lower indices
+ * directly matching the order in F_CONSTR and higher indices matching
+ * the order in F_CONSTRNC offset by the number of constraints in F_CONSTR.
+ *
+ * \param[in]  numAtoms  The number of atoms to construct the list for
+ * \param[in]  ilist     Interaction list, size F_NRE
+ * \param[in]  iparams   Interaction parameters, can be null when flexibleConstraintTreatment=Include
+ * \param[in]  flexibleConstraintTreatment  The flexible constraint treatment, see enum above
+ * \returns a block struct with all constraints for each atom
+ */
+t_blocka make_at2con(int                          numAtoms,
+                     const t_ilist               *ilist,
+                     const t_iparams             *iparams,
+                     FlexibleConstraintTreatment  flexibleConstraintTreatment);
+
+/*! \brief Returns an array of atom to constraints lists for the moltypes */
+const t_blocka *atom2constraints_moltype(const Constraints *constr);
+
+//! Return the number of flexible constraints in the \c ilist and \c iparams.
+int countFlexibleConstraints(const t_ilist   *ilist,
+                             const t_iparams *iparams);
+
+/*! \brief Returns the constraint iatoms for a constraint number con
  * which comes from a list where F_CONSTR and F_CONSTRNC constraints
- * are concatenated.
- */
+ * are concatenated. */
+inline const int *
+constr_iatomptr(gmx::ArrayRef<const int> iatom_constr,
+                gmx::ArrayRef<const int> iatom_constrnc,
+                int                      con)
+{
+    if (con*3 < iatom_constr.size())
+    {
+        return iatom_constr.data() + con*3;
+    }
+    else
+    {
+        return iatom_constrnc.data() + con*3 - iatom_constr.size();
+    }
+};
 
-gmx_bool inter_charge_group_constraints(const gmx_mtop_t *mtop);
-/* Returns if there are inter charge group constraints */
+/*! \brief Returns whether there are inter charge group constraints */
+bool inter_charge_group_constraints(const gmx_mtop_t &mtop);
 
-gmx_bool inter_charge_group_settles(const gmx_mtop_t *mtop);
-/* Returns if there are inter charge group settles */
+/*! \brief Returns whether there are inter charge group settles */
+bool inter_charge_group_settles(const gmx_mtop_t &mtop);
 
-real *constr_rmsd_data(gmx_constr_t constr);
-/* Return the data for determining constraint RMS relative deviations.
- * Returns NULL when LINCS is not used.
- */
+}  // namespace gmx
 
-real constr_rmsd(gmx_constr_t constr);
-/* Return the RMSD of the constraint */
-
-real *lincs_rmsd_data(gmx_lincsdata_t lincsd);
-/* Return the data for determining constraint RMS relative deviations */
-
-real lincs_rmsd(gmx_lincsdata_t lincsd);
-/* Return the RMSD of the constraint */
-
-gmx_lincsdata_t init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
-                           int nflexcon_global, const t_blocka *at2con,
-                           gmx_bool bPLINCS, int nIter, int nProjOrder);
-/* Initializes and returns the lincs data struct */
-
-void set_lincs(const t_idef *idef, const t_mdatoms *md,
-               gmx_bool bDynamics, struct t_commrec *cr,
-               gmx_lincsdata_t li);
-/* Initialize lincs stuff */
-
-void set_lincs_matrix(gmx_lincsdata_t li, const real *invmass, real lambda);
-/* Sets the elements of the LINCS constraint coupling matrix */
-
-real constr_r_max(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir);
-/* Returns an estimate of the maximum distance between atoms
- * required for LINCS.
- */
-
-gmx_bool
-constrain_lincs(FILE *log, gmx_bool bLog, gmx_bool bEner,
-                t_inputrec *ir,
-                gmx_int64_t step,
-                gmx_lincsdata_t lincsd, t_mdatoms *md,
-                struct t_commrec *cr,
-                rvec *x, rvec *xprime, rvec *min_proj,
-                matrix box, struct t_pbc *pbc,
-                real lambda, real *dvdlambda,
-                real invdt, rvec *v,
-                gmx_bool bCalcVir, tensor vir_r_m_dr,
-                int econ,
-                t_nrnb *nrnb,
-                int maxwarn, int *warncount);
-/* Returns if the constraining succeeded */
-
-
-/* helper functions for andersen temperature control, because the
- * gmx_constr construct is only defined in constr.c. Return the list
- * of blocks (get_sblock) and the number of blocks (get_nblocks).  */
-
-int *get_sblock(struct gmx_constr *constr);
-
-int get_nblocks(struct gmx_constr *constr);
-
-#ifdef __cplusplus
-}
-#endif
 #endif

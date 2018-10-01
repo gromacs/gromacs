@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace gmx
 {
@@ -128,7 +129,7 @@ class ITextBlockMatcherSettings
 class ExactTextMatch : public ITextBlockMatcherSettings
 {
     public:
-        virtual TextBlockMatcherPointer createMatcher() const;
+        TextBlockMatcherPointer createMatcher() const override;
 };
 
 /*! \libinternal \brief
@@ -140,7 +141,32 @@ class ExactTextMatch : public ITextBlockMatcherSettings
 class NoTextMatch : public ITextBlockMatcherSettings
 {
     public:
-        virtual TextBlockMatcherPointer createMatcher() const;
+        TextBlockMatcherPointer createMatcher() const override;
+};
+
+/*! \libinternal \brief
+ * Use an exact text match after scrubbing lines of the text
+ * that match the supplied regular expressions.
+ *
+ * This suits comparing files in tests that are intended to be
+ * localized by reporting usage, time, date, user, or file-system
+ * stamps. The latter won't be reproducible in tests until
+ * the tools that emit them can be mocked suitably.
+ *
+ * \inlibraryapi
+ * \ingroup module_testutils
+ */
+class FilteringExactTextMatch : public ITextBlockMatcherSettings
+{
+    public:
+        //! Factory method.
+        TextBlockMatcherPointer createMatcher() const override;
+        //! Add a regular expression for which a matching line should be skipped.
+        void addRegexToSkip(const std::string &lineToSkip);
+    private:
+        //! The regular expressions for lines that should be skipped.
+        std::vector<std::string> linesToSkip_;
+
 };
 
 } // namespace test

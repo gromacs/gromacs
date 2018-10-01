@@ -1,0 +1,151 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">clustsize -mol -nlevels 6</String>
+  <OutputFiles Name="Files">
+    <File Name="-mc">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Max cluster size"
+xaxis  label "Time (ps)"
+yaxis  label "#molecules"
+TYPE xy
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">2</Int>
+          <Real>1.000000e+00</Real>
+          <Real>2</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">2</Int>
+          <Real>2.000000e+00</Real>
+          <Real>2</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-nc">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Number of clusters"
+xaxis  label "Time (ps)"
+yaxis  label "N"
+TYPE xy
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">2</Int>
+          <Real>1.000000e+00</Real>
+          <Real>5</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">2</Int>
+          <Real>2.000000e+00</Real>
+          <Real>6</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-ac">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Average cluster size"
+xaxis  label "Time (ps)"
+yaxis  label "#molecules"
+TYPE xy
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">2</Int>
+          <Real>1.000000e+00</Real>
+          <Real>2.000</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">2</Int>
+          <Real>2.000000e+00</Real>
+          <Real>2.000</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-hc">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Cluster size distribution"
+xaxis  label "Cluster size"
+yaxis  label "()"
+TYPE xy
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">2</Int>
+          <Real>0</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">2</Int>
+          <Real>1</Real>
+          <Real>3.000</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">2</Int>
+          <Real>2</Real>
+          <Real>2.500</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">2</Int>
+          <Real>3</Real>
+          <Real>0.000</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-o">
+      <String Name="Contents"><![CDATA[
+/* XPM */
+/* This file can be converted to EPS by the GROMACS program xpm2ps */
+/* title:   "Cluster size distribution" */
+/* legend:  "# clusters" */
+/* x-label: "Time (ps)" */
+/* y-label: "Size" */
+/* type:    "Continuous" */
+static char *gromacs_xpm[] = {
+"2 2   6 1",
+"A  c #FFFFFF " /* "0" */,
+"B  c #FFFF00 " /* "1" */,
+"C  c #BFBF40 " /* "1.75" */,
+"D  c #808080 " /* "2.5" */,
+"E  c #4040BF " /* "3.25" */,
+"F  c #0000FF " /* "4" */,
+/* x-axis:  1 2 */
+/* y-axis:  1 2 */
+"EC",
+"CF"
+]]></String>
+    </File>
+    <File Name="-ow">
+      <String Name="Contents"><![CDATA[
+/* XPM */
+/* This file can be converted to EPS by the GROMACS program xpm2ps */
+/* title:   "Weighted cluster size distribution" */
+/* legend:  "Fraction" */
+/* x-label: "Time (ps)" */
+/* y-label: "Size" */
+/* type:    "Continuous" */
+static char *gromacs_xpm[] = {
+"2 2   6 1",
+"A  c #FFFFFF " /* "0" */,
+"B  c #FFFF00 " /* "2" */,
+"C  c #BFBF40 " /* "3" */,
+"D  c #808080 " /* "4" */,
+"E  c #4040BF " /* "5" */,
+"F  c #0000FF " /* "6" */,
+/* x-axis:  1 2 */
+/* y-axis:  1 2 */
+"FD",
+"BD"
+]]></String>
+    </File>
+  </OutputFiles>
+</ReferenceData>

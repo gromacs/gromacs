@@ -86,7 +86,7 @@ class HelpWriterContextTest : public gmx::test::StringTestBase
             }
             checkText(result, id);
         }
-        void testFormatting(const gmx::ConstArrayRef<const char *> &text)
+        void testFormatting(const gmx::ArrayRef<const char *const> &text)
         {
             std::string testText = gmx::joinStrings(text, "\n");
             testFormatting(testText, gmx::eHelpOutputFormat_Console, nullptr);

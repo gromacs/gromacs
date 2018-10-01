@@ -10,9 +10,9 @@
 echo $shell | grep -q csh && goto CSH
 
 # if we got here, shell is bsh/bash/zsh/ksh
-. @CMAKE_INSTALL_PREFIX@/@BIN_INSTALL_DIR@/GMXRC.bash
+. @CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_BINDIR@/GMXRC.bash
 return
 
 # csh/tcsh jump here
 CSH:
-source @CMAKE_INSTALL_PREFIX@/@BIN_INSTALL_DIR@/GMXRC.csh
+source @CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_BINDIR@/GMXRC.csh

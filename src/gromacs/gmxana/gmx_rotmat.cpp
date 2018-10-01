@@ -110,7 +110,7 @@ static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int
         nfr_all++;
     }
     while (read_next_x(oenv, status, &ti[nfr], x, box));
-    close_trj(status);
+    close_trx(status);
     sfree(x);
 
     gmx_rmpbc_done(gpbc);
@@ -307,7 +307,7 @@ int gmx_rotmat(int argc, char *argv[])
 
     gmx_rmpbc_done(gpbc);
 
-    close_trj(status);
+    close_trx(status);
 
     xvgrclose(out);
 

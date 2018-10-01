@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,7 +63,7 @@ int g_initializationCounter = 0;
 #endif
 }
 
-void init(int *argc, char ***argv)
+void init(int *argc, char ***argv) // NOLINT(readability-non-const-parameter)
 {
 #if GMX_LIB_MPI
     int isInitialized = 0, isFinalized = 0;
@@ -81,7 +81,7 @@ void init(int *argc, char ***argv)
     }
     else
     {
-#ifdef GMX_FAHCORE
+#if GMX_FAHCORE
         fah_MPI_Init(argc, argv);
 #else
 #    if GMX_OPENMP

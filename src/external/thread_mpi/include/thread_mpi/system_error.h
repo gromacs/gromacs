@@ -48,8 +48,6 @@
 
 #include "visibility.h"
 
-#ifdef __cplusplus
-
 namespace tMPI
 {
 /*! \brief Subset of the C++11 system_error class
@@ -75,7 +73,5 @@ class system_error : public std::runtime_error
         error_code ec_;
 };
 }
-
-#endif /* __cplusplus */
 
 #endif /* TMPI_SYSTEM_ERROR_H_ */

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,7 +36,7 @@
 
 #include "fflibutil.h"
 
-#include <string.h>
+#include <cstring>
 
 #include <string>
 #include <vector>
@@ -82,9 +82,9 @@ void fflib_filename_base(const char *filename, char *filebase, int maxlen)
     {
         cptr = filename;
     }
-    if (strlen(filename) >= (size_t)maxlen)
+    if (strlen(filename) >= static_cast<size_t>(maxlen))
     {
-        gmx_fatal(FARGS, "filename is longer (%d) than maxlen (%d)",
+        gmx_fatal(FARGS, "filename is longer (%zu) than maxlen (%d)",
                   strlen(filename), maxlen);
     }
     strcpy(filebase, cptr);
@@ -96,10 +96,9 @@ void fflib_filename_base(const char *filename, char *filebase, int maxlen)
     }
 }
 
-int fflib_search_file_end(const char *ffdir,
-                          const char *file_end,
-                          gmx_bool    bFatalError,
-                          char     ***filenames)
+std::vector<std::string> fflib_search_file_end(const char *ffdir,
+                                               const char *file_end,
+                                               bool        bFatalError)
 {
     try
     {
@@ -115,19 +114,11 @@ int fflib_search_file_end(const char *ffdir,
                                     file_end, ffdir);
             GMX_THROW(gmx::InvalidInputError(message));
         }
-        const int count = static_cast<int>(result.size());
-        for (int i = 0; i < count; ++i)
+        for (std::string &filename : result)
         {
-            result[i] = gmx::Path::join(ffdir, result[i]);
+            filename = gmx::Path::join(ffdir, filename);
         }
-        char    **fns;
-        snew(fns, count);
-        for (int i = 0; i < count; ++i)
-        {
-            fns[i] = gmx_strdup(result[i].c_str());
-        }
-        *filenames = fns;
-        return count;
+        return result;
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
@@ -167,34 +158,15 @@ std::vector<gmx::DataFileInfo> fflib_enumerate_forcefields()
     return result;
 }
 
-gmx_bool fflib_fexist(const char *file)
+bool fflib_fexist(const std::string &file)
 {
-    char *file_fullpath;
-
-    file_fullpath = low_gmxlibfn(file, TRUE, FALSE);
-
-    if (file_fullpath == nullptr)
-    {
-        return FALSE;
-    }
-    else
-    {
-        sfree(file_fullpath);
-
-        return TRUE;
-    }
+    return !gmx::findLibraryFile(file, true, false).empty();
 }
 
 
-FILE *fflib_open(const char *file)
+FILE *fflib_open(const std::string &file)
 {
-    char *file_fullpath;
-    FILE *fp;
-
-    file_fullpath = gmxlibfn(file);
-    fprintf(stderr, "Opening force field file %s\n", file_fullpath);
-    fp = gmx_ffopen(file_fullpath, "r");
-    sfree(file_fullpath);
-
-    return fp;
+    std::string fileFullPath = gmx::findLibraryFile(file);
+    fprintf(stderr, "Opening force field file %s\n", fileFullPath.c_str());
+    return gmx_ffopen(fileFullPath.c_str(), "r");
 }

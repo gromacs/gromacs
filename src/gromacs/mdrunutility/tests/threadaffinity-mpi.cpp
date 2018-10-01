@@ -98,7 +98,6 @@ TEST(ThreadAffinityMultiRankTest, HandlesTooManyThreadsWithAuto)
     ThreadAffinityTestHelper helper;
     helper.setLogicalProcessorCount(6);
     helper.expectWarningMatchingRegex("Oversubscribing the CPU");
-    helper.expectGenericFailureMessage();
     helper.setAffinity(2);
 }
 
@@ -109,7 +108,6 @@ TEST(ThreadAffinityMultiRankTest, HandlesTooManyThreadsWithForce)
     helper.setAffinityOption(threadaffON);
     helper.setLogicalProcessorCount(6);
     helper.expectWarningMatchingRegex("Oversubscribing the CPU");
-    helper.expectGenericFailureMessage();
     helper.setAffinity(2);
 }
 
@@ -142,7 +140,6 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsOnMasterOnly)
     helper.setAffinityOption(threadaffON);
     setupNodes(&helper, {{2, 1}});
     helper.expectWarningMatchingRegexIf("Oversubscribing the CPU", isMaster() || currentNode() == 1);
-    helper.expectGenericFailureMessageIf(isMaster() || currentNode() == 1);
     if (currentNode() == 0)
     {
         helper.expectPinningMessage(false, 1);
@@ -158,7 +155,6 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsOnNonMasterOnly)
     helper.setAffinityOption(threadaffON);
     setupNodes(&helper, {{1, 2}});
     helper.expectWarningMatchingRegexIf("Oversubscribing the CPU", currentNode() == 0);
-    helper.expectGenericFailureMessageIf(currentNode() == 0);
     if (currentNode() == 1)
     {
         helper.expectPinningMessage(false, 1);
@@ -174,7 +170,6 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, HandlesUnknownHardwareOnNonMaster)
     helper.setAffinityOption(threadaffON);
     setupNodes(&helper, {{2, 0}});
     helper.expectWarningMatchingRegexIf("No information on available cores", isMaster() || currentNode() == 1);
-    helper.expectGenericFailureMessageIf(isMaster() || currentNode() == 1);
     if (currentNode() == 0)
     {
         helper.expectPinningMessage(false, 1);
@@ -189,7 +184,6 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsAutomaticallyOnMasterOnly)
     ThreadAffinityTestHelper helper;
     setupNodes(&helper, {{2, 1}});
     helper.expectWarningMatchingRegexIf("Oversubscribing the CPU", isMaster() || currentNode() == 1);
-    helper.expectGenericFailureMessageIf(isMaster() || currentNode() == 1);
     if (currentNode() == 0)
     {
         helper.expectPinningMessage(false, 1);
@@ -204,7 +198,6 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsAutomaticallyOnNonMasterOnly)
     ThreadAffinityTestHelper helper;
     setupNodes(&helper, {{1, 2}});
     helper.expectWarningMatchingRegexIf("Oversubscribing the CPU", currentNode() == 0);
-    helper.expectGenericFailureMessageIf(currentNode() == 0);
     if (currentNode() == 1)
     {
         helper.expectPinningMessage(false, 1);
@@ -222,7 +215,6 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, HandlesInvalidOffsetOnNonMasterOnly
     setupNodes(&helper, {{4, 2}});
     helper.expectWarningMatchingRegex("Applying core pinning offset 2");
     helper.expectWarningMatchingRegexIf("Requested offset too large", isMaster() || currentNode() == 1);
-    helper.expectGenericFailureMessageIf(isMaster() || currentNode() == 1);
     if (currentNode() == 0)
     {
         helper.expectPinningMessage(false, 1);
@@ -239,7 +231,6 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, HandlesInvalidStrideOnNonMasterOnly
     helper.setOffsetAndStride(0, 2);
     setupNodes(&helper, {{4, 2}});
     helper.expectWarningMatchingRegexIf("Requested stride too large", isMaster() || currentNode() == 1);
-    helper.expectGenericFailureMessageIf(isMaster() || currentNode() == 1);
     if (currentNode() == 0)
     {
         helper.expectPinningMessage(true, 2);

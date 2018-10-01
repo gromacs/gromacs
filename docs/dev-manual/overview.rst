@@ -35,8 +35,7 @@ All other content is in the following top-level directories:
   Contains all source code.  See :ref:`dev-source-layout`.
 :file:`tests/`
   Contains build system logic for some high-level tests.  Currently, only the
-  regression test build system logic and cppcheck rules are in this directory,
-  while other tests are under :file:`src/`.
+  regression test build system logic, while other tests are under :file:`src/`.
 
 .. _dev-source-layout:
 
@@ -157,11 +156,8 @@ included at the root level.  All actual code is in subdirectories:
   parts of this code are included in the build.
   See :doc:`build-system` for some explanation about how the code in this
   directory is used.
-:file:`src/contrib/`
-  Contains collection of less well maintained code that may or may
-  not compile.  It is not included in the build.
-:file:`src/contrib/fftw/`
-  As an exception to the above, this folder contains the build system code for
+:file:`src/external/build-fftw/`
+  This folder contains the build system code for
   downloading and building FFTW to be included into :file:`libgromacs`.
 
 When compiling, the include search path is set to :file:`src/`.
@@ -189,6 +185,22 @@ They are installed into a corresponding hierarchy under
 :file:`include/gromacs/` in the installation directory.
 Comments at the top of the header files contain a note about their visibility:
 public (installed), intra-library (can be used from inside the library), or
+intra-module/intra-file. All headers should compile by themselves,
+with installed headers doing so without reference to variables
+defined in ``config.h`` or requiring other headers to be included before it.
+Not installed headers are allowed to include ``config.h``. Cyclic include dependencies
+prevent this, and must be avoided because of this. This is best guaranteed
+by including every header in some source file as the first header,
+even before ``config.h``. This is partly enforced by :doc:`gmxtree`,
+which is run by Jenkins and votes accordingly in Gerrit.
+
+Code inside the library should not unnecessarily include headers. In
+particular, headers should not include other headers if a forward
+declaration of a type is enough for the header. Within the library
+source files, include only headers from other modules that are
+necessary for that file. You can use the public API header if you
+really require everything declared in it.
+
 intra-module/intra-file.
 
 See :doc:`naming` for some common naming patterns for files that can help
@@ -244,8 +256,8 @@ Developer guide
   Contains reStructuredText source files used to build the developer guide.
   The build rules are in :file:`docs/CMakeLists.txt`.
 
-The organization of the developer guide is explained on the :doc:`front page of
-the guide <index>`.
+The organization of the developer guide is explained on the :ref:`front page of
+the guide <dev guide>`.
 
 Doxygen documentation
 ^^^^^^^^^^^^^^^^^^^^^

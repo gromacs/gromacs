@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,8 +59,8 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-real calc_gyro(rvec x[], int gnx, int index[], t_atom atom[], real tm,
-               rvec gvec, rvec d, gmx_bool bQ, gmx_bool bRot, gmx_bool bMOI, matrix trans)
+static real calc_gyro(rvec x[], int gnx, int index[], t_atom atom[], real tm,
+                      rvec gvec, rvec d, gmx_bool bQ, gmx_bool bRot, gmx_bool bMOI, matrix trans)
 {
     int    i, ii, m;
     real   gyro, dx2, m0, Itot;
@@ -108,9 +108,9 @@ real calc_gyro(rvec x[], int gnx, int index[], t_atom atom[], real tm,
     return std::sqrt(gyro/tm);
 }
 
-void calc_gyro_z(rvec x[], matrix box,
-                 int gnx, int index[], t_atom atom[],
-                 int nz, real time, FILE *out)
+static void calc_gyro_z(rvec x[], matrix box,
+                        int gnx, const int index[], t_atom atom[],
+                        int nz, real time, FILE *out)
 {
     static dvec   *inertia = nullptr;
     static double *tm      = nullptr;
@@ -375,7 +375,7 @@ int gmx_gyrate(int argc, char *argv[])
         j++;
     }
     while (read_next_x(oenv, status, &t, x, box));
-    close_trj(status);
+    close_trx(status);
     if (nz == 0)
     {
         gmx_rmpbc_done(gpbc);

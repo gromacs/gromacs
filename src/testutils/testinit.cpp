@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,6 +56,7 @@
 #include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
@@ -111,23 +112,23 @@ class TestProgramContext : public IProgramContext
             dataPath_ = sourceRoot;
         }
 
-        virtual const char *programName() const
+        const char *programName() const override
         {
             return context_.programName();
         }
-        virtual const char *displayName() const
+        const char *displayName() const override
         {
             return context_.displayName();
         }
-        virtual const char *fullBinaryPath() const
+        const char *fullBinaryPath() const override
         {
             return context_.fullBinaryPath();
         }
-        virtual InstallationPrefixInfo installationPrefix() const
+        InstallationPrefixInfo installationPrefix() const override
         {
             return InstallationPrefixInfo(dataPath_.c_str(), true);
         }
-        virtual const char *commandLine() const
+        const char *commandLine() const override
         {
             return context_.commandLine();
         }
@@ -158,7 +159,7 @@ std::unique_ptr<TestProgramContext> g_testContext;
 
 //! \cond internal
 void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
-                   int *argc, char ***argv)
+                   bool usesHardwareDetection, int *argc, char ***argv)
 {
 #ifndef NDEBUG
     gmx_feenableexcept();
@@ -181,7 +182,11 @@ void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
             finalizeForCommandLine();
             std::exit(1);
         }
-        g_testContext.reset(new TestProgramContext(context));
+        if (usesHardwareDetection)
+        {
+            callAddGlobalTestEnvironment();
+        }
+        g_testContext = gmx::compat::make_unique<TestProgramContext>(context);
         setProgramContext(g_testContext.get());
         // Use the default finder that does not respect GMXLIB, since the tests
         // generally can only get confused by a different set of data files.

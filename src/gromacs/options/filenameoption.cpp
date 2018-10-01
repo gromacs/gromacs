@@ -215,8 +215,8 @@ FileNameOptionStorage::FileNameOptionStorage(const FileNameOption  &settings,
     }
     else
     {
-        ConstArrayRef<FileTypeMapping>                 map(c_fileTypeMapping);
-        ConstArrayRef<FileTypeMapping>::const_iterator i;
+        ArrayRef<const FileTypeMapping>                 map(c_fileTypeMapping);
+        ArrayRef<const FileTypeMapping>::const_iterator i;
         for (i = map.begin(); i != map.end(); ++i)
         {
             if (i->optionType == settings.optionType_)
@@ -434,11 +434,11 @@ bool FileNameOptionStorage::isValidType(int fileType) const
     return typeHandler.isValidType(fileType);
 }
 
-ConstArrayRef<int> FileNameOptionStorage::fileTypes() const
+ArrayRef<const int> FileNameOptionStorage::fileTypes() const
 {
     if (fileType_ < 0)
     {
-        return ConstArrayRef<int>();
+        return ArrayRef<const int>();
     }
     const int genericTypeCount = ftp2generic_count(fileType_);
     if (genericTypeCount > 0)
@@ -512,7 +512,7 @@ bool FileNameOptionInfo::isValidType(int fileType) const
     return option().isValidType(fileType);
 }
 
-ConstArrayRef<int> FileNameOptionInfo::fileTypes() const
+ArrayRef<const int> FileNameOptionInfo::fileTypes() const
 {
     return option().fileTypes();
 }

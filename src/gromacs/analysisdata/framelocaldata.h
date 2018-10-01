@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -134,9 +134,8 @@ class AnalysisDataFrameLocalDataHandle
                        "Invalid data set index");
             const int firstIndex = (*dataSetIndices_)[dataSet];
             const int lastIndex  = (*dataSetIndices_)[dataSet + 1];
-            typename ValueArray::iterator begin = values_->begin() + firstIndex;
-            typename ValueArray::iterator end   = values_->begin() + lastIndex;
-            return DataSetHandle(arrayRefFromVector<ValueType>(begin, end));
+            return DataSetHandle(makeArrayRef(*values_).
+                                     subArray(firstIndex, lastIndex-firstIndex));
         }
         //! Accesses a single value in the frame.
         ValueType &value(int dataSet, int column)

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,6 @@
 
 #include "groupcoord.h"
 
-#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
@@ -54,24 +53,23 @@
  * anrs_loc[0..nr_loc]. The indices are saved in coll_ind[] for later reduction
  * in communicate_group_positions()
  */
-void dd_make_local_group_indices(gmx_ga2la_t     *ga2la,
-                                 const int        nr,         /* IN:  Total number of atoms in the group */
-                                 int              anrs[],     /* IN:  Global atom numbers of the groups atoms */
-                                 int             *nr_loc,     /* OUT: Number of group atoms found locally */
-                                 int             *anrs_loc[], /* OUT: Local atom numbers of the group  */
-                                 int             *nalloc_loc, /* IN+OUT: Allocation size of anrs_loc */
-                                 int              coll_ind[]) /* OUT (opt): Where is this position found in the collective array? */
+void
+dd_make_local_group_indices(const gmx_ga2la_t *ga2la,
+                            const int          nr,         /* IN:  Total number of atoms in the group */
+                            int                anrs[],     /* IN:  Global atom numbers of the groups atoms */
+                            int               *nr_loc,     /* OUT: Number of group atoms found locally */
+                            int               *anrs_loc[], /* OUT: Local atom numbers of the group  */
+                            int               *nalloc_loc, /* IN+OUT: Allocation size of anrs_loc */
+                            int                coll_ind[]) /* OUT (opt): Where is this position found in the collective array? */
 {
-    int  i, ii;
-    int  localnr;
-
+    GMX_ASSERT(ga2la, "We need a valid ga2la object");
 
     /* Loop over all the atom indices of the group to check
      * which ones are on the local node */
-    localnr = 0;
-    for (i = 0; i < nr; i++)
+    int localnr = 0;
+    for (int i = 0; i < nr; i++)
     {
-        if (ga2la_get_home(ga2la, anrs[i], &ii))
+        if (const int *ii = ga2la->findHome(anrs[i]))
         {
             /* The atom with this index is a home atom */
             if (localnr >= *nalloc_loc) /* Check whether memory suffices */
@@ -82,7 +80,7 @@ void dd_make_local_group_indices(gmx_ga2la_t     *ga2la,
                 srenew(*anrs_loc, *nalloc_loc);
             }
             /* Save the atoms index in the local atom numbers array */
-            (*anrs_loc)[localnr] = ii;
+            (*anrs_loc)[localnr] = *ii;
 
             if (coll_ind != nullptr)
             {
@@ -103,12 +101,12 @@ void dd_make_local_group_indices(gmx_ga2la_t     *ga2la,
 
 
 static void get_shifts_group(
-        int     npbcdim,
-        matrix  box,
-        rvec   *xcoll,     /* IN:  Collective set of positions [0..nr] */
-        int     nr,        /* IN:  Total number of atoms in the group */
-        rvec   *xcoll_old, /* IN:  Positions from the last time step [0...nr] */
-        ivec   *shifts)    /* OUT: Shifts for xcoll */
+        int           npbcdim,
+        const matrix  box,
+        rvec         *xcoll,     /* IN:  Collective set of positions [0..nr] */
+        int           nr,        /* IN:  Total number of atoms in the group */
+        rvec         *xcoll_old, /* IN:  Positions from the last time step [0...nr] */
+        ivec         *shifts)    /* OUT: Shifts for xcoll */
 {
     int  i, m, d;
     rvec dx;
@@ -153,10 +151,10 @@ static void get_shifts_group(
 
 
 static void shift_positions_group(
-        matrix  box,
-        rvec    x[],     /* The positions [0..nr] */
-        ivec   *is,      /* The shifts [0..nr] */
-        int     nr)      /* The number of positions and shifts */
+        const matrix  box,
+        rvec          x[],     /* The positions [0..nr] */
+        ivec         *is,      /* The shifts [0..nr] */
+        int           nr)      /* The number of positions and shifts */
 {
     int      i, tx, ty, tz;
 
@@ -195,19 +193,19 @@ static void shift_positions_group(
  * The atom indices are retrieved from anrs_loc[0..nr_loc]
  * Note that coll_ind[i] = i is needed in the serial case */
 extern void communicate_group_positions(
-        t_commrec     *cr,           /* Pointer to MPI communication data */
-        rvec          *xcoll,        /* Collective array of positions */
-        ivec          *shifts,       /* Collective array of shifts for xcoll (can be NULL) */
-        ivec          *extra_shifts, /* (optional) Extra shifts since last time step */
-        const gmx_bool bNS,          /* (optional) NS step, the shifts have changed */
-        rvec          *x_loc,        /* Local positions on this node */
-        const int      nr,           /* Total number of atoms in the group */
-        const int      nr_loc,       /* Local number of atoms in the group */
-        int           *anrs_loc,     /* Local atom numbers */
-        int           *coll_ind,     /* Collective index */
-        rvec          *xcoll_old,    /* (optional) Positions from the last time step,
-                                        used to make group whole */
-        matrix         box)          /* (optional) The box */
+        const t_commrec *cr,           /* Pointer to MPI communication data */
+        rvec            *xcoll,        /* Collective array of positions */
+        ivec            *shifts,       /* Collective array of shifts for xcoll (can be NULL) */
+        ivec            *extra_shifts, /* (optional) Extra shifts since last time step */
+        const gmx_bool   bNS,          /* (optional) NS step, the shifts have changed */
+        const rvec      *x_loc,        /* Local positions on this node */
+        const int        nr,           /* Total number of atoms in the group */
+        const int        nr_loc,       /* Local number of atoms in the group */
+        const int       *anrs_loc,     /* Local atom numbers */
+        const int       *coll_ind,     /* Collective index */
+        rvec            *xcoll_old,    /* (optional) Positions from the last time step,
+                                          used to make group whole */
+        const matrix     box)          /* (optional) The box */
 {
     int i;
 
@@ -334,12 +332,12 @@ extern void get_center(rvec x[], real weight[], const int nr, rvec rcenter)
 /* Get the center from local positions that already have the correct
  * PBC representation */
 extern void get_center_comm(
-        t_commrec *cr,
-        rvec       x_loc[],      /* Local positions */
-        real       weight_loc[], /* Local masses or other weights */
-        int        nr_loc,       /* Local number of atoms */
-        int        nr_group,     /* Total number of atoms of the group */
-        rvec       center)       /* Weighted center */
+        const t_commrec *cr,
+        rvec             x_loc[],      /* Local positions */
+        real             weight_loc[], /* Local masses or other weights */
+        int              nr_loc,       /* Local number of atoms */
+        int              nr_group,     /* Total number of atoms of the group */
+        rvec             center)       /* Weighted center */
 {
     double weight_sum, denom;
     dvec   dsumvec;

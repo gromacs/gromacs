@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,13 +72,13 @@ class AbstractOptionSection
         //! \cond libapi
         //! Initializes option properties with the given name.
         explicit AbstractOptionSection(const char *name) : name_(name) {}
-
+        virtual ~AbstractOptionSection() {}
         /*! \brief
          * Creates a storage object corresponding to this section.
          *
          * Similar to AbstractOption::createStorage().
          */
-        virtual IOptionSectionStorage *createStorage() const = 0;
+        virtual std::unique_ptr<IOptionSectionStorage> createStorage() const = 0;
         //! \endcond
 
     private:
@@ -100,7 +100,7 @@ class AbstractOptionSectionHandle : public IOptionsContainerWithSections
     public:
         // From IOptionsContainer
         //! \copydoc IOptionsContainer::addGroup()
-        virtual IOptionsContainer &addGroup();
+        IOptionsContainer &addGroup() override;
 
     protected:
         //! \cond libapi
@@ -131,10 +131,10 @@ class AbstractOptionSectionHandle : public IOptionsContainerWithSections
 
     private:
         // From IOptionsContainerWithSections
-        virtual internal::OptionSectionImpl *
-        addSectionImpl(const AbstractOptionSection &section);
+        internal::OptionSectionImpl *
+        addSectionImpl(const AbstractOptionSection &section) override;
         // From IOptionsContainer
-        virtual OptionInfo *addOptionImpl(const AbstractOption &settings);
+        OptionInfo *addOptionImpl(const AbstractOption &settings) override;
 
         /*! \brief
          * Implementation helper for the template method.

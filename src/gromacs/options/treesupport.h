@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,6 +65,17 @@ void assignOptionsFromKeyValueTree(Options                   *options,
                                    const KeyValueTreeObject  &tree,
                                    IKeyValueTreeErrorHandler *errorHandler);
 /*! \libinternal \brief
+ * Checks that a given KeyValueTreeObject can be assigned to given Options.
+ *
+ * Throws an exception if `tree` contains any values that are not recognized by
+ * `options`.  Does not verify the type of the values, only that an option with
+ * the correct names exists.
+ *
+ * \ingroup module_options
+ */
+void checkForUnknownOptionsInKeyValueTree(const KeyValueTreeObject &tree,
+                                          const Options            &options);
+/*! \libinternal \brief
  * Adjusts a KeyValueTreeObject to the structure of given Options.
  *
  * Assumes that all values in the input KeyValueTreeObject are valid values for
@@ -74,6 +85,11 @@ void assignOptionsFromKeyValueTree(Options                   *options,
  * accepts those).  For any option that does not have a corresponding value in
  * the input, the output has it with a default value (if one exists for the
  * option).
+ *
+ * Any values in `tree` that do not have matching options are not present in
+ * the output.  If this is not desirable, call
+ * checkForUnknownOptionsInKeyValueTree() before calling this function to
+ * ensure that no such values are present.
  *
  * Does not currently work for option sections in an array.
  *

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,7 +63,7 @@
 
 #include "poscalc.h"
 
-#include <string.h>
+#include <cstring>
 
 #include <algorithm>
 #include <vector>
@@ -127,7 +127,7 @@ class PositionCalculationCollection::Impl
          * there are also other thread-unsafe constructs here), so a temporary
          * array is used to avoid repeated memory allocation.
          */
-        ConstArrayRef<int> getFrameIndices(int size, int index[])
+        ArrayRef<const int> getFrameIndices(int size, int index[])
         {
             if (mapToFrameAtoms_.empty())
             {
@@ -737,7 +737,7 @@ static void
 set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, bool bBase)
 {
     const gmx_mtop_t *top = pc->coll->top_;
-    gmx_ana_index_make_block(&pc->b, top, g, pc->itype, pc->flags & POS_COMPLWHOLE);
+    gmx_ana_index_make_block(&pc->b, top, g, pc->itype, (pc->flags & POS_COMPLWHOLE) != 0);
     /* Set the type to POS_ATOM if the calculation in fact is such. */
     if (pc->b.nr == pc->b.nra)
     {
@@ -1218,7 +1218,7 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
 {
     int  i, bi, bj;
 
-    if (pc->bEval == true && !(pc->flags & POS_MASKONLY))
+    if (pc->bEval && !(pc->flags & POS_MASKONLY))
     {
         return;
     }
@@ -1330,9 +1330,9 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
                 clear_rvec(p->f[i]);
             }
         }
-        gmx::ConstArrayRef<int> index = pc->coll->getFrameIndices(pc->b.nra, pc->b.a);
-        const gmx_mtop_t       *top   = pc->coll->top_;
-        const bool              bMass = pc->flags & POS_MASS;
+        gmx::ArrayRef<const int> index = pc->coll->getFrameIndices(pc->b.nra, pc->b.a);
+        const gmx_mtop_t        *top   = pc->coll->top_;
+        const bool               bMass = (pc->flags & POS_MASS) != 0;
         switch (pc->type)
         {
             case POS_ATOM:

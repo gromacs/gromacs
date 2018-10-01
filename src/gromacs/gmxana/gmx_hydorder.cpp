@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,7 +61,7 @@
 
 static void find_tetra_order_grid(t_topology top, int ePBC,
                                   int natoms, matrix box,
-                                  rvec x[], int maxidx, int index[],
+                                  rvec x[], int maxidx, const int index[],
                                   real *sgmean, real *skmean,
                                   int nslicex, int nslicey, int nslicez,
                                   real ***sggrid, real ***skgrid)
@@ -366,7 +366,7 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
 
     }
     while (read_next_x(oenv, status, &t, x, box));
-    close_trj(status);
+    close_trx(status);
 
     sfree(grpname);
     sfree(index);
@@ -446,10 +446,10 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
     sfree(sg_4d);
 }
 
-static void writesurftoxpms(real ***surf, int tblocks, int xbins, int ybins, real bw, char **outfiles, int maplevels )
+static void writesurftoxpms(real ***surf, int tblocks, int xbins, int ybins, real bw, gmx::ArrayRef<const std::string> outfiles, int maplevels )
 {
 
-    char   numbuf[8];
+    char   numbuf[STRLEN];
     int    n, i, j;
     real **profile1, **profile2;
     real   max1, max2, min1, min2, *xticks, *yticks;
@@ -475,8 +475,8 @@ static void writesurftoxpms(real ***surf, int tblocks, int xbins, int ybins, rea
         yticks[j] += bw;
     }
 
-    xpmfile1 = gmx_ffopen(outfiles[0], "w");
-    xpmfile2 = gmx_ffopen(outfiles[1], "w");
+    xpmfile1 = gmx_ffopen(outfiles[0].c_str(), "w");
+    xpmfile2 = gmx_ffopen(outfiles[1].c_str(), "w");
 
     max1 = max2 = 0.0;
     min1 = min2 = 1000.00;
@@ -527,13 +527,14 @@ static void writesurftoxpms(real ***surf, int tblocks, int xbins, int ybins, rea
 }
 
 
-static void writeraw(real ***surf, int tblocks, int xbins, int ybins, char **fnms)
+static void writeraw(real ***surf, int tblocks, int xbins, int ybins,
+                     gmx::ArrayRef<const std::string> fnms)
 {
     FILE *raw1, *raw2;
     int   i, j, n;
 
-    raw1 = gmx_ffopen(fnms[0], "w");
-    raw2 = gmx_ffopen(fnms[1], "w");
+    raw1 = gmx_ffopen(fnms[0].c_str(), "w");
+    raw2 = gmx_ffopen(fnms[1].c_str(), "w");
     fprintf(raw1, "#Legend\n#TBlock\n#Xbin Ybin Z t\n");
     fprintf(raw2, "#Legend\n#TBlock\n#Xbin Ybin Z t\n");
     for (n = 0; n < tblocks; n++)
@@ -562,7 +563,7 @@ int gmx_hydorder(int argc, char *argv[])
         "[THISMODULE] computes the tetrahedrality order parameters around a ",
         "given atom. Both angle an distance order parameters are calculated. See",
         "P.-L. Chau and A.J. Hardwick, Mol. Phys., 93, (1998), 511-518.",
-        "for more details.[PAR]"
+        "for more details.[PAR]",
         "[THISMODULE] calculates the order parameter in a 3d-mesh in the box, and",
         "with 2 phases in the box gives the user the option to define a 2D interface in time",
         "separating the faces by specifying parameters [TT]-sgang1[tt] and",
@@ -608,8 +609,6 @@ int gmx_hydorder(int argc, char *argv[])
 
     /*Filenames*/
     const char       *ndxfnm, *tpsfnm, *trxfnm;
-    char            **spectra, **intfn, **raw;
-    int               nfspect, nfxpm, nfraw;
     gmx_output_env_t *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
@@ -663,30 +662,30 @@ int gmx_hydorder(int argc, char *argv[])
 
     /* tetraheder order parameter */
     /* If either of the options is set we compute both */
-    nfxpm = opt2fns(&intfn, "-o", NFILE, fnm);
-    if (nfxpm != 2)
+    gmx::ArrayRef<const std::string> intfn = opt2fns("-o", NFILE, fnm);
+    if (intfn.size() != 2)
     {
-        gmx_fatal(FARGS, "No or not correct number (2) of output-files: %d", nfxpm);
+        gmx_fatal(FARGS, "No or not correct number (2) of output-files: %td", intfn.size());
     }
     calc_tetra_order_interface(ndxfnm, tpsfnm, trxfnm, binwidth, nsttblock, &frames, &xslices, &yslices, sg1, sg2, &intfpos, oenv);
     writesurftoxpms(intfpos, frames, xslices, yslices, binwidth, intfn, nlevels);
 
     if (bFourier)
     {
-        nfspect = opt2fns(&spectra, "-Spect", NFILE, fnm);
-        if (nfspect != 2)
+        gmx::ArrayRef<const std::string> spectra = opt2fns("-Spect", NFILE, fnm);
+        if (spectra.size() != 2)
         {
-            gmx_fatal(FARGS, "No or not correct number (2) of output-files: %d", nfspect);
+            gmx_fatal(FARGS, "No or not correct number (2) of output-files: %td", spectra.size());
         }
         powerspectavg(intfpos, frames, xslices, yslices, spectra);
     }
 
     if (bRawOut)
     {
-        nfraw = opt2fns(&raw, "-or", NFILE, fnm);
-        if (nfraw != 2)
+        gmx::ArrayRef<const std::string> raw = opt2fns("-or", NFILE, fnm);
+        if (raw.size() != 2)
         {
-            gmx_fatal(FARGS, "No or not correct number (2) of output-files: %d", nfraw);
+            gmx_fatal(FARGS, "No or not correct number (2) of output-files: %td", raw.size());
         }
         writeraw(intfpos, frames, xslices, yslices, raw);
     }

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,7 +54,6 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/utility/exceptions.h"
@@ -95,18 +94,6 @@ int ePBC2npbcdim(int ePBC)
     }
 
     return npbcdim;
-}
-
-int inputrec2nboundeddim(const t_inputrec *ir)
-{
-    if (ir->nwall == 2 && ir->ePBC == epbcXY)
-    {
-        return 3;
-    }
-    else
-    {
-        return ePBC2npbcdim(ir->ePBC);
-    }
 }
 
 void dump_pbc(FILE *fp, t_pbc *pbc)
@@ -176,8 +163,8 @@ void matrix_convert(matrix box, const rvec vec, const rvec angleInDegrees)
     box[ZZ][XX] = vec[ZZ]*cos(angle[YY]);
     box[ZZ][YY] = vec[ZZ]
         *(cos(angle[XX])-cos(angle[YY])*cos(angle[ZZ]))/sin(angle[ZZ]);
-    box[ZZ][ZZ] = sqrt(gmx::square(vec[ZZ])
-                       -box[ZZ][XX]*box[ZZ][XX]-box[ZZ][YY]*box[ZZ][YY]);
+    box[ZZ][ZZ] = std::sqrt(gmx::square(vec[ZZ])
+                            -box[ZZ][XX]*box[ZZ][XX]-box[ZZ][YY]*box[ZZ][YY]);
 }
 
 real max_cutoff2(int ePBC, const matrix box)
@@ -311,7 +298,7 @@ gmx_bool correct_box(FILE *fplog, int step, tensor box, t_graph *graph)
     zx = correct_box_elem(fplog, step, box, ZZ, XX);
     yx = correct_box_elem(fplog, step, box, YY, XX);
 
-    bCorrected = (zy || zx || yx);
+    bCorrected = ((zy != 0) || (zx != 0) || (yx != 0));
 
     if (bCorrected && graph)
     {
@@ -325,29 +312,6 @@ gmx_bool correct_box(FILE *fplog, int step, tensor box, t_graph *graph)
     }
 
     return bCorrected;
-}
-
-int ndof_com(t_inputrec *ir)
-{
-    int n = 0;
-
-    switch (ir->ePBC)
-    {
-        case epbcXYZ:
-        case epbcNONE:
-            n = 3;
-            break;
-        case epbcXY:
-            n = (ir->nwall == 0 ? 3 : 2);
-            break;
-        case epbcSCREW:
-            n = 1;
-            break;
-        default:
-            gmx_incons("Unknown pbc in calc_nrdf");
-    }
-
-    return n;
 }
 
 //! Do the real arithmetic for filling the pbc struct
@@ -833,7 +797,6 @@ void pbc_dx(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
             break;
         default:
             gmx_fatal(FARGS, "Internal error in pbc_dx, set_pbc has not been called");
-            break;
     }
 }
 
@@ -1098,7 +1061,6 @@ int pbc_dx_aiuc(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
             break;
         default:
             gmx_fatal(FARGS, "Internal error in pbc_dx_aiuc, set_pbc_dd or set_pbc has not been called");
-            break;
     }
 
     is = IVEC2IS(ishift);
@@ -1230,7 +1192,6 @@ void pbc_dx_d(const t_pbc *pbc, const dvec x1, const dvec x2, dvec dx)
             break;
         default:
             gmx_fatal(FARGS, "Internal error in pbc_dx, set_pbc has not been called");
-            break;
     }
 }
 
@@ -1449,9 +1410,9 @@ int *compact_unitcell_edges()
     return edge;
 }
 
-void put_atoms_in_box(int ePBC, const matrix box, int natoms, rvec x[])
+void put_atoms_in_box(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x)
 {
-    int npbcdim, i, m, d;
+    int npbcdim, m, d;
 
     if (ePBC == epbcSCREW)
     {
@@ -1469,7 +1430,7 @@ void put_atoms_in_box(int ePBC, const matrix box, int natoms, rvec x[])
 
     if (TRICLINIC(box))
     {
-        for (i = 0; (i < natoms); i++)
+        for (gmx::index i = 0; (i < x.size()); ++i)
         {
             for (m = npbcdim-1; m >= 0; m--)
             {
@@ -1492,7 +1453,7 @@ void put_atoms_in_box(int ePBC, const matrix box, int natoms, rvec x[])
     }
     else
     {
-        for (i = 0; i < natoms; i++)
+        for (gmx::index i = 0; (i < x.size()); ++i)
         {
             for (d = 0; d < npbcdim; d++)
             {
@@ -1510,11 +1471,11 @@ void put_atoms_in_box(int ePBC, const matrix box, int natoms, rvec x[])
 }
 
 void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box,
-                                     int natoms, rvec x[])
+                                     gmx::ArrayRef<gmx::RVec> x)
 {
     rvec   box_center, shift_center;
     real   shm01, shm02, shm12, shift;
-    int    i, m, d;
+    int    m, d;
 
     calc_box_center(ecenter, box, box_center);
 
@@ -1536,7 +1497,7 @@ void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box,
     shift_center[1] = shm12*shift_center[2];
     shift_center[2] = 0;
 
-    for (i = 0; (i < natoms); i++)
+    for (gmx::index i = 0; (i < x.size()); ++i)
     {
         for (m = DIM-1; m >= 0; m--)
         {
@@ -1568,11 +1529,10 @@ void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box,
 }
 
 void put_atoms_in_compact_unitcell(int ePBC, int ecenter, const matrix box,
-                                   int natoms, rvec x[])
+                                   gmx::ArrayRef<gmx::RVec> x)
 {
     t_pbc pbc;
     rvec  box_center, dx;
-    int   i;
 
     set_pbc(&pbc, ePBC, box);
 
@@ -1582,7 +1542,7 @@ void put_atoms_in_compact_unitcell(int ePBC, int ecenter, const matrix box,
     }
 
     calc_box_center(ecenter, box, box_center);
-    for (i = 0; i < natoms; i++)
+    for (gmx::index i = 0; (i < x.size()); ++i)
     {
         pbc_dx(&pbc, x[i], box_center, dx);
         rvec_add(box_center, dx, x[i]);

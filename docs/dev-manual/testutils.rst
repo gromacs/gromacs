@@ -120,6 +120,8 @@ that are also used in ``src/gromacs/trajectoryanalysis/tests/``.
 These cases are handled using CMake object libraries that are linked to all the
 test binaries that need them.
 
+.. _gmx-make-new-tests:
+
 Getting started with new tests
 ------------------------------
 

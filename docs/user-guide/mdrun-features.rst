@@ -18,11 +18,18 @@ subsets of the molecular system (see :ref:`gmx convert-tpr` and
 :ref:`gmx trjconv`). It is easier to do a correct "single-point" energy
 evaluation with this feature than a 0-step simulation.
 
-Neighbor searching is normally performed for every frame in the
-trajectory, since :ref:`gmx mdrun` can no longer assume anything about how the
-structures were generated. If :mdp:`nstlist` is zero, then only one
-neighbor list will be constructed. Naturally, no update or constraint
+Neighbor searching is performed for every frame in the trajectory
+independently of the value in :mdp:`nstlist`, since
+:ref:`gmx mdrun` can no longer assume anything about how the
+structures were generated. Naturally, no update or constraint
 algorithms are ever used.
+
+The rerun feature cannot, in general, compute many of the quantities
+reported during full simulations. It does only take positions as input
+(ignoring potentially present velocities), and does only report potential
+energies, volume and density, dH/dl terms, and restraint information.
+It does notably not report kinetic, total or conserved energy, temperature,
+virial or pressure.
 
 Running a simulation in reproducible mode
 -----------------------------------------
@@ -48,7 +55,7 @@ Running a related series of lambda points for a free-energy
 computation is also convenient to do this way.
 
 This feature requires
-:ref:`configuring GROMACS with an external MPI library <mpi-support>`
+:ref:`configuring |Gromacs| with an external MPI library <mpi-support>`
 so that the set of
 simulations can communicate. The ``n`` simulations within the set can
 use internal MPI parallelism also, so that ``mpirun -np x mdrun_mpi``
@@ -71,23 +78,8 @@ including ``-deffnm``.
    most convenient to use. ``gmx mdrun -table`` for the group cutoff-scheme
    works only in this mode.
 
-``-multi``
-   You must organize that the filenames for each simulation in a set of
-   ``n`` simulations have an integer ``0`` through ``n-1`` appended to
-   the filename (e.g. ``topol2.tpr``), and run with
-   ``mpirun -np x gmx mdrun -multi n -s input``. The order of simulations
-   within the set is determined by the integer appended.
-
 Examples running multi-simulations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-::
-
-    mpirun -np 32 gmx_mpi mdrun -multi
-
-Starts a multi-simulation on 32 ranks with as many simulations ``n`` as
-there are files named ``topol*.tpr`` for integers ``0`` to ``n-1``. Other
-input and output files are suffixed similarly.
 
 ::
 
@@ -98,7 +90,7 @@ and output files are found in directories ``a``, ``b``, ``c``, and ``d``.
 
 ::
 
-    mpirun -np 32 gmx_mpi mdrun -multidir a b c d -gpu_id 0000000011111111
+    mpirun -np 32 gmx_mpi mdrun -multidir a b c d -gputasks 0000000011111111
 
 Starts the same multi-simulation as before. On a machine with two
 physical nodes and two GPUs per node, there will be 16 MPI ranks per
@@ -113,21 +105,21 @@ Running replica-exchange simulations
 
 When running a multi-simulation, using ``gmx mdrun -replex n`` means that a
 replica exchange is attempted every given number of steps. The number
-of replicas is set with the ``-multi`` or ``-multidir`` option, described
+of replicas is set with ``-multidir`` option, described
 above.  All run input files should use a different value for the
 coupling parameter (e.g. temperature), which ascends over the set of
 input files. The random seed for replica exchange is set with
 ``-reseed``. After every exchange, the velocities are scaled and
 neighbor searching is performed. See the Reference Manual for more
-details on how replica exchange functions in GROMACS.
+details on how replica exchange functions in |Gromacs|.
 
 Controlling the length of the simulation
 ----------------------------------------
 
 Normally, the length of an MD simulation is best managed through the
-[.mdp] option [nsteps](#nsteps), however there are situations where
-more control is useful. `gmx mdrun -nsteps 100` overrides the [.mdp] file
-and executes 100 steps. `gmx mdrun -maxh 2.5` will terminate the
+:ref:`mdp` option :mdp:`nsteps`, however there are situations where
+more control is useful. :samp:`gmx mdrun -nsteps 100` overrides the :ref:`mdp`
+file and executes 100 steps. :samp:`gmx mdrun -maxh 2.5` will terminate the
 simulation shortly before 2.5 hours elapse, which can be useful when
 running under cluster queues (as long as the queuing system does not
 ever suspend the simulation).
@@ -136,13 +128,16 @@ Running a membrane protein embedding simulation
 -----------------------------------------------
 
 This is a module to help embed a membrane protein into an equilibrated
-lipid bilayer at a position and orientation specified by the user. 
+lipid bilayer at a position and orientation specified by the user.
 
-This method was initially described as a ProtSqueeze technique 
-(Yesylevskyy S.O., J Chem Inf Model 47(5) (2007) 1986-94) and 
-later implemented in GROMACS as g_membed tool (Wolf et al, J Comp Chem 31 (2010) 2169-2174). 
-Currently the functionality of g_membed is available in mdrun if 
+This method was initially described as a ProtSqueeze technique
+(`Yesylevskyy S.O., J Chem Inf Model 47(5) (2007) 1986-94`_) and
+later implemented in |Gromacs| as g_membed tool (`Wolf et al, J Comp Chem 31 (2010) 2169-2174`_).
+Currently the functionality of g_membed is available in mdrun if
 ``-membed`` option is specified (see below).
+
+.. _Yesylevskyy S.O., J Chem Inf Model 47(5) (2007) 1986-94: https://dx.doi.org/10.1021/ci600553y
+.. _Wolf et al, J Comp Chem 31 (2010) 2169-2174: http://onlinelibrary.wiley.com/doi/10.1002/jcc.21507/full
 
 The main advantage is that it is possible to use very complex lipid bilayers
 with a number of different components that have been relaxed for a

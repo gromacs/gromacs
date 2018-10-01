@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,18 +39,19 @@
 
 #include "nsgrid.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
 
 #include <algorithm>
 
+#include "gromacs/domdec/dlb.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -60,7 +61,7 @@
  *         Grid Routines
  ***********************************/
 
-const char *range_warn =
+static const char *range_warn =
     "Explanation: During neighborsearching, we assign each particle to a grid\n"
     "based on its coordinates. If your system contains collisions or parameter\n"
     "errors that give particles very high velocities you might end up with some\n"
@@ -96,9 +97,9 @@ static void calc_x_av_stddev(int n, rvec *x, rvec av, rvec stddev)
     }
 }
 
-void get_nsgrid_boundaries_vac(real av, real stddev,
-                               real *bound0, real *bound1,
-                               real *bdens0, real *bdens1)
+static void get_nsgrid_boundaries_vac(real av, real stddev,
+                                      real *bound0, real *bound1,
+                                      real *bdens0, real *bdens1)
 {
     /* Set the grid to 2 times the standard deviation of
      * the charge group centers in both directions.
@@ -237,7 +238,7 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
         grid->cell_offset[i] = izones_x0[i];
         size                 = izones_size[i];
 
-        bDD = dd && (dd->nc[i] > 1);
+        bDD = (dd != nullptr) && (dd->nc[i] > 1);
         if (!bDD)
         {
             bDDRect = FALSE;
@@ -247,7 +248,7 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
             /* With DD grid cell jumps only the first decomposition
              * direction has uniform DD cell boundaries.
              */
-            bDDRect = !(ddbox->tric_dir[i] ||
+            bDDRect = !((ddbox->tric_dir[i] != 0) ||
                         (dd_dlb_is_on(dd) && i != dd->dim[0]));
 
             radd = rlist;
@@ -320,7 +321,7 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
              * we will use the normal grid ns that checks all cells
              * that are within cut-off distance of the i-particle.
              */
-            grid->n[i] = (int)(size*inv_r_ideal + 0.5);
+            grid->n[i] = gmx::roundToInt(size*inv_r_ideal);
             if (grid->n[i] < 2)
             {
                 grid->n[i] = 2;
@@ -335,13 +336,13 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
              * We can then beforehand exclude certain ns grid cells
              * for non-home i-particles.
              */
-            grid->ncpddc[i] = (int)(izones_size[i]*inv_r_ideal + 0.5);
+            grid->ncpddc[i] = gmx::roundToInt(izones_size[i]*inv_r_ideal);
             if (grid->ncpddc[i] < 2)
             {
                 grid->ncpddc[i] = 2;
             }
             grid->cell_size[i] = izones_size[i]/grid->ncpddc[i];
-            grid->n[i]         = grid->ncpddc[i] + (int)(radd/grid->cell_size[i]) + 1;
+            grid->n[i]         = grid->ncpddc[i] + static_cast<int>(radd/grid->cell_size[i]) + 1;
         }
         if (debug)
         {
@@ -408,6 +409,10 @@ t_grid *init_grid(FILE *fplog, t_forcerec *fr)
 
 void done_grid(t_grid *grid)
 {
+    if (grid == nullptr)
+    {
+        return;
+    }
     grid->nr      = 0;
     clear_ivec(grid->n);
     grid->ncells  = 0;
@@ -425,6 +430,7 @@ void done_grid(t_grid *grid)
     {
         fprintf(debug, "Successfully freed memory for grid pointers.");
     }
+    sfree(grid);
 }
 
 int xyz2ci_(int nry, int nrz, int x, int y, int z)
@@ -448,7 +454,7 @@ void ci2xyz(t_grid *grid, int i, int *x, int *y, int *z)
     *z  = ci;
 }
 
-static int ci_not_used(ivec n)
+static int ci_not_used(const ivec n)
 {
     /* Return an improbable value */
     return xyz2ci(n[YY], n[ZZ], 3*n[XX], 3*n[YY], 3*n[ZZ]);
@@ -721,7 +727,7 @@ void fill_grid(gmx_domdec_zones_t *dd_zones,
             for (d = 0; d < DIM; d++)
             {
                 shift0[d] = dd_zones->shift[zone][d];
-                useall[d] = (shift0[d] == 0 || d >= grid->npbcdim);
+                useall[d] = static_cast<int>(shift0[d] == 0 || d >= grid->npbcdim);
                 /* Check if we need to do normal or optimized grid assignments.
                  * Normal is required for dims without DD or triclinic dims.
                  * DD edge cell on dims without pbc will be automatically

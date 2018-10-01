@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,7 +68,7 @@ void check_mcover(real mcover)
     {
         gmx_fatal(FARGS, "mcover should be -1 or (0,1]");
     }
-    else if ((mcover < 0)&(mcover != -1))
+    else if ((mcover < 0) && (mcover != -1))
     {
         gmx_fatal(FARGS, "mcover should be -1 or (0,1]");
     }
@@ -95,7 +95,6 @@ void normalize_probability(int n, double *a)
 gmx_neutron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const char *datfn)
 {
     /* read nsfactor.dat */
-    FILE    *fp;
     char     line[STRLEN];
     int      nralloc = 10;
     int      n, p;
@@ -104,7 +103,7 @@ gmx_neutron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const ch
     double   slength;
     gmx_neutron_atomic_structurefactors_t   *gnsf;
 
-    fp      = libopen(datfn);
+    gmx::FilePtr fp = gmx::openLibraryFile(datfn);
     line_no = 0;
     /* allocate memory for structure */
     snew(gnsf, nralloc);
@@ -115,7 +114,7 @@ gmx_neutron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const ch
 
     gnsf->nratoms = line_no;
 
-    while (get_a_line(fp, line, STRLEN))
+    while (get_a_line(fp.get(), line, STRLEN))
     {
         i = line_no;
         if (sscanf(line, "%s %d %d %lf", atomnm, &p, &n, &slength) == 4)
@@ -145,8 +144,6 @@ gmx_neutron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const ch
     srenew(gnsf->p, gnsf->nratoms);
     srenew(gnsf->n, gnsf->nratoms);
     srenew(gnsf->slength, gnsf->nratoms);
-
-    fclose(fp);
 
     return gnsf;
 }
@@ -190,16 +187,16 @@ gmx_sans_t *gmx_sans_init (const t_topology *top, gmx_neutron_atomic_structurefa
 }
 
 gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
-        gmx_sans_t  *gsans,
-        rvec        *x,
-        matrix       box,
-        int         *index,
-        int          isize,
-        double       binwidth,
-        gmx_bool     bMC,
-        gmx_bool     bNORM,
-        real         mcover,
-        unsigned int seed)
+        gmx_sans_t        *gsans,
+        rvec              *x,
+        matrix             box,
+        const int         *index,
+        int                isize,
+        double             binwidth,
+        gmx_bool           bMC,
+        gmx_bool           bNORM,
+        real               mcover,
+        unsigned int       seed)
 {
     gmx_radial_distribution_histogram_t    *pr = nullptr;
     rvec                                    dist;
@@ -211,7 +208,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
     int                                     nthreads;
     gmx::DefaultRandomEngine               *trng = nullptr;
 #endif
-    gmx_int64_t                             mc  = 0, mc_max;
+    int64_t                                 mc  = 0, mc_max;
     gmx::DefaultRandomEngine                rng(seed);
 
     /* allocate memory for pr */
@@ -237,11 +234,11 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
         /* Special case for setting automaticaly number of mc iterations to 1% of total number of direct iterations */
         if (mcover == -1)
         {
-            mc_max = static_cast<gmx_int64_t>(std::floor(0.5*0.01*isize*(isize-1)));
+            mc_max = static_cast<int64_t>(std::floor(0.5*0.01*isize*(isize-1)));
         }
         else
         {
-            mc_max = static_cast<gmx_int64_t>(std::floor(0.5*mcover*isize*(isize-1)));
+            mc_max = static_cast<int64_t>(std::floor(0.5*mcover*isize*(isize-1)));
         }
 #if GMX_OPENMP
         nthreads = gmx_omp_get_max_threads();

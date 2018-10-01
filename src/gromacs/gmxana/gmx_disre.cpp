@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,7 +60,6 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdrun.h"
-#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -81,8 +80,8 @@ typedef struct {
     real v;
 } t_toppop;
 
-t_toppop *top  = nullptr;
-int       ntop = 0;
+static t_toppop *top  = nullptr;
+static int       ntop = 0;
 
 typedef struct {
     int   nv, nframes;
@@ -96,7 +95,7 @@ static void init5(int n)
     snew(top, ntop);
 }
 
-static void reset5(void)
+static void reset5()
 {
     int i;
 
@@ -105,17 +104,6 @@ static void reset5(void)
         top[i].n = -1;
         top[i].v = 0;
     }
-}
-
-int tpcomp(const void *a, const void *b)
-{
-    t_toppop *tpa;
-    t_toppop *tpb;
-
-    tpa = (t_toppop *)a;
-    tpb = (t_toppop *)b;
-
-    return static_cast<int>(1e7*(tpb->v-tpa->v));
 }
 
 static void add5(int ndr, real viol)
@@ -141,7 +129,7 @@ static void print5(FILE *fp)
 {
     int i;
 
-    qsort(top, ntop, sizeof(top[0]), tpcomp);
+    std::sort(top, top+ntop, [](const t_toppop &a, const t_toppop &b) {return a.v > b.v; }); //reverse sort
     fprintf(fp, "Index:");
     for (i = 0; (i < ntop); i++)
     {
@@ -159,7 +147,7 @@ static void check_viol(FILE *log,
                        t_ilist *disres, t_iparams forceparams[],
                        rvec x[], rvec4 f[],
                        t_pbc *pbc, t_graph *g, t_dr_result dr[],
-                       int clust_id, int isize, int index[], real vvindex[],
+                       int clust_id, int isize, const int index[], real vvindex[],
                        t_fcdata *fcd)
 {
     t_iatom         *forceatoms;
@@ -205,24 +193,24 @@ static void check_viol(FILE *log,
         while (((i+n) < disres->nr) &&
                (forceparams[forceatoms[i+n]].disres.label == label));
 
-        calc_disres_R_6(nullptr, n, &forceatoms[i],
-                        (const rvec*)x, pbc, fcd, nullptr);
+        calc_disres_R_6(nullptr, nullptr, n, &forceatoms[i],
+                        x, pbc, fcd, nullptr);
 
-        if (fcd->disres.Rt_6[0] <= 0)
+        if (fcd->disres.Rt_6[label] <= 0)
         {
-            gmx_fatal(FARGS, "ndr = %d, rt_6 = %f", ndr, fcd->disres.Rt_6[0]);
+            gmx_fatal(FARGS, "ndr = %d, rt_6 = %f", ndr, fcd->disres.Rt_6[label]);
         }
 
-        rt = gmx::invsixthroot(fcd->disres.Rt_6[0]);
+        rt = gmx::invsixthroot(fcd->disres.Rt_6[label]);
         dr[clust_id].aver1[ndr]  += rt;
         dr[clust_id].aver2[ndr]  += gmx::square(rt);
         drt = 1.0/gmx::power3(rt);
         dr[clust_id].aver_3[ndr] += drt;
-        dr[clust_id].aver_6[ndr] += fcd->disres.Rt_6[0];
+        dr[clust_id].aver_6[ndr] += fcd->disres.Rt_6[label];
 
         snew(fshift, SHIFTS);
         interaction_function[F_DISRES].ifunc(n, &forceatoms[i], forceparams,
-                                             (const rvec*)x, f, fshift,
+                                             x, f, fshift,
                                              pbc, g, lam, &dvdl, nullptr, fcd, nullptr);
         sfree(fshift);
         viol = fcd->disres.sumviol;
@@ -243,7 +231,7 @@ static void check_viol(FILE *log,
             {
                 if (index[j] == forceparams[type].disres.label)
                 {
-                    vvindex[j] = gmx::invsixthroot(fcd->disres.Rt_6[0]);
+                    vvindex[j] = gmx::invsixthroot(fcd->disres.Rt_6[label]);
                 }
             }
         }
@@ -274,27 +262,6 @@ typedef struct {
     real     up1, r, rT3, rT6, viol, violT3, violT6;
 } t_dr_stats;
 
-static int drs_comp(const void *a, const void *b)
-{
-    t_dr_stats *da, *db;
-
-    da = (t_dr_stats *)a;
-    db = (t_dr_stats *)b;
-
-    if (da->viol > db->viol)
-    {
-        return -1;
-    }
-    else if (da->viol < db->viol)
-    {
-        return 1;
-    }
-    else
-    {
-        return 0;
-    }
-}
-
 static void dump_dump(FILE *log, int ndr, t_dr_stats drs[])
 {
     static const char *core[] = { "All restraints", "Core restraints" };
@@ -304,8 +271,9 @@ static void dump_dump(FILE *log, int ndr, t_dr_stats drs[])
     int                nviol, nrestr;
     int                i, kkk;
 
-    for (bCore = FALSE; (bCore <= TRUE); bCore++)
+    for (int iCore = 0; iCore < 2; iCore++)
     {
+        bCore = (iCore == 1);
         for (kkk = 0; (kkk < 3); kkk++)
         {
             viol_tot  = 0;
@@ -374,7 +342,7 @@ static void dump_viol(FILE *log, int ndr, t_dr_stats *drs, gmx_bool bLinear)
     }
 }
 
-static gmx_bool is_core(int i, int isize, int index[])
+static gmx_bool is_core(int i, int isize, const int index[])
 {
     int      kk;
     gmx_bool bIC = FALSE;
@@ -429,7 +397,8 @@ static void dump_stats(FILE *log, int nsteps, int ndr, t_ilist *disres,
     dump_viol(log, ndr, drs, FALSE);
 
     fprintf(log, "+++ Sorted by linear averaged violations: +++\n");
-    qsort(drs, ndr, sizeof(drs[0]), drs_comp);
+    std::sort(drs, drs+ndr, [](const t_dr_stats &a, const t_dr_stats &b)
+              {return a.viol > b.viol; });            //Reverse sort
     dump_viol(log, ndr, drs, TRUE);
 
     dump_dump(log, ndr, drs);
@@ -485,7 +454,7 @@ static void dump_clust_stats(FILE *fp, int ndr, t_ilist *disres,
             drs[i].bCore  = is_core(i, isize, index);
             drs[i].up1    = ip[disres->iatoms[j]].disres.up1;
             drs[i].r      = dr[k].aver1[i]/dr[k].nframes;
-            if ((dr[k].aver_3[i] <= 0) || (dr[k].aver_3[i] != dr[k].aver_3[i]))
+            if ((dr[k].aver_3[i] <= 0) || !std::isfinite(dr[k].aver_3[i]))
             {
                 gmx_fatal(FARGS, "dr[%d].aver_3[%d] = %f", k, i, dr[k].aver_3[i]);
             }
@@ -533,8 +502,7 @@ static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
 {
     FILE      *fp;
     int       *resnr;
-    int        n_res, a_offset, mb, mol, a;
-    t_atoms   *atoms;
+    int        n_res, a_offset, mol, a;
     int        i, j, nra, nratoms, tp, ri, rj, index, nlabel, label;
     int        ai, aj, *ptr;
     real     **matrix, *t_res, hi, *w_dr, rav, rviol;
@@ -548,17 +516,17 @@ static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
     snew(resnr, mtop->natoms);
     n_res    = 0;
     a_offset = 0;
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
-        for (mol = 0; mol < mtop->molblock[mb].nmol; mol++)
+        const t_atoms &atoms = mtop->moltype[molb.type].atoms;
+        for (mol = 0; mol < molb.nmol; mol++)
         {
-            for (a = 0; a < atoms->nr; a++)
+            for (a = 0; a < atoms.nr; a++)
             {
-                resnr[a_offset+a] = n_res + atoms->atom[a].resind;
+                resnr[a_offset + a] = n_res + atoms.atom[a].resind;
             }
-            n_res    += atoms->nres;
-            a_offset += atoms->nr;
+            n_res    += atoms.nres;
+            a_offset += atoms.nr;
         }
     }
 
@@ -630,7 +598,7 @@ static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
             {
                 fprintf(debug, "DR %d, atoms %d, %d, distance %g\n", i, ai, aj, rav);
             }
-            rviol           = std::max(static_cast<real>(0.0), rav-idef->iparams[tp].disres.up1);
+            rviol           = std::max(0.0_real, rav-idef->iparams[tp].disres.up1);
             matrix[ri][rj] += w_dr[i]*rviol;
             matrix[rj][ri] += w_dr[i]*rviol;
             hi              = std::max(hi, matrix[ri][rj]);
@@ -712,7 +680,6 @@ int gmx_disre(int argc, char *argv[])
     t_dr_result       dr, *dr_clust = nullptr;
     char            **leg;
     real             *vvindex = nullptr, *w_rls = nullptr;
-    t_mdatoms        *mdatoms;
     t_pbc             pbc, *pbc_null;
     int               my_clust;
     FILE             *fplog;
@@ -748,8 +715,8 @@ int gmx_disre(int argc, char *argv[])
         init5(ntop);
     }
 
-    gmx::MDModules  mdModules;
-    t_inputrec     *ir = mdModules.inputrec();
+    t_inputrec      irInstance;
+    t_inputrec     *ir = &irInstance;
 
     read_tpxheader(ftp2fn(efTPR, NFILE, fnm), &header, FALSE);
     snew(xtop, header.natoms);
@@ -807,7 +774,7 @@ int gmx_disre(int argc, char *argv[])
             snew(leg[i], 12);
             sprintf(leg[i], "index %d", index[i]);
         }
-        xvgr_legend(xvg, isize, (const char**)leg, oenv);
+        xvgr_legend(xvg, isize, leg, oenv);
     }
     else
     {
@@ -815,7 +782,7 @@ int gmx_disre(int argc, char *argv[])
     }
 
     ir->dr_tau = 0.0;
-    init_disres(fplog, &mtop, ir, nullptr, &fcd, nullptr, FALSE);
+    init_disres(fplog, &mtop, ir, nullptr, nullptr, &fcd, nullptr, FALSE);
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
     snew(f, 5*natoms);
@@ -842,9 +809,9 @@ int gmx_disre(int argc, char *argv[])
                          "Largest Violation", "Time (ps)", "nm", oenv);
     }
 
-    mdatoms = init_mdatoms(fplog, &mtop, ir->efep != efepNO);
-    atoms2md(&mtop, ir, -1, nullptr, mtop.natoms, mdatoms);
-    update_mdatoms(mdatoms, ir->fepvals->init_lambda);
+    auto mdAtoms = gmx::makeMDAtoms(fplog, mtop, *ir, false);
+    atoms2md(&mtop, ir, -1, nullptr, mtop.natoms, mdAtoms.get());
+    update_mdatoms(mdAtoms->mdatoms(), ir->fepvals->init_lambda);
     init_nrnb(&nrnb);
     if (ir->ePBC != epbcNONE)
     {
@@ -918,7 +885,7 @@ int gmx_disre(int argc, char *argv[])
         j++;
     }
     while (read_next_x(oenv, status, &t, x, box));
-    close_trj(status);
+    close_trx(status);
     if (ir->ePBC != epbcNONE)
     {
         gmx_rmpbc_done(gpbc);

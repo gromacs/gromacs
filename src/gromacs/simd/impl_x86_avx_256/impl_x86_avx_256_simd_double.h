@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,8 @@
 #include <cstdint>
 
 #include <immintrin.h>
+
+#include "gromacs/math/utilities.h"
 
 #include "impl_x86_avx_256_simd_float.h"
 
@@ -106,7 +108,7 @@ class SimdDIBool
 
 
 static inline SimdDouble gmx_simdcall
-simdLoad(const double *m)
+simdLoad(const double *m, SimdDoubleTag  /*unused*/ = {})
 {
     assert(std::size_t(m) % 32 == 0);
     return {
@@ -122,7 +124,7 @@ store(double *m, SimdDouble a)
 }
 
 static inline SimdDouble gmx_simdcall
-simdLoadU(const double *m)
+simdLoadU(const double *m, SimdDoubleTag  /*unused*/ = {})
 {
     return {
                _mm256_loadu_pd(m)
@@ -144,7 +146,7 @@ setZeroD()
 }
 
 static inline SimdDInt32 gmx_simdcall
-simdLoadDI(const std::int32_t * m)
+simdLoad(const std::int32_t * m, SimdDInt32Tag /*unused*/)
 {
     assert(std::size_t(m) % 16 == 0);
     return {
@@ -160,7 +162,7 @@ store(std::int32_t * m, SimdDInt32 a)
 }
 
 static inline SimdDInt32 gmx_simdcall
-simdLoadUDI(const std::int32_t *m)
+simdLoadU(const std::int32_t *m, SimdDInt32Tag /*unused*/)
 {
     return {
                _mm_loadu_si128(reinterpret_cast<const __m128i *>(m))
@@ -416,6 +418,7 @@ frexp(SimdDouble value, SimdDInt32 * exponent)
     };
 }
 
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble
 ldexp(SimdDouble value, SimdDInt32 exponent)
 {
@@ -424,6 +427,13 @@ ldexp(SimdDouble value, SimdDInt32 exponent)
     __m256d       fExponent;
 
     iExponentLow  = _mm_add_epi32(exponent.simdInternal_, exponentBias);
+
+    if (opt == MathOptimization::Safe)
+    {
+        // Make sure biased argument is not negative
+        iExponentLow  = _mm_max_epi32(iExponentLow, _mm_setzero_si128());
+    }
+
     iExponentHigh = _mm_shuffle_epi32(iExponentLow, _MM_SHUFFLE(3, 3, 2, 2));
     iExponentLow  = _mm_shuffle_epi32(iExponentLow, _MM_SHUFFLE(1, 1, 0, 0));
     iExponentHigh = _mm_slli_epi64(iExponentHigh, 52);
@@ -541,22 +551,6 @@ blend(SimdDouble a, SimdDouble b, SimdDBool sel)
 }
 
 static inline SimdDInt32 gmx_simdcall
-operator<<(SimdDInt32 a, int n)
-{
-    return {
-               _mm_slli_epi32(a.simdInternal_, n)
-    };
-}
-
-static inline SimdDInt32 gmx_simdcall
-operator>>(SimdDInt32 a, int n)
-{
-    return {
-               _mm_srli_epi32(a.simdInternal_, n)
-    };
-}
-
-static inline SimdDInt32 gmx_simdcall
 operator&(SimdDInt32 a, SimdDInt32 b)
 {
     return {
@@ -656,7 +650,7 @@ operator||(SimdDIBool a, SimdDIBool b)
 }
 
 static inline bool gmx_simdcall
-anyTrue(SimdDIBool a) { return _mm_movemask_epi8(_mm_shuffle_epi32(a.simdInternal_, _MM_SHUFFLE(1, 0, 1, 0))) != 0; }
+anyTrue(SimdDIBool a) { return _mm_movemask_epi8(a.simdInternal_) != 0; }
 
 static inline SimdDInt32 gmx_simdcall
 selectByMask(SimdDInt32 a, SimdDIBool mask)

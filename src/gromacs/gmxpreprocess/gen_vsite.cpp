@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,11 +38,13 @@
 
 #include "gen_vsite.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
+#include <string>
+#include <vector>
 
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/add_par.h"
@@ -71,7 +73,7 @@
 
 typedef struct {
     char       atomtype[MAXNAME];  /* Type for the XH3/XH2 atom */
-    gmx_bool   isplanar;           /* If true, the atomtype above and the three connected
+    bool       isplanar;           /* If true, the atomtype above and the three connected
                                     * ones are in a planar geometry. The two next entries
                                     * are undefined in that case
                                     */
@@ -162,7 +164,6 @@ static void read_vsite_database(const char *ddbname,
      * case the second field should just be the word planar.
      */
 
-    FILE        *ddb;
     char         dirstr[STRLEN];
     char         pline[STRLEN];
     int          i, n, k, nvsite, ntop, curdir;
@@ -171,7 +172,7 @@ static void read_vsite_database(const char *ddbname,
     char        *ch;
     char         s1[MAXNAME], s2[MAXNAME], s3[MAXNAME], s4[MAXNAME];
 
-    ddb = libopen(ddbname);
+    gmx::FilePtr ddb = gmx::openLibraryFile(ddbname);
 
     nvsite        = *nvsiteconf;
     vsiteconflist = *pvsiteconflist;
@@ -183,7 +184,7 @@ static void read_vsite_database(const char *ddbname,
     snew(vsiteconflist, 1);
     snew(vsitetoplist, 1);
 
-    while (fgets2(pline, STRLEN-2, ddb) != nullptr)
+    while (fgets2(pline, STRLEN-2, ddb.get()) != nullptr)
     {
         strip_comment(pline);
         trim(pline);
@@ -226,7 +227,6 @@ static void read_vsite_database(const char *ddbname,
                 {
                     case -1:
                         gmx_fatal(FARGS, "First entry in vsite database must be a directive.\n");
-                        break;
                     case DDB_CH3:
                     case DDB_NH3:
                     case DDB_NH2:
@@ -320,8 +320,6 @@ static void read_vsite_database(const char *ddbname,
     *pvsitetoplist  = vsitetoplist;
     *nvsiteconf     = nvsite;
     *nvsitetop      = ntop;
-
-    gmx_ffclose(ddb);
 }
 
 static int nitrogen_is_planar(t_vsiteconf vsiteconflist[], int nvsiteconf, char atomtype[])
@@ -330,14 +328,14 @@ static int nitrogen_is_planar(t_vsiteconf vsiteconflist[], int nvsiteconf, char 
      * and -1 if not found.
      */
     int      i, res;
-    gmx_bool found = FALSE;
+    bool     found = FALSE;
     for (i = 0; i < nvsiteconf && !found; i++)
     {
-        found = (!gmx_strcasecmp(vsiteconflist[i].atomtype, atomtype) && (vsiteconflist[i].nhydrogens == 2));
+        found = ((gmx_strcasecmp(vsiteconflist[i].atomtype, atomtype) == 0) && (vsiteconflist[i].nhydrogens == 2));
     }
     if (found)
     {
-        res = (vsiteconflist[i-1].isplanar == TRUE);
+        res = static_cast<int>(vsiteconflist[i-1].isplanar);
     }
     else
     {
@@ -351,11 +349,11 @@ static char *get_dummymass_name(t_vsiteconf vsiteconflist[], int nvsiteconf, cha
 {
     /* Return the dummy mass name if found, or NULL if not set in ddb database */
     int      i;
-    gmx_bool found = FALSE;
+    bool     found = FALSE;
     for (i = 0; i < nvsiteconf && !found; i++)
     {
-        found = (!gmx_strcasecmp(vsiteconflist[i].atomtype, atom) &&
-                 !gmx_strcasecmp(vsiteconflist[i].nextheavytype, nextheavy));
+        found = ((gmx_strcasecmp(vsiteconflist[i].atomtype, atom) == 0) &&
+                 (gmx_strcasecmp(vsiteconflist[i].nextheavytype, nextheavy) == 0));
     }
     if (found)
     {
@@ -386,8 +384,8 @@ static real get_ddb_bond(t_vsitetop *vsitetop, int nvsitetop,
     }
     j = 0;
     while (j < vsitetop[i].nbonds &&
-           ( strcmp(atom1, vsitetop[i].bond[j].atom1) || strcmp(atom2, vsitetop[i].bond[j].atom2)) &&
-           ( strcmp(atom2, vsitetop[i].bond[j].atom1) || strcmp(atom1, vsitetop[i].bond[j].atom2)))
+           ( strcmp(atom1, vsitetop[i].bond[j].atom1) != 0 || strcmp(atom2, vsitetop[i].bond[j].atom2) != 0) &&
+           ( strcmp(atom2, vsitetop[i].bond[j].atom1) != 0 || strcmp(atom1, vsitetop[i].bond[j].atom2) != 0))
     {
         j++;
     }
@@ -417,12 +415,12 @@ static real get_ddb_angle(t_vsitetop *vsitetop, int nvsitetop,
     }
     j = 0;
     while (j < vsitetop[i].nangles &&
-           ( strcmp(atom1, vsitetop[i].angle[j].atom1) ||
-             strcmp(atom2, vsitetop[i].angle[j].atom2) ||
-             strcmp(atom3, vsitetop[i].angle[j].atom3)) &&
-           ( strcmp(atom3, vsitetop[i].angle[j].atom1) ||
-             strcmp(atom2, vsitetop[i].angle[j].atom2) ||
-             strcmp(atom1, vsitetop[i].angle[j].atom3)))
+           ( strcmp(atom1, vsitetop[i].angle[j].atom1) != 0 ||
+             strcmp(atom2, vsitetop[i].angle[j].atom2) != 0 ||
+             strcmp(atom3, vsitetop[i].angle[j].atom3) != 0) &&
+           ( strcmp(atom3, vsitetop[i].angle[j].atom1) != 0 ||
+             strcmp(atom2, vsitetop[i].angle[j].atom2) != 0 ||
+             strcmp(atom1, vsitetop[i].angle[j].atom3) != 0))
     {
         j++;
     }
@@ -496,8 +494,8 @@ static void count_bonds(int atom, t_params *psb, char ***atomname,
 }
 
 static void print_bonds(FILE *fp, int o2n[],
-                        int nrHatoms, int Hatoms[], int Heavy,
-                        int nrheavies, int heavies[])
+                        int nrHatoms, const int Hatoms[], int Heavy,
+                        int nrheavies, const int heavies[])
 {
     int i;
 
@@ -518,11 +516,11 @@ static int get_atype(int atom, t_atoms *at, int nrtp, t_restp rtp[],
                      gmx_residuetype_t *rt)
 {
     int      type;
-    gmx_bool bNterm;
+    bool     bNterm;
     int      j;
     t_restp *rtpp;
 
-    if (at->atom[atom].m)
+    if (at->atom[atom].m != 0.0f)
     {
         type = at->atom[atom].type;
     }
@@ -556,11 +554,11 @@ static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[],
                       gmx_residuetype_t *rt)
 {
     real     mass;
-    gmx_bool bNterm;
+    bool     bNterm;
     int      j;
     t_restp *rtpp;
 
-    if (at->atom[atom].m)
+    if (at->atom[atom].m != 0.0f)
     {
         mass = at->atom[atom].m;
     }
@@ -590,7 +588,7 @@ static void add_vsites(t_params plist[], int vsite_type[],
                        int nrheavies, int heavies[])
 {
     int      i, j, ftype, other, moreheavy;
-    gmx_bool bSwapParity;
+    bool     bSwapParity;
 
     for (i = 0; i < nrHatoms; i++)
     {
@@ -688,13 +686,13 @@ static void add_vsites(t_params plist[], int vsite_type[],
 
 /* cosine rule: a^2 = b^2 + c^2 - 2 b c cos(alpha) */
 /* get a^2 when a, b and alpha are given: */
-#define cosrule(b, c, alpha) ( gmx::square(b) + gmx::square(c) - 2*b*c*std::cos(alpha) )
+#define cosrule(b, c, alpha) ( gmx::square(b) + gmx::square(c) - 2*(b)*(c)*std::cos(alpha) )
 /* get cos(alpha) when a, b and c are given: */
-#define acosrule(a, b, c) ( (gmx::square(b)+gmx::square(c)-gmx::square(a))/(2*b*c) )
+#define acosrule(a, b, c) ( (gmx::square(b)+gmx::square(c)-gmx::square(a))/(2*(b)*(c)) )
 
 static int gen_vsites_6ring(t_atoms *at, int *vsite_type[], t_params plist[],
                             int nrfound, int *ats, real bond_cc, real bond_ch,
-                            real xcom, gmx_bool bDoZ)
+                            real xcom, bool bDoZ)
 {
     /* these MUST correspond to the atnms array in do_vsite_aromatics! */
     enum {
@@ -1492,7 +1490,7 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
     return nvsite;
 }
 
-static gmx_bool is_vsite(int vsite_type)
+static bool is_vsite(int vsite_type)
 {
     if (vsite_type == NOTSET)
     {
@@ -1517,7 +1515,7 @@ static char atomnamesuffix[] = "1234";
 void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                t_atoms *at, t_symtab *symtab, rvec *x[],
                t_params plist[], int *vsite_type[], int *cgnr[],
-               real mHmult, gmx_bool bVsiteAromatics,
+               real mHmult, bool bVsiteAromatics,
                const char *ffdir)
 {
 #define MAXATOMSPERRESIDUE 16
@@ -1525,9 +1523,9 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
     int               ai, aj, ak, al;
     int               nrfound = 0, needed, nrbonds, nrHatoms, Heavy, nrheavies, tpM, tpHeavy;
     int               Hatoms[4], heavies[4];
-    gmx_bool          bWARNING, bAddVsiteParam, bFirstWater;
+    bool              bWARNING, bAddVsiteParam, bFirstWater;
     matrix            tmpmat;
-    gmx_bool         *bResProcessed;
+    bool             *bResProcessed;
     real              mHtot, mtot, fact, fact2;
     rvec              rpar, rperp, temp;
     char              name[10], tpname[32], nexttpname[32], *ch;
@@ -1537,10 +1535,8 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
     t_params         *params;
     char           ***newatomname;
     char             *resnm = nullptr;
-    int               ndb, f;
-    char            **db;
     int               nvsiteconf, nvsitetop, cmplength;
-    gmx_bool          isN, planarN, bFound;
+    bool              isN, planarN, bFound;
     gmx_residuetype_t*rt;
 
     t_vsiteconf      *vsiteconflist;
@@ -1568,7 +1564,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
     const char *resnmsN[resNR]  = {  "NPHE", "NTRP", "NTYR", "NHIS" };
     const char *resnmsC[resNR]  = {  "CPHE", "CTRP", "CTYR", "CHIS" };
     /* HIS can be known as HISH, HIS1, HISA, HID, HIE, HIP, etc. too */
-    gmx_bool    bPartial[resNR]  = {  FALSE,  FALSE,  FALSE,   TRUE  };
+    bool        bPartial[resNR]  = {  FALSE,  FALSE,  FALSE,   TRUE  };
     /* the atnms for every residue MUST correspond to the enums in the
        gen_vsites_* (one for each residue) routines! */
     /* also the atom names in atnms MUST be in the same order as in the .rtp! */
@@ -1598,17 +1594,15 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
         fprintf(debug, "# # # VSITES # # #\n");
     }
 
-    ndb           = fflib_search_file_end(ffdir, ".vsd", FALSE, &db);
+    std::vector<std::string> db = fflib_search_file_end(ffdir, ".vsd", FALSE);
     nvsiteconf    = 0;
     vsiteconflist = nullptr;
     nvsitetop     = 0;
     vsitetop      = nullptr;
-    for (f = 0; f < ndb; f++)
+    for (const auto &filename : db)
     {
-        read_vsite_database(db[f], &vsiteconflist, &nvsiteconf, &vsitetop, &nvsitetop);
-        sfree(db[f]);
+        read_vsite_database(filename.c_str(), &vsiteconflist, &nvsiteconf, &vsitetop, &nvsitetop);
     }
-    sfree(db);
 
     bFirstWater = TRUE;
     nvsite      = 0;
@@ -1806,9 +1800,8 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                 }
 
             }
-            else if ( /*(nrHatoms == 2) && (nrbonds == 2) && REMOVED this test
-                         DvdS 19-01-04 */
-                (gmx_strncasecmp(*at->atomname[Heavy], "OW", 2) == 0) )
+            else if ( (nrHatoms == 2) && (nrbonds == 2) &&
+                      (at->atom[Heavy].atomnumber == 8) )
             {
                 bAddVsiteParam = FALSE; /* this is water: skip these hydrogens */
                 if (bFirstWater)
@@ -1855,7 +1848,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                 {
                     /* CH3, NH3 or non-planar NH2 group */
                     int      Hat_vsite_type[3] = { F_VSITE3, F_VSITE3OUT, F_VSITE3OUT };
-                    gmx_bool Hat_SwapParity[3] = { FALSE,    TRUE,        FALSE };
+                    bool     Hat_SwapParity[3] = { FALSE,    TRUE,        FALSE };
 
                     if (debug)
                     {
@@ -1875,7 +1868,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 
                     if (ch == nullptr)
                     {
-                        if (ndb > 0)
+                        if (!db.empty())
                         {
                             gmx_fatal(FARGS, "Can't find dummy mass for type %s bonded to type %s in the virtual site database (.vsd files). Add it to the database!\n", tpname, nexttpname);
                         }
@@ -2168,7 +2161,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 }
 
 void do_h_mass(t_params *psb, int vsite_type[], t_atoms *at, real mHmult,
-               gmx_bool bDeuterate)
+               bool bDeuterate)
 {
     int i, j, a;
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,7 +57,6 @@
 
 #include "testutils/cmdlinetest.h"
 
-using gmx::test::CommandLine;
 using gmx::Path;
 
 #if GMX_NATIVE_WINDOWS || GMX_CYGWIN
@@ -81,11 +80,11 @@ class TestExecutableEnvironment : public gmx::IExecutableEnvironment
         {
         }
 
-        virtual std::string getWorkingDirectory() const
+        std::string getWorkingDirectory() const override
         {
             return workingDirectory_;
         }
-        virtual std::vector<std::string> getExecutablePaths() const
+        std::vector<std::string> getExecutablePaths() const override
         {
             return path_;
         }

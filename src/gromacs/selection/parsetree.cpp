@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -224,11 +224,12 @@
 
 #include "parsetree.h"
 
-#include <stdarg.h>
-#include <stdio.h>
+#include <cstdarg>
+#include <cstdio>
 
 #include <exception>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -357,9 +358,9 @@ SelectionParserParameter::SelectionParserParameter(
         const char                      *name,
         SelectionParserValueListPointer  values,
         const SelectionLocation         &location)
-    : name_(name != nullptr ? name : ""), location_(location),
-      values_(values ? std::move(values)
-              : SelectionParserValueListPointer(new SelectionParserValueList))
+    : name_(name != nullptr ? name : ""),
+      location_(location),
+      values_(values ? std::move(values) : compat::make_unique<SelectionParserValueList>())
 {
 }
 
@@ -723,7 +724,7 @@ init_keyword_internal(gmx_ana_selmethod_t *method,
                                   "Unknown type for keyword selection"));
         }
         /* Initialize the selection element */
-        root.reset(new SelectionTreeElement(SEL_EXPRESSION, location));
+        root = std::make_shared<SelectionTreeElement>(SEL_EXPRESSION, location);
         _gmx_selelem_set_method(root, kwmethod, scanner);
         if (method->type == STR_VALUE)
         {
@@ -1012,8 +1013,8 @@ _gmx_sel_init_variable_ref(const gmx::SelectionTreeElementPointer &sel,
     }
     else
     {
-        ref.reset(new SelectionTreeElement(
-                          SEL_SUBEXPRREF, _gmx_sel_lexer_get_current_location(scanner)));
+        ref = std::make_shared<SelectionTreeElement>(
+                    SEL_SUBEXPRREF, _gmx_sel_lexer_get_current_location(scanner));
         _gmx_selelem_set_vtype(ref, sel->v.type);
         ref->setName(sel->name());
         ref->child = sel;
@@ -1112,10 +1113,10 @@ _gmx_sel_assign_variable(const char                             *name,
     {
         SelectionLocation location(_gmx_sel_lexer_get_current_location(scanner));
         /* Create the root element */
-        root.reset(new SelectionTreeElement(SEL_ROOT, location));
+        root = std::make_shared<SelectionTreeElement>(SEL_ROOT, location);
         root->setName(name);
         /* Create the subexpression element */
-        root->child.reset(new SelectionTreeElement(SEL_SUBEXPR, location));
+        root->child = std::make_shared<SelectionTreeElement>(SEL_SUBEXPR, location);
         root->child->setName(name);
         _gmx_selelem_set_vtype(root->child, expr->v.type);
         root->child->child  = expr;
@@ -1213,5 +1214,5 @@ bool
 _gmx_sel_parser_should_finish(yyscan_t scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
-    return (int)sc->sel.size() == _gmx_sel_lexer_exp_selcount(scanner);
+    return static_cast<int>(sc->sel.size()) == _gmx_sel_lexer_exp_selcount(scanner);
 }

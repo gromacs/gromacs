@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,9 +38,8 @@
  * trajectories produced by mdrun.
  *
  * Intended usage is to create a TrajectoryFrameReader. Successive
- * calls to its TrajectoryFrameReader::readNextFrame() and
- * TrajectoryFrameReader::frame() methods will return a handle to a
- * t_trxframe object for each frame.
+ * calls to its readNextFrameStub and frame methods will return a handle
+ * to a t_trxframe object for each frame.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun_integration_tests
@@ -54,20 +53,16 @@
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/unique_cptr.h"
-
-#include "testutils/testasserts.h"
-
-//! Forward declaration
-struct gmx_output_env_t;
 
 namespace gmx
 {
+
+class TrajectoryFrame;
+
 namespace test
 {
-
-//! Forward declaration
-class TrajectoryFrame;
 
 //! Convenience smart pointer typedef
 typedef unique_cptr<gmx_output_env_t, output_env_done> oenv_ptr;
@@ -92,10 +87,10 @@ class TrajectoryFrameReader
          * API, which does the file opening as a side effect of
          * reading the first frame.
          *
-         * If true is returned, then frame() should be called
+         * If true is returned, then TrajectoryFrame frame() should be called
          * to get access to the data. If false is returned, then no
          * further data exists and no further call to
-         * readNextFrame() or frame() should occur.
+         * readNextFrameStub or TrajectoryFrame frame() should occur.
          *
          * \throws FileIOError upon reading the first frame, if the trajectory file cannot be opened
          * \throws APIError    if an earlier probe has not been properly handled
@@ -106,9 +101,9 @@ class TrajectoryFrameReader
          *
          * If the next frame has not been probed for, then probe for
          * it. If no next frame exists, then throw APIError, because
-         * user code should have called readNextFrame() itself if this
+         * user code should have called readNextFrameStub itself if this
          * is possible. (This permits user code to avoid making calls
-         * to readNextFrame() in a case where it already knows that
+         * to readNextFrameStub in a case where it already knows that
          * the frame exists.)
          *
          * \throws APIError  if no next frame exists, or if it lacks either time or step number. */
@@ -137,40 +132,7 @@ class TrajectoryFrameReader
         GMX_DISALLOW_COPY_AND_ASSIGN(TrajectoryFrameReader);
 };
 
-//! Convenience smart pointer typedef
-typedef std::unique_ptr<TrajectoryFrameReader> TrajectoryFrameReaderPtr;
-
-/*! \brief Compare the fields of the two frames for equality within
- * the \c tolerance.
- *
- * The two frames are required to have valid and matching values for
- * time and step. Positions, velocities and/or forces will be compared
- * when present in both frames, and expected to be equal within \c
- * tolerance. */
-void compareFrames(const std::pair<TrajectoryFrame, TrajectoryFrame> &frames,
-                   FloatingPointTolerance tolerance);
-
-/*! \internal
- * \brief Contains the content of a trajectory frame read by an TrajectoryFrameReader
- *
- * Objects of this type are intended to be constructed by
- * TrajectoryFrameReader objects, and as such will always contain valid
- * data from an trajectory file frame. */
-class TrajectoryFrame
-{
-    public:
-        /*! \brief Return string that helps users identify this frame, containing time and step number.
-         *
-         * \throws std::bad_alloc  when out of memory */
-        std::string getFrameName() const;
-        //! Constructor
-        TrajectoryFrame();
-
-        //! Handle to trajectory data
-        t_trxframe *frame_;
-};
-
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx
 
 #endif

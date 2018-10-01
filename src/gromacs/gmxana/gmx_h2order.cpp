@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,11 +63,11 @@
 /* directions.                                                              */
 /****************************************************************************/
 
-void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
-                  real **slOrder, real *slWidth, int *nslices,
-                  const t_topology *top, int ePBC,
-                  int axis, gmx_bool bMicel, int micel[], int nmic,
-                  const gmx_output_env_t *oenv)
+static void calc_h2order(const char *fn, const int index[], int ngx, rvec **slDipole,
+                         real **slOrder, real *slWidth, int *nslices,
+                         const t_topology *top, int ePBC,
+                         int axis, gmx_bool bMicel, int micel[], int nmic,
+                         const gmx_output_env_t *oenv)
 {
     rvec *x0,            /* coordinates with pbc */
           dipole,        /* dipole moment due to one molecules */
@@ -109,8 +109,6 @@ void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
             break;
         default:
             gmx_fatal(FARGS, "No valid value for -axis-. Exiting.\n");
-            /* make compiler happy */
-            normal[0] = 1; normal[1] = 0; normal[2] = 0;
     }
 
     clear_rvec(dipole);
@@ -232,8 +230,8 @@ void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
     sfree(x0);       /* free memory used by coordinate arrays */
 }
 
-void h2order_plot(rvec dipole[], real order[], const char *afile,
-                  int nslices, real slWidth, const gmx_output_env_t *oenv)
+static void h2order_plot(rvec dipole[], real order[], const char *afile,
+                         int nslices, real slWidth, const gmx_output_env_t *oenv)
 {
     FILE       *ord;              /* xvgr files with order parameters  */
     int         slice;            /* loop index     */

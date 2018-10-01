@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -114,6 +114,27 @@ blend(SimdFInt32 a, SimdFInt32 b, SimdFIBool sel)
     };
 }
 
+template <MathOptimization opt = MathOptimization::Safe>
+static inline SimdFloat gmx_simdcall
+ldexp(SimdFloat value, SimdFInt32 exponent)
+{
+    const __m128i exponentBias = _mm_set1_epi32(127);
+    __m128i       iExponent;
+
+    iExponent = _mm_add_epi32(exponent.simdInternal_, exponentBias);
+
+    if (opt == MathOptimization::Safe)
+    {
+        // Make sure biased argument is not negative
+        iExponent = _mm_max_epi32(iExponent, _mm_setzero_si128());
+    }
+
+    iExponent = _mm_slli_epi32( iExponent, 23);
+
+    return {
+               _mm_mul_ps(value.simdInternal_, _mm_castsi128_ps(iExponent))
+    };
+}
 
 }      // namespace gmx
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,15 +44,13 @@
 
 #include <arm_neon.h>
 
-#include "gromacs/utility/basedefinitions.h"
-
 #include "impl_arm_neon_asimd_simd_double.h"
 
 namespace gmx
 {
 
 template <int align>
-static gmx_inline void gmx_simdcall
+static inline void gmx_simdcall
 gatherLoadTranspose(const double *        base,
                     const std::int32_t    offset[],
                     SimdDouble *          v0,
@@ -77,7 +75,7 @@ gatherLoadTranspose(const double *        base,
 }
 
 template <int align>
-static gmx_inline void gmx_simdcall
+static inline void gmx_simdcall
 gatherLoadTranspose(const double *        base,
                     const std::int32_t    offset[],
                     SimdDouble *          v0,
@@ -98,7 +96,7 @@ gatherLoadTranspose(const double *        base,
 static const int c_simdBestPairAlignmentDouble = 2;
 
 template <int align>
-static gmx_inline void gmx_simdcall
+static inline void gmx_simdcall
 gatherLoadUTranspose(const double *        base,
                      const std::int32_t    offset[],
                      SimdDouble *          v0,
@@ -120,7 +118,7 @@ gatherLoadUTranspose(const double *        base,
 }
 
 template <int align>
-static gmx_inline void gmx_simdcall
+static inline void gmx_simdcall
 transposeScatterStoreU(double *             base,
                        const std::int32_t   offset[],
                        SimdDouble           v0,
@@ -140,7 +138,7 @@ transposeScatterStoreU(double *             base,
 }
 
 template <int align>
-static gmx_inline void gmx_simdcall
+static inline void gmx_simdcall
 transposeScatterIncrU(double *             base,
                       const std::int32_t   offset[],
                       SimdDouble           v0,
@@ -173,7 +171,7 @@ transposeScatterIncrU(double *             base,
 }
 
 template <int align>
-static gmx_inline void gmx_simdcall
+static inline void gmx_simdcall
 transposeScatterDecrU(double *             base,
                       const std::int32_t   offset[],
                       SimdDouble           v0,
@@ -205,7 +203,7 @@ transposeScatterDecrU(double *             base,
     vst1_f64(base + align * offset[1] + 2, t3);
 }
 
-static gmx_inline void gmx_simdcall
+static inline void gmx_simdcall
 expandScalarsToTriplets(SimdDouble    scalar,
                         SimdDouble *  triplets0,
                         SimdDouble *  triplets1,
@@ -217,7 +215,7 @@ expandScalarsToTriplets(SimdDouble    scalar,
 }
 
 template <int align>
-static gmx_inline void gmx_simdcall
+static inline void gmx_simdcall
 gatherLoadBySimdIntTranspose(const double *  base,
                              SimdDInt32      offset,
                              SimdDouble *    v0,
@@ -225,7 +223,7 @@ gatherLoadBySimdIntTranspose(const double *  base,
                              SimdDouble *    v2,
                              SimdDouble *    v3)
 {
-    GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH)  ioffset[GMX_SIMD_DINT32_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t     ioffset[GMX_SIMD_DINT32_WIDTH];
 
     assert(std::size_t(base) % 16 == 0);
     assert(align % 2 == 0);
@@ -236,13 +234,13 @@ gatherLoadBySimdIntTranspose(const double *  base,
 
 
 template <int align>
-static gmx_inline void gmx_simdcall
+static inline void gmx_simdcall
 gatherLoadBySimdIntTranspose(const double *  base,
                              SimdDInt32      offset,
                              SimdDouble *    v0,
                              SimdDouble *    v1)
 {
-    GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH)  ioffset[GMX_SIMD_DINT32_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t     ioffset[GMX_SIMD_DINT32_WIDTH];
 
     assert(std::size_t(base) % 16 == 0);
     assert(align % 2 == 0);
@@ -252,13 +250,13 @@ gatherLoadBySimdIntTranspose(const double *  base,
 }
 
 template <int align>
-static gmx_inline void gmx_simdcall
+static inline void gmx_simdcall
 gatherLoadUBySimdIntTranspose(const double *  base,
                               SimdDInt32      offset,
                               SimdDouble *    v0,
                               SimdDouble *    v1)
 {
-    GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH)  ioffset[GMX_SIMD_DINT32_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t     ioffset[GMX_SIMD_DINT32_WIDTH];
 
     vst1_s32(ioffset, offset.simdInternal_);
 
@@ -271,7 +269,7 @@ gatherLoadUBySimdIntTranspose(const double *  base,
 }
 
 
-static gmx_inline double gmx_simdcall
+static inline double gmx_simdcall
 reduceIncr4ReturnSum(double *    m,
                      SimdDouble  v0,
                      SimdDouble  v1,

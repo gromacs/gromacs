@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "convert_tpr.h"
+
 #include <cmath>
 
 #include "gromacs/commandline/pargs.h"
@@ -44,7 +46,6 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
@@ -93,7 +94,7 @@ static int *invind(int gnx, int natoms, int index[])
     return inv;
 }
 
-static void reduce_block(gmx_bool bKeep[], t_block *block,
+static void reduce_block(const gmx_bool bKeep[], t_block *block,
                          const char *name)
 {
     int     *index;
@@ -124,7 +125,7 @@ static void reduce_block(gmx_bool bKeep[], t_block *block,
     block->nr    = newi;
 }
 
-static void reduce_blocka(int invindex[], gmx_bool bKeep[], t_blocka *block,
+static void reduce_blocka(const int invindex[], const gmx_bool bKeep[], t_blocka *block,
                           const char *name)
 {
     int     *index, *a;
@@ -160,7 +161,7 @@ static void reduce_blocka(int invindex[], gmx_bool bKeep[], t_blocka *block,
     block->nra   = newj;
 }
 
-static void reduce_rvec(int gnx, int index[], rvec vv[])
+static void reduce_rvec(int gnx, const int index[], rvec vv[])
 {
     rvec *ptr;
     int   i;
@@ -177,7 +178,7 @@ static void reduce_rvec(int gnx, int index[], rvec vv[])
     sfree(ptr);
 }
 
-static void reduce_atom(int gnx, int index[], t_atom atom[], char ***atomname,
+static void reduce_atom(int gnx, const int index[], t_atom atom[], char ***atomname,
                         int *nres, t_resinfo *resinfo)
 {
     t_atom    *ptr;
@@ -217,7 +218,7 @@ static void reduce_atom(int gnx, int index[], t_atom atom[], char ***atomname,
     sfree(rinfo);
 }
 
-static void reduce_ilist(int invindex[], gmx_bool bKeep[],
+static void reduce_ilist(const int invindex[], const gmx_bool bKeep[],
                          t_ilist *il, int nratoms, const char *name)
 {
     t_iatom *ia;
@@ -287,39 +288,37 @@ static void reduce_topology_x(int gnx, int index[],
 
     top.atoms.nr = gnx;
 
-    mtop->nmoltype = 1;
-    snew(mtop->moltype, mtop->nmoltype);
+    mtop->moltype.resize(1);
     mtop->moltype[0].name  = mtop->name;
     mtop->moltype[0].atoms = top.atoms;
     for (i = 0; i < F_NRE; i++)
     {
-        mtop->moltype[0].ilist[i] = top.idef.il[i];
+        InteractionList &ilist =  mtop->moltype[0].ilist[i];
+        ilist.iatoms.resize(top.idef.il[i].nr);
+        for (int j = 0; j < top.idef.il[i].nr; j++)
+        {
+            ilist.iatoms[j] = top.idef.il[i].iatoms[j];
+        }
     }
     mtop->moltype[0].atoms = top.atoms;
     mtop->moltype[0].cgs   = top.cgs;
     mtop->moltype[0].excls = top.excls;
 
-    mtop->nmolblock = 1;
-    snew(mtop->molblock, mtop->nmolblock);
-    mtop->molblock[0].type       = 0;
-    mtop->molblock[0].nmol       = 1;
-    mtop->molblock[0].natoms_mol = top.atoms.nr;
-    mtop->molblock[0].nposres_xA = 0;
-    mtop->molblock[0].nposres_xB = 0;
+    mtop->molblock.resize(1);
+    mtop->molblock[0].type = 0;
+    mtop->molblock[0].nmol = 1;
 
-    mtop->natoms                 = top.atoms.nr;
+    mtop->natoms           = top.atoms.nr;
 }
 
-static void zeroq(int index[], gmx_mtop_t *mtop)
+static void zeroq(const int index[], gmx_mtop_t *mtop)
 {
-    int mt, i;
-
-    for (mt = 0; mt < mtop->nmoltype; mt++)
+    for (gmx_moltype_t &moltype : mtop->moltype)
     {
-        for (i = 0; (i < mtop->moltype[mt].atoms.nr); i++)
+        for (int i = 0; i < moltype.atoms.nr; i++)
         {
-            mtop->moltype[mt].atoms.atom[index[i]].q  = 0;
-            mtop->moltype[mt].atoms.atom[index[i]].qB = 0;
+            moltype.atoms.atom[index[i]].q  = 0;
+            moltype.atoms.atom[index[i]].qB = 0;
         }
     }
 }
@@ -344,13 +343,12 @@ int gmx_convert_tpr(int argc, char *argv[])
 
     const char       *top_fn;
     int               i;
-    gmx_int64_t       nsteps_req, run_step;
+    int64_t           nsteps_req, run_step;
     double            run_t, state_t;
     gmx_bool          bSel;
     gmx_bool          bNsteps, bExtend, bUntil;
     gmx_mtop_t        mtop;
     t_atoms           atoms;
-    t_inputrec       *ir;
     t_state           state;
     int               gnx;
     char             *grpname;
@@ -386,7 +384,7 @@ int gmx_convert_tpr(int argc, char *argv[])
         return 0;
     }
 
-    /* Convert int to gmx_int64_t */
+    /* Convert int to int64_t */
     nsteps_req = nsteps_req_int;
     bNsteps    = opt2parg_bSet("-nsteps", asize(pa), pa);
     bExtend    = opt2parg_bSet("-extend", asize(pa), pa);
@@ -395,8 +393,8 @@ int gmx_convert_tpr(int argc, char *argv[])
     top_fn = ftp2fn(efTPR, NFILE, fnm);
     fprintf(stderr, "Reading toplogy and stuff from %s\n", top_fn);
 
-    gmx::MDModules mdModules;
-    ir = mdModules.inputrec();
+    t_inputrec  irInstance;
+    t_inputrec *ir = &irInstance;
     read_tpx_state(top_fn, ir, &state, &mtop);
     run_step = ir->init_step;
     run_t    = ir->init_step*ir->delta_t + ir->init_t;
@@ -411,7 +409,7 @@ int gmx_convert_tpr(int argc, char *argv[])
         /* Determine total number of steps remaining */
         if (bExtend)
         {
-            ir->nsteps = ir->nsteps - (run_step - ir->init_step) + (gmx_int64_t)(extend_t/ir->delta_t + 0.5);
+            ir->nsteps = ir->nsteps - (run_step - ir->init_step) + gmx::roundToInt64(extend_t/ir->delta_t);
             printf("Extending remaining runtime of by %g ps (now %s steps)\n",
                    extend_t, gmx_step_str(ir->nsteps, buf));
         }
@@ -421,7 +419,7 @@ int gmx_convert_tpr(int argc, char *argv[])
                    gmx_step_str(ir->nsteps, buf),
                    gmx_step_str(run_step, buf2),
                    run_t, until_t);
-            ir->nsteps = (gmx_int64_t)((until_t - run_t)/ir->delta_t + 0.5);
+            ir->nsteps = gmx::roundToInt64((until_t - run_t)/ir->delta_t);
             printf("Extending remaining runtime until %g ps (now %s steps)\n",
                    until_t, gmx_step_str(ir->nsteps, buf));
         }
@@ -475,7 +473,7 @@ int gmx_convert_tpr(int argc, char *argv[])
         }
 
         state_t = ir->init_t + ir->init_step*ir->delta_t;
-        sprintf(buf,   "Writing statusfile with starting step %s%s and length %s%s steps...\n", "%10", GMX_PRId64, "%10", GMX_PRId64);
+        sprintf(buf,   "Writing statusfile with starting step %s%s and length %s%s steps...\n", "%10", PRId64, "%10", PRId64);
         fprintf(stderr, buf, ir->init_step, ir->nsteps);
         fprintf(stderr, "                                 time %10.3f and length %10.3f ps\n",
                 state_t, ir->nsteps*ir->delta_t);

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -138,7 +138,7 @@ AnalysisDataDisplacementModule::setMaxTime(real tmax)
 
 void
 AnalysisDataDisplacementModule::setMSDHistogram(
-        AnalysisDataBinAverageModulePointer histm)
+        const AnalysisDataBinAverageModulePointer &histm)
 {
     GMX_RELEASE_ASSERT(_impl->histm == nullptr, "Can only set MSD histogram once");
     _impl->histm = histm.get();
@@ -212,7 +212,7 @@ AnalysisDataDisplacementModule::frameStarted(const AnalysisDataFrameHeader &head
     // Allocate memory for all the positions once it is possible.
     if (_impl->max_store == -1 && !_impl->bFirst)
     {
-        _impl->max_store = _impl->nmax * (int)(_impl->tmax/_impl->dt + 1);
+        _impl->max_store = _impl->nmax * static_cast<int>(_impl->tmax/_impl->dt + 1);
         srenew(_impl->oldval, _impl->max_store);
     }
 

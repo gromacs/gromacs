@@ -1,4 +1,4 @@
-libdir=@CMAKE_INSTALL_PREFIX@/@LIB_INSTALL_DIR@
+libdir=@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@
 
 Name: libgromacs@GMX_LIBS_SUFFIX@
 Description: Gromacs library

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,6 +86,7 @@ class CpuInfo
             Fujitsu,      //!< Only works on Linux (parsed from /proc/cpuinfo)
             Ibm,          //!< Only works on Linux (parsed from /proc/cpuinfo)
             Arm,          //!< Only works on Linux (parsed from /proc/cpuinfo)
+            Oracle,       //!< Cannot detect anything else yet (no /proc/cpuinfo available)
         };
 
         /*! \brief List of CPU features
@@ -97,6 +98,7 @@ class CpuInfo
         enum class Feature
         {
             X86_Aes,         //!< x86 advanced encryption standard accel.
+            X86_Amd,         //!< This is an AMD x86 processor
             X86_Apic,        //!< APIC support
             X86_Avx,         //!< Advanced vector extensions
             X86_Avx2,        //!< AVX2 including gather support (not used yet)
@@ -114,7 +116,8 @@ class CpuInfo
             X86_Fma,         //!< Fused-multiply add support (mainly for AVX)
             X86_Fma4,        //!< 4-operand FMA, only on AMD for now
             X86_Hle,         //!< Hardware lock elision
-            X86_Htt,         //!< Hyper-Threading supported (but maybe not enabled)
+            X86_Htt,         //!< Hyper-Threading enabled (NOTE: might not match the CPUID HTT support flag)
+            X86_Intel,       //!< This is an Intel x86 processor
             X86_Lahf,        //!< LAHF/SAHF support in 64 bits
             X86_MisalignSse, //!< Support for misaligned SSE data instructions
             X86_Mmx,         //!< MMX registers and instructions
@@ -141,7 +144,7 @@ class CpuInfo
             X86_Xop,         //!< AMD extended instructions, only AMD for now
             Arm_Neon,        //!< 32-bit ARM NEON
             Arm_NeonAsimd,   //!< 64-bit ARM AArch64 Advanced SIMD
-            Ibm_Qpx,         //!< IBM QPX SIMD (BlueGene/Q and later)
+            Ibm_Qpx,         //!< IBM QPX SIMD (BlueGene/Q)
             Ibm_Vmx,         //!< IBM VMX SIMD (Altivec on Power6 and later)
             Ibm_Vsx,         //!< IBM VSX SIMD (Power7 and later)
             Fujitsu_HpcAce   //!< Fujitsu Sparc64 HPC-ACE
@@ -187,11 +190,7 @@ class CpuInfo
          *          map of vendor names. This can only happen if we extend the enum
          *          type but forget to add the string with the vendor name.
          */
-        const std::string &
-        vendorString() const
-        {
-            return s_vendorStrings_.at(vendor_);
-        }
+        const std::string &vendorString() const;
 
         /*! \brief String description of processor */
         const std::string &
@@ -228,11 +227,7 @@ class CpuInfo
          *          map of feature names. This can only happen if we extend the enum
          *          type but forget to add the string with the feature name.
          */
-        static const std::string &
-        featureString(Feature f)
-        {
-            return s_featureStrings_.at(f);
-        }
+        static const std::string &featureString(Feature f);
 
         /*! \brief Set of all supported features on this processor
          *
@@ -276,8 +271,6 @@ class CpuInfo
         int                                          stepping_;          //!<  Minor version of current cpu
         std::set<Feature>                            features_;          //!< Set of features supported on this cpu
         std::vector<LogicalProcessor>                logicalProcessors_; //!< Simple logical processor topology
-        static const std::map<Vendor, std::string>   s_vendorStrings_;   //!< Text description of each vendor
-        static const std::map<Feature, std::string>  s_featureStrings_;  //!< Text description of each feature
 };                                                                       // class CpuInfo
 
 /*! \brief Return true if the CPU is an Intel x86 Nehalem

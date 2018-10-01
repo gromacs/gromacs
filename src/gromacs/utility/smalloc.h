@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,10 +36,10 @@
  */
 /*! \file
  * \brief
- * C memory allocation routines for \Gromacs.
+ * C-style memory allocation routines for \Gromacs.
  *
  * This header provides macros snew(), srenew(), smalloc(), and sfree() for
- * C memory management.  Additionally, snew_aligned() and sfree_aligned() are
+ * C-style memory management.  Additionally, snew_aligned() and sfree_aligned() are
  * provided for managing memory with a specified byte alignment.
  *
  * If an allocation fails, the program is halted by calling gmx_fatal(), which
@@ -57,14 +57,6 @@
  * save_malloc_aligned() exists for this purpose, although there is no macro to
  * invoke it.
  *
- * \if internal
- * As an implementation detail, the macros need a different internal
- * implementation for C and C++ code.  This is because C accepts conversions
- * from `void *` to any pointer type, but C++ doesn't.  And in order to cast
- * the returned pointer to a correct type, a C++ template needs to be used to
- * get access to the type.
- * \endif
- *
  * \inpublicapi
  * \ingroup module_utility
  */
@@ -74,10 +66,6 @@
 #include <stddef.h>
 
 #include "gromacs/utility/basedefinitions.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /*! \brief
  * \Gromacs wrapper for malloc().
@@ -190,22 +178,14 @@ void *save_calloc_aligned(const char *name, const char *file, int line,
  */
 void save_free_aligned(const char *name, const char *file, int line, void *ptr);
 
-#ifdef __cplusplus
-}
-#endif
-
-#ifdef __cplusplus
-
-#if GMX_CXX11_COMPILATION
 #include <type_traits>
-#endif
 
 /*! \cond internal */
 /*! \name Implementation templates for C++ memory allocation macros
  *
  * These templates are used to implement the snew() etc. macros for C++, where
  * an explicit cast is needed from `void *` (the return value of the allocation
- * wrapper functions) to the thpe of \p ptr.
+ * wrapper functions) to the type of \p ptr.
  *
  * Having these as `static` avoid some obscure bugs if several files define
  * distinct data structures with identical names and allocate memory for them
@@ -227,64 +207,51 @@ template <typename T> static inline
 void gmx_snew_impl(const char *name, const char *file, int line,
                    T * &ptr, size_t nelem)
 {
-#if GMX_CXX11_COMPILATION
     static_assert(std::is_pod<T>::value, "snew() called on C++ type");
-#endif
-    ptr = (T *)save_calloc(name, file, line, nelem, sizeof(T));
+    ptr = static_cast<T*>(save_calloc(name, file, line, nelem, sizeof(T)));
 }
 /** C++ helper for srenew(). */
 template <typename T> static inline
 void gmx_srenew_impl(const char *name, const char *file, int line,
                      T * &ptr, size_t nelem)
 {
-#if GMX_CXX11_COMPILATION
     static_assert(std::is_pod<T>::value, "srenew() called on C++ type");
-#endif
-    ptr = (T *)save_realloc(name, file, line, ptr, nelem, sizeof(T));
+    ptr = static_cast<T*>(save_realloc(name, file, line, ptr, nelem, sizeof(T)));
 }
 /** C++ helper for smalloc(). */
 template <typename T> static inline
 void gmx_smalloc_impl(const char *name, const char *file, int line,
                       T * &ptr, size_t size)
 {
-#if GMX_CXX11_COMPILATION
     static_assert(std::is_pod<T>::value, "smalloc() called on C++ type");
-#endif
-    ptr = (T *)save_malloc(name, file, line, size);
+    ptr = static_cast<T*>(save_malloc(name, file, line, size));
 }
 /** C++ helper for snew_aligned(). */
 template <typename T> static inline
 void gmx_snew_aligned_impl(const char *name, const char *file, int line,
                            T * &ptr, size_t nelem, size_t alignment)
 {
-#if GMX_CXX11_COMPILATION
     static_assert(std::is_pod<T>::value, "snew_aligned() called on C++ type");
-#endif
-    ptr = (T *)save_calloc_aligned(name, file, line, nelem, sizeof(T), alignment);
+    ptr = static_cast<T*>(save_calloc_aligned(name, file, line, nelem, sizeof(T), alignment));
 }
 /** C++ helper for sfree(). */
 template <typename T> static inline
 void gmx_sfree_impl(const char *name, const char *file, int line, T *ptr)
 {
-#if GMX_CXX11_COMPILATION
     static_assert(std::is_pod<T>::value || std::is_void<T>::value,
                   "sfree() called on C++ type");
-#endif
     save_free(name, file, line, ptr);
 }
 /** C++ helper for sfree_aligned(). */
 template <typename T> static inline
 void gmx_sfree_aligned_impl(const char *name, const char *file, int line, T *ptr)
 {
-#if GMX_CXX11_COMPILATION
     static_assert(std::is_pod<T>::value || std::is_void<T>::value,
                   "sfree_aligned() called on C++ type");
-#endif
     save_free_aligned(name, file, line, ptr);
 }
 /*! \} */
 /*! \endcond */
-#endif /* __cplusplus */
 
 /*! \def snew
  * \brief
@@ -358,7 +325,6 @@ void gmx_sfree_aligned_impl(const char *name, const char *file, int line, T *ptr
  *
  * \hideinitializer
  */
-#ifdef __cplusplus
 
 /* C++ implementation */
 #define snew(ptr, nelem) \
@@ -374,26 +340,6 @@ void gmx_sfree_aligned_impl(const char *name, const char *file, int line, T *ptr
 #define sfree_aligned(ptr) \
     gmx_sfree_aligned_impl(#ptr, __FILE__, __LINE__, (ptr))
 
-#else
-
-/* C implementation */
-#define snew(ptr, nelem) \
-    (ptr) = save_calloc(#ptr, __FILE__, __LINE__, (nelem), sizeof(*(ptr)))
-#define srenew(ptr, nelem) \
-    (ptr) = save_realloc(#ptr, __FILE__, __LINE__, (ptr), (nelem), sizeof(*(ptr)))
-#define smalloc(ptr, size) \
-    (ptr) = save_malloc(#ptr, __FILE__, __LINE__, size)
-#define snew_aligned(ptr, nelem, alignment) \
-    (ptr) = save_calloc_aligned(#ptr, __FILE__, __LINE__, (nelem), sizeof(*(ptr)), alignment)
-#define sfree(ptr) save_free(#ptr, __FILE__, __LINE__, (ptr))
-#define sfree_aligned(ptr) save_free_aligned(#ptr, __FILE__, __LINE__, (ptr))
-
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*! \brief
  * Over allocation factor for memory allocations.
  *
@@ -406,7 +352,7 @@ extern "C" {
  *
  * This factor leads to 4 realloc calls to double the array size.
  */
-#define OVER_ALLOC_FAC 1.19
+constexpr float OVER_ALLOC_FAC = 1.19;
 
 /*! \brief
  * Turns over allocation for variable size atoms/cg/top arrays on or off,
@@ -428,13 +374,11 @@ void set_over_alloc_dd(gmx_bool set);
 int over_alloc_dd(int n);
 
 /** Over allocation for small data types: int, real etc. */
-#define over_alloc_small(n) (int)(OVER_ALLOC_FAC*(n) + 8000)
+template<typename T>
+constexpr T over_alloc_small(T n) { return OVER_ALLOC_FAC*n + 8000; }
 
 /** Over allocation for large data types: complex structs */
-#define over_alloc_large(n) (int)(OVER_ALLOC_FAC*(n) + 1000)
-
-#ifdef __cplusplus
-}
-#endif
+template<typename T>
+constexpr T over_alloc_large(T n) { return OVER_ALLOC_FAC*n + 1000; }
 
 #endif

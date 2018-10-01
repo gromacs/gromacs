@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015, by the GROMACS development team, led by
+# Copyright (c) 2015,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -44,12 +44,13 @@ mark_as_advanced(SPHINX_EXECUTABLE)
 if (SPHINX_EXECUTABLE AND NOT DEFINED SPHINX_EXECUTABLE_VERSION)
     execute_process(
         COMMAND ${SPHINX_EXECUTABLE} --version
+        ERROR_VARIABLE  SPHINX_VERSION_OUTPUT_VARIABLE
         OUTPUT_VARIABLE SPHINX_VERSION_OUTPUT_VARIABLE
         RESULT_VARIABLE SPHINX_VERSION_RESULT_VARIABLE
         ERROR_QUIET
         OUTPUT_STRIP_TRAILING_WHITESPACE
         )
-    string(REGEX REPLACE "Sphinx \\([^)]*\\) ([^ ]+)" "\\1" SPHINX_EXECUTABLE_VERSION "${SPHINX_VERSION_OUTPUT_VARIABLE}")
+    string(REGEX REPLACE ".*build[ )]*" "" SPHINX_EXECUTABLE_VERSION "${SPHINX_VERSION_OUTPUT_VARIABLE}")
     set(SPHINX_EXECUTABLE_VERSION "${SPHINX_EXECUTABLE_VERSION}" CACHE INTERNAL "Version of ${SPHINX_EXECUTABLE}")
 endif()
 

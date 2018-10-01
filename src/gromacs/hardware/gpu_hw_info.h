@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,9 +37,6 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 #if 0
 } /* fixes auto-indentation problems */
 #endif
@@ -53,7 +50,7 @@ struct gmx_device_info_t;
  * incompatible driver/runtime. */
 typedef enum
 {
-    egpuCompatible = 0,  egpuNonexistent,  egpuIncompatible, egpuInsane, egpuNR
+    egpuCompatible = 0,  egpuNonexistent,  egpuIncompatible, egpuIncompatibleClusterSize, egpuInsane, egpuNR
 } e_gpu_detect_res_t;
 
 /* Names of the GPU detection/check results */
@@ -68,21 +65,5 @@ struct gmx_gpu_info_t
     struct gmx_device_info_t *gpu_dev;          /* GPU devices detected in the system (per node) */
     int                       n_dev_compatible; /* number of compatible GPUs */
 };
-
-/* GPU device selection information -- includes either CUDA or OpenCL devices */
-typedef struct gmx_gpu_opt_t
-{
-    char     *gpu_id;           /* GPU id's to use, each specified as chars */
-    gmx_bool  bUserSet;         /* true if the GPUs in dev_use are manually provided by the user */
-
-    int       n_dev_compatible; /* number of compatible GPU devices that could be used */
-    int      *dev_compatible;   /* array of compatible GPU device IDs, from which automatic selection occurs */
-    int       n_dev_use;        /* number of GPU devices selected to be used, either by the user or automatically */
-    int      *dev_use;          /* array mapping from PP rank index to GPU device ID; GPU IDs can be listed multiple times when ranks share them */
-} gmx_gpu_opt_t;
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

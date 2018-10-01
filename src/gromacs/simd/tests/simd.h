@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,6 +81,7 @@
 #include "gromacs/simd/simd.h"
 
 #include "base.h"
+#include "data.h"
 
 #if GMX_SIMD
 
@@ -108,13 +109,15 @@ namespace test
  * them in a single place makes sure they are consistent.
  */
 #if GMX_SIMD_HAVE_REAL
-extern const SimdReal rSimd_1_2_3;     //!< Generic (different) fp values.
-extern const SimdReal rSimd_4_5_6;     //!< Generic (different) fp values.
-extern const SimdReal rSimd_7_8_9;     //!< Generic (different) fp values.
-extern const SimdReal rSimd_5_7_9;     //!< rSimd_1_2_3 + rSimd_4_5_6.
-extern const SimdReal rSimd_m1_m2_m3;  //!< Generic negative floating-point values.
-extern const SimdReal rSimd_3_1_4;     //!< Used to test min/max.
-extern const SimdReal rSimd_m3_m1_m4;  //!< negative rSimd_3_1_4.
+extern const SimdReal rSimd_c0c1c2;    //!< c0,c1,c2 repeated
+extern const SimdReal rSimd_c3c4c5;    //!< c3,c4,c5 repeated
+extern const SimdReal rSimd_c6c7c8;    //!< c6,c7,c8 repeated
+extern const SimdReal rSimd_c3c0c4;    //!< c3,c0,c4 repeated
+extern const SimdReal rSimd_c4c6c8;    //!< c4,c6,c8 repeated
+extern const SimdReal rSimd_c7c2c3;    //!< c7,c2,c3 repeated
+extern const SimdReal rSimd_m0m1m2;    //!< -c0,-c1,-c2 repeated
+extern const SimdReal rSimd_m3m0m4;    //!< -c3,-c0,-c4 repeated
+
 extern const SimdReal rSimd_2p25;      //!< Value that rounds down.
 extern const SimdReal rSimd_3p25;      //!< Value that rounds down.
 extern const SimdReal rSimd_3p75;      //!< Value that rounds up.
@@ -123,6 +126,14 @@ extern const SimdReal rSimd_m3p25;     //!< Negative value that rounds up.
 extern const SimdReal rSimd_m3p75;     //!< Negative value that rounds down.
 //! Three large floating-point values whose exponents are >32.
 extern const SimdReal rSimd_Exp;
+
+#if GMX_SIMD_HAVE_LOGICAL
+extern const SimdReal rSimd_logicalA;         //!< Bit pattern to test logical ops
+extern const SimdReal rSimd_logicalB;         //!< Bit pattern to test logical ops
+extern const SimdReal rSimd_logicalResultOr;  //!< Result or bitwise 'or' of A and B
+extern const SimdReal rSimd_logicalResultAnd; //!< Result or bitwise 'and' of A and B
+#endif                                        // GMX_SIMD_HAVE_LOGICAL
+
 #    if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
 // Make sure we also test exponents outside single precision when we use double
 extern const SimdReal rSimd_ExpDouble;
@@ -178,7 +189,7 @@ class SimdTest : public SimdBaseTest
 
             ::testing::AssertionResult
         compareSimdRealUlp(const char * refExpr, const char * tstExpr,
-                           const SimdReal ref, const SimdReal tst);
+                           SimdReal ref, SimdReal tst);
 
         /*! \brief Compare two real SIMD variables for exact equality.
          *
@@ -193,8 +204,8 @@ class SimdTest : public SimdBaseTest
          * reference element.
          */
         ::testing::AssertionResult
-        compareSimdRealEq(const char * refExpr, const char * tstExpr,
-                          const SimdReal ref, const SimdReal tst);
+        compareSimdEq(const char * refExpr, const char * tstExpr,
+                      SimdReal ref, SimdReal tst);
 
         /*! \brief Compare two 32-bit integer SIMD variables.
          *
@@ -209,8 +220,8 @@ class SimdTest : public SimdBaseTest
          * in the SIMD variable tst is identical to the corresponding reference element.
          */
         ::testing::AssertionResult
-        compareSimdInt32(const char * refExpr, const char *  tstExpr,
-                         const SimdInt32 ref, const SimdInt32 tst);
+        compareSimdEq(const char * refExpr, const char *  tstExpr,
+                      SimdInt32 ref, SimdInt32 tst);
 #endif
 };
 
@@ -219,7 +230,7 @@ class SimdTest : public SimdBaseTest
  *
  * The returned vector will have the same length as the SIMD width.
  */
-std::vector<real> simdReal2Vector(const SimdReal simd);
+std::vector<real> simdReal2Vector(SimdReal simd);
 
 /*! \brief Return floating-point SIMD value from std::vector<real>.
  *
@@ -245,7 +256,10 @@ SimdReal   setSimdRealFrom3R(real r0, real r1, real r2);
 SimdReal   setSimdRealFrom1R(real value);
 
 /*! \brief Test if a SIMD real is bitwise identical to reference SIMD value. */
-#define GMX_EXPECT_SIMD_REAL_EQ(ref, tst)   EXPECT_PRED_FORMAT2(compareSimdRealEq, ref, tst)
+#define GMX_EXPECT_SIMD_REAL_EQ(ref, tst)   EXPECT_PRED_FORMAT2(compareSimdEq, ref, tst)
+
+/*! \brief Test if a SIMD is bitwise identical to reference SIMD value. */
+#define GMX_EXPECT_SIMD_EQ(ref, tst)   EXPECT_PRED_FORMAT2(compareSimdEq, ref, tst)
 
 /*! \brief Test if a SIMD real is within tolerance of reference SIMD value. */
 #define GMX_EXPECT_SIMD_REAL_NEAR(ref, tst) EXPECT_PRED_FORMAT2(compareSimdRealUlp, ref, tst)
@@ -254,14 +268,14 @@ SimdReal   setSimdRealFrom1R(real value);
  *
  * The returned vector will have the same length as the SIMD width.
  */
-std::vector<int>   simdInt2Vector(const SimdInt32 simd);
+std::vector<std::int32_t>   simdInt2Vector(SimdInt32 simd);
 
 /*! \brief Return 32-bit integer SIMD value from std::vector<int>.
  *
  * If the vector is longer than SIMD width, only the first elements will be used.
  * If it is shorter, the contents will be repeated to fill the SIMD register.
  */
-SimdInt32   vector2SimdInt(const std::vector<int> &v);
+SimdInt32   vector2SimdInt(const std::vector<std::int32_t> &v);
 
 /*! \brief Set SIMD register contents from three int values.
  *
@@ -284,15 +298,15 @@ SimdInt32   setSimdIntFrom1I(int value);
  * If the reference argument is a scalar integer it will be expanded into
  * the width of the SIMD register and tested against all elements.
  */
-#define GMX_EXPECT_SIMD_INT_EQ(ref, tst)    EXPECT_PRED_FORMAT2(compareSimdInt32, ref, tst)
+#define GMX_EXPECT_SIMD_INT_EQ(ref, tst)    EXPECT_PRED_FORMAT2(compareSimdEq, ref, tst)
 
 #endif  // GMX_SIMD_HAVE_REAL
 
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace
+}      // namespace test
+}      // namespace gmx
 
 #endif // GMX_SIMD
 

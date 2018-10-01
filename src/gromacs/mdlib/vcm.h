@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 
 struct gmx_groups_t;
 struct t_inputrec;
+struct t_mdatoms;
 
 typedef struct {
     rvec      p;        /* Linear momentum                     */
@@ -60,7 +61,8 @@ typedef struct {
     int           size;        /* Size of group arrays                */
     int           stride;      /* Stride for thread data              */
     int           mode;        /* One of the enums above              */
-    gmx_bool      ndim;        /* The number of dimensions for corr.  */
+    int           ndim;        /* The number of dimensions for corr.  */
+    real          timeStep;    /* The time step for COMM removal      */
     real         *group_ndf;   /* Number of degrees of freedom        */
     rvec         *group_p;     /* Linear momentum per group           */
     rvec         *group_v;     /* Linear velocity per group           */
@@ -70,18 +72,22 @@ typedef struct {
     tensor       *group_i;     /* Moment of inertia per group         */
     real         *group_mass;  /* Mass per group                      */
     char        **group_name;  /* These two are copies to pointers in */
+    ivec         *nFreeze;     /* Tells whether dimensions are frozen per freeze group */
     t_vcm_thread *thread_vcm;  /* Temporary data per thread and group */
 } t_vcm;
 
-t_vcm *init_vcm(FILE *fp, gmx_groups_t *groups, t_inputrec *ir);
+t_vcm *init_vcm(FILE *fp, const gmx_groups_t *groups, const t_inputrec *ir);
 
 /* Do a per group center of mass things */
 void calc_vcm_grp(int start, int homenr, t_mdatoms *md,
                   rvec x[], rvec v[], t_vcm *vcm);
 
-void do_stopcm_grp(int start, int homenr,
-                   unsigned short *group_id,
-                   rvec x[], rvec v[], t_vcm *vcm);
+/* Set the COM velocity to zero and potentially correct the COM position.
+ *
+ * With linear modes nullptr can be passed for x.
+ */
+void do_stopcm_grp(const t_mdatoms &mdatoms,
+                   rvec x[], rvec v[], const t_vcm &vcm);
 
 void check_cm_grp(FILE *fp, t_vcm *vcm, t_inputrec *ir, real Temp_Max);
 

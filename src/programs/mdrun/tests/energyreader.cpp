@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,7 +50,9 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/enxio.h"
+#include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -92,7 +94,7 @@ openEnergyFileToReadFields(const std::string              &filename,
             auto        requiredEnergy = std::find_if(std::begin(namesOfRequiredEnergyFields),
                                                       std::end(namesOfRequiredEnergyFields),
                                                       [name](const std::string &n){
-                                                          return 0 == n.compare(name);
+                                                          return name == n;
                                                       });
             if (requiredEnergy != namesOfRequiredEnergyFields.end())
             {
@@ -118,11 +120,12 @@ openEnergyFileToReadFields(const std::string              &filename,
         GMX_THROW(APIError(requiredEnergiesNotFound));
     }
 
-    return EnergyFrameReaderPtr(new EnergyFrameReader(indicesOfEnergyFields, energyFile.release()));
+    return EnergyFrameReaderPtr(compat::make_unique<EnergyFrameReader>(indicesOfEnergyFields,
+                                                                       energyFile.release()));
 }
 
 //! Helper function to obtain resources
-t_enxframe *make_enxframe()
+static t_enxframe *make_enxframe()
 {
     t_enxframe *frame;
 
@@ -174,8 +177,6 @@ EnergyFrameReader::readNextFrame()
 EnergyFrame
 EnergyFrameReader::frame()
 {
-    EnergyFrame energyFrame;
-
     if (!haveProbedForNextFrame_)
     {
         readNextFrame();
@@ -185,64 +186,13 @@ EnergyFrameReader::frame()
         GMX_THROW(APIError("There is no next frame, so there should have been no attempt to use the data, e.g. by reacting to a call to readNextFrame()."));
     }
 
-    // The probe filled enxframe_ with new data, so now we use that data to fill energyFrame
-    t_enxframe *enxframe = enxframeGuard_.get();
-    energyFrame.time_ = enxframe->t;
-    energyFrame.step_ = enxframe->step;
-    for (auto &index : indicesOfEnergyFields_)
-    {
-        if (index.second >= enxframe->nre)
-        {
-            GMX_THROW(InternalError(formatString("Index %d for energy %s not present in energy frame with %d energies",
-                                                 index.second, index.first.c_str(), enxframe->nre)));
-        }
-        energyFrame.values_[index.first] = enxframe->ener[index.second].e;
-    }
-
     // Prepare for reading future frames
     haveProbedForNextFrame_ = false;
     nextFrameExists_        = false;
 
-    return energyFrame;
+    // The probe filled enxframe_ with new data, so now we use that data to fill energyFrame
+    return EnergyFrame(*enxframeGuard_.get(), indicesOfEnergyFields_);
 }
 
-// === EnergyFrame ===
-
-EnergyFrame::EnergyFrame() : values_(), step_(), time_() {};
-
-std::string EnergyFrame::getFrameName() const
-{
-    return formatString("Time %f Step %" GMX_PRId64, time_, step_);
-}
-
-const real &EnergyFrame::at(const std::string &name) const
-{
-    auto valueIterator = values_.find(name);
-    if (valueIterator == values_.end())
-    {
-        GMX_THROW(APIError("Cannot get energy value " + name + " unless previously registered when constructing EnergyFrameReader"));
-    }
-    return valueIterator->second;
-}
-
-void compareFrames(const std::pair<EnergyFrame, EnergyFrame> &frames,
-                   FloatingPointTolerance tolerance)
-{
-    auto &reference = frames.first;
-    auto &test      = frames.second;
-
-    for (auto referenceIt = reference.values_.begin(); referenceIt != reference.values_.end(); ++referenceIt)
-    {
-        auto testIt = test.values_.find(referenceIt->first);
-        if (testIt != test.values_.end())
-        {
-            auto energyFieldInReference = referenceIt->second;
-            auto energyFieldInTest      = testIt->second;
-            EXPECT_REAL_EQ_TOL(energyFieldInReference, energyFieldInTest, tolerance)
-            << referenceIt->first << " didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
-        }
-    }
-}
-
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx

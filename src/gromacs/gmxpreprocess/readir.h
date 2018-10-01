@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,11 @@
 #ifndef GMX_GMXPREPROCESS_READIR_H
 #define GMX_GMXPREPROCESS_READIR_H
 
+<<<<<<< HEAD
 #include "gromacs/fileio/warninp.h"
+=======
+#include "gromacs/fileio/readinp.h"
+>>>>>>> master
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/ikeyvaluetreeerror.h"
@@ -77,17 +81,17 @@ struct t_gromppopts
     int      nshake;
     char    *include;
     char    *define;
-    gmx_bool bGenVel;
-    gmx_bool bGenPairs;
+    bool     bGenVel;
+    bool     bGenPairs;
     real     tempi;
     int      seed;
-    gmx_bool bOrire;
-    gmx_bool bMorse;
+    bool     bOrire;
+    bool     bMorse;
     char    *wall_atomtype[2];
     char    *couple_moltype;
     int      couple_lam0;
     int      couple_lam1;
-    gmx_bool bCoupleIntra;
+    bool     bCoupleIntra;
 };
 
 /*! \brief Initialise object to hold strings parsed from an .mdp file */
@@ -105,8 +109,8 @@ int search_string(const char *s, int ng, char *gn[]);
 /* Returns the index of string s in the index groups */
 
 void double_check(t_inputrec *ir, matrix box,
-                  gmx_bool bHasNormalConstraints,
-                  gmx_bool bHasAnyConstraints,
+                  bool bHasNormalConstraints,
+                  bool bHasAnyConstraints,
                   warninp_t wi);
 /* Do more checks */
 
@@ -120,8 +124,8 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
 /* Even more checks, charge group radii vs. cut-off's only. */
 
 void get_ir(const char *mdparin, const char *mdparout,
-            gmx::MDModules *mdModules, t_gromppopts *opts,
-            warninp_t wi);
+            gmx::MDModules *mdModules, t_inputrec *ir, t_gromppopts *opts,
+            WriteMdpHeader writeMdpHeader, warninp_t wi);
 /* Read the input file, and retrieve data for inputrec.
  * More data are read, but the are only evaluated when the next
  * function is called. Also prints the input file back to mdparout.
@@ -130,7 +134,7 @@ void get_ir(const char *mdparin, const char *mdparout,
 void do_index(const char* mdparin,
               const char *ndx,
               gmx_mtop_t *mtop,
-              gmx_bool    bVerbose,
+              bool        bVerbose,
               t_inputrec *ir,
               warninp_t   wi);
 /* Read the index file and assign grp numbers to atoms.
@@ -138,9 +142,9 @@ void do_index(const char* mdparin,
 
 /* Routines In readpull.c */
 
-char **read_pullparams(int *ninp_p, t_inpfile **inp,
-                       pull_params_t *pull,
-                       warninp_t wi);
+char **read_pullparams(std::vector<t_inpfile> *inp,
+                       pull_params_t          *pull,
+                       warninp_t               wi);
 /* Reads the pull parameters, returns a list of the pull group names */
 
 void make_pull_groups(pull_params_t *pull,
@@ -153,17 +157,14 @@ void make_pull_coords(pull_params_t *pull);
 
 pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
                       rvec *x, matrix box, real lambda,
-                      const gmx_output_env_t *oenv);
+                      warninp_t wi);
 /* Prints the initial pull group distances in x.
  * If requested, adds the current distance to the initial reference location.
  * Returns the pull_t pull work struct. This should be passed to finish_pull()
  * after all modules have registered their external potentials, if present.
  */
 
-int str_nelem(const char *str, int maxptr, char *ptr[]);
-/* helper function from readir.c to convert strings */
-
-char **read_rotparams(int *ninp_p, t_inpfile **inp, t_rot *rot, warninp_t wi);
+char **read_rotparams(std::vector<t_inpfile> *inp, t_rot *rot, warninp_t wi);
 /* Reads enforced rotation parameters, returns a list of the rot group names */
 
 void make_rotation_groups(t_rot *rot, char **rotgnames,
@@ -171,7 +172,7 @@ void make_rotation_groups(t_rot *rot, char **rotgnames,
 /* Process the rotation parameters after reading the index groups */
 
 void set_reference_positions(t_rot *rot, rvec *x, matrix box,
-                             const char *fn, gmx_bool bSet, warninp_t wi);
+                             const char *fn, bool bSet, warninp_t wi);
 
 namespace gmx
 {

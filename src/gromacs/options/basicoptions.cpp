@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -85,7 +85,7 @@ void expandVector(size_t length, std::vector<ValueType> *values)
         if (values->size() != 1)
         {
             GMX_THROW(gmx::InvalidInputError(gmx::formatString(
-                                                     "Expected 1 or %d values, got %d", length, values->size())));
+                                                     "Expected 1 or %zu values, got %zu", length, values->size())));
         }
         const ValueType &value = (*values)[0];
         values->resize(length, value);
@@ -182,7 +182,7 @@ BooleanOption::createStorage(const OptionManagerContainer & /*managers*/) const
 
 std::string IntegerOptionStorage::formatSingleValue(const int &value) const
 {
-    return formatString("%d", value);
+    return toString(value);
 }
 
 void IntegerOptionStorage::initConverter(ConverterType *converter)
@@ -222,14 +222,14 @@ IntegerOption::createStorage(const OptionManagerContainer & /*managers*/) const
  * Int64OptionStorage
  */
 
-std::string Int64OptionStorage::formatSingleValue(const gmx_int64_t &value) const
+std::string Int64OptionStorage::formatSingleValue(const int64_t &value) const
 {
-    return formatString("%" GMX_PRId64, value);
+    return toString(value);
 }
 
 void Int64OptionStorage::initConverter(ConverterType *converter)
 {
-    converter->addConverter<std::string>(&fromStdString<gmx_int64_t>);
+    converter->addConverter<std::string>(&fromStdString<int64_t>);
 }
 
 /********************************************************************
@@ -268,7 +268,7 @@ std::string DoubleOptionStorage::typeString() const
 
 std::string DoubleOptionStorage::formatSingleValue(const double &value) const
 {
-    return formatString("%g", value / factor_);
+    return toString(value / factor_);
 }
 
 void DoubleOptionStorage::initConverter(ConverterType *converter)
@@ -361,7 +361,7 @@ std::string FloatOptionStorage::typeString() const
 
 std::string FloatOptionStorage::formatSingleValue(const float &value) const
 {
-    return formatString("%g", value / factor_);
+    return toString(value / factor_);
 }
 
 void FloatOptionStorage::initConverter(ConverterType *converter)
@@ -506,7 +506,7 @@ void StringOptionStorage::initConverter(ConverterType * /*converter*/)
 
 std::string StringOptionStorage::processValue(const std::string &value) const
 {
-    if (allowed_.size() > 0)
+    if (!allowed_.empty())
     {
         return *findEnumValue(this->allowed_, value);
     }
@@ -610,6 +610,11 @@ std::string EnumOptionStorage::formatSingleValue(const int &value) const
     return allowed_[value];
 }
 
+Variant EnumOptionStorage::normalizeValue(const int &value) const
+{
+    return Variant::create<std::string>(formatSingleValue(value));
+}
+
 void EnumOptionStorage::initConverter(ConverterType *converter)
 {
     converter->addConverter<std::string>(
@@ -650,11 +655,10 @@ AbstractOptionStorage *
 createEnumOptionStorage(const AbstractOption &option,
                         const char *const *enumValues, int count,
                         int defaultValue, int defaultValueIfSet,
-                        IOptionValueStore<int> *store)
+                        std::unique_ptr<IOptionValueStore<int> > store)
 {
-    std::unique_ptr<IOptionValueStore<int> > storePtr(store);
     return new EnumOptionStorage(option, enumValues, count, defaultValue,
-                                 defaultValueIfSet, move(storePtr));
+                                 defaultValueIfSet, move(store));
 }
 //! \endcond
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,7 +67,7 @@
 #include "gromacs/utility/strdb.h"
 
 
-real calc_mass(t_atoms *atoms, gmx_bool bGetMass, gmx_atomprop_t aps)
+static real calc_mass(t_atoms *atoms, gmx_bool bGetMass, gmx_atomprop_t aps)
 {
     real tmass;
     int  i;
@@ -87,8 +87,8 @@ real calc_mass(t_atoms *atoms, gmx_bool bGetMass, gmx_atomprop_t aps)
     return tmass;
 }
 
-real calc_geom(int isize, int *index, rvec *x, rvec geom_center, rvec minval,
-               rvec maxval, gmx_bool bDiam)
+static real calc_geom(int isize, const int *index, rvec *x, rvec geom_center, rvec minval,
+                      rvec maxval, gmx_bool bDiam)
 {
     real  diam2, d;
     int   ii, i, j;
@@ -162,7 +162,7 @@ real calc_geom(int isize, int *index, rvec *x, rvec geom_center, rvec minval,
     return std::sqrt(diam2);
 }
 
-void center_conf(int natom, rvec *x, rvec center, rvec geom_cent)
+static void center_conf(int natom, rvec *x, rvec center, rvec geom_cent)
 {
     int  i;
     rvec shift;
@@ -178,7 +178,7 @@ void center_conf(int natom, rvec *x, rvec center, rvec geom_cent)
     }
 }
 
-void scale_conf(int natom, rvec x[], matrix box, rvec scale)
+static void scale_conf(int natom, rvec x[], matrix box, const rvec scale)
 {
     int i, j;
 
@@ -198,7 +198,7 @@ void scale_conf(int natom, rvec x[], matrix box, rvec scale)
     }
 }
 
-void read_bfac(const char *fn, int *n_bfac, double **bfac_val, int **bfac_nr)
+static void read_bfac(const char *fn, int *n_bfac, double **bfac_val, int **bfac_nr)
 {
     int    i;
     char **bfac_lines;
@@ -216,8 +216,8 @@ void read_bfac(const char *fn, int *n_bfac, double **bfac_val, int **bfac_nr)
 
 }
 
-void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
-                       double *bfac, int *bfac_nr, gmx_bool peratom)
+static void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
+                              double *bfac, int *bfac_nr, gmx_bool peratom)
 {
     real     bfac_min, bfac_max;
     int      i, n;
@@ -306,7 +306,7 @@ void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
     }
 }
 
-void pdb_legend(FILE *out, int natoms, int nres, t_atoms *atoms, rvec x[])
+static void pdb_legend(FILE *out, int natoms, int nres, t_atoms *atoms, rvec x[])
 {
     real bfac_min, bfac_max, xmin, ymin, zmin;
     int  i;
@@ -336,7 +336,7 @@ void pdb_legend(FILE *out, int natoms, int nres, t_atoms *atoms, rvec x[])
     }
 }
 
-void visualize_images(const char *fn, int ePBC, matrix box)
+static void visualize_images(const char *fn, int ePBC, matrix box)
 {
     t_atoms atoms;
     rvec   *img;
@@ -348,8 +348,8 @@ void visualize_images(const char *fn, int ePBC, matrix box)
     atoms.nr = nat;
     snew(img, nat);
     /* FIXME: Constness should not be cast away */
-    c   = (char *) "C";
-    ala = (char *) "ALA";
+    c   = const_cast<char*>("C");
+    ala = const_cast<char*>("ALA");
     for (i = 0; i < nat; i++)
     {
         atoms.atomname[i]        = &c;
@@ -366,7 +366,7 @@ void visualize_images(const char *fn, int ePBC, matrix box)
     sfree(img);
 }
 
-void visualize_box(FILE *out, int a0, int r0, matrix box, rvec gridsize)
+static void visualize_box(FILE *out, int a0, int r0, matrix box, const rvec gridsize)
 {
     int  *edge;
     rvec *vert, shift;
@@ -381,9 +381,9 @@ void visualize_box(FILE *out, int a0, int r0, matrix box, rvec gridsize)
     a0++;
     r0++;
 
-    nx   = static_cast<int>(gridsize[XX] + 0.5);
-    ny   = static_cast<int>(gridsize[YY] + 0.5);
-    nz   = static_cast<int>(gridsize[ZZ] + 0.5);
+    nx   = gmx::roundToInt(gridsize[XX]);
+    ny   = gmx::roundToInt(gridsize[YY]);
+    nz   = gmx::roundToInt(gridsize[ZZ]);
     nbox = nx * ny * nz;
     if (TRICLINIC(box))
     {
@@ -451,7 +451,7 @@ void visualize_box(FILE *out, int a0, int r0, matrix box, rvec gridsize)
     }
 }
 
-void calc_rotmatrix(rvec principal_axis, rvec targetvec, matrix rotmatrix)
+static void calc_rotmatrix(rvec principal_axis, rvec targetvec, matrix rotmatrix)
 {
     rvec rotvec;
     real ux, uy, uz, costheta, sintheta;
@@ -513,6 +513,9 @@ int gmx_editconf(int argc, char *argv[])
         "The box can be modified with options [TT]-box[tt], [TT]-d[tt] and",
         "[TT]-angles[tt]. Both [TT]-box[tt] and [TT]-d[tt]",
         "will center the system in the box, unless [TT]-noc[tt] is used.",
+        "The [TT]-center[tt] option can be used to shift the geometric center",
+        "of the system from the default of (x/2, y/2, z/2) implied by [TT]-c[tt]",
+        "to some other value.",
         "[PAR]",
         "Option [TT]-bt[tt] determines the box type: [TT]triclinic[tt] is a",
         "triclinic box, [TT]cubic[tt] is a rectangular box with all sides equal",
@@ -642,7 +645,7 @@ int gmx_editconf(int argc, char *argv[])
           { &bCenter },
           "Center molecule in box (implied by [TT]-box[tt] and [TT]-d[tt])" },
         { "-center", FALSE, etRVEC,
-          { center }, "Coordinates of geometrical center" },
+          { center }, "Shift the geometrical center to (x,y,z)" },
         { "-aligncenter", FALSE, etRVEC,
           { aligncenter }, "Center of rotation for alignment" },
         { "-align", FALSE, etRVEC,
@@ -704,7 +707,7 @@ int gmx_editconf(int argc, char *argv[])
     int              *bfac_nr = nullptr;
     t_topology       *top     = nullptr;
     char             *grpname, *sgrpname, *agrpname;
-    int               isize, ssize, asize;
+    int               isize, ssize, numAlignmentAtoms;
     int              *index, *sindex, *aindex;
     rvec             *x, *v, gc, rmin, rmax, size;
     int               ePBC;
@@ -999,28 +1002,28 @@ int gmx_editconf(int argc, char *argv[])
         {
             fprintf(stderr, "\nSelect a group that you want to align:\n");
             get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm),
-                      1, &asize, &aindex, &agrpname);
+                      1, &numAlignmentAtoms, &aindex, &agrpname);
         }
         else
         {
-            asize = atoms.nr;
-            snew(aindex, asize);
-            for (i = 0; i < asize; i++)
+            numAlignmentAtoms = atoms.nr;
+            snew(aindex, numAlignmentAtoms);
+            for (i = 0; i < numAlignmentAtoms; i++)
             {
                 aindex[i] = i;
             }
         }
-        printf("Aligning %d atoms (out of %d) to %g %g %g, center of rotation %g %g %g\n", asize, natom,
+        printf("Aligning %d atoms (out of %d) to %g %g %g, center of rotation %g %g %g\n", numAlignmentAtoms, natom,
                targetvec[XX], targetvec[YY], targetvec[ZZ],
                aligncenter[XX], aligncenter[YY], aligncenter[ZZ]);
         /*subtract out pivot point*/
-        for (i = 0; i < asize; i++)
+        for (i = 0; i < numAlignmentAtoms; i++)
         {
             rvec_dec(x[aindex[i]], aligncenter);
         }
         /*now determine transform and rotate*/
         /*will this work?*/
-        principal_comp(asize, aindex, atoms.atom, x, trans, princd);
+        principal_comp(numAlignmentAtoms, aindex, atoms.atom, x, trans, princd);
 
         unitv(targetvec, targetvec);
         printf("Using %g %g %g as principal axis\n", trans[0][2], trans[1][2], trans[2][2]);
@@ -1028,14 +1031,14 @@ int gmx_editconf(int argc, char *argv[])
         calc_rotmatrix(tmpvec, targetvec, rotmatrix);
         /* rotmatrix finished */
 
-        for (i = 0; i < asize; ++i)
+        for (i = 0; i < numAlignmentAtoms; ++i)
         {
             mvmul(rotmatrix, x[aindex[i]], tmpvec);
             copy_rvec(tmpvec, x[aindex[i]]);
         }
 
         /*add pivot point back*/
-        for (i = 0; i < asize; i++)
+        for (i = 0; i < numAlignmentAtoms; i++)
         {
             rvec_inc(x[aindex[i]], aligncenter);
         }
@@ -1262,7 +1265,7 @@ int gmx_editconf(int argc, char *argv[])
         if (outftp == efPDB)
         {
             out = gmx_ffopen(outfile, "w");
-            write_pdbfile_indexed(out, *top_tmp->name, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, TRUE);
+            write_pdbfile_indexed(out, *top_tmp->name, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, TRUE, FALSE);
             gmx_ffclose(out);
         }
         else
@@ -1308,7 +1311,18 @@ int gmx_editconf(int argc, char *argv[])
                     atoms.resinfo[atoms.atom[i].resind].chainid = label[0];
                 }
             }
-            write_pdbfile(out, *top_tmp->name, &atoms, x, ePBC, box, ' ', -1, conect, TRUE);
+            /* Need to bypass the regular write_pdbfile because I don't want to change
+             * all instances to include the boolean flag for writing out PQR files.
+             */
+            int *index;
+            snew(index, atoms.nr);
+            for (int i = 0; i < atoms.nr; i++)
+            {
+                index[i] = i;
+            }
+            write_pdbfile_indexed(out, *top_tmp->name, &atoms, x, ePBC, box, ' ', -1, atoms.nr, index, conect,
+                                  TRUE, outftp == efPQR);
+            sfree(index);
             if (bLegend)
             {
                 pdb_legend(out, atoms.nr, atoms.nres, &atoms, x);

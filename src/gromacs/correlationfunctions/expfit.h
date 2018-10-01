@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,10 +46,6 @@
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct gmx_output_env_t;
 
@@ -97,7 +93,7 @@ int sffn2effn(const char **sffn);
  * \param[in] x The value of x
  * \return the value of the fit
  */
-double fit_function(const int eFitFn, const double parm[], const double x);
+double fit_function(int eFitFn, const double parm[], double x);
 
 /*! \brief
  * Use Levenberg-Marquardt method to fit to a nfitparm parameter exponential
@@ -126,7 +122,7 @@ double fit_function(const int eFitFn, const double parm[], const double x);
  * \param[in] fn_fitted If not NULL file to print the data and fitted curve to
  * \return integral.
  */
-real do_lmfit(int ndata, real c1[], real sig[], real dt, real *x0,
+real do_lmfit(int ndata, const real c1[], real sig[], real dt, const real *x0,
               real begintimefit, real endtimefit, const gmx_output_env_t *oenv,
               gmx_bool bVerbose, int eFitFn, double fitparms[], int fix,
               const char *fn_fitted);
@@ -148,9 +144,5 @@ real do_lmfit(int ndata, real c1[], real sig[], real dt, real *x0,
  */
 real fit_acf(int ncorr, int fitfn, const gmx_output_env_t *oenv, gmx_bool bVerbose,
              real tbeginfit, real tendfit, real dt, real c1[], real *fit);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

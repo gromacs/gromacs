@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,11 +38,13 @@
 
 #include "resall.h"
 
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cctype>
+#include <cstdlib>
+#include <cstring>
 
 #include <algorithm>
+#include <string>
+#include <vector>
 
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/notset.h"
@@ -56,24 +58,22 @@
 
 gpp_atomtype_t read_atype(const char *ffdir, t_symtab *tab)
 {
-    int            nfile, f;
-    char         **file;
-    FILE          *in;
-    char           buf[STRLEN], name[STRLEN];
-    double         m;
-    int            nratt = 0;
-    gpp_atomtype_t at;
-    t_atom        *a;
-    t_param       *nb;
+    FILE                    *in;
+    char                     buf[STRLEN], name[STRLEN];
+    double                   m;
+    int                      nratt = 0;
+    gpp_atomtype_t           at;
+    t_atom                  *a;
+    t_param                 *nb;
 
-    nfile = fflib_search_file_end(ffdir, ".atp", TRUE, &file);
+    std::vector<std::string> files = fflib_search_file_end(ffdir, ".atp", TRUE);
     at    = init_atomtype();
     snew(a, 1);
     snew(nb, 1);
 
-    for (f = 0; f < nfile; f++)
+    for (const auto &filename : files)
     {
-        in = fflib_open(file[f]);
+        in = fflib_open(filename);
         while (!feof(in))
         {
             /* Skip blank or comment-only lines */
@@ -85,12 +85,12 @@ gpp_atomtype_t read_atype(const char *ffdir, t_symtab *tab)
                     trim(buf);
                 }
             }
-            while (!feof(in) && strlen(buf) == 0);
+            while ((feof(in) == 0) && strlen(buf) == 0);
 
             if (sscanf(buf, "%s%lf", name, &m) == 2)
             {
                 a->m = m;
-                add_atomtype(at, tab, a, name, nb, 0, 0.0, 0.0, 0.0, 0, 0.0, 0.0 );
+                add_atomtype(at, tab, a, name, nb, 0, 0);
                 fprintf(stderr, "\rAtomtype %d", ++nratt);
                 fflush(stderr);
             }
@@ -100,10 +100,8 @@ gpp_atomtype_t read_atype(const char *ffdir, t_symtab *tab)
             }
         }
         gmx_ffclose(in);
-        sfree(file[f]);
     }
     fprintf(stderr, "\n");
-    sfree(file);
 
     return at;
 }
@@ -131,8 +129,8 @@ static void print_resatoms(FILE *out, gpp_atomtype_t atype, t_restp *rtp)
     }
 }
 
-static gmx_bool read_atoms(FILE *in, char *line,
-                           t_restp *r0, t_symtab *tab, gpp_atomtype_t atype)
+static bool read_atoms(FILE *in, char *line,
+                       t_restp *r0, t_symtab *tab, gpp_atomtype_t atype)
 {
     int    i, j, cg, maxentries;
     char   buf[256], buf1[256];
@@ -178,7 +176,7 @@ static gmx_bool read_atoms(FILE *in, char *line,
     return TRUE;
 }
 
-gmx_bool read_bondeds(int bt, FILE *in, char *line, t_restp *rtp)
+static bool read_bondeds(int bt, FILE *in, char *line, t_restp *rtp)
 {
     char str[STRLEN];
     int  j, n, ni, maxrb;
@@ -245,7 +243,7 @@ static void print_resbondeds(FILE *out, int bt, t_restp *rtp)
     }
 }
 
-static void check_rtp(int nrtp, t_restp rtp[], char *libfn)
+static void check_rtp(int nrtp, t_restp rtp[], const char *libfn)
 {
     int i;
 
@@ -260,7 +258,7 @@ static void check_rtp(int nrtp, t_restp rtp[], char *libfn)
     }
 }
 
-int get_bt(char* header)
+static int get_bt(char* header)
 {
     int i;
 
@@ -274,13 +272,13 @@ int get_bt(char* header)
     return NOTSET;
 }
 
-void clear_t_restp(t_restp *rrtp)
+static void clear_t_restp(t_restp *rrtp)
 {
-    memset((void *)rrtp, 0, sizeof(t_restp));
+    memset(rrtp, 0, sizeof(t_restp));
 }
 
 /* print all the ebtsNR type numbers */
-void print_resall_header(FILE *out, t_restp rtp[])
+static void print_resall_header(FILE *out, t_restp rtp[])
 {
     fprintf(out, "[ bondedtypes ]\n");
     fprintf(out, "; bonds  angles  dihedrals  impropers all_dihedrals nr_exclusions  HH14  remove_dih\n");
@@ -289,10 +287,10 @@ void print_resall_header(FILE *out, t_restp rtp[])
             rtp[0].rb[1].type,
             rtp[0].rb[2].type,
             rtp[0].rb[3].type,
-            rtp[0].bKeepAllGeneratedDihedrals,
+            static_cast<int>(rtp[0].bKeepAllGeneratedDihedrals),
             rtp[0].nrexcl,
-            rtp[0].bGenerateHH14Interactions,
-            rtp[0].bRemoveDihedralIfWithImproper);
+            static_cast<int>(rtp[0].bGenerateHH14Interactions),
+            static_cast<int>(rtp[0].bRemoveDihedralIfWithImproper));
 }
 
 void print_resall(FILE *out, int nrtp, t_restp rtp[],
@@ -320,31 +318,22 @@ void print_resall(FILE *out, int nrtp, t_restp rtp[],
     }
 }
 
-void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
+void read_resall(const char *rrdb, int *nrtpptr, t_restp **rtp,
                  gpp_atomtype_t atype, t_symtab *tab,
-                 gmx_bool bAllowOverrideRTP)
+                 bool bAllowOverrideRTP)
 {
     FILE         *in;
     char          filebase[STRLEN], line[STRLEN], header[STRLEN];
     int           i, nrtp, maxrtp, bt, nparam;
     int           dum1, dum2, dum3;
     t_restp      *rrtp, *header_settings;
-    gmx_bool      bNextResidue, bError;
+    bool          bNextResidue, bError;
     int           firstrtp;
 
     fflib_filename_base(rrdb, filebase, STRLEN);
 
     in = fflib_open(rrdb);
 
-    if (debug)
-    {
-        fprintf(debug, "%9s %5s", "Residue", "atoms");
-        for (i = 0; i < ebtsNR; i++)
-        {
-            fprintf(debug, " %10s", btsNames[i]);
-        }
-        fprintf(debug, "\n");
-    }
     snew(header_settings, 1);
 
     /* these bonded parameters will overwritten be when  *
@@ -480,22 +469,12 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
                           rrtp[nrtp].resname, line);
             }
         }
-        while (!feof(in) && !bNextResidue);
+        while ((feof(in) == 0) && !bNextResidue);
 
         if (rrtp[nrtp].natom == 0)
         {
             gmx_fatal(FARGS, "No atoms found in .rtp file in residue %s\n",
                       rrtp[nrtp].resname);
-        }
-        if (debug)
-        {
-            fprintf(debug, "%3d %5s %5d",
-                    nrtp+1, rrtp[nrtp].resname, rrtp[nrtp].natom);
-            for (i = 0; i < ebtsNR; i++)
-            {
-                fprintf(debug, " %10d", rrtp[nrtp].rb[i].nb);
-            }
-            fprintf(debug, "\n");
         }
 
         firstrtp = -1;
@@ -554,7 +533,7 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
  *                  SEARCH   ROUTINES
  *
  ***********************************************************/
-static gmx_bool is_sign(char c)
+static bool is_sign(char c)
 {
     return (c == '+' || c == '-');
 }
@@ -566,8 +545,8 @@ static int neq_str_sign(const char *a1, const char *a2)
 {
     int l1, l2, lm;
 
-    l1 = (int)strlen(a1);
-    l2 = (int)strlen(a2);
+    l1 = static_cast<int>(strlen(a1));
+    l2 = static_cast<int>(strlen(a2));
     lm = std::min(l1, l2);
 
     if (lm >= 1 &&
@@ -605,8 +584,8 @@ char *search_rtp(const char *key, int nrtp, t_restp rtp[])
             /* Allow a mismatch of at most a sign character (with warning) */
             n = neq_str_sign(key, rtp[i].resname);
             if (n >= best &&
-                n+1 >= (int)strlen(key) &&
-                n+1 >= (int)strlen(rtp[i].resname))
+                n+1 >= static_cast<int>(strlen(key)) &&
+                n+1 >= static_cast<int>(strlen(rtp[i].resname)))
             {
                 if (n == best)
                 {

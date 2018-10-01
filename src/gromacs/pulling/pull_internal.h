@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,7 +35,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/*! \libinternal \file
+/*! \internal \file
  *
  *
  * \brief
@@ -43,8 +43,6 @@
    use in the pull code.
  *
  * \author Berk Hess
- *
- * \inlibraryapi
  */
 
 #ifndef GMX_PULLING_PULL_INTERNAL_H
@@ -52,10 +50,12 @@
 
 #include "config.h"
 
+#include <memory>
+#include <vector>
+
+#include "gromacs/domdec/localatomset.h"
 #include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/utility/gmxmpi.h"
-
-/*! \cond INTERNAL */
 
 /*! \brief Determines up to what local atom count a pull group gets processed single-threaded.
  *
@@ -73,34 +73,45 @@ enum {
     epgrppbcNONE, epgrppbcREFAT, epgrppbcCOS
 };
 
-typedef struct
+/*! \internal
+ * \brief Pull group data used during pulling
+ */
+struct pull_group_work_t
 {
-    t_pull_group  params;
+    /*! \brief Constructor
+     *
+     * \param[in] params   The group parameters set by the user
+     * \param[in] atomSet  The global to local atom set manager
+     */
+    pull_group_work_t(const t_pull_group &params,
+                      gmx::LocalAtomSet   atomSet);
 
-    gmx_bool      bCalcCOM;   /* Calculate COM? Not if only used as cylinder group */
-    int           epgrppbc;   /* The type of pbc for this pull group, see enum above */
+    /* Data only modified at initialization */
+    const t_pull_group params;        /**< The pull group parameters */
+    const int          epgrppbc;      /**< The type of pbc for this pull group, see enum above */
+    bool               needToCalcCom; /**< Do we need to calculate the COM? (Not for group 0 or if only used as cylinder group) */
+    std::vector<real>  globalWeights; /**< Weights per atom set by the user and/or mass/friction coefficients, if empty all weights are equal */
 
-    int           nat_loc;    /* Number of local pull atoms */
-    int           nalloc_loc; /* Allocation size for ind_loc and weight_loc */
-    int          *ind_loc;    /* Local pull indices */
-    real         *weight_loc; /* Weights for the local indices */
+    /* Data modified only at init or at domain decomposition */
+    gmx::LocalAtomSet                  atomSet;       /**< Global to local atom set mapper */
+    std::vector<real>                  localWeights;  /**< Weights for the local atoms */
+    std::unique_ptr<gmx::LocalAtomSet> pbcAtomSet;    /**< Keeps index of the pbc reference atom.
+                                                           The stored LocalAtomSet consists of exactly one atom when pbc reference atom is required.
+                                                           When no pbc refence atom is used, this pointer shall be null. */
 
-    real          mwscale;    /* mass*weight scaling factor 1/sum w m */
-    real          wscale;     /* scaling factor for the weights: sum w m/sum w w m */
-    real          invtm;      /* inverse total mass of the group: 1/wscale sum w m */
-    dvec         *mdw;        /* mass*gradient(weight) for atoms */
-    double       *dv;         /* distance to the other group along vec */
-    dvec          x;          /* center of mass before update */
-    dvec          xp;         /* center of mass after update before constraining */
-}
-pull_group_work_t;
+    /* Data, potentially, changed at every pull call */
+    real                                  mwscale; /**< mass*weight scaling factor 1/sum w m */
+    real                                  wscale;  /**< scaling factor for the weights: sum w m/sum w w m */
+    real                                  invtm;   /**< inverse total mass of the group: 1/wscale sum w m */
+    std::vector < gmx::BasicVector < double>> mdw; /**< mass*gradient(weight) for atoms */
+    std::vector<double>                   dv;      /**< distance to the other group(s) along vec */
+    dvec                                  x;       /**< COM before update */
+    dvec                                  xp;      /**< COM after update before constraining */
+};
 
-typedef struct
+/* Struct describing the instantaneous spatial layout of a pull coordinate */
+struct PullCoordSpatialData
 {
-    t_pull_coord  params;     /* Pull coordinate (constant) parameters */
-
-    double        value_ref;  /* The reference value, usually init+rate*t, units of nm or rad */
-    double        value;      /* The current value of the coordinate, units of nm or rad */
     dvec          dr01;       /* The direction vector of group 1 relative to group 0 */
     dvec          dr23;       /* The direction vector of group 3 relative to group 2 */
     dvec          dr45;       /* The direction vector of group 5 relative to group 4 */
@@ -108,20 +119,48 @@ typedef struct
     double        vec_len;    /* Length of vec for direction-relative */
     dvec          ffrad;      /* conversion factor from vec to radial force */
     double        cyl_dev;    /* The deviation from the reference position */
-    double        f_scal;     /* Scalar force for directional pulling */
-    dvec          f01;        /* Force due to the pulling/constraining for groups 0, 1 */
-    dvec          f23;        /* Force for groups 2 and 3 */
-    dvec          f45;        /* Force for groups 4 and 5 */
     dvec          planevec_m; /* Normal of plane for groups 0, 1, 2, 3 for geometry dihedral */
     dvec          planevec_n; /* Normal of plane for groups 2, 3, 4, 5 for geometry dihedral */
 
+    double        value;      /* The current value of the coordinate, units of nm or rad */
+};
+
+/* Struct with parameters and force evaluation local data for a pull coordinate */
+struct pull_coord_work_t
+{
+    /* Constructor */
+    pull_coord_work_t(const t_pull_coord &params) :
+        params(params),
+        value_ref(0),
+        spatialData(),
+        scalarForce(0),
+        bExternalPotentialProviderHasBeenRegistered(false)
+    {
+    }
+
+    const t_pull_coord    params;      /* Pull coordinate parameters */
+
+    double                value_ref;   /* The reference value, usually init+rate*t, units of nm or rad */
+
+    PullCoordSpatialData  spatialData; /* Data defining the current geometry */
+
+    double                scalarForce; /* Scalar force for this cooordinate */
+
     /* For external-potential coordinates only, for checking if a provider has been registered */
     bool          bExternalPotentialProviderHasBeenRegistered;
-}
-pull_coord_work_t;
+};
+
+/* Struct for storing vectorial forces for a pull coordinate */
+struct PullCoordVectorForces
+{
+    dvec force01; /* Force due to the pulling/constraining for groups 0, 1 */
+    dvec force23; /* Force for groups 2 and 3 */
+    dvec force45; /* Force for groups 4 and 5 */
+};
 
 /* Struct for sums over (local) atoms in a pull group */
-struct pull_sum_com_t {
+struct ComSums
+{
     /* For normal weighting */
     double sum_wm;    /* Sum of weight*mass        */
     double sum_wwm;   /* Sum of weight*weight*mass */
@@ -144,25 +183,31 @@ struct pull_sum_com_t {
     int    dummy[32];
 };
 
-typedef struct {
+/*! \brief The cylinder buffer needs 9 elements per group */
+static constexpr int c_cylinderBufferStride = 9;
+
+struct pull_comm_t
+{
     gmx_bool    bParticipateAll; /* Do all ranks always participate in pulling? */
     gmx_bool    bParticipate;    /* Does our rank participate in pulling? */
 #if GMX_MPI
     MPI_Comm    mpi_comm_com;    /* Communicator for pulling */
 #endif
     int         nparticipate;    /* The number of ranks participating */
+    bool        isMasterRank;    /* Tells whether our rank is the master rank and thus should add the pull virial */
 
-    gmx_int64_t setup_count;     /* The number of decomposition calls */
-    gmx_int64_t must_count;      /* The last count our rank needed to be part */
+    int64_t     setup_count;     /* The number of decomposition calls */
+    int64_t     must_count;      /* The last count our rank needed to be part */
 
-    rvec       *rbuf;            /* COM calculation buffer */
-    dvec       *dbuf;            /* COM calculation buffer */
-    double     *dbuf_cyl;        /* cylinder ref. groups calculation buffer */
-}
-pull_comm_t;
+    /* Buffers for parallel reductions */
+    std::vector<gmx::RVec>                pbcAtomBuffer;  /* COM calculation buffer */
+    std::vector < gmx::BasicVector < double>> comBuffer;  /* COM calculation buffer */
+    std::vector<double>                   cylinderBuffer; /* cylinder ref. groups calculation buffer */
+};
 
 struct pull_t
 {
+    /* Global parameters */
     pull_params_t      params;       /* The pull parameters, from inputrec */
 
     gmx_bool           bPotential;   /* Are there coordinates with potential? */
@@ -173,24 +218,25 @@ struct pull_t
     int                npbcdim;      /* do pbc in dims 0 <= dim < npbcdim */
     gmx_bool           bRefAt;       /* do we need reference atoms for a group COM ? */
     int                cosdim;       /* dimension for cosine weighting, -1 if none */
-
-    int                ngroup;       /* Number of pull groups */
-    int                ncoord;       /* Number of pull coordinates */
-    pull_group_work_t *group;        /* The pull group param and work data */
-    pull_group_work_t *dyna;         /* Dynamic groups for geom=cylinder */
-    pull_coord_work_t *coord;        /* The pull group param and work data */
-
     gmx_bool           bCylinder;    /* Is group 0 a cylinder group? */
 
-    gmx_bool           bSetPBCatoms; /* Do we need to set x_pbc for the groups? */
+    /* Parameters + dynamic data for groups */
+    std::vector<pull_group_work_t>  group;  /* The pull group param and work data */
+    std::vector<pull_group_work_t>  dyna;   /* Dynamic groups for geom=cylinder */
 
-    int                nthreads;     /* Number of threads used by the pull code */
-    pull_sum_com_t    *sum_com;      /* Work array for summing for COM, 1 entry per thread */
+    /* Parameters + dynamic data for coordinates */
+    std::vector<pull_coord_work_t> coord;  /* The pull group param and work data */
 
-    pull_comm_t        comm;         /* Communication parameters, communicator and buffers */
+    /* Global dynamic data */
+    gmx_bool             bSetPBCatoms; /* Do we need to set x_pbc for the groups? */
 
-    FILE              *out_x;        /* Output file for pull data */
-    FILE              *out_f;        /* Output file for pull data */
+    int                  nthreads;     /* Number of threads used by the pull code */
+    std::vector<ComSums> comSums;      /* Work array for summing for COM, 1 entry per thread */
+
+    pull_comm_t          comm;         /* Communication parameters, communicator and buffers */
+
+    FILE                *out_x;        /* Output file for pull data */
+    FILE                *out_f;        /* Output file for pull data */
 
     /* The number of coordinates using an external potential */
     int                numCoordinatesWithExternalPotential;
@@ -199,7 +245,5 @@ struct pull_t
     /* */
     int                numExternalPotentialsStillToBeAppliedThisStep;
 };
-
-/*! \endcond */
 
 #endif

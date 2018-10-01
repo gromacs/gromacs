@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,8 +58,8 @@
 #include "programs/mdrun/mdrun_main.h"
 
 #include "testutils/cmdlinetest.h"
-#include "testutils/integrationtests.h"
 #include "testutils/mpitest.h"
+#include "testutils/testfilemanager.h"
 #include "testutils/testoptions.h"
 
 namespace gmx
@@ -89,20 +89,15 @@ GMX_TEST_OPTIONS(MdrunTestOptions, options)
 }
 //! \endcond
 
-}
+}       // namespace
 
-SimulationRunner::SimulationRunner(IntegrationTestFixture *fixture) :
-    fixture_(fixture),
-    topFileName_(),
-    groFileName_(),
-    fullPrecisionTrajectoryFileName_(),
-    ndxFileName_(),
-    mdpInputFileName_(fixture_->fileManager_.getTemporaryFilePath("input.mdp")),
-    mdpOutputFileName_(fixture_->fileManager_.getTemporaryFilePath("output.mdp")),
-    tprFileName_(fixture_->fileManager_.getTemporaryFilePath(".tpr")),
-    logFileName_(fixture_->fileManager_.getTemporaryFilePath(".log")),
-    edrFileName_(fixture_->fileManager_.getTemporaryFilePath(".edr")),
-    nsteps_(-2)
+SimulationRunner::SimulationRunner(TestFileManager *fileManager) :
+    mdpOutputFileName_(fileManager->getTemporaryFilePath("output.mdp")),
+    tprFileName_(fileManager->getTemporaryFilePath(".tpr")),
+    logFileName_(fileManager->getTemporaryFilePath(".log")),
+    edrFileName_(fileManager->getTemporaryFilePath(".edr")),
+    nsteps_(-2),
+    fileManager_(*fileManager)
 {
 #if GMX_LIB_MPI
     GMX_RELEASE_ASSERT(gmx_mpi_initialized(), "MPI system not initialized for mdrun tests");
@@ -113,6 +108,9 @@ SimulationRunner::SimulationRunner(IntegrationTestFixture *fixture) :
 // and verlet-buffer-tolerance = -1 gives a grompp error. If we keep
 // things that way, this function should be renamed. For now,
 // force the use of the group scheme.
+// TODO There is possible outstanding unexplained behaviour of mdp
+// input parsing e.g. Redmine 2074, so this particular set of mdp
+// contents is also tested with GetIrTest in gmxpreprocess-test.
 void
 SimulationRunner::useEmptyMdpFile()
 {
@@ -129,7 +127,7 @@ SimulationRunner::useStringAsMdpFile(const char *mdpString)
 void
 SimulationRunner::useStringAsMdpFile(const std::string &mdpString)
 {
-    gmx::TextWriter::writeFileFromString(mdpInputFileName_, mdpString);
+    mdpInputContents_ = mdpString;
 }
 
 void
@@ -139,29 +137,36 @@ SimulationRunner::useStringAsNdxFile(const char *ndxString)
 }
 
 void
-SimulationRunner::useTopGroAndNdxFromDatabase(const char *name)
+SimulationRunner::useTopGroAndNdxFromDatabase(const std::string &name)
 {
-    topFileName_ = fixture_->fileManager_.getInputFilePath((std::string(name) + ".top").c_str());
-    groFileName_ = fixture_->fileManager_.getInputFilePath((std::string(name) + ".gro").c_str());
-    ndxFileName_ = fixture_->fileManager_.getInputFilePath((std::string(name) + ".ndx").c_str());
+    topFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".top");
+    groFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".gro");
+    ndxFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".ndx");
 }
 
 void
 SimulationRunner::useGroFromDatabase(const char *name)
 {
-    groFileName_ = fixture_->fileManager_.getInputFilePath((std::string(name) + ".gro").c_str());
+    groFileName_ = gmx::test::TestFileManager::getInputFilePath((std::string(name) + ".gro").c_str());
 }
 
 int
 SimulationRunner::callGromppOnThisRank(const CommandLine &callerRef)
 {
+    const std::string mdpInputFileName(fileManager_.getTemporaryFilePath("input.mdp"));
+    gmx::TextWriter::writeFileFromString(mdpInputFileName, mdpInputContents_);
+
     CommandLine caller;
     caller.append("grompp");
     caller.merge(callerRef);
-    caller.addOption("-f", mdpInputFileName_);
-    caller.addOption("-n", ndxFileName_);
+    caller.addOption("-f", mdpInputFileName);
+    if (!ndxFileName_.empty())
+    {
+        caller.addOption("-n", ndxFileName_);
+    }
     caller.addOption("-p", topFileName_);
     caller.addOption("-c", groFileName_);
+    caller.addOption("-r", groFileName_);
 
     caller.addOption("-po", mdpOutputFileName_);
     caller.addOption("-o", tprFileName_);
@@ -221,20 +226,12 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
     caller.addOption("-o", fullPrecisionTrajectoryFileName_);
     caller.addOption("-x", reducedPrecisionTrajectoryFileName_);
 
-    caller.addOption("-deffnm", fixture_->fileManager_.getTemporaryFilePath("state"));
+    caller.addOption("-deffnm", fileManager_.getTemporaryFilePath("state"));
 
     if (nsteps_ > -2)
     {
         caller.addOption("-nsteps", nsteps_);
     }
-
-#if GMX_MPI
-#  if GMX_GPU != GMX_GPU_NONE
-    const int   numGpusNeeded = getNumberOfTestMpiRanks();
-    std::string gpuIdString(numGpusNeeded, '0');
-    caller.addOption("-gpu_id", gpuIdString.c_str());
-#  endif
-#endif
 
 #if GMX_THREAD_MPI
     caller.addOption("-ntmpi", getNumberOfTestMpiRanks());
@@ -244,23 +241,6 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
     caller.addOption("-ntomp", g_numOpenMPThreads);
 #endif
 
-#if GMX_GPU != GMX_GPU_NONE
-    /* TODO Ideally, with real MPI, we could call
-     * gmx_collect_hardware_mpi() here and find out how many nodes
-     * mdrun will run on. For now, we assume that we're running on one
-     * node regardless of the number of ranks, because that's true in
-     * Jenkins and for most developers running the tests. */
-    int numberOfNodes = 1;
-    int numberOfRanks = getNumberOfTestMpiRanks();
-    if (numberOfRanks > numberOfNodes && !gmx_multiple_gpu_per_node_supported())
-    {
-        if (gmx_node_rank() == 0)
-        {
-            fprintf(stderr, "GROMACS in this build configuration cannot run on more than one GPU per node,\n so with %d ranks and %d nodes, this test will disable GPU support", numberOfRanks, numberOfNodes);
-        }
-        caller.addOption("-nb", "cpu");
-    }
-#endif
     return gmx_mdrun(caller.argc(), caller.argv());
 }
 
@@ -285,12 +265,16 @@ MdrunTestFixtureBase::~MdrunTestFixtureBase()
 
 // ====
 
-MdrunTestFixture::MdrunTestFixture() : runner_(this)
+MdrunTestFixture::MdrunTestFixture() : runner_(&fileManager_)
 {
 }
 
 MdrunTestFixture::~MdrunTestFixture()
 {
+#if GMX_LIB_MPI
+    // fileManager_ should only clean up after all the ranks are done.
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
 }
 
 } // namespace test

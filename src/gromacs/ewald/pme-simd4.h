@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
  * This code does not assume any memory alignment for the grid.
  */
 {
+    using namespace gmx;
     Simd4Real ty_S0(thy[0]);
     Simd4Real ty_S1(thy[1]);
     Simd4Real ty_S2(thy[2]);
@@ -87,66 +88,13 @@
 #endif
 
 
-#ifdef PME_GATHER_F_SIMD4_ORDER4
-/* Gather for one charge with pme_order=4 with unaligned SIMD4 load+store.
- * This code does not assume any memory alignment for the grid.
- */
-{
-    Simd4Real fx_S, fy_S, fz_S;
-
-    Simd4Real tx_S, ty_S, tz_S;
-    Simd4Real dx_S, dy_S, dz_S;
-
-    Simd4Real gval_S;
-
-    Simd4Real fxy1_S;
-    Simd4Real fz1_S;
-
-    fx_S = setZero();
-    fy_S = setZero();
-    fz_S = setZero();
-
-    /* With order 4 the z-spline is actually aligned */
-    tz_S  = load4(thz);
-    dz_S  = load4(dthz);
-
-    for (ithx = 0; (ithx < 4); ithx++)
-    {
-        index_x  = (i0+ithx)*pny*pnz;
-        tx_S     = Simd4Real(thx[ithx]);
-        dx_S     = Simd4Real(dthx[ithx]);
-
-        for (ithy = 0; (ithy < 4); ithy++)
-        {
-            index_xy = index_x+(j0+ithy)*pnz;
-            ty_S     = Simd4Real(thy[ithy]);
-            dy_S     = Simd4Real(dthy[ithy]);
-
-            gval_S = load4U(grid+index_xy+k0);
-
-            fxy1_S = tz_S * gval_S;
-            fz1_S  = dz_S * gval_S;
-
-            fx_S = fma(dx_S * ty_S, fxy1_S, fx_S);
-            fy_S = fma(tx_S * dy_S, fxy1_S, fy_S);
-            fz_S = fma(tx_S * ty_S, fz1_S, fz_S);
-        }
-    }
-
-    fx += reduce(fx_S);
-    fy += reduce(fy_S);
-    fz += reduce(fz_S);
-}
-#undef PME_GATHER_F_SIMD4_ORDER4
-#endif
-
-
 #ifdef PME_SPREAD_SIMD4_ALIGNED
 /* This code assumes that the grid is allocated 4-real aligned
  * and that pnz is a multiple of 4.
  * This code supports pme_order <= 5.
  */
 {
+    using namespace gmx;
     int              offset;
     int              index;
     Simd4Real        ty_S0(thy[0]);
@@ -248,96 +196,4 @@
 }
 #undef PME_ORDER
 #undef PME_SPREAD_SIMD4_ALIGNED
-#endif
-
-
-#ifdef PME_GATHER_F_SIMD4_ALIGNED
-/* This code assumes that the grid is allocated 4-real aligned
- * and that pnz is a multiple of 4.
- * This code supports pme_order <= 5.
- */
-{
-    int              offset;
-
-    Simd4Real        fx_S, fy_S, fz_S;
-
-    Simd4Real        tx_S, ty_S, tz_S0, tz_S1;
-    Simd4Real        dx_S, dy_S, dz_S0, dz_S1;
-
-    Simd4Real        gval_S0;
-    Simd4Real        gval_S1;
-
-    Simd4Real        fxy1_S0;
-    Simd4Real        fz1_S0;
-    Simd4Real        fxy1_S1;
-    Simd4Real        fz1_S1;
-    Simd4Real        fxy1_S;
-    Simd4Real        fz1_S;
-
-    offset = k0 & 3;
-
-    fx_S = setZero();
-    fy_S = setZero();
-    fz_S = setZero();
-
-#ifdef PME_SIMD4_UNALIGNED
-    tz_S0 = load4U(thz-offset);
-    tz_S1 = load4U(thz-offset+4);
-    dz_S0 = load4U(dthz-offset);
-    dz_S1 = load4U(dthz-offset+4);
-#else
-    {
-        int i;
-        /* Copy (d)thz to an aligned buffer (unused buffer parts are masked) */
-        for (i = 0; i < PME_ORDER; i++)
-        {
-            thz_aligned[offset+i]  = thz[i];
-            dthz_aligned[offset+i] = dthz[i];
-        }
-        tz_S0 = load4(thz_aligned);
-        tz_S1 = load4(thz_aligned+4);
-        dz_S0 = load4(dthz_aligned);
-        dz_S1 = load4(dthz_aligned+4);
-    }
-#endif
-    tz_S0 = selectByMask(tz_S0, work->mask_S0[offset]);
-    dz_S0 = selectByMask(dz_S0, work->mask_S0[offset]);
-    tz_S1 = selectByMask(tz_S1, work->mask_S1[offset]);
-    dz_S1 = selectByMask(dz_S1, work->mask_S1[offset]);
-
-    for (ithx = 0; (ithx < PME_ORDER); ithx++)
-    {
-        index_x  = (i0+ithx)*pny*pnz;
-        tx_S     = Simd4Real(thx[ithx]);
-        dx_S     = Simd4Real(dthx[ithx]);
-
-        for (ithy = 0; (ithy < PME_ORDER); ithy++)
-        {
-            index_xy = index_x+(j0+ithy)*pnz;
-            ty_S     = Simd4Real(thy[ithy]);
-            dy_S     = Simd4Real(dthy[ithy]);
-
-            gval_S0 = load4(grid+index_xy+k0-offset);
-            gval_S1 = load4(grid+index_xy+k0-offset+4);
-
-            fxy1_S0 = tz_S0 * gval_S0;
-            fz1_S0  = dz_S0 * gval_S0;
-            fxy1_S1 = tz_S1 * gval_S1;
-            fz1_S1  = dz_S1 * gval_S1;
-
-            fxy1_S = fxy1_S0 + fxy1_S1;
-            fz1_S  = fz1_S0 + fz1_S1;
-
-            fx_S = fma(dx_S * ty_S, fxy1_S, fx_S);
-            fy_S = fma(tx_S * dy_S, fxy1_S, fy_S);
-            fz_S = fma(tx_S * ty_S, fz1_S, fz_S);
-        }
-    }
-
-    fx += reduce(fx_S);
-    fy += reduce(fy_S);
-    fz += reduce(fz_S);
-}
-#undef PME_ORDER
-#undef PME_GATHER_F_SIMD4_ALIGNED
 #endif

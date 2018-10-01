@@ -117,9 +117,9 @@ F77_FUNC(dlagts,DLAGTS)(int *job,
 	    }
 	} else {
 	    for (k = *n; k >= 1; --k) {
-		if (k <= *n - 2) {
+		if (k + 2 <= *n) {
 		    temp = y[k] - b[k] * y[k + 1] - d__[k] * y[k + 2];
-		} else if (k == *n - 1) {
+		} else if (k + 1 == *n) {
 		    temp = y[k] - b[k] * y[k + 1];
 		} else {
 		    temp = y[k];

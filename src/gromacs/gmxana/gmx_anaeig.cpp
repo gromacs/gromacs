@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <string>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -55,7 +56,6 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
@@ -67,65 +67,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-static void calc_entropy_qh(FILE *fp, int n, real eigval[], real temp, int nskip)
-{
-    int    i;
-    double hwkT, dS, S = 0;
-    double hbar, lambda;
+#include "thermochemistry.h"
 
-    hbar = PLANCK1/(2*M_PI);
-    for (i = 0; (i < n-nskip); i++)
-    {
-        if (eigval[i] > 0)
-        {
-            double w;
-            lambda = eigval[i]*AMU;
-            w      = std::sqrt(BOLTZMANN*temp/lambda)/NANO;
-            hwkT   = (hbar*w)/(BOLTZMANN*temp);
-            dS     = (hwkT/std::expm1(hwkT) - std::log1p(-std::exp(-hwkT)));
-            S     += dS;
-            if (debug)
-            {
-                fprintf(debug, "i = %5d w = %10g lam = %10g hwkT = %10g dS = %10g\n",
-                        i, w, lambda, hwkT, dS);
-            }
-        }
-        else
-        {
-            fprintf(stderr, "eigval[%d] = %g\n", i, eigval[i]);
-        }
-    }
-    fprintf(fp, "The Entropy due to the Quasi Harmonic approximation is %g J/mol K\n",
-            S*RGAS);
-}
-
-static void calc_entropy_schlitter(FILE *fp, int n, int nskip,
-                                   real *eigval, real temp)
-{
-    double  dd, deter;
-    int     i;
-    double  hbar, kt, kteh, S;
-
-    hbar = PLANCK1/(2*M_PI);
-    kt   = BOLTZMANN*temp;
-    kteh = kt*std::exp(2.0)/(hbar*hbar)*AMU*(NANO*NANO);
-    if (debug)
-    {
-        fprintf(debug, "n = %d, nskip = %d kteh = %g\n", n, nskip, kteh);
-    }
-
-    deter = 0;
-    for (i = 0; (i < n-nskip); i++)
-    {
-        dd     = 1+kteh*eigval[i];
-        deter += std::log(dd);
-    }
-    S = 0.5*RGAS*deter;
-
-    fprintf(fp, "The Entropy due to the Schlitter formula is %g J/mol K\n", S);
-}
-
-const char *proj_unit;
+static const char *proj_unit;
 
 static real tick_spacing(real range, int minticks)
 {
@@ -147,7 +91,7 @@ static real tick_spacing(real range, int minticks)
 
 static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
                               const char *title, const char *subtitle,
-                              const char *xlabel, const char **ylabel,
+                              const std::string &xlabel, const char **ylabel,
                               int n, real *x, real **y, real ***sy,
                               real scale_x, gmx_bool bZero, gmx_bool bSplit,
                               const gmx_output_env_t *oenv)
@@ -223,7 +167,7 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
             }
             if (g == ngraphs-1)
             {
-                fprintf(out, "@ xaxis  label \"%s\"\n", xlabel);
+                fprintf(out, "@ xaxis  label \"%s\"\n", xlabel.c_str());
             }
             else
             {
@@ -329,7 +273,7 @@ compare(int natoms, int n1, rvec **eigvec1, int n2, rvec **eigvec2,
     if (neig1 != n || neig2 != n)
     {
         fprintf(stdout, "this is %d%% and %d%% of the total trace\n",
-                static_cast<int>(100*sum1/trace1+0.5), static_cast<int>(100*sum2/trace2+0.5));
+                gmx::roundToInt(100*sum1/trace1), gmx::roundToInt(100*sum2/trace2));
     }
     fprintf(stdout, "Square root of the traces: %g and %g\n",
             std::sqrt(sum1), std::sqrt(sum2));
@@ -369,8 +313,8 @@ compare(int natoms, int n1, rvec **eigvec1, int n2, rvec **eigvec2,
 
 static void inprod_matrix(const char *matfile, int natoms,
                           int nvec1, int *eignr1, rvec **eigvec1,
-                          int nvec2, int *eignr2, rvec **eigvec2,
-                          gmx_bool bSelect, int noutvec, int *outvec)
+                          int nvec2, const int *eignr2, rvec **eigvec2,
+                          gmx_bool bSelect, int noutvec, const int *outvec)
 {
     FILE   *out;
     real  **mat;
@@ -506,7 +450,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                     const char *extremefile, gmx_bool bExtrAll, real extreme,
                     int nextr, const t_atoms *atoms, int natoms, int *index,
                     gmx_bool bFit, rvec *xref, int nfit, int *ifit, real *w_rls,
-                    real *sqrtm, rvec *xav,
+                    const real *sqrtm, rvec *xav,
                     int *eignr, rvec **eigvec,
                     int noutvec, int *outvec, gmx_bool bSplit,
                     const gmx_output_env_t *oenv)
@@ -521,7 +465,8 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
     matrix       box;
     rvec        *xread, *x;
     real         t, inp, **inprod = nullptr;
-    char         str[STRLEN], str2[STRLEN], **ylabel, *c;
+    char         str[STRLEN], str2[STRLEN], *c;
+    const char **ylabel;
     real         fact;
     gmx_rmpbc_t  gpbc = nullptr;
 
@@ -663,7 +608,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
         }
         sprintf(str, "projection on eigenvectors (%s)", proj_unit);
         write_xvgr_graphs(projfile, noutvec, 1, str, nullptr, output_env_get_xvgr_tlabel(oenv),
-                          (const char **)ylabel,
+                          ylabel,
                           nframes, inprod[noutvec], inprod, nullptr,
                           output_env_get_time_factor(oenv), FALSE, bSplit, oenv);
     }
@@ -874,12 +819,13 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
 
 static void components(const char *outfile, int natoms,
                        int *eignr, rvec **eigvec,
-                       int noutvec, int *outvec,
+                       int noutvec, const int *outvec,
                        const gmx_output_env_t *oenv)
 {
-    int   g, s, v, i;
-    real *x, ***y;
-    char  str[STRLEN], **ylabel;
+    int         g, s, v, i;
+    real       *x, ***y;
+    char        str[STRLEN];
+    const char**ylabel;
 
     fprintf(stderr, "Writing eigenvector components to %s\n", outfile);
 
@@ -911,20 +857,21 @@ static void components(const char *outfile, int natoms,
     }
     write_xvgr_graphs(outfile, noutvec, 4, "Eigenvector components",
                       "black: total, red: x, green: y, blue: z",
-                      "Atom number", (const char **)ylabel,
+                      "Atom number", ylabel,
                       natoms, x, nullptr, y, 1, FALSE, FALSE, oenv);
     fprintf(stderr, "\n");
 }
 
-static void rmsf(const char *outfile, int natoms, real *sqrtm,
+static void rmsf(const char *outfile, int natoms, const real *sqrtm,
                  int *eignr, rvec **eigvec,
-                 int noutvec, int *outvec,
+                 int noutvec, const int *outvec,
                  real *eigval, int neig,
                  const gmx_output_env_t *oenv)
 {
-    int    g, v, i;
-    real  *x, **y;
-    char   str[STRLEN], **ylabel;
+    int          g, v, i;
+    real        *x, **y;
+    char         str[STRLEN];
+    const char **ylabel;
 
     for (i = 0; i < neig; i++)
     {
@@ -959,7 +906,7 @@ static void rmsf(const char *outfile, int natoms, real *sqrtm,
         }
     }
     write_xvgr_graphs(outfile, noutvec, 1, "RMS fluctuation (nm) ", nullptr,
-                      "Atom number", (const char **)ylabel,
+                      "Atom number", ylabel,
                       natoms, x, y, nullptr, 1, TRUE, FALSE, oenv);
     fprintf(stderr, "\n");
 }
@@ -1144,20 +1091,20 @@ int gmx_anaeig(int argc, char *argv[])
     OverlapFile     = opt2fn_null("-over", NFILE, fnm);
     InpMatFile      = ftp2fn_null(efXPM, NFILE, fnm);
 
-    bProj  = ProjOnVecFile || TwoDPlotFile || ThreeDPlotFile
-        || FilterFile || ExtremeFile;
+    bProj  = (ProjOnVecFile != nullptr) || (TwoDPlotFile != nullptr) || (ThreeDPlotFile != nullptr)
+        || (FilterFile != nullptr) || (ExtremeFile != nullptr);
     bFirstLastSet  =
         opt2parg_bSet("-first", NPA, pa) && opt2parg_bSet("-last", NPA, pa);
-    bFirstToLast = CompFile || RmsfFile || ProjOnVecFile || FilterFile ||
-        OverlapFile || ((ExtremeFile || InpMatFile) && bFirstLastSet);
-    bVec2  = Vec2File || OverlapFile || InpMatFile;
-    bM     = RmsfFile || bProj;
-    bTraj  = ProjOnVecFile || FilterFile || (ExtremeFile && (max == 0))
-        || TwoDPlotFile || ThreeDPlotFile;
+    bFirstToLast = (CompFile != nullptr) || (RmsfFile != nullptr) || (ProjOnVecFile != nullptr) || (FilterFile != nullptr) ||
+        (OverlapFile != nullptr) || (((ExtremeFile != nullptr) || (InpMatFile != nullptr)) && bFirstLastSet);
+    bVec2  = (Vec2File != nullptr) || (OverlapFile != nullptr) || (InpMatFile != nullptr);
+    bM     = (RmsfFile != nullptr) || bProj;
+    bTraj  = (ProjOnVecFile != nullptr) || (FilterFile != nullptr) || ((ExtremeFile != nullptr) && (max == 0))
+        || (TwoDPlotFile != nullptr) || (ThreeDPlotFile != nullptr);
     bIndex = bM || bProj;
     bTPS   = ftp2bSet(efTPS, NFILE, fnm) || bM || bTraj ||
-        FilterFile  || (bIndex && indexfile);
-    bCompare = Vec2File || Eig2File;
+        (FilterFile != nullptr)  || (bIndex && (indexfile != nullptr));
+    bCompare = (Vec2File != nullptr) || (Eig2File != nullptr);
     bPDB3D   = fn2ftp(ThreeDPlotFile) == efPDB;
 
     read_eigenvectors(VecFile, &natoms, &bFit1,
@@ -1199,8 +1146,9 @@ int gmx_anaeig(int argc, char *argv[])
         {
             gmx_fatal(FARGS, "Can not calculate entropies from mass-weighted eigenvalues, redo the analysis without mass-weighting");
         }
-        calc_entropy_qh(stdout, neig1, eigval1, temp, nskip);
-        calc_entropy_schlitter(stdout, neig1, nskip, eigval1, temp);
+        printf("The Entropy due to the Schlitter formula is %g J/mol K\n",
+               calcSchlitterEntropy(gmx::arrayRefFromArray(eigval1, neig1),
+                                    temp, FALSE));
     }
 
     if (bVec2)

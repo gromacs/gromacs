@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/timing/wallcycle.h"
 
+struct NbnxnListParameters;
 struct t_commrec;
 struct t_inputrec;
 class t_state;
@@ -76,9 +77,10 @@ bool pme_loadbal_is_active(const pme_load_balancing_t *pme_lb);
 void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
                       t_commrec                 *cr,
                       const gmx::MDLogger       &mdlog,
-                      const t_inputrec          *ir,
-                      matrix                     box,
-                      const interaction_const_t *ic,
+                      const t_inputrec          &ir,
+                      const matrix               box,
+                      const interaction_const_t &ic,
+                      const NbnxnListParameters &listParams,
                       gmx_pme_t                 *pmedata,
                       gmx_bool                   bUseGPU,
                       gmx_bool                  *bPrinting);
@@ -95,12 +97,12 @@ void pme_loadbal_do(pme_load_balancing_t  *pme_lb,
                     FILE                  *fp_err,
                     FILE                  *fp_log,
                     const gmx::MDLogger   &mdlog,
-                    const t_inputrec      *ir,
+                    const t_inputrec      &ir,
                     t_forcerec            *fr,
-                    t_state               *state,
+                    const t_state         &state,
                     gmx_wallcycle_t        wcycle,
-                    gmx_int64_t            step,
-                    gmx_int64_t            step_rel,
+                    int64_t                step,
+                    int64_t                step_rel,
                     gmx_bool              *bPrinting);
 
 /*! \brief Finish the PME load balancing and print the settings when fplog!=NULL */

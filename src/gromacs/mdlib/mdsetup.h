@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,14 +35,21 @@
 #ifndef GMX_MDLIB_MDSETUP_H
 #define GMX_MDLIB_MDSETUP_H
 
-#include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/mdlib/shellfc.h"
-#include "gromacs/mdlib/vsite.h"
-#include "gromacs/mdtypes/commrec.h"
-#include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/pbcutil/mshift.h"
-#include "gromacs/topology/topology.h"
+struct bonded_threading_t;
+struct gmx_localtop_t;
+struct gmx_mtop_t;
+struct gmx_shellfc_t;
+struct gmx_vsite_t;
+struct t_commrec;
+struct t_forcerec;
+struct t_graph;
+struct t_inputrec;
+
+namespace gmx
+{
+class Constraints;
+class MDAtoms;
+}
 
 /*! \brief Sets atom data for several MD algorithms
  *
@@ -57,17 +64,19 @@
  * \param[in,out] top        The local topology
  * \param[in,out] fr         The force calculation parameter/data record
  * \param[out]    graph      The molecular graph, can be NULL
- * \param[out]    mdatoms    The MD atom data
+ * \param[out]    mdAtoms    The MD atom data
+ * \param[in,out] constr     The constraints handler, can be NULL
  * \param[in,out] vsite      The virtual site data, can be NULL
  * \param[in,out] shellfc    The shell/flexible-constraint data, can be NULL
  */
-void mdAlgorithmsSetupAtomData(t_commrec         *cr,
+void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
                                const t_inputrec  *ir,
                                const gmx_mtop_t  *top_global,
                                gmx_localtop_t    *top,
                                t_forcerec        *fr,
                                t_graph          **graph,
-                               t_mdatoms         *mdatoms,
+                               gmx::MDAtoms      *mdAtoms,
+                               gmx::Constraints  *constr,
                                gmx_vsite_t       *vsite,
                                gmx_shellfc_t     *shellfc);
 

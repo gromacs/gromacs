@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -178,7 +178,7 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
         sscanf(name, "%d", &resnr);
         sscanf(line+5, "%5s", resname);
 
-        if (!oldResFirst || oldres != resnr || strncmp(resname, oldresname, sizeof(resname)))
+        if (!oldResFirst || oldres != resnr || strncmp(resname, oldresname, sizeof(resname)) != 0)
         {
             oldres      = resnr;
             oldResFirst = TRUE;
@@ -308,27 +308,30 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
 }
 
 void gmx_gro_read_conf(const char *infile,
-                       t_symtab *symtab, char ***name, t_atoms *atoms,
+                       t_symtab *symtab, char **name, t_atoms *atoms,
                        rvec x[], rvec *v, matrix box)
 {
     FILE *in = gmx_fio_fopen(infile, "r");
     int   ndec;
     char  title[STRLEN];
     get_w_conf(in, infile, title, symtab, atoms, &ndec, x, v, box);
-    *name = put_symtab(symtab, title);
+    if (name != nullptr)
+    {
+        *name = gmx_strdup(title);
+    }
     gmx_fio_fclose(in);
 }
 
 static gmx_bool gmx_one_before_eof(FILE *fp)
 {
     char     data[4];
-    gmx_bool beof;
+    gmx_bool beof = fread(data, 1, 1, fp) != 1;
 
-    if ((beof = fread(data, 1, 1, fp)) == 1)
+    if (!beof)
     {
         gmx_fseek(fp, -1, SEEK_CUR);
     }
-    return !beof;
+    return beof;
 }
 
 gmx_bool gro_next_x_or_v(FILE *status, t_trxframe *fr)
@@ -359,8 +362,6 @@ gmx_bool gro_next_x_or_v(FILE *status, t_trxframe *fr)
     {
         fr->prec *= 10;
     }
-    fr->title  = title;
-    fr->bTitle = TRUE;
     fr->bX     = TRUE;
     fr->bBox   = TRUE;
 
@@ -384,6 +385,13 @@ gmx_bool gro_next_x_or_v(FILE *status, t_trxframe *fr)
         }
     }
 
+    if ((p = std::strstr(title, "step=")) != nullptr)
+    {
+        p        += 5;
+        fr->step  = 0; // Default value if fr-bStep is false
+        fr->bStep = (sscanf(p, "%" SCNd64, &fr->step) == 1);
+    }
+
     if (atoms.nr != fr->natoms)
     {
         gmx_fatal(FARGS, "Number of atoms in gro frame (%d) doesn't match the number in the previous frame (%d)", atoms.nr, fr->natoms);
@@ -401,8 +409,6 @@ int gro_first_x_or_v(FILE *status, t_trxframe *fr)
     get_coordnum_fp(status, title, &fr->natoms);
     frewind(status);
     fprintf(stderr, " '%s', %d atoms.\n", title, fr->natoms);
-    fr->bTitle = TRUE;
-    fr->title  = title;
     if (fr->natoms == 0)
     {
         gmx_file("No coordinates in gro file");
@@ -430,8 +436,8 @@ static const char *get_hconf_format(bool haveVelocities)
 
 static void write_hconf_box(FILE *out, const matrix box)
 {
-    if (box[XX][YY] || box[XX][ZZ] || box[YY][XX] || box[YY][ZZ] ||
-        box[ZZ][XX] || box[ZZ][YY])
+    if ((box[XX][YY] != 0.0f) || (box[XX][ZZ] != 0.0f) || (box[YY][XX] != 0.0f) || (box[YY][ZZ] != 0.0f) ||
+        (box[ZZ][XX] != 0.0f) || (box[ZZ][YY] != 0.0f))
     {
         fprintf(out, "%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f\n",
                 box[XX][XX], box[YY][YY], box[ZZ][ZZ],

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,8 +44,8 @@
 
 #include "config.h"
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #if GMX_OPENMP
 #include <omp.h>
@@ -58,7 +58,7 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
-int gmx_omp_get_max_threads(void)
+int gmx_omp_get_max_threads()
 {
 #if GMX_OPENMP
     return omp_get_max_threads();
@@ -67,7 +67,7 @@ int gmx_omp_get_max_threads(void)
 #endif
 }
 
-int gmx_omp_get_num_procs(void)
+int gmx_omp_get_num_procs()
 {
 #if GMX_OPENMP
     return omp_get_num_procs();
@@ -76,7 +76,7 @@ int gmx_omp_get_num_procs(void)
 #endif
 }
 
-int gmx_omp_get_thread_num(void)
+int gmx_omp_get_thread_num()
 {
 #if GMX_OPENMP
     return omp_get_thread_num();

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/g96io.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -65,6 +66,7 @@
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -75,7 +77,7 @@ enum {
 };
 
 static void calc_pbc_cluster(int ecenter, int nrefat, t_topology *top, int ePBC,
-                             rvec x[], int index[], matrix box)
+                             rvec x[], const int index[], matrix box)
 {
     int       m, i, j, j0, j1, jj, ai, aj;
     int       imin, jmin;
@@ -269,7 +271,7 @@ static void put_molecule_com_in_box(int unitcell_enum, int ecenter,
 {
     int     i, j;
     int     d;
-    rvec    com, new_com, shift, box_center;
+    rvec    com, shift, box_center;
     real    m;
     double  mtot;
     t_pbc   pbc;
@@ -298,20 +300,22 @@ static void put_molecule_com_in_box(int unitcell_enum, int ecenter,
         svmul(1.0/mtot, com, com);
 
         /* check if COM is outside box */
-        copy_rvec(com, new_com);
+        gmx::RVec newCom;
+        copy_rvec(com, newCom);
+        auto      newComArrayRef = gmx::arrayRefFromArray(&newCom, 1);
         switch (unitcell_enum)
         {
             case euRect:
-                put_atoms_in_box(ePBC, box, 1, &new_com);
+                put_atoms_in_box(ePBC, box, newComArrayRef);
                 break;
             case euTric:
-                put_atoms_in_triclinic_unitcell(ecenter, box, 1, &new_com);
+                put_atoms_in_triclinic_unitcell(ecenter, box, newComArrayRef);
                 break;
             case euCompact:
-                put_atoms_in_compact_unitcell(ePBC, ecenter, box, 1, &new_com);
+                put_atoms_in_compact_unitcell(ePBC, ecenter, box, newComArrayRef);
                 break;
         }
-        rvec_sub(new_com, com, shift);
+        rvec_sub(newCom, com, shift);
         if (norm2(shift) > 0)
         {
             if (debug)
@@ -336,7 +340,7 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
     int              d, presnr;
     real             m;
     double           mtot;
-    rvec             box_center, com, new_com, shift;
+    rvec             box_center, com, shift;
     static const int NOTSET = -12347;
     calc_box_center(ecenter, box, box_center);
 
@@ -353,21 +357,23 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
             svmul(1.0/mtot, com, com);
 
             /* check if COM is outside box */
-            copy_rvec(com, new_com);
+            gmx::RVec newCom;
+            copy_rvec(com, newCom);
+            auto      newComArrayRef = gmx::arrayRefFromArray(&newCom, 1);
             switch (unitcell_enum)
             {
                 case euRect:
-                    put_atoms_in_box(ePBC, box, 1, &new_com);
+                    put_atoms_in_box(ePBC, box, newComArrayRef);
                     break;
                 case euTric:
-                    put_atoms_in_triclinic_unitcell(ecenter, box, 1, &new_com);
+                    put_atoms_in_triclinic_unitcell(ecenter, box, newComArrayRef);
                     break;
                 case euCompact:
-                    put_atoms_in_compact_unitcell(ePBC, ecenter, box, 1, &new_com);
+                    put_atoms_in_compact_unitcell(ePBC, ecenter, box, newComArrayRef);
                     break;
             }
-            rvec_sub(new_com, com, shift);
-            if (norm2(shift))
+            rvec_sub(newCom, com, shift);
+            if (norm2(shift) != 0.0f)
             {
                 if (debug)
                 {
@@ -401,7 +407,7 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
     }
 }
 
-static void center_x(int ecenter, rvec x[], matrix box, int n, int nc, int ci[])
+static void center_x(int ecenter, rvec x[], matrix box, int n, int nc, const int ci[])
 {
     int  i, m, ai;
     rvec cmin, cmax, box_center, dx;
@@ -462,7 +468,7 @@ static void mk_filenm(char *base, const char *ext, int ndigit, int file_nr,
     std::strcat(out_file, ext);
 }
 
-void check_trr(const char *fn)
+static void check_trr(const char *fn)
 {
     if (fn2ftp(fn) != efTRR)
     {
@@ -470,7 +476,7 @@ void check_trr(const char *fn)
     }
 }
 
-void do_trunc(const char *fn, real t0)
+static void do_trunc(const char *fn, real t0)
 {
     t_fileio        *in;
     FILE            *fp;
@@ -516,7 +522,7 @@ void do_trunc(const char *fn, real t0)
         {
             fprintf(stderr, "Do you REALLY want to truncate this trajectory (%s) at:\n"
                     "frame %d, time %g, bytes %ld ??? (type YES if so)\n",
-                    fn, j, t, (long int)fpos);
+                    fn, j, t, static_cast<long int>(fpos));
             if (1 != scanf("%s", yesno))
             {
                 gmx_fatal(FARGS, "Error reading user input");
@@ -563,20 +569,21 @@ void do_trunc(const char *fn, real t0)
  * molecule information will generally be present if the input TNG
  * file was written by a GROMACS tool, this seems like reasonable
  * behaviour. */
-static gmx_mtop_t *read_mtop_for_tng(const char *tps_file,
-                                     const char *input_file,
-                                     const char *output_file)
+static std::unique_ptr<gmx_mtop_t>
+read_mtop_for_tng(const char *tps_file,
+                  const char *input_file,
+                  const char *output_file)
 {
-    gmx_mtop_t *mtop = nullptr;
+    std::unique_ptr<gmx_mtop_t> mtop;
 
     if (fn2bTPX(tps_file) &&
         efTNG != fn2ftp(input_file) &&
         efTNG == fn2ftp(output_file))
     {
         int temp_natoms = -1;
-        snew(mtop, 1);
+        mtop = gmx::compat::make_unique<gmx_mtop_t>();
         read_tpx(tps_file, nullptr, nullptr, &temp_natoms,
-                 nullptr, nullptr, mtop);
+                 nullptr, nullptr, mtop.get());
     }
 
     return mtop;
@@ -611,7 +618,7 @@ int gmx_trjconv(int argc, char *argv[])
         "[REF].xtc[ref], [REF].trr[ref], [REF].gro[ref], [TT].g96[tt]",
         "and [REF].pdb[ref].",
         "The file formats are detected from the file extension.",
-        "The precision of [REF].xtc[ref] and [REF].gro[ref] output is taken from the",
+        "The precision of the [REF].xtc[ref] output is taken from the",
         "input file for [REF].xtc[ref], [REF].gro[ref] and [REF].pdb[ref],",
         "and from the [TT]-ndec[tt] option for other input formats. The precision",
         "is always taken from [TT]-ndec[tt], when this option is set.",
@@ -664,10 +671,6 @@ int gmx_trjconv(int argc, char *argv[])
         "   results if you in fact have a cluster. Luckily that can be checked",
         "   afterwards using a trajectory viewer. Note also that if your molecules",
         "   are broken this will not work either.",
-        "",
-        "   The separate option [TT]-clustercenter[tt] can be used to specify an",
-        "   approximate center for the cluster. This is useful e.g. if you have",
-        "   two big vesicles, and you want to maintain their relative positions.",
         " * [TT]whole[tt] only makes broken molecules whole.",
         "",
 
@@ -868,14 +871,13 @@ int gmx_trjconv(int argc, char *argv[])
     real             *w_rls = nullptr;
     int               m, i, d, frame, outframe, natoms, nout, ncent, newstep = 0, model_nr;
 #define SKIP 10
-    t_topology        top;
-    gmx_mtop_t       *mtop  = nullptr;
+    t_topology       *top   = nullptr;
     gmx_conect        gc    = nullptr;
     int               ePBC  = -1;
     t_atoms          *atoms = nullptr, useatoms;
     matrix            top_box;
-    int              *index, *cindex;
-    char             *grpnm;
+    int              *index = nullptr, *cindex = nullptr;
+    char             *grpnm = nullptr;
     int              *frindex, nrfri;
     char             *frname;
     int               ifit, my_clust = -1;
@@ -888,7 +890,7 @@ int gmx_trjconv(int argc, char *argv[])
     int              *nfwritten       = nullptr;
     int               ndrop           = 0, ncol, drop0 = 0, drop1 = 0, dropuse = 0;
     double          **dropval;
-    real              tshift = 0, t0 = -1, dt = 0.001, prec;
+    real              tshift = 0, dt = -1, prec;
     gmx_bool          bFit, bPFit, bReset;
     int               nfitdim;
     gmx_rmpbc_t       gpbc = nullptr;
@@ -902,7 +904,7 @@ int gmx_trjconv(int argc, char *argv[])
     char              out_file2[256], *charpt;
     char             *outf_base = nullptr;
     const char       *outf_ext  = nullptr;
-    char              top_title[256], title[256], filemode[5];
+    char              top_title[256], title[256], timestr[32], stepstr[32], filemode[5];
     gmx_output_env_t *oenv;
 
     t_filenm          fnm[] = {
@@ -926,7 +928,6 @@ int gmx_trjconv(int argc, char *argv[])
     }
 
     top_file = ftp2fn(efTPS, NFILE, fnm);
-    init_top(&top);
 
     /* Check command line */
     in_file = opt2fn("-f", NFILE, fnm);
@@ -1052,7 +1053,8 @@ int gmx_trjconv(int argc, char *argv[])
             /* Check for number of files disabled, as FOPEN_MAX is not the correct
              * number to check for. In my linux box it is only 16.
              */
-            if (0 && (clust->clust->nr > FOPEN_MAX-4))
+            if (/* DISABLES CODE */ (false))
+            //if (clust->clust->nr > FOPEN_MAX-4)
             {
                 gmx_fatal(FARGS, "Can not open enough (%d) files to write all the"
                           " trajectories.\ntry splitting the index file in %d parts.\n"
@@ -1078,9 +1080,10 @@ int gmx_trjconv(int argc, char *argv[])
         /* skipping */
         if (skip_nr <= 0)
         {
+            gmx_fatal(FARGS, "Argument for -skip (%d) needs to be greater or equal to 1.", skip_nr);
         }
 
-        mtop = read_mtop_for_tng(top_file, in_file, out_file);
+        std::unique_ptr<gmx_mtop_t> mtop = read_mtop_for_tng(top_file, in_file, out_file);
 
         /* Determine whether to read a topology */
         bTPS = (ftp2bSet(efTPS, NFILE, fnm) ||
@@ -1092,33 +1095,41 @@ int gmx_trjconv(int argc, char *argv[])
 
         if (bTPS)
         {
-            read_tps_conf(top_file, &top, &ePBC, &xp, nullptr, top_box,
+            snew(top, 1);
+            read_tps_conf(top_file, top, &ePBC, &xp, nullptr, top_box,
                           bReset || bPBCcomRes);
-            std::strncpy(top_title, *top.name, 255);
+            std::strncpy(top_title, *top->name, 255);
             top_title[255] = '\0';
-            atoms          = &top.atoms;
+            atoms          = &top->atoms;
 
-            if (0 == top.mols.nr && (bCluster || bPBCcomMol))
+            if (0 == top->mols.nr && (bCluster || bPBCcomMol))
             {
                 gmx_fatal(FARGS, "Option -pbc %s requires a .tpr file for the -s option", pbc_opt[pbc_enum]);
             }
 
             /* top_title is only used for gro and pdb,
-             * the header in such a file is top_title t= ...
-             * to prevent a double t=, remove it from top_title
+             * the header in such a file is top_title, followed by
+             * t= ... and/or step= ...
+             * to prevent double t= or step=, remove it from top_title.
+             * From GROMACS-2018 we only write t/step when the frame actually
+             * has a valid time/step, so we need to check for both separately.
              */
             if ((charpt = std::strstr(top_title, " t= ")))
+            {
+                charpt[0] = '\0';
+            }
+            if ((charpt = std::strstr(top_title, " step= ")))
             {
                 charpt[0] = '\0';
             }
 
             if (bCONECT)
             {
-                gc = gmx_conect_generate(&top);
+                gc = gmx_conect_generate(top);
             }
             if (bRmPBC)
             {
-                gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
+                gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
             }
         }
 
@@ -1127,7 +1138,7 @@ int gmx_trjconv(int argc, char *argv[])
         if (opt2bSet("-fr", NFILE, fnm))
         {
             printf("Select groups of frame number indices:\n");
-            rd_index(opt2fn("-fr", NFILE, fnm), 1, &nrfri, (int **)&frindex, &frname);
+            rd_index(opt2fn("-fr", NFILE, fnm), 1, &nrfri, &frindex, &frname);
             if (debug)
             {
                 for (i = 0; i < nrfri; i++)
@@ -1184,7 +1195,7 @@ int gmx_trjconv(int argc, char *argv[])
                 gmx_fatal(FARGS, "Could not read a frame from %s", in_file);
             }
             natoms = fr.natoms;
-            close_trj(trxin);
+            close_trx(trxin);
             sfree(fr.x);
             snew(index, natoms);
             for (i = 0; i < natoms; i++)
@@ -1211,7 +1222,7 @@ int gmx_trjconv(int argc, char *argv[])
                store original location (to put structure back) */
             if (bRmPBC)
             {
-                gmx_rmpbc(gpbc, top.atoms.nr, top_box, xp);
+                gmx_rmpbc(gpbc, top->atoms.nr, top_box, xp);
             }
             copy_rvec(xp[index[0]], x_shift);
             reset_x_ndim(nfitdim, ifit, ind_fit, atoms->nr, nullptr, xp, w_rls);
@@ -1296,8 +1307,29 @@ int gmx_trjconv(int argc, char *argv[])
 
         if (bHaveFirstFrame)
         {
-            set_trxframe_ePBC(&fr, ePBC);
+            if (bTDump)
+            {
+                // Determine timestep (assuming constant spacing for now) if we
+                // need to dump frames based on time. This is required so we do not
+                // skip the first frame if that was the one that should have been dumped
+                double firstFrameTime = fr.time;
+                if (read_next_frame(oenv, trxin, &fr))
+                {
+                    dt     = fr.time - firstFrameTime;
+                    bDTset = TRUE;
+                    if (dt <= 0)
+                    {
+                        fprintf(stderr, "Warning: Frame times are not incrementing - will dump first frame.\n");
+                    }
+                }
+                // Now close and reopen so we are at first frame again
+                close_trx(trxin);
+                done_frame(&fr);
+                // Reopen at first frame (We already know it exists if we got here)
+                read_first_frame(oenv, &trxin, in_file, &fr, flags);
+            }
 
+            set_trxframe_ePBC(&fr, ePBC);
             natoms = fr.natoms;
 
             if (bSetTime)
@@ -1331,15 +1363,14 @@ int gmx_trjconv(int argc, char *argv[])
             switch (ftp)
             {
                 case efTNG:
-                    trjtools_gmx_prepare_tng_writing(out_file,
-                                                     filemode[0],
-                                                     trxin,
-                                                     &trxout,
-                                                     nullptr,
-                                                     nout,
-                                                     mtop,
-                                                     index,
-                                                     grpnm);
+                    trxout = trjtools_gmx_prepare_tng_writing(out_file,
+                                                              filemode[0],
+                                                              trxin,
+                                                              nullptr,
+                                                              nout,
+                                                              mtop.get(),
+                                                              gmx::arrayRefFromArray(index, nout),
+                                                              grpnm);
                     break;
                 case efXTC:
                 case efTRR:
@@ -1379,7 +1410,6 @@ int gmx_trjconv(int argc, char *argv[])
             frame    =  0;
             outframe =  0;
             model_nr =  0;
-            bDTset   = FALSE;
 
             /* Main loop over frames */
             do
@@ -1412,7 +1442,7 @@ int gmx_trjconv(int argc, char *argv[])
                 if (bSetBox)
                 {
                     /* generate new box */
-                    if (fr.bBox == FALSE)
+                    if (!fr.bBox)
                     {
                         clear_mat(fr.box);
                     }
@@ -1424,7 +1454,7 @@ int gmx_trjconv(int argc, char *argv[])
                         }
                         else
                         {
-                            if (fr.bBox == FALSE)
+                            if (!fr.bBox)
                             {
                                 gmx_fatal(FARGS, "Cannot preserve a box that does not exist.\n");
                             }
@@ -1442,22 +1472,23 @@ int gmx_trjconv(int argc, char *argv[])
 
                 if (bTDump)
                 {
-                    /* determine timestep */
-                    if (t0 == -1)
+                    // If we could not read two frames or times are not incrementing
+                    // we have almost no idea what to do,
+                    // but dump the first frame so output is not broken.
+                    if (dt <= 0 || !bDTset)
                     {
-                        t0 = fr.time;
+                        bDumpFrame = true;
                     }
                     else
                     {
-                        if (!bDTset)
-                        {
-                            dt     = fr.time-t0;
-                            bDTset = TRUE;
-                        }
+                        // Dump the frame if we are less than half a frame time
+                        // below it. This will also ensure we at least dump a
+                        // somewhat reasonable frame if the spacing is unequal
+                        // and we have overrun the frame time. Once we dump one
+                        // frame based on time we quit, so it does not matter
+                        // that this might be true for all subsequent frames too.
+                        bDumpFrame = (fr.time > tdump-0.5*dt);
                     }
-                    /* This is not very elegant, as one can not dump a frame after
-                     * a timestep with is more than twice as small as the first one. */
-                    bDumpFrame = (fr.time > tdump-0.5*dt) && (fr.time <= tdump+0.5*dt);
                 }
                 else
                 {
@@ -1501,7 +1532,7 @@ int gmx_trjconv(int argc, char *argv[])
                 }
                 else if (bCluster)
                 {
-                    calc_pbc_cluster(ecenter, ifit, &top, ePBC, fr.x, ind_fit, fr.box);
+                    calc_pbc_cluster(ecenter, ifit, top, ePBC, fr.x, ind_fit, fr.box);
                 }
 
                 if (bPFit)
@@ -1545,7 +1576,7 @@ int gmx_trjconv(int argc, char *argv[])
                 }
 
                 bWriteFrame =
-                    ( ( !bTDump && !frindex && frame % skip_nr == 0 ) || bDumpFrame );
+                    ( ( !bTDump && (frindex == nullptr) && frame % skip_nr == 0 ) || bDumpFrame );
 
                 if (bWriteFrame && (bDropUnder || bDropOver))
                 {
@@ -1585,8 +1616,7 @@ int gmx_trjconv(int argc, char *argv[])
                     {
                         frout_time = tzero + frame*timestep;
                     }
-                    else
-                    if (bSetTime)
+                    else if (bSetTime)
                     {
                         frout_time += tshift;
                     }
@@ -1594,7 +1624,7 @@ int gmx_trjconv(int argc, char *argv[])
                     if (bTDump)
                     {
                         fprintf(stderr, "\nDumping frame at t= %g %s\n",
-                                output_env_conv_time(oenv, frout_time), output_env_get_time_unit(oenv));
+                                output_env_conv_time(oenv, frout_time), output_env_get_time_unit(oenv).c_str());
                     }
 
                     /* check for writing at each delta_t */
@@ -1655,19 +1685,20 @@ int gmx_trjconv(int argc, char *argv[])
                             }
                         }
 
+                        auto positionsArrayRef = gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec *>(fr.x), natoms);
                         if (bPBCcomAtom)
                         {
                             switch (unitcell_enum)
                             {
                                 case euRect:
-                                    put_atoms_in_box(ePBC, fr.box, natoms, fr.x);
+                                    put_atoms_in_box(ePBC, fr.box, positionsArrayRef);
                                     break;
                                 case euTric:
-                                    put_atoms_in_triclinic_unitcell(ecenter, fr.box, natoms, fr.x);
+                                    put_atoms_in_triclinic_unitcell(ecenter, fr.box, positionsArrayRef);
                                     break;
                                 case euCompact:
                                     put_atoms_in_compact_unitcell(ePBC, ecenter, fr.box,
-                                                                  natoms, fr.x);
+                                                                  positionsArrayRef);
                                     break;
                             }
                         }
@@ -1679,7 +1710,7 @@ int gmx_trjconv(int argc, char *argv[])
                         if (bPBCcomMol)
                         {
                             put_molecule_com_in_box(unitcell_enum, ecenter,
-                                                    &top.mols,
+                                                    &top->mols,
                                                     natoms, atoms->atom, ePBC, fr.box, fr.x);
                         }
                         /* Copy the input trxframe struct to the output trxframe struct */
@@ -1804,8 +1835,29 @@ int gmx_trjconv(int argc, char *argv[])
                             case efGRO:
                             case efG96:
                             case efPDB:
-                                sprintf(title, "Generated by trjconv : %s t= %9.5f",
-                                        top_title, frout.time);
+                                // Only add a generator statement if title is empty,
+                                // to avoid multiple generated-by statements from various programs
+                                if (std::strlen(top_title) == 0)
+                                {
+                                    sprintf(top_title, "Generated by trjconv");
+                                }
+                                if (frout.bTime)
+                                {
+                                    sprintf(timestr, " t= %9.5f", frout.time);
+                                }
+                                else
+                                {
+                                    std::strcpy(timestr, "");
+                                }
+                                if (frout.bStep)
+                                {
+                                    sprintf(stepstr, " step= %" PRId64, frout.step);
+                                }
+                                else
+                                {
+                                    std::strcpy(stepstr, "");
+                                }
+                                snprintf(title, 256, "%s%s%s", top_title, timestr, stepstr);
                                 if (bSeparate || bSplitHere)
                                 {
                                     out = gmx_ffopen(out_file2, "w");
@@ -1818,7 +1870,6 @@ int gmx_trjconv(int argc, char *argv[])
                                         break;
                                     case efPDB:
                                         fprintf(out, "REMARK    GENERATED BY TRJCONV\n");
-                                        sprintf(title, "%s t= %9.5f", top_title, frout.time);
                                         /* if reading from pdb, we want to keep the original
                                            model numbering else we write the output frame
                                            number plus one, because model 0 is not allowed in pdb */
@@ -1834,10 +1885,10 @@ int gmx_trjconv(int argc, char *argv[])
                                                       frout.ePBC, frout.box, ' ', model_nr, gc, TRUE);
                                         break;
                                     case efG96:
-                                        frout.title = title;
+                                        const char *outputTitle = "";
                                         if (bSeparate || bTDump)
                                         {
-                                            frout.bTitle = TRUE;
+                                            outputTitle = title;
                                             if (bTPS)
                                             {
                                                 frout.bAtoms = TRUE;
@@ -1848,12 +1899,15 @@ int gmx_trjconv(int argc, char *argv[])
                                         }
                                         else
                                         {
-                                            frout.bTitle = (outframe == 0);
+                                            if (outframe == 0)
+                                            {
+                                                outputTitle = title;
+                                            }
                                             frout.bAtoms = FALSE;
                                             frout.bStep  = TRUE;
                                             frout.bTime  = TRUE;
                                         }
-                                        write_g96_conf(out, &frout, -1, nullptr);
+                                        write_g96_conf(out, outputTitle, &frout, -1, nullptr);
                                 }
                                 if (bSeparate || bSplitHere)
                                 {
@@ -1896,7 +1950,7 @@ int gmx_trjconv(int argc, char *argv[])
         }
         fprintf(stderr, "\n");
 
-        close_trj(trxin);
+        close_trx(trxin);
         sfree(outf_base);
 
         if (bRmPBC)
@@ -1924,9 +1978,22 @@ int gmx_trjconv(int argc, char *argv[])
         }
     }
 
-    sfree(mtop);
+    if (bTPS)
+    {
+        done_top(top);
+        sfree(top);
+    }
+    sfree(xp);
+    sfree(xmem);
+    sfree(vmem);
+    sfree(fmem);
+    sfree(grpnm);
+    sfree(index);
+    sfree(cindex);
+    done_frame(&fr);
 
     do_view(oenv, out_file, nullptr);
 
+    output_env_done(oenv);
     return 0;
 }

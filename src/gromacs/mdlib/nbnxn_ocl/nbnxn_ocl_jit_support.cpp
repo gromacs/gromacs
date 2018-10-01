@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -92,7 +92,7 @@ static const char * kernel_VdW_family_definitions[] =
 {
     " -DVDWNAME=_VdwLJ",
     " -DLJ_COMB_GEOM -DVDWNAME=_VdwLJCombGeom",
-    " -DLJ_COMB_LB  -DVDWNAME=_VdwLJCombLB",
+    " -DLJ_COMB_LB -DVDWNAME=_VdwLJCombLB",
     " -DLJ_FORCE_SWITCH -DVDWNAME=_VdwLJFsw",
     " -DLJ_POT_SWITCH -DVDWNAME=_VdwLJPsw",
     " -DLJ_EWALD_COMB_GEOM -DVDWNAME=_VdwLJEwCombGeom",
@@ -161,7 +161,7 @@ makeDefinesForKernelTypes(bool bFastGen,
 
 /*! \brief Compiles nbnxn kernels for OpenCL GPU given by \p mygpu
  *
- * With OpenCL, a call to this function must precede nbnxn_gpu_init().
+ * With OpenCL, a call to this function must not precede nbnxn_gpu_init() (which also calls it).
  *
  * Doing bFastGen means only the requested kernels are compiled,
  * significantly reducing the total compilation time. If false, all
@@ -179,7 +179,7 @@ nbnxn_gpu_compile_kernels(gmx_nbnxn_ocl_t *nb)
     gmx_bool                  bFastGen = TRUE;
     cl_program                program  = nullptr;
 
-    if (getenv("GMX_OCL_NOFASTGEN") != NULL)
+    if (getenv("GMX_OCL_NOFASTGEN") != nullptr)
     {
         bFastGen = FALSE;
     }
@@ -196,24 +196,29 @@ nbnxn_gpu_compile_kernels(gmx_nbnxn_ocl_t *nb)
          * files outside the nbnxn_ocl as macros, to avoid including those files
          * in the JIT compilation that happens at runtime.
          */
+
         extraDefines += gmx::formatString(
-                    " -DCENTRAL=%d -DNBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER=%d -DNBNXN_GPU_CLUSTER_SIZE=%d -DNBNXN_GPU_JGROUP_SIZE=%d -DNBNXN_MIN_RSQ=%s %s",
-                    CENTRAL,                                 /* Defined in ishift.h */
-                    c_nbnxnGpuNumClusterPerSupercluster,     /* Defined in nbnxn_pairlist.h */
-                    c_nbnxnGpuClusterSize,                   /* Defined in nbnxn_pairlist.h */
-                    c_nbnxnGpuJgroupSize,                    /* Defined in nbnxn_pairlist.h */
-                    STRINGIFY_MACRO(NBNXN_MIN_RSQ)           /* Defined in nbnxn_consts.h */
-                                                             /* NBNXN_MIN_RSQ passed as string to avoid
-                                                                floating point representation problems with sprintf */
+                    " -DCENTRAL=%d "
+                    "-DNBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER=%d -DNBNXN_GPU_CLUSTER_SIZE=%d -DNBNXN_GPU_JGROUP_SIZE=%d "
+                    "-DGMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY=%d "
+                    "-DNBNXN_MIN_RSQ=%s %s",
+                    CENTRAL,                                                /* Defined in ishift.h */
+                    c_nbnxnGpuNumClusterPerSupercluster,                    /* Defined in nbnxn_pairlist.h */
+                    c_nbnxnGpuClusterSize,                                  /* Defined in nbnxn_pairlist.h */
+                    c_nbnxnGpuJgroupSize,                                   /* Defined in nbnxn_pairlist.h */
+                    getOclPruneKernelJ4Concurrency(nb->dev_info->vendor_e), /* In nbnxn_ocl_types.h  */
+                    STRINGIFY_MACRO(NBNXN_MIN_RSQ)                          /* Defined in nbnxn_consts.h */
+                                                                            /* NBNXN_MIN_RSQ passed as string to avoid
+                                                                                floating point representation problems with sprintf */
                     , (nb->bPrefetchLjParam) ? "-DIATYPE_SHMEM" : ""
                     );
-
 
         try
         {
             /* TODO when we have a proper MPI-aware logging module,
                the log output here should be written there */
             program = gmx::ocl::compileProgram(stderr,
+                                               "src/gromacs/mdlib/nbnxn_ocl",
                                                "nbnxn_ocl_kernels.cl",
                                                extraDefines,
                                                nb->dev_rundata->context,

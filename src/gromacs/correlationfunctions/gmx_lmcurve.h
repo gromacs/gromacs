@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,13 +43,26 @@
 #ifndef GMX_CORRELATION_FUNCTIONS_GMX_LMCURVE_H
 #define GMX_CORRELATION_FUNCTIONS_GMX_LMCURVE_H
 
-#include <lmstruct.h>
+#include "gromacs/correlationfunctions/expfit.h"
 
-//! Calls lmmin with the given data, with callback function \c f.
-void gmx_lmcurve( const int n_par, double *par, const int m_dat,
-                  const double *t, const double *y, const double *dy,
-                  double (*f)(double t, const double *par ),
-                  const lm_control_struct *control,
-                  lm_status_struct *status );
+/*! \brief function type for passing to fitting routine */
+typedef double (*t_lmcurve)(double x, const double *a);
+
+/*! \brief lmfit_exp supports fitting of different functions
+ *
+ * This routine calls the Levenberg-Marquardt non-linear fitting
+ * routine for fitting a data set with errors to a target function.
+ * Fitting routines included in gromacs in src/external/lmfit.
+ */
+bool lmfit_exp(int          nfit,
+               const double x[],
+               const double y[],
+               const double dy[],
+               double       parm[],
+               bool         bVerbose,
+               int          eFitFn,
+               int          nfix);
+
+extern t_lmcurve lmcurves[effnNR+1];
 
 #endif

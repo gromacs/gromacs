@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,8 +36,8 @@
  */
 #include "gmxpre.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -47,7 +47,6 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
-#include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/rbin.h"
@@ -69,7 +68,7 @@ typedef struct gmx_global_stat
     int   *itc1;
 } t_gmx_global_stat;
 
-gmx_global_stat_t global_stat_init(t_inputrec *ir)
+gmx_global_stat_t global_stat_init(const t_inputrec *ir)
 {
     gmx_global_stat_t gs;
 
@@ -90,7 +89,7 @@ void global_stat_destroy(gmx_global_stat_t gs)
     sfree(gs);
 }
 
-static int filter_enerdterm(real *afrom, gmx_bool bToBuffer, real *ato,
+static int filter_enerdterm(const real *afrom, gmx_bool bToBuffer, real *ato,
                             gmx_bool bTemp, gmx_bool bPres, gmx_bool bEner)
 {
     int i, to, from;
@@ -136,11 +135,11 @@ static int filter_enerdterm(real *afrom, gmx_bool bToBuffer, real *ato,
     return to;
 }
 
-void global_stat(gmx_global_stat_t gs,
-                 t_commrec *cr, gmx_enerdata_t *enerd,
+void global_stat(const gmx_global_stat *gs,
+                 const t_commrec *cr, gmx_enerdata_t *enerd,
                  tensor fvir, tensor svir, rvec mu_tot,
-                 t_inputrec *inputrec,
-                 gmx_ekindata_t *ekind, gmx_constr_t constr,
+                 const t_inputrec *inputrec,
+                 gmx_ekindata_t *ekind, const gmx::Constraints *constr,
                  t_vcm *vcm,
                  int nsig, real *sig,
                  int *totalNumberOfBondedInteractions,
@@ -156,18 +155,17 @@ void global_stat(gmx_global_stat_t gs,
     int        inn[egNR];
     real       copyenerd[F_NRE];
     int        nener, j;
-    real      *rmsd_data = nullptr;
     double     nb;
     gmx_bool   bVV, bTemp, bEner, bPres, bConstrVir, bEkinAveVel, bReadEkin;
-    bool       checkNumberOfBondedInteractions = flags & CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS;
+    bool       checkNumberOfBondedInteractions = (flags & CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS) != 0;
 
     bVV           = EI_VV(inputrec->eI);
-    bTemp         = flags & CGLO_TEMPERATURE;
-    bEner         = flags & CGLO_ENERGY;
-    bPres         = (flags & CGLO_PRESSURE);
-    bConstrVir    = (flags & CGLO_CONSTRAINT);
+    bTemp         = ((flags & CGLO_TEMPERATURE) != 0);
+    bEner         = ((flags & CGLO_ENERGY) != 0);
+    bPres         = ((flags & CGLO_PRESSURE) != 0);
+    bConstrVir    = ((flags & CGLO_CONSTRAINT) != 0);
     bEkinAveVel   = (inputrec->eI == eiVV || (inputrec->eI == eiVVAK && bPres));
-    bReadEkin     = (flags & CGLO_READEKIN);
+    bReadEkin     = ((flags & CGLO_READEKIN) != 0);
 
     rb   = gs->rb;
     itc0 = gs->itc0;
@@ -191,7 +189,6 @@ void global_stat(gmx_global_stat_t gs,
     if (bConstrVir)
     {
         isv = add_binr(rb, DIM*DIM, svir[0]);
-        where();
     }
 
 /* We need the force virial and the kinetic energy for the first time through with velocity verlet */
@@ -215,49 +212,41 @@ void global_stat(gmx_global_stat_t gs,
                 }
             }
             /* these probably need to be put into one of these categories */
-            where();
             idedl = add_binr(rb, 1, &(ekind->dekindl));
             if (bSumEkinhOld)
             {
                 idedlo = add_binr(rb, 1, &(ekind->dekindl_old));
             }
-            where();
             ica   = add_binr(rb, 1, &(ekind->cosacc.mvcos));
-            where();
         }
     }
-    where();
 
     if (bPres)
     {
         ifv = add_binr(rb, DIM*DIM, fvir[0]);
     }
 
-
+    gmx::ArrayRef<real> rmsdData;
     if (bEner)
     {
-        where();
         ie  = add_binr(rb, nener, copyenerd);
-        where();
         if (constr)
         {
-            rmsd_data = constr_rmsd_data(constr);
-            if (rmsd_data)
+            rmsdData = constr->rmsdData();
+            if (!rmsdData.empty())
             {
-                irmsd = add_binr(rb, 2, rmsd_data);
+                irmsd = add_binr(rb, 2, rmsdData.data());
             }
         }
         if (!inputrecNeedMutot(inputrec))
         {
             imu = add_binr(rb, DIM, mu_tot);
-            where();
         }
 
         for (j = 0; (j < egNR); j++)
         {
             inn[j] = add_binr(rb, enerd->grpp.nener, enerd->grpp.ener[j]);
         }
-        where();
         if (inputrec->efep != efepNO)
         {
             idvdll  = add_bind(rb, efptNR, enerd->dvdl_lin);
@@ -272,17 +261,12 @@ void global_stat(gmx_global_stat_t gs,
     if (vcm)
     {
         icm   = add_binr(rb, DIM*vcm->nr, vcm->group_p[0]);
-        where();
         imass = add_binr(rb, vcm->nr, vcm->group_mass);
-        where();
         if (vcm->mode == ecmANGULAR)
         {
             icj   = add_binr(rb, DIM*vcm->nr, vcm->group_j[0]);
-            where();
             icx   = add_binr(rb, DIM*vcm->nr, vcm->group_x[0]);
-            where();
             ici   = add_binr(rb, DIM*DIM*vcm->nr, vcm->group_i[0][0]);
-            where();
         }
     }
 
@@ -291,7 +275,6 @@ void global_stat(gmx_global_stat_t gs,
         nb  = cr->dd->nbonded_local;
         inb = add_bind(rb, 1, &nb);
     }
-    where();
     if (nsig > 0)
     {
         isig = add_binr(rb, nsig, sig);
@@ -303,7 +286,6 @@ void global_stat(gmx_global_stat_t gs,
         fprintf(debug, "Summing %d energies\n", rb->maxreal);
     }
     sum_bin(rb, cr);
-    where();
 
     /* Extract all the data locally */
 
@@ -338,7 +320,6 @@ void global_stat(gmx_global_stat_t gs,
                 extract_binr(rb, idedlo, 1, &(ekind->dekindl_old));
             }
             extract_binr(rb, ica, 1, &(ekind->cosacc.mvcos));
-            where();
         }
     }
     if (bPres)
@@ -349,9 +330,9 @@ void global_stat(gmx_global_stat_t gs,
     if (bEner)
     {
         extract_binr(rb, ie, nener, copyenerd);
-        if (rmsd_data)
+        if (!rmsdData.empty())
         {
-            extract_binr(rb, irmsd, 2, rmsd_data);
+            extract_binr(rb, irmsd, rmsdData);
         }
         if (!inputrecNeedMutot(inputrec))
         {
@@ -371,7 +352,6 @@ void global_stat(gmx_global_stat_t gs,
                 extract_bind(rb, iepl, enerd->n_lambda, enerd->enerpart_lambda);
             }
         }
-        where();
 
         filter_enerdterm(copyenerd, FALSE, enerd->term, bTemp, bPres, bEner);
     }
@@ -379,41 +359,35 @@ void global_stat(gmx_global_stat_t gs,
     if (vcm)
     {
         extract_binr(rb, icm, DIM*vcm->nr, vcm->group_p[0]);
-        where();
         extract_binr(rb, imass, vcm->nr, vcm->group_mass);
-        where();
         if (vcm->mode == ecmANGULAR)
         {
             extract_binr(rb, icj, DIM*vcm->nr, vcm->group_j[0]);
-            where();
             extract_binr(rb, icx, DIM*vcm->nr, vcm->group_x[0]);
-            where();
             extract_binr(rb, ici, DIM*DIM*vcm->nr, vcm->group_i[0][0]);
-            where();
         }
     }
 
     if (checkNumberOfBondedInteractions)
     {
         extract_bind(rb, inb, 1, &nb);
-        *totalNumberOfBondedInteractions = static_cast<int>(nb+0.5);
+        *totalNumberOfBondedInteractions = gmx::roundToInt(nb);
     }
 
     if (nsig > 0)
     {
         extract_binr(rb, isig, nsig, sig);
     }
-    where();
 }
 
-int do_per_step(gmx_int64_t step, gmx_int64_t nstep)
+bool do_per_step(int64_t step, int64_t nstep)
 {
     if (nstep != 0)
     {
-        return ((step % nstep) == 0);
+        return (step % nstep) == 0;
     }
     else
     {
-        return 0;
+        return false;
     }
 }

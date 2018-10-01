@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,7 +67,7 @@ gmx_bool gmx_fio_doe_gmx_bool(struct t_fileio *fio, gmx_bool *item,
                               const char *desc, const char *srcfile, int line);
 gmx_bool gmx_fio_doe_int(struct t_fileio *fio, int *item,
                          const char *desc, const char *srcfile, int line);
-gmx_bool gmx_fio_doe_int64(struct t_fileio *fio, gmx_int64_t *item,
+gmx_bool gmx_fio_doe_int64(struct t_fileio *fio, int64_t *item,
                            const char *desc, const char *srcfile, int line);
 gmx_bool gmx_fio_doe_uchar(struct t_fileio *fio, unsigned char *item,
                            const char *desc, const char *srcfile, int line);
@@ -91,7 +91,7 @@ gmx_bool gmx_fio_ndoe_gmx_bool(struct t_fileio *fio, gmx_bool *item, int n,
                                const char *desc, const char *srcfile, int line);
 gmx_bool gmx_fio_ndoe_int(struct t_fileio *fio, int *item, int n,
                           const char *desc, const char *srcfile, int line);
-gmx_bool gmx_fio_ndoe_int64(struct t_fileio *fio, gmx_int64_t *item, int n,
+gmx_bool gmx_fio_ndoe_int64(struct t_fileio *fio, int64_t *item, int n,
                             const char *desc, const char *srcfile,
                             int line);
 gmx_bool gmx_fio_ndoe_uchar(struct t_fileio *fio, unsigned char *item, int n,
@@ -110,16 +110,16 @@ gmx_bool gmx_fio_ndoe_string(struct t_fileio *fio, char *item[], int n,
 /* convenience macros */
 #define gmx_fio_write_string(fio, item)         gmx_fio_writee_string(fio, item, (#item), __FILE__, __LINE__)
 
-#define gmx_fio_do_real(fio, item)              gmx_fio_doe_real(fio, &item, (#item), __FILE__, __LINE__)
-#define gmx_fio_do_float(fio, item)             gmx_fio_doe_float(fio, &item, (#item), __FILE__, __LINE__)
-#define gmx_fio_do_double(fio, item)            gmx_fio_doe_double(fio, &item, (#item), __FILE__, __LINE__)
-#define gmx_fio_do_gmx_bool(fio, item)          gmx_fio_doe_gmx_bool(fio, &item, (#item), __FILE__, __LINE__)
-#define gmx_fio_do_int(fio, item)               gmx_fio_doe_int(fio, &item, (#item), __FILE__, __LINE__)
-#define gmx_fio_do_int64(fio, item)             gmx_fio_doe_int64(fio, &item, (#item), __FILE__, __LINE__)
-#define gmx_fio_do_uchar(fio, item)             gmx_fio_doe_uchar(fio, &item, (#item), __FILE__, __LINE__)
-#define gmx_fio_do_ushort(fio, item)            gmx_fio_doe_ushort(fio, &item, (#item), __FILE__, __LINE__)
-#define gmx_fio_do_rvec(fio, item)              gmx_fio_doe_rvec(fio, &item, (#item), __FILE__, __LINE__)
-#define gmx_fio_do_ivec(fio, item)              gmx_fio_doe_ivec(fio, &item, (#item), __FILE__, __LINE__)
+#define gmx_fio_do_real(fio, item)              gmx_fio_doe_real(fio, &(item), (#item), __FILE__, __LINE__)
+#define gmx_fio_do_float(fio, item)             gmx_fio_doe_float(fio, &(item), (#item), __FILE__, __LINE__)
+#define gmx_fio_do_double(fio, item)            gmx_fio_doe_double(fio, &(item), (#item), __FILE__, __LINE__)
+#define gmx_fio_do_gmx_bool(fio, item)          gmx_fio_doe_gmx_bool(fio, &(item), (#item), __FILE__, __LINE__)
+#define gmx_fio_do_int(fio, item)               gmx_fio_doe_int(fio, &(item), (#item), __FILE__, __LINE__)
+#define gmx_fio_do_int64(fio, item)             gmx_fio_doe_int64(fio, &(item), (#item), __FILE__, __LINE__)
+#define gmx_fio_do_uchar(fio, item)             gmx_fio_doe_uchar(fio, &(item), (#item), __FILE__, __LINE__)
+#define gmx_fio_do_ushort(fio, item)            gmx_fio_doe_ushort(fio, &(item), (#item), __FILE__, __LINE__)
+#define gmx_fio_do_rvec(fio, item)              gmx_fio_doe_rvec(fio, &(item), (#item), __FILE__, __LINE__)
+#define gmx_fio_do_ivec(fio, item)              gmx_fio_doe_ivec(fio, &(item), (#item), __FILE__, __LINE__)
 #define gmx_fio_do_string(fio, item)            gmx_fio_doe_string(fio, item, (#item), __FILE__, __LINE__)
 
 
@@ -143,14 +143,15 @@ class FileIOXdrSerializer : public ISerializer
     public:
         explicit FileIOXdrSerializer(t_fileio *fio) : fio_(fio) {}
 
-        virtual bool reading() const;
+        bool reading() const override;
 
-        virtual void doUChar(unsigned char *value);
-        virtual void doInt(int *value);
-        virtual void doInt64(gmx_int64_t *value);
-        virtual void doFloat(float *value);
-        virtual void doDouble(double *value);
-        virtual void doString(std::string *value);
+        void doBool(bool *value) override;
+        void doUChar(unsigned char *value) override;
+        void doInt(int *value) override;
+        void doInt64(int64_t *value) override;
+        void doFloat(float *value) override;
+        void doDouble(double *value) override;
+        void doString(std::string *value) override;
 
     private:
         t_fileio *fio_;

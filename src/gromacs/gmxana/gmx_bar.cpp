@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -107,12 +107,12 @@ typedef struct hist_t
     unsigned int   *bin[2];                 /* the (forward + reverse) histogram values */
     double          dx[2];                  /* the histogram spacing. The reverse
                                                dx is the negative of the forward dx.*/
-    gmx_int64_t     x0[2];                  /* the (forward + reverse) histogram start
-                                                   point(s) as int */
+    int64_t         x0[2];                  /* the (forward + reverse) histogram start
+                                                       point(s) as int */
 
     int             nbin[2];                /* the (forward+reverse) number of bins */
-    gmx_int64_t     sum;                    /* the total number of counts. Must be
-                                                   the same for forward + reverse.  */
+    int64_t         sum;                    /* the total number of counts. Must be
+                                                       the same for forward + reverse.  */
     int             nhist;                  /* number of hist datas (forward or reverse) */
 
     double          start_time, delta_time; /* start time, end time of histogram */
@@ -141,7 +141,7 @@ typedef struct samples_t
     size_t          ndu_alloc, nt_alloc; /* pre-allocated sizes */
     hist_t         *hist_alloc;          /* allocated hist */
 
-    gmx_int64_t     ntot;                /* total number of samples */
+    int64_t         ntot;                /* total number of samples */
     const char     *filename;            /* the file name this sample comes from */
 } samples_t;
 
@@ -171,8 +171,8 @@ typedef struct sample_coll_t
     sample_range_t *r;                 /* the sample ranges */
     int             nsamples_alloc;    /* number of allocated samples */
 
-    gmx_int64_t     ntot;              /* total number of samples in the ranges of
-                                              this collection */
+    int64_t         ntot;              /* total number of samples in the ranges of
+                                                  this collection */
 
     struct sample_coll_t *next, *prev; /* next and previous in the list */
 } sample_coll_t;
@@ -251,7 +251,7 @@ static gmx_bool lambda_components_check(const lambda_components_t *lc,
                                         size_t                     name_length)
 {
     size_t len;
-    if (index >= lc->N)
+    if (!lc || index >= lc->N)
     {
         return FALSE;
     }
@@ -268,11 +268,7 @@ static gmx_bool lambda_components_check(const lambda_components_t *lc,
     {
         return FALSE;
     }
-    if (std::strncmp(lc->names[index], name, name_length) == 0)
-    {
-        return TRUE;
-    }
-    return FALSE;
+    return std::strncmp(lc->names[index], name, name_length) == 0;
 }
 
 /* Find the index of a given lambda component name, or -1 if not found */
@@ -453,8 +449,8 @@ static gmx_bool lambda_vec_same(const lambda_vec_t *a, const lambda_vec_t *b)
     returns 1 if a is 'bigger' than b,
     returns 0 if they're the same,
     returns -1 if a is 'smaller' than b.*/
-static gmx_bool lambda_vec_cmp_foreign(const lambda_vec_t *a,
-                                       const lambda_vec_t *b)
+static int lambda_vec_cmp_foreign(const lambda_vec_t *a,
+                                  const lambda_vec_t *b)
 {
     int      i;
     double   norm_a    = 0, norm_b = 0;
@@ -481,7 +477,7 @@ static gmx_bool lambda_vec_cmp_foreign(const lambda_vec_t *a,
         {
             return (a->dhdl >= 0) ? 1 : -1;
         }
-        return a->dhdl > b->dhdl;
+        return 0;
     }
 
     /* neither has an index, so we can only sort on the lambda components,
@@ -499,7 +495,7 @@ static gmx_bool lambda_vec_cmp_foreign(const lambda_vec_t *a,
     {
         return 0;
     }
-    return norm_a > norm_b;
+    return (norm_a > norm_b) ? 1 : -1;
 }
 
 /* Compare the sort order of two native lambda vectors
@@ -507,8 +503,8 @@ static gmx_bool lambda_vec_cmp_foreign(const lambda_vec_t *a,
     returns 1 if a is 'bigger' than b,
     returns 0 if they're the same,
     returns -1 if a is 'smaller' than b.*/
-static gmx_bool lambda_vec_cmp_native(const lambda_vec_t *a,
-                                      const lambda_vec_t *b)
+static int lambda_vec_cmp_native(const lambda_vec_t *a,
+                                 const lambda_vec_t *b)
 {
     if (a->lc != b->lc)
     {
@@ -747,6 +743,7 @@ static void sample_coll_insert_sample(sample_coll_t *sc, samples_t *s,
                                       sample_range_t *r)
 {
     /* first check if it belongs here */
+    GMX_ASSERT(sc->next->s, "Next not properly initialized!");
     if (sc->temp != s->temp)
     {
         gmx_fatal(FARGS, "Temperatures in files %s and %s are not the same!",
@@ -985,8 +982,8 @@ static void sample_coll_make_hist(sample_coll_t *sc, int **bin,
 }
 
 /* write a collection of histograms to a file */
-void sim_data_histogram(sim_data_t *sd, const char *filename,
-                        int nbin_default, const gmx_output_env_t *oenv)
+static void sim_data_histogram(sim_data_t *sd, const char *filename,
+                               int nbin_default, const gmx_output_env_t *oenv)
 {
     char           label_x[STRLEN];
     const char    *dhdl    = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda";
@@ -1044,7 +1041,7 @@ void sim_data_histogram(sim_data_t *sd, const char *filename,
 
         bl = bl->next;
     }
-    xvgr_legend(fp, nsets, (const char**)setnames, oenv);
+    xvgr_legend(fp, nsets, setnames, oenv);
 
 
     /* now make the histograms */
@@ -1408,9 +1405,9 @@ static gmx_bool sample_coll_create_subsample(sample_coll_t  *sc,
 {
     int             j;
 
-    gmx_int64_t     ntot_start;
-    gmx_int64_t     ntot_end;
-    gmx_int64_t     ntot_so_far;
+    int64_t         ntot_start;
+    int64_t         ntot_end;
+    int64_t         ntot_so_far;
 
     *sc = *sc_orig; /* just copy all fields */
 
@@ -1427,13 +1424,13 @@ static gmx_bool sample_coll_create_subsample(sample_coll_t  *sc,
 
     /* now fix start and end fields */
     /* the casts avoid possible overflows */
-    ntot_start  = static_cast<gmx_int64_t>(sc_orig->ntot*static_cast<double>(i)/static_cast<double>(ni));
-    ntot_end    = static_cast<gmx_int64_t>(sc_orig->ntot*static_cast<double>(i+1)/static_cast<double>(ni));
+    ntot_start  = static_cast<int64_t>(sc_orig->ntot*static_cast<double>(i)/static_cast<double>(ni));
+    ntot_end    = static_cast<int64_t>(sc_orig->ntot*static_cast<double>(i+1)/static_cast<double>(ni));
     ntot_so_far = 0;
     for (j = 0; j < sc->nsamples; j++)
     {
-        gmx_int64_t ntot_add;
-        gmx_int64_t new_start, new_end;
+        int64_t ntot_add;
+        int64_t new_start, new_end;
 
         if (sc->r[j].use)
         {
@@ -2275,7 +2272,7 @@ static gmx_bool read_lambda_compvec(const char                *str,
         lc_in = lc_out;
     }
 
-    while (1)
+    while (true)
     {
         if (!start_reached)
         {
@@ -2713,7 +2710,7 @@ static double filename2lambda(const char *fn)
     return lambda;
 }
 
-static void read_bar_xvg_lowlevel(const char *fn, real *temp, xvg_t *ba,
+static void read_bar_xvg_lowlevel(const char *fn, const real *temp, xvg_t *ba,
                                   lambda_components_t *lc)
 {
     int          i;
@@ -2806,11 +2803,10 @@ static void read_bar_xvg_lowlevel(const char *fn, real *temp, xvg_t *ba,
     {
         for (i = 0; i < ba->nset; )
         {
-            gmx_bool use = FALSE;
             /* Read lambda from the legend */
             lambda_vec_init( &(ba->lambda[i]), lc );
             lambda_vec_copy( &(ba->lambda[i]), &(ba->native_lambda));
-            use = legend2lambda(fn, legend[i], &(ba->lambda[i]));
+            gmx_bool use = legend2lambda(fn, legend[i], &(ba->lambda[i]));
             if (use)
             {
                 lambda_vec_print(&(ba->lambda[i]), buf, FALSE);
@@ -2845,7 +2841,7 @@ static void read_bar_xvg_lowlevel(const char *fn, real *temp, xvg_t *ba,
     }
 }
 
-static void read_bar_xvg(char *fn, real *temp, sim_data_t *sd)
+static void read_bar_xvg(const char *fn, real *temp, sim_data_t *sd)
 {
     xvg_t     *barsim;
     samples_t *s;
@@ -2970,9 +2966,9 @@ static void read_edr_rawdh_block(samples_t **smp, int *ndu, t_enxblock *blk,
     }
 
     /* make room for the data */
-    if (s->ndu_alloc < (size_t)(s->ndu + blk->sub[2].nr) )
+    if (gmx::index(s->ndu_alloc) < s->ndu + blk->sub[2].nr)
     {
-        s->ndu_alloc += (s->ndu_alloc < (size_t)blk->sub[2].nr) ?
+        s->ndu_alloc += (s->ndu_alloc < static_cast<size_t>(blk->sub[2].nr)) ?
             blk->sub[2].nr*2 : s->ndu_alloc;
         srenew(s->du_alloc, s->ndu_alloc);
         s->du = s->du_alloc;
@@ -3112,7 +3108,7 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
 
     for (i = 0; i < nhist; i++)
     {
-        gmx_int64_t     sum = 0;
+        int64_t     sum = 0;
 
         for (j = 0; j < s->hist->nbin[i]; j++)
         {
@@ -3145,7 +3141,7 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
 }
 
 
-static void read_barsim_edr(char *fn, real *temp, sim_data_t *sd)
+static void read_barsim_edr(const char *fn, real *temp, sim_data_t *sd)
 {
     int            i, j;
     ener_file_t    fp;
@@ -3167,7 +3163,8 @@ static void read_barsim_edr(char *fn, real *temp, sim_data_t *sd)
     snew(fr, 1);
 
     snew(native_lambda, 1);
-    start_lambda.lc = nullptr;
+    start_lambda.lc  = nullptr;
+    start_lambda.val = nullptr;
 
     while (do_enx(fp, fr))
     {
@@ -3319,7 +3316,7 @@ static void read_barsim_edr(char *fn, real *temp, sim_data_t *sd)
             if (!lambda_vec_same(&start_lambda, native_lambda) )
             {
                 gmx_fatal(FARGS, "Native lambda not constant in file %s: started at %f, and becomes %f at time %f",
-                          fn, native_lambda, start_lambda, start_time);
+                          fn, native_lambda->val[0], start_lambda.val[0], start_time);
             }
             /* check the number of samples against the previous number */
             if ( ((nblocks_raw+nblocks_hist) != nsamples) || (nlam != 1 ) )
@@ -3332,13 +3329,8 @@ static void read_barsim_edr(char *fn, real *temp, sim_data_t *sd)
             if ( (std::abs(last_t - start_time) > 2*delta_time)  && last_t >= 0)
             {
                 /* it didn't. We need to store our samples and reallocate */
-
                 for (i = 0; i < nsamples; i++)
                 {
-                    // nsamples is always >0 here, so samples_rawdh must be a valid pointer. Unfortunately
-                    // cppcheck does not understand the logic unless the assert is inside the loop, but
-                    // this is not performance-sensitive code.
-                    GMX_RELEASE_ASSERT(samples_rawdh != nullptr, "samples_rawdh==NULL with nsamples>0");
                     if (samples_rawdh[i])
                     {
                         /* insert it into the existing list */
@@ -3576,13 +3568,9 @@ int gmx_bar(int argc, char *argv[])
     int               f;
     int               nf = 0;    /* file counter */
     int               nfile_tot; /* total number of input files */
-    int               nxvgfile = 0;
-    int               nedrfile = 0;
-    char            **fxvgnms;
-    char            **fedrnms;
-    sim_data_t        sim_data; /* the simulation data */
-    barres_t         *results;  /* the results */
-    int               nresults; /* number of results in results array */
+    sim_data_t        sim_data;  /* the simulation data */
+    barres_t         *results;   /* the results */
+    int               nresults;  /* number of results in results array */
 
     double           *partsum;
     double            prec, dg_tot;
@@ -3608,14 +3596,8 @@ int gmx_bar(int argc, char *argv[])
         return 0;
     }
 
-    if (opt2bSet("-f", NFILE, fnm))
-    {
-        nxvgfile = opt2fns(&fxvgnms, "-f", NFILE, fnm);
-    }
-    if (opt2bSet("-g", NFILE, fnm))
-    {
-        nedrfile = opt2fns(&fedrnms, "-g", NFILE, fnm);
-    }
+    gmx::ArrayRef<const std::string> xvgFiles = opt2fnsIfOptionSet("-f", NFILE, fnm);
+    gmx::ArrayRef<const std::string> edrFiles = opt2fnsIfOptionSet("-g", NFILE, fnm);
 
     sim_data_init(&sim_data);
 #if 0
@@ -3627,7 +3609,7 @@ int gmx_bar(int argc, char *argv[])
 #endif
 
 
-    nfile_tot = nxvgfile + nedrfile;
+    nfile_tot = xvgFiles.size() + edrFiles.size();
 
     if (nfile_tot == 0)
     {
@@ -3644,15 +3626,15 @@ int gmx_bar(int argc, char *argv[])
     nf = 0;
 
     /* read in all files. First xvg files */
-    for (f = 0; f < nxvgfile; f++)
+    for (const std::string &filenm : xvgFiles)
     {
-        read_bar_xvg(fxvgnms[f], &temp, &sim_data);
+        read_bar_xvg(filenm.c_str(), &temp, &sim_data);
         nf++;
     }
     /* then .edr files */
-    for (f = 0; f < nedrfile; f++)
+    for (const std::string &filenm : edrFiles)
     {
-        read_barsim_edr(fedrnms[f], &temp, &sim_data);;
+        read_barsim_edr(filenm.c_str(), &temp, &sim_data);;
         nf++;
     }
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,9 +54,9 @@
 
 #include <cstdint>
 
-#include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "gromacs/fileio/enxio.h"
@@ -66,10 +66,33 @@
 
 namespace gmx
 {
+
+class EnergyFrame;
+
 namespace test
 {
 
-//! Forward declaration
+/*! \brief Convenience function to get std::string keys from a map.
+ *
+ * This function can be used to provide an input for
+ * openEnergyFileToReadFields().
+ *
+ * \todo This returns a copy of the keys, which is convenient, but
+ * inefficient. Alternatively, this could return a view of the keys
+ * from a range rather than a container, but there's no implementation
+ * of that in C++11 at the moment. */
+template <typename Map>
+std::vector<std::string> getKeys(const Map &m)
+{
+    std::vector<std::string> keys;
+    keys.reserve(m.size());
+    for (const auto &it : m)
+    {
+        keys.push_back(it.first);
+    }
+    return keys;
+}
+
 class EnergyFrameReader;
 //! Convenience smart pointer typedef
 typedef std::unique_ptr<EnergyFrameReader> EnergyFrameReaderPtr;
@@ -87,8 +110,6 @@ typedef std::unique_ptr<EnergyFrameReader> EnergyFrameReaderPtr;
  * making EnergyFrameReader objects. */
 EnergyFrameReaderPtr openEnergyFileToReadFields(const std::string              &filename,
                                                 const std::vector<std::string> &requiredEnergyFieldNames);
-
-class EnergyFrame;
 
 //! Convenience smart pointer typedef
 typedef unique_cptr<ener_file, done_ener_file> ener_file_ptr;
@@ -150,49 +171,7 @@ class EnergyFrameReader
         GMX_DISALLOW_COPY_AND_ASSIGN(EnergyFrameReader);
 };
 
-/*! \brief Compare all fields of reference with all matching fields from test
- *
- * Ignore any key found in either \c reference or \c test that is not
- * found in the other. For all keys found in both frames, compare the
- * values with EXPECT_REAL_EQ_TOL and the given tolerance. */
-void compareFrames(const std::pair<EnergyFrame, EnergyFrame> &frames,
-                   FloatingPointTolerance tolerance);
-
-/*! \internal
- * \brief Contains the content of an .edr frame read by an EnergyFrameReader
- *
- * The interface of this class is intended to resemble a subset of std::map.
- *
- * Objects of this type are intended to be constructed by
- * EnergyFrameReader objects, and as such will always contain valid
- * data from an .edr file frame. */
-class EnergyFrame
-{
-    public:
-        /*! \brief Return string that helps users identify this frame, containing time and step number.
-         *
-         * \throws std::bad_alloc  when out of memory */
-        std::string getFrameName() const;
-        /*! \brief Return the value read for energy \c name.
-         *
-         * \throws APIError  if \c name was not registered with EnergyFileReader. */
-        const real &at(const std::string &name) const;
-        //! Constructor
-        EnergyFrame();
-    private:
-        //! Container for energy values, indexed by name
-        std::map<std::string, real> values_;
-        //! Step number read from the .edr file frame
-        std::int64_t                step_;
-        //! Time read from the .edr file frame
-        double time_;
-
-        friend class EnergyFrameReader;
-        friend void compareFrames(const std::pair<EnergyFrame, EnergyFrame> &frames,
-                                  FloatingPointTolerance tolerance);
-};
-
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx
 
 #endif

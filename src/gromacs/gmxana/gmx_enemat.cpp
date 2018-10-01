@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,8 +49,10 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdlib/mdebin.h"
+#include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -157,7 +159,7 @@ int gmx_enemat(int argc, char *argv[])
     gmx_bool          bCont, bRef;
     gmx_bool          bCutmax, bCutmin;
     real            **eneset, *time = nullptr;
-    int              *set, i, j, k, prevk, m = 0, n, nre, nset, nenergy;
+    int              *set, i, j, prevk, k, m = 0, n, nre, nset, nenergy;
     char            **groups = nullptr;
     char              groupname[255], fn[255];
     int               ngroups;
@@ -222,8 +224,6 @@ int gmx_enemat(int argc, char *argv[])
     prevk = 0;
     for (i = 0; (i < ngroups); i++)
     {
-        fprintf(stderr, "\rgroup %d", i);
-        fflush(stderr);
         for (j = i; (j < ngroups); j++)
         {
             for (m = 0; (m < egNR); m++)
@@ -231,21 +231,19 @@ int gmx_enemat(int argc, char *argv[])
                 if (egrp_use[m])
                 {
                     sprintf(groupname, "%s:%s-%s", egrp_nm[m], groups[i], groups[j]);
-#ifdef DEBUG
-                    fprintf(stderr, "\r%-15s %5d", groupname, n);
-                    fflush(stderr);
-#endif
+                    bool foundMatch = false;
                     for (k = prevk; (k < prevk+nre); k++)
                     {
-                        if (std::strcmp(enm[k%nre].name, groupname) == 0)
+                        if (std::strcmp(enm[k % nre].name, groupname) == 0)
                         {
-                            set[n++] = k;
+                            set[n++]   = k;
+                            foundMatch = true;
                             break;
                         }
                     }
-                    if (k == prevk+nre)
+                    if (!foundMatch)
                     {
-                        fprintf(stderr, "WARNING! could not find group %s (%d,%d)"
+                        fprintf(stderr, "WARNING! could not find group %s (%d,%d) "
                                 "in energy file\n", groupname, i, j);
                     }
                     else
@@ -257,6 +255,15 @@ int gmx_enemat(int argc, char *argv[])
         }
     }
     fprintf(stderr, "\n");
+    if (n == 0)
+    {
+        // Return an error, can't do what the user asked for
+        fprintf(stderr,
+                "None of the specified energy groups were found in this .edr file.\n"
+                "Perhaps you used the wrong groups, the wrong files, or didn't use a .tpr\n"
+                "that was made from an .mdp file that specified these energy groups.\n");
+        return 1;
+    }
     nset = n;
     snew(eneset, nset+1);
     fprintf(stderr, "Will select half-matrix of energies with %d elements\n", n);
@@ -277,7 +284,7 @@ int gmx_enemat(int argc, char *argv[])
 
         if (timecheck == 0)
         {
-#define DONTSKIP(cnt) (skip) ? ((cnt % skip) == 0) : TRUE
+#define DONTSKIP(cnt) (skip) ? (((cnt) % skip) == 0) : TRUE
 
             if (bCont)
             {
@@ -332,9 +339,9 @@ int gmx_enemat(int argc, char *argv[])
     {
         groupnr[i] = i+1;
     }
-    rlo.r  = 1.0, rlo.g  = 0.0, rlo.b  = 0.0;
-    rmid.r = 1.0, rmid.g = 1.0, rmid.b = 1.0;
-    rhi.r  = 0.0, rhi.g  = 0.0, rhi.b  = 1.0;
+    rlo.r  = 1.0; rlo.g  = 0.0; rlo.b  = 0.0;
+    rmid.r = 1.0; rmid.g = 1.0; rmid.b = 1.0;
+    rhi.r  = 0.0; rhi.g  = 0.0; rhi.b  = 1.0;
     if (bMeanEmtx)
     {
         snew(e, ngroups);

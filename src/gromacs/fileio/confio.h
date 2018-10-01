@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,12 +43,9 @@
 /* For reading coordinate files it is assumed that enough memory
  * has been allocated beforehand.
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct gmx_mtop_t;
 struct t_atoms;
+struct t_symtab;
 struct t_topology;
 
 void write_sto_conf_indexed(const char *outfile, const char *title,
@@ -86,6 +83,24 @@ void readConfAndTopology(const char *infile,
                          int *ePBC,
                          rvec **x, rvec **v, matrix box);
 
+/*! \brief Read a configuration from a structure file.
+ *
+ * This should eventually be superseded by TopologyInformation
+ *
+ * \param[in]     infile        Input file name
+ * \param[out]    symtab        The symbol table
+ * \param[out]    name          The title of the molecule, e.g. from pdb TITLE record
+ * \param[out]    atoms         The global t_atoms struct
+ * \param[out]    ePBC          Enum reporting the type of PBC
+ * \param[in,out] x             Coordinates will be stored when *x!=NULL
+ * \param[in,out] v             Velocities will be stored when *v!=NULL
+ * \param[out]    box           Box dimensions
+ */
+void readConfAndAtoms(const char *infile,
+                      t_symtab *symtab, char **name, t_atoms *atoms,
+                      int *ePBC,
+                      rvec **x, rvec **v, matrix box);
+
 /*! \brief Read a configuration and, when available, a topology from a tpr or structure file.
  *
  * Deprecated, superseded by readConfAndTopology().
@@ -97,7 +112,7 @@ void readConfAndTopology(const char *infile,
  * their presence is signaled with the \p haveMass flag in t_atoms of \p top.
  *
  * \param[in]     infile        Input file name
- * \param[out]    top           The topology, either complete or only atom data
+ * \param[out]    top           The topology, either complete or only atom data. Caller is responsible for calling done_top().
  * \param[out]    ePBC          Enum reporting the type of PBC
  * \param[in,out] x             Coordinates will be stored when *x!=NULL
  * \param[in,out] v             Velocities will be stored when *v!=NULL
@@ -108,9 +123,5 @@ void readConfAndTopology(const char *infile,
 gmx_bool read_tps_conf(const char *infile, struct t_topology *top,
                        int *ePBC, rvec **x, rvec **v, matrix box,
                        gmx_bool requireMasses);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

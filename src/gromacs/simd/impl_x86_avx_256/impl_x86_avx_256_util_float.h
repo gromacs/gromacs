@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -484,7 +484,7 @@ gatherLoadBySimdIntTranspose(const float *  base,
                              SimdFloat *    v2,
                              SimdFloat *    v3)
 {
-    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH) offset[GMX_SIMD_FLOAT_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t    offset[GMX_SIMD_FLOAT_WIDTH];
     _mm256_store_si256( reinterpret_cast<__m256i *>(offset), simdoffset.simdInternal_);
     gatherLoadTranspose<align>(base, offset, v0, v1, v2, v3);
 }
@@ -496,7 +496,7 @@ gatherLoadBySimdIntTranspose(const float *   base,
                              SimdFloat *     v0,
                              SimdFloat *     v1)
 {
-    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH) offset[GMX_SIMD_FLOAT_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t    offset[GMX_SIMD_FLOAT_WIDTH];
     _mm256_store_si256( reinterpret_cast<__m256i *>(offset), simdoffset.simdInternal_);
     gatherLoadTranspose<align>(base, offset, v0, v1);
 }
@@ -512,7 +512,7 @@ gatherLoadUBySimdIntTranspose(const float *  base,
     __m128 t1, t2, t3, t4, t5, t6, t7, t8;
     __m256 tA, tB, tC, tD;
 
-    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH) offset[GMX_SIMD_FLOAT_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t     offset[GMX_SIMD_FLOAT_WIDTH];
     _mm256_store_si256( reinterpret_cast<__m256i *>(offset), simdoffset.simdInternal_);
 
     t1  = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64 *>( base + align * offset[0] ) );
@@ -586,13 +586,11 @@ loadDuplicateHsimd(const float * m)
 }
 
 static inline SimdFloat gmx_simdcall
-load1DualHsimd(const float * m)
+loadU1DualHsimd(const float * m)
 {
     __m128 t0, t1;
-    t0 = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64 *>(m));
-    t1 = _mm_permute_ps(t0, _MM_SHUFFLE(1, 1, 1, 1));
-    t0 = _mm_permute_ps(t0, _MM_SHUFFLE(0, 0, 0, 0));
-
+    t0 = _mm_broadcast_ss(m);
+    t1 = _mm_broadcast_ss(m+1);
     return {
                _mm256_insertf128_ps(_mm256_castps128_ps256(t0), t1, 0x1)
     };
@@ -689,6 +687,15 @@ reduceIncr4ReturnSumHsimd(float *     m,
     t0 = _mm_add_ss(t0, _mm_permute_ps(t0, _MM_SHUFFLE(0, 3, 2, 1)));
     return *reinterpret_cast<float *>(&t0);
 }
+
+static inline SimdFloat gmx_simdcall
+loadU4NOffset(const float *m, int offset)
+{
+    return {
+               _mm256_insertf128_ps(_mm256_castps128_ps256(_mm_loadu_ps(m)), _mm_loadu_ps(m+offset), 0x1)
+    };
+}
+
 
 }      // namespace gmx
 

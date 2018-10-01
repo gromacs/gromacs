@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,10 +86,10 @@
 /*                                                                           */
 /*****************************************************************************/
 
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 /*
  * Plugin header files; get plugin source from www.ks.uiuc.edu/Research/vmd"
@@ -116,9 +116,9 @@
 #include "gromacs/utility/smalloc.h"
 
 
-typedef int (*initfunc)(void);
+typedef int (*initfunc)();
 typedef int (*regfunc)(void *, vmdplugin_register_cb);
-typedef int (*finifunc)(void);
+typedef int (*finifunc)();
 
 
 
@@ -129,7 +129,7 @@ static int register_cb(void *v, vmdplugin_t *p)
 
     if (strcmp(key, vmdplugin->filetype) == 0)
     {
-        vmdplugin->api = (molfile_plugin_t *)p;
+        vmdplugin->api = reinterpret_cast<molfile_plugin_t *>(p);
     }
     return VMDPLUGIN_SUCCESS;
 }
@@ -149,7 +149,7 @@ static int load_sharedlibrary_plugins(const char *fullpath, gmx_vmdplugin_t *vmd
     }
 
     ifunc = vmddlsym(handle, "vmdplugin_init");
-    if (!ifunc || ((initfunc)(ifunc))())
+    if (!ifunc || (reinterpret_cast<initfunc>(ifunc))())
     {
         printf("\nvmdplugin_init() for %s returned an error; plugin(s) not loaded.\n", fullpath);
         vmddlclose(handle);
@@ -166,7 +166,7 @@ static int load_sharedlibrary_plugins(const char *fullpath, gmx_vmdplugin_t *vmd
     else
     {
         /* Load plugins from the library.*/
-        ((regfunc)registerfunc)(vmdplugin, register_cb);
+        (reinterpret_cast<regfunc>(registerfunc))(vmdplugin, register_cb);
     }
 
     /* in case this library does not support the filetype, close it */
@@ -195,10 +195,10 @@ gmx_bool read_next_vmd_frame(gmx_vmdplugin_t *vmdplugin, t_trxframe *fr)
         snew(ts.velocities, fr->natoms*3);
     }
 #else
-    ts.coords = (float*)fr->x;
+    ts.coords = reinterpret_cast<float*>(fr->x);
     if (fr->bV)
     {
-        ts.velocities = (float*)fr->v;
+        ts.velocities = reinterpret_cast<float*>(fr->v);
     }
 #endif
 
@@ -211,7 +211,7 @@ gmx_bool read_next_vmd_frame(gmx_vmdplugin_t *vmdplugin, t_trxframe *fr)
     if (rc < 0)
     {
         vmdplugin->api->close_file_read(vmdplugin->handle);
-        return 0;
+        return false;
     }
 
 #if GMX_DOUBLE
@@ -243,8 +243,8 @@ gmx_bool read_next_vmd_frame(gmx_vmdplugin_t *vmdplugin, t_trxframe *fr)
     }
 #endif
 
-    fr->bX   = 1;
-    fr->bBox = 1;
+    fr->bX   = true;
+    fr->bBox = true;
     vec[0]   = .1*ts.A; vec[1] = .1*ts.B; vec[2] = .1*ts.C;
     angle[0] = ts.alpha; angle[1] = ts.beta; angle[2] = ts.gamma;
     matrix_convert(fr->box, vec, angle);
@@ -259,7 +259,7 @@ gmx_bool read_next_vmd_frame(gmx_vmdplugin_t *vmdplugin, t_trxframe *fr)
     }
 
 
-    return 1;
+    return true;
 }
 
 static int load_vmd_library(const char *fn, gmx_vmdplugin_t *vmdplugin)
@@ -430,12 +430,12 @@ int read_first_vmd_frame(const char *fn, gmx_vmdplugin_t **vmdpluginp, t_trxfram
 
     snew(fr->x, fr->natoms);
 
-    vmdplugin->bV = 0;
+    vmdplugin->bV = false;
     if (vmdplugin->api->abiversion > 10 && vmdplugin->api->read_timestep_metadata)
     {
         vmdplugin->api->read_timestep_metadata(vmdplugin->handle, metadata);
         assert(metadata);
-        vmdplugin->bV = metadata->has_velocities;
+        vmdplugin->bV = (metadata->has_velocities != 0);
         if (vmdplugin->bV)
         {
             snew(fr->v, fr->natoms);

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -220,7 +220,6 @@ highBitCounter
         {
             GMX_THROW(InternalError("Random engine stream ran out of internal counter space."));
         }
-        return;
     }
 
     /*! \brief Increment the internal counter in highBits by a value.
@@ -277,10 +276,9 @@ highBitCounter
         {
             GMX_THROW(InternalError("Random engine stream ran out of internal counter space."));
         }
-        return;
     }
 };
-}
+}   // namespace internal
 
 /*! \brief General implementation class for ThreeFry counter-based random engines.
  *
@@ -338,7 +336,7 @@ class ThreeFry2x64General
         // result_type must be lower case to be compatible with C++11 standard library
 
         /*! \brief Integer type for output. */
-        typedef gmx_uint64_t                    result_type;
+        typedef uint64_t                    result_type;
         /*! \brief Use array for counter & key states so it is allocated on the stack */
         typedef std::array<result_type, 2>      counter_type;
 
@@ -426,11 +424,16 @@ class ThreeFry2x64General
 
     public:
         //! \brief Smallest value that can be returned from random engine.
-        static gmx_constexpr
+#if !defined(_MSC_VER)
+        static constexpr
+#else
+        // Avoid constexpr bug in MSVC 2015, note that max() below does work
+        static
+#endif
         result_type min() { return std::numeric_limits<result_type>::min(); }
 
         //! \brief Largest value that can be returned from random engine.
-        static gmx_constexpr
+        static constexpr
         result_type max() { return std::numeric_limits<result_type>::max(); }
 
         /*! \brief Construct random engine with 2x64 key values
@@ -452,7 +455,8 @@ class ThreeFry2x64General
          *  \throws InternalError if the high bits needed to encode the number of counter
          *          bits are nonzero.
          */
-        ThreeFry2x64General(gmx_uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other)
+        //NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+        ThreeFry2x64General(uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other)
         {
             seed(key0, domain);
         }
@@ -470,7 +474,8 @@ class ThreeFry2x64General
          *  \throws InternalError if the high bits needed to encode the number of counter
          *          bits are nonzero. To test arbitrary values, use 0 internal counter bits.
          */
-        ThreeFry2x64General(gmx_uint64_t key0, gmx_uint64_t key1)
+        //NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+        ThreeFry2x64General(uint64_t key0, uint64_t key1)
         {
             seed(key0, key1);
         }
@@ -495,9 +500,9 @@ class ThreeFry2x64General
          *  when using e.g. a random device, we just ignore them.
          */
         void
-        seed(gmx_uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other)
+        seed(uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other)
         {
-            seed(key0, static_cast<gmx_uint64_t>(domain));
+            seed(key0, static_cast<uint64_t>(domain));
         }
 
         /*! \brief Seed random engine from 2x64-bit unsigned integers
@@ -514,7 +519,7 @@ class ThreeFry2x64General
          *          bits are nonzero. To test arbitrary values, use 0 internal counter bits.
          */
         void
-        seed(gmx_uint64_t key0, gmx_uint64_t key1)
+        seed(uint64_t key0, uint64_t key1)
         {
             const unsigned int internalCounterBitsBits = (internalCounterBits > 0) ? ( StaticLog2<internalCounterBits>::value + 1 ) : 0;
 
@@ -543,7 +548,7 @@ class ThreeFry2x64General
          *         reserved bits is to the last template parameter to the class.
          */
         void
-        restart(gmx_uint64_t ctr0 = 0, gmx_uint64_t ctr1 = 0)
+        restart(uint64_t ctr0 = 0, uint64_t ctr1 = 0)
         {
 
             counter_ = {{ctr0, ctr1}};
@@ -587,7 +592,7 @@ class ThreeFry2x64General
          *  \throws InternalError if the internal counter space is exhausted.
          */
         void
-        discard(gmx_uint64_t n)
+        discard(uint64_t n)
         {
             index_ += n % c_resultsPerCounter_;
             n      /= c_resultsPerCounter_;
@@ -691,7 +696,7 @@ class ThreeFry2x64 : public ThreeFry2x64General<20, internalCounterBits>
          *  \throws InternalError if the high bits needed to encode the number of counter
          *          bits are nonzero.
          */
-        ThreeFry2x64(gmx_uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other) : ThreeFry2x64General<20, internalCounterBits>(key0, domain) {}
+        ThreeFry2x64(uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other) : ThreeFry2x64General<20, internalCounterBits>(key0, domain) {}
 
         /*! \brief Construct random engine from 2x64-bit unsigned integers, 20 rounds
          *
@@ -706,7 +711,7 @@ class ThreeFry2x64 : public ThreeFry2x64General<20, internalCounterBits>
          *  \throws InternalError if the high bits needed to encode the number of counter
          *          bits are nonzero. To test arbitrary values, use 0 internal counter bits.
          */
-        ThreeFry2x64(gmx_uint64_t key0, gmx_uint64_t key1) : ThreeFry2x64General<20, internalCounterBits>(key0, key1) {}
+        ThreeFry2x64(uint64_t key0, uint64_t key1) : ThreeFry2x64General<20, internalCounterBits>(key0, key1) {}
 };
 
 /*! \brief ThreeFry2x64 random engine with 13 iteractions.
@@ -739,7 +744,7 @@ class ThreeFry2x64Fast : public ThreeFry2x64General<13, internalCounterBits>
          *  \throws InternalError if the high bits needed to encode the number of counter
          *          bits are nonzero.
          */
-        ThreeFry2x64Fast(gmx_uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other) : ThreeFry2x64General<13, internalCounterBits>(key0, domain) {}
+        ThreeFry2x64Fast(uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other) : ThreeFry2x64General<13, internalCounterBits>(key0, domain) {}
 
         /*! \brief Construct ThreeFry random engine from 2x64-bit unsigned integers, 13 rounds.
          *
@@ -754,7 +759,7 @@ class ThreeFry2x64Fast : public ThreeFry2x64General<13, internalCounterBits>
          *  \throws InternalError if the high bits needed to encode the number of counter
          *          bits are nonzero. To test arbitrary values, use 0 internal counter bits.
          */
-        ThreeFry2x64Fast(gmx_uint64_t key0, gmx_uint64_t key1) : ThreeFry2x64General<13, internalCounterBits>(key0, key1) {}
+        ThreeFry2x64Fast(uint64_t key0, uint64_t key1) : ThreeFry2x64General<13, internalCounterBits>(key0, key1) {}
 };
 
 

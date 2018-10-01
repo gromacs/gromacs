@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,7 +74,6 @@ static void calc_dihs(t_xrama *xr)
 {
     int          i, t1, t2, t3;
     rvec         r_ij, r_kj, r_kl, m, n;
-    real         sign;
     t_dih       *dd;
     gmx_rmpbc_t  gpbc = nullptr;
 
@@ -88,7 +87,7 @@ static void calc_dihs(t_xrama *xr)
         dd->ang = dih_angle(xr->x[dd->ai[0]], xr->x[dd->ai[1]],
                             xr->x[dd->ai[2]], xr->x[dd->ai[3]],
                             nullptr,
-                            r_ij, r_kj, r_kl, m, n, &sign, &t1, &t2, &t3);
+                            r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
     }
 }
 
@@ -118,7 +117,7 @@ static int find_atom(const char *find, char ***names, int start, int nr)
     return -1;
 }
 
-static void add_xr(t_xrama *xr, int ff[5], const t_atoms *atoms)
+static void add_xr(t_xrama *xr, const int ff[5], const t_atoms *atoms)
 {
     char buf[12];
     int  i;

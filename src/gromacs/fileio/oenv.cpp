@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 struct gmx_output_env_t
 {
@@ -49,7 +50,9 @@ struct gmx_output_env_t
           time_unit(time_ps),
           view(FALSE),
           xvg_format(exvgNONE),
-          verbosity(0) {}
+          verbosity(0),
+          trajectory_io_verbosity(0) {}
+
 
     const gmx::IProgramContext  &programContext;
 
@@ -61,6 +64,8 @@ struct gmx_output_env_t
     xvg_format_t                         xvg_format;
     /* The level of verbosity for this program */
     int                                  verbosity;
+    /* The level of verbosity during trajectory I/O. Default=1, quiet=0. */
+    int                                  trajectory_io_verbosity;
 };
 
 /* The source code in this file should be thread-safe.
@@ -101,6 +106,9 @@ void output_env_init(gmx_output_env_t **oenvp,
         oenv->view        = view;
         oenv->xvg_format  = xvg_format;
         oenv->verbosity   = verbosity;
+        const char *env = getenv("GMX_TRAJECTORY_IO_VERBOSITY");
+        oenv->trajectory_io_verbosity = (env != nullptr ? strtol(env, nullptr, 10) : 1);
+
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
@@ -126,31 +134,26 @@ int output_env_get_verbosity(const gmx_output_env_t *oenv)
     return oenv->verbosity;
 }
 
-const char *output_env_get_time_unit(const gmx_output_env_t *oenv)
+int output_env_get_trajectory_io_verbosity(const gmx_output_env_t *oenv)
+{
+    return oenv->trajectory_io_verbosity;
+}
+
+std::string output_env_get_time_unit(const gmx_output_env_t *oenv)
 {
     return time_units_str[oenv->time_unit];
 }
 
-const char *output_env_get_time_label(const gmx_output_env_t *oenv)
+std::string output_env_get_time_label(const gmx_output_env_t *oenv)
 {
-    char *label;
-    snew(label, 20);
-
-    sprintf(label, "Time (%s)", time_units_str[oenv->time_unit] ?
-            time_units_str[oenv->time_unit] : "ps");
-
-    return label;
+    return gmx::formatString("Time (%s)", time_units_str[oenv->time_unit] ?
+                             time_units_str[oenv->time_unit] : "ps");
 }
 
-const char *output_env_get_xvgr_tlabel(const gmx_output_env_t *oenv)
+std::string output_env_get_xvgr_tlabel(const gmx_output_env_t *oenv)
 {
-    char *label;
-    snew(label, 20);
-
-    sprintf(label, "Time (%s)", time_units_xvgr[oenv->time_unit] ?
-            time_units_xvgr[oenv->time_unit] : "ps");
-
-    return label;
+    return gmx::formatString("Time (%s)", time_units_xvgr[oenv->time_unit] ?
+                             time_units_xvgr[oenv->time_unit] : "ps");
 }
 
 real output_env_get_time_factor(const gmx_output_env_t *oenv)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,6 +56,7 @@
 #include "gromacs/tools/check.h"
 #include "gromacs/tools/convert_tpr.h"
 #include "gromacs/tools/dump.h"
+#include "gromacs/tools/report-methods.h"
 
 #include "mdrun/mdrun_main.h"
 #include "view/view.h"
@@ -78,24 +79,24 @@ class ObsoleteToolModule : public gmx::ICommandLineModule
         {
         }
 
-        virtual const char *name() const
+        const char *name() const override
         {
             return name_;
         }
-        virtual const char *shortDescription() const
+        const char *shortDescription() const override
         {
             return nullptr;
         }
 
-        virtual void init(gmx::CommandLineModuleSettings * /*settings*/)
+        void init(gmx::CommandLineModuleSettings * /*settings*/) override
         {
         }
-        virtual int run(int /*argc*/, char * /*argv*/[])
+        int run(int /*argc*/, char * /*argv*/[]) override
         {
             printMessage();
             return 0;
         }
-        virtual void writeHelp(const gmx::CommandLineHelpContext & /*context*/) const
+        void writeHelp(const gmx::CommandLineHelpContext & /*context*/) const override
         {
             printMessage();
         }
@@ -175,8 +176,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Make binary files human readable");
     registerModule(manager, &gmx_grompp, "grompp",
                    "Make a run input file");
-    registerModule(manager, &gmx_pdb2gmx, "pdb2gmx",
-                   "Convert coordinate files to topology and FF-compliant coordinate files");
     registerModule(manager, &gmx_convert_tpr, "convert-tpr",
                    "Make a modifed run-input file");
     registerObsoleteTool(manager, "tpbconv");
@@ -187,9 +186,19 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                          "Perform a simulation, do a normal mode analysis or an energy minimization");
 
     gmx::ICommandLineOptionsModule::registerModuleFactory(
-            manager, gmx::InsertMoleculesInfo::name,
-            gmx::InsertMoleculesInfo::shortDescription,
+            manager, gmx::InsertMoleculesInfo::name(),
+            gmx::InsertMoleculesInfo::shortDescription(),
             &gmx::InsertMoleculesInfo::create);
+
+    gmx::ICommandLineOptionsModule::registerModuleFactory(
+            manager, gmx::ReportMethodsInfo::name,
+            gmx::ReportMethodsInfo::shortDescription,
+            &gmx::ReportMethodsInfo::create);
+
+    gmx::ICommandLineOptionsModule::registerModuleFactory(
+            manager, gmx::pdb2gmxInfo::name,
+            gmx::pdb2gmxInfo::shortDescription,
+            &gmx::pdb2gmxInfo::create);
 
     // Modules from gmx_ana.h.
     registerModule(manager, &gmx_do_dssp, "do_dssp",
@@ -230,6 +239,8 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Analyze data sets");
     registerModule(manager, &gmx_g_angle, "angle",
                    "Calculate distributions and correlations for angles and dihedrals");
+    registerModule(manager, &gmx_awh, "awh",
+                   "Extract data from an accelerated weight histogram (AWH) run");
     registerModule(manager, &gmx_bar, "bar",
                    "Calculate free energy difference estimates through Bennett's acceptance ratio");
     registerObsoleteTool(manager, "bond");
@@ -301,6 +312,8 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Diagonalize the Hessian for normal mode analysis");
     registerModule(manager, &gmx_nmens, "nmens",
                    "Generate an ensemble of structures from the normal modes");
+    registerModule(manager, &gmx_nmr, "nmr",
+                   "Analyze nuclear magnetic resonance properties from an energy file");
     registerModule(manager, &gmx_nmtraj, "nmtraj",
                    "Generate a virtual oscillating trajectory from an eigenvector");
     registerModule(manager, &gmx_order, "order",
@@ -404,6 +417,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         gmx::CommandLineModuleGroup group =
             manager->addModuleGroup("Tools");
         group.addModule("analyze");
+        group.addModule("awh");
         group.addModule("dyndom");
         group.addModule("filter");
         group.addModule("lie");
@@ -420,6 +434,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("mk_angndx");
         group.addModule("trjorder");
         group.addModule("xpm2ps");
+        group.addModule("report");
     }
     {
         gmx::CommandLineModuleGroup group =

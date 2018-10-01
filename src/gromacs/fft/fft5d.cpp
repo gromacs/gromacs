@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,15 +38,19 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <float.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cassert>
+#include <cfloat>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include <algorithm>
 
+#include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/gpu_utils/hostallocator.h"
+#include "gromacs/gpu_utils/pinning.h"
+#include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -102,36 +106,6 @@ static int lfactor(int z)
 }
 #endif
 
-/* largest factor */
-static int l2factor(int z)
-{
-    int i;
-    if (z == 1)
-    {
-        i = 1;
-    }
-    else
-    {
-        i = z/2;
-        while (z%i != 0)
-        {
-            i--;
-        }
-    }
-    return i;
-}
-
-/* largest prime factor: WARNING: slow recursion, only use for small numbers */
-static int lpfactor(int z)
-{
-    int f = l2factor(z);
-    if (f == 1)
-    {
-        return z;
-    }
-    return std::max(lpfactor(f), lpfactor(z/f));
-}
-
 #if !GMX_MPI
 #if HAVE_GETTIMEOFDAY
 #include <sys/time.h>
@@ -149,7 +123,7 @@ double MPI_Wtime()
 #endif
 #endif
 
-static int vmax(int* a, int s)
+static int vmax(const int* a, int s)
 {
     int i, max = 0;
     for (i = 0; i < s; i++)
@@ -169,10 +143,11 @@ static int vmax(int* a, int s)
  * lin is allocated by fft5d because size of array is only known after planning phase
  * rlout2 is only used as intermediate buffer - only returned after allocation to reuse for back transform - should not be used by caller
  */
-fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_complex** rlin, t_complex** rlout, t_complex** rlout2, t_complex** rlout3, int nthreads)
+fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_complex** rlin, t_complex** rlout, t_complex** rlout2, t_complex** rlout3, int nthreads, gmx::PinningPolicy realGridAllocationPinningPolicy)
 {
 
-    int        P[2], bMaster, prank[2], i, t;
+    int        P[2], prank[2], i, t;
+    bool       bMaster;
     int        rNG, rMG, rKG;
     int       *N0 = nullptr, *N1 = nullptr, *M0 = nullptr, *M1 = nullptr, *K0 = nullptr, *K1 = nullptr, *oN0 = nullptr, *oN1 = nullptr, *oM0 = nullptr, *oM1 = nullptr, *oK0 = nullptr, *oK1 = nullptr;
     int        N[3], M[3], K[3], pN[3], pM[3], pK[3], oM[3], oK[3], *iNin[3] = {nullptr}, *oNin[3] = {nullptr}, *iNout[3] = {nullptr}, *oNout[3] = {nullptr};
@@ -208,7 +183,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         prank[1] = 0;
     }
 
-    bMaster = (prank[0] == 0 && prank[1] == 0);
+    bMaster = prank[0] == 0 && prank[1] == 0;
 
 
     if (debug)
@@ -222,7 +197,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         if (debug)
         {
             fprintf(debug, "FFT5D: N: %d, M: %d, K: %d, P: %dx%d, real2complex: %d, backward: %d, order yz: %d, debug %d\n",
-                    NG, MG, KG, P[0], P[1], (flags&FFT5D_REALCOMPLEX) > 0, (flags&FFT5D_BACKWARD) > 0, (flags&FFT5D_ORDER_YZ) > 0, (flags&FFT5D_DEBUG) > 0);
+                    NG, MG, KG, P[0], P[1], int((flags&FFT5D_REALCOMPLEX) > 0), int((flags&FFT5D_BACKWARD) > 0), int((flags&FFT5D_ORDER_YZ) > 0), int((flags&FFT5D_DEBUG) > 0));
         }
         /* The check below is not correct, one prime factor 11 or 13 is ok.
            if (fft5d_fmax(fft5d_fmax(lpfactor(NG),lpfactor(MG)),lpfactor(KG))>7) {
@@ -266,12 +241,12 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
 
     /*for transpose we need to know the size for each processor not only our own size*/
 
-    N0  = (int*)malloc(P[0]*sizeof(int)); N1 = (int*)malloc(P[1]*sizeof(int));
-    M0  = (int*)malloc(P[0]*sizeof(int)); M1 = (int*)malloc(P[1]*sizeof(int));
-    K0  = (int*)malloc(P[0]*sizeof(int)); K1 = (int*)malloc(P[1]*sizeof(int));
-    oN0 = (int*)malloc(P[0]*sizeof(int)); oN1 = (int*)malloc(P[1]*sizeof(int));
-    oM0 = (int*)malloc(P[0]*sizeof(int)); oM1 = (int*)malloc(P[1]*sizeof(int));
-    oK0 = (int*)malloc(P[0]*sizeof(int)); oK1 = (int*)malloc(P[1]*sizeof(int));
+    N0  = static_cast<int*>(malloc(P[0]*sizeof(int))); N1 = static_cast<int*>(malloc(P[1]*sizeof(int)));
+    M0  = static_cast<int*>(malloc(P[0]*sizeof(int))); M1 = static_cast<int*>(malloc(P[1]*sizeof(int)));
+    K0  = static_cast<int*>(malloc(P[0]*sizeof(int))); K1 = static_cast<int*>(malloc(P[1]*sizeof(int)));
+    oN0 = static_cast<int*>(malloc(P[0]*sizeof(int))); oN1 = static_cast<int*>(malloc(P[1]*sizeof(int)));
+    oM0 = static_cast<int*>(malloc(P[0]*sizeof(int))); oM1 = static_cast<int*>(malloc(P[1]*sizeof(int)));
+    oK0 = static_cast<int*>(malloc(P[0]*sizeof(int))); oK1 = static_cast<int*>(malloc(P[1]*sizeof(int)));
 
     for (i = 0; i < P[0]; i++)
     {
@@ -414,7 +389,18 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
     /* int lsize = fmax(C[0]*M[0]*K[0],fmax(C[1]*M[1]*K[1],C[2]*M[2]*K[2])); */
     if (!(flags&FFT5D_NOMALLOC))
     {
-        snew_aligned(lin, lsize, 32);
+        // only needed for PME GPU mixed mode
+        if (realGridAllocationPinningPolicy == gmx::PinningPolicy::PinnedIfSupported &&
+            GMX_GPU == GMX_GPU_CUDA)
+        {
+            const std::size_t numBytes = lsize * sizeof(t_complex);
+            lin = static_cast<t_complex *>(gmx::PageAlignedAllocationPolicy::malloc(numBytes));
+            gmx::pinBuffer(lin, numBytes);
+        }
+        else
+        {
+            snew_aligned(lin, lsize, 32);
+        }
         snew_aligned(lout, lsize, 32);
         if (nthreads > 1)
         {
@@ -445,7 +431,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         }
     }
 
-    plan = (fft5d_plan)calloc(1, sizeof(struct fft5d_plan_t));
+    plan = static_cast<fft5d_plan>(calloc(1, sizeof(struct fft5d_plan_t)));
 
 
     if (debug)
@@ -557,21 +543,21 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         {
             plan->p3d = FFTW(plan_guru_dft_r2c)(/*rank*/ 3, dims,
                                                          /*howmany*/ 0, /*howmany_dims*/ nullptr,
-                                                         (real*)lin, (FFTW(complex) *) lout,
+                                                         reinterpret_cast<real*>(lin), reinterpret_cast<FFTW(complex) *>(lout),
                                                          /*flags*/ fftwflags);
         }
         else if ((flags&FFT5D_REALCOMPLEX) && (flags&FFT5D_BACKWARD))
         {
             plan->p3d = FFTW(plan_guru_dft_c2r)(/*rank*/ 3, dims,
                                                          /*howmany*/ 0, /*howmany_dims*/ nullptr,
-                                                         (FFTW(complex) *) lin, (real*)lout,
+                                                         reinterpret_cast<FFTW(complex) *>(lin), reinterpret_cast<real*>(lout),
                                                          /*flags*/ fftwflags);
         }
         else
         {
             plan->p3d = FFTW(plan_guru_dft)(/*rank*/ 3, dims,
                                                      /*howmany*/ 0, /*howmany_dims*/ nullptr,
-                                                     (FFTW(complex) *) lin, (FFTW(complex) *) lout,
+                                                     reinterpret_cast<FFTW(complex) *>(lin), reinterpret_cast<FFTW(complex) *>(lout),
                                                      /*sign*/ (flags&FFT5D_BACKWARD) ? 1 : -1, /*flags*/ fftwflags);
         }
 #ifdef FFT5D_THREADS
@@ -591,7 +577,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
             fprintf(debug, "FFT5D: Plan s %d rC %d M %d pK %d C %d lsize %d\n",
                     s, rC[s], M[s], pK[s], C[s], lsize);
         }
-        plan->p1d[s] = (gmx_fft_t*)malloc(sizeof(gmx_fft_t)*nthreads);
+        plan->p1d[s] = static_cast<gmx_fft_t*>(malloc(sizeof(gmx_fft_t)*nthreads));
 
         /* Make sure that the init routines are only called by one thread at a time and in order
            (later is only important to not confuse valgrind)
@@ -670,12 +656,13 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
     plan->direction=direction;
     plan->realcomplex=realcomplex;
  */
-    plan->flags    = flags;
-    plan->nthreads = nthreads;
-    *rlin          = lin;
-    *rlout         = lout;
-    *rlout2        = lout2;
-    *rlout3        = lout3;
+    plan->flags         = flags;
+    plan->nthreads      = nthreads;
+    plan->pinningPolicy = realGridAllocationPinningPolicy;
+    *rlin               = lin;
+    *rlout              = lout;
+    *rlout2             = lout2;
+    *rlout3             = lout3;
     return plan;
 }
 
@@ -698,7 +685,7 @@ enum order {
    NG, MG, KG is size of global data*/
 static void splitaxes(t_complex* lout, const t_complex* lin,
                       int maxN, int maxM, int maxK, int pM,
-                      int P, int NG, int *N, int* oN, int starty, int startz, int endy, int endz)
+                      int P, int NG, const int *N, const int* oN, int starty, int startz, int endy, int endz)
 {
     int x, y, z, i;
     int in_i, out_i, in_z, out_z, in_y, out_y;
@@ -752,7 +739,7 @@ static void splitaxes(t_complex* lout, const t_complex* lin,
    KG global size*/
 static void joinAxesTrans13(t_complex* lout, const t_complex* lin,
                             int maxN, int maxM, int maxK, int pM,
-                            int P, int KG, int* K, int* oK, int starty, int startx, int endy, int endx)
+                            int P, int KG, const int* K, const int* oK, int starty, int startx, int endy, int endx)
 {
     int i, x, y, z;
     int out_i, in_i, out_x, in_x, out_z, in_z;
@@ -804,7 +791,7 @@ static void joinAxesTrans13(t_complex* lout, const t_complex* lin,
    N,M,K local size
    MG, global size*/
 static void joinAxesTrans12(t_complex* lout, const t_complex* lin, int maxN, int maxM, int maxK, int pN,
-                            int P, int MG, int* M, int* oM, int startx, int startz, int endx, int endz)
+                            int P, int MG, const int* M, const int* oM, int startx, int startz, int endx, int endz)
 {
     int i, z, y, x;
     int out_i, in_i, out_z, in_z, out_x, in_x;
@@ -958,7 +945,7 @@ static void print_localdata(const t_complex* lin, const char* txt, int s, fft5d_
             {
                 for (l = 0; l < ll; l++)
                 {
-                    fprintf(debug, "%f ", ((real*)lin)[(z*xs[2]+y*xs[1])*2+(x*xs[0])*ll+l]);
+                    fprintf(debug, "%f ", reinterpret_cast<const real*>(lin)[(z*xs[2]+y*xs[1])*2+(x*xs[0])*ll+l]);
                 }
                 fprintf(debug, ",");
             }
@@ -1127,11 +1114,11 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
 #if GMX_MPI
                 if ((s == 0 && !(plan->flags&FFT5D_ORDER_YZ)) || (s == 1 && (plan->flags&FFT5D_ORDER_YZ)))
                 {
-                    MPI_Alltoall((real *)lout2, N[s]*pM[s]*K[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, (real *)lout3, N[s]*pM[s]*K[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, cart[s]);
+                    MPI_Alltoall(reinterpret_cast<real *>(lout2), N[s]*pM[s]*K[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, reinterpret_cast<real *>(lout3), N[s]*pM[s]*K[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, cart[s]);
                 }
                 else
                 {
-                    MPI_Alltoall((real *)lout2, N[s]*M[s]*pK[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, (real *)lout3, N[s]*M[s]*pK[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, cart[s]);
+                    MPI_Alltoall(reinterpret_cast<real *>(lout2), N[s]*M[s]*pK[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, reinterpret_cast<real *>(lout3), N[s]*M[s]*pK[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, cart[s]);
                 }
 #else
                 gmx_incons("fft5d MPI call without MPI configuration");
@@ -1299,6 +1286,12 @@ void fft5d_destroy(fft5d_plan plan)
 
     if (!(plan->flags&FFT5D_NOMALLOC))
     {
+        // only needed for PME GPU mixed mode
+        if (plan->pinningPolicy == gmx::PinningPolicy::PinnedIfSupported &&
+            isHostMemoryPinned(plan->lin))
+        {
+            gmx::unpinBuffer(plan->lin);
+        }
         sfree_aligned(plan->lin);
         sfree_aligned(plan->lout);
         if (plan->nthreads > 1)
@@ -1407,18 +1400,18 @@ void fft5d_compare_data(const t_complex* lin, const t_complex* in, fft5d_plan pl
                 for (l = 0; l < ll; l++)   /*loop over real/complex parts*/
                 {
                     real a, b;
-                    a = ((real*)lin)[(z*xs[2]+y*xs[1])*2+x*xs[0]*ll+l];
+                    a = reinterpret_cast<const real*>(lin)[(z*xs[2]+y*xs[1])*2+x*xs[0]*ll+l];
                     if (normalize)
                     {
                         a /= plan->rC[0]*plan->rC[1]*plan->rC[2];
                     }
                     if (!bothLocal)
                     {
-                        b = ((real*)in)[((z+xc[2])*NG[0]*NG[1]+(y+xc[1])*NG[0])*2+(x+xc[0])*ll+l];
+                        b = reinterpret_cast<const real*>(in)[((z+xc[2])*NG[0]*NG[1]+(y+xc[1])*NG[0])*2+(x+xc[0])*ll+l];
                     }
                     else
                     {
-                        b = ((real*)in)[(z*xs[2]+y*xs[1])*2+x*xs[0]*ll+l];
+                        b = reinterpret_cast<const real*>(in)[(z*xs[2]+y*xs[1])*2+x*xs[0]*ll+l];
                     }
                     if (plan->flags&FFT5D_DEBUG)
                     {
@@ -1426,7 +1419,7 @@ void fft5d_compare_data(const t_complex* lin, const t_complex* in, fft5d_plan pl
                     }
                     else
                     {
-                        if (fabs(a-b) > 2*NG[0]*NG[1]*NG[2]*GMX_REAL_EPS)
+                        if (std::fabs(a-b) > 2*NG[0]*NG[1]*NG[2]*GMX_REAL_EPS)
                         {
                             printf("result incorrect on %d,%d at %d,%d,%d: FFT5D:%f reference:%f\n", coor[0], coor[1], x, y, z, a, b);
                         }

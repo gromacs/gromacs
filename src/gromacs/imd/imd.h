@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,8 +62,11 @@
 
 #include "config.h"
 
+#include <cstdio>
+
 #include "gromacs/math/vectypes.h"
-#include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/basedefinitions.h"
+
 
 #if GMX_NATIVE_WINDOWS
 #include <Windows.h>
@@ -73,7 +76,11 @@
 struct gmx_domdec_t;
 struct gmx_enerdata_t;
 struct gmx_mtop_t;
+struct gmx_multisim_t;
 struct gmx_output_env_t;
+struct gmx_wallcycle;
+struct MdrunOptions;
+struct t_commrec;
 struct t_filenm;
 struct t_gmx_IMD;
 struct t_IMD;
@@ -95,8 +102,8 @@ static const char IMDstr[] = "IMD:";  /**< Tag output from the IMD module with t
  * \param nfile   Number of files.
  * \param fnm     Filename struct.
  */
-void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, t_state *state,
-                            gmx_mtop_t *sys, int nfile, const t_filenm fnm[]);
+void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, const t_state *state,
+                            const gmx_mtop_t *sys, int nfile, const t_filenm fnm[]);
 
 
 /*! \brief Make a selection of the home atoms for the IMD group.
@@ -112,17 +119,17 @@ void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, t_state *state,
  * \param dd      Structure containing domain decomposition data.
  * \param imd     The IMD group of atoms.
  */
-void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd);
+void dd_make_local_IMD_atoms(gmx_bool bIMD, const gmx_domdec_t *dd, t_IMD *imd);
 
 
 /*! \brief Initializes (or disables) IMD.
  *
- * This function is called before the main MD loop over time steps,
- * and it must be called prior to any call to dd_partition_system if in parallel.
+ * This function is called before the main MD loop over time steps.
  *
  * \param ir           The inputrec structure containing the MD input parameters
  *                     including a pointer to the IMD data structure.
  * \param cr           Information structure for MPI communication.
+ * \param ms           Handler for multi-simulations.
  * \param top_global   The topology of the whole system.
  * \param fplog        General output file, normally md.log.
  * \param defnstimd    Default IMD update (=communication) frequency.
@@ -130,14 +137,14 @@ void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd);
  * \param nfile        Number of files.
  * \param fnm          Struct containing file names etc.
  * \param oenv         Output options.
- * \param imdport      Port to use for IMD connections.
- * \param Flags        Flags passed over from main, used to determine
- *                     whether or not we are appending.
+ * \param mdrunOptions Options for mdrun.
  */
-void init_IMD(t_inputrec *ir, t_commrec *cr, gmx_mtop_t *top_global,
-              FILE *fplog, int defnstimd, rvec x[],
+void init_IMD(t_inputrec *ir, const t_commrec *cr,
+              const gmx_multisim_t *ms,
+              const gmx_mtop_t *top_global,
+              FILE *fplog, int defnstimd, const rvec x[],
               int nfile, const t_filenm fnm[], const gmx_output_env_t *oenv,
-              int imdport, unsigned long  Flags);
+              const MdrunOptions &mdrunOptions);
 
 
 /*! \brief IMD required in this time step?
@@ -156,10 +163,10 @@ void init_IMD(t_inputrec *ir, t_commrec *cr, gmx_mtop_t *top_global,
  *
  * \returns            Whether or not we have to do IMD communication at this step.
  */
-gmx_bool do_IMD(gmx_bool bIMD, gmx_int64_t step, t_commrec *cr,
+gmx_bool do_IMD(gmx_bool bIMD, int64_t step, const t_commrec *cr,
                 gmx_bool bNS,
-                matrix box, rvec x[], t_inputrec *ir, double t,
-                gmx_wallcycle_t wcycle);
+                const matrix box, const rvec x[], t_inputrec *ir, double t,
+                gmx_wallcycle *wcycle);
 
 
 /*! \brief Get the IMD update frequency.
@@ -180,8 +187,8 @@ int IMD_get_step(t_gmx_IMD *IMDsetup);
  * \param wcycle       Count wallcycles of IMD routines for diagnostic output.
  */
 void IMD_apply_forces(gmx_bool bIMD, t_IMD *imd,
-                      t_commrec *cr, rvec *f,
-                      gmx_wallcycle_t wcycle);
+                      const t_commrec *cr, rvec *f,
+                      gmx_wallcycle *wcycle);
 
 
 /*! \brief Copy energies and convert to float from enerdata to the IMD energy record.
@@ -195,8 +202,8 @@ void IMD_apply_forces(gmx_bool bIMD, t_IMD *imd,
  * \param bHaveNewEnergies Only copy energies if we have done global summing of them before.
  *
  */
-void IMD_fill_energy_record(gmx_bool bIMD, t_IMD *imd, gmx_enerdata_t *enerd,
-                            gmx_int64_t step, gmx_bool bHaveNewEnergies);
+void IMD_fill_energy_record(gmx_bool bIMD, t_IMD *imd, const gmx_enerdata_t *enerd,
+                            int64_t step, gmx_bool bHaveNewEnergies);
 
 
 /*! \brief Send positions and energies to the client.
@@ -218,9 +225,9 @@ void IMD_send_positions(t_IMD *imd);
  *
  */
 void IMD_prep_energies_send_positions(gmx_bool bIMD, gmx_bool bIMDstep,
-                                      t_IMD *imd, gmx_enerdata_t *enerd,
-                                      gmx_int64_t step, gmx_bool bHaveNewEnergies,
-                                      gmx_wallcycle_t wcycle);
+                                      t_IMD *imd, const gmx_enerdata_t *enerd,
+                                      int64_t step, gmx_bool bHaveNewEnergies,
+                                      gmx_wallcycle *wcycle);
 
 /*! \brief Finalize IMD and do some cleaning up.
  *

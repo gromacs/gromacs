@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -277,9 +277,9 @@
 #endif /* CHECK_EXCLS */
 
     /* load j atom coordinates */
-    jx_S        = load(x+ajx);
-    jy_S        = load(x+ajy);
-    jz_S        = load(x+ajz);
+    jx_S        = load<SimdReal>(x+ajx);
+    jy_S        = load<SimdReal>(x+ajy);
+    jz_S        = load<SimdReal>(x+ajz);
 
     /* Calculate distance */
     dx_S0       = ix_S0 - jx_S;
@@ -363,7 +363,7 @@
 #ifdef COUNT_PAIRS
     {
         int  i, j;
-        GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  tmp[2*GMX_SIMD_REAL_WIDTH];
+        alignas(GMX_SIMD_ALIGNMENT) real  tmp[2*GMX_SIMD_REAL_WIDTH];
 
         for (i = 0; i < UNROLLI; i++)
         {
@@ -399,7 +399,7 @@
 
 #ifdef CALC_COULOMB
     /* Load parameters for j atom */
-    jq_S        = load(q+aj);
+    jq_S        = load<SimdReal>(q+aj);
     qq_S0       = iq_S0 * jq_S;
     qq_S1       = iq_S1 * jq_S;
     qq_S2       = iq_S2 * jq_S;
@@ -419,8 +419,8 @@
 #endif /* not defined any LJ rule */
 
 #ifdef LJ_COMB_GEOM
-    c6s_j_S     = load(ljc+aj2+0);
-    c12s_j_S    = load(ljc+aj2+STRIDE);
+    c6s_j_S     = load<SimdReal>(ljc+aj2+0);
+    c12s_j_S    = load<SimdReal>(ljc+aj2+STRIDE);
     SimdReal c6_S0  = c6s_S0 * c6s_j_S;
     SimdReal c6_S1  = c6s_S1 * c6s_j_S;
 #ifndef HALF_LJ
@@ -436,8 +436,8 @@
 #endif /* LJ_COMB_GEOM */
 
 #ifdef LJ_COMB_LB
-    hsig_j_S    = load(ljc+aj2+0);
-    seps_j_S    = load(ljc+aj2+STRIDE);
+    hsig_j_S    = load<SimdReal>(ljc+aj2+0);
+    seps_j_S    = load<SimdReal>(ljc+aj2+STRIDE);
 
     sig_S0      = hsig_i_S0 + hsig_j_S;
     sig_S1      = hsig_i_S1 + hsig_j_S;
@@ -840,7 +840,7 @@
 #endif /* LJ_CUT */
 
 #ifdef LJ_FORCE_SWITCH
-#define v_fswitch_r(rsw, rsw2, c0, c3, c4) fma(fma(c4, rsw, c3), (rsw2 * rsw), c0)
+#define v_fswitch_r(rsw, rsw2, c0, c3, c4) fma(fma((c4), (rsw), (c3)), ((rsw2) * (rsw)), (c0))
 
     SimdReal VLJ6_S0  = c6_S0 * fma(sixth_S, rinvsix_S0, v_fswitch_r(rsw_S0, rsw2_S0, p6_6cpot_S, p6_vc3_S, p6_vc4_S));
     SimdReal VLJ6_S1  = c6_S1 * fma(sixth_S, rinvsix_S1, v_fswitch_r(rsw_S1, rsw2_S1, p6_6cpot_S, p6_vc3_S, p6_vc4_S));
@@ -884,8 +884,8 @@
         SimdReal sw_S3, dsw_S3;
 #endif
 
-#define switch_r(rsw, rsw2, c3, c4, c5) fma(fma(fma(c5, rsw, c4), rsw, c3), (rsw2 * rsw), one_S)
-#define dswitch_r(rsw, rsw2, c2, c3, c4) (fma(fma(c4, rsw, c3), rsw, c2) * rsw2)
+#define switch_r(rsw, rsw2, c3, c4, c5) fma(fma(fma(c5, rsw, c4), rsw, c3), ((rsw2) * (rsw)), one_S)
+#define dswitch_r(rsw, rsw2, c2, c3, c4) (fma(fma(c4, rsw, c3), rsw, c2) * (rsw2))
 
         sw_S0  = switch_r(rsw_S0, rsw2_S0, swV3_S, swV4_S, swV5_S);
         dsw_S0 = dswitch_r(rsw_S0, rsw2_S0, swF2_S, swF3_S, swF4_S);
@@ -946,7 +946,7 @@
 #endif
 
         /* Determine C6 for the grid using the geometric combination rule */
-        c6s_j_S         = load(ljc+aj2+0);
+        c6s_j_S         = load<SimdReal>(ljc+aj2+0);
         c6grid_S0       = c6s_S0 * c6s_j_S;
         c6grid_S1       = c6s_S1 * c6s_j_S;
 #ifndef HALF_LJ
@@ -979,11 +979,13 @@
         cr2_S2        = lje_c2_S * selectByMask(rsq_S2, wco_vdw_S2);
         cr2_S3        = lje_c2_S * selectByMask(rsq_S3, wco_vdw_S3);
 #endif
-        expmcr2_S0    = exp( -cr2_S0 );
-        expmcr2_S1    = exp( -cr2_S1 );
+        // Unsafe version of our exp() should be fine, since these arguments should never
+        // be smaller than -127 for any reasonable choice of cutoff or ewald coefficients.
+        expmcr2_S0    = exp<MathOptimization::Unsafe>( -cr2_S0 );
+        expmcr2_S1    = exp<MathOptimization::Unsafe>( -cr2_S1 );
 #ifndef HALF_LJ
-        expmcr2_S2    = exp( -cr2_S2 );
-        expmcr2_S3    = exp( -cr2_S3 );
+        expmcr2_S2    = exp<MathOptimization::Unsafe>( -cr2_S2 );
+        expmcr2_S3    = exp<MathOptimization::Unsafe>( -cr2_S3 );
 #endif
 
         /* 1 + cr2 + 1/2*cr2^2 */
@@ -1170,9 +1172,9 @@
     fiz_S3      = fiz_S3 + tz_S3;
 
     /* Decrement j atom force */
-    store(f+ajx, load(f+ajx) - (tx_S0 + tx_S1 + tx_S2 + tx_S3));
-    store(f+ajy, load(f+ajy) - (ty_S0 + ty_S1 + ty_S2 + ty_S3));
-    store(f+ajz, load(f+ajz) - (tz_S0 + tz_S1 + tz_S2 + tz_S3));
+    store(f+ajx, load<SimdReal>(f+ajx) - (tx_S0 + tx_S1 + tx_S2 + tx_S3));
+    store(f+ajy, load<SimdReal>(f+ajy) - (ty_S0 + ty_S1 + ty_S2 + ty_S3));
+    store(f+ajz, load<SimdReal>(f+ajz) - (tz_S0 + tz_S1 + tz_S2 + tz_S3));
 }
 
 #undef  rinv_ex_S0

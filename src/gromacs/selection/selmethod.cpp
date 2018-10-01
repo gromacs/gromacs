@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,72 +43,16 @@
 
 #include "selmethod.h"
 
-#include <ctype.h>
-#include <stdarg.h>
+#include <cctype>
+#include <cstdarg>
 
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 
+#include "selmethod-impl.h"
 #include "symrec.h"
-
-/*
- * These global variables cannot be const because gmx_ana_selmethod_register()
- * modifies them to set some defaults. This is a small price to pay for the
- * convenience of not having to remember exactly how the selection compiler
- * expects the structures to be filled, and even more so if the expectations
- * change. Also, even if the gmx_ana_selmethod_t structures were made const,
- * the parameters could not be without typecasts somewhere, because the param
- * field in gmx_ana_selmethod_t cannot be declared const.
- *
- * Even though the variables may be modified, this should be thread-safe as
- * modifications are done only in gmx_ana_selmethod_register(), and it should
- * work even if called more than once for the same structure, and even if
- * called concurrently from multiple threads (as long as the selection
- * collection is not the same).
- *
- * All of these problems should go away if/when the selection methods are
- * implemented as C++ classes.
- */
-
-/* From sm_com.c */
-extern gmx_ana_selmethod_t sm_cog;
-extern gmx_ana_selmethod_t sm_com;
-/* From sm_simple.c */
-extern gmx_ana_selmethod_t sm_all;
-extern gmx_ana_selmethod_t sm_none;
-extern gmx_ana_selmethod_t sm_atomnr;
-extern gmx_ana_selmethod_t sm_resnr;
-extern gmx_ana_selmethod_t sm_resindex;
-extern gmx_ana_selmethod_t sm_molindex;
-extern gmx_ana_selmethod_t sm_atomname;
-extern gmx_ana_selmethod_t sm_pdbatomname;
-extern gmx_ana_selmethod_t sm_atomtype;
-extern gmx_ana_selmethod_t sm_resname;
-extern gmx_ana_selmethod_t sm_insertcode;
-extern gmx_ana_selmethod_t sm_chain;
-extern gmx_ana_selmethod_t sm_mass;
-extern gmx_ana_selmethod_t sm_charge;
-extern gmx_ana_selmethod_t sm_altloc;
-extern gmx_ana_selmethod_t sm_occupancy;
-extern gmx_ana_selmethod_t sm_betafactor;
-extern gmx_ana_selmethod_t sm_x;
-extern gmx_ana_selmethod_t sm_y;
-extern gmx_ana_selmethod_t sm_z;
-/* From sm_distance.c */
-extern gmx_ana_selmethod_t sm_distance;
-extern gmx_ana_selmethod_t sm_mindistance;
-extern gmx_ana_selmethod_t sm_within;
-/* From sm_insolidangle.c */
-extern gmx_ana_selmethod_t sm_insolidangle;
-/* From sm_same.c */
-extern gmx_ana_selmethod_t sm_same;
-
-/* From sm_merge.c */
-extern gmx_ana_selmethod_t sm_merge;
-extern gmx_ana_selmethod_t sm_plus;
-/* From sm_permute.c */
-extern gmx_ana_selmethod_t sm_permute;
 
 /*! \internal \brief
  * Helper structure for defining selection methods.
@@ -125,58 +69,14 @@ typedef struct {
     gmx_ana_selmethod_t   *method;
 } t_register_method;
 
-/** Array of selection methods defined in the library. */
-static const t_register_method smtable_def[] = {
-    {nullptr,         &sm_cog},
-    {nullptr,         &sm_com},
-
-    {nullptr,         &sm_all},
-    {nullptr,         &sm_none},
-    {nullptr,         &sm_atomnr},
-    {nullptr,         &sm_resnr},
-    {"resid",      &sm_resnr},
-    {nullptr,         &sm_resindex},
-    {"residue",    &sm_resindex},
-    {nullptr,         &sm_molindex},
-    {"mol",        &sm_molindex},
-    {"molecule",   &sm_molindex},
-    {nullptr,         &sm_atomname},
-    {"name",       &sm_atomname},
-    {nullptr,         &sm_pdbatomname},
-    {"pdbname",    &sm_pdbatomname},
-    {nullptr,         &sm_atomtype},
-    {"type",       &sm_atomtype},
-    {nullptr,         &sm_resname},
-    {nullptr,         &sm_insertcode},
-    {nullptr,         &sm_chain},
-    {nullptr,         &sm_mass},
-    {nullptr,         &sm_charge},
-    {nullptr,         &sm_altloc},
-    {nullptr,         &sm_occupancy},
-    {nullptr,         &sm_betafactor},
-    {"beta",       &sm_betafactor},
-    {nullptr,         &sm_x},
-    {nullptr,         &sm_y},
-    {nullptr,         &sm_z},
-
-    {nullptr,         &sm_distance},
-    {"dist",       &sm_distance},
-    {nullptr,         &sm_mindistance},
-    {"mindist",    &sm_mindistance},
-    {nullptr,         &sm_within},
-    {nullptr,         &sm_insolidangle},
-    {nullptr,         &sm_same},
-
-    {nullptr,         &sm_merge},
-    {nullptr,         &sm_plus},
-    {nullptr,         &sm_permute},
-};
-
 /*! \brief
  * Convenience function for reporting errors found in selection methods.
  */
 static void
-report_error(FILE *fp, const char *name, const char *fmt, ...)
+report_error(FILE *fp, const char *name, gmx_fmtstr const char *fmt, ...) gmx_format(printf, 3, 4);
+
+static void
+report_error(FILE *fp, const char *name, gmx_fmtstr const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -194,7 +94,10 @@ report_error(FILE *fp, const char *name, const char *fmt, ...)
  */
 static void
 report_param_error(FILE *fp, const char *mname, const char *pname,
-                   const char *fmt, ...)
+                   gmx_fmtstr const char *fmt, ...) gmx_format(printf, 4, 5);
+static void
+report_param_error(FILE *fp, const char *mname, const char *pname,
+                   gmx_fmtstr const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -389,7 +292,7 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
             continue;
         }
         /* Check that the name does not conflict with a method */
-        if (symtab.findSymbol(param[i].name))
+        if (symtab.findSymbol(param[i].name) != nullptr)
         {
             report_param_error(fp, name, param[i].name, "error: name conflicts with another method or a keyword");
             bOk = false;
@@ -658,7 +561,7 @@ gmx_ana_selmethod_register(gmx::SelectionParserSymbolTable *symtab,
         }
         catch (const gmx::APIError &ex)
         {
-            report_error(stderr, name, ex.what());
+            report_error(stderr, name, "%s", ex.what());
             bOk = false;
         }
     }
@@ -678,9 +581,56 @@ gmx_ana_selmethod_register(gmx::SelectionParserSymbolTable *symtab,
 int
 gmx_ana_selmethod_register_defaults(gmx::SelectionParserSymbolTable *symtab)
 {
-    size_t i;
-    int    rc;
-    bool   bOk;
+    /* Array of selection methods defined in the library. */
+    const t_register_method smtable_def[] = {
+        {nullptr,         &sm_cog},
+        {nullptr,         &sm_com},
+
+        {nullptr,         &sm_all},
+        {nullptr,         &sm_none},
+        {nullptr,         &sm_atomnr},
+        {nullptr,         &sm_resnr},
+        {"resid",      &sm_resnr},
+        {nullptr,         &sm_resindex},
+        {"residue",    &sm_resindex},
+        {nullptr,         &sm_molindex},
+        {"mol",        &sm_molindex},
+        {"molecule",   &sm_molindex},
+        {nullptr,         &sm_atomname},
+        {"name",       &sm_atomname},
+        {nullptr,         &sm_pdbatomname},
+        {"pdbname",    &sm_pdbatomname},
+        {nullptr,         &sm_atomtype},
+        {"type",       &sm_atomtype},
+        {nullptr,         &sm_resname},
+        {nullptr,         &sm_insertcode},
+        {nullptr,         &sm_chain},
+        {nullptr,         &sm_mass},
+        {nullptr,         &sm_charge},
+        {nullptr,         &sm_altloc},
+        {nullptr,         &sm_occupancy},
+        {nullptr,         &sm_betafactor},
+        {"beta",       &sm_betafactor},
+        {nullptr,         &sm_x},
+        {nullptr,         &sm_y},
+        {nullptr,         &sm_z},
+
+        {nullptr,         &sm_distance},
+        {"dist",       &sm_distance},
+        {nullptr,         &sm_mindistance},
+        {"mindist",    &sm_mindistance},
+        {nullptr,         &sm_within},
+        {nullptr,         &sm_insolidangle},
+        {nullptr,         &sm_same},
+
+        {nullptr,         &sm_merge},
+        {nullptr,         &sm_plus},
+        {nullptr,         &sm_permute},
+    };
+
+    size_t                  i;
+    int                     rc;
+    bool                    bOk;
 
     bOk = true;
     for (i = 0; i < asize(smtable_def); ++i)

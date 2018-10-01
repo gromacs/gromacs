@@ -1,7 +1,7 @@
 /* This code is part of the tng binary trajectory format.
  *
  * Written by Magnus Lundborg
- * Copyright (c) 2012-2014, The GROMACS development team.
+ * Copyright (c) 2012-2017, The GROMACS development team.
  * Check out http://www.gromacs.org for more information.
  *
  *
@@ -75,6 +75,14 @@
  * See git log for full revision history.
  *
  * Revisions
+ * 
+ * v. 1.8 - Added GROMACS energy block IDs.
+ *        - Rewritten build system for the main library.
+ *        - Added block ID for atom (or generic particle) mass.
+ *        - Fixed bugs, such as:
+ *           - Do not switch endianness when reading and writing TNG compressed data.
+ *           - Update pointers to residues in the chain when writing multiple chains in one molecule.
+ *           - Update frame set pointers when appending to file.
  *
  * v. 1.7 - Fifth stable release of the API
  *
@@ -438,6 +446,7 @@ typedef enum {TNG_NON_TRAJECTORY_BLOCK, TNG_TRAJECTORY_BLOCK} tng_block_type;
 #define TNG_TRAJ_ANISOTROPIC_B_FACTORS  0x0000000010000007LL
 #define TNG_TRAJ_OCCUPANCY              0x0000000010000008LL
 #define TNG_TRAJ_GENERAL_COMMENTS       0x0000000010000009LL
+#define TNG_TRAJ_MASSES                 0x0000000010000010LL
 /** @} */
 
 
@@ -3591,8 +3600,9 @@ tng_function_status DECLSPECDLLEXPORT tng_util_box_shape_read
  * @param tng_data is the trajectory to read from.
  * @param block_id is the ID number of the block containing the data of interest.
  * @param values will be set to point at a 1-dimensional array containing the
- * requested data. The variable may point at already allocated memory or be a
- * NULL pointer. The memory must be freed afterwards.
+ * requested data. The variable may point at already allocated memory (which will
+ * be reallocated with realloc()), or be a
+ * NULL pointer. The calling code must free the memory afterwards.
  * @param data_type will be pointing to a character indicating the size of the
  * data of the returned values, e.g. TNG_INT_DATA, TNG_FLOAT_DATA or TNG_DOUBLE_DATA.
  * @param retrieved_frame_number will be pointing at the frame number of the
@@ -4818,7 +4828,7 @@ tng_function_status DECLSPECDLLEXPORT tng_util_frame_current_compression_get
  * @param data_block_ids_in_next_frame is set to an array (of length
  * n_data_blocks_in_next_frame) that lists the data block IDs with data for
  * next_frame. It must be pointing at NULL or previously allocated memory.
- * Memory for the array is allocated by this function.
+ * Memory for the array is reallocated by this function using realloc().
  * The memory must be freed by the client afterwards or
  * there will be a memory leak.
  * @pre \code tng_data != 0 \endcode The trajectory container (tng_data)

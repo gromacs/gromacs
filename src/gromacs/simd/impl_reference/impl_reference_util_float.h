@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -752,7 +752,7 @@ loadDuplicateHsimd(const float *  m)
  * Available if \ref GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT is 1.
  */
 static inline SimdFloat gmx_simdcall
-load1DualHsimd(const float *  m)
+loadU1DualHsimd(const float *  m)
 {
     SimdFloat        a;
 
@@ -951,6 +951,85 @@ reduceIncr4ReturnSumHsimd(float *            m,
 
     return sum[0] + sum[1] + sum[2] + sum[3];
 }
+
+#if GMX_SIMD_FLOAT_WIDTH > 8 || defined DOXYGEN
+/*! \brief Load N floats and duplicate them 4 times each.
+ *
+ * \param m Pointer to unaligned memory
+ *
+ * \return SIMD variable with N floats from m duplicated 4x.
+ *
+ * Available if \ref GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT is 1.
+ * N is GMX_SIMD_FLOAT_WIDTH/4. Duplicated values are
+ * contigous and different values are 4 positions in SIMD
+ * apart.
+ */
+static inline SimdFloat gmx_simdcall
+loadUNDuplicate4(const float* m)
+{
+    SimdFloat        a;
+    for (std::size_t i = 0; i < a.simdInternal_.size()/4; i++)
+    {
+        a.simdInternal_[i*4]   = m[i];
+        a.simdInternal_[i*4+1] = m[i];
+        a.simdInternal_[i*4+2] = m[i];
+        a.simdInternal_[i*4+3] = m[i];
+    }
+    return a;
+}
+
+/*! \brief Load 4 floats and duplicate them N times each.
+ *
+ * \param m Pointer to memory aligned to 4 floats
+ *
+ * \return SIMD variable with 4 floats from m duplicated Nx.
+ *
+ * Available if \ref GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT is 1.
+ * N is GMX_SIMD_FLOAT_WIDTH/4. Different values are
+ * contigous and same values are 4 positions in SIMD
+ * apart.
+ */
+static inline SimdFloat gmx_simdcall
+load4DuplicateN(const float* m)
+{
+    SimdFloat        a;
+    for (std::size_t i = 0; i < a.simdInternal_.size()/4; i++)
+    {
+        a.simdInternal_[i*4]   = m[0];
+        a.simdInternal_[i*4+1] = m[1];
+        a.simdInternal_[i*4+2] = m[2];
+        a.simdInternal_[i*4+3] = m[3];
+    }
+    return a;
+}
+#endif
+
+#if GMX_SIMD_FLOAT_WIDTH >= 8 || defined DOXYGEN
+/*! \brief Load floats in blocks of 4 at fixed offsets
+ *
+ * \param m Pointer to unaligned memory
+ * \param offset Offset in memory between input blocks of 4
+ *
+ * \return SIMD variable with floats from m.
+ *
+ * Available if \ref GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT is 1.
+ * Blocks of 4 floats are loaded from m+n*offset where n
+ * is the n-th block of 4 floats.
+ */
+static inline SimdFloat gmx_simdcall
+loadU4NOffset(const float* m, int offset)
+{
+    SimdFloat        a;
+    for (std::size_t i = 0; i < a.simdInternal_.size()/4; i++)
+    {
+        a.simdInternal_[i*4]   = m[offset*i + 0];
+        a.simdInternal_[i*4+1] = m[offset*i + 1];
+        a.simdInternal_[i*4+2] = m[offset*i + 2];
+        a.simdInternal_[i*4+3] = m[offset*i + 3];
+    }
+    return a;
+}
+#endif
 
 /*! \} */
 

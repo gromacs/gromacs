@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/analysisdata/modules/plot.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
@@ -76,16 +77,16 @@ class Distance : public TrajectoryAnalysisModule
     public:
         Distance();
 
-        virtual void initOptions(IOptionsContainer          *options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation        &top);
+        void initOptions(IOptionsContainer          *options,
+                         TrajectoryAnalysisSettings *settings) override;
+        void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                          const TopologyInformation        &top) override;
 
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+        void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                          TrajectoryAnalysisModuleData *pdata) override;
 
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
+        void finishAnalysis(int nframes) override;
+        void writeOutput() override;
 
     private:
         SelectionList                            sel_;
@@ -109,16 +110,16 @@ class Distance : public TrajectoryAnalysisModule
 };
 
 Distance::Distance()
-    : meanLength_(0.1), lengthDev_(1.0), binWidth_(0.001)
+    : meanLength_(0.1), lengthDev_(1.0), binWidth_(0.001),
+      summaryStatsModule_(compat::make_unique<AnalysisDataAverageModule>()),
+      allStatsModule_(compat::make_unique<AnalysisDataAverageModule>()),
+      averageModule_(compat::make_unique<AnalysisDataFrameAverageModule>()),
+      histogramModule_(compat::make_unique<AnalysisDataSimpleHistogramModule>())
 {
-    summaryStatsModule_.reset(new AnalysisDataAverageModule());
     summaryStatsModule_->setAverageDataSets(true);
     distances_.addModule(summaryStatsModule_);
-    allStatsModule_.reset(new AnalysisDataAverageModule());
     distances_.addModule(allStatsModule_);
-    averageModule_.reset(new AnalysisDataFrameAverageModule());
     distances_.addModule(averageModule_);
-    histogramModule_.reset(new AnalysisDataSimpleHistogramModule());
     distances_.addModule(histogramModule_);
 
     registerAnalysisDataset(&distances_, "dist");

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,6 +53,7 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/compare.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -72,7 +73,8 @@ const char      *enx_block_id_name[] = {
     "Distance restraints",
     "Free energy data",
     "BAR histogram",
-    "Delta H raw data"
+    "Delta H raw data",
+    "AWH data"
 };
 
 
@@ -331,7 +333,7 @@ static void enx_warning(const char *msg)
 {
     if (getenv("GMX_ENX_NO_FATAL") != nullptr)
     {
-        gmx_warning(msg);
+        gmx_warning("%s", msg);
     }
     else
     {
@@ -497,14 +499,13 @@ static gmx_bool do_eheader(ener_file_t ef, int *file_version, t_enxframe *fr,
             return FALSE;
         }
         *file_version = enx_version;
-        // cppcheck-suppress redundantPointerOp
         if (!gmx_fio_do_int(ef->fio, *file_version))
         {
             *bOK = FALSE;
         }
         if (*bOK && *file_version > enx_version)
         {
-            gmx_fatal(FARGS, "reading tpx file (%s) version %d with version %d program", gmx_fio_getname(ef->fio), file_version, enx_version);
+            gmx_fatal(FARGS, "reading tpx file (%s) version %d with version %d program", gmx_fio_getname(ef->fio), *file_version, enx_version);
         }
         if (!gmx_fio_do_double(ef->fio, fr->t))
         {
@@ -693,7 +694,7 @@ static gmx_bool do_eheader(ener_file_t ef, int *file_version, t_enxframe *fr,
                 *bOK = *bOK && gmx_fio_do_int(ef->fio, typenr);
                 *bOK = *bOK && gmx_fio_do_int(ef->fio, sub->nr);
 
-                sub->type = (xdr_datatype)typenr;
+                sub->type = static_cast<xdr_datatype>(typenr);
             }
         }
     }
@@ -784,7 +785,7 @@ empty_file(const char *fn)
 
     fp     = gmx_fio_fopen(fn, "r");
     ret    = fread(&dum, sizeof(dum), 1, fp);
-    bEmpty = feof(fp);
+    bEmpty = (feof(fp) != 0);
     gmx_fio_fclose(fp);
 
     // bEmpty==TRUE but ret!=0 would likely be some strange I/O error, but at
@@ -819,7 +820,7 @@ ener_file_t open_enx(const char *fn, const char *mode)
         /* Now check whether this file is in single precision */
         if (!bWrongPrecision &&
             ((fr->e_size && (fr->nre == nre) &&
-              (nre*4*(long int)sizeof(float) == fr->e_size)) ) )
+              (nre*4*static_cast<long int>(sizeof(float)) == fr->e_size)) ) )
         {
             fprintf(stderr, "Opened %s as single precision energy file\n", fn);
             free_enxnms(nre, nms);
@@ -836,7 +837,7 @@ ener_file_t open_enx(const char *fn, const char *mode)
             }
 
             if (((fr->e_size && (fr->nre == nre) &&
-                  (nre*4*(long int)sizeof(double) == fr->e_size)) ))
+                  (nre*4*static_cast<long int>(sizeof(double)) == fr->e_size)) ))
             {
                 fprintf(stderr, "Opened %s as double precision energy file\n",
                         fn);
@@ -869,7 +870,7 @@ ener_file_t open_enx(const char *fn, const char *mode)
     return ef;
 }
 
-t_fileio *enx_file_pointer(const ener_file_t ef)
+t_fileio *enx_file_pointer(const ener_file* ef)
 {
     return ef->fio;
 }
@@ -916,7 +917,7 @@ static void convert_full_sums(ener_old_t *ener_old, t_enxframe *fr)
             fr->ener[i].eav  = eav_all  - ener_old->ener_prev[i].eav
                 - gmx::square(ener_old->ener_prev[i].esum/(nstep_all - fr->nsum)
                               - esum_all/nstep_all)*
-                (nstep_all - fr->nsum)*nstep_all/(double)fr->nsum;
+                (nstep_all - fr->nsum)*nstep_all/static_cast<double>(fr->nsum);
             ener_old->ener_prev[i].esum = esum_all;
             ener_old->ener_prev[i].eav  = eav_all;
         }
@@ -1003,7 +1004,7 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr)
     {
         fprintf(stderr, "\nWARNING: there may be something wrong with energy file %s\n",
                 gmx_fio_getname(ef->fio));
-        fprintf(stderr, "Found: step=%" GMX_PRId64 ", nre=%d, nblock=%d, time=%g.\n",
+        fprintf(stderr, "Found: step=%" PRId64 ", nre=%d, nblock=%d, time=%g.\n",
                 fr->step, fr->nre, fr->nblock, fr->t);
     }
     if (bRead && fr->nre > fr->e_alloc)
@@ -1144,9 +1145,7 @@ static real find_energy(const char *name, int nre, gmx_enxnm_t *enm,
         }
     }
 
-    gmx_fatal(FARGS, "Could not find energy term named '%s'", name);
-
-    return 0;
+    gmx_fatal(FARGS, "Could not find energy term named '%s'. Either the energy file is from a different run or this state variable is not stored in the energy file. In the latter case (and if you did not modify the T/P-coupling setup), you can read the state in mdrun instead, by passing in a checkpoint file.", name);
 }
 
 
@@ -1248,9 +1247,9 @@ void get_enx_state(const char *fn, real t, const gmx_groups_t *groups, t_inputre
     sfree(fr);
 }
 
-static real ener_tensor_diag(int n, int *ind1, int *ind2,
+static real ener_tensor_diag(int n, const int *ind1, const int *ind2,
                              gmx_enxnm_t *enm1,
-                             int *tensi, int i,
+                             const int *tensi, int i,
                              t_energy e1[], t_energy e2[])
 {
     int    d1, d2;
@@ -1431,7 +1430,7 @@ static void cmp_eblocks(t_enxframe *fr1, t_enxframe *fr2, real ftol, real abstol
                     s1 = &(b1->sub[i]);
                     s2 = &(b2->sub[i]);
 
-                    cmp_int(stdout, buf, -1, (int)s1->type, (int)s2->type);
+                    cmp_int(stdout, buf, -1, static_cast<int>(s1->type), static_cast<int>(s2->type));
                     cmp_int64(stdout, buf, s1->nr, s2->nr);
 
                     if ((s1->type == s2->type) && (s1->nr == s2->nr))

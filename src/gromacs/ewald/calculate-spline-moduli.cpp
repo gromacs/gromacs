@@ -38,7 +38,7 @@
 
 #include "calculate-spline-moduli.h"
 
-#include <math.h>
+#include <cmath>
 
 #include <algorithm>
 

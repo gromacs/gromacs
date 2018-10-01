@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,10 +48,7 @@
 #include <stdio.h>
 
 #include "gromacs/utility/basedefinitions.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "gromacs/utility/stringutil.h"
 
 /*! \brief
  * Debug log file.
@@ -77,16 +74,10 @@ extern gmx_bool gmx_debug_at;
  * For command line programs, gmx::CommandLineModuleManager takes care
  * of this if the user requests debugging.
  */
-void gmx_init_debug(const int dbglevel, const char *dbgfile);
+void gmx_init_debug(int dbglevel, const char *dbgfile);
 
 /** Returns TRUE when the program was started in debug mode */
-gmx_bool bDebugMode(void);
-
-/** Implementation for where(). */
-void
-_where(const char *file, int line);
-/** Prints filename and line to stdlog. */
-#define where() _where(__FILE__, __LINE__)
+gmx_bool bDebugMode();
 
 /** Sets the log file for printing error messages. */
 void
@@ -142,7 +133,7 @@ enum ExitType
  * \param[in] returnValue  Exit code for the program, for cases where it can be
  *    used.
  */
-gmx_noreturn void gmx_exit_on_fatal_error(enum ExitType exitType, int returnValue);
+[[noreturn]] void gmx_exit_on_fatal_error(enum ExitType exitType, int returnValue);
 
 /*! \brief
  * Low-level fatal error reporting routine for collective MPI errors.
@@ -156,7 +147,7 @@ gmx_noreturn void gmx_exit_on_fatal_error(enum ExitType exitType, int returnValu
  * This is used to implement gmx_fatal_collective() (which cannot be declared
  * here, since it would bring with it mdrun-specific dependencies).
  */
-gmx_noreturn void
+[[noreturn]] void
 gmx_fatal_mpi_va(int fatal_errno, const char *file, int line,
                  gmx_bool bMaster, gmx_bool bFinalize,
                  const char *fmt, va_list ap);
@@ -182,13 +173,13 @@ gmx_fatal_mpi_va(int fatal_errno, const char *file, int line,
    gmx_fatal(FARGS, fmt, ...);
    \endcode
  */
-gmx_noreturn void
-gmx_fatal(int fatal_errno, const char *file, int line, const char *fmt, ...);
+[[noreturn]] void
+gmx_fatal(int fatal_errno, const char *file, int line, gmx_fmtstr const char *fmt, ...) gmx_format(printf, 4, 5);
 /** Helper macro to pass first three parameters to gmx_fatal(). */
 #define FARGS 0, __FILE__, __LINE__
 
 /** Implementation for gmx_error(). */
-gmx_noreturn void _gmx_error(const char *key, const char *msg, const char *file, int line);
+[[noreturn]] void _gmx_error(const char *key, const char *msg, const char *file, int line);
 /*! \brief
  * Alternative fatal error routine with canned messages.
  *
@@ -245,10 +236,6 @@ void _range_check(int n, int n_min, int n_max, const char *warn_str,
  * The message string should NOT start with "WARNING"
  * and should NOT end with a newline.
  */
-void gmx_warning(const char *fmt, ...);
-
-#ifdef __cplusplus
-}
-#endif
+void gmx_warning(gmx_fmtstr const char *fmt, ...) gmx_format(printf, 1, 2);
 
 #endif

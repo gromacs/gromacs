@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,7 @@
 
 #include <immintrin.h>
 
+#include "gromacs/math/utilities.h"
 #include "gromacs/utility/real.h"
 
 #include "impl_x86_avx_512_general.h"
@@ -99,7 +100,7 @@ class SimdFIBool
 };
 
 static inline SimdFloat gmx_simdcall
-simdLoad(const float *m)
+simdLoad(const float *m, SimdFloatTag = {})
 {
     assert(std::size_t(m) % 64 == 0);
     return {
@@ -115,7 +116,7 @@ store(float *m, SimdFloat a)
 }
 
 static inline SimdFloat gmx_simdcall
-simdLoadU(const float *m)
+simdLoadU(const float *m, SimdFloatTag = {})
 {
     return {
                _mm512_loadu_ps(m)
@@ -137,7 +138,7 @@ setZeroF()
 }
 
 static inline SimdFInt32 gmx_simdcall
-simdLoadFI(const std::int32_t * m)
+simdLoad(const std::int32_t * m, SimdFInt32Tag)
 {
     assert(std::size_t(m) % 64 == 0);
     return {
@@ -153,7 +154,7 @@ store(std::int32_t * m, SimdFInt32 a)
 }
 
 static inline SimdFInt32 gmx_simdcall
-simdLoadUFI(const std::int32_t *m)
+simdLoadU(const std::int32_t *m, SimdFInt32Tag)
 {
     return {
                _mm512_loadu_si512(m)
@@ -392,13 +393,20 @@ frexp(SimdFloat value, SimdFInt32 * exponent)
     };
 }
 
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall
 ldexp(SimdFloat value, SimdFInt32 exponent)
 {
     const __m512i exponentBias = _mm512_set1_epi32(127);
-    __m512i       iExponent;
+    __m512i       iExponent    =  _mm512_add_epi32(exponent.simdInternal_, exponentBias);
 
-    iExponent = _mm512_slli_epi32( _mm512_add_epi32(exponent.simdInternal_, exponentBias), 23);
+    if (opt == MathOptimization::Safe)
+    {
+        // Make sure biased argument is not negative
+        iExponent = _mm512_max_epi32(iExponent, _mm512_setzero_epi32());
+    }
+
+    iExponent = _mm512_slli_epi32(iExponent, 23);
 
     return {
                _mm512_mul_ps(value.simdInternal_, _mm512_castsi512_ps(iExponent))
@@ -502,19 +510,14 @@ blend(SimdFloat a, SimdFloat b, SimdFBool sel)
     };
 }
 
-static inline SimdFInt32 gmx_simdcall
-operator<<(SimdFInt32 a, int n)
+static inline SimdFloat gmx_simdcall
+copysign(SimdFloat a, SimdFloat b)
 {
     return {
-               _mm512_slli_epi32(a.simdInternal_, n)
-    };
-}
-
-static inline SimdFInt32 gmx_simdcall
-operator>>(SimdFInt32 a, int n)
-{
-    return {
-               _mm512_srli_epi32(a.simdInternal_, n)
+               _mm512_castsi512_ps(_mm512_ternarylogic_epi32(
+                                           _mm512_castps_si512(a.simdInternal_),
+                                           _mm512_castps_si512(b.simdInternal_),
+                                           _mm512_set1_epi32(INT32_MIN), 0xD8))
     };
 }
 

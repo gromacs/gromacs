@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -139,7 +139,7 @@ makeProgramFromCache(const std::string &filename,
                                                    &deviceId,
                                                    &fileSize,
                                                    const_cast<const unsigned char **>(&binary),
-                                                   NULL,
+                                                   nullptr,
                                                    &cl_error);
     if (cl_error != CL_SUCCESS)
     {
@@ -153,7 +153,7 @@ void
 writeBinaryToCache(cl_program program, const std::string &filename)
 {
     size_t fileSize;
-    cl_int cl_error = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES, sizeof(fileSize), &fileSize, NULL);
+    cl_int cl_error = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES, sizeof(fileSize), &fileSize, nullptr);
     if (cl_error != CL_SUCCESS)
     {
         GMX_THROW(InternalError("Could not get OpenCL program binary size, error was " + ocl_get_error_string(cl_error)));
@@ -164,7 +164,7 @@ writeBinaryToCache(cl_program program, const std::string &filename)
     snew(binary, fileSize);
     const unique_cptr<unsigned char> binaryGuard(binary);
 
-    cl_error = clGetProgramInfo(program, CL_PROGRAM_BINARIES, sizeof(binary), &binary, NULL);
+    cl_error = clGetProgramInfo(program, CL_PROGRAM_BINARIES, sizeof(binary), &binary, nullptr);
     if (cl_error != CL_SUCCESS)
     {
         GMX_THROW(InternalError("Could not get OpenCL program binary, error was " + ocl_get_error_string(cl_error)));
@@ -179,5 +179,5 @@ writeBinaryToCache(cl_program program, const std::string &filename)
     fwrite(binary, 1, fileSize, f.get());
 }
 
-} // namespace
-} // namespace
+} // namespace ocl
+} // namespace gmx

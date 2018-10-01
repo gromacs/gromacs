@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,25 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
+void gmx::RangePartitioning::setAllBlocksSizeOne(int numBlocksToSet)
+{
+    if (!allBlocksHaveSizeOne())
+    {
+        clear();
+    }
+    if (numBlocksToSet < numBlocks())
+    {
+        index_.resize(numBlocksToSet + 1);
+    }
+    else if (numBlocksToSet > numBlocks())
+    {
+        for (int b = numBlocks(); b < numBlocksToSet; b++)
+        {
+            appendBlock(1);
+        }
+    }
+}
+
 void init_block(t_block *block)
 {
     block->nr           = 0;
@@ -64,7 +83,7 @@ void init_blocka(t_blocka *block)
     block->a            = nullptr;
 }
 
-t_blocka *new_blocka(void)
+t_blocka *new_blocka()
 {
     t_blocka *block;
 
@@ -76,8 +95,9 @@ t_blocka *new_blocka(void)
 
 void done_block(t_block *block)
 {
-    block->nr    = 0;
+    block->nr           = 0;
     sfree(block->index);
+    block->index        = nullptr;
     block->nalloc_index = 0;
 }
 
@@ -98,7 +118,7 @@ void stupid_fill_block(t_block *grp, int natom, gmx_bool bOneIndexGroup)
     if (bOneIndexGroup)
     {
         grp->nalloc_index = 2;
-        snew(grp->index, grp->nalloc_index);
+        srenew(grp->index, grp->nalloc_index);
         grp->index[0] = 0;
         grp->index[1] = natom;
         grp->nr       = 1;
@@ -106,8 +126,7 @@ void stupid_fill_block(t_block *grp, int natom, gmx_bool bOneIndexGroup)
     else
     {
         grp->nalloc_index = natom+1;
-        snew(grp->index, grp->nalloc_index);
-        snew(grp->index, natom+1);
+        srenew(grp->index, grp->nalloc_index);
         for (int i = 0; i <= natom; ++i)
         {
             grp->index[i] = i;
@@ -247,7 +266,7 @@ void pr_blocka(FILE *fp, int indent, const char *title, const t_blocka *block, g
         indent = pr_blocka_title(fp, indent, title, block);
         start  = 0;
         end    = start;
-        if ((ok = (block->index[start] == 0)) == 0)
+        if ((ok = static_cast<int>(block->index[start] == 0)) == 0)
         {
             fprintf(fp, "block->index[%d] should be 0\n", start);
         }

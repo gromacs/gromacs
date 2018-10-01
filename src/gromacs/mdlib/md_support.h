@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,7 +40,6 @@
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/timing/wallcycle.h"
 
-struct gmx_constr;
 struct gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct gmx_global_stat;
@@ -56,6 +55,7 @@ struct t_trxframe;
 
 namespace gmx
 {
+class Constraints;
 class MDLogger;
 class SimulationSignaller;
 }
@@ -64,6 +64,8 @@ class SimulationSignaller;
  * passed to compute_globals in md.c and global_stat.
  */
 
+/* we are initializing and not yet in the actual MD loop */
+#define CGLO_INITIALIZATION (1<<1)
 /* we are computing the kinetic energy from average velocities */
 #define CGLO_EKINAVEVEL     (1<<2)
 /* we are removing the center of mass momenta */
@@ -99,14 +101,19 @@ int check_nstglobalcomm(const gmx::MDLogger &mdlog,
  *
  * \todo This duplicates some of check_multi_int. Consolidate. */
 bool multisim_int_all_are_equal(const gmx_multisim_t *ms,
-                                gmx_int64_t           value);
+                                int64_t               value);
 
 void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
                          gmx_bool *bLastStep);
 
-/* set the lambda values at each step of mdrun when they change */
-void set_current_lambdas(gmx_int64_t step, t_lambda *fepvals, gmx_bool bRerunMD,
-                         t_trxframe *rerun_fr, t_state *state_global, t_state *state, double lam0[]);
+/* Set the lambda values in the global state from a frame read with rerun */
+void setCurrentLambdasRerun(int64_t step, const t_lambda *fepvals,
+                            const t_trxframe *rerun_fr, const double *lam0,
+                            t_state *globalState);
+
+/* Set the lambda values at each step of mdrun when they change */
+void setCurrentLambdasLocal(int64_t step, const t_lambda *fepvals,
+                            const double *lam0, t_state *state);
 
 int multisim_min(const gmx_multisim_t *ms, int nmin, int n);
 /* Set an appropriate value for n across the whole multi-simulation */
@@ -116,7 +123,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
                      t_state *state, t_mdatoms *mdatoms,
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
-                     tensor pres, rvec mu_tot, gmx_constr *constr,
+                     tensor pres, rvec mu_tot, gmx::Constraints *constr,
                      gmx::SimulationSignaller *signalCoordinator,
                      matrix box, int *totalNumberOfBondedInteractions,
                      gmx_bool *bSumEkinhOld, int flags);

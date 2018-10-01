@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,7 +74,7 @@ static gmx_bool *bPhobics(int nres, char *resnm[])
     return bb;
 }
 
-void wheel(const char *fn, int nres, char *resnm[], int r0, real rot0, char *title)
+static void wheel(const char *fn, int nres, char *resnm[], int r0, real rot0, char *title)
 {
     const real fontsize  = 16;
     const real gray      = 0.9;
@@ -113,7 +113,7 @@ void wheel(const char *fn, int nres, char *resnm[], int r0, real rot0, char *tit
     }
     ring  = (2+slen)*fontwidth;
     outer = inner+ring;
-    box   = inner*1.5+(1+(nres / 18))*ring;
+    box   = inner*1.5+(1+int{nres/18})*ring;
 
     bPh = bPhobics(nres, resnm);
 
@@ -152,7 +152,7 @@ void wheel(const char *fn, int nres, char *resnm[], int r0, real rot0, char *tit
     ps_close(out);
 }
 
-void wheel2(const char *fn, int nres, char *resnm[], real rot0, char *title)
+static void wheel2(const char *fn, int nres, char *resnm[], real rot0, char *title)
 {
     const real fontsize  = 14;
     const real gray      = 0.9;
@@ -174,7 +174,7 @@ void wheel2(const char *fn, int nres, char *resnm[], real rot0, char *title)
     fprintf(stderr, "slen = %d\n", slen);
     ring  = slen*fontwidth;
     outer = inner+ring;
-    box   = (1+(nres / (2*angle)))*outer;
+    box   = (1+gmx::exactDiv(nres, 2*angle))*outer;
 
     out = ps_open(fn, 0, 0, 2.0*box, 2.0*box);
     xc  = box;

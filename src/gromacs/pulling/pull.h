@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,22 +54,33 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/pull-params.h"
-#include "gromacs/pulling/pull_internal.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+struct ContinuationOptions;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
+struct pull_coord_work_t;
 struct pull_params_t;
 struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
+
+namespace gmx
+{
+class ForceWithVirial;
+class LocalAtomSetManager;
+}
+
+/*! \brief Returns if the pull coordinate is an angle
+ *
+ * \param[in] pcrd The pull coordinate to query the type for.
+ * \returns a boolean telling if the coordinate is of angle type.
+ */
+bool pull_coordinate_is_angletype(const t_pull_coord *pcrd);
 
 /*! \brief Returns the units of the pull coordinate.
  *
@@ -97,13 +108,11 @@ double pull_conversion_factor_internal2userinput(const t_pull_coord *pcrd);
  * \param[in,out] pull      The pull struct.
  * \param[in]     coord_ind Number of the pull coordinate.
  * \param[in]     pbc       Information structure about periodicity.
- * \param[out]    value     The value of the pull coordinate.
+ * \returns the value of the pull coordinate.
  */
-void get_pull_coord_value(struct pull_t      *pull,
-                          int                 coord_ind,
-                          const struct t_pbc *pbc,
-                          double             *value);
-
+double get_pull_coord_value(struct pull_t      *pull,
+                            int                 coord_ind,
+                            const struct t_pbc *pbc);
 
 /*! \brief Registers the provider of an external potential for a coordinate.
  *
@@ -121,6 +130,8 @@ void get_pull_coord_value(struct pull_t      *pull,
  * every step or calls it with incorrect forces). This registering function
  * will exit with a (release) assertion failure when used incorrely or
  * with a fatal error when the user (mdp) input in inconsistent.
+ *
+ * Thread-safe for simultaneous registration from multiple threads.
  *
  * \param[in,out] pull         The pull struct.
  * \param[in]     coord_index  The pull coordinate index to register the external potential for.
@@ -141,19 +152,17 @@ void register_external_pull_potential(struct pull_t *pull,
  * This function should be called after pull_potential has been called and,
  * obviously, before the coordinates are updated uses the forces.
  *
- * \param[in,out] pull           The pull struct.
- * \param[in]     coord_index    The pull coordinate index to set the force for.
- * \param[in]     coord_force    The scalar force for the pull coordinate.
- * \param[in]     mdatoms        Atom properties, only masses are used.
- * \param[in,out] force          The force buffer.
- * \param[in,out] virial         The virial, can be NULL.
+ * \param[in,out] pull             The pull struct.
+ * \param[in]     coord_index      The pull coordinate index to set the force for.
+ * \param[in]     coord_force      The scalar force for the pull coordinate.
+ * \param[in]     mdatoms          Atom properties, only masses are used.
+ * \param[in,out] forceWithVirial  Force and virial buffers.
  */
-void apply_external_pull_coord_force(struct pull_t   *pull,
-                                     int              coord_index,
-                                     double           coord_force,
-                                     const t_mdatoms *mdatoms,
-                                     rvec            *force,
-                                     tensor           virial);
+void apply_external_pull_coord_force(struct pull_t        *pull,
+                                     int                   coord_index,
+                                     double                coord_force,
+                                     const t_mdatoms      *mdatoms,
+                                     gmx::ForceWithVirial *forceWithVirial);
 
 
 /*! \brief Set the all the pull forces to zero.
@@ -172,15 +181,14 @@ void clear_pull_forces(struct pull_t *pull);
  * \param[in]     t      Time.
  * \param[in]     lambda The value of lambda in FEP calculations.
  * \param[in]     x      Positions.
- * \param[in]     f      Forces.
- * \param[in,out] vir    The virial, which, if != NULL, gets a pull correction.
+ * \param[in,out] force  Forces and virial.
  * \param[out] dvdlambda Pull contribution to dV/d(lambda).
  *
  * \returns The pull potential energy.
  */
-real pull_potential(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
-                    t_commrec *cr, double t, real lambda,
-                    rvec *x, rvec *f, tensor vir, real *dvdlambda);
+real pull_potential(struct pull_t *pull, const t_mdatoms *md, struct t_pbc *pbc,
+                    const t_commrec *cr, double t, real lambda,
+                    const rvec *x, gmx::ForceWithVirial *force, real *dvdlambda);
 
 
 /*! \brief Constrain the coordinates xp in the directions in x
@@ -197,8 +205,8 @@ real pull_potential(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
  * \param[in,out] v      Velocities, which may get a pull correction.
  * \param[in,out] vir    The virial, which, if != NULL, gets a pull correction.
  */
-void pull_constraint(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
-                     t_commrec *cr, double dt, double t,
+void pull_constraint(struct pull_t *pull, const t_mdatoms *md, struct t_pbc *pbc,
+                     const t_commrec *cr, double dt, double t,
                      rvec *x, rvec *xp, rvec *v, tensor vir);
 
 
@@ -207,10 +215,8 @@ void pull_constraint(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
  *
  * \param cr             Structure for communication info.
  * \param pull           The pull group.
- * \param md             All atoms.
  */
-void dd_make_local_pull_groups(t_commrec *cr,
-                               struct pull_t *pull, t_mdatoms *md);
+void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull);
 
 
 /*! \brief Allocate, initialize and return a pull work struct.
@@ -218,28 +224,35 @@ void dd_make_local_pull_groups(t_commrec *cr,
  * \param fplog       General output file, normally md.log.
  * \param pull_params The pull input parameters containing all pull settings.
  * \param ir          The inputrec.
- * \param nfile       Number of files.
- * \param fnm         Standard filename struct.
  * \param mtop        The topology of the whole system.
  * \param cr          Struct for communication info.
- * \param oenv        Output options.
+ * \param atomSets    The manager that handles the pull atom sets
  * \param lambda      FEP lambda.
- * \param bOutFile    Open output files?
- * \param Flags       Flags passed over from main, used to determine
- *                    whether or not we are appending.
  */
-struct pull_t *init_pull(FILE                   *fplog,
-                         const pull_params_t    *pull_params,
-                         const t_inputrec       *ir,
-                         int                     nfile,
-                         const t_filenm          fnm[],
-                         const gmx_mtop_t       *mtop,
-                         t_commrec             * cr,
-                         const gmx_output_env_t *oenv,
-                         real                    lambda,
-                         gmx_bool                bOutFile,
-                         unsigned long           Flags);
+struct pull_t *init_pull(FILE                      *fplog,
+                         const pull_params_t       *pull_params,
+                         const t_inputrec          *ir,
+                         const gmx_mtop_t          *mtop,
+                         const t_commrec           *cr,
+                         gmx::LocalAtomSetManager  *atomSets,
+                         real                       lambda);
 
+/*! \brief Set up and open the pull output files, when requested.
+ *
+ * NOTE: This should only be called on the master rank and only when
+ *       doing dynamics (e.g. not with energy minimization).
+ *
+ * \param pull        The pull work data struct
+ * \param nfile       Number of files.
+ * \param fnm         Standard filename struct.
+ * \param oenv        Output options.
+ * \param continuationOptions  Options for continuing from checkpoint file
+ */
+void init_pull_output_files(pull_t                    *pull,
+                            int                        nfile,
+                            const t_filenm             fnm[],
+                            const gmx_output_env_t    *oenv,
+                            const ContinuationOptions &continuationOptions);
 
 /*! \brief Close the pull output files.
  *
@@ -254,7 +267,7 @@ void finish_pull(struct pull_t *pull);
  * \param step     Time step number.
  * \param time     Time.
  */
-void pull_print_output(struct pull_t *pull, gmx_int64_t step, double time);
+void pull_print_output(struct pull_t *pull, int64_t step, double time);
 
 
 /*! \brief Calculates centers of mass all pull groups.
@@ -268,14 +281,65 @@ void pull_print_output(struct pull_t *pull, gmx_int64_t step, double time);
  * \param[in,out] xp   Updated x, can be NULL.
  *
  */
-void pull_calc_coms(t_commrec        *cr,
-                    struct pull_t    *pull,
-                    t_mdatoms        *md,
-                    struct t_pbc     *pbc,
-                    double            t,
-                    rvec              x[],
-                    rvec             *xp);
+void pull_calc_coms(const t_commrec *cr,
+                    pull_t          *pull,
+                    const t_mdatoms *md,
+                    t_pbc           *pbc,
+                    double           t,
+                    const rvec       x[],
+                    rvec            *xp);
 
+/*! \brief Margin for checking pull group PBC distances compared to half the box size */
+static constexpr real c_pullGroupPbcMargin = 0.9;
+
+/*! \brief Checks whether all groups that use a reference atom are within PBC restrictions
+ *
+ * Groups that use a reference atom for determining PBC should have all their
+ * atoms within half the box size from the PBC atom. The box size is used
+ * per dimension for rectangular boxes, but can be a combination of
+ * dimensions for triclinic boxes, depending on which dimensions are
+ * involved in the pull coordinates a group is involved in. A margin is specified
+ * to ensure that atoms are not too close to the maximum distance.
+ *
+ * Should be called without MPI parallelization and after pull_calc_coms()
+ * has been called at least once.
+ *
+ * \param[in] pull       The pull data structure
+ * \param[in] x          The coordinates
+ * \param[in] pbc        Information struct about periodicity
+ * \param[in] pbcMargin  The minimum margin (as a fraction) to half the box size
+ * \returns -1 when all groups obey PBC or the first group index that fails PBC
+ */
+int pullCheckPbcWithinGroups(const pull_t &pull,
+                             const rvec   *x,
+                             const t_pbc  &pbc,
+                             real          pbcMargin);
+
+/*! \brief Checks whether a specific group that uses a reference atom is within PBC restrictions
+ *
+ * Groups that use a reference atom for determining PBC should have all their
+ * atoms within half the box size from the PBC atom. The box size is used
+ * per dimension for rectangular boxes, but can be a combination of
+ * dimensions for triclinic boxes, depending on which dimensions are
+ * involved in the pull coordinates a group is involved in. A margin is specified
+ * to ensure that atoms are not too close to the maximum distance. Only one group is
+ * checked.
+ *
+ * Should be called without MPI parallelization and after pull_calc_coms()
+ * has been called at least once.
+ *
+ * \param[in] pull       The pull data structure
+ * \param[in] x          The coordinates
+ * \param[in] pbc        Information struct about periodicity
+ * \param[in] groupNr    The index of the group (in pull.group[]) to check
+ * \param[in] pbcMargin  The minimum margin (as a fraction) to half the box size
+ * \returns true if the group obeys PBC otherwise false
+ */
+bool pullCheckPbcWithinGroup(const pull_t                  &pull,
+                             gmx::ArrayRef<const gmx::RVec> x,
+                             const t_pbc                   &pbc,
+                             int                            groupNr,
+                             real                           pbcMargin);
 
 /*! \brief Returns if we have pull coordinates with potential pulling.
  *
@@ -303,9 +367,5 @@ gmx_bool pull_have_constraint(const struct pull_t *pull);
  */
 real max_pull_distance2(const pull_coord_work_t *pcrd,
                         const t_pbc             *pbc);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

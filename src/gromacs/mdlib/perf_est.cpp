@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -171,8 +171,7 @@ void count_bonded_distances(const gmx_mtop_t *mtop, const t_inputrec *ir,
 {
     gmx_bool       bExcl;
     double         nonsimd_step_frac;
-    int            mb, nmol, ftype;
-    gmx_moltype_t *molt;
+    int            ftype;
     double         ndtot_c, ndtot_simd;
 #if GMX_SIMD_HAVE_REAL
     gmx_bool       bSimdBondeds = TRUE;
@@ -211,13 +210,9 @@ void count_bonded_distances(const gmx_mtop_t *mtop, const t_inputrec *ir,
      */
     ndtot_c    = 0;
     ndtot_simd = 0;
-#if defined _ICC && __ICC == 1400 || defined __ICL && __ICL == 1400
-#pragma novector /* Work-around for incorrect vectorization */
-#endif
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        molt = &mtop->moltype[mtop->molblock[mb].type];
-        nmol = mtop->molblock[mb].nmol;
+        const gmx_moltype_t *molt = &mtop->moltype[molb.type];
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
             int nbonds;
@@ -251,14 +246,14 @@ void count_bonded_distances(const gmx_mtop_t *mtop, const t_inputrec *ir,
                         nd_c    = NRAL(ftype) - 1;
                         break;
                 }
-                nbonds      = nmol*molt->ilist[ftype].nr/(1 + NRAL(ftype));
+                nbonds      = molb.nmol*molt->ilist[ftype].size()/(1 + NRAL(ftype));
                 ndtot_c    += nbonds*nd_c;
                 ndtot_simd += nbonds*nd_simd;
             }
         }
         if (bExcl)
         {
-            ndtot_c += nmol*(molt->excls.nra - molt->atoms.nr)/2;
+            ndtot_c += molb.nmol*(molt->excls.nra - molt->atoms.nr)/2.;
         }
     }
 
@@ -283,13 +278,10 @@ static void pp_group_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
                           double *cost_pp,
                           gmx_bool *bChargePerturbed, gmx_bool *bTypePerturbed)
 {
-    t_atom        *atom;
-    int            mb, nmol, atnr, cg, a, a0, ncqlj, ncq, nclj;
+    int            atnr, cg, a0, ncqlj, ncq, nclj;
     gmx_bool       bBHAM, bLJcut, bWater, bQ, bLJ;
     int            nw, nqlj, nq, nlj;
     double         fq, fqlj, flj, fqljw, fqw;
-    t_iparams     *iparams;
-    gmx_moltype_t *molt;
 
     bBHAM = (mtop->ffparams.functype[0] == F_BHAM);
 
@@ -309,7 +301,7 @@ static void pp_group_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
     /* Cost of 1 water with one Q atom or with 1/3 water (LJ negligible) */
     fqw   = c_group_qw;
 
-    iparams           = mtop->ffparams.iparams;
+    gmx::ArrayRef<const t_iparams> iparams = mtop->ffparams.iparams;
     atnr              = mtop->ffparams.atnr;
     nw                = 0;
     nqlj              = 0;
@@ -317,12 +309,11 @@ static void pp_group_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
     nlj               = 0;
     *bChargePerturbed = FALSE;
     *bTypePerturbed   = FALSE;
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        molt = &mtop->moltype[mtop->molblock[mb].type];
-        atom = molt->atoms.atom;
-        nmol = mtop->molblock[mb].nmol;
-        a    = 0;
+        const gmx_moltype_t *molt = &mtop->moltype[molb.type];
+        const t_atom        *atom = molt->atoms.atom;
+        int                  a    = 0;
         for (cg = 0; cg < molt->cgs.nr; cg++)
         {
             bWater = !bBHAM;
@@ -370,13 +361,13 @@ static void pp_group_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
             }
             if (bWater)
             {
-                nw   += nmol;
+                nw   += molb.nmol;
             }
             else
             {
-                nqlj += nmol*ncqlj;
-                nq   += nmol*ncq;
-                nlj  += nmol*nclj;
+                nqlj += molb.nmol*ncqlj;
+                nq   += molb.nmol*ncq;
+                nlj  += molb.nmol*nclj;
             }
         }
     }
@@ -410,11 +401,8 @@ static void pp_verlet_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
                            double *cost_pp,
                            gmx_bool *bChargePerturbed, gmx_bool *bTypePerturbed)
 {
-    t_atom        *atom;
-    int            mb, nmol, atnr, a, nqlj, nq, nlj;
+    int            atnr, a, nqlj, nq, nlj;
     gmx_bool       bQRF;
-    t_iparams     *iparams;
-    gmx_moltype_t *molt;
     real           r_eff;
     double         c_qlj, c_q, c_lj;
     double         nppa;
@@ -430,17 +418,16 @@ static void pp_verlet_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
 
     bQRF = (EEL_RF(ir->coulombtype) || ir->coulombtype == eelCUT);
 
-    iparams           = mtop->ffparams.iparams;
+    gmx::ArrayRef<const t_iparams> iparams = mtop->ffparams.iparams;
     atnr              = mtop->ffparams.atnr;
     nqlj              = 0;
     nq                = 0;
     *bChargePerturbed = FALSE;
     *bTypePerturbed   = FALSE;
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        molt = &mtop->moltype[mtop->molblock[mb].type];
-        atom = molt->atoms.atom;
-        nmol = mtop->molblock[mb].nmol;
+        const gmx_moltype_t *molt = &mtop->moltype[molb.type];
+        const t_atom        *atom = molt->atoms.atom;
         for (a = 0; a < molt->atoms.nr; a++)
         {
             if (atom[a].q != 0 || atom[a].qB != 0)
@@ -448,11 +435,11 @@ static void pp_verlet_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
                 if (iparams[(atnr+1)*atom[a].type].lj.c6  != 0 ||
                     iparams[(atnr+1)*atom[a].type].lj.c12 != 0)
                 {
-                    nqlj += nmol;
+                    nqlj += molb.nmol;
                 }
                 else
                 {
-                    nq += nmol;
+                    nq += molb.nmol;
                 }
             }
             if (atom[a].q != atom[a].qB)
@@ -558,9 +545,12 @@ float pme_load_estimate(const gmx_mtop_t *mtop, const t_inputrec *ir,
     cost_fft    = 0;
     cost_solve  = 0;
 
+    int gridNkzFactor = int{
+        (ir->nkz + 1)/2
+    };
     if (EEL_PME(ir->coulombtype))
     {
-        double grid = ir->nkx*ir->nky*((ir->nkz + 1)/2);
+        double grid = ir->nkx*ir->nky*gridNkzFactor;
 
         int    f     = ((ir->efep != efepNO && bChargePerturbed) ? 2 : 1);
         cost_redist +=   c_pme_redist*nq_tot;
@@ -571,7 +561,7 @@ float pme_load_estimate(const gmx_mtop_t *mtop, const t_inputrec *ir,
 
     if (EVDW_PME(ir->vdwtype))
     {
-        double grid = ir->nkx*ir->nky*((ir->nkz + 1)/2);
+        double grid = ir->nkx*ir->nky*gridNkzFactor;
 
         int    f     = ((ir->efep != efepNO && bTypePerturbed) ? 2 : 1);
         if (ir->ljpme_combination_rule == eljpmeLB)

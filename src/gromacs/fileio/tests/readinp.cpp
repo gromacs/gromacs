@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,94 +56,81 @@ namespace testing
 class ReadTest : public ::testing::Test
 {
     public:
-        ReadTest() : numInputs_(1),
-                     inputField_(nullptr),
-                     inpGuard_(),
-                     wi_(),
-                     wiGuard_()
+        ReadTest() : inputField_ {{(t_inpfile(0, 0, false, false, false, "test", ""))}},
+        wi_()
+
         {
-            snew(inputField_, numInputs_);
-            inpGuard_.reset(inputField_);
-
-            inputField_[0].count     = 0;
-            inputField_[0].bObsolete = FALSE;
-            inputField_[0].bSet      = FALSE;
-            inputField_[0].name      = (char *) "test";
-            inputField_[0].inp_count = 0;
-
             wi_ = init_warning(FALSE, 0);
             wiGuard_.reset(wi_);
         }
 
-        int                                            numInputs_;
-        t_inpfile                                     *inputField_;
-        gmx::unique_cptr<t_inpfile>                    inpGuard_;
+        std::vector<t_inpfile>                         inputField_;
         warninp_t                                      wi_;
         gmx::unique_cptr<struct warninp, free_warning> wiGuard_;
 };
 
 TEST_F(ReadTest, get_eint_ReadsInteger)
 {
-    inputField_[0].value = (char *) "1";
-    ASSERT_EQ(1, get_eint(&numInputs_, &inputField_, "test", 2, wi_));
+    inputField_.front().value_.assign("1");
+    ASSERT_EQ(1, get_eint(&inputField_, "test", 2, wi_));
     ASSERT_FALSE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_eint_WarnsAboutFloat)
 {
-    inputField_[0].value = (char *) "0.8";
-    get_eint(&numInputs_, &inputField_, "test", 2, wi_);
+    inputField_.front().value_.assign("0.8");
+    get_eint(&inputField_, "test", 2, wi_);
     ASSERT_TRUE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_eint_WarnsAboutString)
 {
-    inputField_[0].value = (char *) "hello";
-    get_eint(&numInputs_, &inputField_, "test", 2, wi_);
+    inputField_.front().value_.assign("hello");
+    get_eint(&inputField_, "test", 2, wi_);
     ASSERT_TRUE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_eint64_ReadsInteger)
 {
-    inputField_[0].value = (char *) "1";
-    ASSERT_EQ(1, get_eint64(&numInputs_, &inputField_, "test", 2, wi_));
+    inputField_.front().value_.assign("1");
+    ASSERT_EQ(1, get_eint64(&inputField_, "test", 2, wi_));
     ASSERT_FALSE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_eint64_WarnsAboutFloat)
 {
-    inputField_[0].value = (char *) "0.8";
-    get_eint64(&numInputs_, &inputField_, "test", 2, wi_);
+    inputField_.front().value_.assign("0.8");
+    get_eint64(&inputField_, "test", 2, wi_);
     ASSERT_TRUE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_eint64_WarnsAboutString)
 {
-    inputField_[0].value = (char *) "hello";
-    get_eint64(&numInputs_, &inputField_, "test", 2, wi_);
+    inputField_.front().value_.assign("hello");
+    get_eint64(&inputField_, "test", 2, wi_);
     ASSERT_TRUE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_ereal_ReadsInteger)
 {
-    inputField_[0].value = (char *) "1";
-    ASSERT_EQ(1, get_ereal(&numInputs_, &inputField_, "test", 2, wi_));
+    inputField_.front().value_.assign("1");
+    ASSERT_EQ(1, get_ereal(&inputField_, "test", 2, wi_));
     ASSERT_FALSE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_ereal_ReadsFloat)
 {
-    inputField_[0].value = (char *) "0.8";
-    ASSERT_EQ(0.8, get_ereal(&numInputs_, &inputField_, "test", 2, wi_));
+    inputField_.front().value_.assign("0.8");
+    ASSERT_EQ(0.8, get_ereal(&inputField_, "test", 2, wi_));
     ASSERT_FALSE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_ereal_WarnsAboutString)
 {
-    inputField_[0].value = (char *) "hello";
-    get_ereal(&numInputs_, &inputField_, "test", 2, wi_);
+    inputField_.front().value_.assign("hello");
+    get_ereal(&inputField_, "test", 2, wi_);
     ASSERT_TRUE(warning_errors_exist(wi_));
 }
 
-} // namespace
-} // namespace
+}  // namespace testing
+}  // namespace gmx

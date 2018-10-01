@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlineparser.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helptopic.h"
@@ -100,8 +101,8 @@ class RootHelpTopic : public AbstractCompositeHelpTopic
         {
         }
 
-        virtual const char *name() const;
-        virtual const char *title() const { return title_.c_str(); }
+        const char *name() const override;
+        const char *title() const override { return title_.c_str(); }
 
         //! Adds a top-level topic and optionally marks it as exported.
         void addTopic(HelpTopicPointer topic, bool bExported)
@@ -115,11 +116,11 @@ class RootHelpTopic : public AbstractCompositeHelpTopic
         //! Exports all the top-level topics with the given exporter.
         void exportHelp(IHelpExport *exporter);
 
-        virtual void writeHelp(const HelpWriterContext &context) const;
+        void writeHelp(const HelpWriterContext &context) const override;
 
     private:
         // unused because of the writeHelp() override
-        virtual std::string helpText() const { return ""; }
+        std::string helpText() const override { return ""; }
 
         CommandLineHelpContext createContext(const HelpWriterContext &context) const;
 
@@ -182,7 +183,7 @@ class IHelpExport
         //! Shorthand for a list of modules contained in a group.
         typedef CommandLineModuleGroupData::ModuleList ModuleGroupContents;
 
-        virtual ~IHelpExport() {};
+        virtual ~IHelpExport() {}
 
         /*! \brief
          * Called once before exporting individual modules.
@@ -295,7 +296,7 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
         cmdlineContext.setModuleDisplayName(helpModule_.binaryName_);
         optionsHolder.initOptions();
         Options                    &options = *optionsHolder.options();
-        ConstArrayRef<const char *> helpText;
+        ArrayRef<const char *const> helpText;
         if (context.outputFormat() != eHelpOutputFormat_Console)
         {
             helpText = RootHelpText::text;
@@ -365,15 +366,15 @@ class CommandsHelpTopic : public IHelpTopic
         {
         }
 
-        virtual const char *name() const { return "commands"; }
-        virtual const char *title() const { return "List of available commands"; }
-        virtual bool hasSubTopics() const { return false; }
-        virtual const IHelpTopic *findSubTopic(const char * /*name*/) const
+        const char *name() const override { return "commands"; }
+        const char *title() const override { return "List of available commands"; }
+        bool hasSubTopics() const override { return false; }
+        const IHelpTopic *findSubTopic(const char * /*name*/) const override
         {
             return nullptr;
         }
 
-        virtual void writeHelp(const HelpWriterContext &context) const;
+        void writeHelp(const HelpWriterContext &context) const override;
 
     private:
         const CommandLineHelpModuleImpl &helpModule_;
@@ -447,14 +448,14 @@ class ModuleHelpTopic : public IHelpTopic
         {
         }
 
-        virtual const char *name() const { return module_.name(); }
-        virtual const char *title() const { return nullptr; }
-        virtual bool hasSubTopics() const { return false; }
-        virtual const IHelpTopic *findSubTopic(const char * /*name*/) const
+        const char *name() const override { return module_.name(); }
+        const char *title() const override { return nullptr; }
+        bool hasSubTopics() const override { return false; }
+        const IHelpTopic *findSubTopic(const char * /*name*/) const override
         {
             return nullptr;
         }
-        virtual void writeHelp(const HelpWriterContext &context) const;
+        void writeHelp(const HelpWriterContext &context) const override;
 
     private:
         const ICommandLineModule         &module_;
@@ -521,23 +522,23 @@ class HelpExportReStructuredText : public IHelpExport
             const CommandLineHelpModuleImpl &helpModule,
             IFileOutputRedirector           *outputRedirector);
 
-        virtual void startModuleExport();
-        virtual void exportModuleHelp(
+        void startModuleExport() override;
+        void exportModuleHelp(
             const ICommandLineModule         &module,
             const std::string                &tag,
-            const std::string                &displayName);
-        virtual void finishModuleExport();
+            const std::string                &displayName) override;
+        void finishModuleExport() override;
 
-        virtual void startModuleGroupExport();
-        virtual void exportModuleGroup(const char                *title,
-                                       const ModuleGroupContents &modules);
-        virtual void finishModuleGroupExport();
+        void startModuleGroupExport() override;
+        void exportModuleGroup(const char                *title,
+                               const ModuleGroupContents &modules) override;
+        void finishModuleGroupExport() override;
 
-        virtual void exportTopic(const IHelpTopic &topic);
+        void exportTopic(const IHelpTopic &topic) override;
 
     private:
         IFileOutputRedirector          *outputRedirector_;
-        const std::string              &binaryName_;
+        const std::string              &binaryName_; //NOLINT(google-runtime-member-string-references)
         HelpLinks                       links_;
         // These never release ownership.
         std::unique_ptr<TextWriter>     indexFile_;
@@ -553,7 +554,8 @@ HelpExportReStructuredText::HelpExportReStructuredText(
 {
     TextReader   linksFile("links.dat");
     std::string  line;
-    while (linksFile.readLineTrimmed(&line))
+    linksFile.setTrimTrailingWhiteSpace(true);
+    while (linksFile.readLine(&line))
     {
         links_.addLink("[REF]." + line + "[ref]",
                        formatString(":ref:`.%s <%s>`", line.c_str(), line.c_str()),
@@ -566,15 +568,13 @@ HelpExportReStructuredText::HelpExportReStructuredText(
 
 void HelpExportReStructuredText::startModuleExport()
 {
-    indexFile_.reset(
-            new TextWriter(
-                    outputRedirector_->openTextOutputFile("fragments/byname.rst")));
+    indexFile_ = compat::make_unique<TextWriter>(
+                outputRedirector_->openTextOutputFile("fragments/byname.rst"));
     indexFile_->writeLine(formatString("* :doc:`%s </onlinehelp/%s>` - %s",
                                        binaryName_.c_str(), binaryName_.c_str(),
                                        RootHelpText::title));
-    manPagesFile_.reset(
-            new TextWriter(
-                    outputRedirector_->openTextOutputFile("conf-man.py")));
+    manPagesFile_ = compat::make_unique<TextWriter>(
+                outputRedirector_->openTextOutputFile("conf-man.py"));
     manPagesFile_->writeLine("man_pages = [");
 }
 
@@ -587,7 +587,7 @@ void HelpExportReStructuredText::exportModuleHelp(
         = outputRedirector_->openTextOutputFile("onlinehelp/" + tag + ".rst");
     TextWriter              writer(file);
     writer.writeLine(formatString(".. _%s:", displayName.c_str()));
-    if (0 == displayName.compare(binaryName_ + " mdrun"))
+    if (displayName == binaryName_ + " mdrun")
     {
         // Make an extra link target for the convenience of
         // MPI-specific documentation
@@ -635,12 +635,10 @@ void HelpExportReStructuredText::finishModuleExport()
 
 void HelpExportReStructuredText::startModuleGroupExport()
 {
-    indexFile_.reset(
-            new TextWriter(
-                    outputRedirector_->openTextOutputFile("fragments/bytopic.rst")));
-    manPagesFile_.reset(
-            new TextWriter(
-                    outputRedirector_->openTextOutputFile("fragments/bytopic-man.rst")));
+    indexFile_ = compat::make_unique<TextWriter>(
+                outputRedirector_->openTextOutputFile("fragments/bytopic.rst"));
+    manPagesFile_ = compat::make_unique<TextWriter>(
+                outputRedirector_->openTextOutputFile("fragments/bytopic-man.rst"));
 }
 
 void HelpExportReStructuredText::exportModuleGroup(
@@ -708,19 +706,19 @@ class HelpExportCompletion : public IHelpExport
         //! Initializes completion exporter.
         explicit HelpExportCompletion(const CommandLineHelpModuleImpl &helpModule);
 
-        virtual void startModuleExport();
-        virtual void exportModuleHelp(
+        void startModuleExport() override;
+        void exportModuleHelp(
             const ICommandLineModule         &module,
             const std::string                &tag,
-            const std::string                &displayName);
-        virtual void finishModuleExport();
+            const std::string                &displayName) override;
+        void finishModuleExport() override;
 
-        virtual void startModuleGroupExport() {}
-        virtual void exportModuleGroup(const char                * /*title*/,
-                                       const ModuleGroupContents & /*modules*/) {}
-        virtual void finishModuleGroupExport() {}
+        void startModuleGroupExport() override {}
+        void exportModuleGroup(const char                * /*title*/,
+                               const ModuleGroupContents & /*modules*/) override {}
+        void finishModuleGroupExport() override {}
 
-        virtual void exportTopic(const IHelpTopic & /*topic*/) {}
+        void exportTopic(const IHelpTopic & /*topic*/) override {}
 
     private:
         ShellCompletionWriter    bashWriter_;
@@ -844,8 +842,8 @@ class ModificationCheckingFileOutputStream : public TextOutputStream
         {
         }
 
-        virtual void write(const char *str) { contents_.write(str); }
-        virtual void close()
+        void write(const char *str) override { contents_.write(str); }
+        void close() override
         {
             const std::string &newContents = contents_.toString();
             // TODO: Redirect these for unit tests.
@@ -881,11 +879,11 @@ class ModificationCheckingFileOutputRedirector : public IFileOutputRedirector
         {
         }
 
-        virtual TextOutputStream &standardOutput()
+        TextOutputStream &standardOutput() override
         {
             return redirector_->standardOutput();
         }
-        virtual TextOutputStreamPointer openTextOutputFile(const char *filename)
+        TextOutputStreamPointer openTextOutputFile(const char *filename) override
         {
             return TextOutputStreamPointer(
                     new ModificationCheckingFileOutputStream(filename, redirector_));
@@ -952,7 +950,7 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     Options           options;
     options.addOption(StringOption("export").store(&exportFormat)
                           .enumValue(exportFormats));
-    CommandLineParser(&options).parse(&argc, argv);
+    CommandLineParser(&options).allowPositionalArguments(true).parse(&argc, argv);
     if (!exportFormat.empty())
     {
         ModificationCheckingFileOutputRedirector redirector(impl_->outputRedirector_);

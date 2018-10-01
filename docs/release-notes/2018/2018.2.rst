@@ -1,0 +1,168 @@
+GROMACS 2018.2 release notes
+----------------------------
+
+This version was released on June 14, 2018. These release notes document
+the changes that have taken place in GROMACS since version 2018.1, to fix known
+issues. It also incorporates all fixes made in version 2016.5 and
+earlier, which you can find described in the :ref:`release-notes`.
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Prevented OpenCL timing memory leak
+"""""""""""""""""""""""""""""""""""
+
+When using OpenCL builds and timing, a memory leak would lead to all system memory being used up.
+
+:issue:`2470`
+
+Fixed MPI error after constraint failure during energy minimization
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2540`
+
+Fixed moving frozen atoms with constraints
+""""""""""""""""""""""""""""""""""""""""""
+
+Frozen atoms which also had bond constraints could move.
+
+:issue:`2542`
+
+Fixed COM removal moving frozen atoms
+"""""""""""""""""""""""""""""""""""""
+
+When frozen atoms were part of center of mass motion removal groups,
+they could accumulate momentum and move.
+
+:issue:`2551`
+
+Fixed AWH too infrequent checks for covering
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+For multidimensional AWH grids with many points relative to the number
+of samples required for covering the grid, the detection of covering
+could be delayed because of too infrequent checks.
+
+:issue:`2487`
+
+Fixed AWH continuation consistency checks
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Some kinds of changes upon restarts are now disallowed, as intended.
+
+Fixed AWH awh-nsamples-update value checking
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Zero is now forbidden, as intended.
+
+:issue:`2489`
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed buffer overflow in grompp warnings
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When grompp issued a warning or error with a filename/path of more than
+255 characters, a buffer overflow would occur. This could also happens
+during make check/test.
+
+:issue:`2465`
+
+Fixed infinite loop in gmx solvate
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When provided with a PDB file that had no box information for the solvent,
+gmx solvate could be stuck in an infinite loop.
+Fixed by disallowing empty boxes for solvent PDB files.
+
+:issue:`2523`
+
+Fixed enemat when the .edr file had no matching energy groups
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2508`
+
+Fixed PQR file output
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+PQR files from gmx editconf violated the standard for the format because
+they were always written in fixed format. This commit fixes the issue by
+introducing a different output method for PQR files that follows the
+standard.
+
+:issue:`2511`
+
+Fixed crash in gmx solvate
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+gmx solvate would crash due to memory corruption when using multiple solvent
+molecule types.
+
+Added check for unallowed periodic setups
+"""""""""""""""""""""""""""""""""""""""""
+
+Long distances between atoms in bonded interactions could lead to incorrect
+periodicity removal. In such cases an inconsistent shift message was printed,
+but the run or analysis was not terminated and other, confusing, errors
+could be issued. Now an informative fatal error is issued.
+
+:issue:`2549`
+
+Fixes to improve portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed CUDA compilation on Windows.
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2509`
+
+Fixed SIMD support for POWER systems in double precision with gcc 8
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2421`
+
+
+Fixed possible illegal instruction on KNL with Intel compiler
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2504`
+
+Miscellaneous
+^^^^^^^^^^^^^
+
+Information message about OMP_NUM_THREADS now sent to log file
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Made it easier to track this information by writing it to the log file
+in a clear way, rather than to stderr.
+
+:issue:`2472`
+
+Fixed inadvertent disabling of SIMD version of the integrator
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed a bug so the SIMD version of the leap-frog integrator is chosen,
+when possible. This may improve performance.
+
+:issue:`2497`
+
+Fixed own FFTW builds on certain AVX2/AVX512 hardware
+"""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Version 3.3.8 of FFTW fixes some known gcc-8 errors for AVX2 by removing the 
+fast-math flag, and it also appears to fix an issue with failed unit tests on
+AVX512-capable hardware, so we have bumped the version we download to 3.3.8.
+
+:issue:`2541`
+
+Switched to using more standard CMake variables for installing on GNU systems
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+GnuInstallDirs.cmake is a better approach.
+
+Several documentation and output improvements
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+* Updated top-level README file for latest GROMACS core publication.
+* Reporting about GPU detection has improved.
+* ``gmx mindist -pi`` docs improved.
+* Docs for mdp options relating to bonds improved.
+* Fixed various typos.
+* Removed a leftover mention of the twin-range scheme.
+* `gmx trjconv -ndec`` docs improved.

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/ivaluestore.h"
 #include "gromacs/utility/arrayref.h"
@@ -101,8 +102,8 @@ class BooleanOption : public OptionTemplate<bool, BooleanOption>
 
     private:
         //! Creates a BooleanOptionStorage object.
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer &managers) const;
+        AbstractOptionStorage *createStorage(
+            const OptionManagerContainer &managers) const override;
 };
 
 /*! \brief
@@ -144,8 +145,8 @@ class IntegerOption : public OptionTemplate<int, IntegerOption>
 
     private:
         //! Creates an IntegerOptionStorage object.
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer &managers) const;
+        AbstractOptionStorage *createStorage(
+            const OptionManagerContainer &managers) const override;
 
         /*! \brief
          * Needed to initialize IntegerOptionStorage from this class without
@@ -163,7 +164,7 @@ class IntegerOption : public OptionTemplate<int, IntegerOption>
  *
  * \inpublicapi
  */
-class Int64Option : public OptionTemplate<gmx_int64_t, Int64Option>
+class Int64Option : public OptionTemplate<int64_t, Int64Option>
 {
     public:
         //! OptionInfo subclass corresponding to this option type.
@@ -174,8 +175,8 @@ class Int64Option : public OptionTemplate<gmx_int64_t, Int64Option>
 
     private:
         //! Creates an Int64OptionStorage object.
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer &managers) const;
+        AbstractOptionStorage *createStorage(
+            const OptionManagerContainer &managers) const override;
 
         /*! \brief
          * Needed to initialize Int64OptionStorage from this class without
@@ -220,8 +221,8 @@ class DoubleOption : public OptionTemplate<double, DoubleOption>
 
     private:
         //! Creates a DoubleOptionStorage object.
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer &managers) const;
+        AbstractOptionStorage *createStorage(
+            const OptionManagerContainer &managers) const override;
 
         bool bTime_;
 
@@ -259,8 +260,8 @@ class FloatOption : public OptionTemplate<float, FloatOption>
 
     private:
         //! Creates a FloatOptionStorage object.
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer &managers) const;
+        AbstractOptionStorage *createStorage(
+            const OptionManagerContainer &managers) const override;
 
         bool bTime_;
 
@@ -317,7 +318,7 @@ class StringOption : public OptionTemplate<std::string, StringOption>
         template <size_t count>
         MyClass &enumValue(const char *const (&values)[count])
         {
-            GMX_ASSERT(enumValues_ == NULL,
+            GMX_ASSERT(enumValues_ == nullptr,
                        "Multiple sets of enumerated values specified");
             enumValues_      = values;
             enumValuesCount_ = count;
@@ -337,7 +338,7 @@ class StringOption : public OptionTemplate<std::string, StringOption>
          */
         MyClass &enumValueFromNullTerminatedArray(const char *const *values)
         {
-            GMX_ASSERT(enumValues_ == NULL,
+            GMX_ASSERT(enumValues_ == nullptr,
                        "Multiple sets of enumerated values specified");
             enumValues_      = values;
             enumValuesCount_ = -1;
@@ -357,8 +358,8 @@ class StringOption : public OptionTemplate<std::string, StringOption>
 
     private:
         //! Creates a StringOptionStorage object.
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer &managers) const;
+        AbstractOptionStorage *createStorage(
+            const OptionManagerContainer &managers) const override;
 
         const char *const      *enumValues_;
         int                     enumValuesCount_;
@@ -409,9 +410,9 @@ class EnumIndexStore : public IOptionValueStore<int>
             }
         }
 
-        virtual int valueCount() { return static_cast<int>(intStore_.size()); }
-        virtual ArrayRef<int> values() { return intStore_; }
-        virtual void clear()
+        int valueCount() override { return static_cast<int>(intStore_.size()); }
+        ArrayRef<int> values() override { return intStore_; }
+        void clear() override
         {
             intStore_.clear();
             if (storeVector_ != nullptr)
@@ -419,7 +420,7 @@ class EnumIndexStore : public IOptionValueStore<int>
                 storeVector_->clear();
             }
         }
-        virtual void reserve(size_t count)
+        void reserve(size_t count) override
         {
             intStore_.reserve(intStore_.size() + count);
             if (storeVector_ != nullptr)
@@ -427,7 +428,7 @@ class EnumIndexStore : public IOptionValueStore<int>
                 storeVector_->reserve(storeVector_->size() + count);
             }
         }
-        virtual void append(const int &value)
+        void append(const int &value) override
         {
             const size_t count = intStore_.size();
             intStore_.push_back(value);
@@ -463,7 +464,7 @@ AbstractOptionStorage *
 createEnumOptionStorage(const AbstractOption &option,
                         const char *const *enumValues, int count,
                         int defaultValue, int defaultValueIfSet,
-                        IOptionValueStore<int> *store);
+                        std::unique_ptr<IOptionValueStore<int> > store);
 //! \endcond
 
 }   // namespace internal
@@ -533,7 +534,7 @@ class EnumOption : public OptionTemplate<EnumType, EnumOption<EnumType> >
         template <size_t count>
         EnumOption &enumValue(const char *const (&values)[count])
         {
-            GMX_ASSERT(enumValues_ == NULL,
+            GMX_ASSERT(enumValues_ == nullptr,
                        "Multiple sets of enumerated values specified");
             enumValues_      = values;
             enumValuesCount_ = count;
@@ -553,7 +554,7 @@ class EnumOption : public OptionTemplate<EnumType, EnumOption<EnumType> >
          */
         EnumOption &enumValueFromNullTerminatedArray(const char *const *values)
         {
-            GMX_ASSERT(enumValues_ == NULL,
+            GMX_ASSERT(enumValues_ == nullptr,
                        "Multiple sets of enumerated values specified");
             enumValues_      = values;
             enumValuesCount_ = -1;
@@ -568,15 +569,15 @@ class EnumOption : public OptionTemplate<EnumType, EnumOption<EnumType> >
         }
 
         //! Creates a EnumOptionStorage object.
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer & /*managers*/) const
+        AbstractOptionStorage *createStorage(
+            const OptionManagerContainer & /*managers*/) const override
         {
             // TODO: Implement storeCount() if necessary.
             return internal::createEnumOptionStorage(
                     *this, enumValues_, enumValuesCount_,
                     convertToInt(MyBase::defaultValue()),
                     convertToInt(MyBase::defaultValueIfSet()),
-                    new internal::EnumIndexStore<EnumType>(
+                    compat::make_unique<internal::EnumIndexStore<EnumType> >(
                             MyBase::store(), MyBase::storeVector()));
         }
 

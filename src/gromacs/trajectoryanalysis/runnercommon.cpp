@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,12 +43,11 @@
 
 #include "runnercommon.h"
 
-#include <string.h>
+#include <cstring>
 
 #include <algorithm>
 #include <string>
 
-#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
@@ -64,6 +63,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/trajectoryanalysis/topologyinformation.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -80,7 +80,7 @@ class TrajectoryAnalysisRunnerCommon::Impl : public ITopologyProvider
 {
     public:
         explicit Impl(TrajectoryAnalysisSettings *settings);
-        ~Impl();
+        ~Impl() override;
 
         bool hasTrajectory() const { return !trjfile_.empty(); }
 
@@ -90,12 +90,12 @@ class TrajectoryAnalysisRunnerCommon::Impl : public ITopologyProvider
         void finishTrajectory();
 
         // From ITopologyProvider
-        virtual gmx_mtop_t *getTopology(bool required)
+        gmx_mtop_t *getTopology(bool required) override
         {
             initTopology(required);
-            return topInfo_.mtop_;
+            return topInfo_.mtop_.get();
         }
-        virtual int getAtomCount()
+        int getAtomCount() override
         {
             if (!topInfo_.hasTopology())
             {
@@ -180,26 +180,16 @@ TrajectoryAnalysisRunnerCommon::Impl::initTopology(bool required)
     // Load the topology if requested.
     if (!topfile_.empty())
     {
-        snew(topInfo_.mtop_, 1);
-        readConfAndTopology(topfile_.c_str(), &topInfo_.bTop_, topInfo_.mtop_,
-                            &topInfo_.ePBC_, &topInfo_.xtop_, nullptr,
-                            topInfo_.boxtop_);
-        // TODO: Only load this here if the tool actually needs it; selections
-        // take care of themselves.
-        for (int i = 0; i < topInfo_.mtop_->nmoltype; ++i)
-        {
-            gmx_moltype_t &moltype = topInfo_.mtop_->moltype[i];
-            if (!moltype.atoms.haveMass)
-            {
-                // Try to read masses from database, be silent about missing masses
-                atomsSetMassesBasedOnNames(&moltype.atoms, FALSE);
-            }
-        }
+        topInfo_.fillFromInputFile(topfile_);
         if (hasTrajectory()
             && !settings_.hasFlag(TrajectoryAnalysisSettings::efUseTopX))
         {
-            sfree(topInfo_.xtop_);
-            topInfo_.xtop_ = nullptr;
+            topInfo_.xtop_.clear();
+        }
+        if (hasTrajectory()
+            && !settings_.hasFlag(TrajectoryAnalysisSettings::efUseTopV))
+        {
+            topInfo_.vtop_.clear();
         }
     }
 }
@@ -213,7 +203,7 @@ TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
         return;
     }
     time_unit_t time_unit
-        = static_cast<time_unit_t>(settings_.timeUnit() + 1);
+        = static_cast<time_unit_t>(settings_.timeUnit() + 1); // NOLINT(bugprone-misplaced-widening-cast)
     output_env_init(&oenv_, getProgramContext(), time_unit, FALSE, exvgNONE, 0);
 
     int frflags = settings_.frflags();
@@ -231,7 +221,7 @@ TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
 
         if (topInfo_.hasTopology())
         {
-            const int topologyAtomCount = topInfo_.topology()->atoms.nr;
+            const int topologyAtomCount = topInfo_.mtop()->natoms;
             if (fr->natoms > topologyAtomCount)
             {
                 const std::string message
@@ -244,20 +234,26 @@ TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
     else
     {
         // Prepare a frame from topology information.
-        // TODO: Initialize more of the fields.
-        if (frflags & (TRX_NEED_V))
-        {
-            GMX_THROW(NotImplementedError("Velocity reading from a topology not implemented"));
-        }
         if (frflags & (TRX_NEED_F))
         {
             GMX_THROW(InvalidInputError("Forces cannot be read from a topology"));
         }
-        fr->natoms = topInfo_.topology()->atoms.nr;
+        fr->natoms = topInfo_.mtop()->natoms;
         fr->bX     = TRUE;
         snew(fr->x, fr->natoms);
-        memcpy(fr->x, topInfo_.xtop_,
+        memcpy(fr->x, topInfo_.xtop_.data(),
                sizeof(*fr->x) * fr->natoms);
+        if (frflags & (TRX_NEED_V))
+        {
+            if (topInfo_.vtop_.empty())
+            {
+                GMX_THROW(InvalidInputError("Velocities were required, but could not be read from the topology file"));
+            }
+            fr->bV = TRUE;
+            snew(fr->v, fr->natoms);
+            memcpy(fr->v, topInfo_.vtop_.data(),
+                   sizeof(*fr->v) * fr->natoms);
+        }
         fr->bBox   = TRUE;
         copy_mat(topInfo_.boxtop_, fr->box);
     }
@@ -265,8 +261,7 @@ TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
     set_trxframe_ePBC(fr, topInfo_.ePBC());
     if (topInfo_.hasTopology() && settings_.hasRmPBC())
     {
-        gpbc_ = gmx_rmpbc_init(&topInfo_.topology()->idef, topInfo_.ePBC(),
-                               fr->natoms);
+        gpbc_             = gmx_rmpbc_init(topInfo_);
     }
 }
 

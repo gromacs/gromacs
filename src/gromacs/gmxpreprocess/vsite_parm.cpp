@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,10 +38,9 @@
 
 #include "vsite_parm.h"
 
-#include <stdio.h>
-#include <string.h>
-
 #include <cmath>
+#include <cstdio>
+#include <cstring>
 
 #include <algorithm>
 
@@ -55,11 +54,12 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/strconvert.h"
 
 typedef struct {
     t_iatom  a[4];
@@ -120,7 +120,7 @@ static void enter_bonded(int nratoms, int *nrbonded, t_mybonded **bondeds,
     (*nrbonded)++;
 }
 
-static void get_bondeds(int nrat, t_iatom atoms[],
+static void get_bondeds(int nrat, const t_iatom atoms[],
                         at2vsitebond_t *at2vb,
                         int *nrbond, t_mybonded **bonds,
                         int *nrang,  t_mybonded **angles,
@@ -149,7 +149,7 @@ static void get_bondeds(int nrat, t_iatom atoms[],
 
 static at2vsitebond_t *make_at2vsitebond(int natoms, t_params plist[])
 {
-    gmx_bool       *bVSI;
+    bool           *bVSI;
     int             ftype, i, j, nrcheck, nr;
     t_iatom        *aa;
     at2vsitebond_t *at2vb;
@@ -217,7 +217,7 @@ static void done_at2vsitebond(int natoms, at2vsitebond_t *at2vb)
 
 static at2vsitecon_t *make_at2vsitecon(int natoms, t_params plist[])
 {
-    gmx_bool      *bVSI;
+    bool          *bVSI;
     int            ftype, i, j, ai, aj, nr;
     at2vsitecon_t *at2vc;
 
@@ -414,31 +414,20 @@ static char *get_atomtype_name_AB(t_atom *atom, gpp_atomtype_t atype)
     return name;
 }
 
-static gmx_bool calc_vsite3_param(gpp_atomtype_t atype,
-                                  t_param *param, t_atoms *at,
-                                  int nrbond, t_mybonded *bonds,
-                                  int nrang,  t_mybonded *angles )
+static bool calc_vsite3_param(gpp_atomtype_t atype,
+                              t_param *param, t_atoms *at,
+                              int nrbond, t_mybonded *bonds,
+                              int nrang,  t_mybonded *angles )
 {
     /* i = virtual site          |    ,k
      * j = 1st bonded heavy atom | i-j
      * k,l = 2nd bonded atoms    |    `l
      */
 
-    gmx_bool bXH3, bError;
+    bool     bXH3, bError;
     real     bjk, bjl, a = -1, b = -1;
     /* check if this is part of a NH3 , NH2-umbrella or CH3 group,
      * i.e. if atom k and l are dummy masses (MNH* or MCH3*) */
-    if (debug)
-    {
-        int i;
-        for (i = 0; i < 4; i++)
-        {
-            fprintf(debug, "atom %d type %s ",
-                    param->a[i]+1,
-                    get_atomtype_name_AB(&at->atom[param->a[i]], atype));
-        }
-        fprintf(debug, "\n");
-    }
     bXH3 =
         ( (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atype), "MNH", 3) == 0) &&
           (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atype), "MNH", 3) == 0) ) ||
@@ -502,25 +491,19 @@ static gmx_bool calc_vsite3_param(gpp_atomtype_t atype,
     param->c0() = a;
     param->c1() = b;
 
-    if (debug)
-    {
-        fprintf(debug, "params for vsite3 %d: %g %g\n",
-                param->ai()+1, param->c0(), param->c1());
-    }
-
     return bError;
 }
 
-static gmx_bool calc_vsite3fd_param(t_param *param,
-                                    int nrbond, t_mybonded *bonds,
-                                    int nrang,  t_mybonded *angles)
+static bool calc_vsite3fd_param(t_param *param,
+                                int nrbond, t_mybonded *bonds,
+                                int nrang,  t_mybonded *angles)
 {
     /* i = virtual site          |    ,k
      * j = 1st bonded heavy atom | i-j
      * k,l = 2nd bonded atoms    |    `l
      */
 
-    gmx_bool bError;
+    bool     bError;
     real     bij, bjk, bjl, aijk, aijl, rk, rl;
 
     bij    = get_bond_length(nrbond, bonds, param->ai(), param->aj());
@@ -536,17 +519,12 @@ static gmx_bool calc_vsite3fd_param(t_param *param,
     param->c0() = rk / (rk + rl);
     param->c1() = -bij; /* 'bond'-length for fixed distance vsite */
 
-    if (debug)
-    {
-        fprintf(debug, "params for vsite3fd %d: %g %g\n",
-                param->ai()+1, param->c0(), param->c1());
-    }
     return bError;
 }
 
-static gmx_bool calc_vsite3fad_param(t_param *param,
-                                     int nrbond, t_mybonded *bonds,
-                                     int nrang,  t_mybonded *angles)
+static bool calc_vsite3fad_param(t_param *param,
+                                 int nrbond, t_mybonded *bonds,
+                                 int nrang,  t_mybonded *angles)
 {
     /* i = virtual site          |
      * j = 1st bonded heavy atom | i-j
@@ -554,7 +532,7 @@ static gmx_bool calc_vsite3fad_param(t_param *param,
      * l = 3d bonded heavy atom  |
      */
 
-    gmx_bool bSwapParity, bError;
+    bool     bSwapParity, bError;
     real     bij, aijk;
 
     bSwapParity = ( param->c1() == -1 );
@@ -571,18 +549,13 @@ static gmx_bool calc_vsite3fad_param(t_param *param,
         param->c0() = 360 - param->c0();
     }
 
-    if (debug)
-    {
-        fprintf(debug, "params for vsite3fad %d: %g %g\n",
-                param->ai()+1, param->c0(), param->c1());
-    }
     return bError;
 }
 
-static gmx_bool calc_vsite3out_param(gpp_atomtype_t atype,
-                                     t_param *param, t_atoms *at,
-                                     int nrbond, t_mybonded *bonds,
-                                     int nrang,  t_mybonded *angles)
+static bool calc_vsite3out_param(gpp_atomtype_t atype,
+                                 t_param *param, t_atoms *at,
+                                 int nrbond, t_mybonded *bonds,
+                                 int nrang,  t_mybonded *angles)
 {
     /* i = virtual site          |    ,k
      * j = 1st bonded heavy atom | i-j
@@ -590,21 +563,11 @@ static gmx_bool calc_vsite3out_param(gpp_atomtype_t atype,
      * NOTE: i is out of the j-k-l plane!
      */
 
-    gmx_bool bXH3, bError, bSwapParity;
+    bool     bXH3, bError, bSwapParity;
     real     bij, bjk, bjl, aijk, aijl, akjl, pijk, pijl, a, b, c;
 
     /* check if this is part of a NH2-umbrella, NH3 or CH3 group,
      * i.e. if atom k and l are dummy masses (MNH* or MCH3*) */
-    if (debug)
-    {
-        int i;
-        for (i = 0; i < 4; i++)
-        {
-            fprintf(debug, "atom %d type %s ",
-                    param->a[i]+1, get_atomtype_name_AB(&at->atom[param->a[i]], atype));
-        }
-        fprintf(debug, "\n");
-    }
     bXH3 =
         ( (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atype), "MNH", 3) == 0) &&
           (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atype), "MNH", 3) == 0) ) ||
@@ -683,24 +646,19 @@ static gmx_bool calc_vsite3out_param(gpp_atomtype_t atype,
     {
         param->c2() =  c;
     }
-    if (debug)
-    {
-        fprintf(debug, "params for vsite3out %d: %g %g %g\n",
-                param->ai()+1, param->c0(), param->c1(), param->c2());
-    }
     return bError;
 }
 
-static gmx_bool calc_vsite4fd_param(t_param *param,
-                                    int nrbond, t_mybonded *bonds,
-                                    int nrang,  t_mybonded *angles)
+static bool calc_vsite4fd_param(t_param *param,
+                                int nrbond, t_mybonded *bonds,
+                                int nrang,  t_mybonded *angles)
 {
     /* i = virtual site          |    ,k
      * j = 1st bonded heavy atom | i-j-m
      * k,l,m = 2nd bonded atoms  |    `l
      */
 
-    gmx_bool bError;
+    bool     bError;
     real     bij, bjk, bjl, bjm, aijk, aijl, aijm, akjm, akjl;
     real     pk, pl, pm, cosakl, cosakm, sinakl, sinakm, cl, cm;
 
@@ -741,18 +699,13 @@ static gmx_bool calc_vsite4fd_param(t_param *param,
         param->c0() = cl;
         param->c1() = cm;
         param->c2() = -bij;
-        if (debug)
-        {
-            fprintf(debug, "params for vsite4fd %d: %g %g %g\n",
-                    param->ai()+1, param->c0(), param->c1(), param->c2());
-        }
     }
 
     return bError;
 }
 
 
-static gmx_bool
+static bool
 calc_vsite4fdn_param(t_param *param,
                      int nrbond, t_mybonded *bonds,
                      int nrang,  t_mybonded *angles)
@@ -762,7 +715,7 @@ calc_vsite4fdn_param(t_param *param,
      * k,l,m = 2nd bonded atoms  |    `l
      */
 
-    gmx_bool bError;
+    bool     bError;
     real     bij, bjk, bjl, bjm, aijk, aijl, aijm;
     real     pk, pl, pm, a, b;
 
@@ -804,11 +757,6 @@ calc_vsite4fdn_param(t_param *param,
         param->c1() = b;
         param->c2() = bij;
 
-        if (debug)
-        {
-            fprintf(debug, "params for vsite4fdn %d: %g %g %g\n",
-                    param->ai()+1, param->c0(), param->c1(), param->c2());
-        }
     }
 
     return bError;
@@ -816,12 +764,12 @@ calc_vsite4fdn_param(t_param *param,
 
 
 
-int set_vsites(gmx_bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
+int set_vsites(bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
                t_params plist[])
 {
     int             i, j, ftype;
     int             nvsite, nrbond, nrang, nridih, nrset;
-    gmx_bool        bFirst, bSet, bERROR;
+    bool            bFirst, bSet, bERROR;
     at2vsitebond_t *at2vb;
     t_mybonded     *bonds;
     t_mybonded     *angles;
@@ -829,10 +777,6 @@ int set_vsites(gmx_bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
 
     bFirst = TRUE;
     nvsite = 0;
-    if (debug)
-    {
-        fprintf(debug, "\nCalculating parameters for virtual sites\n");
-    }
 
     /* Make a reverse list to avoid ninteractions^2 operations */
     at2vb = make_at2vsitebond(atoms->nr, plist);
@@ -939,12 +883,7 @@ int set_vsites(gmx_bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
                     sfree(idihs);
                 } /* if bSet */
             }     /* for i */
-            if (debug && plist[ftype].nr)
-            {
-                fprintf(stderr, "Calculated parameters for %d out of %d %s atoms\n",
-                        nrset, plist[ftype].nr, interaction_function[ftype].longname);
-            }
-        } /* if IF_VSITE */
+        }         /* if IF_VSITE */
 
     }
     done_at2vsitebond(atoms->nr, at2vb);
@@ -952,29 +891,22 @@ int set_vsites(gmx_bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
     return nvsite;
 }
 
-void set_vsites_ptype(gmx_bool bVerbose, gmx_moltype_t *molt)
+void set_vsites_ptype(bool bVerbose, gmx_moltype_t *molt)
 {
     int      ftype, i;
-    int      nra, nrd;
-    t_ilist *il;
-    t_iatom *ia, avsite;
 
     if (bVerbose)
     {
         fprintf(stderr, "Setting particle type to V for virtual sites\n");
     }
-    if (debug)
-    {
-        fprintf(stderr, "checking %d functypes\n", F_NRE);
-    }
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
-        il = &molt->ilist[ftype];
+        InteractionList *il = &molt->ilist[ftype];
         if (interaction_function[ftype].flags & IF_VSITE)
         {
-            nra    = interaction_function[ftype].nratoms;
-            nrd    = il->nr;
-            ia     = il->iatoms;
+            const int                nra = interaction_function[ftype].nratoms;
+            const int                nrd = il->size();
+            gmx::ArrayRef<const int> ia  = il->iatoms;
 
             if (debug && nrd)
             {
@@ -985,11 +917,10 @@ void set_vsites_ptype(gmx_bool bVerbose, gmx_moltype_t *molt)
             for (i = 0; (i < nrd); )
             {
                 /* The virtual site */
-                avsite = ia[1];
+                int avsite = ia[i + 1];
                 molt->atoms.atom[avsite].ptype = eptVSite;
 
                 i  += nra+1;
-                ia += nra+1;
             }
         }
     }
@@ -1001,7 +932,7 @@ typedef struct {
 } t_pindex;
 
 static void check_vsite_constraints(t_params *plist,
-                                    int cftype, int vsite_type[])
+                                    int cftype, const int vsite_type[])
 {
     int       i, k, n;
     int       atom;
@@ -1029,12 +960,12 @@ static void check_vsite_constraints(t_params *plist,
 }
 
 static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
-                              int cftype, int vsite_type[])
+                              int cftype, const int vsite_type[])
 {
     int          ftype, i, j, k, m, n, nvsite, nOut, kept_i;
     int          nconverted, nremoved;
     int          atom, oatom, at1, at2;
-    gmx_bool     bKeep, bRemove, bUsed, bPresent, bThisFD, bThisOUT, bAllFD, bFirstTwo;
+    bool         bKeep, bRemove, bUsed, bPresent, bThisFD, bThisOUT, bAllFD, bFirstTwo;
     t_params    *ps;
 
     if (cftype == F_CONNBONDS)
@@ -1057,10 +988,6 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
         bAllFD  = TRUE;
         /* check if all virtual sites are constructed from the same atoms */
         nvsite = 0;
-        if (debug)
-        {
-            fprintf(debug, "constr %d %d:", ps->param[i].ai()+1, ps->param[i].aj()+1);
-        }
         for (k = 0; (k < 2) && !bKeep && !bRemove; k++)
         {
             /* for all atoms in the bond */
@@ -1073,17 +1000,12 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
                             (pindex[atom].ftype == F_VSITE4FD ) ||
                             (pindex[atom].ftype == F_VSITE4FDN ) );
                 bThisOUT = ( (pindex[atom].ftype == F_VSITE3OUT) &&
-                             (interaction_function[cftype].flags & IF_CONSTRAINT) );
+                             ((interaction_function[cftype].flags & IF_CONSTRAINT) != 0u) );
                 bAllFD = bAllFD && bThisFD;
                 if (bThisFD || bThisOUT)
                 {
-                    if (debug)
-                    {
-                        fprintf(debug, " %s", bThisOUT ? "out" : "fd");
-                    }
                     oatom = ps->param[i].a[1-k]; /* the other atom */
                     if (vsite_type[oatom] == NOTSET &&
-                        vsite_type[oatom] != F_VSITEN &&
                         oatom == plist[pindex[atom].ftype].param[pindex[atom].parnr].aj())
                     {
                         /* if the other atom isn't a vsite, and it is AI */
@@ -1091,10 +1013,6 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
                         if (bThisOUT)
                         {
                             nOut++;
-                        }
-                        if (debug)
-                        {
-                            fprintf(debug, " D-AI");
                         }
                     }
                 }
@@ -1116,7 +1034,7 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
                     else
                     {
                         GMX_ASSERT(vsnral != 0, "nvsite > 1 must have vsnral != 0");
-                        GMX_ASSERT(first_atoms != NULL, "nvsite > 1 must have first_atoms != NULL");
+                        GMX_ASSERT(first_atoms != nullptr, "nvsite > 1 must have first_atoms != NULL");
                         /* if it is not the first then
                            check if this vsite is constructed from the same atoms */
                         if (vsnral == NRAL(pindex[atom].ftype)-1)
@@ -1137,20 +1055,12 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
                                 if (!bPresent)
                                 {
                                     bKeep = TRUE;
-                                    if (debug)
-                                    {
-                                        fprintf(debug, " !present");
-                                    }
                                 }
                             }
                         }
                         else
                         {
                             bKeep = TRUE;
-                            if (debug)
-                            {
-                                fprintf(debug, " !same#at");
-                            }
                         }
                     }
                 }
@@ -1166,10 +1076,6 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
             /* if we have no virtual sites in this bond, keep it */
             if (nvsite == 0)
             {
-                if (debug)
-                {
-                    fprintf(debug, " no vsite");
-                }
                 bKeep = TRUE;
             }
 
@@ -1181,12 +1087,12 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
             for (k = 0; (k < 2) && !bKeep; k++) /* for all atoms in the bond */
             {
                 atom = ps->param[i].a[k];
-                if (vsite_type[atom] == NOTSET && vsite_type[atom] != F_VSITEN)
+                if (vsite_type[atom] == NOTSET)
                 {
                     bUsed = FALSE;
                     for (m = 0; (m < vsnral) && !bUsed; m++)
                     {
-                        GMX_ASSERT(first_atoms != NULL, "If we've seen a vsite before, we know what its first atom index was");
+                        GMX_ASSERT(first_atoms != nullptr, "If we've seen a vsite before, we know what its first atom index was");
 
                         if (atom == first_atoms[m])
                         {
@@ -1197,10 +1103,6 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
                     if (!bUsed)
                     {
                         bKeep = TRUE;
-                        if (debug)
-                        {
-                            fprintf(debug, " !used");
-                        }
                     }
                 }
             }
@@ -1234,10 +1136,6 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
                     if (!bPresent)
                     {
                         bKeep = TRUE;
-                        if (debug)
-                        {
-                            fprintf(debug, " !bonded");
-                        }
                     }
                 }
             }
@@ -1245,10 +1143,6 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
 
         if (bKeep)
         {
-            if (debug)
-            {
-                fprintf(debug, " keeping");
-            }
             /* now copy the bond to the new array */
             ps->param[kept_i] = ps->param[i];
             kept_i++;
@@ -1263,10 +1157,6 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
         else
         {
             nremoved++;
-        }
-        if (debug)
-        {
-            fprintf(debug, "\n");
         }
     }
 
@@ -1294,12 +1184,12 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
 }
 
 static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
-                               int cftype, int vsite_type[],
+                               int cftype, const int vsite_type[],
                                at2vsitecon_t *at2vc)
 {
     int          i, j, k, m, n, nvsite, kept_i;
     int          atom, at1, at2;
-    gmx_bool     bKeep, bUsed, bPresent, bAll3FAD, bFirstTwo;
+    bool         bKeep, bUsed, bPresent, bAll3FAD, bFirstTwo;
     t_params    *ps;
 
     ps     = &(plist[cftype]);
@@ -1329,7 +1219,7 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
                 else
                 {
                     GMX_ASSERT(vsnral != 0, "If we've seen a vsite before, we know how many constructing atoms it had");
-                    GMX_ASSERT(first_atoms != NULL, "If we've seen a vsite before, we know what its first atom index was");
+                    GMX_ASSERT(first_atoms != nullptr, "If we've seen a vsite before, we know what its first atom index was");
                     /* check if this vsite is constructed from the same atoms */
                     if (vsnral == NRAL(pindex[atom].ftype)-1)
                     {
@@ -1372,12 +1262,12 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
         for (k = 0; (k < 3) && !bKeep; k++) /* for all atoms in the angle */
         {
             atom = ps->param[i].a[k];
-            if (vsite_type[atom] == NOTSET && vsite_type[atom] != F_VSITEN)
+            if (vsite_type[atom] == NOTSET)
             {
                 bUsed = FALSE;
                 for (m = 0; (m < vsnral) && !bUsed; m++)
                 {
-                    GMX_ASSERT(first_atoms != NULL, "If we've seen a vsite before, we know what its first atom index was");
+                    GMX_ASSERT(first_atoms != nullptr, "If we've seen a vsite before, we know what its first atom index was");
 
                     if (atom == first_atoms[m])
                     {
@@ -1431,7 +1321,7 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
 }
 
 static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
-                             int cftype, int vsite_type[])
+                             int cftype, const int vsite_type[])
 {
     int       i, kept_i;
     t_params *ps;
@@ -1445,7 +1335,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
         int            vsnral      = 0;
         const int     *first_atoms = nullptr;
         int            atom;
-        gmx_bool       bKeep, bUsed, bPresent;
+        bool           bKeep, bUsed, bPresent;
 
 
         bKeep = FALSE;
@@ -1461,19 +1351,11 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
                     /* store construction atoms of first vsite */
                     vsnral      = NRAL(pindex[atom].ftype) - 1;
                     first_atoms = plist[pindex[atom].ftype].param[pindex[atom].parnr].a + 1;
-                    if (debug)
-                    {
-                        fprintf(debug, "dih w. vsite: %d %d %d %d\n",
-                                ps->param[i].ai()+1, ps->param[i].aj()+1,
-                                ps->param[i].ak()+1, ps->param[i].al()+1);
-                        fprintf(debug, "vsite %d from: %d %d %d\n",
-                                atom+1, first_atoms[0]+1, first_atoms[1]+1, first_atoms[2]+1);
-                    }
                 }
                 else
                 {
                     GMX_ASSERT(vsnral != 0, "If we've seen a vsite before, we know how many constructing atoms it had");
-                    GMX_ASSERT(first_atoms != NULL, "If we've seen a vsite before, we know what its first atom index was");
+                    GMX_ASSERT(first_atoms != nullptr, "If we've seen a vsite before, we know what its first atom index was");
                     /* check if this vsite is constructed from the same atoms */
                     if (vsnral == NRAL(pindex[atom].ftype)-1)
                     {
@@ -1515,9 +1397,9 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
         for (k = 0; (k < 4) && !bKeep; k++) /* for all atoms in the dihedral */
         {
             GMX_ASSERT(vsnral != 0, "If we've seen a vsite before, we know how many constructing atoms it had");
-            GMX_ASSERT(first_atoms != NULL, "If we've seen a vsite before, we know what its first atom index was");
+            GMX_ASSERT(first_atoms != nullptr, "If we've seen a vsite before, we know what its first atom index was");
             atom = ps->param[i].a[k];
-            if (vsite_type[atom] == NOTSET && vsite_type[atom] != F_VSITEN)
+            if (vsite_type[atom] == NOTSET)
             {
                 /* vsnral will be set here, we don't get here with nvsite==0 */
                 bUsed = FALSE;
@@ -1531,10 +1413,6 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
                 if (!bUsed)
                 {
                     bKeep = TRUE;
-                    if (debug)
-                    {
-                        fprintf(debug, "unused atom in dih: %d\n", atom+1);
-                    }
                 }
             }
         }
@@ -1554,7 +1432,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
     ps->nr = kept_i;
 }
 
-void clean_vsite_bondeds(t_params *plist, int natoms, gmx_bool bRmVSiteBds)
+void clean_vsite_bondeds(t_params *plist, int natoms, bool bRmVSiteBds)
 {
     int            i, k, nvsite, ftype, vsite, parnr;
     int           *vsite_type;
@@ -1633,16 +1511,6 @@ void clean_vsite_bondeds(t_params *plist, int natoms, gmx_bool bRmVSiteBds)
                     pindex[k].ftype = ftype;
                     pindex[k].parnr = parnr;
                 }
-            }
-        }
-
-        if (debug)
-        {
-            for (i = 0; i < natoms; i++)
-            {
-                fprintf(debug, "atom %d vsite_type %s\n", i,
-                        vsite_type[i] == NOTSET ? "NOTSET" :
-                        interaction_function[vsite_type[i]].name);
             }
         }
 

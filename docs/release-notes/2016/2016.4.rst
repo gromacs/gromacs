@@ -1,0 +1,298 @@
+GROMACS 2016.4 Release Notes
+----------------------------
+
+This version was released on September 15, 2017. These release notes
+document the changes that have taken place in GROMACS since version
+2016.3 to fix known issues. It also incorporates all fixes made in
+version 5.1.4 and several since.
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Disabled PME tuning with the group scheme
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+PME tuning with the group cut-off scheme did not work correctly.
+Interactions between charge-group pairs at distances between ``rlist``
+and ``rcoulomb`` can go missing. The group scheme is deprecated, and
+this issue would require considerable effort to fix and test, so we
+have simply disabled PME tuning with the group scheme.
+
+:issue:`2200`
+
+Fixed value of Ewald shift
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+In all the Ewald short-ranged kernel flavours, the value of the
+potential at the cutoff is subtracted from the potential at the actual
+distance, which was done incorrectly (failing to divide the shift
+value by cutoff distance). Fortunately, the value of that distance is
+often close to 1, and the inconsistent shifts often cancel in
+practice, and energy differences computed on neighbour lists of the
+same size will have the error cancel. The difference doesn't even show
+up in the regressiontests, but would if we had a unit test of a single
+interaction.
+
+:issue:`2215`
+
+Fixed orientation restraint reference
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The resetting of the COM of the molecule with orientation restraints
+for fitting to the reference structure was done with the COM of the
+reference structure instead of the instantaneous structure. This does
+not affect the restraining (unless ensemble averaging is used), only
+the printed orientation tensor.
+
+:issue:`2219`
+
+Fixed bugs with setup for orientation restraints
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The orientation restraint initialization got moved to before the
+initialization of the domain decomposition, which made the check
+for domain decomposition fail.
+Also fixed orientation restraints not working with the whole system
+as fitting group.
+
+Worked around missing OpenMP implementation in orientation restraints
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The orientation restraint code is not aware of OpenMP threads
+and uses some global information. By only running it on the
+master rank, results are now independent of number of threads
+used.
+
+:issue:`2223`
+
+Enable group-scheme SIMD kernels on recent AVX extensions
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The group-scheme code only runs using the feature set of AVX_256, but
+that is supported on the more recent hardware, so we should have the
+group scheme run with the maximum suitable SIMD. With previous releases,
+building AVX_256 binaries was required for best performance with the
+(deprecated) group scheme.
+
+Fix FEP state with rerun
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When using FEP states with rerun, the FEP state was always 0.
+
+:issue:`2244`
+
+Fixed COM pull force with SD
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The reported COM pull force when using the SD integrator was random
+only. Now the pull force is summed over the systematic and random SD
+update components.  A better solution is to not add the random force
+at all, but such a change should not be done in a release branch.
+
+:issue:`2201`
+
+Fix PBC bugs in the swap code
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+:issue:`2245`
+
+Fixed flat-bottomed position restraints with multiple ranks
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Reallocation was never done for flat-bottomed restraints, during
+domain decomposition, so the indexing could go out of range, leading
+to segfaults.
+
+:issue:`2236`
+
+Fixed null pointer print in DD
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Fixed a (rather harmless) print of a null pointer string during
+DD initialization. This would only show up with ``gmx mdrun -dlb yes``.
+
+Improved the "files not present" error message
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+It's possible to use ``gmx mdrun -deffnm`` in restarts even if it
+wasn't used in the initial simulation. This can lead to absurd
+situations such as:
+
+  Expected output files not present or named differently:
+    pullx.xvg
+    pullf.xvg
+
+where ``pullx.xvg`` and ``pullf.xvg`` are present and named exactly as
+listed, but GROMACS expects them to be named as ``-deffnm`` requested.
+
+The improved error message suggest to the user to check for that
+possibility.
+
+:issue:`942` (partial workaround)
+
+Fixed LJ-PME + switch grompp error
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+An error call was missing in grompp when LJ-PME was requested in
+combination with a force or potential switch modifier.
+
+:issue:`2174`
+
+Fixed unused SIMD PME table kernel
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The Verlet-scheme 2xNN PME kernel with tabulated correction had
+several issues. This kernel flavor could only be selected manually by
+setting an environment variable, so no user simulations should be
+affected.
+
+:issue:`2247`
+
+Fixed bugs in most double-precision Simd4 implementations
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The double precision version of reduce() and dotProduct() returned a
+float with AVX2_256, AVX_256, AVX_128_FMA, AVX_512, MIC and IBM_QPX.
+Only reduce() is used in double, in the PME force gather, and the
+difference is small.
+
+:issue:`2162`
+
+Avoid inf in SIMD double sqrt()
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Arguments > 0 and < float_min to double precision SIMD sqrt()
+would produce inf on many SIMD architectures. Now sqrt() will
+return 0 for arguments in this range, which is not fully correct,
+but should be unproblematic.
+
+:issue:`2164`
+:issue:`2163`
+
+Fix NVML error messages
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+These should refer to the API calls that failed, e.g. when users lack
+permissions to change clocks.
+
+Fixed IMD interface malfunctions
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+:issue:`2206`
+
+Fixed initial temperature reporting
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When continuing a simulation from a checkpoint, mdrun could report
+double the intial temperature when ``nstcalcenergy=1`` or ``nsttcoupl=1``.
+Note that this only affected reporting, the actual velocities were
+correct.
+Now the initial temperature is no longer reported for continuation
+runs, since at continuation there is no "initial" temperature.
+
+:issue:`2199`
+
+Fix exception in SIMD LJ PME solve
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Clear SIMD padding elements in solve helper arrays to avoid,
+otherwise harmles, fp overflow exceptions.
+
+:issue:`2242`
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed memory access issues in gmx solvate
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+There was out-of-bounds access if
+ 1) the solvent configuration was given as a .pdb file, or
+ 2) there was more than one type of residue in the solvent (which
+    triggered sorting).
+
+Also fix a memory leak in the sorting routine.
+
+Should fix crashes mentioned in :issue:`2148`
+
+Fixed a consistency check in ``gmx make_edi`` for flooding
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+If one sets up a flooding .edi input file with ``gmx make_edi``,
+the code should check that one does not use of the last 6 eigenvectors
+of the covariance matrix, which correspond to the rotational and
+translational degrees of freedom.
+The check that was in the code erroneously checked against the
+number of eigenvalues neig that was stored in the .xvg file,
+not against the total number of eigenvectors which depends on
+the number of atoms nav used in gmx covar. Thus the original
+check would always fail if the .xvg eigenvalue file contained
+1-6 values only.
+
+Supported quiet trajectory-handling I/O
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Permits ``GMX_TRAJECTORY_IO_VERBOSITY=0`` to be set to keep frame-reading
+code quiet, which is convenient for tools using libgromacs.
+
+Improved documentation
+^^^^^^^^^^^^^^^^^^^^^^
+
+Migrated much content from the wiki to the user guide
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+This includes
+* expanding the "Performance" section,
+* reworking extending simulations, doing restarts and reproducibility,
+* adding documentation for mdp option ``simulation-part``.
+* adding documentation for issues relating to floating-point arithmetic
+* adding documentation for run-time errors
+
+Corrected the PDF manual to reflect that all tools are called ``gmx <tool>``
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+There were still a few occurrences of the old-style ``g_tool`` naming,
+this patch removes. Deliberately left ``g_membed`` as is, because there
+was never a ``gmx membed``, but instead it got incorporated into
+``gmx mdrun``.
+
+Clarified ``gmx editconf`` help text
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+It is possible that users can confuse ``-c`` with ``-center`` so this
+patch makes it clear that ``-center`` doesn't do anything unless the
+user really wants to shift the center of the system away from the
+middle of the box.
+
+:issue:`2171`
+
+Added missing .mdp file documentation for the enforced rotation module
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed parameter description for dihedral_restraints
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The force-constant parameter for dihedral_restraints was not
+documented in the table of interaction types.
+
+:issue:`2144`
+
+Replaced instance of "group" by "coord" in pull .mdp documentation
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Portability enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Supported CUDA 9/Volta for nonbonded kernels
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Implemented production-quality support for Volta GPUs and CUDA 9.
+
+The code was adapted to support changes to the nature of warp
+synchrony, without disturbing support for older GPUs and/or
+CUDA. Further improvements may be seen (e.g. in the 2017 release).
+
+Really enabled AVX512 in the GROMACS-managed build of FFTW
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+An earlier attempt to enable AVX512 on GCC 4.9 or newer and
+Clang 3.9 or newer was wrongly implemented. Now this works on
+all compilers we officially support (MSVC, GCC, clang, ICC).
+
+Fixed aspects for compiling and running on Solaris
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed AVX512F compiler flags
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Avoid using the MIC code generation flags for the Xeon code path.
+
+Fixed compiler flags for using MKL
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fixes compilation issues with ARM SIMD
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+ARM_NEON has never supported double precision SIMD, so disabled it
+with GROMACS double-precision build.
+
+The maskzR* functions used the wrong argument order in the debug-mode
+pre-masking (and sometimes in a typo-ed syntax).
+
+In the shift operators, the clang-based compilers (including the
+armclang v6 compiler series) seem to check that the required immediate
+integer argument is given before inlining the call to the operator
+function. The inlining seems to permit gcc to recognize that the
+callers always use an immediate. In theory, the new code might
+generate code that runs a trifle slower, but we don't use it at the
+moment and the cost might be negligible if other effects dominate
+performance.

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,7 +40,7 @@
 
 #include "config.h"
 
-#include <assert.h>
+#include <cassert>
 
 #include <algorithm>
 
@@ -224,11 +224,11 @@ static void make_thread_local_ind(const pme_atomcomm_t *atc,
             dr  = xptr[j];                         \
                                                \
             /* dr is relative offset from lower cell limit */ \
-            data[order-1] = 0;                     \
-            data[1]       = dr;                          \
-            data[0]       = 1 - dr;                      \
+            data[(order)-1] = 0;                     \
+            data[1]         = dr;                          \
+            data[0]         = 1 - dr;                      \
                                                \
-            for (int k = 3; (k < order); k++)      \
+            for (int k = 3; (k < (order)); k++)      \
             {                                      \
                 div       = 1.0/(k - 1.0);               \
                 data[k-1] = div*dr*data[k-2];      \
@@ -240,30 +240,30 @@ static void make_thread_local_ind(const pme_atomcomm_t *atc,
                 data[0] = div*(1-dr)*data[0];      \
             }                                      \
             /* differentiate */                    \
-            dtheta[j][i*order+0] = -data[0];       \
-            for (int k = 1; (k < order); k++)      \
+            dtheta[j][i*(order)+0] = -data[0];       \
+            for (int k = 1; (k < (order)); k++)      \
             {                                      \
-                dtheta[j][i*order+k] = data[k-1] - data[k]; \
+                dtheta[j][i*(order)+k] = data[k-1] - data[k]; \
             }                                      \
                                                \
-            div           = 1.0/(order - 1);                 \
-            data[order-1] = div*dr*data[order-2];  \
-            for (int l = 1; (l < (order-1)); l++)  \
+            div             = 1.0/((order) - 1);                 \
+            data[(order)-1] = div*dr*data[(order)-2];  \
+            for (int l = 1; (l < ((order)-1)); l++)  \
             {                                      \
-                data[order-l-1] = div*((dr+l)*data[order-l-2]+    \
-                                       (order-l-dr)*data[order-l-1]); \
+                data[(order)-l-1] = div*((dr+l)*data[(order)-l-2]+    \
+                                         ((order)-l-dr)*data[(order)-l-1]); \
             }                                      \
             data[0] = div*(1 - dr)*data[0];        \
                                                \
-            for (int k = 0; k < order; k++)        \
+            for (int k = 0; k < (order); k++)        \
             {                                      \
-                theta[j][i*order+k]  = data[k];    \
+                theta[j][i*(order)+k]  = data[k];    \
             }                                      \
         }                                          \
     }
 
 static void make_bsplines(splinevec theta, splinevec dtheta, int order,
-                          rvec fractx[], int nr, int ind[], real coefficient[],
+                          rvec fractx[], int nr, const int ind[], const real coefficient[],
                           gmx_bool bDoSplines)
 {
     /* construct splines for local atoms */
@@ -293,17 +293,17 @@ static void make_bsplines(splinevec theta, splinevec dtheta, int order,
 
 /* This has to be a macro to enable full compiler optimization with xlC (and probably others too) */
 #define DO_BSPLINE(order)                            \
-    for (ithx = 0; (ithx < order); ithx++)                    \
+    for (ithx = 0; (ithx < (order)); ithx++)                    \
     {                                                    \
         index_x = (i0+ithx)*pny*pnz;                     \
         valx    = coefficient*thx[ithx];                          \
                                                      \
-        for (ithy = 0; (ithy < order); ithy++)                \
+        for (ithy = 0; (ithy < (order)); ithy++)                \
         {                                                \
             valxy    = valx*thy[ithy];                   \
             index_xy = index_x+(j0+ithy)*pnz;            \
                                                      \
-            for (ithz = 0; (ithz < order); ithz++)            \
+            for (ithz = 0; (ithz < (order)); ithz++)            \
             {                                            \
                 index_xyz        = index_xy+(k0+ithz);   \
                 grid[index_xyz] += valxy*thz[ithz];      \
@@ -329,7 +329,7 @@ static void spread_coefficients_bsplines_thread(const pmegrid_t                 
     int            offx, offy, offz;
 
 #if defined PME_SIMD4_SPREAD_GATHER && !defined PME_SIMD4_UNALIGNED
-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  thz_aligned[GMX_SIMD4_WIDTH*2];
+    alignas(GMX_SIMD_ALIGNMENT) real  thz_aligned[GMX_SIMD4_WIDTH*2];
 #endif
 
     pnx = pmegrid->s[XX];
@@ -710,8 +710,7 @@ static void sum_fftgrid_dd(const gmx_pme_t *pme, real *fftgrid, int grid_index)
     MPI_Status stat;
 #endif
     int  recv_size_y;
-    int  ipulse, size_yx;
-    real *sendptr, *recvptr;
+    int  size_yx;
     int  x, y, z, indg, indb;
 
     /* Note that this routine is only used for forward communication.
@@ -745,7 +744,7 @@ static void sum_fftgrid_dd(const gmx_pme_t *pme, real *fftgrid, int grid_index)
         int send_size_y = overlap->send_size;
 #endif
 
-        for (ipulse = 0; ipulse < overlap->noverlap_nodes; ipulse++)
+        for (size_t ipulse = 0; ipulse < overlap->comm_data.size(); ipulse++)
         {
             send_index0   =
                 overlap->comm_data[ipulse].send_index0 -
@@ -755,8 +754,8 @@ static void sum_fftgrid_dd(const gmx_pme_t *pme, real *fftgrid, int grid_index)
             recv_nindex   = overlap->comm_data[ipulse].recv_nindex;
             recv_size_y   = overlap->comm_data[ipulse].recv_size;
 
-            sendptr = overlap->sendbuf + send_index0*local_fft_ndata[ZZ];
-            recvptr = overlap->recvbuf;
+            auto *sendptr = const_cast<real *>(overlap->sendbuf.data()) + send_index0 * local_fft_ndata[ZZ];
+            auto *recvptr = const_cast<real *>(overlap->recvbuf.data());
 
             if (debug != nullptr)
             {
@@ -765,8 +764,8 @@ static void sum_fftgrid_dd(const gmx_pme_t *pme, real *fftgrid, int grid_index)
             }
 
 #if GMX_MPI
-            int send_id = overlap->send_id[ipulse];
-            int recv_id = overlap->recv_id[ipulse];
+            int send_id = overlap->comm_data[ipulse].send_id;
+            int recv_id = overlap->comm_data[ipulse].recv_id;
             MPI_Sendrecv(sendptr, send_size_y*datasize, GMX_MPI_REAL,
                          send_id, ipulse,
                          recvptr, recv_size_y*datasize, GMX_MPI_REAL,
@@ -790,7 +789,7 @@ static void sum_fftgrid_dd(const gmx_pme_t *pme, real *fftgrid, int grid_index)
             if (pme->nnodes_major > 1)
             {
                 /* Copy from the received buffer to the send buffer for dim 0 */
-                sendptr = pme->overlap[0].sendbuf;
+                sendptr = const_cast<real *>(pme->overlap[0].sendbuf.data());
                 for (x = 0; x < size_yx; x++)
                 {
                     for (y = 0; y < recv_nindex; y++)
@@ -816,13 +815,11 @@ static void sum_fftgrid_dd(const gmx_pme_t *pme, real *fftgrid, int grid_index)
         /* Major dimension */
         const pme_overlap_t *overlap = &pme->overlap[0];
 
-        ipulse = 0;
+        size_t ipulse = 0;
 
         send_nindex   = overlap->comm_data[ipulse].send_nindex;
         /* We don't use recv_index0, as we always receive starting at 0 */
         recv_nindex   = overlap->comm_data[ipulse].recv_nindex;
-
-        recvptr = overlap->recvbuf;
 
         if (debug != nullptr)
         {
@@ -831,10 +828,11 @@ static void sum_fftgrid_dd(const gmx_pme_t *pme, real *fftgrid, int grid_index)
         }
 
 #if GMX_MPI
-        int datasize = local_fft_ndata[YY]*local_fft_ndata[ZZ];
-        int send_id  = overlap->send_id[ipulse];
-        int recv_id  = overlap->recv_id[ipulse];
-        sendptr      = overlap->sendbuf;
+        int datasize  = local_fft_ndata[YY]*local_fft_ndata[ZZ];
+        int send_id   = overlap->comm_data[ipulse].send_id;
+        int recv_id   = overlap->comm_data[ipulse].recv_id;
+        auto *sendptr = const_cast<real *>(overlap->sendbuf.data());
+        auto *recvptr = const_cast<real *>(overlap->recvbuf.data());
         MPI_Sendrecv(sendptr, send_nindex*datasize, GMX_MPI_REAL,
                      send_id, ipulse,
                      recvptr, recv_nindex*datasize, GMX_MPI_REAL,
@@ -850,7 +848,7 @@ static void sum_fftgrid_dd(const gmx_pme_t *pme, real *fftgrid, int grid_index)
                 indb = (x*local_fft_ndata[YY] + y)*local_fft_ndata[ZZ];
                 for (z = 0; z < local_fft_ndata[ZZ]; z++)
                 {
-                    fftgrid[indg+z] += recvptr[indb+z];
+                    fftgrid[indg + z] += overlap->recvbuf[indb + z];
                 }
             }
         }
@@ -979,8 +977,8 @@ void spread_on_grid(const gmx_pme_t *pme,
             {
                 reduce_threadgrid_overlap(pme, grids, thread,
                                           fftgrid,
-                                          pme->overlap[0].sendbuf,
-                                          pme->overlap[1].sendbuf,
+                                          const_cast<real *>(pme->overlap[0].sendbuf.data()),
+                                          const_cast<real *>(pme->overlap[1].sendbuf.data()),
                                           grid_index);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;

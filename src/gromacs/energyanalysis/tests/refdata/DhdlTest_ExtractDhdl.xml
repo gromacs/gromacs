@@ -2,7 +2,7 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <OutputFiles Name="Files">
-    <File Name="-o">
+    <File Name="-odh">
       <XvgLegend Name="Legend">
         <String Name="XvgLegend"><![CDATA[
 title "dH/d\xl\f{} and \xD\f{}H"

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -122,7 +122,7 @@ int gmx_covar(int argc, char *argv[])
     real              xj, *w_rls = nullptr;
     real              min, max, *axis;
     int               natoms, nat, nframes0, nframes, nlevels;
-    gmx_int64_t       ndim, i, j, k, l;
+    int64_t           ndim, i, j, k, l;
     int               WriteXref;
     const char       *fitfile, *trxfile, *ndxfile;
     const char       *eigvalfile, *eigvecfile, *averfile, *logfile;
@@ -254,7 +254,7 @@ int gmx_covar(int argc, char *argv[])
     snew(x, natoms);
     snew(xav, natoms);
     ndim = natoms*DIM;
-    if (std::sqrt(static_cast<real>(GMX_INT64_MAX)) < static_cast<real>(ndim))
+    if (std::sqrt(static_cast<real>(INT64_MAX)) < static_cast<real>(ndim))
     {
         gmx_fatal(FARGS, "Number of degrees of freedoms to large for matrix.\n");
     }
@@ -286,7 +286,7 @@ int gmx_covar(int argc, char *argv[])
         }
     }
     while (read_next_x(oenv, status, &t, xread, box));
-    close_trj(status);
+    close_trx(status);
 
     inv_nframes = 1.0/nframes0;
     for (i = 0; i < natoms; i++)
@@ -353,7 +353,7 @@ int gmx_covar(int argc, char *argv[])
     }
     while (read_next_x(oenv, status, &t, xread, box) &&
            (bRef || nframes < nframes0));
-    close_trj(status);
+    close_trx(status);
     gmx_rmpbc_done(gpbc);
 
     fprintf(stderr, "Read %d frames\n", nframes);
@@ -599,7 +599,7 @@ int gmx_covar(int argc, char *argv[])
     fprintf(out, "Working directory: %s\n\n", str);
 
     fprintf(out, "Read %d frames from %s (time %g to %g %s)\n", nframes, trxfile,
-            output_env_conv_time(oenv, tstart), output_env_conv_time(oenv, tend), output_env_get_time_unit(oenv));
+            output_env_conv_time(oenv, tstart), output_env_conv_time(oenv, tend), output_env_get_time_unit(oenv).c_str());
     if (bFit)
     {
         fprintf(out, "Read reference structure for fit from %s\n", fitfile);

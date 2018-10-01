@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,7 +63,7 @@
 
 #define FARAWAY 10000
 
-int *res_ndx(t_atoms *atoms)
+static int *res_ndx(t_atoms *atoms)
 {
     int *rndx;
     int  i, r0;
@@ -82,7 +82,7 @@ int *res_ndx(t_atoms *atoms)
     return rndx;
 }
 
-int *res_natm(t_atoms *atoms)
+static int *res_natm(t_atoms *atoms)
 {
     int *natm;
     int  i, j, r0;
@@ -106,8 +106,8 @@ int *res_natm(t_atoms *atoms)
     return natm;
 }
 
-static void calc_mat(int nres, int natoms, int rndx[],
-                     rvec x[], int *index,
+static void calc_mat(int nres, int natoms, const int rndx[],
+                     rvec x[], const int *index,
                      real trunc, real **mdmat, int **nmat, int ePBC, matrix box)
 {
     int   i, j, resi, resj;
@@ -305,8 +305,8 @@ int gmx_mdmat(int argc, char *argv[])
 
     nframes = 0;
 
-    rlo.r = 1.0, rlo.g = 1.0, rlo.b = 1.0;
-    rhi.r = 0.0, rhi.g = 0.0, rhi.b = 0.0;
+    rlo.r = 1.0; rlo.g = 1.0; rlo.b = 1.0;
+    rhi.r = 0.0; rhi.g = 0.0; rhi.b = 0.0;
 
     gpbc = gmx_rmpbc_init(&top.idef, ePBC, trxnat);
 
@@ -345,7 +345,7 @@ int gmx_mdmat(int argc, char *argv[])
     }
     while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
-    close_trj(status);
+    close_trx(status);
     gmx_rmpbc_done(gpbc);
     if (bFrames)
     {
@@ -382,7 +382,7 @@ int gmx_mdmat(int argc, char *argv[])
         sprintf(legend[2], "Mean");
         sprintf(legend[3], "# atoms");
         sprintf(legend[4], "Mean/# atoms");
-        xvgr_legend(fp, 5, (const char**)legend, oenv);
+        xvgr_legend(fp, 5, legend, oenv);
         for (i = 0; (i < nres); i++)
         {
             if (mean_n[i] == 0)

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -68,11 +68,14 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
     if(GMX_BUILD_OWN_FFTW)
 
-        if(WIN32)
-            message(FATAL_ERROR "Cannot build FFTW3 automatically (GMX_BUILD_OWN_FFTW=ON) on Windows")
+        if(MSVC)
+            message(FATAL_ERROR "Cannot build FFTW3 automatically (GMX_BUILD_OWN_FFTW=ON) in Visual Studio")
+        endif()
+        if(CMAKE_GENERATOR STREQUAL "Ninja")
+            message(FATAL_ERROR "Cannot build FFTW3 automatically (GMX_BUILD_OWN_FFTW=ON) with ninja")
         endif()
 
-        add_subdirectory(src/contrib/fftw)
+        add_subdirectory(src/external/build-fftw)
         include_directories(BEFORE ${${FFTW}_INCLUDE_DIRS})
         # libgmxfftw is always built static, so libgromacs does not
         # have a dependency on anything, so PKG_FFT should be empty
@@ -89,13 +92,13 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
         set(PKG_FFT "${${FFTW}_PKG}")
         include_directories(SYSTEM ${${FFTW}_INCLUDE_DIRS})
 
-        if ((${GMX_SIMD} MATCHES "SSE" OR ${GMX_SIMD} MATCHES "AVX") AND NOT ${FFTW}_HAVE_SIMD)
-            message(WARNING "The fftw library found is compiled without SIMD support, which makes it slow. Consider recompiling it or contact your admin")
+        if ((${GMX_SIMD_ACTIVE} MATCHES "SSE" OR ${GMX_SIMD_ACTIVE} MATCHES "AVX") AND NOT ${FFTW}_HAVE_SIMD)
+            set(FFT_WARNING_MESSAGE "The fftw library found is compiled without SIMD support, which makes it slow. Consider recompiling it or contact your admin")
         else()
-            if(${GMX_SIMD} MATCHES "AVX" AND NOT (${FFTW}_HAVE_SSE OR ${FFTW}_HAVE_SSE2))
+            if(${GMX_SIMD_ACTIVE} MATCHES "AVX" AND NOT (${FFTW}_HAVE_SSE OR ${FFTW}_HAVE_SSE2))
                 # If we end up here we have an AVX Gromacs build, and
                 # FFTW with SIMD.
-                message(WARNING "The FFTW library was compiled with neither --enable-sse nor --enable-sse2; those would have enabled SSE(2) SIMD instructions. This will give suboptimal performance. You should (re)compile the FFTW library with --enable-sse2 and --enable-avx (and --enable-avx2 or --enable-avx512 if supported).")
+                set(FFT_WARNING_MESSAGE "The FFTW library was compiled with neither --enable-sse nor --enable-sse2; those would have enabled SSE(2) SIMD instructions. This will give suboptimal performance. You should (re)compile the FFTW library with --enable-sse2 and --enable-avx (and --enable-avx2 or --enable-avx512 if supported).")
             endif()
         endif()
         set(FFT_STATUS_MESSAGE "Using external FFT library - FFTW3")
@@ -120,6 +123,7 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
         # Some versions of icc require this in order that mkl.h can be
         # found at compile time.
         set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} ${FFT_LINKER_FLAGS}")
+        set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} ${FFT_LINKER_FLAGS}")
 
         set(MKL_ERROR_MESSAGE "Make sure you have configured your compiler so that ${FFT_LINKER_FLAGS} will work.")
     else()
@@ -164,6 +168,9 @@ else()
 endif()
 gmx_check_if_changed(FFT_CHANGED GMX_FFT_LIBRARY)
 if (FFT_CHANGED)
+    if(FFT_WARNING_MESSAGE)
+        message(WARNING "${FFT_WARNING_MESSAGE}")
+    endif()
     message(STATUS "${FFT_STATUS_MESSAGE}")
 endif()
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,11 +68,6 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 /*! \addtogroup module_utility
  * \{
  */
@@ -84,21 +79,21 @@ extern "C"
  *
  * Acts as a wrapper for omp_get_max_threads().
  */
-int gmx_omp_get_max_threads(void);
+int gmx_omp_get_max_threads();
 
 /*! \brief
  * Returns the number of processors available when the function is called.
  *
  * Acts as a wrapper around omp_get_num_procs().
  */
-int gmx_omp_get_num_procs(void);
+int gmx_omp_get_num_procs();
 
 /*! \brief
  * Returns the thread number of the thread executing within its thread team.
  *
  * Acts as a wrapper for omp_get_thread_num().
  */
-int gmx_omp_get_thread_num(void);
+int gmx_omp_get_thread_num();
 
 /*! \brief
  * Sets the number of threads in subsequent parallel regions, unless overridden
@@ -129,7 +124,7 @@ gmx_bool gmx_omp_check_thread_affinity(char **message);
 /*! \brief
  * Pause for use in a spin-wait loop.
  */
-static gmx_inline void gmx_pause()
+static inline void gmx_pause()
 {
 #ifndef _MSC_VER
     /* Ugly hack because the openmp implementation below hacks into the SIMD
@@ -151,9 +146,5 @@ static gmx_inline void gmx_pause()
 }
 
 /*! \} */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

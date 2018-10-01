@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,33 +39,6 @@
  * Used for log and version output.
  */
 
-/** Hardware and OS version for build host */
-#define BUILD_HOST              "@BUILD_HOST@"
-
-/** Date and time for build */
-#define BUILD_TIME              "@BUILD_TIME@"
-
-/** User doing build */
-#define BUILD_USER              "@BUILD_USER@"
-
-/** CPU vendor for build host */
-#define BUILD_CPU_VENDOR        "@BUILD_CPU_VENDOR@"
-
-/** CPU brand for build host */
-#define BUILD_CPU_BRAND         "@BUILD_CPU_BRAND@"
-
-/** CPU family for build host */
-#define BUILD_CPU_FAMILY        @BUILD_CPU_FAMILY@
-
-/** CPU model for build host */
-#define BUILD_CPU_MODEL         @BUILD_CPU_MODEL@
-
-/** CPU stepping for build host */
-#define BUILD_CPU_STEPPING      @BUILD_CPU_STEPPING@
-
-/** CPU feature list for build host */
-#define BUILD_CPU_FEATURES      "@BUILD_CPU_FEATURES@"
-
 /** C compiler used to build */
 #define BUILD_C_COMPILER        "@BUILD_C_COMPILER@"
 
@@ -87,20 +60,23 @@
 /** Binary directory for the build */
 #define CMAKE_BINARY_DIR        "@CMAKE_BINARY_DIR@"
 
-/** Location of data files in the installation directory */
-#define DATA_INSTALL_DIR        "@DATA_INSTALL_DIR@"
+/** Location of GROMACS-specific data files */
+#define GMX_INSTALL_GMXDATADIR  "@GMX_INSTALL_GMXDATADIR@"
 
-/** CUDA nvcc compiler version information */
-#define CUDA_NVCC_COMPILER_INFO "@CUDA_NVCC_COMPILER_INFO@"
+/** HWLOC version information */
+#define HWLOC_VERSION "@HWLOC_VERSION@"
 
-/** CUDA nvcc compiler flags */
-#define CUDA_NVCC_COMPILER_FLAGS "@CUDA_NVCC_COMPILER_FLAGS@"
+/** CUDA compiler version information */
+#define CUDA_COMPILER_INFO "@CUDA_COMPILER_INFO@"
+
+/** CUDA compiler flags */
+#define CUDA_COMPILER_FLAGS "@CUDA_COMPILER_FLAGS@"
 
 /** OpenCL include dir */
-#define OPENCL_INCLUDE_DIR "@OPENCL_INCLUDE_DIR@"
+#define OPENCL_INCLUDE_DIR "@OpenCL_INCLUDE_DIR@"
 
 /** OpenCL library */
-#define OPENCL_LIBRARY "@OPENCL_LIBRARY@"
+#define OPENCL_LIBRARY "@OpenCL_LIBRARY@"
 
 /** OpenCL version */
-#define OPENCL_VERSION_STRING "@OPENCL_VERSION_STRING@"
+#define OPENCL_VERSION_STRING "@OpenCL_VERSION_STRING@"

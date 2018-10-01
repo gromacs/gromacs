@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,23 +43,68 @@
 #ifndef GMX_MATH_PADDEDVECTOR_H
 #define GMX_MATH_PADDEDVECTOR_H
 
+#include <algorithm>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/alignedallocator.h"
+#include "gromacs/utility/arrayref.h"
 
 namespace gmx
 {
 
 /*! \brief Temporary definition of a type usable for SIMD-style loads of RVec quantities.
  *
- * \todo This vector is not padded yet, padding will be added soon */
-using PaddedRVecVector = std::vector<gmx::RVec>;
+ * \note When resizing paddedRVecVector, the size should be chosen with
+         paddedRVecVectorSize() to ensure correct padding.
+ * \todo Consider replacing the padding applied in resizePaddedRVecVector()
+ *       by automated padding on resize() of the vector.
+ * \todo Undo the move of allocator.h and alignedallocator.h from the internal
+ *       to be public API applied in Change-Id: Ifb8dacf, needed to use
+ *       AlignedAllocationPolicy here, when replacing std::vector here.
+ */
+using PaddedRVecVector = std::vector < RVec, Allocator < RVec, AlignedAllocationPolicy > >;
+
+/*! \brief Returns the padded size for PaddedRVecVector given the number of atoms
+ *
+ * \param[in] numAtoms  The number of atoms for which data will be stored in a PaddedRVecVector
+ */
+static inline index paddedRVecVectorSize(index numAtoms)
+{
+    /* We need one real extra for 4-wide SIMD load/store of RVec.
+     * But because the vector contains RVecs, we need to add 1 RVec.
+     */
+    index simdScatterAccessSize;
+    if (numAtoms > 0)
+    {
+        simdScatterAccessSize = numAtoms + 1;
+    }
+    else
+    {
+        simdScatterAccessSize = 0;
+    }
+
+    /* We need padding up to a multiple of the SIMD real width.
+     * But because we don't want a dependence on the SIMD module,
+     * we use GMX_REAL_MAX_SIMD_WIDTH here.
+     */
+    index simdFlatAccesSize  = ((numAtoms + (GMX_REAL_MAX_SIMD_WIDTH - 1))/GMX_REAL_MAX_SIMD_WIDTH)*GMX_REAL_MAX_SIMD_WIDTH;
+
+    return std::max(simdScatterAccessSize, simdFlatAccesSize);
+}
+
+/*! \brief Temporary definition of a type usable for SIMD-style loads of RVec quantities from a view.
+ *
+ * \todo Find a more permanent solution that permits the update code to safely
+ * use a padded, aligned array-ref type. */
+template <typename T>
+using PaddedArrayRef = ArrayRef<T>;
 
 } // namespace gmx
 
-// TODO This is a hack to avoid littering gmx:: all over code that is
+// TODO These are hacks to avoid littering gmx:: all over code that is
 // almost all destined to move into the gmx namespace at some point.
 // An alternative would be about 20 files with using statements.
-using gmx::PaddedRVecVector;
+using gmx::PaddedRVecVector; //NOLINT(google-global-names-in-headers)
 
 #endif

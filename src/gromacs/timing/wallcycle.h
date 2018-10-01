@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,18 +46,21 @@
 
 typedef struct gmx_wallcycle *gmx_wallcycle_t;
 struct t_commrec;
+static constexpr gmx_wallcycle* nullWallcycle = nullptr;
 
 enum {
     ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD,
-    ewcDDCOMMBOUND, ewcVSITECONSTR, ewcPP_PMESENDX, ewcNS, ewcLAUNCH_GPU_NB,
-    ewcMOVEX, ewcGB, ewcFORCE, ewcMOVEF, ewcPMEMESH,
-    ewcPME_REDISTXF, ewcPME_SPREADGATHER, ewcPME_FFT, ewcPME_FFTCOMM, ewcLJPME, ewcPME_SOLVE,
-    ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF, ewcWAIT_GPU_NB_NL, ewcWAIT_GPU_NB_L, ewcNB_XF_BUF_OPS,
-    ewcVSITESPREAD, ewcPULLPOT,
+    ewcDDCOMMBOUND, ewcVSITECONSTR, ewcPP_PMESENDX, ewcNS, ewcLAUNCH_GPU,
+    ewcMOVEX, ewcFORCE, ewcMOVEF, ewcPMEMESH,
+    ewcPME_REDISTXF, ewcPME_SPREAD, ewcPME_GATHER, ewcPME_FFT, ewcPME_FFTCOMM, ewcLJPME, ewcPME_SOLVE,
+    ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF,
+    ewcWAIT_GPU_PME_SPREAD, ewcPME_FFT_MIXED_MODE, ewcPME_SOLVE_MIXED_MODE,
+    ewcWAIT_GPU_PME_GATHER, ewcPME_GPU_F_REDUCTION,
+    ewcWAIT_GPU_NB_NL, ewcWAIT_GPU_NB_L, ewcNB_XF_BUF_OPS,
+    ewcVSITESPREAD, ewcPULLPOT, ewcAWH,
     ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcROT, ewcROTadd, ewcSWAP, ewcIMD,
     ewcTEST, ewcNR
 };
-
 
 enum {
     ewcsDD_REDIST, ewcsDD_GRID, ewcsDD_SETUPCOMM,
@@ -68,14 +71,17 @@ enum {
     ewcsLISTED_FEP,
     ewcsRESTRAINTS,
     ewcsLISTED_BUF_OPS,
+    ewcsNONBONDED_PRUNING,
     ewcsNONBONDED,
+    ewcsLAUNCH_GPU_NONBONDED,
+    ewcsLAUNCH_GPU_PME,
     ewcsEWALD_CORRECTION,
     ewcsNB_X_BUF_OPS,
     ewcsNB_F_BUF_OPS,
     ewcsNR
 };
 
-gmx_bool wallcycle_have_counter(void);
+gmx_bool wallcycle_have_counter();
 /* Returns if cycle counting is supported */
 
 gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, struct t_commrec *cr);
@@ -101,10 +107,10 @@ void wallcycle_reset_all(gmx_wallcycle_t wc);
 void wallcycle_scale_by_num_threads(gmx_wallcycle_t wc, bool isPmeRank, int nthreads_pp, int nthreads_pme);
 /* Scale the cycle counts to reflect how many threads run for that number of cycles */
 
-gmx_int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc);
+int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc);
 /* Return reset_counters from wc struct */
 
-void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_int64_t reset_counters);
+void wcycle_set_reset_counters(gmx_wallcycle_t wc, int64_t reset_counters);
 /* Set reset_counters */
 
 void wallcycle_sub_start(gmx_wallcycle_t wc, int ewcs);

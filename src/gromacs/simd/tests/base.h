@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -114,6 +114,16 @@ class SimdBaseTest : public ::testing::Test
         /*! \brief Adjust ulp tolerance from the default 10 (float) or 255 (double). */
         void setUlpTol(std::int64_t newTol)   { ulpTol_ = newTol; }
 
+        /*! \brief Adjust ulp tolerance for single accuracy functions. */
+        void setUlpTolSingleAccuracy(std::int64_t newTol)
+        {
+#if GMX_DOUBLE
+            setUlpTol(newTol * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+#else
+            setUlpTol(newTol);
+#endif
+        }
+
         /*! \brief Adjust the absolute tolerance from the default 0.
          *
          * If values are closer than the absolute tolerance, the test will pass
@@ -182,7 +192,7 @@ class SimdBaseTest : public ::testing::Test
         std::pair<real, real>  range_;        //!< Range for math function tests.
 };
 
-}      // namespace
-}      // namespace
+}      // namespace test
+}      // namespace gmx
 
 #endif // GMX_SIMD_TESTS_BASE_H

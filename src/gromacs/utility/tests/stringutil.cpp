@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,10 +54,15 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/exceptions.h"
 
 #include "testutils/refdata.h"
 #include "testutils/stringtest.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -138,6 +143,26 @@ TEST(StringUtilityTest, SplitDelimitedString)
     EXPECT_THAT(gmx::splitDelimitedString("", ';'), IsEmpty());
 }
 
+TEST(StringUtilityTest, SplitAndTrimDelimitedString)
+{
+    using ::testing::ElementsAre;
+    using ::testing::IsEmpty;
+    EXPECT_THAT(splitAndTrimDelimitedString("", ';'), IsEmpty());
+    EXPECT_THAT(splitAndTrimDelimitedString(" \t\n ", ';'), ElementsAre(""));
+    EXPECT_THAT(splitAndTrimDelimitedString("foo", ';'), ElementsAre("foo"));
+    EXPECT_THAT(splitAndTrimDelimitedString(" foo ", ';'), ElementsAre("foo"));
+    EXPECT_THAT(splitAndTrimDelimitedString("foo;bar", ';'), ElementsAre("foo", "bar"));
+    EXPECT_THAT(splitAndTrimDelimitedString(";foo;bar", ';'), ElementsAre("", "foo", "bar"));
+    EXPECT_THAT(splitAndTrimDelimitedString("foo;bar;", ';'), ElementsAre("foo", "bar", ""));
+    EXPECT_THAT(splitAndTrimDelimitedString(";foo;bar;", ';'), ElementsAre("", "foo", "bar", ""));
+    EXPECT_THAT(splitAndTrimDelimitedString("foo;;bar", ';'), ElementsAre("foo", "", "bar"));
+    EXPECT_THAT(splitAndTrimDelimitedString("foo  ;  bar ", ';'), ElementsAre("foo", "bar"));
+    EXPECT_THAT(splitAndTrimDelimitedString("  ; foo ;  bar ", ';'), ElementsAre("", "foo", "bar"));
+    EXPECT_THAT(splitAndTrimDelimitedString(" foo  ;  bar ; ", ';'), ElementsAre("foo", "bar", ""));
+    EXPECT_THAT(splitAndTrimDelimitedString(" ;  foo\n ;  bar ;  ", ';'), ElementsAre("", "foo", "bar", ""));
+    EXPECT_THAT(splitAndTrimDelimitedString(" foo  ; ; \tbar", ';'), ElementsAre("foo", "", "bar"));
+}
+
 /********************************************************************
  * Tests for formatString()
  */
@@ -173,11 +198,11 @@ TEST(formatAndJoinTest, Works)
 {
     const char * const words[] = { "The", "quick", "brown", "fox" };
     EXPECT_EQ("The       .quick     .brown     .fox       ",
-              gmx::formatAndJoin(gmx::ConstArrayRef<const char *>(words), ".",
+              gmx::formatAndJoin(gmx::ArrayRef<const char *const>(words), ".",
                                  gmx::StringFormatter("%-10s")));
 
     const int values[] = { 0, 1, 4 };
-    EXPECT_EQ("0,1,4", gmx::formatAndJoin(gmx::ConstArrayRef<int>(values), ",",
+    EXPECT_EQ("0,1,4", gmx::formatAndJoin(gmx::ArrayRef<const int>(values), ",",
                                           gmx::StringFormatter("%d")));
 }
 
@@ -188,7 +213,7 @@ TEST(formatAndJoinTest, Works)
 TEST(JoinStringsTest, Works)
 {
     const char * const               words[] = { "The", "quick", "brown", "fox" };
-    gmx::ConstArrayRef<const char *> refToWords(words);
+    gmx::ArrayRef<const char *const> refToWords(words);
     EXPECT_EQ("The; quick; brown; fox", gmx::joinStrings(refToWords.begin(), refToWords.end(), "; "));
     EXPECT_EQ("The-quick-brown-fox", gmx::joinStrings(refToWords, "-"));
     EXPECT_EQ("The-quick-brown-fox", gmx::joinStrings(words, "-"));
@@ -284,7 +309,7 @@ TEST_F(TextLineWrapperTest, HandlesTrailingWhitespace)
 
     wrapper.settings().setKeepFinalSpaces(true);
     EXPECT_EQ("line   ", wrapper.wrapToString("line   "));
-    EXPECT_EQ("line\n", wrapper.wrapToString("line   \n"));
+    EXPECT_EQ("line   \n", wrapper.wrapToString("line   \n"));
 }
 
 TEST_F(TextLineWrapperTest, HandlesTrailingNewlines)
@@ -400,6 +425,12 @@ TEST_F(TextLineWrapperTest, WrapsCorrectlyWithExtraWhitespace)
 
     checkText(wrapper.wrapToString(g_wrapTextWhitespace),
               "WrappedAt14");
+
+    wrapper.settings().setKeepFinalSpaces(true);
+    checkText(wrapper.wrapToString(g_wrapTextWhitespace),
+              "WrappedAt14WithTrailingWhitespace");
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

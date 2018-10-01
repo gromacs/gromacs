@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,13 +44,14 @@
 
 #include "gmxpre.h"
 
-#include <assert.h>
-#include <stdio.h>
-
+#include <cassert>
+#include <cinttypes>
 #include <cmath>
+#include <cstdio>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/ewald/pme.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
@@ -59,8 +60,10 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/logger.h"
+#include "gromacs/utility/stringutil.h"
 
 /*! \brief Margin for setting up the DD grid */
 #define DD_GRID_MARGIN_PRES_SCALE 1.05
@@ -68,53 +71,49 @@
 /*! \brief Factorize \p n.
  *
  * \param[in]    n     Value to factorize
- * \param[out]   fac   Pointer to array of factors (to be allocated in this function)
- * \param[out]   mfac  Pointer to array of the number of times each factor repeats in the factorization (to be allocated in this function)
- * \return             The number of unique factors
+ * \param[out]   fac   Vector of factors (to be allocated in this function)
+ * \param[out]   mfac  Vector with the number of times each factor repeats in the factorization (to be allocated in this function)
  */
-static int factorize(int n, int **fac, int **mfac)
+static void factorize(int               n,
+                      std::vector<int> *fac,
+                      std::vector<int> *mfac)
 {
-    int d, ndiv;
-
     if (n <= 0)
     {
         gmx_fatal(FARGS, "Can only factorize positive integers.");
     }
 
     /* Decompose n in factors */
-    snew(*fac, n/2);
-    snew(*mfac, n/2);
-    d    = 2;
-    ndiv = 0;
+    fac->clear();
+    mfac->clear();
+    int d = 2;
     while (n > 1)
     {
         while (n % d == 0)
         {
-            if (ndiv == 0 || (*fac)[ndiv-1] != d)
+            if (fac->empty() || fac->back() != d)
             {
-                ndiv++;
-                (*fac)[ndiv-1] = d;
+                fac->push_back(d);
+                mfac->push_back(1);
             }
-            (*mfac)[ndiv-1]++;
+            else
+            {
+                mfac->back()++;
+            }
             n /= d;
         }
         d++;
     }
-
-    return ndiv;
 }
 
 /*! \brief Find largest divisor of \p n smaller than \p n*/
-static gmx_bool largest_divisor(int n)
+static int largest_divisor(int n)
 {
-    int ndiv, *div, *mdiv, ldiv;
+    std::vector<int> div;
+    std::vector<int> mdiv;
+    factorize(n, &div, &mdiv);
 
-    ndiv = factorize(n, &div, &mdiv);
-    ldiv = div[ndiv-1];
-    sfree(div);
-    sfree(mdiv);
-
-    return ldiv;
+    return div.back();
 }
 
 /*! \brief Compute largest common divisor of \p n1 and \b n2 */
@@ -137,28 +136,24 @@ static int lcd(int n1, int n2)
 /*! \brief Returns TRUE when there are enough PME ranks for the ratio */
 static gmx_bool fits_pme_ratio(int nrank_tot, int nrank_pme, float ratio)
 {
-    return ((double)nrank_pme/(double)nrank_tot > 0.95*ratio);
+    return (static_cast<double>(nrank_pme)/static_cast<double>(nrank_tot) > 0.95*ratio);
 }
 
 /*! \brief Returns TRUE when npme out of ntot ranks doing PME is expected to give reasonable performance */
 static gmx_bool fits_pp_pme_perf(int ntot, int npme, float ratio)
 {
-    int ndiv, *div, *mdiv, ldiv;
-    int npp_root3, npme_root2;
+    std::vector<int> div;
+    std::vector<int> mdiv;
+    factorize(ntot - npme, &div, &mdiv);
 
-    ndiv = factorize(ntot - npme, &div, &mdiv);
-    ldiv = div[ndiv-1];
-    sfree(div);
-    sfree(mdiv);
-
-    npp_root3  = static_cast<int>(std::cbrt(ntot - npme) + 0.5);
-    npme_root2 = static_cast<int>(std::sqrt(static_cast<double>(npme)) + 0.5);
+    int npp_root3  = gmx::roundToInt(std::cbrt(ntot - npme));
+    int npme_root2 = gmx::roundToInt(std::sqrt(static_cast<double>(npme)));
 
     /* The check below gives a reasonable division:
      * factor 5 allowed at 5 or more PP ranks,
      * factor 7 allowed at 49 or more PP ranks.
      */
-    if (ldiv > 3 + npp_root3)
+    if (div.back() > 3 + npp_root3)
     {
         return FALSE;
     }
@@ -179,8 +174,9 @@ static gmx_bool fits_pp_pme_perf(int ntot, int npme, float ratio)
 }
 
 /*! \brief Make a guess for the number of PME ranks to use. */
-static int guess_npme(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir,
-                      matrix box,
+static int guess_npme(const gmx::MDLogger &mdlog,
+                      const gmx_mtop_t *mtop, const t_inputrec *ir,
+                      const matrix box,
                       int nrank_tot)
 {
     float      ratio;
@@ -188,10 +184,8 @@ static int guess_npme(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir,
 
     ratio = pme_load_estimate(mtop, ir, box);
 
-    if (fplog)
-    {
-        fprintf(fplog, "Guess for relative PME load: %.2f\n", ratio);
-    }
+    GMX_LOG(mdlog.info).appendTextFormatted(
+            "Guess for relative PME load: %.2f", ratio);
 
     /* We assume the optimal rank ratio is close to the load ratio.
      * The communication load is neglected,
@@ -245,22 +239,13 @@ static int guess_npme(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir,
     {
         gmx_fatal(FARGS, "Could not find an appropriate number of separate PME ranks. i.e. >= %5f*#ranks (%d) and <= #ranks/2 (%d) and reasonable performance wise (grid_x=%d, grid_y=%d).\n"
                   "Use the -npme option of mdrun or change the number of ranks or the PME grid dimensions, see the manual for details.",
-                  ratio, (int)(0.95*ratio*nrank_tot + 0.5), nrank_tot/2, ir->nkx, ir->nky);
-        /* Keep the compiler happy */
-        npme = 0;
+                  ratio, gmx::roundToInt(0.95*ratio*nrank_tot), nrank_tot/2, ir->nkx, ir->nky);
     }
     else
     {
-        if (fplog)
-        {
-            fprintf(fplog,
-                    "Will use %d particle-particle and %d PME only ranks\n"
-                    "This is a guess, check the performance at the end of the log file\n",
-                    nrank_tot - npme, npme);
-        }
-        fprintf(stderr, "\n"
+        GMX_LOG(mdlog.info).appendTextFormatted(
                 "Will use %d particle-particle and %d PME only ranks\n"
-                "This is a guess, check the performance at the end of the log file\n",
+                "This is a guess, check the performance at the end of the log file",
                 nrank_tot - npme, npme);
     }
 
@@ -341,7 +326,7 @@ static float comm_pme_cost_vol(int npme, int a, int b, int c)
 
 /*! \brief Estimate cost of communication for a possible domain decomposition. */
 static float comm_cost_est(real limit, real cutoff,
-                           matrix box, const gmx_ddbox_t *ddbox,
+                           const matrix box, const gmx_ddbox_t *ddbox,
                            int natoms, const t_inputrec *ir,
                            float pbcdxr,
                            int npme_tot, ivec nc)
@@ -428,6 +413,28 @@ static float comm_cost_est(real limit, real cutoff,
         }
     }
 
+    if (EEL_PME(ir->coulombtype) || EVDW_PME(ir->vdwtype))
+    {
+        /* Check the PME grid restrictions.
+         * Currently these can only be invalid here with too few grid lines
+         * along the x dimension per rank doing PME.
+         */
+        int npme_x = (npme_tot > 1 ? npme[XX] : nc[XX]);
+
+        /* Currently we don't have the OpenMP thread count available here.
+         * But with threads we have only tighter restrictions and it's
+         * probably better anyhow to avoid settings where we need to reduce
+         * grid lines over multiple ranks, as the thread check will do.
+         */
+        bool useThreads     = true;
+        bool errorsAreFatal = false;
+        if (!gmx_pme_check_restrictions(ir->pme_order, ir->nkx, ir->nky, ir->nkz,
+                                        npme_x, useThreads, errorsAreFatal))
+        {
+            return -1;
+        }
+    }
+
     /* When two dimensions are (nearly) equal, use more cells
      * for the smallest index, so the decomposition does not
      * depend sensitively on the rounding of the box elements.
@@ -439,7 +446,7 @@ static float comm_cost_est(real limit, real cutoff,
             /* Check if the box size is nearly identical,
              * in that case we prefer nx > ny  and ny > nz.
              */
-            if (fabs(bt[j] - bt[i]) < 0.01*bt[i] && nc[j] > nc[i])
+            if (std::fabs(bt[j] - bt[i]) < 0.01*bt[i] && nc[j] > nc[i])
             {
                 /* The XX/YY check is a bit compact. If nc[YY]==npme[YY]
                  * this means the swapped nc has nc[XX]==npme[XX],
@@ -478,7 +485,7 @@ static float comm_cost_est(real limit, real cutoff,
             }
             else
             {
-                comm_vol_xf = 1.0 - lcd(nc[i], npme[i])/(double)npme[i];
+                comm_vol_xf = 1.0 - lcd(nc[i], npme[i])/static_cast<double>(npme[i]);
             }
             comm_pme += 3*natoms*comm_vol_xf;
         }
@@ -532,10 +539,11 @@ static float comm_cost_est(real limit, real cutoff,
 /*! \brief Assign penalty factors to possible domain decompositions, based on the estimated communication costs. */
 static void assign_factors(const gmx_domdec_t *dd,
                            real limit, real cutoff,
-                           matrix box, const gmx_ddbox_t *ddbox,
+                           const matrix box, const gmx_ddbox_t *ddbox,
                            int natoms, const t_inputrec *ir,
                            float pbcdxr, int npme,
-                           int ndiv, int *div, int *mdiv, ivec ir_try, ivec opt)
+                           int ndiv, const int *div, const int *mdiv,
+                           ivec ir_try, ivec opt)
 {
     int   x, y, i;
     float ce;
@@ -593,18 +601,18 @@ static void assign_factors(const gmx_domdec_t *dd,
 }
 
 /*! \brief Determine the optimal distribution of DD cells for the simulation system and number of MPI ranks */
-static real optimize_ncells(FILE *fplog,
+static real optimize_ncells(const gmx::MDLogger &mdlog,
                             int nnodes_tot, int npme_only,
                             gmx_bool bDynLoadBal, real dlb_scale,
                             const gmx_mtop_t *mtop,
-                            matrix box, const gmx_ddbox_t *ddbox,
+                            const matrix box, const gmx_ddbox_t *ddbox,
                             const t_inputrec *ir,
                             gmx_domdec_t *dd,
                             real cellsize_limit, real cutoff,
                             gmx_bool bInterCGBondeds,
                             ivec nc)
 {
-    int      npp, npme, ndiv, *div, *mdiv, d, nmax;
+    int      npp, npme, d, nmax;
     double   pbcdxr;
     real     limit;
     ivec     itry;
@@ -632,7 +640,7 @@ static real optimize_ncells(FILE *fplog,
          * Here we ignore SIMD bondeds as they always do (fast) PBC.
          */
         count_bonded_distances(mtop, ir, &pbcdxr, nullptr);
-        pbcdxr /= (double)mtop->natoms;
+        pbcdxr /= static_cast<double>(mtop->natoms);
     }
     else
     {
@@ -646,48 +654,47 @@ static real optimize_ncells(FILE *fplog,
         {
             gmx_fatal(FARGS, "The value for option -dds should be smaller than 1");
         }
-        if (fplog)
-        {
-            fprintf(fplog, "Scaling the initial minimum size with 1/%g (option -dds) = %g\n", dlb_scale, 1/dlb_scale);
-        }
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "Scaling the initial minimum size with 1/%g (option -dds) = %g",
+                dlb_scale, 1/dlb_scale);
         limit /= dlb_scale;
     }
     else if (ir->epc != epcNO)
     {
-        if (fplog)
-        {
-            fprintf(fplog, "To account for pressure scaling, scaling the initial minimum size with %g\n", DD_GRID_MARGIN_PRES_SCALE);
-            limit *= DD_GRID_MARGIN_PRES_SCALE;
-        }
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "To account for pressure scaling, scaling the initial minimum size with %g",
+                DD_GRID_MARGIN_PRES_SCALE);
+        limit *= DD_GRID_MARGIN_PRES_SCALE;
     }
 
-    if (fplog)
+    GMX_LOG(mdlog.info).appendTextFormatted(
+            "Optimizing the DD grid for %d cells with a minimum initial size of %.3f nm",
+            npp, limit);
+
+    if (inhomogeneous_z(ir))
     {
-        fprintf(fplog, "Optimizing the DD grid for %d cells with a minimum initial size of %.3f nm\n", npp, limit);
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "Ewald_geometry=%s: assuming inhomogeneous particle distribution in z, will not decompose in z.",
+                eewg_names[ir->ewald_geometry]);
+    }
 
-        if (inhomogeneous_z(ir))
+    if (limit > 0)
+    {
+        std::string maximumCells = "The maximum allowed number of cells is:";
+        for (d = 0; d < DIM; d++)
         {
-            fprintf(fplog, "Ewald_geometry=%s: assuming inhomogeneous particle distribution in z, will not decompose in z.\n", eewg_names[ir->ewald_geometry]);
-        }
-
-        if (limit > 0)
-        {
-            fprintf(fplog, "The maximum allowed number of cells is:");
-            for (d = 0; d < DIM; d++)
+            nmax = static_cast<int>(ddbox->box_size[d]*ddbox->skew_fac[d]/limit);
+            if (d >= ddbox->npbcdim && nmax < 2)
             {
-                nmax = (int)(ddbox->box_size[d]*ddbox->skew_fac[d]/limit);
-                if (d >= ddbox->npbcdim && nmax < 2)
-                {
-                    nmax = 2;
-                }
-                if (d == ZZ && inhomogeneous_z(ir))
-                {
-                    nmax = 1;
-                }
-                fprintf(fplog, " %c %d", 'X' + d, nmax);
+                nmax = 2;
             }
-            fprintf(fplog, "\n");
+            if (d == ZZ && inhomogeneous_z(ir))
+            {
+                nmax = 1;
+            }
+            maximumCells += gmx::formatString(" %c %d", 'X' + d, nmax);
         }
+        GMX_LOG(mdlog.info).appendText(maximumCells);
     }
 
     if (debug)
@@ -696,32 +703,31 @@ static real optimize_ncells(FILE *fplog,
     }
 
     /* Decompose npp in factors */
-    ndiv = factorize(npp, &div, &mdiv);
+    std::vector<int> div;
+    std::vector<int> mdiv;
+    factorize(npp, &div, &mdiv);
 
     itry[XX] = 1;
     itry[YY] = 1;
     itry[ZZ] = 1;
     clear_ivec(nc);
     assign_factors(dd, limit, cutoff, box, ddbox, mtop->natoms, ir, pbcdxr,
-                   npme, ndiv, div, mdiv, itry, nc);
-
-    sfree(div);
-    sfree(mdiv);
+                   npme, div.size(), div.data(), mdiv.data(), itry, nc);
 
     return limit;
 }
 
-real dd_choose_grid(FILE *fplog,
+real dd_choose_grid(const gmx::MDLogger &mdlog,
                     t_commrec *cr, gmx_domdec_t *dd,
                     const t_inputrec *ir,
                     const gmx_mtop_t *mtop,
-                    matrix box, const gmx_ddbox_t *ddbox,
+                    const matrix box, const gmx_ddbox_t *ddbox,
                     int nPmeRanks,
                     gmx_bool bDynLoadBal, real dlb_scale,
                     real cellsize_limit, real cutoff_dd,
                     gmx_bool bInterCGBondeds)
 {
-    gmx_int64_t     nnodes_div, ldiv;
+    int64_t         nnodes_div, ldiv;
     real            limit;
 
     if (MASTER(cr))
@@ -755,7 +761,7 @@ real dd_choose_grid(FILE *fplog,
             /* Check if the largest divisor is more than nnodes^2/3 */
             if (ldiv*ldiv*ldiv > nnodes_div*nnodes_div)
             {
-                gmx_fatal(FARGS, "The number of ranks you selected (%d) contains a large prime factor %d. In most cases this will lead to bad performance. Choose a number with smaller prime factors or set the decomposition (option -dd) manually.",
+                gmx_fatal(FARGS, "The number of ranks you selected (%" PRId64 ") contains a large prime factor %" PRId64 ". In most cases this will lead to bad performance. Choose a number with smaller prime factors or set the decomposition (option -dd) manually.",
                           nnodes_div, ldiv);
             }
         }
@@ -768,32 +774,31 @@ real dd_choose_grid(FILE *fplog,
                 if (cr->nnodes <= 18)
                 {
                     cr->npmenodes = 0;
-                    if (fplog)
-                    {
-                        fprintf(fplog, "Using %d separate PME ranks, as there are too few total\n ranks for efficient splitting\n", cr->npmenodes);
-                    }
+                    GMX_LOG(mdlog.info).appendTextFormatted(
+                            "Using %d separate PME ranks, as there are too few total\n"
+                            " ranks for efficient splitting",
+                            cr->npmenodes);
                 }
                 else
                 {
-                    cr->npmenodes = guess_npme(fplog, mtop, ir, box, cr->nnodes);
-                    if (fplog)
-                    {
-                        fprintf(fplog, "Using %d separate PME ranks, as guessed by mdrun\n", cr->npmenodes);
-                    }
+                    cr->npmenodes = guess_npme(mdlog, mtop, ir, box, cr->nnodes);
+                    GMX_LOG(mdlog.info).appendTextFormatted(
+                            "Using %d separate PME ranks, as guessed by mdrun", cr->npmenodes);
                 }
             }
             else
             {
                 /* We checked above that nPmeRanks is a valid number */
                 cr->npmenodes = nPmeRanks;
-                if (fplog)
-                {
-                    fprintf(fplog, "Using %d separate PME ranks, per user request\n", cr->npmenodes);
-                }
+                GMX_LOG(mdlog.info).appendTextFormatted(
+                        "Using %d separate PME ranks", cr->npmenodes);
+                // TODO: there was a ", per user request" note here, but it's not correct anymore,
+                // as with GPUs decision about nPmeRanks can be made in runner() as well.
+                // Consider a single spot for setting nPmeRanks.
             }
         }
 
-        limit = optimize_ncells(fplog, cr->nnodes, cr->npmenodes,
+        limit = optimize_ncells(mdlog, cr->nnodes, cr->npmenodes,
                                 bDynLoadBal, dlb_scale,
                                 mtop, box, ddbox, ir, dd,
                                 cellsize_limit, cutoff_dd,

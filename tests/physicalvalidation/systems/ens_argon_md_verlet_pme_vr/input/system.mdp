@@ -1,0 +1,7 @@
+nsteps                   = 500000
+dt                       = 0.002
+cutoff-scheme            = verlet
+tcoupl                   = v-rescale
+tc-grps                  = system
+ref-t                    = 87.0
+tau-t                    = 0.1

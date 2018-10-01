@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,7 @@
 
 #include "gromacs/utility/compare.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
@@ -56,21 +57,6 @@ std::vector<std::string> splitPathElements(const std::string &path)
     GMX_ASSERT(!path.empty() && path[0] == '/',
                "Paths to KeyValueTree should start with '/'");
     return splitDelimitedString(path.substr(1), '/');
-}
-
-//! Helper function to format a simple KeyValueTreeValue.
-std::string formatSingleValue(const KeyValueTreeValue &value)
-{
-    if (value.isType<float>())
-    {
-        return formatString("%g", value.cast<float>());
-    }
-    else if (value.isType<double>())
-    {
-        return formatString("%g", value.cast<double>());
-    }
-    GMX_RELEASE_ASSERT(false, "Unknown value type");
-    return std::string();
 }
 
 }   // namespace
@@ -116,9 +102,14 @@ bool KeyValueTreeObject::hasDistinctProperties(const KeyValueTreeObject &obj) co
     return true;
 }
 
-void KeyValueTreeObject::writeUsing(TextWriter *writer) const
+/********************************************************************
+ * Key value tree dump
+ */
+
+//! \cond libapi
+void dumpKeyValueTree(TextWriter *writer, const KeyValueTreeObject &tree)
 {
-    for (const auto &prop : properties())
+    for (const auto &prop : tree.properties())
     {
         const auto &value = prop.value();
         if (value.isObject())
@@ -127,7 +118,7 @@ void KeyValueTreeObject::writeUsing(TextWriter *writer) const
             writer->writeLine(":");
             int oldIndent = writer->wrapperSettings().indent();
             writer->wrapperSettings().setIndent(oldIndent + 2);
-            value.asObject().writeUsing(writer);
+            dumpKeyValueTree(writer, value.asObject());
             writer->wrapperSettings().setIndent(oldIndent);
         }
         else
@@ -143,18 +134,19 @@ void KeyValueTreeObject::writeUsing(TextWriter *writer) const
                     GMX_RELEASE_ASSERT(!elem.isObject() && !elem.isArray(),
                                        "Arrays of objects not currently implemented");
                     writer->writeString(" ");
-                    writer->writeString(formatSingleValue(elem));
+                    writer->writeString(simpleValueToString(elem));
                 }
                 writer->writeString(" ]");
             }
             else
             {
-                writer->writeString(formatSingleValue(value));
+                writer->writeString(simpleValueToString(value));
             }
             writer->writeLine();
         }
     }
 }
+//! \endcond
 
 /********************************************************************
  * Key value tree comparison
@@ -212,29 +204,10 @@ class CompareHelper
                 {
                     GMX_RELEASE_ASSERT(false, "Array comparison not implemented");
                 }
-                else if (value1.isType<double>())
+                else if (!areSimpleValuesOfSameTypeEqual(value1, value2))
                 {
-                    const double v1 = value1.cast<double>();
-                    const double v2 = value2.cast<double>();
-                    if (!equal_double(v1, v2, ftol_, abstol_))
-                    {
-                        writer_->writeString(currentPath_.toString());
-                        writer_->writeLine(formatString(" (%e - %e)", v1, v2));
-                    }
-                }
-                else if (value1.isType<float>())
-                {
-                    const float v1 = value1.cast<float>();
-                    const float v2 = value2.cast<float>();
-                    if (!equal_float(v1, v2, ftol_, abstol_))
-                    {
-                        writer_->writeString(currentPath_.toString());
-                        writer_->writeLine(formatString(" (%e - %e)", v1, v2));
-                    }
-                }
-                else
-                {
-                    GMX_RELEASE_ASSERT(false, "Unknown value type");
+                    writer_->writeString(currentPath_.toString());
+                    writer_->writeLine(formatString(" (%s - %s)", simpleValueToString(value1).c_str(), simpleValueToString(value2).c_str()));
                 }
             }
             else if ((value1.isType<double>() && value2.isType<float>())
@@ -253,6 +226,43 @@ class CompareHelper
             else
             {
                 handleMismatchingTypes(value1, value2);
+            }
+        }
+
+        bool areSimpleValuesOfSameTypeEqual(
+            const KeyValueTreeValue &value1,
+            const KeyValueTreeValue &value2)
+        {
+            GMX_ASSERT(value1.type() == value2.type(),
+                       "Caller should ensure that types are equal");
+            if (value1.isType<bool>())
+            {
+                return value1.cast<bool>() == value2.cast<bool>();
+            }
+            else if (value1.isType<int>())
+            {
+                return value1.cast<int>() == value2.cast<int>();
+            }
+            else if (value1.isType<int64_t>())
+            {
+                return value1.cast<int64_t>() == value2.cast<int64_t>();
+            }
+            else if (value1.isType<double>())
+            {
+                return equal_double(value1.cast<double>(), value2.cast<double>(), ftol_, abstol_);
+            }
+            else if (value1.isType<float>())
+            {
+                return equal_float(value1.cast<float>(), value2.cast<float>(), ftol_, abstol_);
+            }
+            else if (value1.isType<std::string>())
+            {
+                return value1.cast<std::string>() == value2.cast<std::string>();
+            }
+            else
+            {
+                GMX_RELEASE_ASSERT(false, "Unknown value type");
+                return false;
             }
         }
 
@@ -284,7 +294,7 @@ class CompareHelper
             {
                 return "present";
             }
-            return formatSingleValue(value);
+            return simpleValueToString(value);
         }
 
         KeyValueTreePath  currentPath_;

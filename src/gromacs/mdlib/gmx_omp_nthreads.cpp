@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -128,7 +128,6 @@ static void pick_module_nthreads(const gmx::MDLogger &mdlog, int m,
     {
         sscanf(env, "%d", &nth);
 
-        // cppcheck-suppress knownConditionTrueFalse
         if (!bOMP)
         {
             gmx_warning("%s=%d is set, but %s is compiled without OpenMP!",
@@ -175,8 +174,8 @@ static void pick_module_nthreads(const gmx::MDLogger &mdlog, int m,
     gmx_omp_nthreads_set(m, nth);
 }
 
-void gmx_omp_nthreads_read_env(int     *nthreads_omp,
-                               gmx_bool bIsSimMaster)
+void gmx_omp_nthreads_read_env(const gmx::MDLogger &mdlog,
+                               int                 *nthreads_omp)
 {
     char    *env;
     gmx_bool bCommandLineSetNthreadsOMP = *nthreads_omp > 0;
@@ -204,16 +203,14 @@ void gmx_omp_nthreads_read_env(int     *nthreads_omp,
 
         /* Output the results */
         sprintf(buffer,
-                "The number of OpenMP threads was set by environment variable OMP_NUM_THREADS to %d%s\n",
+                "\nThe number of OpenMP threads was set by environment variable OMP_NUM_THREADS to %d%s\n\n",
                 nt_omp,
                 bCommandLineSetNthreadsOMP ? " (and the command-line setting agreed with that)" : "");
-        if (bIsSimMaster)
-        {
-            /* This prints once per simulation for multi-simulations,
-             * which might help diagnose issues with inhomogenous
-             * cluster setups. */
-            fputs(buffer, stderr);
-        }
+
+        /* This prints once per simulation for multi-simulations,
+         * which might help diagnose issues with inhomogenous
+         * cluster setups. */
+        GMX_LOG(mdlog.info).appendTextFormatted("%s", buffer);
         if (debug)
         {
             /* This prints once per process for real MPI (i.e. once
@@ -235,7 +232,7 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger &mdlog,
                                             int                  omp_nthreads_pme_req,
                                             gmx_bool gmx_unused  bThisNodePMEOnly,
                                             gmx_bool             bFullOmpSupport,
-                                            int                  nppn,
+                                            int                  numRanksOnThisNode,
                                             gmx_bool             bSepPME)
 {
     int      nth;
@@ -304,10 +301,10 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger &mdlog,
         /* max available threads per node */
         nth = nthreads_hw_avail;
 
-        /* divide the threads among the MPI processes/tMPI threads */
-        if (nth >= nppn)
+        /* divide the threads among the MPI ranks */
+        if (nth >= numRanksOnThisNode)
         {
-            nth /= nppn;
+            nth /= numRanksOnThisNode;
         }
         else
         {
@@ -465,73 +462,25 @@ reportOpenmpSettings(const gmx::MDLogger &mdlog,
     GMX_LOG(mdlog.warning);
 }
 
-/*! \brief Detect and warn about oversubscription of cores.
- *
- * \todo This could probably live elsewhere, since it is not specifc
- * to OpenMP, and only needs modth.gnth.
- *
- * \todo Enable this for separate PME nodes as well! */
-static void
-issueOversubscriptionWarning(const gmx::MDLogger &mdlog,
-                             const t_commrec     *cr,
-                             int                  nthreads_hw_avail,
-                             int                  nppn,
-                             gmx_bool             bSepPME)
-{
-    char sbuf[STRLEN], sbuf1[STRLEN], sbuf2[STRLEN];
-
-    if (bSepPME || 0 != cr->rank_pp_intranode)
-    {
-        return;
-    }
-
-    if (modth.gnth*nppn > nthreads_hw_avail)
-    {
-        sprintf(sbuf, "threads");
-        sbuf1[0] = '\0';
-        sprintf(sbuf2, "O");
-#if GMX_MPI
-        if (modth.gnth == 1)
-        {
-#if GMX_THREAD_MPI
-            sprintf(sbuf, "thread-MPI threads");
-#else
-            sprintf(sbuf, "MPI processes");
-            sprintf(sbuf1, " per rank");
-            sprintf(sbuf2, "On rank %d: o", cr->sim_nodeid);
-#endif
-        }
-#endif
-        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                "WARNING: %sversubscribing the available %d logical CPU cores%s with %d %s.\n"
-                "         This will cause considerable performance loss!",
-                sbuf2, nthreads_hw_avail, sbuf1, nppn*modth.gnth, sbuf);
-    }
-}
-
 void gmx_omp_nthreads_init(const gmx::MDLogger &mdlog, t_commrec *cr,
                            int nthreads_hw_avail,
+                           int numRanksOnThisNode,
                            int omp_nthreads_req,
                            int omp_nthreads_pme_req,
                            gmx_bool bThisNodePMEOnly,
                            gmx_bool bFullOmpSupport)
 {
-    int        nppn;
     gmx_bool   bSepPME;
 
     const bool bOMP = GMX_OPENMP;
 
-    /* number of MPI processes/threads per physical node */
-    nppn = cr->nrank_intranode;
-
-    bSepPME = ( (cr->duty & DUTY_PP) && !(cr->duty & DUTY_PME)) ||
-        (!(cr->duty & DUTY_PP) &&  (cr->duty & DUTY_PME));
+    bSepPME = (thisRankHasDuty(cr, DUTY_PP) != thisRankHasDuty(cr, DUTY_PME));
 
     manage_number_of_openmp_threads(mdlog, cr, bOMP,
                                     nthreads_hw_avail,
                                     omp_nthreads_req, omp_nthreads_pme_req,
                                     bThisNodePMEOnly, bFullOmpSupport,
-                                    nppn, bSepPME);
+                                    numRanksOnThisNode, bSepPME);
 #if GMX_THREAD_MPI
     /* Non-master threads have to wait for the OpenMP management to be
      * done, so that code elsewhere that uses OpenMP can be certain
@@ -543,7 +492,6 @@ void gmx_omp_nthreads_init(const gmx::MDLogger &mdlog, t_commrec *cr,
 #endif
 
     reportOpenmpSettings(mdlog, cr, bOMP, bFullOmpSupport, bSepPME);
-    issueOversubscriptionWarning(mdlog, cr, nthreads_hw_avail, nppn, bSepPME);
 }
 
 int gmx_omp_nthreads_get(int mod)

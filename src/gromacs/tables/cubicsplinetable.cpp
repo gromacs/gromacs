@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -146,7 +146,7 @@ fillSingleCubicSplineTableData(const std::function<double(double)>   &function,
                                double                                 spacing,
                                std::vector<real>                     *yfghTableData)
 {
-    int  endIndex   = range.second / spacing + 2;
+    int  endIndex   = static_cast<int>(range.second / spacing + 2);
 
     yfghTableData->resize(4*endIndex);
 
@@ -220,14 +220,14 @@ fillSingleCubicSplineTableData(const std::function<double(double)>   &function,
  * \param[out] yfghTableData        Output cubic spline table with Y,F,G,H entries
  */
 void
-fillSingleCubicSplineTableData(ConstArrayRef<double>                  function,
-                               ConstArrayRef<double>                  derivative,
+fillSingleCubicSplineTableData(ArrayRef<const double>                 function,
+                               ArrayRef<const double>                 derivative,
                                double                                 inputSpacing,
                                const std::pair<real, real>           &range,
                                double                                 spacing,
                                std::vector<real>                     *yfghTableData)
 {
-    int                 endIndex   = range.second / spacing + 2;
+    int                 endIndex   = static_cast<int>(range.second / spacing + 2);
 
     std::vector<double> tmpFunction(endIndex);
     std::vector<double> tmpDerivative(endIndex);
@@ -241,7 +241,7 @@ fillSingleCubicSplineTableData(ConstArrayRef<double>                  function,
     {
         double x     = i * spacing;
         double xtab  = x / inputSpacing;
-        int    index = xtab;
+        int    index = static_cast<int>(xtab);
         double eps   = xtab - index;
 
         if (range.first > 0 && i == 0)
@@ -298,7 +298,7 @@ fillSingleCubicSplineTableData(ConstArrayRef<double>                  function,
 
 }
 
-}   // namespace anonymous
+}   // namespace
 
 
 
@@ -329,7 +329,7 @@ CubicSplineTable::CubicSplineTable(std::initializer_list<AnalyticalSplineTableIn
     double minQuotient = GMX_REAL_MAX;
 
     // loop over all functions to find smallest spacing
-    for (auto thisFuncInput : analyticalInputList)
+    for (const auto &thisFuncInput : analyticalInputList)
     {
         try
         {
@@ -340,10 +340,14 @@ CubicSplineTable::CubicSplineTable(std::initializer_list<AnalyticalSplineTableIn
             ex.prependContext("Error generating cubic spline table for function '" + thisFuncInput.desc + "'");
             throw;
         }
-        // Calculate the required table spacing h. The error we make with linear interpolation
-        // of the derivative will be described by the third-derivative correction term.
-        // This means we can compute the required spacing as h = sqrt(12*tolerance*min(f'/f''')),
-        // where f'/f''' is the first and third derivative of the function, respectively.
+        // Calculate the required table spacing h. The error we make with a third order polynomial
+        // (second order for derivative) will be described by the fourth-derivative correction term.
+        //
+        // This means we can compute the required spacing as h = 0.5*cbrt(72*sqrt(3)*tolerance**min(f'/f'''')),
+        // where f'/f'''' is the first and fourth derivative of the function, respectively.
+        // Since we already have an analytical form of the derivative, we reduce the numerical
+        // errors by calculating the quotient of the function and third derivative of the
+        // input-derivative-analytical function instead.
 
         double thisMinQuotient = internal::findSmallestQuotientOfFunctionAndThirdDerivative(thisFuncInput.derivative, range_);
 
@@ -364,7 +368,7 @@ CubicSplineTable::CubicSplineTable(std::initializer_list<AnalyticalSplineTableIn
     // combine them into a multiplexed table function.
     std::size_t funcIndex = 0;
 
-    for (auto thisFuncInput : analyticalInputList)
+    for (const auto &thisFuncInput : analyticalInputList)
     {
         try
         {

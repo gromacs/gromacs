@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "pme-internal.h"
+
 #ifdef DEBUG_PME
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/utility/cstringutil.h"
@@ -71,22 +73,22 @@ void gmx_sum_qgrid_dd(struct gmx_pme_t *pme, real *grid, int direction)
     int            recv_index0, recv_nindex;
     MPI_Status     stat;
     int            i, j, k, ix, iy, iz, icnt;
-    int            ipulse, send_id, recv_id, datasize;
+    int            send_id, recv_id, datasize;
     real          *p;
     real          *sendptr, *recvptr;
 
     /* Start with minor-rank communication. This is a bit of a pain since it is not contiguous */
     overlap = &pme->overlap[1];
 
-    for (ipulse = 0; ipulse < overlap->noverlap_nodes; ipulse++)
+    for (size_t ipulse = 0; ipulse < overlap->comm_data.size(); ipulse++)
     {
         /* Since we have already (un)wrapped the overlap in the z-dimension,
          * we only have to communicate 0 to nkz (not pmegrid_nz).
          */
         if (direction == GMX_SUM_GRID_FORWARD)
         {
-            send_id       = overlap->send_id[ipulse];
-            recv_id       = overlap->recv_id[ipulse];
+            send_id       = overlap->comm_data[ipulse].send_id;
+            recv_id       = overlap->comm_data[ipulse].recv_id;
             send_index0   = overlap->comm_data[ipulse].send_index0;
             send_nindex   = overlap->comm_data[ipulse].send_nindex;
             recv_index0   = overlap->comm_data[ipulse].recv_index0;
@@ -94,8 +96,8 @@ void gmx_sum_qgrid_dd(struct gmx_pme_t *pme, real *grid, int direction)
         }
         else
         {
-            send_id       = overlap->recv_id[ipulse];
-            recv_id       = overlap->send_id[ipulse];
+            send_id       = overlap->comm_data[ipulse].recv_id;
+            recv_id       = overlap->comm_data[ipulse].send_id;
             send_index0   = overlap->comm_data[ipulse].recv_index0;
             send_nindex   = overlap->comm_data[ipulse].recv_nindex;
             recv_index0   = overlap->comm_data[ipulse].send_index0;
@@ -128,9 +130,9 @@ void gmx_sum_qgrid_dd(struct gmx_pme_t *pme, real *grid, int direction)
 
         datasize      = pme->pmegrid_nx * pme->nkz;
 
-        MPI_Sendrecv(overlap->sendbuf, send_nindex*datasize, GMX_MPI_REAL,
+        MPI_Sendrecv(overlap->sendbuf.data(), send_nindex*datasize, GMX_MPI_REAL,
                      send_id, ipulse,
-                     overlap->recvbuf, recv_nindex*datasize, GMX_MPI_REAL,
+                     overlap->recvbuf.data(), recv_nindex*datasize, GMX_MPI_REAL,
                      recv_id, ipulse,
                      overlap->mpi_comm, &stat);
 
@@ -173,22 +175,22 @@ void gmx_sum_qgrid_dd(struct gmx_pme_t *pme, real *grid, int direction)
      */
     overlap = &pme->overlap[0];
 
-    for (ipulse = 0; ipulse < overlap->noverlap_nodes; ipulse++)
+    for (size_t ipulse = 0; ipulse < overlap->comm_data.size(); ipulse++)
     {
         if (direction == GMX_SUM_GRID_FORWARD)
         {
-            send_id       = overlap->send_id[ipulse];
-            recv_id       = overlap->recv_id[ipulse];
+            send_id       = overlap->comm_data[ipulse].send_id;
+            recv_id       = overlap->comm_data[ipulse].recv_id;
             send_index0   = overlap->comm_data[ipulse].send_index0;
             send_nindex   = overlap->comm_data[ipulse].send_nindex;
             recv_index0   = overlap->comm_data[ipulse].recv_index0;
             recv_nindex   = overlap->comm_data[ipulse].recv_nindex;
-            recvptr       = overlap->recvbuf;
+            recvptr       = overlap->recvbuf.data();
         }
         else
         {
-            send_id       = overlap->recv_id[ipulse];
-            recv_id       = overlap->send_id[ipulse];
+            send_id       = overlap->comm_data[ipulse].recv_id;
+            recv_id       = overlap->comm_data[ipulse].send_id;
             send_index0   = overlap->comm_data[ipulse].recv_index0;
             send_nindex   = overlap->comm_data[ipulse].recv_nindex;
             recv_index0   = overlap->comm_data[ipulse].send_index0;
@@ -233,7 +235,7 @@ void gmx_sum_qgrid_dd(struct gmx_pme_t *pme, real *grid, int direction)
 #endif
 
 
-int copy_pmegrid_to_fftgrid(const gmx_pme_t *pme, real *pmegrid, real *fftgrid, int grid_index)
+int copy_pmegrid_to_fftgrid(const gmx_pme_t *pme, const real *pmegrid, real *fftgrid, int grid_index)
 {
     ivec    local_fft_ndata, local_fft_offset, local_fft_size;
     ivec    local_pme_size;
@@ -507,7 +509,7 @@ void set_grid_alignment(int gmx_unused *pmegrid_nz, int gmx_unused pme_order)
 {
 #ifdef PME_SIMD4_SPREAD_GATHER
     if (pme_order == 5
-#ifndef PME_SIMD4_UNALIGNED
+#if !PME_4NSIMD_GATHER
         || pme_order == 4
 #endif
         )
@@ -521,7 +523,7 @@ void set_grid_alignment(int gmx_unused *pmegrid_nz, int gmx_unused pme_order)
 static void set_gridsize_alignment(int gmx_unused *gridsize, int gmx_unused pme_order)
 {
 #ifdef PME_SIMD4_SPREAD_GATHER
-#ifndef PME_SIMD4_UNALIGNED
+#if !PME_4NSIMD_GATHER
     if (pme_order == 4)
     {
         /* Add extra elements to ensured aligned operations do not go
@@ -869,46 +871,4 @@ void reuse_pmegrids(const pmegrids_t *oldgrid, pmegrids_t *newgrid)
             newgrid->grid_th[t].grid = oldgrid->grid_th[t].grid;
         }
     }
-}
-
-static void dump_grid(FILE *fp,
-                      int sx, int sy, int sz, int nx, int ny, int nz,
-                      int my, int mz, const real *g)
-{
-    int x, y, z;
-
-    for (x = 0; x < nx; x++)
-    {
-        for (y = 0; y < ny; y++)
-        {
-            for (z = 0; z < nz; z++)
-            {
-                fprintf(fp, "%2d %2d %2d %6.3f\n",
-                        sx+x, sy+y, sz+z, g[(x*my + y)*mz + z]);
-            }
-        }
-    }
-}
-
-/* This function is called from gmx_pme_do() only from debugging code
-   that is commented out. */
-void dump_local_fftgrid(struct gmx_pme_t *pme, const real *fftgrid)
-{
-    ivec local_fft_ndata, local_fft_offset, local_fft_size;
-
-    gmx_parallel_3dfft_real_limits(pme->pfft_setup[PME_GRID_QA],
-                                   local_fft_ndata,
-                                   local_fft_offset,
-                                   local_fft_size);
-
-    dump_grid(stderr,
-              pme->pmegrid_start_ix,
-              pme->pmegrid_start_iy,
-              pme->pmegrid_start_iz,
-              pme->pmegrid_nx-pme->pme_order+1,
-              pme->pmegrid_ny-pme->pme_order+1,
-              pme->pmegrid_nz-pme->pme_order+1,
-              local_fft_size[YY],
-              local_fft_size[ZZ],
-              fftgrid);
 }

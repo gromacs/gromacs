@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,18 +39,19 @@
 
 #include "ebin.h"
 
-#include <math.h>
-#include <string.h>
+#include <cmath>
+#include <cstring>
 
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-t_ebin *mk_ebin(void)
+t_ebin *mk_ebin()
 {
     t_ebin *eb;
 
@@ -59,7 +60,19 @@ t_ebin *mk_ebin(void)
     return eb;
 }
 
-int get_ebin_space(t_ebin *eb, int nener, const char *enm[], const char *unit)
+void done_ebin(t_ebin *eb)
+{
+    for (int i = 0; i < eb->nener; i++)
+    {
+        sfree(eb->enm[i].name);
+        sfree(eb->enm[i].unit);
+    }
+    sfree(eb->e);
+    sfree(eb->e_sim);
+    sfree(eb->enm);
+}
+
+int get_ebin_space(t_ebin *eb, int nener, const char *const enm[], const char *unit)
 {
     int         index;
     int         i, f;
@@ -115,7 +128,7 @@ int get_ebin_space(t_ebin *eb, int nener, const char *enm[], const char *unit)
     return index;
 }
 
-void add_ebin(t_ebin *eb, int index, int nener, real ener[], gmx_bool bSum)
+void add_ebin(t_ebin *eb, int index, int nener, const real ener[], gmx_bool bSum)
 {
     int       i, m;
     double    e, invmm, diff;
@@ -151,7 +164,7 @@ void add_ebin(t_ebin *eb, int index, int nener, real ener[], gmx_bool bSum)
         }
         else
         {
-            invmm = (1.0/(double)m)/((double)m+1.0);
+            invmm = (1.0/m)/(m+1.0);
 
             for (i = 0; (i < nener); i++)
             {
@@ -191,30 +204,31 @@ void pr_ebin(FILE *fp, t_ebin *eb, int index, int nener, int nperline,
              int prmode, gmx_bool bPrHead)
 {
     int  i, j, i0;
-    real ee = 0;
     int  rc;
     char buf[30];
 
     rc = 0;
 
-    if (index < 0)
+    if (index < 0 || index > eb->nener)
     {
         gmx_fatal(FARGS, "Invalid index in pr_ebin: %d", index);
     }
-    if (nener == -1)
+    int start = index;
+    if (nener > eb->nener)
     {
-        nener = eb->nener;
+        gmx_fatal(FARGS, "Invalid nener in pr_ebin: %d", nener);
     }
-    else
+    int end = eb->nener;
+    if (nener != -1)
     {
-        nener = index + nener;
+        end = index + nener;
     }
-    for (i = index; (i < nener) && rc >= 0; )
+    for (i = start; (i < end) && rc >= 0; )
     {
         if (bPrHead)
         {
             i0 = i;
-            for (j = 0; (j < nperline) && (i < nener) && rc >= 0; j++, i++)
+            for (j = 0; (j < nperline) && (i < end) && rc >= 0; j++, i++)
             {
                 if (strncmp(eb->enm[i].name, "Pres", 4) == 0)
                 {
@@ -235,17 +249,27 @@ void pr_ebin(FILE *fp, t_ebin *eb, int index, int nener, int nperline,
 
             i = i0;
         }
-        for (j = 0; (j < nperline) && (i < nener) && rc >= 0; j++, i++)
+        for (j = 0; (j < nperline) && (i < end) && rc >= 0; j++, i++)
         {
             switch (prmode)
             {
-                case eprNORMAL: ee = eb->e[i].e; break;
-                case eprAVER:   ee = eb->e_sim[i].esum/eb->nsum_sim; break;
+                case eprNORMAL:
+                    rc = fprintf(fp, "   %12.5e", eb->e[i].e);
+                    break;
+                case eprAVER:
+                    if (eb->nsum_sim > 0)
+                    {
+                        rc = fprintf(fp, "   %12.5e", eb->e_sim[i].esum/eb->nsum_sim);
+                    }
+                    else
+                    {
+                        rc = fprintf(fp, "    %-12s", "N/A");
+                    }
+                    break;
                 default: gmx_fatal(FARGS, "Invalid print mode %d in pr_ebin",
                                    prmode);
             }
 
-            rc = fprintf(fp, "   %12.5e", ee);
         }
         if (rc >= 0)
         {
@@ -257,53 +281,3 @@ void pr_ebin(FILE *fp, t_ebin *eb, int index, int nener, int nperline,
         gmx_fatal(FARGS, "Cannot write to logfile; maybe you are out of disk space?");
     }
 }
-
-#ifdef DEBUGEBIN
-int main(int argc, char *argv[])
-{
-#define NE 12
-#define NT 7
-#define NS 5
-
-    t_ebin *eb;
-    int     i;
-    char    buf[25];
-    char   *ce[NE], *ct[NT], *cs[NS];
-    real    e[NE], t[NT], s[NS];
-    int     ie, it, is;
-
-    eb = mk_ebin();
-    for (i = 0; (i < NE); i++)
-    {
-        e[i] = i;
-        sprintf(buf, "e%d", i);
-        ce[i] = gmx_strdup(buf);
-    }
-    ie = get_ebin_space(eb, NE, ce);
-    add_ebin(eb, ie, NE, e, 0);
-    for (i = 0; (i < NS); i++)
-    {
-        s[i] = i;
-        sprintf(buf, "s%d", i);
-        cs[i] = gmx_strdup(buf);
-    }
-    is = get_ebin_space(eb, NS, cs);
-    add_ebin(eb, is, NS, s, 0);
-    for (i = 0; (i < NT); i++)
-    {
-        t[i] = i;
-        sprintf(buf, "t%d", i);
-        ct[i] = gmx_strdup(buf);
-    }
-    it = get_ebin_space(eb, NT, ct);
-    add_ebin(eb, it, NT, t, 0);
-
-    printf("Normal:\n");
-    pr_ebin(stdout, eb, 0, -1, 5, eprNORMAL, 1);
-
-    printf("Average:\n");
-    pr_ebin(stdout, eb, ie, NE, 5, eprAVER, 1);
-    pr_ebin(stdout, eb, is, NS, 3, eprAVER, 1);
-    pr_ebin(stdout, eb, it, NT, 4, eprAVER, 1);
-}
-#endif

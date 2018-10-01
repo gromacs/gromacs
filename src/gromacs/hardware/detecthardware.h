@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,40 +35,13 @@
 #ifndef GMX_HARDWARE_DETECTHARDWARE_H
 #define GMX_HARDWARE_DETECTHARDWARE_H
 
-#include <cstdio>
-
-#include <string>
-
-#include "gromacs/utility/basedefinitions.h"
-
 struct gmx_gpu_info_t;
-struct gmx_gpu_opt_t;
 struct gmx_hw_info_t;
-struct gmx_hw_opt_t;
-struct t_commrec;
 
 namespace gmx
 {
-class HardwareTopology;
 class MDLogger;
-}
-
-/*! \brief Return whether mdrun can use more than one GPU per node
- *
- * The OpenCL implementation cannot use more than one GPU per node,
- * for example. */
-gmx_bool gmx_multiple_gpu_per_node_supported();
-
-/*! \brief Return whether PP ranks can share a GPU
- *
- * The OpenCL implementation cannot share a GPU between ranks, for
- * example. */
-gmx_bool gmx_gpu_sharing_supported();
-
-/*! \internal \brief
- * Returns the GPU information text, one GPU per line.
- */
-std::string sprint_gpus(const gmx_gpu_info_t *gpu_info);
+class PhysicalNodeCommunicator;
 
 /*! \brief Run detection, consistency checks, and make available on all ranks.
  *
@@ -76,36 +49,19 @@ std::string sprint_gpus(const gmx_gpu_info_t *gpu_info);
  * it. It will run a preamble before executing cpu and hardware checks, and
  * then run consistency checks afterwards. The results will also be made
  * available on all nodes.
- * Caller is responsible for freeing this pointer.
+ * Caller is responsible for calling gmx_hardware_info_free() when finished.
+ *
+ * May do communication on MPI_COMM_WORLD when compiled with real MPI.
  */
-gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog,
-                                   const t_commrec *cr, gmx_bool bDetectGPUs);
+gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger            &mdlog,
+                                   const PhysicalNodeCommunicator &physicalNodeComm);
 
-/* Print information about the detected hardware to fplog (if != NULL)
- * and to stderr the master rank.
- */
-void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
-                                 const gmx::MDLogger &mdlog,
-                                 const gmx_hw_info_t *hwinfo);
+/*! \brief Free the hwinfo structure */
+void gmx_hardware_info_free();
 
-void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
+//! Return whether compatible GPUs were found.
+bool compatibleGpusFound(const gmx_gpu_info_t &gpu_info);
 
-void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt);
-
-/* Check the consistency of hw_opt with hwinfo.
-   This function should be called once on each MPI rank. */
-void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
-                                      const gmx_hw_info_t *hwinfo,
-                                      const t_commrec     *cr,
-                                      const gmx_hw_opt_t  *hw_opt,
-                                      gmx_bool             bUseGPU);
-
-/* Check whether a GPU is shared among ranks, and return the number of shared
-   gpus
-
-   gpu_opt       = the gpu options struct
-
-   returns: The number of GPUs shared among ranks, or 0 */
-int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt);
+} // namespace gmx
 
 #endif

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,7 @@
 
 #include <cstdint>
 
+#include "gromacs/math/utilities.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #include "impl_ibm_vmx_definitions.h"
@@ -117,7 +118,7 @@ class SimdFIBool
 };
 
 static inline SimdFloat gmx_simdcall
-simdLoad(const float *m)
+simdLoad(const float *m, SimdFloatTag = {})
 {
     return {
                vec_ld(0, const_cast<float *>(m))
@@ -139,7 +140,7 @@ setZeroF()
 }
 
 static inline SimdFInt32 gmx_simdcall
-simdLoadFI(const std::int32_t * m)
+simdLoad(const std::int32_t * m, SimdFInt32Tag)
 {
     return {
                vec_ld(0, const_cast<int *>(m))
@@ -384,6 +385,7 @@ frexp(SimdFloat value, SimdFInt32 * exponent)
     };
 }
 
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall
 ldexp(SimdFloat value, SimdFInt32 exponent)
 {
@@ -391,6 +393,13 @@ ldexp(SimdFloat value, SimdFInt32 exponent)
     __vector signed int       iExponent;
 
     iExponent  = vec_add(exponent.simdInternal_, exponentBias);
+
+    if (opt == MathOptimization::Safe)
+    {
+        // Make sure biased argument is not negative
+        iExponent = vec_max(iExponent, vec_splat_s32(0));
+    }
+
     iExponent  = vec_sl(iExponent, vec_add(vec_splat_u32(15), vec_splat_u32(8)));
 
     return {
@@ -495,38 +504,6 @@ blend(SimdFloat a, SimdFloat b, SimdFBool sel)
 {
     return {
                vec_sel(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
-    };
-}
-
-static inline SimdFInt32 gmx_simdcall
-operator<<(SimdFInt32 a, int n)
-{
-    // The shift constant magic requires an explanation:
-    // VMX only allows literals up to 15 to be created directly with vec_splat_u32,
-    // and we need to be able to shift up to 31 bits. The code on the right hand
-    // side splits the constant in three parts with values in the range 0..15.
-    // Since the argument has to be a constant (both our and VMX requirement), these
-    // constants will be evaluated at compile-time, and if one or two parts evaluate
-    // to zero they will be removed with -O2 or higher optimization (checked).
-
-    return {
-               vec_sl(a.simdInternal_, vec_add(vec_add(vec_splat_u32( (((n&0xF)+(n/16))&0xF)+n/31 ), vec_splat_u32( (n/16)*15 )), vec_splat_u32( (n/31)*15 )))
-    };
-}
-
-static inline SimdFInt32 gmx_simdcall
-operator>>(SimdFInt32 a, int n)
-{
-    // The shift constant magic requires an explanation:
-    // VMX only allows literals up to 15 to be created directly with vec_splat_u32,
-    // and we need to be able to shift up to 31 bits. The code on the right hand
-    // side splits the constant in three parts with values in the range 0..15.
-    // Since the argument has to be a constant (both our and VMX requirement), these
-    // constants will be evaluated at compile-time, and if one or two parts evaluate
-    // to zero they will be removed with -O2 or higher optimization (checked).
-
-    return {
-               vec_sr(a.simdInternal_, vec_add(vec_add(vec_splat_u32( (((n&0xF)+(n/16))&0xF)+n/31 ), vec_splat_u32( (n/16)*15 )), vec_splat_u32( (n/31)*15 )))
     };
 }
 

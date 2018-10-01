@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,11 +35,8 @@
 #ifndef GMX_MDTYPES_INTERACTION_CONST_H
 #define GMX_MDTYPES_INTERACTION_CONST_H
 
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /* Used with force switching or a constant potential shift:
  * rsw       = max(r - r_switch, 0)
@@ -75,11 +72,14 @@ struct interaction_const_t
     /* VdW */
     int                    vdwtype;
     int                    vdw_modifier;
+    double                 reppow;
     real                   rvdw;
     real                   rvdw_switch;
     struct shift_consts_t  dispersion_shift;
     struct shift_consts_t  repulsion_shift;
     struct switch_consts_t vdw_switch;
+    gmx_bool               useBuckingham;
+    real                   buckinghamBMax;
     /* TODO: remove this variable, used for not modyfing the group kernels,
      * it is equal to -dispersion_shift->cpot
      */
@@ -91,9 +91,7 @@ struct interaction_const_t
 
     /* Coulomb */
     real rcoulomb;
-
-    /* Cut-off */
-    real rlist;
+    real rcoulomb_switch;
 
     /* PME/Ewald */
     real ewaldcoeff_q;
@@ -132,9 +130,5 @@ struct interaction_const_t
        single precision x86 SIMD for aligned loads */
     real *tabq_vdw_FDV0;
 };
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

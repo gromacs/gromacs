@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,7 +69,7 @@ const char *xdr_datatype_names[] =
  | with some routines to assist in this task (those are marked
  | static and cannot be called from user programs)
  */
-#define MAXABS INT_MAX-2
+#define MAXABS (INT_MAX-2)
 
 #ifndef SQR
 #define SQR(x) ((x)*(x))
@@ -170,7 +170,7 @@ static int sizeofint(const int size)
  | So I don't need to call 'sizeofints for those calls.
  */
 
-static int sizeofints( const int num_of_ints, unsigned int sizes[])
+static int sizeofints( const int num_of_ints, const unsigned int sizes[])
 {
     int          i, num;
     int          bytes[32];
@@ -336,7 +336,7 @@ static int receivebits(int buf[], int num_of_bits)
  */
 
 static void receiveints(int buf[], const int num_of_ints, int num_of_bits,
-                        unsigned int sizes[], int nums[])
+                        const unsigned int sizes[], int nums[])
 {
     int bytes[32];
     int i, j, num_of_bytes, p, num;
@@ -449,7 +449,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         if (*size <= 9)
         {
             return (xdr_vector(xdrs, reinterpret_cast<char *>(fp), static_cast<unsigned int>(size3),
-                               static_cast<unsigned int>(sizeof(*fp)), (xdrproc_t)xdr_float));
+                               static_cast<unsigned int>(sizeof(*fp)), reinterpret_cast<xdrproc_t>(xdr_float)));
         }
 
         if (xdr_float(xdrs, precision) == 0)
@@ -494,7 +494,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             {
                 lf = *lfp * *precision - 0.5;
             }
-            if (fabs(lf) > MAXABS)
+            if (std::fabs(lf) > MAXABS)
             {
                 /* scaling would cause overflow */
                 errval = 0;
@@ -518,7 +518,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             {
                 lf = *lfp * *precision - 0.5;
             }
-            if (fabs(lf) > MAXABS)
+            if (std::fabs(lf) > MAXABS)
             {
                 /* scaling would cause overflow */
                 errval = 0;
@@ -582,9 +582,9 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             return 0;
         }
 
-        if ((float)maxint[0] - (float)minint[0] >= MAXABS ||
-            (float)maxint[1] - (float)minint[1] >= MAXABS ||
-            (float)maxint[2] - (float)minint[2] >= MAXABS)
+        if (static_cast<float>(maxint[0]) - static_cast<float>(minint[0]) >= MAXABS ||
+            static_cast<float>(maxint[1]) - static_cast<float>(minint[1]) >= MAXABS ||
+            static_cast<float>(maxint[2]) - static_cast<float>(minint[2]) >= MAXABS)
         {
             /* turning value in unsigned by subtracting minint
              * would cause overflow
@@ -796,7 +796,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         {
             *precision = -1;
             return (xdr_vector(xdrs, reinterpret_cast<char *>(fp), static_cast<unsigned int>(size3),
-                               static_cast<unsigned int>(sizeof(*fp)), (xdrproc_t)xdr_float));
+                               static_cast<unsigned int>(sizeof(*fp)), reinterpret_cast<xdrproc_t>(xdr_float)));
         }
         if (xdr_float(xdrs, precision) == 0)
         {
@@ -1111,7 +1111,7 @@ xtc_get_next_frame_number(FILE *fp, XDR *xdrs, int natoms)
 
     /* read one int just to make sure we dont read this frame but the next */
     xdr_int(xdrs, &step);
-    while (1)
+    while (true)
     {
         ret = xtc_at_header_start(fp, xdrs, natoms, &step, &time);
         if (ret == 1)
@@ -1140,7 +1140,7 @@ static float xtc_get_next_frame_time(FILE *fp, XDR *xdrs, int natoms,
     float     time;
     int       step;
     int       ret;
-    *bOK = 0;
+    *bOK = false;
 
     if ((off = gmx_ftell(fp)) < 0)
     {
@@ -1148,15 +1148,15 @@ static float xtc_get_next_frame_time(FILE *fp, XDR *xdrs, int natoms,
     }
     /* read one int just to make sure we dont read this frame but the next */
     xdr_int(xdrs, &step);
-    while (1)
+    while (true)
     {
         ret = xtc_at_header_start(fp, xdrs, natoms, &step, &time);
         if (ret == 1)
         {
-            *bOK = 1;
+            *bOK = true;
             if (gmx_fseek(fp, off, SEEK_SET))
             {
-                *bOK = 0;
+                *bOK = false;
                 return -1;
             }
             return time;
@@ -1180,22 +1180,22 @@ xtc_get_current_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
     int       step;
     float     time;
     int       ret;
-    *bOK = 0;
+    *bOK = false;
 
     if ((off = gmx_ftell(fp)) < 0)
     {
         return -1;
     }
 
-    while (1)
+    while (true)
     {
         ret = xtc_at_header_start(fp, xdrs, natoms, &step, &time);
         if (ret == 1)
         {
-            *bOK = 1;
+            *bOK = true;
             if (gmx_fseek(fp, off, SEEK_SET))
             {
-                *bOK = 0;
+                *bOK = false;
                 return -1;
             }
             return time;
@@ -1227,7 +1227,7 @@ xtc_get_current_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
     int       ret;
     int       step;
     float     time;
-    *bOK = 0;
+    *bOK = false;
 
     if ((off = gmx_ftell(fp)) < 0)
     {
@@ -1235,15 +1235,15 @@ xtc_get_current_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
     }
 
 
-    while (1)
+    while (true)
     {
         ret = xtc_at_header_start(fp, xdrs, natoms, &step, &time);
         if (ret == 1)
         {
-            *bOK = 1;
+            *bOK = true;
             if (gmx_fseek(fp, off, SEEK_SET))
             {
-                *bOK = 0;
+                *bOK = false;
                 return -1;
             }
             return step;
@@ -1278,7 +1278,7 @@ static gmx_off_t xtc_get_next_frame_start(FILE *fp, XDR *xdrs, int natoms)
     float     time;
     /* read one int just to make sure we dont read this frame but the next */
     xdr_int(xdrs, &step);
-    while (1)
+    while (true)
     {
         ret = xtc_at_header_start(fp, xdrs, natoms, &step, &time);
         if (ret == 1)
@@ -1308,7 +1308,7 @@ xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
     float     tinit;
     gmx_off_t off;
 
-    *bOK = 0;
+    *bOK = false;
     if ((off   = gmx_ftell(fp)) < 0)
     {
         return -1;
@@ -1331,7 +1331,7 @@ xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
     res -= tinit;
     if (0 != gmx_fseek(fp, off, SEEK_SET))
     {
-        *bOK = 0;
+        *bOK = false;
         return -1;
     }
     return res;
@@ -1367,7 +1367,7 @@ xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms)
         return -1;
     }
 
-    while (1)
+    while (true)
     {
         fr = xtc_get_next_frame_number(fp, xdrs, natoms);
         if (fr < 0)
@@ -1466,7 +1466,7 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms, gmx_bool bSeek
        }
      */
 
-    while (1)
+    while (true)
     {
         dt = xdr_xtc_estimate_dt(fp, xdrs, natoms, &bOK);
         if (!bOK)
@@ -1590,17 +1590,17 @@ xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
     float      time;
     gmx_off_t  off;
-    *bOK = 1;
+    *bOK = true;
     off  = gmx_ftell(fp);
     if (off < 0)
     {
-        *bOK = 0;
+        *bOK = false;
         return -1;
     }
 
     if (gmx_fseek(fp, -3*XDR_INT_SIZE, SEEK_END) != 0)
     {
-        *bOK = 0;
+        *bOK = false;
         return -1;
     }
 
@@ -1612,7 +1612,7 @@ xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 
     if (gmx_fseek(fp, off, SEEK_SET) != 0)
     {
-        *bOK = 0;
+        *bOK = false;
         return -1;
     }
     return time;
@@ -1624,18 +1624,18 @@ xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
     int        frame;
     gmx_off_t  off;
-    *bOK = 1;
+    *bOK = true;
 
     if ((off = gmx_ftell(fp)) < 0)
     {
-        *bOK = 0;
+        *bOK = false;
         return -1;
     }
 
 
     if (gmx_fseek(fp, -3*XDR_INT_SIZE, SEEK_END))
     {
-        *bOK = 0;
+        *bOK = false;
         return -1;
     }
 
@@ -1648,7 +1648,7 @@ xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 
     if (gmx_fseek(fp, off, SEEK_SET))
     {
-        *bOK = 0;
+        *bOK = false;
         return -1;
     }
 

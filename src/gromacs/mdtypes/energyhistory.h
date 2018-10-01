@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,11 +69,10 @@ class delta_h_history_t
         //! Whether the lambda value is set. Here for backward-compatibility.
         gmx_bool                        start_lambda_set;
 
-        //! Constructor
-        delta_h_history_t() : dh(),
-                              start_time(0),
-                              start_lambda(0),
-                              start_lambda_set(false)
+        delta_h_history_t() :
+            start_time(0),
+            start_lambda(0),
+            start_lambda_set(false)
         {
         }
 };
@@ -83,22 +82,20 @@ class delta_h_history_t
 class energyhistory_t
 {
     public:
-        gmx_int64_t         nsteps;       //! The number of steps in the history
-        gmx_int64_t         nsum;         //! Nr. of steps in the ener_ave and ener_sum
+        int64_t             nsteps;       //! The number of steps in the history
+        int64_t             nsum;         //! Nr. of steps in the ener_ave and ener_sum
         std::vector<double> ener_ave;     //! Energy terms difference^2 sum to get fluctuations
         std::vector<double> ener_sum;     //! Energy terms sum
-        gmx_int64_t         nsteps_sim;   //! The number of steps in ener_sum_sim
-        gmx_int64_t         nsum_sim;     //! The number of frames in ener_sum_sim
+        int64_t             nsteps_sim;   //! The number of steps in ener_sum_sim
+        int64_t             nsum_sim;     //! The number of frames in ener_sum_sim
         std::vector<double> ener_sum_sim; //! Energy term history sum of the whole sim
 
         //! History for energy difference for foreign lambdas (useful for BAR)
         std::unique_ptr<delta_h_history_t> deltaHForeignLambdas;
 
-        //! Constructor
         energyhistory_t() : nsteps(0),
                             nsum(0),
-                            ener_ave(),
-                            ener_sum(),
+
                             nsteps_sim(0),
                             nsum_sim(0),
                             ener_sum_sim(0)

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,8 +49,11 @@ struct gmx_localtop_t;
 struct t_atom;
 struct t_atoms;
 struct t_block;
-struct t_ilist;
 struct t_symtab;
+
+// TODO All of the functions taking a const gmx_mtop * are deprecated
+// and should be replaced by versions taking const gmx_mtop & when
+// their callers are refactored similarly.
 
 /* Should be called after generating or reading mtop,
  * to set some compute intesive variables to avoid
@@ -69,6 +72,12 @@ gmx_mtop_count_atomtypes(const gmx_mtop_t *mtop, int state, int typecount[]);
 /* Returns the total number of charge groups in mtop */
 int
 ncg_mtop(const gmx_mtop_t *mtop);
+
+/*!\brief Returns the total number of molecules in mtop
+ *
+ * \param[in] mtop  The global topology
+ */
+int gmx_mtop_num_molecules(const gmx_mtop_t &mtop);
 
 /* Returns the total number of residues in mtop. */
 int gmx_mtop_nres(const gmx_mtop_t *mtop);
@@ -117,7 +126,7 @@ gmx_mtop_atomloop_all_names(gmx_mtop_atomloop_all_t aloop,
  */
 void
 gmx_mtop_atomloop_all_moltype(gmx_mtop_atomloop_all_t aloop,
-                              gmx_moltype_t **moltype, int *at_mol);
+                              const gmx_moltype_t **moltype, int *at_mol);
 
 
 /* Abstract type for atom loop over atoms in all molecule blocks */
@@ -153,17 +162,19 @@ typedef struct gmx_mtop_ilistloop *gmx_mtop_ilistloop_t;
 gmx_mtop_ilistloop_t
 gmx_mtop_ilistloop_init(const gmx_mtop_t *mtop);
 
+/* Initialize an ilist loop over all molecule types in the system. */
+gmx_mtop_ilistloop_t
+gmx_mtop_ilistloop_init(const gmx_mtop_t &mtop);
 
 /* Loop to the next molecule,
  * When not at the end:
- *   returns TRUE and a pointer to the next array ilist_mol[F_NRE],
+ *   returns a valid pointer to the next array ilist_mol[F_NRE],
  *   writes the number of molecules for this ilist in *nmol.
- * When at the end, destroys iloop and returns FALSE.
+ * When at the end, destroys iloop and returns nullptr.
  */
-gmx_bool
-gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t iloop,
-                        t_ilist **ilist_mol, int *nmol);
-
+const InteractionLists *
+gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t     iloop,
+                        int                     *nmol);
 
 /* Abstract type for ilist loop over all ilists of all molecules */
 typedef struct gmx_mtop_ilistloop_all *gmx_mtop_ilistloop_all_t;
@@ -178,19 +189,22 @@ gmx_mtop_ilistloop_all_init(const gmx_mtop_t *mtop);
 
 /* Loop to the next molecule,
  * When not at the end:
- *   returns TRUE and a pointer to the next array ilist_mol[F_NRE],
+ *   returns a valid pointer to the next array ilist_mol[F_NRE],
  *   writes the atom offset which should be added to iatoms in atnr_offset.
- * When at the end, destroys iloop and returns FALSE.
+ * When at the end, destroys iloop and returns nullptr.
  */
-gmx_bool
-gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
-                            t_ilist **ilist_mol, int *atnr_offset);
+const InteractionLists *
+gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t   iloop,
+                            int                       *atnr_offset);
 
 
 /* Returns the total number of interactions in the system of type ftype */
 int
 gmx_mtop_ftype_count(const gmx_mtop_t *mtop, int ftype);
 
+/* Returns the total number of interactions in the system of type ftype */
+int
+gmx_mtop_ftype_count(const gmx_mtop_t &mtop, int ftype);
 
 /* Returns a charge group index for the whole system */
 t_block
@@ -210,8 +224,20 @@ gmx_localtop_t *
 gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, bool freeEnergyInteractionsAtEnd);
 
 
+/*!\brief Creates and returns a struct with begin/end atom indices of all molecules
+ *
+ * \param[in] mtop  The global topology
+ * \returns A RangePartitioning object with numBlocks() equal to the number
+ * of molecules and atom indices such that molecule m contains atoms a with:
+ * index[m] <= a < index[m+1].
+ */
+gmx::RangePartitioning gmx_mtop_molecules(const gmx_mtop_t &mtop);
+
+
 /* Converts a gmx_mtop_t struct to t_topology.
  *
+ * If the lifetime of the returned topology should be longer than that
+ * of mtop, your need to pass freeMtop==true.
  * If freeMTop == true, memory related to mtop will be freed so that done_top()
  * on the result value will free all memory.
  * If freeMTop == false, mtop and the return value will share some of their
@@ -227,7 +253,7 @@ gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop, bool freeMTop);
  * \param[in]  mtop Molecular topology
  * \returns Vector that will be filled with the atom indices
  */
-std::vector<size_t> get_atom_index(const gmx_mtop_t *mtop);
+std::vector<int> get_atom_index(const gmx_mtop_t *mtop);
 
 /*! \brief Converts a t_atoms struct to an mtop struct
  *

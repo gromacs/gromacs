@@ -48,7 +48,7 @@
 #include "x11.h"
 #include "xutil.h"
 
-bool ChildCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool ChildCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
 {
     t_child   *child;
     t_mentry  *m;
@@ -93,7 +93,7 @@ bool ChildCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
     return false;
 }
 
-bool MenuCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
+static bool MenuCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
 {
     t_menu *m;
 

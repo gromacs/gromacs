@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,11 +48,6 @@
 struct t_atom;
 struct t_resinfo;
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 #define PHI_AHX (-55.0)
 #define PSI_AHX (-45.0)
 /* Canonical values of the helix phi/psi angles */
@@ -77,15 +72,15 @@ enum {
     efhAHX,  efhNR
 };
 
-extern real ahx_len(int gnx, int index[], rvec x[]);
+extern real ahx_len(int gnx, const int index[], rvec x[]);
 /* Assume we have a list of Calpha atoms only! */
 
 extern real ellipticity(int nres, t_bb bb[]);
 
-extern real radius(FILE *fp, int nca, int ca_index[], rvec x[]);
+extern real radius(FILE *fp, int nca, const int ca_index[], rvec x[]);
 /* Assume we have calphas */
 
-extern real twist(int nca, int caindex[], rvec x[]);
+extern real twist(int nca, const int caindex[], rvec x[]);
 /* Calculate the twist of the helix */
 
 extern real pprms(FILE *fp, int nbb, t_bb bb[]);
@@ -93,12 +88,12 @@ extern real pprms(FILE *fp, int nbb, t_bb bb[]);
  * and the distance per residue
  */
 
-extern real ca_phi(int gnx, int index[], rvec x[]);
+extern real ca_phi(int gnx, const int index[], rvec x[]);
 /* Assume we have a list of Calpha atoms only! */
 
 extern real dip(int nbb, const int bbind[], const rvec x[], const t_atom atom[]);
 
-extern real rise(int gnx, int index[], rvec x[]);
+extern real rise(int gnx, const int index[], rvec x[]);
 /* Assume we have a list of Calpha atoms only! */
 
 extern void av_hblen(FILE *fp3, FILE *fp3a,
@@ -121,9 +116,5 @@ extern void do_start_end(int nres, t_bb bb[], int *nbb,
 extern void calc_hxprops(int nres, t_bb bb[], const rvec x[]);
 
 extern void pr_bb(FILE *fp, int nres, t_bb bb[]);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,22 +54,15 @@ typedef struct {
     int atom, sid;
 } t_sid;
 
-static int sid_comp(const void *a, const void *b)
+static bool sid_comp(const t_sid &sa, const t_sid &sb)
 {
-    t_sid *sa, *sb;
-    int    dd;
-
-    sa = (t_sid *)a;
-    sb = (t_sid *)b;
-
-    dd = sa->sid-sb->sid;
-    if (dd == 0)
+    if (sa.sid == sb.sid)
     {
-        return (sa->atom-sb->atom);
+        return sa.atom < sb.atom;
     }
     else
     {
-        return dd;
+        return sa.sid < sb.sid;
     }
 }
 
@@ -114,7 +107,7 @@ static int mk_grey(egCol egc[], t_graph *g, int *AtomI,
     return ng;
 }
 
-static int first_colour(int fC, egCol Col, t_graph *g, egCol egc[])
+static int first_colour(int fC, egCol Col, t_graph *g, const egCol egc[])
 /* Return the first node with colour Col starting at fC.
  * return -1 if none found.
  */
@@ -355,7 +348,7 @@ static int merge_sid(int at_start, int at_end, int nsid, t_sid sid[],
 }
 
 void gen_sblocks(FILE *fp, int at_start, int at_end,
-                 t_idef *idef, t_blocka *sblock,
+                 const t_idef *idef, t_blocka *sblock,
                  gmx_bool bSettle)
 {
     t_graph *g;
@@ -382,7 +375,7 @@ void gen_sblocks(FILE *fp, int at_start, int at_end,
     }
 
     /* Now sort the shake blocks... */
-    qsort(sid+at_start, at_end-at_start, static_cast<size_t>(sizeof(sid[0])), sid_comp);
+    std::sort(sid+at_start, sid+at_end, sid_comp);
 
     if (debug)
     {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -186,7 +186,7 @@ static void remove_jump(matrix box, int natoms, rvec xp[], rvec x[])
     }
 }
 
-static void calc_mj(t_topology top, int ePBC, matrix box, gmx_bool bNoJump, int isize, int index0[], \
+static void calc_mj(t_topology top, int ePBC, matrix box, gmx_bool bNoJump, int isize, const int index0[], \
                     rvec fr[], rvec mj, real mass2[], real qmol[])
 {
 
@@ -272,7 +272,7 @@ static real calceps(real prefactor, real md2, real mj2, real cor, real eps_rf, g
 }
 
 
-static real calc_cacf(FILE *fcacf, real prefactor, real cacf[], real time[], int nfr, int vfr[], int ei, int nshift)
+static real calc_cacf(FILE *fcacf, real prefactor, real cacf[], real time[], int nfr, const int vfr[], int ei, int nshift)
 {
 
     int  i;
@@ -323,7 +323,7 @@ static real calc_cacf(FILE *fcacf, real prefactor, real cacf[], real time[], int
 
 }
 
-static void calc_mjdsp(FILE *fmjdsp, real prefactor, real dsp2[], real time[], int nfr, real refr[])
+static void calc_mjdsp(FILE *fmjdsp, real prefactor, real dsp2[], real time[], int nfr, const real refr[])
 {
 
     int     i;
@@ -350,7 +350,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
                        int ePBC, t_topology top, t_trxframe fr, real temp,
                        real bfit, real efit, real bvit, real evit,
                        t_trxstatus *status, int isize, int nmols, int nshift,
-                       int *index0, int indexm[], real mass2[],
+                       const int *index0, int indexm[], real mass2[],
                        real qmol[], real eps_rf, const gmx_output_env_t *oenv)
 {
     int       i, j;
@@ -848,7 +848,7 @@ int gmx_current(int argc, char *argv[])
         "dielectric constant. To obtain a reasonable result, the index group has to be neutral.",
         "Furthermore, the routine is capable of extracting the static conductivity from the current ",
         "autocorrelation function, if velocities are given. Additionally, an Einstein-Helfand fit ",
-        "can be used to obtain the static conductivity."
+        "can be used to obtain the static conductivity.",
         "[PAR]",
         "The flag [TT]-caf[tt] is for the output of the current autocorrelation function and [TT]-mc[tt] writes the",
         "correlation of the rotational and translational part of the dipole moment in the corresponding",

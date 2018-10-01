@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,10 +45,9 @@
 
 #include "autocorr.h"
 
-#include <stdio.h>
-#include <string.h>
-
 #include <cmath>
+#include <cstdio>
+#include <cstring>
 
 #include <algorithm>
 
@@ -64,7 +63,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/strconvert.h"
 
 /*! \brief Shortcut macro to select modes. */
 #define MODE(x) ((mode & (x)) == (x))
@@ -172,7 +171,7 @@ static void do_ac_core(int nframes, int nout,
             else if (MODE(eacCos))
             {
                 /* Compute the cos (phi(t)-phi(t+dt)) */
-                corr[k] += cos(c1[j]-c1[j+k]);
+                corr[k] += std::cos(c1[j]-c1[j+k]);
             }
             else if (MODE(eacIden))
             {
@@ -231,7 +230,7 @@ static void do_ac_core(int nframes, int nout,
             }
             else
             {
-                gmx_fatal(FARGS, "\nInvalid mode (%d) in do_ac_core", mode);
+                gmx_fatal(FARGS, "\nInvalid mode (%lu) in do_ac_core", mode);
             }
         }
     }
@@ -244,7 +243,7 @@ static void do_ac_core(int nframes, int nout,
 }
 
 /*! \brief Routine to normalize ACF, dividing by corr[0]. */
-void normalize_acf(int nout, real corr[])
+static void normalize_acf(int nout, real corr[])
 {
     int    j;
     double c0;
@@ -285,7 +284,7 @@ void normalize_acf(int nout, real corr[])
 }
 
 /*! \brief Routine that averages ACFs. */
-void average_acf(gmx_bool bVerbose, int n, int nitem, real **c1)
+static void average_acf(gmx_bool bVerbose, int n, int nitem, real **c1)
 {
     real c0;
     int  i, j;
@@ -307,7 +306,7 @@ void average_acf(gmx_bool bVerbose, int n, int nitem, real **c1)
 }
 
 /*! \brief Normalize ACFs. */
-void norm_and_scale_vectors(int nframes, real c1[], real scale)
+static void norm_and_scale_vectors(int nframes, real c1[], real scale)
 {
     int   j, m;
     real *rij;
@@ -519,13 +518,13 @@ static void do_four_core(unsigned long mode, int nframes,
     }
     else
     {
-        gmx_fatal(FARGS, "\nUnknown mode in do_autocorr (%d)", mode);
+        gmx_fatal(FARGS, "\nUnknown mode in do_autocorr (%lu)", mode);
     }
 
     sfree(cfour);
     for (j = 0; (j < nframes); j++)
     {
-        c1[j] = csum[j]/(real)(nframes-j);
+        c1[j] = csum[j]/static_cast<real>(nframes-j);
     }
 }
 
@@ -793,7 +792,7 @@ void do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *title
                     acf.fitfn);
 }
 
-int get_acfnout(void)
+int get_acfnout()
 {
     if (!bACFinit)
     {
@@ -803,7 +802,7 @@ int get_acfnout(void)
     return acf.nout;
 }
 
-int get_acffitfn(void)
+int get_acffitfn()
 {
     if (!bACFinit)
     {

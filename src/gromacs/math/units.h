@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,10 +45,6 @@
 
 #include "gromacs/math/utilities.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define ANGSTROM         (1e-10)                           /* Old...	*/
 #define KILO             (1e3)                             /* Thousand	*/
 #define NANO             (1e-9)                            /* A Number	*/
@@ -72,7 +68,7 @@ extern "C" {
 
 #define EPSILON0_SI      (8.854187817e-12)                 /* F/m,  NIST 2010 CODATA */
 /* Epsilon in our MD units: (e^2 / Na (kJ nm)) == (e^2 mol/(kJ nm)) */
-#define EPSILON0         (EPSILON0_SI*NANO*KILO)/(E_CHARGE*E_CHARGE*AVOGADRO)
+#define EPSILON0         ((EPSILON0_SI*NANO*KILO)/(E_CHARGE*E_CHARGE*AVOGADRO))
 
 #define SPEED_OF_LIGHT   (2.99792458E05)                   /* nm/ps, NIST 2010 CODATA */
 #define ATOMICMASS_keV   (931494.061)                      /* Atomic mass in keV, NIST 2010 CODATA   */
@@ -81,7 +77,7 @@ extern "C" {
 #define RYDBERG          (1.0973731568539e-02)             /* nm^-1, NIST 2010 CODATA */
 
 #define ONE_4PI_EPS0     (1.0/(4.0*M_PI*EPSILON0))
-#define FACEL            10.0*ONE_4PI_EPS0
+#define FACEL            (10.0*ONE_4PI_EPS0)
 
 /* Pressure in MD units is:
  * 1 bar = 1e5 Pa = 1e5 kg m^-1 s^-2 = 1e-28 kg nm^-1 ps^-2 = 1e-28 / AMU amu nm^1 ps ^2
@@ -164,9 +160,5 @@ extern int string2unit(const char *string);
 
 /* Convert the unit to a string. Return NULL when unit is out of range. */
 extern const char *unit2string(int unit);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

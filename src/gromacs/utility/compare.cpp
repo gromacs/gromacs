@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,7 @@
 #include <cstdio>
 #include <cstring>
 
-#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/strconvert.h"
 
 void cmp_int(FILE *fp, const char *s, int index, int i1, int i2)
 {
@@ -61,14 +61,14 @@ void cmp_int(FILE *fp, const char *s, int index, int i1, int i2)
     }
 }
 
-void cmp_int64(FILE *fp, const char *s, gmx_int64_t i1, gmx_int64_t i2)
+void cmp_int64(FILE *fp, const char *s, int64_t i1, int64_t i2)
 {
     if (i1 != i2)
     {
         fprintf(fp, "%s (", s);
-        fprintf(fp, "%" GMX_PRId64, i1);
+        fprintf(fp, "%" PRId64, i1);
         fprintf(fp, " - ");
-        fprintf(fp, "%" GMX_PRId64, i2);
+        fprintf(fp, "%" PRId64, i2);
         fprintf(fp, ")\n");
     }
 }
@@ -94,33 +94,17 @@ void cmp_uc(FILE *fp, const char *s, int index, unsigned char i1, unsigned char 
     {
         if (index != -1)
         {
-            fprintf(fp, "%s[%d] (%d - %d)\n", s, index, i1, i2);
+            fprintf(fp, "%s[%d] (%d - %d)\n", s, index, int{i1}, int{i2});
         }
         else
         {
-            fprintf(fp, "%s (%d - %d)\n", s, i1, i2);
+            fprintf(fp, "%s (%d - %d)\n", s, int{i1}, int{i2});
         }
     }
 }
 
 gmx_bool cmp_bool(FILE *fp, const char *s, int index, gmx_bool b1, gmx_bool b2)
 {
-    if (b1)
-    {
-        b1 = 1;
-    }
-    else
-    {
-        b1 = 0;
-    }
-    if (b2)
-    {
-        b2 = 1;
-    }
-    else
-    {
-        b2 = 0;
-    }
     if (b1 != b2)
     {
         if (index != -1)
@@ -154,12 +138,12 @@ void cmp_str(FILE *fp, const char *s, int index, const char *s1, const char *s2)
 
 gmx_bool equal_real(real i1, real i2, real ftol, real abstol)
 {
-    return ( ( 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || fabs(i1-i2) <= abstol );
+    return ( ( 2*std::fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || std::fabs(i1-i2) <= abstol );
 }
 
 gmx_bool equal_float(float i1, float i2, float ftol, float abstol)
 {
-    return ( ( 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || fabs(i1-i2) <= abstol );
+    return ( ( 2*std::fabs(i1 - i2) <= (std::fabs(i1) + std::fabs(i2))*ftol ) || std::fabs(i1-i2) <= abstol );
 }
 
 gmx_bool equal_double(double i1, double i2, real ftol, real abstol)

@@ -1,0 +1,12 @@
+nsteps                   = 500000
+dt                       = 0.0005
+integrator               = md-vv
+cutoff-scheme            = verlet
+coulombtype              = PME
+tcoupl                   = nose-hoover
+tc-grps                  = system
+ref-t                    = 298.15
+tau-t                    = 1.0
+pcoupl                   = mttk
+ref-p                    = 1.0
+compressibility          = 4.5e-5

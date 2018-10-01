@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,8 +33,6 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
-
 #if GMX_SIMD_REAL_WIDTH >= NBNXN_CPU_CLUSTER_I_SIZE
 #define STRIDE_S  (GMX_SIMD_REAL_WIDTH)
 #else
@@ -42,7 +40,7 @@ using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 #endif
 
 /* Copies PBC shifted i-cell packed atom coordinates to working array */
-static gmx_inline void
+static inline void
 icell_set_x_simd_4xn(int ci,
                      real shx, real shy, real shz,
                      int gmx_unused stride, const real *x,
@@ -51,7 +49,7 @@ icell_set_x_simd_4xn(int ci,
     int    ia;
     real  *x_ci_simd = work->x_ci_simd;
 
-    ia = x_ind_ci_simd_4xn(ci);
+    ia = xIndexFromCi<NbnxnLayout::Simd4xN>(ci);
 
     store(x_ci_simd +  0*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 0*STRIDE_S    ] + shx) );
     store(x_ci_simd +  1*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 1*STRIDE_S    ] + shy) );
@@ -67,22 +65,37 @@ icell_set_x_simd_4xn(int ci,
     store(x_ci_simd + 11*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 2*STRIDE_S + 3] + shz) );
 }
 
-/* SIMD code for making a pair list of cell ci vs cell cjf-cjl
- * for coordinates in packed format.
+/* SIMD code for checking and adding cluster-pairs to the list using coordinates in packed format.
+ *
  * Checks bouding box distances and possibly atom pair distances.
  * This is an accelerated version of make_cluster_list_simple.
+ *
+ * \param[in]     gridj               The j-grid
+ * \param[in,out] nbl                 The pair-list to store the cluster pairs in
+ * \param[in]     icluster            The index of the i-cluster
+ * \param[in]     firstCell           The first cluster in the j-range, using i-cluster size indexing
+ * \param[in]     lastCell            The last cluster in the j-range, using i-cluster size indexing
+ * \param[in]     excludeSubDiagonal  Exclude atom pairs with i-index > j-index
+ * \param[in]     x_j                 Coordinates for the j-atom, in SIMD packed format
+ * \param[in]     rlist2              The squared list cut-off
+ * \param[in]     rbb2                The squared cut-off for putting cluster-pairs in the list based on bounding box distance only
+ * \param[in,out] numDistanceChecks   The number of distance checks performed
  */
-static gmx_inline void
-make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
-                           nbnxn_pairlist_t *nbl,
-                           int ci, int cjf, int cjl,
-                           gmx_bool remove_sub_diag,
-                           const real *x_j,
-                           real rl2, float rbb2,
-                           int *ndistc)
+static inline void
+makeClusterListSimd4xn(const nbnxn_grid_t *      gridj,
+                       nbnxn_pairlist_t *        nbl,
+                       int                       icluster,
+                       int                       firstCell,
+                       int                       lastCell,
+                       bool                      excludeSubDiagonal,
+                       const real * gmx_restrict x_j,
+                       real                      rlist2,
+                       float                     rbb2,
+                       int * gmx_restrict        numDistanceChecks)
 {
-    const real                        *x_ci_simd = nbl->work->x_ci_simd;
-    const nbnxn_bb_t                  *bb_ci;
+    using namespace gmx;
+    const real * gmx_restrict          x_ci_simd = nbl->work->x_ci_simd;
+    const nbnxn_bb_t * gmx_restrict    bb_ci     = nbl->work->bb_ci;
 
     SimdReal                           jx_S, jy_S, jz_S;
 
@@ -106,25 +119,29 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
 
     gmx_bool                           InRange;
     float                              d2;
-    int                                xind_f, xind_l, cj;
+    int                                xind_f, xind_l;
 
-    /* cppcheck-suppress selfAssignment . selfAssignment for width 4.*/
-    cjf = ci_to_cj_simd_4xn(cjf);
-    cjl = ci_to_cj_simd_4xn(cjl + 1) - 1;
+    /* Convert the j-range from i-cluster size indexing to j-cluster indexing */
+    int jclusterFirst = cjFromCi<NbnxnLayout::Simd4xN>(firstCell);
+#if GMX_SIMD_REAL_WIDTH >= NBNXN_CPU_CLUSTER_I_SIZE
+    int jclusterLast  = cjFromCi<NbnxnLayout::Simd4xN>(lastCell);
+#else
+    /* Set the correct last j-cluster with a j-cluster size of 2 */
+    int jclusterLast  = cjFromCi<NbnxnLayout::Simd4xN>(lastCell + 1) - 1;
+#endif
+    GMX_ASSERT(jclusterLast >= jclusterFirst, "We should have a non-empty j-cluster range, since the calling code should have ensured a non-empty cell range");
 
-    bb_ci = nbl->work->bb_ci;
-
-    rc2_S   = SimdReal(rl2);
+    rc2_S   = SimdReal(rlist2);
 
     InRange = FALSE;
-    while (!InRange && cjf <= cjl)
+    while (!InRange && jclusterFirst <= jclusterLast)
     {
-#ifdef NBNXN_SEARCH_BB_SIMD4
-        d2 = subc_bb_dist2_simd4(0, bb_ci, cjf, gridj->bbj);
+#if NBNXN_SEARCH_BB_SIMD4
+        d2 = subc_bb_dist2_simd4(0, bb_ci, jclusterFirst, gridj->bbj);
 #else
-        d2 = subc_bb_dist2(0, bb_ci, cjf, gridj->bbj);
+        d2 = subc_bb_dist2(0, bb_ci, jclusterFirst, gridj->bbj);
 #endif
-        *ndistc += 2;
+        *numDistanceChecks += 2;
 
         /* Check if the distance is within the distance where
          * we use only the bounding box distance rbb,
@@ -135,28 +152,28 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
         {
             InRange = TRUE;
         }
-        else if (d2 < rl2)
+        else if (d2 < rlist2)
         {
-            xind_f  = x_ind_cj_simd_4xn(ci_to_cj_simd_4xn(gridj->cell0) + cjf);
+            xind_f  = xIndexFromCj<NbnxnLayout::Simd4xN>(cjFromCi<NbnxnLayout::Simd4xN>(gridj->cell0) + jclusterFirst);
 
-            jx_S  = load(x_j+xind_f+0*STRIDE_S);
-            jy_S  = load(x_j+xind_f+1*STRIDE_S);
-            jz_S  = load(x_j+xind_f+2*STRIDE_S);
+            jx_S  = load<SimdReal>(x_j + xind_f + 0*STRIDE_S);
+            jy_S  = load<SimdReal>(x_j + xind_f + 1*STRIDE_S);
+            jz_S  = load<SimdReal>(x_j + xind_f + 2*STRIDE_S);
 
 
             /* Calculate distance */
-            dx_S0            = load(x_ci_simd +  0*GMX_SIMD_REAL_WIDTH) - jx_S;
-            dy_S0            = load(x_ci_simd +  1*GMX_SIMD_REAL_WIDTH) - jy_S;
-            dz_S0            = load(x_ci_simd +  2*GMX_SIMD_REAL_WIDTH) - jz_S;
-            dx_S1            = load(x_ci_simd +  3*GMX_SIMD_REAL_WIDTH) - jx_S;
-            dy_S1            = load(x_ci_simd +  4*GMX_SIMD_REAL_WIDTH) - jy_S;
-            dz_S1            = load(x_ci_simd +  5*GMX_SIMD_REAL_WIDTH) - jz_S;
-            dx_S2            = load(x_ci_simd +  6*GMX_SIMD_REAL_WIDTH) - jx_S;
-            dy_S2            = load(x_ci_simd +  7*GMX_SIMD_REAL_WIDTH) - jy_S;
-            dz_S2            = load(x_ci_simd +  8*GMX_SIMD_REAL_WIDTH) - jz_S;
-            dx_S3            = load(x_ci_simd +  9*GMX_SIMD_REAL_WIDTH) - jx_S;
-            dy_S3            = load(x_ci_simd + 10*GMX_SIMD_REAL_WIDTH) - jy_S;
-            dz_S3            = load(x_ci_simd + 11*GMX_SIMD_REAL_WIDTH) - jz_S;
+            dx_S0            = load<SimdReal>(x_ci_simd +  0*GMX_SIMD_REAL_WIDTH) - jx_S;
+            dy_S0            = load<SimdReal>(x_ci_simd +  1*GMX_SIMD_REAL_WIDTH) - jy_S;
+            dz_S0            = load<SimdReal>(x_ci_simd +  2*GMX_SIMD_REAL_WIDTH) - jz_S;
+            dx_S1            = load<SimdReal>(x_ci_simd +  3*GMX_SIMD_REAL_WIDTH) - jx_S;
+            dy_S1            = load<SimdReal>(x_ci_simd +  4*GMX_SIMD_REAL_WIDTH) - jy_S;
+            dz_S1            = load<SimdReal>(x_ci_simd +  5*GMX_SIMD_REAL_WIDTH) - jz_S;
+            dx_S2            = load<SimdReal>(x_ci_simd +  6*GMX_SIMD_REAL_WIDTH) - jx_S;
+            dy_S2            = load<SimdReal>(x_ci_simd +  7*GMX_SIMD_REAL_WIDTH) - jy_S;
+            dz_S2            = load<SimdReal>(x_ci_simd +  8*GMX_SIMD_REAL_WIDTH) - jz_S;
+            dx_S3            = load<SimdReal>(x_ci_simd +  9*GMX_SIMD_REAL_WIDTH) - jx_S;
+            dy_S3            = load<SimdReal>(x_ci_simd + 10*GMX_SIMD_REAL_WIDTH) - jy_S;
+            dz_S3            = load<SimdReal>(x_ci_simd + 11*GMX_SIMD_REAL_WIDTH) - jz_S;
 
             /* rsq = dx*dx+dy*dy+dz*dz */
             rsq_S0           = norm2(dx_S0, dy_S0, dz_S0);
@@ -175,11 +192,11 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
 
             InRange          = anyTrue(wco_any_S);
 
-            *ndistc += 4*GMX_SIMD_REAL_WIDTH;
+            *numDistanceChecks += 4*GMX_SIMD_REAL_WIDTH;
         }
         if (!InRange)
         {
-            cjf++;
+            jclusterFirst++;
         }
     }
     if (!InRange)
@@ -188,14 +205,14 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
     }
 
     InRange = FALSE;
-    while (!InRange && cjl > cjf)
+    while (!InRange && jclusterLast > jclusterFirst)
     {
-#ifdef NBNXN_SEARCH_BB_SIMD4
-        d2 = subc_bb_dist2_simd4(0, bb_ci, cjl, gridj->bbj);
+#if NBNXN_SEARCH_BB_SIMD4
+        d2 = subc_bb_dist2_simd4(0, bb_ci, jclusterLast, gridj->bbj);
 #else
-        d2 = subc_bb_dist2(0, bb_ci, cjl, gridj->bbj);
+        d2 = subc_bb_dist2(0, bb_ci, jclusterLast, gridj->bbj);
 #endif
-        *ndistc += 2;
+        *numDistanceChecks += 2;
 
         /* Check if the distance is within the distance where
          * we use only the bounding box distance rbb,
@@ -206,27 +223,27 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
         {
             InRange = TRUE;
         }
-        else if (d2 < rl2)
+        else if (d2 < rlist2)
         {
-            xind_l  = x_ind_cj_simd_4xn(ci_to_cj_simd_4xn(gridj->cell0) + cjl);
+            xind_l  = xIndexFromCj<NbnxnLayout::Simd4xN>(cjFromCi<NbnxnLayout::Simd4xN>(gridj->cell0) + jclusterLast);
 
-            jx_S  = load(x_j+xind_l+0*STRIDE_S);
-            jy_S  = load(x_j+xind_l+1*STRIDE_S);
-            jz_S  = load(x_j+xind_l+2*STRIDE_S);
+            jx_S  = load<SimdReal>(x_j +xind_l + 0*STRIDE_S);
+            jy_S  = load<SimdReal>(x_j +xind_l + 1*STRIDE_S);
+            jz_S  = load<SimdReal>(x_j +xind_l + 2*STRIDE_S);
 
             /* Calculate distance */
-            dx_S0            = load(x_ci_simd +  0*GMX_SIMD_REAL_WIDTH) - jx_S;
-            dy_S0            = load(x_ci_simd +  1*GMX_SIMD_REAL_WIDTH) - jy_S;
-            dz_S0            = load(x_ci_simd +  2*GMX_SIMD_REAL_WIDTH) - jz_S;
-            dx_S1            = load(x_ci_simd +  3*GMX_SIMD_REAL_WIDTH) - jx_S;
-            dy_S1            = load(x_ci_simd +  4*GMX_SIMD_REAL_WIDTH) - jy_S;
-            dz_S1            = load(x_ci_simd +  5*GMX_SIMD_REAL_WIDTH) - jz_S;
-            dx_S2            = load(x_ci_simd +  6*GMX_SIMD_REAL_WIDTH) - jx_S;
-            dy_S2            = load(x_ci_simd +  7*GMX_SIMD_REAL_WIDTH) - jy_S;
-            dz_S2            = load(x_ci_simd +  8*GMX_SIMD_REAL_WIDTH) - jz_S;
-            dx_S3            = load(x_ci_simd +  9*GMX_SIMD_REAL_WIDTH) - jx_S;
-            dy_S3            = load(x_ci_simd + 10*GMX_SIMD_REAL_WIDTH) - jy_S;
-            dz_S3            = load(x_ci_simd + 11*GMX_SIMD_REAL_WIDTH) - jz_S;
+            dx_S0            = load<SimdReal>(x_ci_simd +  0*GMX_SIMD_REAL_WIDTH) - jx_S;
+            dy_S0            = load<SimdReal>(x_ci_simd +  1*GMX_SIMD_REAL_WIDTH) - jy_S;
+            dz_S0            = load<SimdReal>(x_ci_simd +  2*GMX_SIMD_REAL_WIDTH) - jz_S;
+            dx_S1            = load<SimdReal>(x_ci_simd +  3*GMX_SIMD_REAL_WIDTH) - jx_S;
+            dy_S1            = load<SimdReal>(x_ci_simd +  4*GMX_SIMD_REAL_WIDTH) - jy_S;
+            dz_S1            = load<SimdReal>(x_ci_simd +  5*GMX_SIMD_REAL_WIDTH) - jz_S;
+            dx_S2            = load<SimdReal>(x_ci_simd +  6*GMX_SIMD_REAL_WIDTH) - jx_S;
+            dy_S2            = load<SimdReal>(x_ci_simd +  7*GMX_SIMD_REAL_WIDTH) - jy_S;
+            dz_S2            = load<SimdReal>(x_ci_simd +  8*GMX_SIMD_REAL_WIDTH) - jz_S;
+            dx_S3            = load<SimdReal>(x_ci_simd +  9*GMX_SIMD_REAL_WIDTH) - jx_S;
+            dy_S3            = load<SimdReal>(x_ci_simd + 10*GMX_SIMD_REAL_WIDTH) - jy_S;
+            dz_S3            = load<SimdReal>(x_ci_simd + 11*GMX_SIMD_REAL_WIDTH) - jz_S;
 
             /* rsq = dx*dx+dy*dy+dz*dz */
             rsq_S0           = norm2(dx_S0, dy_S0, dz_S0);
@@ -245,21 +262,21 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
 
             InRange          = anyTrue(wco_any_S);
 
-            *ndistc += 4*GMX_SIMD_REAL_WIDTH;
+            *numDistanceChecks += 4*GMX_SIMD_REAL_WIDTH;
         }
         if (!InRange)
         {
-            cjl--;
+            jclusterLast--;
         }
     }
 
-    if (cjf <= cjl)
+    if (jclusterFirst <= jclusterLast)
     {
-        for (cj = cjf; cj <= cjl; cj++)
+        for (int jcluster = jclusterFirst; jcluster <= jclusterLast; jcluster++)
         {
             /* Store cj and the interaction mask */
-            nbl->cj[nbl->ncj].cj   = ci_to_cj_simd_4xn(gridj->cell0) + cj;
-            nbl->cj[nbl->ncj].excl = get_imask_simd_4xn(remove_sub_diag, ci, cj);
+            nbl->cj[nbl->ncj].cj   = cjFromCi<NbnxnLayout::Simd4xN>(gridj->cell0) + jcluster;
+            nbl->cj[nbl->ncj].excl = get_imask_simd_4xn(excludeSubDiagonal, icluster, jcluster);
             nbl->ncj++;
         }
         /* Increase the closing index in i super-cell list */

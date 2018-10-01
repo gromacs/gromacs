@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,17 +46,6 @@
  *  NOTE: No include fence as it is meant to be included multiple times.
  */
 
-#if defined(_WARPLESS_SOURCE_)
-#define CL_SOURCE_FILE "nbnxn_ocl_kernel_nowarp.clh"
-#elif defined(_NVIDIA_SOURCE_)
-#define CL_SOURCE_FILE "nbnxn_ocl_kernel_nvidia.clh"
-#elif defined(_AMD_SOURCE_)
-#define CL_SOURCE_FILE "nbnxn_ocl_kernel_amd.clh"
-#else
-#pragma error "Unknown kernel vendor spec"
-#endif
-
-
 #include "nbnxn_ocl_kernel_utils.clh"
 
 /* Analytical plain cut-off electrostatics kernels
@@ -65,42 +54,42 @@
 
 /* cut-off + V shift LJ */
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecCut_VdwLJ ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef NB_KERNEL_FUNC_NAME
 /* cut-off + V shift LJ w geometric combination rules */
 #define LJ_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecCut_VdwLJCombGeom ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_COMB_GEOM
 #undef NB_KERNEL_FUNC_NAME
 /* cut-off + V shift LJ w LB combination rules */
 #define LJ_COMB_LB
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecCut_VdwLJCombLB ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecCut_VdwLJEwCombGeom ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_EWALD_COMB_GEOM
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w LB combination rules */
 #define LJ_EWALD_COMB_LB
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecCut_VdwLJEwCombLB ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_EWALD_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* F switch LJ */
 #define LJ_FORCE_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecCut_VdwLJFsw ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_FORCE_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 /* V switch LJ */
 #define LJ_POT_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecCut_VdwLJPsw ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_POT_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 
@@ -113,42 +102,42 @@
 
 /* cut-off + V shift LJ */
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecRF_VdwLJ ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef NB_KERNEL_FUNC_NAME
 /* cut-off + V shift LJ w geometric combination rules */
 #define LJ_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecRF_VdwLJCombGeom ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_COMB_GEOM
 #undef NB_KERNEL_FUNC_NAME
 /* cut-off + V shift LJ w LB combination rules */
 #define LJ_COMB_LB
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecRF_VdwLJCombLB ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecRF_VdwLJEwCombGeom ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_EWALD_COMB_GEOM
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w LB combination rules */
 #define LJ_EWALD_COMB_LB
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecRF_VdwLJEwCombLB ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_EWALD_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* F switch LJ */
 #define LJ_FORCE_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecRF_VdwLJFsw ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_FORCE_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 /* V switch LJ */
 #define LJ_POT_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecRF_VdwLJPsw ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_POT_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 
@@ -161,42 +150,42 @@
 
 /* cut-off + V shift LJ */
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEw_VdwLJ ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef NB_KERNEL_FUNC_NAME
 /* cut-off + V shift LJ w geometric combination rules */
 #define LJ_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEw_VdwLJCombGeom ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_COMB_GEOM
 #undef NB_KERNEL_FUNC_NAME
 /* cut-off + V shift LJ w LB combination rules */
 #define LJ_COMB_LB
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEw_VdwLJCombLB ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEw_VdwLJEwCombGeom ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_EWALD_COMB_GEOM
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w LB combination rules */
 #define LJ_EWALD_COMB_LB
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEw_VdwLJEwCombLB ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_EWALD_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* F switch LJ */
 #define LJ_FORCE_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEw_VdwLJFsw ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_FORCE_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 /* V switch LJ */
 #define LJ_POT_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEw_VdwLJPsw ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_POT_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 
@@ -210,42 +199,42 @@
 
 /* cut-off + V shift LJ */
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwTwinCut_VdwLJ ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef NB_KERNEL_FUNC_NAME
 /* cut-off + V shift LJ w geometric combination rules */
 #define LJ_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwTwinCut_VdwLJCombGeom ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_COMB_GEOM
 #undef NB_KERNEL_FUNC_NAME
 /* cut-off + V shift LJ w LB combination rules */
 #define LJ_COMB_LB
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwTwinCut_VdwLJCombLB ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwTwinCut_VdwLJEwCombGeom ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_EWALD_COMB_GEOM
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w LB combination rules */
 #define LJ_EWALD_COMB_LB
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwTwinCut_VdwLJEwCombLB ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_EWALD_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* F switch LJ */
 #define LJ_FORCE_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwTwinCut_VdwLJFsw ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_FORCE_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 /* V switch LJ */
 #define LJ_POT_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwTwinCut_VdwLJPsw ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_POT_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 
@@ -258,42 +247,42 @@
 
 /* cut-off + V shift LJ */
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwQSTab_VdwLJ ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef NB_KERNEL_FUNC_NAME
 /* cut-off + V shift LJ w geometric combination rules */
 #define LJ_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwQSTab_VdwLJCombGeom ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_COMB_GEOM
 #undef NB_KERNEL_FUNC_NAME
 /* cut-off + V shift LJ w LB combination rules */
 #define LJ_COMB_LB
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwQSTab_VdwLJCombLB ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwQSTab_VdwLJEwCombGeom ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_EWALD_COMB_GEOM
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w LB combination rules */
 #define LJ_EWALD_COMB_LB
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwQSTab_VdwLJEwCombLB ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_EWALD_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* F switch LJ */
 #define LJ_FORCE_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwQSTab_VdwLJFsw ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_FORCE_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 /* V switch LJ */
 #define LJ_POT_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwQSTab_VdwLJPsw ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_POT_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 
@@ -306,46 +295,44 @@
 
 /* cut-off + V shift LJ */
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwQSTabTwinCut_VdwLJ ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef NB_KERNEL_FUNC_NAME
 /* cut-off + V shift LJ w geometric combination rules */
 #define LJ_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwQSTabTwin_VdwLJCombGeom ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_COMB_GEOM
 #undef NB_KERNEL_FUNC_NAME
 /* cut-off + V shift LJ w LB combination rules */
 #define LJ_COMB_LB
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwQSTabTwin_VdwLJCombLB ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwQSTabTwinCut_VdwLJEwCombGeom ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_EWALD_COMB_GEOM
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w LB combination rules */
 #define LJ_EWALD_COMB_LB
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwQSTabTwinCut_VdwLJEwCombLB ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_EWALD_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* F switch LJ */
 #define LJ_FORCE_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwQSTabTwinCut_VdwLJFsw ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_FORCE_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 /* V switch LJ */
 #define LJ_POT_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwQSTabTwinCut_VdwLJPsw ## y
-#include CL_SOURCE_FILE
+#include "nbnxn_ocl_kernel.clh"
 #undef LJ_POT_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 
 #undef EL_EWALD_TAB
 #undef VDW_CUTOFF_CHECK
-
-#undef CL_SOURCE_FILE

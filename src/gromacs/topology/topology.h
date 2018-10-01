@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,13 +39,17 @@
 
 #include <cstdio>
 
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/unique_cptr.h"
 
-enum {
+enum
+{
     egcTC,    egcENER,   egcACC, egcFREEZE,
     egcUser1, egcUser2,  egcVCM, egcCompressedX,
     egcORFIT, egcQMMM,
@@ -54,32 +58,45 @@ enum {
 /* Names corresponding to groups */
 extern const char *gtypes[egcNR+1];
 
-typedef struct gmx_moltype_t
+/*! \brief Molecules type data: atoms, interactions and exclusions */
+struct gmx_moltype_t
 {
-    char          **name;         /* Name of the molecule type            */
-    t_atoms         atoms;        /* The atoms in this molecule           */
-    t_ilist         ilist[F_NRE]; /* Interaction list with local indices  */
-    t_block         cgs;          /* The charge groups                    */
-    t_blocka        excls;        /* The exclusions                       */
-} gmx_moltype_t;
+    gmx_moltype_t();
+
+    ~gmx_moltype_t();
+
+    /*! \brief Deleted copy assignment operator to avoid (not) freeing pointers */
+    gmx_moltype_t &operator=(const gmx_moltype_t &) = delete;
+
+    /*! \brief Default copy constructor */
+    gmx_moltype_t(const gmx_moltype_t &) = default;
+
+    char              **name;   /**< Name of the molecule type            */
+    t_atoms             atoms;  /**< The atoms in this molecule           */
+    InteractionLists    ilist;  /**< Interaction list with local indices  */
+    t_block             cgs;    /**< The charge groups                    */
+    t_blocka            excls;  /**< The exclusions                       */
+};
 
 /*! \brief Block of molecules of the same type, used in gmx_mtop_t */
-typedef struct gmx_molblock_t
+struct gmx_molblock_t
 {
-    int     type;               /**< The molecule type index in mtop.moltype  */
-    int     nmol;               /**< The number of molecules in this block    */
-    int     nposres_xA;         /**< The number of posres coords for top A    */
-    rvec   *posres_xA;          /**< Position restraint coordinates for top A */
-    int     nposres_xB;         /**< The number of posres coords for top B    */
-    rvec   *posres_xB;          /**< Position restraint coordinates for top B */
+    int                    type = -1; /**< The molecule type index in mtop.moltype  */
+    int                    nmol = 0;  /**< The number of molecules in this block    */
+    std::vector<gmx::RVec> posres_xA; /**< Position restraint coordinates for top A */
+    std::vector<gmx::RVec> posres_xB; /**< Position restraint coordinates for top B */
+};
 
-    /* Convenience information, derived from other gmx_mtop_t contents     */
-    int     natoms_mol;         /**< The number of atoms in one molecule      */
-    int     globalAtomStart;    /**< Global atom index of the first atom in the block */
-    int     globalAtomEnd;      /**< Global atom index + 1 of the last atom in the block */
-    int     globalResidueStart; /**< Global residue index of the first residue in the block */
-    int     residueNumberStart; /**< Residue numbers start from this value if the number of residues per molecule is <= maxres_renum */
-} gmx_molblock_t;
+/*! \brief Indices for a gmx_molblock_t, derived from other gmx_mtop_t contents */
+struct MoleculeBlockIndices
+{
+    int     numAtomsPerMolecule; /**< Number of atoms in a molecule in the block */
+    int     globalAtomStart;     /**< Global atom index of the first atom in the block */
+    int     globalAtomEnd;       /**< Global atom index + 1 of the last atom in the block */
+    int     globalResidueStart;  /**< Global residue index of the first residue in the block */
+    int     residueNumberStart;  /**< Residue numbers start from this value if the number of residues per molecule is <= maxres_renum */
+    int     moleculeIndexStart;  /**< Global molecule indexing starts from this value */
+};
 
 typedef struct gmx_groups_t
 {
@@ -90,35 +107,64 @@ typedef struct gmx_groups_t
     unsigned char    *grpnr[egcNR]; /* Group numbers or NULL                */
 } gmx_groups_t;
 
-/* This macro gives the group number of group type egc for atom i.
- * This macro is useful, since the grpnr pointers are NULL
- * for group types that have all entries 0.
+/*! \brief
+ * Returns group number of an input group for a given atom.
+ *
+ * Returns the group \p type for \p atom in \p group, or 0 if the
+ * entries for all atoms in the group are 0 and the pointer is thus null.
+ *
+ * \param[in] group Group to check.
+ * \param[in] type  Type of group to check.
+ * \param[in] atom  Atom to check if it has an entry.
  */
-#define ggrpnr(groups, egc, i) ((groups)->grpnr[egc] ? (groups)->grpnr[egc][i] : 0)
+int getGroupType (const gmx_groups_t *group, int type, int atom);
 
 /* The global, complete system topology struct, based on molecule types.
-   This structure should contain no data that is O(natoms) in memory. */
-typedef struct gmx_mtop_t
+ * This structure should contain no data that is O(natoms) in memory.
+ *
+ * TODO: Find a solution for ensuring that the derived data is in sync
+ *       with the primary data, possibly by converting to a class.
+ */
+struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
 {
-    char           **name;      /* Name of the topology                 */
-    gmx_ffparams_t   ffparams;
-    int              nmoltype;
-    gmx_moltype_t   *moltype;
-    int              nmolblock;
-    gmx_molblock_t  *molblock;
-    gmx_bool         bIntermolecularInteractions; /* Are there intermolecular
-                                                   * interactions?            */
-    t_ilist         *intermolecular_ilist;        /* List of intermolecular interactions
-                                                   * using system wide atom indices,
-                                                   * either NULL or size F_NRE           */
-    int              natoms;
-    int              maxres_renum;                /* Parameter for residue numbering      */
-    int              maxresnr;                    /* The maximum residue number in moltype */
-    t_atomtypes      atomtypes;                   /* Atomtype properties                  */
-    t_block          mols;                        /* The molecules                        */
-    gmx_groups_t     groups;
-    t_symtab         symtab;                      /* The symbol table                     */
-} gmx_mtop_t;
+    gmx_mtop_t();
+
+    ~gmx_mtop_t();
+
+    //! Name of the topology.
+    char                            **name = nullptr;
+    //! Force field parameters used.
+    gmx_ffparams_t                    ffparams;
+    //! Vector of different molecule types.
+    std::vector<gmx_moltype_t>        moltype;
+    //! Vector of different molecule blocks.
+    std::vector<gmx_molblock_t>       molblock;
+    //! Are there intermolecular interactions?
+    bool                              bIntermolecularInteractions = false;
+    /* \brief
+     * List of intermolecular interactions using system wide
+     * atom indices, either NULL or size F_NRE
+     */
+    std::unique_ptr<InteractionLists> intermolecular_ilist = nullptr;
+    //! Number of global atoms.
+    int                               natoms = 0;
+    //! Parameter for residue numbering.
+    int                               maxres_renum = 0;
+    //! The maximum residue number in moltype
+    int                               maxresnr = -1;
+    //! Atomtype properties
+    t_atomtypes                       atomtypes;
+    //! Groups of atoms for different purposes
+    gmx_groups_t                      groups;
+    //! The symbol table
+    t_symtab                          symtab;
+    //! Tells whether we have valid molecule indices
+    bool                              haveMoleculeIndices = false;
+
+    /* Derived data  below */
+    //! Indices for each molblock entry for fast lookup of atom properties
+    std::vector<MoleculeBlockIndices> moleculeBlockIndices;
+};
 
 /* The mdrun node-local topology struct, completely written out */
 typedef struct gmx_localtop_t
@@ -143,19 +189,29 @@ typedef struct t_topology
     t_symtab        symtab;                      /* The symbol table                     */
 } t_topology;
 
-void init_mtop(gmx_mtop_t *mtop);
 void init_top(t_topology *top);
-void done_moltype(gmx_moltype_t *molt);
-void done_molblock(gmx_molblock_t *molb);
 void done_gmx_groups_t(gmx_groups_t *g);
-void done_mtop(gmx_mtop_t *mtop);
 void done_top(t_topology *top);
 // Frees both t_topology and gmx_mtop_t when the former has been created from
 // the latter.
 void done_top_mtop(t_topology *top, gmx_mtop_t *mtop);
+/*! \brief
+ * Properly initialize local topology.
+ *
+ * \param[in] top Pointer to topology to initialize.
+ */
+void init_localtop(gmx_localtop_t *top);
+/*! \brief
+ * Properly clear up local topology,
+ *
+ * \param[in] top Pointer to topology to clear up.
+ */
+void done_localtop(gmx_localtop_t *top);
+void done_and_sfree_localtop(gmx_localtop_t *top);
 
 bool gmx_mtop_has_masses(const gmx_mtop_t *mtop);
 bool gmx_mtop_has_charges(const gmx_mtop_t *mtop);
+bool gmx_mtop_has_perturbed_charges(const gmx_mtop_t &mtop);
 bool gmx_mtop_has_atomtypes(const gmx_mtop_t *mtop);
 bool gmx_mtop_has_pdbinfo(const gmx_mtop_t *mtop);
 
@@ -167,5 +223,8 @@ void pr_top(FILE *fp, int indent, const char *title, const t_topology *top,
 void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, real abstol);
 void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
                 int natoms0, int natoms1);
+
+//! Deleter for gmx_localtop_t, needed until it has a proper destructor.
+using ExpandedTopologyPtr = gmx::unique_cptr<gmx_localtop_t, done_and_sfree_localtop>;
 
 #endif

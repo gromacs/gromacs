@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,10 +44,13 @@
 #ifndef GMX_COMMANDLINE_FILENM_H
 #define GMX_COMMANDLINE_FILENM_H
 
+#include <string>
+#include <vector>
+
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
-struct t_commrec;
 
 //! \addtogroup module_commandline
 //! \{
@@ -57,13 +60,13 @@ struct t_commrec;
  *
  * \inpublicapi
  */
-struct t_filenm {
-    int           ftp;    //!< File type (see enum in filetypes.h)
-    const char   *opt;    //!< Command line option
-    const char   *fn;     //!< File name (as set in source code)
-    unsigned long flag;   //!< Flag for all kinds of info (see defs)
-    int           nfiles; //!< number of files
-    char        **fns;    //!< File names
+struct t_filenm
+{
+    int                      ftp;       //!< File type, see enum in filetypes.h
+    const char       *       opt;       //!< Command line option, can be nullptr in which case the commandline module, including all opt2??? functions below, will use the default option for the file type
+    const char       *       fn;        //!< File name (as set in source code), can be nullptr in which case the commandline module will use the default file name for the file type
+    unsigned long            flag;      //!< Flag for all kinds of info (see defs)
+    std::vector<std::string> filenames; //!< File names
 };
 
 //! Whether a file name option is set.
@@ -108,17 +111,21 @@ struct t_filenm {
 const char *opt2fn(const char *opt, int nfile, const t_filenm fnm[]);
 
 /*! \brief
- * Returns the filenames belonging to cmd-line option opt, or NULL when
- * no such option.
+ * Returns the filenames belonging to cmd-line option opt.
+ *
+ * An assertion will fail when the option does not exist.
  */
-int opt2fns(char **fns[], const char *opt, int nfile,
-            const t_filenm fnm[]);
+gmx::ArrayRef<const std::string>
+opt2fns(const char *opt, int nfile, const t_filenm fnm[]);
 
 /*! \brief
- * Return a pointer to the t_filenm data structure of filenames belonging to
- * command-line option opt, or NULL when no such option was used.
+ * Returns the filenames belonging to cmd-line option opt when set,
+ * returns an empty vector when the option is not set.
+ *
+ * An assertion will fail when the option does not exist.
  */
-const t_filenm *getFilenm(const char *opt, int nfile, const t_filenm fnm[]);
+gmx::ArrayRef<const std::string>
+opt2fnsIfOptionSet(const char *opt, int nfile, const t_filenm fnm[]);
 
 //! Returns a file pointer from the filename.
 #define opt2FILE(opt, nfile, fnm, mode) gmx_ffopen(opt2fn(opt, nfile, fnm), mode)
@@ -127,10 +134,12 @@ const t_filenm *getFilenm(const char *opt, int nfile, const t_filenm fnm[]);
 const char *ftp2fn(int ftp, int nfile, const t_filenm fnm[]);
 
 /*! \brief
- * Returns the number of files for the first option with type ftp
- * and the files in **fns[] (will be allocated), or NULL when none found.
+ * Returns the filenames for the first option with type ftp.
+ *
+ * An assertion will fail when when none found.
  */
-int ftp2fns(char **fns[], int ftp, int nfile, const t_filenm fnm[]);
+gmx::ArrayRef<const std::string>
+ftp2fns(int ftp, int nfile, const t_filenm fnm[]);
 
 //! Returns a file pointer from the file type.
 #define ftp2FILE(ftp, nfile, fnm, mode) gmx_ffopen(ftp2fn(ftp, nfile, fnm), mode)
@@ -170,15 +179,6 @@ gmx_bool is_set(const t_filenm *fnm);
  * output files and append a '.partNNNN' suffix before the (output) file extensions.
  */
 int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix);
-
-/*! \brief
- * Duplicates the filename list (to make a private copy for each thread,
- * for example).
- */
-t_filenm *dup_tfn(int nf, const t_filenm tfn[]);
-
-//! Frees memory allocated for file names by parse_common_args().
-void done_filenms(int nf, t_filenm fnm[]);
 
 //! \}
 

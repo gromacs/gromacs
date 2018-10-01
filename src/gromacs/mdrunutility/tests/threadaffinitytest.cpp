@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,7 @@
 
 #include <gmock/gmock.h>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basenetwork.h"
@@ -52,7 +53,7 @@ namespace test
 {
 
 MockThreadAffinityAccess::MockThreadAffinityAccess()
-    : supported_(true), physicalNodeId_(0)
+    : supported_(true)
 {
     using ::testing::_;
     using ::testing::Return;
@@ -70,24 +71,23 @@ ThreadAffinityTestHelper::ThreadAffinityTestHelper()
     snew(cr_, 1);
     cr_->nnodes         = gmx_node_num();
     cr_->nodeid         = gmx_node_rank();
-    cr_->rank_intranode = cr_->nodeid;
     cr_->duty           = DUTY_PP;
 #if GMX_MPI
     cr_->mpi_comm_mysim = MPI_COMM_WORLD;
 #endif
-    snew(hwOpt_, 1);
-    hwOpt_->thread_affinity = threadaffAUTO;
+    hwOpt_.thread_affinity     = threadaffAUTO;
+    hwOpt_.totNumThreadsIsAuto = false;
+    physicalNodeId_            = 0;
 }
 
 ThreadAffinityTestHelper::~ThreadAffinityTestHelper()
 {
     sfree(cr_);
-    sfree(hwOpt_);
 }
 
 void ThreadAffinityTestHelper::setLogicalProcessorCount(int logicalProcessorCount)
 {
-    hwTop_.reset(new HardwareTopology(logicalProcessorCount));
+    hwTop_ = gmx::compat::make_unique<HardwareTopology>(logicalProcessorCount);
 }
 
 } // namespace test

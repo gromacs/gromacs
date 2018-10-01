@@ -9,7 +9,7 @@
         <DataValues>
           <Int Name="Count">2</Int>
           <DataValue>
-            <Real Name="Value">11.879942829725929</Real>
+            <Real Name="Value">11.90491849132197</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">7.9341601835821569</Real>
@@ -21,7 +21,7 @@
       <DataFrame Name="Frame0">
         <Real Name="X">0</Real>
         <DataValues>
-          <Int Name="Count">155</Int>
+          <Int Name="Count">156</Int>
           <Int Name="DataSet">0</Int>
           <DataValue>
             <Real Name="Value">0.034174637584831476</Real>
@@ -318,7 +318,10 @@
             <Real Name="Value">0.15927874753700255</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0.40212385965949349</Real>
+            <Real Name="Value">0.24127431579569611</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.1858252054598363</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
@@ -490,7 +493,7 @@
           </DataValue>
         </DataValues>
         <DataValues>
-          <Int Name="Count">155</Int>
+          <Int Name="Count">156</Int>
           <Int Name="DataSet">1</Int>
           <DataValue>
             <Real Name="Value">0.034174637584831476</Real>
@@ -866,6 +869,10 @@
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
@@ -1035,7 +1042,7 @@
             <Real Name="Value">1.9788063529899724</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0.78071090715829228</Real>
+            <Real Name="Value">0.80568656875433131</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0.81812256327356647</Real>

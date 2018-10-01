@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,11 +41,11 @@
 
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/mdlib/ebin.h"
-#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/enerdata.h"
 
 class energyhistory_t;
-struct gmx_constr;
 struct gmx_ekindata_t;
+struct gmx_enerdata_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct t_expanded;
@@ -53,6 +53,14 @@ struct t_fcdata;
 struct t_grpopts;
 struct t_lambda;
 class t_state;
+
+namespace gmx
+{
+class Awh;
+class Constraints;
+}
+
+extern const char *egrp_nm[egNR+1];
 
 /* The functions & data structures here determine the content for outputting
    the .edr file; the file format and actual writing is done with functions
@@ -72,7 +80,6 @@ typedef struct t_mdebin {
     int                 ivcos, ivisc;
     int                 nE, nEg, nEc, nTC, nTCP, nU, nNHC;
     int                *igrp;
-    char              **grpnms;
     int                 mde_n, mdeb_n;
     real               *tmp_r;
     rvec               *tmp_v;
@@ -85,6 +92,7 @@ typedef struct t_mdebin {
     gmx_bool            bMTTK;
     gmx_bool            bMu; /* true if dipole is calculated */
     gmx_bool            bDiagPres;
+    gmx_bool            bPres;
     int                 f_nre;
     int                 epc;
     real                ref_p;
@@ -117,8 +125,12 @@ enum
 t_mdebin *init_mdebin(ener_file_t       fp_ene,
                       const gmx_mtop_t *mtop,
                       const t_inputrec *ir,
-                      FILE             *fp_dhdl);
+                      FILE             *fp_dhdl,
+                      bool              isRerun = false);
 /* Initiate MD energy bin and write header to energy file. */
+
+//! Destroy mdebin
+void done_mdebin(t_mdebin *mdebin);
 
 FILE *open_dhdl(const char *filename, const t_inputrec *ir,
                 const gmx_output_env_t *oenv);
@@ -142,19 +154,20 @@ void upd_mdebin(t_mdebin                 *md,
                 tensor                    pres,
                 gmx_ekindata_t           *ekind,
                 rvec                      mu_tot,
-                gmx_constr               *constr);
+                const gmx::Constraints   *constr);
 
 void upd_mdebin_step(t_mdebin *md);
 /* Updates only the step count in md */
 
-void print_ebin_header(FILE *log, gmx_int64_t steps, double time);
+void print_ebin_header(FILE *log, int64_t steps, double time);
 
 void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 FILE *log,
-                gmx_int64_t step, double time,
+                int64_t step, double time,
                 int mode,
                 t_mdebin *md, t_fcdata *fcd,
-                gmx_groups_t *groups, t_grpopts *opts);
+                gmx_groups_t *groups, t_grpopts *opts,
+                gmx::Awh *awh);
 
 
 
@@ -164,10 +177,10 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
    that is written to checkpoints in checkpoint.c */
 
 /* Set the energyhistory_t data from a mdebin structure */
-void update_energyhistory(energyhistory_t * enerhist, t_mdebin * mdebin);
+void update_energyhistory(energyhistory_t * enerhist, const t_mdebin * mdebin);
 
 /* Read the energyhistory_t data to a mdebin structure*/
-void restore_energyhistory_from_state(t_mdebin        * mdebin,
-                                      energyhistory_t * enerhist);
+void restore_energyhistory_from_state(t_mdebin              * mdebin,
+                                      const energyhistory_t * enerhist);
 
 #endif

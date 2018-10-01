@@ -61,14 +61,6 @@
 
 #include "visibility.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-#if 0
-} /* Avoids screwing up auto-indentation */
-#endif
-
 
 #if (defined(WIN32) || defined( _WIN32 ) || defined(WIN64) || defined( _WIN64 )) && !defined (__CYGWIN__) && !defined (__CYGWIN32__)
 
@@ -127,10 +119,5 @@ void *tMPI_Realloc_local(void *ptr, size_t size);
  */
 TMPI_EXPORT
 int tMPI_Free_numa(void *ptr);
-
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* TMPI_NUMA_MALLOC_H_ */

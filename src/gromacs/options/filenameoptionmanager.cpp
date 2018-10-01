@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,8 +83,8 @@ std::string findExistingExtension(const std::string                  &prefix,
                                   const FileNameOptionInfo           &option,
                                   const IFileInputRedirector         *redirector)
 {
-    ConstArrayRef<int>                 types = option.fileTypes();
-    ConstArrayRef<int>::const_iterator i;
+    ArrayRef<const int>                 types = option.fileTypes();
+    ArrayRef<const int>::const_iterator i;
     for (i = types.begin(); i != types.end(); ++i)
     {
         std::string testFilename(prefix + ftp2ext_with_dot(*i));
@@ -185,8 +185,8 @@ std::string FileNameOptionManager::completeFileName(
         if (fileType == efNR
             && impl_->redirector_->fileExists(value, File::throwOnError))
         {
-            ConstArrayRef<const char *>                 compressedExtensions(c_compressedExtensions);
-            ConstArrayRef<const char *>::const_iterator ext;
+            ArrayRef<const char *const>                 compressedExtensions(c_compressedExtensions);
+            ArrayRef<const char *const>::const_iterator ext;
             for (ext = compressedExtensions.begin(); ext != compressedExtensions.end(); ++ext)
             {
                 if (endsWith(value, *ext))

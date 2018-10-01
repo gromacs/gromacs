@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -132,6 +132,7 @@
 
 #include "selelem.h"
 #include "selmethod.h"
+#include "selmethod-impl.h"
 
 using std::min;
 using std::max;
@@ -342,7 +343,7 @@ static const char *const help_insolidangle[] = {
     "(default=5) of any position in [TT]POS_EXPR[tt] as seen from [TT]POS[tt]",
     "a position expression that evaluates to a single position), i.e., atoms",
     "in the solid angle spanned by the positions in [TT]POS_EXPR[tt] and",
-    "centered at [TT]POS[tt].[PAR]"
+    "centered at [TT]POS[tt].[PAR]",
 
     "Technically, the solid angle is constructed as a union of small cones",
     "whose tip is at [TT]POS[tt] and the axis goes through a point in",
@@ -372,27 +373,17 @@ static void *
 init_data_insolidangle(int /* npar */, gmx_ana_selparam_t *param)
 {
     t_methoddata_insolidangle *data = new t_methoddata_insolidangle();
-    // cppcheck-suppress uninitdata
     data->angcut        = 5.0;
-    // cppcheck-suppress uninitdata
     data->cfrac         = 0.0;
 
-    // cppcheck-suppress uninitdata
     data->distccut      = 0.0;
-    // cppcheck-suppress uninitdata
     data->targetbinsize = 0.0;
 
-    // cppcheck-suppress uninitdata
     data->ntbins        = 0;
-    // cppcheck-suppress uninitdata
     data->tbinsize      = 0.0;
-    // cppcheck-suppress uninitdata
     data->tbin          = nullptr;
-    // cppcheck-suppress uninitdata
     data->maxbins       = 0;
-    // cppcheck-suppress uninitdata
     data->nbins         = 0;
-    // cppcheck-suppress uninitdata
     data->bin           = nullptr;
 
     param[0].val.u.p = &data->center;
@@ -404,7 +395,7 @@ init_data_insolidangle(int /* npar */, gmx_ana_selparam_t *param)
 static void
 init_insolidangle(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t * /* param */, void *data)
 {
-    t_methoddata_insolidangle *surf = (t_methoddata_insolidangle *)data;
+    t_methoddata_insolidangle *surf = static_cast<t_methoddata_insolidangle *>(data);
     int                        i, c;
 
     if (surf->angcut <= 0)
@@ -443,7 +434,7 @@ init_insolidangle(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam
 static void
 free_data_insolidangle(void *data)
 {
-    t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)data;
+    t_methoddata_insolidangle *d = static_cast<t_methoddata_insolidangle *>(data);
     int                        i;
 
     if (d->tbin)
@@ -462,7 +453,7 @@ free_data_insolidangle(void *data)
 static void
 init_frame_insolidangle(const gmx::SelMethodEvalContext &context, void *data)
 {
-    t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)data;
+    t_methoddata_insolidangle *d = static_cast<t_methoddata_insolidangle *>(data);
     rvec                       dx;
     int                        i;
 
@@ -494,7 +485,7 @@ init_frame_insolidangle(const gmx::SelMethodEvalContext &context, void *data)
 static bool
 accept_insolidangle(rvec x, const t_pbc *pbc, void *data)
 {
-    t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)data;
+    t_methoddata_insolidangle *d = static_cast<t_methoddata_insolidangle *>(data);
     rvec                       dx;
 
     if (pbc)
@@ -593,7 +584,7 @@ _gmx_selelem_estimate_coverfrac(const gmx::SelectionTreeElement &sel)
 
     if (sel.type == SEL_EXPRESSION && sel.u.expr.method->name == sm_insolidangle.name)
     {
-        t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)sel.u.expr.mdata;
+        t_methoddata_insolidangle *d = static_cast<t_methoddata_insolidangle *>(sel.u.expr.mdata);
         if (d->cfrac < 0)
         {
             d->cfrac = estimate_covered_fraction(d);
@@ -688,7 +679,7 @@ find_surface_bin(t_methoddata_insolidangle *surf, rvec x)
 
     theta = acos(x[ZZ]);
     phi   = atan2(x[YY], x[XX]);
-    tbin  = static_cast<int>(floor(theta / surf->tbinsize));
+    tbin  = static_cast<int>(std::floor(theta / surf->tbinsize));
     if (tbin >= surf->ntbins)
     {
         tbin = surf->ntbins - 1;
@@ -902,7 +893,7 @@ store_surface_point(t_methoddata_insolidangle *surf, rvec x)
         tmax      = std::acos(cos(theta) / cos(surf->angcut));
     }
     /* Find the first affected bin */
-    tbin   = max(static_cast<int>(floor((theta - surf->angcut) / surf->tbinsize)), 0);
+    tbin   = max(static_cast<int>(std::floor((theta - surf->angcut) / surf->tbinsize)), 0);
     theta1 = tbin * surf->tbinsize;
     if (theta1 < theta - surf->angcut)
     {
@@ -913,7 +904,7 @@ store_surface_point(t_methoddata_insolidangle *surf, rvec x)
         pdelta1 = M_PI;
     }
     /* Loop through all affected bins */
-    while (tbin < ceil((theta + surf->angcut) / surf->tbinsize)
+    while (tbin < std::ceil((theta + surf->angcut) / surf->tbinsize)
            && tbin < surf->ntbins)
     {
         /* Calculate the next boundaries */
@@ -939,7 +930,7 @@ store_surface_point(t_methoddata_insolidangle *surf, rvec x)
              * such that the case above catches this instead of falling through
              * here. */
             pdelta2 = 2*asin(std::sqrt(
-                                     (gmx::square(sin(surf->angcut/2)) - gmx::square(sin((theta2-theta)/2))) /
+                                     (gmx::square(std::sin(surf->angcut/2)) - gmx::square(std::sin((theta2-theta)/2))) /
                                      (sin(theta) * sin(theta2))));
         }
         /* Update the bin */
@@ -977,7 +968,7 @@ estimate_covered_fraction(t_methoddata_insolidangle *surf)
     cfrac = 0.0;
     for (t = 0; t < surf->ntbins; ++t)
     {
-        tfrac = cos(t * surf->tbinsize) - cos((t+1) * surf->tbinsize);
+        tfrac = std::cos(t * surf->tbinsize) - std::cos((t+1) * surf->tbinsize);
         for (p = 0; p < surf->tbin[t].n; ++p)
         {
             pfrac = surf->tbin[t].p[p+1].left - surf->tbin[t].p[p].left;

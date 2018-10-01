@@ -39,23 +39,23 @@ typedef struct {
                          stepbound itself. In most cases stepbound should lie
                          in the interval (0.1,100.0). Generally, the value
                          100.0 is recommended. */
-    int   patience;   /* Used to set the maximum number of function evaluations
+    int patience;     /* Used to set the maximum number of function evaluations
                          to patience*(number_of_parameters+1). */
-    int   scale_diag; /* If 1, the variables will be rescaled internally.
+    int scale_diag;   /* If 1, the variables will be rescaled internally.
                          Recommended value is 1. */
     FILE* msgfile;    /* Progress messages will be written to this file. */
-    int   verbosity;  /* OR'ed: 1: print some messages; 2: print Jacobian. */
-    int   n_maxpri;   /* -1, or max number of parameters to print. */
-    int   m_maxpri;   /* -1, or max number of residuals to print. */
+    int verbosity;    /* OR'ed: 1: print some messages; 2: print Jacobian. */
+    int n_maxpri;     /* -1, or max number of parameters to print. */
+    int m_maxpri;     /* -1, or max number of residuals to print. */
 } lm_control_struct;
 
 /* Collection of output parameters for status info. */
 typedef struct {
-    double fnorm;     /* norm of the residue vector fvec. */
-    int    nfev;      /* actual number of iterations. */
-    int    outcome;   /* Status indicator. Nonnegative values are used as index
-                         for the message text lm_infmsg, set in lmmin.c. */
-    int    userbreak; /* Set when function evaluation requests termination. */
+    double fnorm;  /* norm of the residue vector fvec. */
+    int nfev;      /* actual number of iterations. */
+    int outcome;   /* Status indicator. Nonnegative values are used as index
+                      for the message text lm_infmsg, set in lmmin.c. */
+    int userbreak; /* Set when function evaluation requests termination. */
 } lm_status_struct;
 
 /* Preset (and recommended) control parameter settings. */

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,27 +71,27 @@ class PositionCalculationTest : public ::testing::Test
 {
     public:
         PositionCalculationTest();
-        ~PositionCalculationTest();
+        ~PositionCalculationTest() override;
 
         void generateCoordinates();
 
         gmx_ana_poscalc_t *createCalculation(e_poscalc_t type, int flags);
-        void setMaximumGroup(gmx_ana_poscalc_t *pc, const gmx::ConstArrayRef<int> &atoms);
+        void setMaximumGroup(gmx_ana_poscalc_t *pc, const gmx::ArrayRef<const int> &atoms);
         gmx_ana_pos_t *initPositions(gmx_ana_poscalc_t *pc, const char *name);
 
         void checkInitialized();
         void updateAndCheck(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
-                            const gmx::ConstArrayRef<int> &atoms,
+                            const gmx::ArrayRef<const int> &atoms,
                             gmx::test::TestReferenceChecker *checker,
                             const char *name);
 
         void testSingleStatic(e_poscalc_t type, int flags, bool bExpectTop,
-                              const gmx::ConstArrayRef<int> &atoms,
-                              const gmx::ConstArrayRef<int> &index = gmx::EmptyArrayRef());
+                              const gmx::ArrayRef<const int> &atoms,
+                              const gmx::ArrayRef<const int> &index = gmx::EmptyArrayRef());
         void testSingleDynamic(e_poscalc_t type, int flags, bool bExpectTop,
-                               const gmx::ConstArrayRef<int> &initAtoms,
-                               const gmx::ConstArrayRef<int> &evalAtoms,
-                               const gmx::ConstArrayRef<int> &index = gmx::EmptyArrayRef());
+                               const gmx::ArrayRef<const int> &initAtoms,
+                               const gmx::ArrayRef<const int> &evalAtoms,
+                               const gmx::ArrayRef<const int> &index = gmx::EmptyArrayRef());
 
         gmx::test::TestReferenceData        data_;
         gmx::test::TestReferenceChecker     checker_;
@@ -107,20 +107,6 @@ class PositionCalculationTest : public ::testing::Test
                          const char *name)
                 : pos(std::move(pos)), pc(pc), name(name)
             {
-            }
-
-            // Default move constructor and assignment. Only needed for old compilers.
-            PositionTest(PositionTest &&o)
-                : pos(std::move(o.pos)), pc(o.pc), name(o.name)
-            {
-            }
-
-            PositionTest &operator= (PositionTest &&o)
-            {
-                pos  = std::move(o.pos);
-                pc   = o.pc;
-                name = o.name;
-                return *this;
             }
 
             PositionPointer                 pos;
@@ -185,8 +171,8 @@ PositionCalculationTest::createCalculation(e_poscalc_t type, int flags)
     return pcList_.back();
 }
 
-void PositionCalculationTest::setMaximumGroup(gmx_ana_poscalc_t             *pc,
-                                              const gmx::ConstArrayRef<int> &atoms)
+void PositionCalculationTest::setMaximumGroup(gmx_ana_poscalc_t              *pc,
+                                              const gmx::ArrayRef<const int> &atoms)
 {
     setTopologyIfRequired();
     gmx_ana_index_t g;
@@ -218,7 +204,7 @@ void PositionCalculationTest::checkInitialized()
 }
 
 void PositionCalculationTest::updateAndCheck(
-        gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p, const gmx::ConstArrayRef<int> &atoms,
+        gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p, const gmx::ArrayRef<const int> &atoms,
         gmx::test::TestReferenceChecker *checker, const char *name)
 {
     gmx_ana_index_t g;
@@ -230,8 +216,8 @@ void PositionCalculationTest::updateAndCheck(
 
 void PositionCalculationTest::testSingleStatic(
         e_poscalc_t type, int flags, bool bExpectTop,
-        const gmx::ConstArrayRef<int> &atoms,
-        const gmx::ConstArrayRef<int> &index)
+        const gmx::ArrayRef<const int> &atoms,
+        const gmx::ArrayRef<const int> &index)
 {
     t_trxframe *frame = topManager_.frame();
     if (frame->bV)
@@ -266,9 +252,9 @@ void PositionCalculationTest::testSingleStatic(
 
 void PositionCalculationTest::testSingleDynamic(
         e_poscalc_t type, int flags, bool bExpectTop,
-        const gmx::ConstArrayRef<int> &initAtoms,
-        const gmx::ConstArrayRef<int> &evalAtoms,
-        const gmx::ConstArrayRef<int> &index)
+        const gmx::ArrayRef<const int> &initAtoms,
+        const gmx::ArrayRef<const int> &evalAtoms,
+        const gmx::ArrayRef<const int> &index)
 {
     gmx_ana_poscalc_t *pc = createCalculation(type, flags | POS_DYNAMIC);
     const bool         requiresTopology

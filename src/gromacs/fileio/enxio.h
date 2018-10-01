@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,10 +38,12 @@
 #define GMX_FILEIO_ENXIO_H
 
 #include "gromacs/fileio/xdr_datatype.h"
-#include "gromacs/trajectory/energy.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_groups_t;
+struct t_energy;
+struct t_enxframe;
 struct t_fileio;
 struct t_inputrec;
 class t_state;
@@ -81,6 +83,8 @@ enum {
     enxDHHIST, /* BAR histogram                                              */
     enxDH,     /* BAR raw delta H data                                       */
 
+    enxAWH,    /* AWH data */
+
     enxNR      /* Total number of extra blocks in the current code,
                 * note that the enxio code can read files written by
                 * future code which contain more blocks.
@@ -93,7 +97,7 @@ extern const char *enx_block_id_name[];
 
 /* the subblocks that are contained in energy file blocks. Each of these
    has a number of values of a single data type in a .edr file. */
-typedef struct
+struct t_enxsubblock
 {
     int          nr;        /* number of items in subblock */
     xdr_datatype type;      /* the block type */
@@ -102,7 +106,7 @@ typedef struct
     float*             fval;
     double*            dval;
     int*               ival;
-    gmx_int64_t*       lval;
+    int64_t    *       lval;
     unsigned char*     cval;
     char**             sval;
 
@@ -114,34 +118,17 @@ typedef struct
     int lval_alloc;
     int cval_alloc;
     int sval_alloc;
-} t_enxsubblock;
-
+};
 
 /* the energy file blocks. Each block contains a number of sub-blocks
    of a single type that contain the actual data. */
-typedef struct t_enxblock{
+struct t_enxblock
+{
     int            id;         /* block id, from the enx enums above */
     int            nsub;       /* number of subblocks */
     t_enxsubblock *sub;        /* the subblocks */
     int            nsub_alloc; /* number of allocated subblocks */
-} t_enxblock;
-
-
-/* The frames that are read/written */
-typedef struct {
-    double          t;            /* Timestamp of this frame	                     */
-    gmx_int64_t     step;         /* MD step	                             */
-    gmx_int64_t     nsteps;       /* The number of steps between frames            */
-    double          dt;           /* The MD time step                              */
-    int             nsum;         /* The number of terms for the sums in ener      */
-    int             nre;          /* Number of energies			     */
-    int             e_size;       /* Size (in bytes) of energies		     */
-    int             e_alloc;      /* Allocated size (in elements) of ener          */
-    t_energy       *ener;         /* The energies                                  */
-    int             nblock;       /* Number of following energy blocks             */
-    t_enxblock     *block;        /* The blocks                                    */
-    int             nblock_alloc; /* The number of blocks allocated                */
-} t_enxframe;
+};
 
 /* file handle */
 typedef struct ener_file *ener_file_t;
@@ -172,7 +159,7 @@ void free_enxframe(t_enxframe *ef);
 
 ener_file_t open_enx(const char *fn, const char *mode);
 
-struct t_fileio *enx_file_pointer(const ener_file_t ef);
+struct t_fileio *enx_file_pointer(const ener_file* ef);
 
 /* Free the contents of ef */
 void close_enx(ener_file_t ef);

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,7 @@ class SwapTestFixture : public MdrunTestFixture
 {
     protected:
         SwapTestFixture();
-        ~SwapTestFixture();
+        ~SwapTestFixture() override;
 };
 
 
@@ -76,9 +76,42 @@ typedef gmx::test::SwapTestFixture CompelTest;
  * the swap state variables can be written to and read from checkpoint. */
 TEST_F(CompelTest, SwapCanRun)
 {
-    std::string name = "OctaneSandwich";
-    runner_.useTopGroAndNdxFromDatabase(name.c_str());
-    runner_.mdpInputFileName_ = fileManager_.getInputFilePath((name + ".mdp").c_str());
+    runner_.useTopGroAndNdxFromDatabase("OctaneSandwich");
+    const std::string mdpContents = R"(
+        dt                       = 0.005
+        nsteps                   = 2
+        define                   = -DPOSRES
+        tcoupl                   = Berendsen
+        tc-grps                  = System
+        tau-t                    = 0.5
+        ref-t                    = 300
+        constraints              = all-bonds
+        cutoff-scheme            = Verlet
+        swapcoords               = Z
+        swap_frequency           = 1
+        split_group0             = Ch0
+        split_group1             = Ch1
+        massw_split0             = yes
+        massw_split1             = no
+        solvent_group            = SOL
+        cyl0_r                   = 1
+        cyl0_up                  = 0.5
+        cyl0_down                = 0.5
+        cyl1_r                   = 1
+        cyl1_up                  = 0.5
+        cyl1_down                = 0.5
+        coupl_steps              = 5
+        iontypes                 = 2
+        iontype0-name            = NA+
+        iontype0-in-A            = 8
+        iontype0-in-B            = 11
+        iontype1-name            = CL-
+        iontype1-in-A            = -1
+        iontype1-in-B            = -1
+        threshold                = 1
+     )";
+
+    runner_.useStringAsMdpFile(mdpContents);
 
     EXPECT_EQ(0, runner_.callGrompp());
 

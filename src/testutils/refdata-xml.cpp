@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -208,9 +208,21 @@ readReferenceDataFile(const std::string &path)
     document.LoadFile(path.c_str());
     if (document.Error())
     {
+        const char *errorStr1 = document.GetErrorStr1();
+        const char *errorStr2 = document.GetErrorStr2();
         std::string errorString("Error was ");
-        errorString += document.GetErrorStr1();
-        errorString += document.GetErrorStr2();
+        if (errorStr1)
+        {
+            errorString += errorStr1;
+        }
+        if (errorStr2)
+        {
+            errorString += errorStr2;
+        }
+        if (!errorStr1 && !errorStr2)
+        {
+            errorString += "not specified.";
+        }
         GMX_THROW(TestException("Reference data not parsed successfully: " + path + "\n." + errorString + "\n"));
     }
     XMLElementPtr rootNode = document.RootElement();

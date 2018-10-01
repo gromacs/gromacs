@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,7 +56,7 @@ namespace test
 //! Check that a null signaller can be called without problems
 TEST(NullSignalTest, NullSignallerWorks)
 {
-    SimulationSignaller signaller(nullptr, nullptr, false, false);
+    SimulationSignaller signaller(nullptr, nullptr, nullptr, false, false);
     EXPECT_EQ(0, signaller.getCommunicationBuffer().size());
     signaller.finalizeSignals();
 }
@@ -65,7 +65,6 @@ TEST(NullSignalTest, NullSignallerWorks)
 class SignalTest : public ::testing::Test
 {
     public:
-        //! Constructor
         SignalTest() : signals_ {}
         {
             signals_[0].sig = 1;
@@ -77,7 +76,7 @@ class SignalTest : public ::testing::Test
 
 TEST_F(SignalTest, NoSignalPropagatesIfNoSignallingTakesPlace)
 {
-    SimulationSignaller signaller(&signals_, nullptr, false, false);
+    SimulationSignaller signaller(&signals_, nullptr, nullptr, false, false);
     EXPECT_EQ(0, signaller.getCommunicationBuffer().size());
     signaller.finalizeSignals();
     EXPECT_EQ(1, signals_[0].sig);
@@ -90,7 +89,7 @@ TEST_F(SignalTest, NoSignalPropagatesIfNoSignallingTakesPlace)
 
 TEST_F(SignalTest, LocalIntraSimSignalPropagatesWhenIntraSimSignalTakesPlace)
 {
-    SimulationSignaller signaller(&signals_, nullptr, false, true);
+    SimulationSignaller signaller(&signals_, nullptr, nullptr, false, true);
     EXPECT_NE(0, signaller.getCommunicationBuffer().size());
     signaller.finalizeSignals();
     EXPECT_EQ(0, signals_[0].sig);
@@ -103,7 +102,7 @@ TEST_F(SignalTest, LocalIntraSimSignalPropagatesWhenIntraSimSignalTakesPlace)
 
 TEST_F(SignalTest, LocalIntraSimSignalPropagatesWhenInterSimTakesPlace)
 {
-    SimulationSignaller signaller(&signals_, nullptr, true, false);
+    SimulationSignaller signaller(&signals_, nullptr, nullptr, true, false);
     EXPECT_NE(0, signaller.getCommunicationBuffer().size());
     // Can't call finalizeSignals without a full commrec
     signaller.setSignals();
@@ -117,7 +116,7 @@ TEST_F(SignalTest, LocalIntraSimSignalPropagatesWhenInterSimTakesPlace)
 
 TEST_F(SignalTest, LocalIntraSimSignalPropagatesWhenBothTakePlace)
 {
-    SimulationSignaller signaller(&signals_, nullptr, true, true);
+    SimulationSignaller signaller(&signals_, nullptr, nullptr, true, true);
     EXPECT_NE(0, signaller.getCommunicationBuffer().size());
     // Can't call finalizeSignals without a full commrec
     signaller.setSignals();
@@ -132,7 +131,7 @@ TEST_F(SignalTest, LocalIntraSimSignalPropagatesWhenBothTakePlace)
 TEST_F(SignalTest, NonLocalSignalDoesntPropagateWhenIntraSimSignalTakesPlace)
 {
     signals_[0].isLocal = false;
-    SimulationSignaller signaller(&signals_, nullptr, false, true);
+    SimulationSignaller signaller(&signals_, nullptr, nullptr, false, true);
     EXPECT_NE(0, signaller.getCommunicationBuffer().size());
     signaller.finalizeSignals();
     EXPECT_EQ(1, signals_[0].sig);
@@ -146,7 +145,7 @@ TEST_F(SignalTest, NonLocalSignalDoesntPropagateWhenIntraSimSignalTakesPlace)
 TEST_F(SignalTest, NonLocalSignalPropagatesWhenInterSimSignalTakesPlace)
 {
     signals_[0].isLocal = false;
-    SimulationSignaller signaller(&signals_, nullptr, true, false);
+    SimulationSignaller signaller(&signals_, nullptr, nullptr, true, false);
     EXPECT_NE(0, signaller.getCommunicationBuffer().size());
     // Can't call finalizeSignals without a full commrec
     signaller.setSignals();
@@ -161,7 +160,7 @@ TEST_F(SignalTest, NonLocalSignalPropagatesWhenInterSimSignalTakesPlace)
 TEST_F(SignalTest, NonLocalSignalPropagatesWhenBothTakePlace)
 {
     signals_[0].isLocal = false;
-    SimulationSignaller signaller(&signals_, nullptr, true, true);
+    SimulationSignaller signaller(&signals_, nullptr, nullptr, true, true);
     EXPECT_NE(0, signaller.getCommunicationBuffer().size());
     // Can't call finalizeSignals without a full commrec
     signaller.setSignals();
@@ -173,5 +172,5 @@ TEST_F(SignalTest, NonLocalSignalPropagatesWhenBothTakePlace)
     EXPECT_EQ(0, signals_[2].set);
 }
 
-} // namespace
-} // namespace
+}  // namespace test
+}  // namespace gmx

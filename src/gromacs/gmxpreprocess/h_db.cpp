@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,8 +39,11 @@
 
 #include "h_db.h"
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
+
+#include <string>
+#include <vector>
 
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/notset.h"
@@ -49,6 +52,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 /* Number of control atoms for each 'add' type.
  *
@@ -105,7 +109,7 @@ void read_ab(char *line, const char *fn, t_hack *hack)
     hack->nctl = ns - 3;
     if ((hack->nctl != ncontrol[hack->tp]) && (ncontrol[hack->tp] != -1))
     {
-        gmx_fatal(FARGS, "Error in hdb file %s:\nWrong number of control atoms (%d iso %d) on line:\n%s\n", fn, hack->nctl, ncontrol[hack->tp], line);
+        gmx_fatal(FARGS, "Error in hdb file %s:\nWrong number of control atoms (%d instead of %d) on line:\n%s\n", fn, hack->nctl, ncontrol[hack->tp], line);
     }
     for (i = 0; (i < hack->nctl); i++)
     {
@@ -133,11 +137,6 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
     int          i, n, nab, nah;
     t_hackblock *aah;
 
-    if (debug)
-    {
-        fprintf(debug, "Hydrogen Database (%s):\n", hfn);
-    }
-
     fflib_filename_base(hfn, filebase, STRLEN);
     /* Currently filebase is read and set, but not used.
      * hdb entries from any hdb file and be applied to rtp entries
@@ -150,15 +149,16 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
     aah = *ah;
     while (fgets2(line, STRLEN-1, in))
     {
+        // Skip lines that are only whitespace
+        if (gmx::countWords(line) == 0)
+        {
+            continue;
+        }
         if (sscanf(line, "%s%n", buf, &n) != 1)
         {
             fprintf(stderr, "Error in hdb file: nah = %d\nline = '%s'\n",
                     nah, line);
             break;
-        }
-        if (debug)
-        {
-            fprintf(debug, "%s", buf);
         }
         srenew(aah, nah+1);
         clear_t_hackblock(&aah[nah]);
@@ -167,10 +167,6 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
 
         if (sscanf(line+n, "%d", &nab) == 1)
         {
-            if (debug)
-            {
-                fprintf(debug, "  %d\n", nab);
-            }
             snew(aah[nah].hack, nab);
             aah[nah].nhack = nab;
             for (i = 0; (i < nab); i++)
@@ -195,13 +191,8 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
     if (nah > 0)
     {
         /* Sort the list (necessary to be able to use bsearch */
-        qsort(aah, nah, (size_t)sizeof(**ah), compaddh);
+        qsort(aah, nah, static_cast<size_t>(sizeof(**ah)), compaddh);
     }
-
-    /*
-       if (debug)
-       dump_h_db(hfn,nah,aah);
-     */
 
     *nahptr = nah;
     *ah     = aah;
@@ -209,23 +200,17 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
 
 int read_h_db(const char *ffdir, t_hackblock **ah)
 {
-    int    nhdbf, f;
-    char **hdbf;
-    int    nah;
-
     /* Read the hydrogen database file(s).
      * Do not generate an error when no files are found.
      */
-    nhdbf = fflib_search_file_end(ffdir, ".hdb", FALSE, &hdbf);
-    nah   = 0;
-    *ah   = nullptr;
-    for (f = 0; f < nhdbf; f++)
-    {
-        read_h_db_file(hdbf[f], &nah, ah);
-        sfree(hdbf[f]);
-    }
-    sfree(hdbf);
 
+    std::vector<std::string> hdbf = fflib_search_file_end(ffdir, ".hdb", FALSE);
+    int nah                       = 0;
+    *ah   = nullptr;
+    for (const auto &filename : hdbf)
+    {
+        read_h_db_file(filename.c_str(), &nah, ah);
+    }
     return nah;
 }
 
@@ -240,7 +225,7 @@ t_hackblock *search_h_db(int nh, t_hackblock ah[], char *key)
 
     ahkey.name = key;
 
-    result = static_cast<t_hackblock *>(bsearch(&ahkey, ah, nh, (size_t)sizeof(ah[0]), compaddh));
+    result = static_cast<t_hackblock *>(bsearch(&ahkey, ah, nh, static_cast<size_t>(sizeof(ah[0])), compaddh));
 
     return result;
 }

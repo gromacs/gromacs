@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -39,20 +39,66 @@ include(GetCompilerInfo.cmake)
 get_compiler_info(C BUILD_C_COMPILER BUILD_CFLAGS)
 get_compiler_info(CXX BUILD_CXX_COMPILER BUILD_CXXFLAGS)
 if(GMX_USE_CUDA)
-    GMX_SET_CUDA_NVCC_FLAGS()
-    get_cuda_compiler_info(CUDA_NVCC_COMPILER_INFO CUDA_NVCC_COMPILER_FLAGS)
+    if(NOT GMX_CLANG_CUDA)
+        GMX_SET_CUDA_NVCC_FLAGS()
+    endif()
+
+    get_cuda_compiler_info(CUDA_COMPILER_INFO CUDA_COMPILER_FLAGS)
 endif()
 
 configure_file(config.h.cmakein config.h)
 configure_file(gmxpre-config.h.cmakein gmxpre-config.h)
 configure_file(buildinfo.h.cmakein buildinfo.h ESCAPE_QUOTES)
 
+####
+set(IGNORED_CLANG_ALL_WARNINGS
+    "-Wno-c++98-compat -Wno-c++98-compat-pedantic" #No intention of C++98 compability
+    "-Wno-source-uses-openmp" #Don't warn for no-omp build
+    "-Wno-c++17-extensions"   #Allowed in attributes (compilers are required to ignore unknown attributes)
+    "-Wno-documentation-unknown-command" #Custom commands are used
+    "-Wno-covered-switch-default" #GCC gives maybe-uninitialized without default label and checks for illegal enum values.
+    "-Wno-switch-enum" # default statement for enum is OK
+
+    #Following ones are undecided/TODO
+    "-Wno-disabled-macro-expansion"
+    "-Wno-cast-align"
+    "-Wno-reserved-id-macro"
+    "-Wno-global-constructors"
+    "-Wno-exit-time-destructors"
+    "-Wno-unused-macros"
+    "-Wno-weak-vtables"
+    "-Wno-conditional-uninitialized"
+    "-Wno-format-nonliteral"
+    "-Wno-shadow"
+    "-Wno-cast-qual"
+    "-Wno-documentation"
+    "-Wno-used-but-marked-unused"
+    "-Wno-padded"
+    "-Wno-float-equal"
+    "-Wno-old-style-cast"
+    "-Wno-conversion"
+    "-Wno-double-promotion")
+string(REPLACE " " ";" IGNORED_CLANG_ALL_WARNINGS "${IGNORED_CLANG_ALL_WARNINGS}")
+
+if (GMX_CLANG_TIDY)
+   set(CLANG_TIDY "clang-tidy" CACHE STRING "Name of clang-tidy executable")
+   find_program(CLANG_TIDY_EXE NAMES "${CLANG_TIDY}"
+       DOC "Path to clang-tidy executable")
+   if(NOT CLANG_TIDY_EXE)
+       message(FATAL_ERROR "clang-tidy not found.")
+   endif()
+   if(CMAKE_VERSION VERSION_LESS "3.6")
+       message(FATAL_ERROR "clang-tidy support requires cmake 3.6.")
+   endif()
+endif()
+#####
+
 if (BUILD_TESTING)
     if(NOT GMX_DEVELOPER_BUILD)
         set(UNITTEST_TARGET_OPTIONS EXCLUDE_FROM_ALL)
     endif()
     if (GMX_BUILD_UNITTESTS)
-        add_subdirectory(external/gmock-1.7.0)
+        add_subdirectory(external/googletest)
     endif()
     include(testutils/TestMacros.cmake)
     add_subdirectory(testutils)
@@ -61,6 +107,14 @@ endif()
 add_subdirectory(gromacs)
 add_subdirectory(programs)
 
-if (NOT GMX_FAHCORE)
-    add_subdirectory(contrib)
+# Activate targets for new C++ API components and docs.
+if(GMX_NATIVE_WINDOWS)
+    # GMXAPI has not been tested in Microsoft environments.
+    set(_GMXAPI_DEFAULT OFF)
+else()
+    set(_GMXAPI_DEFAULT ON)
+endif()
+option(GMXAPI "Experimental external interfaces" ${_GMXAPI_DEFAULT})
+if (GMXAPI)
+   add_subdirectory(api)
 endif()

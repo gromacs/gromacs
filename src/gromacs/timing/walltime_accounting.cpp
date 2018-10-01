@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,11 +68,17 @@
 typedef struct gmx_walltime_accounting {
     //! Seconds since the epoch recorded at the start of the simulation
     double          start_time_stamp;
-    //! Seconds since the epoch recorded at the start of the simulation for this thread
-    double          start_time_stamp_per_thread;
-    //! Total seconds elapsed over the simulation
+    /*! \brief Seconds since the epoch recorded at the reset of
+     * counters for the simulation (or the start, if no reset has
+     * occured). */
+    double          reset_time_stamp;
+    /*! \brief Seconds since the epoch recorded at the reset of
+     * counters for the simulation for this thread (or the start, if
+     * no reset has occured). */
+    double          reset_time_stamp_per_thread;
+    //! Total seconds elapsed over the simulation since counter reset
     double          elapsed_time;
-    //! Total seconds elapsed over the simulation running this thread
+    //! Total seconds elapsed over the simulation since counter reset running this thread
     double          elapsed_time_over_all_threads;
     /*! \brief Number of OpenMP threads that will be launched by this
      * MPI rank.
@@ -84,8 +90,10 @@ typedef struct gmx_walltime_accounting {
      * elapsed_time_over_all_threads over all threads was constant
      * with respect to parallelism implementation. */
     int             numOpenMPThreads;
+    //! Numbers of steps done before reset of counters
+    int64_t         nsteps_done_at_reset;
     //! Set by integrators to report the amount of work they did
-    gmx_int64_t     nsteps_done;
+    int64_t         nsteps_done;
     //! Whether the simulation has finished in a way valid for walltime reporting.
     bool            isValidFinish;
 } t_gmx_walltime_accounting;
@@ -101,7 +109,7 @@ typedef struct gmx_walltime_accounting {
 static double gmx_gettime_per_thread();
 
 // TODO In principle, all this should get protected by checks that
-// walltime_accounting is not null. In practice, that NULL condition
+// walltime_accounting is not nullptr. In practice, that nullptr condition
 // does not happen, and future refactoring will likely enforce it by
 // having the gmx_walltime_accounting_t object be owned by the runner
 // object. When these become member functions, existence will be
@@ -114,8 +122,10 @@ walltime_accounting_init(int numOpenMPThreads)
 
     snew(walltime_accounting, 1);
     walltime_accounting->start_time_stamp            = 0;
-    walltime_accounting->start_time_stamp_per_thread = 0;
+    walltime_accounting->reset_time_stamp            = 0;
+    walltime_accounting->reset_time_stamp_per_thread = 0;
     walltime_accounting->elapsed_time                = 0;
+    walltime_accounting->nsteps_done_at_reset        = 0;
     walltime_accounting->nsteps_done                 = 0;
     walltime_accounting->numOpenMPThreads            = numOpenMPThreads;
     walltime_accounting->isValidFinish               = false;
@@ -130,24 +140,33 @@ walltime_accounting_destroy(gmx_walltime_accounting_t walltime_accounting)
 }
 
 void
-walltime_accounting_start(gmx_walltime_accounting_t walltime_accounting)
+walltime_accounting_reset_time(gmx_walltime_accounting_t walltime_accounting,
+                               int64_t                   step)
 {
-    walltime_accounting->start_time_stamp            = gmx_gettime();
-    walltime_accounting->start_time_stamp_per_thread = gmx_gettime_per_thread();
+    walltime_accounting->reset_time_stamp            = gmx_gettime();
+    walltime_accounting->reset_time_stamp_per_thread = gmx_gettime_per_thread();
     walltime_accounting->elapsed_time                = 0;
     walltime_accounting->nsteps_done                 = 0;
+    walltime_accounting->nsteps_done_at_reset        = step;
 }
 
 void
-walltime_accounting_end(gmx_walltime_accounting_t walltime_accounting)
+walltime_accounting_start_time(gmx_walltime_accounting_t walltime_accounting)
+{
+    walltime_accounting_reset_time(walltime_accounting, 0);
+    walltime_accounting->start_time_stamp = walltime_accounting->reset_time_stamp;
+}
+
+void
+walltime_accounting_end_time(gmx_walltime_accounting_t walltime_accounting)
 {
     double now, now_per_thread;
 
     now            = gmx_gettime();
     now_per_thread = gmx_gettime_per_thread();
 
-    walltime_accounting->elapsed_time                  = now - walltime_accounting->start_time_stamp;
-    walltime_accounting->elapsed_time_over_all_threads = now_per_thread - walltime_accounting->start_time_stamp_per_thread;
+    walltime_accounting->elapsed_time                  = now - walltime_accounting->reset_time_stamp;
+    walltime_accounting->elapsed_time_over_all_threads = now_per_thread - walltime_accounting->reset_time_stamp_per_thread;
     /* For thread-MPI, the per-thread CPU timer makes this just
      * work. For OpenMP threads, the per-thread CPU timer measurement
      * needs to be multiplied by the number of OpenMP threads used,
@@ -159,19 +178,19 @@ walltime_accounting_end(gmx_walltime_accounting_t walltime_accounting)
 }
 
 double
-walltime_accounting_get_current_elapsed_time(gmx_walltime_accounting_t walltime_accounting)
+walltime_accounting_get_time_since_start(gmx_walltime_accounting_t walltime_accounting)
 {
     return gmx_gettime() - walltime_accounting->start_time_stamp;
 }
 
 double
-walltime_accounting_get_elapsed_time(gmx_walltime_accounting_t walltime_accounting)
+walltime_accounting_get_time_since_reset(gmx_walltime_accounting_t walltime_accounting)
 {
-    return walltime_accounting->elapsed_time;
+    return gmx_gettime() - walltime_accounting->reset_time_stamp;
 }
 
 double
-walltime_accounting_get_elapsed_time_over_all_threads(gmx_walltime_accounting_t walltime_accounting)
+walltime_accounting_get_time_since_reset_over_all_threads(gmx_walltime_accounting_t walltime_accounting)
 {
     return walltime_accounting->elapsed_time_over_all_threads;
 }
@@ -182,15 +201,15 @@ walltime_accounting_get_start_time_stamp(gmx_walltime_accounting_t walltime_acco
     return walltime_accounting->start_time_stamp;
 }
 
-gmx_int64_t
-walltime_accounting_get_nsteps_done(gmx_walltime_accounting_t walltime_accounting)
+int64_t
+walltime_accounting_get_nsteps_done_since_reset(gmx_walltime_accounting_t walltime_accounting)
 {
-    return walltime_accounting->nsteps_done;
+    return walltime_accounting->nsteps_done - walltime_accounting->nsteps_done_at_reset;
 }
 
 void
 walltime_accounting_set_nsteps_done(gmx_walltime_accounting_t   walltime_accounting,
-                                    gmx_int64_t                 nsteps_done)
+                                    int64_t                     nsteps_done)
 {
     walltime_accounting->nsteps_done = nsteps_done;
 }
@@ -201,10 +220,8 @@ gmx_gettime()
     /* Use clock_gettime only if we know linking the C run-time
        library will work (which is not trivial on e.g. Crays), and its
        headers claim sufficient support for POSIX (ie not Mac and
-       Windows), and it isn't BG/Q (whose compute node kernel only
-       supports gettimeofday, and bgclang doesn't provide a fully
-       functional implementation clock_gettime). */
-#if HAVE_CLOCK_GETTIME && defined(_POSIX_TIMERS) && _POSIX_TIMERS > 0 && !(defined __bgq__ && defined __clang__)
+       Windows). */
+#if HAVE_CLOCK_GETTIME && defined(_POSIX_TIMERS) && _POSIX_TIMERS > 0
     struct timespec t;
     double          seconds;
 
@@ -215,18 +232,17 @@ gmx_gettime()
 #elif HAVE_GETTIMEOFDAY
     // Note that gettimeofday() is deprecated by POSIX, but since Mac
     // and Windows do not yet support POSIX, we are still stuck.
-    // Also, this is the only supported API call on Bluegene/Q.
     struct timeval t;
     double         seconds;
 
-    gettimeofday(&t, NULL);
+    gettimeofday(&t, nullptr);
     seconds = static_cast<double>(t.tv_sec) + 1e-6*t.tv_usec;
 
     return seconds;
 #else
     double  seconds;
 
-    seconds = time(NULL);
+    seconds = time(nullptr);
 
     return seconds;
 #endif
@@ -240,7 +256,7 @@ walltime_accounting_set_valid_finish(gmx_walltime_accounting_t walltime_accounti
 
 //! Return whether the simulation finished in a way valid for reporting walltime.
 bool
-walltime_accounting_get_valid_finish(const gmx_walltime_accounting_t walltime_accounting)
+walltime_accounting_get_valid_finish(const gmx_walltime_accounting* walltime_accounting)
 {
     return walltime_accounting->isValidFinish;
 }
@@ -251,10 +267,8 @@ gmx_gettime_per_thread()
     /* Use clock_gettime only if we know linking the C run-time
        library will work (which is not trivial on e.g. Crays), and its
        headers claim sufficient support for POSIX (ie not Mac and
-       Windows), and it isn't BG/Q (whose compute node kernel only
-       supports gettimeofday, and bgclang doesn't provide a fully
-       functional implementation clock_gettime). */
-#if HAVE_CLOCK_GETTIME && defined(_POSIX_THREAD_CPUTIME) && _POSIX_THREAD_CPUTIME > 0 && !(defined __bgq__ && defined __clang__)
+       Windows). */
+#if HAVE_CLOCK_GETTIME && defined(_POSIX_THREAD_CPUTIME) && _POSIX_THREAD_CPUTIME > 0
     struct timespec t;
     double          seconds;
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,11 +38,12 @@
 
 #include "vsite.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <algorithm>
 #include <vector>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/network.h"
@@ -51,16 +52,18 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
-#include "gromacs/utility/smalloc.h"
-
 
 /* The strategy used here for assigning virtual sites to (thread-)tasks
  * is as follows:
@@ -128,7 +131,8 @@ struct InterdependentTask
 };
 
 /*! \brief Vsite thread task data structure */
-struct VsiteThread {
+struct VsiteThread
+{
     //! Start of atom range of this task
     int                rangeStart;
     //! End of atom range of this task
@@ -144,10 +148,11 @@ struct VsiteThread {
     //! Data for vsites that involve constructing atoms in the atom range of other threads/tasks
     InterdependentTask idTask;
 
+    /*! \brief Constructor */
     VsiteThread()
     {
-        rangeStart            = 0;
-        rangeEnd              = 0;
+        rangeStart            = -1;
+        rangeEnd              = -1;
         init_ilist(ilist);
         clear_rvecs(SHIFTS, fshift);
         clear_mat(dxdf);
@@ -155,23 +160,17 @@ struct VsiteThread {
     }
 };
 
-
-/* The start and end values of for the vsite indices in the ftype enum.
- * The validity of these values is checked in init_vsite.
- * This is used to avoid loops over all ftypes just to get the vsite entries.
- * (We should replace the fixed ilist array by only the used entries.)
+/*! \brief Returns the sum of the vsite ilist sizes over all vsite types
+ *
+ * \param[in] ilist  The interaction list
  */
-static const int c_ftypeVsiteStart = F_VSITE2;
-static const int c_ftypeVsiteEnd   = F_VSITEN + 1;
-
-
-/* Returns the sum of the vsite ilist sizes over all vsite types */
-static int vsiteIlistNrCount(const t_ilist *ilist)
+template <typename T>
+static int vsiteIlistNrCount(const T *ilist)
 {
     int nr = 0;
     for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
     {
-        nr += ilist[ftype].nr;
+        nr += ilist[ftype].size();
     }
 
     return nr;
@@ -420,6 +419,35 @@ static int constr_vsiten(const t_iatom *ia, const t_iparams ip[],
     return n3;
 }
 
+/*! \brief PBC modes for vsite construction and spreading */
+enum class PbcMode
+{
+    all,         // Apply normal, simple PBC for all vsites
+    chargeGroup, // Keep vsite in the same periodic image as the rest of it's charge group
+    none         // No PBC treatment needed
+};
+
+/*! \brief Returns the PBC mode based on the system PBC and vsite properties
+ *
+ * \param[in] pbcPtr  A pointer to a PBC struct or nullptr when no PBC treatment is required
+ * \param[in] vsite   A pointer to the vsite struct, can be nullptr
+ */
+static PbcMode getPbcMode(const t_pbc       *pbcPtr,
+                          const gmx_vsite_t *vsite)
+{
+    if (pbcPtr == nullptr)
+    {
+        return PbcMode::none;
+    }
+    else if (vsite != nullptr && vsite->bHaveChargeGroups)
+    {
+        return PbcMode::chargeGroup;
+    }
+    else
+    {
+        return PbcMode::all;
+    }
+}
 
 static void construct_vsites_thread(const gmx_vsite_t *vsite,
                                     rvec x[],
@@ -427,11 +455,7 @@ static void construct_vsites_thread(const gmx_vsite_t *vsite,
                                     const t_iparams ip[], const t_ilist ilist[],
                                     const t_pbc *pbc_null)
 {
-    gmx_bool     bPBCAll;
     real         inv_dt;
-    const t_pbc *pbc_null2;
-    int         *vsite_pbc;
-
     if (v != nullptr)
     {
         inv_dt = 1.0/dt;
@@ -441,10 +465,11 @@ static void construct_vsites_thread(const gmx_vsite_t *vsite,
         inv_dt = 1.0;
     }
 
-    bPBCAll = (pbc_null != nullptr && !vsite->bHaveChargeGroups);
+    const PbcMode            pbcMode   = getPbcMode(pbc_null, vsite);
+    /* We need another pbc pointer, as with charge groups we switch per vsite */
+    const t_pbc             *pbc_null2 = pbc_null;
+    gmx::ArrayRef<const int> vsite_pbc;
 
-    pbc_null2 = nullptr;
-    vsite_pbc = nullptr;
     for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
     {
         if (ilist[ftype].nr == 0)
@@ -459,13 +484,9 @@ static void construct_vsites_thread(const gmx_vsite_t *vsite,
 
             const t_iatom *ia = ilist[ftype].iatoms;
 
-            if (bPBCAll)
+            if (pbcMode == PbcMode::chargeGroup)
             {
-                pbc_null2 = pbc_null;
-            }
-            else if (pbc_null != nullptr)
-            {
-                vsite_pbc = vsite->vsite_pbc_loc[ftype - c_ftypeVsiteStart];
+                vsite_pbc = (*vsite->vsite_pbc_loc)[ftype - c_ftypeVsiteStart];
             }
 
             for (int i = 0; i < nr; )
@@ -479,13 +500,13 @@ static void construct_vsites_thread(const gmx_vsite_t *vsite,
                 /* Check what kind of pbc we need to use */
                 int  pbc_atom;
                 rvec xpbc;
-                if (bPBCAll)
+                if (pbcMode == PbcMode::all)
                 {
                     /* No charge groups, vsite follows its own pbc */
                     pbc_atom = avsite;
                     copy_rvec(x[avsite], xpbc);
                 }
-                else if (vsite_pbc != nullptr)
+                else if (pbcMode == PbcMode::chargeGroup)
                 {
                     pbc_atom = vsite_pbc[i/(1 + nra)];
                     if (pbc_atom > -2)
@@ -604,14 +625,23 @@ void construct_vsites(const gmx_vsite_t *vsite,
                       real dt, rvec *v,
                       const t_iparams ip[], const t_ilist ilist[],
                       int ePBC, gmx_bool bMolPBC,
-                      t_commrec *cr, matrix box)
+                      const t_commrec *cr,
+                      const matrix box)
 {
+    const bool useDomdec = (vsite != nullptr && vsite->useDomdec);
+    GMX_ASSERT(!useDomdec || (cr != nullptr && DOMAINDECOMP(cr)), "When vsites are set up with domain decomposition, we need a valid commrec");
+    // TODO: Remove this assertion when we remove charge groups
+    GMX_ASSERT(vsite != nullptr || ePBC == epbcNONE, "Without a vsite struct we can not do PBC (in case we have charge groups)");
+
     t_pbc     pbc, *pbc_null;
 
-    gmx_bool  bDomDec = cr && DOMAINDECOMP(cr);
-
-    /* We only need to do pbc when we have inter-cg vsites */
-    if (ePBC != epbcNONE && (bDomDec || bMolPBC) && vsite->n_intercg_vsite)
+    /* We only need to do pbc when we have inter-cg vsites.
+     * Note that with domain decomposition we do not need to apply PBC here
+     * when we have at least 3 domains along each dimension. Currently we
+     * do not optimize this case.
+     */
+    if (ePBC != epbcNONE && (useDomdec || bMolPBC) &&
+        !(vsite != nullptr && vsite->n_intercg_vsite == 0))
     {
         /* This is wasting some CPU time as we now do this multiple times
          * per MD step.
@@ -619,7 +649,7 @@ void construct_vsites(const gmx_vsite_t *vsite,
         ivec null_ivec;
         clear_ivec(null_ivec);
         pbc_null = set_pbc_dd(&pbc, ePBC,
-                              DOMAINDECOMP(cr) ? cr->dd->nc : null_ivec,
+                              useDomdec ? cr->dd->nc : null_ivec,
                               FALSE, box);
     }
     else
@@ -627,12 +657,12 @@ void construct_vsites(const gmx_vsite_t *vsite,
         pbc_null = nullptr;
     }
 
-    if (bDomDec)
+    if (useDomdec)
     {
         dd_move_x_vsites(cr->dd, box, x);
     }
 
-    if (vsite->nthreads == 1)
+    if (vsite == nullptr || vsite->nthreads == 1)
     {
         construct_vsites_thread(vsite,
                                 x, dt, v,
@@ -645,12 +675,15 @@ void construct_vsites(const gmx_vsite_t *vsite,
         {
             try
             {
-                int th = gmx_omp_get_thread_num();
+                const int          th    = gmx_omp_get_thread_num();
+                const VsiteThread &tData = *vsite->tData[th];
+                GMX_ASSERT(tData.rangeStart >= 0, "The thread data should be initialized before calling construct_vsites");
+
                 construct_vsites_thread(vsite,
                                         x, dt, v,
-                                        ip, vsite->tData[th]->ilist,
+                                        ip, tData.ilist,
                                         pbc_null);
-                if (vsite->tData[th]->useInterdependentTask)
+                if (tData.useInterdependentTask)
                 {
                     /* Here we don't need a barrier (unlike the spreading),
                      * since both tasks only construct vsites from particles,
@@ -658,7 +691,7 @@ void construct_vsites(const gmx_vsite_t *vsite,
                      */
                     construct_vsites_thread(vsite,
                                             x, dt, v,
-                                            ip, vsite->tData[th]->idTask.ilist,
+                                            ip, tData.idTask.ilist,
                                             pbc_null);
                 }
             }
@@ -722,20 +755,34 @@ static void spread_vsite2(const t_iatom ia[], real a,
     /* TOTAL: 13 flops */
 }
 
-void construct_vsites_mtop(gmx_vsite_t *vsite,
-                           gmx_mtop_t *mtop, rvec x[])
+void constructVsitesGlobal(const gmx_mtop_t         &mtop,
+                           gmx::ArrayRef<gmx::RVec>  x)
 {
-    int as = 0;
-    for (int mb = 0; mb < mtop->nmolblock; mb++)
+    GMX_ASSERT(x.size() >= static_cast<gmx::index>(mtop.natoms), "x should contain the whole system");
+    GMX_ASSERT(!mtop.moleculeBlockIndices.empty(), "molblock indices are needed in constructVsitesGlobal");
+
+    for (size_t mb = 0; mb < mtop.molblock.size(); mb++)
     {
-        const gmx_molblock_t *molb = &mtop->molblock[mb];
-        const gmx_moltype_t  *molt = &mtop->moltype[molb->type];
-        for (int mol = 0; mol < molb->nmol; mol++)
+        const gmx_molblock_t  &molb = mtop.molblock[mb];
+        const gmx_moltype_t   &molt = mtop.moltype[molb.type];
+        if (vsiteIlistNrCount(molt.ilist.data()) > 0)
         {
-            construct_vsites(vsite, x+as, 0.0, nullptr,
-                             mtop->ffparams.iparams, molt->ilist,
-                             epbcNONE, TRUE, nullptr, nullptr);
-            as += molt->atoms.nr;
+            int atomOffset = mtop.moleculeBlockIndices[mb].globalAtomStart;
+            for (int mol = 0; mol < molb.nmol; mol++)
+            {
+                t_ilist ilist[F_NRE];
+                for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
+                {
+                    ilist[ftype].nr     = molt.ilist[ftype].size();
+                    ilist[ftype].iatoms = const_cast<t_iatom *>(molt.ilist[ftype].iatoms.data());
+                }
+
+                construct_vsites(nullptr, as_rvec_array(x.data()) + atomOffset,
+                                 0.0, nullptr,
+                                 mtop.ffparams.iparams.data(), ilist,
+                                 epbcNONE, TRUE, nullptr, nullptr);
+                atomOffset += molt.atoms.nr;
+            }
         }
     }
 }
@@ -1448,16 +1495,13 @@ static void spread_vsite_f_thread(const gmx_vsite_t *vsite,
                                   t_iparams ip[], const t_ilist ilist[],
                                   const t_graph *g, const t_pbc *pbc_null)
 {
-    gmx_bool     bPBCAll;
-    const t_pbc *pbc_null2;
-    const int   *vsite_pbc;
-
-    bPBCAll = (pbc_null != nullptr && !vsite->bHaveChargeGroups);
+    const PbcMode            pbcMode   = getPbcMode(pbc_null, vsite);
+    /* We need another pbc pointer, as with charge groups we switch per vsite */
+    const t_pbc             *pbc_null2 = pbc_null;
+    gmx::ArrayRef<const int> vsite_pbc;
 
     /* this loop goes backwards to be able to build *
      * higher type vsites from lower types         */
-    pbc_null2 = nullptr;
-    vsite_pbc = nullptr;
     for (int ftype = c_ftypeVsiteEnd - 1; ftype >= c_ftypeVsiteStart; ftype--)
     {
         if (ilist[ftype].nr == 0)
@@ -1472,18 +1516,21 @@ static void spread_vsite_f_thread(const gmx_vsite_t *vsite,
 
             const t_iatom *ia = ilist[ftype].iatoms;
 
-            if (bPBCAll)
+            if (pbcMode == PbcMode::all)
             {
                 pbc_null2 = pbc_null;
             }
-            else if (pbc_null != nullptr)
+            else if (pbcMode == PbcMode::chargeGroup)
             {
-                vsite_pbc = vsite->vsite_pbc_loc[ftype - c_ftypeVsiteStart];
+                if (vsite->vsite_pbc_loc)
+                {
+                    vsite_pbc = (*vsite->vsite_pbc_loc)[ftype - c_ftypeVsiteStart];
+                }
             }
 
             for (int i = 0; i < nr; )
             {
-                if (vsite_pbc != nullptr)
+                if (!vsite_pbc.empty())
                 {
                     if (vsite_pbc[i/(1 + nra)] > -2)
                     {
@@ -1572,39 +1619,55 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                     gmx_bool VirCorr, matrix vir,
                     t_nrnb *nrnb, const t_idef *idef,
                     int ePBC, gmx_bool bMolPBC, const t_graph *g, const matrix box,
-                    t_commrec *cr)
+                    const t_commrec *cr, gmx_wallcycle *wcycle)
 {
+    wallcycle_start(wcycle, ewcVSITESPREAD);
+    const bool useDomdec = vsite->useDomdec;
+    GMX_ASSERT(!useDomdec || (cr != nullptr && DOMAINDECOMP(cr)), "When vsites are set up with domain decomposition, we need a valid commrec");
+
     t_pbc pbc, *pbc_null;
 
     /* We only need to do pbc when we have inter-cg vsites */
-    if ((DOMAINDECOMP(cr) || bMolPBC) && vsite->n_intercg_vsite)
+    if ((useDomdec || bMolPBC) && vsite->n_intercg_vsite)
     {
         /* This is wasting some CPU time as we now do this multiple times
          * per MD step.
          */
-        pbc_null = set_pbc_dd(&pbc, ePBC, cr->dd ? cr->dd->nc : nullptr, FALSE, box);
+        pbc_null = set_pbc_dd(&pbc, ePBC, useDomdec ? cr->dd->nc : nullptr, FALSE, box);
     }
     else
     {
         pbc_null = nullptr;
     }
 
-    if (DOMAINDECOMP(cr))
+    if (useDomdec)
     {
         dd_clear_f_vsites(cr->dd, f);
     }
 
     if (vsite->nthreads == 1)
     {
+        matrix dxdf;
         if (VirCorr)
         {
-            clear_mat(vsite->tData[0]->dxdf);
+            clear_mat(dxdf);
         }
         spread_vsite_f_thread(vsite,
                               x, f, fshift,
-                              VirCorr, vsite->tData[0]->dxdf,
+                              VirCorr, dxdf,
                               idef->iparams, idef->il,
                               g, pbc_null);
+
+        if (VirCorr)
+        {
+            for (int i = 0; i < DIM; i++)
+            {
+                for (int j = 0; j < DIM; j++)
+                {
+                    vir[i][j] += -0.5*dxdf[i][j];
+                }
+            }
+        }
     }
     else
     {
@@ -1625,7 +1688,7 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
             try
             {
                 int          thread = gmx_omp_get_thread_num();
-                VsiteThread *tData  = vsite->tData[thread];
+                VsiteThread &tData  = *vsite->tData[thread];
 
                 rvec        *fshift_t;
                 if (thread == 0 || fshift == nullptr)
@@ -1634,7 +1697,7 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                 }
                 else
                 {
-                    fshift_t = tData->fshift;
+                    fshift_t = tData.fshift;
 
                     for (int i = 0; i < SHIFTS; i++)
                     {
@@ -1643,16 +1706,16 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                 }
                 if (VirCorr)
                 {
-                    clear_mat(tData->dxdf);
+                    clear_mat(tData.dxdf);
                 }
 
-                if (tData->useInterdependentTask)
+                if (tData.useInterdependentTask)
                 {
                     /* Spread the vsites that spread outside our local range.
                      * This is done using a thread-local force buffer force.
                      * First we need to copy the input vsite forces to force.
                      */
-                    InterdependentTask *idTask = &tData->idTask;
+                    InterdependentTask *idTask = &tData.idTask;
 
                     /* Clear the buffer elements set by our task during
                      * the last call to spread_vsite_f.
@@ -1667,9 +1730,9 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                     }
                     spread_vsite_f_thread(vsite,
                                           x, as_rvec_array(idTask->force.data()), fshift_t,
-                                          VirCorr, tData->dxdf,
+                                          VirCorr, tData.dxdf,
                                           idef->iparams,
-                                          tData->idTask.ilist,
+                                          tData.idTask.ilist,
                                           g, pbc_null);
 
                     /* We need a barrier before reducing forces below
@@ -1700,18 +1763,18 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                     /* Clear the vsite forces, both in f and force */
                     for (int i = 0; i < nvsite; i++)
                     {
-                        int ind = tData->idTask.vsite[i];
+                        int ind = tData.idTask.vsite[i];
                         clear_rvec(f[ind]);
-                        clear_rvec(tData->idTask.force[ind]);
+                        clear_rvec(tData.idTask.force[ind]);
                     }
                 }
 
                 /* Spread the vsites that spread locally only */
                 spread_vsite_f_thread(vsite,
                                       x, f, fshift_t,
-                                      VirCorr, tData->dxdf,
+                                      VirCorr, tData.dxdf,
                                       idef->iparams,
-                                      tData->ilist,
+                                      tData.ilist,
                                       g, pbc_null);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -1727,23 +1790,26 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                 }
             }
         }
-    }
 
-    if (VirCorr)
-    {
-        for (int th = 0; th < (vsite->nthreads == 1 ? 1 : vsite->nthreads + 1); th++)
+        if (VirCorr)
         {
-            for (int i = 0; i < DIM; i++)
+            for (int th = 0; th < vsite->nthreads + 1; th++)
             {
-                for (int j = 0; j < DIM; j++)
+                /* MSVC doesn't like matrix references, so we use a pointer */
+                const matrix *dxdf = &vsite->tData[th]->dxdf;
+
+                for (int i = 0; i < DIM; i++)
                 {
-                    vir[i][j] += -0.5*vsite->tData[th]->dxdf[i][j];
+                    for (int j = 0; j < DIM; j++)
+                    {
+                        vir[i][j] += -0.5*(*dxdf)[i][j];
+                    }
                 }
             }
         }
     }
 
-    if (DOMAINDECOMP(cr))
+    if (useDomdec)
     {
         dd_move_f_vsites(cr->dd, f, fshift);
     }
@@ -1756,19 +1822,23 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
     inc_nrnb(nrnb, eNR_VSITE4FD, vsite_count(idef->il, F_VSITE4FD));
     inc_nrnb(nrnb, eNR_VSITE4FDN, vsite_count(idef->il, F_VSITE4FDN));
     inc_nrnb(nrnb, eNR_VSITEN,   vsite_count(idef->il, F_VSITEN));
+
+    wallcycle_stop(wcycle, ewcVSITESPREAD);
 }
 
-static int *atom2cg(t_block *cgs)
+/*! \brief Returns the an array with charge-group indices for each atom
+ *
+ * \param[in] chargeGroups  The charge group block struct
+ */
+static std::vector<int> atom2cg(const t_block &chargeGroups)
 {
-    int *a2cg;
+    std::vector<int> a2cg(chargeGroups.index[chargeGroups.nr], 0);
 
-    snew(a2cg, cgs->index[cgs->nr]);
-    for (int cg = 0; cg < cgs->nr; cg++)
+    for (int chargeGroup = 0; chargeGroup < chargeGroups.nr; chargeGroup++)
     {
-        for (int i = cgs->index[cg]; i < cgs->index[cg+1]; i++)
-        {
-            a2cg[i] = cg;
-        }
+        std::fill(a2cg.begin() + chargeGroups.index[chargeGroup],
+                  a2cg.begin() + chargeGroups.index[chargeGroup + 1],
+                  chargeGroup);
     }
 
     return a2cg;
@@ -1776,79 +1846,71 @@ static int *atom2cg(t_block *cgs)
 
 int count_intercg_vsites(const gmx_mtop_t *mtop)
 {
-    gmx_molblock_t *molb;
-    gmx_moltype_t  *molt;
-    int            *a2cg;
-    int             n_intercg_vsite;
-
-    n_intercg_vsite = 0;
-    for (int mb = 0; mb < mtop->nmolblock; mb++)
+    int n_intercg_vsite = 0;
+    for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        molb = &mtop->molblock[mb];
-        molt = &mtop->moltype[molb->type];
+        const gmx_moltype_t &molt = mtop->moltype[molb.type];
 
-        a2cg = atom2cg(&molt->cgs);
+        std::vector<int>     a2cg = atom2cg(molt.cgs);
         for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
         {
-            int            nral = NRAL(ftype);
-            t_ilist       *il   = &molt->ilist[ftype];
-            const t_iatom *ia   = il->iatoms;
-            for (int i = 0; i < il->nr; i += 1 + nral)
+            const int              nral = NRAL(ftype);
+            const InteractionList &il   = molt.ilist[ftype];
+            for (int i = 0; i < il.size(); i += 1 + nral)
             {
-                int cg = a2cg[ia[1+i]];
+                int cg = a2cg[il.iatoms[1 + i]];
                 for (int a = 1; a < nral; a++)
                 {
-                    if (a2cg[ia[1+a]] != cg)
+                    if (a2cg[il.iatoms[1 + a]] != cg)
                     {
-                        n_intercg_vsite += molb->nmol;
+                        n_intercg_vsite += molb.nmol;
                         break;
                     }
                 }
             }
         }
-        sfree(a2cg);
     }
 
     return n_intercg_vsite;
 }
 
-static int **get_vsite_pbc(const t_iparams *iparams, const t_ilist *ilist,
-                           const t_atom *atom, const t_mdatoms *md,
-                           const t_block *cgs, const int *a2cg)
+template <typename T>
+static VsitePbc
+get_vsite_pbc(const t_iparams *iparams, const T *ilist,
+              const t_atom *atom, const t_mdatoms *md,
+              const t_block &cgs)
 {
-    char    *pbc_set;
+    /* Make an atom to charge group index */
+    std::vector<int> a2cg = atom2cg(cgs);
 
     /* Make an array that tells if the pbc of an atom is set */
-    snew(pbc_set, cgs->index[cgs->nr]);
+    std::vector<bool> pbc_set(cgs.index[cgs.nr], false);
     /* PBC is set for all non vsites */
-    for (int a = 0; a < cgs->index[cgs->nr]; a++)
+    for (int a = 0; a < cgs.index[cgs.nr]; a++)
     {
         if ((atom && atom[a].ptype != eptVSite) ||
             (md   && md->ptype[a]  != eptVSite))
         {
-            pbc_set[a] = 1;
+            pbc_set[a] = true;
         }
     }
 
-    int **vsite_pbc;
-    snew(vsite_pbc, F_VSITEN-F_VSITE2+1);
+    VsitePbc vsite_pbc;
 
     for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
     {
         {   // TODO remove me
-            int            nral = NRAL(ftype);
-            const t_ilist *il   = &ilist[ftype];
-            const t_iatom *ia   = il->iatoms;
-            int           *vsite_pbc_f;
+            int               nral = NRAL(ftype);
+            const T          &il   = ilist[ftype];
 
-            snew(vsite_pbc[ftype-F_VSITE2], il->nr/(1 + nral));
-            vsite_pbc_f = vsite_pbc[ftype-F_VSITE2];
+            std::vector<int> &vsite_pbc_f = vsite_pbc[ftype - F_VSITE2];
+            vsite_pbc_f.resize(il.size()/(1 + nral));
 
             int i = 0;
-            while (i < il->nr)
+            while (i < il.size())
             {
                 int     vsi   = i/(1 + nral);
-                t_iatom vsite = ia[i+1];
+                t_iatom vsite = il.iatoms[i + 1];
                 int     cg_v  = a2cg[vsite];
                 /* A value of -2 signals that this vsite and its contructing
                  * atoms are all within the same cg, so no pbc is required.
@@ -1858,10 +1920,10 @@ static int **get_vsite_pbc(const t_iparams *iparams, const t_ilist *ilist,
                 int nc3 = 0;
                 if (ftype == F_VSITEN)
                 {
-                    nc3 = 3*iparams[ia[i]].vsiten.n;
+                    nc3 = 3*iparams[il.iatoms[i]].vsiten.n;
                     for (int j = 0; j < nc3; j += 3)
                     {
-                        if (a2cg[ia[i+j+2]] != cg_v)
+                        if (a2cg[il.iatoms[i + j + 2]] != cg_v)
                         {
                             vsite_pbc_f[vsi] = -1;
                         }
@@ -1871,7 +1933,7 @@ static int **get_vsite_pbc(const t_iparams *iparams, const t_ilist *ilist,
                 {
                     for (int a = 1; a < nral; a++)
                     {
-                        if (a2cg[ia[i+1+a]] != cg_v)
+                        if (a2cg[il.iatoms[i + 1 + a]] != cg_v)
                         {
                             vsite_pbc_f[vsi] = -1;
                         }
@@ -1881,7 +1943,7 @@ static int **get_vsite_pbc(const t_iparams *iparams, const t_ilist *ilist,
                 {
                     /* Check if this is the first processed atom of a vsite only cg */
                     gmx_bool bViteOnlyCG_and_FirstAtom = TRUE;
-                    for (int a = cgs->index[cg_v]; a < cgs->index[cg_v+1]; a++)
+                    for (int a = cgs.index[cg_v]; a < cgs.index[cg_v + 1]; a++)
                     {
                         /* Non-vsites already have pbc set, so simply check for pbc_set */
                         if (pbc_set[a])
@@ -1898,7 +1960,7 @@ static int **get_vsite_pbc(const t_iparams *iparams, const t_ilist *ilist,
                          */
                         vsite_pbc_f[vsi] = vsite;
                     }
-                    else if (cg_v != a2cg[ia[1+i+1]])
+                    else if (cg_v != a2cg[il.iatoms[1 + i + 1]])
                     {
                         /* This vsite has a different charge group index
                          * than it's first constructing atom
@@ -1907,7 +1969,7 @@ static int **get_vsite_pbc(const t_iparams *iparams, const t_ilist *ilist,
                          * or vsite that already had its pbc defined.
                          * If nothing is found, use full pbc for this vsite.
                          */
-                        for (int a = cgs->index[cg_v]; a < cgs->index[cg_v+1]; a++)
+                        for (int a = cgs.index[cg_v]; a < cgs.index[cg_v + 1]; a++)
                         {
                             if (a != vsite && pbc_set[a])
                             {
@@ -1923,8 +1985,8 @@ static int **get_vsite_pbc(const t_iparams *iparams, const t_ilist *ilist,
                         if (gmx_debug_at)
                         {
                             fprintf(debug, "vsite atom %d  cg %d - %d pbc atom %d\n",
-                                    vsite+1, cgs->index[cg_v]+1, cgs->index[cg_v+1],
-                                    vsite_pbc_f[vsi]+1);
+                                    vsite+1, cgs.index[cg_v] + 1, cgs.index[cg_v + 1],
+                                    vsite_pbc_f[vsi] + 1);
                         }
                     }
                 }
@@ -1939,22 +2001,22 @@ static int **get_vsite_pbc(const t_iparams *iparams, const t_ilist *ilist,
                 }
 
                 /* This vsite now has its pbc defined */
-                pbc_set[vsite] = 1;
+                pbc_set[vsite] = true;
             }
         }
     }
-
-    sfree(pbc_set);
 
     return vsite_pbc;
 }
 
 
-gmx_vsite_t *init_vsite(const gmx_mtop_t *mtop, t_commrec *cr,
-                        gmx_bool bSerial_NoPBC)
+std::unique_ptr<gmx_vsite_t>
+initVsite(const gmx_mtop_t &mtop,
+          const t_commrec  *cr)
 {
-    gmx_vsite_t   *vsite;
-    gmx_moltype_t *molt;
+    GMX_RELEASE_ASSERT(cr != nullptr, "We need a valid commrec");
+
+    std::unique_ptr<gmx_vsite_t> vsite;
 
     /* check if there are vsites */
     int nvsite = 0;
@@ -1964,7 +2026,7 @@ gmx_vsite_t *init_vsite(const gmx_mtop_t *mtop, t_commrec *cr,
         {
             GMX_ASSERT(ftype >= c_ftypeVsiteStart && ftype < c_ftypeVsiteEnd, "c_ftypeVsiteStart and/or c_ftypeVsiteEnd do not have correct values");
 
-            nvsite += gmx_mtop_ftype_count(mtop, ftype);
+            nvsite += gmx_mtop_ftype_count(&mtop, ftype);
         }
         else
         {
@@ -1974,77 +2036,79 @@ gmx_vsite_t *init_vsite(const gmx_mtop_t *mtop, t_commrec *cr,
 
     if (nvsite == 0)
     {
-        return nullptr;
+        return vsite;
     }
 
-    snew(vsite, 1);
+    vsite = gmx::compat::make_unique<gmx_vsite_t>();
 
-    vsite->n_intercg_vsite   = count_intercg_vsites(mtop);
+    vsite->n_intercg_vsite   = count_intercg_vsites(&mtop);
 
-    vsite->bHaveChargeGroups = (ncg_mtop(mtop) < mtop->natoms);
+    vsite->bHaveChargeGroups = (ncg_mtop(&mtop) < mtop.natoms);
 
-    /* If we don't have charge groups, the vsite follows its own pbc */
-    if (!bSerial_NoPBC &&
-        vsite->bHaveChargeGroups &&
-        vsite->n_intercg_vsite > 0 && DOMAINDECOMP(cr))
+    vsite->useDomdec         = (DOMAINDECOMP(cr) && cr->dd->nnodes > 1);
+
+    /* If we don't have charge groups, the vsite follows its own pbc.
+     *
+     * With charge groups, each vsite needs to follow the pbc of the charge
+     * group. Thus we need to keep track of PBC. Here we assume that without
+     * domain decomposition all molecules are whole (which will not be
+     * the case with periodic molecules).
+     */
+    if (vsite->bHaveChargeGroups &&
+        vsite->n_intercg_vsite > 0 &&
+        DOMAINDECOMP(cr))
     {
-        vsite->nvsite_pbc_molt = mtop->nmoltype;
-        snew(vsite->vsite_pbc_molt, vsite->nvsite_pbc_molt);
-        for (int mt = 0; mt < mtop->nmoltype; mt++)
+        vsite->vsite_pbc_molt.resize(mtop.moltype.size());
+        for (size_t mt = 0; mt < mtop.moltype.size(); mt++)
         {
-            molt = &mtop->moltype[mt];
-            /* Make an atom to charge group index */
-            int *a2cg = atom2cg(&molt->cgs);
-            vsite->vsite_pbc_molt[mt] = get_vsite_pbc(mtop->ffparams.iparams,
-                                                      molt->ilist,
-                                                      molt->atoms.atom, nullptr,
-                                                      &molt->cgs, a2cg);
-            sfree(a2cg);
+            const gmx_moltype_t &molt = mtop.moltype[mt];
+            vsite->vsite_pbc_molt[mt] = get_vsite_pbc(mtop.ffparams.iparams.data(),
+                                                      molt.ilist.data(),
+                                                      molt.atoms.atom, nullptr,
+                                                      molt.cgs);
         }
 
-        snew(vsite->vsite_pbc_loc_nalloc, c_ftypeVsiteEnd - c_ftypeVsiteStart);
-        snew(vsite->vsite_pbc_loc,        c_ftypeVsiteEnd - c_ftypeVsiteStart);
+        vsite->vsite_pbc_loc = gmx::compat::make_unique<VsitePbc>();
     }
 
-    if (bSerial_NoPBC)
-    {
-        vsite->nthreads = 1;
-    }
-    else
-    {
-        vsite->nthreads = gmx_omp_nthreads_get(emntVSITE);
-    }
-    if (!bSerial_NoPBC)
+    vsite->nthreads = gmx_omp_nthreads_get(emntVSITE);
+
+    if (vsite->nthreads > 1)
     {
         /* We need one extra thread data structure for the overlap vsites */
-        snew(vsite->tData, vsite->nthreads + 1);
+        vsite->tData.resize(vsite->nthreads + 1);
 #pragma omp parallel for num_threads(vsite->nthreads) schedule(static)
         for (int thread = 0; thread < vsite->nthreads; thread++)
         {
             try
             {
-                vsite->tData[thread] = new VsiteThread;
+                vsite->tData[thread] = gmx::compat::make_unique<VsiteThread>();
 
-                InterdependentTask *idTask = &vsite->tData[thread]->idTask;
-                idTask->nuse               = 0;
-                idTask->atomIndex.resize(vsite->nthreads);
+                InterdependentTask &idTask = vsite->tData[thread]->idTask;
+                idTask.nuse                = 0;
+                idTask.atomIndex.resize(vsite->nthreads);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
         if (vsite->nthreads > 1)
         {
-            vsite->tData[vsite->nthreads] = new VsiteThread;
+            vsite->tData[vsite->nthreads] = gmx::compat::make_unique<VsiteThread>();
         }
     }
-
-    vsite->taskIndex       = nullptr;
-    vsite->taskIndexNalloc = 0;
 
     return vsite;
 }
 
-static gmx_inline void flagAtom(InterdependentTask *idTask, int atom,
-                                int thread, int nthread, int natperthread)
+gmx_vsite_t::gmx_vsite_t()
+{
+}
+
+gmx_vsite_t::~gmx_vsite_t()
+{
+}
+
+static inline void flagAtom(InterdependentTask *idTask, int atom,
+                            int thread, int nthread, int natperthread)
 {
     if (!idTask->use[atom])
     {
@@ -2072,7 +2136,7 @@ static void assignVsitesToThread(VsiteThread           *tData,
                                  int                    thread,
                                  int                    nthread,
                                  int                    natperthread,
-                                 int                   *taskIndex,
+                                 gmx::ArrayRef<int>     taskIndex,
                                  const t_ilist         *ilist,
                                  const t_iparams       *ip,
                                  const unsigned short  *ptype)
@@ -2213,11 +2277,11 @@ static void assignVsitesToThread(VsiteThread           *tData,
 }
 
 /*! \brief Assign all vsites with taskIndex[]==task to task tData */
-static void assignVsitesToSingleTask(VsiteThread     *tData,
-                                     int              task,
-                                     const int       *taskIndex,
-                                     const t_ilist   *ilist,
-                                     const t_iparams *ip)
+static void assignVsitesToSingleTask(VsiteThread              *tData,
+                                     int                       task,
+                                     gmx::ArrayRef<const int>  taskIndex,
+                                     const t_ilist            *ilist,
+                                     const t_iparams          *ip)
 {
     for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
     {
@@ -2260,7 +2324,6 @@ static void assignVsitesToSingleTask(VsiteThread     *tData,
 void split_vsites_over_threads(const t_ilist   *ilist,
                                const t_iparams *ip,
                                const t_mdatoms *mdatoms,
-                               gmx_bool         bLimitRange,
                                gmx_vsite_t     *vsite)
 {
     int      vsite_atom_range, natperthread;
@@ -2274,14 +2337,14 @@ void split_vsites_over_threads(const t_ilist   *ilist,
     /* The current way of distributing the vsites over threads in primitive.
      * We divide the atom range 0 - natoms_in_vsite uniformly over threads,
      * without taking into account how the vsites are distributed.
-     * Without domain decomposition we bLimitRange=TRUE and we at least
-     * tighten the upper bound of the range (useful for common systems
-     * such as a vsite-protein in 3-site water).
+     * Without domain decomposition we at least tighten the upper bound
+     * of the range (useful for common systems such as a vsite-protein
+     * in 3-site water).
      * With domain decomposition, as long as the vsites are distributed
      * uniformly in each domain along the major dimension, usually x,
      * it will also perform well.
      */
-    if (bLimitRange)
+    if (!vsite->useDomdec)
     {
         vsite_atom_range = -1;
         for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
@@ -2345,17 +2408,13 @@ void split_vsites_over_threads(const t_ilist   *ilist,
     /* To simplify the vsite assignment, we make an index which tells us
      * to which task particles, both non-vsites and vsites, are assigned.
      */
-    if (mdatoms->nr > vsite->taskIndexNalloc)
-    {
-        vsite->taskIndexNalloc = over_alloc_large(mdatoms->nr);
-        srenew(vsite->taskIndex, vsite->taskIndexNalloc);
-    }
+    vsite->taskIndex.resize(mdatoms->nr);
 
     /* Initialize the task index array. Here we assign the non-vsite
      * particles to task=thread, so we easily figure out if vsites
      * depend on local and/or non-local particles in assignVsitesToThread.
      */
-    int *taskIndex = vsite->taskIndex;
+    gmx::ArrayRef<int> taskIndex = vsite->taskIndex;
     {
         int  thread = 0;
         for (int i = 0; i < mdatoms->nr; i++)
@@ -2382,31 +2441,31 @@ void split_vsites_over_threads(const t_ilist   *ilist,
         try
         {
             int          thread = gmx_omp_get_thread_num();
-            VsiteThread *tData  = vsite->tData[thread];
+            VsiteThread &tData  = *vsite->tData[thread];
 
             /* Clear the buffer use flags that were set before */
-            if (tData->useInterdependentTask)
+            if (tData.useInterdependentTask)
             {
-                InterdependentTask *idTask = &tData->idTask;
+                InterdependentTask &idTask = tData.idTask;
 
                 /* To avoid an extra OpenMP barrier in spread_vsite_f,
                  * we clear the force buffer at the next step,
                  * so we need to do it here as well.
                  */
-                clearTaskForceBufferUsedElements(idTask);
+                clearTaskForceBufferUsedElements(&idTask);
 
-                idTask->vsite.resize(0);
+                idTask.vsite.resize(0);
                 for (int t = 0; t < vsite->nthreads; t++)
                 {
-                    AtomIndex *atomIndex = &idTask->atomIndex[t];
-                    int        natom     = atomIndex->atom.size();
+                    AtomIndex &atomIndex = idTask.atomIndex[t];
+                    int        natom     = atomIndex.atom.size();
                     for (int i = 0; i < natom; i++)
                     {
-                        idTask->use[atomIndex->atom[i]] = false;
+                        idTask.use[atomIndex.atom[i]] = false;
                     }
-                    atomIndex->atom.resize(0);
+                    atomIndex.atom.resize(0);
                 }
-                idTask->nuse = 0;
+                idTask.nuse = 0;
             }
 
             /* To avoid large f_buf allocations of #threads*vsite_atom_range
@@ -2415,40 +2474,40 @@ void split_vsites_over_threads(const t_ilist   *ilist,
              * vsites will end up in the separate task.
              * Note that useTask2 should be the same for all threads.
              */
-            tData->useInterdependentTask = (vsite_atom_range <= 200000);
-            if (tData->useInterdependentTask)
+            tData.useInterdependentTask = (vsite_atom_range <= 200000);
+            if (tData.useInterdependentTask)
             {
                 size_t              natoms_use_in_vsites = vsite_atom_range;
-                InterdependentTask *idTask               = &tData->idTask;
+                InterdependentTask &idTask               = tData.idTask;
                 /* To avoid resizing and re-clearing every nstlist steps,
                  * we never down size the force buffer.
                  */
-                if (natoms_use_in_vsites > idTask->force.size() ||
-                    natoms_use_in_vsites > idTask->use.size())
+                if (natoms_use_in_vsites > idTask.force.size() ||
+                    natoms_use_in_vsites > idTask.use.size())
                 {
-                    idTask->force.resize(natoms_use_in_vsites, { 0, 0, 0 });
-                    idTask->use.resize(natoms_use_in_vsites, false);
+                    idTask.force.resize(natoms_use_in_vsites, { 0, 0, 0 });
+                    idTask.use.resize(natoms_use_in_vsites, false);
                 }
             }
 
             /* Assign all vsites that can execute independently on threads */
-            tData->rangeStart     =  thread     *natperthread;
+            tData.rangeStart     =  thread     *natperthread;
             if (thread < vsite->nthreads - 1)
             {
-                tData->rangeEnd   = (thread + 1)*natperthread;
+                tData.rangeEnd   = (thread + 1)*natperthread;
             }
             else
             {
                 /* The last thread should cover up to the end of the range */
-                tData->rangeEnd   = mdatoms->nr;
+                tData.rangeEnd   = mdatoms->nr;
             }
-            assignVsitesToThread(tData,
+            assignVsitesToThread(&tData,
                                  thread, vsite->nthreads,
                                  natperthread,
                                  taskIndex,
                                  ilist, ip, mdatoms->ptype);
 
-            if (tData->useInterdependentTask)
+            if (tData.useInterdependentTask)
             {
                 /* In the worst case, all tasks write to force ranges of
                  * all other tasks, leading to #tasks^2 scaling (this is only
@@ -2457,24 +2516,24 @@ void split_vsites_over_threads(const t_ilist   *ilist,
                  * scaling at high thread counts we therefore construct
                  * an index to only loop over the actually affected tasks.
                  */
-                InterdependentTask *idTask = &tData->idTask;
+                InterdependentTask &idTask = tData.idTask;
 
                 /* Ensure assignVsitesToThread finished on other threads */
 #pragma omp barrier
 
-                idTask->spreadTask.resize(0);
-                idTask->reduceTask.resize(0);
+                idTask.spreadTask.resize(0);
+                idTask.reduceTask.resize(0);
                 for (int t = 0; t < vsite->nthreads; t++)
                 {
                     /* Do we write to the force buffer of task t? */
-                    if (idTask->atomIndex[t].atom.size() > 0)
+                    if (!idTask.atomIndex[t].atom.empty())
                     {
-                        idTask->spreadTask.push_back(t);
+                        idTask.spreadTask.push_back(t);
                     }
                     /* Does task t write to our force buffer? */
-                    if (vsite->tData[t]->idTask.atomIndex[thread].atom.size() > 0)
+                    if (!vsite->tData[t]->idTask.atomIndex[thread].atom.empty())
                     {
-                        idTask->reduceTask.push_back(t);
+                        idTask.reduceTask.push_back(t);
                     }
                 }
             }
@@ -2484,7 +2543,7 @@ void split_vsites_over_threads(const t_ilist   *ilist,
     /* Assign all remaining vsites, that will have taskIndex[]=2*vsite->nthreads,
      * to a single task that will not run in parallel with other tasks.
      */
-    assignVsitesToSingleTask(vsite->tData[vsite->nthreads],
+    assignVsitesToSingleTask(vsite->tData[vsite->nthreads].get(),
                              2*vsite->nthreads,
                              taskIndex,
                              ilist, ip);
@@ -2492,7 +2551,7 @@ void split_vsites_over_threads(const t_ilist   *ilist,
     if (debug && vsite->nthreads > 1)
     {
         fprintf(debug, "virtual site useInterdependentTask %d, nuse:\n",
-                vsite->tData[0]->useInterdependentTask);
+                static_cast<int>(vsite->tData[0]->useInterdependentTask));
         for (int th = 0; th < vsite->nthreads + 1; th++)
         {
             fprintf(debug, " %4d", vsite->tData[th]->idTask.nuse);
@@ -2529,21 +2588,16 @@ void split_vsites_over_threads(const t_ilist   *ilist,
 #endif
 }
 
-void set_vsite_top(gmx_vsite_t *vsite, gmx_localtop_t *top, t_mdatoms *md,
-                   t_commrec *cr)
+void set_vsite_top(gmx_vsite_t          *vsite,
+                   const gmx_localtop_t *top,
+                   const t_mdatoms      *md)
 {
-    if (vsite->n_intercg_vsite > 0)
+    if (vsite->n_intercg_vsite > 0 && vsite->bHaveChargeGroups)
     {
-        if (vsite->bHaveChargeGroups)
-        {
-            /* Make an atom to charge group index */
-            int *a2cg = atom2cg(&top->cgs);
-            vsite->vsite_pbc_loc = get_vsite_pbc(top->idef.iparams,
-                                                 top->idef.il, nullptr, md,
-                                                 &top->cgs, a2cg);
-            sfree(a2cg);
-        }
-
+        vsite->vsite_pbc_loc  = gmx::compat::make_unique<VsitePbc>();
+        *vsite->vsite_pbc_loc = get_vsite_pbc(top->idef.iparams,
+                                              top->idef.il, nullptr, md,
+                                              top->cgs);
     }
 
     if (vsite->nthreads > 1)
@@ -2554,6 +2608,6 @@ void set_vsite_top(gmx_vsite_t *vsite, gmx_localtop_t *top, t_mdatoms *md,
         }
 
         split_vsites_over_threads(top->idef.il, top->idef.iparams,
-                                  md, !DOMAINDECOMP(cr), vsite);
+                                  md, vsite);
     }
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,6 +65,7 @@ typedef enum module_nth
  * This function should caled only once during the initialization of mdrun. */
 void gmx_omp_nthreads_init(const gmx::MDLogger &fplog, t_commrec *cr,
                            int nthreads_hw_avail,
+                           int numRanksOnThisNode,
                            int omp_nthreads_req,
                            int omp_nthreads_pme_req,
                            gmx_bool bCurrNodePMEOnly,
@@ -82,7 +83,7 @@ int gmx_omp_nthreads_get(int mod);
  * the reduction in computional cost due to parallelization. This routine
  * returns 1 when the overhead is expected to be higher than the gain.
  */
-static int gmx_omp_nthreads_get_simple_rvec_task(int mod, int nrvec)
+static inline int gmx_omp_nthreads_get_simple_rvec_task(int mod, int nrvec)
 {
     /* There can be a relatively large overhead to an OpenMP parallel for loop.
      * This overhead increases, slowly, with the numbe of threads used.
@@ -116,7 +117,7 @@ void gmx_omp_nthreads_set(int mod, int nthreads);
 /*! \brief
  * Read the OMP_NUM_THREADS env. var. and check against the value set on the
  * command line. */
-void gmx_omp_nthreads_read_env(int     *nthreads_omp,
-                               gmx_bool bIsSimMaster);
+void gmx_omp_nthreads_read_env(const gmx::MDLogger &mdlog,
+                               int                 *nthreads_omp);
 
 #endif

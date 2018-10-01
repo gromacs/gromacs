@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2016, by the GROMACS development team, led by
+# Copyright (c) 2016,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,35 +32,61 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-set(GMX_LMFIT_MINIMUM_REQUIRED_VERSION "6.1")
-set(GMX_BUNDLED_LMFIT_DIR "${CMAKE_SOURCE_DIR}/src/external/lmfit")
+# Note that lmfit does not have a stable API, so GROMACS only supports
+# the same version that it bundles.
+set(GMX_LMFIT_REQUIRED_VERSION "7.0")
 
-option(GMX_EXTERNAL_LMFIT "Use external lmfit instead of compiling the version bundled with GROMACS." OFF)
-mark_as_advanced(GMX_EXTERNAL_LMFIT)
+include(gmxOptionUtilities)
 
-macro(manage_lmfit)
-    if(GMX_EXTERNAL_LMFIT)
+# Make a three-state enumeration, defaulting to 
+gmx_option_multichoice(GMX_USE_LMFIT
+    "How to handle the lmfit dependency of GROMACS"
+    INTERNAL
+    INTERNAL EXTERNAL NONE)
+
+# Make a fully functional lmfit library target that libgromacs can
+# depend on regardless of how the user directed lmfit support and/or
+# linking to work.
+function(gmx_manage_lmfit)
+    if(GMX_USE_LMFIT STREQUAL "INTERNAL")
+        # Create an object library for the lmfit sources
+        set(BUNDLED_LMFIT_DIR "${CMAKE_SOURCE_DIR}/src/external/lmfit")
+        file(GLOB LMFIT_SOURCES ${BUNDLED_LMFIT_DIR}/*.cpp)
+        add_library(lmfit_objlib OBJECT ${LMFIT_SOURCES})
+        # Ensure that the objects can be used in both STATIC and SHARED
+        # libraries.
+        set_target_properties(lmfit_objlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+        # Create an INTERFACE (ie. fake) library for lmfit, that
+        # libgromacs can depend on. The generator expression for the
+        # target_sources expands to nothing when cmake builds the
+        # export for libgromacs, so that it understands that we don't
+        # install anything for this library - using plain source files
+        # would not convey the right information.
+        add_library(lmfit INTERFACE)
+        target_sources(lmfit INTERFACE $<TARGET_OBJECTS:lmfit_objlib>)
+        target_include_directories(lmfit INTERFACE $<BUILD_INTERFACE:${BUNDLED_LMFIT_DIR}>)
+        # Add the lmfit interface library to the libgromacs Export name, even though
+        # we will not be installing any content.
+        install(TARGETS lmfit EXPORT libgromacs)
+
+        set(HAVE_LMFIT_VALUE TRUE)
+    elseif(GMX_USE_LMFIT STREQUAL "EXTERNAL")
         # Find an external lmfit library.
         find_package(Lmfit ${GMX_LMFIT_MINIMUM_REQUIRED_VERSION})
         if(NOT LMFIT_FOUND)
             message(FATAL_ERROR "External lmfit could not be found, please adjust your pkg-config path to include the lmfit.pc file")
         endif()
-    endif()
-endmacro()
 
-macro(get_lmfit_properties LMFIT_SOURCES_VAR LMFIT_LIBRARIES_VAR LMFIT_INCLUDE_DIR_VAR LMFIT_INCLUDE_DIR_ORDER_VAR)
-    if (GMX_EXTERNAL_LMFIT)
-        set(${LMFIT_INCLUDE_DIR_VAR} ${LMFIT_INCLUDE_DIR})
-        set(${LMFIT_INCLUDE_DIR_ORDER_VAR} "AFTER")
-        set(${LMFIT_SOURCES_VAR} "")
-        set(${LMFIT_LIBRARIES_VAR} ${LMFIT_LIBRARIES})
+        set(HAVE_LMFIT_VALUE TRUE)
     else()
-        set(${LMFIT_INCLUDE_DIR_VAR} ${GMX_BUNDLED_LMFIT_DIR})
-        set(${LMFIT_INCLUDE_DIR_ORDER_VAR} "BEFORE")
-        file(GLOB ${LMFIT_SOURCES_VAR} ${GMX_BUNDLED_LMFIT_DIR}/*.cpp)
-        set(${LMFIT_LIBRARIES_VAR} "")
+        # Create a dummy link target so the calling code doesn't need to know
+        # whether lmfit support is being compiled.
+        add_library(lmfit INTERFACE)
+        # Add the lmfit interface library to the libgromacs Export name, even though
+        # we will not be installing any content.
+        install(TARGETS lmfit EXPORT libgromacs)
+
+        set(HAVE_LMFIT_VALUE FALSE)
     endif()
-endmacro()
-
-manage_lmfit()
-
+endfunction()

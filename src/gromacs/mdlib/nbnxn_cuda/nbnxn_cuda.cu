@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,9 +51,13 @@
 #endif
 
 
+#include "nbnxn_cuda.h"
+
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_gpu_common.h"
+#include "gromacs/mdlib/nbnxn_gpu_common_utils.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/timing/gpu_timing.h"
@@ -61,15 +65,6 @@
 #include "gromacs/utility/gmxassert.h"
 
 #include "nbnxn_cuda_types.h"
-
-/*! Texture reference for LJ C6/C12 parameters; bound to cu_nbparam_t.nbfp */
-texture<float, 1, cudaReadModeElementType> nbfp_texref;
-
-/*! Texture reference for LJ-PME parameters; bound to cu_nbparam_t.nbfp_comb */
-texture<float, 1, cudaReadModeElementType> nbfp_comb_texref;
-
-/*! Texture reference for Ewald coulomb force table; bound to cu_nbparam_t.coulomb_tab */
-texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 
 
 /***** The kernel declarations/definitions come here *****/
@@ -98,6 +93,9 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernels.cuh"
 #undef CALC_ENERGIES
 #undef PRUNE_NBL
+
+/* Prune-only kernels */
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_pruneonly.cuh"
 #undef FUNCTION_DECLARATION_ONLY
 
 /* Now generate the function definitions if we are using a single compilation unit. */
@@ -106,16 +104,8 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_F_prune.cu"
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_VF_noprune.cu"
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_VF_prune.cu"
-#else
-/* Prevent compilation in multiple compilation unit mode for CC 2.x. Although we have
- * build-time checks to prevent this, the user could manually tweaks nvcc flags
- * which would lead to buggy kernels getting compiled.
- */
-#if GMX_PTX_ARCH > 0 && GMX_PTX_ARCH <= 210
-#error Due to an CUDA compiler bug, the CUDA non-bonded module can not be compiled with multiple compilation units for CC 2.x devices. If you have changed the nvcc flags manually, either use the GMX_CUDA_TARGET_* variables instead or set GMX_CUDA_NB_SINGLE_COMPILATION_UNIT=ON CMake option.
-#endif
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_pruneonly.cu"
 #endif /* GMX_CUDA_NB_SINGLE_COMPILATION_UNIT */
-
 
 
 /*! Nonbonded kernel function pointer type */
@@ -126,19 +116,8 @@ typedef void (*nbnxn_cu_kfunc_ptr_t)(const cu_atomdata_t,
 
 /*********************************/
 
-/* XXX switch between chevron and cudaLaunch (supported only in CUDA >=7.0)
-   -- only for benchmarking purposes */
-static const bool bUseCudaLaunchKernel =
-    (GMX_CUDA_VERSION >= 7000) && (getenv("GMX_DISABLE_CUDALAUNCH") == NULL);
-
-/* XXX always/never run the energy/pruning kernels -- only for benchmarking purposes */
-static bool always_ener  = (getenv("GMX_GPU_ALWAYS_ENER") != NULL);
-static bool never_ener   = (getenv("GMX_GPU_NEVER_ENER") != NULL);
-static bool always_prune = (getenv("GMX_GPU_ALWAYS_PRUNE") != NULL);
-
-
 /*! Returns the number of blocks to be used for the nonbonded GPU kernel. */
-static inline int calc_nb_kernel_nblock(int nwork_units, gmx_device_info_t *dinfo)
+static inline int calc_nb_kernel_nblock(int nwork_units, const gmx_device_info_t *dinfo)
 {
     int max_grid_x_size;
 
@@ -221,7 +200,7 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int                      
                                                        int                                  evdwtype,
                                                        bool                                 bDoEne,
                                                        bool                                 bDoPrune,
-                                                       struct gmx_device_info_t gmx_unused *devInfo)
+                                                       const gmx_device_info_t gmx_unused  *devInfo)
 {
     nbnxn_cu_kfunc_ptr_t res;
 
@@ -260,8 +239,8 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int                      
     return res;
 }
 
-/*! Calculates the amount of shared memory required by the CUDA kernel in use. */
-static inline int calc_shmem_required(const int num_threads_z, gmx_device_info_t gmx_unused *dinfo, const cu_nbparam_t *nbp)
+/*! \brief Calculates the amount of shared memory required by the nonbonded kernel in use. */
+static inline int calc_shmem_required_nonbonded(const int num_threads_z, const gmx_device_info_t gmx_unused *dinfo, const cu_nbparam_t *nbp)
 {
     int shmem;
 
@@ -320,7 +299,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     cudaError_t          stat;
     int                  adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
     /* CUDA kernel launch-related stuff */
-    int                  shmem, nblock;
+    int                  nblock;
     dim3                 dim_block, dim_grid;
     nbnxn_cu_kfunc_ptr_t nb_kernel = NULL; /* fn pointer to the nonbonded kernel */
 
@@ -334,9 +313,6 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     bool                 bCalcFshift = flags & GMX_FORCE_VIRIAL;
     bool                 bDoTime     = nb->bDoTime;
 
-    /* turn energy calculation always on/off (for debugging/testing only) */
-    bCalcEner = (bCalcEner || always_ener) && !never_ener;
-
     /* Don't launch the non-local kernel if there is no work to do.
        Doing the same for the local kernel is more complicated, since the
        local part of the force array also depends on the non-local kernel.
@@ -346,8 +322,10 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
        clearing. All these operations, except for the local interaction kernel,
        are needed for the non-local interactions. The skip of the local kernel
        call is taken care of later in this function. */
-    if (iloc == eintNonlocal && plist->nsci == 0)
+    if (canSkipWork(nb, iloc))
     {
+        plist->haveFreshList = false;
+
         return;
     }
 
@@ -366,13 +344,17 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     /* beginning of timed HtoD section */
     if (bDoTime)
     {
-        stat = cudaEventRecord(t->start_nb_h2d[iloc], stream);
-        CU_RET_ERR(stat, "cudaEventRecord failed");
+        t->nb_h2d[iloc].openTimingRegion(stream);
     }
 
     /* HtoD x, q */
     cu_copy_H2D_async(adat->xq + adat_begin, nbatom->x + adat_begin * 4,
                       adat_len * sizeof(*adat->xq), stream);
+
+    if (bDoTime)
+    {
+        t->nb_h2d[iloc].closeTimingRegion(stream);
+    }
 
     /* When we get here all misc operations issues in the local stream as well as
        the local xq H2D are done,
@@ -391,10 +373,13 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
         }
     }
 
-    if (bDoTime)
+    if (nbp->useDynamicPruning && plist->haveFreshList)
     {
-        stat = cudaEventRecord(t->stop_nb_h2d[iloc], stream);
-        CU_RET_ERR(stat, "cudaEventRecord failed");
+        /* Prunes for rlistOuter and rlistInner, sets plist->haveFreshList=false
+           (TODO: ATM that's the way the timing accounting can distinguish between
+           separate prune kernel and combined force+prune, maybe we need a better way?).
+         */
+        nbnxn_gpu_launch_kernel_pruneonly(nb, iloc, 1);
     }
 
     if (plist->nsci == 0)
@@ -406,15 +391,14 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     /* beginning of timed nonbonded calculation section */
     if (bDoTime)
     {
-        stat = cudaEventRecord(t->start_nb_k[iloc], stream);
-        CU_RET_ERR(stat, "cudaEventRecord failed");
+        t->nb_k[iloc].openTimingRegion(stream);
     }
 
     /* get the pointer to the kernel flavor we need to use */
     nb_kernel = select_nbnxn_kernel(nbp->eeltype,
                                     nbp->vdwtype,
                                     bCalcEner,
-                                    plist->bDoPrune || always_prune,
+                                    (plist->haveFreshList && !nb->timers->didPrune[iloc]),
                                     nb->dev_info);
 
     /* Kernel launch config:
@@ -428,49 +412,177 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
         num_threads_z = 2;
     }
     nblock    = calc_nb_kernel_nblock(plist->nsci, nb->dev_info);
-    dim_block = dim3(c_clSize, c_clSize, num_threads_z);
-    dim_grid  = dim3(nblock, 1, 1);
-    shmem     = calc_shmem_required(num_threads_z, nb->dev_info, nbp);
+
+    KernelLaunchConfig config;
+    config.blockSize[0]     = c_clSize;
+    config.blockSize[1]     = c_clSize;
+    config.blockSize[2]     = num_threads_z;
+    config.gridSize[0]      = nblock;
+    config.sharedMemorySize = calc_shmem_required_nonbonded(num_threads_z, nb->dev_info, nbp);
+    config.stream           = stream;
 
     if (debug)
     {
-        fprintf(debug, "GPU launch configuration:\n\tThread block: %ux%ux%u\n\t"
-                "\tGrid: %ux%u\n\t#Super-clusters/clusters: %d/%d (%d)\n"
-                "\tShMem: %d\n",
-                dim_block.x, dim_block.y, dim_block.z,
-                dim_grid.x, dim_grid.y, plist->nsci*c_numClPerSupercl,
+        fprintf(debug, "Non-bonded GPU launch configuration:\n\tThread block: %zux%zux%zu\n\t"
+                "\tGrid: %zux%zu\n\t#Super-clusters/clusters: %d/%d (%d)\n"
+                "\tShMem: %zu\n",
+                config.blockSize[0], config.blockSize[1], config.blockSize[2],
+                config.gridSize[0], config.gridSize[1], plist->nsci*c_numClPerSupercl,
                 c_numClPerSupercl, plist->na_c,
-                shmem);
+                config.sharedMemorySize);
     }
 
-    if (bUseCudaLaunchKernel)
-    {
-        gmx_unused void* kernel_args[4];
-        kernel_args[0] = adat;
-        kernel_args[1] = nbp;
-        kernel_args[2] = plist;
-        kernel_args[3] = &bCalcFshift;
-
-#if GMX_CUDA_VERSION >= 7000
-        cudaLaunchKernel((void *)nb_kernel, dim_grid, dim_block, kernel_args, shmem, stream);
-#endif
-    }
-    else
-    {
-        nb_kernel<<< dim_grid, dim_block, shmem, stream>>> (*adat, *nbp, *plist, bCalcFshift);
-    }
-    CU_LAUNCH_ERR("k_calc_nb");
+    auto      *timingEvent = bDoTime ? t->nb_k[iloc].fetchNextEvent() : nullptr;
+    const auto kernelArgs  = prepareGpuKernelArguments(nb_kernel, config, adat, nbp, plist, &bCalcFshift);
+    launchGpuKernel(nb_kernel, config, timingEvent, "k_calc_nb", kernelArgs);
 
     if (bDoTime)
     {
-        stat = cudaEventRecord(t->stop_nb_k[iloc], stream);
-        CU_RET_ERR(stat, "cudaEventRecord failed");
+        t->nb_k[iloc].closeTimingRegion(stream);
     }
 
-#if (defined(WIN32) || defined( _WIN32 ))
-    /* Windows: force flushing WDDM queue */
-    stat = cudaStreamQuery(stream);
-#endif
+    if (GMX_NATIVE_WINDOWS)
+    {
+        /* Windows: force flushing WDDM queue */
+        cudaStreamQuery(stream);
+    }
+}
+
+/*! Calculates the amount of shared memory required by the CUDA kernel in use. */
+static inline int calc_shmem_required_prune(const int num_threads_z)
+{
+    int shmem;
+
+    /* i-atom x in shared memory */
+    shmem  = c_numClPerSupercl * c_clSize * sizeof(float4);
+    /* cj in shared memory, for each warp separately */
+    shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
+
+    return shmem;
+}
+
+void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t       *nb,
+                                       int                     iloc,
+                                       int                     numParts)
+{
+    cu_atomdata_t       *adat    = nb->atdat;
+    cu_nbparam_t        *nbp     = nb->nbparam;
+    cu_plist_t          *plist   = nb->plist[iloc];
+    cu_timers_t         *t       = nb->timers;
+    cudaStream_t         stream  = nb->stream[iloc];
+
+    bool                 bDoTime = nb->bDoTime;
+
+    if (plist->haveFreshList)
+    {
+        GMX_ASSERT(numParts == 1, "With first pruning we expect 1 part");
+
+        /* Set rollingPruningNumParts to signal that it is not set */
+        plist->rollingPruningNumParts = 0;
+        plist->rollingPruningPart     = 0;
+    }
+    else
+    {
+        if (plist->rollingPruningNumParts == 0)
+        {
+            plist->rollingPruningNumParts = numParts;
+        }
+        else
+        {
+            GMX_ASSERT(numParts == plist->rollingPruningNumParts, "It is not allowed to change numParts in between list generation steps");
+        }
+    }
+
+    /* Use a local variable for part and update in plist, so we can return here
+     * without duplicating the part increment code.
+     */
+    int part = plist->rollingPruningPart;
+
+    plist->rollingPruningPart++;
+    if (plist->rollingPruningPart >= plist->rollingPruningNumParts)
+    {
+        plist->rollingPruningPart = 0;
+    }
+
+    /* Compute the number of list entries to prune in this pass */
+    int numSciInPart = (plist->nsci - part)/numParts;
+
+    /* Don't launch the kernel if there is no work to do (not allowed with CUDA) */
+    if (numSciInPart <= 0)
+    {
+        plist->haveFreshList = false;
+
+        return;
+    }
+
+    GpuRegionTimer *timer = nullptr;
+    if (bDoTime)
+    {
+        timer = &(plist->haveFreshList ? t->prune_k[iloc] : t->rollingPrune_k[iloc]);
+    }
+
+    /* beginning of timed prune calculation section */
+    if (bDoTime)
+    {
+        timer->openTimingRegion(stream);
+    }
+
+    /* Kernel launch config:
+     * - The thread block dimensions match the size of i-clusters, j-clusters,
+     *   and j-cluster concurrency, in x, y, and z, respectively.
+     * - The 1D block-grid contains as many blocks as super-clusters.
+     */
+    int                num_threads_z  = c_cudaPruneKernelJ4Concurrency;
+    int                nblock         = calc_nb_kernel_nblock(numSciInPart, nb->dev_info);
+    KernelLaunchConfig config;
+    config.blockSize[0]     = c_clSize;
+    config.blockSize[1]     = c_clSize;
+    config.blockSize[2]     = num_threads_z;
+    config.gridSize[0]      = nblock;
+    config.sharedMemorySize = calc_shmem_required_prune(num_threads_z);
+    config.stream           = stream;
+
+    if (debug)
+    {
+        fprintf(debug, "Pruning GPU kernel launch configuration:\n\tThread block: %zux%zux%zu\n\t"
+                "\tGrid: %zux%zu\n\t#Super-clusters/clusters: %d/%d (%d)\n"
+                "\tShMem: %zu\n",
+                config.blockSize[0], config.blockSize[1], config.blockSize[2],
+                config.gridSize[0], config.gridSize[1], numSciInPart*c_numClPerSupercl,
+                c_numClPerSupercl, plist->na_c,
+                config.sharedMemorySize);
+    }
+
+    auto          *timingEvent  = bDoTime ? timer->fetchNextEvent() : nullptr;
+    constexpr char kernelName[] = "k_pruneonly";
+    const auto    &kernel       = plist->haveFreshList ? nbnxn_kernel_prune_cuda<true> : nbnxn_kernel_prune_cuda<false>;
+    const auto     kernelArgs   = prepareGpuKernelArguments(kernel, config, adat, nbp, plist, &numParts, &part);
+    launchGpuKernel(kernel, config, timingEvent, kernelName, kernelArgs);
+
+    /* TODO: consider a more elegant way to track which kernel has been called
+       (combined or separate 1st pass prune, rolling prune). */
+    if (plist->haveFreshList)
+    {
+        plist->haveFreshList         = false;
+        /* Mark that pruning has been done */
+        nb->timers->didPrune[iloc] = true;
+    }
+    else
+    {
+        /* Mark that rolling pruning has been done */
+        nb->timers->didRollingPrune[iloc] = true;
+    }
+
+    if (bDoTime)
+    {
+        timer->closeTimingRegion(stream);
+    }
+
+    if (GMX_NATIVE_WINDOWS)
+    {
+        /* Windows: force flushing WDDM queue */
+        cudaStreamQuery(stream);
+    }
 }
 
 void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
@@ -480,24 +592,9 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
 {
     cudaError_t stat;
     int         adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
-    int         iloc = -1;
 
     /* determine interaction locality from atom locality */
-    if (LOCAL_A(aloc))
-    {
-        iloc = eintLocal;
-    }
-    else if (NONLOCAL_A(aloc))
-    {
-        iloc = eintNonlocal;
-    }
-    else
-    {
-        char stmp[STRLEN];
-        sprintf(stmp, "Invalid atom locality passed (%d); valid here is only "
-                "local (%d) or nonlocal (%d)", aloc, eatLocal, eatNonlocal);
-        gmx_incons(stmp);
-    }
+    int              iloc = gpuAtomToInteractionLocality(aloc);
 
     cu_atomdata_t   *adat    = nb->atdat;
     cu_timers_t     *t       = nb->timers;
@@ -508,28 +605,17 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     bool             bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
     /* don't launch non-local copy-back if there was no non-local work to do */
-    if (iloc == eintNonlocal && nb->plist[iloc]->nsci == 0)
+    if (canSkipWork(nb, iloc))
     {
         return;
     }
 
-    /* calculate the atom data index range based on locality */
-    if (LOCAL_A(aloc))
-    {
-        adat_begin  = 0;
-        adat_len    = adat->natoms_local;
-    }
-    else
-    {
-        adat_begin  = adat->natoms_local;
-        adat_len    = adat->natoms - adat->natoms_local;
-    }
+    getGpuAtomRange(adat, aloc, &adat_begin, &adat_len);
 
     /* beginning of timed D2H section */
     if (bDoTime)
     {
-        stat = cudaEventRecord(t->start_nb_d2h[iloc], stream);
-        CU_RET_ERR(stat, "cudaEventRecord failed");
+        t->nb_d2h[iloc].openTimingRegion(stream);
     }
 
     /* With DD the local D2H transfer can only start after the non-local
@@ -576,143 +662,11 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
 
     if (bDoTime)
     {
-        stat = cudaEventRecord(t->stop_nb_d2h[iloc], stream);
-        CU_RET_ERR(stat, "cudaEventRecord failed");
+        t->nb_d2h[iloc].closeTimingRegion(stream);
     }
 }
 
-void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
-                            int flags, int aloc,
-                            real *e_lj, real *e_el, rvec *fshift)
-{
-    /* NOTE:  only implemented for single-precision at this time */
-    cudaError_t stat;
-    int         iloc = -1;
-
-    /* determine interaction locality from atom locality */
-    if (LOCAL_A(aloc))
-    {
-        iloc = eintLocal;
-    }
-    else if (NONLOCAL_A(aloc))
-    {
-        iloc = eintNonlocal;
-    }
-    else
-    {
-        char stmp[STRLEN];
-        sprintf(stmp, "Invalid atom locality passed (%d); valid here is only "
-                "local (%d) or nonlocal (%d)", aloc, eatLocal, eatNonlocal);
-        gmx_incons(stmp);
-    }
-
-    cu_plist_t                 *plist    = nb->plist[iloc];
-    cu_timers_t                *timers   = nb->timers;
-    struct gmx_wallclock_gpu_t *timings  = nb->timings;
-    nb_staging                  nbst     = nb->nbst;
-
-    bool                        bCalcEner   = flags & GMX_FORCE_ENERGY;
-    bool                        bCalcFshift = flags & GMX_FORCE_VIRIAL;
-
-    /* turn energy calculation always on/off (for debugging/testing only) */
-    bCalcEner = (bCalcEner || always_ener) && !never_ener;
-
-    /* Launch wait/update timers & counters, unless doing the non-local phase
-       when there is not actually work to do. This is consistent with
-       nbnxn_cuda_launch_kernel.
-
-       NOTE: if timing with multiple GPUs (streams) becomes possible, the
-       counters could end up being inconsistent due to not being incremented
-       on some of the nodes! */
-    if (iloc == eintNonlocal && nb->plist[iloc]->nsci == 0)
-    {
-        return;
-    }
-
-    stat = cudaStreamSynchronize(nb->stream[iloc]);
-    CU_RET_ERR(stat, "cudaStreamSynchronize failed in cu_blockwait_nb");
-
-    /* timing data accumulation */
-    if (nb->bDoTime)
-    {
-        /* only increase counter once (at local F wait) */
-        if (LOCAL_I(iloc))
-        {
-            timings->nb_c++;
-            timings->ktime[plist->bDoPrune ? 1 : 0][bCalcEner ? 1 : 0].c += 1;
-        }
-
-        /* kernel timings */
-        timings->ktime[plist->bDoPrune ? 1 : 0][bCalcEner ? 1 : 0].t +=
-            cu_event_elapsed(timers->start_nb_k[iloc], timers->stop_nb_k[iloc]);
-
-        /* X/q H2D and F D2H timings */
-        timings->nb_h2d_t += cu_event_elapsed(timers->start_nb_h2d[iloc],
-                                              timers->stop_nb_h2d[iloc]);
-        timings->nb_d2h_t += cu_event_elapsed(timers->start_nb_d2h[iloc],
-                                              timers->stop_nb_d2h[iloc]);
-
-        /* only count atdat and pair-list H2D at pair-search step */
-        if (plist->bDoPrune)
-        {
-            /* atdat transfer timing (add only once, at local F wait) */
-            if (LOCAL_A(aloc))
-            {
-                timings->pl_h2d_c++;
-                timings->pl_h2d_t += cu_event_elapsed(timers->start_atdat,
-                                                      timers->stop_atdat);
-            }
-
-            timings->pl_h2d_t += cu_event_elapsed(timers->start_pl_h2d[iloc],
-                                                  timers->stop_pl_h2d[iloc]);
-        }
-    }
-
-    /* add up energies and shift forces (only once at local F wait) */
-    if (LOCAL_I(iloc))
-    {
-        if (bCalcEner)
-        {
-            *e_lj += *nbst.e_lj;
-            *e_el += *nbst.e_el;
-        }
-
-        if (bCalcFshift)
-        {
-            for (int i = 0; i < SHIFTS; i++)
-            {
-                fshift[i][0] += nbst.fshift[i].x;
-                fshift[i][1] += nbst.fshift[i].y;
-                fshift[i][2] += nbst.fshift[i].z;
-            }
-        }
-    }
-
-    /* turn off pruning (doesn't matter if this is pair-search step or not) */
-    plist->bDoPrune = false;
-}
-
-/*! Return the reference to the nbfp texture. */
-const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_texref()
-{
-    return nbfp_texref;
-}
-
-/*! Return the reference to the nbfp_comb texture. */
-const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_comb_texref()
-{
-    return nbfp_comb_texref;
-}
-
-/*! Return the reference to the coulomb_tab. */
-const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_coulomb_tab_texref()
-{
-    return coulomb_tab_texref;
-}
-
-/*! Set up the cache configuration for the non-bonded kernels,
- */
-void nbnxn_cuda_set_cacheconfig(gmx_device_info_t *devinfo)
+void nbnxn_cuda_set_cacheconfig(const gmx_device_info_t *devinfo)
 {
     cudaError_t stat;
 

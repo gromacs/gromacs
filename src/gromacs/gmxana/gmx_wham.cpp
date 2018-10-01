@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,7 +61,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull-params.h"
@@ -210,7 +209,7 @@ typedef struct
 } t_coordselection;
 
 //! Parameters of WHAM
-typedef struct
+typedef struct // NOLINT(clang-analyzer-optin.performance.Padding)
 {
     /*!
      * \name Input stuff
@@ -324,7 +323,7 @@ typedef struct
 } t_UmbrellaOptions;
 
 //! Make an umbrella window (may contain several histograms)
-t_UmbrellaWindow * initUmbrellaWindows(int nwin)
+static t_UmbrellaWindow * initUmbrellaWindows(int nwin)
 {
     t_UmbrellaWindow *win;
     int               i;
@@ -345,7 +344,7 @@ t_UmbrellaWindow * initUmbrellaWindows(int nwin)
 }
 
 //! Delete an umbrella window (may contain several histograms)
-void freeUmbrellaWindows(t_UmbrellaWindow *win, int nwin)
+static void freeUmbrellaWindows(t_UmbrellaWindow *win, int nwin)
 {
     int i, j;
     for (i = 0; i < nwin; i++)
@@ -394,7 +393,7 @@ void freeUmbrellaWindows(t_UmbrellaWindow *win, int nwin)
 /*! \brief
  * Read and setup tabulated umbrella potential
  */
-void setup_tab(const char *fn, t_UmbrellaOptions *opt)
+static void setup_tab(const char *fn, t_UmbrellaOptions *opt)
 {
     int      i, ny, nl;
     double **y;
@@ -418,7 +417,7 @@ void setup_tab(const char *fn, t_UmbrellaOptions *opt)
     {
         if  (std::abs(y[0][i+1]-y[0][i]-opt->tabDz) > opt->tabDz/1e6)
         {
-            gmx_fatal(FARGS, "z-values in %s are not equally spaced.\n", ny, fn);
+            gmx_fatal(FARGS, "z-values in %s are not equally spaced.\n", fn);
         }
     }
     snew(opt->tabY, nl);
@@ -433,7 +432,7 @@ void setup_tab(const char *fn, t_UmbrellaOptions *opt)
 }
 
 //! Read the header of an PDO file (position, force const, nr of groups)
-void read_pdo_header(FILE * file, t_UmbrellaHeader * header, t_UmbrellaOptions *opt)
+static void read_pdo_header(FILE * file, t_UmbrellaHeader * header, t_UmbrellaOptions *opt)
 {
     char               line[2048];
     char               Buffer0[256], Buffer1[256], Buffer2[256], Buffer3[256], Buffer4[256];
@@ -447,13 +446,13 @@ void read_pdo_header(FILE * file, t_UmbrellaHeader * header, t_UmbrellaOptions *
     }
     ist.str(line);
     ist >> Buffer0 >> Buffer1 >> Buffer2;
-    if (std::strcmp(Buffer1, "UMBRELLA"))
+    if (std::strcmp(Buffer1, "UMBRELLA") != 0)
     {
         gmx_fatal(FARGS, "This does not appear to be a valid pdo file. Found %s, expected %s\n"
                   "(Found in first line: `%s')\n",
                   Buffer1, "UMBRELLA", line);
     }
-    if (std::strcmp(Buffer2, "3.0"))
+    if (std::strcmp(Buffer2, "3.0") != 0)
     {
         gmx_fatal(FARGS, "This does not appear to be a version 3.0 pdo file");
     }
@@ -570,17 +569,17 @@ static char *fgets3(FILE *fp, char ptr[], int *len)
  *         At the moment, this warning is avoided by hiding the format string
  *         the variable fmtlf.
  */
-void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
-                   int fileno, t_UmbrellaWindow * win,
-                   t_UmbrellaOptions *opt,
-                   gmx_bool bGetMinMax, real *mintmp, real *maxtmp)
+static void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
+                          int fileno, t_UmbrellaWindow * win,
+                          t_UmbrellaOptions *opt,
+                          gmx_bool bGetMinMax, real *mintmp, real *maxtmp)
 {
     int                i, inttemp, bins, count, ntot;
     real               minval, maxval, minfound = 1e20, maxfound = -1e20;
     double             temp, time, time0 = 0, dt;
     char              *ptr    = nullptr;
     t_UmbrellaWindow * window = nullptr;
-    gmx_bool           timeok, dt_ok = 1;
+    gmx_bool           timeok, dt_ok = true;
     char              *tmpbuf   = nullptr, fmt[256], fmtign[256], fmtlf[5] = "%lf";
     int                len      = STRLEN, dstep = 1;
     const int          blocklen = 4096;
@@ -660,7 +659,7 @@ void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
 
         sscanf(ptr, fmtlf, &time); /* printf("Time %f\n",time); */
         /* Round time to fs */
-        time = 1.0/1000*( static_cast<gmx_int64_t> (time*1000+0.5) );
+        time = 1.0/1000*( gmx::roundToInt64(time*1000) );
 
         /* get time step of pdo file */
         if (count == 0)
@@ -672,7 +671,7 @@ void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
             dt = time-time0;
             if (opt->dt > 0.0)
             {
-                dstep = static_cast<int>(opt->dt/dt+0.5);
+                dstep = gmx::roundToInt(opt->dt/dt);
                 if (dstep == 0)
                 {
                     dstep = 1;
@@ -781,7 +780,7 @@ void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
  * by this routine (not recommended). Since we now support autocorrelations, it is better to set
  * an appropriate autocorrelation times instead of using this function.
  */
-void enforceEqualWeights(t_UmbrellaWindow * window, int nWindows)
+static void enforceEqualWeights(t_UmbrellaWindow * window, int nWindows)
 {
     int    i, k, j, NEnforced;
     double ratio;
@@ -800,14 +799,14 @@ void enforceEqualWeights(t_UmbrellaWindow * window, int nWindows)
             {
                 window[j].Histo[k][i] *= ratio;
             }
-            window[j].N[k] = static_cast<int>(ratio*window[j].N[k] + 0.5);
+            window[j].N[k] = gmx::roundToInt(ratio*window[j].N[k]);
         }
     }
 }
 
 /*! \brief Simple linear interpolation between two given tabulated points
  */
-double tabulated_pot(double dist, t_UmbrellaOptions *opt)
+static double tabulated_pot(double dist, t_UmbrellaOptions *opt)
 {
     int    jl, ju;
     double pl, pu, dz, dp;
@@ -834,8 +833,8 @@ double tabulated_pot(double dist, t_UmbrellaOptions *opt)
  * After rapid convergence (using only substiantal contributions), we always switch to
  * full precision.
  */
-void setup_acc_wham(double *profile, t_UmbrellaWindow * window, int nWindows,
-                    t_UmbrellaOptions *opt)
+static void setup_acc_wham(const double *profile, t_UmbrellaWindow * window, int nWindows,
+                           t_UmbrellaOptions *opt)
 {
     int           i, j, k, nGrptot = 0, nContrib = 0, nTot = 0;
     double        U, min = opt->min, dz = opt->dz, temp, ztot_half, distance, ztot, contrib1, contrib2;
@@ -901,7 +900,7 @@ void setup_acc_wham(double *profile, t_UmbrellaWindow * window, int nWindows,
                 contrib1                 = profile[k]*std::exp(-U/(BOLTZ*opt->Temperature));
                 contrib2                 = window[i].N[j]*std::exp(-U/(BOLTZ*opt->Temperature) + window[i].z[j]);
                 window[i].bContrib[j][k] = (contrib1 > wham_contrib_lim || contrib2 > wham_contrib_lim);
-                bAnyContrib              = (bAnyContrib | window[i].bContrib[j][k]);
+                bAnyContrib              = bAnyContrib || window[i].bContrib[j][k];
                 if (window[i].bContrib[j][k])
                 {
                     nContrib++;
@@ -935,8 +934,8 @@ void setup_acc_wham(double *profile, t_UmbrellaWindow * window, int nWindows,
 }
 
 //! Compute the PMF (one of the two main WHAM routines)
-void calc_profile(double *profile, t_UmbrellaWindow * window, int nWindows,
-                  t_UmbrellaOptions *opt, gmx_bool bExact)
+static void calc_profile(double *profile, t_UmbrellaWindow * window, int nWindows,
+                         t_UmbrellaOptions *opt, gmx_bool bExact)
 {
     double ztot_half, ztot, min = opt->min, dz = opt->dz;
 
@@ -1002,8 +1001,8 @@ void calc_profile(double *profile, t_UmbrellaWindow * window, int nWindows,
 }
 
 //! Compute the free energy offsets z (one of the two main WHAM routines)
-double calc_z(double * profile, t_UmbrellaWindow * window, int nWindows,
-              t_UmbrellaOptions *opt, gmx_bool bExact)
+static double calc_z(const double * profile, t_UmbrellaWindow * window, int nWindows,
+                     t_UmbrellaOptions *opt, gmx_bool bExact)
 {
     double min     = opt->min, dz = opt->dz, ztot_half, ztot;
     double maxglob = -1e20;
@@ -1096,7 +1095,7 @@ double calc_z(double * profile, t_UmbrellaWindow * window, int nWindows,
 }
 
 //! Make PMF symmetric around 0 (useful e.g. for membranes)
-void symmetrizeProfile(double* profile, t_UmbrellaOptions *opt)
+static void symmetrizeProfile(double* profile, t_UmbrellaOptions *opt)
 {
     int     i, j, bins = opt->bins;
     double *prof2, min = opt->min, max = opt->max, dz = opt->dz, zsym, deltaz, profsym;
@@ -1115,7 +1114,7 @@ void symmetrizeProfile(double* profile, t_UmbrellaOptions *opt)
         z    = min+(i+0.5)*dz;
         zsym = -z;
         /* bin left of zsym */
-        j = static_cast<int> (std::floor((zsym-min)/dz-0.5));
+        j = gmx::roundToInt((zsym-min)/dz)-1;
         if (j >= 0 && (j+1) < bins)
         {
             /* interpolate profile linearly between bins j and j+1 */
@@ -1136,7 +1135,7 @@ void symmetrizeProfile(double* profile, t_UmbrellaOptions *opt)
 }
 
 //! Set energy unit (kJ/mol,kT,kCal/mol) and set it to zero at opt->zProf0
-void prof_normalization_and_unit(double * profile, t_UmbrellaOptions *opt)
+static void prof_normalization_and_unit(double * profile, t_UmbrellaOptions *opt)
 {
     int    i, bins, imin;
     double unit_factor = 1., diff;
@@ -1204,7 +1203,7 @@ void prof_normalization_and_unit(double * profile, t_UmbrellaOptions *opt)
 }
 
 //! Make an array of random integers (used for bootstrapping)
-void getRandomIntArray(int nPull, int blockLength, int* randomArray, gmx::DefaultRandomEngine * rng)
+static void getRandomIntArray(int nPull, int blockLength, int* randomArray, gmx::DefaultRandomEngine * rng)
 {
     gmx::UniformIntDistribution<int> dist(0, blockLength-1);
 
@@ -1241,8 +1240,8 @@ void getRandomIntArray(int nPull, int blockLength, int* randomArray, gmx::Defaul
  * This is used when bootstapping new trajectories and thereby create new histogtrams,
  * but it is not required if we bootstrap complete histograms.
  */
-void copy_pullgrp_to_synthwindow(t_UmbrellaWindow *synthWindow,
-                                 t_UmbrellaWindow *thisWindow, int pullid)
+static void copy_pullgrp_to_synthwindow(t_UmbrellaWindow *synthWindow,
+                                        t_UmbrellaWindow *thisWindow, int pullid)
 {
     synthWindow->N       [0] = thisWindow->N        [pullid];
     synthWindow->Histo   [0] = thisWindow->Histo    [pullid];
@@ -1260,8 +1259,8 @@ void copy_pullgrp_to_synthwindow(t_UmbrellaWindow *synthWindow,
  * which are distributed according to the histograms. Required to generate
  * the "synthetic" histograms for the Bootstrap method
  */
-void calc_cumulatives(t_UmbrellaWindow *window, int nWindows,
-                      t_UmbrellaOptions *opt, const char *fnhist, const char *xlabel)
+static void calc_cumulatives(t_UmbrellaWindow *window, int nWindows,
+                             t_UmbrellaOptions *opt, const char *fnhist, const char *xlabel)
 {
     int    i, j, k, nbin;
     double last;
@@ -1325,7 +1324,7 @@ void calc_cumulatives(t_UmbrellaWindow *window, int nWindows,
  *
  *  This is used to generate a random sequence distributed according to a histogram
  */
-void searchCumulative(double xx[], int n, double x, int *j)
+static void searchCumulative(const double xx[], int n, double x, int *j)
 {
     int ju, jm, jl;
 
@@ -1358,8 +1357,8 @@ void searchCumulative(double xx[], int n, double x, int *j)
 }
 
 //! Bootstrap new trajectories and thereby generate new (bootstrapped) histograms
-void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWindow *thisWindow,
-                            int pullid, t_UmbrellaOptions *opt)
+static void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWindow *thisWindow,
+                                   int pullid, t_UmbrellaOptions *opt)
 {
     int    N, i, nbins, r_index, ibin;
     double r, tausteps = 0.0, a, ap, dt, x, invsqrt2, g, y, sig = 0., z, mu = 0.;
@@ -1393,7 +1392,7 @@ void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWindow *thi
                     "3) If all ACTs are identical and know, you can define them with -bs-tau.\n"
                     "   Use option (3) only if you are sure what you're doing, you may severely\n"
                     "   underestimate the error if a too small ACT is given.\n");
-        gmx_fatal(FARGS, errstr);
+        gmx_fatal(FARGS, "%s", errstr);
     }
 
     synthWindow->N       [0] = N;
@@ -1503,8 +1502,8 @@ void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWindow *thi
  * If bs_index>=0, a number is added to the output file name to allow the ouput of all
  * sets of bootstrapped histograms.
  */
-void print_histograms(const char *fnhist, t_UmbrellaWindow * window, int nWindows,
-                      int bs_index, t_UmbrellaOptions *opt, const char *xlabel)
+static void print_histograms(const char *fnhist, t_UmbrellaWindow * window, int nWindows,
+                             int bs_index, t_UmbrellaOptions *opt, const char *xlabel)
 {
     char *fn = nullptr, *buf = nullptr, title[256];
     FILE *fp;
@@ -1549,28 +1548,8 @@ void print_histograms(const char *fnhist, t_UmbrellaWindow * window, int nWindow
     sfree(fn);
 }
 
-//! Used for qsort to sort random numbers
-int func_wham_is_larger(const void *a, const void *b)
-{
-    double *aa, *bb;
-    aa = (double*)a;
-    bb = (double*)b;
-    if (*aa < *bb)
-    {
-        return -1;
-    }
-    else if (*aa > *bb)
-    {
-        return 1;
-    }
-    else
-    {
-        return 0;
-    }
-}
-
 //! Make random weights for histograms for the Bayesian bootstrap of complete histograms)
-void setRandomBsWeights(t_UmbrellaWindow *synthwin, int nAllPull, t_UmbrellaOptions *opt)
+static void setRandomBsWeights(t_UmbrellaWindow *synthwin, int nAllPull, t_UmbrellaOptions *opt)
 {
     int     i;
     double *r;
@@ -1583,7 +1562,7 @@ void setRandomBsWeights(t_UmbrellaWindow *synthwin, int nAllPull, t_UmbrellaOpti
     {
         r[i] = dist(opt->rng);
     }
-    qsort((void *)r, nAllPull-1, sizeof(double), &func_wham_is_larger);
+    std::sort(r, r+nAllPull-1);
     r[nAllPull-1] = 1.0*nAllPull;
 
     synthwin[0].bsWeight[0] = r[0];
@@ -1605,9 +1584,9 @@ void setRandomBsWeights(t_UmbrellaWindow *synthwin, int nAllPull, t_UmbrellaOpti
 }
 
 //! The main bootstrapping routine
-void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
-                      const char *xlabel, char* ylabel, double *profile,
-                      t_UmbrellaWindow * window, int nWindows, t_UmbrellaOptions *opt)
+static void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
+                             const char *xlabel, char* ylabel, double *profile,
+                             t_UmbrellaWindow * window, int nWindows, t_UmbrellaOptions *opt)
 {
     t_UmbrellaWindow * synthWindow;
     double            *bsProfile, *bsProfiles_av, *bsProfiles_av2, maxchange = 1e20, tmp, stddev;
@@ -1803,7 +1782,7 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
 }
 
 //! Return type of input file based on file extension (xvg, pdo, or tpr)
-int whaminFileType(char *fn)
+static int whaminFileType(char *fn)
 {
     int len;
     len = std::strlen(fn);
@@ -1823,12 +1802,11 @@ int whaminFileType(char *fn)
     {
         gmx_fatal(FARGS, "Unknown file type of %s. Should be tpr, xvg, or pdo.\n", fn);
     }
-    return whamin_unknown;
 }
 
 //! Read the files names in pdo-files.dat, pullf/x-files.dat, tpr-files.dat
-void read_wham_in(const char *fn, char ***filenamesRet, int *nfilesRet,
-                  t_UmbrellaOptions *opt)
+static void read_wham_in(const char *fn, char ***filenamesRet, int *nfilesRet,
+                         t_UmbrellaOptions *opt)
 {
     char **filename = nullptr, tmp[WHAM_MAXFILELEN+2];
     int    nread, sizenow, i, block = 1;
@@ -1869,11 +1847,11 @@ void read_wham_in(const char *fn, char ***filenamesRet, int *nfilesRet,
 }
 
 //! Open a file or a pipe to a gzipped file
-FILE *open_pdo_pipe(const char *fn, t_UmbrellaOptions *opt, gmx_bool *bPipeOpen)
+static FILE *open_pdo_pipe(const char *fn, t_UmbrellaOptions *opt, gmx_bool *bPipeOpen)
 {
     char            Buffer[1024], gunzip[1024], *Path = nullptr;
     FILE           *pipe   = nullptr;
-    static gmx_bool bFirst = 1;
+    static gmx_bool bFirst = true;
 
     /* gzipped pdo file? */
     if ((std::strcmp(fn+std::strlen(fn)-3, ".gz") == 0))
@@ -1893,7 +1871,7 @@ FILE *open_pdo_pipe(const char *fn, t_UmbrellaOptions *opt, gmx_bool *bPipeOpen)
             {
                 gmx_fatal(FARGS, "Cannot find executable gunzip in /bin or /usr/bin.\n"
                           "You may want to define the path to gunzip "
-                          "with the environment variable GMX_PATH_GZIP.", gunzip);
+                          "with the environment variable GMX_PATH_GZIP.");
             }
         }
         else
@@ -1908,7 +1886,7 @@ FILE *open_pdo_pipe(const char *fn, t_UmbrellaOptions *opt, gmx_bool *bPipeOpen)
         if (bFirst)
         {
             printf("Using gunzip executable %s\n", gunzip);
-            bFirst = 0;
+            bFirst = false;
         }
         if (!gmx_fexist(fn))
         {
@@ -1939,7 +1917,7 @@ FILE *open_pdo_pipe(const char *fn, t_UmbrellaOptions *opt, gmx_bool *bPipeOpen)
 }
 
 //! Close file or pipe
-void pdo_close_file(FILE *fp)
+static void pdo_close_file(FILE *fp)
 {
 #if HAVE_PIPES
     pclose(fp);
@@ -1949,8 +1927,8 @@ void pdo_close_file(FILE *fp)
 }
 
 //! Reading all pdo files
-void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
-                    t_UmbrellaWindow *window, t_UmbrellaOptions *opt)
+static void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
+                           t_UmbrellaWindow *window, t_UmbrellaOptions *opt)
 {
     FILE    *file;
     real     mintmp, maxtmp, done = 0.;
@@ -2050,10 +2028,10 @@ void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
 #define int2YN(a) (((a) == 0) ? ("N") : ("Y"))
 
 //! Read pull groups from a tpr file (including position, force const, geometry, number of groups)
-void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions *opt, t_coordselection *coordsel)
+static void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions *opt, t_coordselection *coordsel)
 {
-    gmx::MDModules  mdModules;
-    t_inputrec     *ir = mdModules.inputrec();
+    t_inputrec      irInstance;
+    t_inputrec     *ir = &irInstance;
     t_state         state;
     static int      first = 1;
 
@@ -2148,7 +2126,7 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
             }
             if (header->pcrd[i].k <= 0.0)
             {
-                gmx_fatal(FARGS, "%s: Pull coordinate %d has force constant of of %g in %s.\n"
+                gmx_fatal(FARGS, "%s: Pull coordinate %d has force constant of of %g.\n"
                           "That doesn't seem to be an Umbrella tpr.\n",
                           fn, i+1, header->pcrd[i].k);
             }
@@ -2187,24 +2165,12 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
     first = 0;
 }
 
-//! 2-norm in a ndim-dimensional space
-double dist_ndim(double **dx, int ndim, int line)
-{
-    int    i;
-    double r2 = 0.;
-    for (i = 0; i < ndim; i++)
-    {
-        r2 += gmx::square(dx[i][line]);
-    }
-    return std::sqrt(r2);
-}
-
 //! Read pullx.xvg or pullf.xvg
-void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
-                  t_UmbrellaWindow * window,
-                  t_UmbrellaOptions *opt,
-                  gmx_bool bGetMinMax, real *mintmp, real *maxtmp,
-                  t_coordselection *coordsel)
+static void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
+                         t_UmbrellaWindow * window,
+                         t_UmbrellaOptions *opt,
+                         gmx_bool bGetMinMax, real *mintmp, real *maxtmp,
+                         t_coordselection *coordsel)
 {
     double        **y = nullptr, pos = 0., t, force, time0 = 0., dt;
     int             ny, nt, bins, ibin, i, g, gUsed, dstep = 1;
@@ -2239,7 +2205,7 @@ void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
     snew(nColCOMCrd,  header->npullcrds);
     snew(nColRefCrd,  header->npullcrds);
 
-    if (opt->bPullx == FALSE)
+    if (!opt->bPullx)
     {
         /* pullf reading: simply one column per coordinate */
         for (g = 0; g < header->npullcrds; g++)
@@ -2366,7 +2332,7 @@ void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
            all pull groups from header (tpr file) may be used in window variable */
         for (g = 0, gUsed = 0; g < header->npullcrds; ++g)
         {
-            if (coordsel && (coordsel->bUse[g] == FALSE))
+            if (coordsel && !coordsel->bUse[g])
             {
                 continue;
             }
@@ -2386,7 +2352,7 @@ void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
     for (i = 0; i < nt; i++)
     {
         /* Do you want that time frame? */
-        t = 1.0/1000*( static_cast<gmx_int64_t> ((y[0][i]*1000) + 0.5)); /* round time to fs */
+        t = 1.0/1000*( gmx::roundToInt64((y[0][i]*1000))); /* round time to fs */
 
         /* get time step of pdo file and get dstep from opt->dt */
         if (i == 0)
@@ -2398,7 +2364,7 @@ void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
             dt = t-time0;
             if (opt->dt > 0.0)
             {
-                dstep = static_cast<int>(opt->dt/dt+0.5);
+                dstep = gmx::roundToInt(opt->dt/dt);
                 if (dstep == 0)
                 {
                     dstep = 1;
@@ -2426,7 +2392,7 @@ void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
             for (g = 0; g < header->npullcrds; ++g)
             {
                 /* was this group selected for application in WHAM? */
-                if (coordsel && (coordsel->bUse[g] == FALSE))
+                if (coordsel && !coordsel->bUse[g])
                 {
                     continue;
                 }
@@ -2534,9 +2500,9 @@ void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
 }
 
 //! read pullf-files.dat or pullx-files.dat and tpr-files.dat
-void read_tpr_pullxf_files(char **fnTprs, char **fnPull, int nfiles,
-                           t_UmbrellaHeader* header,
-                           t_UmbrellaWindow *window, t_UmbrellaOptions *opt)
+static void read_tpr_pullxf_files(char **fnTprs, char **fnPull, int nfiles,
+                                  t_UmbrellaHeader* header,
+                                  t_UmbrellaWindow *window, t_UmbrellaOptions *opt)
 {
     int  i;
     real mintmp, maxtmp;
@@ -2623,7 +2589,7 @@ void read_tpr_pullxf_files(char **fnTprs, char **fnPull, int nfiles,
  * Note: Here we consider tau[int] := int_0^inf ACF(t) as the integrated autocorrelation times.
  * The factor `g := 1 + 2*tau[int]` subsequently enters the uncertainty.
  */
-void readIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins, const char* fn)
+static void readIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins, const char* fn)
 {
     int      nlines, ny, i, ig;
     double **iact;
@@ -2666,7 +2632,7 @@ void readIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins, con
  * If opt->bAllowReduceIact==FALSE, the ACTs are never reduced, only increased
  * by the smoothing
  */
-void smoothIact(t_UmbrellaWindow *window, int nwins, t_UmbrellaOptions *opt)
+static void smoothIact(t_UmbrellaWindow *window, int nwins, t_UmbrellaOptions *opt)
 {
     int    i, ig, j, jg;
     double pos, dpos2, siglim, siglim2, gaufact, invtwosig2, w, weight, tausm;
@@ -2720,8 +2686,8 @@ void smoothIact(t_UmbrellaWindow *window, int nwins, t_UmbrellaOptions *opt)
 
 /*! \brief Try to compute the autocorrelation time for each umbrealla window
  */
-void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
-                                        t_UmbrellaOptions *opt, const char *fn, const char *xlabel)
+static void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
+                                               t_UmbrellaOptions *opt, const char *fn, const char *xlabel)
 {
     int   i, ig, ncorr, ntot, j, k, *count, restart;
     real *corr, c0, dt, tmp;
@@ -2753,7 +2719,7 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
         snew(count, ncorr);
         dt = window[i].dt;
         snew(window[i].tau, window[i].nPull);
-        restart = static_cast<int>(opt->acTrestart/dt+0.5);
+        restart = gmx::roundToInt(opt->acTrestart/dt);
         if (restart == 0)
         {
             restart = 1;
@@ -2888,7 +2854,7 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
 /*! \brief
  * compute average and sigma of each umbrella histogram
  */
-void averageSigma(t_UmbrellaWindow *window, int nwins)
+static void averageSigma(t_UmbrellaWindow *window, int nwins)
 {
     int  i, ig, ntot, k;
     real av, sum2, sig, diff, *ztime, nSamplesIndep;
@@ -2937,7 +2903,7 @@ void averageSigma(t_UmbrellaWindow *window, int nwins)
 /*! \brief
  * Use histograms to compute average force on pull group.
  */
-void computeAverageForce(t_UmbrellaWindow *window, int nWindows, t_UmbrellaOptions *opt)
+static void computeAverageForce(t_UmbrellaWindow *window, int nWindows, t_UmbrellaOptions *opt)
 {
     int    i, j, bins = opt->bins, k;
     double dz, min = opt->min, max = opt->max, displAv, temp, distance, ztot, ztot_half, w, weight;
@@ -3000,10 +2966,11 @@ void computeAverageForce(t_UmbrellaWindow *window, int nWindows, t_UmbrellaOptio
 /*! \brief
  * Check if the complete reaction coordinate is covered by the histograms
  */
-void  checkReactionCoordinateCovered(t_UmbrellaWindow *window, int nwins,
-                                     t_UmbrellaOptions *opt)
+static void  checkReactionCoordinateCovered(t_UmbrellaWindow *window, int nwins,
+                                            t_UmbrellaOptions *opt)
 {
-    int  i, ig, j, bins = opt->bins, bBoundary;
+    int  i, ig, j, bins = opt->bins;
+    bool bBoundary;
     real avcount = 0, z, relcount, *count;
     snew(count, opt->bins);
 
@@ -3023,7 +2990,7 @@ void  checkReactionCoordinateCovered(t_UmbrellaWindow *window, int nwins,
     {
         relcount  = count[j]/avcount;
         z         = (j+0.5)*opt->dz+opt->min;
-        bBoundary = ( j<bins/20 || (bins-j)>bins/20 );
+        bBoundary = j<bins/20 || (bins-j)>bins/20;
         /* check for bins with no data */
         if (count[j] == 0)
         {
@@ -3043,7 +3010,7 @@ void  checkReactionCoordinateCovered(t_UmbrellaWindow *window, int nwins,
  *
  * This speeds up the convergence by roughly a factor of 2
  */
-void guessPotByIntegration(t_UmbrellaWindow *window, int nWindows, t_UmbrellaOptions *opt, const char *xlabel)
+static void guessPotByIntegration(t_UmbrellaWindow *window, int nWindows, t_UmbrellaOptions *opt, const char *xlabel)
 {
     int    i, j, ig, bins = opt->bins, nHist, winmin, groupmin;
     double dz, min = opt->min, *pot, pos, hispos, dist, diff, fAv, distmin, *f;
@@ -3166,7 +3133,7 @@ static int wordcount(char *ptr)
  *
  * TO DO: ptr=fgets(...) is never freed (small memory leak)
  */
-void readPullCoordSelection(t_UmbrellaOptions *opt, char **fnTpr, int nTpr)
+static void readPullCoordSelection(t_UmbrellaOptions *opt, char **fnTpr, int nTpr)
 {
     FILE *fp;
     int   i, iline, n, len = STRLEN, temp;
@@ -3268,7 +3235,7 @@ int gmx_wham(int argc, char *argv[])
         "  From the pull force the position in the umbrella potential is",
         "  computed. This does not work with tabulated umbrella potentials.",
         "* With option [TT]-ip[tt], the user provides file names of (gzipped) [REF].pdo[ref] files, i.e.",
-        "  the GROMACS 3.3 umbrella output files. If you have some unusual"
+        "  the GROMACS 3.3 umbrella output files. If you have some unusual",
         "  reaction coordinate you may also generate your own [REF].pdo[ref] files and",
         "  feed them with the [TT]-ip[tt] option into to [THISMODULE]. The [REF].pdo[ref] file header",
         "  must be similar to the following::",

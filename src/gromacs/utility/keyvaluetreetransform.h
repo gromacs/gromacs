@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,6 +64,7 @@ enum class StringCompareType;
 
 class KeyValueTreeTransformResult;
 class KeyValueTreeTransformRuleBuilder;
+class KeyValueTreeTransformRulesScoped;
 
 namespace internal
 {
@@ -97,9 +98,48 @@ class IKeyValueTreeTransformRules
          * builder.
          */
         virtual KeyValueTreeTransformRuleBuilder addRule() = 0;
+        /*! \brief
+         * Creates a scoped set of rules, where all rules use a target sub-tree.
+         *
+         * \param[in] scope Prefix defining the scope in the target tree
+         *
+         * Any rules added to the returned scope will have `scope` prefixed to
+         * their target paths, i.e., it is not possible to produce elements
+         * outside the specified subtree.
+         */
+        virtual KeyValueTreeTransformRulesScoped
+        scopedTransform(const KeyValueTreePath &scope) = 0;
 
     protected:
-        ~IKeyValueTreeTransformRules();
+        virtual ~IKeyValueTreeTransformRules();
+};
+
+/*! \libinternal \brief
+ * Helper object returned from IKeyValueTreeTransformRules::scopedTransform().
+ *
+ * \inlibraryapi
+ * \ingroup module_utility
+ */
+class KeyValueTreeTransformRulesScoped
+{
+    public:
+        //! Internal constructor for creating the scope.
+        KeyValueTreeTransformRulesScoped(
+            internal::KeyValueTreeTransformerImpl *impl,
+            const KeyValueTreePath                &prefix);
+        //! Supports returning the object from IKeyValueTreeTransformRules::scopedTransform().
+        KeyValueTreeTransformRulesScoped(KeyValueTreeTransformRulesScoped &&other) noexcept;
+        //! Supports returning the object from IKeyValueTreeTransformRules::scopedTransform().
+        KeyValueTreeTransformRulesScoped &operator=(KeyValueTreeTransformRulesScoped &&other) noexcept;
+        ~KeyValueTreeTransformRulesScoped();
+
+        //! Returns the interface for adding rules to this scope.
+        IKeyValueTreeTransformRules *rules();
+
+    private:
+        class Impl;
+
+        PrivateImplPointer<Impl> impl_;
 };
 
 /*! \libinternal \brief
@@ -255,7 +295,8 @@ class KeyValueTreeTransformRuleBuilder
         };
 
         //! Internal constructor for creating a builder.
-        explicit KeyValueTreeTransformRuleBuilder(internal::KeyValueTreeTransformerImpl *impl);
+        KeyValueTreeTransformRuleBuilder(internal::KeyValueTreeTransformerImpl *impl,
+                                         const KeyValueTreePath                &prefix);
         //! Supports returning the builder from IKeyValueTreeTransformRules::addRule().
         KeyValueTreeTransformRuleBuilder(KeyValueTreeTransformRuleBuilder &&)            = default;
         //! Supports returning the builder from IKeyValueTreeTransformRules::addRule().
@@ -305,8 +346,8 @@ class KeyValueTreeTransformRuleBuilder
         void setExpectedType(const std::type_index &type);
         void setToPath(const KeyValueTreePath &path);
         void setKeyMatchType(StringCompareType keyMatchType);
-        void addTransformToVariant(std::function<Variant(const Variant &)> transform);
-        void addTransformToObject(std::function<void(KeyValueTreeObjectBuilder *, const Variant &)> transform);
+        void addTransformToVariant(const std::function<Variant(const Variant &)> &transform);
+        void addTransformToObject(const std::function<void(KeyValueTreeObjectBuilder *, const Variant &)> &transform);
 
         class Data;
 

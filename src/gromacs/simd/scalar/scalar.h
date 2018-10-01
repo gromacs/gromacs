@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -183,7 +183,7 @@ fnms(float a, float b, float c)
 static inline float
 maskAdd(float a, float b, float m)
 {
-    return a + (m ? b : 0.0f);
+    return a + (m != 0.0f ? b : 0.0f);
 }
 
 /*! \brief Multiply two float variables, masked version.
@@ -200,7 +200,7 @@ maskAdd(float a, float b, float m)
 static inline float
 maskzMul(float a, float b, float m)
 {
-    return m ? (a * b) : 0.0f;
+    return m != 0.0f ? (a * b) : 0.0f;
 }
 
 /*! \brief Float fused multiply-add, masked version.
@@ -218,7 +218,7 @@ maskzMul(float a, float b, float m)
 static inline float
 maskzFma(float a, float b, float c, float m)
 {
-    return m ? (a * b + c) : 0.0f;
+    return m != 0.0f ? (a * b + c) : 0.0f;
 }
 
 /*! \brief Float Floating-point abs().
@@ -425,7 +425,7 @@ selectByNotMask(float a, bool mask)
  *       outside such code.
  */
 static inline float
-blend(float a, float b, float sel)
+blend(float a, float b, bool sel)
 {
     return sel ? b : a;
 }
@@ -442,7 +442,7 @@ blend(float a, float b, float sel)
 static inline std::int32_t
 cvtR2I(float a)
 {
-    return std::round(a);
+    return static_cast<std::int32_t>(std::round(a));
 };
 
 /*! \brief Truncate single precision floating point to integer.
@@ -457,7 +457,7 @@ cvtR2I(float a)
 static inline std::int32_t
 cvttR2I(float a)
 {
-    return std::trunc(a);
+    return static_cast<std::int32_t>(std::trunc(a));
 };
 
 /*! \brief Return integer.
@@ -600,7 +600,7 @@ fnms(double a, double b, double c)
 static inline double
 maskAdd(double a, double b, double m)
 {
-    return a + (m ? b : 0.0);
+    return a + (m != 0.0 ? b : 0.0);
 }
 
 /*! \brief Multiply two double variables, masked version.
@@ -617,7 +617,7 @@ maskAdd(double a, double b, double m)
 static inline double
 maskzMul(double a, double b, double m)
 {
-    return m ? (a * b) : 0.0;
+    return m != 0.0 ? (a * b) : 0.0;
 }
 
 /*! \brief double fused multiply-add, masked version.
@@ -635,7 +635,7 @@ maskzMul(double a, double b, double m)
 static inline double
 maskzFma(double a, double b, double c, double m)
 {
-    return m ? (a * b + c) : 0.0;
+    return m != 0.0 ? (a * b + c) : 0.0;
 }
 
 /*! \brief double doubleing-point abs().
@@ -827,7 +827,7 @@ selectByNotMask(double a, bool mask)
  *       outside such code.
  */
 static inline double
-blend(double a, double b, double sel)
+blend(double a, double b, bool sel)
 {
     return sel ? b : a;
 }
@@ -844,7 +844,7 @@ blend(double a, double b, double sel)
 static inline std::int32_t
 cvtR2I(double a)
 {
-    return std::round(a);
+    return static_cast<std::int32_t>(std::round(a));
 };
 
 /*! \brief Truncate single precision doubleing point to integer.
@@ -859,7 +859,7 @@ cvtR2I(double a)
 static inline std::int32_t
 cvttR2I(double a)
 {
-    return std::trunc(a);
+    return static_cast<std::int32_t>(std::trunc(a));
 };
 
 // We do not have a separate cvtI2R for double, since that would require
@@ -1009,7 +1009,7 @@ selectByNotMask(std::int32_t a, bool mask)
  *       outside such code.
  */
 static inline std::int32_t
-blend(std::int32_t a, std::int32_t b, float sel)
+blend(std::int32_t a, std::int32_t b, bool sel)
 {
     return sel ? b : a;
 }

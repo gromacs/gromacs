@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,13 +40,13 @@
 #include "pme-internal.h"
 
 void
-gather_f_bsplines(struct gmx_pme_t *pme, real *grid,
-                  gmx_bool bClearF, pme_atomcomm_t *atc,
-                  splinedata_t *spline,
+gather_f_bsplines(const struct gmx_pme_t *pme, const real *grid,
+                  gmx_bool bClearF, const pme_atomcomm_t *atc,
+                  const splinedata_t *spline,
                   real scale);
 
 real
-gather_energy_bsplines(struct gmx_pme_t *pme, real *grid,
+gather_energy_bsplines(struct gmx_pme_t *pme, const real *grid,
                        pme_atomcomm_t *atc);
 
 #endif

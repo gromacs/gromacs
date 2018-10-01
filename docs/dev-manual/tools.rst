@@ -1,15 +1,19 @@
 Development-time tools
 ======================
 
+Several tools have their own individual pages and are listed below.
+
 .. toctree::
    :maxdepth: 2
 
    doxygen
+   change-management
    jenkins
    releng/index
    gmxtree
    uncrustify
    testutils
+   physical_validation
 
 .. TODO: Consider what is the most reasonable structure; currently, this list
    here does not make much sense in the overall organization and creates a
@@ -21,12 +25,15 @@ Development-time tools
 Change management
 -----------------
 
-git
-  |Gromacs| uses git as the version control system.
-  Instructions for setting up git for |Gromacs|, as well as tips and tricks for
-  its use, can be found on the wiki: `Git Tips & Tricks`_
+|Gromacs| change management is supported by the following tools.
+(For change submission guidelines, refer to :doc:`contribute`.)
 
-  Other basic tutorial material for ``git`` can be found on the web.
+git
+  |Gromacs| uses `git <https://git-scm.com/>`__ as the version control system.
+  Instructions for setting up git for |Gromacs|, as well as tips and tricks for
+  its use, can be found in :doc:`change-management`.
+
+  Other basic tutorial material for ``git`` can be found on the `web <https://git-scm.com/doc/ext>`__.
 
 Gerrit
   All code changes go through a code review system at
@@ -56,6 +63,14 @@ Build system
 CMake
   Main tool used in the build system.
 
+ccache
+  When the `ccache <https://ccache.samba.org>`_ caching compiler wrapper is
+  found on the PATH, we attempt to set up a caching compiler wrapper for CMake
+  builds. Not all compilers are supported. Refer to the ``ENABLE_CCACHE``
+  option in ``CMakeLists.txt`` and to ``cmake/gmxCcache.cmake``
+  for details. Please submit updates if you find that the current
+  configuration is too conservative.
+
 packaging for distribution (CPack)
 
 unit testing (CTest)
@@ -66,12 +81,25 @@ unit testing (CTest)
 
 regression tests
 
-cppcheck
-  `cppcheck <http://cppcheck.sourceforge.net>`_ is used for static code
-  analysis, and is run automatically on Jenkins for each commit.  Different rules
-  are used for C and C++ code (with stricter checking for C++ code, as that is
-  newer).  The build system provides a ``cppcheck`` target (produced from
-  ``tests/CppCheck.cmake``) to run the tool.  This target is used also by Jenkins.
+clang-tidy
+  `clang-tidy <http://releases.llvm.org/7.0.0/tools/clang/tools/extra/docs/clang-tidy/index.html>`_
+  is used for static code analysis. clang-tidy is easy to install. It is contained in
+  the llvm binary `package <http://releases.llvm.org/download.html#6.0.0>`_. Only
+  version 7.0.* with libstdc++<7 or libc++ is supported. Others might miss tests or give false positives.
+  It is run automatically on Jenkins for each commit. Many checks have fixes which can automatically be
+  applied. To run it, the build has to be configured with
+  ``cmake -DGMX_CLANG_TIDY=ON -DGMX_OPENMP=no -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=on``.
+  Any ``CMAKE_BUILD_TYPE`` which enables asserts (e.g. ASAN) works. Such a configured build will
+  run both the compiler as well as clang-tidy when building. The name of the clang-tidy executable is set with
+``-DCLANG_TIDY=...``, and the full path to it can be set with ``-DCLANG_TIDY_EXE=...``.
+  To apply the automatic fixes to the issue identified clang-tidy should be run sepereately (running clang-tidy
+  with ``-fix`` as part of the build can corrupt header files). To fix a specific file run
+  ``clang-tidy -fix -header-filter '.*' {file}``, to fix all files in parallel
+  ``run-clang-tidy.py -fix -header-filter '.*' '(?<!/selection/parser\.cpp|selection/scanner\.cpp)$'``,
+  and to fix all modified files ``run-clang-tidy.py -fix -header-filter '.*' $(git diff HEAD --name-only)``.
+  The run-clang-tidy.py script is in the
+  ``share/clang/`` subfolder of the llvm distribution. ``clang-tidy`` has to be able to find the
+  ``compile_commands.json`` file. Eithe run from the build folder or add a symlink to the source folder.
 
 clang static analyzer
 
@@ -143,131 +171,3 @@ git attributes
   build system dependencies for easier processing in CMake.
 
 include-what-you-use
-
-Documentation generation
-------------------------
-
-Building the |Gromacs| documentation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. TODO: Move this onto a separate page
-
-For now, there are multiple components, formats and tools for the
-|Gromacs| documentation, which is aimed primarily at version-specific
-deployment of the complete documentation on the website.
-
-This is quite complex, because the dependencies for building the
-documentation must not get in the way of building the code
-(particularly when cross-compiling), and yet the code must build and
-run in order for some documentation to be generated. Also, man page
-documentation (and command-line completions) must be built from the
-wrapper binary, in order to be bundled into the tarball.
-
-The outputs of interest to most developers are generally produced in the
-``docs/html/`` subdirectory of the build tree.
-
-You need to enable at least some of the following CMake options:
-
-``GMX_BUILD_MANUAL``
-  Option needed for trying to build the PDF reference manual
-  (requires LaTeX and ImageMagick)
-``GMX_BUILD_HELP``
-  Option that controls 1) whether shell completions are built automatically,
-  and 2) whether built man pages are installed if available (the user still needs
-  to build the ``man`` target manually before installing)
-
-Some documentation cannot be built if the CMake option
-``GMX_BUILD_MDRUN_ONLY`` is enabled, or when cross-compiling, as it
-requires executing the ``gmx`` binary.
-
-The following make targets are the most useful:
-
-``manual``
-  Builds the PDF reference manual
-``man``
-  Makes man pages from the wrapper binary with Sphinx
-``doxygen-all``
-  Makes the code documentation with Doxygen
-``install-guide``
-  Makes the INSTALL file for the tarball with Sphinx
-``webpage-sphinx``
-  Makes all the components of the GROMACS webpage that require Sphinx,
-  including install guide and user guide.
-``webpage``
-  Makes the complete GROMACS webpage, requires everything. When complete,
-  you can browse ``docs/html/index.html`` to find everything.
-
-  If built from a release tarball, the ``SOURCE_MD5SUM``,
-  ``SOURCE_TARBALL``, ``REGRESSIONTESTS_MD5SUM``, and
-  ``REGRESSIONTESTS_TARBALL`` CMake variables can be set to pass in
-  the md5sum values and names of those tarballs, for embedding into the
-  final deployment to the |Gromacs| website.
-
-The following tools are used in building parts of the documentation.
-
-Doxygen
-  `Doxygen <http://www.doxygen.org>`_ is used to extract documentation from
-  source code comments.  Also some other overview
-  content is laid out by Doxygen from Markdown source files.  Currently, version
-  |EXPECTED_DOXYGEN_VERSION| is required for a warning-free build.  Thorough
-  explanation of the Doxygen setup and instructions for documenting the source
-  code can be found on a separate page: :doc:`doxygen`.
-
-graphviz (dot)
-  The Doxygen documentation uses ``dot`` from `graphviz
-  <http://www.graphviz.org>`_ for building some graphs.  The tool is not
-  mandatory, but the Doxygen build will produce warnings if it is not
-  available, and the graphs are omitted from the documentation.
-
-mscgen
-  The Doxygen documentation uses `mscgen
-  <http://www.mcternan.me.uk/mscgen/>`_ for building some graphs.  As with ``dot``,
-  the tool is not mandatory, but not having it available will result in warnings
-  and missing graphs.
-
-Doxygen issue checker
-  Doxygen produces warnings about some incorrect uses and wrong
-  documentation, but there are many common mistakes that it does not detect.
-  |Gromacs| uses an additional, custom Python script to check for such issues.
-  This is most easily invoked through a ``check-source`` target in the build system.
-  The script also checks that documentation for a header matches its use in the
-  source code (e.g., that a header documented as internal to a module is not
-  actually used from outside the module).  These checks are run in Jenkins as
-  part of the Documentation job.  Details for the custom checker are on a
-  separate page (common for several checkers): :doc:`gmxtree`.
-
-module dependency graphs
-  |Gromacs| uses a custom Python script to generate an annotated dependency
-  graph for the code, showing #include dependencies between modules.
-  The generated graph is embedded into the Doxygen documentation:
-  `Module dependency graph`__
-  This script shares most of its implementation with the custom checkers, and is
-  documented on the same page: :doc:`gmxtree`.
-
-__ doxygen-page-modulegraph_
-
-Sphinx
-  `Sphinx <http://sphinx-doc.org/>`_; at least version 1.2.3) is used
-  for building some parts of the documentation from reStructuredText
-  source files.
-
-LaTeX
-  Also requires ImageMagick for converting graphics file formats.
-
-linkchecker
-
-documentation exported from source files
-  For man pages, HTML documentation of command-line options for executables,
-  and for shell completions, the ``gmx`` binary has explicit C++ code to export
-  the information required.  The build system provides targets that then invoke
-  the built ``gmx`` binary to produce these documentation items.  The generated
-  items are packaged into source tarballs so that this is not necessary when
-  building from a source distribution (since in general, it will not work in
-  cross-compilation scenarios).  To build and install these from a git
-  distribution, explicit action is required.
-  See `Doxygen documentation on the wrapper binary`__
-  for some additional details.
-
-__ doxygen-page-wrapperbinary_
-
-.. include:: /fragments/doxygen-links.rst

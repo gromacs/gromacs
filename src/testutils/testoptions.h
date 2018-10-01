@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -163,21 +163,21 @@ void initTestOptions(IOptionsContainer *options);
  */
 /* *INDENT-ON* */
 #define GMX_TEST_OPTIONS(name, options) \
-    class name : public ::gmx::test::TestOptionsProvider \
+    class name : public ::gmx::test::TestOptionsProvider /*NOLINT(misc-macro-parentheses,bugprone-macro-parentheses)*/ \
     { \
         public: \
             name() \
             { \
                 ::gmx::test::registerTestOptions(#name, this); \
             } \
-            virtual void initOptions(::gmx::IOptionsContainer *options); \
+            virtual void initOptions(::gmx::IOptionsContainer *(options)); \
     }; \
     \
     static name s_ ## name ## Instance; \
     \
-    void name::initOptions(::gmx::IOptionsContainer *options)
+    void name::initOptions(::gmx::IOptionsContainer *options) //NOLINT(misc-macro-parentheses,bugprone-macro-parentheses)
 
-} // namespace test
-} // namespace gmx
+}                                                             // namespace test
+}                                                             // namespace gmx
 
 #endif

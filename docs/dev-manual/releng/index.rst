@@ -15,3 +15,11 @@ releng repository (missing)
 This documentation was built without releng documentation.
 If you want to see this documentation, set ``RELENG_PATH`` CMake variable to
 point to the root of a checkout from the releng repository.
+
+.. _releng-triggering-builds:
+
+Triggering builds (missing)
+---------------------------
+
+This information is available when building the documentation
+with releng, as indicated above.

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,46 +32,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gromacs/math/vectypes.h"
-#include "gromacs/mdlib/nbnxn_pairlist.h"
-#include "gromacs/mdtypes/interaction_const.h"
-#include "gromacs/utility/real.h"
 
-/*! \brief Run-time dispatcher for nbnxn kernel functions. */
-void
-{0}(nbnxn_pairlist_set_t       *nbl_list,
-{1}const nbnxn_atomdata_t     *nbat,
-{1}const interaction_const_t  *ic,
-{1}int                         ewald_excl,
-{1}rvec                       *shift_vec,
-{1}int                         force_flags,
-{1}int                         clearF,
-{1}real                       *fshift,
-{1}real                       *Vc,
-{1}real                       *Vvdw);
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_common.h"
 
-/* Need an #include guard so that sim_util.c can include all
- * such files. */
-#ifndef _nbnxn_kernel_simd_include_h
-#define _nbnxn_kernel_simd_include_h
-/*! \brief Typedefs for declaring kernel functions. */
-typedef void (nbk_func_ener)(const nbnxn_pairlist_t     *nbl,
-                             const nbnxn_atomdata_t     *nbat,
-                             const interaction_const_t  *ic,
-                             rvec                       *shift_vec,
-                             real                       *f,
-                             real                       *fshift,
-                             real                       *Vvdw,
-                             real                       *Vc);
-typedef nbk_func_ener *p_nbk_func_ener;
+/* Declare all the different kernel functions.
+ */
+{0}
 
-typedef void (nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
-                               const nbnxn_atomdata_t     *nbat,
-                               const interaction_const_t  *ic,
-                               rvec                       *shift_vec,
-                               real                       *f,
-                               real                       *fshift);
-typedef nbk_func_noener *p_nbk_func_noener;
-#endif
+#ifdef INCLUDE_KERNELFUNCTION_TABLES
 
+/* Declare and define the kernel function pointer lookup tables.
+ * The minor index of the array goes over both the LJ combination rules,
+ * which is only supported by plain cut-off, and the LJ switch/PME functions.
+ */
+p_nbk_func_noener nbnxn_kernel_noener_simd_{1}[coulktNR][vdwktNR] =
 {2}
+p_nbk_func_ener nbnxn_kernel_ener_simd_{1}[coulktNR][vdwktNR] =
+{3}
+p_nbk_func_ener nbnxn_kernel_energrp_simd_{1}[coulktNR][vdwktNR] =
+{4}
+
+#endif /* INCLUDE_KERNELFUNCTION_TABLES */

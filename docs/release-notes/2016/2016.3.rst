@@ -1,0 +1,114 @@
+GROMACS 2016.3 Release Notes
+----------------------------
+
+This version was released on March 14, 2017. These release notes
+document the changes that have taken place in GROMACS since version
+2016.2 to fix known issues. It also incorporates all fixes made in
+version 5.1.4 and several since.
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed mdrun with separate PME ranks hanging upon exit
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+A recent fix for another issue led to mdrun hanging while communicating
+with PME ranks to coordinate end-of-run performance statistics.
+
+:issue:`2131`
+
+Fixed handling of previous virials with md-vv integrator
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+These quantities get written to checkpoint files only for the Trotter
+pressure-coupling integrators that need them, but they were being
+copied in do_md for all Trotter integrators. This meant that an
+appending restart of md-vv plus nose-hoover plus no pressure coupling
+truncated off a correct edr frame and wrote one with zero virial and
+wrong pressure. And in the same case, a no-append restart writes a
+duplicate frame that does not agree with the one written before
+termination.
+
+:issue:`1793`
+
+Fixed an incorrect check that nstlog != 0 for expanded ensembles
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The original version was accidentally reversed, causing it to
+fail when nstlog was not equal to 0.
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed ``gmx tune_pme`` detection of GPU support
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed spacing in ``gmx tune_pme`` call to thread-MPI mdrun
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed minor issues in ``gmx traj -av -af``
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Made the description of the xvg y-axis more useful. Also works for
+option ``-af``.
+
+:issue:`2133`
+
+Removed rogue printing to xvg file in gmx mindist
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+``gmx mindist -xvg`` none is now adhered to, and printing is preceded by
+a comment.
+
+:issue:`2129`
+
+Fixed bug in ``gmx solvate -shell`` if it yielded 0 SOL.
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+In the transition from genbox to solvate, some incorrect logic was
+introduced.
+
+:issue:`2119`
+
+Corrected output of ``gmx do_dssp -sc``
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+This code has always written a probability, and not a percentage, so
+fixed the label. It still fits within the expected 8-character field.
+
+:issue:`2120`
+
+Improved documentation
+^^^^^^^^^^^^^^^^^^^^^^
+
+Made several minor improvements to documentation and messages to users
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Removed documentation of unimplemented ``gmx trjconv -clustercenter``.
+
+Introduced system preparation section to user guide, to create
+somewhere to document the use and limitations of vdwradii.dat.
+Enchanced documentation of solvate and insert-molecules, similarly.
+
+:issue:`2094`
+
+Documented that we now support AMD GCN on Mesa/LLVM
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+AMD GPUs using Mesa 17.0+ and LLVM 4.0+ run GROMACS using OpenCL.
+
+Documented running Clang static analyzer manually
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Portability enhancements
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Enabled avx512 in the GROMACS FFTW build only if the compiler supports it
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Enabling avx512 requires GCC 4.9 or newer or Clang 3.9 or newer. Since
+we support compilers older than those, we can not afford to enable
+avx512 in ``GMX_BUILD_OWN_FFTW=on`` unconditionally.
+
+Worked around false positives in SIMD test from bug in xlc 13.1.5
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+atan2(0,0) should return 0.0, which the GROMACS simd implementation
+does. However, since at least one compiler produces -nan for the
+standard library version it's better to compare with the known
+correct value rather than calling std:atan2(0,0).
+
+:issue:`2102`
+
+Fixed compile with icc of ``GMX_SIMD=None``
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+ICC defines invsqrt in math.h

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selectionenums.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -137,7 +138,6 @@ SelectionTreeElement::SelectionTreeElement(e_selelem_t              type,
                                            const SelectionLocation &location)
     : location_(location)
 {
-    // cppcheck-suppress useInitializationList
     this->type       = type;
     this->flags      = (type != SEL_ROOT) ? SEL_ALLOCVAL : 0;
     if (type == SEL_BOOLEAN)
@@ -266,7 +266,7 @@ void SelectionTreeElement::mempoolReserve(int count)
             break;
 
         default:
-            GMX_THROW(gmx::InternalError("Memory pooling not implemented for requested type"));
+            gmx_incons("Memory pooling not implemented for requested type");
     }
 }
 
@@ -292,7 +292,7 @@ void SelectionTreeElement::mempoolRelease()
             break;
 
         default:
-            GMX_THROW(gmx::InternalError("Memory pooling not implemented for requested type"));
+            gmx_incons("Memory pooling not implemented for requested type");
     }
 }
 
@@ -336,8 +336,8 @@ SelectionTreeElement::requiredTopologyProperties() const
         bool needsMasses = false;
         if (u.expr.method != nullptr)
         {
-            needsTop    = (u.expr.method->flags & SMETH_REQTOP);
-            needsMasses = (u.expr.method->flags & SMETH_REQMASS);
+            needsTop    = ((u.expr.method->flags & SMETH_REQTOP) != 0);
+            needsMasses = ((u.expr.method->flags & SMETH_REQMASS) != 0);
         }
         if (u.expr.pc != nullptr)
         {
@@ -373,7 +373,7 @@ void SelectionTreeElement::checkUnsortedAtoms(
             || type == SEL_ROOT || type == SEL_SUBEXPR || type == SEL_SUBEXPRREF
             // TODO: Consolidate.
             || type == SEL_MODIFIER
-            || (type == SEL_EXPRESSION && (u.expr.method->flags & SMETH_ALLOW_UNSORTED));
+            || (type == SEL_EXPRESSION && ((u.expr.method->flags & SMETH_ALLOW_UNSORTED) != 0));
 
     // TODO: For some complicated selections, this may result in the same
     // index group reference being flagged as an error multiple times for the

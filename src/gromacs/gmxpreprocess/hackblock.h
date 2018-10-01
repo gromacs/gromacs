@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,7 +60,7 @@ typedef struct {
     char  *s;              /* optional define string which gets copied from
                               .rtp/.tdb to .top and will be parsed by cpp
                               during grompp */
-    gmx_bool match;        /* boolean to mark that the entry has been found */
+    bool match;            /* boolean to mark that the entry has been found */
     char*   &ai() { return a[0]; }
     char*   &aj() { return a[1]; }
     char*   &ak() { return a[2]; }
@@ -85,10 +85,10 @@ typedef struct {
     char       ***atomname;
     int          *cgnr;
     /* Bonded interaction setup */
-    gmx_bool      bKeepAllGeneratedDihedrals;
+    bool          bKeepAllGeneratedDihedrals;
     int           nrexcl;
-    gmx_bool      bGenerateHH14Interactions;
-    gmx_bool      bRemoveDihedralIfWithImproper;
+    bool          bGenerateHH14Interactions;
+    bool          bRemoveDihedralIfWithImproper;
     /* list of bonded interactions to add */
     t_rbondeds    rb[ebtsNR];
 } t_restp;
@@ -108,8 +108,8 @@ typedef struct {
     int         tp;   /* Type of attachment (1..11) */
     int         nctl; /* How many control atoms there are */
     char       *a[4]; /* Control atoms i,j,k,l	  */
-    gmx_bool    bAlreadyPresent;
-    gmx_bool    bXSet;
+    bool        bAlreadyPresent;
+    bool        bXSet;
     rvec        newx; /* calculated new position    */
     int         newi; /* new atom index number (after additions) */
     char*      &ai() { return a[0]; }
@@ -148,8 +148,8 @@ void clear_t_hackblock(t_hackblock *hb);
 void clear_t_hack(t_hack *hack);
 /* reset struct */
 
-gmx_bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[],
-                         gmx_bool bMin, gmx_bool bPlus);
+bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[],
+                     bool bMin, bool bPlus);
 /* add s[].b[] to d[].b[]
  * If bMin==TRUE, don't copy bondeds with atoms starting with '-'
  * If bPlus==TRUE, don't copy bondeds with atoms starting with '+'

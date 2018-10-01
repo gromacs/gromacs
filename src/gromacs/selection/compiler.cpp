@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -273,8 +273,8 @@
 
 #include "compiler.h"
 
-#include <math.h>
-#include <stdarg.h>
+#include <cmath>
+#include <cstdarg>
 
 #include <algorithm>
 
@@ -376,15 +376,15 @@ print_group_info(FILE *fp, const char *name,
     }
     else if (sel.cdata->flags & SEL_CDATA_MINMAXALLOC)
     {
-        fprintf(fp, "(%d atoms, %p)", g->isize, (void*)g);
+        fprintf(fp, "(%d atoms, %p)", g->isize, static_cast<void*>(g));
     }
     else if (sel.v.type == GROUP_VALUE && g == sel.v.u.g)
     {
-        fprintf(fp, "(static, %p)", (void*)g);
+        fprintf(fp, "(static, %p)", static_cast<void*>(g));
     }
     else
     {
-        fprintf(fp, "%p", (void*)g);
+        fprintf(fp, "%p", static_cast<void*>(g));
     }
 }
 
@@ -791,17 +791,17 @@ extract_item_subselections(const SelectionTreeElementPointer &sel,
             /* Create the root element for the subexpression */
             if (!root)
             {
-                root.reset(new SelectionTreeElement(SEL_ROOT, location));
+                root    = std::make_shared<SelectionTreeElement>(SEL_ROOT, location);
                 subexpr = root;
             }
             else
             {
-                subexpr->next.reset(new SelectionTreeElement(SEL_ROOT, location));
-                subexpr = subexpr->next;
+                subexpr->next = std::make_shared<SelectionTreeElement>(SEL_ROOT, location);
+                subexpr       = subexpr->next;
             }
             /* Create the subexpression element and
              * move the actual subexpression under the created element. */
-            subexpr->child.reset(new SelectionTreeElement(SEL_SUBEXPR, location));
+            subexpr->child = std::make_shared<SelectionTreeElement>(SEL_SUBEXPR, location);
             _gmx_selelem_set_vtype(subexpr->child, child->v.type);
             subexpr->child->child = child->child;
             child->child          = subexpr->child;
@@ -1217,7 +1217,7 @@ setup_memory_pooling(const SelectionTreeElementPointer &sel,
 static void
 init_item_evaloutput(const SelectionTreeElementPointer &sel)
 {
-    GMX_ASSERT(!(sel->child == NULL &&
+    GMX_ASSERT(!(sel->child == nullptr &&
                  (sel->type == SEL_SUBEXPRREF || sel->type == SEL_SUBEXPR)),
                "Subexpression elements should always have a child element");
 
@@ -1929,7 +1929,7 @@ evaluate_boolean_static_part(gmx_sel_evaluate_t                *data,
         child->next.reset();
         sel->cdata->evaluate(data, sel, g);
         /* Replace the subexpressions with the result */
-        child.reset(new SelectionTreeElement(SEL_CONST, SelectionLocation::createEmpty()));
+        child             = std::make_shared<SelectionTreeElement>(SEL_CONST, SelectionLocation::createEmpty());
         child->flags      = SEL_FLAGSSET | SEL_SINGLEVAL | SEL_ALLOCVAL | SEL_ALLOCDATA;
         _gmx_selelem_set_vtype(child, GROUP_VALUE);
         child->evaluate   = nullptr;
@@ -2080,7 +2080,6 @@ evaluate_boolean_minmax_grps(const SelectionTreeElementPointer &sel,
 
         case BOOL_XOR: /* Should not be reached */
             GMX_THROW(gmx::NotImplementedError("xor expressions not implemented"));
-            break;
     }
 }
 
@@ -2115,7 +2114,7 @@ analyze_static(gmx_sel_evaluate_t                *data,
         alloc_selection_data(sel, g->isize, false);
     }
 
-    bDoMinMax = (sel->cdata->flags & SEL_CDATA_DOMINMAX);
+    bDoMinMax = ((sel->cdata->flags & SEL_CDATA_DOMINMAX) != 0);
     if (sel->type != SEL_SUBEXPR && bDoMinMax)
     {
         gmx_ana_index_deinit(sel->cdata->gmin);
@@ -2509,7 +2508,7 @@ init_required_atoms(const SelectionTreeElementPointer &sel,
 static void
 postprocess_item_subexpressions(const SelectionTreeElementPointer &sel)
 {
-    GMX_ASSERT(!(sel->child == NULL &&
+    GMX_ASSERT(!(sel->child == nullptr &&
                  (sel->type == SEL_SUBEXPRREF || sel->type == SEL_SUBEXPR)),
                "Subexpression elements should always have a child element");
 
@@ -2846,7 +2845,7 @@ SelectionCompiler::compile(SelectionCollection *coll)
     {
         if (item->child->cdata->flags & SEL_CDATA_COMMONSUBEXPR)
         {
-            bool bMinMax = item->child->cdata->flags & SEL_CDATA_DOMINMAX;
+            bool bMinMax = (item->child->cdata->flags & SEL_CDATA_DOMINMAX) != 0;
 
             mark_subexpr_dynamic(item->child, false);
             item->child->u.cgrp.isize = 0;

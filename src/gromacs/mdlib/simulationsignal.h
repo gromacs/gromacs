@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,7 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \file
  *
  * \brief This file declares functions for inter-rank signalling by mdrun
  *
@@ -56,6 +56,7 @@
 
 #include "gromacs/utility/real.h"
 
+struct gmx_multisim_t;
 struct t_commrec;
 
 //! Kinds of simulation conditions to signal about.
@@ -69,7 +70,7 @@ namespace gmx
 template <typename T>
 class ArrayRef;
 
-/*! \internal
+/*!
  * \brief POD-style object used by mdrun ranks to set and
  * receive signals within and between simulations.
  *
@@ -87,7 +88,7 @@ class SimulationSignal
 {
     public:
         //! Constructor
-        SimulationSignal(bool isSignalLocal = true) : sig(0), set(0), isLocal(isSignalLocal) {};
+        SimulationSignal(bool isSignalLocal = true) : sig(0), set(0), isLocal(isSignalLocal) {}
         //! The signal set by this rank in do_md().
         signed char sig;
         //! The communicated signal that triggers action, which will be equal for all ranks, once communication has occured.
@@ -99,7 +100,7 @@ class SimulationSignal
 //! Convenience typedef for the group of signals used.
 typedef std::array<SimulationSignal, eglsNR> SimulationSignals;
 
-/*! \internal
+/*!
  * \brief Object used by mdrun ranks to signal to each other at this step.
  *
  * This object has responsibility to read signal values from \c gs,
@@ -113,10 +114,11 @@ class SimulationSignaller
 {
     public:
         //! Constructor
-        SimulationSignaller(SimulationSignals *signals,
-                            const t_commrec   *cr,
-                            bool               doInterSim,
-                            bool               doIntraSim);
+        SimulationSignaller(SimulationSignals    *signals,
+                            const t_commrec      *cr,
+                            const gmx_multisim_t *ms,
+                            bool                  doInterSim,
+                            bool                  doIntraSim);
         /*! \brief Return a reference to an array of signal values to communicate.
          *
          * \return If intra-sim signalling will take place, fill and
@@ -147,6 +149,8 @@ class SimulationSignaller
         SimulationSignals       *signals_;
         //! Communication object.
         const t_commrec         *cr_;
+        //! Multi-sim handler.
+        const gmx_multisim_t    *ms_;
         //! Do inter-sim communication at this step.
         bool                     doInterSim_;
         //! Do intra-sim communication at this step.
@@ -155,6 +159,6 @@ class SimulationSignaller
         std::array<real, eglsNR> mpiBuffer_;
 };
 
-} // namespace
+}  // namespace gmx
 
 #endif

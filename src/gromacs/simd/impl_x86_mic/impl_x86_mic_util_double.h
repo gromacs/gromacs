@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,11 +70,11 @@ gatherLoadBySimdIntTranspose(const double *  base,
     // but multiplication otherwise.
     if (align == 4)
     {
-        simdoffset = simdoffset << 2;
+        simdoffset.simdInternal_ = _mm512_slli_epi32(simdoffset.simdInternal_, 2);
     }
     else if (align == 8)
     {
-        simdoffset = simdoffset << 3;
+        simdoffset.simdInternal_ = _mm512_slli_epi32(simdoffset.simdInternal_, 3);
     }
     else
     {
@@ -99,15 +99,15 @@ gatherLoadUBySimdIntTranspose(const double *  base,
     // but multiplication otherwise.
     if (align == 2)
     {
-        simdoffset = simdoffset << 1;
+        simdoffset.simdInternal_ = _mm512_slli_epi32(simdoffset.simdInternal_, 1);
     }
     else if (align == 4)
     {
-        simdoffset = simdoffset << 2;
+        simdoffset.simdInternal_ = _mm512_slli_epi32(simdoffset.simdInternal_, 2);
     }
     else if (align == 8)
     {
-        simdoffset = simdoffset << 3;
+        simdoffset.simdInternal_ = _mm512_slli_epi32(simdoffset.simdInternal_, 3);
     }
     else
     {
@@ -142,7 +142,7 @@ gatherLoadTranspose(const double *        base,
                     SimdDouble *          v2,
                     SimdDouble *          v3)
 {
-    gatherLoadBySimdIntTranspose<align>(base, simdLoadDI(offset), v0, v1, v2, v3);
+    gatherLoadBySimdIntTranspose<align>(base, simdLoad(offset, SimdDInt32Tag()), v0, v1, v2, v3);
 }
 
 template <int align>
@@ -152,7 +152,7 @@ gatherLoadTranspose(const double *        base,
                     SimdDouble *          v0,
                     SimdDouble *          v1)
 {
-    gatherLoadBySimdIntTranspose<align>(base, simdLoadDI(offset), v0, v1);
+    gatherLoadBySimdIntTranspose<align>(base, simdLoad(offset, SimdDInt32Tag()), v0, v1);
 }
 
 static const int c_simdBestPairAlignmentDouble = 2;
@@ -169,18 +169,18 @@ gatherLoadUTranspose(const double *        base,
 
     assert(std::size_t(offset) % 32 == 0);
 
-    simdoffset = simdLoadDI(offset);
+    simdoffset = simdLoad(offset, SimdDInt32Tag());
 
     // All instructions might be latency ~4 on MIC, so we use shifts where we
     // only need a single instruction (since the shift parameter is an immediate),
     // but multiplication otherwise.
     if (align == 4)
     {
-        simdoffset = simdoffset << 2;
+        simdoffset.simdInternal_ = _mm512_slli_epi32(simdoffset.simdInternal_, 2);
     }
     else if (align == 8)
     {
-        simdoffset = simdoffset << 3;
+        simdoffset.simdInternal_ = _mm512_slli_epi32(simdoffset.simdInternal_, 3);
     }
     else
     {
@@ -204,18 +204,18 @@ transposeScatterStoreU(double *            base,
 
     assert(std::size_t(offset) % 32 == 0);
 
-    simdoffset = simdLoadDI(offset);
+    simdoffset = simdLoad(offset, SimdDInt32Tag());
 
     // All instructions might be latency ~4 on MIC, so we use shifts where we
     // only need a single instruction (since the shift parameter is an immediate),
     // but multiplication otherwise.
     if (align == 4)
     {
-        simdoffset = simdoffset << 2;
+        simdoffset.simdInternal_ = _mm512_slli_epi32(simdoffset.simdInternal_, 2);
     }
     else if (align == 8)
     {
-        simdoffset = simdoffset << 3;
+        simdoffset.simdInternal_ = _mm512_slli_epi32(simdoffset.simdInternal_, 3);
     }
     else
     {
@@ -235,9 +235,9 @@ transposeScatterIncrU(double *            base,
                       SimdDouble          v1,
                       SimdDouble          v2)
 {
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata0[GMX_SIMD_DOUBLE_WIDTH];
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata1[GMX_SIMD_DOUBLE_WIDTH];
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata2[GMX_SIMD_DOUBLE_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) double  rdata0[GMX_SIMD_DOUBLE_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) double  rdata1[GMX_SIMD_DOUBLE_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) double  rdata2[GMX_SIMD_DOUBLE_WIDTH];
 
     store(rdata0, v0);
     store(rdata1, v1);
@@ -259,9 +259,9 @@ transposeScatterDecrU(double *            base,
                       SimdDouble          v1,
                       SimdDouble          v2)
 {
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata0[GMX_SIMD_DOUBLE_WIDTH];
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata1[GMX_SIMD_DOUBLE_WIDTH];
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata2[GMX_SIMD_DOUBLE_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) double  rdata0[GMX_SIMD_DOUBLE_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) double  rdata1[GMX_SIMD_DOUBLE_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) double  rdata2[GMX_SIMD_DOUBLE_WIDTH];
 
     store(rdata0, v0);
     store(rdata1, v1);
@@ -346,7 +346,7 @@ loadDuplicateHsimd(const double * m)
 }
 
 static inline SimdDouble gmx_simdcall
-load1DualHsimd(const double * m)
+loadU1DualHsimd(const double * m)
 {
     return _mm512_mask_extload_pd(_mm512_extload_pd(m, _MM_UPCONV_PD_NONE, _MM_BROADCAST_1X8, _MM_HINT_NONE), _mm512_int2mask(0xF0),
                                   m+1, _MM_UPCONV_PD_NONE, _MM_BROADCAST_1X8, _MM_HINT_NONE);

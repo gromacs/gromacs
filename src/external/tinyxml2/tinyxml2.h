@@ -372,7 +372,6 @@ public:
         if ( !_root ) {
             // Need a new block.
             Block* block = new Block();
-            // cppcheck-suppress uninitdata
             _blockPtrs.Push( block );
 
             for( int i=0; i<COUNT-1; ++i ) {

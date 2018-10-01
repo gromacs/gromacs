@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,7 @@
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
@@ -69,7 +70,9 @@
 #include "gromacs/utility/smalloc.h"
 
 /* Different default (c) and SIMD instructions interaction-specific kernels */
+#if !GMX_CLANG_ANALYZER
 #include "gromacs/gmxlib/nonbonded/nb_kernel_c/nb_kernel_c.h"
+#endif
 
 #if GMX_SIMD_X86_SSE2 && !GMX_DOUBLE
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_sse2_single/nb_kernel_sse2_single.h"
@@ -95,10 +98,6 @@
 #if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && GMX_DOUBLE
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_256_double/nb_kernel_avx_256_double.h"
 #endif
-#if GMX_SIMD_SPARC64_HPC_ACE && GMX_DOUBLE
-#    include "gromacs/gmxlib/nonbonded/nb_kernel_sparc64_hpc_ace_double/nb_kernel_sparc64_hpc_ace_double.h"
-#endif
-
 
 static tMPI_Thread_mutex_t nonbonded_setup_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 static gmx_bool            nonbonded_setup_done  = FALSE;
@@ -110,14 +109,16 @@ gmx_nonbonded_setup(t_forcerec *   fr,
 {
     tMPI_Thread_mutex_lock(&nonbonded_setup_mutex);
     /* Here we are guaranteed only one thread made it. */
-    if (nonbonded_setup_done == FALSE)
+    if (!nonbonded_setup_done)
     {
-        if (bGenericKernelOnly == FALSE)
+        if (!bGenericKernelOnly)
         {
             /* Add the generic kernels to the structure stored statically in nb_kernel.c */
+#if !GMX_CLANG_ANALYZER
             nb_kernel_list_add_kernels(kernellist_c, kernellist_c_size);
+#endif
 
-            if (!(fr != nullptr && fr->use_simd_kernels == FALSE))
+            if (!(fr != nullptr && !fr->use_simd_kernels))
             {
                 /* Add interaction-specific kernels for different architectures */
                 /* Single precision */
@@ -145,9 +146,6 @@ gmx_nonbonded_setup(t_forcerec *   fr,
 #endif
 #if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && GMX_DOUBLE
                 nb_kernel_list_add_kernels(kernellist_avx_256_double, kernellist_avx_256_double_size);
-#endif
-#if GMX_SIMD_SPARC64_HPC_ACE && GMX_DOUBLE
-                nb_kernel_list_add_kernels(kernellist_sparc64_hpc_ace_double, kernellist_sparc64_hpc_ace_double_size);
 #endif
                 ; /* empty statement to avoid a completely empty block */
             }
@@ -211,16 +209,12 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
         /* No padding - see comment above */
         { "sse4_1_double", 1 },
 #endif
-#if GMX_SIMD_SPARC64_HPC_ACE && GMX_DOUBLE
-        /* No padding - see comment above */
-        { "sparc64_hpc_ace_double", 1 },
-#endif
         { "c", 1 },
     };
     int              narch = asize(arch_and_padding);
     int              i;
 
-    if (nonbonded_setup_done == FALSE)
+    if (!nonbonded_setup_done)
     {
         /* We typically call this setup routine before starting timers,
          * but if that has not been done for whatever reason we do it now.
@@ -243,14 +237,14 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
 
     if (nl->type == GMX_NBLIST_INTERACTION_FREE_ENERGY)
     {
-        nl->kernelptr_vf       = (void *) gmx_nb_free_energy_kernel;
-        nl->kernelptr_f        = (void *) gmx_nb_free_energy_kernel;
+        nl->kernelptr_vf       = reinterpret_cast<void *>(gmx_nb_free_energy_kernel);
+        nl->kernelptr_f        = reinterpret_cast<void *>(gmx_nb_free_energy_kernel);
         nl->simd_padding_width = 1;
     }
     else if (!gmx_strcasecmp_min(geom, "CG-CG"))
     {
-        nl->kernelptr_vf       = (void *) gmx_nb_generic_cg_kernel;
-        nl->kernelptr_f        = (void *) gmx_nb_generic_cg_kernel;
+        nl->kernelptr_vf       = reinterpret_cast<void *>(gmx_nb_generic_cg_kernel);
+        nl->kernelptr_f        = reinterpret_cast<void *>(gmx_nb_generic_cg_kernel);
         nl->simd_padding_width = 1;
     }
     else
@@ -259,18 +253,18 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
 
         for (i = 0; i < narch && nl->kernelptr_vf == nullptr; i++)
         {
-            nl->kernelptr_vf       = (void *) nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce");
+            nl->kernelptr_vf       = reinterpret_cast<void *>(nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce"));
             nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
         }
         for (i = 0; i < narch && nl->kernelptr_f == nullptr; i++)
         {
-            nl->kernelptr_f        = (void *) nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "Force");
+            nl->kernelptr_f        = reinterpret_cast<void *>(nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "Force"));
             nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
 
             /* If there is not force-only optimized kernel, is there a potential & force one? */
             if (nl->kernelptr_f == nullptr)
             {
-                nl->kernelptr_f        = (void *) nb_kernel_list_findkernel(nullptr, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce");
+                nl->kernelptr_f        = reinterpret_cast<void *>(nb_kernel_list_findkernel(nullptr, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce"));
                 nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
             }
         }
@@ -300,8 +294,8 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
          */
         if (nl->kernelptr_vf == nullptr && !gmx_strcasecmp_min(geom, "Particle-Particle"))
         {
-            nl->kernelptr_vf       = (void *) gmx_nb_generic_kernel;
-            nl->kernelptr_f        = (void *) gmx_nb_generic_kernel;
+            nl->kernelptr_vf       = reinterpret_cast<void *>(gmx_nb_generic_kernel);
+            nl->kernelptr_f        = reinterpret_cast<void *>(gmx_nb_generic_kernel);
             nl->simd_padding_width = 1;
             if (debug)
             {
@@ -313,14 +307,20 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
             }
         }
     }
-    return;
 }
 
-void do_nonbonded(t_forcerec *fr,
-                  rvec x[], rvec f_shortrange[], t_mdatoms *mdatoms, t_blocka *excl,
+void do_nonbonded(const t_forcerec  *fr,
+                  rvec               x[],
+                  rvec               f_shortrange[],
+                  const t_mdatoms   *mdatoms,
+                  const t_blocka    *excl,
                   gmx_grppairener_t *grppener,
-                  t_nrnb *nrnb, real *lambda, real *dvdl,
-                  int nls, int eNL, int flags)
+                  t_nrnb            *nrnb,
+                  real              *lambda,
+                  real              *dvdl,
+                  int                nls,
+                  int                eNL,
+                  int                flags)
 {
     t_nblist *        nlist;
     int               n, n0, n1, i, i0, i1;
@@ -337,7 +337,6 @@ void do_nonbonded(t_forcerec *fr,
     if (fr->bAllvsAll)
     {
         gmx_incons("All-vs-all kernels have not been implemented in version 4.6");
-        return;
     }
 
     if (eNL >= 0)
@@ -372,8 +371,7 @@ void do_nonbonded(t_forcerec *fr,
          * improvement, this assertion will stop code segfaulting if
          * someone assumes that extending the group-scheme table-type
          * enumeration is something that GROMACS supports. */
-        /* cppcheck-suppress duplicateExpression */
-        assert(etiNR == 3);
+        static_assert(etiNR == 3, "");
 
         kernel_data.table_elec              = nblists->table_elec;
         kernel_data.table_vdw               = nblists->table_vdw;
@@ -388,7 +386,6 @@ void do_nonbonded(t_forcerec *fr,
                 }
                 kernel_data.energygrp_elec          = grppener->ener[egCOULSR];
                 kernel_data.energygrp_vdw           = grppener->ener[fr->bBHAM ? egBHAMSR : egLJSR];
-                kernel_data.energygrp_polarization  = grppener->ener[egGB];
                 nlist = nblists->nlist_sr;
                 f                                   = f_shortrange;
             }
@@ -400,12 +397,12 @@ void do_nonbonded(t_forcerec *fr,
                     if (flags & GMX_NONBONDED_DO_POTENTIAL)
                     {
                         /* Potential and force */
-                        kernelptr = (nb_kernel_t *)nlist[i].kernelptr_vf;
+                        kernelptr = reinterpret_cast<nb_kernel_t *>(nlist[i].kernelptr_vf);
                     }
                     else
                     {
                         /* Force only, no potential */
-                        kernelptr = (nb_kernel_t *)nlist[i].kernelptr_f;
+                        kernelptr = reinterpret_cast<nb_kernel_t *>(nlist[i].kernelptr_f);
                     }
 
                     if (nlist[i].type != GMX_NBLIST_INTERACTION_FREE_ENERGY && (flags & GMX_NONBONDED_DO_FOREIGNLAMBDA))
@@ -416,7 +413,8 @@ void do_nonbonded(t_forcerec *fr,
                     /* Neighborlists whose kernelptr==NULL will always be empty */
                     if (kernelptr != nullptr)
                     {
-                        (*kernelptr)(&(nlist[i]), x, f, fr, mdatoms, &kernel_data, nrnb);
+                        (*kernelptr)(&(nlist[i]), x, f, const_cast<t_forcerec*>(fr),
+                                     const_cast<t_mdatoms*>(mdatoms), &kernel_data, nrnb);
                     }
                     else
                     {

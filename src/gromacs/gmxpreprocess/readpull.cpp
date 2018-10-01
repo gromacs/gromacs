@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,15 +36,17 @@
  */
 #include "gmxpre.h"
 
-#include <assert.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cassert>
+#include <cstdlib>
+#include <cstring>
 
+#include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull-params.h"
@@ -262,37 +264,32 @@ static void init_pull_coord(t_pull_coord *pcrd, int coord_index_for_output,
     }
 }
 
-char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
-                       pull_params_t *pull,
-                       warninp_t wi)
+char **read_pullparams(std::vector<t_inpfile> *inp,
+                       pull_params_t          *pull,
+                       warninp_t               wi)
 {
-    int           ninp, nscan, idum;
-    t_inpfile    *inp;
-    const char   *tmp;
-    char        **grpbuf;
-    char          buf[STRLEN];
-    char          provider[STRLEN], groups[STRLEN], dim_buf[STRLEN];
-    char          wbuf[STRLEN], origin_buf[STRLEN], vec_buf[STRLEN];
+    int                    nscan, idum;
+    char                 **grpbuf;
+    char                   buf[STRLEN];
+    char                   provider[STRLEN], groups[STRLEN], dim_buf[STRLEN];
+    char                   wbuf[STRLEN], origin_buf[STRLEN], vec_buf[STRLEN];
 
-    t_pull_group *pgrp;
-    t_pull_coord *pcrd;
-
-    ninp   = *ninp_p;
-    inp    = *inp_p;
+    t_pull_group          *pgrp;
+    t_pull_coord          *pcrd;
 
     /* read pull parameters */
-    CTYPE("Cylinder radius for dynamic reaction force groups (nm)");
-    RTYPE("pull-cylinder-r",  pull->cylinder_r, 1.5);
-    RTYPE("pull-constr-tol",  pull->constr_tol, 1E-6);
-    EETYPE("pull-print-com", pull->bPrintCOM, yesno_names);
-    EETYPE("pull-print-ref-value", pull->bPrintRefValue, yesno_names);
-    EETYPE("pull-print-components", pull->bPrintComp, yesno_names);
-    ITYPE("pull-nstxout",     pull->nstxout, 50);
-    ITYPE("pull-nstfout",     pull->nstfout, 50);
-    CTYPE("Number of pull groups");
-    ITYPE("pull-ngroups",     pull->ngroup, 1);
-    CTYPE("Number of pull coordinates");
-    ITYPE("pull-ncoords",     pull->ncoord, 1);
+    printStringNoNewline(inp, "Cylinder radius for dynamic reaction force groups (nm)");
+    pull->cylinder_r     = get_ereal(inp, "pull-cylinder-r", 1.5, wi);
+    pull->constr_tol     = get_ereal(inp, "pull-constr-tol", 1E-6, wi);
+    pull->bPrintCOM      = (get_eeenum(inp, "pull-print-com", yesno_names, wi) != 0);
+    pull->bPrintRefValue = (get_eeenum(inp, "pull-print-ref-value", yesno_names, wi) != 0);
+    pull->bPrintComp     = (get_eeenum(inp, "pull-print-components", yesno_names, wi) != 0);
+    pull->nstxout        = get_eint(inp, "pull-nstxout", 50, wi);
+    pull->nstfout        = get_eint(inp, "pull-nstfout", 50, wi);
+    printStringNoNewline(inp, "Number of pull groups");
+    pull->ngroup = get_eint(inp, "pull-ngroups", 1, wi);
+    printStringNoNewline(inp, "Number of pull coordinates");
+    pull->ncoord = get_eint(inp, "pull-ncoords", 1, wi);
 
     if (pull->ngroup < 1)
     {
@@ -311,7 +308,7 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     snew(pull->coord, pull->ncoord);
 
     /* pull group options */
-    CTYPE("Group and coordinate parameters");
+    printStringNoNewline(inp, "Group and coordinate parameters");
 
     /* Read the pull groups */
     snew(grpbuf, pull->ngroup);
@@ -321,11 +318,11 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
         pgrp = &pull->group[groupNum];
         snew(grpbuf[groupNum], STRLEN);
         sprintf(buf, "pull-group%d-name", groupNum);
-        STYPE(buf,              grpbuf[groupNum], "");
+        setStringEntry(inp, buf, grpbuf[groupNum], "");
         sprintf(buf, "pull-group%d-weights", groupNum);
-        STYPE(buf,              wbuf, "");
+        setStringEntry(inp, buf, wbuf, "");
         sprintf(buf, "pull-group%d-pbcatom", groupNum);
-        ITYPE(buf,              pgrp->pbcatom, 0);
+        pgrp->pbcatom = get_eint(inp, buf, 0, wi);
 
         /* Initialize the pull group */
         init_pull_group(pgrp, wbuf);
@@ -336,14 +333,14 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     {
         pcrd = &pull->coord[coordNum - 1];
         sprintf(buf, "pull-coord%d-type", coordNum);
-        EETYPE(buf,             pcrd->eType, epull_names);
+        pcrd->eType = get_eeenum(inp, buf, epull_names, wi);
         sprintf(buf, "pull-coord%d-potential-provider", coordNum);
-        STYPE(buf,              provider, "");
+        setStringEntry(inp, buf, provider, "");
         pcrd->externalPotentialProvider = gmx_strdup(provider);
         sprintf(buf, "pull-coord%d-geometry", coordNum);
-        EETYPE(buf,             pcrd->eGeom, epullg_names);
+        pcrd->eGeom = get_eeenum(inp, buf, epullg_names, wi);
         sprintf(buf, "pull-coord%d-groups", coordNum);
-        STYPE(buf,              groups, "");
+        setStringEntry(inp, buf, groups, "");
 
         switch (pcrd->eGeom)
         {
@@ -377,28 +374,25 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
         }
 
         sprintf(buf, "pull-coord%d-dim", coordNum);
-        STYPE(buf,              dim_buf,     "Y Y Y");
+        setStringEntry(inp, buf, dim_buf, "Y Y Y");
         sprintf(buf, "pull-coord%d-origin", coordNum);
-        STYPE(buf,              origin_buf,  "0.0 0.0 0.0");
+        setStringEntry(inp, buf, origin_buf, "0.0 0.0 0.0");
         sprintf(buf, "pull-coord%d-vec", coordNum);
-        STYPE(buf,              vec_buf,     "0.0 0.0 0.0");
+        setStringEntry(inp, buf, vec_buf, "0.0 0.0 0.0");
         sprintf(buf, "pull-coord%d-start", coordNum);
-        EETYPE(buf,             pcrd->bStart, yesno_names);
+        pcrd->bStart = (get_eeenum(inp, buf, yesno_names, wi) != 0);
         sprintf(buf, "pull-coord%d-init", coordNum);
-        RTYPE(buf,              pcrd->init,  0.0);
+        pcrd->init = get_ereal(inp, buf, 0.0, wi);
         sprintf(buf, "pull-coord%d-rate", coordNum);
-        RTYPE(buf,              pcrd->rate,  0.0);
+        pcrd->rate = get_ereal(inp, buf, 0.0, wi);
         sprintf(buf, "pull-coord%d-k", coordNum);
-        RTYPE(buf,              pcrd->k,     0.0);
+        pcrd->k = get_ereal(inp, buf, 0.0, wi);
         sprintf(buf, "pull-coord%d-kB", coordNum);
-        RTYPE(buf,              pcrd->kB,    pcrd->k);
+        pcrd->kB = get_ereal(inp, buf, pcrd->k, wi);
 
         /* Initialize the pull coordinate */
         init_pull_coord(pcrd, coordNum, dim_buf, origin_buf, vec_buf, wi);
     }
-
-    *ninp_p   = ninp;
-    *inp_p    = inp;
 
     return grpbuf;
 }
@@ -503,19 +497,20 @@ void make_pull_coords(pull_params_t *pull)
 
 pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
                       rvec *x, matrix box, real lambda,
-                      const gmx_output_env_t *oenv)
+                      warninp_t wi)
 {
     pull_params_t *pull;
     pull_t        *pull_work;
-    t_mdatoms     *md;
     t_pbc          pbc;
     int            c;
     double         t_start;
 
     pull      = ir->pull;
-    pull_work = init_pull(nullptr, pull, ir, 0, nullptr, mtop, nullptr, oenv, lambda, FALSE, 0);
-    md        = init_mdatoms(nullptr, mtop, ir->efep);
-    atoms2md(mtop, ir, -1, nullptr, mtop->natoms, md);
+    gmx::LocalAtomSetManager atomSets;
+    pull_work = init_pull(nullptr, pull, ir, mtop, nullptr, &atomSets, lambda);
+    auto                     mdAtoms = gmx::makeMDAtoms(nullptr, *mtop, *ir, false);
+    auto                     md      = mdAtoms->mdatoms();
+    atoms2md(mtop, ir, -1, nullptr, mtop->natoms, mdAtoms.get());
     if (ir->efep)
     {
         update_mdatoms(md, lambda);
@@ -526,6 +521,19 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
     t_start = ir->init_t + ir->init_step*ir->delta_t;
 
     pull_calc_coms(nullptr, pull_work, md, &pbc, t_start, x, nullptr);
+
+    int groupThatFailsPbc = pullCheckPbcWithinGroups(*pull_work, x, pbc, c_pullGroupPbcMargin);
+    if (groupThatFailsPbc >= 0)
+    {
+        char buf[STRLEN];
+        sprintf(buf,
+                "Pull group %d has atoms at a distance larger than %g times half the box size from the PBC atom (%d). If atoms are or will more beyond half the box size from the PBC atom, the COM will be ill defined.",
+                groupThatFailsPbc,
+                c_pullGroupPbcMargin,
+                pull->group[groupThatFailsPbc].pbcatom);
+        set_warning_line(wi, nullptr, -1);
+        warning(wi, buf);
+    }
 
     fprintf(stderr, "Pull group  natoms  pbc atom  distance at start  reference at t=0\n");
     for (c = 0; c < pull->ncoord; c++)
@@ -550,7 +558,7 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
             pcrd->init = 0;
         }
 
-        get_pull_coord_value(pull_work, c, &pbc, &value);
+        value  = get_pull_coord_value(pull_work, c, &pbc);
 
         value *= pull_conversion_factor_internal2userinput(pcrd);
         fprintf(stderr, " %10.3f %s", value, pull_coordinate_units(pcrd));

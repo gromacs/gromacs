@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,9 +33,10 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- * \brief Tests for gmx::AlignedAllocator
+ * \brief Tests for gmx::AlignedAllocator and gmx::PageAlignedAllocator.
  *
  * \author Erik Lindahl <erik.lindahl@gmail.com>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_utility
  */
 
@@ -43,43 +44,52 @@
 
 #include "gromacs/utility/alignedallocator.h"
 
-#include <list>
 #include <vector>
 
 #include <gtest/gtest.h>
 
-#include "gromacs/utility/real.h"
+#include "gromacs/math/vectypes.h"
 
 namespace gmx
 {
-
-TEST(AlignedAllocatorTest, AllocatorAlign)
+namespace test
 {
-    AlignedAllocator<real>   a;
-    real *                   p    = a.allocate(1000);
 
-    // Mask for 128-byte alignment is 128-1 - these bits should be zero in p
-    std::size_t              mask = static_cast<std::size_t>(128-1);
+//! Declare allocator types to test.
+using AllocatorTypesToTest = ::testing::Types<AlignedAllocator<real>,
+                                              PageAlignedAllocator<real>,
+                                              AlignedAllocator<int>,
+                                              PageAlignedAllocator<int>,
+                                              AlignedAllocator<RVec>,
+                                              PageAlignedAllocator<RVec>
+                                              >;
 
-    EXPECT_EQ(0, reinterpret_cast<std::size_t>(p) & mask);
-    a.deallocate(p, 1000);
-}
+TYPED_TEST_CASE(AllocatorTest, AllocatorTypesToTest);
 
+}  // namespace test
+}  // namespace gmx
 
-TEST(AlignedAllocator, Vector)
+// Includes tests common to all allocation policies.
+#include "gromacs/utility/tests/alignedallocator-impl.h"
+
+namespace gmx
 {
-    // Mask for 128-byte alignment is 128-1 - these bits should be zero in pointers
-    std::size_t mask = static_cast<std::size_t>(128-1);
+namespace test
+{
 
-    std::vector<real, AlignedAllocator<real> > v(10);
-    EXPECT_EQ(0, reinterpret_cast<std::size_t>(v.data()) & mask);
-
-    for (std::size_t i = 10000; i <= 100000; i += 10000)
-    {
-        v.resize(i);
-        EXPECT_EQ(0, reinterpret_cast<std::size_t>(v.data()) & mask);
-    }
+TYPED_TEST(AllocatorTest, StatelessAllocatorUsesNoMemory)
+{
+    using value_type = typename TypeParam::value_type;
+    EXPECT_EQ(sizeof(std::vector<value_type>),
+              sizeof(std::vector<value_type, TypeParam>));
 }
 
-
+TEST(AllocatorUntypedTest, Comparison)
+{
+    //Should always be true for the same policy, indpendent of value_type
+    EXPECT_EQ(AlignedAllocator<float>{}, AlignedAllocator<double>{});
+    EXPECT_EQ(PageAlignedAllocator<float>{}, PageAlignedAllocator<double>{});
 }
+
+}  // namespace test
+}  // namespace gmx

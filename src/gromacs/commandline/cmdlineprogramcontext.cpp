@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -103,11 +103,11 @@ class DefaultExecutableEnvironment : public IExecutableEnvironment
         {
         }
 
-        virtual std::string getWorkingDirectory() const
+        std::string getWorkingDirectory() const override
         {
             return initialWorkingDirectory_;
         }
-        virtual std::vector<std::string> getExecutablePaths() const
+        std::vector<std::string> getExecutablePaths() const override
         {
             return Path::getExecutablePaths();
         }
@@ -186,12 +186,8 @@ bool isAcceptableLibraryPath(const std::string &path)
  */
 bool isAcceptableLibraryPathPrefix(const std::string &path)
 {
-    std::string testPath = Path::join(path, DATA_INSTALL_DIR, "top");
-    if (isAcceptableLibraryPath(testPath))
-    {
-        return true;
-    }
-    return false;
+    std::string testPath = Path::join(path, GMX_INSTALL_GMXDATADIR, "top");
+    return isAcceptableLibraryPath(testPath);
 }
 
 /*! \brief

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,12 +38,12 @@
 
 #include "mdebin_bar.h"
 
-#include <float.h>
-#include <math.h>
-#include <string.h>
-
 #include <cassert>
+#include <cfloat>
+#include <cmath>
+#include <cstring>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/mdlib/mdebin.h"
 #include "gromacs/mdtypes/energyhistory.h"
@@ -64,7 +64,7 @@ static void mde_delta_h_reset(t_mde_delta_h *dh)
 static void mde_delta_h_init(t_mde_delta_h *dh, int nbins,
                              double dx, unsigned int  ndhmax,
                              int type, int derivative, int nlambda,
-                             double *lambda)
+                             const double *lambda)
 {
     int i;
 
@@ -108,6 +108,18 @@ static void mde_delta_h_init(t_mde_delta_h *dh, int nbins,
         }
     }
     mde_delta_h_reset(dh);
+}
+
+static void done_mde_delta_h(t_mde_delta_h *dh)
+{
+    sfree(dh->lambda);
+    sfree(dh->subblock_meta_d);
+    sfree(dh->dh);
+    sfree(dh->dhf);
+    for (int i = 0; i < dh->nhist; i++)
+    {
+        sfree(dh->bin[i]);
+    }
 }
 
 /* Add a value to the delta_h list */
@@ -163,7 +175,7 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi, gmx_bool invert)
        Get this start value in number of histogram dxs from zero,
        as an integer.*/
 
-    dh->x0[hi] = (gmx_int64_t)floor(min_dh/dx);
+    dh->x0[hi] = static_cast<int64_t>(floor(min_dh/dx));
 
     min_dh_hist = (dh->x0[hi])*dx;
     max_dh_hist = (dh->x0[hi] + dh->nbins + 1)*dx;
@@ -179,7 +191,7 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi, gmx_bool invert)
            might lead to overflow with unpredictable results.*/
         if ( (f*dh->dh[i] >= min_dh_hist) && (f*dh->dh[i] <= max_dh_hist ) )
         {
-            bin = (unsigned int)( (f*dh->dh[i] - min_dh_hist)/dx );
+            bin = static_cast<unsigned int>( (f*dh->dh[i] - min_dh_hist)/dx );
         }
         else
         {
@@ -208,7 +220,7 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi, gmx_bool invert)
 }
 
 
-void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
+static void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
 {
     /* first check which type we should use: histogram or raw data */
     if (dh->nhist == 0)
@@ -256,7 +268,7 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
             blk->sub[2].type = xdr_datatype_float;
             for (i = 0; i < dh->ndh; i++)
             {
-                dh->dhf[i] = (float)dh->dh[i];
+                dh->dhf[i] = static_cast<float>(dh->dh[i]);
             }
             blk->sub[2].fval = dh->dhf;
             dh->written      = TRUE;
@@ -559,6 +571,24 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
     }
 }
 
+void done_mde_delta_h_coll(t_mde_delta_h_coll *dhc)
+{
+    if (dhc == nullptr)
+    {
+        return;
+    }
+    sfree(dhc->native_lambda_vec);
+    sfree(dhc->native_lambda_components);
+    sfree(dhc->subblock_d);
+    sfree(dhc->subblock_i);
+    for (int i = 0; i < dhc->ndh; ++i)
+    {
+        done_mde_delta_h(&dhc->dh[i]);
+    }
+    sfree(dhc->dh);
+    sfree(dhc);
+}
+
 /* add a bunch of samples - note fep_state is double to allow for better data storage */
 void mde_delta_h_coll_add_dh(t_mde_delta_h_coll *dhc,
                              double              fep_state,
@@ -686,7 +716,7 @@ void mde_delta_h_coll_update_energyhistory(const t_mde_delta_h_coll *dhc,
 {
     if (enerhist->deltaHForeignLambdas == nullptr)
     {
-        enerhist->deltaHForeignLambdas.reset(new delta_h_history_t);
+        enerhist->deltaHForeignLambdas = gmx::compat::make_unique<delta_h_history_t>();
         enerhist->deltaHForeignLambdas->dh.resize(dhc->ndh);
     }
 

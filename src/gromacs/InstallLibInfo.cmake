@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2016, by the GROMACS development team, led by
+# Copyright (c) 2014,2016,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,7 @@ function (do_pkgconfig)
     configure_file(libgromacs.pc.cmakein
                    libgromacs.pc @ONLY)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgromacs.pc
-            DESTINATION ${PKGCONFIG_INSTALL_DIR}
+            DESTINATION ${GMX_INSTALL_PKGCONFIGDIR}
             RENAME "libgromacs${GMX_LIBS_SUFFIX}.pc"
             COMPONENT development)
 endfunction()
@@ -60,7 +60,7 @@ function (do_cmake_config)
     # Install everything into a subdirectory, because
     #  1. CMake expects things to be there for CMAKE_PREFIX_PATH to work, and
     #  2. This nicely isolates files for different suffixes from each other.
-    set(CMAKE_PACKAGE_DIR ${CMAKE_INSTALL_DIR}/gromacs${GMX_LIBS_SUFFIX})
+    set(GMX_INSTALL_CMAKEPKGDIR ${GMX_INSTALL_CMAKEDIR}/gromacs${GMX_LIBS_SUFFIX})
 
     # Install import definitions that take care of the library locations and
     # library dependencies.
@@ -70,7 +70,7 @@ function (do_cmake_config)
     endif()
     install(EXPORT libgromacs
             FILE ${EXPORT_FILE_NAME}
-            DESTINATION ${CMAKE_PACKAGE_DIR}
+            DESTINATION ${GMX_INSTALL_CMAKEPKGDIR}
             COMPONENT libraries)
 
     get_filename_component(GROMACS_CXX_COMPILER ${CMAKE_CXX_COMPILER} REALPATH)
@@ -83,11 +83,11 @@ function (do_cmake_config)
     # find_package(GROMACS NAMES gromacs_d) to find them, without also
     # specifying CONFIGS.
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gromacs-config.cmake
-            DESTINATION ${CMAKE_PACKAGE_DIR}
+            DESTINATION ${GMX_INSTALL_CMAKEPKGDIR}
             RENAME "gromacs${GMX_LIBS_SUFFIX}-config.cmake"
             COMPONENT development)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gromacs-config-version.cmake
-            DESTINATION ${CMAKE_PACKAGE_DIR}
+            DESTINATION ${GMX_INSTALL_CMAKEPKGDIR}
             RENAME "gromacs${GMX_LIBS_SUFFIX}-config-version.cmake"
             COMPONENT development)
 endfunction()

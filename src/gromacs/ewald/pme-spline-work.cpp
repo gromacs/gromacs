@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,12 +54,12 @@ pme_spline_work *make_pme_spline_work(int gmx_unused order)
     pme_spline_work *work;
 
 #ifdef PME_SIMD4_SPREAD_GATHER
-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  tmp[GMX_SIMD4_WIDTH*2];
+    alignas(GMX_SIMD_ALIGNMENT) real  tmp[GMX_SIMD4_WIDTH*2];
     Simd4Real        zero_S;
     Simd4Real        real_mask_S0, real_mask_S1;
     int              of, i;
 
-    work = new(internal::alignedMalloc(sizeof(pme_spline_work)))pme_spline_work;
+    work = new(gmx::AlignedAllocationPolicy::malloc(sizeof(pme_spline_work)))pme_spline_work;
 
     zero_S = setZero();
 
@@ -83,4 +83,12 @@ pme_spline_work *make_pme_spline_work(int gmx_unused order)
 #endif
 
     return work;
+}
+
+void destroy_pme_spline_work(pme_spline_work *work)
+{
+    if (work != nullptr)
+    {
+        gmx::AlignedAllocationPolicy::free(work);
+    }
 }

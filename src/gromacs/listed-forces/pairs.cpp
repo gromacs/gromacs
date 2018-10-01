@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,8 +94,8 @@ warning_rlimit(const rvec *x, int ai, int aj, int * global_atom_index, real r, r
 }
 
 /*! \brief Compute the energy and force for a single pair interaction */
-real
-evaluate_single(real r2, real tabscale, real *vftab, real tableStride,
+static real
+evaluate_single(real r2, real tabscale, const real *vftab, real tableStride,
                 real qq, real c6, real c12, real *velec, real *vvdw)
 {
     real       rinv, r, rtab, eps, eps2, Y, F, Geps, Heps2, Fp, VVe, FFe, VVd, FFd, VVr, FFr, fscal;
@@ -108,7 +108,7 @@ evaluate_single(real r2, real tabscale, real *vftab, real tableStride,
     ntab             = static_cast<int>(rtab);
     eps              = rtab-ntab;
     eps2             = eps*eps;
-    ntab             = tableStride*ntab;
+    ntab             = static_cast<int>(tableStride*ntab);
     /* Electrostatics */
     Y                = vftab[ntab];
     F                = vftab[ntab+1];
@@ -143,13 +143,13 @@ evaluate_single(real r2, real tabscale, real *vftab, real tableStride,
 }
 
 /*! \brief Compute the energy and force for a single pair interaction under FEP */
-real
+static real
 free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
-                            real alpha_vdw, real tabscale, real *vftab, real tableStride,
+                            real alpha_vdw, real tabscale, const real *vftab, real tableStride,
                             real qqA, real c6A, real c12A, real qqB,
-                            real c6B, real c12B, real LFC[2], real LFV[2], real DLF[2],
-                            real lfac_coul[2], real lfac_vdw[2], real dlfac_coul[2],
-                            real dlfac_vdw[2], real sigma6_def, real sigma6_min,
+                            real c6B, real c12B, const real LFC[2], const real LFV[2], const real DLF[2],
+                            const real lfac_coul[2], const real lfac_vdw[2], const real dlfac_coul[2],
+                            const real dlfac_vdw[2], real sigma6_def, real sigma6_min,
                             real sigma2_def, real sigma2_min,
                             real *velectot, real *vvdwtot, real *dvdl)
 {
@@ -264,7 +264,7 @@ free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
             ntab             = static_cast<int>(rtab);
             eps              = rtab-ntab;
             eps2             = eps*eps;
-            ntab             = tableStride*ntab;
+            ntab             = static_cast<int>(tableStride*ntab);
             /* Electrostatics */
             Y                = vftab[ntab];
             F                = vftab[ntab+1];
@@ -342,7 +342,7 @@ do_pairs_general(int ftype, int nbonds,
                  const t_iatom iatoms[], const t_iparams iparams[],
                  const rvec x[], rvec4 f[], rvec fshift[],
                  const struct t_pbc *pbc, const struct t_graph *g,
-                 real *lambda, real *dvdl,
+                 const real *lambda, real *dvdl,
                  const t_mdatoms *md,
                  const t_forcerec *fr, gmx_grppairener_t *grppener,
                  int *global_atom_index)
@@ -377,7 +377,6 @@ do_pairs_general(int ftype, int nbonds,
             energygrp_elec = nullptr; /* Keep compiler happy */
             energygrp_vdw  = nullptr; /* Keep compiler happy */
             gmx_fatal(FARGS, "Unknown function type %d in do_nonbonded14", ftype);
-            break;
     }
 
     if (fr->efep != efepNO)
@@ -416,6 +415,8 @@ do_pairs_general(int ftype, int nbonds,
     GMX_ASSERT(fr->pairsTable->interaction == GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP,
                "Pair interaction kernels need a table with Coulomb, repulsion and dispersion entries");
 
+    const real epsfac = fr->ic->epsfac;
+
     bFreeEnergy = FALSE;
     for (i = 0; (i < nbonds); )
     {
@@ -430,20 +431,20 @@ do_pairs_general(int ftype, int nbonds,
             case F_LJ14:
                 bFreeEnergy =
                     (fr->efep != efepNO &&
-                     ((md->nPerturbed && (md->bPerturbed[ai] || md->bPerturbed[aj])) ||
+                     (((md->nPerturbed != 0) && (md->bPerturbed[ai] || md->bPerturbed[aj])) ||
                       iparams[itype].lj14.c6A != iparams[itype].lj14.c6B ||
                       iparams[itype].lj14.c12A != iparams[itype].lj14.c12B));
-                qq               = md->chargeA[ai]*md->chargeA[aj]*fr->epsfac*fr->fudgeQQ;
+                qq               = md->chargeA[ai]*md->chargeA[aj]*epsfac*fr->fudgeQQ;
                 c6               = iparams[itype].lj14.c6A;
                 c12              = iparams[itype].lj14.c12A;
                 break;
             case F_LJC14_Q:
-                qq               = iparams[itype].ljc14.qi*iparams[itype].ljc14.qj*fr->epsfac*iparams[itype].ljc14.fqq;
+                qq               = iparams[itype].ljc14.qi*iparams[itype].ljc14.qj*epsfac*iparams[itype].ljc14.fqq;
                 c6               = iparams[itype].ljc14.c6;
                 c12              = iparams[itype].ljc14.c12;
                 break;
             case F_LJC_PAIRS_NB:
-                qq               = iparams[itype].ljcnb.qi*iparams[itype].ljcnb.qj*fr->epsfac;
+                qq               = iparams[itype].ljcnb.qi*iparams[itype].ljcnb.qj*epsfac;
                 c6               = iparams[itype].ljcnb.c6;
                 c12              = iparams[itype].ljcnb.c12;
                 break;
@@ -462,7 +463,7 @@ do_pairs_general(int ftype, int nbonds,
         c12 *= 12.0;
 
         /* Do we need to apply full periodic boundary conditions? */
-        if (fr->bMolPBC == TRUE)
+        if (fr->bMolPBC)
         {
             fshift_index = pbc_dx_aiuc(pbc, x[ai], x[aj], dx);
         }
@@ -477,7 +478,7 @@ do_pairs_general(int ftype, int nbonds,
         {
             /* This check isn't race free. But it doesn't matter because if a race occurs the only
              * disadvantage is that the warning is printed twice */
-            if (warned_rlimit == FALSE)
+            if (!warned_rlimit)
             {
                 warning_rlimit(x, ai, aj, global_atom_index, sqrt(r2), fr->pairsTable->r);
                 warned_rlimit = TRUE;
@@ -488,7 +489,7 @@ do_pairs_general(int ftype, int nbonds,
         if (bFreeEnergy)
         {
             /* Currently free energy is only supported for F_LJ14, so no need to check for that if we got here */
-            qqB              = md->chargeB[ai]*md->chargeB[aj]*fr->epsfac*fr->fudgeQQ;
+            qqB              = md->chargeB[ai]*md->chargeB[aj]*epsfac*fr->fudgeQQ;
             c6B              = iparams[itype].lj14.c6B*6.0;
             c12B             = iparams[itype].lj14.c12B*12.0;
 
@@ -548,11 +549,15 @@ do_pairs_simple(int nbonds,
     T         twelve(12);
     T         ef(scale_factor);
 
-    const int align = 16;
-    GMX_ASSERT(pack_size <= align, "align should be increased");
-    GMX_ALIGNED(int,  align)  ai[pack_size];
-    GMX_ALIGNED(int,  align)  aj[pack_size];
-    GMX_ALIGNED(real, align)  coeff[3*pack_size];
+#if GMX_SIMD_HAVE_REAL
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t  ai[pack_size];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t  aj[pack_size];
+    alignas(GMX_SIMD_ALIGNMENT) real          coeff[3*pack_size];
+#else
+    std::int32_t   ai[pack_size];
+    std::int32_t   aj[pack_size];
+    real           coeff[3*pack_size];
+#endif
 
     /* nbonds is #pairs*nfa1, here we step pack_size pairs */
     for (int i = 0; i < nbonds; i += pack_size*nfa1)
@@ -595,9 +600,9 @@ do_pairs_simple(int nbonds,
         gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), ai, &xi[XX], &xi[YY], &xi[ZZ]);
         gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), aj, &xj[XX], &xj[YY], &xj[ZZ]);
 
-        T c6    = load(coeff + 0*pack_size);
-        T c12   = load(coeff + 1*pack_size);
-        T qq    = load(coeff + 2*pack_size);
+        T c6    = load<T>(coeff + 0*pack_size);
+        T c12   = load<T>(coeff + 1*pack_size);
+        T qq    = load<T>(coeff + 2*pack_size);
 
         /* We could save these operations by storing 6*C6,12*C12 */
         c6             = six*c6;
@@ -607,7 +612,7 @@ do_pairs_simple(int nbonds,
         pbc_dx_aiuc(pbc, xi, xj, dr);
 
         T rsq   = dr[XX]*dr[XX] + dr[YY]*dr[YY] + dr[ZZ]*dr[ZZ];
-        T rinv  = invsqrt(rsq);
+        T rinv  = gmx::invsqrt(rsq);
         T rinv2 = rinv*rinv;
         T rinv6 = rinv2*rinv2*rinv2;
 
@@ -637,15 +642,16 @@ do_pairs(int ftype, int nbonds,
          const t_iatom iatoms[], const t_iparams iparams[],
          const rvec x[], rvec4 f[], rvec fshift[],
          const struct t_pbc *pbc, const struct t_graph *g,
-         real *lambda, real *dvdl,
+         const real *lambda, real *dvdl,
          const t_mdatoms *md,
          const t_forcerec *fr,
-         gmx_bool bCalcEnergyAndVirial, gmx_grppairener_t *grppener,
+         const gmx_bool computeForcesOnly,
+         gmx_grppairener_t *grppener,
          int *global_atom_index)
 {
     if (ftype == F_LJ14 &&
-        fr->vdwtype != evdwUSER && !EEL_USER(fr->eeltype) &&
-        !bCalcEnergyAndVirial && fr->efep == efepNO)
+        fr->ic->vdwtype != evdwUSER && !EEL_USER(fr->ic->eeltype) &&
+        computeForcesOnly)
     {
         /* We use a fast code-path for plain LJ 1-4 without FEP.
          *
@@ -656,13 +662,13 @@ do_pairs(int ftype, int nbonds,
          * at once for the angles and dihedrals as well.
          */
 #if GMX_SIMD
-        GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) pbc_simd[9*GMX_SIMD_REAL_WIDTH];
+        alignas(GMX_SIMD_ALIGNMENT) real pbc_simd[9*GMX_SIMD_REAL_WIDTH];
         set_pbc_simd(pbc, pbc_simd);
 
         do_pairs_simple<SimdReal, GMX_SIMD_REAL_WIDTH,
                         const real *>(nbonds, iatoms, iparams,
                                       x, f, pbc_simd,
-                                      md, fr->epsfac*fr->fudgeQQ);
+                                      md, fr->ic->epsfac*fr->fudgeQQ);
 #else
         /* This construct is needed because pbc_dx_aiuc doesn't accept pbc=NULL */
         t_pbc        pbc_no;
@@ -681,7 +687,7 @@ do_pairs(int ftype, int nbonds,
         do_pairs_simple<real, 1,
                         const t_pbc *>(nbonds, iatoms, iparams,
                                        x, f, pbc_nonnull,
-                                       md, fr->epsfac*fr->fudgeQQ);
+                                       md, fr->ic->epsfac*fr->fudgeQQ);
 #endif
     }
     else

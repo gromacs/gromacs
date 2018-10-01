@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,17 +47,8 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
-}
-#endif
-
 /** Continuation character. */
 #define CONTINUE    '\\'
-/** Comment sign to use. */
-#define COMMENTSIGN ';'
 /** Standard size for char* string buffers. */
 #define STRLEN 4096
 
@@ -77,7 +68,7 @@ int continuing(char *s);
  */
 char *fgets2(char *s, int n, FILE *stream);
 
-/** Remove portion of a line after a ::COMMENTSIGN.  */
+/** Remove portion of a line after a ';' comment sign.  */
 void strip_comment(char *line);
 
 /** Make a string uppercase. */
@@ -91,9 +82,6 @@ void rtrim(char *str);
 
 /** Remove leading and trailing whitespace from a string. */
 void trim(char *str);
-
-/** Prints creation time stamp and user information into a file as comments. */
-void nice_header(FILE *out, const char *fn);
 
 /** Version of gmx_strcasecmp() that also ignores '-' and '_'. */
 int gmx_strcasecmp_min(const char *str1, const char *str2);
@@ -172,73 +160,23 @@ char *wrap_lines(const char *buf, int line_width, int indent,
                  gmx_bool bIndentFirst);
 
 /*! \brief
- * Convert a string to gmx_int64_t.
+ * Convert a string to int64_t.
  *
  * This method works as the standard library function strtol(), except that it
  * does not support different bases.
  */
-gmx_int64_t str_to_int64_t(const char *str, char **endptr);
+int64_t str_to_int64_t(const char *str, char **endptr);
 
 /** Minimum size of buffer to pass to gmx_step_str(). */
 #define STEPSTRSIZE 22
 
 /*! \brief
- * Prints a gmx_int64_t value in buf and returns the pointer to buf.
+ * Prints a int64_t value in buf and returns the pointer to buf.
  *
  * buf should be large enough to contain i: STEPSTRSIZE (22) chars.
- * When multiple gmx_int64_t values are printed in the same printf call,
+ * When multiple int64_t values are printed in the same printf call,
  * be sure to call gmx_step_str with different buffers.
  */
-char *gmx_step_str(gmx_int64_t i, char *buf);
-
-/*! \brief Construct an array of digits found in the input string
- *
- * \param[in]  digitstring  String that must contain only digits
- * \param[out] ndigits      Size of return array with the values of the digits
- * \param[out] digitlist    Array of digits found in
- *                          digitstring. Allocated by this function
- *                          with size *ndigits. Calling code is
- *                          responsible for deallocation.
- *
- * If digitstring is NULL, then ndigits is set to zero and digitlist
- * to NULL. If digitstring contains a non-digit character, a fatal
- * error results.
- */
-void parse_digits_from_plain_string(const char *digitstring, int *ndigits, int **digitlist);
-
-/*! \brief Construct an array of digits from a comma separated input string
- *
- * \param[in]  digitstring  String that must contain only digits and commas
- * \param[out] ndigits      Size of return array with the values of the digits
- * \param[out] digitlist    Array of digits found in
- *                          digitstring. Allocated by this function
- *                          with size *ndigits. Calling code is
- *                          responsible for deallocation.
- *
- * If digitstring is NULL, then ndigits is set to zero and digitlist
- * to NULL. If digitstring contains a non digit-or-comma character, a fatal
- * error results.
- */
-void parse_digits_from_csv_string(const char *digitstring, int *ndigits, int **digitlist);
-
-/*! \brief Construct an array of digits an input string
- *
- *
- * \param[in]  digitstring  String that must contain only digits, or only
- *                          digits and commas
- * \param[out] ndigits      Size of return array with the values of the digits
- * \param[out] digitlist    Array of digits found in
- *                          digitstring. Allocated by this function
- *                          with size *ndigits. Calling code is
- *                          responsible for deallocation.
- * If digitstring is NULL, then ndigits is set to zero and digitlist
- * to NULL. If digitstring contains a non digit-or-comma character, a fatal
- * error results.
- */
-void parse_digits_from_string(const char *digitstring, int *ndigits, int **digitlist);
-
-#ifdef __cplusplus
-}
-#endif
+char *gmx_step_str(int64_t i, char *buf);
 
 #endif

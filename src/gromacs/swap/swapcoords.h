@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,14 +52,27 @@
 #ifndef GMX_SWAP_SWAPCOORDS_H
 #define GMX_SWAP_SWAPCOORDS_H
 
-#include "gromacs/mdtypes/commrec.h"
-#include "gromacs/timing/wallcycle.h"
+#include <cstdio>
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+
+struct gmx_domdec_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
-struct swapstate_t;
+struct gmx_wallcycle;
+struct MdrunOptions;
+struct swaphistory_t;
+struct t_commrec;
 struct t_inputrec;
+class t_state;
 struct t_swapcoords;
+struct ObservablesHistory;
+
+namespace gmx
+{
+class LocalAtomSetManager;
+}
 
 /*! \brief Initialize ion / water position swapping ("Computational Electrophysiology").
  *
@@ -67,31 +80,28 @@ struct t_swapcoords;
  * the output file, sets up swap data checkpoint writing, etc.
  *
  * \param[in] fplog         General output file, normally md.log.
- * \param[in] bVerbose      Should we be quiet or verbose?
  * \param[in] ir            Structure containing MD input parameters, among those
  *                          also the structure needed for position swapping.
  * \param[in] fn            Output file name for swap data.
  * \param[in] mtop          Molecular topology.
- * \param[in] x             The initial positions of all particles.
- * \param[in] box           The simulation box.
- * \param[in] swapstatePtr  Swap-related data that is read from or written to checkpoint.
+ * \param[in] globalState   The global state, only used on the master rank.
+ * \param[in] oh            Contains struct with swap data that is read from or written to checkpoint.
  * \param[in] cr            Pointer to MPI communication data.
+ * \param[in] atomSets      Manager tending to swap atom indices.
  * \param[in] oenv          Needed to open the swap output XVGR file.
- * \param[in] Flags         Flags passed over from main, used to determine
- *                          whether we are doing a rerun, appending, etc.
+ * \param[in] mdrunOptions  Options for mdrun.
  */
 void init_swapcoords(
-        FILE                   *fplog,
-        gmx_bool                bVerbose,
-        t_inputrec             *ir,
-        const char             *fn,
-        gmx_mtop_t             *mtop,
-        rvec                    x[],
-        matrix                  box,
-        swapstate_t           **swapstatePtr,
-        t_commrec              *cr,
-        const gmx_output_env_t *oenv,
-        unsigned long           Flags);
+        FILE                     *fplog,
+        t_inputrec               *ir,
+        const char               *fn,
+        gmx_mtop_t               *mtop,
+        const t_state            *globalState,
+        ObservablesHistory       *oh,
+        t_commrec                *cr,
+        gmx::LocalAtomSetManager *atomSets,
+        const gmx_output_env_t   *oenv,
+        const MdrunOptions       &mdrunOptions);
 
 
 /*! \brief Finalizes ion / water position swapping.
@@ -99,16 +109,6 @@ void init_swapcoords(
  * \param[in] sc            Pointer to swap data.
  */
 void finish_swapcoords(t_swapcoords *sc);
-
-
-/*! \brief Make a selection of the home atoms for the swap groups. These are
- * the ions, the water, and the channels. This routine should be called at every
- * domain decomposition.
- *
- * \param[in] dd            Structure containing domain decomposition data.
- * \param[in] si_pub        Pointer to the swap data structure.
- */
-void dd_make_local_swap_groups(gmx_domdec_t *dd, t_swapcoords *si_pub);
 
 
 /*! \brief "Computational Electrophysiology" main routine within MD loop.
@@ -128,10 +128,10 @@ void dd_make_local_swap_groups(gmx_domdec_t *dd, t_swapcoords *si_pub);
  */
 gmx_bool do_swapcoords(
         t_commrec        *cr,
-        gmx_int64_t       step,
+        int64_t           step,
         double            t,
         t_inputrec       *ir,
-        gmx_wallcycle_t   wcycle,
+        gmx_wallcycle    *wcycle,
         rvec              x[],
         matrix            box,
         gmx_bool          bVerbose,

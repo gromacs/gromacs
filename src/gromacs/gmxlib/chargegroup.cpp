@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,12 +52,8 @@ void calc_chargegroup_radii(const gmx_mtop_t *mtop, rvec *x,
                             real *rcoul1, real *rcoul2)
 {
     real            r2v1, r2v2, r2c1, r2c2, r2;
-    int             ntype, i, j, mb, m, cg, a_mol, a0, a1, a;
+    int             ntype, i, j, m, cg, a_mol, a0, a1, a;
     gmx_bool       *bLJ;
-    gmx_molblock_t *molb;
-    gmx_moltype_t  *molt;
-    t_block        *cgs;
-    t_atom         *atom;
     rvec            cen;
 
     r2v1 = 0;
@@ -81,13 +77,12 @@ void calc_chargegroup_radii(const gmx_mtop_t *mtop, rvec *x,
     }
 
     a_mol = 0;
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        molb = &mtop->molblock[mb];
-        molt = &mtop->moltype[molb->type];
-        cgs  = &molt->cgs;
-        atom = molt->atoms.atom;
-        for (m = 0; m < molb->nmol; m++)
+        const gmx_moltype_t *molt = &mtop->moltype[molb.type];
+        const t_block       *cgs  = &molt->cgs;
+        const t_atom        *atom = molt->atoms.atom;
+        for (m = 0; m < molb.nmol; m++)
         {
             for (cg = 0; cg < cgs->nr; cg++)
             {
@@ -133,7 +128,7 @@ void calc_chargegroup_radii(const gmx_mtop_t *mtop, rvec *x,
                     }
                 }
             }
-            a_mol += molb->natoms_mol;
+            a_mol += molt->atoms.nr;
         }
     }
 
@@ -190,7 +185,7 @@ void calc_cgcm(FILE gmx_unused *fplog, int cg0, int cg1, const t_block *cgs,
 }
 
 void put_charge_groups_in_box(FILE gmx_unused *fplog, int cg0, int cg1,
-                              int ePBC, matrix box, t_block *cgs,
+                              int ePBC, matrix box, const t_block *cgs,
                               rvec pos[], rvec cg_cm[])
 
 {

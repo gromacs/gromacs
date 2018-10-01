@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,7 @@
 /*! \libinternal \file
  * \brief Declares structures related to domain decomposition.
  *
+ * \author Berk Hess <hess@kth.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \inlibraryapi
  * \ingroup module_domdec
@@ -46,7 +47,11 @@
 
 #include <cstddef>
 
+#include <memory>
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
+#include "gromacs/topology/block.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
@@ -55,17 +60,20 @@
 #define DD_MAXZONE  8
 //! Max number of izones in domain decomposition
 #define DD_MAXIZONE 4
-//! Are we the master node for domain decomposition
-#define DDMASTER(dd)       ((dd)->rank == (dd)->masterrank)
 
+struct AtomDistribution;
 struct gmx_domdec_comm_t;
 struct gmx_domdec_constraints_t;
-struct gmx_domdec_master_t;
 struct gmx_domdec_specat_comm_t;
-struct gmx_ga2la_t;
-struct gmx_hash_t;
+class gmx_ga2la_t;
 struct gmx_pme_comm_n_box_t;
 struct gmx_reverse_top_t;
+
+namespace gmx
+{
+template <typename T> class HashedMap;
+class LocalAtomSetManager;
+}
 
 typedef struct {
     int  j0;     /* j-zone start               */
@@ -116,7 +124,7 @@ struct gmx_ddbox_t {
 };
 
 
-struct gmx_domdec_t {
+struct gmx_domdec_t { //NOLINT(clang-analyzer-optin.performance.Padding)
     /* The DD particle-particle nodes only */
     /* The communication setup within the communicator all
      * defined in dd->comm in domdec.c
@@ -133,8 +141,8 @@ struct gmx_domdec_t {
     /* Communication with the PME only nodes */
     int                    pme_nodeid;
     gmx_bool               pme_receive_vir_ener;
-    gmx_pme_comm_n_box_t  *cnb;
-    int                    nreq_pme;
+    gmx_pme_comm_n_box_t  *cnb      = nullptr;
+    int                    nreq_pme = 0;
     MPI_Request            req_pme[8];
 
 
@@ -143,8 +151,14 @@ struct gmx_domdec_t {
     int      ndim;
     ivec     dim; /* indexed by 0 to ndim */
 
-    /* PBC from dim 0 to npbcdim */
-    int npbcdim;
+    /* TODO: Move the next 4, and more from domdec_internal.h, to a simulation system */
+
+    /* PBC from dim 0 (X) to npbcdim */
+    int  npbcdim;
+    /* The system is bounded from 0 (X) to numBoundedDimensions */
+    int  numBoundedDimensions;
+    /* Does the box size change during the simulaton? */
+    bool haveDynamicBox;
 
     /* Screw PBC? */
     gmx_bool bScrewPBC;
@@ -153,11 +167,12 @@ struct gmx_domdec_t {
     int  neighbor[DIM][2];
 
     /* Only available on the master node */
-    gmx_domdec_master_t *ma;
+    std::unique_ptr<AtomDistribution> ma;
 
-    /* Are there inter charge group constraints */
-    gmx_bool bInterCGcons;
-    gmx_bool bInterCGsettles;
+    /* Can atoms connected by constraints be assigned to different domains? */
+    bool splitConstraints;
+    /* Can atoms connected by settles be assigned to different domains? */
+    bool splitSettles;
 
     /* Global atom number to interaction list */
     gmx_reverse_top_t  *reverse_top;
@@ -168,45 +183,57 @@ struct gmx_domdec_t {
     int  n_intercg_excl;
 
     /* Vsite stuff */
-    gmx_hash_t                *ga2la_vsite;
-    gmx_domdec_specat_comm_t  *vsite_comm;
+    gmx::HashedMap<int>       *ga2la_vsite = nullptr;
+    gmx_domdec_specat_comm_t  *vsite_comm  = nullptr;
+    std::vector<int>           vsite_requestedGlobalAtomIndices;
 
     /* Constraint stuff */
-    gmx_domdec_constraints_t *constraints;
-    gmx_domdec_specat_comm_t *constraint_comm;
+    gmx_domdec_constraints_t *constraints     = nullptr;
+    gmx_domdec_specat_comm_t *constraint_comm = nullptr;
 
-    /* The local to gobal charge group index and local cg to local atom index */
-    int   ncg_home;
-    int   ncg_tot;
-    int  *index_gl;
-    int  *cgindex;
-    int   cg_nalloc;
-    /* Local atom to local cg index, only for special cases */
-    int  *la2lc;
-    int   la2lc_nalloc;
+    /* The number of home atom groups */
+    int                           ncg_home = 0;
+    /* Global atom group indices for the home and all non-home groups */
+    std::vector<int>              globalAtomGroupIndices;
+    /* The atom groups for the home and all non-home groups, todo: make private */
+    gmx::RangePartitioning        atomGrouping_;
+    const gmx::RangePartitioning &atomGrouping() const
+    {
+        return atomGrouping_;
+    }
+    /* Local atom to local atom-group index, only used for checking bondeds */
+    std::vector<int> localAtomGroupFromAtom;
 
-    /* The number of home atoms */
-    int   nat_home;
-    /* The total number of atoms: home and received zones */
-    int   nat_tot;
-    /* Index from the local atoms to the global atoms */
-    int  *gatindex;
-    int   gatindex_nalloc;
+    /* Index from the local atoms to the global atoms, covers home and received zones */
+    std::vector<int> globalAtomIndices;
 
     /* Global atom number to local atom number list */
-    gmx_ga2la_t  *ga2la;
+    gmx_ga2la_t  *ga2la = nullptr;
 
     /* Communication stuff */
     gmx_domdec_comm_t *comm;
 
     /* The partioning count, to keep track of the state */
-    gmx_int64_t ddp_count;
+    int64_t ddp_count;
 
+    /* The managed atom sets that are updated in domain decomposition */
+    gmx::LocalAtomSetManager * atomSets;
 
     /* gmx_pme_recv_f buffer */
-    int   pme_recv_f_alloc;
-    rvec *pme_recv_f_buf;
+    int   pme_recv_f_alloc = 0;
+    rvec *pme_recv_f_buf   = nullptr;
+};
 
+//! Are we the master node for domain decomposition
+static inline bool DDMASTER(const gmx_domdec_t &dd)
+{
+    return dd.rank == dd.masterrank;
+};
+
+//! Are we the master node for domain decomposition, deprecated
+static inline bool DDMASTER(const gmx_domdec_t *dd)
+{
+    return dd->rank == dd->masterrank;
 };
 
 #endif

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -69,7 +69,7 @@ if(GMX_OPENMP)
 endif()
 gmx_dependent_cache_variable(GMX_OPENMP_MAX_THREADS
     "Maximum number of OpenMP Threads supported. Has to be 32 or a multiple of 64."
-    STRING 32 GMX_OPENMP)
+    STRING 64 GMX_OPENMP)
 mark_as_advanced(GMX_OPENMP_MAX_THREADS)
 math(EXPR MAX_THREAD_MOD "${GMX_OPENMP_MAX_THREADS} % 64")
 if (NOT GMX_OPENMP_MAX_THREADS EQUAL 32 AND NOT ${MAX_THREAD_MOD} EQUAL 0)

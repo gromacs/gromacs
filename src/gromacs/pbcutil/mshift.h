@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,18 +42,26 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+struct InteractionList;
+struct gmx_moltype_t;
 struct t_idef;
-struct t_ilist;
 
 typedef enum {
     egcolWhite, egcolGrey, egcolBlack, egcolNR
 } egCol;
 
-typedef struct t_graph {
+struct t_graph
+{
+    /* Described the connectivity between, potentially, multiple parts of
+     * the ilist that are internally chemically bonded together.
+     */
+    enum class BondedParts
+    {
+        Single,               /* All atoms are connected through chemical bonds */
+        MultipleDisconnected, /* There are multiple parts, e.g. monomers, that are all disconnected */
+        MultipleConnected     /* There are multiple parts, e.g. monomers, that are partially or fully connected between each other by interactions other than chemical bonds */
+    };
+
     int          at0;       /* The first atom the graph was constructed for */
     int          at1;       /* The last atom the graph was constructed for  */
     int          nnodes;    /* The number of nodes, nnodes=at_end-at_start  */
@@ -66,7 +74,8 @@ typedef struct t_graph {
     ivec        *ishift;    /* Shift for each particle                      */
     int          negc;
     egCol       *egc;       /* color of each node */
-} t_graph;
+    BondedParts  parts;     /* How chemically bonded parts are connected    */
+};
 
 #define SHIFT_IVEC(g, i) ((g)->ishift[i])
 
@@ -81,11 +90,9 @@ t_graph *mk_graph(FILE *fplog,
  * If bSettle && bShakeOnly the settles are used too.
  */
 
-void mk_graph_ilist(FILE *fplog,
-                    const struct t_ilist *ilist, int at_start, int at_end,
-                    gmx_bool bShakeOnly, gmx_bool bSettle,
-                    t_graph *g);
-/* As mk_graph, but takes t_ilist iso t_idef and does not allocate g */
+void mk_graph_moltype(const gmx_moltype_t &moltype,
+                      t_graph             *g);
+/* As mk_graph, but takes gmx_moltype_t iso t_idef and does not allocate g */
 
 
 void done_graph(t_graph *g);
@@ -109,9 +116,5 @@ void unshift_x(const t_graph *g, const matrix box, rvec x[], const rvec x_s[]);
 
 void unshift_self(const t_graph *g, const matrix box, rvec x[]);
 /* Id, but in place */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

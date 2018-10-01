@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "dump.h"
+
 #include "config.h"
 
 #include <cassert>
@@ -62,6 +64,7 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/energyframe.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -80,31 +83,26 @@ static void list_tpx(const char *fn,
     FILE         *gp;
     int           indent, i, j, **gcount, atot;
     t_state       state;
-    t_inputrec   *ir = nullptr;
     t_tpxheader   tpx;
     gmx_mtop_t    mtop;
     gmx_groups_t *groups;
     t_topology    top;
 
     read_tpxheader(fn, &tpx, TRUE);
-    gmx::MDModules mdModules;
-    if (tpx.bIr)
-    {
-        ir = mdModules.inputrec();
-    }
+    t_inputrec     ir;
     read_tpx_state(fn,
-                   ir,
+                   tpx.bIr ? &ir : nullptr,
                    &state,
                    tpx.bTop ? &mtop : nullptr);
     if (tpx.bIr && !bOriginalInputrec)
     {
-        mdModules.adjustInputrecBasedOnModules();
+        gmx::MDModules().adjustInputrecBasedOnModules(&ir);
     }
 
     if (mdpfn && tpx.bIr)
     {
         gp = gmx_fio_fopen(mdpfn, "w");
-        pr_inputrec(gp, 0, nullptr, ir, TRUE);
+        pr_inputrec(gp, 0, nullptr, &ir, TRUE);
         gmx_fio_fclose(gp);
     }
 
@@ -119,7 +117,7 @@ static void list_tpx(const char *fn,
         {
             indent = 0;
             pr_title(stdout, indent, fn);
-            pr_inputrec(stdout, 0, "inputrec", ir, FALSE);
+            pr_inputrec(stdout, 0, "inputrec", tpx.bIr ? &ir : nullptr, FALSE);
 
             pr_tpxheader(stdout, indent, "header", &(tpx));
 
@@ -158,7 +156,7 @@ static void list_tpx(const char *fn,
         {
             for (j = 0; (j < egcNR); j++)
             {
-                gcount[j][ggrpnr(groups, j, i)]++;
+                gcount[j][getGroupType(groups, j, i)]++;
             }
         }
         printf("Group statistics\n");
@@ -189,17 +187,17 @@ static void list_top(const char *fn)
     status = cpp_open_file(fn, &handle, cppopts);
     if (status != 0)
     {
-        gmx_fatal(FARGS, cpp_error(&handle, status));
+        gmx_fatal(FARGS, "%s", cpp_error(&handle, status));
     }
     do
     {
         status = cpp_read_line(&handle, BUFLEN, buf);
-        done   = (status == eCPP_EOF);
+        done   = static_cast<int>(status == eCPP_EOF);
         if (!done)
         {
             if (status != eCPP_OK)
             {
-                gmx_fatal(FARGS, cpp_error(&handle, status));
+                gmx_fatal(FARGS, "%s", cpp_error(&handle, status));
             }
             else
             {
@@ -207,11 +205,11 @@ static void list_top(const char *fn)
             }
         }
     }
-    while (!done);
+    while (done == 0);
     status = cpp_close_file(&handle);
     if (status != eCPP_OK)
     {
-        gmx_fatal(FARGS, cpp_error(&handle, status));
+        gmx_fatal(FARGS, "%s", cpp_error(&handle, status));
     }
 }
 
@@ -243,7 +241,7 @@ static void list_trr(const char *fn)
             indent = 0;
             indent = pr_title(stdout, indent, buf);
             pr_indent(stdout, indent);
-            fprintf(stdout, "natoms=%10d  step=%10" GMX_PRId64 "  time=%12.7e  lambda=%10g\n",
+            fprintf(stdout, "natoms=%10d  step=%10" PRId64 "  time=%12.7e  lambda=%10g\n",
                     trrheader.natoms, trrheader.step, trrheader.t, trrheader.lambda);
             if (trrheader.box_size)
             {
@@ -281,7 +279,7 @@ static void list_trr(const char *fn)
     gmx_trr_close(fpread);
 }
 
-void list_xtc(const char *fn)
+static void list_xtc(const char *fn)
 {
     t_fileio   *xd;
     int         indent;
@@ -289,7 +287,7 @@ void list_xtc(const char *fn)
     rvec       *x;
     matrix      box;
     int         nframe, natoms;
-    gmx_int64_t step;
+    int64_t     step;
     real        prec, time;
     gmx_bool    bOK;
 
@@ -303,13 +301,13 @@ void list_xtc(const char *fn)
         indent = 0;
         indent = pr_title(stdout, indent, buf);
         pr_indent(stdout, indent);
-        fprintf(stdout, "natoms=%10d  step=%10" GMX_PRId64 "  time=%12.7e  prec=%10g\n",
+        fprintf(stdout, "natoms=%10d  step=%10" PRId64 "  time=%12.7e  prec=%10g\n",
                 natoms, step, time, prec);
         pr_rvecs(stdout, indent, "box", box, DIM);
         pr_rvecs(stdout, indent, "x", x, natoms);
         nframe++;
     }
-    while (read_next_xtc(xd, natoms, &step, &time, box, x, &prec, &bOK));
+    while (read_next_xtc(xd, natoms, &step, &time, box, x, &prec, &bOK) != 0);
     if (!bOK)
     {
         fprintf(stderr, "\nWARNING: Incomplete frame at time %g\n", time);
@@ -318,16 +316,18 @@ void list_xtc(const char *fn)
     close_xtc(xd);
 }
 
+#if GMX_USE_TNG
+
 /*! \brief Callback used by list_tng_for_gmx_dump. */
 static void list_tng_inner(const char *fn,
                            gmx_bool    bFirstFrame,
                            real       *values,
-                           gmx_int64_t step,
+                           int64_t     step,
                            double      frame_time,
-                           gmx_int64_t n_values_per_frame,
-                           gmx_int64_t n_atoms,
+                           int64_t     n_values_per_frame,
+                           int64_t     n_atoms,
                            real        prec,
-                           gmx_int64_t nframe,
+                           int64_t     nframe,
                            char       *block_name)
 {
     char                 buf[256];
@@ -335,11 +335,11 @@ static void list_tng_inner(const char *fn,
 
     if (bFirstFrame)
     {
-        sprintf(buf, "%s frame %" GMX_PRId64, fn, nframe);
+        sprintf(buf, "%s frame %" PRId64, fn, nframe);
         indent = 0;
         indent = pr_title(stdout, indent, buf);
         pr_indent(stdout, indent);
-        fprintf(stdout, "natoms=%10" GMX_PRId64 "  step=%10" GMX_PRId64 "  time=%12.7e",
+        fprintf(stdout, "natoms=%10" PRId64 "  step=%10" PRId64 "  time=%12.7e",
                 n_atoms, step, frame_time);
         if (prec > 0)
         {
@@ -350,12 +350,14 @@ static void list_tng_inner(const char *fn,
     pr_reals_of_dim(stdout, indent, block_name, values, n_atoms, n_values_per_frame);
 }
 
+#endif
+
 static void list_tng(const char gmx_unused *fn)
 {
-#ifdef GMX_USE_TNG
-    tng_trajectory_t     tng;
-    gmx_int64_t          nframe = 0;
-    gmx_int64_t          i, *block_ids = nullptr, step, ndatablocks;
+#if GMX_USE_TNG
+    gmx_tng_trajectory_t tng;
+    int64_t              nframe = 0;
+    int64_t              i, *block_ids = nullptr, step, ndatablocks;
     gmx_bool             bOK;
     real                *values = nullptr;
 
@@ -373,7 +375,7 @@ static void list_tng(const char gmx_unused *fn)
         {
             double               frame_time;
             real                 prec;
-            gmx_int64_t          n_values_per_frame, n_atoms;
+            int64_t              n_values_per_frame, n_atoms;
             char                 block_name[STRLEN];
 
             gmx_get_tng_data_next_frame_of_block_type(tng, block_ids[i], &values,
@@ -411,7 +413,7 @@ static void list_tng(const char gmx_unused *fn)
 #endif
 }
 
-void list_trx(const char *fn)
+static void list_trx(const char *fn)
 {
     switch (fn2ftp(fn))
     {
@@ -430,7 +432,7 @@ void list_trx(const char *fn)
     }
 }
 
-void list_ene(const char *fn)
+static void list_ene(const char *fn)
 {
     ener_file_t    in;
     gmx_bool       bCont;

@@ -17,9 +17,15 @@
 
 #include "lmstruct.h"
 
-/*! \brief
- * Levenberg-Marquardt minimization.
- *
+/* Levenberg-Marquardt minimization. */
+void lmmin(
+    const int n_par, double* par, const int m_dat, const double* y,
+    const void* data,
+    void (*evaluate)(
+        const double* par, const int m_dat, const void* data,
+        double* fvec, int* userbreak),
+    const lm_control_struct* control, lm_status_struct* status);
+/*
  *   This routine contains the core algorithm of our library.
  *
  *   It minimizes the sum of the squares of m nonlinear functions
@@ -29,14 +35,16 @@
  *
  *   Parameters:
  *
- * \param[in] n_par The number of variables (INPUT, positive integer).
- * \param par The parameters to be fitted
- *      x is the solution vector (INPUT/OUTPUT, array of length n).
+ *      n_par is the number of variables (INPUT, positive integer).
+ *
+ *      par is the solution vector (INPUT/OUTPUT, array of length n).
  *        On input it must be set to an estimated solution.
  *        On output it yields the final estimate of the solution.
  *
- *      m is the number of functions to be minimized (INPUT, positive integer).
+ *      m_dat is the number of functions to be minimized (INPUT, positive integer).
  *        It must fulfill m>=n.
+ *
+ *      y contains data to be fitted. Use a null pointer if there are no data.
  *
  *      data is a pointer that is ignored by lmmin; it is however forwarded
  *        to the user-supplied functions evaluate and printout.
@@ -56,9 +64,9 @@
  *      status contains OUTPUT variables that inform about the fit result,
  *        as declared and explained in lmstruct.h
  */
-void lmmin( const int n_par, double *par, const int m_dat, const void *data,
-            void (*evaluate) (const double *par, const int m_dat, const void *data,
-                              double *fvec, int *userbreak),
-            const lm_control_struct *control, lm_status_struct *status );
+
+/* Refined calculation of Eucledian norm. */
+double lm_enorm(const int, const double*);
+double lm_fnorm(const int, const double*, const double*);
 
 #endif /* LMMIN_H */

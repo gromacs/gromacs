@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,7 @@ const char *gmx_stop_cond_name[] =
 
 /* these do not neccesarily match the stop condition, but are
    referred to in the signal handler. */
-const char *gmx_signal_name[] =
+static const char *gmx_signal_name[] =
 {
     "None",
     "INT",
@@ -71,6 +71,12 @@ static volatile sig_atomic_t stop_condition   = gmx_stop_cond_none;
 static volatile sig_atomic_t last_signal_name = 0;
 
 static volatile sig_atomic_t usr_condition = 0;
+
+void gmx_reset_stop_condition()
+{
+    stop_condition   = gmx_stop_cond_none;
+    // last_signal_name and usr_condition are left untouched by reset.
+}
 
 static void signal_handler(int n)
 {
@@ -123,7 +129,7 @@ static void gmx_signal(int signum)
 #endif
 }
 
-void signal_handler_install(void)
+void signal_handler_install()
 {
     if (getenv("GMX_NO_TERM") == nullptr)
     {
@@ -153,9 +159,9 @@ void signal_handler_install(void)
 #endif
 }
 
-gmx_stop_cond_t gmx_get_stop_condition(void)
+gmx_stop_cond_t gmx_get_stop_condition()
 {
-    return (gmx_stop_cond_t)stop_condition;
+    return static_cast<gmx_stop_cond_t>(stop_condition);
 }
 
 void gmx_set_stop_condition(gmx_stop_cond_t recvd_stop_cond)
@@ -174,12 +180,12 @@ void gmx_set_stop_condition(gmx_stop_cond_t recvd_stop_cond)
     }
 }
 
-const char *gmx_get_signal_name(void)
+const char *gmx_get_signal_name()
 {
     return gmx_signal_name[last_signal_name];
 }
 
-gmx_bool gmx_got_usr_signal(void)
+gmx_bool gmx_got_usr_signal()
 {
 #if HAVE_SIGUSR1
     gmx_bool ret = static_cast<gmx_bool>(usr_condition);

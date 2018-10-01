@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,10 +57,11 @@
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
 
-void gmx_fill_commrec_from_mpi(t_commrec gmx_unused *cr)
+void gmx_fill_commrec_from_mpi(t_commrec *cr)
 {
 #if !GMX_MPI
     gmx_call("gmx_fill_commrec_from_mpi");
+    GMX_UNUSED_VALUE(cr);
 #else
     if (!gmx_mpi_initialized())
     {
@@ -72,7 +73,6 @@ void gmx_fill_commrec_from_mpi(t_commrec gmx_unused *cr)
     cr->sim_nodeid       = cr->nodeid;
     cr->mpi_comm_mysim   = MPI_COMM_WORLD;
     cr->mpi_comm_mygroup = MPI_COMM_WORLD;
-
 #endif
 }
 
@@ -85,8 +85,8 @@ t_commrec *init_commrec()
 #if GMX_LIB_MPI
     gmx_fill_commrec_from_mpi(cr);
 #else
-    cr->mpi_comm_mysim   = nullptr;
-    cr->mpi_comm_mygroup = nullptr;
+    cr->mpi_comm_mysim   = MPI_COMM_NULL;
+    cr->mpi_comm_mygroup = MPI_COMM_NULL;
     cr->nnodes           = 1;
     cr->sim_nodeid       = 0;
     cr->nodeid           = cr->sim_nodeid;
@@ -111,7 +111,7 @@ t_commrec *init_commrec()
     return cr;
 }
 
-static void done_mpi_in_place_buf(mpi_in_place_buf_t *buf)
+void done_mpi_in_place_buf(mpi_in_place_buf_t *buf)
 {
     if (nullptr != buf)
     {
@@ -130,16 +130,11 @@ void done_commrec(t_commrec *cr)
         // TODO: implement
         // done_domdec(cr->dd);
     }
-    if (nullptr != cr->ms)
-    {
-        done_mpi_in_place_buf(cr->ms->mpb);
-        sfree(cr->ms);
-    }
     done_mpi_in_place_buf(cr->mpb);
     sfree(cr);
 }
 
-t_commrec *reinitialize_commrec_for_this_thread(const t_commrec gmx_unused *cro)
+t_commrec *reinitialize_commrec_for_this_thread(const t_commrec *cro)
 {
 #if GMX_THREAD_MPI
     t_commrec *cr;
@@ -158,6 +153,7 @@ t_commrec *reinitialize_commrec_for_this_thread(const t_commrec gmx_unused *cro)
 
     return cr;
 #else
+    GMX_UNUSED_VALUE(cro);
     return nullptr;
 #endif
 }
@@ -184,6 +180,8 @@ void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
 #if GMX_MPI
     int n, rank;
 
+    // TODO PhysicalNodeCommunicator could be extended/used to handle
+    // the need for per-node per-group communicators.
     MPI_Comm_size(cr->mpi_comm_mygroup, &n);
     MPI_Comm_rank(cr->mpi_comm_mygroup, &rank);
 
@@ -249,94 +247,6 @@ void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
     nc->rank_intra = cr->nodeid;
 #endif
 }
-
-void gmx_init_intranode_counters(t_commrec *cr)
-{
-    /* counters for PP+PME and PP-only processes on my physical node */
-    int nrank_intranode, rank_intranode;
-    int nrank_pp_intranode, rank_pp_intranode;
-    /* thread-MPI is not initialized when not running in parallel */
-#if GMX_MPI && !GMX_THREAD_MPI
-    int nrank_world, rank_world;
-    int i, myhash, *hash, *hash_s, *hash_pp, *hash_pp_s;
-
-    MPI_Comm_size(MPI_COMM_WORLD, &nrank_world);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank_world);
-
-    /* Get a (hopefully unique) hash that identifies our physical node */
-    myhash = gmx_physicalnode_id_hash();
-
-    /* We can't rely on MPI_IN_PLACE, so we need send and receive buffers */
-    snew(hash,   nrank_world);
-    snew(hash_s, nrank_world);
-    snew(hash_pp,   nrank_world);
-    snew(hash_pp_s, nrank_world);
-
-    hash_s[rank_world]    = myhash;
-    hash_pp_s[rank_world] = (cr->duty & DUTY_PP) ? myhash : -1;
-
-    MPI_Allreduce(hash_s,    hash,    nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Allreduce(hash_pp_s, hash_pp, nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-
-    nrank_intranode    = 0;
-    rank_intranode     = 0;
-    nrank_pp_intranode = 0;
-    rank_pp_intranode  = 0;
-    for (i = 0; i < nrank_world; i++)
-    {
-        if (hash[i] == myhash)
-        {
-            nrank_intranode++;
-            if (i < rank_world)
-            {
-                rank_intranode++;
-            }
-        }
-        if (hash_pp[i] == myhash)
-        {
-            nrank_pp_intranode++;
-            if ((cr->duty & DUTY_PP) && i < rank_world)
-            {
-                rank_pp_intranode++;
-            }
-        }
-    }
-    sfree(hash);
-    sfree(hash_s);
-    sfree(hash_pp);
-    sfree(hash_pp_s);
-#else
-    /* Serial or thread-MPI code: we run within a single physical node */
-    nrank_intranode    = cr->nnodes;
-    rank_intranode     = cr->sim_nodeid;
-    nrank_pp_intranode = cr->nnodes - cr->npmenodes;
-    rank_pp_intranode  = cr->nodeid;
-#endif
-
-    if (debug)
-    {
-        char sbuf[STRLEN];
-        if ((cr->duty & DUTY_PP) && (cr->duty & DUTY_PME))
-        {
-            sprintf(sbuf, "PP+PME");
-        }
-        else
-        {
-            sprintf(sbuf, "%s", (cr->duty & DUTY_PP) ? "PP" : "PME");
-        }
-        fprintf(debug, "On %3s rank %d: nrank_intranode=%d, rank_intranode=%d, "
-                "nrank_pp_intranode=%d, rank_pp_intranode=%d\n",
-                sbuf, cr->sim_nodeid,
-                nrank_intranode, rank_intranode,
-                nrank_pp_intranode, rank_pp_intranode);
-    }
-
-    cr->nrank_intranode    = nrank_intranode;
-    cr->rank_intranode     = rank_intranode;
-    cr->nrank_pp_intranode = nrank_pp_intranode;
-    cr->rank_pp_intranode  = rank_pp_intranode;
-}
-
 
 void gmx_barrier(const t_commrec gmx_unused *cr)
 {
@@ -548,7 +458,7 @@ void gmx_sumi(int gmx_unused nr, int gmx_unused r[], const t_commrec gmx_unused 
 #endif
 }
 
-void gmx_sumli(int gmx_unused nr, gmx_int64_t gmx_unused r[], const t_commrec gmx_unused *cr)
+void gmx_sumli(int gmx_unused nr, int64_t gmx_unused r[], const t_commrec gmx_unused *cr)
 {
 #if !GMX_MPI
     gmx_call("gmx_sumli");
@@ -702,7 +612,7 @@ void gmx_sumi_sim(int gmx_unused nr, int gmx_unused r[], const gmx_multisim_t gm
 #endif
 }
 
-void gmx_sumli_sim(int gmx_unused nr, gmx_int64_t gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
+void gmx_sumli_sim(int gmx_unused nr, int64_t gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
 {
 #if !GMX_MPI
     gmx_call("gmx_sumli_sim");
@@ -729,6 +639,115 @@ void gmx_sumli_sim(int gmx_unused nr, gmx_int64_t gmx_unused r[], const gmx_mult
 #endif
 }
 
+void check_multi_int(FILE *log, const gmx_multisim_t *ms, int val,
+                     const char *name,
+                     gmx_bool bQuiet)
+{
+    int     *ibuf, p;
+    gmx_bool bCompatible;
+
+    if (nullptr != log && !bQuiet)
+    {
+        fprintf(log, "Multi-checking %s ... ", name);
+    }
+
+    if (ms == nullptr)
+    {
+        gmx_fatal(FARGS,
+                  "check_multi_int called with a NULL communication pointer");
+    }
+
+    snew(ibuf, ms->nsim);
+    ibuf[ms->sim] = val;
+    gmx_sumi_sim(ms->nsim, ibuf, ms);
+
+    bCompatible = TRUE;
+    for (p = 1; p < ms->nsim; p++)
+    {
+        bCompatible = bCompatible && (ibuf[p-1] == ibuf[p]);
+    }
+
+    if (bCompatible)
+    {
+        if (nullptr != log && !bQuiet)
+        {
+            fprintf(log, "OK\n");
+        }
+    }
+    else
+    {
+        if (nullptr != log)
+        {
+            fprintf(log, "\n%s is not equal for all subsystems\n", name);
+            for (p = 0; p < ms->nsim; p++)
+            {
+                fprintf(log, "  subsystem %d: %d\n", p, ibuf[p]);
+            }
+        }
+        gmx_fatal(FARGS, "The %d subsystems are not compatible\n", ms->nsim);
+    }
+
+    sfree(ibuf);
+}
+
+void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
+                       int64_t val, const char *name,
+                       gmx_bool bQuiet)
+{
+    int64_t          *ibuf;
+    int               p;
+    gmx_bool          bCompatible;
+
+    if (nullptr != log && !bQuiet)
+    {
+        fprintf(log, "Multi-checking %s ... ", name);
+    }
+
+    if (ms == nullptr)
+    {
+        gmx_fatal(FARGS,
+                  "check_multi_int called with a NULL communication pointer");
+    }
+
+    snew(ibuf, ms->nsim);
+    ibuf[ms->sim] = val;
+    gmx_sumli_sim(ms->nsim, ibuf, ms);
+
+    bCompatible = TRUE;
+    for (p = 1; p < ms->nsim; p++)
+    {
+        bCompatible = bCompatible && (ibuf[p-1] == ibuf[p]);
+    }
+
+    if (bCompatible)
+    {
+        if (nullptr != log && !bQuiet)
+        {
+            fprintf(log, "OK\n");
+        }
+    }
+    else
+    {
+        // TODO Part of this error message would also be good to go to
+        // stderr (from one rank of one sim only)
+        if (nullptr != log)
+        {
+            fprintf(log, "\n%s is not equal for all subsystems\n", name);
+            for (p = 0; p < ms->nsim; p++)
+            {
+                char strbuf[255];
+                /* first make the format string */
+                snprintf(strbuf, 255, "  subsystem %%d: %s\n",
+                         "%" PRId64);
+                fprintf(log, strbuf, p, ibuf[p]);
+            }
+        }
+        gmx_fatal(FARGS, "The %d subsystems are not compatible\n", ms->nsim);
+    }
+
+    sfree(ibuf);
+}
+
 const char *opt2fn_master(const char *opt, int nfile, const t_filenm fnm[],
                           t_commrec *cr)
 {
@@ -737,7 +756,7 @@ const char *opt2fn_master(const char *opt, int nfile, const t_filenm fnm[],
 
 void gmx_fatal_collective(int f_errno, const char *file, int line,
                           MPI_Comm comm, gmx_bool bMaster,
-                          const char *fmt, ...)
+                          gmx_fmtstr const char *fmt, ...)
 {
     va_list  ap;
     gmx_bool bFinalize;

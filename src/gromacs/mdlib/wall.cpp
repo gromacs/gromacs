@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,7 +37,9 @@
 
 #include "gmxpre.h"
 
-#include <string.h>
+#include "wall.h"
+
+#include <cstring>
 
 #include <algorithm>
 
@@ -45,7 +47,7 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/force.h"
+#include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
@@ -88,7 +90,7 @@ void make_wall_tables(FILE *fplog,
                         *groups->grpname[nm_ind[egp]],
                         *groups->grpname[nm_ind[negp_pp+w]],
                         ftp2ext(efXVG));
-                fr->wall_tab[w][egp] = make_tables(fplog, fr, buf, 0,
+                fr->wall_tab[w][egp] = make_tables(fplog, fr->ic, buf, 0,
                                                    GMX_MAKETABLES_FORCEUSER);
 
                 /* Since wall have no charge, we can compress the table */
@@ -105,7 +107,7 @@ void make_wall_tables(FILE *fplog,
     }
 }
 
-static void wall_error(int a, rvec *x, real r)
+[[ noreturn ]] static void wall_error(int a, const rvec *x, real r)
 {
     gmx_fatal(FARGS,
               "An atom is beyond the wall: coordinates %f %f %f, distance %f\n"
@@ -113,80 +115,133 @@ static void wall_error(int a, rvec *x, real r)
               x[a][XX], x[a][YY], x[a][ZZ], r);
 }
 
-real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
-              rvec x[], rvec f[], real lambda, real Vlj[], t_nrnb *nrnb)
+static void tableForce(real                r,
+                       const t_forcetable &tab,
+                       real                Cd,
+                       real                Cr,
+                       real               *V,
+                       real               *F)
 {
-    int             nwall;
-    int             ntw[2], at, ntype, ngid, ggid, *egp_flags, *type;
-    real           *nbfp, lamfac, fac_d[2], fac_r[2], Cd, Cr, Vtot;
-    real            wall_z[2], r, mr, r1, r2, r4, Vd, Vr, V = 0, Fd, Fr, F = 0, dvdlambda;
-    dvec            xf_z;
-    int             n0, nnn;
-    real            tabscale, *VFtab, rt, eps, eps2, Yt, Ft, Geps, Heps2, Fp, VV, FF;
-    unsigned short *gid = md->cENER;
-    t_forcetable   *tab;
+    const real  tabscale = tab.scale;
+    const real *VFtab    = tab.data;
 
-    nwall     = ir->nwall;
-    ngid      = ir->opts.ngener;
-    ntype     = fr->ntype;
-    nbfp      = fr->nbfp;
-    egp_flags = fr->egp_flags;
+    real        rt = r*tabscale;
+    int         n0 = static_cast<int>(rt);
+    if (n0 >= tab.n)
+    {
+        /* Beyond the table range, set V and F to zero */
+        *V         = 0;
+        *F         = 0;
+    }
+    else
+    {
+        real eps   = rt - n0;
+        real eps2  = eps*eps;
+        /* Dispersion */
+        int  nnn   = 8*n0;
+        real Yt    = VFtab[nnn];
+        real Ft    = VFtab[nnn + 1];
+        real Geps  = VFtab[nnn + 2]*eps;
+        real Heps2 = VFtab[nnn + 3]*eps2;
+        real Fp    = Ft + Geps + Heps2;
+        real VV    = Yt + Fp*eps;
+        real FF    = Fp + Geps + 2.0*Heps2;
+        real Vd    = 6*Cd*VV;
+        real Fd    = 6*Cd*FF;
+        /* Repulsion */
+        nnn        = nnn + 4;
+        Yt         = VFtab[nnn];
+        Ft         = VFtab[nnn+1];
+        Geps       = VFtab[nnn+2]*eps;
+        Heps2      = VFtab[nnn+3]*eps2;
+        Fp         = Ft + Geps + Heps2;
+        VV         = Yt + Fp*eps;
+        FF         = Fp + Geps + 2.0*Heps2;
+        real Vr    = 12*Cr*VV;
+        real Fr    = 12*Cr*FF;
+        *V         = Vd + Vr;
+        *F         = -(Fd + Fr)*tabscale;
+    }
+}
+
+real do_walls(const t_inputrec &ir, const t_forcerec &fr,
+              const matrix box, const t_mdatoms &md,
+              const rvec *x, gmx::ForceWithVirial *forceWithVirial,
+              real lambda, real Vlj[], t_nrnb *nrnb)
+{
+    constexpr real        sixth   = 1.0/6.0;
+    constexpr real        twelfth = 1.0/12.0;
+
+    int                   ntw[2];
+    real                  fac_d[2], fac_r[2];
+    const unsigned short *gid = md.cENER;
+
+    const int             nwall     = ir.nwall;
+    const int             ngid      = ir.opts.ngener;
+    const int             ntype     = fr.ntype;
+    const real           *nbfp      = fr.nbfp;
+    const int            *egp_flags = fr.egp_flags;
 
     for (int w = 0; w < nwall; w++)
     {
-        ntw[w] = 2*ntype*ir->wall_atomtype[w];
-        switch (ir->wall_type)
+        ntw[w] = 2*ntype*ir.wall_atomtype[w];
+        switch (ir.wall_type)
         {
             case ewt93:
-                fac_d[w] = ir->wall_density[w]*M_PI/6;
-                fac_r[w] = ir->wall_density[w]*M_PI/45;
+                fac_d[w] = ir.wall_density[w]*M_PI/6;
+                fac_r[w] = ir.wall_density[w]*M_PI/45;
                 break;
             case ewt104:
-                fac_d[w] = ir->wall_density[w]*M_PI/2;
-                fac_r[w] = ir->wall_density[w]*M_PI/5;
+                fac_d[w] = ir.wall_density[w]*M_PI/2;
+                fac_r[w] = ir.wall_density[w]*M_PI/5;
                 break;
             default:
                 break;
         }
     }
-    wall_z[0] = 0;
-    wall_z[1] = box[ZZ][ZZ];
+    const real          wall_z[2] = { 0, box[ZZ][ZZ] };
 
-    Vtot      = 0;
-    dvdlambda = 0;
-    clear_dvec(xf_z);
-    for (int lam = 0; lam < (md->nPerturbed ? 2 : 1); lam++)
+    rvec * gmx_restrict f = as_rvec_array(forceWithVirial->force_.data());
+
+    real                dvdlambda = 0;
+    double              sumRF     = 0;
+    for (int lam = 0; lam < (md.nPerturbed ? 2 : 1); lam++)
     {
-        if (md->nPerturbed)
+        real       lamfac;
+        const int *type;
+        if (md.nPerturbed)
         {
             if (lam == 0)
             {
                 lamfac = 1 - lambda;
-                type   = md->typeA;
+                type   = md.typeA;
             }
             else
             {
                 lamfac = lambda;
-                type   = md->typeB;
+                type   = md.typeB;
             }
         }
         else
         {
             lamfac = 1;
-            type   = md->typeA;
+            type   = md.typeA;
         }
-        for (int i = 0; i < md->homenr; i++)
+
+        real Vlambda = 0;
+        for (int i = 0; i < md.homenr; i++)
         {
             for (int w = 0; w < std::min(nwall, 2); w++)
             {
                 /* The wall energy groups are always at the end of the list */
-                ggid = gid[i]*ngid + ngid - nwall + w;
-                at   = type[i];
+                const int  ggid = gid[i]*ngid + ngid - nwall + w;
+                const int  at   = type[i];
                 /* nbfp now includes the 6/12 derivative prefactors */
-                Cd = nbfp[ntw[w]+2*at]/6;
-                Cr = nbfp[ntw[w]+2*at+1]/12;
+                const real Cd = nbfp[ntw[w] + 2*at]*sixth;
+                const real Cr = nbfp[ntw[w] + 2*at + 1]*twelfth;
                 if (!((Cd == 0 && Cr == 0) || (egp_flags[ggid] & EGP_EXCL)))
                 {
+                    real r, mr;
                     if (w == 0)
                     {
                         r = x[i][ZZ];
@@ -195,69 +250,29 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
                     {
                         r = wall_z[1] - x[i][ZZ];
                     }
-                    if (r < ir->wall_r_linpot)
+                    if (r < ir.wall_r_linpot)
                     {
-                        mr = ir->wall_r_linpot - r;
-                        r  = ir->wall_r_linpot;
+                        mr = ir.wall_r_linpot - r;
+                        r  = ir.wall_r_linpot;
                     }
                     else
                     {
                         mr = 0;
                     }
-                    switch (ir->wall_type)
+                    if (r <= 0)
+                    {
+                        wall_error(i, x, r);
+                    }
+
+                    real V, F;
+                    real r1, r2, r4, Vd, Vr;
+                    switch (ir.wall_type)
                     {
                         case ewtTABLE:
-                            if (r < 0)
-                            {
-                                wall_error(i, x, r);
-                            }
-                            tab      = fr->wall_tab[w][gid[i]];
-                            tabscale = tab->scale;
-                            VFtab    = tab->data;
-
-                            rt    = r*tabscale;
-                            n0    = static_cast<int>(rt);
-                            if (n0 >= tab->n)
-                            {
-                                /* Beyond the table range, set V and F to zero */
-                                V     = 0;
-                                F     = 0;
-                            }
-                            else
-                            {
-                                eps   = rt - n0;
-                                eps2  = eps*eps;
-                                /* Dispersion */
-                                nnn   = 8*n0;
-                                Yt    = VFtab[nnn];
-                                Ft    = VFtab[nnn+1];
-                                Geps  = VFtab[nnn+2]*eps;
-                                Heps2 = VFtab[nnn+3]*eps2;
-                                Fp    = Ft + Geps + Heps2;
-                                VV    = Yt + Fp*eps;
-                                FF    = Fp + Geps + 2.0*Heps2;
-                                Vd    = 6*Cd*VV;
-                                Fd    = 6*Cd*FF;
-                                /* Repulsion */
-                                nnn   = nnn + 4;
-                                Yt    = VFtab[nnn];
-                                Ft    = VFtab[nnn+1];
-                                Geps  = VFtab[nnn+2]*eps;
-                                Heps2 = VFtab[nnn+3]*eps2;
-                                Fp    = Ft + Geps + Heps2;
-                                VV    = Yt + Fp*eps;
-                                FF    = Fp + Geps + 2.0*Heps2;
-                                Vr    = 12*Cr*VV;
-                                Fr    = 12*Cr*FF;
-                                V     = Vd + Vr;
-                                F     = -lamfac*(Fd + Fr)*tabscale;
-                            }
+                            tableForce(r, *fr.wall_tab[w][gid[i]], Cd, Cr, &V, &F);
+                            F *= lamfac;
                             break;
                         case ewt93:
-                            if (r <= 0)
-                            {
-                                wall_error(i, x, r);
-                            }
                             r1 = 1/r;
                             r2 = r1*r1;
                             r4 = r2*r2;
@@ -267,10 +282,6 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
                             F  = lamfac*(9*Vr - 3*Vd)*r1;
                             break;
                         case ewt104:
-                            if (r <= 0)
-                            {
-                                wall_error(i, x, r);
-                            }
                             r1 = 1/r;
                             r2 = r1*r1;
                             r4 = r2*r2;
@@ -280,10 +291,6 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
                             F  = lamfac*(10*Vr - 4*Vd)*r1;
                             break;
                         case ewt126:
-                            if (r <= 0)
-                            {
-                                wall_error(i, x, r);
-                            }
                             r1 = 1/r;
                             r2 = r1*r1;
                             r4 = r2*r2;
@@ -293,45 +300,37 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
                             F  = lamfac*(12*Vr - 6*Vd)*r1;
                             break;
                         default:
+                            V  = 0;
+                            F  = 0;
                             break;
                     }
                     if (mr > 0)
                     {
-                        V += mr*F;
+                        V     += mr*F;
                     }
+                    sumRF     += r*F;
                     if (w == 1)
                     {
-                        F = -F;
+                        F      = -F;
                     }
                     Vlj[ggid] += lamfac*V;
-                    Vtot      += V;
+                    Vlambda   += V;
                     f[i][ZZ]  += F;
-                    /* Because of the single sum virial calculation we need
-                     * to add  the full virial contribution of the walls.
-                     * Since the force only has a z-component, there is only
-                     * a contribution to the z component of the virial tensor.
-                     * We could also determine the virial contribution directly,
-                     * which would be cheaper here, but that would require extra
-                     * communication for f_novirsum for with virtual sites
-                     * in parallel.
-                     */
-                    xf_z[XX]  -= x[i][XX]*F;
-                    xf_z[YY]  -= x[i][YY]*F;
-                    xf_z[ZZ]  -= wall_z[w]*F;
                 }
             }
         }
-        if (md->nPerturbed)
+        if (md.nPerturbed)
         {
-            dvdlambda += (lam == 0 ? -1 : 1)*Vtot;
+            dvdlambda += (lam == 0 ? -1 : 1)*Vlambda;
         }
 
-        inc_nrnb(nrnb, eNR_WALLS, md->homenr);
+        inc_nrnb(nrnb, eNR_WALLS, md.homenr);
     }
 
-    for (int i = 0; i < DIM; i++)
+    if (forceWithVirial->computeVirial_)
     {
-        fr->vir_wall_z[i] = -0.5*xf_z[i];
+        rvec virial = { 0, 0, static_cast<real>(-0.5*sumRF) };
+        forceWithVirial->addVirialContribution(virial);
     }
 
     return dvdlambda;

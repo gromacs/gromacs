@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,6 +64,7 @@ TEST(TabulatedNormalDistributionTest, Output14)
     gmx::TabulatedNormalDistribution<>   dist(2.0, 5.0); // Use default 14-bit resolution
     std::vector<float>                   result;
 
+    result.reserve(10);
     for (int i = 0; i < 10; i++)
     {
         result.push_back(dist(rng));
@@ -80,6 +81,7 @@ TEST(TabulatedNormalDistributionTest, Output16)
     gmx::TabulatedNormalDistribution<float, 16>   dist(2.0, 5.0); // Use larger 16-bit table
     std::vector<float>                            result;
 
+    result.reserve(10);
     for (int i = 0; i < 10; i++)
     {
         result.push_back(dist(rng));
@@ -96,6 +98,7 @@ TEST(TabulatedNormalDistributionTest, OutputDouble14)
     gmx::TabulatedNormalDistribution<double>      dist(2.0, 5.0);
     std::vector<double>                           result;
 
+    result.reserve(10);
     for (int i = 0; i < 10; i++)
     {
         result.push_back(dist(rng));
@@ -153,7 +156,7 @@ TEST(TabulatedNormalDistributionTest, AltParam)
 
 TEST(TabulatedNormalDistributionTableTest, HasValidProperties)
 {
-    std::vector<real> table = TabulatedNormalDistribution<real>::makeTable();
+    auto table = TabulatedNormalDistribution<real>::makeTable();
 
     EXPECT_EQ(table.size() % 2, 0) << "Table must have even number of entries";
 
@@ -175,6 +178,6 @@ TEST(TabulatedNormalDistributionTableTest, HasValidProperties)
     EXPECT_REAL_EQ_TOL(1.0, variance, tolerance) << "Table should have unit variance";
 }
 
-}      // namespace anonymous
+}  // namespace
 
-}      // namespace gmx
+}  // namespace gmx

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,8 +52,8 @@ static const char *type[] = {
     "pixmap", "statictext",   "edittext", "defbutton"
 };
 
-void ReadDlgError(const char *infile, eDLGERR err, const char *s,
-                  const char *file, int line)
+static void ReadDlgError(const char *infile, eDLGERR err, const char *s,
+                         const char *file, int line)
 {
     std::fprintf(stderr, "Error: ");
     switch (err)
@@ -368,16 +368,16 @@ static t_fitem *ScanFItem(const char *infile, FILE *in, char *buf)
 
 t_fgrid *FGridFromFile(const char *infile)
 {
-    FILE      *in;
-    char       buf[STRLEN];
-    int        result;
+    char         buf[STRLEN];
+    int          result;
 
-    t_fgrid   *fgrid;
-    t_fgroup  *fgroup;
-    t_fsimple *fsimple;
-    int        gridx, gridy;
+    t_fgrid     *fgrid;
+    t_fgroup    *fgroup;
+    t_fsimple   *fsimple;
+    int          gridx, gridy;
 
-    in     = libopen(infile);
+    gmx::FilePtr inGuard = gmx::openLibraryFile(infile);
+    FILE        *in      = inGuard.get();
     result = std::fscanf(in, "%6s", buf);
     if ((1 != result) || std::strcmp(buf, "grid") != 0)
     {
@@ -447,7 +447,6 @@ t_fgrid *FGridFromFile(const char *infile)
             result = std::fscanf(in, "%15s", buf);
         }
     }
-    gmx_ffclose(in);
     /* Since we always read one variable at a time the result from
      * fscanf should always be 1.
      */

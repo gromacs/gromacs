@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -152,6 +152,8 @@ class TextWriter
         void writeString(const char *str);
         //! \copydoc writeString(const char *)
         void writeString(const std::string &str);
+        //! Writes a string to the stream, with printf-style formatting.
+        void writeStringFormatted(const char *fmt, ...);
         /*! \brief
          * Writes a line to the stream.
          *
@@ -163,6 +165,8 @@ class TextWriter
         void writeLine(const char *line);
         //! \copydoc writeLine(const char *)
         void writeLine(const std::string &line);
+        //! Writes a line to the stream, with printf-style formatting.
+        void writeLineFormatted(const char *fmt, ...);
         //! Writes a newline to the stream.
         void writeLine();
 

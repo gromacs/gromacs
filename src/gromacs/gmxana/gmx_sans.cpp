@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,8 @@
 
 #include "config.h"
 
+#include <array>
+
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
@@ -63,7 +65,7 @@ int gmx_sans(int argc, char *argv[])
         "[THISMODULE] computes SANS spectra using Debye formula.",
         "It currently uses topology file (since it need to assigne element for each atom).",
         "[PAR]",
-        "Parameters:[PAR]"
+        "Parameters:[PAR]",
         "[TT]-pr[tt] Computes normalized g(r) function averaged over trajectory[PAR]",
         "[TT]-prframe[tt] Computes normalized g(r) function for each frame[PAR]",
         "[TT]-sq[tt] Computes SANS intensity curve averaged over trajectory[PAR]",
@@ -136,23 +138,22 @@ int gmx_sans(int argc, char *argv[])
     int                                   i;
     char                                 *hdr            = nullptr;
     char                                 *suffix         = nullptr;
-    t_filenm                             *fnmdup         = nullptr;
     gmx_radial_distribution_histogram_t  *prframecurrent = nullptr, *pr = nullptr;
     gmx_static_structurefactor_t         *sqframecurrent = nullptr, *sq = nullptr;
     gmx_output_env_t                     *oenv;
 
-#define NFILE asize(fnm)
-
-    t_filenm   fnm[] = {
-        { efTPR,  "-s",       nullptr,       ffREAD },
-        { efTRX,  "-f",       nullptr,       ffREAD },
-        { efNDX,  nullptr,       nullptr,       ffOPTRD },
+    std::array<t_filenm, 8>               filenames =
+    { { { efTPR,  "-s",       nullptr,    ffREAD  },
+        { efTRX,  "-f",       nullptr,    ffREAD  },
+        { efNDX,  nullptr,    nullptr,    ffOPTRD },
         { efDAT,  "-d",       "nsfactor", ffOPTRD },
         { efXVG,  "-pr",      "pr",       ffWRITE },
-        { efXVG,  "-sq",       "sq",      ffWRITE },
+        { efXVG,  "-sq",      "sq",       ffWRITE },
         { efXVG,  "-prframe", "prframe",  ffOPTWR },
-        { efXVG,  "-sqframe", "sqframe",  ffOPTWR }
-    };
+        { efXVG,  "-sqframe", "sqframe",  ffOPTWR } } };
+    t_filenm                             *fnm = filenames.data();
+
+    const auto NFILE = filenames.size();
 
     nthreads = gmx_omp_get_max_threads();
 
@@ -297,19 +298,17 @@ int gmx_sans(int argc, char *argv[])
             /* prepare header */
             sprintf(hdr, "g(r), t = %f", t);
             /* prepare output filename */
-            fnmdup = dup_tfn(NFILE, fnm);
+            auto fnmdup = filenames;
             sprintf(suffix, "-t%.2f", t);
-            add_suffix_to_output_names(fnmdup, NFILE, suffix);
-            fp = xvgropen(opt2fn_null("-prframe", NFILE, fnmdup), hdr, "Distance (nm)", "Probability", oenv);
+            add_suffix_to_output_names(fnmdup.data(), NFILE, suffix);
+            fp = xvgropen(opt2fn_null("-prframe", NFILE, fnmdup.data()), hdr, "Distance (nm)", "Probability", oenv);
             for (i = 0; i < prframecurrent->grn; i++)
             {
                 fprintf(fp, "%10.6f%10.6f\n", prframecurrent->r[i], prframecurrent->gr[i]);
             }
-            done_filenms(NFILE, fnmdup);
             xvgrclose(fp);
             sfree(hdr);
             sfree(suffix);
-            sfree(fnmdup);
         }
         if (opt2fn_null("-sqframe", NFILE, fnm))
         {
@@ -318,19 +317,17 @@ int gmx_sans(int argc, char *argv[])
             /* prepare header */
             sprintf(hdr, "I(q), t = %f", t);
             /* prepare output filename */
-            fnmdup = dup_tfn(NFILE, fnm);
+            auto fnmdup = filenames;
             sprintf(suffix, "-t%.2f", t);
-            add_suffix_to_output_names(fnmdup, NFILE, suffix);
-            fp = xvgropen(opt2fn_null("-sqframe", NFILE, fnmdup), hdr, "q (nm^-1)", "s(q)/s(0)", oenv);
+            add_suffix_to_output_names(fnmdup.data(), NFILE, suffix);
+            fp = xvgropen(opt2fn_null("-sqframe", NFILE, fnmdup.data()), hdr, "q (nm^-1)", "s(q)/s(0)", oenv);
             for (i = 0; i < sqframecurrent->qn; i++)
             {
                 fprintf(fp, "%10.6f%10.6f\n", sqframecurrent->q[i], sqframecurrent->s[i]);
             }
-            done_filenms(NFILE, fnmdup);
             xvgrclose(fp);
             sfree(hdr);
             sfree(suffix);
-            sfree(fnmdup);
         }
         /* free pr structure */
         sfree(prframecurrent->gr);
@@ -342,7 +339,7 @@ int gmx_sans(int argc, char *argv[])
         sfree(sqframecurrent);
     }
     while (read_next_x(oenv, status, &t, x, box));
-    close_trj(status);
+    close_trx(status);
 
     /* normalize histo */
     normalize_probability(pr->grn, pr->gr);

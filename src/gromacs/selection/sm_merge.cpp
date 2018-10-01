@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "selmethod.h"
+#include "selmethod-impl.h"
 
 /*! \internal \brief
  * Data structure for the merging selection modifiers.
@@ -199,7 +200,7 @@ init_data_merge(int npar, gmx_ana_selparam_t *param)
 static void
 init_merge(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t * /* param */, void *data)
 {
-    t_methoddata_merge *d = (t_methoddata_merge *)data;
+    t_methoddata_merge *d = static_cast<t_methoddata_merge *>(data);
 
     if (d->stride < 0)
     {
@@ -226,7 +227,7 @@ init_merge(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t * /*
 static void
 init_output_common(const gmx_mtop_t *top, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_merge *d = (t_methoddata_merge *)data;
+    t_methoddata_merge *d = static_cast<t_methoddata_merge *>(data);
 
     GMX_UNUSED_VALUE(top);
     if (d->p1.m.type != d->p2.m.type)
@@ -252,7 +253,7 @@ init_output_common(const gmx_mtop_t *top, gmx_ana_selvalue_t *out, void *data)
 static void
 init_output_merge(const gmx_mtop_t *top, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_merge *d = (t_methoddata_merge *)data;
+    t_methoddata_merge *d = static_cast<t_methoddata_merge *>(data);
     int                 i, j;
 
     init_output_common(top, out, data);
@@ -274,7 +275,7 @@ init_output_merge(const gmx_mtop_t *top, gmx_ana_selvalue_t *out, void *data)
 static void
 init_output_plus(const gmx_mtop_t *top, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_merge *d = (t_methoddata_merge *)data;
+    t_methoddata_merge *d = static_cast<t_methoddata_merge *>(data);
     int                 i;
 
     init_output_common(top, out, data);
@@ -296,7 +297,7 @@ init_output_plus(const gmx_mtop_t *top, gmx_ana_selvalue_t *out, void *data)
 static void
 free_data_merge(void *data)
 {
-    t_methoddata_merge *d = (t_methoddata_merge *)data;
+    t_methoddata_merge *d = static_cast<t_methoddata_merge *>(data);
     delete d;
 }
 
@@ -304,7 +305,7 @@ static void
 evaluate_merge(const gmx::SelMethodEvalContext & /*context*/,
                gmx_ana_pos_t * /* p */, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_merge *d = (t_methoddata_merge *)data;
+    t_methoddata_merge *d = static_cast<t_methoddata_merge *>(data);
     int                 i, j;
     int                 refid;
 
@@ -334,7 +335,7 @@ static void
 evaluate_plus(const gmx::SelMethodEvalContext & /*context*/,
               gmx_ana_pos_t * /* p */, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_merge *d = (t_methoddata_merge *)data;
+    t_methoddata_merge *d = static_cast<t_methoddata_merge *>(data);
     int                 i;
     int                 refid;
 

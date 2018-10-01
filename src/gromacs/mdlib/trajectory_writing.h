@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,12 +45,10 @@
 
 struct gmx_ekindata_t;
 struct gmx_mtop_t;
+struct ObservablesHistory;
 struct t_commrec;
 struct t_filenm;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+struct t_forcerec;
 
 /*! \brief Wrapper routine for writing trajectories during mdrun
  *
@@ -61,20 +59,19 @@ do_md_trajectory_writing(FILE                     *fplog,
                          struct t_commrec         *cr,
                          int                       nfile,
                          const t_filenm            fnm[],
-                         gmx_int64_t               step,
-                         gmx_int64_t               step_rel,
+                         int64_t                   step,
+                         int64_t                   step_rel,
                          double                    t,
                          t_inputrec               *ir,
                          t_state                  *state,
                          t_state                  *state_global,
-                         energyhistory_t          *energyHistory,
+                         ObservablesHistory       *observablesHistory,
                          struct gmx_mtop_t        *top_global,
                          t_forcerec               *fr,
                          gmx_mdoutf_t              outf,
                          t_mdebin                 *mdebin,
                          struct gmx_ekindata_t    *ekind,
-                         PaddedRVecVector         *f,
-                         int                      *nchkpt,
+                         gmx::ArrayRef<gmx::RVec>  f,
                          gmx_bool                  bCPT,
                          gmx_bool                  bRerunMD,
                          gmx_bool                  bLastStep,
@@ -82,9 +79,5 @@ do_md_trajectory_writing(FILE                     *fplog,
                          gmx_bool                  bSumEkinhOld
                          );
 
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

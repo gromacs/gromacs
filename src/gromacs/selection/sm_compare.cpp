@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "keywords.h"
 #include "selmethod.h"
 
 /** Defines the comparison operator for comparison expressions. */
@@ -181,7 +182,7 @@ gmx_ana_selmethod_t sm_compare = {
  * \ref CMP_INVALID is returned.
  */
 static e_comparison_t
-comparison_type(char *str)
+comparison_type(const char *str)
 {
     switch (str[0])
     {
@@ -229,7 +230,7 @@ comparison_type_str(e_comparison_t cmpt)
 void
 _gmx_selelem_print_compare_info(FILE *fp, void *data)
 {
-    t_methoddata_compare *d = (t_methoddata_compare *)data;
+    t_methoddata_compare *d = static_cast<t_methoddata_compare *>(data);
 
     fprintf(fp, " \"");
     /* Print the left value */
@@ -351,7 +352,7 @@ convert_int_real(int n, t_compare_value *val)
     snew(rv, n);
     for (i = 0; i < n; ++i)
     {
-        rv[i] = (real)val->i[i];
+        rv[i] = static_cast<real>(val->i[i]);
     }
     /* Free the previous value if one is present. */
     sfree(val->r);
@@ -418,7 +419,7 @@ convert_real_int(int n, t_compare_value *val, e_comparison_t cmpt, bool bRight)
 static void
 init_compare(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
-    t_methoddata_compare *d = (t_methoddata_compare *)data;
+    t_methoddata_compare *d = static_cast<t_methoddata_compare *>(data);
     int                   n1, n2;
 
     /* Store the values */
@@ -485,7 +486,7 @@ init_compare(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *p
 static void
 free_data_compare(void *data)
 {
-    t_methoddata_compare *d = (t_methoddata_compare *)data;
+    t_methoddata_compare *d = static_cast<t_methoddata_compare *>(data);
 
     sfree(d->cmpop);
     if (d->left.flags & CMP_ALLOCINT)
@@ -517,7 +518,7 @@ free_data_compare(void *data)
 static void
 evaluate_compare_int(gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_compare *d = (t_methoddata_compare *)data;
+    t_methoddata_compare *d = static_cast<t_methoddata_compare *>(data);
     int                   i, i1, i2, ig;
     int                   a, b;
     bool                  bAccept;
@@ -566,7 +567,7 @@ evaluate_compare_int(gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 static void
 evaluate_compare_real(gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_compare *d = (t_methoddata_compare *)data;
+    t_methoddata_compare *d = static_cast<t_methoddata_compare *>(data);
     int                   i, i1, i2, ig;
     real                  a, b;
     bool                  bAccept;
@@ -606,7 +607,7 @@ static void
 evaluate_compare(const gmx::SelMethodEvalContext & /*context*/,
                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_compare *d = (t_methoddata_compare *)data;
+    t_methoddata_compare *d = static_cast<t_methoddata_compare *>(data);
 
     if (!((d->left.flags | d->right.flags) & CMP_REALVAL))
     {

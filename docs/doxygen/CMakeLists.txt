@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -85,11 +85,17 @@ if (DOXYGEN_FOUND)
     if (GMX_COMPACT_DOXYGEN)
         set(DOXYGEN_EXTRA_SETTINGS "@INCLUDE   = ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile-compact")
     endif()
-    configure_file(Doxyfile-common.cmakein Doxyfile-common)
-    configure_file(Doxyfile-full.cmakein Doxyfile-full)
-    configure_file(Doxyfile-lib.cmakein Doxyfile-lib)
-    configure_file(Doxyfile-user.cmakein Doxyfile-user)
-    configure_file(Doxyfile-xml.cmakein Doxyfile-xml)
+    set(DOXYGENLIST "html-full;html-lib;html-user;xml")
+    foreach(_target ${DOXYGENLIST})
+        set(_targetdir ${HTML_OUTPUT_DIR}/doxygen/${_target})
+        if (NOT EXISTS ${_targetdir})
+            file(MAKE_DIRECTORY ${_targetdir})
+        endif()
+    endforeach()
+    set(DOXYGENLIST "common;dev;full;lib;user;xml")
+    foreach(_target ${DOXYGENLIST})
+        configure_file(Doxyfile-${_target}.cmakein Doxyfile-${_target})
+    endforeach()
 
     configure_file(RunDoxygen.cmake.cmakein RunDoxygen.cmake @ONLY)
     gmx_configure_version_file(Doxyfile-version.cmakein Doxyfile-version
@@ -132,11 +138,16 @@ if (DOXYGEN_FOUND)
         set(_deps doxygen-source-timestamp doxygen-version
             ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-${TYPE})
         set(_fast_arg "")
-        if ("${ARGN}" STREQUAL "DEPGRAPHS")
+        list (FIND ARGN "DEPGRAPHS" _index)
+        if (${_index} GREATER -1)
             set(_fast_arg "ADD_FAST_TARGET")
             if (TARGET dep-graphs-dot)
                 list(APPEND _deps dep-graphs-dot)
             endif()
+        endif()
+        list (FIND ARGN "DEPXML" _index)
+        if (${_index} GREATER -1)
+            list(APPEND _deps doxygen-xml)
         endif()
         gmx_add_custom_output_target(${TARGET} OUTPUT STAMP ${_fast_arg}
             # Ensure the directory exists to avoid spurious warnings
@@ -190,9 +201,10 @@ if (DOXYGEN_FOUND)
     endif()
 
     # Create the actual targets to build the documentation.
-    add_doxygen_target(doxygen-full full "Generating full documentation with Doxygen" DEPGRAPHS)
-    add_doxygen_target(doxygen-lib  lib  "Generating library documentation with Doxygen" DEPGRAPHS)
-    add_doxygen_target(doxygen-user user "Generating public API documentation with Doxygen")
+    add_doxygen_target(doxygen-full full "Generating full documentation with Doxygen" DEPGRAPHS DEPXML)
+    add_doxygen_target(doxygen-lib  lib  "Generating library documentation with Doxygen" DEPGRAPHS DEPXML)
+    add_doxygen_target(doxygen-user user "Generating public API documentation with Doxygen" DEPXML)
+    add_doxygen_target(doxygen-dev dev "Generating verbose developer docs with Doxygen" DEPGRAPHS DEPXML)
     # Convenience targets to build all the documentation flavors.
     add_custom_target(doxygen-all)
     add_custom_target(doxygen-all-fast)

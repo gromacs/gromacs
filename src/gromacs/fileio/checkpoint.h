@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,15 +40,14 @@
 
 #include <cstdio>
 
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 class energyhistory_t;
 struct gmx_file_position_t;
+struct ObservablesHistory;
 struct t_commrec;
 struct t_fileio;
 struct t_inputrec;
@@ -63,17 +62,17 @@ struct t_trxframe;
  * otherwise moves the previous <fn>.cpt to <fn>_prev.cpt
  */
 void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
-                      FILE *fplog, t_commrec *cr,
+                      FILE *fplog, const t_commrec *cr,
                       ivec domdecCells, int nppnodes,
                       int eIntegrator, int simulation_part,
                       gmx_bool bExpanded, int elamstats,
-                      gmx_int64_t step, double t,
-                      t_state *state, energyhistory_t *enerhist);
+                      int64_t step, double t,
+                      t_state *state, ObservablesHistory *observablesHistory);
 
 /* Loads a checkpoint from fn for run continuation.
  * Generates a fatal error on system size mismatch.
  * The master node reads the file
- * and communicates all the modified number of steps and the parallel setup,
+ * and communicates all the modified number of steps,
  * but not the state itself.
  * When bAppend is set, lock the log file and truncate the existing output
  * files so they can be appended.
@@ -82,20 +81,12 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
  * With reproducibilityRequested warns about version, build, #ranks differences.
  */
 void load_checkpoint(const char *fn, FILE **fplog,
-                     const t_commrec *cr, ivec dd_nc, int *npme,
+                     const t_commrec *cr, const ivec dd_nc,
                      t_inputrec *ir, t_state *state,
                      gmx_bool *bReadEkin,
-                     energyhistory_t *enerhist,
+                     ObservablesHistory *observablesHistory,
                      gmx_bool bAppend, gmx_bool bForceAppend,
                      gmx_bool reproducibilityRequested);
-
-/* Read the state from checkpoint file.
- * Arrays in state that are NULL are allocated.
- * If bReadRNG=TRUE a RNG state compatible with the current
- * number of nodes was read.
- */
-void read_checkpoint_state(const char *fn, int *simulation_part,
-                           gmx_int64_t *step, double *t, t_state *state);
 
 /* Read everything that can be stored in t_trxframe from a checkpoint file */
 void read_checkpoint_trxframe(struct t_fileio *fp, t_trxframe *fr);
@@ -115,7 +106,7 @@ void list_checkpoint(const char *fn, FILE *out);
  * does not exist, or is not readable. */
 void read_checkpoint_part_and_step(const char  *filename,
                                    int         *simulation_part,
-                                   gmx_int64_t *step);
+                                   int64_t     *step);
 
 /* ! \brief Read simulation part and output filenames from a checkpoint file
  *
@@ -123,17 +114,10 @@ void read_checkpoint_part_and_step(const char  *filename,
  *
  * \param[in]  fp               Handle to open checkpoint file
  * \param[out] simulation_part  The part of the simulation that wrote the checkpoint
- * \param[out] nfiles           Number of output files from the previous run
- * \param[out] outputfiles      Pointer to array of output file names from the previous run. Pointer is allocated in this function.
- */
+ * \param[out] outputfiles      Container of output file names from the previous run. */
 void
-read_checkpoint_simulation_part_and_filenames(struct t_fileio             *fp,
-                                              int                         *simulation_part,
-                                              int                         *nfiles,
-                                              struct gmx_file_position_t **outputfiles);
-
-#ifdef __cplusplus
-}
-#endif
+read_checkpoint_simulation_part_and_filenames(struct t_fileio                  *fp,
+                                              int                              *simulation_part,
+                                              std::vector<gmx_file_position_t> *outputfiles);
 
 #endif

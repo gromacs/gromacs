@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,8 +41,8 @@
  */
 #include "gmxpre.h"
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"
@@ -52,6 +52,7 @@
 #include "parsetree.h"
 #include "selelem.h"
 #include "selmethod.h"
+#include "selmethod-impl.h"
 
 /*! \internal
  * \brief
@@ -283,7 +284,7 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t                           **me
 static void
 init_same(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
-    t_methoddata_same *d = (t_methoddata_same *)data;
+    t_methoddata_same *d = static_cast<t_methoddata_same *>(data);
 
     d->val.ptr = param[0].val.u.ptr;
     d->as.ptr  = param[1].val.u.ptr;
@@ -305,7 +306,7 @@ init_same(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *para
 static void
 free_data_same(void *data)
 {
-    t_methoddata_same *d = (t_methoddata_same *)data;
+    t_methoddata_same *d = static_cast<t_methoddata_same *>(data);
 
     sfree(d->as_s_sorted);
     sfree(d);
@@ -317,11 +318,11 @@ free_data_same(void *data)
 static int
 cmp_int(const void *a, const void *b)
 {
-    if (*(int *)a < *(int *)b)
+    if (*reinterpret_cast<const int*>(a) < *reinterpret_cast<const int*>(b))
     {
         return -1;
     }
-    if (*(int *)a > *(int *)b)
+    if (*reinterpret_cast<const int*>(a) > *reinterpret_cast<const int*>(b))
     {
         return 1;
     }
@@ -331,7 +332,7 @@ cmp_int(const void *a, const void *b)
 static void
 init_frame_same_int(const gmx::SelMethodEvalContext & /*context*/, void *data)
 {
-    t_methoddata_same *d = (t_methoddata_same *)data;
+    t_methoddata_same *d = static_cast<t_methoddata_same *>(data);
     int                i, j;
 
     /* Collapse adjacent values, and check whether the array is sorted. */
@@ -384,7 +385,7 @@ static void
 evaluate_same_int(const gmx::SelMethodEvalContext & /*context*/,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_same     *d = (t_methoddata_same *)data;
+    t_methoddata_same     *d = static_cast<t_methoddata_same *>(data);
     int                    i, j;
 
     out->u.g->isize = 0;
@@ -453,13 +454,13 @@ evaluate_same_int(const gmx::SelMethodEvalContext & /*context*/,
 static int
 cmp_str(const void *a, const void *b)
 {
-    return strcmp(*(char **)a, *(char **)b);
+    return strcmp(*static_cast<char *const*>(a), *static_cast<char *const*>(b));
 }
 
 static void
 init_frame_same_str(const gmx::SelMethodEvalContext & /*context*/, void *data)
 {
-    t_methoddata_same *d = (t_methoddata_same *)data;
+    t_methoddata_same *d = static_cast<t_methoddata_same *>(data);
     int                i, j;
 
     /* Collapse adjacent values.
@@ -507,7 +508,7 @@ static void
 evaluate_same_str(const gmx::SelMethodEvalContext & /*context*/,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_same     *d = (t_methoddata_same *)data;
+    t_methoddata_same     *d = static_cast<t_methoddata_same *>(data);
     int                    j;
 
     out->u.g->isize = 0;

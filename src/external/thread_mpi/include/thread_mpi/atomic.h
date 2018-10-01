@@ -78,14 +78,6 @@
 
 #include "visibility.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-#if 0
-} /* Avoids screwing up auto-indentation */
-#endif
-
 /* Setting TMPI_ATOMICS_DISABLED permits the build to enforce that no
  * atomic operations are used. This is used when building to run
  * ThreadSanitzer.
@@ -634,11 +626,5 @@ void tMPI_Spinlock_wait(tMPI_Spinlock_t *x);
 /** Indicates that support for atomic operations is present. */
 #define TMPI_ATOMICS
 #endif
-
-
-#ifdef __cplusplus
-}
-#endif
-
 
 #endif /* TMPI_ATOMIC_H_ */

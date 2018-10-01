@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,7 +34,7 @@
  */
 /*! \file
  * \brief
- * Declares gmx::ArrayRef and gmx::ConstArrayRef.
+ * Declares gmx::ArrayRef
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
@@ -59,8 +59,8 @@ namespace gmx
 /*! \brief
  * Tag type to initialize empty array references.
  *
- * This type (together with appropriate constructors in ArrayRef and
- * ConstArrayRef) allows initializing any array reference to an empty value
+ * This type (together with appropriate constructors in ArrayRef)
+ * allows initializing any array reference to an empty value
  * without explicitly specifying its type.  This is convenient when calling
  * a function that takes an array reference, where constructing an empty
  * reference explicitly would otherwise require specifying the full array
@@ -69,15 +69,15 @@ namespace gmx
 struct EmptyArrayRef {};
 
 /*! \brief STL-like container for an interface to a C array of T (or part
- * of a std::vector<T> or std::array<T>).
+ * of a std::vector<T, A> or std::array<T>).
  *
  * \tparam T  Value type of elements.
  *
- * This class provides an interface similar to \c std::vector<T>, with the
+ * This class provides an interface similar to \c std::vector<T, A>, with the
  * following main differences:
  *  - This class does not have its own storage.  Instead, it references an
  *    existing array of values (either a C-style array or part of an existing
- *    std::vector<T> or std::array<T>).
+ *    std::vector<T, A> or std::array<T>).
  *  - It is only possible to modify the values themselves through ArrayRef;
  *    it is not possible to add or remove values.
  *  - Copying objects of this type is cheap, and the copies behave identically
@@ -92,9 +92,17 @@ struct EmptyArrayRef {};
  * Note that due to a Doxygen limitation, the constructor that takes a C array
  * whose size is known at compile time does not appear in the documentation.
  *
+ * To refer to const data of type T, ArrayRef<const T> is used. For both const
+ * and non-const std::vector and std::array an ArrayRef view can be created.
+ * Attempting to create a non-const ArrayRef of a const vector/array will result
+ * in a compiler error in the respective constructor.
+ *
+ * For SIMD types there is template specialization available
+ * (e.g. ArrayRef<SimdReal>) in gromacs/simd/simd_memory.h which should have
+ * the same functionality as much as possible.
+ *
  * \todo
- * This class is not complete.  At least, it should be possible to convert an
- * ArrayRef to a ConstArrayRef.  There are likely also methods missing (not
+ * This class is not complete. There are likely also methods missing (not
  * required for current usage).
  *
  * \inpublicapi
@@ -107,7 +115,7 @@ class ArrayRef
         //! Type of values stored in the container.
         typedef T         value_type;
         //! Type for representing size of the container.
-        typedef size_t    size_type;
+        typedef index     size_type;
         //! Type for representing difference between two container indices.
         typedef ptrdiff_t difference_type;
         //! Const reference to a container element.
@@ -128,54 +136,9 @@ class ArrayRef
         typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
         /*! \brief
-         * Constructs a reference to a particular range from two pointers.
-         *
-         * \param[in] begin  Pointer to the beginning of a range.
-         * \param[in] end    Pointer to the end of a range.
-         *
-         * Passed pointers must remain valid for the lifetime of this object.
-         */
-        static ArrayRef<value_type>
-        fromPointers(value_type *begin, value_type *end)
-        {
-            return ArrayRef<value_type>(begin, end);
-        }
-        /*! \brief
-         * Constructs a reference to an array.
-         *
-         * \param[in] begin  Pointer to the beginning of the array.
-         *                   May be NULL if \p size is zero.
-         * \param[in] size   Number of elements in the array.
-         *
-         * Passed pointer must remain valid for the lifetime of this object.
-         */
-        static ArrayRef<value_type>
-        fromArray(value_type *begin, size_t size)
-        {
-            return ArrayRef<value_type>(begin, begin+size);
-        }
-        /*! \brief
-         * Constructs a reference to a particular range in a std::vector.
-         *
-         * \param[in] begin  Iterator to the beginning of a range.
-         * \param[in] end    Iterator to the end of a range.
-         *
-         * The referenced vector must remain valid and not be reallocated for
-         * the lifetime of this object.
-         */
-        static ArrayRef<value_type>
-        fromVector(typename std::vector<value_type>::iterator begin,
-                   typename std::vector<value_type>::iterator end)
-        {
-            value_type *p_begin = (begin != end) ? &*begin : nullptr;
-            value_type *p_end   = p_begin + (end-begin);
-            return ArrayRef<value_type>(p_begin, p_end);
-        }
-
-        /*! \brief
          * Constructs an empty reference.
          */
-        ArrayRef() : begin_(NULL), end_(NULL) {}
+        ArrayRef() : begin_(nullptr), end_(nullptr) {}
         /*! \brief
          * Constructs an empty reference.
          *
@@ -183,7 +146,27 @@ class ArrayRef
          * used to initialize any ArrayRef, without specifying the template
          * type.  It is not explicit to enable that usage.
          */
-        ArrayRef(const EmptyArrayRef &) : begin_(nullptr), end_(nullptr) {}
+        ArrayRef(const EmptyArrayRef & /*unused*/) : begin_(nullptr), end_(nullptr) {}
+        /*! \brief
+         * Constructs a reference to a container or reference
+         *
+         * \param[in] o container to reference.
+         *
+         * Can be used to create a reference to a whole vector, std::array or
+         * an ArrayRef. The destination has to have a convertible pointer type
+         * (identical besides const or base class).
+         *
+         * Passed container must remain valid and not be reallocated for the
+         * lifetime of this object.
+         *
+         * This constructor is not explicit to allow directly passing
+         * a container to a method that takes ArrayRef.
+         */
+        template<typename U,
+                 typename = typename std::enable_if<
+                         std::is_convertible<typename std::remove_reference<U>::type::pointer,
+                                             pointer>::value>::type>
+        ArrayRef(U &&o) : begin_(o.data()), end_(o.data()+o.size()) {}
         /*! \brief
          * Constructs a reference to a particular range.
          *
@@ -191,47 +174,11 @@ class ArrayRef
          * \param[in] end    Pointer to the end of a range.
          *
          * Passed pointers must remain valid for the lifetime of this object.
-         *
-         * \note For clarity, use the non-member function arrayRefFromPointers
-         * instead.
          */
         ArrayRef(pointer begin, pointer end)
             : begin_(begin), end_(end)
         {
             GMX_ASSERT(end >= begin, "Invalid range");
-        }
-        /*! \brief
-         * Constructs a reference to a whole std::vector<T>.
-         *
-         * \param[in] v  Vector to reference.
-         *
-         * Passed vector must remain valid and not be reallocated for the
-         * lifetime of this object.
-         *
-         * This constructor is not explicit to allow directly passing
-         * std::vector<T> to a method that takes ArrayRef.
-         */
-        ArrayRef(std::vector<T> &v)
-            : begin_((!v.empty()) ? &v[0] : nullptr),
-              end_((!v.empty()) ? &v[0] + v.size() : nullptr)
-        {
-        }
-        /*! \brief
-         * Constructs a reference to a whole std::array<T>.
-         *
-         * \param[in] a  Array to reference.
-         *
-         * Passed array must remain valid for the lifetime of this
-         * object.
-         *
-         * This constructor is not explicit to allow directly passing
-         * std::array<T> to a method that takes ArrayRef.
-         */
-        template <size_t count>
-        ArrayRef(std::array<T, count> &a)
-            : begin_((!a.empty()) ? &a[0] : NULL),
-              end_((!a.empty()) ? &a[0] + a.size() : NULL)
-        {
         }
         //! \cond
         // Doxygen 1.8.5 doesn't parse the declaration correctly...
@@ -258,22 +205,19 @@ class ArrayRef
         }
         //! \endcond
 
+        //! Returns a reference to part of the container.
+        ArrayRef subArray(size_type start, size_type count) const
+        {
+            return {begin_+start, begin_+start+count};
+        }
         //! Returns an iterator to the beginning of the container.
-        iterator begin() { return begin_; }
-        //! Returns an iterator to the beginning of the container.
-        const_iterator begin() const { return begin_; }
+        iterator begin() const { return begin_; }
         //! Returns an iterator to the end of the container.
-        iterator end() { return end_; }
-        //! Returns an iterator to the end of the container.
-        const_iterator end() const { return end_; }
+        iterator end() const { return end_; }
         //! Returns an iterator to the reverse beginning of the container.
-        reverse_iterator rbegin() { return reverse_iterator(end()); }
-        //! Returns an iterator to the reverse beginning of the container.
-        const_reverse_iterator rbegin() const { return reverse_iterator(end()); }
+        reverse_iterator rbegin() const { return reverse_iterator(end()); }
         //! Returns an iterator to the reverse end of the container.
-        reverse_iterator rend() { return reverse_iterator(begin()); }
-        //! Returns an iterator to the reverse end of the container.
-        const_reverse_iterator rend() const { return reverse_iterator(begin()); }
+        reverse_iterator rend() const { return reverse_iterator(begin()); }
 
         //! Returns the size of the container.
         size_type size() const { return end_ - begin_; }
@@ -283,20 +227,9 @@ class ArrayRef
         bool empty() const { return begin_ == end_; }
 
         //! Access container element.
-        reference operator[](size_type n) { return begin_[n]; }
-        //! Access container element.
-        const_reference operator[](size_type n) const { return begin_[n]; }
+        reference operator[](size_type n) const { return begin_[n]; }
         //! Access container element (throws on out-of-range error).
-        reference at(size_type n)
-        {
-            if (n >= size())
-            {
-                throw std::out_of_range("Vector index out of range");
-            }
-            return begin_[n];
-        }
-        //! Access container element (throws on out-of-range error).
-        const_reference at(size_type n) const
+        reference at(size_type n) const
         {
             if (n >= size())
             {
@@ -305,18 +238,12 @@ class ArrayRef
             return begin_[n];
         }
         //! Returns the first element in the container.
-        reference front() { return *begin_; }
+        reference front() const { return *begin_; }
         //! Returns the first element in the container.
-        const_reference front() const { return *begin_; }
-        //! Returns the last element in the container.
-        reference back() { return *(end_ - 1); }
-        //! Returns the last element in the container.
-        const_reference back() const { return *(end_ - 1); }
+        reference back() const { return *(end_ - 1); }
 
         //! Returns a raw pointer to the contents of the array.
-        pointer data() { return begin_; }
-        //! Returns a raw pointer to the contents of the array.
-        const_pointer data() const { return begin_; }
+        pointer data() const { return begin_; }
 
         /*! \brief
          * Swaps referenced memory with the other object.
@@ -335,272 +262,45 @@ class ArrayRef
         pointer           end_;
 };
 
-
-
-/*! \brief STL-like container for non-mutable interface to a C array of T
- * (or part of a std::vector<T> or std::array<T>).
- *
- * \tparam T  Value type of elements.
- *
- * This class provides an interface similar to \c std::vector<T>, with the
- * following main differences:
- *  - This class does not have its own storage.  Instead, it references an
- *    existing array of values (either a C-style array or part of an existing
- *    std::vector<T> or std::array<T>).
- *  - Only const methods are provided to access the stored values.
- *    It is not possible to alter the referenced array.
- *  - Copying objects of this type is cheap, and the copies behave identically
- *    to the original object: the copy references the same set of values.
- *
- * This class is useful for writing wrappers that expose a view of the
- * internal data stored as a single vector/array, which can be a whole
- * or part of the underlying storage.
- *
- * Methods in this class do not throw, except where indicated.
- *
- * Note that due to a Doxygen limitation, the constructor that takes a C array
- * whose size is known at compile time does not appear in the documentation.
- *
- * \inpublicapi
- * \ingroup module_utility
- */
-template <typename T>
-class ConstArrayRef
-{
-    public:
-        //! Type of values stored in the container.
-        typedef T         value_type;
-        //! Type for representing size of the container.
-        typedef size_t    size_type;
-        //! Type for representing difference between two container indices.
-        typedef ptrdiff_t difference_type;
-        //! Const reference to a container element.
-        typedef const T  &const_reference;
-        //! Const pointer to a container element.
-        typedef const T  *const_pointer;
-        //! Const iterator type for the container.
-        typedef const T  *const_iterator;
-        //! Equal to \a const_reference since changes are not allowed.
-        typedef const_reference reference;
-        //! Equal to \a const_pointer since changes are not allowed.
-        typedef const_pointer   pointer;
-        //! Equal to \a const_iterator since changes are not allowed.
-        typedef const_iterator  iterator;
-        //! Standard reverse iterator.
-        typedef std::reverse_iterator<iterator>       reverse_iterator;
-        //! Standard reverse iterator.
-        typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
-
-        //! \copydoc ArrayRef::fromPointers()
-        static ConstArrayRef<value_type>
-        fromPointers(const value_type *begin, const value_type *end)
-        {
-            return ConstArrayRef<value_type>(begin, end);
-        }
-        //! \copydoc ArrayRef::fromArray()
-        static ConstArrayRef<value_type>
-        fromArray(const value_type *begin, size_t size)
-        {
-            return ConstArrayRef<value_type>(begin, begin+size);
-        }
-        //! \copydoc ArrayRef::fromVector()
-        static ConstArrayRef<value_type>
-        fromVector(typename std::vector<value_type>::const_iterator begin,
-                   typename std::vector<value_type>::const_iterator end)
-        {
-            const value_type *p_begin = (begin != end) ? &*begin : nullptr;
-            const value_type *p_end   = p_begin + (end-begin);
-            return ConstArrayRef<value_type>(p_begin, p_end);
-        }
-
-        /*! \brief
-         * Constructs an empty reference.
-         */
-        ConstArrayRef() : begin_(nullptr), end_(nullptr) {}
-        /*! \brief
-         * Constructs an empty reference.
-         *
-         * This is provided for convenience, such that EmptyArrayRef can be
-         * used to initialize any Const ArrayRef, without specifying the
-         * template type.  It is not explicit to enable that usage.
-         */
-        ConstArrayRef(const EmptyArrayRef &) : begin_(nullptr), end_(nullptr) {}
-        /*! \brief
-         * Constructs a const reference from a non-const reference.
-         */
-        ConstArrayRef(const ArrayRef<T> &other) : begin_(other.begin()), end_(other.end()) {}
-        /*! \brief
-         * Constructs a reference to a particular range.
-         *
-         * \param[in] begin  Pointer to the beginning of a range.
-         * \param[in] end    Pointer to the end of a range.
-         *
-         * Passed pointers must remain valid for the lifetime of this object.
-         *
-         * \note For clarity, use the non-member function constArrayRefFromPointers
-         * instead.
-         */
-        ConstArrayRef(const_pointer begin, const_pointer end)
-            : begin_(begin), end_(end)
-        {
-            GMX_ASSERT(end >= begin, "Invalid range");
-        }
-        /*! \brief
-         * Constructs a reference to a whole std::vector<T>.
-         *
-         * \param[in] v  Vector to reference.
-         *
-         * Passed vector must remain valid and not be reallocated for the
-         * lifetime of this object.
-         *
-         * This constructor is not explicit to allow directly passing
-         * std::vector<T> to a method that takes ConstArrayRef.
-         */
-        ConstArrayRef(const std::vector<T> &v)
-            : begin_((!v.empty()) ? &v[0] : nullptr),
-              end_((!v.empty()) ? &v[0] + v.size() : nullptr)
-        {
-        }
-        /*! \brief
-         * Constructs a reference to a whole std::array<T>.
-         *
-         * \param[in] a  Array to reference.
-         *
-         * Passed array must remain valid for the lifetime of this
-         * object.
-         *
-         * This constructor is not explicit to allow directly passing
-         * std::array<T> to a method that takes ConstArrayRef.
-         */
-        template <size_t count>
-        ConstArrayRef(const std::array<T, count> &a)
-            : begin_((!a.empty()) ? &a[0] : NULL),
-              end_((!a.empty()) ? &a[0] + a.size() : NULL)
-        {
-        }
-        //! \cond
-        // Doxygen 1.8.5 doesn't parse the declaration correctly...
-        /*! \brief
-         * Constructs a reference to a C array.
-         *
-         * \param[in] array  C array to reference.
-         * \tparam    count  Deduced number of elements in \p array.
-         *
-         * This constructor can only be used with a real array (not with a
-         * pointer).  It constructs a reference to the whole array, without
-         * a need to pass the number of elements explicitly.  The compiler
-         * must be able to deduce the array size.
-         *
-         * Passed array must remain valid for the lifetime of this object.
-         *
-         * This constructor is not explicit to allow directly passing
-         * a C array to a function that takes a ConstArrayRef parameter.
-         */
-        template <size_t count>
-        ConstArrayRef(const value_type (&array)[count])
-            : begin_(array), end_(array + count)
-        {
-        }
-        //! \endcond
-
-        //! Returns an iterator to the beginning of the container.
-        const_iterator begin() const { return begin_; }
-        //! Returns an iterator to the end of the container.
-        const_iterator end() const { return end_; }
-        //! Returns an iterator to the reverse beginning of the container.
-        const_reverse_iterator rbegin() const { return reverse_iterator(end()); }
-        //! Returns an iterator to the reverse end of the container.
-        const_reverse_iterator rend() const { return reverse_iterator(begin()); }
-
-        //! Returns the size of the container.
-        size_type size() const { return end_ - begin_; }
-        //! Identical to size().
-        size_type capacity() const { return end_ - begin_; }
-        //! Whether the container is empty.
-        bool empty() const { return begin_ == end_; }
-
-        //! Access container element.
-        const_reference operator[](size_type n) const { return begin_[n]; }
-        //! Access container element (throws on out-of-range error).
-        const_reference at(size_type n) const
-        {
-            if (n >= size())
-            {
-                throw std::out_of_range("Vector index out of range");
-            }
-            return begin_[n];
-        }
-        //! Returns the first element in the container.
-        const_reference front() const { return *begin_; }
-        //! Returns the last element in the container.
-        const_reference back() const { return *(end_ - 1); }
-
-        //! Returns a raw pointer to the contents of the array.
-        const_pointer data() const { return begin_; }
-
-        /*! \brief
-         * Swaps referenced memory with the other object.
-         *
-         * The actual memory areas are not modified, only the references are
-         * swapped.
-         */
-        void swap(ConstArrayRef<T> &other)
-        {
-            std::swap(begin_, other.begin_);
-            std::swap(end_, other.end_);
-        }
-
-    private:
-        const_pointer           begin_;
-        const_pointer           end_;
-};
-
-
-//! \copydoc ArrayRef::fromPointers()
-//! \related ArrayRef
-template <typename T>
-ArrayRef<T> arrayRefFromPointers(T *begin, T *end)
-{
-    return ArrayRef<T>::fromPointers(begin, end);
-}
 //! \copydoc ArrayRef::fromArray()
 //! \related ArrayRef
 template <typename T>
 ArrayRef<T> arrayRefFromArray(T *begin, size_t size)
 {
-    return ArrayRef<T>::fromArray(begin, size);
+    return ArrayRef<T>(begin, begin+size);
 }
-//! \copydoc ArrayRef::fromVector()
+
+//! \copydoc ArrayRef::fromArray()
 //! \related ArrayRef
 template <typename T>
-ArrayRef<T> arrayRefFromVector(typename std::vector<T>::iterator begin,
-                               typename std::vector<T>::iterator end)
+ArrayRef<const T> constArrayRefFromArray(const T *begin, size_t size)
 {
-    return ArrayRef<T>::fromVector(begin, end);
+    return ArrayRef<const T>(begin, begin+size);
 }
 
+/*! \brief
+ * Create ArrayRef from container with type deduction
+ *
+ * \see ArrayRef
+ */
+template <typename T>
+ArrayRef<typename std::conditional<std::is_const<T>::value,
+                                   const typename T::value_type,
+                                   typename T::value_type>::type>
+makeArrayRef(T &c)
+{
+    return c;
+}
 
-//! \copydoc ConstArrayRef::fromPointers()
-//! \related ConstArrayRef
+/*! \brief
+ * Create ArrayRef to const T from container with type deduction
+ *
+ * \see ArrayRef
+ */
 template <typename T>
-ConstArrayRef<T> constArrayRefFromPointers(const T *begin, const T *end)
+ArrayRef<const typename T::value_type> makeConstArrayRef(const T &c)
 {
-    return ConstArrayRef<T>::fromPointers(begin, end);
-}
-//! \copydoc ConstArrayRef::fromArray()
-//! \related ConstArrayRef
-template <typename T>
-ConstArrayRef<T> constArrayRefFromArray(const T *begin, size_t size)
-{
-    return ConstArrayRef<T>::fromArray(begin, size);
-}
-//! \copydoc ConstArrayRef::fromVector()
-//! \related ConstArrayRef
-template <typename T>
-ConstArrayRef<T> constArrayRefFromVector(typename std::vector<T>::const_iterator begin,
-                                         typename std::vector<T>::const_iterator end)
-{
-    return ConstArrayRef<T>::fromVector(begin, end);
+    return c;
 }
 
 /*! \brief
@@ -616,17 +316,20 @@ void swap(ArrayRef<T> &a, ArrayRef<T> &b)
     a.swap(b);
 }
 
-/*! \brief
- * Simple swap method for ConstArrayRef objects.
+/*! \brief Return a vector that is a copy of an ArrayRef.
  *
- * \see ConstArrayRef::swap()
+ * This makes it convenient, clear, and performant (the compiler will
+ * either do RVO to elide the temporary, or invoke the move constructor
+ * taking the unnamed temporary) to write a declaration like
+ *
+ *   auto v = copyOf(arrayRef);
  *
  * \ingroup module_utility
  */
 template <typename T>
-void swap(ConstArrayRef<T> &a, ConstArrayRef<T> &b)
+std::vector<T> copyOf(const ArrayRef<const T> &arrayRef)
 {
-    a.swap(b);
+    return std::vector<T>(arrayRef.begin(), arrayRef.end());
 }
 
 } // namespace gmx

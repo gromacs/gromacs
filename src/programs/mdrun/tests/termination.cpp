@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,7 @@ namespace test
 {
 
 //! Build a simple .mdp file
-void organizeMdpFile(SimulationRunner *runner)
+static void organizeMdpFile(SimulationRunner *runner)
 {
     // Make sure -maxh has a chance to propagate
     runner->useStringAsMdpFile("nsteps = 100\n"
@@ -81,5 +81,18 @@ TEST_F(MdrunTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts
     helper.runSecondMdrun();
 }
 
-} // namespace
-} // namespace
+TEST_F(MdrunTerminationTest, CheckpointRestartWorksWithNoAppend)
+{
+    CommandLine       mdrunCaller;
+    mdrunCaller.append("mdrun");
+    TerminationHelper helper(&fileManager_, &mdrunCaller, &runner_);
+
+    organizeMdpFile(&runner_);
+    EXPECT_EQ(0, runner_.callGrompp());
+
+    helper.runFirstMdrun(runner_.cptFileName_);
+    helper.runSecondMdrunWithNoAppend();
+}
+
+}  // namespace test
+}  // namespace gmx

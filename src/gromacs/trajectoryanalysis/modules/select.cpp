@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,6 +67,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/trajectoryanalysis/topologyinformation.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -92,7 +93,7 @@ class IndexFileWriterModule : public AnalysisDataModuleSerial
 {
     public:
         IndexFileWriterModule();
-        virtual ~IndexFileWriterModule();
+        ~IndexFileWriterModule() override;
 
         //! Sets the file name to write the index file to.
         void setFileName(const std::string &fnm);
@@ -103,13 +104,13 @@ class IndexFileWriterModule : public AnalysisDataModuleSerial
          */
         void addGroup(const std::string &name, bool bDynamic);
 
-        virtual int flags() const;
+        int flags() const override;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
-        virtual void frameStarted(const AnalysisDataFrameHeader &header);
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
-        virtual void frameFinished(const AnalysisDataFrameHeader &header);
-        virtual void dataFinished();
+        void dataStarted(AbstractAnalysisData *data) override;
+        void frameStarted(const AnalysisDataFrameHeader &header) override;
+        void pointsAdded(const AnalysisDataPointSetRef &points) override;
+        void frameFinished(const AnalysisDataFrameHeader &header) override;
+        void dataFinished() override;
 
     private:
         void closeFile();
@@ -279,17 +280,17 @@ class Select : public TrajectoryAnalysisModule
     public:
         Select();
 
-        virtual void initOptions(IOptionsContainer          *options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation        &top);
+        void initOptions(IOptionsContainer          *options,
+                         TrajectoryAnalysisSettings *settings) override;
+        void optionsFinished(TrajectoryAnalysisSettings *settings) override;
+        void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                          const TopologyInformation        &top) override;
 
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+        void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                          TrajectoryAnalysisModuleData *pdata) override;
 
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
+        void finishAnalysis(int nframes) override;
+        void writeOutput() override;
 
     private:
         SelectionList                       sel_;
@@ -309,6 +310,7 @@ class Select : public TrajectoryAnalysisModule
         ResidueNumbering                    resNumberType_;
         PdbAtomsSelection                   pdbAtoms_;
 
+        //! The input topology.
         const TopologyInformation          *top_;
         std::vector<int>                    totsize_;
         AnalysisData                        sdata_;
@@ -606,7 +608,6 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
     AnalysisDataHandle   idh = pdata->dataHandle(idata_);
     AnalysisDataHandle   mdh = pdata->dataHandle(mdata_);
     const SelectionList &sel = pdata->parallelSelections(sel_);
-    t_topology          *top = top_->topology();
 
     sdh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
@@ -637,7 +638,7 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
             const SelectionPosition &p = sel[g].position(i);
             if (sel[g].type() == INDEX_RES && !bResInd_)
             {
-                idh.setPoint(1, top->atoms.resinfo[p.mappedId()].nr);
+                idh.setPoint(1, top_->atoms()->resinfo[p.mappedId()].nr);
             }
             else
             {
@@ -678,45 +679,39 @@ Select::writeOutput()
     {
         GMX_RELEASE_ASSERT(top_->hasTopology(),
                            "Topology should have been loaded or an error given earlier");
-        t_atoms            atoms;
-        atoms = top_->topology()->atoms;
-        t_pdbinfo         *pdbinfo;
-        snew(pdbinfo, atoms.nr);
-        const sfree_guard  pdbinfoGuard(pdbinfo);
-        if (atoms.havePdbInfo)
+        auto atoms = top_->copyAtoms();
+        if (!atoms->havePdbInfo)
         {
-            std::memcpy(pdbinfo, atoms.pdbinfo, atoms.nr*sizeof(*pdbinfo));
+            snew(atoms->pdbinfo, atoms->nr);
+            atoms->havePdbInfo = TRUE;
         }
-        else
+        for (int i = 0; i < atoms->nr; ++i)
         {
-            atoms.havePdbInfo = TRUE;
-        }
-        atoms.pdbinfo = pdbinfo;
-        for (int i = 0; i < atoms.nr; ++i)
-        {
-            pdbinfo[i].occup = 0.0;
+            atoms->pdbinfo[i].occup = 0.0;
         }
         for (size_t g = 0; g < sel_.size(); ++g)
         {
             for (int i = 0; i < sel_[g].posCount(); ++i)
             {
-                ConstArrayRef<int>                 atomIndices
+                ArrayRef<const int>                 atomIndices
                     = sel_[g].position(i).atomIndices();
-                ConstArrayRef<int>::const_iterator ai;
+                ArrayRef<const int>::const_iterator ai;
                 for (ai = atomIndices.begin(); ai != atomIndices.end(); ++ai)
                 {
-                    pdbinfo[*ai].occup += occupancyModule_->average(g, i);
+                    atoms->pdbinfo[*ai].occup += occupancyModule_->average(g, i);
                 }
             }
         }
 
-        t_trxframe fr;
+        std::vector<RVec> x = copyOf(top_->x());
+        t_trxframe        fr;
         clear_trxframe(&fr, TRUE);
         fr.bAtoms = TRUE;
-        fr.atoms  = &atoms;
+        fr.atoms  = atoms.get();
         fr.bX     = TRUE;
         fr.bBox   = TRUE;
-        top_->getTopologyConf(&fr.x, fr.box);
+        fr.x      = as_rvec_array(x.data());
+        top_->getBox(fr.box);
 
         switch (pdbAtoms_)
         {
@@ -732,7 +727,7 @@ Select::writeOutput()
                 std::set<int> atomIndicesSet;
                 for (size_t g = 0; g < sel_.size(); ++g)
                 {
-                    ConstArrayRef<int> atomIndices = sel_[g].atomIndices();
+                    ArrayRef<const int> atomIndices = sel_[g].atomIndices();
                     atomIndicesSet.insert(atomIndices.begin(), atomIndices.end());
                 }
                 std::vector<int>  allAtomIndices(atomIndicesSet.begin(),
@@ -746,9 +741,9 @@ Select::writeOutput()
             case PdbAtomsSelection_Selected:
             {
                 std::vector<int> indices;
-                for (int i = 0; i < atoms.nr; ++i)
+                for (int i = 0; i < atoms->nr; ++i)
                 {
-                    if (pdbinfo[i].occup > 0.0)
+                    if (atoms->pdbinfo[i].occup > 0.0)
                     {
                         indices.push_back(i);
                     }

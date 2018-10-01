@@ -87,11 +87,11 @@ OTHER DEALINGS WITH THE SOFTWARE.
 
 /* File plugin symbolic constants for better code readability */
 #define MOLFILE_SUCCESS           0   /**< succeeded in reading file      */
-#define MOLFILE_EOF              -1   /**< end of file                    */
-#define MOLFILE_ERROR            -1   /**< error reading/opening a file   */
-#define MOLFILE_NOSTRUCTUREDATA  -2   /**< no structure data in this file */
+#define MOLFILE_EOF              (-1)   /**< end of file                    */
+#define MOLFILE_ERROR            (-1)   /**< error reading/opening a file   */
+#define MOLFILE_NOSTRUCTUREDATA  (-2)   /**< no structure data in this file */
 
-#define MOLFILE_NUMATOMS_UNKNOWN -1   /**< unknown number of atoms       */
+#define MOLFILE_NUMATOMS_UNKNOWN (-1)   /**< unknown number of atoms       */
 #define MOLFILE_NUMATOMS_NONE     0   /**< no atoms in this file type    */
 
 /**
@@ -103,7 +103,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #define MOLFILE_MAXWAVEPERTS     25   /**< maximum number of wavefunctions
                                        *   per timestep */
 
-#define MOLFILE_QM_STATUS_UNKNOWN  -1
+#define MOLFILE_QM_STATUS_UNKNOWN  (-1)
 #define MOLFILE_QM_OPT_CONVERGED    0
 #define MOLFILE_QM_SCF_NOT_CONV     1
 #define MOLFILE_QM_OPT_NOT_CONV     2

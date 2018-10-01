@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,7 +62,7 @@
 #include "gromacs/utility/strdb.h"
 
 static int strip_dssp(char *dsspfile, int nres,
-                      gmx_bool bPhobres[], real t,
+                      const gmx_bool bPhobres[], real t,
                       real *acc, FILE *fTArea,
                       t_matrix *mat, int average_area[],
                       const gmx_output_env_t *oenv)
@@ -147,7 +147,7 @@ static int strip_dssp(char *dsspfile, int nres,
 
         sprintf(mat->title, "Secondary structure");
         mat->legend[0] = 0;
-        sprintf(mat->label_x, "%s", output_env_get_time_label(oenv));
+        sprintf(mat->label_x, "%s", output_env_get_time_label(oenv).c_str());
         sprintf(mat->label_y, "Residue");
         mat->bDiscrete = TRUE;
         mat->ny        = nr;
@@ -237,7 +237,7 @@ static void check_oo(t_atoms *atoms)
 }
 
 static void norm_acc(t_atoms *atoms, int nres,
-                     real av_area[], real norm_av_area[])
+                     const real av_area[], real norm_av_area[])
 {
     int     i, n, n_surf;
 
@@ -269,7 +269,7 @@ static void norm_acc(t_atoms *atoms, int nres,
     }
 }
 
-void prune_ss_legend(t_matrix *mat)
+static void prune_ss_legend(t_matrix *mat)
 {
     gmx_bool  *present;
     int       *newnum;
@@ -314,7 +314,7 @@ void prune_ss_legend(t_matrix *mat)
     }
 }
 
-void write_sas_mat(const char *fn, real **accr, int nframe, int nres, t_matrix *mat)
+static void write_sas_mat(const char *fn, real **accr, int nframe, int nres, t_matrix *mat)
 {
     real  lo, hi;
     int   i, j, nlev;
@@ -341,8 +341,8 @@ void write_sas_mat(const char *fn, real **accr, int nframe, int nres, t_matrix *
     }
 }
 
-void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
-                const gmx_output_env_t *oenv)
+static void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
+                       const gmx_output_env_t *oenv)
 {
     FILE        *fp;
     t_mapping   *map;
@@ -355,7 +355,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     snew(total, mat->nmap);
     snew(leg, mat->nmap+1);
     leg[0] = "Structure";
-    for (s = 0; s < (size_t)mat->nmap; s++)
+    for (s = 0; s < static_cast<size_t>(mat->nmap); s++)
     {
         leg[s+1] = gmx_strdup(map[s].desc);
     }
@@ -384,7 +384,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     xvgr_legend(fp, mat->nmap+1, leg, oenv);
 
     total_count = 0;
-    for (s = 0; s < (size_t)mat->nmap; s++)
+    for (s = 0; s < static_cast<size_t>(mat->nmap); s++)
     {
         total[s] = 0;
     }
@@ -423,8 +423,8 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     }
     fprintf(fp, "\n");
 
-    /* now print percentages */
-    fprintf(fp, "%-8s %5.2f", "# SS %", total_count / static_cast<real>(mat->nx * mat->ny));
+    /* now print probabilities */
+    fprintf(fp, "%-8s %5.2f", "# SS pr.", total_count / static_cast<real>(mat->nx * mat->ny));
     for (s = 0; s < static_cast<size_t>(mat->nmap); s++)
     {
         fprintf(fp, " %5.2f", total[s] / static_cast<real>(mat->nx * mat->ny));
@@ -536,7 +536,7 @@ int gmx_do_dssp(int argc, char *argv[])
     fnArea     = opt2fn_null("-a", NFILE, fnm);
     fnTArea    = opt2fn_null("-ta", NFILE, fnm);
     fnAArea    = opt2fn_null("-aa", NFILE, fnm);
-    bDoAccSurf = (fnArea || fnTArea || fnAArea);
+    bDoAccSurf = ((fnArea != nullptr) || (fnTArea != nullptr) || (fnAArea != nullptr));
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xp, nullptr, box, FALSE);
     atoms = &(top.atoms);
@@ -660,12 +660,12 @@ int gmx_do_dssp(int argc, char *argv[])
         }
         gmx_rmpbc(gpbc, natoms, box, x);
         tapein = gmx_ffopen(pdbfile, "w");
-        write_pdbfile_indexed(tapein, nullptr, atoms, x, ePBC, box, ' ', -1, gnx, index, nullptr, TRUE);
+        write_pdbfile_indexed(tapein, nullptr, atoms, x, ePBC, box, ' ', -1, gnx, index, nullptr, TRUE, FALSE);
         gmx_ffclose(tapein);
 
         if (0 != system(dssp))
         {
-            gmx_fatal(FARGS, "Failed to execute command: %s\n",
+            gmx_fatal(FARGS, "Failed to execute command: %s\n"
                       "Try specifying your dssp version with the -ver option.", dssp);
         }
 
@@ -685,7 +685,7 @@ int gmx_do_dssp(int argc, char *argv[])
     }
     while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
-    close_trj(status);
+    close_trx(status);
     if (fTArea)
     {
         xvgrclose(fTArea);

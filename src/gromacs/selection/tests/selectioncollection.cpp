@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,7 +78,7 @@ class SelectionCollectionTest : public ::testing::Test
         static int               s_debugLevel;
 
         SelectionCollectionTest();
-        ~SelectionCollectionTest();
+        ~SelectionCollectionTest() override;
 
         void setAtomCount(int natoms)
         {
@@ -161,7 +161,7 @@ class SelectionCollectionInteractiveTest : public SelectionCollectionTest
         }
 
         void runTest(int count, bool bInteractive,
-                     const gmx::ConstArrayRef<const char *> &input);
+                     const gmx::ArrayRef<const char *const> &input);
 
         gmx::test::TestReferenceData      data_;
         gmx::test::InteractiveTestHelper  helper_;
@@ -169,7 +169,7 @@ class SelectionCollectionInteractiveTest : public SelectionCollectionTest
 
 void SelectionCollectionInteractiveTest::runTest(
         int count, bool bInteractive,
-        const gmx::ConstArrayRef<const char *> &inputLines)
+        const gmx::ArrayRef<const char *const> &inputLines)
 {
     helper_.setInputLines(inputLines);
     // TODO: Check something about the returned selections as well.
@@ -208,15 +208,15 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
 
         void setFlags(TestFlags flags) { flags_ = flags; }
 
-        void runParser(const gmx::ConstArrayRef<const char *> &selections);
+        void runParser(const gmx::ArrayRef<const char *const> &selections);
         void runCompiler();
         void runEvaluate();
         void runEvaluateFinal();
 
         void runTest(int                                     natoms,
-                     const gmx::ConstArrayRef<const char *> &selections);
+                     const gmx::ArrayRef<const char *const> &selections);
         void runTest(const char                             *filename,
-                     const gmx::ConstArrayRef<const char *> &selections);
+                     const gmx::ArrayRef<const char *const> &selections);
 
     private:
         static void checkSelection(gmx::test::TestReferenceChecker *checker,
@@ -240,7 +240,7 @@ SelectionCollectionDataTest::checkSelection(
     using gmx::test::TestReferenceChecker;
 
     {
-        gmx::ConstArrayRef<int> atoms = sel.atomIndices();
+        gmx::ArrayRef<const int> atoms = sel.atomIndices();
         checker->checkSequence(atoms.begin(), atoms.end(), "Atoms");
     }
     if (flags.test(efTestPositionAtoms)
@@ -257,7 +257,7 @@ SelectionCollectionDataTest::checkSelection(
             const gmx::SelectionPosition &p = sel.position(i);
             if (flags.test(efTestPositionAtoms))
             {
-                gmx::ConstArrayRef<int> atoms = p.atomIndices();
+                gmx::ArrayRef<const int> atoms = p.atomIndices();
                 poscompound.checkSequence(atoms.begin(), atoms.end(), "Atoms");
             }
             if (flags.test(efTestPositionCoordinates))
@@ -284,14 +284,14 @@ SelectionCollectionDataTest::checkSelection(
 
 void
 SelectionCollectionDataTest::runParser(
-        const gmx::ConstArrayRef<const char *> &selections)
+        const gmx::ArrayRef<const char *const> &selections)
 {
     using gmx::test::TestReferenceChecker;
 
     TestReferenceChecker compound(checker_.checkCompound("ParsedSelections", "Parsed"));
     size_t               varcount = 0;
     count_ = 0;
-    for (size_t i = 0; i < selections.size(); ++i)
+    for (gmx::index i = 0; i < selections.size(); ++i)
     {
         SCOPED_TRACE(std::string("Parsing selection \"")
                      + selections[i] + "\"");
@@ -391,7 +391,7 @@ SelectionCollectionDataTest::runEvaluateFinal()
 
 void
 SelectionCollectionDataTest::runTest(
-        int natoms, const gmx::ConstArrayRef<const char *> &selections)
+        int natoms, const gmx::ArrayRef<const char *const> &selections)
 {
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
     ASSERT_NO_FATAL_FAILURE(setAtomCount(natoms));
@@ -401,7 +401,7 @@ SelectionCollectionDataTest::runTest(
 
 void
 SelectionCollectionDataTest::runTest(
-        const char *filename, const gmx::ConstArrayRef<const char *> &selections)
+        const char *filename, const gmx::ArrayRef<const char *const> &selections)
 {
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
     ASSERT_NO_FATAL_FAILURE(loadTopology(filename));

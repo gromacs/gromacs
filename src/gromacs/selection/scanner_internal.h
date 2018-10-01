@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -136,10 +136,10 @@ typedef struct gmx_sel_lexer_t
  * we cannot have them here as parameter names... */
 /** Internal function for cases where several tokens need to be returned. */
 int
-_gmx_sel_lexer_process_pending(YYSTYPE *, YYLTYPE *, gmx_sel_lexer_t *state);
+_gmx_sel_lexer_process_pending(YYSTYPE * /*yylval*/, YYLTYPE *, gmx_sel_lexer_t *state);
 /** Internal function that processes identifier tokens. */
 int
-    _gmx_sel_lexer_process_identifier(YYSTYPE *, YYLTYPE *, char *, size_t,
+    _gmx_sel_lexer_process_identifier(YYSTYPE * /*yylval*/, YYLTYPE *, char * /*yytext*/, size_t /*yyleng*/,
                                       gmx_sel_lexer_t *state);
 /** Internal function to add a token to the pretty-printed selection text. */
 void

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,11 +39,11 @@
 
 #include "convparm.h"
 
-#include <string.h>
-
 #include <cassert>
 #include <cmath>
+#include <cstring>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/topio.h"
 #include "gromacs/gmxpreprocess/toputil.h"
@@ -59,16 +59,7 @@
 
 static int round_check(real r, int limit, int ftype, const char *name)
 {
-    int i;
-
-    if (r >= 0)
-    {
-        i = (int)(r + 0.5);
-    }
-    else
-    {
-        i = (int)(r - 0.5);
-    }
+    const int i = gmx::roundToInt(r);
 
     if (r-i > 0.01 || r-i < -0.01)
     {
@@ -117,7 +108,7 @@ assign_param(t_functype ftype, t_iparams *newparam,
              real old[MAXFORCEPARAM], int comb, double reppow)
 {
     int      i, j;
-    gmx_bool all_param_zero = TRUE;
+    bool     all_param_zero = TRUE;
 
     /* Set to zero */
     for (j = 0; (j < MAXFORCEPARAM); j++)
@@ -128,10 +119,10 @@ assign_param(t_functype ftype, t_iparams *newparam,
          * zero parameters (e.g. an index to a Cmap interaction, or LJ parameters), but
          * we use it for angles and torsions that are typically generated automatically.
          */
-        all_param_zero = (all_param_zero == TRUE) && fabs(old[j]) < GMX_REAL_MIN;
+        all_param_zero = all_param_zero && fabs(old[j]) < GMX_REAL_MIN;
     }
 
-    if (all_param_zero == TRUE)
+    if (all_param_zero)
     {
         if (IS_ANGLE(ftype) || IS_RESTRAINT_TYPE(ftype) || ftype == F_IDIHS ||
             ftype == F_PDIHS || ftype == F_PIDIHS || ftype == F_RBDIHS || ftype == F_FOURDIHS)
@@ -451,14 +442,9 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->cmap.cmapA = static_cast<int>(old[0]);
             newparam->cmap.cmapB = static_cast<int>(old[1]);
             break;
-        case F_GB12:
-        case F_GB13:
-        case F_GB14:
-            newparam->gb.sar  = old[0];
-            newparam->gb.st   = old[1];
-            newparam->gb.pi   = old[2];
-            newparam->gb.gbr  = old[3];
-            newparam->gb.bmlt = old[4];
+        case F_GB12_NOLONGERUSED:
+        case F_GB13_NOLONGERUSED:
+        case F_GB14_NOLONGERUSED:
             break;
         default:
             gmx_fatal(FARGS, "unknown function type %d in %s line %d",
@@ -467,9 +453,15 @@ assign_param(t_functype ftype, t_iparams *newparam,
     return 0;
 }
 
+<<<<<<< HEAD
 int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
                  real forceparams[MAXFORCEPARAM], int comb, real reppow,
                  int start, gmx_bool bAppend)
+=======
+static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
+                        real forceparams[MAXFORCEPARAM], int comb, real reppow,
+                        int start, bool bAppend)
+>>>>>>> master
 {
     t_iparams newparam;
     int       type;
@@ -483,97 +475,58 @@ int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
 
     if (!bAppend)
     {
-        for (type = start; (type < ffparams->ntypes); type++)
+        for (type = start; (type < ffparams->numTypes()); type++)
         {
             if (ffparams->functype[type] == ftype)
             {
-                if (F_GB13 == ftype)
+                if (memcmp(&newparam, &ffparams->iparams[type], static_cast<size_t>(sizeof(newparam))) == 0)
                 {
-                    /* Occasionally, the way the 1-3 reference distance is
-                     * computed can lead to non-binary-identical results, but I
-                     * don't know why. */
-                    if ((gmx_within_tol(newparam.gb.sar,  ffparams->iparams[type].gb.sar,  1e-6)) &&
-                        (gmx_within_tol(newparam.gb.st,   ffparams->iparams[type].gb.st,   1e-6)) &&
-                        (gmx_within_tol(newparam.gb.pi,   ffparams->iparams[type].gb.pi,   1e-6)) &&
-                        (gmx_within_tol(newparam.gb.gbr,  ffparams->iparams[type].gb.gbr,  1e-6)) &&
-                        (gmx_within_tol(newparam.gb.bmlt, ffparams->iparams[type].gb.bmlt, 1e-6)))
-                    {
-                        return type;
-                    }
-                }
-                else
-                {
-                    if (memcmp(&newparam, &ffparams->iparams[type], (size_t)sizeof(newparam)) == 0)
-                    {
-                        return type;
-                    }
+                    return type;
                 }
             }
         }
     }
     else
     {
-        type = ffparams->ntypes;
+        type = ffparams->numTypes();
     }
-    if (debug)
-    {
-        fprintf(debug, "copying newparam to ffparams->iparams[%d] (ntypes=%d)\n",
-                type, ffparams->ntypes);
-    }
-    memcpy(&ffparams->iparams[type], &newparam, (size_t)sizeof(newparam));
 
-    ffparams->ntypes++;
-    ffparams->functype[type] = ftype;
+    ffparams->iparams.push_back(newparam);
+    ffparams->functype.push_back(ftype);
+
+    GMX_ASSERT(ffparams->iparams.size() == ffparams->functype.size(),
+               "sizes should match");
 
     return type;
 }
 
-static void append_interaction(t_ilist *ilist,
-                               int type, int nral, int a[MAXATOMLIST])
+static void append_interaction(InteractionList *ilist,
+                               int type, int nral, const int a[MAXATOMLIST])
 {
-    int i, where1;
-
-    where1     = ilist->nr;
-    ilist->nr += nral+1;
-
-    ilist->iatoms[where1++] = type;
-    for (i = 0; (i < nral); i++)
+    ilist->iatoms.push_back(type);
+    for (int i = 0; (i < nral); i++)
     {
-        ilist->iatoms[where1++] = a[i];
+        ilist->iatoms.push_back(a[i]);
     }
 }
 
 static void enter_function(t_params *p, t_functype ftype, int comb, real reppow,
-                           gmx_ffparams_t *ffparams, t_ilist *il,
-                           int *maxtypes,
-                           gmx_bool bNB, gmx_bool bAppend)
+                           gmx_ffparams_t *ffparams, InteractionList *il,
+                           bool bNB, bool bAppend)
 {
-    int     k, type, nr, nral, delta, start;
+    int     k, type, nr, nral, start;
 
-    start = ffparams->ntypes;
+    start = ffparams->numTypes();
     nr    = p->nr;
 
     for (k = 0; k < nr; k++)
     {
-        if (*maxtypes <= ffparams->ntypes)
-        {
-            *maxtypes += 1000;
-            srenew(ffparams->functype, *maxtypes);
-            srenew(ffparams->iparams, *maxtypes);
-            if (debug)
-            {
-                fprintf(debug, "%s, line %d: srenewed idef->functype and idef->iparams to %d\n",
-                        __FILE__, __LINE__, *maxtypes);
-            }
-        }
         type = enter_params(ffparams, ftype, p->param[k].c, comb, reppow, start, bAppend);
         /* Type==-1 is used as a signal that this interaction is all-zero and should not be added. */
         if (!bNB && type >= 0)
         {
             assert(il);
             nral  = NRAL(ftype);
-            delta = nr*(nral+1);
-            srenew(il->iatoms, il->nr+delta);
             append_interaction(il, type, nral, p->param[k].a);
         }
     }
@@ -584,33 +537,29 @@ void convert_params(int atnr, t_params nbtypes[],
                     int comb, double reppow, real fudgeQQ,
                     gmx_mtop_t *mtop)
 {
-    int             i, maxtypes, mt;
+    int             i;
     unsigned long   flags;
     gmx_ffparams_t *ffp;
     gmx_moltype_t  *molt;
     t_params       *plist;
 
-    maxtypes = 0;
-
     ffp           = &mtop->ffparams;
-    ffp->ntypes   = 0;
     ffp->atnr     = atnr;
-    ffp->functype = nullptr;
-    ffp->iparams  = nullptr;
+    ffp->functype.clear();
+    ffp->iparams.clear();
     ffp->reppow   = reppow;
 
-    enter_function(&(nbtypes[F_LJ]),  (t_functype)F_LJ,    comb, reppow, ffp, nullptr,
-                   &maxtypes, TRUE, TRUE);
-    enter_function(&(nbtypes[F_BHAM]), (t_functype)F_BHAM,  comb, reppow, ffp, nullptr,
-                   &maxtypes, TRUE, TRUE);
+    enter_function(&(nbtypes[F_LJ]),  static_cast<t_functype>(F_LJ),    comb, reppow, ffp, nullptr,
+                   TRUE, TRUE);
+    enter_function(&(nbtypes[F_BHAM]), static_cast<t_functype>(F_BHAM),  comb, reppow, ffp, nullptr,
+                   TRUE, TRUE);
 
-    for (mt = 0; mt < mtop->nmoltype; mt++)
+    for (size_t mt = 0; mt < mtop->moltype.size(); mt++)
     {
         molt = &mtop->moltype[mt];
         for (i = 0; (i < F_NRE); i++)
         {
-            molt->ilist[i].nr     = 0;
-            molt->ilist[i].iatoms = nullptr;
+            molt->ilist[i].iatoms.clear();
 
             plist = mi[mt].plist;
 
@@ -619,9 +568,9 @@ void convert_params(int atnr, t_params nbtypes[],
                                                  (flags & IF_VSITE) ||
                                                  (flags & IF_CONSTRAINT)))
             {
-                enter_function(&(plist[i]), (t_functype)i, comb, reppow,
+                enter_function(&(plist[i]), static_cast<t_functype>(i), comb, reppow,
                                ffp, &molt->ilist[i],
-                               &maxtypes, FALSE, (i == F_POSRES  || i == F_FBPOSRES));
+                               FALSE, (i == F_POSRES  || i == F_FBPOSRES));
             }
         }
     }
@@ -630,12 +579,11 @@ void convert_params(int atnr, t_params nbtypes[],
     if (intermolecular_interactions != nullptr)
     {
         /* Process the intermolecular interaction list */
-        snew(mtop->intermolecular_ilist, F_NRE);
+        mtop->intermolecular_ilist = gmx::compat::make_unique<InteractionLists>();
 
         for (i = 0; (i < F_NRE); i++)
         {
-            mtop->intermolecular_ilist[i].nr     = 0;
-            mtop->intermolecular_ilist[i].iatoms = nullptr;
+            (*mtop->intermolecular_ilist)[i].iatoms.clear();
 
             plist = intermolecular_interactions->plist;
 
@@ -661,9 +609,9 @@ void convert_params(int atnr, t_params nbtypes[],
                 }
                 else
                 {
-                    enter_function(&(plist[i]), (t_functype)i, comb, reppow,
-                                   ffp, &mtop->intermolecular_ilist[i],
-                                   &maxtypes, FALSE, FALSE);
+                    enter_function(&(plist[i]), static_cast<t_functype>(i), comb, reppow,
+                                   ffp, &(*mtop->intermolecular_ilist)[i],
+                                   FALSE, FALSE);
 
                     mtop->bIntermolecularInteractions = TRUE;
                 }
@@ -672,14 +620,8 @@ void convert_params(int atnr, t_params nbtypes[],
 
         if (!mtop->bIntermolecularInteractions)
         {
-            sfree(mtop->intermolecular_ilist);
+            mtop->intermolecular_ilist.reset(nullptr);
         }
-    }
-
-    if (debug)
-    {
-        fprintf(debug, "%s, line %d: There are %d functypes in idef\n",
-                __FILE__, __LINE__, ffp->ntypes);
     }
 
     ffp->fudgeQQ = fudgeQQ;

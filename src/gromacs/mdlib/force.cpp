@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,9 +40,9 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <math.h>
-#include <string.h>
+#include <cassert>
+#include <cmath>
+#include <cstring>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -55,12 +55,17 @@
 #include "gromacs/listed-forces/listed-forces.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
+#include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/forcerec-threading.h"
-#include "gromacs/mdlib/genborn.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
+#include "gromacs/mdlib/rf_util.h"
+#include "gromacs/mdlib/wall.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/enerdata.h"
+#include "gromacs/mdtypes/forceoutput.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -72,15 +77,15 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-void ns(FILE              *fp,
-        t_forcerec        *fr,
-        matrix             box,
-        gmx_groups_t      *groups,
-        gmx_localtop_t    *top,
-        t_mdatoms         *md,
-        t_commrec         *cr,
-        t_nrnb            *nrnb,
-        gmx_bool           bFillGrid)
+void ns(FILE               *fp,
+        t_forcerec         *fr,
+        matrix              box,
+        const gmx_groups_t *groups,
+        gmx_localtop_t     *top,
+        const t_mdatoms    *md,
+        const t_commrec    *cr,
+        t_nrnb             *nrnb,
+        gmx_bool            bFillGrid)
 {
     int     nsearch;
 
@@ -108,51 +113,57 @@ void ns(FILE              *fp,
     }
 }
 
-static void reduce_thread_energies(tensor vir_q, tensor vir_lj,
-                                   real *Vcorr_q, real *Vcorr_lj,
-                                   real *dvdl_q, real *dvdl_lj,
-                                   int nthreads,
-                                   ewald_corr_thread_t *ewc_t)
+static void clearEwaldThreadOutput(ewald_corr_thread_t *ewc_t)
 {
-    int t;
+    ewc_t->Vcorr_q        = 0;
+    ewc_t->Vcorr_lj       = 0;
+    ewc_t->dvdl[efptCOUL] = 0;
+    ewc_t->dvdl[efptVDW]  = 0;
+    clear_mat(ewc_t->vir_q);
+    clear_mat(ewc_t->vir_lj);
+}
 
-    for (t = 1; t < nthreads; t++)
+static void reduceEwaldThreadOuput(int nthreads, ewald_corr_thread_t *ewc_t)
+{
+    ewald_corr_thread_t &dest = ewc_t[0];
+
+    for (int t = 1; t < nthreads; t++)
     {
-        *Vcorr_q  += ewc_t[t].Vcorr_q;
-        *Vcorr_lj += ewc_t[t].Vcorr_lj;
-        *dvdl_q   += ewc_t[t].dvdl[efptCOUL];
-        *dvdl_lj  += ewc_t[t].dvdl[efptVDW];
-        m_add(vir_q, ewc_t[t].vir_q, vir_q);
-        m_add(vir_lj, ewc_t[t].vir_lj, vir_lj);
+        dest.Vcorr_q        += ewc_t[t].Vcorr_q;
+        dest.Vcorr_lj       += ewc_t[t].Vcorr_lj;
+        dest.dvdl[efptCOUL] += ewc_t[t].dvdl[efptCOUL];
+        dest.dvdl[efptVDW]  += ewc_t[t].dvdl[efptVDW];
+        m_add(dest.vir_q,  ewc_t[t].vir_q,  dest.vir_q);
+        m_add(dest.vir_lj, ewc_t[t].vir_lj, dest.vir_lj);
     }
 }
 
-void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
-                       t_idef     *idef,    t_commrec  *cr,
-                       t_nrnb     *nrnb,    gmx_wallcycle_t wcycle,
-                       t_mdatoms  *md,
-                       rvec       x[],      history_t  *hist,
-                       rvec       f[],
-                       gmx_enerdata_t *enerd,
-                       t_fcdata   *fcd,
-                       gmx_localtop_t *top,
-                       gmx_genborn_t *born,
-                       gmx_bool       bBornRadii,
-                       matrix     box,
-                       t_lambda   *fepvals,
-                       real       *lambda,
-                       t_graph    *graph,
-                       t_blocka   *excl,
-                       rvec       mu_tot[],
-                       int        flags,
-                       float      *cycles_pme)
+void do_force_lowlevel(t_forcerec           *fr,
+                       const t_inputrec     *ir,
+                       const t_idef         *idef,
+                       const t_commrec      *cr,
+                       const gmx_multisim_t *ms,
+                       t_nrnb               *nrnb,
+                       gmx_wallcycle_t       wcycle,
+                       const t_mdatoms      *md,
+                       rvec                  x[],
+                       history_t            *hist,
+                       rvec                 *forceForUseWithShiftForces,
+                       gmx::ForceWithVirial *forceWithVirial,
+                       gmx_enerdata_t       *enerd,
+                       t_fcdata             *fcd,
+                       matrix                box,
+                       t_lambda             *fepvals,
+                       real                 *lambda,
+                       const t_graph        *graph,
+                       const t_blocka       *excl,
+                       rvec                  mu_tot[],
+                       int                   flags,
+                       float                *cycles_pme)
 {
     int         i, j;
     int         donb_flags;
-    gmx_bool    bSB;
     int         pme_flags;
-    matrix      boxs;
-    rvec        box_size;
     t_pbc       pbc;
     real        dvdl_dum[efptNR], dvdl_nb[efptNR];
 
@@ -169,16 +180,10 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         dvdl_dum[i] = 0;
     }
 
-    /* Reset box */
-    for (i = 0; (i < DIM); i++)
-    {
-        box_size[i] = box[i][i];
-    }
-
     /* do QMMM first if requested */
     if (fr->bQMMM)
     {
-        enerd->term[F_EQM] = calculate_QMMM(cr, x, f, fr);
+        enerd->term[F_EQM] = calculate_QMMM(cr, forceForUseWithShiftForces, fr);
     }
 
     /* Call the short range functions all in one go. */
@@ -196,30 +201,12 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     if (ir->nwall)
     {
         /* foreign lambda component for walls */
-        real dvdl_walls = do_walls(ir, fr, box, md, x, f, lambda[efptVDW],
+        real dvdl_walls = do_walls(*ir, *fr, box, *md, x,
+                                   forceWithVirial, lambda[efptVDW],
                                    enerd->grpp.ener[egLJSR], nrnb);
         enerd->dvdl_lin[efptVDW] += dvdl_walls;
     }
 
-    /* If doing GB, reset dvda and calculate the Born radii */
-    if (ir->implicit_solvent)
-    {
-        wallcycle_sub_start(wcycle, ewcsNONBONDED);
-
-        for (i = 0; i < born->nr; i++)
-        {
-            fr->dvda[i] = 0;
-        }
-
-        if (bBornRadii)
-        {
-            calc_gb_rad(cr, fr, ir, top, x, fr->gblist, born, md, nrnb);
-        }
-
-        wallcycle_sub_stop(wcycle, ewcsNONBONDED);
-    }
-
-    where();
     /* We only do non-bonded calculation with group scheme here, the verlet
      * calls are done from do_force_cutsVERLET(). */
     if (fr->cutoff_scheme == ecutsGROUP && (flags & GMX_FORCE_NONBONDED))
@@ -244,7 +231,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         }
 	
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
-        do_nonbonded(fr, x, f, md, excl,
+        do_nonbonded(fr, x, forceForUseWithShiftForces, md, excl,
                      &enerd->grpp, nrnb,
                      lambda, dvdl_nb, -1, -1, donb_flags);
 
@@ -262,7 +249,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                     lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
                 }
                 reset_foreign_enerdata(enerd);
-                do_nonbonded(fr, x, f, md, excl,
+                do_nonbonded(fr, x, forceForUseWithShiftForces, md, excl,
                              &(enerd->foreign_grpp), nrnb,
                              lam_i, dvdl_dum, -1, -1,
                              (donb_flags & ~GMX_NONBONDED_DO_FORCE) | GMX_NONBONDED_DO_FOREIGNLAMBDA);
@@ -271,18 +258,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
             }
         }
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);
-        where();
-    }
-
-    /* If we are doing GB, calculate bonded forces and apply corrections
-     * to the solvation forces */
-    /* MRS: Eventually, many need to include free energy contribution here! */
-    if (ir->implicit_solvent)
-    {
-        wallcycle_sub_start(wcycle, ewcsLISTED);
-        calc_gb_forces(cr, md, born, top, x, f, fr, idef,
-                       ir->gb_algorithm, ir->sa_algorithm, nrnb, &pbc, graph, enerd);
-        wallcycle_sub_stop(wcycle, ewcsLISTED);
     }
 
 #if GMX_MPI
@@ -348,7 +323,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     /* Check whether we need to do listed interactions or correct for exclusions */
     if (fr->bMolPBC &&
         ((flags & GMX_FORCE_LISTED)
-         || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype)))
+         || EEL_RF(fr->ic->eeltype) || EEL_FULL(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype)))
     {
         /* TODO There are no electrostatics methods that require this
            transformation, when using the Verlet scheme, so update the
@@ -360,39 +335,32 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                    TRUE, box);
     }
 
-    do_force_listed(wcycle, box, ir->fepvals, cr,
-                    idef, (const rvec *) x, hist, f, fr,
-                    &pbc, graph, enerd, nrnb, lambda, md, fcd,
-                    DOMAINDECOMP(cr) ? cr->dd->gatindex : nullptr,
+    do_force_listed(wcycle, box, ir->fepvals, cr, ms,
+                    idef, x, hist,
+                    forceForUseWithShiftForces, forceWithVirial,
+                    fr, &pbc, graph, enerd, nrnb, lambda, md, fcd,
+                    DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr,
                     flags);
 
-    where();
 
     *cycles_pme = 0;
-    clear_mat(fr->vir_el_recip);
-    clear_mat(fr->vir_lj_recip);
 
     /* Do long-range electrostatics and/or LJ-PME, including related short-range
      * corrections.
      */
-    if (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype))
+    if (EEL_FULL(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype))
     {
         int  status            = 0;
-        real Vlr_q             = 0, Vlr_lj = 0, Vcorr_q = 0, Vcorr_lj = 0;
-        real dvdl_long_range_q = 0, dvdl_long_range_lj = 0;
+        real Vlr_q             = 0, Vlr_lj = 0;
 
-        bSB = (ir->nwall == 2);
-        if (bSB)
-        {
-            copy_mat(box, boxs);
-            svmul(ir->wall_ewald_zfac, boxs[ZZ], boxs[ZZ]);
-            box_size[ZZ] *= ir->wall_ewald_zfac;
-        }
+        /* We reduce all virial, dV/dlambda and energy contributions, except
+         * for the reciprocal energies (Vlr_q, Vlr_lj) into the same struct.
+         */
+        ewald_corr_thread_t &ewaldOutput = fr->ewc_t[0];
+        clearEwaldThreadOutput(&ewaldOutput);
 
-        if (EEL_PME_EWALD(fr->eeltype) || EVDW_PME(fr->vdwtype))
+        if (EEL_PME_EWALD(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype))
         {
-            real dvdl_long_range_correction_q   = 0;
-            real dvdl_long_range_correction_lj  = 0;
             /* With the Verlet scheme exclusion forces are calculated
              * in the non-bonded kernel.
              */
@@ -420,78 +388,54 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                 {
                     try
                     {
-                        tensor *vir_q, *vir_lj;
-                        real   *Vcorrt_q, *Vcorrt_lj, *dvdlt_q, *dvdlt_lj;
-                        if (t == 0)
+                        ewald_corr_thread_t &ewc_t = fr->ewc_t[t];
+                        if (t > 0)
                         {
-                            vir_q     = &fr->vir_el_recip;
-                            vir_lj    = &fr->vir_lj_recip;
-                            Vcorrt_q  = &Vcorr_q;
-                            Vcorrt_lj = &Vcorr_lj;
-                            dvdlt_q   = &dvdl_long_range_correction_q;
-                            dvdlt_lj  = &dvdl_long_range_correction_lj;
+                            clearEwaldThreadOutput(&ewc_t);
                         }
-                        else
-                        {
-                            vir_q     = &fr->ewc_t[t].vir_q;
-                            vir_lj    = &fr->ewc_t[t].vir_lj;
-                            Vcorrt_q  = &fr->ewc_t[t].Vcorr_q;
-                            Vcorrt_lj = &fr->ewc_t[t].Vcorr_lj;
-                            dvdlt_q   = &fr->ewc_t[t].dvdl[efptCOUL];
-                            dvdlt_lj  = &fr->ewc_t[t].dvdl[efptVDW];
-                            clear_mat(*vir_q);
-                            clear_mat(*vir_lj);
-                        }
-                        *dvdlt_q  = 0;
-                        *dvdlt_lj = 0;
 
                         /* Threading is only supported with the Verlet cut-off
                          * scheme and then only single particle forces (no
                          * exclusion forces) are calculated, so we can store
-                         * the forces in the normal, single fr->f_novirsum array.
+                         * the forces in the normal, single forceWithVirial->force_ array.
                          */
-                        ewald_LRcorrection(md->homenr, cr, nthreads, t, fr,
+                        ewald_LRcorrection(md->homenr, cr, nthreads, t, fr, ir,
                                            md->chargeA, md->chargeB,
                                            md->sqrt_c6A, md->sqrt_c6B,
                                            md->sigmaA, md->sigmaB,
                                            md->sigma3A, md->sigma3B,
-                                           md->nChargePerturbed || md->nTypePerturbed,
+                                           (md->nChargePerturbed != 0) || (md->nTypePerturbed != 0),
                                            ir->cutoff_scheme != ecutsVERLET,
-                                           excl, x, bSB ? boxs : box, mu_tot,
+                                           excl, x, box, mu_tot,
                                            ir->ewald_geometry,
                                            ir->epsilon_surface,
-                                           as_rvec_array(fr->f_novirsum->data()),
-                                           *vir_q, *vir_lj,
-                                           Vcorrt_q, Vcorrt_lj,
+                                           as_rvec_array(forceWithVirial->force_.data()),
+                                           ewc_t.vir_q, ewc_t.vir_lj,
+                                           &ewc_t.Vcorr_q, &ewc_t.Vcorr_lj,
                                            lambda[efptCOUL], lambda[efptVDW],
-                                           dvdlt_q, dvdlt_lj);
+                                           &ewc_t.dvdl[efptCOUL], &ewc_t.dvdl[efptVDW]);
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
                 }
                 if (nthreads > 1)
                 {
-                    reduce_thread_energies(fr->vir_el_recip, fr->vir_lj_recip,
-                                           &Vcorr_q, &Vcorr_lj,
-                                           &dvdl_long_range_correction_q,
-                                           &dvdl_long_range_correction_lj,
-                                           nthreads, fr->ewc_t);
+                    reduceEwaldThreadOuput(nthreads, fr->ewc_t);
                 }
                 wallcycle_sub_stop(wcycle, ewcsEWALD_CORRECTION);
             }
 
-            if (EEL_PME_EWALD(fr->eeltype) && fr->n_tpi == 0)
+            if (EEL_PME_EWALD(fr->ic->eeltype) && fr->n_tpi == 0)
             {
                 /* This is not in a subcounter because it takes a
                    negligible and constant-sized amount of time */
-                Vcorr_q += ewald_charge_correction(cr, fr, lambda[efptCOUL], box,
-                                                   &dvdl_long_range_correction_q,
-                                                   fr->vir_el_recip);
+                ewaldOutput.Vcorr_q +=
+                    ewald_charge_correction(cr, fr, lambda[efptCOUL], box,
+                                            &ewaldOutput.dvdl[efptCOUL],
+                                            ewaldOutput.vir_q);
             }
 
-            enerd->dvdl_lin[efptCOUL] += dvdl_long_range_correction_q;
-            enerd->dvdl_lin[efptVDW]  += dvdl_long_range_correction_lj;
-
-            if ((EEL_PME(fr->eeltype) || EVDW_PME(fr->vdwtype)) && (cr->duty & DUTY_PME))
+            if ((EEL_PME(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype)) &&
+                thisRankHasDuty(cr, DUTY_PME) && (pme_run_mode(fr->pmedata) == PmeRunMode::CPU))
             {
                 /* Do reciprocal PME for Coulomb and/or LJ. */
                 assert(fr->n_tpi >= 0);
@@ -512,27 +456,40 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                         /* We don't calculate f, but we do want the potential */
                         pme_flags |= GMX_PME_CALC_POT;
                     }
+
+                    /* With domain decomposition we close the CPU side load
+                     * balancing region here, because PME does global
+                     * communication that acts as a global barrier.
+                     */
+                    if (DOMAINDECOMP(cr))
+                    {
+                        ddCloseBalanceRegionCpu(cr->dd);
+                    }
+
                     wallcycle_start(wcycle, ewcPMEMESH);
                     status = gmx_pme_do(fr->pmedata,
                                         0, md->homenr - fr->n_tpi,
                                         x,
-                                        as_rvec_array(fr->f_novirsum->data()),
+                                        as_rvec_array(forceWithVirial->force_.data()),
                                         md->chargeA, md->chargeB,
                                         md->sqrt_c6A, md->sqrt_c6B,
                                         md->sigmaA, md->sigmaB,
-                                        bSB ? boxs : box, cr,
+                                        box, cr,
                                         DOMAINDECOMP(cr) ? dd_pme_maxshift_x(cr->dd) : 0,
                                         DOMAINDECOMP(cr) ? dd_pme_maxshift_y(cr->dd) : 0,
                                         nrnb, wcycle,
-                                        fr->vir_el_recip, fr->vir_lj_recip,
+                                        ewaldOutput.vir_q, ewaldOutput.vir_lj,
                                         &Vlr_q, &Vlr_lj,
                                         lambda[efptCOUL], lambda[efptVDW],
-                                        &dvdl_long_range_q, &dvdl_long_range_lj, pme_flags);
+                                        &ewaldOutput.dvdl[efptCOUL],
+                                        &ewaldOutput.dvdl[efptVDW],
+                                        pme_flags);
                     *cycles_pme = wallcycle_stop(wcycle, ewcPMEMESH);
                     if (status != 0)
                     {
                         gmx_fatal(FARGS, "Error %d in reciprocal PME routine", status);
                     }
+
                     /* We should try to do as little computation after
                      * this as possible, because parallel PME synchronizes
                      * the nodes, so we want all load imbalance of the
@@ -559,29 +516,33 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
             }
         }
 
-        if (!EEL_PME(fr->eeltype) && EEL_PME_EWALD(fr->eeltype))
+        if (!EEL_PME(fr->ic->eeltype) && EEL_PME_EWALD(fr->ic->eeltype))
         {
-            Vlr_q = do_ewald(ir, x, as_rvec_array(fr->f_novirsum->data()),
+            Vlr_q = do_ewald(ir, x, as_rvec_array(forceWithVirial->force_.data()),
                              md->chargeA, md->chargeB,
-                             box_size, cr, md->homenr,
-                             fr->vir_el_recip, fr->ewaldcoeff_q,
-                             lambda[efptCOUL], &dvdl_long_range_q, fr->ewald_table);
+                             box, cr, md->homenr,
+                             ewaldOutput.vir_q, fr->ic->ewaldcoeff_q,
+                             lambda[efptCOUL], &ewaldOutput.dvdl[efptCOUL],
+                             fr->ewald_table);
         }
 
         /* Note that with separate PME nodes we get the real energies later */
-        enerd->dvdl_lin[efptCOUL] += dvdl_long_range_q;
-        enerd->dvdl_lin[efptVDW]  += dvdl_long_range_lj;
-        enerd->term[F_COUL_RECIP]  = Vlr_q + Vcorr_q;
-        enerd->term[F_LJ_RECIP]    = Vlr_lj + Vcorr_lj;
+        forceWithVirial->addVirialContribution(ewaldOutput.vir_q);
+        forceWithVirial->addVirialContribution(ewaldOutput.vir_lj);
+        enerd->dvdl_lin[efptCOUL] += ewaldOutput.dvdl[efptCOUL];
+        enerd->dvdl_lin[efptVDW]  += ewaldOutput.dvdl[efptVDW];
+        enerd->term[F_COUL_RECIP]  = Vlr_q + ewaldOutput.Vcorr_q;
+        enerd->term[F_LJ_RECIP]    = Vlr_lj + ewaldOutput.Vcorr_lj;
+
         if (debug)
         {
             fprintf(debug, "Vlr_q = %g, Vcorr_q = %g, Vlr_corr_q = %g\n",
-                    Vlr_q, Vcorr_q, enerd->term[F_COUL_RECIP]);
-            pr_rvecs(debug, 0, "vir_el_recip after corr", fr->vir_el_recip, DIM);
+                    Vlr_q, ewaldOutput.Vcorr_q, enerd->term[F_COUL_RECIP]);
+            pr_rvecs(debug, 0, "vir_el_recip after corr", ewaldOutput.vir_q, DIM);
             pr_rvecs(debug, 0, "fshift after LR Corrections", fr->fshift, SHIFTS);
             fprintf(debug, "Vlr_lj: %g, Vcorr_lj = %g, Vlr_corr_lj = %g\n",
-                    Vlr_lj, Vcorr_lj, enerd->term[F_LJ_RECIP]);
-            pr_rvecs(debug, 0, "vir_lj_recip after corr", fr->vir_lj_recip, DIM);
+                    Vlr_lj, ewaldOutput.Vcorr_lj, enerd->term[F_LJ_RECIP]);
+            pr_rvecs(debug, 0, "vir_lj_recip after corr", ewaldOutput.vir_lj, DIM);
         }
     }
     else
@@ -590,17 +551,17 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
          * With the Verlet scheme, exclusion forces are calculated
          * in the non-bonded kernel.
          */
-        if (ir->cutoff_scheme != ecutsVERLET && EEL_RF(fr->eeltype))
+        if (ir->cutoff_scheme != ecutsVERLET && EEL_RF(fr->ic->eeltype))
         {
             real dvdl_rf_excl      = 0;
             enerd->term[F_RF_EXCL] =
-                RF_excl_correction(fr, graph, md, excl, x, f,
+                RF_excl_correction(fr, graph, md, excl, DOMAINDECOMP(cr),
+                                   x, forceForUseWithShiftForces,
                                    fr->fshift, &pbc, lambda[efptCOUL], &dvdl_rf_excl);
 
             enerd->dvdl_lin[efptCOUL] += dvdl_rf_excl;
         }
     }
-    where();
 
     if (debug)
     {
@@ -694,7 +655,7 @@ void destroy_enerdata(gmx_enerdata_t *enerd)
     }
 }
 
-static real sum_v(int n, real v[])
+static real sum_v(int n, const real v[])
 {
     real t;
     int  i;
@@ -717,8 +678,6 @@ void sum_epot(gmx_grppairener_t *grpp, real *epot)
     epot[F_LJ]       = sum_v(grpp->nener, grpp->ener[egLJSR]);
     epot[F_LJ14]     = sum_v(grpp->nener, grpp->ener[egLJ14]);
     epot[F_COUL14]   = sum_v(grpp->nener, grpp->ener[egCOUL14]);
-    /* We have already added 1-2,1-3, and 1-4 terms to F_GBPOL */
-    epot[F_GBPOL]   += sum_v(grpp->nener, grpp->ener[egGB]);
 
 /* lattice part of LR doesnt belong to any group
  * and has been added earlier
@@ -735,7 +694,7 @@ void sum_epot(gmx_grppairener_t *grpp, real *epot)
     }
 }
 
-void sum_dhdl(gmx_enerdata_t *enerd, gmx::ConstArrayRef<real> lambda, t_lambda *fepvals)
+void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda *fepvals)
 {
     int    index;
     double dlam;
@@ -814,7 +773,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ConstArrayRef<real> lambda, t_lambda *
            current lambda, because the contributions to the current
            lambda are automatically zeroed */
 
-        for (size_t j = 0; j < lambda.size(); j++)
+        for (gmx::index j = 0; j < lambda.size(); j++)
         {
             /* Note that this loop is over all dhdl components, not just the separated ones */
             dlam = (fepvals->all_lambda[j][i] - lambda[j]);

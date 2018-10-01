@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,7 +37,6 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
-#include "gromacs/utility/basedefinitions.h"
 #ifdef CALC_COUL_EWALD
 #include "gromacs/math/utilities.h"
 #endif
@@ -58,9 +57,6 @@
 /* The stride of all the atom data arrays is equal to half the SIMD width */
 #define STRIDE     UNROLLJ
 
-// TODO: Remove when all kernels are in the gmx namespace
-using namespace gmx;
-
 #if !defined GMX_NBNXN_SIMD_2XNN && !defined GMX_NBNXN_SIMD_4XN
 #error "Must define an NBNxN kernel flavour before including NBNxN kernel utility functions"
 #endif
@@ -74,8 +70,8 @@ using namespace gmx;
 /* As add_ener_grp, but for two groups of UNROLLJ/2 stored in
  * a single SIMD register.
  */
-static gmx_inline void
-add_ener_grp_halves(SimdReal e_S, real *v0, real *v1, const int *offset_jj)
+static inline void
+add_ener_grp_halves(gmx::SimdReal e_S, real *v0, real *v1, const int *offset_jj)
 {
     for (int jj = 0; jj < (UNROLLJ/2); jj++)
     {
@@ -86,19 +82,20 @@ add_ener_grp_halves(SimdReal e_S, real *v0, real *v1, const int *offset_jj)
 #endif
 
 #if GMX_SIMD_HAVE_INT32_LOGICAL
-typedef SimdInt32    SimdBitMask;
+typedef gmx::SimdInt32    SimdBitMask;
 #else
-typedef SimdReal     SimdBitMask;
+typedef gmx::SimdReal     SimdBitMask;
 #endif
 
 
-static gmx_inline void gmx_simdcall
+static inline void gmx_simdcall
 gmx_load_simd_2xnn_interactions(int                  excl,
                                 SimdBitMask          filter_S0,
                                 SimdBitMask          filter_S2,
-                                SimdBool            *interact_S0,
-                                SimdBool            *interact_S2)
+                                gmx::SimdBool       *interact_S0,
+                                gmx::SimdBool       *interact_S2)
 {
+    using namespace gmx;
 #if GMX_SIMD_HAVE_INT32_LOGICAL
     SimdInt32 mask_pr_S(excl);
     *interact_S0  = cvtIB2B( testBits( mask_pr_S & filter_S0 ) );

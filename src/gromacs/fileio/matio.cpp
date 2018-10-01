@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,8 +44,10 @@
 #include <cstring>
 
 #include <algorithm>
+#include <string>
 
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
@@ -56,7 +58,7 @@
 #include "gromacs/utility/smalloc.h"
 
 static const char mapper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+{}|;:',<.>/?";
-#define NMAP (long int)strlen(mapper)
+#define NMAP static_cast<long int>(strlen(mapper))
 
 #define MAX_XPM_LINELENGTH 4096
 
@@ -155,14 +157,8 @@ int getcmap(FILE *in, const char *fn, t_mapping **map)
 
 int readcmap(const char *fn, t_mapping **map)
 {
-    FILE      *in;
-    int        n;
-
-    in = libopen(fn);
-    n  = getcmap(in, fn, map);
-    gmx_ffclose(in);
-
-    return n;
+    gmx::FilePtr in = gmx::openLibraryFile(fn);
+    return getcmap(in.get(), fn, map);
 }
 
 void printcmap(FILE *out, int n, t_mapping map[])
@@ -633,16 +629,6 @@ static void write_xpm_header(FILE *out,
                              gmx_bool bDiscrete)
 {
     fprintf(out,  "/* XPM */\n");
-    try
-    {
-        gmx::BinaryInformationSettings settings;
-        settings.generatedByHeader(true);
-        settings.linePrefix("/* ");
-        settings.lineSuffix(" */");
-        gmx::printBinaryInformation(out, gmx::getProgramContext(),
-                                    settings);
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     fprintf(out,  "/* This file can be converted to EPS by the GROMACS program xpm2ps */\n");
     fprintf(out,  "/* title:   \"%s\" */\n", title);
     fprintf(out,  "/* legend:  \"%s\" */\n", legend);
@@ -671,12 +657,12 @@ static void write_xpm_map3(FILE *out, int n_x, int n_y, int *nlevels,
                            t_rgb rlo, t_rgb rmid, t_rgb rhi)
 {
     int    i, nmid;
-    real   r, g, b, clev_lo, clev_hi;
+    double r, g, b, clev_lo, clev_hi;
 
     if (*nlevels > NMAP*NMAP)
     {
         fprintf(stderr, "Warning, too many levels (%d) in matrix, using %d only\n",
-                *nlevels, (int)(NMAP*NMAP));
+                *nlevels, static_cast<int>(NMAP*NMAP));
         *nlevels = NMAP*NMAP;
     }
     else if (*nlevels < 2)
@@ -705,9 +691,9 @@ static void write_xpm_map3(FILE *out, int n_x, int n_y, int *nlevels,
         fprintf(out, "\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n",
                 mapper[i % NMAP],
                 (*nlevels <= NMAP) ? ' ' : mapper[i/NMAP],
-                static_cast<unsigned int>(round(255*r)),
-                static_cast<unsigned int>(round(255*g)),
-                static_cast<unsigned int>(round(255*b)),
+                static_cast<unsigned int>(std::round(255*r)),
+                static_cast<unsigned int>(std::round(255*g)),
+                static_cast<unsigned int>(std::round(255*b)),
                 ((nmid - i)*lo + i*mid)/clev_lo);
     }
     for (i = 0; (i < (*nlevels-nmid)); i++)
@@ -718,9 +704,9 @@ static void write_xpm_map3(FILE *out, int n_x, int n_y, int *nlevels,
         fprintf(out, "\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n",
                 mapper[(i+nmid) % NMAP],
                 (*nlevels <= NMAP) ? ' ' : mapper[(i+nmid)/NMAP],
-                static_cast<unsigned int>(round(255*r)),
-                static_cast<unsigned int>(round(255*g)),
-                static_cast<unsigned int>(round(255*b)),
+                static_cast<unsigned int>(std::round(255*r)),
+                static_cast<unsigned int>(std::round(255*g)),
+                static_cast<unsigned int>(std::round(255*b)),
                 ((*nlevels - 1 - nmid - i)*mid + i*hi)/clev_hi);
     }
 }
@@ -740,9 +726,9 @@ static void pr_simple_cmap(FILE *out, real lo, real hi, int nlevel, t_rgb rlo,
         fprintf(out, "\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n",
                 mapper[(i+i0) % NMAP],
                 (nlevel <= NMAP) ? ' ' : mapper[(i+i0)/NMAP],
-                static_cast<unsigned int>(round(255*r)),
-                static_cast<unsigned int>(round(255*g)),
-                static_cast<unsigned int>(round(255*b)),
+                static_cast<unsigned int>(std::round(255*r)),
+                static_cast<unsigned int>(std::round(255*g)),
+                static_cast<unsigned int>(std::round(255*b)),
                 lo+fac*(hi-lo));
     }
 }
@@ -787,7 +773,7 @@ static void pr_discrete_cmap(FILE *out, int *nlevel, int i0)
 
 
 static void write_xpm_map_split(FILE *out, int n_x, int n_y,
-                                int *nlevel_top, real lo_top, real hi_top,
+                                const int *nlevel_top, real lo_top, real hi_top,
                                 t_rgb rlo_top, t_rgb rhi_top,
                                 gmx_bool bDiscreteColor,
                                 int *nlevel_bot, real lo_bot, real hi_bot,
@@ -826,7 +812,7 @@ static void write_xpm_map(FILE *out, int n_x, int n_y, int *nlevels,
     if (*nlevels > NMAP*NMAP)
     {
         fprintf(stderr, "Warning, too many levels (%d) in matrix, using %d only\n",
-                *nlevels, (int)(NMAP*NMAP));
+                *nlevels, static_cast<int>(NMAP*NMAP));
         *nlevels = NMAP*NMAP;
     }
     else if (*nlevels < 2)
@@ -848,9 +834,9 @@ static void write_xpm_map(FILE *out, int n_x, int n_y, int *nlevels,
         b   = (nlo*rlo.b+i*rhi.b)*invlevel;
         fprintf(out, "\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n",
                 mapper[i % NMAP], (*nlevels <= NMAP) ? ' ' : mapper[i/NMAP],
-                static_cast<unsigned int>(round(255*r)),
-                static_cast<unsigned int>(round(255*g)),
-                static_cast<unsigned int>(round(255*b)),
+                static_cast<unsigned int>(std::round(255*r)),
+                static_cast<unsigned int>(std::round(255*g)),
+                static_cast<unsigned int>(std::round(255*b)),
                 (nlo*lo+i*hi)*invlevel);
     }
 }
@@ -894,7 +880,7 @@ static void write_xpm_data(FILE *out, int n_x, int n_y, real **mat,
         fprintf(out, "\"");
         for (i = 0; (i < n_x); i++)
         {
-            c = std::round((mat[i][j]-lo)*invlevel);
+            c = gmx::roundToInt((mat[i][j]-lo)*invlevel);
             if (c < 0)
             {
                 c = 0;
@@ -944,11 +930,11 @@ static void write_xpm_data3(FILE *out, int n_x, int n_y, real **mat,
         {
             if (mat[i][j] >= mid)
             {
-                c = nmid+std::round((mat[i][j]-mid)*invlev_hi);
+                c = nmid+gmx::roundToInt((mat[i][j]-mid)*invlev_hi);
             }
             else if (mat[i][j] >= lo)
             {
-                c = std::round((mat[i][j]-lo)*invlev_lo);
+                c = gmx::roundToInt((mat[i][j]-lo)*invlev_lo);
             }
             else
             {
@@ -1004,7 +990,7 @@ static void write_xpm_data_split(FILE *out, int n_x, int n_y, real **mat,
         {
             if (i < j)
             {
-                c = nlevel_bot+round((mat[i][j]-lo_top)*invlev_top);
+                c = nlevel_bot+gmx::roundToInt((mat[i][j]-lo_top)*invlev_top);
                 if ((c < nlevel_bot) || (c >= nlevel_bot+nlevel_top))
                 {
                     gmx_fatal(FARGS, "Range checking i = %d, j = %d, c = %d, bot = %d, top = %d matrix[i,j] = %f", i, j, c, nlevel_bot, nlevel_top, mat[i][j]);
@@ -1012,7 +998,7 @@ static void write_xpm_data_split(FILE *out, int n_x, int n_y, real **mat,
             }
             else if (i > j)
             {
-                c = round((mat[i][j]-lo_bot)*invlev_bot);
+                c = gmx::roundToInt((mat[i][j]-lo_bot)*invlev_bot);
                 if ((c < 0) || (c >= nlevel_bot+nlevel_bot))
                 {
                     gmx_fatal(FARGS, "Range checking i = %d, j = %d, c = %d, bot = %d, top = %d matrix[i,j] = %f", i, j, c, nlevel_bot, nlevel_top, mat[i][j]);
@@ -1058,8 +1044,8 @@ void write_xpm_m(FILE *out, t_matrix m)
                 static_cast<unsigned int>(round(m.map[i].rgb.g*255)),
                 static_cast<unsigned int>(round(m.map[i].rgb.b*255)), m.map[i].desc);
     }
-    write_xpm_axis(out, "x", m.flags & MAT_SPATIAL_X, m.nx, m.axis_x);
-    write_xpm_axis(out, "y", m.flags & MAT_SPATIAL_Y, m.ny, m.axis_y);
+    write_xpm_axis(out, "x", (m.flags & MAT_SPATIAL_X) != 0u, m.nx, m.axis_x);
+    write_xpm_axis(out, "y", (m.flags & MAT_SPATIAL_Y) != 0u, m.ny, m.axis_y);
     for (j = m.ny-1; (j >= 0); j--)
     {
         if (j%(1+m.ny/100) == 0)
@@ -1094,8 +1080,8 @@ void write_xpm_m(FILE *out, t_matrix m)
 }
 
 void write_xpm3(FILE *out, unsigned int flags,
-                const char *title, const char *legend,
-                const char *label_x, const char *label_y,
+                const std::string &title, const std::string &legend,
+                const std::string &label_x, const std::string &label_y,
                 int n_x, int n_y, real axis_x[], real axis_y[],
                 real *mat[], real lo, real mid, real hi,
                 t_rgb rlo, t_rgb rmid, t_rgb rhi, int *nlevels)
@@ -1109,16 +1095,16 @@ void write_xpm3(FILE *out, unsigned int flags,
         gmx_fatal(FARGS, "hi (%g) <= lo (%g)", hi, lo);
     }
 
-    write_xpm_header(out, title, legend, label_x, label_y, FALSE);
+    write_xpm_header(out, title.c_str(), legend.c_str(), label_x.c_str(), label_y.c_str(), FALSE);
     write_xpm_map3(out, n_x, n_y, nlevels, lo, mid, hi, rlo, rmid, rhi);
-    write_xpm_axis(out, "x", flags & MAT_SPATIAL_X, n_x, axis_x);
-    write_xpm_axis(out, "y", flags & MAT_SPATIAL_Y, n_y, axis_y);
+    write_xpm_axis(out, "x", (flags & MAT_SPATIAL_X) != 0u, n_x, axis_x);
+    write_xpm_axis(out, "y", (flags & MAT_SPATIAL_Y) != 0u, n_y, axis_y);
     write_xpm_data3(out, n_x, n_y, mat, lo, mid, hi, *nlevels);
 }
 
 void write_xpm_split(FILE *out, unsigned int flags,
-                     const char *title, const char *legend,
-                     const char *label_x, const char *label_y,
+                     const std::string &title, const std::string &legend,
+                     const std::string &label_x, const std::string &label_y,
                      int n_x, int n_y, real axis_x[], real axis_y[],
                      real *mat[],
                      real lo_top, real hi_top, int *nlevel_top,
@@ -1144,18 +1130,18 @@ void write_xpm_split(FILE *out, unsigned int flags,
         gmx_impl("Can not plot more than 16 discrete colors");
     }
 
-    write_xpm_header(out, title, legend, label_x, label_y, FALSE);
+    write_xpm_header(out, title.c_str(), legend.c_str(), label_x.c_str(), label_y.c_str(), FALSE);
     write_xpm_map_split(out, n_x, n_y, nlevel_top, lo_top, hi_top, rlo_top, rhi_top,
                         bDiscreteColor, nlevel_bot, lo_bot, hi_bot, rlo_bot, rhi_bot);
-    write_xpm_axis(out, "x", flags & MAT_SPATIAL_X, n_x, axis_x);
-    write_xpm_axis(out, "y", flags & MAT_SPATIAL_Y, n_y, axis_y);
+    write_xpm_axis(out, "x", (flags & MAT_SPATIAL_X) != 0u, n_x, axis_x);
+    write_xpm_axis(out, "y", (flags & MAT_SPATIAL_Y) != 0u, n_y, axis_y);
     write_xpm_data_split(out, n_x, n_y, mat, lo_top, hi_top, *nlevel_top,
                          lo_bot, hi_bot, *nlevel_bot);
 }
 
 void write_xpm(FILE *out, unsigned int flags,
-               const char *title, const char *legend,
-               const char *label_x, const char *label_y,
+               const std::string &title, const std::string &legend,
+               const std::string &label_x, const std::string &label_y,
                int n_x, int n_y, real axis_x[], real axis_y[],
                real *mat[], real lo, real hi,
                t_rgb rlo, t_rgb rhi, int *nlevels)
@@ -1181,9 +1167,9 @@ void write_xpm(FILE *out, unsigned int flags,
         gmx_fatal(FARGS, "hi (%f) <= lo (%f)", hi, lo);
     }
 
-    write_xpm_header(out, title, legend, label_x, label_y, FALSE);
+    write_xpm_header(out, title.c_str(), legend.c_str(), label_x.c_str(), label_y.c_str(), FALSE);
     write_xpm_map(out, n_x, n_y, nlevels, lo, hi, rlo, rhi);
-    write_xpm_axis(out, "x", flags & MAT_SPATIAL_X, n_x, axis_x);
-    write_xpm_axis(out, "y", flags & MAT_SPATIAL_Y, n_y, axis_y);
+    write_xpm_axis(out, "x", (flags & MAT_SPATIAL_X) != 0u, n_x, axis_x);
+    write_xpm_axis(out, "y", (flags & MAT_SPATIAL_Y) != 0u, n_y, axis_y);
     write_xpm_data(out, n_x, n_y, mat, lo, hi, *nlevels);
 }

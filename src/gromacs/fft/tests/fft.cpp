@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -104,7 +104,7 @@ class BaseFFTTest : public ::testing::Test
             checker_.setDefaultTolerance(
                     gmx::test::relativeToleranceAsPrecisionDependentUlp(10.0, 64, 512));
         }
-        ~BaseFFTTest()
+        ~BaseFFTTest() override
         {
             gmx_fft_cleanup();
         }
@@ -121,7 +121,7 @@ class FFTTest : public BaseFFTTest
         FFTTest() : fft_(nullptr)
         {
         }
-        ~FFTTest()
+        ~FFTTest() override
         {
             if (fft_)
             {
@@ -137,7 +137,7 @@ class ManyFFTTest : public BaseFFTTest
         ManyFFTTest() : fft_(nullptr)
         {
         }
-        ~ManyFFTTest()
+        ~ManyFFTTest() override
         {
             if (fft_)
             {
@@ -161,7 +161,7 @@ class FFFTest3D : public BaseFFTTest
         FFFTest3D() : fft_(nullptr)
         {
         }
-        ~FFFTest3D()
+        ~FFFTest3D() override
         {
             if (fft_)
             {

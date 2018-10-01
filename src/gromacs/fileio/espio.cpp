@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2005, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -88,7 +88,7 @@ static int get_espresso_word(FILE *fp, char word[])
             }
             else
             {
-                word[nc++] = (char)i;
+                word[nc++] = static_cast<char>(i);
             }
         }
     }
@@ -164,7 +164,7 @@ static const char *const esp_prop[espNR] = {
 };
 
 void gmx_espresso_read_conf(const char *infile,
-                            t_symtab *symtab, char ***name, t_atoms *atoms,
+                            t_symtab *symtab, char **name, t_atoms *atoms,
                             rvec x[], rvec *v, matrix box)
 {
     FILE     *fp;
@@ -174,8 +174,11 @@ void gmx_espresso_read_conf(const char *infile,
     double    d;
     gmx_bool  bFoundParticles, bFoundProp, bFoundVariable, bMol;
 
-    // No title reading implemented for espresso files
-    *name = put_symtab(symtab, "");
+    if (name != nullptr)
+    {
+        // No title reading implemented for espresso files
+        *name = gmx_strdup("");
+    }
 
     clear_mat(box);
 
@@ -440,7 +443,7 @@ int get_espresso_coordnum(const char *infile)
 }
 
 void write_espresso_conf_indexed(FILE *out, const char *title,
-                                 const t_atoms *atoms, int nx, int *index,
+                                 const t_atoms *atoms, int nx, const int *index,
                                  const rvec *x, const rvec *v, const matrix box)
 {
     int i, j;

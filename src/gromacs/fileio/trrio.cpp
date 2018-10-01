@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -112,7 +112,6 @@ do_trr_frame_header(t_fileio *fio, bool bRead, gmx_trr_header_t *sh, gmx_bool *b
     {
         *bOK = FALSE;
         gmx_fatal(FARGS, "Failed to find GROMACS magic number in trr frame header, so this is not a trr file!\n");
-        return *bOK;
     }
 
     if (bRead)
@@ -203,7 +202,7 @@ do_trr_frame_data(t_fileio *fio, gmx_trr_header_t *sh,
 }
 
 static gmx_bool
-do_trr_frame(t_fileio *fio, bool bRead, gmx_int64_t *step, real *t, real *lambda,
+do_trr_frame(t_fileio *fio, bool bRead, int64_t *step, real *t, real *lambda,
              rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)
 {
     gmx_trr_header_t *sh;
@@ -278,7 +277,7 @@ gmx_bool gmx_trr_read_frame_header(t_fileio *fio, gmx_trr_header_t *header, gmx_
     return do_trr_frame_header(fio, true, header, bOK);
 }
 
-void gmx_trr_write_single_frame(const char *fn, gmx_int64_t step, real t, real lambda,
+void gmx_trr_write_single_frame(const char *fn, int64_t step, real t, real lambda,
                                 const rvec *box, int natoms, const rvec *x, const rvec *v, const rvec *f)
 {
     t_fileio *fio = gmx_trr_open(fn, "w");
@@ -286,7 +285,7 @@ void gmx_trr_write_single_frame(const char *fn, gmx_int64_t step, real t, real l
     gmx_trr_close(fio);
 }
 
-void gmx_trr_read_single_frame(const char *fn, gmx_int64_t *step, real *t, real *lambda,
+void gmx_trr_read_single_frame(const char *fn, int64_t *step, real *t, real *lambda,
                                rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)
 {
     t_fileio *fio = gmx_trr_open(fn, "r");
@@ -294,7 +293,7 @@ void gmx_trr_read_single_frame(const char *fn, gmx_int64_t *step, real *t, real 
     gmx_trr_close(fio);
 }
 
-void gmx_trr_write_frame(t_fileio *fio, gmx_int64_t step, real t, real lambda,
+void gmx_trr_write_frame(t_fileio *fio, int64_t step, real t, real lambda,
                          const rvec *box, int natoms, const rvec *x, const rvec *v, const rvec *f)
 {
     if (!do_trr_frame(fio, false, &step, &t, &lambda, const_cast<rvec *>(box), &natoms, const_cast<rvec *>(x), const_cast<rvec *>(v), const_cast<rvec *>(f)))
@@ -304,7 +303,7 @@ void gmx_trr_write_frame(t_fileio *fio, gmx_int64_t step, real t, real lambda,
 }
 
 
-gmx_bool gmx_trr_read_frame(t_fileio *fio, gmx_int64_t *step, real *t, real *lambda,
+gmx_bool gmx_trr_read_frame(t_fileio *fio, int64_t *step, real *t, real *lambda,
                             rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)
 {
     return do_trr_frame(fio, true, step, t, lambda, box, natoms, x, v, f);

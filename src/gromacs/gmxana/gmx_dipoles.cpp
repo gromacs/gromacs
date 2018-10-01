@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,6 +63,7 @@
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
@@ -72,8 +73,8 @@
 #include "gromacs/utility/smalloc.h"
 
 #define e2d(x) ENM2DEBYE*(x)
-#define EANG2CM  E_CHARGE*1.0e-10       /* e Angstrom to Coulomb meter */
-#define CM2D  SPEED_OF_LIGHT*1.0e+24    /* Coulomb meter to Debye */
+#define EANG2CM  (E_CHARGE*1.0e-10)       /* e Angstrom to Coulomb meter */
+#define CM2D  (SPEED_OF_LIGHT*1.0e+24)    /* Coulomb meter to Debye */
 
 typedef struct {
     int      nelem;
@@ -136,7 +137,7 @@ static void done_gkrbin(t_gkrbin **gb)
 
 static void add2gkr(t_gkrbin *gb, real r, real cosa, real phi)
 {
-    int  cy, index = std::round(r/gb->spacing);
+    int  cy, index = gmx::roundToInt(r/gb->spacing);
     real alpha;
 
     if (index < gb->nelem)
@@ -175,7 +176,7 @@ static void rvec2sprvec(rvec dipcart, rvec dipsp)
 
 
 static void do_gkr(t_gkrbin *gb, int ncos, int *ngrp, int *molindex[],
-                   int mindex[], rvec x[], rvec mu[],
+                   const int mindex[], rvec x[], rvec mu[],
                    int ePBC, const matrix box, const t_atom *atom, const int *nAtom)
 {
     static rvec *xcm[2] = { nullptr, nullptr};
@@ -238,7 +239,6 @@ static void do_gkr(t_gkrbin *gb, int ncos, int *ngrp, int *molindex[],
                 {
                     rvec xi, xj, xk, xl;
                     rvec r_ij, r_kj, r_kl, mm, nn;
-                    real sign;
                     int  t1, t2, t3;
 
                     copy_rvec(xcm[grp0][i], xj);
@@ -247,7 +247,7 @@ static void do_gkr(t_gkrbin *gb, int ncos, int *ngrp, int *molindex[],
                     rvec_add(xk, mu[gj], xl);
                     phi = dih_angle(xi, xj, xk, xl, &pbc,
                                     r_ij, r_kj, r_kl, mm, nn, /* out */
-                                    &sign, &t1, &t2, &t3);
+                                    &t1, &t2, &t3);
                     cosa = std::cos(phi);
                 }
                 else
@@ -410,8 +410,8 @@ static void print_gkrbin(const char *fn, t_gkrbin *gb,
     xvgrclose(fp);
 }
 
-gmx_bool read_mu_from_enx(ener_file_t fmu, int Vol, ivec iMu, rvec mu, real *vol,
-                          real *t, int nre, t_enxframe *fr)
+static gmx_bool read_mu_from_enx(ener_file_t fmu, int Vol, const ivec iMu, rvec mu, real *vol,
+                                 real *t, int nre, t_enxframe *fr)
 {
     int          i;
     gmx_bool     bCont;
@@ -440,7 +440,7 @@ gmx_bool read_mu_from_enx(ener_file_t fmu, int Vol, ivec iMu, rvec mu, real *vol
     return bCont;
 }
 
-static void neutralize_mols(int n, int *index, const t_block *mols, t_atom *atom)
+static void neutralize_mols(int n, const int *index, const t_block *mols, t_atom *atom)
 {
     double mtot, qtot;
     int    ncharged, m, a0, a1, a;
@@ -532,7 +532,7 @@ static void mol_quad(int k0, int k1, rvec x[], const t_atom atom[], rvec quad)
      * the individual components on the diagonal.
      */
 
-#define delta(a, b) (( a == b ) ? 1.0 : 0.0)
+#define delta(a, b) (( (a) == (b) ) ? 1.0 : 0.0)
 
     for (m = 0; (m < DIM); m++)
     {
@@ -587,10 +587,10 @@ static void mol_quad(int k0, int k1, rvec x[], const t_atom atom[], rvec quad)
      */
 
 #define SWAP(i)                                 \
-    if (dd[i+1] > dd[i]) {                      \
-        tmp     = dd[i];                              \
-        dd[i]   = dd[i+1];                          \
-        dd[i+1] = tmp;                            \
+    if (dd[(i)+1] > dd[i]) {                      \
+        tmp       = dd[i];                              \
+        dd[i]     = dd[(i)+1];                          \
+        dd[(i)+1] = tmp;                            \
     }
     SWAP(0);
     SWAP(1);
@@ -621,7 +621,7 @@ static void mol_quad(int k0, int k1, rvec x[], const t_atom atom[], rvec quad)
 /*
  * Calculates epsilon according to M. Neumann, Mol. Phys. 50, 841 (1983)
  */
-real calc_eps(double M_diff, double volume, double epsRF, double temp)
+static real calc_eps(double M_diff, double volume, double epsRF, double temp)
 {
     double eps, A, teller, noemer;
     double eps_0 = 8.854187817e-12;   /* epsilon_0 in C^2 J^-1 m^-1 */
@@ -945,11 +945,11 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
         snew(dipsp, gnx_tot);
 
         /* we need a dummy file for gnuplot */
-        dip3d = (FILE *)gmx_ffopen("dummy.dat", "w");
+        dip3d = gmx_ffopen("dummy.dat", "w");
         fprintf(dip3d, "%f %f %f", 0.0, 0.0, 0.0);
         gmx_ffclose(dip3d);
 
-        dip3d = (FILE *)gmx_ffopen(fndip3d, "w");
+        dip3d = gmx_ffopen(fndip3d, "w");
         try
         {
             gmx::BinaryInformationSettings settings;
@@ -1120,7 +1120,7 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
                     mu_ave += mu_mol;                         /* calc. the average mu */
 
                     /* Update the dipole distribution */
-                    ibin = static_cast<int>(ndipbin*mu_mol/mu_max + 0.5);
+                    ibin = gmx::roundToInt(ndipbin*mu_mol/mu_max);
                     if (ibin < ndipbin)
                     {
                         dipole_bin[ibin]++;
@@ -1337,7 +1337,7 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
 
     if (!bMU)
     {
-        close_trj(status);
+        close_trx(status);
     }
 
     xvgrclose(outmtot);
@@ -1400,7 +1400,7 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
             {
                 do_autocorr(corf, oenv, "Dipole Autocorrelation Function",
                             teller, gnx_tot, muall, dt,
-                            mode, std::strcmp(corrtype, "molsep"));
+                            mode, std::strcmp(corrtype, "molsep") != 0);
             }
         }
     }
@@ -1469,7 +1469,7 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
     }
 }
 
-void dipole_atom2molindex(int *n, int *index, const t_block *mols)
+static void dipole_atom2molindex(int *n, int *index, const t_block *mols)
 {
     int nmol, i, j, m;
 

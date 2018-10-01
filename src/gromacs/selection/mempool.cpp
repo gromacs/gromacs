@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,7 +43,7 @@
 
 #include "mempool.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include <new>
 
@@ -186,7 +186,7 @@ _gmx_sel_mempool_free(gmx_sel_mempool_t *mp, void *ptr)
     mp->currsize -= size;
     if (mp->buffer)
     {
-        mp->freeptr   = (char *)ptr;
+        mp->freeptr   = static_cast<char *>(ptr);
         mp->freesize += size;
     }
     else
@@ -205,7 +205,7 @@ _gmx_sel_mempool_reserve(gmx_sel_mempool_t *mp, size_t size)
     {
         size = mp->maxsize;
     }
-    mp->buffer = (char *)malloc(size);
+    mp->buffer = static_cast<char *>(malloc(size));
     if (!mp->buffer)
     {
         throw std::bad_alloc();

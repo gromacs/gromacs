@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,18 +41,17 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/ewald/ewald-utils.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fft/calcgrid.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/broadcaststructs.h"
-#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -82,7 +81,7 @@ enum {
 
 typedef struct
 {
-    gmx_int64_t     orig_sim_steps;  /* Number of steps to be done in the real simulation  */
+    int64_t         orig_sim_steps;  /* Number of steps to be done in the real simulation  */
     int             n_entries;       /* Number of entries in arrays                        */
     real            volume;          /* The volume of the box                              */
     matrix          recipbox;        /* The reciprocal box                                 */
@@ -109,14 +108,7 @@ typedef struct
 /* Returns TRUE when atom is charged */
 static gmx_bool is_charge(real charge)
 {
-    if (charge*charge > GMX_REAL_EPS)
-    {
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
-    }
+    return charge*charge > GMX_REAL_EPS;
 }
 
 
@@ -124,28 +116,24 @@ static gmx_bool is_charge(real charge)
 static void calc_q2all(const gmx_mtop_t *mtop,   /* molecular topology */
                        real *q2all, real *q2allnr)
 {
-    int             imol, iatom; /* indices for loops */
     real            q2_all = 0;  /* Sum of squared charges */
     int             nrq_mol;     /* Number of charges in a single molecule */
     int             nrq_all;     /* Total number of charges in the MD system */
     real            qi, q2_mol;
-    gmx_moltype_t  *molecule;
-    gmx_molblock_t *molblock;
 
 #ifdef DEBUG
     fprintf(stderr, "\nCharge density:\n");
 #endif
-    q2_all  = 0.0;                                 /* total q squared */
-    nrq_all = 0;                                   /* total number of charges in the system */
-    for (imol = 0; imol < mtop->nmolblock; imol++) /* Loop over molecule types */
+    q2_all  = 0.0;                                        /* total q squared */
+    nrq_all = 0;                                          /* total number of charges in the system */
+    for (const gmx_molblock_t &molblock : mtop->molblock) /* Loop over molecule types */
     {
-        q2_mol   = 0.0;                            /* q squared value of this molecule */
-        nrq_mol  = 0;                              /* number of charges this molecule carries */
-        molecule = &(mtop->moltype[imol]);
-        molblock = &(mtop->molblock[imol]);
-        for (iatom = 0; iatom < molblock->natoms_mol; iatom++) /* Loop over atoms in this molecule */
+        q2_mol   = 0.0;                                   /* q squared value of this molecule */
+        nrq_mol  = 0;                                     /* number of charges this molecule carries */
+        const gmx_moltype_t &molecule = mtop->moltype[molblock.type];
+        for (int i = 0; i < molecule.atoms.nr; i++)
         {
-            qi = molecule->atoms.atom[iatom].q;                /* Charge of this atom */
+            qi = molecule.atoms.atom[i].q;
             /* Is this charge worth to be considered? */
             if (is_charge(qi))
             {
@@ -154,11 +142,11 @@ static void calc_q2all(const gmx_mtop_t *mtop,   /* molecular topology */
             }
         }
         /* Multiply with the number of molecules present of this type and add */
-        q2_all  += q2_mol*molblock->nmol;
-        nrq_all += nrq_mol*molblock->nmol;
+        q2_all  += q2_mol*molblock.nmol;
+        nrq_all += nrq_mol*molblock.nmol;
 #ifdef DEBUG
         fprintf(stderr, "Molecule %2d (%5d atoms) q2_mol=%10.3e nr.mol.charges=%5d (%6dx)  q2_all=%10.3e  tot.charges=%d\n",
-                imol, molblock->natoms_mol, q2_mol, nrq_mol, molblock->nmol, q2_all, nrq_all);
+                imol, molecule.atoms.nr, q2_mol, nrq_mol, molblock.nmol, q2_all, nrq_all);
 #endif
     }
 
@@ -182,7 +170,7 @@ static real estimate_direct(
     r_coulomb = info->rcoulomb[0];
 
     e_dir  = 2.0 * info->q2all * gmx::invsqrt( info->q2allnr  *  r_coulomb * info->volume );
-    e_dir *= exp (-beta*beta*r_coulomb*r_coulomb);
+    e_dir *= std::exp (-beta*beta*r_coulomb*r_coulomb);
 
     return ONE_4PI_EPS0*e_dir;
 }
@@ -423,16 +411,16 @@ static void calc_recipbox(matrix box, matrix recipbox)
 
 /* Estimate the reciprocal space part error of the SPME Ewald sum. */
 static real estimate_reciprocal(
-        t_inputinfo       *info,
-        rvec               x[], /* array of particles */
-        real               q[], /* array of charges */
-        int                nr,  /* number of charges = size of the charge array */
-        FILE  gmx_unused  *fp_out,
-        gmx_bool           bVerbose,
-        int                seed,     /* The seed for the random number generator */
-        int               *nsamples, /* Return the number of samples used if Monte Carlo
-                                      * algorithm is used for self energy error estimate */
-        t_commrec         *cr)
+        t_inputinfo             *info,
+        rvec                     x[], /* array of particles */
+        const real               q[], /* array of charges */
+        int                      nr,  /* number of charges = size of the charge array */
+        FILE  gmx_unused        *fp_out,
+        gmx_bool                 bVerbose,
+        int                      seed,     /* The seed for the random number generator */
+        int                     *nsamples, /* Return the number of samples used if Monte Carlo
+                                            * algorithm is used for self energy error estimate */
+        t_commrec               *cr)
 {
     real      e_rec   = 0; /* reciprocal error estimate */
     real      e_rec1  = 0; /* Error estimate term 1*/
@@ -897,7 +885,7 @@ static void read_tpr_file(const char *fn_sim_tpr, t_inputinfo *info, t_state *st
 
 
 /* Transfer what we need for parallelizing the reciprocal error estimate */
-static void bcast_info(t_inputinfo *info, t_commrec *cr)
+static void bcast_info(t_inputinfo *info, const t_commrec *cr)
 {
     nblock_bc(cr, info->n_entries, info->nkx);
     nblock_bc(cr, info->n_entries, info->nky);
@@ -1082,7 +1070,7 @@ int gmx_pme_error(int argc, char *argv[])
         "if using the sPME algorithm. The flag [TT]-tune[tt] will determine",
         "the splitting parameter such that the error is equally",
         "distributed over the real and reciprocal space part.",
-        "The part of the error that stems from self interaction of the particles "
+        "The part of the error that stems from self interaction of the particles ",
         "is computationally demanding. However, a good a approximation is to",
         "just use a fraction of the particles for this term which can be",
         "indicated by the flag [TT]-self[tt].[PAR]",
@@ -1094,7 +1082,6 @@ int gmx_pme_error(int argc, char *argv[])
     t_inputinfo     info;
     t_state         state;        /* The state from the tpr input file */
     gmx_mtop_t      mtop;         /* The topology from the tpr input file */
-    t_inputrec     *ir = nullptr; /* The inputrec from the tpr file */
     FILE           *fp = nullptr;
     t_commrec      *cr;
     unsigned long   PCA_Flags;
@@ -1149,12 +1136,10 @@ int gmx_pme_error(int argc, char *argv[])
     create_info(&info);
     info.fourier_sp[0] = fs;
 
-    gmx::MDModules mdModules;
-
+    t_inputrec ir;
     if (MASTER(cr))
     {
-        ir = mdModules.inputrec();
-        read_tpr_file(opt2fn("-s", NFILE, fnm), &info, &state, &mtop, ir, user_beta, fracself);
+        read_tpr_file(opt2fn("-s", NFILE, fnm), &info, &state, &mtop, &ir, user_beta, fracself);
         /* Open logfile for reading */
         fp = fopen(opt2fn("-o", NFILE, fnm), "w");
 
@@ -1174,10 +1159,10 @@ int gmx_pme_error(int argc, char *argv[])
         info.nkz[0] = 0;
         calcFftGrid(stdout, state.box, info.fourier_sp[0], minimalPmeGridSize(info.pme_order[0]),
                     &(info.nkx[0]), &(info.nky[0]), &(info.nkz[0]));
-        if ( (ir->nkx != info.nkx[0]) || (ir->nky != info.nky[0]) || (ir->nkz != info.nkz[0]) )
+        if ( (ir.nkx != info.nkx[0]) || (ir.nky != info.nky[0]) || (ir.nkz != info.nkz[0]) )
         {
             gmx_fatal(FARGS, "Wrong fourierspacing %f nm, input file grid = %d x %d x %d, computed grid = %d x %d x %d",
-                      fs, ir->nkx, ir->nky, ir->nkz, info.nkx[0], info.nky[0], info.nkz[0]);
+                      fs, ir.nkx, ir.nky, ir.nkz, info.nkx[0], info.nky[0], info.nkz[0]);
         }
     }
 
@@ -1196,8 +1181,8 @@ int gmx_pme_error(int argc, char *argv[])
         /* Write out optimized tpr file if requested */
         if (opt2bSet("-so", NFILE, fnm) || bTUNE)
         {
-            ir->ewald_rtol = info.ewald_rtol[0];
-            write_tpx_state(opt2fn("-so", NFILE, fnm), ir, &state, &mtop);
+            ir.ewald_rtol = info.ewald_rtol[0];
+            write_tpx_state(opt2fn("-so", NFILE, fnm), &ir, &state, &mtop);
         }
         please_cite(fp, "Wang2010");
         fclose(fp);

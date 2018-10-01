@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -92,6 +92,7 @@ static void gmx_fio_check_nitem(int eio, int nitem, const char *file, int line)
 }
 
 /* output a data type error. */
+[[ noreturn ]]
 static void gmx_fio_fe(t_fileio *fio, int eio, const char *desc,
                        const char *srcfile, int line)
 {
@@ -111,7 +112,7 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
     float           fvec[DIM];
     double          dvec[DIM];
     int             j, m, *iptr, idum;
-    gmx_int64_t     sdum;
+    int64_t         sdum;
     real           *ptr;
     unsigned short  us;
     double          d = 0;
@@ -126,84 +127,84 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
             {
                 if (item && !fio->bRead)
                 {
-                    d = *((real *) item);
+                    d = *(static_cast<real *>(item));
                 }
                 res = xdr_double(fio->xdr, &d);
                 if (item)
                 {
-                    *((real *) item) = d;
+                    *(static_cast<real *>(item)) = d;
                 }
             }
             else
             {
                 if (item && !fio->bRead)
                 {
-                    f = *((real *) item);
+                    f = *(static_cast<real *>(item));
                 }
                 res = xdr_float(fio->xdr, &f);
                 if (item)
                 {
-                    *((real *) item) = f;
+                    *(static_cast<real *>(item)) = f;
                 }
             }
             break;
         case eioFLOAT:
             if (item && !fio->bRead)
             {
-                f = *((float *) item);
+                f = *(static_cast<float *>(item));
             }
             res = xdr_float(fio->xdr, &f);
             if (item)
             {
-                *((float *) item) = f;
+                *(static_cast<float *>(item)) = f;
             }
             break;
         case eioDOUBLE:
             if (item && !fio->bRead)
             {
-                d = *((double *) item);
+                d = *(static_cast<double *>(item));
             }
             res = xdr_double(fio->xdr, &d);
             if (item)
             {
-                *((double *) item) = d;
+                *(static_cast<double *>(item)) = d;
             }
             break;
         case eioINT:
             if (item && !fio->bRead)
             {
-                idum = *(int *) item;
+                idum = *static_cast<int *>(item);
             }
             res = xdr_int(fio->xdr, &idum);
             if (item)
             {
-                *(int *) item = idum;
+                *static_cast<int *>(item) = idum;
             }
             break;
         case eioINT64:
             if (item && !fio->bRead)
             {
-                sdum = *(gmx_int64_t *) item;
+                sdum = *static_cast<int64_t *>(item);
             }
             res = xdr_int64(fio->xdr, &sdum);
             if (item)
             {
-                *(gmx_int64_t *) item = sdum;
+                *static_cast<int64_t *>(item) = sdum;
             }
             break;
         case eioUCHAR:
             if (item && !fio->bRead)
             {
-                ucdum = *(unsigned char *) item;
+                ucdum = *static_cast<unsigned char *>(item);
             }
             res = xdr_u_char(fio->xdr, &ucdum);
             if (item)
             {
-                *(unsigned char *) item = ucdum;
+                *static_cast<unsigned char *>(item) = ucdum;
             }
             break;
         case eioNUCHAR:
-            ucptr = (unsigned char *) item;
+            ucptr = static_cast<unsigned char *>(item);
             res   = 1;
             for (j = 0; (j < nitem) && res; j++)
             {
@@ -213,12 +214,12 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
         case eioUSHORT:
             if (item && !fio->bRead)
             {
-                us = *(unsigned short *) item;
+                us = *static_cast<unsigned short *>(item);
             }
-            res = xdr_u_short(fio->xdr, (unsigned short *) &us);
+            res = xdr_u_short(fio->xdr, &us);
             if (item)
             {
-                *(unsigned short *) item = us;
+                *static_cast<unsigned short *>(item) = us;
             }
             break;
         case eioRVEC:
@@ -228,17 +229,17 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
                 {
                     for (m = 0; (m < DIM); m++)
                     {
-                        dvec[m] = ((real *) item)[m];
+                        dvec[m] = (static_cast<real *>(item))[m];
                     }
                 }
-                res = xdr_vector(fio->xdr, (char *) dvec, DIM,
+                res = xdr_vector(fio->xdr, reinterpret_cast<char *>(dvec), DIM,
                                  static_cast<unsigned int>(sizeof(double)),
-                                 (xdrproc_t) xdr_double);
+                                 reinterpret_cast<xdrproc_t>(xdr_double));
                 if (item)
                 {
                     for (m = 0; (m < DIM); m++)
                     {
-                        ((real *) item)[m] = dvec[m];
+                        (static_cast<real *>(item))[m] = dvec[m];
                     }
                 }
             }
@@ -248,17 +249,17 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
                 {
                     for (m = 0; (m < DIM); m++)
                     {
-                        fvec[m] = ((real *) item)[m];
+                        fvec[m] = (static_cast<real *>(item))[m];
                     }
                 }
-                res = xdr_vector(fio->xdr, (char *) fvec, DIM,
+                res = xdr_vector(fio->xdr, reinterpret_cast<char *>(fvec), DIM,
                                  static_cast<unsigned int>(sizeof(float)),
-                                 (xdrproc_t) xdr_float);
+                                 reinterpret_cast<xdrproc_t>(xdr_float));
                 if (item)
                 {
                     for (m = 0; (m < DIM); m++)
                     {
-                        ((real *) item)[m] = fvec[m];
+                        (static_cast<real *>(item))[m] = fvec[m];
                     }
                 }
             }
@@ -270,13 +271,13 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
             {
                 if (item)
                 {
-                    ptr = ((rvec *) item)[j];
+                    ptr = (static_cast<rvec *>(item))[j];
                 }
-                res = do_xdr(fio, ptr, 1, eioRVEC, desc, srcfile, line);
+                res = static_cast<bool_t>(do_xdr(fio, ptr, 1, eioRVEC, desc, srcfile, line));
             }
             break;
         case eioIVEC:
-            iptr = (int *) item;
+            iptr = static_cast<int *>(item);
             res  = 1;
             for (m = 0; (m < DIM) && res; m++)
             {
@@ -300,7 +301,7 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
             {
                 if (!fio->bRead)
                 {
-                    slen = strlen((char *) item) + 1;
+                    slen = strlen(static_cast<char *>(item)) + 1;
                 }
                 else
                 {
@@ -323,7 +324,7 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
             }
             else
             {
-                cptr = (char *)item;
+                cptr = static_cast<char *>(item);
             }
             if (cptr)
             {
@@ -356,7 +357,7 @@ gmx_bool gmx_fio_writee_string(t_fileio *fio, const char *item,
                                const char *desc, const char *srcfile, int line)
 {
     gmx_bool ret;
-    void    *it = (void*)item; /* ugh.. */
+    void    *it = const_cast<char*>(item); /* ugh.. */
     gmx_fio_lock(fio);
     ret = do_xdr(fio, it, 1, eioSTRING, desc, srcfile, line);
     gmx_fio_unlock(fio);
@@ -405,11 +406,11 @@ gmx_bool gmx_fio_doe_gmx_bool(t_fileio *fio, gmx_bool *item,
     {
         int itmp = 0;
         ret      = do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
-        *item    = itmp;
+        *item    = (itmp != 0);
     }
     else
     {
-        int itmp = *item;
+        int itmp = static_cast<int>(*item);
         ret      = do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
     }
     gmx_fio_unlock(fio);
@@ -426,7 +427,7 @@ gmx_bool gmx_fio_doe_int(t_fileio *fio, int *item,
     return ret;
 }
 
-gmx_bool gmx_fio_doe_int64(t_fileio *fio, gmx_int64_t *item,
+gmx_bool gmx_fio_doe_int64(t_fileio *fio, int64_t *item,
                            const char *desc, const char *srcfile, int line)
 {
     gmx_bool ret;
@@ -553,11 +554,11 @@ gmx_bool gmx_fio_ndoe_gmx_bool(t_fileio *fio, gmx_bool *item, int n,
         {
             int itmp = 0;
             ret      = ret && do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
-            item[i]  = itmp;
+            item[i]  = (itmp != 0);
         }
         else
         {
-            int itmp = item[i];
+            int itmp = static_cast<int>(item[i]);
             ret      = ret && do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
         }
     }
@@ -582,7 +583,7 @@ gmx_bool gmx_fio_ndoe_int(t_fileio *fio, int *item, int n,
 
 
 
-gmx_bool gmx_fio_ndoe_int64(t_fileio *fio, gmx_int64_t *item, int n,
+gmx_bool gmx_fio_ndoe_int64(t_fileio *fio, int64_t *item, int n,
                             const char *desc, const char *srcfile, int line)
 {
     gmx_bool ret = TRUE;
@@ -681,6 +682,13 @@ bool FileIOXdrSerializer::reading() const
     return fio_->bRead;
 }
 
+void FileIOXdrSerializer::doBool(bool *value)
+{
+    gmx_bool v = *value;
+    gmx_fio_do_gmx_bool(fio_, v);
+    *value = v;
+}
+
 void FileIOXdrSerializer::doUChar(unsigned char *value)
 {
     gmx_fio_do_uchar(fio_, *value);
@@ -691,7 +699,7 @@ void FileIOXdrSerializer::doInt(int *value)
     gmx_fio_do_int(fio_, *value);
 }
 
-void FileIOXdrSerializer::doInt64(gmx_int64_t *value)
+void FileIOXdrSerializer::doInt64(int64_t *value)
 {
     gmx_fio_do_int64(fio_, *value);
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 #include <cmath>
 #include <cstdint>
 
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
 namespace gmx
@@ -439,6 +440,57 @@ erfinv(double x);
  */
 float
 erfinv(float x);
+
+/*! \brief Exact integer division, 32bit.
+ *
+ * \param a dividend. Function asserts that it is a multiple of divisor
+ * \param b divisor
+ *
+ * \return quotient of division
+ */
+constexpr int32_t exactDiv(int32_t a, int32_t b)
+{
+    return GMX_ASSERT(a%b == 0, "exactDiv called with non-divisible arguments"), a/b;
+}
+
+//! Exact integer division, 64bit.
+constexpr int64_t exactDiv(int64_t a, int64_t b)
+{
+    return GMX_ASSERT(a%b == 0, "exactDiv called with non-divisible arguments"), a/b;
+}
+
+/*! \brief Round float to int
+ *
+ * Rounding behavior is round to nearest. Rounding of halfway cases is implemention defined
+ * (either halway to even or halway away from zero).
+ */
+/* Implementation details: It is assumed that FE_TONEAREST is default and not changed by anyone.
+ * Currently the implementation is using rint(f) because 1) on all known HW that is faster than
+ * lround and 2) some compilers (e.g. clang (#22944) and icc) don't optimize (l)lrint(f) well.
+ * GCC(>=4.7) optimizes (l)lrint(f) well but with "-fno-math-errno -funsafe-math-optimizations"
+ * rint(f) is optimized as well. This avoids using intrinsics.
+ * rint(f) followed by float/double to int/int64 conversion produces the same result as directly
+ * rounding to int/int64.
+ */
+static inline int roundToInt(float x)
+{
+    return static_cast<int>(rintf(x));
+}
+//! Round double to int
+static inline int roundToInt(double x)
+{
+    return static_cast<int>(rint(x));
+}
+//! Round float to int64_t
+static inline int64_t roundToInt64(float x)
+{
+    return static_cast<int>(rintf(x));
+}
+//! Round double to int64_t
+static inline int64_t roundToInt64(double x)
+{
+    return static_cast<int>(rint(x));
+}
 
 } // namespace gmx
 

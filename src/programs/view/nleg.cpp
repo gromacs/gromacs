@@ -68,7 +68,7 @@ static t_atomcolor ac[] = {
 };
 #define NAC asize(ac)
 
-int search_ac(const char *type)
+static int search_ac(const char *type)
 {
     unsigned int i, nb, mij, best, besti;
 
@@ -114,7 +114,7 @@ t_rgb *Type2RGB(const char *type)
     return &(ac[i].rgb);
 }
 
-void DrawLegend(t_x11 *x11, t_windata *Win)
+static void DrawLegend(t_x11 *x11, t_windata *Win)
 {
 #define NLAB 6
 #define COLS 3

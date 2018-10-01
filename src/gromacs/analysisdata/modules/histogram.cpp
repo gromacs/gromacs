@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,6 +51,7 @@
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datastorage.h"
 #include "gromacs/analysisdata/framelocaldata.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -138,9 +139,9 @@ AnalysisHistogramSettings::AnalysisHistogramSettings(
             GMX_RELEASE_ASSERT(isDefined(settings.binWidth_),
                                "Rounding only makes sense with defined binwidth");
             binWidth_  = settings.binWidth_;
-            firstEdge_ = binWidth_ * floor(settings.min_ / binWidth_);
-            lastEdge_  = binWidth_ * ceil(settings.max_ / binWidth_);
-            binCount_  = static_cast<int>((lastEdge_ - firstEdge_) / binWidth_ + 0.5);
+            firstEdge_ = binWidth_ * std::floor(settings.min_ / binWidth_);
+            lastEdge_  = binWidth_ * std::ceil(settings.max_ / binWidth_);
+            binCount_  = gmx::roundToInt((lastEdge_ - firstEdge_) / binWidth_);
         }
         else
         {
@@ -165,7 +166,7 @@ AnalysisHistogramSettings::AnalysisHistogramSettings(
             else
             {
                 binWidth_ = settings.binWidth_;
-                binCount_ = static_cast<int>((lastEdge_ - firstEdge_) / binWidth_ + 0.5);
+                binCount_ = gmx::roundToInt((lastEdge_ - firstEdge_) / binWidth_);
                 if (settings.bIntegerBins_)
                 {
                     firstEdge_ -= 0.5 * binWidth_;
@@ -396,7 +397,7 @@ AbstractAverageHistogram::scaleAll(real factor)
 
 
 void
-AbstractAverageHistogram::scaleAllByVector(real factor[])
+AbstractAverageHistogram::scaleAllByVector(const real factor[])
 {
     for (int c = 0; c < columnCount(); ++c)
     {
@@ -438,13 +439,13 @@ class BasicAverageHistogramModule : public AbstractAverageHistogram,
 
         using AbstractAverageHistogram::init;
 
-        virtual int flags() const;
+        int flags() const override;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
-        virtual void frameStarted(const AnalysisDataFrameHeader &header);
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
-        virtual void frameFinished(const AnalysisDataFrameHeader &header);
-        virtual void dataFinished();
+        void dataStarted(AbstractAnalysisData *data) override;
+        void frameStarted(const AnalysisDataFrameHeader &header) override;
+        void pointsAdded(const AnalysisDataPointSetRef &points) override;
+        void frameFinished(const AnalysisDataFrameHeader &header) override;
+        void dataFinished() override;
 
     private:
         //! Averaging helper objects for each input data set.
@@ -601,7 +602,7 @@ class AnalysisDataSimpleHistogramModule::Impl : public internal::BasicHistogramI
 {
     public:
         //! Shorthand for the per-frame accumulation data structure type.
-        typedef AnalysisDataFrameLocalData<gmx_int64_t> FrameLocalData;
+        typedef AnalysisDataFrameLocalData<int64_t> FrameLocalData;
 
         Impl() {}
         //! Creates an histogram impl with defined bin parameters.

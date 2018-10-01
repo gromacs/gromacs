@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -35,38 +35,13 @@
 # Manage CUDA nvcc compilation configuration, try to be smart to ease the users'
 # pain as much as possible:
 # - use the CUDA_HOST_COMPILER if defined by the user, otherwise
-# - auto-detect compatible nvcc host compiler and set nvcc -ccbin (if not MPI wrapper)
-# - set icc compatibility mode to gcc 4.8.1
+# - check if nvcc works with CUDA_HOST_COMPILER and the generated nvcc and C++ flags
+#
 # - (advanced) variables set:
-#   * CUDA_HOST_COMPILER            - the host compiler for nvcc (only with cmake <2.8.10)
 #   * CUDA_HOST_COMPILER_OPTIONS    - the full host-compiler related option list passed to nvcc
 #
 # Note that from CMake 2.8.10 FindCUDA defines CUDA_HOST_COMPILER internally,
 # so we won't set it ourselves, but hope that the module does a good job.
-
-gmx_check_if_changed(CUDA_HOST_COMPILER_CHANGED CUDA_HOST_COMPILER)
-
-# CUDA_HOST_COMPILER changed hence it is not auto-set anymore
-if (CUDA_HOST_COMPILER_CHANGED AND CUDA_HOST_COMPILER_AUTOSET)
-    unset(CUDA_HOST_COMPILER_AUTOSET CACHE)
-endif()
-
-# Set the host compiler for nvcc if this is not set by CMake (v<=2.8.9)
-#
-# Note that even though nvcc compiles host code as C++, we use the
-# CMAKE_C_COMPILER as host compiler. We do this because CUDA versions
-# preceding 5.0 only recognize icc, but not icpc. However, both gcc and icc
-# (i.e. all supported compilers) happily compile C++ code.
-#
-# Also note that with MSVC nvcc sets the -compiler-bindir option behind the
-# scenes; to avoid conflicts we don't set -ccbin automatically.
-#
-# TODO: remove this when CMAke >=v2.8.10 is required.
-if (NOT DEFINED CUDA_HOST_COMPILER AND NOT MSVC)
-    set(CUDA_HOST_COMPILER "${CMAKE_C_COMPILER}")
-    set(CUDA_HOST_COMPILER_AUTOSET TRUE CACHE INTERNAL
-        "True if CUDA_HOST_COMPILER is automatically set")
-endif()
 
 # glibc 2.23 changed string.h in a way that breaks CUDA compilation in
 # many projects, but which has a trivial workaround. It would be nicer
@@ -84,6 +59,8 @@ function(work_around_glibc_2_23)
         set(CUDA_HOST_COMPILER_OPTIONS ${CUDA_HOST_COMPILER_OPTIONS} PARENT_SCOPE)
     endif()
 endfunction()
+
+gmx_check_if_changed(CUDA_HOST_COMPILER_CHANGED CUDA_HOST_COMPILER)
 
 # set up host compiler and its options
 if(CUDA_HOST_COMPILER_CHANGED)
@@ -128,14 +105,17 @@ else()
     #     => compile sm_20, sm_30, sm_35, sm_37, sm_50, & sm_52 SASS, and compute_52 PTX
     # - with CUDA >=8.0         CC 6.0-6.2 is supported (but we know nothing about CC 6.2, so we won't generate code or it)
     #     => compile sm_20, sm_30, sm_35, sm_37, sm_50, sm_52, sm_60, sm_61 SASS, and compute_60 and compute_61 PTX
-    #
+    # - with CUDA >=9.0         CC 7.0 is supported and CC 2.0 is no longer supported
+    #     => compile sm_30, sm_35, sm_37, sm_50, sm_52, sm_60, sm_61, sm_70 SASS, and compute_70 PTX
     #
     #   Note that CUDA 6.5.19 second patch release supports cc 5.2 too, but
     #   CUDA_VERSION does not contain patch version and having PTX 5.0 JIT-ed is
     #   equally fast as compiling with sm_5.2 anyway.
 
     # First add flags that trigger SASS (binary) code generation for physical arch
-    list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_20,code=sm_20")
+    if(CUDA_VERSION VERSION_LESS "9.00") # < 9.0
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_20,code=sm_20")
+    endif()
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_30,code=sm_30")
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_35,code=sm_35")
 
@@ -150,6 +130,9 @@ else()
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_60,code=sm_60")
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_61,code=sm_61")
     endif()
+    if(NOT CUDA_VERSION VERSION_LESS "9.0") # >= 9.0
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_70,code=sm_70")
+    endif()
 
     # Next add flags that trigger PTX code generation for the newest supported virtual arch
     # that's useful to JIT to future architectures
@@ -159,21 +142,59 @@ else()
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_50,code=compute_50")
     elseif(CUDA_VERSION VERSION_LESS "8.0")
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_52,code=compute_52")
-    else() # version >= 8.0
+    elseif(CUDA_VERSION VERSION_LESS "9.0")
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_60,code=compute_60")
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_61,code=compute_61")
+    else() # version >= 9.0
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_70,code=compute_70")
     endif()
 endif()
 
-gmx_dependent_cache_variable(GMX_CUDA_TARGET_SM "List of CUDA GPU architecture codes to compile for (without the sm_ prefix)" STRING "" GMX_CUDA_TARGET_SM)
-gmx_dependent_cache_variable(GMX_CUDA_TARGET_COMPUTE "List of CUDA virtual architecture codes to compile for (without the compute_ prefix)" STRING "" GMX_CUDA_TARGET_COMPUTE)
+if (GMX_CUDA_TARGET_SM)
+    set_property(CACHE GMX_CUDA_TARGET_SM PROPERTY HELPSTRING "List of CUDA GPU architecture codes to compile for (without the sm_ prefix)")
+    set_property(CACHE GMX_CUDA_TARGET_SM PROPERTY TYPE STRING)
+endif()
+if (GMX_CUDA_TARGET_COMPUTE)
+    set_property(CACHE GMX_CUDA_TARGET_COMPUTE PROPERTY HELPSTRING "List of CUDA virtual architecture codes to compile for (without the compute_ prefix)")
+    set_property(CACHE GMX_CUDA_TARGET_COMPUTE PROPERTY TYPE STRING)
+endif()
 
 # assemble the CUDA flags
 list(APPEND GMX_CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
 list(APPEND GMX_CUDA_NVCC_FLAGS "-use_fast_math")
+if (CUDA_VERSION VERSION_EQUAL "8.0")
+    # requesting sm_20 triggers deprecation messages with nvcc 8.0 which we better avoid
+    list(APPEND GMX_CUDA_NVCC_FLAGS "-Wno-deprecated-gpu-targets")
+endif()
 
 # assemble the CUDA host compiler flags
 list(APPEND GMX_CUDA_NVCC_FLAGS "${CUDA_HOST_COMPILER_OPTIONS}")
+
+string(TOUPPER "${CMAKE_BUILD_TYPE}" _build_type)
+gmx_check_if_changed(_cuda_nvcc_executable_or_flags_changed CUDA_NVCC_EXECUTABLE CUDA_NVCC_FLAGS CUDA_NVCC_FLAGS_${_build_type})
+
+if(_cuda_nvcc_executable_or_flags_changed OR CUDA_HOST_COMPILER_CHANGED OR NOT GMX_NVCC_WORKS)
+    message(STATUS "Check for working NVCC/C compiler combination")
+    execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} -ccbin ${CUDA_HOST_COMPILER} -c ${CUDA_NVCC_FLAGS} ${CUDA_NVCC_FLAGS_${_build_type}} ${CMAKE_SOURCE_DIR}/cmake/TestCUDA.cu
+        RESULT_VARIABLE _cuda_test_res
+        OUTPUT_VARIABLE _cuda_test_out
+        ERROR_VARIABLE  _cuda_test_err
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+    if(${_cuda_test_res})
+        message(${_cuda_test_err})
+        message(STATUS "Check for working NVCC/C compiler combination - broken")
+        if(${_cuda_test_err} MATCHES "nsupported")
+            message(FATAL_ERROR "NVCC/C compiler combination does not seem to be supported. CUDA frequently does not support the latest versions of the host compiler, so you might want to try an earlier C/C++ compiler version and make sure your CUDA compiler and driver are as recent as possible.")
+        else()
+            message(FATAL_ERROR "CUDA compiler does not seem to be functional.")
+        endif()
+    elseif(NOT GMX_CUDA_TEST_COMPILER_QUIETLY)
+        message(STATUS "Check for working NVCC/C compiler combination - works")
+        set(GMX_NVCC_WORKS TRUE CACHE INTERNAL "Nvcc can compile a trivial test program")
+    endif()
+endif() # GMX_CHECK_NVCC
+
 
 # The flags are set as local variables which shadow the cache variables. The cache variables
 # (can be set by the user) are appended. This is done in a macro to set the flags when all

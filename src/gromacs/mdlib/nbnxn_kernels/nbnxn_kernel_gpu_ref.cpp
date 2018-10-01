@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,13 +45,14 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/force.h"
+#include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
-#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_common.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/fatalerror.h"
+
+#include "nbnxn_kernel_common.h"
 
 static const int c_numClPerSupercl = c_nbnxnGpuNumClusterPerSupercluster;
 static const int c_clSize          = c_nbnxnGpuClusterSize;
@@ -119,7 +120,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
         clear_f(nbat, 0, f);
     }
 
-    bEner = (force_flags & GMX_FORCE_ENERGY);
+    bEner = ((force_flags & GMX_FORCE_ENERGY) != 0);
 
     bEwald = EEL_FULL(iconst->eeltype);
     if (bEwald)
@@ -233,7 +234,9 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                                     continue;
                                 }
 
-                                int_bit = ((excl[jc >> 2]->pair[(jc & 3)*c_clSize + ic] >> (jm*c_numClPerSupercl + im)) & 1);
+                                constexpr int clusterPerSplit = c_nbnxnGpuClusterSize/c_nbnxnGpuClusterpairSplit;
+                                int_bit = ((excl[jc/clusterPerSplit]->pair[(jc & (clusterPerSplit - 1))*c_clSize + ic]
+                                            >> (jm*c_numClPerSupercl + im)) & 1);
 
                                 js               = ja*nbat->xstride;
                                 jfs              = ja*nbat->fstride;
@@ -279,7 +282,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                                 {
                                     r     = rsq*rinv;
                                     rt    = r*iconst->tabq_scale;
-                                    n0    = rt;
+                                    n0    = static_cast<int>(rt);
                                     eps   = rt - n0;
 
                                     fexcl = (1 - eps)*Ftab[n0] + eps*Ftab[n0+1];
@@ -367,7 +370,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
     {
         fprintf(debug, "number of half %dx%d atom pairs: %d after pruning: %d fraction %4.2f\n",
                 nbl->na_ci, nbl->na_ci,
-                nhwu, nhwu_pruned, nhwu_pruned/(double)nhwu);
+                nhwu, nhwu_pruned, nhwu_pruned/static_cast<double>(nhwu));
         fprintf(debug, "generic kernel pair interactions:            %d\n",
                 nhwu*nbl->na_ci/2*nbl->na_ci);
         fprintf(debug, "generic kernel post-prune pair interactions: %d\n",
@@ -375,6 +378,6 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
         fprintf(debug, "generic kernel non-zero pair interactions:   %d\n",
                 npair_tot);
         fprintf(debug, "ratio non-zero/post-prune pair interactions: %4.2f\n",
-                npair_tot/(double)(nhwu_pruned*nbl->na_ci/2*nbl->na_ci));
+                npair_tot/static_cast<double>(nhwu_pruned*gmx::exactDiv(nbl->na_ci, 2)*nbl->na_ci));
     }
 }

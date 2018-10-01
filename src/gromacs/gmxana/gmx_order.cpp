@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,7 +77,7 @@
 
 static void find_nearest_neighbours(int ePBC,
                                     int natoms, matrix box,
-                                    rvec x[], int maxidx, int index[],
+                                    rvec x[], int maxidx, const int index[],
                                     real *sgmean, real *skmean,
                                     int nslice, int slice_dim,
                                     real sgslice[], real skslice[],
@@ -319,7 +319,7 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
         nframes++;
     }
     while (read_next_x(oenv, status, &t, x, box));
-    close_trj(status);
+    close_trx(status);
     gmx_rmpbc_done(gpbc);
 
     sfree(grpname);
@@ -348,7 +348,7 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
 
 
 /* Print name of first atom in all groups in index file */
-static void print_types(int index[], int a[], int ngrps,
+static void print_types(const int index[], int a[], int ngrps,
                         char *groups[], const t_topology *top)
 {
     int i;
@@ -372,12 +372,12 @@ static void check_length(real length, int a, int b)
     }
 }
 
-void calc_order(const char *fn, int *index, int *a, rvec **order,
-                real ***slOrder, real *slWidth, int nslices, gmx_bool bSliced,
-                gmx_bool bUnsat, const t_topology *top, int ePBC, int ngrps, int axis,
-                gmx_bool permolecule, gmx_bool radial, gmx_bool distcalc, const char *radfn,
-                real ***distvals,
-                const gmx_output_env_t *oenv)
+static void calc_order(const char *fn, const int *index, int *a, rvec **order,
+                       real ***slOrder, real *slWidth, int nslices, gmx_bool bSliced,
+                       gmx_bool bUnsat, const t_topology *top, int ePBC, int ngrps, int axis,
+                       gmx_bool permolecule, gmx_bool radial, gmx_bool distcalc, const char *radfn,
+                       real ***distvals,
+                       const gmx_output_env_t *oenv)
 {
     /* if permolecule = TRUE, order parameters will be calculed per molecule
      * and stored in slOrder with #slices = # molecules */
@@ -637,7 +637,7 @@ void calc_order(const char *fn, int *index, int *a, rvec **order,
                     z1    = x1[a[index[i-1]+j]][axis];
                     z2    = x1[a[index[i+1]+j]][axis];
                     z_ave = 0.5 * (z1 + z2);
-                    slice = (int)((nslices*z_ave)/box[axis][axis]);
+                    slice = static_cast<int>((nslices*z_ave)/box[axis][axis]);
                     while (slice < 0)
                     {
                         slice += nslices;
@@ -751,9 +751,9 @@ void calc_order(const char *fn, int *index, int *a, rvec **order,
 }
 
 
-void order_plot(rvec order[], real *slOrder[], const char *afile, const char *bfile,
-                const char *cfile, int ngrps, int nslices, real slWidth, gmx_bool bSzonly,
-                gmx_bool permolecule, real **distvals, const gmx_output_env_t *oenv)
+static void order_plot(rvec order[], real *slOrder[], const char *afile, const char *bfile,
+                       const char *cfile, int ngrps, int nslices, real slWidth, gmx_bool bSzonly,
+                       gmx_bool permolecule, real **distvals, const gmx_output_env_t *oenv)
 {
     FILE       *ord, *slOrd;      /* xvgr files with order parameters  */
     int         atom, slice;      /* atom corresponding to order para.*/
@@ -832,7 +832,7 @@ void order_plot(rvec order[], real *slOrder[], const char *afile, const char *bf
     xvgrclose(slOrd);
 }
 
-void write_bfactors(t_filenm  *fnm, int nfile, int *index, int *a, int nslices, int ngrps, real **order, const t_topology *top, real **distvals, gmx_output_env_t *oenv)
+static void write_bfactors(t_filenm  *fnm, int nfile, const int *index, const int *a, int nslices, int ngrps, real **order, const t_topology *top, real **distvals, gmx_output_env_t *oenv)
 {
     /*function to write order parameters as B factors in PDB file using
           first frame of trajectory*/
@@ -846,7 +846,7 @@ void write_bfactors(t_filenm  *fnm, int nfile, int *index, int *a, int nslices, 
     nout   = nslices*ngrps;
     read_first_frame(oenv, &status, ftp2fn(efTRX, nfile, fnm), &fr, TRX_NEED_X);
 
-    close_trj(status);
+    close_trx(status);
     frout        = fr;
     frout.natoms = nout;
     frout.bF     = FALSE;
@@ -906,7 +906,7 @@ int gmx_order(int argc, char *argv[])
         "order tensor component (specified by the [TT]-d[tt] option) is given and the",
         "order parameter per slice is calculated as well. If [TT]-szonly[tt] is not",
         "selected, all diagonal elements and the deuterium order parameter is",
-        "given.[PAR]"
+        "given.[PAR]",
         "The tetrahedrality order parameters can be determined",
         "around an atom. Both angle an distance order parameters are calculated. See",
         "P.-L. Chau and A.J. Hardwick, Mol. Phys., 93, (1998), 511-518.",

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,14 +54,19 @@
 
 #include "config.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/mdlib/main.h"
 #include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdrun/logging.h"
+#include "gromacs/mdrun/multisim.h"
+#include "gromacs/mdrun/replicaexchange.h"
+#include "gromacs/mdrun/runner.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/arraysize.h"
@@ -69,15 +74,14 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "mdrun_main.h"
-#include "runner.h"
 
-/*! \brief Return whether either of the command-line parameters that
+/*! \brief Return whether the command-line parameter that
  *  will trigger a multi-simulation is set */
 static bool is_multisim_option_set(int argc, const char *const argv[])
 {
     for (int i = 0; i < argc; ++i)
     {
-        if (strcmp(argv[i], "-multi") == 0 || strcmp(argv[i], "-multidir") == 0)
+        if (strcmp(argv[i], "-multidir") == 0)
         {
             return true;
         }
@@ -87,6 +91,15 @@ static bool is_multisim_option_set(int argc, const char *const argv[])
 
 //! Implements C-style main function for mdrun
 int gmx_mdrun(int argc, char *argv[])
+{
+    gmx::Mdrunner runner;
+    return runner.mainFunction(argc, argv);
+}
+
+namespace gmx
+{
+
+int Mdrunner::mainFunction(int argc, char *argv[])
 {
     const char   *desc[] = {
         "[THISMODULE] is the main computational chemistry engine",
@@ -203,15 +216,19 @@ int gmx_mdrun(int argc, char *argv[])
         "exceeds [TT]-maxh[tt]\\*0.99 hours. This option is particularly useful in",
         "combination with setting [TT]nsteps[tt] to -1 either in the mdp or using the",
         "similarly named command line option. This results in an infinite run,",
-        "terminated only when the time limit set by [TT]-maxh[tt] is reached (if any)"
-        "or upon receiving a signal."
+        "terminated only when the time limit set by [TT]-maxh[tt] is reached (if any)",
+        "or upon receiving a signal.",
         "[PAR]",
-        "When [TT]mdrun[tt] receives a TERM signal, it will stop as soon as",
-        "checkpoint file can be written, i.e. after the next global communication step.",
-        "When [TT]mdrun[tt] receives an INT signal (e.g. when ctrl+C is",
+        "When [TT]mdrun[tt] receives a TERM or INT signal (e.g. when ctrl+C is",
         "pressed), it will stop at the next neighbor search step or at the",
         "second global communication step, whichever happens later.",
-        "In both cases all the usual output will be written to file.",
+        "When [TT]mdrun[tt] receives a second TERM or INT signal and",
+        "reproducibility is not requested, it will stop at the first global",
+        "communication step.",
+        "In both cases all the usual output will be written to file and",
+        "a checkpoint file is written at the last step.",
+        "When [TT]mdrun[tt] receives an ABRT signal or the third TERM or INT signal,",
+        "it will abort directly without writing a new checkpoint file.",
         "When running with MPI, a signal to one of the [TT]mdrun[tt] ranks",
         "is sufficient, this signal should not be sent to mpirun or",
         "the [TT]mdrun[tt] process that is the parent of the others.",
@@ -223,274 +240,227 @@ int gmx_mdrun(int argc, char *argv[])
         "IMD remote can be turned on by [TT]-imdpull[tt].",
         "The port [TT]mdrun[tt] listens to can be altered by [TT]-imdport[tt].The",
         "file pointed to by [TT]-if[tt] contains atom indices and forces if IMD",
-        "pulling is used."
+        "pulling is used.",
         "[PAR]",
         "When [TT]mdrun[tt] is started with MPI, it does not run niced by default."
     };
-    t_commrec    *cr;
-    t_filenm      fnm[] = {
-        { efTPR, nullptr,      nullptr,       ffREAD },
-        { efTRN, "-o",      nullptr,       ffWRITE },
-        { efCOMPRESSED, "-x", nullptr,     ffOPTWR },
-        { efCPT, "-cpi",    nullptr,       ffOPTRD | ffALLOW_MISSING },
-        { efCPT, "-cpo",    nullptr,       ffOPTWR },
-        { efSTO, "-c",      "confout",  ffWRITE },
-        { efEDR, "-e",      "ener",     ffWRITE },
-        { efLOG, "-g",      "md",       ffWRITE },
-        { efXVG, "-dhdl",   "dhdl",     ffOPTWR },
-        { efXVG, "-field",  "field",    ffOPTWR },
-        { efXVG, "-table",  "table",    ffOPTRD },
-        { efXVG, "-tablep", "tablep",   ffOPTRD },
-        { efXVG, "-tableb", "table",    ffOPTRDMULT },
-        { efTRX, "-rerun",  "rerun",    ffOPTRD },
-        { efXVG, "-tpi",    "tpi",      ffOPTWR },
-        { efXVG, "-tpid",   "tpidist",  ffOPTWR },
-        { efEDI, "-ei",     "sam",      ffOPTRD },
-        { efXVG, "-eo",     "edsam",    ffOPTWR },
-        { efXVG, "-devout", "deviatie", ffOPTWR },
-        { efXVG, "-runav",  "runaver",  ffOPTWR },
-        { efXVG, "-px",     "pullx",    ffOPTWR },
-        { efXVG, "-pf",     "pullf",    ffOPTWR },
-        { efXVG, "-ro",     "rotation", ffOPTWR },
-        { efLOG, "-ra",     "rotangles", ffOPTWR },
-        { efLOG, "-rs",     "rotslabs", ffOPTWR },
-        { efLOG, "-rt",     "rottorque", ffOPTWR },
-        { efMTX, "-mtx",    "nm",       ffOPTWR },
-        { efRND, "-multidir", nullptr,      ffOPTRDMULT},
-        { efDAT, "-membed", "membed",   ffOPTRD },
-        { efTOP, "-mp",     "membed",   ffOPTRD },
-        { efNDX, "-mn",     "membed",   ffOPTRD },
-        { efXVG, "-if",     "imdforces", ffOPTWR },
-        { efXVG, "-swap",   "swapions", ffOPTWR }
-    };
-    const int     NFILE = asize(fnm);
 
-    /* Command line options ! */
-    gmx_bool          bDDBondCheck  = TRUE;
-    gmx_bool          bDDBondComm   = TRUE;
-    gmx_bool          bTunePME      = TRUE;
-    gmx_bool          bVerbose      = FALSE;
-    gmx_bool          bRerunVSite   = FALSE;
-    gmx_bool          bConfout      = TRUE;
-    gmx_bool          bReproducible = FALSE;
-    gmx_bool          bIMDwait      = FALSE;
-    gmx_bool          bIMDterm      = FALSE;
-    gmx_bool          bIMDpull      = FALSE;
-
-    int               npme          = -1;
-    int               nstlist       = 0;
-    int               nmultisim     = 0;
-    int               nstglobalcomm = -1;
-    int               repl_ex_nst   = 0;
-    int               repl_ex_seed  = -1;
-    int               repl_ex_nex   = 0;
-    int               nstepout      = 100;
-    int               resetstep     = -1;
-    gmx_int64_t       nsteps        = -2;   /* the value -2 means that the mdp option will be used */
-    int               imdport       = 8888; /* can be almost anything, 8888 is easy to remember */
-
-    rvec              realddxyz                   = {0, 0, 0};
-    const char       *ddrank_opt[ddrankorderNR+1] =
+    /* Command line options */
+    rvec              realddxyz                                               = {0, 0, 0};
+    const char       *ddrank_opt_choices[static_cast<int>(DdRankOrder::nr)+1] =
     { nullptr, "interleave", "pp_pme", "cartesian", nullptr };
-    const char       *dddlb_opt[] =
+    const char       *dddlb_opt_choices[static_cast<int>(DlbOption::nr)+1] =
     { nullptr, "auto", "no", "yes", nullptr };
-    const char       *thread_aff_opt[threadaffNR+1] =
+    const char       *thread_aff_opt_choices[threadaffNR+1] =
     { nullptr, "auto", "on", "off", nullptr };
-    const char       *nbpu_opt[] =
-    { nullptr, "auto", "cpu", "gpu", "gpu_cpu", nullptr };
-    real              rdd                   = 0.0, rconstr = 0.0, dlb_scale = 0.8, pforce = -1;
-    char             *ddcsx                 = nullptr, *ddcsy = nullptr, *ddcsz = nullptr;
-    real              cpt_period            = 15.0, max_hours = -1;
+    const char       *nbpu_opt_choices[] =
+    { nullptr, "auto", "cpu", "gpu", nullptr };
+    const char       *pme_opt_choices[] =
+    { nullptr, "auto", "cpu", "gpu", nullptr };
+    const char       *pme_fft_opt_choices[] =
+    { nullptr, "auto", "cpu", "gpu", nullptr };
     gmx_bool          bTryToAppendFiles     = TRUE;
-    gmx_bool          bKeepAndNumCPT        = FALSE;
-    gmx_bool          bResetCountersHalfWay = FALSE;
-    gmx_output_env_t *oenv                  = nullptr;
+    const char       *gpuIdsAvailable       = "";
+    const char       *userGpuTaskAssignment = "";
 
-    /* Non transparent initialization of a complex gmx_hw_opt_t struct.
-     * But unfortunately we are not allowed to call a function here,
-     * since declarations follow below.
-     */
-    gmx_hw_opt_t    hw_opt = {
-        0, 0, 0, 0, threadaffSEL, 0, 0,
-        { nullptr, FALSE, 0, nullptr }
-    };
+    ImdOptions       &imdOptions = mdrunOptions.imdOptions;
 
-    t_pargs         pa[] = {
+    t_pargs           pa[] = {
 
         { "-dd",      FALSE, etRVEC, {&realddxyz},
           "Domain decomposition grid, 0 is optimize" },
-        { "-ddorder", FALSE, etENUM, {ddrank_opt},
+        { "-ddorder", FALSE, etENUM, {ddrank_opt_choices},
           "DD rank order" },
-        { "-npme",    FALSE, etINT, {&npme},
+        { "-npme",    FALSE, etINT, {&domdecOptions.numPmeRanks},
           "Number of separate ranks to be used for PME, -1 is guess" },
         { "-nt",      FALSE, etINT, {&hw_opt.nthreads_tot},
           "Total number of threads to start (0 is guess)" },
         { "-ntmpi",   FALSE, etINT, {&hw_opt.nthreads_tmpi},
-          "Number of thread-MPI threads to start (0 is guess)" },
+          "Number of thread-MPI ranks to start (0 is guess)" },
         { "-ntomp",   FALSE, etINT, {&hw_opt.nthreads_omp},
           "Number of OpenMP threads per MPI rank to start (0 is guess)" },
         { "-ntomp_pme", FALSE, etINT, {&hw_opt.nthreads_omp_pme},
           "Number of OpenMP threads per MPI rank to start (0 is -ntomp)" },
-        { "-pin",     FALSE, etENUM, {thread_aff_opt},
+        { "-pin",     FALSE, etENUM, {thread_aff_opt_choices},
           "Whether mdrun should try to set thread affinities" },
         { "-pinoffset", FALSE, etINT, {&hw_opt.core_pinning_offset},
           "The lowest logical core number to which mdrun should pin the first thread" },
         { "-pinstride", FALSE, etINT, {&hw_opt.core_pinning_stride},
           "Pinning distance in logical cores for threads, use 0 to minimize the number of threads per physical core" },
-        { "-gpu_id",  FALSE, etSTR, {&hw_opt.gpu_opt.gpu_id},
-          "List of GPU device id-s to use, specifies the per-node PP rank to GPU mapping" },
-        { "-ddcheck", FALSE, etBOOL, {&bDDBondCheck},
+        { "-gpu_id",  FALSE, etSTR, {&gpuIdsAvailable},
+          "List of unique GPU device IDs available to use" },
+        { "-gputasks",  FALSE, etSTR, {&userGpuTaskAssignment},
+          "List of GPU device IDs, mapping each PP task on each node to a device" },
+        { "-ddcheck", FALSE, etBOOL, {&domdecOptions.checkBondedInteractions},
           "Check for all bonded interactions with DD" },
-        { "-ddbondcomm", FALSE, etBOOL, {&bDDBondComm},
+        { "-ddbondcomm", FALSE, etBOOL, {&domdecOptions.useBondedCommunication},
           "HIDDENUse special bonded atom communication when [TT]-rdd[tt] > cut-off" },
-        { "-rdd",     FALSE, etREAL, {&rdd},
+        { "-rdd",     FALSE, etREAL, {&domdecOptions.minimumCommunicationRange},
           "The maximum distance for bonded interactions with DD (nm), 0 is determine from initial coordinates" },
-        { "-rcon",    FALSE, etREAL, {&rconstr},
+        { "-rcon",    FALSE, etREAL, {&domdecOptions.constraintCommunicationRange},
           "Maximum distance for P-LINCS (nm), 0 is estimate" },
-        { "-dlb",     FALSE, etENUM, {dddlb_opt},
+        { "-dlb",     FALSE, etENUM, {dddlb_opt_choices},
           "Dynamic load balancing (with DD)" },
-        { "-dds",     FALSE, etREAL, {&dlb_scale},
+        { "-dds",     FALSE, etREAL, {&domdecOptions.dlbScaling},
           "Fraction in (0,1) by whose reciprocal the initial DD cell size will be increased in order to "
           "provide a margin in which dynamic load balancing can act while preserving the minimum cell size." },
-        { "-ddcsx",   FALSE, etSTR, {&ddcsx},
+        { "-ddcsx",   FALSE, etSTR, {&domdecOptions.cellSizeX},
           "HIDDENA string containing a vector of the relative sizes in the x "
           "direction of the corresponding DD cells. Only effective with static "
           "load balancing." },
-        { "-ddcsy",   FALSE, etSTR, {&ddcsy},
+        { "-ddcsy",   FALSE, etSTR, {&domdecOptions.cellSizeY},
           "HIDDENA string containing a vector of the relative sizes in the y "
           "direction of the corresponding DD cells. Only effective with static "
           "load balancing." },
-        { "-ddcsz",   FALSE, etSTR, {&ddcsz},
+        { "-ddcsz",   FALSE, etSTR, {&domdecOptions.cellSizeZ},
           "HIDDENA string containing a vector of the relative sizes in the z "
           "direction of the corresponding DD cells. Only effective with static "
           "load balancing." },
-        { "-gcom",    FALSE, etINT, {&nstglobalcomm},
+        { "-gcom",    FALSE, etINT, {&mdrunOptions.globalCommunicationInterval},
           "Global communication frequency" },
-        { "-nb",      FALSE, etENUM, {&nbpu_opt},
+        { "-nb",      FALSE, etENUM, {nbpu_opt_choices},
           "Calculate non-bonded interactions on" },
-        { "-nstlist", FALSE, etINT, {&nstlist},
+        { "-nstlist", FALSE, etINT, {&nstlist_cmdline},
           "Set nstlist when using a Verlet buffer tolerance (0 is guess)" },
-        { "-tunepme", FALSE, etBOOL, {&bTunePME},
-          "Optimize PME load between PP/PME ranks or GPU/CPU" },
-        { "-v",       FALSE, etBOOL, {&bVerbose},
+        { "-tunepme", FALSE, etBOOL, {&mdrunOptions.tunePme},
+          "Optimize PME load between PP/PME ranks or GPU/CPU (only with the Verlet cut-off scheme)" },
+        { "-pme",     FALSE, etENUM, {pme_opt_choices},
+          "Perform PME calculations on" },
+        { "-pmefft", FALSE, etENUM, {pme_fft_opt_choices},
+          "Perform PME FFT calculations on" },
+        { "-v",       FALSE, etBOOL, {&mdrunOptions.verbose},
           "Be loud and noisy" },
         { "-pforce",  FALSE, etREAL, {&pforce},
           "Print all forces larger than this (kJ/mol nm)" },
-        { "-reprod",  FALSE, etBOOL, {&bReproducible},
+        { "-reprod",  FALSE, etBOOL, {&mdrunOptions.reproducible},
           "Try to avoid optimizations that affect binary reproducibility" },
-        { "-cpt",     FALSE, etREAL, {&cpt_period},
+        { "-cpt",     FALSE, etREAL, {&mdrunOptions.checkpointOptions.period},
           "Checkpoint interval (minutes)" },
-        { "-cpnum",   FALSE, etBOOL, {&bKeepAndNumCPT},
+        { "-cpnum",   FALSE, etBOOL, {&mdrunOptions.checkpointOptions.keepAndNumberCheckpointFiles},
           "Keep and number checkpoint files" },
         { "-append",  FALSE, etBOOL, {&bTryToAppendFiles},
           "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names" },
-        { "-nsteps",  FALSE, etINT64, {&nsteps},
+        { "-nsteps",  FALSE, etINT64, {&mdrunOptions.numStepsCommandline},
           "Run this number of steps, overrides .mdp file option (-1 means infinite, -2 means use mdp option, smaller is invalid)" },
-        { "-maxh",   FALSE, etREAL, {&max_hours},
+        { "-maxh",   FALSE, etREAL, {&mdrunOptions.maximumHoursToRun},
           "Terminate after 0.99 times this time (hours)" },
-        { "-multi",   FALSE, etINT, {&nmultisim},
-          "Do multiple simulations in parallel" },
-        { "-replex",  FALSE, etINT, {&repl_ex_nst},
+        { "-replex",  FALSE, etINT, {&replExParams.exchangeInterval},
           "Attempt replica exchange periodically with this period (steps)" },
-        { "-nex",  FALSE, etINT, {&repl_ex_nex},
+        { "-nex",  FALSE, etINT, {&replExParams.numExchanges},
           "Number of random exchanges to carry out each exchange interval (N^3 is one suggestion).  -nex zero or not specified gives neighbor replica exchange." },
-        { "-reseed",  FALSE, etINT, {&repl_ex_seed},
+        { "-reseed",  FALSE, etINT, {&replExParams.randomSeed},
           "Seed for replica exchange, -1 is generate a seed" },
-        { "-imdport",    FALSE, etINT, {&imdport},
+        { "-imdport",    FALSE, etINT, {&imdOptions.port},
           "HIDDENIMD listening port" },
-        { "-imdwait",  FALSE, etBOOL, {&bIMDwait},
+        { "-imdwait",  FALSE, etBOOL, {&imdOptions.wait},
           "HIDDENPause the simulation while no IMD client is connected" },
-        { "-imdterm",  FALSE, etBOOL, {&bIMDterm},
+        { "-imdterm",  FALSE, etBOOL, {&imdOptions.terminatable},
           "HIDDENAllow termination of the simulation from IMD client" },
-        { "-imdpull",  FALSE, etBOOL, {&bIMDpull},
+        { "-imdpull",  FALSE, etBOOL, {&imdOptions.pull},
           "HIDDENAllow pulling in the simulation from IMD client" },
-        { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
+        { "-rerunvsite", FALSE, etBOOL, {&mdrunOptions.rerunConstructVsites},
           "HIDDENRecalculate virtual site coordinates with [TT]-rerun[tt]" },
-        { "-confout", FALSE, etBOOL, {&bConfout},
+        { "-confout", FALSE, etBOOL, {&mdrunOptions.writeConfout},
           "HIDDENWrite the last configuration with [TT]-c[tt] and force checkpointing at the last step" },
-        { "-stepout", FALSE, etINT, {&nstepout},
+        { "-stepout", FALSE, etINT, {&mdrunOptions.verboseStepPrintInterval},
           "HIDDENFrequency of writing the remaining wall clock time for the run" },
-        { "-resetstep", FALSE, etINT, {&resetstep},
+        { "-resetstep", FALSE, etINT, {&mdrunOptions.timingOptions.resetStep},
           "HIDDENReset cycle counters after these many time steps" },
-        { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
+        { "-resethway", FALSE, etBOOL, {&mdrunOptions.timingOptions.resetHalfway},
           "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt]" }
     };
-    unsigned long   Flags;
-    ivec            ddxyz;
-    int             dd_rank_order;
-    gmx_bool        bDoAppendFiles, bStartFromCpt;
-    FILE           *fplog;
-    int             rc;
-    char          **multidir = nullptr;
+    int               rc;
 
     cr = init_commrec();
 
     unsigned long PCA_Flags = PCA_CAN_SET_DEFFNM;
-    // With -multi or -multidir, the file names are going to get processed
-    // further (or the working directory changed), so we can't check for their
-    // existence during parsing.  It isn't useful to do any completion based on
-    // file system contents, either.
+    // With -multidir, the working directory still needs to be
+    // changed, so we can't check for the existence of files during
+    // parsing.  It isn't useful to do any completion based on file
+    // system contents, either.
     if (is_multisim_option_set(argc, argv))
     {
         PCA_Flags |= PCA_DISABLE_INPUT_FILE_CHECKING;
     }
 
-    /* Comment this in to do fexist calls only on master
-     * works not with rerun or tables at the moment
-     * also comment out the version of init_forcerec in md.c
-     * with NULL instead of opt2fn
-     */
-    /*
-       if (!MASTER(cr))
-       {
-       PCA_Flags |= PCA_NOT_READ_NODE;
-       }
-     */
-
-    if (!parse_common_args(&argc, argv, PCA_Flags, NFILE, fnm, asize(pa), pa,
+    if (!parse_common_args(&argc, argv, PCA_Flags, nfile, fnm, asize(pa), pa,
                            asize(desc), desc, 0, nullptr, &oenv))
     {
         sfree(cr);
         return 0;
     }
 
-
-    dd_rank_order = nenum(ddrank_opt);
-
-    hw_opt.thread_affinity = nenum(thread_aff_opt);
-
-    /* now check the -multi and -multidir option */
-    if (opt2bSet("-multidir", NFILE, fnm))
+    // Handle the options that permits the user to either declare
+    // which compatible GPUs are availble for use, or to select a GPU
+    // task assignment. Either could be in an environment variable (so
+    // that there is a way to customize it, when using MPI in
+    // heterogeneous contexts).
     {
-        if (nmultisim > 0)
+        // TODO Argument parsing can't handle std::string. We should
+        // fix that by changing the parsing, once more of the roles of
+        // handling, validating and implementing defaults for user
+        // command-line options have been seperated.
+        hw_opt.gpuIdsAvailable       = gpuIdsAvailable;
+        hw_opt.userGpuTaskAssignment = userGpuTaskAssignment;
+
+        const char *env = getenv("GMX_GPU_ID");
+        if (env != nullptr)
         {
-            gmx_fatal(FARGS, "mdrun -multi and -multidir options are mutually exclusive.");
+            if (!hw_opt.gpuIdsAvailable.empty())
+            {
+                gmx_fatal(FARGS, "GMX_GPU_ID and -gpu_id can not be used at the same time");
+            }
+            hw_opt.gpuIdsAvailable = env;
         }
-        nmultisim = opt2fns(&multidir, "-multidir", NFILE, fnm);
+
+        env = getenv("GMX_GPUTASKS");
+        if (env != nullptr)
+        {
+            if (!hw_opt.userGpuTaskAssignment.empty())
+            {
+                gmx_fatal(FARGS, "GMX_GPUTASKS and -gputasks can not be used at the same time");
+            }
+            hw_opt.userGpuTaskAssignment = env;
+        }
+
+        if (!hw_opt.gpuIdsAvailable.empty() && !hw_opt.userGpuTaskAssignment.empty())
+        {
+            gmx_fatal(FARGS, "-gpu_id and -gputasks cannot be used at the same time");
+        }
     }
 
+    hw_opt.thread_affinity = nenum(thread_aff_opt_choices);
 
-    if (repl_ex_nst != 0 && nmultisim < 2)
+    // now check for a multi-simulation
+    gmx::ArrayRef<const std::string> multidir = opt2fnsIfOptionSet("-multidir", nfile, fnm);
+
+    if (replExParams.exchangeInterval != 0 && multidir.size() < 2)
     {
-        gmx_fatal(FARGS, "Need at least two replicas for replica exchange (option -multi)");
+        gmx_fatal(FARGS, "Need at least two replicas for replica exchange (use option -multidir)");
     }
 
-    if (repl_ex_nex < 0)
+    if (replExParams.numExchanges < 0)
     {
         gmx_fatal(FARGS, "Replica exchange number of exchanges needs to be positive");
     }
 
-    if (nmultisim >= 1)
-    {
-#if !GMX_THREAD_MPI
-        init_multisystem(cr, nmultisim, multidir, NFILE, fnm);
-#else
-        gmx_fatal(FARGS, "mdrun -multi or -multidir are not supported with the thread-MPI library. "
-                  "Please compile GROMACS with a proper external MPI library.");
-#endif
-    }
+    ms = init_multisystem(MPI_COMM_WORLD, multidir);
 
-    if (!opt2bSet("-cpi", NFILE, fnm))
+    /* Prepare the intra-simulation communication */
+    // TODO consolidate this with init_commrec, after changing the
+    // relative ordering of init_commrec and init_multisystem
+#if GMX_MPI
+    if (ms != nullptr)
+    {
+        cr->nnodes = cr->nnodes / ms->nsim;
+        MPI_Comm_split(MPI_COMM_WORLD, ms->sim, cr->sim_nodeid, &cr->mpi_comm_mysim);
+        cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
+        MPI_Comm_rank(cr->mpi_comm_mysim, &cr->sim_nodeid);
+        MPI_Comm_rank(cr->mpi_comm_mygroup, &cr->nodeid);
+    }
+#endif
+
+    if (!opt2bSet("-cpi", nfile, fnm))
     {
         // If we are not starting from a checkpoint we never allow files to be appended
         // to, since that has caused a ton of strange behaviour and bugs in the past.
@@ -506,56 +476,53 @@ int gmx_mdrun(int argc, char *argv[])
         }
     }
 
-    handleRestart(cr, bTryToAppendFiles, NFILE, fnm, &bDoAppendFiles, &bStartFromCpt);
+    ContinuationOptions &continuationOptions = mdrunOptions.continuationOptions;
 
-    Flags = opt2bSet("-rerun", NFILE, fnm) ? MD_RERUN : 0;
-    Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
-    Flags = Flags | (bDDBondComm   ? MD_DDBONDCOMM   : 0);
-    Flags = Flags | (bTunePME      ? MD_TUNEPME      : 0);
-    Flags = Flags | (bConfout      ? MD_CONFOUT      : 0);
-    Flags = Flags | (bRerunVSite   ? MD_RERUN_VSITE  : 0);
-    Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
-    Flags = Flags | (bDoAppendFiles  ? MD_APPENDFILES  : 0);
-    Flags = Flags | (opt2parg_bSet("-append", asize(pa), pa) ? MD_APPENDFILESSET : 0);
-    Flags = Flags | (bKeepAndNumCPT ? MD_KEEPANDNUMCPT : 0);
-    Flags = Flags | (bStartFromCpt ? MD_STARTFROMCPT : 0);
-    Flags = Flags | (bResetCountersHalfWay ? MD_RESETCOUNTERSHALFWAY : 0);
-    Flags = Flags | (opt2parg_bSet("-ntomp", asize(pa), pa) ? MD_NTOMPSET : 0);
-    Flags = Flags | (bIMDwait      ? MD_IMDWAIT      : 0);
-    Flags = Flags | (bIMDterm      ? MD_IMDTERM      : 0);
-    Flags = Flags | (bIMDpull      ? MD_IMDPULL      : 0);
+    continuationOptions.appendFilesOptionSet = opt2parg_bSet("-append", asize(pa), pa);
+
+    handleRestart(cr, ms, bTryToAppendFiles, nfile, fnm, &continuationOptions.appendFiles, &continuationOptions.startedFromCheckpoint);
+
+    mdrunOptions.rerun            = opt2bSet("-rerun", nfile, fnm);
+    mdrunOptions.ntompOptionIsSet = opt2parg_bSet("-ntomp", asize(pa), pa);
 
     /* We postpone opening the log file if we are appending, so we can
        first truncate the old log file and append to the correct position
        there instead.  */
-    if (MASTER(cr) && !bDoAppendFiles)
+    if (MASTER(cr) && !continuationOptions.appendFiles)
     {
-        gmx_log_open(ftp2fn(efLOG, NFILE, fnm), cr,
-                     Flags & MD_APPENDFILES, &fplog);
+        gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr->nodeid, cr->nnodes, &fplog);
     }
     else
     {
         fplog = nullptr;
     }
 
-    ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
-    ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
-    ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
+    domdecOptions.rankOrder    = static_cast<DdRankOrder>(nenum(ddrank_opt_choices));
+    domdecOptions.dlbOption    = static_cast<DlbOption>(nenum(dddlb_opt_choices));
+    domdecOptions.numCells[XX] = roundToInt(realddxyz[XX]);
+    domdecOptions.numCells[YY] = roundToInt(realddxyz[YY]);
+    domdecOptions.numCells[ZZ] = roundToInt(realddxyz[ZZ]);
 
-    rc = gmx::mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose,
-                       nstglobalcomm, ddxyz, dd_rank_order, npme, rdd, rconstr,
-                       dddlb_opt[0], dlb_scale, ddcsx, ddcsy, ddcsz,
-                       nbpu_opt[0], nstlist,
-                       nsteps, nstepout, resetstep,
-                       nmultisim, repl_ex_nst, repl_ex_nex, repl_ex_seed,
-                       pforce, cpt_period, max_hours, imdport, Flags);
+    nbpu_opt    = nbpu_opt_choices[0];
+    pme_opt     = pme_opt_choices[0];
+    pme_fft_opt = pme_fft_opt_choices[0];
+
+
+    rc = mdrunner();
 
     /* Log file has to be closed in mdrunner if we are appending to it
        (fplog not set here) */
-    if (MASTER(cr) && !bDoAppendFiles)
+    if (fplog != nullptr)
     {
         gmx_log_close(fplog);
     }
 
+    if (GMX_LIB_MPI)
+    {
+        done_commrec(cr);
+    }
+    done_multisim(ms);
     return rc;
 }
+
+}  // namespace gmx

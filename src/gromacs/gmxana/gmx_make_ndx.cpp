@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,9 +61,9 @@
 #define NAME_LEN 1024
 static const int NOTSET = -92637;
 
-gmx_bool         bCase = FALSE;
+static gmx_bool  bCase = FALSE;
 
-static int or_groups(int nr1, int *at1, int nr2, int *at2,
+static int or_groups(int nr1, const int *at1, int nr2, const int *at2,
                      int *nr, int *at)
 {
     int      i1, i2, max = 0;
@@ -123,7 +123,7 @@ static int or_groups(int nr1, int *at1, int nr2, int *at2,
     return *nr;
 }
 
-static int and_groups(int nr1, int *at1, int nr2, int *at2,
+static int and_groups(int nr1, const int *at1, int nr2, const int *at2,
                       int *nr, int *at)
 {
     int i1, i2;
@@ -538,7 +538,7 @@ static gmx_bool atoms_from_residuenumbers(const t_atoms *atoms, int group, t_blo
     }
     printf("Found %d atom%s in %d residues from group %s\n",
            *nr, (*nr == 1) ? "" : "s", j1-j0, gname);
-    return *nr;
+    return *nr != 0;
 }
 
 static gmx_bool comp_name(const char *name, const char *search)
@@ -686,7 +686,7 @@ static int select_residuenames(const t_atoms *atoms, int n_names, char **names,
     return *nr;
 }
 
-static void copy2block(int n, int *index, t_blocka *block)
+static void copy2block(int n, const int *index, t_blocka *block)
 {
     int i, n0;
 
@@ -825,7 +825,7 @@ static int split_chain(const t_atoms *atoms, const rvec *x,
 
     while (ca_start < natoms)
     {
-        while ((ca_start < natoms) && std::strcmp(*atoms->atomname[ca_start], "CA"))
+        while ((ca_start < natoms) && std::strcmp(*atoms->atomname[ca_start], "CA") != 0)
         {
             ca_start++;
         }
@@ -849,7 +849,7 @@ static int split_chain(const t_atoms *atoms, const rvec *x,
                 {
                     i++;
                 }
-                while ((i < natoms) && std::strcmp(*atoms->atomname[i], "CA"));
+                while ((i < natoms) && std::strcmp(*atoms->atomname[i], "CA") != 0);
                 if (i < natoms)
                 {
                     rvec_sub(x[ca_end], x[i], vec);
@@ -997,11 +997,11 @@ static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
         {
             if (parse_int(string, &sel_nr1))
             {
-                bRet = select_atomnumbers(string, atoms, sel_nr1, nr, index, gname);
+                bRet = (select_atomnumbers(string, atoms, sel_nr1, nr, index, gname) != 0);
             }
             else if (parse_names(string, &n_names, names))
             {
-                bRet = select_atomnames(atoms, n_names, names, nr, index, FALSE);
+                bRet = (select_atomnames(atoms, n_names, names, nr, index, FALSE) != 0);
                 make_gname(n_names, names, gname);
             }
         }
@@ -1018,7 +1018,7 @@ static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
             }
             else
             {
-                bRet = select_atomnames(atoms, n_names, names, nr, index, TRUE);
+                bRet = (select_atomnames(atoms, n_names, names, nr, index, TRUE) != 0);
                 make_gname(n_names, names, gname);
             }
         }
@@ -1041,7 +1041,7 @@ static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
         if (check_have_atoms(atoms, ostring) &&
             parse_int_char(string, &sel_nr1, &c))
         {
-            bRet = select_residueindices(string, atoms, sel_nr1, c, nr, index, gname);
+            bRet = (select_residueindices(string, atoms, sel_nr1, c, nr, index, gname) != 0);
         }
     }
     else if ((*string)[0] == 'r')
@@ -1051,11 +1051,11 @@ static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
         {
             if (parse_int_char(string, &sel_nr1, &c))
             {
-                bRet = select_residuenumbers(string, atoms, sel_nr1, c, nr, index, gname);
+                bRet = (select_residuenumbers(string, atoms, sel_nr1, c, nr, index, gname) != 0);
             }
             else if (parse_names(string, &n_names, names))
             {
-                bRet = select_residuenames(atoms, n_names, names, nr, index);
+                bRet = (select_residuenames(atoms, n_names, names, nr, index) != 0);
                 make_gname(n_names, names, gname);
             }
         }
@@ -1066,7 +1066,7 @@ static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
         if (check_have_atoms(atoms, ostring) &&
             parse_names(string, &n_names, names))
         {
-            bRet = select_chainnames(atoms, n_names, names, nr, index);
+            bRet = (select_chainnames(atoms, n_names, names, nr, index) != 0);
             sprintf(gname, "ch%s", names[0]);
             for (i = 1; i < n_names; i++)
             {
@@ -1127,8 +1127,8 @@ static void list_residues(const t_atoms *atoms)
         resind = atoms->atom[i].resind;
         if ((resind != prev_resind) || (i == atoms->nr-1))
         {
-            if ((bDiff = std::strcmp(*atoms->resinfo[resind].name,
-                                     *atoms->resinfo[start].name)) ||
+            if ((bDiff = (std::strcmp(*atoms->resinfo[resind].name,
+                                      *atoms->resinfo[start].name) != 0)) ||
                 (i == atoms->nr-1))
             {
                 if (bDiff)
@@ -1483,7 +1483,7 @@ static int block2natoms(t_blocka *block)
     return natoms;
 }
 
-void merge_blocks(t_blocka *dest, t_blocka *source)
+static void merge_blocks(t_blocka *dest, t_blocka *source)
 {
     int     i, nra0, i0;
 
@@ -1553,12 +1553,10 @@ int gmx_make_ndx(int argc, char *argv[])
 #define NPA asize(pa)
 
     gmx_output_env_t *oenv;
-    int               nndxin;
     const char       *stxfile;
-    char            **ndxinfiles;
     const char       *ndxoutfile;
     gmx_bool          bNatoms;
-    int               i, j;
+    int               j;
     t_atoms          *atoms;
     rvec             *x, *v;
     int               ePBC;
@@ -1579,18 +1577,11 @@ int gmx_make_ndx(int argc, char *argv[])
     }
 
     stxfile = ftp2fn_null(efSTX, NFILE, fnm);
-    if (opt2bSet("-n", NFILE, fnm))
-    {
-        nndxin = opt2fns(&ndxinfiles, "-n", NFILE, fnm);
-    }
-    else
-    {
-        nndxin = 0;
-    }
+    gmx::ArrayRef<const std::string> ndxInFiles = opt2fnsIfOptionSet("-n", NFILE, fnm);
     ndxoutfile = opt2fn("-o", NFILE, fnm);
     bNatoms    = opt2parg_bSet("-natoms", NPA, pa);
 
-    if (!stxfile && !nndxin)
+    if (!stxfile && ndxInFiles.empty())
     {
         gmx_fatal(FARGS, "No input files (structure or index)");
     }
@@ -1618,12 +1609,12 @@ int gmx_make_ndx(int argc, char *argv[])
     /* read input file(s) */
     block  = new_blocka();
     gnames = nullptr;
-    printf("Going to read %d old index file(s)\n", nndxin);
-    if (nndxin)
+    printf("Going to read %td old index file(s)\n", ndxInFiles.size());
+    if (!ndxInFiles.empty())
     {
-        for (i = 0; i < nndxin; i++)
+        for (const std::string &ndxInFile : ndxInFiles)
         {
-            block2 = init_index(ndxinfiles[i], &gnames2);
+            block2 = init_index(ndxInFile.c_str(), &gnames2);
             srenew(gnames, block->nr+block2->nr);
             for (j = 0; j < block2->nr; j++)
             {

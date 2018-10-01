@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,18 +55,19 @@ class InMemorySerializer : public ISerializer
 {
     public:
         InMemorySerializer();
-        virtual ~InMemorySerializer();
+        ~InMemorySerializer() override;
 
         std::vector<char> finishAndGetBuffer();
 
         // From ISerializer
-        virtual bool reading() const { return false; }
-        virtual void doUChar(unsigned char *value);
-        virtual void doInt(int *value);
-        virtual void doInt64(gmx_int64_t *value);
-        virtual void doFloat(float *value);
-        virtual void doDouble(double *value);
-        virtual void doString(std::string *value);
+        bool reading() const override { return false; }
+        void doBool(bool *value) override;
+        void doUChar(unsigned char *value) override;
+        void doInt(int *value) override;
+        void doInt64(int64_t *value) override;
+        void doFloat(float *value) override;
+        void doDouble(double *value) override;
+        void doString(std::string *value) override;
 
     private:
         class Impl;
@@ -78,16 +79,17 @@ class InMemoryDeserializer : public ISerializer
 {
     public:
         explicit InMemoryDeserializer(const std::vector<char> &buffer);
-        virtual ~InMemoryDeserializer();
+        ~InMemoryDeserializer() override;
 
         // From ISerializer
-        virtual bool reading() const { return true; }
-        virtual void doUChar(unsigned char *value);
-        virtual void doInt(int *value);
-        virtual void doInt64(gmx_int64_t *value);
-        virtual void doFloat(float *value);
-        virtual void doDouble(double *value);
-        virtual void doString(std::string *value);
+        bool reading() const override { return true; }
+        void doBool(bool *value) override;
+        void doUChar(unsigned char *value) override;
+        void doInt(int *value) override;
+        void doInt64(int64_t *value) override;
+        void doFloat(float *value) override;
+        void doDouble(double *value) override;
+        void doString(std::string *value) override;
 
     private:
         class Impl;

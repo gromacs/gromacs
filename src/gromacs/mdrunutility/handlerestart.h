@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,9 +58,10 @@
 #ifndef GMX_MDRUNUTILITY_HANDLERESTART_H
 #define GMX_MDRUNUTILITY_HANDLERESTART_H
 
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basedefinitions.h"
 
+struct gmx_multisim_t;
+struct t_commrec;
 struct t_filenm;
 
 /*! \brief Handle startup of mdrun, particularly regarding -cpi and -append
@@ -80,6 +81,7 @@ struct t_filenm;
  * and/or simulations.
  *
  * \param[in]    cr                 Communication structure
+ * \param[in]    ms                 Handles multi-simulations.
  * \param[in]    bTryToAppendFiles  Whether appending is requested (from mdrun)
  * \param[in]    NFILE              Size of fnm struct
  * \param[inout] fnm                Filename parameters to mdrun
@@ -90,11 +92,12 @@ struct t_filenm;
  * \param[out]   bStartFromCpt      True on return if we found the checkpoint
  *                                  and will use it to restart.
  */
-void handleRestart(t_commrec *cr,
-                   gmx_bool   bTryToAppendFiles,
-                   const int  NFILE,
-                   t_filenm   fnm[],
-                   gmx_bool  *bDoAppendFiles,
-                   gmx_bool  *bStartFromCpt);
+void handleRestart(t_commrec            *cr,
+                   const gmx_multisim_t *ms,
+                   gmx_bool              bTryToAppendFiles,
+                   int                   NFILE,
+                   t_filenm              fnm[],
+                   bool                 *bDoAppendFiles,
+                   bool                 *bStartFromCpt);
 
 #endif

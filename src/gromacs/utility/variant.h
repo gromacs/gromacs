@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,11 +44,13 @@
 #define GMX_UTILITY_VARIANT_H
 
 #include <memory>
+#include <string>
 #include <type_traits>
 #include <typeindex>
 #include <typeinfo>
 #include <utility>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx
@@ -96,7 +98,7 @@ class Variant
          * method avoids copying when move-construction is possible.
          */
         template <typename T>
-        static Variant create(T &&value) { return Variant(std::move(value)); }
+        static Variant create(T &&value) { return Variant(std::forward<T>(value)); }
 
         //! Creates an empty variant value.
         Variant() {}
@@ -105,19 +107,9 @@ class Variant
          *
          * \throws std::bad_alloc if out of memory.
          */
-        template <typename T>
-        explicit Variant(const T &value)
-            : content_(new Content<typename std::decay<T>::type>(value))
-        {
-        }
-        /*! \brief
-         * Creates a variant that holds the given value.
-         *
-         * \throws std::bad_alloc if out of memory.
-         */
-        template <typename T>
+        template <typename T, typename = typename std::enable_if<!std::is_same<T, Variant>::value>::type>
         explicit Variant(T &&value)
-            : content_(new Content<typename std::decay<T>::type>(std::move(value)))
+            : content_(new Content<typename std::decay<T>::type>(std::forward<T>(value)))
         {
         }
         /*! \brief
@@ -135,7 +127,7 @@ class Variant
          */
         Variant &operator=(const Variant &other)
         {
-            content_.reset(other.cloneContent());
+            content_ = other.cloneContent();
             return *this;
         }
         //! Move-assigns the variant.
@@ -223,7 +215,7 @@ class Variant
             public:
                 virtual ~IContent() {}
                 virtual const std::type_info &typeInfo() const = 0;
-                virtual IContent *clone() const                = 0;
+                virtual std::unique_ptr<IContent> clone() const = 0;
         };
 
         template <typename T>
@@ -233,20 +225,32 @@ class Variant
                 explicit Content(const T &value) : value_(value) {}
                 explicit Content(T &&value) : value_(std::move(value)) {}
 
-                virtual const std::type_info &typeInfo() const { return typeid(T); }
-                virtual IContent *clone() const { return new Content(value_); }
+                const std::type_info &typeInfo() const override { return typeid(T); }
+                std::unique_ptr<IContent> clone() const override { return compat::make_unique<Content>(value_); }
 
                 T value_;
         };
 
         //! Creates a deep copy of the content.
-        IContent *cloneContent() const
+        std::unique_ptr<IContent> cloneContent() const
         {
             return content_ != nullptr ? content_->clone() : nullptr;
         }
 
         std::unique_ptr<IContent> content_;
 };
+
+//! \cond libapi
+/*! \brief
+ * Converts a Variant value to a string.
+ *
+ * As the name suggests, only some types of "simple" values (such as int) are
+ * supported.  Asserts for unsupported types.
+ *
+ * \ingroup module_utility
+ */
+std::string simpleValueToString(const Variant &value);
+//! \endcond
 
 } // namespace gmx
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,10 +38,11 @@
 
 #include "topsort.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -134,11 +135,9 @@ static gmx_bool ip_pert(int ftype, const t_iparams *ip)
         case F_CBTDIHS:
             gmx_fatal(FARGS, "Function type %s does not support currentely free energy calculations",
                       interaction_function[ftype].longname);
-            break;
         default:
             gmx_fatal(FARGS, "Function type %s not implemented in ip_pert",
                       interaction_function[ftype].longname);
-            break;
     }
 
     return bPert;
@@ -157,21 +156,13 @@ static gmx_bool ip_q_pert(int ftype, const t_iatom *ia,
 
 gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
 {
-    const gmx_ffparams_t *ffparams;
-    int                   i, ftype;
-    int                   mb;
-    t_atom               *atom;
-    t_ilist              *il;
-    t_iatom              *ia;
-    gmx_bool              bPert;
-
-    ffparams = &mtop->ffparams;
+    const gmx_ffparams_t *ffparams = &mtop->ffparams;
 
     /* Loop over all the function types and compare the A/B parameters */
-    bPert = FALSE;
-    for (i = 0; i < ffparams->ntypes; i++)
+    gmx_bool bPert = FALSE;
+    for (int i = 0; i < ffparams->numTypes(); i++)
     {
-        ftype = ffparams->functype[i];
+        int ftype = ffparams->functype[i];
         if (interaction_function[ftype].flags & IF_BOND)
         {
             if (ip_pert(ftype, &ffparams->iparams[i]))
@@ -182,12 +173,12 @@ gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
     }
 
     /* Check perturbed charges for 1-4 interactions */
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        atom = mtop->moltype[mtop->molblock[mb].type].atoms.atom;
-        il   = &mtop->moltype[mtop->molblock[mb].type].ilist[F_LJ14];
-        ia   = il->iatoms;
-        for (i = 0; i < il->nr; i += 3)
+        const t_atom             *atom = mtop->moltype[molb.type].atoms.atom;
+        const InteractionList    &il   = mtop->moltype[molb.type].ilist[F_LJ14];
+        gmx::ArrayRef<const int>  ia   = il.iatoms;
+        for (int i = 0; i < il.size(); i += 3)
         {
             if (atom[ia[i+1]].q != atom[ia[i+1]].qB ||
                 atom[ia[i+2]].q != atom[ia[i+2]].qB)
@@ -203,7 +194,6 @@ gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
 void gmx_sort_ilist_fe(t_idef *idef, const real *qA, const real *qB)
 {
     int        ftype, nral, i, ic, ib, a;
-    t_iparams *iparams;
     t_ilist   *ilist;
     t_iatom   *iatoms;
     t_iatom   *iabuf;
@@ -217,7 +207,7 @@ void gmx_sort_ilist_fe(t_idef *idef, const real *qA, const real *qB)
     iabuf_nalloc = 0;
     iabuf        = nullptr;
 
-    iparams = idef->iparams;
+    const t_iparams *iparams = idef->iparams;
 
     for (ftype = 0; ftype < F_NRE; ftype++)
     {

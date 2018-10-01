@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -130,15 +130,15 @@ static gmx_bool bAllowed(real phi, real psi)
 #define NPP asize(map)
     int                x, y;
 
-#define INDEX(ppp) (((static_cast<int> (360+ppp*RAD2DEG)) % 360)/6)
+#define INDEX(ppp) (((static_cast<int> (360+(ppp)*RAD2DEG)) % 360)/6)
     x = INDEX(phi);
     y = INDEX(psi);
 #undef INDEX
 
-    return (map[x][y] == '1') ? TRUE : FALSE;
+    return map[x][y] == '1';
 }
 
-int *make_chi_ind(int nl, t_dlist dl[], int *ndih)
+static int *make_chi_ind(int nl, t_dlist dl[], int *ndih)
 {
     int     *id;
     int      i, Xi, n;
@@ -179,7 +179,7 @@ int *make_chi_ind(int nl, t_dlist dl[], int *ndih)
             id[n++] = dl[i].atm.O;
         }
     }
-    for (i = 1; (i < nl); i++)
+    for (i = 0; (i < nl); i++)
     {
         /* Omega */
         if (has_dihedral(edOmega, &(dl[i])))
@@ -210,14 +210,6 @@ int *make_chi_ind(int nl, t_dlist dl[], int *ndih)
 
     return id;
 }
-
-int bin(real chi, int mult)
-{
-    mult = 3;
-
-    return static_cast<int>(chi*mult/360.0);
-}
-
 
 static void do_dihcorr(const char *fn, int nf, int ndih, real **dih, real dt,
                        int nlist, t_dlist dlist[], real time[], int maxchi,
@@ -280,7 +272,7 @@ static void do_dihcorr(const char *fn, int nf, int ndih, real **dih, real dt,
     fprintf(stderr, "\n");
 }
 
-static void copy_dih_data(real in[], real out[], int nf, gmx_bool bLEAVE)
+static void copy_dih_data(const real in[], real out[], int nf, gmx_bool bLEAVE)
 {
     /* if bLEAVE, do nothing to data in copying to out
      * otherwise multiply by 180/pi to convert rad to deg */
@@ -445,7 +437,7 @@ static int reset_em_all(int nlist, t_dlist dlist[], int nf,
 static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
                           int nf, int maxchi, real **dih,
                           int nlist, t_dlist dlist[],
-                          int index[],
+                          const int index[],
                           gmx_bool bPhi, gmx_bool bPsi, gmx_bool bOmega, gmx_bool bChi,
                           gmx_bool bNormalize, gmx_bool bSSHisto, const char *ssdump,
                           real bfac_max, const t_atoms *atoms,
@@ -701,7 +693,7 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
         {
             leg[i+NKKKPHI+NKKKPSI] = gmx_strdup(kkkchi1[i].name);
         }
-        xvgr_legend(fp, NJC, (const char**)leg, oenv);
+        xvgr_legend(fp, NJC, leg, oenv);
         fprintf(fp, "%5s ", "#Res.");
         for (i = 0; (i < NJC); i++)
         {
@@ -892,15 +884,15 @@ static FILE *rama_file(const char *fn, const char *title, const char *xaxis,
 static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
                     gmx_bool bViol, gmx_bool bRamOmega, const gmx_output_env_t *oenv)
 {
-    FILE    *fp, *gp = nullptr;
-    gmx_bool bOm;
-    char     fn[256];
-    int      i, j, k, Xi1, Xi2, Phi, Psi, Om = 0, nlevels;
-#define NMAT 120
-    real   **mat  = nullptr, phi, psi, omega, axis[NMAT], lo, hi;
-    t_rgb    rlo  = { 1.0, 0.0, 0.0 };
-    t_rgb    rmid = { 1.0, 1.0, 1.0 };
-    t_rgb    rhi  = { 0.0, 0.0, 1.0 };
+    FILE         *fp, *gp = nullptr;
+    gmx_bool      bOm;
+    char          fn[256];
+    int           i, j, k, Xi1, Xi2, Phi, Psi, Om = 0, nlevels;
+    constexpr int NMAT = 120;
+    real        **mat  = nullptr, phi, psi, omega, axis[NMAT], lo, hi;
+    t_rgb         rlo  = { 1.0, 0.0, 0.0 };
+    t_rgb         rmid = { 1.0, 1.0, 1.0 };
+    t_rgb         rhi  = { 0.0, 0.0, 1.0 };
 
     for (i = 0; (i < nlist); i++)
     {
@@ -918,7 +910,7 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
                 for (j = 0; (j < NMAT); j++)
                 {
                     snew(mat[j], NMAT);
-                    axis[j] = -180+(360*j)/NMAT;
+                    axis[j] = -180+gmx::exactDiv(360*j, NMAT);
                 }
             }
             if (bViol)
@@ -935,12 +927,12 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
                 fprintf(fp, "%10g  %10g\n", phi, psi);
                 if (bViol)
                 {
-                    fprintf(gp, "%d\n", (bAllowed(dih[Phi][j], RAD2DEG*dih[Psi][j]) == FALSE) );
+                    fprintf(gp, "%d\n", static_cast<int>(!bAllowed(dih[Phi][j], RAD2DEG*dih[Psi][j])) );
                 }
                 if (bOm)
                 {
                     omega = RAD2DEG*dih[Om][j];
-                    mat[static_cast<int>(((phi*NMAT)/360)+NMAT/2)][static_cast<int>(((psi*NMAT)/360)+NMAT/2)]
+                    mat[static_cast<int>(((phi*NMAT)/360)+gmx::exactDiv(NMAT, 2))][static_cast<int>(((psi*NMAT)/360)+gmx::exactDiv(NMAT, 2))]
                         += omega;
                 }
             }
@@ -1040,7 +1032,7 @@ static void print_transitions(const char *fn, int maxchi, int nlist,
     /* Print order parameters */
     fp = xvgropen(fn, "Dihedral Rotamer Transitions", "Residue", "Transitions/ns",
                   oenv);
-    xvgr_legend(fp, NONCHI+maxchi, (const char**)leg, oenv);
+    xvgr_legend(fp, NONCHI+maxchi, leg, oenv);
 
     fprintf(fp, "%5s ", "#Res.");
     fprintf(fp, "%10s %10s %10s ", leg[edPhi], leg[edPsi], leg[edOmega]);
@@ -1442,7 +1434,7 @@ int gmx_chi(int argc, char *argv[])
     if (maxchi > MAXCHI)
     {
         fprintf(stderr,
-                "Will only calculate first %d Chi dihedrals in stead of %d.\n",
+                "Will only calculate first %d Chi dihedrals instead of %d.\n",
                 MAXCHI, maxchi);
         maxchi = MAXCHI;
     }

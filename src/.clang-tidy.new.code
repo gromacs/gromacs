@@ -1,0 +1,34 @@
+Checks:  clang-diagnostic-*,-clang-analyzer-*,
+         bugprone-*,misc-*,readability-*,performance-*,mpi-*,-misc-incorrect-roundings,
+         -readability-else-after-return,
+         modernize-use-nullptr,modernize-use-emplace,
+         modernize-make-unique,modernize-make-shared,
+         modernize-avoid-bind,
+         modernize-use-override,
+         modernize-redundant-void-arg,modernize-use-bool-literals,
+         cppcoreguidelines-*,-cppcoreguidelines-pro-type-reinterpret-cast,-cppcoreguidelines-pro-type-const-cast,
+         -cppcoreguidelines-pro-type-static-cast-downcast,
+         -cppcoreguidelines-special-member-functions,-cppcoreguidelines-pro-type-vararg,
+         -cppcoreguidelines-pro-bounds-constant-array-index,
+         -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+         -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+         -cppcoreguidelines-avoid-goto,
+         google-*,-google-build-using-namespace,-google-explicit-constructor,
+         -google-readability-todo,
+         -google-runtime-int
+HeaderFilterRegex: .*
+CheckOptions:
+  - key:           cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor
+    value:         1
+  - key:           modernize-make-unique.MakeSmartPtrFunction
+    value:         gmx::compat::make_unique
+  - key:           modernize-make-unique.MakeSmartPtrFunctionHeader
+    value:         gromacs/compat/make_unique.h
+  - key:           modernize-make-unique.IncludeStyle
+    value:         google
+  - key:           modernize-make-shared.IncludeStyle
+    value:         google
+  - key:           readability-implicit-bool-conversion.AllowIntegerConditions
+    value:         1
+  - key:           readability-implicit-bool-conversion.AllowPointerConditions
+    value:         1

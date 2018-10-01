@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,8 +38,8 @@
 
 #include "do_fit.h"
 
-#include <math.h>
-#include <stdio.h>
+#include <cmath>
+#include <cstdio>
 
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/functions.h"
@@ -48,7 +48,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-real calc_similar_ind(gmx_bool bRho, int nind, int *index, real mass[],
+real calc_similar_ind(gmx_bool bRho, int nind, const int *index, const real mass[],
                       rvec x[], rvec xp[])
 {
     int  i, j, d;
@@ -110,7 +110,7 @@ real rhodev(int natoms, real mass[], rvec x[], rvec xp[])
     return calc_similar_ind(TRUE, natoms, nullptr, mass, x, xp);
 }
 
-void calc_fit_R(int ndim, int natoms, real *w_rls, const rvec *xp, rvec *x, matrix R)
+void calc_fit_R(int ndim, int natoms, const real *w_rls, const rvec *xp, rvec *x, matrix R)
 {
     int      c, r, n, j, i, irot, s;
     double **omega, **om;

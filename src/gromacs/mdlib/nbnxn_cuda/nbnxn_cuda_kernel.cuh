@@ -46,6 +46,7 @@
  */
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
+#include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
 #include "gromacs/math/utilities.h"
 #include "gromacs/pbcutil/ishift.h"
 /* Note that floating-point constants in CUDA code should be suffixed
@@ -53,8 +54,8 @@
  * code that is in double precision.
  */
 
-#if GMX_PTX_ARCH < 300
-#error "nbnxn_cuda_kernel.cuh included with GMX_PTX_ARCH < 300"
+#if GMX_PTX_ARCH < 300 && GMX_PTX_ARCH != 0
+#error "nbnxn_cuda_kernel.cuh included with GMX_PTX_ARCH < 300 or host pass"
 #endif
 
 #if defined EL_EWALD_ANA || defined EL_EWALD_TAB
@@ -85,7 +86,7 @@
    Kernel launch parameters:
     - #blocks   = #pair lists, blockId = pair list Id
     - #threads  = NTHREAD_Z * c_clSize^2
-    - shmem     = see nbnxn_cuda.cu:calc_shmem_required()
+    - shmem     = see nbnxn_cuda.cu:calc_shmem_required_nonbonded()
 
     Each thread calculates an i force-component taking one pair of i-j atoms.
  */
@@ -108,6 +109,19 @@
  *
  * Note that the current kernel implementation only supports NTHREAD_Z > 1 with
  * shuffle-based reduction, hence CC >= 3.0.
+ *
+ *
+ * NOTEs on Volta / CUDA 9 extensions:
+ *
+ * - While active thread masks are required for the warp collectives
+ *   (we use any and shfl), the kernel is designed such that all conditions
+ *   (other than the inner-most distance check) including loop trip counts
+ *   are warp-synchronous. Therefore, we don't need ballot to compute the
+ *   active masks as these are all full-warp masks.
+ *
+ * - TODO: reconsider the use of __syncwarp(): its only role is currently to prevent
+ *   WAR hazard due to the cj preload; we should try to replace it with direct
+ *   loads (which may be faster given the improved L1 on Volta).
  */
 
 /* Kernel launch bounds for different compute capabilities. The value of NTHREAD_Z
@@ -185,15 +199,12 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #ifdef EL_RF
     float two_k_rf              = nbparam.two_k_rf;
 #endif
-#ifdef EL_EWALD_TAB
-    float coulomb_tab_scale     = nbparam.coulomb_tab_scale;
-#endif
 #ifdef EL_EWALD_ANA
     float beta2                 = nbparam.ewald_beta*nbparam.ewald_beta;
     float beta3                 = nbparam.ewald_beta*nbparam.ewald_beta*nbparam.ewald_beta;
 #endif
 #ifdef PRUNE_NBL
-    float rlist_sq              = nbparam.rlist_sq;
+    float rlist_sq              = nbparam.rlistOuter_sq;
 #endif
 
 #ifdef CALC_ENERGIES
@@ -251,19 +262,35 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     /*! i-cluster interaction mask for a super-cluster with all c_numClPerSupercl=8 bits set */
     const unsigned superClInteractionMask = ((1U << c_numClPerSupercl) - 1U);
 
+    /*********************************************************************
+     * Set up shared memory pointers.
+     * sm_nextSlotPtr should always be updated to point to the "next slot",
+     * that is past the last point where data has been stored.
+     */
+    extern __shared__  char sm_dynamicShmem[];
+    char                   *sm_nextSlotPtr = sm_dynamicShmem;
+    static_assert(sizeof(char) == 1, "The shared memory offset calculation assumes that char is 1 byte");
+
     /* shmem buffer for i x+q pre-loading */
-    extern __shared__  float4 xqib[];
+    float4 *xqib    = (float4 *)sm_nextSlotPtr;
+    sm_nextSlotPtr += (c_numClPerSupercl * c_clSize * sizeof(*xqib));
 
     /* shmem buffer for cj, for each warp separately */
-    int *cjs       = ((int *)(xqib + c_numClPerSupercl * c_clSize)) + tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize;
-    int *cjs_end   = ((int *)(xqib + c_numClPerSupercl * c_clSize)) + NTHREAD_Z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize;
+    int *cjs        = (int *)(sm_nextSlotPtr);
+    /* the cjs buffer's use expects a base pointer offset for pairs of warps in the j-concurrent execution */
+    cjs            += tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize;
+    sm_nextSlotPtr += (NTHREAD_Z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(*cjs));
+
 #ifndef LJ_COMB
     /* shmem buffer for i atom-type pre-loading */
-    int *atib      = cjs_end;
+    int *atib       = (int *)sm_nextSlotPtr;
+    sm_nextSlotPtr += (c_numClPerSupercl * c_clSize * sizeof(*atib));
 #else
     /* shmem buffer for i-atom LJ combination rule parameters */
-    float2 *ljcpib = (float2 *)cjs_end;
+    float2 *ljcpib  = (float2 *)sm_nextSlotPtr;
+    sm_nextSlotPtr += (c_numClPerSupercl * c_clSize * sizeof(*ljcpib));
 #endif
+    /*********************************************************************/
 
     nb_sci      = pl_sci[bidx];         /* my i super-cluster's index = current bidx */
     sci         = nb_sci.sci;           /* super-cluster */
@@ -276,7 +303,8 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
         ci = sci * c_numClPerSupercl + tidxj;
         ai = ci * c_clSize + tidxi;
 
-        xqbuf    = xq[ai] + shift_vec[nb_sci.shift];
+        float  *shiftptr = (float *)&shift_vec[nb_sci.shift];
+        xqbuf    = xq[ai] + make_float4(LDG(shiftptr), LDG(shiftptr + 1), LDG(shiftptr + 2), 0.0f);
         xqbuf.w *= nbparam.epsfac;
         xqib[tidxj * c_clSize + tidxi] = xqbuf;
 
@@ -318,7 +346,11 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
 
 #ifdef LJ_EWALD
+    #if DISABLE_CUDA_TEXTURES
+            E_lj += LDG(&nbparam.nbfp[atom_types[(sci*c_numClPerSupercl + i)*c_clSize + tidxi]*(ntypes + 1)*2]);
+    #else
             E_lj += tex1Dfetch<float>(nbparam.nbfp_texobj, atom_types[(sci*c_numClPerSupercl + i)*c_clSize + tidxi]*(ntypes + 1)*2);
+    #endif
 #endif
         }
 
@@ -342,7 +374,14 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
 #endif                                  /* CALC_ENERGIES */
 
-    /* loop over the j clusters = seen by any of the atoms in the current super-cluster */
+#ifdef EXCLUSION_FORCES
+    const int nonSelfInteraction = !(nb_sci.shift == CENTRAL & tidxj <= tidxi);
+#endif
+
+    /* loop over the j clusters = seen by any of the atoms in the current super-cluster;
+     * The loop stride NTHREAD_Z ensures that consecutive warps-pairs are assigned
+     * consecutive j4's entries.
+     */
     for (j4 = cij4_start + tidxz; j4 < cij4_end; j4 += NTHREAD_Z)
     {
         wexcl_idx   = pl_cj4[j4].imei[widx].excl_ind;
@@ -354,10 +393,11 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
         {
             /* Pre-load cj into shared memory on both warps separately */
-            if ((tidxj == 0 || tidxj == 4) && tidxi < c_nbnxnGpuJgroupSize)
+            if ((tidxj == 0 | tidxj == 4) & (tidxi < c_nbnxnGpuJgroupSize))
             {
                 cjs[tidxi + tidxj * c_nbnxnGpuJgroupSize/c_splitClSize] = pl_cj4[j4].cj[tidxi];
             }
+            gmx_syncwarp(c_fullWarpMask);
 
             /* Unrolling this loop
                - with pruning leads to register spilling;
@@ -405,7 +445,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                             /* If _none_ of the atoms pairs are in cutoff range,
                                the bit corresponding to the current
                                cluster-pair in imask gets set to 0. */
-                            if (!__any(r2 < rlist_sq))
+                            if (!gmx_any_sync(c_fullWarpMask, r2 < rlist_sq))
                             {
                                 imask &= ~mask_ji;
                             }
@@ -415,10 +455,9 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
                             /* cutoff & exclusion check */
 #ifdef EXCLUSION_FORCES
-                            if (r2 < rcoulomb_sq *
-                                (nb_sci.shift != CENTRAL || ci != cj || tidxj > tidxi))
+                            if ((r2 < rcoulomb_sq) * (nonSelfInteraction | (ci != cj)))
 #else
-                            if (r2 < rcoulomb_sq * int_bit)
+                            if ((r2 < rcoulomb_sq) * int_bit)
 #endif
                             {
                                 /* load the rest of the i-atom parameters */
@@ -427,8 +466,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #ifndef LJ_COMB
                                 /* LJ 6*C6 and 12*C12 */
                                 typei   = atib[i * c_clSize + tidxi];
-                                c6      = tex1Dfetch<float>(nbparam.nbfp_texobj, 2 * (ntypes * typei + typej));
-                                c12     = tex1Dfetch<float>(nbparam.nbfp_texobj, 2 * (ntypes * typei + typej) + 1);
+                                fetch_nbfp_c6_c12(c6, c12, nbparam, ntypes * typei + typej);
 #else
                                 ljcp_i  = ljcpib[i * c_clSize + tidxi];
 #ifdef LJ_COMB_GEOM
@@ -538,7 +576,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                                 F_invr  += qi * qj_f * (int_bit*inv_r2*inv_r + pmecorrF(beta2*r2)*beta3);
 #elif defined EL_EWALD_TAB
                                 F_invr  += qi * qj_f * (int_bit*inv_r2 -
-                                                        interpolate_coulomb_force_r(nbparam.coulomb_tab_texobj, r2 * inv_r, coulomb_tab_scale)) * inv_r;
+                                                        interpolate_coulomb_force_r(nbparam, r2 * inv_r)) * inv_r;
 #endif                          /* EL_EWALD_ANA/TAB */
 
 #ifdef CALC_ENERGIES
@@ -568,7 +606,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                     }
 
                     /* reduce j forces */
-                    reduce_force_j_warp_shfl(fcj_buf, f, tidxi, aj);
+                    reduce_force_j_warp_shfl(fcj_buf, f, tidxi, aj, c_fullWarpMask);
                 }
             }
 #ifdef PRUNE_NBL
@@ -577,6 +615,8 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
             pl_cj4[j4].imei[widx].imask = imask;
 #endif
         }
+        // avoid shared memory WAR hazards between loop iterations
+        gmx_syncwarp(c_fullWarpMask);
     }
 
     /* skip central shifts when summing shift forces */
@@ -593,7 +633,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
         ai  = (sci * c_numClPerSupercl + i) * c_clSize + tidxi;
         reduce_force_i_warp_shfl(fci_buf[i], f,
                                  &fshift_buf, bCalcFshift,
-                                 tidxj, ai);
+                                 tidxj, ai, c_fullWarpMask);
     }
 
     /* add up local shift forces into global mem, tidxj indexes x,y,z */
@@ -604,7 +644,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
 #ifdef CALC_ENERGIES
     /* reduce the energies over warps and store into global memory */
-    reduce_energy_warp_shfl(E_lj, E_el, e_lj, e_el, tidx);
+    reduce_energy_warp_shfl(E_lj, E_el, e_lj, e_el, tidx, c_fullWarpMask);
 #endif
 }
 #endif /* FUNCTION_DECLARATION_ONLY */

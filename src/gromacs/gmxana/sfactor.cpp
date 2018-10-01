@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -104,7 +104,7 @@ extern int * create_indexed_atom_type (reduced_atom_t * atm, int size)
  */
     int          *index_atp, i, i_tmp, j;
 
-    reduced_atom *att = (reduced_atom *)atm;
+    reduced_atom *att = static_cast<reduced_atom *>(atm);
 
     snew (index_atp, 1);
     i_tmp        = 1;
@@ -163,8 +163,8 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
                                       reduced_atom_t * red, int isize, real start_q,
                                       real end_q, int group, real **sf_table)
 {
-    structure_factor *sf   = (structure_factor *)sft;
-    reduced_atom     *redt = (reduced_atom *)red;
+    structure_factor *sf   = static_cast<structure_factor *>(sft);
+    reduced_atom     *redt = static_cast<reduced_atom *>(red);
 
     t_complex      ***tmpSF;
     rvec              k_factor;
@@ -176,9 +176,9 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
     k_factor[YY] = 2 * M_PI / box[YY][YY];
     k_factor[ZZ] = 2 * M_PI / box[ZZ][ZZ];
 
-    maxkx = static_cast<int>(end_q / k_factor[XX] + 0.5);
-    maxky = static_cast<int>(end_q / k_factor[YY] + 0.5);
-    maxkz = static_cast<int>(end_q / k_factor[ZZ] + 0.5);
+    maxkx = gmx::roundToInt(end_q / k_factor[XX]);
+    maxky = gmx::roundToInt(end_q / k_factor[YY]);
+    maxkz = gmx::roundToInt(end_q / k_factor[ZZ]);
 
     snew (counter, sf->n_angles);
 
@@ -205,7 +205,7 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
                     krr = std::sqrt (gmx::square(kx) + gmx::square(ky) + gmx::square(kz));
                     if (krr >= start_q && krr <= end_q)
                     {
-                        kr = static_cast<int>(krr/sf->ref_k + 0.5);
+                        kr = gmx::roundToInt(krr/sf->ref_k);
                         if (kr < sf->n_angles)
                         {
                             counter[kr]++; /* will be used for the copmutation
@@ -241,7 +241,7 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
                 kz = k * k_factor[ZZ]; krr = std::sqrt (gmx::square(kx) + gmx::square(ky)
                                                         + gmx::square(kz)); if (krr >= start_q && krr <= end_q)
                 {
-                    kr = static_cast<int>(krr / sf->ref_k + 0.5);
+                    kr = gmx::roundToInt(krr / sf->ref_k);
                     if (kr < sf->n_angles && counter[kr] != 0)
                     {
                         sf->F[group][kr] +=
@@ -264,7 +264,6 @@ extern gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn)
 
     /* Read the database for the structure factor of the different atoms */
 
-    FILE                 *fp;
     char                  line[STRLEN];
     gmx_structurefactors *gsf;
     double                a1, a2, a3, a4, b1, b2, b3, b4, c;
@@ -273,7 +272,7 @@ extern gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn)
     int                   nralloc = 10;
     int                   line_no;
     char                  atomn[32];
-    fp      = libopen(datfn);
+    gmx::FilePtr          fp = gmx::openLibraryFile(datfn);
     line_no = 0;
     snew(gsf, 1);
 
@@ -284,7 +283,7 @@ extern gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn)
     snew(gsf->p, nralloc);
     gsf->n       = nullptr;
     gsf->nratoms = line_no;
-    while (get_a_line(fp, line, STRLEN))
+    while (get_a_line(fp.get(), line, STRLEN))
     {
         i = line_no;
         if (sscanf(line, "%s %d %lf %lf %lf %lf %lf %lf %lf %lf %lf",
@@ -328,20 +327,18 @@ extern gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn)
     srenew(gsf->c, gsf->nratoms);
     srenew(gsf->p, gsf->nratoms);
 
-    fclose(fp);
-
-    return (gmx_structurefactors_t *) gsf;
+    return static_cast<gmx_structurefactors_t *>(gsf);
 
 }
 
 
-extern void rearrange_atoms (reduced_atom_t * positions, t_trxframe *fr, int * index,
+extern void rearrange_atoms (reduced_atom_t * positions, t_trxframe *fr, const int * index,
                              int isize, const t_topology * top, gmx_bool flag, gmx_structurefactors_t *gsf)
 /* given the group's index, return the (continuous) array of atoms */
 {
     int           i;
 
-    reduced_atom *pos = (reduced_atom *)positions;
+    reduced_atom *pos = static_cast<reduced_atom *>(positions);
 
     if (flag)
     {
@@ -375,7 +372,7 @@ extern int return_atom_type (const char *name, gmx_structurefactors_t *gsf)
     int                   fndx = 0;
     int                   NCMT;
 
-    gmx_structurefactors *gsft = (gmx_structurefactors *)gsf;
+    gmx_structurefactors *gsft = static_cast<gmx_structurefactors *>(gsf);
 
     NCMT = gsft->nratoms;
 
@@ -408,7 +405,7 @@ extern int return_atom_type (const char *name, gmx_structurefactors_t *gsf)
         nrc = 0;
         for (i = 0; i < cnt; i++)
         {
-            if (std::strlen(gsft->atomnm[tndx[i]]) > (size_t)nrc)
+            if (std::strlen(gsft->atomnm[tndx[i]]) > static_cast<size_t>(nrc))
             {
                 nrc  = std::strlen(gsft->atomnm[tndx[i]]);
                 fndx = tndx[i];
@@ -417,8 +414,6 @@ extern int return_atom_type (const char *name, gmx_structurefactors_t *gsf)
 
         return fndx;
     }
-
-    return 0;
 }
 
 extern int gmx_structurefactors_get_sf(gmx_structurefactors_t *gsf, int elem, real a[4], real b[4], real *c)
@@ -426,7 +421,7 @@ extern int gmx_structurefactors_get_sf(gmx_structurefactors_t *gsf, int elem, re
 
     int                   success;
     int                   i;
-    gmx_structurefactors *gsft = (gmx_structurefactors *)gsf;
+    gmx_structurefactors *gsft = static_cast<gmx_structurefactors *>(gsf);
     success = 0;
 
     for (i = 0; i < 4; i++)
@@ -507,7 +502,7 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
 
     sf->ref_k = (2.0 * M_PI) / (r_tmp);
     /* ref_k will be the reference momentum unit */
-    sf->n_angles = static_cast<int>(end_q / sf->ref_k + 0.5);
+    sf->n_angles = gmx::roundToInt(end_q / sf->ref_k);
 
     snew (sf->F, ng);
     for (i = 0; i < ng; i++)
@@ -521,7 +516,7 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
         index_atp[i] = create_indexed_atom_type (red[i], isize[i]);
     }
 
-    sf_table = compute_scattering_factor_table (gmx_sf, (structure_factor_t *)sf);
+    sf_table = compute_scattering_factor_table (gmx_sf, static_cast<structure_factor_t *>(sf));
 
 
     /* This is the main loop over frames */
@@ -533,14 +528,14 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
         {
             rearrange_atoms (red[i], &fr, index[i], isize[i], &top, FALSE, gmx_sf);
 
-            compute_structure_factor ((structure_factor_t *)sf, box, red[i], isize[i],
+            compute_structure_factor (static_cast<structure_factor_t *>(sf), box, red[i], isize[i],
                                       start_q, end_q, i, sf_table);
         }
     }
 
     while (read_next_frame (oenv, status, &fr));
 
-    save_data ((structure_factor_t *)sf, fnXVG, ng, start_q, end_q, oenv);
+    save_data (static_cast<structure_factor_t *>(sf), fnXVG, ng, start_q, end_q, oenv);
 
 
     sfree(a);
@@ -560,7 +555,7 @@ extern void save_data (structure_factor_t *sft, const char *file, int ngrps,
     int               i, g = 0;
     double           *tmp, polarization_factor, A;
 
-    structure_factor *sf = (structure_factor *)sft;
+    structure_factor *sf = static_cast<structure_factor *>(sft);
 
     fp = xvgropen (file, "Scattering Intensity", "q (1/nm)",
                    "Intensity (a.u.)", oenv);
@@ -657,7 +652,7 @@ extern real **gmx_structurefactors_table(gmx_structurefactors_t *gsf, real momen
     int                   i, j;
     double                q, sin_theta;
     real                **sf_table;
-    gmx_structurefactors *gsft = (gmx_structurefactors *)gsf;
+    gmx_structurefactors *gsft = static_cast<gmx_structurefactors *>(gsf);
 
     NCMT     = gsft->nratoms;
     nsftable = NCMT+3;
@@ -690,7 +685,7 @@ extern void gmx_structurefactors_done(gmx_structurefactors_t *gsf)
 
     int                   i;
     gmx_structurefactors *sf;
-    sf = (gmx_structurefactors *) gsf;
+    sf = static_cast<gmx_structurefactors *>(gsf);
 
     for (i = 0; i < sf->nratoms; i++)
     {
@@ -719,7 +714,7 @@ extern real **compute_scattering_factor_table (gmx_structurefactors_t *gsf, stru
     double            hc = 1239.842;
     real           ** sf_table;
 
-    structure_factor *sf = (structure_factor *)sft;
+    structure_factor *sf = static_cast<structure_factor *>(sft);
 
 
     /* \hbar \omega \lambda = hc = 1239.842 eV * nm */

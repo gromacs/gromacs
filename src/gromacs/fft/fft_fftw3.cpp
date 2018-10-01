@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2003 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,8 +37,8 @@
 
 #include "config.h"
 
-#include <errno.h>
-#include <stdlib.h>
+#include <cerrno>
+#include <cstdlib>
 
 #include <fftw3.h>
 
@@ -110,7 +110,7 @@ gmx_fft_init_many_1d(gmx_fft_t *        pfft,
 {
     gmx_fft_t              fft;
     FFTWPREFIX(complex)   *p1, *p2, *up1, *up2;
-    size_t                 pc;
+    char*                  pc;
     int                    i, j, k;
     int                    fftw_flags;
 
@@ -128,14 +128,14 @@ gmx_fft_init_many_1d(gmx_fft_t *        pfft,
     *pfft = nullptr;
 
     FFTW_LOCK;
-    if ( (fft = (gmx_fft_t)FFTWPREFIX(malloc)(sizeof(struct gmx_fft))) == nullptr)
+    if ( (fft = static_cast<gmx_fft_t>(FFTWPREFIX(malloc)(sizeof(struct gmx_fft)))) == nullptr)
     {
         FFTW_UNLOCK;
         return ENOMEM;
     }
 
     /* allocate aligned, and extra memory to make it unaligned */
-    p1  = (FFTWPREFIX(complex) *) FFTWPREFIX(malloc)(sizeof(FFTWPREFIX(complex))*(nx+2)*howmany);
+    p1  = static_cast<FFTWPREFIX(complex) *>(FFTWPREFIX(malloc)(sizeof(FFTWPREFIX(complex))*(nx+2)*howmany));
     if (p1 == nullptr)
     {
         FFTWPREFIX(free)(fft);
@@ -143,7 +143,7 @@ gmx_fft_init_many_1d(gmx_fft_t *        pfft,
         return ENOMEM;
     }
 
-    p2  = (FFTWPREFIX(complex) *) FFTWPREFIX(malloc)(sizeof(FFTWPREFIX(complex))*(nx+2)*howmany);
+    p2  = static_cast<FFTWPREFIX(complex) *>(FFTWPREFIX(malloc)(sizeof(FFTWPREFIX(complex))*(nx+2)*howmany));
     if (p2 == nullptr)
     {
         FFTWPREFIX(free)(p1);
@@ -156,13 +156,13 @@ gmx_fft_init_many_1d(gmx_fft_t *        pfft,
      * In double precision the actual complex datatype will be 16 bytes,
      * so go to a char pointer and force an offset of 8 bytes instead.
      */
-    pc  = (size_t)p1;
+    pc  = reinterpret_cast<char*>(p1);
     pc += 8;
-    up1 = (FFTWPREFIX(complex) *)pc;
+    up1 = reinterpret_cast<FFTWPREFIX(complex) *>(pc);
 
-    pc  = (size_t)p2;
+    pc  = reinterpret_cast<char*>(p2);
     pc += 8;
-    up2 = (FFTWPREFIX(complex) *)pc;
+    up2 = reinterpret_cast<FFTWPREFIX(complex) *>(pc);
 
     /*                            int rank, const int *n, int howmany,
                                   fftw_complex *in, const int *inembed,
@@ -227,7 +227,7 @@ gmx_fft_init_many_1d_real(gmx_fft_t *        pfft,
 {
     gmx_fft_t              fft;
     real                  *p1, *p2, *up1, *up2;
-    size_t                 pc;
+    char*                  pc;
     int                    i, j, k;
     int                    fftw_flags;
 
@@ -245,14 +245,14 @@ gmx_fft_init_many_1d_real(gmx_fft_t *        pfft,
     *pfft = nullptr;
 
     FFTW_LOCK;
-    if ( (fft = (gmx_fft_t) FFTWPREFIX(malloc)(sizeof(struct gmx_fft))) == nullptr)
+    if ( (fft = static_cast<gmx_fft_t>(FFTWPREFIX(malloc)(sizeof(struct gmx_fft)))) == nullptr)
     {
         FFTW_UNLOCK;
         return ENOMEM;
     }
 
     /* allocate aligned, and extra memory to make it unaligned */
-    p1  = (real *) FFTWPREFIX(malloc)(sizeof(real)*(nx/2+1)*2*howmany + 8);
+    p1  = static_cast<real *>(FFTWPREFIX(malloc)(sizeof(real)*(nx/2+1)*2*howmany + 8));
     if (p1 == nullptr)
     {
         FFTWPREFIX(free)(fft);
@@ -260,7 +260,7 @@ gmx_fft_init_many_1d_real(gmx_fft_t *        pfft,
         return ENOMEM;
     }
 
-    p2  = (real *) FFTWPREFIX(malloc)(sizeof(real)*(nx/2+1)*2*howmany + 8);
+    p2  = static_cast<real *>(FFTWPREFIX(malloc)(sizeof(real)*(nx/2+1)*2*howmany + 8));
     if (p2 == nullptr)
     {
         FFTWPREFIX(free)(p1);
@@ -273,13 +273,13 @@ gmx_fft_init_many_1d_real(gmx_fft_t *        pfft,
      * In double precision the actual complex datatype will be 16 bytes,
      * so go to a char pointer and force an offset of 8 bytes instead.
      */
-    pc  = (size_t)p1;
+    pc  = reinterpret_cast<char*>(p1);
     pc += 8;
-    up1 = (real *)pc;
+    up1 = reinterpret_cast<real*>(pc);
 
-    pc  = (size_t)p2;
+    pc  = reinterpret_cast<char*>(p2);
     pc += 8;
-    up2 = (real *)pc;
+    up2 = reinterpret_cast<real*>(pc);
 
     /*                                int rank, const int *n, int howmany,
                                       double *in, const int *inembed,
@@ -287,15 +287,15 @@ gmx_fft_init_many_1d_real(gmx_fft_t *        pfft,
                                       fftw_complex *out, const int *onembed,
                                       int ostride, int odist,
                                       unsigned flag    */
-    fft->plan[0][0][1] = FFTWPREFIX(plan_many_dft_r2c)(1, &nx, howmany, up1, nullptr, 1, (nx/2+1) *2, (FFTWPREFIX(complex) *) up2, nullptr, 1, (nx/2+1), fftw_flags);
-    fft->plan[0][1][1] = FFTWPREFIX(plan_many_dft_r2c)(1, &nx, howmany, up1, nullptr, 1, (nx/2+1) *2, (FFTWPREFIX(complex) *) up1, nullptr, 1, (nx/2+1), fftw_flags);
-    fft->plan[1][0][1] = FFTWPREFIX(plan_many_dft_r2c)(1, &nx, howmany, p1, nullptr, 1, (nx/2+1) *2, (FFTWPREFIX(complex) *) p2, nullptr, 1, (nx/2+1), fftw_flags);
-    fft->plan[1][1][1] = FFTWPREFIX(plan_many_dft_r2c)(1, &nx, howmany, p1, nullptr, 1, (nx/2+1) *2, (FFTWPREFIX(complex) *) p1, nullptr, 1, (nx/2+1), fftw_flags);
+    fft->plan[0][0][1] = FFTWPREFIX(plan_many_dft_r2c)(1, &nx, howmany, up1, nullptr, 1, (nx/2+1) *2, reinterpret_cast<FFTWPREFIX(complex) *>(up2), nullptr, 1, (nx/2+1), fftw_flags);
+    fft->plan[0][1][1] = FFTWPREFIX(plan_many_dft_r2c)(1, &nx, howmany, up1, nullptr, 1, (nx/2+1) *2, reinterpret_cast<FFTWPREFIX(complex) *>(up1), nullptr, 1, (nx/2+1), fftw_flags);
+    fft->plan[1][0][1] = FFTWPREFIX(plan_many_dft_r2c)(1, &nx, howmany, p1, nullptr, 1, (nx/2+1) *2, reinterpret_cast<FFTWPREFIX(complex) *>(p2), nullptr, 1, (nx/2+1), fftw_flags);
+    fft->plan[1][1][1] = FFTWPREFIX(plan_many_dft_r2c)(1, &nx, howmany, p1, nullptr, 1, (nx/2+1) *2, reinterpret_cast<FFTWPREFIX(complex) *>(p1), nullptr, 1, (nx/2+1), fftw_flags);
 
-    fft->plan[0][0][0] = FFTWPREFIX(plan_many_dft_c2r)(1, &nx, howmany, (FFTWPREFIX(complex) *) up1, nullptr, 1, (nx/2+1), up2, nullptr, 1, (nx/2+1) *2, fftw_flags);
-    fft->plan[0][1][0] = FFTWPREFIX(plan_many_dft_c2r)(1, &nx, howmany, (FFTWPREFIX(complex) *) up1, nullptr, 1, (nx/2+1), up1, nullptr, 1, (nx/2+1) *2, fftw_flags);
-    fft->plan[1][0][0] = FFTWPREFIX(plan_many_dft_c2r)(1, &nx, howmany, (FFTWPREFIX(complex) *) p1, nullptr, 1, (nx/2+1), p2, nullptr, 1, (nx/2+1) *2, fftw_flags);
-    fft->plan[1][1][0] = FFTWPREFIX(plan_many_dft_c2r)(1, &nx, howmany, (FFTWPREFIX(complex) *) p1, nullptr, 1, (nx/2+1), p1, nullptr, 1, (nx/2+1) *2, fftw_flags);
+    fft->plan[0][0][0] = FFTWPREFIX(plan_many_dft_c2r)(1, &nx, howmany, reinterpret_cast<FFTWPREFIX(complex) *>(up1), nullptr, 1, (nx/2+1), up2, nullptr, 1, (nx/2+1) *2, fftw_flags);
+    fft->plan[0][1][0] = FFTWPREFIX(plan_many_dft_c2r)(1, &nx, howmany, reinterpret_cast<FFTWPREFIX(complex) *>(up1), nullptr, 1, (nx/2+1), up1, nullptr, 1, (nx/2+1) *2, fftw_flags);
+    fft->plan[1][0][0] = FFTWPREFIX(plan_many_dft_c2r)(1, &nx, howmany, reinterpret_cast<FFTWPREFIX(complex) *>(p1), nullptr, 1, (nx/2+1), p2, nullptr, 1, (nx/2+1) *2, fftw_flags);
+    fft->plan[1][1][0] = FFTWPREFIX(plan_many_dft_c2r)(1, &nx, howmany, reinterpret_cast<FFTWPREFIX(complex) *>(p1), nullptr, 1, (nx/2+1), p1, nullptr, 1, (nx/2+1) *2, fftw_flags);
 
     for (i = 0; i < 2; i++)
     {
@@ -338,7 +338,7 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
 {
     gmx_fft_t              fft;
     real                  *p1, *p2, *up1, *up2;
-    size_t                 pc;
+    char*                  pc;
     int                    i, j, k;
     int                    fftw_flags;
 
@@ -356,14 +356,14 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
     *pfft = nullptr;
 
     FFTW_LOCK;
-    if ( (fft = (gmx_fft_t) FFTWPREFIX(malloc)(sizeof(struct gmx_fft))) == nullptr)
+    if ( (fft = static_cast<gmx_fft_t>(FFTWPREFIX(malloc)(sizeof(struct gmx_fft)))) == nullptr)
     {
         FFTW_UNLOCK;
         return ENOMEM;
     }
 
     /* allocate aligned, and extra memory to make it unaligned */
-    p1  = (real *) FFTWPREFIX(malloc)(sizeof(real) *( nx*(ny/2+1)*2 + 2) );
+    p1  = static_cast<real *>(FFTWPREFIX(malloc)(sizeof(real) *( nx*(ny/2+1)*2 + 2) ));
     if (p1 == nullptr)
     {
         FFTWPREFIX(free)(fft);
@@ -371,7 +371,7 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
         return ENOMEM;
     }
 
-    p2  = (real *) FFTWPREFIX(malloc)(sizeof(real) *( nx*(ny/2+1)*2 + 2) );
+    p2  = static_cast<real *>(FFTWPREFIX(malloc)(sizeof(real) *( nx*(ny/2+1)*2 + 2) ));
     if (p2 == nullptr)
     {
         FFTWPREFIX(free)(p1);
@@ -384,24 +384,24 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
      * In double precision the actual complex datatype will be 16 bytes,
      * so go to a char pointer and force an offset of 8 bytes instead.
      */
-    pc  = (size_t)p1;
+    pc  = reinterpret_cast<char*>(p1);
     pc += 8;
-    up1 = (real *)pc;
+    up1 = reinterpret_cast<real*>(pc);
 
-    pc  = (size_t)p2;
+    pc  = reinterpret_cast<char*>(p2);
     pc += 8;
-    up2 = (real *)pc;
+    up2 = reinterpret_cast<real*>(pc);
 
 
-    fft->plan[0][0][0] = FFTWPREFIX(plan_dft_c2r_2d)(nx, ny, (FFTWPREFIX(complex) *) up1, up2, fftw_flags);
-    fft->plan[0][0][1] = FFTWPREFIX(plan_dft_r2c_2d)(nx, ny, up1, (FFTWPREFIX(complex) *) up2, fftw_flags);
-    fft->plan[0][1][0] = FFTWPREFIX(plan_dft_c2r_2d)(nx, ny, (FFTWPREFIX(complex) *) up1, up1, fftw_flags);
-    fft->plan[0][1][1] = FFTWPREFIX(plan_dft_r2c_2d)(nx, ny, up1, (FFTWPREFIX(complex) *) up1, fftw_flags);
+    fft->plan[0][0][0] = FFTWPREFIX(plan_dft_c2r_2d)(nx, ny, reinterpret_cast<FFTWPREFIX(complex) *>(up1), up2, fftw_flags);
+    fft->plan[0][0][1] = FFTWPREFIX(plan_dft_r2c_2d)(nx, ny, up1, reinterpret_cast<FFTWPREFIX(complex) *>(up2), fftw_flags);
+    fft->plan[0][1][0] = FFTWPREFIX(plan_dft_c2r_2d)(nx, ny, reinterpret_cast<FFTWPREFIX(complex) *>(up1), up1, fftw_flags);
+    fft->plan[0][1][1] = FFTWPREFIX(plan_dft_r2c_2d)(nx, ny, up1, reinterpret_cast<FFTWPREFIX(complex) *>(up1), fftw_flags);
 
-    fft->plan[1][0][0] = FFTWPREFIX(plan_dft_c2r_2d)(nx, ny, (FFTWPREFIX(complex) *) p1, p2, fftw_flags);
-    fft->plan[1][0][1] = FFTWPREFIX(plan_dft_r2c_2d)(nx, ny, p1, (FFTWPREFIX(complex) *) p2, fftw_flags);
-    fft->plan[1][1][0] = FFTWPREFIX(plan_dft_c2r_2d)(nx, ny, (FFTWPREFIX(complex) *) p1, p1, fftw_flags);
-    fft->plan[1][1][1] = FFTWPREFIX(plan_dft_r2c_2d)(nx, ny, p1, (FFTWPREFIX(complex) *) p1, fftw_flags);
+    fft->plan[1][0][0] = FFTWPREFIX(plan_dft_c2r_2d)(nx, ny, reinterpret_cast<FFTWPREFIX(complex) *>(p1), p2, fftw_flags);
+    fft->plan[1][0][1] = FFTWPREFIX(plan_dft_r2c_2d)(nx, ny, p1, reinterpret_cast<FFTWPREFIX(complex) *>(p2), fftw_flags);
+    fft->plan[1][1][0] = FFTWPREFIX(plan_dft_c2r_2d)(nx, ny, reinterpret_cast<FFTWPREFIX(complex) *>(p1), p1, fftw_flags);
+    fft->plan[1][1][1] = FFTWPREFIX(plan_dft_r2c_2d)(nx, ny, p1, reinterpret_cast<FFTWPREFIX(complex) *>(p1), fftw_flags);
 
 
     for (i = 0; i < 2; i++)
@@ -442,9 +442,9 @@ gmx_fft_1d               (gmx_fft_t                  fft,
                           void *                     in_data,
                           void *                     out_data)
 {
-    int           aligned   = ((((size_t)in_data | (size_t)out_data) & 0xf) == 0);
-    int           inplace   = (in_data == out_data);
-    int           isforward = (dir == GMX_FFT_FORWARD);
+    bool          aligned   = (((size_t(in_data) | size_t(out_data)) & 0xf) == 0);
+    bool          inplace   = (in_data == out_data);
+    bool          isforward = (dir == GMX_FFT_FORWARD);
 
     /* Some checks */
     if ( (fft->real_transform == 1) || (fft->ndim != 1) ||
@@ -455,8 +455,8 @@ gmx_fft_1d               (gmx_fft_t                  fft,
     }
 
     FFTWPREFIX(execute_dft)(fft->plan[aligned][inplace][isforward],
-                            (FFTWPREFIX(complex) *) in_data,
-                            (FFTWPREFIX(complex) *) out_data);
+                            static_cast<FFTWPREFIX(complex) *>(in_data),
+                            static_cast<FFTWPREFIX(complex) *>(out_data));
 
     return 0;
 }
@@ -476,9 +476,9 @@ gmx_fft_1d_real          (gmx_fft_t                  fft,
                           void *                     in_data,
                           void *                     out_data)
 {
-    int           aligned   = ((((size_t)in_data | (size_t)out_data) & 0xf) == 0);
-    int           inplace   = (in_data == out_data);
-    int           isforward = (dir == GMX_FFT_REAL_TO_COMPLEX);
+    bool          aligned   = (((size_t(in_data) | size_t(out_data)) & 0xf) == 0);
+    bool          inplace   = (in_data == out_data);
+    bool          isforward = (dir == GMX_FFT_REAL_TO_COMPLEX);
 
     /* Some checks */
     if ( (fft->real_transform != 1) || (fft->ndim != 1) ||
@@ -491,12 +491,12 @@ gmx_fft_1d_real          (gmx_fft_t                  fft,
     if (isforward)
     {
         FFTWPREFIX(execute_dft_r2c)(fft->plan[aligned][inplace][isforward],
-                                    (real *)in_data, (FFTWPREFIX(complex) *) out_data);
+                                    static_cast<real *>(in_data), static_cast<FFTWPREFIX(complex) *>(out_data));
     }
     else
     {
         FFTWPREFIX(execute_dft_c2r)(fft->plan[aligned][inplace][isforward],
-                                    (FFTWPREFIX(complex) *) in_data, (real *)out_data);
+                                    static_cast<FFTWPREFIX(complex) *>(in_data), static_cast<real *>(out_data));
     }
 
     return 0;
@@ -517,9 +517,9 @@ gmx_fft_2d_real          (gmx_fft_t                  fft,
                           void *                     in_data,
                           void *                     out_data)
 {
-    int           aligned   = ((((size_t)in_data | (size_t)out_data) & 0xf) == 0);
-    int           inplace   = (in_data == out_data);
-    int           isforward = (dir == GMX_FFT_REAL_TO_COMPLEX);
+    bool          aligned   = (((size_t(in_data) | size_t(out_data)) & 0xf) == 0);
+    bool          inplace   = (in_data == out_data);
+    bool          isforward = (dir == GMX_FFT_REAL_TO_COMPLEX);
 
     /* Some checks */
     if ( (fft->real_transform != 1) || (fft->ndim != 2) ||
@@ -532,14 +532,14 @@ gmx_fft_2d_real          (gmx_fft_t                  fft,
     if (isforward)
     {
         FFTWPREFIX(execute_dft_r2c)(fft->plan[aligned][inplace][isforward],
-                                    (real *)in_data,
-                                    (FFTWPREFIX(complex) *) out_data);
+                                    static_cast<real *>(in_data),
+                                    static_cast<FFTWPREFIX(complex) *>(out_data));
     }
     else
     {
         FFTWPREFIX(execute_dft_c2r)(fft->plan[aligned][inplace][isforward],
-                                    (FFTWPREFIX(complex) *) in_data,
-                                    (real *)out_data);
+                                    static_cast<FFTWPREFIX(complex) *>(in_data),
+                                    static_cast<real *>(out_data));
     }
 
 

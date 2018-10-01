@@ -35,27 +35,8 @@
    files.
  */
 
-/* PowerPC using xlC inline assembly.
- * Recent versions of xlC (>=7.0) _partially_ support GCC inline assembly
- * if you use the option -qasm=gcc but we have had to hack things a bit, in
- * particular when it comes to clobbered variables. Since this implementation
- * _could_ be buggy, we have separated it from the known-to-be-working gcc
- * one above.
- *
- * For now, we just disable the inline keyword if we're compiling C code:
- */
-#if 1
-#if (!defined(__cplusplus)) && (!defined(inline))
-#define inline_defined_in_atomic 1
-#define inline
-#endif
-#endif
-
-
 /* IBM xlC compiler */
-#ifdef __cplusplus
 #include <builtins.h>
-#endif
 
 
 #define TMPI_XLC_INTRINSICS

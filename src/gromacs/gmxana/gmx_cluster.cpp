@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,9 +65,10 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 /* print to two file pointers at once (i.e. stderr and log) */
-static gmx_inline
+static inline
 void lo_ffprintf(FILE *fp1, FILE *fp2, const char *buf)
 {
     fprintf(fp1, "%s", buf);
@@ -75,14 +76,14 @@ void lo_ffprintf(FILE *fp1, FILE *fp2, const char *buf)
 }
 
 /* just print a prepared buffer to fp1 and fp2 */
-static gmx_inline
+static inline
 void ffprintf(FILE *fp1, FILE *fp2, const char *buf)
 {
     lo_ffprintf(fp1, fp2, buf);
 }
 
 /* prepare buffer with one argument, then print to fp1 and fp2 */
-static gmx_inline
+static inline
 void ffprintf_d(FILE *fp1, FILE *fp2, char *buf, const char *fmt, int arg)
 {
     sprintf(buf, fmt, arg);
@@ -90,7 +91,7 @@ void ffprintf_d(FILE *fp1, FILE *fp2, char *buf, const char *fmt, int arg)
 }
 
 /* prepare buffer with one argument, then print to fp1 and fp2 */
-static gmx_inline
+static inline
 void ffprintf_g(FILE *fp1, FILE *fp2, char *buf, const char *fmt, real arg)
 {
     sprintf(buf, fmt, arg);
@@ -98,7 +99,7 @@ void ffprintf_g(FILE *fp1, FILE *fp2, char *buf, const char *fmt, real arg)
 }
 
 /* prepare buffer with one argument, then print to fp1 and fp2 */
-static gmx_inline
+static inline
 void ffprintf_s(FILE *fp1, FILE *fp2, char *buf, const char *fmt, const char *arg)
 {
     sprintf(buf, fmt, arg);
@@ -106,7 +107,7 @@ void ffprintf_s(FILE *fp1, FILE *fp2, char *buf, const char *fmt, const char *ar
 }
 
 /* prepare buffer with two arguments, then print to fp1 and fp2 */
-static gmx_inline
+static inline
 void ffprintf_dd(FILE *fp1, FILE *fp2, char *buf, const char *fmt, int arg1, int arg2)
 {
     sprintf(buf, fmt, arg1, arg2);
@@ -114,7 +115,7 @@ void ffprintf_dd(FILE *fp1, FILE *fp2, char *buf, const char *fmt, int arg1, int
 }
 
 /* prepare buffer with two arguments, then print to fp1 and fp2 */
-static gmx_inline
+static inline
 void ffprintf_gg(FILE *fp1, FILE *fp2, char *buf, const char *fmt, real arg1, real arg2)
 {
     sprintf(buf, fmt, arg1, arg2);
@@ -122,7 +123,7 @@ void ffprintf_gg(FILE *fp1, FILE *fp2, char *buf, const char *fmt, real arg1, re
 }
 
 /* prepare buffer with two arguments, then print to fp1 and fp2 */
-static gmx_inline
+static inline
 void ffprintf_ss(FILE *fp1, FILE *fp2, char *buf, const char *fmt, const char *arg1, const char *arg2)
 {
     sprintf(buf, fmt, arg1, arg2);
@@ -139,20 +140,10 @@ typedef struct {
     int *nb;
 } t_nnb;
 
-void cp_index(int nn, int from[], int to[])
-{
-    int i;
-
-    for (i = 0; (i < nn); i++)
-    {
-        to[i] = from[i];
-    }
-}
-
-void mc_optimize(FILE *log, t_mat *m, real *time,
-                 int maxiter, int nrandom,
-                 int seed, real kT,
-                 const char *conv, gmx_output_env_t *oenv)
+static void mc_optimize(FILE *log, t_mat *m, real *time,
+                        int maxiter, int nrandom,
+                        int seed, real kT,
+                        const char *conv, gmx_output_env_t *oenv)
 {
     FILE      *fp = nullptr;
     real       ecur, enext, emin, prob, enorm;
@@ -325,7 +316,7 @@ static real rms_dist(int isize, real **d, real **d_r)
             r2 += r*r;
         }
     }
-    r2 /= (isize*(isize-1))/2;
+    r2 /= gmx::exactDiv(isize*(isize-1), 2);
 
     return std::sqrt(r2);
 }
@@ -346,7 +337,7 @@ static bool nrnb_comp(const t_nnb &a, const t_nnb &b)
     return b.nr < a.nr;
 }
 
-void gather(t_mat *m, real cutoff, t_clusters *clust)
+static void gather(t_mat *m, real cutoff, t_clusters *clust)
 {
     t_clustid *c;
     t_dist    *d;
@@ -436,7 +427,7 @@ void gather(t_mat *m, real cutoff, t_clusters *clust)
     sfree(d);
 }
 
-gmx_bool jp_same(int **nnb, int i, int j, int P)
+static gmx_bool jp_same(int **nnb, int i, int j, int P)
 {
     gmx_bool bIn;
     int      k, ii, jj, pp;
@@ -566,7 +557,7 @@ static void jarvis_patrick(int n1, real **mat, int M, int P,
     {
         for (j = i+1; j < n1; j++)
         {
-            mcpy[i][j] = jp_same(nnb, i, j, P);
+            mcpy[i][j] = static_cast<real>(jp_same(nnb, i, j, P));
         }
     }
     do
@@ -577,7 +568,7 @@ static void jarvis_patrick(int n1, real **mat, int M, int P,
         {
             for (j = i+1; j < n1; j++)
             {
-                if (mcpy[i][j])
+                if (mcpy[i][j] != 0.0f)
                 {
                     diff = c[j].clust - c[i].clust;
                     if (diff)
@@ -660,14 +651,12 @@ static void dump_nnb (FILE *fp, const char *title, int n1, t_nnb *nnb)
 
 static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
 {
-    t_dist *row;
     t_nnb  *nnb;
     int     i, j, k, j1, maxval;
 
     /* Put all neighbors nearer than rmsdcut in the list */
     fprintf(stderr, "Making list of neighbors within cutoff ");
     snew(nnb, n1);
-    snew(row, n1);
     for (i = 0; (i < n1); i++)
     {
         maxval = 0;
@@ -694,7 +683,6 @@ static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
         }
     }
     fprintf(stderr, "%3d%%\n", 100);
-    sfree(row);
 
     /* sort neighbor list on number of neighbors, largest first */
     std::sort(nnb, nnb+n1, nrnb_comp);
@@ -761,13 +749,13 @@ static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
     clust->ncl = k-1;
 }
 
-rvec **read_whole_trj(const char *fn, int isize, int index[], int skip,
-                      int *nframe, real **time, const gmx_output_env_t *oenv, gmx_bool bPBC, gmx_rmpbc_t gpbc)
+static rvec **read_whole_trj(const char *fn, int isize, const int index[], int skip,
+                             int *nframe, real **time,  matrix  **boxes, int **frameindexes, const gmx_output_env_t *oenv, gmx_bool bPBC, gmx_rmpbc_t gpbc)
 {
     rvec       **xx, *x;
     matrix       box;
     real         t;
-    int          i, i0, j, max_nf;
+    int          i, j, max_nf;
     int          natom;
     t_trxstatus *status;
 
@@ -777,37 +765,41 @@ rvec **read_whole_trj(const char *fn, int isize, int index[], int skip,
     *time  = nullptr;
     natom  = read_first_x(oenv, &status, fn, &t, &x, box);
     i      = 0;
-    i0     = 0;
+    int clusterIndex = 0;
     do
     {
         if (bPBC)
         {
             gmx_rmpbc(gpbc, natom, box, x);
         }
-        if (i0 >= max_nf)
+        if (clusterIndex >= max_nf)
         {
             max_nf += 10;
             srenew(xx, max_nf);
             srenew(*time, max_nf);
+            srenew(*boxes, max_nf);
+            srenew(*frameindexes, max_nf);
         }
         if ((i % skip) == 0)
         {
-            snew(xx[i0], isize);
+            snew(xx[clusterIndex], isize);
             /* Store only the interesting atoms */
             for (j = 0; (j < isize); j++)
             {
-                copy_rvec(x[index[j]], xx[i0][j]);
+                copy_rvec(x[index[j]], xx[clusterIndex][j]);
             }
-            (*time)[i0] = t;
-            i0++;
+            (*time)[clusterIndex] = t;
+            copy_mat(box, (*boxes)[clusterIndex]);
+            (*frameindexes)[clusterIndex] = nframes_read(status);
+            clusterIndex++;
         }
         i++;
     }
     while (read_next_x(oenv, status, &t, x, box));
-    fprintf(stderr, "Allocated %lu bytes for frames\n",
-            (unsigned long) (max_nf*isize*sizeof(**xx)));
-    fprintf(stderr, "Read %d frames from trajectory %s\n", i0, fn);
-    *nframe = i0;
+    fprintf(stderr, "Allocated %zu bytes for frames\n",
+            (max_nf*isize*sizeof(**xx)));
+    fprintf(stderr, "Read %d frames from trajectory %s\n", clusterIndex, fn);
+    *nframe = clusterIndex;
     sfree(x);
 
     return xx;
@@ -984,16 +976,18 @@ static void ana_trans(t_clusters *clust, int nf,
 static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
                              int natom, t_atoms *atoms, rvec *xtps,
                              real *mass, rvec **xx, real *time,
+                             matrix *boxes, int *frameindexes,
                              int ifsize, int *fitidx,
                              int iosize, int *outidx,
                              const char *trxfn, const char *sizefn,
                              const char *transfn, const char *ntransfn,
-                             const char *clustidfn, gmx_bool bAverage,
+                             const char *clustidfn, const char *clustndxfn, gmx_bool bAverage,
                              int write_ncl, int write_nst, real rmsmin,
                              gmx_bool bFit, FILE *log, t_rgb rlo, t_rgb rhi,
                              const gmx_output_env_t *oenv)
 {
     FILE        *size_fp = nullptr;
+    FILE        *ndxfn   = nullptr;
     char         buf[STRLEN], buf1[40], buf2[40], buf3[40], *trxsfn;
     t_trxstatus *trxout  = nullptr;
     t_trxstatus *trxsout = nullptr;
@@ -1059,6 +1053,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
         /* Calculate the average structure in each cluster,               *
          * all structures are fitted to the first struture of the cluster */
         snew(xav, natom);
+        GMX_ASSERT(xav, "");
     }
 
     if (transfn || ntransfn)
@@ -1089,6 +1084,11 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
             fprintf(size_fp, "@g%d type %s\n", 0, "bar");
         }
     }
+    if (clustndxfn && frameindexes)
+    {
+        ndxfn = gmx_ffopen(clustndxfn, "w");
+    }
+
     snew(structure, nf);
     fprintf(log, "\n%3s | %3s  %4s | %6s %4s | cluster members\n",
             "cl.", "#st", "rmsd", "middle", "rmsd");
@@ -1136,6 +1136,10 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
         if (sizefn)
         {
             fprintf(size_fp, "%8d %8d\n", cl, nstr);
+        }
+        if (ndxfn)
+        {
+            fprintf(ndxfn, "[Cluster_%04d]\n", cl);
         }
         clrmsd  = 0;
         midstr  = 0;
@@ -1192,6 +1196,10 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
             if ((i % 7 == 0) && i)
             {
                 sprintf(buf, "\n%3s | %3s  %4s | %6s %4s |", "", "", "", "", "");
+                if (ndxfn)
+                {
+                    fprintf(ndxfn, "\n");
+                }
             }
             else
             {
@@ -1199,8 +1207,16 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
             }
             i1 = structure[i];
             fprintf(log, "%s %6g", buf, time[i1]);
+            if (ndxfn)
+            {
+                fprintf(ndxfn, " %6d", frameindexes[i1]);
+            }
         }
         fprintf(log, "\n");
+        if (ndxfn)
+        {
+            fprintf(ndxfn, "\n");
+        }
 
         /* write structures to trajectory file(s) */
         if (trxfn)
@@ -1233,7 +1249,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
                     }
                     if (bWrite[i])
                     {
-                        write_trx(trxsout, iosize, outidx, atoms, i, time[structure[i]], zerobox,
+                        write_trx(trxsout, iosize, outidx, atoms, i, time[structure[i]], boxes[structure[i]],
                                   xx[structure[i]], nullptr, nullptr);
                     }
                 }
@@ -1262,7 +1278,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
             {
                 do_fit(natom, mass, xtps, xav);
             }
-            write_trx(trxout, iosize, outidx, atoms, cl, time[midstr], zerobox, xav, nullptr, nullptr);
+            write_trx(trxout, iosize, outidx, atoms, cl, time[midstr], boxes[midstr], xav, nullptr, nullptr);
         }
     }
     /* clean up */
@@ -1284,6 +1300,10 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     if (size_fp)
     {
         xvgrclose(size_fp);
+    }
+    if (ndxfn)
+    {
+        gmx_ffclose(ndxfn);
     }
 }
 
@@ -1384,6 +1404,8 @@ int gmx_cluster(int argc, char *argv[])
         " * [TT]-ntr[tt] writes the total number of transitions to or from",
         "   each cluster.",
         " * [TT]-clid[tt] writes the cluster number as a function of time.",
+        " * [TT]-clndx[tt] writes the frame numbers corresponding to the clusters to the",
+        "   specified index file to be read into trjconv.",
         " * [TT]-cl[tt] writes average (with option [TT]-av[tt]) or central",
         "   structure of each cluster or writes numbered files with cluster members",
         "   for a selected set of clusters (with option [TT]-wcl[tt], depends on",
@@ -1393,10 +1415,11 @@ int gmx_cluster(int argc, char *argv[])
     };
 
     FILE              *fp, *log;
-    int                nf, i, i1, i2, j;
-    gmx_int64_t        nrms = 0;
+    int                nf   = 0, i, i1, i2, j;
+    int64_t            nrms = 0;
 
     matrix             box;
+    matrix            *boxes = nullptr;
     rvec              *xtps, *usextps, *x1, **xx = nullptr;
     const char        *fn, *trx_out_fn;
     t_clusters         clust;
@@ -1409,10 +1432,10 @@ int gmx_cluster(int argc, char *argv[])
     real              *eigenvectors;
 
     int                isize = 0, ifsize = 0, iosize = 0;
-    int               *index = nullptr, *fitidx = nullptr, *outidx = nullptr;
+    int               *index = nullptr, *fitidx = nullptr, *outidx = nullptr, *frameindexes = nullptr;
     char              *grpname;
     real               rmsd, **d1, **d2, *time = nullptr, time_invfac, *mass = nullptr;
-    char               buf[STRLEN], buf1[80], title[STRLEN];
+    char               buf[STRLEN], buf1[80];
     gmx_bool           bAnalyze, bUseRmsdCut, bJP_RMSD = FALSE, bReadMat, bReadTraj, bPBC = TRUE;
 
     int                method, ncluster = 0;
@@ -1452,7 +1475,7 @@ int gmx_cluster(int argc, char *argv[])
         { "-skip",  FALSE, etINT,  {&skip},
           "Only analyze every nr-th frame" },
         { "-av",    FALSE, etBOOL, {&bAverage},
-          "Write average iso middle structure for each cluster" },
+          "Write average instead of middle structure for each cluster" },
         { "-wcl",   FALSE, etINT,  {&write_ncl},
           "Write the structures for this number of clusters to numbered files" },
         { "-nst",   FALSE, etINT,  {&write_nst},
@@ -1485,7 +1508,7 @@ int gmx_cluster(int argc, char *argv[])
     };
     t_filenm          fnm[] = {
         { efTRX, "-f",     nullptr,        ffOPTRD },
-        { efTPS, "-s",     nullptr,        ffOPTRD },
+        { efTPS, "-s",     nullptr,        ffREAD },
         { efNDX, nullptr,     nullptr,        ffOPTRD },
         { efXPM, "-dm",   "rmsd",       ffOPTRD },
         { efXPM, "-om",   "rmsd-raw",   ffWRITE },
@@ -1498,7 +1521,8 @@ int gmx_cluster(int argc, char *argv[])
         { efXPM, "-tr",   "clust-trans", ffOPTWR},
         { efXVG, "-ntr",  "clust-trans", ffOPTWR},
         { efXVG, "-clid", "clust-id",   ffOPTWR},
-        { efTRX, "-cl",   "clusters.pdb", ffOPTWR }
+        { efTRX, "-cl",   "clusters.pdb", ffOPTWR },
+        { efNDX, "-clndx", "clusters.ndx", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
@@ -1529,7 +1553,7 @@ int gmx_cluster(int argc, char *argv[])
     {
         fprintf(stderr,
                 "\nWarning: assuming the time unit in %s is %s\n",
-                opt2fn("-dm", NFILE, fnm), output_env_get_time_unit(oenv));
+                opt2fn("-dm", NFILE, fnm), output_env_get_time_unit(oenv).c_str());
     }
     if (trx_out_fn && !bReadTraj)
     {
@@ -1672,7 +1696,7 @@ int gmx_cluster(int argc, char *argv[])
         /* Loop over first coordinate file */
         fn = opt2fn("-f", NFILE, fnm);
 
-        xx = read_whole_trj(fn, isize, index, skip, &nf, &time, oenv, bPBC, gpbc);
+        xx = read_whole_trj(fn, isize, index, skip, &nf, &time, &boxes, &frameindexes, oenv, bPBC, gpbc);
         output_env_conv_times(oenv, nf, time);
         if (!bRMSdist || bAnalyze)
         {
@@ -1729,7 +1753,7 @@ int gmx_cluster(int argc, char *argv[])
     else   /* !bReadMat */
     {
         rms  = init_mat(nf, method == m_diagonalize);
-        nrms = (static_cast<gmx_int64_t>(nf)*static_cast<gmx_int64_t>(nf-1))/2;
+        nrms = (static_cast<int64_t>(nf)*static_cast<int64_t>(nf-1))/2;
         if (!bRMSdist)
         {
             fprintf(stderr, "Computing %dx%d RMS deviation matrix\n", nf, nf);
@@ -1751,7 +1775,7 @@ int gmx_cluster(int argc, char *argv[])
                     set_mat_entry(rms, i1, i2, rmsd);
                 }
                 nrms -= nf-i1-1;
-                fprintf(stderr, "\r# RMSD calculations left: " "%" GMX_PRId64 "   ", nrms);
+                fprintf(stderr, "\r# RMSD calculations left: " "%" PRId64 "   ", nrms);
                 fflush(stderr);
             }
             sfree(x1);
@@ -1777,7 +1801,7 @@ int gmx_cluster(int argc, char *argv[])
                     set_mat_entry(rms, i1, i2, rms_dist(isize, d1, d2));
                 }
                 nrms -= nf-i1-1;
-                fprintf(stderr, "\r# RMSD calculations left: " "%" GMX_PRId64 "   ", nrms);
+                fprintf(stderr, "\r# RMSD calculations left: " "%" PRId64 "   ", nrms);
                 fflush(stderr);
             }
             /* Clean up work arrays */
@@ -1900,15 +1924,18 @@ int gmx_cluster(int argc, char *argv[])
             copy_rvec(xtps[index[i]], usextps[i]);
         }
         useatoms.nr = isize;
-        analyze_clusters(nf, &clust, rms->mat, isize, &useatoms, usextps, mass, xx, time,
+        analyze_clusters(nf, &clust, rms->mat, isize, &useatoms, usextps, mass, xx, time, boxes, frameindexes,
                          ifsize, fitidx, iosize, outidx,
                          bReadTraj ? trx_out_fn : nullptr,
                          opt2fn_null("-sz", NFILE, fnm),
                          opt2fn_null("-tr", NFILE, fnm),
                          opt2fn_null("-ntr", NFILE, fnm),
                          opt2fn_null("-clid", NFILE, fnm),
+                         opt2fn_null("-clndx", NFILE, fnm),
                          bAverage, write_ncl, write_nst, rmsmin, bFit, log,
                          rlo_bot, rhi_bot, oenv);
+        sfree(boxes);
+        sfree(frameindexes);
     }
     gmx_ffclose(log);
 
@@ -1919,7 +1946,7 @@ int gmx_cluster(int argc, char *argv[])
         {
             for (i1 = i2+1; (i1 < nf); i1++)
             {
-                if (rms->mat[i1][i2])
+                if (rms->mat[i1][i2] != 0.0f)
                 {
                     rms->mat[i1][i2] = rms->maxrms;
                 }
@@ -1937,19 +1964,19 @@ int gmx_cluster(int argc, char *argv[])
     }
     else
     {
-        sprintf(buf, "Time (%s)", output_env_get_time_unit(oenv));
-        sprintf(title, "RMS%sDeviation / Cluster Index",
-                bRMSdist ? " Distance " : " ");
+        auto timeLabel = output_env_get_time_label(oenv);
+        auto title     = gmx::formatString("RMS%sDeviation / Cluster Index",
+                                           bRMSdist ? " Distance " : " ");
         if (minstruct > 1)
         {
-            write_xpm_split(fp, 0, title, "RMSD (nm)", buf, buf,
+            write_xpm_split(fp, 0, title, "RMSD (nm)", timeLabel, timeLabel,
                             nf, nf, time, time, rms->mat, 0.0, rms->maxrms, &nlevels,
                             rlo_top, rhi_top, 0.0, ncluster,
                             &ncluster, TRUE, rlo_bot, rhi_bot);
         }
         else
         {
-            write_xpm(fp, 0, title, "RMSD (nm)", buf, buf,
+            write_xpm(fp, 0, title, "RMSD (nm)", timeLabel, timeLabel,
                       nf, nf, time, time, rms->mat, 0.0, rms->maxrms,
                       rlo_top, rhi_top, &nlevels);
         }
@@ -1959,9 +1986,9 @@ int gmx_cluster(int argc, char *argv[])
     if (nullptr != orig)
     {
         fp = opt2FILE("-om", NFILE, fnm, "w");
-        sprintf(buf, "Time (%s)", output_env_get_time_unit(oenv));
-        sprintf(title, "RMS%sDeviation", bRMSdist ? " Distance " : " ");
-        write_xpm(fp, 0, title, "RMSD (nm)", buf, buf,
+        auto timeLabel = output_env_get_time_label(oenv);
+        auto title     = gmx::formatString("RMS%sDeviation", bRMSdist ? " Distance " : " ");
+        write_xpm(fp, 0, title, "RMSD (nm)", timeLabel, timeLabel,
                   nf, nf, time, time, orig->mat, 0.0, orig->maxrms,
                   rlo_top, rhi_top, &nlevels);
         gmx_ffclose(fp);

@@ -1,4 +1,4 @@
-#!/usr/freeware/bin/python
+#!/usr/bin/env python2
 
 # usage:  make_gromos_rtp.py > ffG43a1.rtp
 # this script tries to make a residue topology database for GROMACS from
@@ -123,7 +123,7 @@ class Cin:
        for i in range(len(list)):
                 if list[i] == string:
                    return i
-       print >> sys.stderr "Could not find string",string,"in list of length",len(list)
+       print >> sys.stderr, "Could not find string", string, "in list of length", len(list)
        return -1
 
 #--------------------------#

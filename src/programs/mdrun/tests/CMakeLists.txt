@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -34,9 +34,12 @@
 
 # make an "object library" for code that we re-use for both kinds of tests
 add_library(mdrun_test_objlib OBJECT
-    mdruncomparisonfixture.cpp
+    energyreader.cpp
     moduletest.cpp
+    simulationdatabase.cpp
     terminationhelper.cpp
+    # PME tests
+    pmetest.cpp
     )
 
 set(testname "MdrunTests")
@@ -45,22 +48,29 @@ set(exename "mdrun-test")
 gmx_add_gtest_executable(
     ${exename}
     # files with code for tests
-    tabulated_bonded_interactions.cpp
-    energyreader.cpp
-    grompp.cpp
-    rerun.cpp
-    trajectory_writing.cpp
-    trajectoryreader.cpp
     compressed_x_output.cpp
-    swapcoords.cpp
+    energycomparison.cpp
+    grompp.cpp
+    initialconstraints.cpp
     interactiveMD.cpp
+    rerun.cpp
+    swapcoords.cpp
+    tabulated_bonded_interactions.cpp
     termination.cpp
+    tpitest.cpp
+    trajectory_writing.cpp
+    trajectorycomparison.cpp
+    trajectoryreader.cpp
     # pseudo-library for code for testing mdrun
     $<TARGET_OBJECTS:mdrun_test_objlib>
     # pseudo-library for code for mdrun
     $<TARGET_OBJECTS:mdrun_objlib>
     )
-gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST)
+if (GMX_GPU AND GMX_USE_OPENCL)
+    gmx_register_gtest_test(${testname} ${exename} OCL_INTEGRATION_TEST)
+else()
+    gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST)
+endif()
 
 set(testname "MdrunMpiTests")
 set(exename "mdrun-mpi-test")
@@ -68,10 +78,10 @@ set(exename "mdrun-mpi-test")
 gmx_add_gtest_executable(
     ${exename} MPI
     # files with code for tests
+    domain_decomposition.cpp
     multisim.cpp
     multisimtest.cpp
     replicaexchange.cpp
-    domain_decomposition.cpp
     # pseudo-library for code for testing mdrun
     $<TARGET_OBJECTS:mdrun_test_objlib>
     # pseudo-library for code for mdrun
