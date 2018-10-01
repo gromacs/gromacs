@@ -35,7 +35,7 @@
 /*! \internal \file
  *
  * \brief This file contains declarations for functions needed
- * internally by the module.
+ * internally by the module, and an inline helper function.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_listed-forces
