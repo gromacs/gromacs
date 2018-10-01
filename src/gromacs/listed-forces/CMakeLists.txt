@@ -33,7 +33,13 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB LISTED_FORCES_SOURCES *.cpp)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${LISTED_FORCES_SOURCES} PARENT_SCOPE)
+
+if(GMX_USE_CUDA)
+   file(GLOB BONDED_CUDA_KERNEL_SOURCES
+       bonded.cu)  
+endif()
+     
+set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${LISTED_FORCES_SOURCES} ${BONDED_CUDA_KERNEL_SOURCES} PARENT_SCOPE)
 
 gmx_install_headers(listed-forces.h)
 
