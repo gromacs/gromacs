@@ -178,7 +178,7 @@ gmx_bool nbnxn_simd_supported(const gmx::MDLogger &mdlog,
 void set_avcsixtwelve(FILE *fplog, t_forcerec *fr,
                       const gmx_mtop_t *mtop);
 
-void free_gpu_resources(const t_forcerec                    *fr,
+void free_gpu_resources(t_forcerec                          *fr,
                         const gmx::PhysicalNodeCommunicator &physicalNodeCommunicator);
 
 #endif

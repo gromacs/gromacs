@@ -34,3 +34,9 @@ On Intel CPUs with integrated GPUs, it is now possible to offload nonbonded task
 to the GPU the same way as offload is done to other GPU architectures.
 This can have performance benefits, in particular on modern desktop and mobile
 Intel CPUs this offload can give up to 20% higher simulation performance.
+
+Bonded interactions are now supported for CUDA GPU offload
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Common types of bonded and LJ-14 interactions found can now run on
+NVIDIA GPUs with CUDA, with and without domain decomposition.
+Interactions with perturbed parameters are not supported.
