@@ -33,11 +33,15 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "device_utils.clh"
-#include "vectype_ops.clh"
+#include "gromacs/gpu_utils/vectype_ops.clh"
+#include "gromacs/gpu_utils/device_utils.clh"
+#include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/pbcutil/ishift.h"
+
+#include "nbnxn_ocl_consts.h"
 
 #define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
-#define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
+#define NCL_PER_SUPERCL         c_nbnxnGpuNumClusterPerSupercluster
 
 #define WARP_SIZE  (CL_SIZE*CL_SIZE/2) //Currently only c_nbnxnGpuClusterpairSplit=2 supported
 
@@ -181,7 +185,6 @@ void preloadCj4(__local int        *sm_cjPreload,
 #endif
 
     const int c_clSize                   = CL_SIZE;
-    const int c_nbnxnGpuJgroupSize       = NBNXN_GPU_JGROUP_SIZE;
     const int c_nbnxnGpuClusterpairSplit = 2;
     const int c_splitClSize              = c_clSize/c_nbnxnGpuClusterpairSplit;
 
@@ -213,7 +216,6 @@ int loadCj(__local int        *sm_cjPreload,
            int                 tidxj)
 {
     const int c_clSize                   = CL_SIZE;
-    const int c_nbnxnGpuJgroupSize       = NBNXN_GPU_JGROUP_SIZE;
     const int c_nbnxnGpuClusterpairSplit = 2;
     const int c_splitClSize              = c_clSize/c_nbnxnGpuClusterpairSplit;
 
