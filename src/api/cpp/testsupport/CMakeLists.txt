@@ -32,8 +32,31 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# The `src/api/cpp/include` directory should be mostly empty so that we can use it internally as
-# the public include directory during build and testing. No targets are defined.
-# Linking targets in the build tree should use the gmxapi INTERFACE. Scripts
-# Needing access to a list of pre-installed public headers can look at the
-# GMXAPI_PUBLIC_HEADERS variable in the src/api scope.
+# Build test input files to test directory.
+# Note that CMake interprets `gmx` in `COMMAND gmx` as the executable produced
+# by the `add_executable` command that defined the `gmx` target.
+# \todo replace command line wrapper with API utilities or test framework facilities.
+add_custom_command(
+    OUTPUT topol.tpr
+    COMMAND gmx grompp -o topol.tpr
+        -f ${CMAKE_CURRENT_SOURCE_DIR}/data/spc-and-methanol.mdp
+        -c ${CMAKE_CURRENT_SOURCE_DIR}/data/spc-and-methanol.gro
+        -n ${CMAKE_CURRENT_SOURCE_DIR}/data/spc-and-methanol.ndx
+        -p ${CMAKE_CURRENT_SOURCE_DIR}/data/spc-and-methanol.top
+    DEPENDS gmx
+            data/spc-and-methanol.gro
+            data/spc-and-methanol.mdp
+            data/spc-and-methanol.top
+            data/spc-and-methanol.ndx
+)
+
+add_custom_target(spc_and_methanol_tpr
+                  DEPENDS topol.tpr
+                  COMMENT "Preparing test reference data."
+                  )
+
+configure_file(testingconfiguration.in.cpp testingconfiguration.cpp)
+
+add_library(gmxapi-test-support SHARED testingconfiguration.cpp)
+add_dependencies(gmxapi-test-support spc_and_methanol_tpr)
+target_include_directories(gmxapi-test-support PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
