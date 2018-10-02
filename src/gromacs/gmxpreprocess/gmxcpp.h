@@ -38,6 +38,8 @@
 #ifndef GMX_GMXPREPROCESS_GMXCPP_H
 #define GMX_GMXPREPROCESS_GMXCPP_H
 
+#include <string>
+
 typedef struct gmx_cpp *gmx_cpp_t;
 
 /* The possible return codes for these functions */
@@ -69,6 +71,11 @@ int cpp_cur_linenr(const gmx_cpp_t *handlep);
 /* Close the file! Return integer status.
  */
 int cpp_close_file(gmx_cpp_t *handlep);
+
+/* Return a pointer to the value of defineName, when present, nullptr othwerwise.
+ */
+const std::string *cpp_find_define(const gmx_cpp_t    handle,
+                                   const std::string &defineName);
 
 /* Clean up normal and file static data structures
  */
