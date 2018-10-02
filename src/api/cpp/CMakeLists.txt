@@ -52,6 +52,9 @@ configure_file(include/version.h.in include/gmxapi/version.h)
 add_library(gmxapi SHARED
             context.cpp
             exceptions.cpp
+            gmxapi.cpp
+            md.cpp
+            mdmodule.cpp
             md.cpp
             mdmodule.cpp
             session.cpp
