@@ -36,7 +36,6 @@
 #ifndef _nbnxn_consts_h
 #define _nbnxn_consts_h
 
-
 /* With CPU kernels the i-cluster size is always 4 atoms.
  * With x86 SIMD the j-cluster size can be 2, 4 or 8, otherwise 4.
  */
@@ -73,5 +72,12 @@
 #define NBNXN_INTERACTION_MASK_DIAG_J8_0  0xf0f8fcfeU
 #define NBNXN_INTERACTION_MASK_DIAG_J8_1  0x0080c0e0U
 
+/* The number of clusters in a super-cluster, used for GPU */
+#define c_nbnxnGpuNumClusterPerSupercluster  8
+
+/* With GPU kernels we group cluster pairs in 4 to optimize memory usage
+ * of integers containing 32 bits.
+ */
+#define c_nbnxnGpuJgroupSize (32/c_nbnxnGpuNumClusterPerSupercluster)
 
 #endif

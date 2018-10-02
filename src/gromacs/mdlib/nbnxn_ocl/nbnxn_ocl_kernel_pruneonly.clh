@@ -112,7 +112,6 @@ __kernel void nbnxn_kernel_prune_rolling_opencl
     // TODO move these consts to utils and unify their use with the nonbonded kernels
     const int c_numClPerSupercl    = NCL_PER_SUPERCL;
     const int c_clSize             = CL_SIZE;
-    const int c_nbnxnGpuJgroupSize = NBNXN_GPU_JGROUP_SIZE;
 
     // TODO pass this value at compile-time as a macro
     const int c_nbnxnGpuClusterpairSplit = 2;

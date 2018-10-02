@@ -51,7 +51,9 @@
 #include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/mdlib/nbnxn_gpu_types_common.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
+#include "gromacs/mdlib/nbnxn_ocl/nbnxn_ocl_consts.h"
 #include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 
 /* kernel does #include "gromacs/math/utilities.h" */
@@ -60,20 +62,6 @@
 //! Define 1/sqrt(pi)
 #define M_FLOAT_1_SQRTPI 0.564189583547756f
 
-/*! \brief Macros defining platform-dependent defaults for the prune kernel's j4 processing concurrency.
- *
- *  The GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY macro allows compile-time override.
- */
-/*! @{ */
-#ifndef GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
-#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_AMD       4
-#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_NVIDIA    4
-#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_DEFAULT   4
-#else
-#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_AMD       GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
-#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_NVIDIA    GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
-#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_DEFAULT   GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
-#endif
 /*! @} */
 /*! \brief Constants for platform-dependent defaults for the prune kernel's j4 processing concurrency.
  *
@@ -82,7 +70,7 @@
 /*! @{ */
 const int c_oclPruneKernelJ4ConcurrencyAMD     = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_AMD;
 const int c_oclPruneKernelJ4ConcurrencyNVIDIA  = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_NVIDIA;
-const int c_oclPruneKernelJ4ConcurrencyDefault = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_DEFAULT;
+const int c_oclPruneKernelJ4ConcurrencyINTEL   = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_INTEL;
 /*! @} */
 
 /*! \brief Returns the j4 processing concurrency parameter for the vendor \p vendorId
@@ -90,12 +78,12 @@ const int c_oclPruneKernelJ4ConcurrencyDefault = GMX_NBNXN_PRUNE_KERNEL_J4_CONCU
  */
 static inline int getOclPruneKernelJ4Concurrency(int vendorId)
 {
-    assert(vendorId < OCL_VENDOR_UNKNOWN);
     switch (vendorId)
     {
         case OCL_VENDOR_AMD:    return c_oclPruneKernelJ4ConcurrencyAMD;     break;
         case OCL_VENDOR_NVIDIA: return c_oclPruneKernelJ4ConcurrencyNVIDIA;  break;
-        default:                return c_oclPruneKernelJ4ConcurrencyDefault; break;
+        case OCL_VENDOR_INTEL:  return c_oclPruneKernelJ4ConcurrencyINTEL;  break;
+        default: gmx_incons("Unknown OCL Vendor");
     }
 }
 
