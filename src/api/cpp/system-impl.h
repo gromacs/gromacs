@@ -85,9 +85,34 @@ class System::Impl final
          */
         std::shared_ptr<Session> launch(const std::shared_ptr<Context> &context);
 
+        /*!
+         * \brief Attach an MD restraint through the modular interface.
+         *
+         * \param module shared ownership of an object providing MD restraint functionality.
+         * \return success if the object was bound to the simulation.
+         *
+         * \todo MDModule is confusingly named.
+         * \todo Could return a proxy or futures object for the post-simulation bound calculator.
+         */
+        Status setRestraint(std::shared_ptr<gmxapi::MDModule> module);
+
+        /*!
+         * \brief Share work registration interface for this system.
+         *
+         * \return container for specifying work through the API proxy objects.
+         */
+        std::shared_ptr<MDWorkSpec> getSpec();
+
     private:
         //! Description of simulation work.
         std::shared_ptr<Workflow>           workflow_;
+
+        /*!
+         * \brief Specified simulation work.
+         *
+         * \todo merge Workflow and MDWorkSpec
+         */
+        std::shared_ptr<gmxapi::MDWorkSpec> spec_;
 };
 
 }      // end namespace gmxapi
