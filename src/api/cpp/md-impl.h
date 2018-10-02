@@ -48,6 +48,8 @@
 namespace gmxapi
 {
 
+class MDWorkSpec;
+
 /*!
  * \brief Implementation class to hide guts of MDHolder
  *
@@ -56,10 +58,17 @@ namespace gmxapi
 class MDHolder::Impl
 {
     public:
-
-        /*! \brief Instance name.
+        /*!
+         * \brief Construct by capturing a messaging object.
+         *
+         * \param spec operations specified for a workflow and the means to instantiate them.
          */
-        std::string name_ {};
+        explicit Impl(std::shared_ptr<MDWorkSpec> &&spec);
+
+        /*!
+         * \brief Shared ownership of the gmxapi object used for higher level message passing.
+         */
+        std::shared_ptr<MDWorkSpec> spec_ {nullptr};
 };
 
 }      // namespace gmxapi

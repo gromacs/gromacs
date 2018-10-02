@@ -57,6 +57,7 @@ namespace gmxapi
 
 // forward declarations
 class Context;  // defined in gmxapi/context.h
+class MDModule;
 class Status;   // defined in gmxapi/status.h
 class Workflow; // implementation detail
 
@@ -177,6 +178,20 @@ class Session
         //! \brief opaque pointer to implementation
         std::unique_ptr<SessionImpl> impl_;
 };
+
+/*!
+ * \brief Add a uniquely identifiable restraint instance to the MD simulator.
+ *
+ * \param session Session with an MD runner to attach a restraint to.
+ * \param restraint wrapped restraint force calculation object.
+ * \return success if restraint was attached successfully, else failure.
+ *
+ * \todo Clarify whether we are adding modules generally, adding restraint modules, or adding restraints.
+ * \todo Update for new scheme in which all restraints are managed by a single Restraint module.
+ * \todo Figure out what this object should return to provide more utility and rigorous error checking.
+ */
+Status addSessionRestraint(Session                         * session,
+                           std::shared_ptr<gmxapi::MDModule> restraint);
 
 /*!
  * \brief Launch a workflow in the provided execution context.

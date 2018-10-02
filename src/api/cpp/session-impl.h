@@ -49,6 +49,7 @@
 
 #include "gmxapi/context.h"
 #include "gmxapi/status.h"
+#include "gmxapi/md/mdmodule.h"
 
 namespace gmxapi
 {
@@ -122,6 +123,14 @@ class SessionImpl
                                                    gmx::LogFilePtr                logFilehandle,
                                                    gmx_multisim_t               * multiSim);
 
+        /*!
+         * \brief Add a restraint to the simulation.
+         *
+         * \param module
+         * \return
+         */
+        Status addRestraint(std::shared_ptr<gmxapi::MDModule> module);
+
         /*! \internal
          * \brief API implementation function to retrieve the current runner.
          *
@@ -187,6 +196,18 @@ class SessionImpl
          * May be null for no multi-simulation management at the Mdrunner level.
          */
         gmx_multisim_t* multiSim_;
+
+        /*!
+         * \brief Restraints active in this session.
+         *
+         * Client owns these restraint objects, but session has the ability to
+         * lock the resource to take temporary ownership in case the client
+         * releases its handle.
+         * \todo clarify and update object lifetime management
+         * A restraint module manager and / or a mapping of factory functions with
+         * which the runner can get objects at run time can encapsulate object management.
+         */
+        std::map<std::string, std::weak_ptr<gmx::IRestraintPotential> > restraints_;
 };
 
 }      //end namespace gmxapi
