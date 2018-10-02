@@ -275,10 +275,9 @@ SessionImpl *Session::getRaw() const noexcept
 }
 //! \endcond
 
-std::shared_ptr<Session> launchSession(Context   * context,
-                                       std::string filename)
+std::shared_ptr<Session> launchSession(Context* context, const Workflow &work) noexcept
 {
-    auto session = context->launch(std::move(filename));
+    auto session = context->launch(work);
     return session;
 }
 

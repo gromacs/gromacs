@@ -44,31 +44,6 @@
 # src/testutils/TestMacros.cmake, which does not allow arbitrary argument
 # passing to add_test. Instead, use set_tests_properties().
 
-# Build test input files to test directory.
-# Note that CMake interprets `gmx` in `COMMAND gmx` as the executable produced
-# by the `add_executable` command that defined the `gmx` target.
-# \todo replace command line wrapper with API utilities or test framework facilities.
-add_custom_command(
-    OUTPUT topol.tpr
-    COMMAND gmx grompp -o topol.tpr
-        -f ${CMAKE_CURRENT_SOURCE_DIR}/data/spc-and-methanol.mdp
-        -c ${CMAKE_CURRENT_SOURCE_DIR}/data/spc-and-methanol.gro
-        -n ${CMAKE_CURRENT_SOURCE_DIR}/data/spc-and-methanol.ndx
-        -p ${CMAKE_CURRENT_SOURCE_DIR}/data/spc-and-methanol.top
-    DEPENDS gmx
-            data/spc-and-methanol.gro
-            data/spc-and-methanol.mdp
-            data/spc-and-methanol.top
-            data/spc-and-methanol.ndx
-)
-
-add_custom_target(spc_and_methanol_tpr
-                  DEPENDS topol.tpr
-                  COMMENT "Preparing test reference data."
-                  )
-
-configure_file(testingconfiguration.in.cpp testingconfiguration.cpp)
-
 #
 # Test public interface.
 #
@@ -78,16 +53,14 @@ gmx_add_gtest_executable(
     runner.cpp
     status.cpp
     system.cpp
-    testingconfiguration.cpp
     version.cpp
     )
-add_dependencies(gmxapi-test spc_and_methanol_tpr)
 
 target_include_directories(gmxapi-test PRIVATE
                            ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Link against the gmxapi libraries and get access to its public (installed) headers.
-target_link_libraries(gmxapi-test Gromacs::gmxapi)
+target_link_libraries(gmxapi-test Gromacs::gmxapi gmxapi-test-support)
 
 gmx_register_gtest_test(GmxapiExternalInterfaceTests gmxapi-test INTEGRATION_TEST)
 
@@ -103,14 +76,12 @@ gmx_add_gtest_executable(
     runner.cpp
     status.cpp
     system.cpp
-    testingconfiguration.cpp
     version.cpp
     )
-add_dependencies(gmxapi-mpi-test spc_and_methanol_tpr)
 
 target_include_directories(gmxapi-mpi-test PRIVATE
                            ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(gmxapi-mpi-test Gromacs::gmxapi)
+target_link_libraries(gmxapi-mpi-test Gromacs::gmxapi gmxapi-test-support)
 
 # Tests that specify MPI_RANKS will be passed a ``-ntmpi`` command-line option
 # when GMX_THREAD_MPI is true, but the test executables in this directory do not
