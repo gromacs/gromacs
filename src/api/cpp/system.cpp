@@ -42,11 +42,16 @@
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/mdrun/runner.h"
 
+#include "gromacs/utility.h"
+#include "gromacs/compat/make_unique.h"
+#include "gromacs/mdrun/runner.h"
+
 #include "gmxapi/context.h"
 #include "gmxapi/session.h"
 #include "gmxapi/status.h"
 
 #include "system-impl.h"
+#include "workflow.h"
 
 namespace gmxapi
 {
@@ -60,7 +65,7 @@ System::Impl &System::Impl::operator=(System::Impl &&source) noexcept
 {
     if (this != &source)
     {
-        filename_.swap(source.filename_);
+        workflow_.swap(source.workflow_);
     }
     return *this;
 }
@@ -91,10 +96,14 @@ System fromTprFile(const std::string &filename)
     // identifying information for when the work spec is used in a different
     // environment.
 
+    // Create a new Workflow instance.
+    // TODO error handling
+    auto workflow = Workflow::create(filename);
+
     // This may produce errors or throw exceptions in the future, but as of
     // 0.0.3 only memory allocation errors are possible, and we do not have a
     // plan for how to recover from them.
-    auto systemImpl = gmx::compat::make_unique<System::Impl>(filename);
+    auto systemImpl = gmx::compat::make_unique<System::Impl>(std::move(workflow));
     GMX_ASSERT(systemImpl, "Could not create a valid implementation object.");
     auto system = System(std::move(systemImpl));
 
@@ -111,17 +120,18 @@ System fromTprFile(const std::string &filename)
     return system;
 }
 
-System::Impl::Impl(const std::string &filename) :
-    filename_(filename)
+System::Impl::Impl(std::unique_ptr<gmxapi::Workflow> workflow) noexcept :
+    workflow_(std::move(workflow))
 {
+    GMX_ASSERT(workflow_, "Class invariant implies non-null workflow_ member");
 }
 
-std::shared_ptr<Session> System::Impl::launch(std::shared_ptr<Context> context)
+std::shared_ptr<Session> System::Impl::launch(const std::shared_ptr<Context> &context)
 {
     std::shared_ptr<Session> session = nullptr;
     if (context != nullptr)
     {
-        session = context->launch(filename_);
+        session = context->launch(*workflow_);
         GMX_ASSERT(session, "Context::launch() expected to produce non-null session.");
     }
     else
