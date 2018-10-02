@@ -32,12 +32,9 @@ gcc-4.8 gpu cuda-7.0 cmake-3.8.1 mpi npme=1 nranks=2 openmp
 # Test SIMD implementation of pair search for GPU code-path
 gcc-7 gpu gpu_id=1 cuda-9.2 thread-mpi openmp cmake-3.6.1 release-with-assert simd=avx2_256
 
-# Test with ThreadSanitizer (compiled without OpenMP, even though
-#   this gcc was configured with --disable-linux-futex, because
-#   Redmine #1850 is unresolved, which causes more suspected
-#   false positives than races detected)
-# Test newest gcc at time of release
-gcc-7 tsan no-openmp cmake-3.10.0
+# Test with libcxx
+# Test with ThreadSanitizer + OpenMP + SIMD
+clang-7 tsan libcxx-7 openmp cmake-3.10.0 simd=avx2_256
 
 # Test on MacOS (the gcc-6 and/or x11 flags implicitly steer jobs to the OSX agent)
 # Test X11 build
@@ -92,7 +89,6 @@ gcc-5 openmp simd=avx_128_fma opencl clFFT-2.14 amdappsdk-3.0
 # Test hwloc-2 support
 # Test newest supported LTS Ubuntu
 # Update gpu testing specifiers per https://redmine.gromacs.org/issues/2161
-# Resolve Redmine #1850 so that ThreadSanitizer can test our OpenMP code
 # Test AVX-512 when hardware is available
 # Update to test gcc 8
 # Update to test clang 7
