@@ -32,64 +32,60 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMXAPI_SYSTEM_IMPL_H
-#define GMXAPI_SYSTEM_IMPL_H
 
-/*! \file
- * \brief Declare implementation details for gmxapi::System.
- *
- * \author M. Eric Irrgang <ericirrgang@gmail.com>
- * \ingroup gmxapi
- */
+#include <memory>
 
-#include <string>
-
+#include "testingconfiguration.h"
+#include "workflow.h"
+#include "workflow-impl.h"
+#include "gmxapi/context.h"
+#include "gmxapi/status.h"
 #include "gmxapi/system.h"
+#include <gtest/gtest.h>
 
-namespace gmxapi
+#include "gromacs/compat/make_unique.h"
+#include "gromacs/utility/arrayref.h"
+
+namespace
 {
 
-class Context;
-class Workflow;
+const auto filename = gmxapi::testing::sample_tprfilename;
 
-/*!
- * \brief Private implementation for gmxapi::System
- *
- * \ingroup gmxapi
- */
-class System::Impl final
+// Create a work spec, then the implementation graph, then the container
+TEST(ApiWorkflowImpl, Build)
 {
-    public:
-        /*! \cond */
-        ~Impl();
+    // Create work spec
+    auto node = gmx::compat::make_unique<gmxapi::MDNodeSpecification>(filename);
+    ASSERT_NE(node, nullptr);
 
-        Impl(Impl &&) noexcept;
-        Impl &operator=(Impl &&source) noexcept;
-        /*! \endcond */
+    // Create key
+    std::string key {
+        "MD"
+    };
+    key.append(filename);
 
-        /*!
-         * \brief Initialize from a work description.
-         *
-         * \param workflow Simulation work to perform.
-         */
-        explicit Impl(std::unique_ptr<gmxapi::Workflow> workflow) noexcept;
+    // Create graph (workflow implementation object)
+    gmxapi::Workflow::Impl impl;
+    impl[key] = std::move(node);
+    ASSERT_EQ(impl.count(key), 1);
+    ASSERT_EQ(impl.size(), 1);
 
-        /*!
-         * \brief Launch the configured simulation.
-         *
-         * \param context Runtime execution context in which to run simulation.
-         * \return Ownership of a new simulation session.
-         *
-         * The session is returned as a shared pointer so that the Context can
-         * maintain a weak reference to it via std::weak_ptr.
-         */
-        std::shared_ptr<Session> launch(std::shared_ptr<Context> context);
+    // Create workflow container
+    gmxapi::Workflow work {
+        std::move(impl)
+    };
+}
 
-    private:
-        //! Description of simulation work.
-        std::shared_ptr<Workflow>           workflow_;
-};
+TEST(ApiWorkflow, Creation)
+{
+    // Create from create() method(s)
+    auto work = gmxapi::Workflow::create(filename);
+    ASSERT_NE(work, nullptr);
+}
 
-}      // end namespace gmxapi
+TEST(ApiWorkflow, Accessors)
+{
+    auto work = gmxapi::Workflow::create(filename);
+}
 
-#endif // header guard
+} // end anonymous namespace
