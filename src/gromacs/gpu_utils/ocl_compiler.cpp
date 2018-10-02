@@ -420,7 +420,7 @@ compileProgram(FILE              *fplog,
 {
     cl_int      cl_error;
     std::string kernelRootPath  = getSourceRootPath(kernelRelativePath);
-    std::string includeRootPath = getSourceRootPath("src/gromacs/gpu_utils");
+    std::string includeRootPath = getSourceRootPath("src");
 
     GMX_RELEASE_ASSERT(fplog != nullptr, "Need a valid log file for building OpenCL programs");
 
