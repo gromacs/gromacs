@@ -69,6 +69,7 @@ char **do_top(bool                          bVerbose,
               t_molinfo                   **intermolecular_interactions,
               const t_inputrec             *ir,
               std::vector<gmx_molblock_t>  *molblock,
+              bool                         *ffParametrizedWithHBondConstraints,
               warninp_t                     wi);
 
 /* This routine expects sys->molt[m].ilist to be of size F_NRE and ordered. */
