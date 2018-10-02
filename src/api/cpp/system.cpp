@@ -36,19 +36,16 @@
 #include "gmxapi/system.h"
 
 #include <array>
-#include <memory>
-
-#include "gromacs/utility.h"
-#include "gromacs/compat/make_unique.h"
-#include "gromacs/mdrun/runner.h"
 
 #include "gromacs/utility.h"
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/mdrun/runner.h"
 
 #include "gmxapi/context.h"
+#include "gmxapi/md.h"
 #include "gmxapi/session.h"
 #include "gmxapi/status.h"
+#include "gmxapi/system.h"
 
 #include "system-impl.h"
 #include "workflow.h"
@@ -121,9 +118,11 @@ System fromTprFile(const std::string &filename)
 }
 
 System::Impl::Impl(std::unique_ptr<gmxapi::Workflow> workflow) noexcept :
-    workflow_(std::move(workflow))
+    workflow_(std::move(workflow)),
+    spec_(std::make_shared<MDWorkSpec>())
 {
     GMX_ASSERT(workflow_, "Class invariant implies non-null workflow_ member");
+    GMX_ASSERT(spec_, "Class invariant implies non-null work specification member.");
 }
 
 std::shared_ptr<Session> System::Impl::launch(const std::shared_ptr<Context> &context)
@@ -133,6 +132,11 @@ std::shared_ptr<Session> System::Impl::launch(const std::shared_ptr<Context> &co
     {
         session = context->launch(*workflow_);
         GMX_ASSERT(session, "Context::launch() expected to produce non-null session.");
+
+        for (auto && module : spec_->getModules())
+        {
+            setSessionRestraint(session.get(), module);
+        }
     }
     else
     {
@@ -141,6 +145,19 @@ std::shared_ptr<Session> System::Impl::launch(const std::shared_ptr<Context> &co
     }
 
     return session;
+}
+
+Status System::Impl::setRestraint(std::shared_ptr<gmxapi::MDModule> module)
+{
+    GMX_ASSERT(spec_, "Class invariant implies non-null work specification member.");
+    spec_->addModule(std::move(module));
+    // \todo We should have some richer output including the name of the restraint just added.
+    return Status(true);
+}
+
+std::shared_ptr<MDWorkSpec> System::Impl::getSpec()
+{
+    return spec_;
 }
 
 } // end namespace gmxapi
