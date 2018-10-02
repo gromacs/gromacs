@@ -682,14 +682,9 @@ int cpp_close_file(gmx_cpp_t *handlep)
         gmx_chdir(handle->cwd.c_str());
     }
 
-    // TODO: Clearing doesn't seem necessary, consider removing
     handle->fp      = nullptr;
     handle->line_nr = 0;
-    handle->fn.clear();
     handle->line.clear();
-    handle->ifdefs.clear();
-    handle->path.clear();
-    handle->cwd.clear();
 
     return eCPP_OK;
 }
