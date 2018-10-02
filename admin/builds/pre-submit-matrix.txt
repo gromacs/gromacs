@@ -32,12 +32,8 @@ gcc-4.8 gpu cuda-7.0 cmake-3.8.1 mpi npme=1 nranks=2 openmp
 # Test SIMD implementation of pair search for GPU code-path
 gcc-7 gpu gpu_id=1 cuda-9.2 thread-mpi openmp cmake-3.6.1 release-with-assert simd=avx2_256
 
-# Test with ThreadSanitizer (compiled without OpenMP, even though
-#   this gcc was configured with --disable-linux-futex, because
-#   Redmine #1850 is unresolved, which causes more suspected
-#   false positives than races detected)
-# Test newest gcc at time of release
-gcc-7 tsan no-openmp cmake-3.10.0
+# Test with ThreadSanitizer + OpenMP
+clang-7 tsan openmp cmake-3.10.0 simd=avx_256
 
 # Test on MacOS (the gcc-6 and/or x11 flags implicitly steer jobs to the OSX agent)
 # Test X11 build
