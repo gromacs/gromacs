@@ -42,6 +42,9 @@
 #include <memory>
 #include <string>
 
+#include "gmxapi/gmxapi.h"
+#include "gmxapi/status.h"
+
 namespace gmxapi
 {
 
