@@ -48,10 +48,12 @@
 #include <cstring>
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdrun/logging.h"
@@ -65,10 +67,12 @@
 
 #include "gmxapi/exceptions.h"
 #include "gmxapi/session.h"
+#include "gmxapi/status.h"
 #include "gmxapi/version.h"
 
 #include "context-impl.h"
 #include "session-impl.h"
+#include "workflow.h"
 
 namespace gmxapi
 {
@@ -84,7 +88,7 @@ std::shared_ptr<gmxapi::ContextImpl> ContextImpl::create()
     return impl;
 }
 
-std::shared_ptr<Session> ContextImpl::launch(std::string filename)
+std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
 {
     using namespace gmx;
     // Much of this implementation is not easily testable: we need tools to inspect simulation results and to modify
@@ -96,6 +100,13 @@ std::shared_ptr<Session> ContextImpl::launch(std::string filename)
     if (session_.expired())
     {
         // Check workflow spec, build graph for current context, launch and return new session.
+        // \todo This is specific to the session implementation...
+        auto        mdNode = work.getNode("MD");
+        std::string filename {};
+        if (mdNode != nullptr)
+        {
+            filename = mdNode->params();
+        }
 
         /* As default behavior, automatically extend trajectories from the checkpoint file.
          * In the future, our API for objects used to initialize a simulation needs to address the fact that currently a
@@ -541,9 +552,9 @@ Context::Context() :
     GMX_ASSERT(impl_, "Context requires a non-null implementation member.");
 }
 
-std::shared_ptr<Session> Context::launch(std::string filename)
+std::shared_ptr<Session> Context::launch(const Workflow &work)
 {
-    return impl_->launch(std::move(filename));
+    return impl_->launch(work);
 }
 
 Context::Context(std::shared_ptr<ContextImpl> impl) :

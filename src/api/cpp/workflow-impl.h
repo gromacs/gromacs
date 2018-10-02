@@ -32,64 +32,47 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMXAPI_SYSTEM_IMPL_H
-#define GMXAPI_SYSTEM_IMPL_H
 
-/*! \file
- * \brief Declare implementation details for gmxapi::System.
+#ifndef GROMACS_WORKFLOW_IMPL_H
+#define GROMACS_WORKFLOW_IMPL_H
+
+/*! \internal \file
+ * \brief Implementation details for Workflow infrastructure.
  *
- * \author M. Eric Irrgang <ericirrgang@gmail.com>
  * \ingroup gmxapi
  */
 
+#include "workflow.h"
+
+#include <memory>
 #include <string>
 
-#include "gmxapi/system.h"
+#include "gmxapi/exceptions.h"
 
 namespace gmxapi
 {
 
-class Context;
-class Workflow;
-
-/*!
- * \brief Private implementation for gmxapi::System
- *
- * \ingroup gmxapi
- */
-class System::Impl final
+class WorkflowKeyError : public BasicException<WorkflowKeyError>
 {
     public:
-        /*! \cond */
-        ~Impl();
+        using BasicException::BasicException;
+};
 
-        Impl(Impl &&) noexcept;
-        Impl &operator=(Impl &&source) noexcept;
-        /*! \endcond */
 
-        /*!
-         * \brief Initialize from a work description.
-         *
-         * \param workflow Simulation work to perform.
-         */
-        explicit Impl(std::unique_ptr<gmxapi::Workflow> workflow) noexcept;
+class MDNodeSpecification : public NodeSpecification
+{
+    public:
+        explicit MDNodeSpecification(std::string filename);
 
-        /*!
-         * \brief Launch the configured simulation.
-         *
-         * \param context Runtime execution context in which to run simulation.
-         * \return Ownership of a new simulation session.
-         *
-         * The session is returned as a shared pointer so that the Context can
-         * maintain a weak reference to it via std::weak_ptr.
-         */
-        std::shared_ptr<Session> launch(std::shared_ptr<Context> context);
+        std::unique_ptr<NodeSpecification> clone() override;
+
+        paramsType params() const noexcept override;
 
     private:
-        //! Description of simulation work.
-        std::shared_ptr<Workflow>           workflow_;
+        std::string tprfilename_;
 };
+
 
 }      // end namespace gmxapi
 
-#endif // header guard
+#endif //GROMACS_WORKFLOW_IMPL_H
