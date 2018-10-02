@@ -41,6 +41,7 @@
 #include <cstddef>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/bitmask.h"
@@ -83,13 +84,6 @@ static constexpr int c_nbnxnGpuClusterSize = GMX_OCL_NB_CLUSTER_SIZE;
 static constexpr int c_nbnxnGpuClusterSize = 8;
 #endif
 
-/* The number of clusters in a super-cluster, used for GPU */
-static constexpr int c_nbnxnGpuNumClusterPerSupercluster = 8;
-
-/* With GPU kernels we group cluster pairs in 4 to optimize memory usage
- * of integers containing 32 bits.
- */
-static constexpr int c_nbnxnGpuJgroupSize = 32/c_nbnxnGpuNumClusterPerSupercluster;
 
 /* In CUDA the number of threads in a warp is 32 and we have cluster pairs
  * of 8*8=64 atoms, so it's convenient to store data for cluster pair halves.

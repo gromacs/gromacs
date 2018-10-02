@@ -1101,7 +1101,7 @@ static void print_nblist_statistics_supersub(FILE *fp, const nbnxn_pairlist_t *n
         {
             fprintf(fp, "nbl j-list #i-subcell %d %7d %4.1f\n",
                     b, c[b],
-                    100.0*c[b]/static_cast<double>(nbl->ncj4*c_nbnxnGpuJgroupSize));
+                    100.0*c[b]/int{nbl->ncj4*c_nbnxnGpuJgroupSize});
         }
     }
 }
