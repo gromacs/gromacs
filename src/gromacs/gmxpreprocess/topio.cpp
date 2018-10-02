@@ -424,6 +424,7 @@ static char **read_topol(const char *infile, const char *outfile,
                          t_gromppopts *opts,
                          real        *fudgeQQ,
                          std::vector<gmx_molblock_t> *molblock,
+                         bool       *ffParametrizedWithHBondConstraints,
                          bool        bFEP,
                          bool        bZero,
                          bool        usingFullRangeElectrostatics,
@@ -903,11 +904,33 @@ static char **read_topol(const char *infile, const char *outfile,
     }
     while (!done);
     sfree(cpp_opts_return);
-    cpp_done(handle);
+
     if (out)
     {
         gmx_fio_fclose(out);
     }
+
+    /* List of GROMACS define names for force fields that have been
+     * parametrized using constraints involving hydrogens only.
+     *
+     * We should avoid hardcoded names, but this is hopefully only
+     * needed temparorily for discouraging use of constraints=all-bonds.
+     */
+    const std::array<std::string, 3> ffDefines = {
+        "_FF_AMBER",
+        "_FF_CHARMM",
+        "_FF_OPLSAA"
+    };
+    *ffParametrizedWithHBondConstraints = false;
+    for (const std::string &ffDefine : ffDefines)
+    {
+        if (cpp_find_define(&handle, ffDefine))
+        {
+            *ffParametrizedWithHBondConstraints = true;
+        }
+    }
+
+    cpp_done(handle);
 
     if (opts->couple_moltype)
     {
@@ -977,6 +1000,7 @@ char **do_top(bool                          bVerbose,
               t_molinfo                   **intermolecular_interactions,
               const t_inputrec             *ir,
               std::vector<gmx_molblock_t>  *molblock,
+              bool                         *ffParametrizedWithHBondConstraints,
               warninp_t                     wi)
 {
     /* Tmpfile might contain a long path */
@@ -1001,6 +1025,7 @@ char **do_top(bool                          bVerbose,
                        nrmols, molinfo, intermolecular_interactions,
                        plist, combination_rule, repulsion_power,
                        opts, fudgeQQ, molblock,
+                       ffParametrizedWithHBondConstraints,
                        ir->efep != efepNO, bZero,
                        EEL_FULL(ir->coulombtype), wi);
 
