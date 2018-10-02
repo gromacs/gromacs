@@ -541,8 +541,8 @@ calc_dr_x_f_simd(int                       b0,
             offset1[i] = bla[bs*2 + i*2 + 1];
         }
 
-        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), offset0, &x0_S, &y0_S, &z0_S);
-        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), offset1, &x1_S, &y1_S, &z1_S);
+        gatherLoadUTransposeTSANSafe<3>(reinterpret_cast<const real *>(x), offset0, &x0_S, &y0_S, &z0_S);
+        gatherLoadUTransposeTSANSafe<3>(reinterpret_cast<const real *>(x), offset1, &x1_S, &y1_S, &z1_S);
         rx_S = x0_S - x1_S;
         ry_S = y0_S - y1_S;
         rz_S = z0_S - z1_S;
@@ -558,8 +558,8 @@ calc_dr_x_f_simd(int                       b0,
 
         transposeScatterStoreU<3>(reinterpret_cast<real *>(r + bs), offset2, rx_S, ry_S, rz_S);
 
-        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(f), offset0, &x0_S, &y0_S, &z0_S);
-        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(f), offset1, &x1_S, &y1_S, &z1_S);
+        gatherLoadUTransposeTSANSafe<3>(reinterpret_cast<const real *>(f), offset0, &x0_S, &y0_S, &z0_S);
+        gatherLoadUTransposeTSANSafe<3>(reinterpret_cast<const real *>(f), offset1, &x1_S, &y1_S, &z1_S);
         fx_S = x0_S - x1_S;
         fy_S = y0_S - y1_S;
         fz_S = z0_S - z1_S;
