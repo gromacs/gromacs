@@ -167,7 +167,13 @@ if(REGRESSIONTEST_PATH)
     endif()
 
     #currently not testing tools because they don't contain any useful tests
-    foreach(subtest simple complex kernel freeenergy pdb2gmx rotation essentialdynamics)
+    list(APPEND regressiontests_subtests_to_test simple complex freeenergy pdb2gmx rotation essentialdynamics)
+    if (NOT CMAKE_BUILD_TYPE STREQUAL "TSAN")
+        # These tests run slowly, and don't use OpenMP threads, so the
+        # coverage drop from not testing them with TSAN is insignificant.
+        list(APPEND regressiontests_subtests_to_test kernel)
+    endif()
+    foreach(subtest ${regressiontests_subtests_to_test})
         add_test(NAME regressiontests/${subtest}
             #windows requires the command to be perl and not the script
             COMMAND perl "${REGRESSIONTEST_PATH}/gmxtest.pl" ${subtest} ${ARGS})
