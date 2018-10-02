@@ -32,45 +32,4 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMXAPI_MD_IMPL_H
-#define GMXAPI_MD_IMPL_H
-/*! \file
- * \brief Declarations for molecular dynamics API implementation details.
- *
- * \ingroup gmxapi
- */
-
-#include <memory>
-
 #include "gmxapi/gmxapi.h"
-#include "gmxapi/md.h"
-
-namespace gmxapi
-{
-
-class MDWorkSpec;
-
-/*!
- * \brief Implementation class to hide guts of MDHolder
- *
- * Holds the gmxapi interface for an object that can help instantiate the gmx::MdRunner
- */
-class MDHolder::Impl
-{
-    public:
-        /*!
-         * \brief Construct by capturing a messaging object.
-         *
-         * \param spec operations specified for a workflow and the means to instantiate them.
-         */
-        explicit Impl(std::shared_ptr<MDWorkSpec> &&spec);
-
-        /*!
-         * \brief Shared ownership of the gmxapi object used for higher level message passing.
-         */
-        std::shared_ptr<MDWorkSpec> spec_ {nullptr};
-};
-
-}      // namespace gmxapi
-
-#endif // header guard
