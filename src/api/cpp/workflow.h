@@ -47,6 +47,8 @@
 #include <memory>
 #include <string>
 
+#include "gmxapi/gmxapi.h"
+
 namespace gmxapi
 {
 

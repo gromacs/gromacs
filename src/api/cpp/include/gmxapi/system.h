@@ -42,6 +42,9 @@
 #include <memory>
 #include <string>
 
+#include "gmxapi/gmxapi.h"
+#include "gmxapi/status.h"
+
 namespace gmxapi
 {
 
@@ -117,6 +120,19 @@ class System final
          */
         ~System();
         /*! \endcond */
+
+        Status setRestraint(std::shared_ptr<gmxapi::MDModule> module);
+
+        /*!
+         * \brief Borrow shared ownership of the System's container of associated modules.
+         *
+         * Used with gmxapi::MDHolder to add MD Modules to the simulation to be run.
+         *
+         * \return handle to be passed to gmxapi::MDHolder
+         *
+         * \todo This is used in gmxpy but not tested here.
+         */
+        std::shared_ptr<MDWorkSpec> getSpec();
 
         /*!
          * \brief Configure the computing environment for the specified workflow.

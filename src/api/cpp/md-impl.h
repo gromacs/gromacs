@@ -48,6 +48,8 @@
 namespace gmxapi
 {
 
+class MDWorkSpec;
+
 /*!
  * \brief Implementation class to hide guts of MDHolder
  *
@@ -56,10 +58,9 @@ namespace gmxapi
 class MDHolder::Impl
 {
     public:
+        explicit Impl(std::shared_ptr<MDWorkSpec> &&spec);
 
-        /*! \brief Instance name.
-         */
-        std::string name_ {};
+        std::shared_ptr<MDWorkSpec> spec_ {nullptr};
 };
 
 }      // namespace gmxapi

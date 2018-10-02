@@ -47,6 +47,7 @@
 
 #include "gmxapi/context.h"
 #include "gmxapi/status.h"
+#include "gmxapi/md/mdmodule.h"
 
 #include "gromacs/mdrun/runner.h"
 
@@ -122,6 +123,8 @@ class SessionImpl
                                                    FILE                        ** logFilehandle,
                                                    gmx_multisim_t               * multiSim);
 
+        Status setRestraint(std::shared_ptr<gmxapi::MDModule> module);
+
         /*! \internal
          * \brief API implementation function to retrieve the current runner.
          *
@@ -187,6 +190,8 @@ class SessionImpl
          * May be null for no multi-simulation management at the Mdrunner level.
          */
         gmx_multisim_t* multiSim_;
+
+        std::map < std::string, std::weak_ptr < gmx::IRestraintPotential>> restraints_;
 };
 
 }      //end namespace gmxapi

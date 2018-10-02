@@ -32,69 +32,42 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMXAPI_SYSTEM_IMPL_H
-#define GMXAPI_SYSTEM_IMPL_H
 
-/*! \file
- * \brief Declare implementation details for gmxapi::System.
+#ifndef GMXAPI_GROMACSFWD_H
+#define GMXAPI_GROMACSFWD_H
+
+/*! \ingroup gmxapi
+ * \file
+ * \brief Provide forward declarations for symbols in the GROMACS public headers.
  *
- * \author M. Eric Irrgang <ericirrgang@gmail.com>
- * \ingroup gmxapi
+ * Basic API clients only need to compile
+ * and link against the gmxapi target, but some gmxapi classes use opaque pointers to
+ * library classes that are forward-declared here.
+ *
+ * We don't want to include ::gmx headers if we don't have to, but we need to declare
+ * some things in the ::gmx namespace somewhere. These are forward declarations for
+ * opaque pointers in libgromacs for client code building against libgmxapi.
+ * Client code that is
+ * more entwined with libgromacs can include headers from there.
+ *
+ * For maximal compatibility with other libgmxapi clients (such as third-party
+ * Python modules), client code should use the wrappers and protocols in the
+ * gmxapi.h header. Note that there is a separate CMake target to build the full
+ * developer documentation for gmxapi.
+ *
+ * Refer to GMXAPI developer docs for the protocols that map gmxapi interfaces to
+ * GROMACS library interfaces.
+ * Refer to the GROMACS developer
+ * documentation for details on library interfaces forward-declared in this header.
+ *
+ * \todo It would be nice to include links to the documentation for these classes, too.
  */
 
-#include <string>
-
-#include "gmxapi/system.h"
-
-namespace gmxapi
+namespace gmx
 {
 
-class Context;
-class Workflow;
+class IRestraintPotential;
 
-/*!
- * \brief Private implementation for gmxapi::System
- *
- * \ingroup gmxapi
- */
-class System::Impl final
-{
-    public:
-        /*! \cond */
-        ~Impl();
+}      // end namespace gmx
 
-        Impl(Impl &&) noexcept;
-        Impl &operator=(Impl &&source) noexcept;
-        /*! \endcond */
-
-        /*!
-         * \brief Initialize from a work description.
-         *
-         * \param workflow Simulation work to perform.
-         */
-        explicit Impl(std::unique_ptr<gmxapi::Workflow> workflow) noexcept;
-
-        /*!
-         * \brief Launch the configured simulation.
-         *
-         * \param context Runtime execution context in which to run simulation.
-         * \return Ownership of a new simulation session.
-         *
-         * The session is returned as a shared pointer so that the Context can
-         * maintain a weak reference to it via std::weak_ptr.
-         */
-        std::shared_ptr<Session> launch(std::shared_ptr<Context> context);
-
-        Status setRestraint(std::shared_ptr<gmxapi::MDModule> module);
-        std::shared_ptr<MDWorkSpec> getSpec();
-
-    private:
-        //! Description of simulation work.
-        std::shared_ptr<Workflow>           workflow_;
-        // \todo merge Workflow and MDWorkSpec
-        std::shared_ptr<gmxapi::MDWorkSpec> spec_;
-};
-
-}      // end namespace gmxapi
-
-#endif // header guard
+#endif //GMXAPI_GROMACSFWD_H
