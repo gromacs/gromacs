@@ -684,6 +684,20 @@ int cpp_close_file(gmx_cpp_t *handlep)
     return eCPP_OK;
 }
 
+const std::string *cpp_find_define(const gmx_cpp_t   *handlep,
+                                   const std::string &defineName)
+{
+    for (const t_define &define : *(*handlep)->defines)
+    {
+        if (define.name == defineName)
+        {
+            return &define.def;
+        }
+    }
+
+    return nullptr;
+}
+
 void cpp_done(gmx_cpp_t handle)
 {
     int status = cpp_close_file(&handle);

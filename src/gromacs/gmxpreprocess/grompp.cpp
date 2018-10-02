@@ -509,6 +509,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     t_molinfo                  *molinfo = nullptr;
     std::vector<gmx_molblock_t> molblock;
     int                         i, nrmols, nmismatch;
+    bool                        ffParametrizedWithHBondConstraints;
     char                        buf[STRLEN];
     char                        warn_buf[STRLEN];
 
@@ -518,6 +519,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
                        atype, &nrmols, &molinfo, intermolecular_interactions,
                        ir,
                        &molblock,
+                       &ffParametrizedWithHBondConstraints,
                        wi);
 
     sys->molblock.clear();
@@ -550,16 +552,6 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         convert_harmonics(nrmols, molinfo, atype);
     }
 
-    if (ir->eDisre == edrNone)
-    {
-        i = rm_interactions(F_DISRES, nrmols, molinfo);
-        if (i > 0)
-        {
-            set_warning_line(wi, "unknown", -1);
-            sprintf(warn_buf, "disre = no, removed %d distance restraints", i);
-            warning_note(wi, warn_buf);
-        }
-    }
     if (!opts->bOrire)
     {
         i = rm_interactions(F_ORIRES, nrmols, molinfo);
@@ -575,6 +567,21 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     molinfo2mtop(nrmols, molinfo, sys);
 
     gmx_mtop_finalize(sys);
+
+    /* Discourage using the, previously common, setup of applying constraints
+     * to all bonds with force fields that have been parametrized with H-bond
+     * constraints only. Do not print note with large timesteps or vsites.
+     */
+    if (opts->nshake == eshALLBONDS &&
+        ffParametrizedWithHBondConstraints &&
+        ir->delta_t < 0.0026 &&
+        gmx_mtop_ftype_count(sys, F_VSITE3FD) == 0)
+    {
+        set_warning_line(wi, "unknown", -1);
+        warning_note(wi, "You are using constraints on all bonds, whereas the forcefield "
+                     "has been parametrized only with constraints involving hydrogen atoms. "
+                     "We suggest using constraints = h-bonds instead, this will also improve performance.");
+    }
 
     /* COORDINATE file processing */
     if (bVerbose)
