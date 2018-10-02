@@ -32,8 +32,36 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# The `src/api/cpp/include` directory should be mostly empty so that we can use it internally as
-# the public include directory during build and testing. No targets are defined.
-# Linking targets in the build tree should use the gmxapi INTERFACE. Scripts
-# Needing access to a list of pre-installed public headers can look at the
-# GMXAPI_PUBLIC_HEADERS variable in the src/api scope.
+#
+# Test private interface.
+#
+
+gmx_add_gtest_executable(
+    workflow-details-test
+    workflow.cpp
+)
+
+target_link_libraries(workflow-details-test Gromacs::gmxapi gmxapi-test-support gmxapi-detail)
+
+gmx_register_gtest_test(GmxapiInternalInterfaceTests workflow-details-test INTEGRATION_TEST)
+
+set_tests_properties(GmxapiInternalInterfaceTests PROPERTIES
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+#
+# Test with MPI.
+#
+
+gmx_add_gtest_executable(
+    workflow-details-mpi-test MPI
+    workflow.cpp
+)
+
+target_link_libraries(workflow-details-mpi-test Gromacs::gmxapi gmxapi-test-support gmxapi-detail)
+
+# Tests that specify MPI_RANKS will be passed a ``-ntmpi`` command-line option
+# when GMX_THREAD_MPI is true, but the test executables in this directory do not
+# yet understand that command-line option.
+if(NOT GMX_THREAD_MPI)
+    gmx_register_gtest_test(GmxapiInternalsMpiTests workflow-details-mpi-test MPI_RANKS 2 INTEGRATION_TEST)
+endif()
