@@ -53,6 +53,8 @@
 
 #include "gmxapi/version.h"
 
+#include "context-impl.h"
+
 namespace gmxapi
 {
 
@@ -76,74 +78,8 @@ class warn
 //! Work-around for GCC bug 58265
 constexpr bool BUGFREE_NOEXCEPT_STRING = std::is_nothrow_move_assignable<std::string>::value;
 
-/*!
- * \brief Context implementation.
- *
- * \todo Separate interface and implementation. Context should allow external implementations.
- */
-class ContextImpl final : public std::enable_shared_from_this<ContextImpl>
-{
-    public:
-        /*!
-         * \brief Default constructor.
-         *
-         * Don't use this. Use create() to get a shared pointer right away.
-         * Otherwise, shared_from_this() is potentially dangerous.
-         *
-         * \todo Make default constructor private or otherwise reduce brittleness of construction.
-         */
-        ContextImpl();
-
-        /*!
-         * \brief Factory function
-         *
-         * Since this class provides `shared_from_this`, we need to make sure
-         * that it never exists without a shared_ptr owning it.
-         *
-         * If we can confirm `shared_from_this` is no longer necessary, implementation may change.
-         *
-         * \return ownership of a new object
-         */
-        static std::shared_ptr<gmxapi::ContextImpl> create();
-
-        /*!
-         * \brief Copy disallowed because Session state would become ambiguous.
-         *
-         * The API implementation needs to unambiguously determine
-         * which Sessions and Contexts are associated with each other.
-         * \{
-         */
-        ContextImpl(const ContextImpl&) = delete;
-        ContextImpl                  &operator=(const ContextImpl &) = delete;
-        //! \}
-
-        /*!
-         * \brief Objects are trivial to move.
-         *
-         * \{
-         */
-        ContextImpl(ContextImpl &&) noexcept(BUGFREE_NOEXCEPT_STRING)            = default;
-        ContextImpl &operator=(ContextImpl &&) noexcept(BUGFREE_NOEXCEPT_STRING) = default;
-        //! \}        static std::shared_ptr<gmxapi::ContextImpl> create();
-
-        /*!
-         * \brief Retain the ability to find a launched session while it exists.
-         *
-         * The client owns the Session launched by a Context, but it is helpful
-         * for the Context to know if it has an active Session associated with it.
-         */
-        std::weak_ptr<Session>  session_;
-
-        /*!
-         * \brief mdrun command line arguments.
-         *
-         * Store arguments provided by the client and pass them when launching
-         * a simulation runner. This allows client code to access the same
-         * options as are available to mdrun on the command line while the API
-         * evolves.
-         */
-        MDArgs                  mdArgs_;
-};
+ContextImpl::ContextImpl(ContextImpl &&) noexcept(BUGFREE_NOEXCEPT_STRING)            = default;
+ContextImpl &ContextImpl::operator=(ContextImpl &&) noexcept(BUGFREE_NOEXCEPT_STRING) = default;
 
 ContextImpl::ContextImpl()
 {
