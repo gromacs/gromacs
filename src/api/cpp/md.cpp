@@ -34,9 +34,6 @@
  */
 #include "gmxapi/md.h"
 
-#include <cassert>
-
-#include <iostream>
 #include <memory>
 
 #include "gromacs/compat/make_unique.h"
@@ -53,16 +50,90 @@ namespace gmxapi
 
 const char* MDHolder::api_name  = MDHolder_Name;
 
-MDHolder::MDHolder(std::string name)
+class MDWorkSpec::Impl
 {
-    assert(impl_ != nullptr);
-    impl_->name_ = std::move(name);
+    public:
+        static std::unique_ptr<Impl> create();
+
+        std::vector < std::shared_ptr < gmxapi::MDModule>> modules {};
+};
+
+std::unique_ptr<MDWorkSpec::Impl> MDWorkSpec::Impl::create()
+{
+    auto newImpl = gmx::compat::make_unique<MDWorkSpec::Impl>();
+    GMX_ASSERT(newImpl, "Expected non-null implementation object.");
+    GMX_ASSERT(newImpl->modules.empty(), "New modules container should be empty.");
+    return newImpl;
+}
+
+MDWorkSpec::MDWorkSpec() :
+    impl_ {Impl::create()}
+{
+    GMX_ASSERT(impl_, "Expected non-null implementation object.");
+}
+
+void MDWorkSpec::addModule(std::shared_ptr<gmxapi::MDModule> module)
+{
+    GMX_ASSERT(impl_, "Expected non-null implementation object.");
+    impl_->modules.emplace_back(std::move(module));
+}
+
+std::vector < std::shared_ptr < gmxapi::MDModule>> &MDWorkSpec::getModules()
+{
+    GMX_ASSERT(impl_, "Expected non-null implementation object.");
+    return impl_->modules;
+}
+
+MDWorkSpec::~MDWorkSpec() = default;
+
+std::shared_ptr<::gmxapi::MDWorkSpec> MDHolder::getSpec()
+{
+    GMX_ASSERT(impl_, "Expected non-null implementation object.");
+    GMX_ASSERT(impl_->spec_, "Expected non-null work specification.");
+    return impl_->spec_;
+}
+
+std::shared_ptr<const ::gmxapi::MDWorkSpec> MDHolder::getSpec() const
+{
+    GMX_ASSERT(impl_, "Expected non-null implementation object.");
+    GMX_ASSERT(impl_->spec_, "Expected non-null work specification.");
+    return impl_->spec_;
+}
+
+MDHolder::MDHolder() :
+    MDHolder {std::make_shared<MDWorkSpec>()}
+{
+    GMX_ASSERT(impl_, "Expected non-null implementation object.");
+    GMX_ASSERT(impl_->spec_, "Expected non-null work specification.");
+}
+
+MDHolder::MDHolder(std::shared_ptr<MDWorkSpec> spec) :
+    name_ {},
+impl_ {
+    std::make_shared<MDHolder::Impl>(std::move(spec))
+}
+{
+    GMX_ASSERT(impl_, "Expected non-null implementation object.");
+    GMX_ASSERT(impl_->spec_, "Expected non-null work specification.");
+}
+
+MDHolder::Impl::Impl(std::shared_ptr<MDWorkSpec> &&spec) :
+    spec_ {spec}
+{
+    GMX_ASSERT(spec_, "Expected non-null work specification.");
+}
+
+MDHolder::MDHolder(std::string name) :
+    MDHolder {}
+{
+    name_ = std::move(name);
+    GMX_ASSERT(impl_, "Expected non-null implementation object.");
+    GMX_ASSERT(impl_->spec_, "Expected non-null work specification.");
 }
 
 std::string MDHolder::name() const
 {
-    assert(impl_ != nullptr);
-    return impl_->name_;
+    return name_;
 }
 
 
