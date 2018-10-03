@@ -130,9 +130,9 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
     const __global int *restrict atom_types,  /* IN  */
 #endif
     const __global float *restrict shift_vec, /* IN stores float3 values */
-    __constant float* gmx_unused nbfp_climg2d,/* IN  */
-    __constant float* gmx_unused nbfp_comb_climg2d, /* IN  */
-    __constant float* gmx_unused coulomb_tab_climg2d, /* IN  */
+    __constant const float* gmx_unused nbfp_climg2d,/* IN  */
+    __constant const float* gmx_unused nbfp_comb_climg2d, /* IN  */
+    __constant const float* gmx_unused coulomb_tab_climg2d, /* IN  */
     const __global nbnxn_sci_t* pl_sci,       /* IN  */
 #ifndef PRUNE_NBL
     const
@@ -176,7 +176,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
     float  beta        = nbparam->ewald_beta;
     float  ewald_shift = nbparam->sh_ewald;
 #else
-    float  c_rf        = nbparam->c_rf;
+    float gmx_unused c_rf = nbparam->c_rf;
 #endif /* EL_EWALD_ANY */
 #endif /* CALC_ENERGIES */
 
@@ -231,13 +231,13 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #ifdef IATYPE_SHMEM
 #ifndef LJ_COMB
     /* shmem buffer for i atom-type pre-loading */
-    __local int *atib      = (__local int *)(LOCAL_OFFSET);
+    __local int *atib      = (__local int *)(LOCAL_OFFSET); //NOLINT(google-readability-casting)
     #undef LOCAL_OFFSET
-    #define LOCAL_OFFSET atib + NCL_PER_SUPERCL * CL_SIZE
+    #define LOCAL_OFFSET (atib + NCL_PER_SUPERCL * CL_SIZE)
 #else
     __local float2 *ljcpib = (__local float2 *)(LOCAL_OFFSET);
     #undef LOCAL_OFFSET
-    #define LOCAL_OFFSET ljcpib + NCL_PER_SUPERCL * CL_SIZE
+    #define LOCAL_OFFSET (ljcpib + NCL_PER_SUPERCL * CL_SIZE)
 #endif
 #endif
 
