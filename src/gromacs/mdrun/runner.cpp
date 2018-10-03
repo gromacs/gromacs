@@ -919,9 +919,13 @@ int Mdrunner::mdrunner()
                           !thisRankHasDuty(cr, DUTY_PP),
                           inputrec->cutoff_scheme == ecutsVERLET);
 
-    // Enable FP exception but not in Release mode and not for compilers
-    // with known buggy FP exception support (clang with any optimization)
-    // or suspected buggy FP exception support (gcc 7.* with optimization).
+    // Enable FP exception catching, but
+    // * not in Release mode
+    // * only with the Verlet scheme
+    // * not with TPI
+    // * not for compilers with known buggy FP exception support (clang with any optimization), and
+    // * not for compilers with suspected buggy FP exception support (gcc 7.* with optimization).
+    // Disable it otherwise (e.g. if turned on by a test binary)
 #if !defined NDEBUG && \
     !((defined __clang__ || (defined(__GNUC__) && !defined(__ICC) && __GNUC__ == 7)) \
     && defined __OPTIMIZE__)
@@ -934,6 +938,10 @@ int Mdrunner::mdrunner()
     if (bEnableFPE)
     {
         gmx_feenableexcept();
+    }
+    else
+    {
+        gmx_fedisableexcept();
     }
 
     // Build a data structure that expresses which kinds of non-bonded
