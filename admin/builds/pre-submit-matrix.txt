@@ -30,19 +30,19 @@ gcc-4.8 gpuhw=nvidia cuda-7.0 cmake-3.8.1 mpi npme=1 nranks=2 openmp
 # Test thread-MPI with CUDA
 # Test older cmake version (< 3.7)
 # Test SIMD implementation of pair search for GPU code-path
-gcc-7 gpuhw=nvidia gpu_id=1 cuda-9.2 thread-mpi openmp cmake-3.6.1 release-with-assert simd=avx2_256
+gcc-7 gpuhw=nvidia gpu_id=1 cuda-10.0 thread-mpi openmp cmake-3.6.1 release-with-assert simd=avx2_256
 
 # Test with libcxx
 # Test with ThreadSanitizer + OpenMP + SIMD
 clang-7 no-hwloc tsan libcxx-7 openmp cmake-3.12.1 simd=avx2_256
 
-# Test on MacOS (the gcc-6 and/or x11 flags implicitly steer jobs to the OSX agent)
+# Test on MacOS (the gcc-8 and/or x11 flags implicitly steer jobs to the OSX agent)
 # Test X11 build
 # Test gcc in double precision
 # Test without TNG support
 # Test 128-bit SIMD in double precision (to cover SimdInt32 support better)
 # Test fftpack fallback
-gcc-6 double x11 no-tng fftpack simd=sse4.1
+gcc-8 double x11 no-tng fftpack simd=sse4.1
 
 # Test oldest supported cmake
 # Test older clang
@@ -82,13 +82,11 @@ gcc-6 openmp gpuhw=nvidia opencl-1.2 clFFT-2.14 mpi simd=avx2_256
 # Test AMD OpenCL
 # Test external clFFT (for build speed)
 # Test AVX_128_FMA SIMD
-gcc-5 openmp simd=avx_128_fma gpuhw=amd opencl-1.2 clFFT-2.14
+# Test newest gcc at time of release
+gcc-8 openmp simd=avx_128_fma gpuhw=amd opencl-1.2 clFFT-2.14
 
 # TODO
 # Add OpenMP support to ASAN build (but libomp.so in clang-4 reports leaks, so might need a suitable build or suppression)
 # Test hwloc-2 support
 # Test newest supported LTS Ubuntu
 # Test AVX-512 when hardware is available
-# Update to test gcc 8
-# Update to test clang 7
-# Update to test CUDA 10

@@ -691,7 +691,15 @@ check_include_file_cxx(regex     HAVE_CXX11_REGEX)
 
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
-if(NOT GMX_SYSTEM_XDR)
+# Darwin has system XDR, but it uses a three-argument flavour of
+# xdrproc_t that it guarantees will still work if you pass the normal
+# two-argument xdr filters, but gcc 8 warns about the cast necessary
+# to do that, so it's simpler to just use our own XDR library.
+#
+# TODO It would be better to craft a cmake test which fails if such
+# XDR operations cause warnings, and succeeds otherwise, because it is
+# generally preferable to use system libraries where possible.
+if(NOT GMX_SYSTEM_XDR OR CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(GMX_INTERNAL_XDR 1)
 endif()
 
