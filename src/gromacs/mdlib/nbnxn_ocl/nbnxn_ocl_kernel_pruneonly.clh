@@ -106,14 +106,13 @@ __kernel void nbnxn_kernel_prune_rolling_opencl
 
     // TODO pass this value at compile-time as a macro
     const int c_nbnxnGpuClusterpairSplit = 2;
-    const int c_splitClSize              = c_clSize/c_nbnxnGpuClusterpairSplit;
 
     /*! i-cluster interaction mask for a super-cluster with all c_numClPerSupercl=8 bits set */
     const unsigned superClInteractionMask = ((1U << c_numClPerSupercl) - 1U);
 
     #define LOCAL_OFFSET (xib + c_numClPerSupercl * c_clSize)
     /* shmem buffer for i cj pre-loading */
-    CjType cjs;
+    CjType cjs = 0;
 #if USE_CJ_PREFETCH
     cjs = (((__local int *)(LOCAL_OFFSET)) + tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize);
     #undef LOCAL_OFFSET
