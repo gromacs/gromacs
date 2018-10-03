@@ -41,7 +41,7 @@ icc-18 simd=sse2 double mkl release-with-assert
 # Test SSE4.1 SIMD
 # Test single-rank GPU
 # Test clang + OpenMP + CUDA
-clang-4 simd=sse4.1 openmp nranks=1 gpu cuda-8.0 clang_cuda
+clang-4 simd=sse4.1 openmp nranks=1 gpu cuda-10.0 clang_cuda
 
 # Test MPMD PME with library MPI
 # Test clang + OpenMP
