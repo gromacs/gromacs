@@ -33,6 +33,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#define GMX_DOUBLE 0
+
 #include "gromacs/gpu_utils/vectype_ops.clh"
 #include "gromacs/gpu_utils/device_utils.clh"
 #include "gromacs/mdlib/nbnxn_consts.h"
@@ -80,6 +82,11 @@
 #define ONE_SIXTH_F     0.16666667f
 #define ONE_TWELVETH_F  0.08333333f
 
+
+#ifdef __GNUC__
+/* GCC, clang, and some ICC pretending to be GCC */
+#  define gmx_unused __attribute__ ((unused))
+#endif
 
 // Data structures shared between OpenCL device code and OpenCL host code
 // TODO: review, improve
@@ -177,19 +184,17 @@ void preloadCj4(__local int        *sm_cjPreload,
                 const __global int *gm_cj,
                 int                 tidxi,
                 int                 tidxj,
-                bool                iMaskCond)
-
+                bool gmx_unused     iMaskCond)
 {
 #if !USE_CJ_PREFETCH
     return;
 #endif
 
+    /* Pre-load cj into shared memory */
+#if defined _NVIDIA_SOURCE_
     const int c_clSize                   = CL_SIZE;
     const int c_nbnxnGpuClusterpairSplit = 2;
     const int c_splitClSize              = c_clSize/c_nbnxnGpuClusterpairSplit;
-
-    /* Pre-load cj into shared memory */
-#if defined _NVIDIA_SOURCE_
     /* on both warps separately for NVIDIA */
     if ((tidxj == 0 | tidxj == 4) & (tidxi < c_nbnxnGpuJgroupSize))
     {
@@ -209,21 +214,20 @@ void preloadCj4(__local int        *sm_cjPreload,
  * If cj4 preloading is enabled, it loads from the local memory, otherwise from global.
  */
 gmx_opencl_inline
-int loadCj(__local int        *sm_cjPreload,
-           const __global int *gm_cj,
-           int                 jm,
-           int                 tidxi,
-           int                 tidxj)
+int loadCj(__local int gmx_unused        *sm_cjPreload,
+           const __global int gmx_unused *gm_cj,
+           int                            jm,
+           int gmx_unused                 tidxi,
+           int gmx_unused                 tidxj)
 {
+#if USE_CJ_PREFETCH
+#if defined _NVIDIA_SOURCE_
     const int c_clSize                   = CL_SIZE;
     const int c_nbnxnGpuClusterpairSplit = 2;
     const int c_splitClSize              = c_clSize/c_nbnxnGpuClusterpairSplit;
-
-#if USE_CJ_PREFETCH
-#if defined _NVIDIA_SOURCE_
-    int warpLoadOffset = (tidxj & 4) * c_nbnxnGpuJgroupSize/c_splitClSize;
+    int       warpLoadOffset             = (tidxj & 4) * c_nbnxnGpuJgroupSize/c_splitClSize;
 #elif defined _AMD_SOURCE_
-    int warpLoadOffset = 0;
+    int       warpLoadOffset = 0;
 #else
 #error Not supported
 #endif
@@ -317,7 +321,7 @@ void calculate_potential_switch_F(cl_nbparam_params_t *nbparam,
                                   float                inv_r,
                                   float                r2,
                                   float               *F_invr,
-                                  float               *E_lj)
+                                  const float         *E_lj)
 {
     float r, r_switch;
     float sw, dsw;
@@ -378,14 +382,14 @@ void calculate_potential_switch_F_E(cl_nbparam_params_t *nbparam,
  *  geometric combination rule.
  */
 gmx_opencl_inline
-void calculate_lj_ewald_comb_geom_F(__constant float * nbfp_comb_climg2d,
-                                    int                typei,
-                                    int                typej,
-                                    float              r2,
-                                    float              inv_r2,
-                                    float              lje_coeff2,
-                                    float              lje_coeff6_6,
-                                    float             *F_invr)
+void calculate_lj_ewald_comb_geom_F(__constant const float *nbfp_comb_climg2d,
+                                    int                     typei,
+                                    int                     typej,
+                                    float                   r2,
+                                    float                   inv_r2,
+                                    float                   lje_coeff2,
+                                    float                   lje_coeff6_6,
+                                    float                  *F_invr)
 {
     float c6grid, inv_r6_nm, cr2, expmcr2, poly;
 
@@ -405,17 +409,17 @@ void calculate_lj_ewald_comb_geom_F(__constant float * nbfp_comb_climg2d,
  *  geometric combination rule.
  */
 gmx_opencl_inline
-void calculate_lj_ewald_comb_geom_F_E(__constant float    *nbfp_comb_climg2d,
-                                      cl_nbparam_params_t *nbparam,
-                                      int                  typei,
-                                      int                  typej,
-                                      float                r2,
-                                      float                inv_r2,
-                                      float                lje_coeff2,
-                                      float                lje_coeff6_6,
-                                      float                int_bit,
-                                      float               *F_invr,
-                                      float               *E_lj)
+void calculate_lj_ewald_comb_geom_F_E(__constant const float *nbfp_comb_climg2d,
+                                      cl_nbparam_params_t    *nbparam,
+                                      int                     typei,
+                                      int                     typej,
+                                      float                   r2,
+                                      float                   inv_r2,
+                                      float                   lje_coeff2,
+                                      float                   lje_coeff6_6,
+                                      float                   int_bit,
+                                      float                  *F_invr,
+                                      float                  *E_lj)
 {
     float c6grid, inv_r6_nm, cr2, expmcr2, poly, sh_mask;
 
@@ -441,18 +445,18 @@ void calculate_lj_ewald_comb_geom_F_E(__constant float    *nbfp_comb_climg2d,
  *  of this is pretty small and LB on the CPU is anyway very slow.
  */
 gmx_opencl_inline
-void calculate_lj_ewald_comb_LB_F_E(__constant float    *nbfp_comb_climg2d,
-                                    cl_nbparam_params_t *nbparam,
-                                    int                  typei,
-                                    int                  typej,
-                                    float                r2,
-                                    float                inv_r2,
-                                    float                lje_coeff2,
-                                    float                lje_coeff6_6,
-                                    float                int_bit,
-                                    bool                 with_E_lj,
-                                    float               *F_invr,
-                                    float               *E_lj)
+void calculate_lj_ewald_comb_LB_F_E(__constant const float *nbfp_comb_climg2d,
+                                    cl_nbparam_params_t    *nbparam,
+                                    int                     typei,
+                                    int                     typej,
+                                    float                   r2,
+                                    float                   inv_r2,
+                                    float                   lje_coeff2,
+                                    float                   lje_coeff6_6,
+                                    float                   int_bit,
+                                    bool                    with_E_lj,
+                                    float                  *F_invr,
+                                    float                  *E_lj)
 {
     float c6grid, inv_r6_nm, cr2, expmcr2, poly;
     float sigma, sigma2, epsilon;
@@ -488,9 +492,9 @@ void calculate_lj_ewald_comb_LB_F_E(__constant float    *nbfp_comb_climg2d,
  *  Original idea: from the OpenMM project
  */
 gmx_opencl_inline float
-interpolate_coulomb_force_r(__constant float *coulomb_tab_climg2d,
-                            float             r,
-                            float             scale)
+interpolate_coulomb_force_r(__constant const float *coulomb_tab_climg2d,
+                            float                   r,
+                            float                   scale)
 {
     float   normalized = scale * r;
     int     index      = (int) normalized;
@@ -783,10 +787,9 @@ void reduce_energy_pow2(volatile __local float  *buf,
                         volatile __global float *e_el,
                         unsigned int             tidx)
 {
-    int     i, j;
-    float   e1, e2;
+    int          j;
 
-    i = WARP_SIZE/2;
+    unsigned int i = WARP_SIZE/2;
 
     /* Can't just use i as loop variable because than nvcc refuses to unroll. */
     for (j = WARP_SIZE_LOG2 - 1; j > 0; j--)
@@ -802,8 +805,8 @@ void reduce_energy_pow2(volatile __local float  *buf,
     /* last reduction step, writing to global mem */
     if (tidx == 0)
     {
-        e1 = buf[              tidx] + buf[              tidx + i];
-        e2 = buf[FBUF_STRIDE + tidx] + buf[FBUF_STRIDE + tidx + i];
+        float e1 = buf[              tidx] + buf[              tidx + i];
+        float e2 = buf[FBUF_STRIDE + tidx] + buf[FBUF_STRIDE + tidx + i];
 
         atomicAdd_g_f(e_lj, e1);
         atomicAdd_g_f(e_el, e2);
