@@ -35,8 +35,8 @@
 
 #define GMX_DOUBLE 0
 
-#include "gromacs/gpu_utils/vectype_ops.clh"
 #include "gromacs/gpu_utils/device_utils.clh"
+#include "gromacs/gpu_utils/vectype_ops.clh"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/pbcutil/ishift.h"
 
