@@ -919,23 +919,6 @@ int Mdrunner::mdrunner()
                           !thisRankHasDuty(cr, DUTY_PP),
                           inputrec->cutoff_scheme == ecutsVERLET);
 
-    // Enable FP exception but not in Release mode and not for compilers
-    // with known buggy FP exception support (clang with any optimization)
-    // or suspected buggy FP exception support (gcc 7.* with optimization).
-#if !defined NDEBUG && \
-    !((defined __clang__ || (defined(__GNUC__) && !defined(__ICC) && __GNUC__ == 7)) \
-    && defined __OPTIMIZE__)
-    const bool bEnableFPE = !EI_TPI(inputrec->eI) &&
-        inputrec->cutoff_scheme == ecutsVERLET;
-#else
-    const bool bEnableFPE = false;
-#endif
-    //FIXME - reconcile with gmx_feenableexcept() call from CommandLineModuleManager::run()
-    if (bEnableFPE)
-    {
-        gmx_feenableexcept();
-    }
-
     // Build a data structure that expresses which kinds of non-bonded
     // task are handled by this rank.
     //
@@ -1440,13 +1423,6 @@ int Mdrunner::mdrunner()
     {
         gmx_log_close(fplog);
         fplog = nullptr;
-    }
-
-    /* Reset FPEs (important for unit tests) by disabling them. Assumes no
-     * exceptions were enabled before function was called. */
-    if (bEnableFPE)
-    {
-        gmx_fedisableexcept();
     }
 
     rc = static_cast<int>(gmx_get_stop_condition());

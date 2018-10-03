@@ -50,6 +50,8 @@
 
 #include <algorithm>
 
+#include <cfenv>
+
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme.h"
@@ -630,6 +632,13 @@ Integrator::do_tpi()
              * out of the box. */
             /* Make do_force do a single node force calculation */
             cr->nnodes = 1;
+
+            // TPI might place a particle so close that the potential
+            // is infinite. Since this is intended to happen, we
+            // temporarily suppress any exceptions that the processor
+            // might raise, then restore the old behaviour.
+            std::fenv_t floatingPointEnvironment;
+            std::feholdexcept(&floatingPointEnvironment);
             do_force(fplog, cr, ms, inputrec, nullptr, nullptr,
                      step, nrnb, wcycle, top, &top_global->groups,
                      state_global->box, state_global->x, &state_global->hist,
@@ -641,6 +650,9 @@ Integrator::do_tpi()
                      (bStateChanged ? GMX_FORCE_STATECHANGED : 0),
                      DdOpenBalanceRegionBeforeForceComputation::no,
                      DdCloseBalanceRegionAfterForceComputation::no);
+            std::feclearexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+            std::feupdateenv(&floatingPointEnvironment);
+
             cr->nnodes    = nnodes;
             bStateChanged = FALSE;
             bNS           = FALSE;
