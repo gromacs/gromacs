@@ -32,8 +32,6 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#define __IN_OPENCL_KERNEL__
-
 /* Auxiliary kernels */
 __kernel void
 memset_f3(__global float3 *buf, const float value, const unsigned int Nbuf)
