@@ -919,19 +919,33 @@ int Mdrunner::mdrunner()
                           !thisRankHasDuty(cr, DUTY_PP),
                           inputrec->cutoff_scheme == ecutsVERLET);
 
-    // Enable FP exception but not in Release mode and not for compilers
-    // with known buggy FP exception support (clang with any optimization)
-    // or suspected buggy FP exception support (gcc 7.* with optimization).
-#if !defined NDEBUG && \
-    !((defined __clang__ || (defined(__GNUC__) && !defined(__ICC) && __GNUC__ == 7)) \
-    && defined __OPTIMIZE__)
-    const bool bEnableFPE = !EI_TPI(inputrec->eI) &&
-        inputrec->cutoff_scheme == ecutsVERLET;
+    // Allow FP exception catching, but
+    // * not in Release mode
+    // * only with the Verlet scheme
+    // * not with TPI
+    // * not for compilers with known buggy FP exception support (clang with any optimization), and
+    // * not for compilers with suspected buggy FP exception support (gcc 7.* with optimization).
+    // Otherwise, explicitly enable it when not in release mode.
+#define FE_EXCEPTION_BUGGY ((defined __clang__ || (defined(__GNUC__) && !defined(__ICC) && __GNUC__ == 7)) \
+                            && defined __OPTIMIZE__)
+#if FE_EXCEPTION_BUGGY
+    const bool bDisableFPE = true;
+    const bool bEnableFPE  = false;
 #else
-    const bool bEnableFPE = false;
+    const bool bDisableFPE = (EI_TPI(inputrec->eI) ||
+                              inputrec->cutoff_scheme != ecutsVERLET);
+#ifdef NDEBUG
+    const bool bEnableFPE  = false;
+#else
+    const bool bEnableFPE  = !bDisableFPE;
 #endif
-    //FIXME - reconcile with gmx_feenableexcept() call from CommandLineModuleManager::run()
-    if (bEnableFPE)
+#endif  // FE_EXCEPTION_BUGGY
+       //FIXME - reconcile with gmx_feenableexcept() call from CommandLineModuleManager::run()
+    if (bDisableFPE)
+    {
+        gmx_fedisableexcept();
+    }
+    else if (bEnableFPE)
     {
         gmx_feenableexcept();
     }
