@@ -111,6 +111,9 @@
 #include "gromacs/pulling/output.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
+#include "gromacs/restraint/manager.h"
+#include "gromacs/restraint/restraintmdmodule.h"
+#include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/swap/swapcoords.h"
 #include "gromacs/taskassignment/decidegpuusage.h"
 #include "gromacs/taskassignment/resourcedivision.h"
@@ -158,6 +161,13 @@ static void threadMpiMdrunnerAccessBarrier()
 Mdrunner Mdrunner::cloneOnSpawnedThread() const
 {
     auto newRunner = Mdrunner();
+
+    // All runners in the same process share a restraint manager resource because it is
+    // part of the interface to the client code, which is associated only with the
+    // original thread. Handles to the same resources can be obtained by copy.
+    {
+        newRunner.restraintManager_ = compat::make_unique<RestraintManager>(*restraintManager_);
+    }
 
     // Copy original cr pointer before master thread can pass the thread barrier
     newRunner.cr  = reinitialize_commrec_for_this_thread(cr);
@@ -684,6 +694,18 @@ int Mdrunner::mdrunner()
         }
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
+    // Build restraints.
+    // TODO: hide restraint implementation details from Mdrunner.
+    // There is nothing unique about restraints at this point as far as the
+    // Mdrunner is concerned. The Mdrunner should just be getting a sequence of
+    // factory functions from the SimulationContext on which to call mdModules->add().
+    for (auto && restraint : restraintManager_->getRestraints())
+    {
+        auto module = RestraintMDModule::create(restraint,
+                                                restraint->sites());
+        mdModules->add(std::move(module));
+    }
 
     // TODO: Error handling
     mdModules->assignOptionsToModules(*inputrec->params, nullptr);
@@ -1463,7 +1485,33 @@ int Mdrunner::mdrunner()
     return rc;
 }
 
-Mdrunner::~Mdrunner() = default;
+Mdrunner::~Mdrunner()
+{
+    // Clean up of the Manager.
+    // This will end up getting called on every thread-MPI rank, which is unnecessary,
+    // but okay as long as threads synchronize some time before adding or accessing
+    // a new set of restraints.
+    if (restraintManager_)
+    {
+        restraintManager_->clear();
+        GMX_ASSERT(restraintManager_->countRestraints() == 0,
+                   "restraints added during runner life time should be cleared at runner destruction.");
+    }
+};
+
+//void Mdrunner::addPotential(std::shared_ptr<gmx::IRestraintPotential> puller,
+//                            std::string                               name)
+//{
+//    GMX_ASSERT(restraintManager_, "Mdrunner must have a restraint manager.");
+//    // Not sure if this should be logged through the md logger or something else,
+//    // but it is helpful to have some sort of INFO level message sent somewhere.
+//    //    std::cout << "Registering restraint named " << name << std::endl;
+//
+//    // When multiple restraints are used, it may be wasteful to register them separately.
+//    // Maybe instead register an entire Restraint Manager as a force provider.
+//    restraintManager_->addToSpec(std::move(puller),
+//                                 std::move(name));
+//}
 
 Mdrunner::Mdrunner(Mdrunner &&) noexcept = default;
 
@@ -1668,6 +1716,8 @@ Mdrunner Mdrunner::BuilderImplementation::build()
     {
         GMX_THROW(gmx::APIError("MdrunnerBuilder::addElectrostatics() is required before build()"));
     }
+
+    newRunner.restraintManager_ = compat::make_unique<gmx::RestraintManager>();
 
     return newRunner;
 }
