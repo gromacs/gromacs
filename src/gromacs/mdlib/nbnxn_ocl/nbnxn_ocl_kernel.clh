@@ -116,24 +116,24 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #endif
 (
 #ifndef LJ_COMB
-    int ntypes,                                       /* IN  */
+    int ntypes,                                             /* IN  */
 #endif
-    cl_nbparam_params_t nbparam_params,               /* IN  */
-    const __global float4 *restrict xq,               /* IN  */
-    __global float *restrict f,                       /* OUT stores float3 values */
-    __global float *restrict gmx_unused e_lj,         /* OUT */
-    __global float *restrict gmx_unused e_el,         /* OUT */
-    __global float *restrict fshift,                  /* OUT stores float3 values */
+    cl_nbparam_params_t nbparam_params,                     /* IN  */
+    const __global float4 *restrict xq,                     /* IN  */
+    __global float *restrict f,                             /* OUT stores float3 values */
+    __global float *restrict gmx_unused e_lj,               /* OUT */
+    __global float *restrict gmx_unused e_el,               /* OUT */
+    __global float *restrict fshift,                        /* OUT stores float3 values */
 #ifdef LJ_COMB
-    const __global float2 *restrict lj_comb,          /* IN stores float2 values */
+    const __global float2 *restrict lj_comb,                /* IN stores float2 values */
 #else
-    const __global int *restrict atom_types,          /* IN  */
+    const __global int *restrict atom_types,                /* IN  */
 #endif
-    const __global float *restrict shift_vec,         /* IN stores float3 values */
-    __constant float* gmx_unused nbfp_climg2d,        /* IN  */
-    __constant float* gmx_unused nbfp_comb_climg2d,   /* IN  */
-    __constant float* gmx_unused coulomb_tab_climg2d, /* IN  */
-    const __global nbnxn_sci_t* pl_sci,               /* IN  */
+    const __global float *restrict shift_vec,               /* IN stores float3 values */
+    __constant const float* gmx_unused nbfp_climg2d,        /* IN  */
+    __constant const float* gmx_unused nbfp_comb_climg2d,   /* IN  */
+    __constant const float* gmx_unused coulomb_tab_climg2d, /* IN  */
+    const __global nbnxn_sci_t* pl_sci,                     /* IN  */
 #ifndef PRUNE_NBL
     const
 #endif
@@ -173,10 +173,10 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 
 #ifdef CALC_ENERGIES
 #ifdef EL_EWALD_ANY
-    float  beta        = nbparam->ewald_beta;
-    float  ewald_shift = nbparam->sh_ewald;
+    float            beta        = nbparam->ewald_beta;
+    float            ewald_shift = nbparam->sh_ewald;
 #else
-    float  c_rf        = nbparam->c_rf;
+    float gmx_unused c_rf = nbparam->c_rf;
 #endif /* EL_EWALD_ANY */
 #endif /* CALC_ENERGIES */
 
@@ -231,13 +231,13 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #ifdef IATYPE_SHMEM
 #ifndef LJ_COMB
     /* shmem buffer for i atom-type pre-loading */
-    __local int *atib      = (__local int *)(LOCAL_OFFSET);
+    __local int *atib      = (__local int *)(LOCAL_OFFSET); //NOLINT(google-readability-casting)
     #undef LOCAL_OFFSET
-    #define LOCAL_OFFSET atib + NCL_PER_SUPERCL * CL_SIZE
+    #define LOCAL_OFFSET (atib + NCL_PER_SUPERCL * CL_SIZE)
 #else
     __local float2 *ljcpib = (__local float2 *)(LOCAL_OFFSET);
     #undef LOCAL_OFFSET
-    #define LOCAL_OFFSET ljcpib + NCL_PER_SUPERCL * CL_SIZE
+    #define LOCAL_OFFSET (ljcpib + NCL_PER_SUPERCL * CL_SIZE)
 #endif
 #endif
 
