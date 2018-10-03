@@ -27,7 +27,7 @@ gcc-4.8 mpi mdrun-only release cmake-3.8.1
 
 # Test static linking with gcc
 # Test newest gcc at time of release
-gcc-7 static release
+gcc-8 static release
 
 # Test double precision
 # Test with newest supported Intel compiler
