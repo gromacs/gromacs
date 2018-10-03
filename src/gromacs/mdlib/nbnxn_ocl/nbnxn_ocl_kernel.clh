@@ -110,24 +110,24 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #endif
 (
 #ifndef LJ_COMB
-    int ntypes,                                       /* IN  */
+    int ntypes,                                             /* IN  */
 #endif
-    cl_nbparam_params_t nbparam_params,               /* IN  */
-    const __global float4 *restrict xq,               /* IN  */
-    __global float *restrict f,                       /* OUT stores float3 values */
-    __global float *restrict gmx_unused e_lj,         /* OUT */
-    __global float *restrict gmx_unused e_el,         /* OUT */
-    __global float *restrict fshift,                  /* OUT stores float3 values */
+    cl_nbparam_params_t nbparam_params,                     /* IN  */
+    const __global float4 *restrict xq,                     /* IN  */
+    __global float *restrict f,                             /* OUT stores float3 values */
+    __global float *restrict gmx_unused e_lj,               /* OUT */
+    __global float *restrict gmx_unused e_el,               /* OUT */
+    __global float *restrict fshift,                        /* OUT stores float3 values */
 #ifdef LJ_COMB
-    const __global float2 *restrict lj_comb,          /* IN stores float2 values */
+    const __global float2 *restrict lj_comb,                /* IN stores float2 values */
 #else
-    const __global int *restrict atom_types,          /* IN  */
+    const __global int *restrict atom_types,                /* IN  */
 #endif
-    const __global float *restrict shift_vec,         /* IN stores float3 values */
-    __constant float* gmx_unused nbfp_climg2d,        /* IN  */
-    __constant float* gmx_unused nbfp_comb_climg2d,   /* IN  */
-    __constant float* gmx_unused coulomb_tab_climg2d, /* IN  */
-    const __global nbnxn_sci_t* pl_sci,               /* IN  */
+    const __global float *restrict shift_vec,               /* IN stores float3 values */
+    __constant const float* gmx_unused nbfp_climg2d,        /* IN  */
+    __constant const float* gmx_unused nbfp_comb_climg2d,   /* IN  */
+    __constant const float* gmx_unused coulomb_tab_climg2d, /* IN  */
+    const __global nbnxn_sci_t* pl_sci,                     /* IN  */
 #ifndef PRUNE_NBL
     const
 #endif
@@ -160,10 +160,10 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 
 #ifdef CALC_ENERGIES
 #ifdef EL_EWALD_ANY
-    const float  beta        = nbparam->ewald_beta;
-    const float  ewald_shift = nbparam->sh_ewald;
+    const float            beta        = nbparam->ewald_beta;
+    const float            ewald_shift = nbparam->sh_ewald;
 #else
-    const float  c_rf        = nbparam->c_rf;
+    const float gmx_unused c_rf        = nbparam->c_rf;
 #endif /* EL_EWALD_ANY */
 #endif /* CALC_ENERGIES */
 
@@ -189,13 +189,13 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #ifdef IATYPE_SHMEM
 #ifndef LJ_COMB
     /* shmem buffer for i atom-type pre-loading */
-    __local int *atib      = (__local int *)(LOCAL_OFFSET);
+    __local int *atib      = (__local int *)(LOCAL_OFFSET); //NOLINT(google-readability-casting)
     #undef LOCAL_OFFSET
-    #define LOCAL_OFFSET atib + NCL_PER_SUPERCL * CL_SIZE
+    #define LOCAL_OFFSET (atib + NCL_PER_SUPERCL * CL_SIZE)
 #else
     __local float2 *ljcpib = (__local float2 *)(LOCAL_OFFSET);
     #undef LOCAL_OFFSET
-    #define LOCAL_OFFSET ljcpib + NCL_PER_SUPERCL * CL_SIZE
+    #define LOCAL_OFFSET (ljcpib + NCL_PER_SUPERCL * CL_SIZE)
 #endif
 #endif
 
@@ -210,9 +210,9 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #if !USE_SUBGROUP_ANY
     /* Local buffer used to implement __any warp vote function from CUDA.
        volatile is used to avoid compiler optimizations for AMD builds. */
-    volatile __local uint *warp_any = (__local uint*)(LOCAL_OFFSET);
+    volatile __local uint            *warp_any = (__local uint*)(LOCAL_OFFSET);
 #else
-    __local uint          *warp_any = 0;
+    __local uint          gmx_unused *warp_any = 0;
 #endif
 #undef LOCAL_OFFSET
 
@@ -337,9 +337,9 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                     const int    aj = cj * CL_SIZE + tidxj;
 
                     /* load j atom data */
-                    const float4 xqbuf = xq[aj];
-                    const float3 xj    = (float3)(xqbuf.xyz);
-                    const float  qj_f  = xqbuf.w;
+                    const float4 xjqbuf = xq[aj];
+                    const float3 xj     = (float3)(xjqbuf.xyz);
+                    const float  qj_f   = xjqbuf.w;
 #ifndef LJ_COMB
                     const int    typej   = atom_types[aj];
 #else
@@ -355,12 +355,11 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                     {
                         if (imask & mask_ji)
                         {
-                            const int ci = sci * NCL_PER_SUPERCL + i; /* i cluster index */
-                            const int ai = ci * CL_SIZE + tidxi;      /* i atom index */
+                            const int gmx_unused ci = sci * NCL_PER_SUPERCL + i; /* i cluster index */
 
                             /* all threads load an atom from i cluster ci into shmem! */
-                            const float4 xqbuf   = xqib[i * CL_SIZE + tidxi];
-                            const float3 xi      = (float3)(xqbuf.xyz);
+                            const float4 xiqbuf   = xqib[i * CL_SIZE + tidxi];
+                            const float3 xi       = (float3)(xiqbuf.xyz);
 
                             /* distance between i and j atoms */
                             const float3 rv      = xi - xj;
@@ -383,14 +382,16 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #endif
                             {
                                 /* load the rest of the i-atom parameters */
-                                const float qi = xqbuf.w;
+                                const float qi = xiqbuf.w;
 #ifdef IATYPE_SHMEM
 #ifndef LJ_COMB
                                 const int    typei   = atib[i * CL_SIZE + tidxi];
 #else
                                 const float2 ljcp_i  = ljcpib[i * CL_SIZE + tidxi];
 #endif
-#else                           /* IATYPE_SHMEM */
+#else                                                                /* IATYPE_SHMEM */
+                                const int ai = ci * CL_SIZE + tidxi; /* i atom index */
+
 #ifndef LJ_COMB
                                 const int    typei   = atom_types[ai];
 #else
@@ -407,10 +408,10 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                                 const float c12 = ljcp_i.y * ljcp_j.y;
 #else
                                 /* LJ 2^(1/6)*sigma and 12*epsilon */
-                                float       c6, c12;
                                 const float sigma   = ljcp_i.x + ljcp_j.x;
                                 const float epsilon = ljcp_i.y * ljcp_j.y;
 #if defined CALC_ENERGIES || defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
+                                float       c6, c12;
                                 convert_sigma_epsilon_to_c6_c12(sigma, epsilon, &c6, &c12);
 #endif
 #endif                          /* LJ_COMB_GEOM */
