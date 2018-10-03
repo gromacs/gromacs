@@ -121,8 +121,8 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
     cl_nbparam_params_t nbparam_params,       /* IN  */
     const __global float4 *restrict xq,       /* IN  */
     __global float *restrict f,               /* OUT stores float3 values */
-    __global float *restrict e_lj,            /* OUT */
-    __global float *restrict e_el,            /* OUT */
+    __global float *restrict gmx_unused e_lj, /* OUT */
+    __global float *restrict gmx_unused e_el, /* OUT */
     __global float *restrict fshift,          /* OUT stores float3 values */
 #ifdef LJ_COMB
     const __global float2 *restrict lj_comb,  /* IN stores float2 values */
@@ -130,9 +130,9 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
     const __global int *restrict atom_types,  /* IN  */
 #endif
     const __global float *restrict shift_vec, /* IN stores float3 values */
-    __constant float* nbfp_climg2d,           /* IN  */
-    __constant float* nbfp_comb_climg2d,      /* IN  */
-    __constant float* coulomb_tab_climg2d,    /* IN  */
+    __constant float* gmx_unused nbfp_climg2d,/* IN  */
+    __constant float* gmx_unused nbfp_comb_climg2d, /* IN  */
+    __constant float* gmx_unused coulomb_tab_climg2d, /* IN  */
     const __global nbnxn_sci_t* pl_sci,       /* IN  */
 #ifndef PRUNE_NBL
     const
@@ -220,12 +220,12 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
     const unsigned superClInteractionMask = ((1U << NCL_PER_SUPERCL) - 1U);
 
 #define LOCAL_OFFSET (xqib + NCL_PER_SUPERCL * CL_SIZE)
-    __local int *cjs;
+    __local int *cjs = 0;
 #if USE_CJ_PREFETCH
     /* shmem buffer for cj, for both warps separately */
     cjs = (__local int *)(LOCAL_OFFSET);
     #undef LOCAL_OFFSET
-    #define LOCAL_OFFSET cjs + 2 * c_nbnxnGpuJgroupSize
+    #define LOCAL_OFFSET (cjs + 2 * c_nbnxnGpuJgroupSize)
 #endif
 
 #ifdef IATYPE_SHMEM
