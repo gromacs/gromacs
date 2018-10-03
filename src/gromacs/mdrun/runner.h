@@ -62,10 +62,15 @@ struct gmx_output_env_t;
 struct ReplicaExchangeParameters;
 struct t_commrec;
 struct t_fileio;
+class PotentialContainer; // defined in pulling/pullpotential.h
 
 namespace gmx
 {
 
+// Todo: move to forward declaration headers...
+class MDModules;
+class IRestraintPotential; // defined in restraint/restraintpotential.h
+class RestraintManager;
 class SimulationContext;
 
 //! Work-around for GCC bug 58265
@@ -146,6 +151,20 @@ class Mdrunner
          * is not initialized until some time during this call...
          */
         int mdrunner();
+
+        /*!
+         * \brief Add a potential to be evaluated during MD integration.
+         *
+         * \param restraint MD restraint potential to apply
+         * \param name User-friendly plain-text name to uniquely identify the puller
+         *
+         * This implementation attaches an object providing the gmx::IRestraintPotential
+         * interface.
+         * \todo Mdrunner should fetch such resources from the SimulationContext
+         * rather than offering this public interface.
+         */
+        void addPotential(std::shared_ptr<IRestraintPotential> restraint,
+                          std::string                          name);
 
         //! Called when thread-MPI spawns threads.
         t_commrec *spawnThreads(int numThreadsToLaunch) const;
@@ -229,6 +248,14 @@ class Mdrunner
 
         //! \brief Non-owning handle to multi-simulation handler.
         gmx_multisim_t                         *ms = nullptr;
+
+        /*!
+         * \brief Handle to restraints manager for the current process.
+         *
+         * \internal
+         * Use opaque pointer for this implementation detail.
+         */
+        std::unique_ptr<RestraintManager>     restraintManager_;
 };
 
 /*! \libinternal
