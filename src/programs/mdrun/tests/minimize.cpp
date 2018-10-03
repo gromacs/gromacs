@@ -104,7 +104,7 @@ std::unordered_map<std::string, FloatingPointTolerance> potentialEnergyTolerance
      },
      {
          "alanine_vsite_vacuo",
-         relativeToleranceAsPrecisionDependentUlp(-160, 100, 400)
+         relativeToleranceAsPrecisionDependentUlp(-160, 150, 400)
      },
      {
          "glycine_no_constraints_vacuo",
