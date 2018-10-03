@@ -62,8 +62,10 @@ TEST(NotNullConstruction, Works)
             std::make_shared<int>(10));
 
 #ifndef NDEBUG
+#ifndef __INTEL_COMPILER
     int *nullPointer = nullptr;
     EXPECT_DEATH_IF_SUPPORTED(not_null<int *> invalidNullPointer(nullPointer), "");
+#endif
 #endif
 
     int  value        = 20;
