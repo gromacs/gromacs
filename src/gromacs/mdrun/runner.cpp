@@ -919,14 +919,14 @@ int Mdrunner::mdrunner()
                           !thisRankHasDuty(cr, DUTY_PP),
                           inputrec->cutoff_scheme == ecutsVERLET);
 
-    // Enable FP exception but not in Release mode and not for compilers
-    // with known buggy FP exception support (clang with any optimization)
-    // or suspected buggy FP exception support (gcc 7.* with optimization).
+    // Enable FP exception detection for the Verlet scheme, but not in
+    // Release mode and not for compilers with known buggy FP
+    // exception support (clang with any optimization) or suspected
+    // buggy FP exception support (gcc 7.* with optimization).
 #if !defined NDEBUG && \
     !((defined __clang__ || (defined(__GNUC__) && !defined(__ICC) && __GNUC__ == 7)) \
     && defined __OPTIMIZE__)
-    const bool bEnableFPE = !EI_TPI(inputrec->eI) &&
-        inputrec->cutoff_scheme == ecutsVERLET;
+    const bool bEnableFPE = inputrec->cutoff_scheme == ecutsVERLET;
 #else
     const bool bEnableFPE = false;
 #endif
