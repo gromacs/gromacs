@@ -513,7 +513,6 @@ str_to_int64_t(const char *str, char **endptr)
 #endif
 }
 
-<<<<<<< HEAD
 char *gmx_strsep(char **stringp, const char *delim)
 {
     char *ret;
@@ -551,10 +550,7 @@ char *gmx_strsep(char **stringp, const char *delim)
     return ret;
 }
 
-char *gmx_step_str(gmx_int64_t i, char *buf)
-=======
 char *gmx_step_str(int64_t i, char *buf)
->>>>>>> master
 {
     sprintf(buf, "%" PRId64, i);
     return buf;

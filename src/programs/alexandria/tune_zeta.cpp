@@ -53,6 +53,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "alex_modules.h"
 #include "gentop_core.h"
 #include "getmdlogger.h"
 #include "gmx_simple_comm.h"
@@ -734,7 +735,6 @@ int alex_tune_zeta(int argc, char *argv[])
             alexandria_poldata_eemprops_table(tp, true, false, opt.poldata());
             gmx_ffclose(tp);
         }
-        done_filenms(NFILE, fnm);
     }
     return 0;
 }

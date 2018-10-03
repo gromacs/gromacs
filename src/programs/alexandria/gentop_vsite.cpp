@@ -379,7 +379,7 @@ static void calc_vsite2parm(t_atoms                   *atoms,
     }
     /* Set information in atoms structure for the new mass-particles */
     memset(&aml, 0, sizeof(aml));
-    mt = add_atomtype(atype, symtab, &aml, ml, &nbml, -1, 0, 0, 0, 0, 0, 0);
+    mt = add_atomtype(atype, symtab, &aml, ml, &nbml, -1, 0);
     for (i = natoms; (i <= natoms); i++)
     {
         atoms->atom[i].m          = mV;
@@ -822,7 +822,7 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
                     newatoms->atom[iat + j].atomnumber    = atoms->atom[i].atomnumber;
                     sprintf(buf, "%sL%d", get_atomtype_name(atoms->atom[i].type, atype), j);
                     newname[iat + j] = strdup(buf);
-                    auto vsite                            = add_atomtype(atype, symtab, vsite_atom, buf, &vs, 0, 0, 0, 0, 0, 0, 0);
+                    auto vsite                            = add_atomtype(atype, symtab, vsite_atom, buf, &vs, -1, 0);
                     newatoms->atom[iat + j].type          = vsite;
                     newatoms->atom[iat + j].typeB         = vsite;
                     newatoms->atomtype[iat + j]           = put_symtab(symtab, buf);

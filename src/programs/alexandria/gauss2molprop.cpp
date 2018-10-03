@@ -50,6 +50,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/real.h"
 
+#include "alex_modules.h"
 #include "gauss_io.h"
 #include "molprop.h"
 #include "molprop_util.h"
@@ -109,8 +110,6 @@ int alex_gauss2molprop(int argc, char *argv[])
     gmx_atomprop_t                   aps;
     alexandria::Poldata              pd;
     std::vector<alexandria::MolProp> mp;
-    char **fns = nullptr;
-    int    i, nfn;
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa, 
                            asize(desc), desc, 0, nullptr, &oenv))
@@ -128,16 +127,17 @@ int alex_gauss2molprop(int argc, char *argv[])
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-    nfn = ftp2fns(&fns, efLOG, NFILE, fnm);
-    for (i = 0; (i < nfn); i++)
+    gmx::ArrayRef<const std::string> fns = ftp2fns(efLOG, NFILE, fnm);    
+    for (auto &i : fns)
     {
         alexandria::MolProp mmm;
-        ReadGauss(fns[i], mmm, molnm, iupac, conf, basis,
+        ReadGauss(i.c_str(), mmm, molnm, iupac, conf, basis,
                   maxpot, nsymm, pd.getForceField().c_str(), jobtype);
         mp.push_back(std::move(mmm));
     }
 
-    printf("Succesfully read %d molprops from %d Gaussian files.\n", (int)mp.size(), nfn);
+    printf("Succesfully read %d molprops from %d Gaussian files.\n", 
+           static_cast<int>(mp.size()), static_cast<int>(fns.size()));
     alexandria::MolSelect gms;
     MolPropSort(mp, MPSA_MOLNAME, nullptr, gms);
     merge_doubles(mp, nullptr, TRUE);

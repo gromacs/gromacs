@@ -1999,11 +1999,7 @@ int pdb2gmx::run()
 
     FILE              *top_file = gmx_fio_fopen(topologyFile_.c_str(), "w");
 
-<<<<<<< HEAD
-    print_top_header(top_file, top_fn, FALSE, ffdir, mHmult, "");
-=======
-    print_top_header(top_file, topologyFile_.c_str(), FALSE, ffdir_, mHmult_);
->>>>>>> master
+    print_top_header(top_file, topologyFile_.c_str(), FALSE, ffdir_, mHmult_, "");
 
     t_chain *cc;
     rvec    *x;
@@ -2292,11 +2288,7 @@ int pdb2gmx::run()
 
         if (bITP_)
         {
-<<<<<<< HEAD
-            print_top_comment(itp_file, itp_fn, ffdir, TRUE, "");
-=======
-            print_top_comment(itp_file_, itp_fn.c_str(), ffdir_, true);
->>>>>>> master
+            print_top_comment(itp_file_, itp_fn.c_str(), ffdir_, true, "");
         }
 
         FILE *top_file2;

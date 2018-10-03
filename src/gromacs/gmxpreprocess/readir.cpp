@@ -1727,8 +1727,6 @@ static bool couple_lambda_has_vdw_on(int couple_lambda_value)
             couple_lambda_value == ecouplamVDWQ);
 }
 
-<<<<<<< HEAD
-=======
 namespace
 {
 
@@ -1773,7 +1771,6 @@ class MdpErrorHandler : public gmx::IKeyValueTreeErrorHandler
 
 } // namespace
 
->>>>>>> master
 void get_ir(const char *mdparin, const char *mdparout,
             gmx::MDModules *mdModules, t_inputrec *ir, t_gromppopts *opts,
             WriteMdpHeader writeMdpHeader, warninp_t wi)

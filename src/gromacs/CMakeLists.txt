@@ -120,11 +120,8 @@ add_subdirectory(pulling)
 add_subdirectory(awh)
 add_subdirectory(simd)
 add_subdirectory(imd)
-<<<<<<< HEAD
 add_subdirectory(coulombintegrals)
-=======
 add_subdirectory(compat)
->>>>>>> master
 if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(gmxana)
     add_subdirectory(gmxpreprocess)

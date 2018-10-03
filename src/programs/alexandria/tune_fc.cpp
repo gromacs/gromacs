@@ -44,6 +44,7 @@
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/arraysize.h"
@@ -53,6 +54,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "alex_modules.h"
 #include "communication.h"
 #include "gentop_core.h"
 #include "getmdlogger.h"
@@ -72,12 +74,12 @@
  *
  * Writes the whole bond energy matrix.
  */
-void dump_csv(const std::vector<std::string>        &ctest,
-              const std::vector<alexandria::MyMol>  &mm,
-              const std::vector<int>                &ntest,
-              const std::vector<double>             &Edissoc,
-              const MatrixWrapper                   &a,
-              const double                           x[])
+static void dump_csv(const std::vector<std::string>        &ctest,
+                     const std::vector<alexandria::MyMol>  &mm,
+                     const std::vector<int>                &ntest,
+                     const std::vector<double>             &Edissoc,
+                     const MatrixWrapper                   &a,
+                     const double                           x[])
 {
     FILE *csv = gmx_ffopen("tune_fc.csv", "w");
     fprintf(csv, ",");
@@ -841,7 +843,7 @@ class Optimization : public MolGen
         std::vector<NonBondParams>  NonBondParams_;
         param_type                  param_, lower_, upper_, best_;
         param_type                  De_, orig_, psigma_, pmean_;
-        std::vector<gmx_bool>       bOpt_;
+        std::vector<int>            iOpt_;
         real                        factor_;
         real                        beta0_, D0_, beta_min_, D0_min_;
         const char                 *lot_;
@@ -855,8 +857,8 @@ class Optimization : public MolGen
          */
         Optimization()
         {
-            bOpt_.resize(eitNR, false);
-            bOpt_[eitBONDS] = true;
+            iOpt_.resize(eitNR, false);
+            iOpt_[eitBONDS] = true;
             factor_         = 1;
             beta0_          = 0;
             D0_             = 0;
@@ -871,7 +873,7 @@ class Optimization : public MolGen
          */
         ~Optimization() {};
 
-        bool bOpt(int i) const { return bOpt_[i]; }
+        bool iOpt(int i) const { return iOpt_[i]; }
         void add_pargs(std::vector<t_pargs> *pargs)
         {
             t_pargs pa[] =
@@ -884,19 +886,19 @@ class Optimization : public MolGen
                   "Minimum value for beta in Morse potential" },
                 { "-DO_min", FALSE, etREAL, {&D0_min_},
                   "Minimum value for D0 in Morse potential" },
-                { "-bonds",   FALSE, etBOOL, {&bOpt_[eitBONDS]},
+                { "-bonds",   FALSE, etINT, {&(iOpt_[eitBONDS])},
                   "Optimize bond parameters" },
-                { "-angles",  FALSE, etBOOL, {&bOpt_[eitANGLES]},
+                { "-angles",  FALSE, etINT, {&(iOpt_[eitANGLES])},
                   "Optimize angle parameters" },
-                { "-langles", FALSE, etBOOL, {&bOpt_[eitLINEAR_ANGLES]},
+                { "-langles", FALSE, etINT, {&(iOpt_[eitLINEAR_ANGLES])},
                   "Optimize linear angle parameters" },
-                { "-dihedrals", FALSE, etBOOL, {&bOpt_[eitPROPER_DIHEDRALS]},
+                { "-dihedrals", FALSE, etINT, {&(iOpt_[eitPROPER_DIHEDRALS])},
                   "Optimize proper dihedral parameters" },
-                { "-impropers", FALSE, etBOOL, {&bOpt_[eitIMPROPER_DIHEDRALS]},
+                { "-impropers", FALSE, etINT, {&(iOpt_[eitIMPROPER_DIHEDRALS])},
                   "Optimize improper dihedral parameters" },
-                { "-vdw", FALSE, etBOOL, {&bOpt_[eitVDW]},
+                { "-vdw", FALSE, etINT, {&(iOpt_[eitVDW])},
                   "Optimize van der Waals parameters" },
-                { "-pairs",  FALSE, etBOOL, {&bOpt_[eitLJ14]},
+                { "-pairs",  FALSE, etINT, {&(iOpt_[eitLJ14])},
                   "Optimize 1-4 interaction parameters" },
                 { "-factor", FALSE, etREAL, {&factor_},
                   "Parameters will be taken within the limit factor*x - x/factor." }
@@ -1064,7 +1066,7 @@ void Optimization::checkSupport(FILE *fp)
         for (int bt = 0; bSupport && (bt < eitNR); bt++)
         {
             int  ft;
-            if (bOpt_[bt])
+            if (iOpt_[bt])
             {
                 auto iType = static_cast<InteractionType>(bt);
                 ft         = poldata().findForces(iType)->fType();
@@ -1489,7 +1491,7 @@ void Optimization::InitOpt(FILE *fplog)
 
     for (size_t bt = 0; bt < fts.size(); bt++)
     {
-        ForceConstants fc(bt, fts[bt], static_cast<InteractionType>(bt), bOpt_[bt]);
+        ForceConstants fc(bt, fts[bt], static_cast<InteractionType>(bt), iOpt_[bt]);
         fc.analyzeIdef(mymols(), poldata());
         fc.makeReverseIndex();
         fc.dump(fplog);
@@ -1510,7 +1512,7 @@ void Optimization::InitOpt(FILE *fplog)
                mymols().size(), ForceConstants_[eitBONDS].nbad());
     }
 
-    NonBondParams nbp(bOpt_[eitVDW], eitVDW);
+    NonBondParams nbp(iOpt_[eitVDW], eitVDW);
     nbp.analyzeIdef(mymols(), poldata());
     nbp.makeReverseIndex();
     NonBondParams_.push_back(std::move(nbp));
@@ -1785,10 +1787,10 @@ void Optimization::optRun(FILE                   *fp,
     }
 }
 
-void print_mols(FILE                          *fp, 
-                std::vector<alexandria::MyMol> mol,
-                gmx_bool                       bForce, 
-                gmx_bool                       bMtop)
+static void print_mols(FILE                          *fp, 
+                       std::vector<alexandria::MyMol> mol,
+                       gmx_bool                       bForce, 
+                       gmx_bool                       bMtop)
 {
     int j, k;
 
@@ -1813,10 +1815,10 @@ void print_mols(FILE                          *fp,
             for (k = 0; k < F_NRE; k++)
             {
                 if ((mi->enerd_->term[k] != 0) ||
-                    (mi->mtop_->moltype[0].ilist[k].nr > 0))
+                    (mi->mtop_->moltype[0].ilist[k].size() > 0))
                 {
                     fprintf(fp, "%s %d %g\n", interaction_function[k].name,
-                            mi->mtop_->moltype[0].ilist[k].nr,
+                            mi->mtop_->moltype[0].ilist[k].size(),
                             mi->enerd_->term[k]);
                 }
             }
@@ -2058,8 +2060,8 @@ int alex_tune_fc(int argc, char *argv[])
              const_elem,
              gms,
              false,
-             opt.bOpt(eitLJ14),
-             opt.bOpt(eitPROPER_DIHEDRALS),
+             opt.iOpt(eitLJ14),
+             opt.iOpt(eitPROPER_DIHEDRALS),
              bZPE,
              false,
              tabfn);
@@ -2106,7 +2108,6 @@ int alex_tune_fc(int argc, char *argv[])
                          opt2fn("-hf", NFILE, fnm), 
                          oenv, true);
         writePoldata(opt2fn("-o", NFILE, fnm), opt.poldata(), compress);
-        done_filenms(NFILE, fnm);
         gmx_ffclose(fp);
     }
 

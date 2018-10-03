@@ -118,12 +118,7 @@ int ifunc_index(directive d, int type)
                 case 10:
                     return F_RESTRBONDS;
                 default:
-<<<<<<< HEAD
-                    fprintf(stderr, "Invalid bond type %d\n", type);
-                    return -1;
-=======
                     gmx_fatal(FARGS, "Invalid bond type %d", type);
->>>>>>> master
             }
         case d_angles:
         case d_angletypes:
@@ -148,12 +143,7 @@ int ifunc_index(directive d, int type)
                 case 10:
                     return F_RESTRANGLES;
                 default:
-<<<<<<< HEAD
-                    fprintf(stderr, "Invalid angle type %d\n", type);
-                    return -1;
-=======
                     gmx_fatal(FARGS, "Invalid angle type %d", type);
->>>>>>> master
             }
         case d_pairs:
         case d_pairtypes:
@@ -294,13 +284,8 @@ int ifunc_index(directive d, int type)
         case d_dihedral_restraints:
             return F_DIHRES;
         default:
-<<<<<<< HEAD
-            fprintf(stderr, "invalid directive %d in ifunc_index (%s:%d)",
-                    (int)d, __FILE__, __LINE__);
-=======
             gmx_fatal(FARGS, "invalid directive %s in ifunc_index (%s:%d)",
                       dir2str(d), __FILE__, __LINE__);
->>>>>>> master
     }
 }
 

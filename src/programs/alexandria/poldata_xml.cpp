@@ -636,18 +636,9 @@ void readPoldata(const std::string &fileName,
     xmlDocPtr   doc;
     std::string fn2;
 
-    if (fileName.size() > 0)
-    {
-        const char *f = low_gmxlibfn(fileName.c_str(), true, false);
-        if (nullptr != f)
-        {
-            fn2.assign(f);
-        }
-    }
-    if (!gmx_fexist(fn2.c_str()))
-    {
-        fn2 = gmxlibfn("alexandria.ff/gentop.dat");
-    }
+    fprintf(stderr,"fileName '%s'\n", fileName.c_str());
+    fn2 = gmx::findLibraryFile(fileName.size() > 0 ? fileName : "alexandria.ff/gentop.dat",
+                               true, false);
 
     if (nullptr != debug)
     {
@@ -659,7 +650,7 @@ void readPoldata(const std::string &fileName,
     {
         char buf[256];
         snprintf(buf, sizeof(buf),
-                 "Error reading XML file %s. Run a syntax checker such as nsgmls.",
+                 "Error reading XML file '%s'. Run a syntax checker such as nsgmls.",
                  fn2.c_str());
         GMX_THROW(gmx::FileIOError(buf));
     }
@@ -948,17 +939,17 @@ void writePoldata(const std::string &fileName,
 
     if ((doc = xmlNewDoc((xmlChar *)"1.0")) == nullptr)
     {
-        gmx_fatal(FARGS, "Creating XML document", "");
+        gmx_fatal(FARGS, "Creating XML document %s", fileName.c_str());
     }
 
     if ((dtd = xmlCreateIntSubset(doc, dtdname, libdtdname, dtdname)) == nullptr)
     {
-        gmx_fatal(FARGS, "Creating XML DTD", "");
+        gmx_fatal(FARGS, "Creating XML DTD in %s", fileName.c_str());
     }
 
     if ((myroot = xmlNewDocNode(doc, nullptr, gmx, nullptr)) == nullptr)
     {
-        gmx_fatal(FARGS, "Creating root element", "");
+        gmx_fatal(FARGS, "Creating root element for %s", fileName.c_str());
     }
     dtd->next    = myroot;
     myroot->prev = (xmlNodePtr) dtd;
@@ -970,7 +961,7 @@ void writePoldata(const std::string &fileName,
     xmlIndentTreeOutput = 1;
     if (xmlSaveFormatFileEnc(fileName.c_str(), doc, "ISO-8859-1", 2) == 0)
     {
-        gmx_fatal(FARGS, "Saving file", fileName.c_str());
+        gmx_fatal(FARGS, "Saving file %s", fileName.c_str());
     }
     xmlFreeDoc(doc);
 }

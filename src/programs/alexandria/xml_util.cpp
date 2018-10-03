@@ -58,7 +58,7 @@ void add_xml_int(xmlNodePtr ptr, const char *name, int val)
     sprintf((char *)buf, "%d", val);
     if (xmlSetProp(ptr, (xmlChar *)name, buf) == 0)
     {
-        gmx_fatal(FARGS, "Setting", (char *)name);
+        gmx_fatal(FARGS, "Setting %s", (char *)name);
     }
 }
 
@@ -69,7 +69,7 @@ void add_xml_double(xmlNodePtr ptr, const char *name, double val)
     sprintf((char *)buf, "%g", val);
     if (xmlSetProp(ptr, (xmlChar *)name, buf) == 0)
     {
-        gmx_fatal(FARGS, "Setting", (char *)name);
+        gmx_fatal(FARGS, "Setting %s", (char *)name);
     }
 }
 
@@ -77,7 +77,7 @@ void add_xml_char(xmlNodePtr ptr, const char *name, const char *val)
 {
     if (xmlSetProp(ptr, (xmlChar *)name, (xmlChar *)val) == 0)
     {
-        gmx_fatal(FARGS, "Setting", (char *)name);
+        gmx_fatal(FARGS, "Setting %s", (char *)name);
     }
 }
 
@@ -87,7 +87,7 @@ xmlNodePtr add_xml_child(xmlNodePtr parent, const char *type)
 
     if ((child = xmlNewChild(parent, NULL, (xmlChar *)type, NULL)) == NULL)
     {
-        gmx_fatal(FARGS, "Creating element", (char *)type);
+        gmx_fatal(FARGS, "Creating element %s", (char *)type);
     }
 
     return child;
@@ -99,7 +99,7 @@ xmlNodePtr add_xml_child_val(xmlNodePtr parent, const char *type, const char *va
 
     if ((child = xmlNewChild(parent, NULL, (xmlChar *)type, (xmlChar *)value)) == NULL)
     {
-        gmx_fatal(FARGS, "Creating element", (char *)type);
+        gmx_fatal(FARGS, "Creating element %s", (char *)type);
     }
 
     return child;
@@ -112,7 +112,7 @@ xmlNodePtr add_xml_comment(xmlDocPtr doc,
 
     if ((comm = xmlNewComment((xmlChar *)comment)) == NULL)
     {
-        gmx_fatal(FARGS, "Creating doc comment element", "");
+        gmx_fatal(FARGS, "Creating doc comment element %s", "");
     }
     ptr = prev;
     while (ptr->next != NULL)

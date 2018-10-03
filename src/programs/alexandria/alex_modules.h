@@ -33,6 +33,23 @@
 #ifndef GMX_ALEXMODULES_H
 #define GMX_ALEXMODULES_H
 
+int alex_gentop(int argc, char *argv[]);
+int alex_tune_fc(int argc, char *argv[]);
+int alex_tune_eem(int argc, char *argv[]);
+int alex_tune_pol(int argc, char *argv[]);
+int alex_poldata_test(int argc, char *argv[]);
+int alex_gauss2molprop(int argc, char *argv[]);
+int alex_bastat(int argc, char *argv[]);
+int alex_analyze(int argc, char *argv[]);
+int alex_gen_table(int argc, char *argv[]);
+int alex_merge_mp(int argc, char *argv[]);
+int alex_merge_pd(int argc, char *argv[]);
+int alex_mp2csv(int argc, char *argv[]);
+int alex_molprop_test(int argc, char *argv[]);
+int alex_molprop_check(int argc, char *argv[]);
+int alex_tune_zeta(int argc, char *argv[]);
+int alex_molselect(int argc, char *argv[]);
+
 namespace gmx
 {
 class CommandLineModuleManager;

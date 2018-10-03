@@ -232,7 +232,7 @@ double QgenEem::getZeta(int atom, int z)
     return 0;
 }
 
-double Coulomb_PP(double r)
+static double Coulomb_PP(double r)
 {
     return 1/r;
 }
@@ -588,7 +588,7 @@ void QgenEem::copyChargesToAtoms(t_atoms *atoms)
     }
 }
 
-void QgenEem::updatePositions(PaddedRVecVector x,
+void QgenEem::updatePositions(gmx::HostVector<gmx::RVec> x,
                               t_atoms         *atoms)
 {
     for (auto i = 0; i < atoms->nr; i++)
@@ -677,7 +677,7 @@ int QgenEem::generateCharges(FILE              *fp,
                              const std::string  molname,
                              const Poldata     &pd,
                              t_atoms           *atoms,
-                             PaddedRVecVector   x)
+                             gmx::HostVector<gmx::RVec> x)
 {  
     if (fp)
     {

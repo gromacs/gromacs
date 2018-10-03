@@ -812,13 +812,8 @@ static void decrease_step_size(int nshell, t_shell s[])
     }
 }
 
-<<<<<<< HEAD
-static void print_epot(FILE *fp, gmx_int64_t mdstep, int count, real epot, real df,
-                       int ndir, real sf_dir, gmx_enerdata_t *enerd)
-=======
 static void print_epot(FILE *fp, int64_t mdstep, int count, real epot, real df,
-                       int ndir, real sf_dir)
->>>>>>> master
+                       int ndir, real sf_dir, gmx_enerdata_t *enerd)
 {
     char buf[22];
 

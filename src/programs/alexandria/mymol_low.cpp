@@ -56,41 +56,15 @@
 namespace alexandria
 {
 
-MyForceProvider::MyForceProvider() {};
-
-void MyForceProvider::calculateForces(const t_commrec  *cr,
-                                      const t_mdatoms  *mdatoms,
-                                      PaddedRVecVector *force,
-                                      double            t)
-{
-    rvec *f = as_rvec_array(force->data());
-    for(int dim = 0; dim < DIM; dim++)
-    {       
-        double efield = FIELDFAC*efield_[dim]; 
-        if (efield != 0)
-        {      
-            for(int i = 0; i < mdatoms->nr; ++i)
-            {
-                f[i][dim] += mdatoms->chargeA[i]*efield;
-            }
-        }
-    }
-    if (MASTER(cr) && nullptr != debug)
-    {
-        fprintf(debug, "Electric Field. t: %4g  Ex: %4g  Ey: %4g  Ez: %4g\n", 
-                t, efield_[XX], efield_[YY], efield_[ZZ]);
-    }
-}
-
 bool is_planar(rvec xi, rvec xj, rvec xk, 
                rvec xl, t_pbc *pbc,
                real phi_toler)
 {
     int  t1, t2, t3;
     rvec r_ij, r_kj, r_kl, m, n;
-    real sign, phi;
+    real phi;
 
-    phi = RAD2DEG*dih_angle(xi, xj, xk, xl, pbc, r_ij, r_kj, r_kl, m, n, &sign, &t1, &t2, &t3);
+    phi = RAD2DEG*dih_angle(xi, xj, xk, xl, pbc, r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
 
     return (fabs(phi) < phi_toler);
 }
@@ -610,18 +584,13 @@ void plist_to_mtop(const Poldata             &pd,
     /* Generate pairs */
     fudgeLJ = pd.getFudgeLJ();
 
-    int nfptot = mtop_->ffparams.ntypes;
+    int nfptot = mtop_->ffparams.atnr;
     for (auto &pw : plist)
     {
         nfptot += pw.nParam()*NRFPA(pw.getFtype());
     }
-    srenew(mtop_->ffparams.functype, nfptot);
-    srenew(mtop_->ffparams.iparams, nfptot);
-    for (int i = mtop_->ffparams.ntypes; i < nfptot; i++)
-    {
-        mtop_->ffparams.functype[i] = 0;
-        memset(&mtop_->ffparams.iparams[i], 0, sizeof(mtop_->ffparams.iparams[i]));
-    }
+    mtop_->ffparams.functype.resize(nfptot);
+    mtop_->ffparams.iparams.resize(nfptot);
 
     for (auto &pw : plist)
     {
@@ -634,7 +603,7 @@ void plist_to_mtop(const Poldata             &pd,
             fprintf(debug, "There are %d interactions of type %s\n", nratot/(nra+1),
                     interaction_function[ftype].name);
         }
-        snew(mtop_->moltype[0].ilist[ftype].iatoms, nratot);
+        mtop_->moltype[0].ilist[ftype].iatoms.resize(nratot);
         int k = 0;
         for (auto j = pw.beginParam(); (j < pw.endParam()); ++j)
         {
@@ -671,31 +640,25 @@ void plist_to_mtop(const Poldata             &pd,
                 mtop_->moltype[0].ilist[ftype].iatoms[k++] = j->a[l];
             }
         }
-        mtop_->moltype[0].ilist[ftype].nr = k;
     }
 }
 
-void do_init_mtop(const Poldata            &pd,
-                  gmx_mtop_t               *mtop,
-                  char                    **molname,
-                  t_atoms                  *atoms,
-                  std::vector<PlistWrapper> plist,
-                  t_inputrec               *ir,
-                  t_symtab                 *symtab,
-                  const char               *tabfn)
+gmx_mtop_t *do_init_mtop(const Poldata            &pd,
+                         char                    **molname,
+                         t_atoms                  *atoms,
+                         std::vector<PlistWrapper> plist,
+                         t_inputrec               *ir,
+                         t_symtab                 *symtab,
+                         const char               *tabfn)
 {
-
-    init_mtop(mtop);
+    gmx_mtop_t *mtop = new gmx_mtop_t();
     mtop->name     = molname;
-    mtop->nmoltype = 1;
-    snew(mtop->moltype, mtop->nmoltype);
+    mtop->moltype.reserve(1);
     mtop->moltype[0].name = molname;
-    mtop->nmolblock       = 1;
-    snew(mtop->molblock, mtop->nmolblock);
+    mtop->molblock.reserve(1);
     mtop->molblock[0].nmol        = 1;
     mtop->molblock[0].type        = 0;
     mtop->groups.grps[egcENER].nr = 1;
-    mtop->molblock[0].natoms_mol  = atoms->nr;
     mtop->natoms                  = atoms->nr;
     init_t_atoms(&(mtop->moltype[0].atoms), atoms->nr, false);
     
@@ -738,7 +701,6 @@ void do_init_mtop(const Poldata            &pd,
     }
 
     mtop->ffparams.atnr             = ntype;
-    mtop->ffparams.ntypes           = ntype*ntype;   
     mtop->ffparams.reppow           = 12;  
     
     if (nullptr != tabfn)
@@ -756,8 +718,9 @@ void do_init_mtop(const Poldata            &pd,
     }
     
     int vdw_type = pd.getVdwFtype();
-    snew(mtop->ffparams.functype, mtop->ffparams.ntypes);
-    snew(mtop->ffparams.iparams, mtop->ffparams.ntypes);   
+    int ntypes = gmx::square(mtop->ffparams.atnr);
+    mtop->ffparams.functype.reserve(ntypes);
+    mtop->ffparams.iparams.reserve(ntypes);   
     for (int i = 0; (i < ntype); i++)
     {
         for (int j = 0; (j < ntype); j++)
@@ -814,6 +777,8 @@ void do_init_mtop(const Poldata            &pd,
     /* Create a charge group block */
     stupid_fill_block(&(mtop->moltype[0].cgs), atoms->nr, false);
     plist_to_mtop(pd, plist, mtop);
+    
+    return mtop;
 }
 
 void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka)
@@ -851,18 +816,16 @@ void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka)
 
 void mtop_update_cgs(gmx_mtop_t *mtop)
 {
-    int i, j;
-
-    for (i = 0; (i < mtop->nmoltype); i++)
+    for (auto &i : mtop->moltype)
     {
-        if (mtop->moltype[i].atoms.nr > mtop->moltype[i].cgs.nr)
+        if (i.atoms.nr > i.cgs.nr)
         {
-            mtop->moltype[i].cgs.nr           = mtop->moltype[i].atoms.nr;
-            mtop->moltype[i].cgs.nalloc_index = mtop->moltype[i].atoms.nr+1;
-            srenew(mtop->moltype[i].cgs.index, mtop->moltype[i].cgs.nr+1);
-            for (j = 0; (j <= mtop->moltype[i].cgs.nr); j++)
+            i.cgs.nr           = i.atoms.nr;
+            i.cgs.nalloc_index = i.atoms.nr+1;
+            srenew(i.cgs.index, i.cgs.nr+1);
+            for (int j = 0; (j <= i.cgs.nr); j++)
             {
-                mtop->moltype[i].cgs.index[j] = j;
+                i.cgs.index[j] = j;
             }
         }
     }

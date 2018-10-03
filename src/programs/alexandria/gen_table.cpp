@@ -38,7 +38,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/coulombintegrals/coulombintegrals.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arraysize.h"
@@ -46,6 +45,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "alex_modules.h"
 #include "poldata.h"
 #include "poldata_xml.h"
 

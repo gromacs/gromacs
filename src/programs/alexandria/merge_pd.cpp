@@ -29,8 +29,6 @@
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
- 
- 
 #include "gmxpre.h"
 
 #include <stdio.h>
@@ -49,10 +47,10 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "alex_modules.h"
 #include "poldata.h"
 #include "poldata_tables.h"
 #include "poldata_xml.h"
-
 
 enum EemAtomProps {
     eEMJ00   = 0, 
@@ -82,18 +80,6 @@ static EemAtomProps name2eemprop(const std::string name)
         }
     }
     return eEMNR;
-}
-
-static const char *getEemAtomName(EemAtomProps eem)
-{
-    for (auto i = 0; i < eEMNR; i++)
-    {
-        if (eem == eemAtom_props[i].eEM)
-        {
-            return eemAtom_props[i].name;
-        }
-    }
-    return nullptr;
 }
 
 static void merge_J00Chi(std::vector<alexandria::Poldata>     pds,
@@ -341,8 +327,6 @@ int alex_merge_pd(int argc, char *argv[])
         { "-printchi", FALSE, etBOOL, {&bPrintChi},
           "Print chi in the latex table" }
     };
-    char                           **fns;
-    int                              nfiles;
     std::vector<alexandria::Poldata> pds;
     alexandria::Poldata              pdout;
     gmx_atomprop_t                   aps;
@@ -357,33 +341,36 @@ int alex_merge_pd(int argc, char *argv[])
     /*
       Read all the gentop files.
      */
-    nfiles = opt2fns(&fns, "-di", NFILE, fnm);
-    for (int i = 0; i < nfiles; i++)
+    auto filenames = opt2fns("-di", NFILE, fnm);
+    for (auto &i : filenames)
     {
         alexandria::Poldata pd;
-        readPoldata(fns[i], pd, aps);
+        readPoldata(i.c_str(), pd, aps);
         pds.push_back(std::move(pd));
     }    
     /* 
        Copy one of the gentop files into pdout.
        Later, we update different parts of it. 
      */
-    readPoldata(fns[0], pdout, aps);    
-    alexandria::ChargeDistributionModel   ieqd   = alexandria::name2eemtype(cqdist[0]);
-    EemAtomProps                          eem    = name2eemprop(eemprop[0]);        
-    if (eem == eEMJ00 || eem == eEMChi)
+    if (filenames.size() > 0)
     {
-        merge_J00Chi(pds, ieqd, pdout, eem);
+        readPoldata(filenames[0].c_str(), pdout, aps);    
+        alexandria::ChargeDistributionModel   ieqd   = alexandria::name2eemtype(cqdist[0]);
+        EemAtomProps                          eem    = name2eemprop(eemprop[0]);        
+        if (eem == eEMJ00 || eem == eEMChi)
+        {
+            merge_J00Chi(pds, ieqd, pdout, eem);
+        }
+        else if (eem == eEMZeta)
+        {
+            merge_zeta(pds, ieqd, pdout);
+        }
+        else
+        {
+            gmx_fatal(FARGS, "There is no atomic electric property called %s in alexandria.\n", eemprop[0]);
+        }    
+        alexandria::writePoldata(opt2fn("-do", NFILE, fnm), pdout, bcompress);
     }
-    else if (eem == eEMZeta)
-    {
-        merge_zeta(pds, ieqd, pdout);
-    }
-    else
-    {
-        gmx_fatal(FARGS, "There is no atomic electric property called %s in alexandria.\n", eemprop[0]);
-    }    
-    alexandria::writePoldata(opt2fn("-do", NFILE, fnm), pdout, bcompress);    
     if (bPrintTable)
     {
         FILE        *tp;
@@ -391,7 +378,6 @@ int alex_merge_pd(int argc, char *argv[])
         alexandria_poldata_eemprops_table(tp, bPrintZeta, bPrintChi, pdout);
         gmx_ffclose(tp);
     }           
-    done_filenms(NFILE, fnm);
     
     return 0;
 }

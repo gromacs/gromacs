@@ -54,12 +54,12 @@ static bool check_polarizability(tensor alpha)
     return true;
 }
 
-void print_stats(FILE        *fp,
-                 const char  *prop,
-                 gmx_stats_t  lsq,
-                 gmx_bool     bHeader,
-                 const char  *xaxis,
-                 const char  *yaxis)
+static void print_stats(FILE        *fp,
+                        const char  *prop,
+                        gmx_stats_t  lsq,
+                        gmx_bool     bHeader,
+                        const char  *xaxis,
+                        const char  *yaxis)
 {
     real a    = 0, da  = 0, b    = 0, db   = 0;
     real mse  = 0, mae = 0, chi2 = 0, rmsd = 0;
@@ -149,10 +149,10 @@ void print_polarizability(FILE              *fp,
     }
 }
 
-void print_quadrapole(FILE              *fp,
-                      alexandria::MyMol *mol,
-                      qType              qt,
-                      real               q_toler)
+static void print_quadrapole(FILE              *fp,
+                             alexandria::MyMol *mol,
+                             qType              qt,
+                             real               q_toler)
 {
     const tensor &qelec = mol->QQM(qtElec);
 
@@ -190,10 +190,10 @@ void print_quadrapole(FILE              *fp,
     }
 }
 
-void print_dipole(FILE              *fp,
-                  alexandria::MyMol *mol,
-                  qType              qt,
-                  real               toler)
+static void print_dipole(FILE              *fp,
+                         alexandria::MyMol *mol,
+                         qType              qt,
+                         real               toler)
 {
     rvec dmu;
     real ndmu, cosa;

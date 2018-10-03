@@ -73,7 +73,7 @@ class PoldataTest : public ::testing::Test
             std::string dataName = gmx::test::TestFileManager::getInputFilePath("gentop.dat");
             try
             {
-                alexandria::readPoldata(dataName.c_str(), pd_, aps);
+                alexandria::readPoldata(dataName, pd_, aps);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 

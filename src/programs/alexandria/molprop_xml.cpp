@@ -249,7 +249,7 @@ static void add_xml_string(xmlNodePtr ptr, const char *name, std::string val)
 {
     if (xmlSetProp(ptr, xmlCharStrdup(name), xmlCharStrdup(val.c_str())) == 0)
     {
-        gmx_fatal(FARGS, "Setting", (char *)name);
+        gmx_fatal(FARGS, "Setting %s", (char *)name);
     }
 }
 
@@ -684,20 +684,18 @@ void MolPropRead(const char *fn, std::vector<alexandria::MolProp> &mpt)
     xmlDocPtr     doc;
     const char   *db          = "alexandria.ff/molprops.dat";
     gmx_bool      bExperiment = FALSE;
-
+    std::string   mpfile;
+    
     xmlDoValidityCheckingDefaultValue = 0;
-    if (nullptr == fn)
+    mpfile = gmx::findLibraryFile(fn ? fn : db, true, false);
+    if (debug)
     {
-        fn = gmxlibfn(db);
+        fprintf(debug, "Opening %s\n", mpfile.c_str());
     }
-    if (nullptr != debug)
-    {
-        fprintf(debug, "Opening %s\n", fn);
-    }
-    if ((doc = xmlParseFile(fn)) == nullptr)
+    if ((doc = xmlParseFile(mpfile.c_str())) == nullptr)
     {
         fprintf(stderr, "Reading XML file %s. Run a syntax checker such as nsgmls.",
-                fn);
+                mpfile.c_str());
         exit(1);
     }
 
@@ -943,17 +941,17 @@ void MolPropWrite(const char *fn, std::vector<alexandria::MolProp> mpt, gmx_bool
 
     if ((doc = xmlNewDoc((xmlChar *)"1.0")) == nullptr)
     {
-        gmx_fatal(FARGS, "Creating XML document", "");
+        gmx_fatal(FARGS, "Creating XML document %s", fn);
     }
 
     if ((dtd = xmlCreateIntSubset(doc, dtdname, libdtdname, dtdname)) == nullptr)
     {
-        gmx_fatal(FARGS, "Creating XML DTD", "");
+        gmx_fatal(FARGS, "Creating XML DTD %s", fn);
     }
 
     if ((myroot = xmlNewDocNode(doc, nullptr, gmx, nullptr)) == nullptr)
     {
-        gmx_fatal(FARGS, "Creating root element", "");
+        gmx_fatal(FARGS, "Creating root element for %s", fn);
     }
     dtd->next    = myroot;
     myroot->prev = (xmlNodePtr) dtd;
@@ -973,7 +971,7 @@ void MolPropWrite(const char *fn, std::vector<alexandria::MolProp> mpt, gmx_bool
     xmlIndentTreeOutput = 1;
     if (xmlSaveFormatFileEnc(fn, doc, "ISO-8859-1", 1) == 0)
     {
-        gmx_fatal(FARGS, "Saving file", fn);
+        gmx_fatal(FARGS, "Saving file %s", fn);
     }
     xmlFreeDoc(doc);
 }

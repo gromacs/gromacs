@@ -48,6 +48,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "alex_modules.h"
 #include "molprop.h"
 #include "molprop_sqlite3.h"
 #include "molprop_util.h"
@@ -216,8 +217,6 @@ int alex_merge_mp(int argc, char *argv[])
         { "-temp", FALSE, etREAL, {&temperature},
           "Temperature corresponding to the experimental data (options [TT]-x[tt] or [TT]-c[tt])" }
     };
-    char                           **fns;
-    int                              nfiles;
     std::vector<alexandria::MolProp> mp;
     gmx_atomprop_t                   ap;
     alexandria::Poldata              pd;
@@ -236,8 +235,8 @@ int alex_merge_mp(int argc, char *argv[])
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-    nfiles = opt2fns(&fns, "-f", NFILE, fnm);
-    int nwarn = merge_xml(nfiles, fns, mp, nullptr, nullptr, nullptr, ap, pd, true);
+    auto fns = opt2fns("-f", NFILE, fnm);
+    int nwarn = merge_xml(fns, mp, nullptr, nullptr, nullptr, ap, pd, true);
 
     if (nwarn <= maxwarn)
     {

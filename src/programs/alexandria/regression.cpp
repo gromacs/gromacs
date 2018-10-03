@@ -156,17 +156,6 @@ static void columnwise2tensor(double **a, tensor c)
     c[ZZ][ZZ] = a[YY][XX];   
 }
 
-static void unitTensor(tensor I, int ncol, int nrow)
-{
-    for (int i = 0; i < ncol; i++)
-    {
-        for (int j = 0; j < nrow; j++)
-        {
-            I[i][j]  = 1 ? (ncol == nrow) : 0;
-        }
-    }
-}
-
 static void SVD(int*    m,    int*     n,     double** a,
                 int*    lda,  double** s,     double** u, 
                 int*    ldu,  double** vt,    int*     ldvt)

@@ -36,40 +36,21 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/enerdata.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "alex_modules.h"
 #include "fill_inputrec.h"
 #include "gauss_io.h"
 #include "getmdlogger.h"
 #include "molprop_xml.h"
 #include "mymol.h"
 #include "poldata_xml.h"
-
-static void clean_pdb_names(t_atoms *atoms, t_symtab *tab)
-{
-    int   i, changed;
-    char *ptr, buf[128];
-
-    for (i = 0; i < atoms->nr; i++)
-    {
-        changed = 0;
-        strncpy(buf, *(atoms->atomname[i]), sizeof(buf));
-        while ((ptr = strchr(buf, ' ')) != nullptr)
-        {
-            *ptr    = '_';
-            changed = 1;
-        }
-        if (changed)
-        {
-            atoms->atomname[i] = put_symtab(tab, buf);
-        }
-    }
-}
 
 int alex_gentop(int argc, char *argv[])
 {
@@ -183,7 +164,6 @@ int alex_gentop(int argc, char *argv[])
     static gmx_bool                  bDihedral      = false;
     static gmx_bool                  b13            = false;
     static gmx_bool                  bLOG           = false;
-    static gmx_bool                  bFTX           = false;
     static gmx_bool                  bCUBE          = false;
     static gmx_bool                  bZatype        = true;
     static gmx_bool                  bH14           = true;
@@ -326,8 +306,7 @@ int alex_gentop(int argc, char *argv[])
     }
 
     alexandria::Poldata       pd;
-    gmx::MDModules            mdModules;
-    t_inputrec               *inputrec                   = mdModules.inputrec();
+    t_inputrec               *inputrec                   = new t_inputrec();
     t_commrec                *cr                         = init_commrec();   
     const char               *tabfn                      = opt2fn_null("-table", NFILE, fnm);
     eChargeGroup              ecg                        = (eChargeGroup) get_option(cgopt);
@@ -402,9 +381,7 @@ int alex_gentop(int argc, char *argv[])
     }
     else
     {
-        char **fns = nullptr;
-        int    i   = 0;
-        int    nfn = 0;       
+        gmx::ArrayRef<const std::string> fns;
         if (strlen(molnm) == 0)
         {
             molnm = (char *)"MOL";
@@ -412,22 +389,18 @@ int alex_gentop(int argc, char *argv[])
         bLOG = opt2bSet("-g03", NFILE, fnm);
         if (bLOG)
         {
-            nfn = ftp2fns(&fns, efLOG, NFILE, fnm);
+            fns = ftp2fns(efLOG, NFILE, fnm);
         }
-        else
+        else if (opt2bSet("-f", NFILE, fnm))
         {
-            bFTX = opt2bSet("-f", NFILE, fnm);
-            if (bFTX)
-            {
-                nfn = ftp2fns(&fns, efSTX, NFILE, fnm);
-            }
+            fns = ftp2fns(efSTX, NFILE, fnm);
         }        
-        if (nfn > 0)
+        if (fns.size() > 0)
         {
-            for (i = 0; i < nfn; i++)
+            for (auto &i : fns)
             {
                 alexandria::MolProp  mp;
-                ReadGauss(fns[i],
+                ReadGauss(i.c_str(),
                           mp,
                           molnm,
                           iupac,

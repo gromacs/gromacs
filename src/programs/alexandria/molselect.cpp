@@ -48,6 +48,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/textreader.h"
 
+#include "alex_modules.h"
 #include "composition.h"
 #include "getmdlogger.h"
 #include "molgen.h"
@@ -97,7 +98,7 @@ static void sample_molecules(FILE                            *fp,
             do
             {
                 auto found = false;
-                auto mol   = mols[dis(gen)];
+                auto &mol  = mols[dis(gen)];
                 auto mci   = mol.molProp()->SearchMolecularComposition(alexandria);
                 for (auto ani = mci->BeginAtomNum(); (!found) && (ani < mci->EndAtomNum()); ++ani)
                 {
@@ -203,9 +204,9 @@ int MolSelect::index(const std::string &iupac) const
     return -1;
 }
 
-void printAtomtypeStatistics(FILE                                 *fp,
-                             const alexandria::Poldata            &pd,
-                             const std::vector<alexandria::MyMol> &mymol)
+static void printAtomtypeStatistics(FILE                                 *fp,
+                                    const alexandria::Poldata            &pd,
+                                    const std::vector<alexandria::MyMol> &mymol)
 {
     struct NN
     {
@@ -220,7 +221,7 @@ void printAtomtypeStatistics(FILE                                 *fp,
         n.count  = 0;
         nn.push_back(n);
     }
-    for (auto mol : mymol)
+    for (const auto &mol : mymol)
     {
         int ntypes = get_atomtype_ntypes(mol.atype_);
         for (int i = 0; i < ntypes; i++)
@@ -247,11 +248,11 @@ void printAtomtypeStatistics(FILE                                 *fp,
 
 int alex_molselect(int argc, char *argv[])
 {
-    static const char               *desc[] = {
+    const char *desc[] = {
         "molselect generates random samples from molprop database"
     };
 
-    t_filenm                         fnm[] =
+    t_filenm    fnm[] =
     {
         { efDAT, "-f",    "allmols",   ffOPTRD },
         { efDAT, "-d",    "gentop",    ffOPTRD },
@@ -326,7 +327,7 @@ int alex_molselect(int argc, char *argv[])
         gmx_ffclose(dat);
     }
     gmx_ffclose(fp);
-    done_filenms(NFILE, fnm);
+    //done_filenms(NFILE, fnm);
 
     return 0;
 }

@@ -530,12 +530,8 @@ static void print_top_heavy_H(FILE *out, real mHmult)
 void print_top_comment(FILE       *out,
                        const char *filename,
                        const char *ffdir,
-<<<<<<< HEAD
-                       gmx_bool    bITP,
+                       bool        bITP,
                        const char *remark)
-=======
-                       bool        bITP)
->>>>>>> master
 {
     char  ffdir_parent[STRLEN];
     char *p;
@@ -588,12 +584,8 @@ void print_top_comment(FILE       *out,
 }
 
 void print_top_header(FILE *out, const char *filename,
-<<<<<<< HEAD
-                      gmx_bool bITP, const char *ffdir, real mHmult,
+                      bool bITP, const char *ffdir, real mHmult,
                       const char *remark)
-=======
-                      bool bITP, const char *ffdir, real mHmult)
->>>>>>> master
 {
     const char *p;
 

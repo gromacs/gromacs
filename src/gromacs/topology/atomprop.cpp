@@ -43,12 +43,9 @@
 #include <cstdio>
 #include <cstring>
 
-<<<<<<< HEAD
 #include <algorithm>
 
-=======
 #include "gromacs/math/functions.h"
->>>>>>> master
 #include "gromacs/math/utilities.h"
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/utility/cstringutil.h"
@@ -247,17 +244,10 @@ static void read_prop(gmx_atomprop_t aps, int eprop, double factor)
 
 static void set_prop(gmx_atomprop_t aps, int eprop)
 {
-<<<<<<< HEAD
-    gmx_atomprop *ap2           = (gmx_atomprop*) aps;
-    const char   *fns[epropNR]  = { "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat", "atomization-energy.dat", "elements.dat" };
+    gmx_atomprop *ap2           = static_cast<gmx_atomprop*>(aps);
+    const char   *fns[epropNR]  = { "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat",  "atomization-energy.dat", "elements.dat" };
     double        fac[epropNR]  = { 1.0,    1.0,  418.4, 1.0, 1.0, 1.0 };
     double        def[epropNR]  = { 12.011, 0.14, 0.0, 2.2, 0, -1 };
-=======
-    gmx_atomprop *ap2           = static_cast<gmx_atomprop*>(aps);
-    const char   *fns[epropNR]  = { "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat", "elements.dat" };
-    double        fac[epropNR]  = { 1.0,    1.0,  418.4, 1.0, 1.0 };
-    double        def[epropNR]  = { 12.011, 0.14, 0.0, 2.2, -1 };
->>>>>>> master
     aprop_t      *ap;
 
     ap = &ap2->prop[eprop];

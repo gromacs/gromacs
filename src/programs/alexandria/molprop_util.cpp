@@ -38,6 +38,7 @@
 
 #include <vector>
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/futil.h"
 
 #include "composition.h"
@@ -82,18 +83,6 @@ void generate_formula(std::vector<MolProp> &mp,
     for (auto &mpi : mp)
     {
         mpi.GenerateFormula(ap);
-    }
-}
-
-int my_strcmp(const char *a, const char *b)
-{
-    if ((nullptr != a) && (nullptr != b))
-    {
-        return strcasecmp(a, b);
-    }
-    else
-    {
-        return 1;
     }
 }
 
@@ -196,7 +185,7 @@ static void dump_mp(std::vector<alexandria::MolProp> mp)
     fclose(fp);
 }
 
-int merge_xml(int nfile, char **filens,
+int merge_xml(gmx::ArrayRef<const std::string> filens,
               std::vector<alexandria::MolProp> &mpout,
               char *outf, char *sorted, char *doubles,
               gmx_atomprop_t ap,
@@ -205,15 +194,15 @@ int merge_xml(int nfile, char **filens,
 {
     std::vector<alexandria::MolProp> mp;
     alexandria::MolPropIterator      mpi;
-    int       i, npout = 0, tmp;
+    int npout = 0, tmp;
 
-    for (i = 0; (i < nfile); i++)
+    for (auto &fn : filens)
     {
-        if (!gmx_fexist(filens[i]))
+        if (!gmx_fexist(fn.c_str()))
         {
             continue;
         }
-        MolPropRead(filens[i], mp);
+        MolPropRead(fn.c_str(), mp);
         generate_composition(mp, pd);
         generate_formula(mp, ap);
         for (mpi = mp.begin(); (mpi < mp.end()); )
@@ -338,20 +327,6 @@ static bool comp_mp_index(alexandria::MolProp ma,
                           alexandria::MolProp mb)
 {
     return (ma.getIndex() < mb.getIndex());
-}
-
-alexandria::MolPropIterator SearchMolProp(std::vector<alexandria::MolProp> &mp,
-                                          const char                       *name)
-{
-    alexandria::MolPropIterator mpi;
-    for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
-    {
-        if (strcmp(mpi->getMolname().c_str(), name) == 0)
-        {
-            break;
-        }
-    }
-    return mpi;
 }
 
 void MolPropSort(std::vector<alexandria::MolProp> &mp,

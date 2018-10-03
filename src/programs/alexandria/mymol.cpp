@@ -40,6 +40,7 @@
 #include "gromacs/gmxpreprocess/gen_ad.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/units.h"
@@ -50,7 +51,11 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/shellfc.h"
+#include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/group.h"
+#include "gromacs/mdtypes/forceoutput.h"
+#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -114,7 +119,7 @@ const char *immsg(immStatus imm)
         "Determining bond order", 
         "RESP Initialization",
         "Charge generation", 
-        "Requested level of theory missing",
+         "Requested level of theory missing",
         "QM Inconsistency (ESP dipole does not match Elec)",
         "Not in training set", 
         "No experimental data",
@@ -131,6 +136,51 @@ const char *immsg(immStatus imm)
     return msg[imm];
 } 
 
+class MyForceProvider : public gmx::IForceProvider
+{
+    private:
+        std::vector<double> efield_;
+        
+    public:
+    
+        MyForceProvider() {}
+
+        // From IForceProvider
+        //! \copydoc IForceProvider::calculateForces()
+        void calculateForces(const gmx::ForceProviderInput &forceProviderInput,
+                             gmx::ForceProviderOutput      *forceProviderOutput) override;
+                         
+        void setField(const std::vector<double> &field) { efield_ = field; }
+};
+
+void MyForceProvider::calculateForces(const gmx::ForceProviderInput &forceProviderInput,
+                                      gmx::ForceProviderOutput      *forceProviderOutput)
+{
+    const t_commrec cr      = forceProviderInput.cr_;
+    const t_mdatoms mdatoms = forceProviderInput.mdatoms_;
+    double          t       = forceProviderInput.t_;
+    
+    rvec *f = as_rvec_array(forceProviderOutput->forceWithVirial_.force_.data());
+
+    for(int dim = 0; dim < DIM; dim++)
+    {       
+        double efield = FIELDFAC*efield_[dim]; 
+        if (efield != 0)
+        {      
+            for(int i = 0; i < mdatoms.nr; ++i)
+            {
+                f[i][dim] += mdatoms.chargeA[i]*efield;
+            }
+        }
+    }
+    if (MASTER(&cr) && nullptr != debug)
+    {
+        fprintf(debug, "Electric Field. t: %4g  Ex: %4g  Ey: %4g  Ez: %4g\n", 
+                t, efield_[XX], efield_[YY], efield_[ZZ]);
+    }
+}
+
+
 MyMol::MyMol() : gvt_(evtALL)
 {
     bHaveShells_       = false;
@@ -145,11 +195,11 @@ MyMol::MyMol() : gvt_(evtALL)
     snew(symtab_, 1);
     open_symtab(symtab_);
     atype_ = init_atomtype();
-    clear_mat(box_);
     mtop_          = nullptr;
     fr_            = nullptr;
+    bt_            = nullptr;
     ltop_          = nullptr;
-    mdatoms_       = nullptr;
+    MDatoms_       = nullptr;
     mp_            = new MolProp;
     state_         = new t_state;
     state_->flags |= (1<<estX);
@@ -157,6 +207,7 @@ MyMol::MyMol() : gvt_(evtALL)
     state_->flags |= (1<<estCGP);
     snew(enerd_, 1);
     snew(fcd_, 1);
+    clear_mat(state_->box);
     init_enerdata(1, 0, enerd_);
     init_nrnb(&nrnb_);
     for(int j=0; j < qtNR; j++)
@@ -316,8 +367,8 @@ void MyMol::MakeSpecialInteractions(const Poldata &pd,
 
     rvec *x = as_rvec_array(state_->x.data());
     
-    clear_mat(box_);
-    set_pbc(&pbc, epbcNONE, box_);
+    clear_mat(state_->box);
+    set_pbc(&pbc, epbcNONE, state_->box);
 
     bonds.resize(topology_->atoms.nr);
     for (auto bi = molProp()->BeginBond(); (bi < molProp()->EndBond()); bi++)
@@ -588,10 +639,8 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
                 topology_->atoms.atom[i].typeB = add_atomtype(atype_, symtab_,
                                                               &(topology_->atoms.atom[i]),
                                                               *topology_->atoms.atomtype[i],
-                                                              &nb,
-                                                              0, 0.0, 0.0, 0.0,
-                                                              topology_->atoms.atom[i].atomnumber,
-                                                              0.0, 0.0);
+                                                              &nb, 0,
+                                                              topology_->atoms.atom[i].atomnumber);
         }
         topology_->atoms.nr   = natom;
         topology_->atoms.nres = 1;
@@ -777,11 +826,9 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     }
     if (imm == immOK)
     {
-        snew(mtop_, 1);
-        
         char **molnameptr = put_symtab(symtab_, molProp()->getMolname().c_str());
 
-        do_init_mtop(pd, mtop_, molnameptr, &topology_->atoms, plist_, inputrec_, symtab_, tabfn);
+        mtop_ = do_init_mtop(pd, molnameptr, &topology_->atoms, plist_, inputrec_, symtab_, tabfn);
 
         excls_to_blocka(topology_->atoms.nr, excls_, &(mtop_->moltype[0].excls));
     }
@@ -792,7 +839,6 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     if (nullptr == ltop_ && imm == immOK)
     {
         ltop_ = gmx_mtop_generate_local_top(mtop_, false);
-        ltop_->idef.nthreads = 1;
     }
     return imm;
 }
@@ -975,7 +1021,7 @@ void MyMol::addShells(const Poldata          &pd,
             newatoms->atomname[j]           = put_symtab(symtab_, buf);
             sprintf(buf, "%s_s", atomtype.c_str());
             newname[j]                      = strdup(buf);           
-            shell                           = add_atomtype(atype_, symtab_, shell_atom, buf, &p, 0, 0, 0, 0, 0, 0, 0);
+            shell                           = add_atomtype(atype_, symtab_, shell_atom, buf, &p, 0, 0);
             newatoms->atom[j].type          = shell;
             newatoms->atom[j].typeB         = shell;
             newatoms->atomtype[j]           = put_symtab(symtab_, buf);
@@ -1042,7 +1088,6 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
                                  ChargeDistributionModel    ieqd)
 {
     GMX_RELEASE_ASSERT(nullptr != mtop_, "mtop_ == nullptr. You forgot to call GenerateTopology");
-    auto nalloc = 2*topology_->atoms.nr + 1;
 
     if (nullptr == fr_)
     {
@@ -1053,26 +1098,25 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
         inputrec_->coulombtype = eelUSER;
     }
 
-    f_.resize(nalloc);
-    optf_.resize(nalloc);
-   
-    fr_->hwinfo = hwinfo;
+    gmx::ArrayRef<const std::string>  tabbfnm;
     init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
-                  box_, tabfn, tabfn, nullptr, nullptr, true, -1);
-    setup_bonded_threading(fr_, &ltop_->idef);
+                  state_->box, tabfn, tabfn, tabbfnm, *hwinfo, nullptr, true, -1);
+    init_bonded_threading(nullptr, 1, &bt_);
+    setup_bonded_threading(bt_, topology_->atoms.nr, &ltop_->idef);
     wcycle_    = wallcycle_init(debug, 0, cr);
-    mdatoms_   = init_mdatoms(nullptr, mtop_, false);
-    atoms2md(mtop_, inputrec_, -1, nullptr, topology_->atoms.nr, mdatoms_);   
+    MDatoms_   = new std::unique_ptr<gmx::MDAtoms>;
+    *MDatoms_  = gmx::makeMDAtoms(nullptr, *mtop_, *inputrec_, false);
+    atoms2md(mtop_, inputrec_, -1, nullptr, topology_->atoms.nr, MDatoms_->get());
     
     if (nullptr != shellfc_)
     {
-        make_local_shells(cr, mdatoms_, shellfc_);
+        make_local_shells(cr, MDatoms_->get()->mdatoms(), shellfc_);
     }
     if (ieqd != eqdAXs && ieqd != eqdAXps)
     {
         for (auto i = 0; i < mtop_->natoms; i++)
         {
-            mdatoms_->row[i] = 0;
+            MDatoms_->get()->mdatoms()->row[i] = 0;
         }
     }
     return immOK;
@@ -1087,46 +1131,49 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
     clear_mat (force_vir);
     for (auto i = 0; i < mtop_->natoms; i++)
     {
-        mdatoms_->chargeA[i] = mtop_->moltype[0].atoms.atom[i].q;  
+        MDatoms_->get()->mdatoms()->chargeA[i] = mtop_->moltype[0].atoms.atom[i].q;  
         if (nullptr != debug)
         {
-            fprintf(debug, "QQQ Setting q[%d] to %g\n", i, mdatoms_->chargeA[i]);
+            fprintf(debug, "QQQ Setting q[%d] to %g\n", i, MDatoms_->get()->mdatoms()->chargeA[i]);
         }
     }
+    if (bHaveVSites_)
+    {
+        vsite_  = new std::unique_ptr<gmx_vsite_t>;
+        *vsite_ = initVsite(*mtop_, cr);
+    }
+    rvec mu_tot = { 0, 0, 0 };
+ 
     if (nullptr != shellfc_)
     {
         auto nnodes = cr->nnodes;
         cr->nnodes  = 1;
-        if (bHaveVSites_)
-        {
-            vsite_ = init_vsite(mtop_, cr, false);
-        }
-        relax_shell_flexcon(fplog, cr, false, 0, inputrec_, 
+        relax_shell_flexcon(fplog, cr, nullptr, false, 
+                            nullptr, 0, inputrec_, 
                             true, force_flags, ltop_, nullptr, 
                             enerd_, fcd_, state_,
-                            &f_, force_vir, mdatoms_,
+                            f_, force_vir, MDatoms_->get()->mdatoms(),
                             &nrnb_, wcycle_, nullptr,
                             &(mtop_->groups), shellfc_, 
-                            fr_, false, t, nullptr,
-                            vsite_);
+                            fr_, t, mu_tot, vsite_->get(),
+                            DdOpenBalanceRegionBeforeForceComputation::no,
+                            DdCloseBalanceRegionAfterForceComputation::no);
         cr->nnodes = nnodes;     
     }
     else
     {   
-        if (bHaveVSites_)
-        {
-            vsite_ = init_vsite(mtop_, cr, false);
-        }
-        do_force(fplog, cr, inputrec_, 0,
+        do_force(fplog, cr, nullptr, inputrec_, nullptr, nullptr, 0,
                  &nrnb_, wcycle_, ltop_,
                  &(mtop_->groups),
-                 box_, &state_->x, nullptr,
-                 &f_, force_vir, mdatoms_,
+                 state_->box, state_->x, nullptr,
+                 f_, force_vir, MDatoms_->get()->mdatoms(),
                  enerd_, fcd_,
                  state_->lambda, nullptr,
-                 fr_, vsite_, nullptr, t,
-                 nullptr, false,
-                 force_flags);
+                 fr_, vsite_->get(), mu_tot, t,
+                 nullptr,
+                 force_flags,
+                 DdOpenBalanceRegionBeforeForceComputation::no,
+                 DdCloseBalanceRegionAfterForceComputation::no);
     }
 }
 
@@ -1153,7 +1200,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
     bool      converged   = false;
     int       iter        = 0;
     
-    gmx_omp_nthreads_init(mdlog, cr, 1, 1, 0, false, false);
+    gmx_omp_nthreads_init(mdlog, cr, 1, 1, 1, 0, false, false);
     GenerateGromacs(mdlog, cr, tabfn, hwinfo, iChargeDistributionModel);
     if (bSymmetricCharges)
     {
@@ -1529,10 +1576,9 @@ void MyMol::CalcPolarizability(double     efield,
     rvec                mu_ref, mu_tot;
     
     myforce                            = new MyForceProvider;
-    fr_->forceBufferNoVirialSummation  = new PaddedRVecVector; 
-    fr_->forceBufferNoVirialSummation->resize(f_.size());     
-    fr_->efield      = myforce; 
-    fr_->bF_NoVirSum = true;  
+    fr_->forceBufferForDirectVirialContributions  = new std::vector<gmx::RVec>; 
+    fr_->forceBufferForDirectVirialContributions->resize(mtop_->natoms);
+
     myforce->setField(field); 
     CalcDipole(mu_ref);       
     computeForces(fplog, cr);
@@ -1557,9 +1603,9 @@ void MyMol::PrintConformation(const char *fn)
 {
     char title[STRLEN];
 
-    put_in_box(topology_->atoms.nr, box_, as_rvec_array(state_->x.data()), 0.3);
+    put_in_box(topology_->atoms.nr, state_->box, as_rvec_array(state_->x.data()), 0.3);
     sprintf(title, "%s processed by alexandria", molProp()->getMolname().c_str());
-    write_sto_conf(fn, title, &topology_->atoms, as_rvec_array(state_->x.data()), nullptr, epbcNONE, box_);
+    write_sto_conf(fn, title, &topology_->atoms, as_rvec_array(state_->x.data()), nullptr, epbcNONE, state_->box);
 }
 
 void MyMol::PrintTopology(const char             *fn,
@@ -1583,8 +1629,8 @@ void MyMol::PrintTopology(const char             *fn,
     fclose(fp);
 }
 
-void add_tensor(std::vector<std::string> *commercials,
-                const char *title, const tensor &Q)
+static void add_tensor(std::vector<std::string> *commercials,
+                       const char *title, const tensor &Q)
 {
     char buf[256];
     snprintf(buf, sizeof(buf), "%s:\n"
@@ -1598,7 +1644,7 @@ void add_tensor(std::vector<std::string> *commercials,
     commercials->push_back(buf);
 }
 
-void rotate_tensor(tensor Q, tensor Qreference)
+static void rotate_tensor(tensor Q, tensor Qreference)
 {
     matrix rotmatrix;
     rvec   tmpvec;
@@ -1815,7 +1861,7 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
         }
         else
         {
-            Qgresp_.makeGrid(spacing, box_, as_rvec_array(state_->x.data()));
+            Qgresp_.makeGrid(spacing, state_->box, as_rvec_array(state_->x.data()));
         }
         if (nullptr != rhofn)
         {

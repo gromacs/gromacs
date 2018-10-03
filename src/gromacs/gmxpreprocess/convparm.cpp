@@ -453,15 +453,9 @@ assign_param(t_functype ftype, t_iparams *newparam,
     return 0;
 }
 
-<<<<<<< HEAD
 int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
                  real forceparams[MAXFORCEPARAM], int comb, real reppow,
-                 int start, gmx_bool bAppend)
-=======
-static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
-                        real forceparams[MAXFORCEPARAM], int comb, real reppow,
-                        int start, bool bAppend)
->>>>>>> master
+                 int start, bool bAppend)
 {
     t_iparams newparam;
     int       type;

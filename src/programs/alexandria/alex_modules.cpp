@@ -39,25 +39,8 @@
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 
-int alex_gentop(int argc, char *argv[]);
-int alex_tune_fc(int argc, char *argv[]);
-int alex_tune_eem(int argc, char *argv[]);
-int alex_tune_pol(int argc, char *argv[]);
-int alex_poldata_test(int argc, char *argv[]);
-int alex_gauss2molprop(int argc, char *argv[]);
-int alex_bastat(int argc, char *argv[]);
-int alex_analyze(int argc, char *argv[]);
-int alex_gen_table(int argc, char *argv[]);
-int alex_merge_mp(int argc, char *argv[]);
-int alex_merge_pd(int argc, char *argv[]);
-int alex_mp2csv(int argc, char *argv[]);
-int alex_molprop_test(int argc, char *argv[]);
-int alex_molprop_check(int argc, char *argv[]);
-int alex_tune_zeta(int argc, char *argv[]);
-int alex_molselect(int argc, char *argv[]);
-
 //! Initializer for a module that defaults to nice level zero.
-void initSettingsNoNice(gmx::CommandLineModuleSettings *settings)
+static void initSettingsNoNice(gmx::CommandLineModuleSettings *settings)
 {
     settings->setDefaultNiceLevel(0);
 }
@@ -69,9 +52,9 @@ void initSettingsNoNice(gmx::CommandLineModuleSettings *settings)
  * \param[in] name             Name for the new module.
  * \param[in] shortDescription One-line description for the new module.
  */
-void registerModule(gmx::CommandLineModuleManager                *manager,
-                    gmx::CommandLineModuleManager::CMainFunction  mainFunction,
-                    const char *name, const char *shortDescription)
+static void registerModule(gmx::CommandLineModuleManager                *manager,
+                           gmx::CommandLineModuleManager::CMainFunction  mainFunction,
+                           const char *name, const char *shortDescription)
 {
     manager->addModuleCMainWithSettings(name, shortDescription, mainFunction,
                                         &initSettingsNoNice);

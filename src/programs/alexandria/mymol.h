@@ -64,6 +64,7 @@ struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
 struct t_topology;
+struct gmx_hw_info_t;
 
 enum eDih {
     edihNo,
@@ -128,7 +129,7 @@ class MyMol
         immStatus        immAtoms_;
         immStatus        immCharges_;
         immStatus        immTopology_;
-        gmx_vsite_t     *vsite_;
+        std::unique_ptr<gmx_vsite_t> *vsite_;
         GentopVsites     gvt_;
         std::string      forcefield_;
 
@@ -262,12 +263,12 @@ class MyMol
         double                    isoPol_calc_   = 0;
         double                    anisoPol_elec_ = 0;
         double                    anisoPol_calc_ = 0;
-        matrix                    box_;
         tensor                    alpha_elec_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
         tensor                    alpha_calc_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
         eSupport                  eSupp_;
-        PaddedRVecVector          f_;
-        PaddedRVecVector          optf_;
+        //gmx::PaddedArrayRef<gmx::RVec> f_;
+        PaddedRVecVector  f_;
+        gmx::PaddedArrayRef<gmx::RVec> optf_;
         std::vector<int>          symmetric_charges_;
         QgenResp                  Qgresp_;
         QgenEem                   Qgeem_;
@@ -279,9 +280,10 @@ class MyMol
         t_symtab                 *symtab_;
         t_inputrec               *inputrec_;
         gmx_enerdata_t           *enerd_;
-        t_mdatoms                *mdatoms_;
+        std::unique_ptr<gmx::MDAtoms> *MDatoms_;
         t_topology               *topology_;
         t_fcdata                 *fcd_;
+        struct bonded_threading_t *bt_;
         t_nrnb                    nrnb_;
         gmx_wallcycle_t           wcycle_;
         
@@ -340,7 +342,7 @@ class MyMol
         /*! \brief
          * Return the coordinate vector of the molecule
          */
-        const PaddedRVecVector &x() const { return state_->x; }
+        const gmx::HostVector<gmx::RVec> &x() const { return state_->x; }
                
         /*! \brief
          * Return my inner molprop

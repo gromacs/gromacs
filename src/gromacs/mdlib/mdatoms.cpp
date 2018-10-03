@@ -59,7 +59,6 @@
 
 #define ALMOST_ZERO 1e-30
 
-<<<<<<< HEAD
 static real getAtomRow(int atomnumber)
 {
     if (atomnumber == 1 || atomnumber == 2)
@@ -97,14 +96,13 @@ static real getAtomRow(int atomnumber)
     }
 }
 
-t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t *mtop, gmx_bool bFreeEnergy)
-=======
+//t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t *mtop, gmx_bool bFreeEnergy)
+
 namespace gmx
 {
 
 MDAtoms::MDAtoms()
     : mdatoms_(nullptr)
->>>>>>> master
 {
 }
 
@@ -285,18 +283,18 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
         gmx::AlignedAllocationPolicy::free(md->invmass);
         md->invmass = new(gmx::AlignedAllocationPolicy::malloc((md->nalloc + GMX_REAL_MAX_SIMD_WIDTH)*sizeof(*md->invmass)))real;
         srenew(md->invMassPerDim, md->nalloc);
-<<<<<<< HEAD
+        //<<<<<<< HEAD
         srenew(md->chargeA, md->nalloc);
         srenew(md->zetaA, md->nalloc);
         srenew(md->row, md->nalloc);
-=======
+        //=======
         // TODO eventually we will have vectors and just resize
         // everything, but for now the semantics of md->nalloc being
         // the capacity are preserved by keeping vectors within
         // mdAtoms having the same properties as the other arrays.
         mdAtoms->reserve(md->nalloc);
         mdAtoms->resize(md->nr);
->>>>>>> master
+        //>>>>>>> master
         srenew(md->typeA, md->nalloc);
         if (md->nPerturbed)
         {

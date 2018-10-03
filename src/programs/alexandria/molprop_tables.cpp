@@ -43,7 +43,9 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/strconvert.h"
 
+#include "alex_modules.h"
 #include "categories.h"
 #include "composition.h"
 #include "latex_util.h"

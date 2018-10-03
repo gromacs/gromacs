@@ -530,11 +530,7 @@ real polarize(int nbonds,
         ai   = forceatoms[i++];
         aj   = forceatoms[i++];
         ksh  = gmx::square(md->chargeA[aj])*ONE_4PI_EPS0/forceparams[type].polarize.alpha;
-<<<<<<< HEAD
         
-=======
->>>>>>> master
-
         ki   = pbc_rvec_sub(pbc, x[ai], x[aj], dx);                         /*   3      */
         dr2  = iprod(dx, dx);                                               /*   5		*/
         dr   = std::sqrt(dr2);                                              /*  10		*/

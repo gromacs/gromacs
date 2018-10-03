@@ -41,6 +41,7 @@
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/physicalnodecommunicator.h"
 #include "programs/alexandria/fill_inputrec.h"
 #include "programs/alexandria/gauss_io.h"
 #include "programs/alexandria/getmdlogger.h"
@@ -108,8 +109,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             //Generate charges and topology
             const char               *lot        = "B3LYP/aug-cc-pVTZ";
 
-            gmx::MDModules            mdModules;
-            t_inputrec               *inputrec   = mdModules.inputrec();
+            t_inputrec               *inputrec   = new t_inputrec();
             fill_inputrec(inputrec);
             mp_.setInputrec(inputrec);
             mp_.GenerateTopology(aps_, pd_, lot, qdist, false, false, false, bPolar, false, nullptr);
@@ -119,8 +119,9 @@ class RespTest : public gmx::test::CommandLineTestBase
             real           watoms      = 0;
             char          *symm_string = (char *)"";
             t_commrec     *cr          = init_commrec();
-            gmx::MDLogger  mdlog       = getMdLogger(cr, stdout);
-            gmx_hw_info_t *hwinfo      = gmx_detect_hardware(mdlog, cr, false);
+            auto pnc                   = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
+            auto mdlog                 = getMdLogger(cr, stdout);
+            auto hwinfo                = gmx_detect_hardware(mdlog, pnc);
             int            qcycle      = 1;
             real           qtol        = 1e-3;
             int            maxpot      = 100;

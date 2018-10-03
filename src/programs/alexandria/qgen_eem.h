@@ -79,7 +79,7 @@ class QgenEem
                             const std::string  molname,
                             const Poldata     &pd,
                             t_atoms           *atoms,
-                            PaddedRVecVector   x);     
+                            const gmx::HostVector<gmx::RVec> x);     
                             
         double rms() { return rms_; }
 
@@ -144,7 +144,7 @@ class QgenEem
 
         void solveQEem(FILE *fp);
         
-        void updatePositions(PaddedRVecVector x, t_atoms *atoms);
+        void updatePositions(gmx::HostVector<gmx::RVec> x, t_atoms *atoms);
 
         double calcSij(int i, int j);
 

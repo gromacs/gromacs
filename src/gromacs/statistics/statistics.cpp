@@ -219,17 +219,12 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
         double mae = 0, mse = 0;
         for (int i = 0; (i < N); i++)
         {
-<<<<<<< HEAD
             double dd = stats->y[i]-stats->x[i];
             d2 += gmx::square(dd);
             
             mae += fabs(dd);
             mse += dd;
-            if ((stats->dy[i]) && (weight == elsqWEIGHT_Y))
-=======
-            d2 += gmx::square(stats->x[i]-stats->y[i]);
-            if (((stats->dy[i]) != 0.0) && (weight == elsqWEIGHT_Y))
->>>>>>> master
+            if ((stats->dy[i] != 0.0) && (weight == elsqWEIGHT_Y))
             {
                 w = 1/gmx::square(stats->dy[i]);
             }

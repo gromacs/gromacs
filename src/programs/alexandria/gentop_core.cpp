@@ -55,7 +55,7 @@ void calc_angles_dihs(t_params *ang,
 {
     int           i, ai, aj, ak, al, t1, t2, t3;
     rvec          r_ij, r_kj, r_kl, m, n;
-    real          sign, th, costh, ph;
+    real          th, costh, ph;
     struct t_pbc  pbc;
 
     if (bPBC)
@@ -87,7 +87,7 @@ void calc_angles_dihs(t_params *ang,
         ak = dih->param[i].a[2];
         al = dih->param[i].a[3];
         ph = RAD2DEG*dih_angle(x[ai], x[aj], x[ak], x[al], bPBC ? &pbc : nullptr,
-                               r_ij, r_kj, r_kl, m, n, &sign, &t1, &t2, &t3);
+                               r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
         if (debug)
         {
             fprintf(debug, "GENTOP: ai=%3d aj=%3d ak=%3d al=%3d r_ij=%8.3f r_kj=%8.3f r_kl=%8.3f ph=%8.3f\n",
@@ -316,7 +316,7 @@ void symmetrize_charges(gmx_bool                                        bQsym,
             if (static_cast<int>(ss.size()) != atoms->nr)
             {
                 gmx_fatal(FARGS, "Wrong number (%d) of atom-numbers in symm_string: expected %d",
-                          ss.size(), atoms->nr);
+                          static_cast<int>(ss.size()), atoms->nr);
             }
             int ii = 0;
             for (auto is = ss.begin();

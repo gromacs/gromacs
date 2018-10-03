@@ -894,14 +894,7 @@ static void copyIdefFromMtop(const gmx_mtop_t &mtop,
     idef->cmap_grid               = new gmx_cmap_t;
     *idef->cmap_grid              = ffp->cmap_grid;
     idef->ilsort                  = ilsortUNKNOWN;
-<<<<<<< HEAD
-    init_block(&top->cgs);
-    init_blocka(&top->excls);
-    for (ftype = 0; ftype < F_NRE; ftype++)
-=======
-
     for (int ftype = 0; ftype < F_NRE; ftype++)
->>>>>>> master
     {
         idef->il[ftype].nr     = 0;
         idef->il[ftype].nalloc = 0;

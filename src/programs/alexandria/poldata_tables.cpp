@@ -45,7 +45,8 @@
 #include "composition.h"
 #include "latex_util.h"
 #include "poldata_low.h" 
- 
+#include "poldata_tables.h"
+
 namespace alexandria
 {
 

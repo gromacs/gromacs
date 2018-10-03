@@ -43,7 +43,9 @@
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/strconvert.h"
 
+#include "alex_modules.h"
 #include "composition.h"
 #include "molprop.h"
 #include "molprop_tables.h"
@@ -117,10 +119,10 @@ void pType::improveStats()
     }
 }
 
-bool check_matrix(double             **a, 
-                  double              *x, 
-                  size_t               nrow,
-                  std::vector<pType>  &ptypes)
+static bool check_matrix(double             **a, 
+                         double              *x, 
+                         size_t               nrow,
+                         std::vector<pType>  &ptypes)
 {
     int nrownew = nrow;
     for (size_t i = 0; i < ptypes.size(); i++)
@@ -136,7 +138,8 @@ bool check_matrix(double             **a,
             {
                 return false;
                 gmx_fatal(FARGS, "Columns %d (%s) and %d (%s) are linearly dependent",
-                          i, ptypes[i].name().c_str(), j, ptypes[j].name().c_str());
+                          static_cast<int>(i), ptypes[i].name().c_str(), 
+                          static_cast<int>(j), ptypes[j].name().c_str());
             }
         }
     }
@@ -149,7 +152,7 @@ bool check_matrix(double             **a,
             {
                 return false;
                 gmx_fatal(FARGS, "a[%d][%d] = 0. Pol type = %s",
-                          i, i, ptypes[i].name().c_str());
+                          static_cast<int>(i),  static_cast<int>(i), ptypes[i].name().c_str());
             }
         }
     }
@@ -750,8 +753,6 @@ int alex_tune_pol(int argc, char *argv[])
     FILE                                  *tp;
     int                                    i, nalexandria_atypes;
     int                                    nwarn = 0;
-    char                                 **fns;
-    int                                    nfiles;
     std::vector<alexandria::MolProp>       mp;
     std::vector<std::string>               zpol;
     MolPropSortAlgorithm                   mpsa;
@@ -780,9 +781,9 @@ int alex_tune_pol(int argc, char *argv[])
         alexandria::readPoldata(opt2fn_null("-di", NFILE, fnm), pd, ap);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-
-    nfiles = opt2fns(&fns, "-f", NFILE, fnm);
-    nwarn = merge_xml(nfiles, fns, mp, nullptr, nullptr, (char *)"double_dip.dat", ap, pd, true);
+    
+    auto fns = opt2fns("-f", NFILE, fnm);
+    nwarn = merge_xml(fns, mp, nullptr, nullptr, (char *)"double_dip.dat", ap, pd, true);
     
     if (nwarn > maxwarn)
     {

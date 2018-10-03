@@ -422,7 +422,8 @@ void ReadGauss(const char          *g09,
             OpenBabel::OBPairData *type = (OpenBabel::OBPairData*) atom->GetData("FFAtomType");
             if (nullptr == type)
             {
-                gmx_fatal(FARGS, "Cannot find %s atom type for atom %s", forcefield.c_str(), atom->GetIdx());
+                gmx_fatal(FARGS, "Cannot find %s atom type for atom %s", 
+                          forcefield.c_str(), static_cast<int>(atom->GetIdx()));
             }
             if (nullptr != debug)
             {

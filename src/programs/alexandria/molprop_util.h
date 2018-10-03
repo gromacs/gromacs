@@ -34,6 +34,8 @@
 #ifndef MOLPROP_UTIL_H
 #define MOLPROP_UTIL_H
 
+#include "gromacs/utility/arrayref.h"
+
 #include "molprop.h"
 #include "molselect.h"
 
@@ -141,7 +143,7 @@ void generate_formula(std::vector<MolProp> &mp,
 int merge_doubles(std::vector<alexandria::MolProp> &mp,
                   char *doubles, bool bForceMerge);
 
-int merge_xml(int nfile, char **infiles,
+int merge_xml(gmx::ArrayRef<const std::string> infiles,
               std::vector<alexandria::MolProp> &mp,
               char *outf, char *sorted, char *doubles,
               gmx_atomprop_t ap,

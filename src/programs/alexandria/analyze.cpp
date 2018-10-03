@@ -35,6 +35,7 @@
 #include <cstring>
 #include <string>
 
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/xvgr.h"
@@ -51,6 +52,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/pleasecite.h"
 
+#include "alex_modules.h"
 #include "categories.h"
 #include "composition.h"
 #include "gmxpre.h"
@@ -572,8 +574,6 @@ int alex_analyze(int argc, char *argv[])
     MolPropObservable                mpo;
     gmx_atomprop_t                   ap;
     gmx_output_env_t                *oenv;
-    char                           **mpname = nullptr;
-    int                              nmpfile;
 
     npa = asize(pa);
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm,
@@ -582,7 +582,7 @@ int alex_analyze(int argc, char *argv[])
         return 0;
     }
     ap = gmx_atomprop_init();
-    nmpfile = opt2fns(&mpname, "-m", NFILE, fnm);    
+    gmx::ArrayRef<const std::string> mpname = opt2fns("-m", NFILE, fnm);
     gms.read(opt2fn("-sel", NFILE, fnm));
     mpsa = MPSA_NR;
     if (opt2parg_bSet("-sort", npa, pa))
@@ -620,16 +620,16 @@ int alex_analyze(int argc, char *argv[])
 
     if (bMerge)
     {
-        int nwarn = merge_xml(nmpfile, mpname, mp, nullptr, nullptr, nullptr, ap, pd, TRUE);
+        int nwarn = merge_xml(mpname, mp, nullptr, nullptr, nullptr, ap, pd, TRUE);
         if (nwarn > maxwarn)
         {
             printf("Too many warnings (%d). Terminating.\n", nwarn);
             return 0;
         }
     }
-    else
+    else if (mpname.size() > 0)
     {
-        MolPropRead((const char *)mpname[0], mp);
+        MolPropRead(mpname[0].c_str(), mp);
         generate_composition(mp, pd);
         generate_formula(mp, ap);
     }

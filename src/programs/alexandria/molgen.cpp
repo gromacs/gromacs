@@ -43,8 +43,10 @@
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/physicalnodecommunicator.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "alex_modules.h"
 #include "fill_inputrec.h"
 #include "getmdlogger.h"
 #include "gmx_simple_comm.h"
@@ -300,7 +302,7 @@ MolGen::MolGen()
     maxESP_    = 100;
     fixchi_    = (char *)"";
     lot_       = "B3LYP/aug-cc-pVTZ";
-    inputrec_  = mdModules_.inputrec();
+    inputrec_  = new t_inputrec();
     fill_inputrec(inputrec_);
     for (int i = 0; i < ermsNR; i++)
     {
@@ -394,7 +396,8 @@ void MolGen::optionsFinished()
     hfac0_                      = hfac_;
     cr_                         = init_commrec();
     mdlog_                      = getMdLogger(cr_, stdout);
-    hwinfo_                     = gmx_detect_hardware(mdlog_, cr_, false);
+    auto pnc                    = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
+    hwinfo_                     = gmx_detect_hardware(mdlog_, pnc);
     if (MASTER(cr_))
     {
         printf("There are %d threads/processes.\n", cr_->nnodes);

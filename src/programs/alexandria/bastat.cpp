@@ -57,6 +57,7 @@
 #include "gromacs/utility/init.h"
 #include "gromacs/utility/real.h"
 
+#include "alex_modules.h"
 #include "molprop_util.h"
 #include "mymol.h"
 #include "poldata_xml.h"
@@ -138,9 +139,9 @@ static void sort_bonds(t_bonds *b)
     sort_dihs(b->imp);
 }
 
-void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
-              const std::string a1, const std::string a2,
-              double blen, double spacing, int order)
+static void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
+                     const std::string a1, const std::string a2,
+                     double blen, double spacing, int order)
 {
     GMX_RELEASE_ASSERT(a1.size() > 0, "atom name a1 is empty");
     GMX_RELEASE_ASSERT(a2.size() > 0, "atom name a2 is empty");
@@ -184,9 +185,9 @@ void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
     }
 }
 
-void lo_add_angle(FILE *fplog, const char *molname, std::vector<t_angle> &angle,
-                  const std::string a1, const std::string a2, const std::string a3,
-                  double refValue, double spacing)
+static void lo_add_angle(FILE *fplog, const char *molname, std::vector<t_angle> &angle,
+                         const std::string a1, const std::string a2, const std::string a3,
+                         double refValue, double spacing)
 {
     GMX_RELEASE_ASSERT(a1.size() > 0, "atom name a1 is empty");
     GMX_RELEASE_ASSERT(a2.size() > 0, "atom name a2 is empty");
@@ -233,9 +234,9 @@ void lo_add_angle(FILE *fplog, const char *molname, std::vector<t_angle> &angle,
     }
 }
 
-void add_angle(FILE *fplog, const char *molname, t_bonds *b,
-               const std::string a1, const std::string a2, const std::string a3,
-               double refValue, double spacing, InteractionType iType)
+static void add_angle(FILE *fplog, const char *molname, t_bonds *b,
+                      const std::string a1, const std::string a2, const std::string a3,
+                      double refValue, double spacing, InteractionType iType)
 {
     lo_add_angle(fplog, molname,
                  (eitANGLES == iType) ? b->angle : b->linangle,
@@ -361,9 +362,9 @@ static void lo_dump_histo(char *fn, char *xaxis, const gmx_output_env_t *oenv, i
     }
 }
 
-void dump_histo(t_bonds *b, double bspacing,
-                double aspacing,
-                const gmx_output_env_t *oenv)
+static void dump_histo(t_bonds *b, double bspacing,
+                       double aspacing,
+                       const gmx_output_env_t *oenv)
 {
     int  N;
     char buf[256];
@@ -425,9 +426,9 @@ static void round_numbers(real *av, real *sig)
     *sig = ((int)(*sig*100+50))/100.0;
 }
 
-void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
-               real Dm, real beta, real kt, real klin,
-               real kp, real kimp, real kub)
+static void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
+                      real Dm, real beta, real kt, real klin,
+                      real kp, real kimp, real kub)
 {
     int                      N;
     real                     av, sig;
@@ -585,15 +586,12 @@ int alex_bastat(int argc, char *argv[])
     t_pbc                            pbc;
     int                              t1, t2, t3;
     matrix                           box;
-    real                             sign;
     double                           bspacing = 1;   /* pm */
     double                           aspacing = 0.5; /* degree */
     double                           dspacing = 1;   /* degree */
     gmx_output_env_t                *oenv     = nullptr;
     Poldata                          pd;
     gmx_atomprop_t                   aps;
-    int                              nfiles;
-    char                           **fns;
     MolSelect                        gms;
     std::vector<alexandria::MolProp> mp;
     std::string                      cai, caj, cak, cal;
@@ -625,8 +623,8 @@ int alex_bastat(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     /* Read Molprops */
-    nfiles = opt2fns(&fns, "-f", NFILE, fnm);
-    auto nwarn = merge_xml(nfiles, fns, mp, nullptr, nullptr, nullptr, aps, pd, true);
+    auto nwarn = merge_xml(opt2fns("-f", NFILE, fnm),
+                           mp, nullptr, nullptr, nullptr, aps, pd, true);
     if (nwarn > maxwarn)
     {
         printf("Too many warnings (%d). Terminating.\n", nwarn);
@@ -774,7 +772,7 @@ int alex_bastat(int argc, char *argv[])
                         auto al  = mmi.ltop_->idef.il[funcType].iatoms[j+4];
                         angle    = RAD2DEG*dih_angle(x[ai], x[aj], x[ak], x[al],
                                                      &pbc, r_ij, r_kj, r_kl, mm, nn,
-                                                     &sign, &t1, &t2, &t3);
+                                                     &t1, &t2, &t3);
                         if (pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ai], cai) &&
                             pd.atypeToBtype(*mmi.topology_->atoms.atomtype[aj], caj) &&
                             pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ak], cak) &&

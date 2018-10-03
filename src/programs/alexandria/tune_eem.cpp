@@ -54,6 +54,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "alex_modules.h"
 #include "gentop_core.h"
 #include "getmdlogger.h"
 #include "gmx_simple_comm.h"
@@ -997,7 +998,6 @@ int alex_tune_eem(int argc, char *argv[])
                              efield);
 
         writePoldata(opt2fn("-o", NFILE, fnm), opt.poldata(), bcompress);
-        done_filenms(NFILE, fnm);
         gmx_ffclose(fp);
     }
     return 0;

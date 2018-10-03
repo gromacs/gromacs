@@ -130,10 +130,6 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
         ewtabscale          = fr->ic->tabq_scale;
         ewtabhalfspace      = 0.5/ewtabscale;
     }
-<<<<<<< HEAD
-    rcoulomb2           = fr->rcoulomb*fr->rcoulomb;
-    rvdw                = fr->rvdw;
-=======
 
     const interaction_const_t *ic = fr->ic;
 
@@ -151,7 +147,6 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
 
     rcoulomb2           = ic->rcoulomb*ic->rcoulomb;
     rvdw                = ic->rvdw;
->>>>>>> master
     rvdw2               = rvdw*rvdw;
     sh_dispersion       = ic->dispersion_shift.cpot;
     sh_repulsion        = ic->repulsion_shift.cpot;
@@ -426,7 +421,6 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         break;
 
                     case GMX_NBKERNEL_VDW_BUCKINGHAM:
-<<<<<<< HEAD
                         /* Modiefied Buckingham: JCTC  Volume: 9  Page: 452  Year: 2012 */
                         c                = vdwparam[tj+1];   /*sigma*/
                         cexp1            = vdwparam[tj+2];   /*epsilon*/
@@ -447,20 +441,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         fvdw_rep         = (6*vdw_wang1*cexp1*c5*(cexp2*r6 + 6*r5*c + cexp2*c6))/(cexp2*(vdw_wang2*vdw_wang2));
                         fvdw             = fvdw_rep - fvdw_disp;
                         
-                        if (fr->vdw_modifier == eintmodPOTSHIFT)
-=======
-                        /* Buckingham */
-                        c6               = vdwparam[tj];
-                        cexp1            = vdwparam[tj+1];
-                        cexp2            = vdwparam[tj+2];
-
-                        rinvsix          = rinvsq*rinvsq*rinvsq;
-                        vvdw_disp        = c6*rinvsix;
-                        br               = cexp2*rsq*rinv;
-                        vvdw_rep         = cexp1*std::exp(-br);
-                        fvdw             = (br*vvdw_rep-vvdw_disp)*rinvsq;
                         if (ic->vdw_modifier == eintmodPOTSHIFT)
->>>>>>> master
                         {
                             vvdw             = (vvdw_rep-cexp1*std::exp(-cexp2*rvdw))-(vvdw_disp + c6*sh_dispersion)/6.0;
                         }

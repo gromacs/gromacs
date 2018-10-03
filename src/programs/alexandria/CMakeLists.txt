@@ -33,7 +33,7 @@ set(ALEXANDRIA_SOURCES
            poldata_xml.cpp
            poldata_tables.cpp
            poldata_low.cpp
-           xml_util.c
+           xml_util.cpp
            latex_util.cpp
            mymol_low.cpp
            mymol.cpp
@@ -90,11 +90,11 @@ set_target_properties(alexandria PROPERTIES
                       OUTPUT_NAME "${BINARY_NAME}")
 
 install(TARGETS alexandria
-        RUNTIME DESTINATION ${BIN_INSTALL_DIR})
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libalexandria.pc.cmakein ${CMAKE_CURRENT_BINARY_DIR}/libalexandria.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libalexandria.pc
-        DESTINATION ${LIB_INSTALL_DIR}/pkgconfig
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
         RENAME "libalexandria${GMX_LIBS_SUFFIX}.pc"
         COMPONENT development)
 

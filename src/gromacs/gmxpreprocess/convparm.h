@@ -51,6 +51,6 @@ void convert_params(int atnr, t_params nbtypes[],
 
 int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
                  real forceparams[MAXFORCEPARAM], int comb, real reppow,
-                 int start, gmx_bool bAppend);
+                 int start, bool bAppend);
 
 #endif

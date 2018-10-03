@@ -47,6 +47,7 @@
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/textreader.h"
 
 #include "nmsimplex.h"
@@ -76,7 +77,7 @@ QgenResp::QgenResp()
     bRandQ_             = false;
 }
 
-void QgenResp::updateAtomCoords(const PaddedRVecVector x)
+void QgenResp::updateAtomCoords(const gmx::HostVector<gmx::RVec> x)
 {
     for (size_t i = 0; i < ra_.size(); i++)
     {
@@ -100,7 +101,7 @@ void QgenResp::updateAtomCharges(t_atoms  *atoms)
 
 void QgenResp::setAtomInfo(t_atoms                   *atoms,
                            const alexandria::Poldata &pd,
-                           const PaddedRVecVector     x,
+                           const gmx::HostVector<gmx::RVec> x,
                            const int                  qtotal)
 {
     nAtom_  = 0;
@@ -868,7 +869,7 @@ real QgenResp::getRms(real *wtot, real *rrms)
 }
 
 
-double calcJ(ChargeDistributionModel iChargeDistributionModel,
+static double calcJ(ChargeDistributionModel iChargeDistributionModel,
              rvec                    espx,
              rvec                    rax,
              double                  zeta,

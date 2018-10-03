@@ -87,24 +87,17 @@ void match_atomnames_with_rtp(t_restp restp[], t_hackblock hb[],
  * If renaming involves atoms added wrt to the rtp database,
  * add these atoms to restp.
  */
-<<<<<<< HEAD
+
 void print_top_comment(FILE       *out,
                        const char *filename,
                        const char *ffdir,
-                       gmx_bool    bITP,
+                       bool        bITP,
                        const char *remark);
 
 void print_top_header(FILE *out, const char *filename,
-                      gmx_bool bITP,
+                      bool bITP,
                       const char *ffdir, real mHmult,
                       const char *remark);
-=======
-
-void print_top_comment(FILE *out, const char *filename, const char *ffdir, bool bITP);
-
-void print_top_header(FILE *out, const char *filename, bool bITP,
-                      const char *ffdir, real mHmult);
->>>>>>> master
 
 void print_top_mols(FILE *out,
                     const char *title, const char *ffdir, const char *water,

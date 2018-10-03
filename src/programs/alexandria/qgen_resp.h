@@ -141,10 +141,10 @@ class QgenResp
 
         void setAtomInfo(t_atoms                *atoms,
                          const Poldata          &pd,
-                         const PaddedRVecVector  x,
+                         const gmx::HostVector<gmx::RVec> x,
                          const int               qtotal);
 
-        void updateAtomCoords(const PaddedRVecVector x);
+        void updateAtomCoords(const gmx::HostVector<gmx::RVec> x);
         
         void updateAtomCharges(t_atoms  *atoms);
 

@@ -38,7 +38,6 @@
 #include <cstring>
 
 #include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/pbcutil/pbc.h"
 
 #include "gentop_core.h"
@@ -78,23 +77,6 @@ enum immStatus {
 
 namespace alexandria
 {
-
-class MyForceProvider : public IForceProvider
-{
-    private:
-        std::vector<double> efield_;
-        
-    public:
-    
-        MyForceProvider();
-        
-        void calculateForces(const t_commrec  *cr,
-                             const t_mdatoms  *mdatoms,
-                             PaddedRVecVector *force,
-                             double            t);
-                         
-        void setField(std::vector<double> field) { efield_ = field; }
-};
 
 bool is_planar(rvec   xi,  rvec xj, 
                rvec   xk,  rvec xl, 
@@ -154,14 +136,13 @@ void plist_to_mtop(const Poldata             &pd,
                    std::vector<PlistWrapper>  plist,
                    gmx_mtop_t                *mtop_);
                    
-void do_init_mtop(const Poldata            &pd,
-                  gmx_mtop_t               *mtop,
-                  char                    **molname,
-                  t_atoms                  *atoms,
-                  std::vector<PlistWrapper> plist,
-                  t_inputrec               *ir,
-                  t_symtab                 *symtab,
-                  const char               *tabfn);
+gmx_mtop_t *do_init_mtop(const Poldata            &pd,
+                         char                    **molname,
+                         t_atoms                  *atoms,
+                         std::vector<PlistWrapper> plist,
+                         t_inputrec               *ir,
+                         t_symtab                 *symtab,
+                         const char               *tabfn);
                   
 void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka);
 
