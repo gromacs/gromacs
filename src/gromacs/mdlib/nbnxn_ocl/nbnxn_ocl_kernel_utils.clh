@@ -35,8 +35,8 @@
 
 #define GMX_DOUBLE 0
 
-#include "gromacs/gpu_utils/vectype_ops.clh"
 #include "gromacs/gpu_utils/device_utils.clh"
+#include "gromacs/gpu_utils/vectype_ops.clh"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/pbcutil/ishift.h"
 
@@ -56,7 +56,7 @@
 #define USE_CJ_PREFETCH 0
 #endif
 
-#if (defined cl_intel_subgroups || defined cl_khr_subgroups || __OPENCL_VERSION__ >= 210)
+#if defined cl_intel_subgroups || defined cl_khr_subgroups || (defined __OPENCL_VERSION__ && __OPENCL_VERSION__ >= 210)
 #define HAVE_SUBGROUP 1
 #else
 #define HAVE_SUBGROUP 0
@@ -68,9 +68,9 @@
 #define HAVE_INTEL_SUBGROUP 0
 #endif
 
-#if _INTEL_SOURCE_
+#if defined _INTEL_SOURCE_
 #define SUBGROUP_SIZE 8
-#elif _AMD_SOURCE_
+#elif defined _AMD_SOURCE_
 #define SUBGROUP_SIZE 64
 #else
 #define SUBGROUP_SIZE 32
@@ -228,7 +228,7 @@ int  preloadCj4Subgroup(const __global int *gm_cj)
 #endif //USE_SUBGROUP_PRELOAD
 
 #if USE_SUBGROUP_PRELOAD
-typedef int CjType;
+typedef size_t CjType;
 #else
 typedef __local int* CjType;
 #endif
@@ -245,9 +245,9 @@ typedef __local int* CjType;
 gmx_opencl_inline
 void preloadCj4(CjType gmx_unused             *cjs,
                 const __global int gmx_unused *gm_cj,
-                int                            tidxi,
-                int                            tidxj,
-                bool                           iMaskCond)
+                int gmx_unused                 tidxi,
+                int gmx_unused                 tidxj,
+                bool gmx_unused                iMaskCond)
 {
 #if USE_SUBGROUP_PRELOAD
     *cjs = preloadCj4Subgroup(gm_cj);
@@ -280,8 +280,8 @@ int loadCjPreload(__local int           *        sm_cjPreload,
  * If cj4 preloading is enabled, it loads from the local memory, otherwise from global.
  */
 gmx_opencl_inline
-int loadCj(CjType cjs, const __global int *gm_cj,
-           int jm, int tidxi, int tidxj)
+int loadCj(CjType cjs, const __global int gmx_unused* gm_cj,
+           int jm, int gmx_unused tidxi, int gmx_unused tidxj)
 {
 #if USE_SUBGROUP_PRELOAD
     return sub_group_broadcast(cjs, jm);
@@ -602,7 +602,7 @@ float pmecorrF(float z2)
 #if REDUCE_SHUFFLE
 gmx_opencl_inline
 void reduce_force_j_shfl(float3 fin, __global float *fout,
-                         int tidxi, int tidxj, int aidx)
+                         int gmx_unused tidxi, int gmx_unused tidxj, int aidx)
 {
     /* Only does reduction over 4 elements in cluster. Needs to be changed
      * for CL_SIZE>4. See CUDA code for required code */
@@ -655,7 +655,7 @@ void reduce_force_j_generic(__local float *f_buf, float3 fcj_buf, __global float
 /*! Final j-force reduction
  */
 gmx_opencl_inline
-void reduce_force_j(__local float *f_buf, float3 fcj_buf, __global float *fout,
+void reduce_force_j(__local float gmx_unused *f_buf, float3 fcj_buf, __global float *fout,
                     int tidxi, int tidxj, int aidx)
 {
 #if REDUCE_SHUFFLE
@@ -795,7 +795,7 @@ void reduce_force_i_and_shift_pow2(volatile __local float *f_buf, float3* fci_bu
 /*! Final i-force reduction
  */
 gmx_opencl_inline
-void reduce_force_i_and_shift(__local float *f_buf, float3* fci_buf, __global float *f,
+void reduce_force_i_and_shift(__local float gmx_unused *f_buf, float3* fci_buf, __global float *f,
                               bool bCalcFshift, int tidxi, int tidxj, int sci,
                               int shift, __global float *fshift)
 {
@@ -868,7 +868,7 @@ void reduce_energy_pow2(volatile __local float  *buf,
 }
 
 gmx_opencl_inline
-void reduce_energy(volatile __local float  *buf,
+void reduce_energy(volatile __local float  gmx_unused *buf,
                    float E_lj, float E_el,
                    volatile __global float *e_lj,
                    volatile __global float *e_el,
@@ -884,6 +884,7 @@ void reduce_energy(volatile __local float  *buf,
 #endif
 }
 
+gmx_opencl_inline
 bool gmx_sub_group_any_localmem(volatile __local uint *warp_any, int widx, bool pred)
 {
     if (pred)
@@ -899,7 +900,8 @@ bool gmx_sub_group_any_localmem(volatile __local uint *warp_any, int widx, bool 
 }
 
 //! Returns a true if predicate is true for any work item in warp
-bool gmx_sub_group_any(volatile __local uint *warp_any, int widx, bool pred)
+gmx_opencl_inline
+bool gmx_sub_group_any(volatile __local uint gmx_unused *warp_any, int gmx_unused widx, bool pred)
 {
 #if USE_SUBGROUP_ANY
     return sub_group_any(pred);
