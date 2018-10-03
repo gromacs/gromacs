@@ -44,6 +44,9 @@
 # src/testutils/TestMacros.cmake, which does not allow arbitrary argument
 # passing to add_test. Instead, use set_tests_properties().
 
+# Those tests can only be run if we are not just building the mdrun binary.
+if (NOT GMX_BUILD_MDRUN_ONLY)
+
 # Build test input files to test directory.
 # Note that CMake interprets `gmx` in `COMMAND gmx` as the executable produced
 # by the `add_executable` command that defined the `gmx` target.
@@ -113,4 +116,6 @@ target_link_libraries(gmxapi-mpi-test Gromacs::gmxapi)
 # yet understand that command-line option.
 if(NOT GMX_THREAD_MPI)
     gmx_register_gtest_test(GmxapiMpiTests gmxapi-mpi-test MPI_RANKS 2 INTEGRATION_TEST)
+endif()
+
 endif()
