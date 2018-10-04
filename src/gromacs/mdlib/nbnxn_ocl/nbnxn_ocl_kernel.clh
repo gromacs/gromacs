@@ -263,7 +263,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
         ci = sci * NCL_PER_SUPERCL + tidxj+i;
         ai = ci * CL_SIZE + tidxi;
 
-        xqbuf    = xq[ai] + (float4)(shift_vec[3 * nb_sci.shift], shift_vec[3 * nb_sci.shift + 1], shift_vec[3 * nb_sci.shift + 2], 0.0f);
+        xqbuf    = xq[ai] + make_float4(shift_vec[3 * nb_sci.shift], shift_vec[3 * nb_sci.shift + 1], shift_vec[3 * nb_sci.shift + 2], 0.0f);
         xqbuf.w *= nbparam->epsfac;
         xqib[(tidxj + i) * CL_SIZE + tidxi] = xqbuf;
 #ifdef IATYPE_SHMEM

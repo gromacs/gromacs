@@ -84,9 +84,9 @@ std::string makeBinaryCacheFilename(const std::string &kernelFilename,
  *         FileIOError    if the file could not be opened
  */
 cl_program
-makeProgramFromCache(const std::string &filename,
-                     cl_context         context,
-                     cl_device_id       deviceId);
+makeProgramFromBinary(const std::string &filename,
+                      cl_context         context,
+                      cl_device_id       deviceId);
 
 /*! \brief Implement caching of OpenCL binaries
  *

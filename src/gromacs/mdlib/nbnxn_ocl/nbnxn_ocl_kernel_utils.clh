@@ -47,6 +47,18 @@
 
 #define WARP_SIZE  (CL_SIZE*CL_SIZE/2) //Currently only c_nbnxnGpuClusterpairSplit=2 supported
 
+//Declare intel subgroup functions which are missing in libclcxx
+#if defined _INTEL_SOURCE_ && defined __cplusplus
+//#define cl_intel_required_subgroup_size //supported by SPIRV but missing in KhronosGroup/SPIR/tree/spirv-1.1
+//It is in clang 7 but it's OpenCL C++ isn't complete. Currently requires to use IGC_ForceOCLSIMDWidth=8
+//TODO: Find a way to avoid the enviroment variable.
+#define cl_intel_subgroups
+//Could be mapped to SPIRV OpSubgroupShuffleDownINTEL. Foward declaring works too and is easier.
+float   __attribute__((overloadable)) intel_sub_group_shuffle_down(float cur, float next, uint c);
+float   __attribute__((overloadable)) intel_sub_group_shuffle_up(float cur, float next, uint c);
+uint    __attribute__((overloadable)) intel_sub_group_block_read(const __global uint* p);
+#endif
+
 #if defined _NVIDIA_SOURCE_ || defined _AMD_SOURCE_
 /* Currently we enable CJ prefetch for AMD/NVIDIA and disable it for other vendors
  * Note that this should precede the kernel_utils include.

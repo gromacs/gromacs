@@ -150,7 +150,7 @@ __kernel void nbnxn_kernel_prune_rolling_opencl
 
             /* We don't need q, but using float4 in shmem avoids bank conflicts */
             float4 tmp = xq[ai];
-            float4 xi  = tmp + (float4)(shift_vec[3 * nb_sci.shift], shift_vec[3 * nb_sci.shift + 1], shift_vec[3 * nb_sci.shift + 2], 0.0f);
+            float4 xi  = tmp + make_float4(shift_vec[3 * nb_sci.shift], shift_vec[3 * nb_sci.shift + 1], shift_vec[3 * nb_sci.shift + 2], 0.0);
             xib[(tidxj + i) * c_clSize + tidxi] = xi;
         }
     }

@@ -54,9 +54,18 @@ set(VDW_DEFS
     "-DLJ_POT_SWITCH\;-DVDWNAME=_VdwLJPsw"
     "-DLJ_EWALD_COMB_GEOM\;-DVDWNAME=_VdwLJEwCombGeom"
     "-DLJ_EWALD_COMB_LB\;-DVDWNAME=_VdwLJEwCombLB")
-if(CLANG_TIDY_EXE)
+set(EXTRA_ARGS "-std=cl1.2;-Xclang;-finclude-default-header;-c")
+if(GMX_OCL_SPIRV)
+   set(OCL_COMPILER "${OCL_COMPILER};-cc1")
+   set(EXTRA_ARGS "-emit-spirv;-triple=spir-unknown-unknown")
+   if (GMX_OCL_SPIRV_USEC) #No need for both C and C++. Can be removed after testing.
+      set (EXTRA_ARGS "${EXTRA_ARGS};-cl-std=CL1.2;-include;opencl.h")
+   else()
+      set (EXTRA_ARGS "${EXTRA_ARGS};-cl-std=c++;-isystem${OCL_LIBCLCXX}")
+   endif()
+elseif(CLANG_TIDY_EXE)
    set(OCL_COMPILER "${CLANG_TIDY_EXE}")
-   set(CLANG_TIDY_ARGS "-quiet;-checks=*,-readability-implicit-bool-conversion,-llvm-header-guard,-hicpp-signed-bitwise,-clang-analyzer-deadcode.DeadStores,-google-readability-todo;--;${CMAKE_C_COMPILER}")
+   set(EXTRA_ARGS "-quiet;-checks=*,-readability-implicit-bool-conversion,-llvm-header-guard,-hicpp-signed-bitwise,-clang-analyzer-deadcode.DeadStores,-google-readability-todo;--;${CMAKE_C_COMPILER};${EXTRA_ARGS}")
 else()
    set(OCL_COMPILER "${CMAKE_C_COMPILER}")
 endif()
@@ -70,16 +79,18 @@ foreach(ELEC_DEF IN LISTS ELEC_DEFS)
             endif()
             string(REGEX REPLACE ".*=" "" ELEC_NAME "${ELEC_DEF}")
             string(REGEX REPLACE ".*=" "" VDW_NAME "${VDW_DEF}")
-            set(OBJ_FILE nbnxn_ocl_kernel${ELEC_NAME}${VDW_NAME}_${VENDOR}.o)
+            set(OBJ_FILE ${CMAKE_CURRENT_BINARY_DIR}/nbnxn_ocl_kernel${ELEC_NAME}${VDW_NAME}_${VENDOR}.o)
             add_custom_command(OUTPUT ${OBJ_FILE} COMMAND ${OCL_COMPILER}
-                ${CMAKE_CURRENT_SOURCE_DIR}/nbnxn_ocl_kernels.cl ${CLANG_TIDY_ARGS}
-                -Xclang -finclude-default-header  -D_${VENDOR}_SOURCE_
+                ${CMAKE_CURRENT_SOURCE_DIR}/nbnxn_ocl_kernels.cl ${EXTRA_ARGS}
+                -D_${VENDOR}_SOURCE_
                 -DGMX_OCL_FASTGEN ${ELEC_DEF} ${VDW_DEF}
                 -DNBNXN_GPU_CLUSTER_SIZE=${CLUSTER_SIZE} -DIATYPE_SHMEM
-                -c -I ${CMAKE_SOURCE_DIR}/src -std=cl1.2
+                -I ${CMAKE_SOURCE_DIR}/src
                 -Weverything  -Wno-conversion -Wno-missing-variable-declarations -Wno-used-but-marked-unused
-                -Wno-cast-align -Wno-incompatible-pointer-types
+                -Wno-cast-align -Wno-c++98-compat
+                -Wno-old-style-cast #TODO: Remove if support for C is removed
                 -o${OBJ_FILE}
+                DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/nbnxn_ocl_kernels.cl #TODO rebuild if headers are changed
                 )
             list(APPEND NBNXN_OCL_KERNELS ${OBJ_FILE})
         endforeach()

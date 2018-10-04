@@ -99,9 +99,9 @@ std::string makeBinaryCacheFilename(const std::string &kernelFilename,
 }
 
 cl_program
-makeProgramFromCache(const std::string &filename,
-                     cl_context         context,
-                     cl_device_id       deviceId)
+makeProgramFromBinary(const std::string &filename,
+                      cl_context         context,
+                      cl_device_id       deviceId)
 {
     // TODO all this file reading stuff should become gmx::BinaryReader
     const auto f = create_unique_with_deleter(fopen(filename.c_str(), "rb"), fclose);
