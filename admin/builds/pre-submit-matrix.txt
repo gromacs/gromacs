@@ -16,15 +16,15 @@
 # Test X11 build
 # Test MPI with CUDA
 # Test MPMD PME with library MPI
-gcc-4.6 gpu cuda-5.0 mpi npme=1 nranks=2 openmp x11 cmake-2.8.8
+gcc-4.6 gpuhw=nvidia cuda-5.0 mpi npme=1 nranks=2 openmp x11 cmake-2.8.8
 
 # Test newest gcc supported by newest CUDA shortly after the release
 # Test SIMD implementation of pair search for GPU code-path
-gcc-5 gpu cuda-8.0 openmp simd=avx2_256
+gcc-5 gpuhw=nvidia cuda-8.0 openmp simd=avx2_256
 
 # Test newest gcc supported by newest CUDA at time of release
 # Test thread-MPI with CUDA
-gcc-4.8 gpu thread-mpi cuda-7.5 openmp release
+gcc-4.8 gpuhw=nvidia thread-mpi cuda-7.5 openmp release
 
 # Test with ThreadSanitizer
 # Test AVX2_256 SIMD
@@ -55,12 +55,12 @@ icc-16.0 no-thread-mpi openmp mkl cmake-3.3.2 simd=avx_256
 # Test AVX_128_FMA SIMD
 gcc-5 mpi openmp simd=avx_128_fma
 
-# Test NVIDIA OpenCL
+# Test OpenCL on NVIDIA hardware
 # Test MPI + OpenCL
-gcc-4.8 openmp opencl cuda-7.5 mpi release
+gcc-4.8 openmp opencl-1.1 gpuhw=nvidia mpi release
 
-# Test AMD OpenCL
-gcc-5 openmp opencl amdappsdk-3.0
+# Test OpenCL on AMD hardware
+gcc-5 openmp opencl-1.1 gpuhw=amd
 
 # TODO
 # Test hwloc support
