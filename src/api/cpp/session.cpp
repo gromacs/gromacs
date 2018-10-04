@@ -166,28 +166,28 @@ Status SessionImpl::run() noexcept
     return successful;
 }
 
-std::unique_ptr<SessionImpl> SessionImpl::create(std::shared_ptr<ContextImpl>   context,
-                                                 std::unique_ptr<gmx::Mdrunner> runner,
-                                                 gmx::SimulationContext       &&simulationContext,
-                                                 FILE                        ** logFilehandle,
-                                                 gmx_multisim_t               * multiSim)
+std::unique_ptr<SessionImpl> SessionImpl::create(std::shared_ptr<ContextImpl>         context,
+                                                 std::unique_ptr<gmx::Mdrunner>       runner,
+                                                 const gmx::SimulationContext        &simulationContext,
+                                                 FILE                              ** logFilehandle,
+                                                 gmx_multisim_t                     * multiSim)
 {
     using gmx::compat::make_unique;
     // We should be able to get a communicator (or subcommunicator) through the
     // Context.
     std::unique_ptr<SessionImpl> impl = make_unique<SessionImpl>(std::move(context),
                                                                  std::move(runner),
-                                                                 std::move(simulationContext),
+                                                                 simulationContext,
                                                                  logFilehandle,
                                                                  multiSim);
     return impl;
 }
 
-SessionImpl::SessionImpl(std::shared_ptr<ContextImpl>   context,
-                         std::unique_ptr<gmx::Mdrunner> runner,
-                         gmx::SimulationContext       &&simulationContext,
-                         FILE                        ** fplog,
-                         gmx_multisim_t               * multiSim) :
+SessionImpl::SessionImpl(std::shared_ptr<ContextImpl>         context,
+                         std::unique_ptr<gmx::Mdrunner>       runner,
+                         const gmx::SimulationContext        &simulationContext,
+                         FILE                              ** fplog,
+                         gmx_multisim_t                     * multiSim) :
     context_(std::move(context)),
     mpiContextManager_(gmx::compat::make_unique<MpiContextManager>()),
     runner_(std::move(runner)),

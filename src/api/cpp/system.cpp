@@ -71,9 +71,9 @@ System::Impl &System::Impl::operator=(System::Impl &&source) noexcept
 }
 //! \endcond
 
-std::shared_ptr<Session> System::launch(std::shared_ptr<Context> context)
+std::shared_ptr<Session> System::launch(const std::shared_ptr<Context> &context)
 {
-    return impl_->launch(std::move(context));
+    return impl_->launch(context);
 }
 
 //! \cond
@@ -90,7 +90,7 @@ System::System(System &&) noexcept = default;
 
 System &System::operator=(System &&) noexcept = default;
 
-System fromTprFile(std::string filename)
+System fromTprFile(const std::string &filename)
 {
     // TODO Confirm the file is readable and parseable and note unique
     // identifying information for when the work spec is used in a different
@@ -126,7 +126,7 @@ System::Impl::Impl(std::unique_ptr<gmxapi::Workflow> workflow) noexcept :
     GMX_ASSERT(workflow_, "Class invariant implies non-null workflow_ member");
 }
 
-std::shared_ptr<Session> System::Impl::launch(std::shared_ptr<Context> context)
+std::shared_ptr<Session> System::Impl::launch(const std::shared_ptr<Context> &context)
 {
     std::shared_ptr<Session> session = nullptr;
     if (context != nullptr)

@@ -523,7 +523,7 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
         {
             auto newSession = SessionImpl::create(shared_from_this(),
                                                   std::move(newMdRunner),
-                                                  std::move(simulationContext),
+                                                  simulationContext,
                                                   &fplog,
                                                   ms);
             // TO DO: capture fplog and ms

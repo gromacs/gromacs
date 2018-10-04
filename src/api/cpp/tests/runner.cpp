@@ -34,33 +34,35 @@
  */
 #include <memory>
 
-#include "testingconfiguration.h"
+#include "api/cpp/tests/testingconfiguration.h"
 #include "gmxapi/context.h"
 #include "gmxapi/session.h"
 #include "gmxapi/status.h"
 #include "gmxapi/system.h"
-#include <gtest/gtest.h>
 
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 
-namespace
+namespace gmxapi
 {
 
-//! Input file for testing is built by CMake script and filename is compiled into in testingconfiguration binary.
-const auto &filename = gmxapi::testing::sample_tprfilename;
+namespace testing
+{
+
+namespace
+{
 
 /*!
  * \brief Check that we can run a basic simulation from a simple client.
  */
-TEST(ApiRunner, BasicMD)
+TEST_F(GmxApiTest, RunnerBasicMD)
 {
 
-    auto system = gmxapi::fromTprFile(filename);
+    auto system = gmxapi::fromTprFile(getTprFileName());
 
     {
         auto           context = std::make_shared<gmxapi::Context>();
-        gmxapi::MDArgs args    = gmxapi::testing::mdArgs;
+        gmxapi::MDArgs args    = getMdArgs();
         args.emplace_back("-nsteps");
         args.emplace_back("10");
         // Work around unclean working directory.
@@ -79,10 +81,10 @@ TEST(ApiRunner, BasicMD)
 /*!
  * \brief Test our ability to reinitialize the libgromacs environment between simulations.
  */
-TEST(ApiRunner, Reinitialize)
+TEST_F(GmxApiTest, RunnerReinitialize)
 {
     auto context = std::make_shared<gmxapi::Context>();
-    gmxapi::MDArgs                   args    = gmxapi::testing::mdArgs;
+    gmxapi::MDArgs                   args    = getMdArgs();
     args.emplace_back("-nsteps");
     args.emplace_back("20");
     // Work around unclean working directory.
@@ -90,7 +92,7 @@ TEST(ApiRunner, Reinitialize)
 
     {
         context->setMDArgs(args);
-        auto system  = gmxapi::fromTprFile(filename);
+        auto system  = gmxapi::fromTprFile(getTprFileName());
         auto session = system.launch(context);
 
         // Try to simulate an interrupt signal to catch.
@@ -103,11 +105,11 @@ TEST(ApiRunner, Reinitialize)
         ASSERT_NE(gmx_get_stop_condition(), gmx_stop_cond_none);
 
         session->close();
-    }   // allow system and session to be destroyed.
+    }           // allow system and session to be destroyed.
 
     {
         context->setMDArgs(args);
-        auto system = gmxapi::fromTprFile(filename);
+        auto system = gmxapi::fromTprFile(getTprFileName());
 
         // If this assertion fails, it is not an error, but it indicates expected behavior has
         // changed and we need to consider the impact of whatever changes caused this.
@@ -172,3 +174,7 @@ TEST(ApiRunner, Reinitialize)
 //}
 
 } // end anonymous namespace
+
+} // end namespace testing
+
+} // end namespace gmxapi

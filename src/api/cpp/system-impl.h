@@ -63,7 +63,7 @@ class System::Impl final
         /*! \cond */
         ~Impl();
 
-        Impl(Impl &&) noexcept;
+        Impl(Impl && /*unused*/) noexcept;
         Impl &operator=(Impl &&source) noexcept;
         /*! \endcond */
 
@@ -83,7 +83,7 @@ class System::Impl final
          * The session is returned as a shared pointer so that the Context can
          * maintain a weak reference to it via std::weak_ptr.
          */
-        std::shared_ptr<Session> launch(std::shared_ptr<Context> context);
+        std::shared_ptr<Session> launch(const std::shared_ptr<Context> &context);
 
     private:
         //! Description of simulation work.

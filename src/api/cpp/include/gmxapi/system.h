@@ -101,8 +101,8 @@ class System final
          *
          * \{
          */
-        System(System &&) noexcept;
-        System &operator=(System &&) noexcept;
+        System(System && /*unused*/) noexcept;
+        System &operator=(System && /*unused*/) noexcept;
         /*! \} */
 
         /*!
@@ -165,7 +165,7 @@ class System final
          *
          * \endcond
          */
-        std::shared_ptr<Session> launch(std::shared_ptr<Context> context);
+        std::shared_ptr<Session> launch(const std::shared_ptr<Context> &context);
 
     private:
         /*!
@@ -186,7 +186,7 @@ class System final
  * \returns gmxapi::System object with the specified workflow.
  * \ingroup gmxapi
  */
-System fromTprFile(std::string filename);
+System fromTprFile(const std::string &filename);
 
 }      // end namespace gmxapi
 
