@@ -417,7 +417,7 @@ static void add_hyperpol(gmx_mtop_t *mtop, t_molinfo mols[], t_inputrec *ir)
 {
     t_atom         *atom;
     gmx_moltype_t  *moltype;
-    int             i, j, k, ai, aj, atmp, molt, ftype, nrhyper, nrbond, last;
+    int             i, j, k, ai, aj, atmp, molt, nrhyper, nrbond, last;
     real            rhyp, khyp, kb;
     int             pow;
     gmx_bool       *bRemoveHarm;
@@ -426,78 +426,69 @@ static void add_hyperpol(gmx_mtop_t *mtop, t_molinfo mols[], t_inputrec *ir)
     khyp = ir->drude->drude_khyp;
     pow  = ir->drude->drude_hyp_power;
 
-    /* loop over bonded interactions of all molecules
-     * and add F_HYPER_POL entries if there are bonds to Drudes */
+    /* loop over the F_DRUDEBONDS interactions of all molecules
+     * and replace them with F_HYPER_POL entries */
     for (molt = 0; molt < mtop->nmoltype; molt++)
     {
         nrhyper = mols[molt].plist[F_HYPER_POL].nr;
         moltype = &mtop->moltype[molt];
         atom    = moltype->atoms.atom;
 
-        for (ftype = 0; ftype < F_NRE; ftype++)
+        nrbond = mols[molt].plist[F_DRUDEBONDS].nr;
+        pr_alloc(nrbond, &(mols[molt].plist[F_HYPER_POL]));
+        snew(bRemoveHarm, nrbond);
+
+        for (i = 0; (i < nrbond); i++)
         {
-            if ((ftype == F_BONDS) || (ftype == F_HARMONIC))
+            ai = mols[molt].plist[F_DRUDEBONDS].param[i].ai();
+            aj = mols[molt].plist[F_DRUDEBONDS].param[i].aj();
+
+            /* for ease of use in listed-forces/bonded.cpp, we enforce
+             * that the atom is always ai and the Drude/shell is always aj */
+            if (atom[ai].ptype == eptShell)
             {
-                nrbond = mols[molt].plist[ftype].nr;
-                pr_alloc(nrbond, &(mols[molt].plist[F_HYPER_POL]));
-                snew(bRemoveHarm, nrbond);
+                atmp = aj;
+                aj   = ai;      /* Drude/shell is now aj */
+                ai   = atmp;    /* atom is now ai */
+            }
+            /* don't need the bond length, just k */
+            kb = mols[molt].plist[F_DRUDEBONDS].param[i].c[1];
+            mols[molt].plist[F_HYPER_POL].param[nrhyper].a[0] = ai;
+            mols[molt].plist[F_HYPER_POL].param[nrhyper].a[1] = aj;
+            mols[molt].plist[F_HYPER_POL].param[nrhyper].c[0] = kb;
+            mols[molt].plist[F_HYPER_POL].param[nrhyper].c[1] = rhyp;
+            mols[molt].plist[F_HYPER_POL].param[nrhyper].c[2] = khyp;
+            mols[molt].plist[F_HYPER_POL].param[nrhyper].c[3] = pow;
+            nrhyper++;
+            bRemoveHarm[i] = TRUE;
+        }
+        mols[molt].plist[F_HYPER_POL].nr = nrhyper;
 
-                for (i = 0; (i < nrbond); i++)
+        /* Remove harmonic bonds */
+        for (j = last = 0; (j < nrbond); j++)
+        {
+            if (!bRemoveHarm[j])
+            {
+                /* copy it */
+                for (k = 0; (k < MAXATOMLIST); k++)
                 {
-                    ai = mols[molt].plist[ftype].param[i].ai();
-                    aj = mols[molt].plist[ftype].param[i].aj();
-                    /* If the bond involves a Drude, add it to hyperpolarization list */
-                    if ((atom[ai].ptype == eptShell) || (atom[aj].ptype == eptShell))
-                    {
-                        /* for ease of use in listed-forces/bonded.cpp, we enforce
-                         * that the atom is always ai and the Drude/shell is always aj */
-                        if (atom[ai].ptype == eptShell)
-                        {
-                            atmp = aj;
-                            aj   = ai;      /* Drude/shell is now aj */
-                            ai   = atmp;    /* atom is now ai */
-                        }
-                        /* don't need the bond length, just k */
-                        kb = mols[molt].plist[ftype].param[i].c[1];
-                        mols[molt].plist[F_HYPER_POL].param[nrhyper].a[0] = ai;
-                        mols[molt].plist[F_HYPER_POL].param[nrhyper].a[1] = aj;
-                        mols[molt].plist[F_HYPER_POL].param[nrhyper].c[0] = kb;
-                        mols[molt].plist[F_HYPER_POL].param[nrhyper].c[1] = rhyp;
-                        mols[molt].plist[F_HYPER_POL].param[nrhyper].c[2] = khyp;
-                        mols[molt].plist[F_HYPER_POL].param[nrhyper].c[3] = pow;
-                        nrhyper++;
-                        bRemoveHarm[i] = TRUE;
-                    }
+                    mols[molt].plist[F_DRUDEBONDS].param[last].a[k] =
+                        mols[molt].plist[F_DRUDEBONDS].param[j].a[k];
                 }
-                mols[molt].plist[F_HYPER_POL].nr = nrhyper;
-
-                /* Remove harmonic bonds */
-                for (j = last = 0; (j < nrbond); j++)
+                for (k = 0; (k < MAXFORCEPARAM); k++)
                 {
-                    if (!bRemoveHarm[j])
-                    {
-                        /* copy it */
-                        for (k = 0; (k < MAXATOMLIST); k++)
-                        {
-                            mols[molt].plist[ftype].param[last].a[k] =
-                                mols[molt].plist[ftype].param[j].a[k];
-                        }
-                        for (k = 0; (k < MAXFORCEPARAM); k++)
-                        {
-                            mols[molt].plist[ftype].param[last].c[k] =
-                                mols[molt].plist[ftype].param[j].c[k];
-                        }
-                        last++;
-                    }
+                    mols[molt].plist[F_DRUDEBONDS].param[last].c[k] =
+                        mols[molt].plist[F_DRUDEBONDS].param[j].c[k];
                 }
-                sfree(bRemoveHarm);
-                if (nrbond > 0)
-                {
-                    fprintf(stderr, "Added %d out of %d bonds to the hyperpolarization list for mol %d\n", nrhyper, nrbond, molt);
-                }
-                mols[molt].plist[ftype].nr = last;
+                last++;
             }
         }
+        sfree(bRemoveHarm);
+        if (nrbond > 0)
+        {
+            fprintf(stderr, "Added %d out of %d bonds to the hyperpolarization list for mol %d\n", nrhyper, nrbond, molt);
+        }
+        mols[molt].plist[F_DRUDEBONDS].nr = last;
     }
 }
 
@@ -1947,6 +1938,10 @@ int gmx_grompp(int argc, char *argv[])
             }
         }
 
+        /* separate bonds involving Drudes - this makes everything during MD easier */
+        fprintf(stderr, "Separating bonds involving Drudes...\n");
+        split_drude_bonds(sys, mi);
+
         if (ir->drude->bHyper)
         {
             /* Currently disable hyperpol + extended Lagrangian due to the re-write for DD in the
@@ -1961,10 +1956,6 @@ int gmx_grompp(int argc, char *argv[])
             fprintf(stderr, "Constructing hyperpolarization list...\n");
             add_hyperpol(sys, mi, ir);
         }
-
-        /* separate bonds involving Drudes - this makes everything during MD easier */
-        fprintf(stderr, "Separating bonds involving Drudes...\n");
-        split_drude_bonds(sys, mi);
 
         if (ir->drude->drudemode == edrudeSCF)
         {
