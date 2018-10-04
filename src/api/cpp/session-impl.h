@@ -119,15 +119,15 @@ class SessionImpl
         static std::unique_ptr<SessionImpl> create(std::shared_ptr<ContextImpl>         context,
                                                    std::unique_ptr<gmx::Mdrunner>       runner,
                                                    const gmx::SimulationContext        &simulationContext,
-                                                   FILE                              ** logFilehandle,
-                                                   gmx_multisim_t                     * multiSim);
+                                                   FILE                                *logFilehandle,
+                                                   gmx_multisim_t                      *multiSim);
 
         /*! \internal
          * \brief API implementation function to retrieve the current runner.
          *
          * \return non-owning pointer to the current runner or nullptr if none.
          */
-        gmx::Mdrunner* getRunner();
+        gmx::Mdrunner *getRunner();
 
         /*!
          * \brief Constructor for use by create()
@@ -142,8 +142,8 @@ class SessionImpl
         SessionImpl(std::shared_ptr<ContextImpl>         context,
                     std::unique_ptr<gmx::Mdrunner>       runner,
                     const gmx::SimulationContext        &simulationContext,
-                    FILE                              ** logFilehandle,
-                    gmx_multisim_t                     * multiSim);
+                    FILE                                *logFilehandle,
+                    gmx_multisim_t                      *multiSim);
 
     private:
         /*!
@@ -179,14 +179,14 @@ class SessionImpl
          *
          * \todo Move to RAII filehandle management; open and close in one place.
          */
-        FILE** fplog_;
+        FILE *fplog_;
 
         /*!
          * \brief MultiSim resources for Mdrunner instance.
          *
          * May be null for no multi-simulation management at the Mdrunner level.
          */
-        gmx_multisim_t* multiSim_;
+        gmx_multisim_t *multiSim_;
 };
 
 }      //end namespace gmxapi

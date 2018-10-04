@@ -133,9 +133,9 @@ Status SessionImpl::close()
 
     /* Log file has to be closed in mdrunner if we are appending to it
        (fplog not set here) */
-    if (*fplog_ != nullptr)
+    if (fplog_ != nullptr)
     {
-        gmx_log_close(*fplog_);
+        gmx_log_close(fplog_);
     }
 
     if (GMX_LIB_MPI)
@@ -169,8 +169,8 @@ Status SessionImpl::run() noexcept
 std::unique_ptr<SessionImpl> SessionImpl::create(std::shared_ptr<ContextImpl>         context,
                                                  std::unique_ptr<gmx::Mdrunner>       runner,
                                                  const gmx::SimulationContext        &simulationContext,
-                                                 FILE                              ** logFilehandle,
-                                                 gmx_multisim_t                     * multiSim)
+                                                 FILE                                *logFilehandle,
+                                                 gmx_multisim_t                      *multiSim)
 {
     using gmx::compat::make_unique;
     // We should be able to get a communicator (or subcommunicator) through the
@@ -186,8 +186,8 @@ std::unique_ptr<SessionImpl> SessionImpl::create(std::shared_ptr<ContextImpl>   
 SessionImpl::SessionImpl(std::shared_ptr<ContextImpl>         context,
                          std::unique_ptr<gmx::Mdrunner>       runner,
                          const gmx::SimulationContext        &simulationContext,
-                         FILE                              ** fplog,
-                         gmx_multisim_t                     * multiSim) :
+                         FILE                                *fplog,
+                         gmx_multisim_t                      *multiSim) :
     context_(std::move(context)),
     mpiContextManager_(gmx::compat::make_unique<MpiContextManager>()),
     runner_(std::move(runner)),
@@ -206,7 +206,7 @@ SessionImpl::SessionImpl(std::shared_ptr<ContextImpl>         context,
 
 gmx::Mdrunner *SessionImpl::getRunner()
 {
-    gmx::Mdrunner * runner = nullptr;
+    gmx::Mdrunner *runner = nullptr;
     if (runner_)
     {
         runner = runner_.get();

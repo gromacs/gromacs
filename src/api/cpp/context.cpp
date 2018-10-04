@@ -524,7 +524,7 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
             auto newSession = SessionImpl::create(shared_from_this(),
                                                   std::move(newMdRunner),
                                                   simulationContext,
-                                                  &fplog,
+                                                  fplog,
                                                   ms);
             // TO DO: capture fplog and ms
             // TO DO: check builder docs to see if we need to manage anything else.
