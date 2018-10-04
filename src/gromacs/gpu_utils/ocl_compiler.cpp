@@ -50,9 +50,11 @@
 #include <cstdio>
 
 #include <algorithm>
+#include <regex>
 #include <string>
 #include <vector>
 
+#include "buildinfo.h"
 #include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -314,13 +316,13 @@ makeVendorFlavorChoice(ocl_vendor_id_t vendorId)
     switch (vendorId)
     {
         case OCL_VENDOR_AMD:
-            choice = "-D_AMD_SOURCE_";
+            choice = "AMD";
             break;
         case OCL_VENDOR_NVIDIA:
-            choice = "-D_NVIDIA_SOURCE_";
+            choice = "NVIDIA";
             break;
         case OCL_VENDOR_INTEL:
-            choice = "-D_INTEL_SOURCE_";
+            choice = "INTEL";
             break;
         default:
             choice = "";
@@ -393,7 +395,7 @@ makePreprocessorOptions(const std::string   &kernelRootPath,
     /* Compose the complete build options */
     preprocessorOptions  = formatString("-DWARP_SIZE_TEST=%d", static_cast<int>(warpSize));
     preprocessorOptions += ' ';
-    preprocessorOptions += makeVendorFlavorChoice(deviceVendorId);
+    preprocessorOptions += std::string("-D_") + makeVendorFlavorChoice(deviceVendorId) + "_SOURCE_";
     preprocessorOptions += ' ';
     preprocessorOptions += extraDefines;
     preprocessorOptions += ' ';
@@ -436,23 +438,36 @@ compileProgram(FILE              *fplog,
                                                               extraDefines);
 
     bool        buildCacheWasRead = false;
+    bool        useSPIRV          = true;
 
-    std::string cacheFilename;
+    std::string binaryFilename;
     if (useBuildCache)
     {
-        cacheFilename = makeBinaryCacheFilename(kernelBaseFilename, deviceId);
+        binaryFilename = makeBinaryCacheFilename(kernelBaseFilename, deviceId);
+    }
+    if (useSPIRV)
+    {
+        //TODO: proper solution should pass kernelName into this function rather than extracting it from the defines
+        std::regex kernelNameRegEx("[^=]*=([^ ]+)[^=]*=([^ ]+).*");
+        //TODO: spirv files need to be installed and looked up properly. Currently only works from running from build folder
+        binaryFilename = Path::join(CMAKE_BINARY_DIR "/src/gromacs/mdlib/nbnxn_ocl",
+                                    "nbnxn_ocl_kernel"); //TODO: kernelBaseFilename without cl (should be passed)
+        std::smatch sm;
+        std::regex_match(extraDefines, sm, kernelNameRegEx);
+        binaryFilename += sm[1].str() + sm[2].str();
+        binaryFilename += std::string("_")  + makeVendorFlavorChoice(deviceVendorId) + ".o";
     }
 
     /* Create OpenCL program */
     cl_program program = nullptr;
-    if (useBuildCache)
+    if (useBuildCache || useSPIRV)
     {
-        if (File::exists(cacheFilename, File::returnFalseOnError))
+        if (File::exists(binaryFilename, File::returnFalseOnError))
         {
             /* Check if there's a valid cache available */
             try
             {
-                program           = makeProgramFromCache(cacheFilename, context, deviceId);
+                program           = makeProgramFromBinary(binaryFilename, context, deviceId);
                 buildCacheWasRead = true;
             }
             catch (FileIOError &e)
@@ -514,7 +529,7 @@ compileProgram(FILE              *fplog,
                valid => update it */
             try
             {
-                writeBinaryToCache(program, cacheFilename);
+                writeBinaryToCache(program, binaryFilename);
             }
             catch (GromacsException &e)
             {

@@ -56,6 +56,7 @@
  * \param[in]   addr    The address where the data to be added to resides
  * \param[in]   val     The value to increment with
  */
+//TODO: combine with atomicAdd_g_f
 gmx_opencl_inline
 void atomicAdd_l_f(volatile __local float *addr, float val)
 {
@@ -68,7 +69,13 @@ void atomicAdd_l_f(volatile __local float *addr, float val)
     {
         expected.f32 = current.f32;
         next.f32     = expected.f32 + val;
+#ifdef __cplusplus //See atomicAdd_g_f for nicer implementation
+        current.u32  = __spirv::OpAtomicCompareExchangeWeak( ( int *)addr,
+                                                             memory_scope_work_group, memory_order_relaxed,
+                                                             memory_order_relaxed, next.u32, expected.u32);
+#else
         current.u32  = atomic_cmpxchg( (volatile __local unsigned int *)addr, expected.u32, next.u32);
+#endif
     }
     while (current.u32 != expected.u32);
 }
@@ -98,6 +105,17 @@ gmx_opencl_inline void atomicAdd_l_f3(__local float3 *addr, float3 val)
  */
 gmx_opencl_inline void atomicAdd_g_f(volatile __global float *addr, float val)
 {
+#ifdef __cplusplus
+    //TODO: volatile shouldn't be neded anyhwere and should be removed
+    float expected = *addr, next;
+    do
+    {
+        next = expected + val;
+    }
+    while (!atomic_compare_exchange_weak_explicit(reinterpret_cast<volatile atomic_float*>(addr), &expected, next,
+                                                  memory_order_relaxed, memory_order_relaxed,
+                                                  memory_scope_device));
+#else
     union {
         unsigned int u32;
         float        f32;
@@ -110,6 +128,7 @@ gmx_opencl_inline void atomicAdd_g_f(volatile __global float *addr, float val)
         current.u32  = atomic_cmpxchg( (volatile __global unsigned int *)addr, expected.u32, next.u32);
     }
     while (current.u32 != expected.u32);
+#endif
 }
 
 /* \brief Atomically increment the float3 value at address addr (in local memory) with value val.

@@ -268,7 +268,10 @@ static inline cl_kernel select_nbnxn_kernel(gmx_nbnxn_ocl_t   *nb,
     if (nullptr == kernel_ptr[0])
     {
         *kernel_ptr = clCreateKernel(nb->dev_rundata->program, kernel_name_to_run, &cl_error);
-        assert(cl_error == CL_SUCCESS);
+        if (cl_error != CL_SUCCESS)
+        {
+            gmx_fatal(FARGS, "Failed to create %s", kernel_name_to_run);
+        }
     }
     // TODO: handle errors
 

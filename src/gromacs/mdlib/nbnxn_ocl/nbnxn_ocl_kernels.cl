@@ -32,6 +32,35 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
+#ifdef __cplusplus
+#include <opencl_work_item>
+#include <opencl_math>
+#include <opencl_geometric>
+#include <opencl_atomic>
+#include <opencl_synchronization>
+#include <opencl_work_group>
+
+using namespace cl;
+
+//There is no reason to have support for both C and C++ at the same time.
+//C++ is only useful if we can drop C support. But while testing C++ it is
+//nice to still be able to use C for comparison. If we switch to C++ the
+//we should search-replace these and remove the defines. That's why these
+//aren't proper functions.
+#define restrict __restrict
+#define CLK_LOCAL_MEM_FENCE mem_fence::local
+#define barrier work_group_barrier
+#define max fmax
+#define make_float4 float4
+#ifdef _INTEL_SOURCE_
+#define sub_group_reduce_add sub_group_reduce < work_group_op::add >
+#endif
+
+#else
+#define make_float4 (float4)
+#endif
+
 /* Auxiliary kernels */
 __kernel void
 memset_f3(__global float3 *buf, const float value, const unsigned int Nbuf)
