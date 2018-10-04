@@ -34,15 +34,21 @@
  */
 
 #include "gmxapi/status.h"
+
 #include <gtest/gtest.h>
+
+namespace gmxapi
+{
+
+namespace testing
+{
 
 namespace
 {
-
 /*!
  * \brief Test construction and conversion of boolean success status.
  */
-TEST(GmxapiStatusClass, Basic)
+TEST(GmxApiBasicTest, Status)
 {
     {
         auto status = gmxapi::Status();
@@ -64,3 +70,7 @@ TEST(GmxapiStatusClass, Basic)
 }
 
 } // end anonymous namespace
+
+} // namespace testing
+
+} // namespace gmxapi

@@ -39,32 +39,33 @@
 #include "gmxapi/session.h"
 #include "gmxapi/status.h"
 #include "gmxapi/system.h"
-#include <gtest/gtest.h>
 
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 
-namespace
+namespace gmxapi
 {
 
-//! Input file for testing is built by CMake script and filename is compiled into in testingconfiguration binary.
-const auto &filename = gmxapi::testing::sample_tprfilename;
+namespace testing
+{
+
+namespace
+{
 
 /*!
  * \brief Check that we can run a basic simulation from a simple client.
  */
-TEST(ApiRunner, BasicMD)
+TEST_F(GmxApiTest, RunnerBasicMD)
 {
-
-    auto system = gmxapi::fromTprFile(filename);
+    makeTprFile(2);
+    auto system = gmxapi::fromTprFile(runner_.tprFileName_);
 
     {
         auto           context = std::make_shared<gmxapi::Context>();
-        gmxapi::MDArgs args    = gmxapi::testing::mdArgs;
-        args.emplace_back("-nsteps");
-        args.emplace_back("10");
-        // Work around unclean working directory.
-        args.emplace_back("-noappend");
+        gmxapi::MDArgs args    = makeMdArgs();
+        // TODO the command line arguments should be set through the
+        // usual command line options settings for the tests
+
         context->setMDArgs(args);
         auto           session = system.launch(context);
         EXPECT_TRUE(session != nullptr);
@@ -79,18 +80,16 @@ TEST(ApiRunner, BasicMD)
 /*!
  * \brief Test our ability to reinitialize the libgromacs environment between simulations.
  */
-TEST(ApiRunner, Reinitialize)
+TEST_F(GmxApiTest, RunnerReinitialize)
 {
     auto context = std::make_shared<gmxapi::Context>();
-    gmxapi::MDArgs                   args    = gmxapi::testing::mdArgs;
-    args.emplace_back("-nsteps");
-    args.emplace_back("20");
-    // Work around unclean working directory.
-    args.emplace_back("-noappend");
+    gmxapi::MDArgs                   args    = makeMdArgs();
+
+    makeTprFile(20);
 
     {
         context->setMDArgs(args);
-        auto system  = gmxapi::fromTprFile(filename);
+        auto system  = gmxapi::fromTprFile(runner_.tprFileName_);
         auto session = system.launch(context);
 
         // Try to simulate an interrupt signal to catch.
@@ -103,11 +102,11 @@ TEST(ApiRunner, Reinitialize)
         EXPECT_NE(gmx_get_stop_condition(), gmx_stop_cond_none);
 
         session->close();
-    }   // allow system and session to be destroyed.
+    }           // allow system and session to be destroyed.
 
     {
         context->setMDArgs(args);
-        auto system = gmxapi::fromTprFile(filename);
+        auto system = gmxapi::fromTprFile(runner_.tprFileName_);
 
         // If this assertion fails, it is not an error, but it indicates expected behavior has
         // changed and we need to consider the impact of whatever changes caused this.
@@ -130,22 +129,24 @@ TEST(ApiRunner, Reinitialize)
 
 }
 
-TEST(ApiRunner, ContinuedMD)
+/*!
+ * \brief Test simulation continuation.
+ *
+ * Run a simulation, then extend the target number of steps and continue the simulation.
+ */
+TEST_F(GmxApiTest, RunnerContinuedMD)
 {
     // Run a simulation, then extend the target number of steps and continue the simulation
-    auto system = gmxapi::fromTprFile(filename);
+    makeTprFile(10);
+    auto system = gmxapi::fromTprFile(runner_.tprFileName_);
 
     {
         auto context = std::make_shared<gmxapi::Context>();
 
         {
             EXPECT_TRUE(context != nullptr);
-            gmxapi::MDArgs args = gmxapi::testing::mdArgs;
-            // \todo If this test runs in a clean working directory, nsteps is only specified for the next run.
-            args.emplace_back("-nsteps");
-            args.emplace_back("10");
-            // Work around unclean working directory.
-            args.emplace_back("-noappend");
+            gmxapi::MDArgs args = makeMdArgs();
+
             context->setMDArgs(args);
             auto           session = system.launch(context);
             EXPECT_TRUE(session != nullptr);
@@ -158,11 +159,11 @@ TEST(ApiRunner, ContinuedMD)
 
         // Reuse the context. Add MD parameters. Run a new session extending the previous trajectory.
         {
-            gmxapi::MDArgs args = gmxapi::testing::mdArgs;
+            gmxapi::MDArgs args = makeMdArgs();
+            // TODO This needs to be changed to make a new tpr with convert-tpr instead.
             args.emplace_back("-nsteps");
-            args.emplace_back("10");
-            // Work around unclean working directory.
-            args.emplace_back("-noappend");
+            args.emplace_back("20");
+
             context->setMDArgs(args);
             auto           session = system.launch(context);
             EXPECT_TRUE(session != nullptr);
@@ -176,3 +177,7 @@ TEST(ApiRunner, ContinuedMD)
 }
 
 } // end anonymous namespace
+
+} // end namespace testing
+
+} // end namespace gmxapi

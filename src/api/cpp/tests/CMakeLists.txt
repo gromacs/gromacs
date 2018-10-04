@@ -54,6 +54,10 @@ gmx_add_gtest_executable(
     status.cpp
     system.cpp
     version.cpp
+    # pseudo-library for code for testing mdrun
+    $<TARGET_OBJECTS:mdrun_test_objlib>
+    # pseudo-library for code for mdrun
+    $<TARGET_OBJECTS:mdrun_objlib>
     )
 if(NOT GMX_USE_OPENCL)
     # GPU resources may not be properly reinitialized between simulations in
@@ -62,13 +66,12 @@ if(NOT GMX_USE_OPENCL)
     # Ref https://redmine.gromacs.org/issues/2689
     target_sources(gmxapi-test PRIVATE runner.cpp stopsignaler.cpp)
 endif()
-add_dependencies(gmxapi-test spc_and_methanol_tpr)
 
 target_include_directories(gmxapi-test PRIVATE
                            ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Link against the gmxapi libraries and get access to its public (installed) headers.
-target_link_libraries(gmxapi-test Gromacs::gmxapi gmxapi-test-support)
+target_link_libraries(gmxapi-test Gromacs::gmxapi)
 
 gmx_register_gtest_test(GmxapiExternalInterfaceTests gmxapi-test INTEGRATION_TEST)
 
@@ -85,6 +88,10 @@ gmx_add_gtest_executable(
     status.cpp
     system.cpp
     version.cpp
+    # pseudo-library for code for testing mdrun
+    $<TARGET_OBJECTS:mdrun_test_objlib>
+    # pseudo-library for code for mdrun
+    $<TARGET_OBJECTS:mdrun_objlib>
     )
 if(NOT GMX_USE_OPENCL)
     # GPU resources may not be properly reinitialized between simulations in
@@ -93,11 +100,10 @@ if(NOT GMX_USE_OPENCL)
     # Ref https://redmine.gromacs.org/issues/2689
     target_sources(gmxapi-mpi-test PRIVATE runner.cpp stopsignaler.cpp)
 endif()
-add_dependencies(gmxapi-mpi-test spc_and_methanol_tpr)
 
 target_include_directories(gmxapi-mpi-test PRIVATE
                            ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(gmxapi-mpi-test Gromacs::gmxapi gmxapi-test-support)
+target_link_libraries(gmxapi-mpi-test Gromacs::gmxapi)
 
 # Tests that specify MPI_RANKS will be passed a ``-ntmpi`` command-line option
 # when GMX_THREAD_MPI is true, but the test executables in this directory do not
