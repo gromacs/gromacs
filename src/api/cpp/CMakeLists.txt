@@ -44,7 +44,6 @@
 # does not expose lower level headers.
 
 add_subdirectory(include)
-add_subdirectory(testsupport)
 
 # The include directory should be mostly empty so that we can use it internally as
 # the public interface include directory during build and testing.

@@ -35,25 +35,30 @@
 
 #include <memory>
 
-#include "testingconfiguration.h"
-#include "workflow.h"
-#include "workflow-impl.h"
-#include "gmxapi/context.h"
-#include "gmxapi/status.h"
-#include "gmxapi/system.h"
-#include <gtest/gtest.h>
+#include "api/cpp/workflow.h"
+#include "api/cpp/workflow-impl.h"
+#include "api/cpp/include/gmxapi/context.h"
+#include "api/cpp/include/gmxapi/status.h"
+#include "api/cpp/include/gmxapi/system.h"
 
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/utility/arrayref.h"
 
+#include "api/cpp/tests/testingconfiguration.h"
+
+namespace gmxapi
+{
+
+namespace testing
+{
+
 namespace
 {
 
-const auto &filename = gmxapi::testing::sample_tprfilename;
-
-// Create a work spec, then the implementation graph, then the container
-TEST(ApiWorkflowImpl, Build)
+//! Create a work spec, then the implementation graph, then the container
+TEST_F(GmxApiTest, BuildApiWorkflowImpl)
 {
+    auto filename = getTprFileName();
     // Create work spec
     auto node = gmx::compat::make_unique<gmxapi::MDNodeSpecification>(filename);
     EXPECT_NE(node, nullptr);
@@ -76,16 +81,15 @@ TEST(ApiWorkflowImpl, Build)
     };
 }
 
-TEST(ApiWorkflow, Creation)
+//! Create from create() method(s)
+TEST_F(GmxApiTest, CreateApiWorkflow)
 {
-    // Create from create() method(s)
-    auto work = gmxapi::Workflow::create(filename);
+    auto work = gmxapi::Workflow::create(getTprFileName());
     EXPECT_NE(work, nullptr);
 }
 
-TEST(ApiWorkflow, Accessors)
-{
-    auto work = gmxapi::Workflow::create(filename);
-}
-
 } // end anonymous namespace
+
+} // end namespace testing
+
+} // end namespace gmxapi

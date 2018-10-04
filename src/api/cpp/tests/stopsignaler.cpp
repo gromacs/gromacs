@@ -34,8 +34,6 @@
  */
 #include <memory>
 
-#include <gtest/gtest.h>
-
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/restraint/restraintpotential.h"
@@ -53,11 +51,14 @@
 
 #include "testingconfiguration.h"
 
-namespace
+namespace gmxapi
 {
 
-//! Input file for testing is built by CMake script and filename is compiled into in testingconfiguration binary.
-const auto &filename = gmxapi::testing::sample_tprfilename;
+namespace testing
+{
+
+namespace
+{
 
 /*!
  * \brief Restraint that can optionally issue an immediate stop signal.
@@ -186,7 +187,7 @@ class SimpleSignalingClient : public gmxapi::MDModule
             const auto timeElapsed =
                 restraint_->lastSimulationTime_ - restraint_->simulationStartTime_;
 
-            const auto numSteps    = timeElapsed / gmxapi::testing::testingTimestep;
+            const auto numSteps    = timeElapsed / getTestStepSize();
             return gmx::roundToInt(numSteps);
         }
 
@@ -198,15 +199,15 @@ class SimpleSignalingClient : public gmxapi::MDModule
 /*!
  * \brief Check that we can bind to and use the stop signaler.
  */
-TEST(ApiRunner, StopSignalClient)
+TEST_F(GmxApiTest, ApiRunnerStopSignalClient)
 {
 
-    auto system  = gmxapi::fromTprFile(filename);
+    auto system  = gmxapi::fromTprFile(getTprFileName());
     auto context = std::make_shared<gmxapi::Context>();
 
     // Check assumptions about basic simulation behavior.
     {
-        gmxapi::MDArgs args    = gmxapi::testing::mdArgs;
+        gmxapi::MDArgs args    = getMdArgs();
         args.emplace_back("-nsteps");
         args.emplace_back("3");
         args.emplace_back("-nstlist");
@@ -235,7 +236,7 @@ TEST(ApiRunner, StopSignalClient)
 
     // Make sure that stop signal shortens simulation.
     {
-        gmxapi::MDArgs args    = gmxapi::testing::mdArgs;
+        gmxapi::MDArgs args    = getMdArgs();
         args.emplace_back("-nsteps");
         args.emplace_back("3");
         args.emplace_back("-nstlist");
@@ -265,3 +266,7 @@ TEST(ApiRunner, StopSignalClient)
 }
 
 } // end anonymous namespace
+
+} // end namespace testing
+
+} // end namespace gmxapi
