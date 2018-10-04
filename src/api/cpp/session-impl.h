@@ -116,11 +116,11 @@ class SessionImpl
          *
          * \return Ownership of new Session implementation instance.
          */
-        static std::unique_ptr<SessionImpl> create(std::shared_ptr<ContextImpl>   context,
-                                                   std::unique_ptr<gmx::Mdrunner> runner,
-                                                   gmx::SimulationContext       &&simulationContext,
-                                                   FILE                        ** logFilehandle,
-                                                   gmx_multisim_t               * multiSim);
+        static std::unique_ptr<SessionImpl> create(std::shared_ptr<ContextImpl>         context,
+                                                   std::unique_ptr<gmx::Mdrunner>       runner,
+                                                   const gmx::SimulationContext        &simulationContext,
+                                                   FILE                              ** logFilehandle,
+                                                   gmx_multisim_t                     * multiSim);
 
         /*! \internal
          * \brief API implementation function to retrieve the current runner.
@@ -139,11 +139,11 @@ class SessionImpl
          * \param multiSim Take ownership of resources for Mdrunner multi-sim.
          *
          */
-        SessionImpl(std::shared_ptr<ContextImpl>   context,
-                    std::unique_ptr<gmx::Mdrunner> runner,
-                    gmx::SimulationContext       &&simulationContext,
-                    FILE                        ** logFilehandle,
-                    gmx_multisim_t               * multiSim);
+        SessionImpl(std::shared_ptr<ContextImpl>         context,
+                    std::unique_ptr<gmx::Mdrunner>       runner,
+                    const gmx::SimulationContext        &simulationContext,
+                    FILE                              ** logFilehandle,
+                    gmx_multisim_t                     * multiSim);
 
     private:
         /*!
