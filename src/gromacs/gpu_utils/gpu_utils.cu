@@ -258,7 +258,7 @@ static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
     config.blockSize[0] = 512;
     const auto         dummyArguments = prepareGpuKernelArguments(k_dummy_test, config);
     launchGpuKernel(k_dummy_test, config, nullptr, "Dummy kernel", dummyArguments);
-    if (cudaThreadSynchronize() != cudaSuccess)
+    if (cudaDevicSynchronize() != cudaSuccess)
     {
         return -1;
     }
