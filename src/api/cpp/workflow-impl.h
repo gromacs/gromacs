@@ -48,7 +48,7 @@
 #include <memory>
 #include <string>
 
-#include "gmxapi/exceptions.h"
+#include "api/cpp/include/gmxapi/exceptions.h"
 
 namespace gmxapi
 {

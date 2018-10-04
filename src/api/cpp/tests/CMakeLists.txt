@@ -61,15 +61,14 @@ if(NOT GMX_USE_OPENCL)
     # Ref https://redmine.gromacs.org/issues/2689
     target_sources(gmxapi-test PRIVATE runner.cpp)
 endif()
-add_dependencies(gmxapi-test spc_and_methanol_tpr)
 
 target_include_directories(gmxapi-test PRIVATE
                            ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Link against the gmxapi libraries and get access to its public (installed) headers.
-target_link_libraries(gmxapi-test Gromacs::gmxapi gmxapi-test-support)
+target_link_libraries(gmxapi-test Gromacs::gmxapi)
 
-gmx_register_gtest_test(GmxapiExternalInterfaceTests gmxapi-test INTEGRATION_TEST)
+gmx_register_gtest_test(GmxapiExternalInterfaceTests gmxapi-test)
 
 set_tests_properties(GmxapiExternalInterfaceTests PROPERTIES
                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
@@ -91,15 +90,49 @@ if(NOT GMX_USE_OPENCL)
     # Ref https://redmine.gromacs.org/issues/2689
     target_sources(gmxapi-mpi-test PRIVATE runner.cpp)
 endif()
-add_dependencies(gmxapi-mpi-test spc_and_methanol_tpr)
 
 target_include_directories(gmxapi-mpi-test PRIVATE
                            ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(gmxapi-mpi-test Gromacs::gmxapi gmxapi-test-support)
+target_link_libraries(gmxapi-mpi-test Gromacs::gmxapi)
 
 # Tests that specify MPI_RANKS will be passed a ``-ntmpi`` command-line option
 # when GMX_THREAD_MPI is true, but the test executables in this directory do not
 # yet understand that command-line option.
 if(NOT GMX_THREAD_MPI)
-    gmx_register_gtest_test(GmxapiMpiTests gmxapi-mpi-test MPI_RANKS 2 INTEGRATION_TEST)
+    gmx_register_gtest_test(GmxapiMpiTests gmxapi-mpi-test MPI_RANKS 2)
 endif()
+
+#
+# Test private interface.
+#
+
+gmx_add_gtest_executable(
+    workflow-details-test
+    workflow.cpp
+)
+
+target_link_libraries(workflow-details-test Gromacs::gmxapi gmxapi-detail)
+
+gmx_register_gtest_test(GmxapiInternalInterfaceTests workflow-details-test)
+
+set_tests_properties(GmxapiInternalInterfaceTests PROPERTIES
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+#
+# Test with MPI.
+#
+
+gmx_add_gtest_executable(
+    workflow-details-mpi-test MPI
+    workflow.cpp
+)
+
+target_link_libraries(workflow-details-mpi-test Gromacs::gmxapi gmxapi-detail)
+
+# Tests that specify MPI_RANKS will be passed a ``-ntmpi`` command-line option
+# when GMX_THREAD_MPI is true, but the test executables in this directory do not
+# yet understand that command-line option.
+if(NOT GMX_THREAD_MPI)
+    gmx_register_gtest_test(GmxapiInternalsMpiTests workflow-details-mpi-test MPI_RANKS 2)
+endif()
+
