@@ -36,8 +36,15 @@
 #ifndef GROMACS_TESTINGCONFIGURATION_H
 #define GROMACS_TESTINGCONFIGURATION_H
 
+#include <gtest/gtest.h>
+
 #include <string>
 #include <vector>
+
+#include "gromacs/gmxpreprocess/grompp.h"
+
+#include "testutils/cmdlinetest.h"
+#include "testutils/testfilemanager.h"
 
 namespace gmxapi
 {
@@ -45,10 +52,19 @@ namespace gmxapi
 namespace testing
 {
 
-// Todo: Need to set up a test fixture...
-extern const std::string              sample_tprfilename;
+class GmxApiTest : public gmx::test::CommandLineTestBase
+{
+    public:
+        GmxApiTest();
 
-extern const std::vector<std::string> mdArgs;
+    private:
+        //! Name of input tpr file generated for tests.
+        std::string                sample_tprfilename;
+        //! Arguments to run API driven simulation.
+        std::vector<std::string>   mdArgs;
+        //! Tetsfile manager keeping track of input file
+        gmx::test::TestFileManager fileManager_;
+};
 
 } // end namespace gmxapi::testing
 
