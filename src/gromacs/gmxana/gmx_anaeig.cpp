@@ -1149,6 +1149,9 @@ int gmx_anaeig(int argc, char *argv[])
         printf("The Entropy due to the Schlitter formula is %g J/mol K\n",
                calcSchlitterEntropy(gmx::arrayRefFromArray(eigval1, neig1),
                                     temp, FALSE));
+        printf("The Entropy due to the Quasiharmonic analysis is %g J/mol K\n",
+               calcQuasiHarmonicEntropy(gmx::arrayRefFromArray(eigval1, neig1),
+                                        temp, FALSE, 1.0));
     }
 
     if (bVec2)
