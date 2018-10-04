@@ -34,22 +34,29 @@
  */
 #include "testingconfiguration.h"
 #include "gmxapi/system.h"
-#include <gtest/gtest.h>
+
+namespace gmxapi
+{
+
+namespace testing
+{
 
 namespace
 {
 
-//! Input file for testing is built by CMake script and filename is compiled into in testingconfiguration binary.
-const auto &filename = gmxapi::testing::sample_tprfilename;
-
 /*!
  * \brief Check gmxapi::System construction.
  */
-TEST(ApiSystem, Construction)
+TEST_F(GmxApiTest, SystemConstruction)
 {
-    EXPECT_NO_THROW(gmxapi::fromTprFile(filename));
+    makeTprFile(1);
+    EXPECT_NO_THROW(gmxapi::fromTprFile(runner_.tprFileName_));
     // We have nothing to check at this point other than compilation and
     // error-free execution.
 }
 
 } // end anonymous namespace
+
+} // end namespace testing
+
+} // end namespace gmxapi
