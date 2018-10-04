@@ -41,9 +41,9 @@ gmx_add_gtest_executable(
     workflow.cpp
 )
 
-target_link_libraries(workflow-details-test Gromacs::gmxapi gmxapi-test-support gmxapi-detail)
+target_link_libraries(workflow-details-test Gromacs::gmxapi gmxapi-detail)
 
-gmx_register_gtest_test(GmxapiInternalInterfaceTests workflow-details-test INTEGRATION_TEST)
+gmx_register_gtest_test(GmxapiInternalInterfaceTests workflow-details-test)
 
 set_tests_properties(GmxapiInternalInterfaceTests PROPERTIES
                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
@@ -57,11 +57,12 @@ gmx_add_gtest_executable(
     workflow.cpp
 )
 
-target_link_libraries(workflow-details-mpi-test Gromacs::gmxapi gmxapi-test-support gmxapi-detail)
+target_link_libraries(workflow-details-mpi-test Gromacs::gmxapi gmxapi-detail)
 
 # Tests that specify MPI_RANKS will be passed a ``-ntmpi`` command-line option
 # when GMX_THREAD_MPI is true, but the test executables in this directory do not
 # yet understand that command-line option.
 if(NOT GMX_THREAD_MPI)
-    gmx_register_gtest_test(GmxapiInternalsMpiTests workflow-details-mpi-test MPI_RANKS 2 INTEGRATION_TEST)
+    gmx_register_gtest_test(GmxapiInternalsMpiTests workflow-details-mpi-test MPI_RANKS 2)
 endif()
+
