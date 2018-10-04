@@ -54,17 +54,35 @@ gmx_add_gtest_executable(
     status.cpp
     system.cpp
     version.cpp
+    testingconfiguration.cpp
     )
 
 target_include_directories(gmxapi-test PRIVATE
                            ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Link against the gmxapi libraries and get access to its public (installed) headers.
-target_link_libraries(gmxapi-test Gromacs::gmxapi gmxapi-test-support)
+target_link_libraries(gmxapi-test Gromacs::gmxapi)
 
-gmx_register_gtest_test(GmxapiExternalInterfaceTests gmxapi-test INTEGRATION_TEST)
+gmx_register_gtest_test(GmxapiExternalInterfaceTests gmxapi-test)
 
 set_tests_properties(GmxapiExternalInterfaceTests PROPERTIES
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+#
+# Test private interface.
+#
+
+gmx_add_gtest_executable(
+    workflow-details-test
+    workflow.cpp
+    testingconfiguration.cpp
+)
+
+target_link_libraries(workflow-details-test Gromacs::gmxapi gmxapi-detail)
+
+gmx_register_gtest_test(GmxapiInternalInterfaceTests workflow-details-test)
+
+set_tests_properties(GmxapiInternalInterfaceTests PROPERTIES
                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 #
@@ -77,15 +95,25 @@ gmx_add_gtest_executable(
     status.cpp
     system.cpp
     version.cpp
+    testingconfiguration.cpp
     )
 
 target_include_directories(gmxapi-mpi-test PRIVATE
                            ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(gmxapi-mpi-test Gromacs::gmxapi gmxapi-test-support)
+target_link_libraries(gmxapi-mpi-test Gromacs::gmxapi)
+
+gmx_add_gtest_executable(
+    workflow-details-mpi-test MPI
+    workflow.cpp
+    testingconfiguration.cpp
+)
+
+target_link_libraries(workflow-details-mpi-test Gromacs::gmxapi gmxapi-detail)
 
 # Tests that specify MPI_RANKS will be passed a ``-ntmpi`` command-line option
 # when GMX_THREAD_MPI is true, but the test executables in this directory do not
 # yet understand that command-line option.
 if(NOT GMX_THREAD_MPI)
-    gmx_register_gtest_test(GmxapiMpiTests gmxapi-mpi-test MPI_RANKS 2 INTEGRATION_TEST)
+    gmx_register_gtest_test(GmxapiMpiTests gmxapi-mpi-test MPI_RANKS 2)
+    gmx_register_gtest_test(GmxapiInternalsMpiTests workflow-details-mpi-test MPI_RANKS 2)
 endif()
