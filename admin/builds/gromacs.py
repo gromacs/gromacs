@@ -49,8 +49,6 @@ extra_options = {
     'fftpack': Option.simple,
     'double': Option.simple,
     'thread-mpi': Option.bool,
-    'gpu': Option.bool,
-    'opencl': Option.bool,
     'clang_cuda': Option.bool,
     'openmp': Option.bool,
     'nranks': Option.string,
@@ -93,7 +91,7 @@ def do_build(context):
         cmake_opts['GMX_SIMD'] = 'None'
     else:
         cmake_opts['GMX_SIMD'] = context.opts.simd
-    if context.opts.gpu or context.opts.opencl:
+    if context.opts.cuda or context.opts.opencl:
         cmake_opts['GMX_GPU'] = 'ON'
         if context.opts.opencl:
             context.env.set_env_var('CUDA_PATH', context.env.cuda_root)
@@ -198,6 +196,9 @@ def do_build(context):
                 # OpenMP should always work when compiled in! Currently not set if
                 # not explicitly set
                 cmd += ' -ntomp 2'
+
+            if context.opts.gpuhw == Gpuhw.NONE:
+                context.env.set_env_var('GMX_DISABLE_GPU_DETECTION', '1')
 
             if context.opts.gpu_id:
                 cmd += ' -gpu_id ' + context.opts.gpu_id
