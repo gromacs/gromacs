@@ -41,18 +41,20 @@
 #include "gmxapi/status.h"
 #include "gmxapi/system.h"
 #include "gmxapi/md/mdmodule.h"
-#include <gtest/gtest.h>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 
-namespace
+namespace gmxapi
 {
 
-//! Input file for testing is built by CMake script and filename is compiled into in testingconfiguration binary.
-const auto &filename = gmxapi::testing::sample_tprfilename;
+namespace testing
+{
+
+namespace
+{
 
 /*!
  * \brief Restraint that does nothing other than note whether it has been used.
@@ -61,13 +63,10 @@ class NullRestraint : public gmx::IRestraintPotential
 {
     public:
         /*! \cond Implement IRestraintPotential */
-        gmx::PotentialPointData evaluate(gmx::Vector r1,
-                                         gmx::Vector r2,
-                                         double      t) override
+        gmx::PotentialPointData evaluate(gmx::Vector /*  r1 */,
+                                         gmx::Vector /*  r2 */,
+                                         double      /*   t */ ) override
         {
-            (void)r1;
-            (void)r2;
-            (void)t;
             hasBeenCalled_ = true;
             return {{0., 0., 0.}, 0.};
         }
@@ -77,9 +76,8 @@ class NullRestraint : public gmx::IRestraintPotential
             return {{0, 1}};
         }
 
-        void bindSession(gmxapi::SessionResources* resources) override
+        void bindSession(gmxapi::SessionResources * /* resources */) override
         {
-            (void)resources;
         }
         //! \endcond
 
@@ -140,18 +138,15 @@ class SimpleApiModule : public gmxapi::MDModule
 /*!
  * \brief Check that we can attach a restraint and have it called.
  */
-TEST(ApiRunner, RestrainedMD)
+TEST_F(GmxApiTest, ApiRunnerRestrainedMD)
 {
-
-    auto system = gmxapi::fromTprFile(filename);
+    makeTprFile(2);
+    auto system = gmxapi::fromTprFile(runner_.tprFileName_);
 
     {
         auto           context = std::make_shared<gmxapi::Context>();
-        gmxapi::MDArgs args    = gmxapi::testing::mdArgs;
-        args.emplace_back("-nsteps");
-        args.emplace_back("2");
-        // Work around unclean working directory.
-        args.emplace_back("-noappend");
+        gmxapi::MDArgs args    = makeMdArgs();
+
         context->setMDArgs(args);
 
         auto           restraint = std::make_shared<SimpleApiModule>();
@@ -173,3 +168,7 @@ TEST(ApiRunner, RestrainedMD)
 }
 
 } // end anonymous namespace
+
+} // end namespace testing
+
+} // end namespace gmxapi
