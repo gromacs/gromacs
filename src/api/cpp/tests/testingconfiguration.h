@@ -36,8 +36,15 @@
 #ifndef GROMACS_TESTINGCONFIGURATION_H
 #define GROMACS_TESTINGCONFIGURATION_H
 
+#include <gtest/gtest.h>
+
 #include <string>
 #include <vector>
+
+#include "gromacs/gmxpreprocess/grompp.h"
+
+#include "testutils/cmdlinetest.h"
+#include "testutils/testfilemanager.h"
 
 namespace gmxapi
 {
@@ -45,12 +52,39 @@ namespace gmxapi
 namespace testing
 {
 
-// Todo: Need to set up a test fixture...
-extern const std::string              sample_tprfilename;
+class GmxApiTest : public gmx::test::CommandLineTestBase
+{
+    public:
+        GmxApiTest()
+        {
+            std::string baseName = "spc-and-methanol";
+            sample_tprfilename = fileManager_.getTemporaryFilePath(baseName + ".tpr");
+            {
+                gmx::test::CommandLine caller;
+                caller.append("grompp");
+                caller.addOption("-f", gmx::test::TestFileManager::getInputFilePath(baseName + ".mdp"));
+                caller.addOption("-p", gmx::test::TestFileManager::getInputFilePath(baseName + ".top"));
+                caller.addOption("-c", gmx::test::TestFileManager::getInputFilePath(baseName + ".gro"));
+                caller.addOption("-n", gmx::test::TestFileManager::getInputFilePath(baseName + ".ndx"));
+                caller.addOption("-o", sample_tprfilename);
+                EXPECT_EQ(0, gmx_grompp(caller.argc(), caller.argv()));
+            }
+        }
 
-extern const std::vector<std::string> mdArgs;
+        //! Get the TPR file to work with
+        std::string getTprFileName() const { return sample_tprfilename; }
+        //! Get the md arguments to work with
+        std::vector<std::string> getMdArgs() const { return mdArgs; }
+    private:
+        //! Name of input tpr file generated for tests.
+        std::string                sample_tprfilename;
+        //! Arguments to run API driven simulation.
+        std::vector<std::string>   mdArgs;
+        //! Tetsfile manager keeping track of input file
+        gmx::test::TestFileManager fileManager_;
+};
 
-} // end namespace gmxapi::testing
+} // namespace testing
 
 } // end namespace gmxapi
 
