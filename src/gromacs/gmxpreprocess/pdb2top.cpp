@@ -753,8 +753,8 @@ static void add_drude_lp_ssbonds(t_params *psv, int ai, int aj)
 {
     /* Nasty, hard-coded values here but only because we can't store them
      * in the .rtp file in any way, since they rely on inter-residue atoms */
-    char ss_lpa[] = "4   -0.135847248   -0.131015228   -2.467798394";
-    char ss_lpb[] = "4   -0.135847248   -0.131015228    2.467798394";
+    char ss_lpa[] = "4   -0.1371870221  -0.1546582376  -2.3347927594"; 
+    char ss_lpb[] = "4   -0.1371870221  -0.1546582376   2.3347927594"; 
 
     /* TODO: this is ugly and makes assumptions about atom order! */
     /* add vsite parameters for both sulfurs - two LP added to each */

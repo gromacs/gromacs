@@ -889,7 +889,8 @@ static void gen_drude_lp_excl(t_params plist[], t_atoms *atoms, t_excls *excls, 
                         /* LP - LP */
                         /* By looping over all combinations, we take care of LP-LP on same atom,
                          * and all combinations of LP-LP on excluded atoms */ 
-                        for (j = 0; j < plist[f].nr; j++)
+                        /* TODO: TESTING, was j=0 */
+                        for (j = i; j < plist[f].nr; j++)
                         {
                             /* we know that aj is a LP host, so if param.aj() is ai,
                              * then we have a LP-LP combination that needs an exclusion */ 
@@ -970,7 +971,8 @@ static void gen_drude_lp_excl(t_params plist[], t_atoms *atoms, t_excls *excls, 
                         excls[ai].e[excls[ai].nr] = plist[f].param[i].ai();
                         excls[ai].nr++;
                         /* LP - LP, as above */
-                        for (j = 0; j < plist[f].nr; j++)
+                        /* TODO: TESTING, was j=0 */
+                        for (j = i; j < plist[f].nr; j++)
                         {
                             /* check for self and excluded LP-LP interactions */
                             if ((aj == plist[f].param[j].aj()) || (ai == plist[f].param[j].aj()))
@@ -1382,7 +1384,7 @@ static void gen_drude_lp_pairs(t_params plist[], t_atoms *atoms, t_param *pai, i
                     (*npai)++;
                 }
             }
-            /* loop over all possible vsite functions to add LP exclusions */
+            /* loop over all possible vsite functions to add LP pairs */
             for (f = F_VSITE2; f <= F_VSITE4FDN; f++)
             {
                 if (debug)
@@ -1424,9 +1426,9 @@ static void gen_drude_lp_pairs(t_params plist[], t_atoms *atoms, t_param *pai, i
                         }
                         /* LP - LP */
                         /* Unlike with exclusions, we only need to set pairs for interatomic LP */
-                        for (j = 0; j < plist[f].nr; j++)
+                        for (j = (i+1); j < plist[f].nr; j++)
                         {
-                            if ((ai == plist[f].param[j].aj()))
+                            if (ai == plist[f].param[j].aj())
                             {
                                 if (debug)
                                 {
@@ -1501,7 +1503,7 @@ static void gen_drude_lp_pairs(t_params plist[], t_atoms *atoms, t_param *pai, i
                         }
                         /* LP - LP */
                         /* Unlike with exclusions, we only need to set pairs for interatomic LP */
-                        for (j = 0; j < plist[f].nr; j++)
+                        for (j = (i+1); j < plist[f].nr; j++)
                         {
                             if ((aj == plist[f].param[j].aj()))
                             {
@@ -1637,8 +1639,9 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                      * but we've somehow detected a polarizable atom, there's a problem */
                     if (!is_d(atoms, i+1) || !is_d(atoms, j1+1))
                     {
-                        gmx_fatal(FARGS, "Non-Drude found in Thole: %d-%d-%d-%d\n",
-                                    i,i+1,j1,j1+1);
+                        gmx_fatal(FARGS, "Non-Drude found in Thole: %s-%s-%s-%s\n",
+                                    *(atoms->atomname[i]), *(atoms->atomname[i+1]),
+                                    *(atoms->atomname[j1]), *(atoms->atomname[j1+1]));
                     }
                     thole[nthole].c0() = NOTSET;
                     thole[nthole].c1() = NOTSET;
@@ -1687,8 +1690,9 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                 /* as above */
                                 if (!is_d(atoms, i+1) || !is_d(atoms, k1+1))
                                 {
-                                    gmx_fatal(FARGS, "Non-Drude found in Thole: %d-%d-%d-%d\n",
-                                                i,i+1,k1,k1+1);
+                                    gmx_fatal(FARGS, "Non-Drude found in Thole: %s-%s-%s-%s\n",
+                                                *(atoms->atomname[i]), *(atoms->atomname[i+1]),
+                                                *(atoms->atomname[k1]), *(atoms->atomname[k1+1]));
                                 }
                                 thole[nthole].c0() = NOTSET;
                                 thole[nthole].c1() = NOTSET;
