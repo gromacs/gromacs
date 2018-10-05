@@ -4,6 +4,7 @@
 #include "gromacs/ewald/pme-grid.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/enerdata.h"
 
 //#include "gmxpre.h"
 #include "gromacs/mdlib/nbnxn_atomdata.h"
@@ -39,14 +40,14 @@
 void update_gpu_bonded( const t_idef *idef,  const t_forcerec *fr, matrix box,
                         int size,  const t_mdatoms *md, const real *lambda,
                         gmx_grppairener_t *grppener );                       
-void do_bonded_gpu(t_forcerec *fr, t_inputrec *ir, const t_idef *idef, 
+void do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef, 
                    int flags, const t_graph *graph , int natoms, rvec x[], 
-                   real *lambda, t_mdatoms *md, 
+                   real *lambda, const t_mdatoms *md, 
                    rvec *input_force, t_lambda *fepvals, gmx_enerdata_t *enerd);
 
-void do_bonded_gpu_finalize(t_forcerec *fr, t_inputrec *ir, const t_idef *idef,
+void do_bonded_gpu_finalize(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
                    int flags, const t_graph *graph , int natoms, rvec x[],
-                   real *lambda, t_mdatoms *md,
+                   real *lambda, const t_mdatoms *md,
                    rvec *input_force, t_lambda *fepvals, gmx_enerdata_t *enerd);
 
 void reset_gpu_bonded(const int size, const int nener);
