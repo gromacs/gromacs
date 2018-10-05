@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018 
+ * Copyright (C) 2014-2018
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,21 +20,25 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "molselect.h"
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+
 #include <random>
 #include <vector>
+
 #include <strings.h>
 
 #include "gromacs/commandline/filenm.h"
@@ -54,7 +58,6 @@
 #include "molgen.h"
 #include "molprop.h"
 #include "molprop_xml.h"
-#include "molselect.h"
 #include "mymol.h"
 #include "poldata.h"
 #include "poldata_xml.h"
@@ -72,11 +75,11 @@ const char *iMolSelectName(iMolSelect ims)
 namespace alexandria
 {
 
-static void sample_molecules(FILE                            *fp,
-                             std::vector<alexandria::MyMol>   mols,
-                             alexandria::Poldata              pd,
-                             int                              minmol,
-                             int                              maxatempt)
+static void sample_molecules(FILE                                 *fp,
+                             const std::vector<alexandria::MyMol> &mols,
+                             alexandria::Poldata                   pd,
+                             int                                   minmol,
+                             int                                   maxatempt)
 {
 
     int nmol      = 0;
@@ -97,9 +100,9 @@ static void sample_molecules(FILE                            *fp,
             atempt = 0;
             do
             {
-                auto found = false;
-                auto &mol  = mols[dis(gen)];
-                auto mci   = mol.molProp()->SearchMolecularComposition(alexandria);
+                auto  found = false;
+                auto &mol   = mols[dis(gen)];
+                auto  mci   = mol.molProp()->SearchMolecularComposition(alexandria);
                 for (auto ani = mci->BeginAtomNum(); (!found) && (ani < mci->EndAtomNum()); ++ani)
                 {
                     if (atp->getType() == ani->getAtom())
@@ -291,7 +294,7 @@ int alex_molselect(int argc, char *argv[])
         pargs.push_back(pa[i]);
     }
     mdp.addOptions(&pargs);
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm, 
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm,
                            pargs.size(), pargs.data(),
                            asize(desc), desc, 0, nullptr, &oenv))
     {
@@ -316,7 +319,7 @@ int alex_molselect(int argc, char *argv[])
              false, true, nullptr);
 
     printAtomtypeStatistics(fp, mdp.poldata(), mdp.mymols());
-    
+
     for (int i = 0; i < nsample; i++)
     {
         char  buf[STRLEN];

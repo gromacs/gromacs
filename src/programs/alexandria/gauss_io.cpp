@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018 
+ * Copyright (C) 2014-2018
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,17 +20,24 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
- 
+
+#include "gmxpre.h"
+
+#include "gauss_io.h"
+
+#include "config.h"
+
 #include <cstdio>
+
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -46,9 +53,6 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "config.h"
-#include "gmxpre.h"
-#include "gauss_io.h"
 #include "molprop.h"
 #include "molprop_util.h"
 #include "poldata.h"
@@ -65,6 +69,7 @@
 #include <openbabel/atom.h>
 #include <openbabel/babelconfig.h>
 #include <openbabel/data_utilities.h>
+#include <openbabel/elements.h>
 #include <openbabel/forcefield.h>
 #include <openbabel/mol.h>
 #include <openbabel/obconversion.h>
@@ -72,7 +77,6 @@
 #include <openbabel/obmolecformat.h>
 #include <openbabel/residue.h>
 #include <openbabel/math/vector3.h>
-#include <openbabel/elements.h>
 #ifdef KOKO
 #ifndef HAVE_SYS_TIME_H
 #define HAVE_SYS_TIME_H KOKO
@@ -81,15 +85,15 @@
 #endif
 
 
-BabelFile::BabelFile(BabelFileType      ftype, 
-                     const std::string &ext, 
+BabelFile::BabelFile(BabelFileType      ftype,
+                     const std::string &ext,
                      const std::string &InFormat)
     :
-    ftype_(ftype),
-    ext_(ext),
-    InFormat_(InFormat)
-   {}
-    
+      ftype_(ftype),
+      ext_(ext),
+      InFormat_(InFormat)
+{}
+
 BabelFiles::BabelFiles ()
 {
     bfiles_.push_back(BabelFile(ebftPDB,  ".pdb",  "pdb"));
@@ -102,8 +106,8 @@ BabelFiles::BabelFiles ()
 
 BabelFileIterator BabelFiles::findBabelFile(const std::string &fn)
 {
-    auto extension = fn.substr(fn.find_last_of("."));    
-    BabelFileIterator fb = bfiles_.begin(), fe = bfiles_.end();
+    auto              extension = fn.substr(fn.find_last_of("."));
+    BabelFileIterator fb        = bfiles_.begin(), fe = bfiles_.end();
     return std::find_if(fb, fe, [extension](const BabelFile &bf)
                         {
                             return (extension == bf.ext());
@@ -148,9 +152,9 @@ static OpenBabel::OBConversion *read_babel(const char *g09, OpenBabel::OBMol *mo
     {
         gmx_fatal(FARGS, "Cannot open file %s for reading", g09);
     }
-    OpenBabel::OBConversion *conv = new OpenBabel::OBConversion(&g09f, &std::cout); // Read from g09f
-    auto babelfiles = BabelFiles();
-    auto informat   = babelfiles.findBabelFile(g09)->informat().c_str();
+    OpenBabel::OBConversion *conv       = new OpenBabel::OBConversion(&g09f, &std::cout); // Read from g09f
+    auto                     babelfiles = BabelFiles();
+    auto                     informat   = babelfiles.findBabelFile(g09)->informat().c_str();
     if (conv->SetInFormat(informat, isGzip))
     {
         if (conv->Read(mol, &g09f))
@@ -214,14 +218,16 @@ void ReadGauss(const char          *g09,
     }
     delete conv;
     conv = new OpenBabel::OBConversion(&std::cin, &std::cout);
-    
+
     // Classification info.
     if (conv->SetOutFormat("fpt"))
     {
-        const char    *exclude[] = { ">", "C_ONS_bond", "Rotatable_bond", "Conjugated_double_bond", "Conjugated_triple_bond", 
-                                     "Chiral_center_specified", "Cis_double_bond", "Bridged_rings", "Conjugated_tripple_bond", 
-                                     "Trans_double_bond" };
-        
+        const char    *exclude[] = {
+            ">", "C_ONS_bond", "Rotatable_bond", "Conjugated_double_bond", "Conjugated_triple_bond",
+            "Chiral_center_specified", "Cis_double_bond", "Bridged_rings", "Conjugated_tripple_bond",
+            "Trans_double_bond"
+        };
+
 #define nexclude (sizeof(exclude)/sizeof(exclude[0]))
 
         conv->AddOption("f", OpenBabel::OBConversion::OUTOPTIONS, "FP4");
@@ -422,7 +428,7 @@ void ReadGauss(const char          *g09,
             OpenBabel::OBPairData *type = (OpenBabel::OBPairData*) atom->GetData("FFAtomType");
             if (nullptr == type)
             {
-                gmx_fatal(FARGS, "Cannot find %s atom type for atom %s", 
+                gmx_fatal(FARGS, "Cannot find %s atom type for atom %s",
                           forcefield.c_str(), static_cast<int>(atom->GetIdx()));
             }
             if (nullptr != debug)
@@ -432,17 +438,17 @@ void ReadGauss(const char          *g09,
             alexandria::CalcAtom ca(OpenBabel::OBElements::GetSymbol(atom->GetAtomicNum()), type->GetValue(), atom->GetIdx());
             ca.SetUnit(unit2string(eg2cPm));
             ca.SetCoords(100*atom->x(), 100*atom->y(), 100*atom->z());
-            for (const auto& cs : charge_scheme)
+            for (const auto &cs : charge_scheme)
             {
                 OBpd = (OpenBabel::OBPairData *) mol.GetData(cs);
                 if (nullptr != OBpd)
                 {
                     charge_model       = strdup(OBpd->GetValue().c_str());
                     OBpc               = (OpenBabel::OBPcharge *) mol.GetData(charge_model);
-                    auto PartialCharge = OBpc->GetPartialCharge();
-                    alexandria::AtomicCharge aq(charge_model, "e", 0.0, PartialCharge[atom->GetIdx()-1]);                
+                    auto                     PartialCharge = OBpc->GetPartialCharge();
+                    alexandria::AtomicCharge aq(charge_model, "e", 0.0, PartialCharge[atom->GetIdx()-1]);
                     ca.AddCharge(aq);
-                }                  
+                }
             }
             if (nullptr == charge_model)
             {
@@ -519,8 +525,8 @@ void ReadGauss(const char          *g09,
         alexandria::MolecularPolarizability mdp("electronic",
                                                 unit2string(eg2cAngstrom3),
                                                 0.0,
-                                                mm[0], mm[4], mm[8], 
-                                                mm[1], mm[2], mm[5], 
+                                                mm[0], mm[4], mm[8],
+                                                mm[1], mm[2], mm[5],
                                                 alpha, 0);
         mpt.LastExperiment()->AddPolar(mdp);
     }
@@ -549,4 +555,3 @@ void ReadGauss(const char          *g09,
     }
 }
 #endif
-

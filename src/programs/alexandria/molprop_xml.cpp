@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018 
+ * Copyright (C) 2014-2018
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,18 +20,21 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "molprop_xml.h"
+
 #include <stdlib.h>
 #include <string.h>
+
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
@@ -40,23 +43,22 @@
 #include "gromacs/utility/futil.h"
 
 #include "molprop.h"
-#include "molprop_xml.h"
 #include "stringutil.h"
 #include "xml_util.h"
 
 
-static const char *job_name[alexandria::JOB_NR] = 
+static const char *job_name[alexandria::JOB_NR] =
 {
-    "Opt", 
-    "Pop", 
-    "POLAR", 
-    "G2", 
-    "G3", 
-    "G4", 
-    "CBSQB3", 
-    "W1U", 
-    "W1BD", 
-    "SP", 
+    "Opt",
+    "Pop",
+    "POLAR",
+    "G2",
+    "G3",
+    "G4",
+    "CBSQB3",
+    "W1U",
+    "W1BD",
+    "SP",
     "unknown"
 };
 
@@ -115,133 +117,133 @@ static const char *xmltypes[] = {
 #define NXMLTYPES sizeof(xmltypes)/sizeof(xmltypes[0])
 
 enum {
-    exmlMOLECULES      = 0, 
-    exmlMOLECULE       = 1, 
-    exmlFORMULA        = 2, 
-    exmlMOLNAME        = 3, 
+    exmlMOLECULES      = 0,
+    exmlMOLECULE       = 1,
+    exmlFORMULA        = 2,
+    exmlMOLNAME        = 3,
     exmlMASS           = 4,
-    exmlMOLINFO        = 5, 
-    exmlIUPAC          = 6, 
-    exmlCAS            = 7, 
-    exmlCID            = 8, 
+    exmlMOLINFO        = 5,
+    exmlIUPAC          = 6,
+    exmlCAS            = 7,
+    exmlCID            = 8,
     exmlINCHI          = 9,
-    exmlMULTIPLICITY   = 10, 
+    exmlMULTIPLICITY   = 10,
     exmlCHARGE         = 11,
-    exmlCATEGORY       = 12, 
-    exmlCATNAME        = 13, 
+    exmlCATEGORY       = 12,
+    exmlCATNAME        = 13,
     exmlEXPERIMENT     = 14,
-    exmlPOLARIZABILITY = 15, 
-    exmlENERGY         = 16, 
-    exmlDIPOLE         = 17, 
-    exmlQUADRUPOLE     = 18, 
+    exmlPOLARIZABILITY = 15,
+    exmlENERGY         = 16,
+    exmlDIPOLE         = 17,
+    exmlQUADRUPOLE     = 18,
     exmlPOTENTIAL      = 19,
-    exmlNAME           = 20, 
-    exmlAVERAGE        = 21, 
-    exmlERROR          = 22, 
-    exmlTEMPERATURE    = 23, 
+    exmlNAME           = 20,
+    exmlAVERAGE        = 21,
+    exmlERROR          = 22,
+    exmlTEMPERATURE    = 23,
     exmlPHASE          = 24,
-    exmlMETHOD         = 25, 
-    exmlREFERENCE      = 26, 
-    exmlTYPE           = 27, 
+    exmlMETHOD         = 25,
+    exmlREFERENCE      = 26,
+    exmlTYPE           = 27,
     exmlSOURCE         = 28,
-    exmlBOND           = 29, 
-    exmlAI             = 30, 
-    exmlAJ             = 31, 
+    exmlBOND           = 29,
+    exmlAI             = 30,
+    exmlAJ             = 31,
     exmlBONDORDER      = 32,
-    exmlCOMPOSITION    = 33, 
-    exmlCOMPNAME       = 34, 
-    exmlCATOM          = 35, 
-    exmlC_NAME         = 36, 
+    exmlCOMPOSITION    = 33,
+    exmlCOMPNAME       = 34,
+    exmlCATOM          = 35,
+    exmlC_NAME         = 36,
     exmlC_NUMBER       = 37,
-    exmlDATASOURCE     = 38, 
-    exmlPROGRAM        = 39, 
-    exmlBASISSET       = 40, 
-    exmlJOBTYPE        = 41, 
-    exmlCONFORMATION   = 42, 
+    exmlDATASOURCE     = 38,
+    exmlPROGRAM        = 39,
+    exmlBASISSET       = 40,
+    exmlJOBTYPE        = 41,
+    exmlCONFORMATION   = 42,
     exmlDATAFILE       = 43,
-    exmlUNIT           = 44, 
-    exmlATOM           = 45, 
-    exmlATOMID         = 46, 
-    exmlOBTYPE         = 47, 
-    exmlX_UNIT         = 48, 
-    exmlV_UNIT         = 49, 
+    exmlUNIT           = 44,
+    exmlATOM           = 45,
+    exmlATOMID         = 46,
+    exmlOBTYPE         = 47,
+    exmlX_UNIT         = 48,
+    exmlV_UNIT         = 49,
     exmlESPID          = 50,
-    exmlX              = 51, 
-    exmlY              = 52, 
-    exmlZ              = 53, 
-    exmlV              = 54, 
-    exmlXX             = 55, 
-    exmlYY             = 56, 
+    exmlX              = 51,
+    exmlY              = 52,
+    exmlZ              = 53,
+    exmlV              = 54,
+    exmlXX             = 55,
+    exmlYY             = 56,
     exmlZZ             = 57,
-    exmlXY             = 58, 
-    exmlXZ             = 59, 
-    exmlYZ             = 60, 
+    exmlXY             = 58,
+    exmlXZ             = 59,
+    exmlYZ             = 60,
     exmlQ              = 61,
     exmlNR             = 62
 };
 
 static const char *exml_names[exmlNR] = {
-    "molecules", 
-    "molecule", 
-    "formula", 
-    "molname", 
+    "molecules",
+    "molecule",
+    "formula",
+    "molname",
     "mass",
-    "molinfo", 
-    "iupac", 
-    "cas", 
-    "cid", 
+    "molinfo",
+    "iupac",
+    "cas",
+    "cid",
     "inchi",
-    "multiplicity", 
+    "multiplicity",
     "charge",
-    "category", 
-    "catname", 
+    "category",
+    "catname",
     "experiment",
-    "polarizability", 
-    "energy", 
-    "dipole", 
-    "quadrupole", 
+    "polarizability",
+    "energy",
+    "dipole",
+    "quadrupole",
     "potential",
-    "name", 
-    "average", 
-    "error", 
-    "temperature", 
+    "name",
+    "average",
+    "error",
+    "temperature",
     "phase",
-    "method", 
-    "reference", 
-    "type", 
+    "method",
+    "reference",
+    "type",
     "source",
-    "bond", 
-    "ai", 
-    "aj", 
+    "bond",
+    "ai",
+    "aj",
     "bondorder",
-    "composition", 
-    "compname", 
-    "catom", 
-    "cname", 
+    "composition",
+    "compname",
+    "catom",
+    "cname",
     "cnumber",
-    "datasource", 
-    "program", 
-    "basisset", 
-    "jobtype", 
-    "conformation", 
+    "datasource",
+    "program",
+    "basisset",
+    "jobtype",
+    "conformation",
     "datafile",
-    "unit", 
-    "atom", 
-    "atomid", 
-    "obtype", 
-    "coord_unit", 
-    "potential_unit", 
+    "unit",
+    "atom",
+    "atomid",
+    "obtype",
+    "coord_unit",
+    "potential_unit",
     "espid",
-    "x", 
-    "y", 
-    "z", 
-    "V", 
-    "xx", 
-    "yy", 
-    "zz", 
-    "xy", 
-    "xz", 
-    "yz", 
+    "x",
+    "y",
+    "z",
+    "V",
+    "xx",
+    "yy",
+    "zz",
+    "xy",
+    "xz",
+    "yz",
     "q"
 };
 
@@ -639,8 +641,8 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                 {
                                     if (NN(xbuf[exmlREFERENCE]))
                                     {
-                                        const char *unknown = "unknown";
-                                        alexandria::Experiment myexp(xbuf[exmlREFERENCE], 
+                                        const char            *unknown = "unknown";
+                                        alexandria::Experiment myexp(xbuf[exmlREFERENCE],
                                                                      NN(xbuf[exmlCONFORMATION]) ? xbuf[exmlCONFORMATION] : unknown);
                                         mpt->AddExperiment(myexp);
                                     }
@@ -685,7 +687,7 @@ void MolPropRead(const char *fn, std::vector<alexandria::MolProp> &mpt)
     const char   *db          = "alexandria.ff/molprops.dat";
     gmx_bool      bExperiment = FALSE;
     std::string   mpfile;
-    
+
     xmlDoValidityCheckingDefaultValue = 0;
     mpfile = gmx::findLibraryFile(fn ? fn : db, true, false);
     if (debug)

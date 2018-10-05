@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018 
+ * Copyright (C) 2014-2018
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,17 +20,17 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
- 
- 
+
+
 #ifndef MYMOL_H
 #define MYMOL_H
 
@@ -41,6 +41,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/state.h"
@@ -80,22 +81,25 @@ enum eSupport {
     eSupportNR
 };
 
+struct gmx_vsite_t;
+
 namespace alexandria
 {
 /*! \brief Enumerated type to differentiate the charge types */
 enum qType {
-    qtCalc      = 0, 
-    qtESP       = 1, 
-    qtMulliken  = 2, 
+    qtCalc      = 0,
+    qtESP       = 1,
+    qtMulliken  = 2,
     qtHirshfeld = 3,
-    qtCM5       = 4, 
-    qtElec      = 5, 
+    qtCM5       = 4,
+    qtElec      = 5,
     qtNR        = 6
 };
 
 /*! \brief return string corresponding to charge type */
 const char *qTypeName(qType qt);
 
+class MyForceProvider;
 /*! \brief
  * Contains molecular properties from a range of sources.
  * Overloads the regular molprop and adds a lot of functionality.
@@ -115,23 +119,26 @@ class MyMol
         /*! \brief
          * Gromacs structures
          */
-        int              nexcl_;
-        int             *cgnr_;
-        bool             bHaveShells_;
-        bool             bHaveVSites_;
-        bool             bNeedVsites_;
-        double           ref_enthalpy_;
-        double           polarizability_;
-        double           sig_pol_;
-        double           EspRms_;
-        double           EemRms_;
-        t_excls         *excls_;
-        immStatus        immAtoms_;
-        immStatus        immCharges_;
-        immStatus        immTopology_;
-        std::unique_ptr<gmx_vsite_t> *vsite_;
-        GentopVsites     gvt_;
-        std::string      forcefield_;
+        int                              nexcl_;
+        int                             *cgnr_;
+        bool                             bHaveShells_;
+        bool                             bHaveVSites_;
+        bool                             bNeedVsites_;
+        double                           ref_enthalpy_;
+        double                           polarizability_;
+        double                           sig_pol_;
+        double                           EspRms_;
+        double                           EemRms_;
+        t_excls                         *excls_;
+        immStatus                        immAtoms_;
+        immStatus                        immCharges_;
+        immStatus                        immTopology_;
+        std::unique_ptr<gmx_vsite_t>    *vsite_;
+        std::unique_ptr<gmx::MDAtoms>   *MDatoms_;
+        std::unique_ptr<gmx::MDModules> *mdModules_;
+        MyForceProvider                 *myforce_;
+        GentopVsites                     gvt_;
+        std::string                      forcefield_;
 
         //! Array of dipole vectors
         rvec                      mu_qm_[qtNR];
@@ -146,7 +153,7 @@ class MyMol
         //! Weighting factor for dipole????
         double                    dip_weight_ = 0;
         //! Center of charge
-        rvec                      coc_        = {0, 0, 0};        
+        rvec                      coc_        = {0, 0, 0};
         //! GROMACS state variable
         t_state                  *state_;
         //! GROMACS force record
@@ -217,25 +224,25 @@ class MyMol
                            const Poldata     &pd);
 
         /*! \brief
-         * Find the atoms inside the molcule needed to construct the inplane virtual sites. 
+         * Find the atoms inside the molcule needed to construct the inplane virtual sites.
          *
-         * \param[in]  ca     The index of the central atom 
+         * \param[in]  ca     The index of the central atom
          * \param[out] atoms  Data structure containing atomic properties
          */
         void findInPlaneAtoms(int ca, std::vector<int> &atoms);
 
         /*! \brief
-         * Find the atoms inside the molcule needed to construct the out of plane virtual sites. 
+         * Find the atoms inside the molcule needed to construct the out of plane virtual sites.
          *
-         * \param[in]  ca     The index of the central atom 
+         * \param[in]  ca     The index of the central atom
          * \param[out] atoms  Data structure containing atomic properties
          */
         void findOutPlaneAtoms(int ca, std::vector<int> &atoms);
 
         /*! \brief
-         * Compare the iupac name of two MyMol objects. 
+         * Compare the iupac name of two MyMol objects.
          *
-         * \param[in]  mol1  Molecule 1 
+         * \param[in]  mol1  Molecule 1
          * \param[out] mol2  Molecule 2
          */
         friend bool operator==(const MyMol &mol1, const MyMol &mol2)
@@ -252,57 +259,56 @@ class MyMol
         void setQandMoments(qType qt, int natom, double q[]);
 
     public:
-        double                    chieq_         = 0;
-        double                    Hform_         = 0;
-        double                    Emol_          = 0;
-        double                    Ecalc_         = 0;
-        double                    OptEcalc_      = 0;
-        double                    Force2_        = 0;
-        double                    OptForce2_     = 0;
-        double                    isoPol_elec_   = 0;
-        double                    isoPol_calc_   = 0;
-        double                    anisoPol_elec_ = 0;
-        double                    anisoPol_calc_ = 0;
-        tensor                    alpha_elec_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-        tensor                    alpha_calc_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-        eSupport                  eSupp_;
+        double                         chieq_         = 0;
+        double                         Hform_         = 0;
+        double                         Emol_          = 0;
+        double                         Ecalc_         = 0;
+        double                         OptEcalc_      = 0;
+        double                         Force2_        = 0;
+        double                         OptForce2_     = 0;
+        double                         isoPol_elec_   = 0;
+        double                         isoPol_calc_   = 0;
+        double                         anisoPol_elec_ = 0;
+        double                         anisoPol_calc_ = 0;
+        tensor                         alpha_elec_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+        tensor                         alpha_calc_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+        eSupport                       eSupp_;
         //gmx::PaddedArrayRef<gmx::RVec> f_;
-        PaddedRVecVector  f_;
+        PaddedRVecVector               f_;
         gmx::PaddedArrayRef<gmx::RVec> optf_;
-        std::vector<int>          symmetric_charges_;
-        QgenResp                  Qgresp_;
-        QgenEem                   Qgeem_;
-        std::vector<PlistWrapper> plist_;
-        gmx_mtop_t               *mtop_;
-        gmx_localtop_t           *ltop_;
-        gpp_atomtype_t            atype_;
-        gmx_shellfc_t            *shellfc_;
-        t_symtab                 *symtab_;
-        t_inputrec               *inputrec_;
-        gmx_enerdata_t           *enerd_;
-        std::unique_ptr<gmx::MDAtoms> *MDatoms_;
-        t_topology               *topology_;
-        t_fcdata                 *fcd_;
-        struct bonded_threading_t *bt_;
-        t_nrnb                    nrnb_;
-        gmx_wallcycle_t           wcycle_;
-        
+        std::vector<int>               symmetric_charges_;
+        QgenResp                       Qgresp_;
+        QgenEem                        Qgeem_;
+        std::vector<PlistWrapper>      plist_;
+        gmx_mtop_t                    *mtop_;
+        gmx_localtop_t                *ltop_;
+        gpp_atomtype_t                 atype_;
+        gmx_shellfc_t                 *shellfc_;
+        t_symtab                      *symtab_;
+        t_inputrec                    *inputrec_;
+        gmx_enerdata_t                *enerd_;
+        t_topology                    *topology_;
+        t_fcdata                      *fcd_;
+        struct bonded_threading_t     *bt_;
+        t_nrnb                         nrnb_;
+        gmx_wallcycle_t                wcycle_;
+
         /*! \brief
          * Constructor
          */
         MyMol();
-        
-        /*! \brief 
+
+        /*! \brief
          * Return QM dipole corresponding to charge type qt
          */
         const rvec &muQM(qType qt) const { return mu_qm_[qt]; }
 
-        /*! \brief 
+        /*! \brief
          * Return QM quadrupole corresponding to charge type qt.
          */
         const tensor &QQM(qType qt) const { return Q_qm_[qt]; }
 
-        /*! \brief 
+        /*! \brief
          * Return Charge vector corresponding to charge type qt.
          */
         const std::vector<double> &chargeQM(qType qt) const { return charge_QM_[qt]; }
@@ -313,8 +319,8 @@ class MyMol
          * \param[in] mu The dipole to be stored
          */
         void set_muQM(qType qt, rvec mu) { copy_rvec(mu, mu_qm_[qt]); }
-        
-        /*! \brief 
+
+        /*! \brief
          * Rotate the molcular dipole vector onto a reference vector
          *
          * \param[in] mu             Molecular dipole vector
@@ -334,7 +340,7 @@ class MyMol
          */
         double dipQM(qType qt) const { return norm(mu_qm_[qt]); }
 
-        /*! \brief 
+        /*! \brief
          * Return experimental dipole
          */
         double dipExper() const { return dip_exp_; }
@@ -343,16 +349,16 @@ class MyMol
          * Return the coordinate vector of the molecule
          */
         const gmx::HostVector<gmx::RVec> &x() const { return state_->x; }
-               
+
         /*! \brief
          * Return my inner molprop
          */
         MolProp *molProp() const { return mp_; }
-        
-         /*! \brief
+
+        /*! \brief
          * Return mol state
          */
-        t_state *molState() const { return state_;}
+        t_state *molState() const { return state_; }
 
         /*! \brief
          * It generates the topology structure which will be used to print the topology file.
@@ -377,7 +383,7 @@ class MyMol
                                    bool                      bAddShells,
                                    bool                      bBASTAT,
                                    const char               *tabfn);
-                                   
+
         /*! \brief
          *  Computes isotropic polarizability at the presence of external
          *  electric field (under construction!!!)
@@ -495,7 +501,7 @@ class MyMol
          */
         void CalcDipole(rvec mu);
 
-        /*! \brief 
+        /*! \brief
          * Compute the anisotropic polarizability from the polarizability tensor
          *
          * \param[in]  polar     Tensor of polarizability

@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018 
+ * Copyright (C) 2014-2018
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,19 +20,22 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "qgen_resp.h"
+
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
+
 #include <map>
 
 #include "gromacs/commandline/filenm.h"
@@ -52,7 +55,6 @@
 
 #include "nmsimplex.h"
 #include "poldata.h"
-#include "qgen_resp.h"
 #include "regression.h"
 
 namespace alexandria
@@ -81,6 +83,7 @@ void QgenResp::updateAtomCoords(const gmx::HostVector<gmx::RVec> x)
 {
     for (size_t i = 0; i < ra_.size(); i++)
     {
+        //fprintf(stderr, "x[%u] = %8.3f  %8.3f  %8.3f\n", i, x[i][XX], x[i][YY], x[i][ZZ]);
         ra_[i].setX(x[i]);
     }
 }
@@ -99,10 +102,10 @@ void QgenResp::updateAtomCharges(t_atoms  *atoms)
     }
 }
 
-void QgenResp::setAtomInfo(t_atoms                   *atoms,
-                           const alexandria::Poldata &pd,
+void QgenResp::setAtomInfo(t_atoms                         *atoms,
+                           const alexandria::Poldata       &pd,
                            const gmx::HostVector<gmx::RVec> x,
-                           const int                  qtotal)
+                           const int                        qtotal)
 {
     nAtom_  = 0;
     nShell_ = 0;
@@ -870,11 +873,11 @@ real QgenResp::getRms(real *wtot, real *rrms)
 
 
 static double calcJ(ChargeDistributionModel iChargeDistributionModel,
-             rvec                    espx,
-             rvec                    rax,
-             double                  zeta,
-             int                     watoms,
-             int                     row)
+                    rvec                    espx,
+                    rvec                    rax,
+                    double                  zeta,
+                    int                     watoms,
+                    int                     row)
 {
     rvec   dx;
     double r    = 0;

@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018 
+ * Copyright (C) 2014-2018
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,10 +20,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
@@ -34,6 +34,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+
 #include <random>
 
 #include "gromacs/commandline/pargs.h"
@@ -77,21 +78,21 @@ class OptZeta : public MolGen
         gmx_bool       bFullTensor_;
         gmx_bool       bCharge_;
         gmx_bool       bFitAlpha_;
-        
+
         Bayes <double> TuneZeta_;
         param_type     param_, lower_, upper_, best_;
         param_type     orig_, psigma_, pmean_;
 
     public:
 
-        OptZeta() 
-            : 
-                bDipole_(false), 
-                bQuadrupole_(false), 
-                bFullTensor_(false), 
-                bCharge_(false), 
-                bFitAlpha_(false)
-            {}
+        OptZeta()
+            :
+              bDipole_(false),
+              bQuadrupole_(false),
+              bFullTensor_(false),
+              bCharge_(false),
+              bFitAlpha_(false)
+        {}
 
         ~OptZeta() {}
 
@@ -212,12 +213,12 @@ void OptZeta::tuneZeta2PolData()
             std::string qstr   = ei->getQstr();
             std::string rowstr = ei->getRowstr();
             zstr[0]  = '\0';
-            z_sig[0] = '\0';            
+            z_sig[0] = '\0';
             if (iChargeDistributionModel() == eqdAXps || iChargeDistributionModel() == eqdAXpg)
             {
-                auto nzeta   = ei->getNzeta();
-                double zeta  = ei->getZeta(0);
-                double sigma = 0;
+                auto   nzeta   = ei->getNzeta();
+                double zeta    = ei->getZeta(0);
+                double sigma   = 0;
                 for (auto i = 0; i < nzeta; i++)
                 {
                     if (i > 0)
@@ -357,7 +358,7 @@ void OptZeta::calcDeviation()
             }
             mymol.Qgresp_.calcPot();
             increaseEnergy(ermsESP,
-                     convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms), eg2cHartree_e));
+                           convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms), eg2cHartree_e));
             if (bDipole_)
             {
                 mymol.CalcDipole();
@@ -381,8 +382,8 @@ void OptZeta::calcDeviation()
                     {
                         if (fullTensor() || mm == nn)
                         {
-                            increaseEnergy(ermsQUAD, 
-                                     gmx::square(mymol.QQM(qtCalc)[mm][nn] - mymol.QQM(qtElec)[mm][nn]));
+                            increaseEnergy(ermsQUAD,
+                                           gmx::square(mymol.QQM(qtCalc)[mm][nn] - mymol.QQM(qtElec)[mm][nn]));
                         }
                     }
                 }
@@ -432,9 +433,9 @@ void OptZeta::optRun(FILE                   *fp,
     double              chi2, chi2_min;
     gmx_bool            bMinimum = false;
 
-    auto  func = [&] (const double v[]) {
-        return objFunction(v);
-    };
+    auto                func = [&] (const double v[]) {
+            return objFunction(v);
+        };
     if (MASTER(commrec()))
     {
         if (PAR(commrec()))
@@ -679,7 +680,7 @@ int alex_tune_zeta(int argc, char *argv[])
         fprintf(fp, "In the total data set of %zu molecules we have:\n",
                 opt.mymols().size());
     }
-    
+
     if (bOptimize)
     {
         if (MASTER(opt.commrec()))
@@ -694,13 +695,13 @@ int alex_tune_zeta(int argc, char *argv[])
                    opt2fn("-conv", NFILE, fnm),
                    opt2fn("-epot", NFILE, fnm));
     }
-    
+
     if (MASTER(opt.commrec()))
     {
         gmx_bool bPolar = (opt.iChargeDistributionModel() == eqdAXpp  ||
                            opt.iChargeDistributionModel() == eqdAXpg  ||
                            opt.iChargeDistributionModel() == eqdAXps);
-                           
+
         auto *ic = opt.indexCount();
         print_electric_props(fp,
                              opt.mymols(),

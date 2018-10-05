@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018 
+ * Copyright (C) 2014-2018
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,10 +20,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
@@ -307,7 +307,7 @@ int alex_gentop(int argc, char *argv[])
 
     alexandria::Poldata       pd;
     t_inputrec               *inputrec                   = new t_inputrec();
-    t_commrec                *cr                         = init_commrec();   
+    t_commrec                *cr                         = init_commrec();
     const char               *tabfn                      = opt2fn_null("-table", NFILE, fnm);
     eChargeGroup              ecg                        = (eChargeGroup) get_option(cgopt);
     ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
@@ -344,10 +344,11 @@ int alex_gentop(int argc, char *argv[])
     }
 
     /* Read standard atom properties */
-    aps = gmx_atomprop_init();   
+    aps = gmx_atomprop_init();
     try
     {
-        alexandria::readPoldata(opt2fn("-d", NFILE, fnm), pd, aps);
+        const char *gentop_fnm = opt2fn_null("-d", NFILE, fnm);
+        alexandria::readPoldata(gentop_fnm ? gentop_fnm : "", pd, aps);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     if (pd.getNexcl() != nexcl)
@@ -385,7 +386,7 @@ int alex_gentop(int argc, char *argv[])
         if (strlen(molnm) == 0)
         {
             molnm = (char *)"MOL";
-        }       
+        }
         bLOG = opt2bSet("-g03", NFILE, fnm);
         if (bLOG)
         {
@@ -394,7 +395,7 @@ int alex_gentop(int argc, char *argv[])
         else if (opt2bSet("-f", NFILE, fnm))
         {
             fns = ftp2fns(efSTX, NFILE, fnm);
-        }        
+        }
         if (fns.size() > 0)
         {
             for (auto &i : fns)
@@ -421,10 +422,10 @@ int alex_gentop(int argc, char *argv[])
     for (auto mpi = mps.begin(); mpi < mps.end(); mpi++)
     {
         mymol.molProp()->Merge(mpi);
-    }    
-    mymol.SetForceField(forcefield);   
-    if (iChargeDistributionModel == eqdAXpp  || 
-        iChargeDistributionModel == eqdAXpg  || 
+    }
+    mymol.SetForceField(forcefield);
+    if (iChargeDistributionModel == eqdAXpp  ||
+        iChargeDistributionModel == eqdAXpg  ||
         iChargeDistributionModel == eqdAXps)
     {
         bPolar = true;
@@ -433,10 +434,10 @@ int alex_gentop(int argc, char *argv[])
     mymol.setInputrec(inputrec);
     imm = mymol.GenerateTopology(aps,
                                  pd,
-                                 lot, 
+                                 lot,
                                  iChargeDistributionModel,
                                  bGenVSites,
-                                 bPairs, 
+                                 bPairs,
                                  bDihedral,
                                  bPolar,
                                  false,
@@ -444,7 +445,7 @@ int alex_gentop(int argc, char *argv[])
 
     if (immOK == imm)
     {
-        maxpot = 100; //Use 100 percent of the ESP read from Gaussian file. 
+        maxpot = 100; //Use 100 percent of the ESP read from Gaussian file.
         imm    = mymol.GenerateCharges(pd,
                                        mdlog,
                                        aps,
@@ -479,30 +480,30 @@ int alex_gentop(int argc, char *argv[])
                            opt2fn_null("-diffhist", NFILE, fnm),
                            oenv);
     }
-    
+
     if (immOK == imm)
     {
         imm = mymol.GenerateChargeGroups(ecg, bUsePDBcharge);
     }
-    
+
     if (debug)
     {
-        mymol.computeForces(debug, cr);   
+        mymol.computeForces(debug, cr);
         fprintf(debug, "Morse %g Hangle %g Langle %g PDIHS %g IDIHS %g Coul %g LJ %g BHAM %g POL %g\n",
-                mymol.enerd_->term[F_MORSE], 
+                mymol.enerd_->term[F_MORSE],
                 mymol.enerd_->term[F_UREY_BRADLEY],
-                mymol.enerd_->term[F_LINEAR_ANGLES], 
+                mymol.enerd_->term[F_LINEAR_ANGLES],
                 mymol.enerd_->term[F_PDIHS],
-                mymol.enerd_->term[F_IDIHS], 
+                mymol.enerd_->term[F_IDIHS],
                 mymol.enerd_->term[F_COUL_SR],
-                mymol.enerd_->term[F_LJ], 
+                mymol.enerd_->term[F_LJ],
                 mymol.enerd_->term[F_BHAM],
-                mymol.enerd_->term[F_POLARIZATION]);    
+                mymol.enerd_->term[F_POLARIZATION]);
     }
-    
+
     if (immOK == imm)
     {
-        mymol.PrintConformation(opt2fn("-c", NFILE, fnm));        
+        mymol.PrintConformation(opt2fn("-c", NFILE, fnm));
         mymol.PrintTopology(bITP ? ftp2fn(efITP, NFILE, fnm) : ftp2fn(efTOP, NFILE, fnm),
                             iChargeDistributionModel,
                             bVerbose,
@@ -510,7 +511,7 @@ int alex_gentop(int argc, char *argv[])
                             aps,
                             cr,
                             efield,
-                            lot);       
+                            lot);
     }
     else
     {

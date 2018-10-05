@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018 
+ * Copyright (C) 2014-2018
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,10 +20,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
@@ -34,6 +34,7 @@
 #define MYMOL_LOW_H
 
 #include <assert.h>
+
 #include <cstdio>
 #include <cstring>
 
@@ -49,40 +50,40 @@
 
 enum immStatus {
     immUnknown,
-    immOK, 
-    immZeroDip, 
-    immNoQuad, 
+    immOK,
+    immZeroDip,
+    immNoQuad,
     immCharged,
-    immAtomTypes, 
-    immAtomNumber, 
-    immMolpropConv, 
-    immBondOrder, 
+    immAtomTypes,
+    immAtomNumber,
+    immMolpropConv,
+    immBondOrder,
     immRespInit,
-    immChargeGeneration, 
+    immChargeGeneration,
     immLOT,
-    immQMInconsistency, 
-    immTest, 
+    immQMInconsistency,
+    immTest,
     immNoData,
-    immGenShells, 
-    immGenBonds, 
-    immCommProblem, 
-    immZeroZeta, 
+    immGenShells,
+    immGenBonds,
+    immCommProblem,
+    immZeroZeta,
     immInsufficientDATA,
-    immNoDipole, 
-    immNotSupportedBond, 
-    immNotSupportedAngle, 
-    immNotSupportedDihedral, 
+    immNoDipole,
+    immNotSupportedBond,
+    immNotSupportedAngle,
+    immNotSupportedDihedral,
     immNR
 };
 
 namespace alexandria
 {
 
-bool is_planar(rvec   xi,  rvec xj, 
-               rvec   xk,  rvec xl, 
+bool is_planar(rvec   xi,  rvec xj,
+               rvec   xk,  rvec xl,
                t_pbc *pbc, real phi_toler);
 
-bool is_linear(rvec xi, rvec xj, 
+bool is_linear(rvec xi, rvec xj,
                rvec xk, t_pbc *pbc,
                real th_toler);
 
@@ -100,23 +101,23 @@ void cp_plist(t_params                  *plist,
               int                        ftype,
               InteractionType            itype,
               std::vector<PlistWrapper> &plist_);
-              
+
 real calc_r13(const Poldata     &pd,
               const std::string  aai,
               const std::string  aaj,
               const std::string  aak,
               const real         angle);
-              
+
 real calc_relposition(const Poldata     &pd,
                       const std::string  aai,
                       const std::string  aaj,
-                      const std::string  aak);  
-                      
+                      const std::string  aak);
+
 immStatus updatePlist(const Poldata             &pd,
                       std::vector<PlistWrapper> &plist,
                       t_topology                *top,
                       bool                       bBASTAT);
-                 
+
 std::vector<double> getDoubles(const std::string &s);
 
 void getLjParams(const Poldata     &pd,
@@ -124,18 +125,18 @@ void getLjParams(const Poldata     &pd,
                  const std::string &aj,
                  double            *c6,
                  double            *cn);
-                 
+
 void getBhamParams(const Poldata     &pd,
                    const std::string &ai,
                    const std::string &aj,
                    double            *a,
                    double            *b,
                    double            *c);
-                   
+
 void plist_to_mtop(const Poldata             &pd,
                    std::vector<PlistWrapper>  plist,
                    gmx_mtop_t                *mtop_);
-                   
+
 gmx_mtop_t *do_init_mtop(const Poldata            &pd,
                          char                    **molname,
                          t_atoms                  *atoms,
@@ -143,23 +144,23 @@ gmx_mtop_t *do_init_mtop(const Poldata            &pd,
                          t_inputrec               *ir,
                          t_symtab                 *symtab,
                          const char               *tabfn);
-                  
+
 void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka);
 
 void mtop_update_cgs(gmx_mtop_t *mtop);
 
 void put_in_box(int natom, matrix box, rvec x[], real dbox);
 
-void write_zeta_q(FILE                   *fp, 
+void write_zeta_q(FILE                   *fp,
                   QgenEem                *qgen,
-                  t_atoms                *atoms, 
+                  t_atoms                *atoms,
                   ChargeDistributionModel iChargeDistributionModel);
 
-void write_zeta_q2(QgenEem                *qgen, 
+void write_zeta_q2(QgenEem                *qgen,
                    gpp_atomtype_t          atype,
-                   t_atoms                *atoms, 
+                   t_atoms                *atoms,
                    ChargeDistributionModel iChargeDistributionModel);
-                   
+
 int get_subtype(directive d, int ftype);
 
 void print_bondeds(FILE                     *out,
@@ -168,26 +169,26 @@ void print_bondeds(FILE                     *out,
                    int                       print_ftype,
                    std::vector<PlistWrapper> plist);
 
-void write_top(FILE                     *out, 
+void write_top(FILE                     *out,
                char                     *molname,
-               t_atoms                  *at, 
+               t_atoms                  *at,
                gmx_bool                  bRTPresname,
                std::vector<PlistWrapper> plist_,
                t_excls                   excls[],
-               gpp_atomtype_t            atype, 
-               int                      *cgnr, 
+               gpp_atomtype_t            atype,
+               int                      *cgnr,
                int                       nrexcl,
                const Poldata            &pd);
-                
-void print_top_header(FILE                    *fp, 
+
+void print_top_header(FILE                    *fp,
                       const Poldata           &pd,
-                      gmx_atomprop_t           aps, 
+                      gmx_atomprop_t           aps,
                       bool                     bPol,
                       ChargeDistributionModel  iChargeDistributionModel,
                       std::vector<std::string> commercials,
                       bool                     bItp);
 
 void calc_rotmatrix(rvec target_vec, rvec ref_vec, matrix rotmatrix);
-                
-}// namespace alexandria
+
+} // namespace alexandria
 #endif

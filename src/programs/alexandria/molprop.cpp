@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018 
+ * Copyright (C) 2014-2018
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,17 +20,20 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "molprop.h"
+
 #include <cmath>
+
 #include <string>
 #include <vector>
 
@@ -40,7 +43,6 @@
 #include "communication.h"
 #include "composition.h"
 #include "gmx_simple_comm.h"
-#include "molprop.h"
 
 
 const char *mpo_name[MPO_NR] =
@@ -199,8 +201,8 @@ bool CalcAtom::Equal(CalcAtom ca)
 CommunicationStatus CalcAtom::Receive(t_commrec *cr, int src)
 {
     CommunicationStatus cs;
-    int Ncharge;
-    
+    int                 Ncharge;
+
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
@@ -208,11 +210,11 @@ CommunicationStatus CalcAtom::Receive(t_commrec *cr, int src)
         gmx_recv_str(cr, src, &obType_);
         atomID_ = gmx_recv_int(cr, src);
         gmx_recv_str(cr, src, &unit_);
-        x_ = gmx_recv_double(cr, src);
-        y_ = gmx_recv_double(cr, src);
-        z_ = gmx_recv_double(cr, src);
+        x_      = gmx_recv_double(cr, src);
+        y_      = gmx_recv_double(cr, src);
+        z_      = gmx_recv_double(cr, src);
         Ncharge = gmx_recv_int(cr, src);
-        
+
         for (int n = 0; (CS_OK == cs) && (n < Ncharge); n++)
         {
             AtomicCharge aq;
@@ -440,14 +442,14 @@ CommunicationStatus MolecularComposition::Send(t_commrec *cr, int dest)
 
 CommunicationStatus MolecularComposition::Receive(t_commrec *cr, int src)
 {
-    int Natomnum;
+    int                 Natomnum;
     CommunicationStatus cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        Natomnum = gmx_recv_int(cr, src); 
-        gmx_recv_str(cr, src, &compname_);      
+        Natomnum = gmx_recv_int(cr, src);
+        gmx_recv_str(cr, src, &compname_);
         CommunicationStatus cs2;
-        for(int n = 0; n < Natomnum; n++)
+        for (int n = 0; n < Natomnum; n++)
         {
             AtomNum an;
             cs2 = an.Receive(cr, src);
@@ -782,14 +784,14 @@ Experiment::Experiment(std::string program, std::string method,
                        std::string conformation, std::string datafile,
                        jobType jtype)
     :
-    dataSource_(dsTheory),
-    reference_(reference),
-    conformation_(conformation),
-    program_(program),
-    method_(method),
-    basisset_(basisset),
-    datafile_(datafile),
-    jobtype_(jtype)
+      dataSource_(dsTheory),
+      reference_(reference),
+      conformation_(conformation),
+      program_(program),
+      method_(method),
+      basisset_(basisset),
+      datafile_(datafile),
+      jobtype_(jtype)
 
 {}
 
@@ -1003,7 +1005,7 @@ bool Experiment::getVal(const std::string  type,
                 }
             }
         }
-            break;
+        break;
         case MPO_QUADRUPOLE:
             for (auto mqi = BeginQuadrupole(); !done && (mqi < EndQuadrupole()); ++mqi)
             {
@@ -1046,7 +1048,7 @@ bool Experiment::getVal(const std::string  type,
                 done = true;
             }
         }
-            break;
+        break;
         default:
             break;
     }
@@ -1060,7 +1062,7 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
     ElectrostaticPotentialIterator epi;
     std::string                    jobtype;
     int                            Npolar, Ndipole, Nenergy, Npotential, Natom;
-    
+
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
@@ -1078,7 +1080,7 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
         Npotential = gmx_recv_int(cr, src);
         Natom      = gmx_recv_int(cr, src);
 
-        //! Receive Polarizabilities        
+        //! Receive Polarizabilities
         for (int n = 0; (CS_OK == cs) && (n < Npolar); n++)
         {
             MolecularPolarizability mp;
@@ -1110,7 +1112,7 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
                 AddEnergy(me);
             }
         }
-                
+
         //! Receive Potentials
         for (int n = 0; (CS_OK == cs) && (n < Npotential); n++)
         {
@@ -1121,7 +1123,7 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
                 AddPotential(ep);
             }
         }
-        
+
         //! Receive Atoms
         for (int n = 0; (CS_OK == cs) && (n < Natom); n++)
         {
@@ -1131,7 +1133,7 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
             {
                 AddAtom(ca);
             }
-        }      
+        }
     }
 
     if ((CS_OK != cs) && (nullptr != debug))
@@ -1148,24 +1150,24 @@ CommunicationStatus Experiment::Send(t_commrec *cr, int dest)
     CommunicationStatus            cs;
     ElectrostaticPotentialIterator epi;
     std::string                    jobtype;
-   
+
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
         gmx_send_str(cr, dest, &reference_);
-        gmx_send_str(cr, dest, &conformation_);      
+        gmx_send_str(cr, dest, &conformation_);
         gmx_send_str(cr, dest, &program_);
         gmx_send_str(cr, dest, &method_);
         gmx_send_str(cr, dest, &basisset_);
         gmx_send_str(cr, dest, &datafile_);
         jobtype.assign(jobType2string(jobtype_));
-        gmx_send_str(cr, dest, &jobtype);        
+        gmx_send_str(cr, dest, &jobtype);
         gmx_send_int(cr, dest, polar_.size());
         gmx_send_int(cr, dest, dipole_.size());
         gmx_send_int(cr, dest, energy_.size());
         gmx_send_int(cr, dest, potential_.size());
         gmx_send_int(cr, dest, catom_.size());
-        
+
 
         //! Send Polarizabilities
         for (auto dpi = BeginPolar(); (CS_OK == cs) && (dpi < EndPolar()); dpi++)
@@ -1184,7 +1186,7 @@ CommunicationStatus Experiment::Send(t_commrec *cr, int dest)
         {
             cs = mei->Send(cr, dest);
         }
-        
+
         //! Send Potentials
         for (epi = BeginPotential(); (CS_OK == cs) && (epi < EndPotential()); epi++)
         {
@@ -1196,8 +1198,8 @@ CommunicationStatus Experiment::Send(t_commrec *cr, int dest)
         {
             cs = cai->Send(cr, dest);
         }
-    }  
-     
+    }
+
     if ((CS_OK != cs) && (nullptr != debug))
     {
         fprintf(debug, "Trying to send Experiment, status %s\n", cs_name(cs));
@@ -1261,9 +1263,9 @@ void MolProp::DeleteComposition(const std::string &compname)
 {
     std::remove_if(mol_comp_.begin(), mol_comp_.end(),
                    [compname](MolecularComposition mc)
-        {
-            return (compname.compare(mc.getCompName()) == 0);
-        });
+                   {
+                       return (compname.compare(mc.getCompName()) == 0);
+                   });
 }
 
 void MolProp::AddComposition(MolecularComposition mc)
@@ -1418,9 +1420,9 @@ MolecularCompositionIterator MolProp::SearchMolecularComposition(std::string str
 {
     return std::find_if(mol_comp_.begin(), mol_comp_.end(),
                         [str](MolecularComposition const &mc)
-        {
-            return (str.compare(mc.getCompName()) == 0);
-        });
+                        {
+                            return (str.compare(mc.getCompName()) == 0);
+                        });
 }
 
 void MolProp::Dump(FILE *fp)
@@ -1608,9 +1610,9 @@ bool MolProp::HasComposition(const std::string &composition) const
     return std::find_if(BeginMolecularComposition(),
                         EndMolecularComposition(),
                         [composition](const MolecularComposition &mi)
-        {
-            return mi.getCompName().compare(composition) == 0;
-        }) != EndMolecularComposition();
+                        {
+                            return mi.getCompName().compare(composition) == 0;
+                        }) != EndMolecularComposition();
 }
 
 
@@ -1901,7 +1903,7 @@ CommunicationStatus MolProp::Send(t_commrec *cr, int dest)
         {
             cs = ei->Send(cr, dest);
         }
-        
+
         if (nullptr != debug)
         {
             fprintf(debug, "Sent MolProp %s, status %s\n",
@@ -1915,7 +1917,7 @@ CommunicationStatus MolProp::Send(t_commrec *cr, int dest)
 CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
 {
     CommunicationStatus cs;
-    int Nbond, Nmol_comp, Ncategory, Nexper; 
+    int                 Nbond, Nmol_comp, Ncategory, Nexper;
 
     /* Generic stuff */
     cs = gmx_recv_data(cr, src);
@@ -1935,13 +1937,13 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
         Nmol_comp = gmx_recv_int(cr, src);
         Ncategory = gmx_recv_int(cr, src);
         Nexper    = gmx_recv_int(cr, src);
-        
+
         if (nullptr != debug)
         {
             fprintf(debug, "Got molname %s\n", getMolname().c_str());
         }
-        //! Receive Bonds       
-        for(int n = 0; (CS_OK == cs) && (n < Nbond); n++)
+        //! Receive Bonds
+        for (int n = 0; (CS_OK == cs) && (n < Nbond); n++)
         {
             Bond b;
             cs = b.Receive(cr, src);
@@ -1951,8 +1953,8 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
             }
         }
 
-        //! Receive Compositions       
-        for(int n = 0; (CS_OK == cs) && (n < Nmol_comp); n++)
+        //! Receive Compositions
+        for (int n = 0; (CS_OK == cs) && (n < Nmol_comp); n++)
         {
             MolecularComposition mc;
             cs = mc.Receive(cr, src);
@@ -1962,8 +1964,8 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
             }
         }
 
-        //! Receive Categories      
-        for(int n = 0; (CS_OK == cs) && (n < Ncategory); n++)
+        //! Receive Categories
+        for (int n = 0; (CS_OK == cs) && (n < Ncategory); n++)
         {
             cs = gmx_recv_data(cr, src);
             if (CS_OK == cs)
@@ -1975,7 +1977,7 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
                     AddCategory(str);
                     if (nullptr != debug)
                     {
-                      fprintf(debug, "Received a category %s\n", str.c_str());
+                        fprintf(debug, "Received a category %s\n", str.c_str());
                         fflush(debug);
                     }
                 }
@@ -1986,8 +1988,8 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
             }
         }
 
-        //! Receive Experiments    
-        for(int n = 0; (CS_OK == cs) && (n < Nexper); n++)
+        //! Receive Experiments
+        for (int n = 0; (CS_OK == cs) && (n < Nexper); n++)
         {
             Experiment ex;
             cs = ex.Receive(cr, src);

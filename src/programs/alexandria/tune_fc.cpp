@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018 
+ * Copyright (C) 2014-2018
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,21 +20,22 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
- 
- 
+
+
 #include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+
 #include <random>
 
 #include "gromacs/commandline/pargs.h"
@@ -959,7 +960,7 @@ class Optimization : public MolGen
 
         void Print(FILE *fp);
 
-        void printResults(FILE                   *fp, 
+        void printResults(FILE                   *fp,
                           char                   *title,
                           const char             *xvg,
                           const char             *HF_xvg,
@@ -1482,7 +1483,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
 void Optimization::InitOpt(FILE *fplog)
 {
     std::vector<unsigned int> fts;
-    
+
     for (auto fs = poldata().forcesBegin();
          fs != poldata().forcesEnd(); fs++)
     {
@@ -1586,10 +1587,10 @@ void Optimization::calcDeviation()
         if ((mymol.eSupp_ == eSupportLocal) ||
             (final() && (mymol.eSupp_ == eSupportRemote)))
         {
-            int natoms      = mymol.topology_->atoms.nr;
-            int nOptSP      = mymol.molProp()->NOptSP();
-            gmx_bool bpolar = (mymol.shellfc_ != nullptr);
-            
+            int      natoms      = mymol.topology_->atoms.nr;
+            int      nOptSP      = mymol.molProp()->NOptSP();
+            gmx_bool bpolar      = (mymol.shellfc_ != nullptr);
+
             if (mymol.molProp()->getOptHF(&optHF))
             {
                 for (const auto fc : ForceConstants_)
@@ -1623,16 +1624,16 @@ void Optimization::calcDeviation()
                         mymol.f_.resize(2*natoms);
 
                         dbcopy = debug;
-                        debug  = nullptr;                       
+                        debug  = nullptr;
                         mymol.changeCoordinate(ei, bpolar);
                         mymol.computeForces(debug, commrec());
                         debug  = dbcopy;
-                        
+
                         mymol.Ecalc_  = mymol.enerd_->term[F_EPOT];
                         ener          = gmx::square(mymol.Ecalc_ - Emol);
                         increaseEnergy(ermsEPOT, ener); // energy is added for opt and sp geometries
-                        
-                        if (jtype == JOB_OPT) // force is added only for the opt geometry
+
+                        if (jtype == JOB_OPT)           // force is added only for the opt geometry
                         {
                             mymol.OptForce2_ = 0.0;
                             for (j = 0; j < natoms; j++)
@@ -1653,24 +1654,24 @@ void Optimization::calcDeviation()
                                 mymol.Force2_ += iprod(mymol.f_[j], mymol.f_[j]);
                             }
                             mymol.Force2_ /= natoms;
-                            
+
                             fprintf(debug, "spHF: %g  optHF: %g  DeltaEn: %g\n", spHF, optHF, deltaEn);
                             fprintf(debug, "%s Chi2 %g Hform %g Emol %g  Ecalc %g Morse %g  "
                                     "Hangle %g Langle %g PDIHS %g IDIHS %g Coul %g LJ %g BHAM %g POL %g  Force %g\n",
-                                    mymol.molProp()->getMolname().c_str(), 
-                                    ener, 
-                                    mymol.Hform_, 
-                                    Emol, 
+                                    mymol.molProp()->getMolname().c_str(),
+                                    ener,
+                                    mymol.Hform_,
+                                    Emol,
                                     mymol.Ecalc_,
-                                    mymol.enerd_->term[F_MORSE], 
+                                    mymol.enerd_->term[F_MORSE],
                                     mymol.enerd_->term[F_UREY_BRADLEY],
-                                    mymol.enerd_->term[F_LINEAR_ANGLES], 
+                                    mymol.enerd_->term[F_LINEAR_ANGLES],
                                     mymol.enerd_->term[F_PDIHS],
-                                    mymol.enerd_->term[F_IDIHS], 
+                                    mymol.enerd_->term[F_IDIHS],
                                     mymol.enerd_->term[F_COUL_SR],
-                                    mymol.enerd_->term[F_LJ], 
+                                    mymol.enerd_->term[F_LJ],
                                     mymol.enerd_->term[F_BHAM],
-                                    mymol.enerd_->term[F_POLARIZATION], 
+                                    mymol.enerd_->term[F_POLARIZATION],
                                     sqrt(mymol.Force2_));
                         }
                     }
@@ -1696,13 +1697,13 @@ double Optimization::objFunction(const double v[])
     {
         param_[i] = v[i];
     }
-    tuneFc2PolData();    
+    tuneFc2PolData();
     calcDeviation();
     return energy(ermsTOT);
 }
 
-void Optimization::optRun(FILE                   *fp, 
-                          FILE                   *fplog, 
+void Optimization::optRun(FILE                   *fp,
+                          FILE                   *fplog,
                           int                     nrun,
                           const gmx_output_env_t *oenv,
                           const char             *xvgconv,
@@ -1712,10 +1713,10 @@ void Optimization::optRun(FILE                   *fp,
     std::vector<double> optx, opts, optm;
     double              chi2, chi2_min;
     gmx_bool            bMinimum = false;
-    
-    auto func = [&] (const double v[]) {
-        return objFunction(v);
-    };
+
+    auto                func = [&] (const double v[]) {
+            return objFunction(v);
+        };
     if (MASTER(commrec()))
     {
         if (PAR(commrec()))
@@ -1724,7 +1725,7 @@ void Optimization::optRun(FILE                   *fp,
             {
                 gmx_send_int(commrec(), dest, (nrun*TuneFc_.maxIter()*param_.size()));
             }
-            
+
         }
         chi2 = chi2_min  = GMX_REAL_MAX;
         TuneFc_.setFunc(func, param_, lower_, upper_, &chi2);
@@ -1787,9 +1788,9 @@ void Optimization::optRun(FILE                   *fp,
     }
 }
 
-static void print_mols(FILE                          *fp, 
+static void print_mols(FILE                          *fp,
                        std::vector<alexandria::MyMol> mol,
-                       gmx_bool                       bForce, 
+                       gmx_bool                       bForce,
                        gmx_bool                       bMtop)
 {
     int j, k;
@@ -1799,9 +1800,9 @@ static void print_mols(FILE                          *fp,
         fprintf(fp, "%-30s  %d\n", mi->molProp()->getMolname().c_str(), mi->topology_->atoms.nr);
         for (j = 0; j < mi->topology_->atoms.nr; j++)
         {
-            fprintf(fp, "  %-5s  %-5s  q = %10g", 
+            fprintf(fp, "  %-5s  %-5s  q = %10g",
                     *(mi->topology_->atoms.atomname[j]),
-                    *(mi->topology_->atoms.atomtype[j]), 
+                    *(mi->topology_->atoms.atomtype[j]),
                     mi->topology_->atoms.atom[j].q);
             if (bForce)
             {
@@ -1831,7 +1832,7 @@ static void print_mols(FILE                          *fp,
 }
 
 
-void Optimization::printResults(FILE                   *fp, 
+void Optimization::printResults(FILE                   *fp,
                                 char                   *title,
                                 const char             *hform_xvg,
                                 const char             *HF_xvg,
@@ -1864,11 +1865,11 @@ void Optimization::printResults(FILE                   *fp,
     {
         real DeltaE = mi->OptEcalc_ - mi->Emol_;
         fprintf(fp, "%-5d %-30s %10g %10g %10g %10g %-10s\n",
-                i, 
+                i,
                 mi->molProp()->getMolname().c_str(),
-                mi->Hform_, 
-                mi->Emol_, 
-                DeltaE, 
+                mi->Hform_,
+                mi->Emol_,
+                DeltaE,
                 sqrt(mi->OptForce2_),
                 (bCheckOutliers && (fabs(DeltaE) > 1000)) ? "XXX" : "");
         msd += gmx::square(DeltaE);
@@ -1894,9 +1895,9 @@ void Optimization::printResults(FILE                   *fp,
                     ei->getHF(&spHF);
                     deltaEn = spHF - optHF;
                     mi->f_.clear();
-                    mi->f_.resize(2*mi->topology_->atoms.nr);                  
+                    mi->f_.resize(2*mi->topology_->atoms.nr);
                     mi->changeCoordinate(ei, bpolar);
-                    mi->computeForces(nullptr, commrec());                                   
+                    mi->computeForces(nullptr, commrec());
                     fprintf(hfp, "%10g  %10g\n", mi->Emol_ + deltaEn, mi->enerd_->term[F_EPOT]);
                 }
             }
@@ -2055,8 +2056,8 @@ int alex_tune_fc(int argc, char *argv[])
     opt.Read(fp ? fp : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
-             bZero, 
-             opt_elem, 
+             bZero,
+             opt_elem,
              const_elem,
              gms,
              false,
@@ -2065,15 +2066,15 @@ int alex_tune_fc(int argc, char *argv[])
              bZPE,
              false,
              tabfn);
-             
-    
+
+
     opt.checkSupport(fp);
-    
+
     if (nullptr != fp)
     {
         fprintf(fp, "In the total data set of %zu molecules we have:\n", opt.mymols().size());
     }
-   
+
     if (MASTER(opt.commrec()))
     {
         opt.InitOpt(fp);
@@ -2086,7 +2087,7 @@ int alex_tune_fc(int argc, char *argv[])
     }
 
     opt.calcDeviation();
-    
+
     if (MASTER(opt.commrec()))
     {
         opt.printResults(fp, (char *)"Before optimization", nullptr, nullptr, oenv, false);
@@ -2103,9 +2104,9 @@ int alex_tune_fc(int argc, char *argv[])
     {
         opt.tuneFc2PolData();
         print_mols(fp, opt.mymols(), true, false);
-        opt.printResults(fp, (char *)"After optimization", 
-                         opt2fn("-x", NFILE, fnm), 
-                         opt2fn("-hf", NFILE, fnm), 
+        opt.printResults(fp, (char *)"After optimization",
+                         opt2fn("-x", NFILE, fnm),
+                         opt2fn("-hf", NFILE, fnm),
                          oenv, true);
         writePoldata(opt2fn("-o", NFILE, fnm), opt.poldata(), compress);
         gmx_ffclose(fp);

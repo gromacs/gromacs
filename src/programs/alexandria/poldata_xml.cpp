@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018 
+ * Copyright (C) 2014-2018
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,18 +20,21 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "poldata_xml.h"
+
 #include <cstdlib>
 #include <cstring>
+
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
@@ -40,7 +43,6 @@
 
 #include "poldata.h"
 #include "poldata_low.h"
-#include "poldata_xml.h"
 #include "xml_util.h"
 
 extern int xmlDoValidityCheckingDefaultValue;
@@ -75,185 +77,185 @@ const char *xmltypes[] = {
 #define NXMLTYPES sizeof(xmltypes)/sizeof(xmltypes[0])
 
 enum {
-    exmlGENTOP            = 0, 
+    exmlGENTOP            = 0,
     exmlREFERENCE         = 1,
-    exmlATOMTYPES         = 2, 
+    exmlATOMTYPES         = 2,
     exmlATOMTYPE          = 3,
-    exmlGT_FORCEFIELD     = 4, 
-    exmlPOLAR_UNIT        = 5, 
-    exmlCOMB_RULE         = 6, 
+    exmlGT_FORCEFIELD     = 4,
+    exmlPOLAR_UNIT        = 5,
+    exmlCOMB_RULE         = 6,
     exmlNEXCL             = 7,
-    exmlFUDGEQQ           = 8, 
+    exmlFUDGEQQ           = 8,
     exmlFUDGELJ           = 9,
-    exmlPOLTYPES          = 10, 
-    exmlPOLTYPE           = 11, 
+    exmlPOLTYPES          = 10,
+    exmlPOLTYPE           = 11,
     exmlPTYPE             = 12,
-    exmlELEM              = 13, 
-    exmlNAME              = 14, 
+    exmlELEM              = 13,
+    exmlNAME              = 14,
     exmlDESC              = 15,
-    exmlATYPE             = 16, 
-    exmlMILLER            = 17, 
-    exmlVALENCE           = 18, 
+    exmlATYPE             = 16,
+    exmlMILLER            = 17,
+    exmlVALENCE           = 18,
     exmlBOSQUE            = 19,
-    exmlBTYPE             = 20, 
-    exmlZTYPE             = 21, 
-    exmlNEIGHBORS         = 22, 
+    exmlBTYPE             = 20,
+    exmlZTYPE             = 21,
+    exmlNEIGHBORS         = 22,
     exmlAROMATIC          = 23,
-    exmlGEOMETRY          = 24, 
-    exmlNUMBONDS          = 25, 
-    exmlPOLARIZABILITY    = 26, 
-    exmlSIGPOL            = 27, 
-    exmlVDWPARAMS         = 28, 
+    exmlGEOMETRY          = 24,
+    exmlNUMBONDS          = 25,
+    exmlPOLARIZABILITY    = 26,
+    exmlSIGPOL            = 27,
+    exmlVDWPARAMS         = 28,
     exmlEREF              = 29,
-    exmlFUNCTION          = 30, 
+    exmlFUNCTION          = 30,
     exmlINTERACTION       = 31,
-    exmlATOM1             = 32, 
-    exmlATOM2             = 33, 
-    exmlATOM3             = 34, 
+    exmlATOM1             = 32,
+    exmlATOM2             = 33,
+    exmlATOM3             = 34,
     exmlATOM4             = 35,
-    exmlSIGMA             = 36, 
-    exmlBONDORDER         = 37, 
+    exmlSIGMA             = 36,
+    exmlBONDORDER         = 37,
     exmlPARAMS            = 38,
-    exmlREFVALUE          = 39, 
-    exmlUNIT              = 40, 
+    exmlREFVALUE          = 39,
+    exmlUNIT              = 40,
     exmlNTRAIN            = 41,
-    exmlGT_VSITES         = 42, 
+    exmlGT_VSITES         = 42,
     exmlGT_VSITE          = 43,
-    exmlGT_BONDS          = 44, 
+    exmlGT_BONDS          = 44,
     exmlGT_BOND           = 45,
-    exmlGT_ANGLES         = 46, 
+    exmlGT_ANGLES         = 46,
     exmlGT_ANGLE          = 47,
-    exmlGT_DIHEDRALS      = 48, 
+    exmlGT_DIHEDRALS      = 48,
     exmlGT_DIHEDRAL       = 49,
-    exmlGT_IMPROPERS      = 50, 
+    exmlGT_IMPROPERS      = 50,
     exmlGT_IMPROPER       = 51,
-    exmlBSATOMS           = 52, 
+    exmlBSATOMS           = 52,
     exmlBSATOM            = 53,
-    exmlMILATOMS          = 54, 
-    exmlTAU_UNIT          = 55, 
+    exmlMILATOMS          = 54,
+    exmlTAU_UNIT          = 55,
     exmlAHP_UNIT          = 56,
-    exmlMILATOM           = 57, 
-    exmlMILNAME           = 58, 
+    exmlMILATOM           = 57,
+    exmlMILNAME           = 58,
     exmlALEXANDRIA_EQUIV  = 59,
-    exmlATOMNUMBER        = 60, 
-    exmlTAU_AHC           = 61, 
+    exmlATOMNUMBER        = 60,
+    exmlTAU_AHC           = 61,
     exmlALPHA_AHP         = 62,
-    exmlSYMMETRIC_CHARGES = 63, 
+    exmlSYMMETRIC_CHARGES = 63,
     exmlSYM_CHARGE        = 64,
-    exmlCENTRAL           = 65, 
-    exmlATTACHED          = 66, 
+    exmlCENTRAL           = 65,
+    exmlATTACHED          = 66,
     exmlNUMATTACH         = 67,
-    exmlEEMPROPS          = 68, 
-    exmlEEMPROP           = 69, 
-    exmlMODEL             = 70, 
-    exmlJ0                = 71, 
-    exmlJ0_SIGMA          = 72, 
-    exmlCHI0              = 73, 
-    exmlCHI0_SIGMA        = 74, 
-    exmlZETA              = 75, 
-    exmlZETA_SIGMA        = 76, 
-    exmlROW               = 77, 
-    exmlEEMPROP_REF       = 78, 
-    exmlEPREF             = 79, 
-    exmlCHARGES           = 80, 
-    exmlANGLE_UNIT        = 81, 
+    exmlEEMPROPS          = 68,
+    exmlEEMPROP           = 69,
+    exmlMODEL             = 70,
+    exmlJ0                = 71,
+    exmlJ0_SIGMA          = 72,
+    exmlCHI0              = 73,
+    exmlCHI0_SIGMA        = 74,
+    exmlZETA              = 75,
+    exmlZETA_SIGMA        = 76,
+    exmlROW               = 77,
+    exmlEEMPROP_REF       = 78,
+    exmlEPREF             = 79,
+    exmlCHARGES           = 80,
+    exmlANGLE_UNIT        = 81,
     exmlLENGTH_UNIT       = 82,
-    exmlDISTANCE          = 83, 
-    exmlNCONTROLATOMS     = 84, 
-    exmlNUMBER            = 85, 
+    exmlDISTANCE          = 83,
+    exmlNCONTROLATOMS     = 84,
+    exmlNUMBER            = 85,
     exmlVTYPE             = 86,
     exmlANGLE             = 87,
     exmlNR                = 88
 };
 
 const char * exml_names[exmlNR] = {
-    "gentop", 
+    "gentop",
     "reference",
-    "atomtypes", 
-    "atomtype", 
-    "forcefield", 
-    "polarizability_unit", 
-    "combination_rule", 
+    "atomtypes",
+    "atomtype",
+    "forcefield",
+    "polarizability_unit",
+    "combination_rule",
     "nexclusions",
-    "fudgeQQ", 
+    "fudgeQQ",
     "fudgeLJ",
-    "poltypes", 
-    "poltype", 
+    "poltypes",
+    "poltype",
     "ptype",
-    "elem", 
-    "name", 
+    "elem",
+    "name",
     "description",
-    "atype", 
-    "miller", 
-    "valence", 
+    "atype",
+    "miller",
+    "valence",
     "bosque",
-    "btype", 
-    "ztype", 
-    "neighbors", 
+    "btype",
+    "ztype",
+    "neighbors",
     "aromatic",
-    "geometry", 
-    "numbonds", 
-    "polarizability", 
-    "sigma_pol", 
-    "vdwparams", 
+    "geometry",
+    "numbonds",
+    "polarizability",
+    "sigma_pol",
+    "vdwparams",
     "ref_enthalpy",
-    "function", 
+    "function",
     "interaction",
-    "atom1", 
-    "atom2", 
-    "atom3", 
+    "atom1",
+    "atom2",
+    "atom3",
     "atom4",
-    "sigma", 
-    "bondorder", 
+    "sigma",
+    "bondorder",
     "params",
-    "refValue", 
-    "unit", 
+    "refValue",
+    "unit",
     "ntrain",
-    "gt_vsites", 
+    "gt_vsites",
     "gt_vsite",
-    "gt_bonds", 
+    "gt_bonds",
     "gt_bond",
-    "gt_angles", 
+    "gt_angles",
     "gt_angle",
-    "gt_dihedrals", 
+    "gt_dihedrals",
     "gt_dihedral",
-    "gt_impropers", 
+    "gt_impropers",
     "gt_improper",
-    "bsatoms", 
+    "bsatoms",
     "bsatom",
-    "milatoms", 
-    "tau_ahc_unit", 
+    "milatoms",
+    "tau_ahc_unit",
     "alpha_ahp_unit",
-    "milatom", 
-    "milname", 
+    "milatom",
+    "milname",
     "alexandria_equiv",
-    "atomnumber", 
-    "tau_ahc", 
+    "atomnumber",
+    "tau_ahc",
     "alpha_ahp",
-    "symmetric_charges", 
+    "symmetric_charges",
     "sym_charge",
-    "central", 
-    "attached", 
+    "central",
+    "attached",
     "numattach",
-    "eemprops", 
-    "eemprop", 
-    "model", 
-    "jaa", 
-    "jaa_sigma", 
-    "chi", 
-    "chi_sigma", 
-    "zeta", 
-    "zeta_sigma", 
+    "eemprops",
+    "eemprop",
+    "model",
+    "jaa",
+    "jaa_sigma",
+    "chi",
+    "chi_sigma",
+    "zeta",
+    "zeta_sigma",
     "row",
-    "eemprop_ref", 
-    "epref", 
-    "charge", 
-    "angle_unit", 
+    "eemprop_ref",
+    "epref",
+    "charge",
+    "angle_unit",
     "length_unit",
-    "distance", 
-    "ncontrolatoms", 
-    "number", 
-    "vtype", 
+    "distance",
+    "ncontrolatoms",
+    "number",
+    "vtype",
     "angle"
 };
 
@@ -636,10 +638,8 @@ void readPoldata(const std::string &fileName,
     xmlDocPtr   doc;
     std::string fn2;
 
-    fprintf(stderr,"fileName '%s'\n", fileName.c_str());
     fn2 = gmx::findLibraryFile(fileName.size() > 0 ? fileName : "alexandria.ff/gentop.dat",
                                true, false);
-
     if (nullptr != debug)
     {
         fprintf(debug, "Opening library file %s\n", fn2.c_str());
@@ -898,11 +898,11 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
     }
 
     child = add_xml_child(parent, exml_names[exmlEEMPROPS]);
-    for (auto eep = pd.BeginEemprops(); 
+    for (auto eep = pd.BeginEemprops();
          eep != pd.EndEemprops(); eep++)
     {
         ChargeDistributionModel model = eep->getEqdModel();
-        
+
         grandchild = add_xml_child(child, exml_names[exmlEEMPROP]);
         add_xml_char(grandchild, exml_names[exmlMODEL], getEemtypeName(model));
         add_xml_char(grandchild, exml_names[exmlNAME], eep->getName());
@@ -915,7 +915,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
         add_xml_char(grandchild, exml_names[exmlCHARGES], eep->getQstr());
         add_xml_char(grandchild, exml_names[exmlROW], eep->getRowstr());
     }
-    
+
     for (auto eep = pd.epRefBegin(); eep < pd.epRefEnd(); ++eep)
     {
         grandchild = add_xml_child(child, exml_names[exmlEEMPROP_REF]);

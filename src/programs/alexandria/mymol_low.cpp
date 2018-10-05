@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018 
+ * Copyright (C) 2014-2018
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,18 +20,21 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
- 
- 
+
+
+#include "mymol_low.h"
+
 #include <assert.h>
+
 #include <cstdio>
 #include <cstring>
 
@@ -50,13 +53,12 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
-#include "mymol_low.h"
 #include "poldata.h"
 
 namespace alexandria
 {
 
-bool is_planar(rvec xi, rvec xj, rvec xk, 
+bool is_planar(rvec xi, rvec xj, rvec xk,
                rvec xl, t_pbc *pbc,
                real phi_toler)
 {
@@ -69,7 +71,7 @@ bool is_planar(rvec xi, rvec xj, rvec xk,
     return (fabs(phi) < phi_toler);
 }
 
-bool is_linear(rvec xi, rvec xj, 
+bool is_linear(rvec xi, rvec xj,
                rvec xk, t_pbc *pbc,
                real th_toler)
 {
@@ -312,11 +314,11 @@ immStatus updatePlist(const Poldata             &pd,
     {
         auto iType = pw.getItype();
         auto fs    = pd.findForces(iType);
-        
+
         if (fs != pd.forcesEnd())
         {
             pw.setFtype(fs->fType());
-            
+
             if (eitBONDS == iType)
             {
                 lu = string2unit(fs->unit().c_str());
@@ -338,11 +340,11 @@ immStatus updatePlist(const Poldata             &pd,
                         }
                         else if (!bBASTAT)
                         {
-			    if (debug)
-			    {
-				fprintf(debug, "Could not find bond information for %s - %s\n",
-					aai.c_str(), aaj.c_str());
-			    }
+                            if (debug)
+                            {
+                                fprintf(debug, "Could not find bond information for %s - %s\n",
+                                        aai.c_str(), aaj.c_str());
+                            }
                             return immNotSupportedBond;
                         }
                     }
@@ -367,7 +369,7 @@ immStatus updatePlist(const Poldata             &pd,
                         if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
                         {
                             r13 = calc_r13(pd, aai, aaj, aak, value);
-                            
+
                             b->c[n++] = value;
                             ptr       = gmx::splitString(params);
                             for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
@@ -417,7 +419,7 @@ immStatus updatePlist(const Poldata             &pd,
                                 else
                                 {
                                     /*Multiplicity for Proper Dihedral must be integer
-                                      This assumes that the second paramter is Multiplicity*/
+                                       This assumes that the second paramter is Multiplicity*/
                                     b->c[n++] = atoi(pi->c_str());
                                 }
                             }
@@ -477,12 +479,12 @@ void getLjParams(const Poldata     &pd,
         vdwj.resize(2, 0.0);
     }
 
-    auto si = vdwi[0]; 
+    auto si = vdwi[0];
     auto ei = vdwi[1];
-    
+
     auto sj = vdwj[0];
     auto ej = vdwj[1];
-    
+
     switch (pd.getCombRule())
     {
         case eCOMB_GEOMETRIC:
@@ -541,14 +543,14 @@ void getBhamParams(const Poldata     &pd,
         vdwj.resize(3, 0.0);
     }
 
-    auto si = vdwi[0]; 
+    auto si = vdwi[0];
     auto ei = vdwi[1];
     auto gi = vdwi[2];
-    
+
     auto sj = vdwj[0];
     auto ej = vdwj[1];
     auto gj = vdwj[2];
-    
+
     switch (pd.getCombRule())
     {
         case eCOMB_GEOMETRIC:
@@ -653,15 +655,15 @@ gmx_mtop_t *do_init_mtop(const Poldata            &pd,
 {
     gmx_mtop_t *mtop = new gmx_mtop_t();
     mtop->name     = molname;
-    mtop->moltype.reserve(1);
+    mtop->moltype.resize(1);
     mtop->moltype[0].name = molname;
-    mtop->molblock.reserve(1);
+    mtop->molblock.resize(1);
     mtop->molblock[0].nmol        = 1;
     mtop->molblock[0].type        = 0;
     mtop->groups.grps[egcENER].nr = 1;
     mtop->natoms                  = atoms->nr;
     init_t_atoms(&(mtop->moltype[0].atoms), atoms->nr, false);
-    
+
 
     /*Count the number of atom types in the molecule*/
     int ntype      = 0;
@@ -701,8 +703,8 @@ gmx_mtop_t *do_init_mtop(const Poldata            &pd,
     }
 
     mtop->ffparams.atnr             = ntype;
-    mtop->ffparams.reppow           = 12;  
-    
+    mtop->ffparams.reppow           = 12;
+
     if (nullptr != tabfn)
     {
         mtop->groups.grps[egcENER].nr   = ntype;
@@ -716,11 +718,11 @@ gmx_mtop_t *do_init_mtop(const Poldata            &pd,
             }
         }
     }
-    
+
     int vdw_type = pd.getVdwFtype();
-    int ntypes = gmx::square(mtop->ffparams.atnr);
-    mtop->ffparams.functype.reserve(ntypes);
-    mtop->ffparams.iparams.reserve(ntypes);   
+    int ntypes   = gmx::square(mtop->ffparams.atnr);
+    mtop->ffparams.functype.resize(ntypes);
+    mtop->ffparams.iparams.resize(ntypes);
     for (int i = 0; (i < ntype); i++)
     {
         for (int j = 0; (j < ntype); j++)
@@ -772,12 +774,12 @@ gmx_mtop_t *do_init_mtop(const Poldata            &pd,
                             pd.getVdwFunction().c_str());
             }
         }
-    }   
+    }
     gmx_mtop_finalize(mtop);
     /* Create a charge group block */
     stupid_fill_block(&(mtop->moltype[0].cgs), atoms->nr, false);
     plist_to_mtop(pd, plist, mtop);
-    
+
     return mtop;
 }
 
@@ -861,9 +863,9 @@ void put_in_box(int natom, matrix box, rvec x[], real dbox)
     }
 }
 
-void write_zeta_q(FILE                   *fp, 
+void write_zeta_q(FILE                   *fp,
                   QgenEem                *qgen,
-                  t_atoms                *atoms, 
+                  t_atoms                *atoms,
                   ChargeDistributionModel iChargeDistributionModel)
 {
     int    i, ii, j, k, nz, row;
@@ -945,9 +947,9 @@ void write_zeta_q(FILE                   *fp,
     fprintf(fp, "\n");
 }
 
-void write_zeta_q2(QgenEem                *qgen, 
+void write_zeta_q2(QgenEem                *qgen,
                    gpp_atomtype_t          atype,
-                   t_atoms                *atoms, 
+                   t_atoms                *atoms,
                    ChargeDistributionModel iChargeDistributionModel)
 {
     FILE      *fp;
@@ -1048,14 +1050,14 @@ void print_bondeds(FILE                     *out,
     fprintf(out, "\n");
 }
 
-void write_top(FILE                     *out, 
+void write_top(FILE                     *out,
                char                     *molname,
-               t_atoms                  *at, 
+               t_atoms                  *at,
                gmx_bool                  bRTPresname,
                std::vector<PlistWrapper> plist_,
                t_excls                   excls[],
-               gpp_atomtype_t            atype, 
-               int                      *cgnr, 
+               gpp_atomtype_t            atype,
+               int                      *cgnr,
                int                       nrexcl,
                const Poldata            &pd)
 {
@@ -1097,9 +1099,9 @@ void write_top(FILE                     *out,
     }
 }
 
-void print_top_header(FILE                    *fp, 
+void print_top_header(FILE                    *fp,
                       const Poldata           &pd,
-                      gmx_atomprop_t           aps, 
+                      gmx_atomprop_t           aps,
                       bool                     bPol,
                       ChargeDistributionModel  iChargeDistributionModel,
                       std::vector<std::string> commercials,
@@ -1183,22 +1185,22 @@ void print_top_header(FILE                    *fp,
             for (auto atype = pd.getAtypeBegin(); atype != pd.getAtypeEnd(); atype++)
             {
                 auto eem = pd.findEem(iChargeDistributionModel, atype->getType());
-                switch(iChargeDistributionModel)
+                switch (iChargeDistributionModel)
                 {
-                case eqdAXpg:
+                    case eqdAXpg:
                     {
                         fprintf(fp, "%-5s  1  %g\n",  atype->getType().c_str(),
                                 eem->getZeta(0));
                         break;
                     }
-                case eqdAXps:
+                    case eqdAXps:
                     {
-                        fprintf(fp, "%-5s  2  %d  %g\n",  atype->getType().c_str(), 
+                        fprintf(fp, "%-5s  2  %d  %g\n",  atype->getType().c_str(),
                                 eem->getRow(0), eem->getZeta(0));
                         break;
                     }
-                default:
-                    GMX_RELEASE_ASSERT(false, "Death horror");
+                    default:
+                        GMX_RELEASE_ASSERT(false, "Death horror");
                 }
             }
             fprintf(fp, "\n");
@@ -1208,7 +1210,7 @@ void print_top_header(FILE                    *fp,
 
 void calc_rotmatrix(rvec target_vec, rvec ref_vec, matrix rotmatrix)
 {
-    rvec au = {0, 0 ,0};
+    rvec au = {0, 0, 0};
     rvec bu = {0, 0, 0};
 
     svmul((1.0/norm(target_vec)), target_vec, au);
@@ -1222,8 +1224,8 @@ void calc_rotmatrix(rvec target_vec, rvec ref_vec, matrix rotmatrix)
     rotmatrix[1][2] = bu[1]*au[2];
     rotmatrix[2][0] = bu[2]*au[0];
     rotmatrix[2][1] = bu[2]*au[1];
-    rotmatrix[2][2] = bu[2]*au[2];     
+    rotmatrix[2][2] = bu[2]*au[2];
 }
-    
 
-}// namespace alexandria
+
+} // namespace alexandria

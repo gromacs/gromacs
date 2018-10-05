@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018 
+ * Copyright (C) 2014-2018
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,21 +20,22 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
- 
- 
+
+
 #ifndef GMX_QGEN_RESP_H
 #define GMX_QGEN_RESP_H
 
 #include <cstdio>
+
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
@@ -67,9 +68,9 @@ class EspPoint
         void setV(double v) { v_ = v; }
 
         double vCalc() const { return vCalc_; }
-        
+
         void setVCalc(double vcalc) { vCalc_ = vcalc; }
-        
+
         double rho() const { return rho_; }
 
         void setRho(double rho) { rho_ = rho; }
@@ -112,8 +113,8 @@ class QgenResp
         size_t nRespAtomType() const { return ratype_.size(); }
 
         size_t nEsp() const { return ep_.size(); }
-        
-        std::vector<EspPoint> &espPoint() {return ep_;}
+
+        std::vector<EspPoint> &espPoint() {return ep_; }
 
         void summary(FILE *gp);
 
@@ -139,13 +140,13 @@ class QgenResp
                                 { return rat.getAtype() == atype; });
         }
 
-        void setAtomInfo(t_atoms                *atoms,
-                         const Poldata          &pd,
+        void setAtomInfo(t_atoms                         *atoms,
+                         const Poldata                   &pd,
                          const gmx::HostVector<gmx::RVec> x,
-                         const int               qtotal);
+                         const int                        qtotal);
 
         void updateAtomCoords(const gmx::HostVector<gmx::RVec> x);
-        
+
         void updateAtomCharges(t_atoms  *atoms);
 
         const std::string &getStoichiometry() const { return stoichiometry_; }
@@ -168,11 +169,11 @@ class QgenResp
         real getRms(real *wtot, real *rrms);
 
         void plotLsq(const gmx_output_env_t *oenv);
-        
+
         void calcRho();
 
         void calcPot();
-        
+
         void calcVShell();
 
         void readCube(const std::string &fn,

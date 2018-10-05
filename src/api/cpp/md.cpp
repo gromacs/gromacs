@@ -37,10 +37,11 @@
 #include <iostream>
 #include <memory>
 
-#include "md-impl.h"
 #include "gmxapi/gmxapi.h"
 #include "gmxapi/md.h"
 #include "gmxapi/md/mdmodule.h"
+
+#include "api/cpp/md-impl.h"
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/keyvaluetree.h"

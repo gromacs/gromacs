@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018 
+ * Copyright (C) 2014-2018
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,10 +20,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
@@ -115,27 +115,28 @@ class EemTest : public gmx::test::CommandLineTestBase
             const char     *lot        = "B3LYP/aug-cc-pVTZ";
             const char     *dihopt[]   = { NULL, "No", "Single", "All", NULL };
             eDih            edih       = (eDih) get_option(dihopt);
-            t_inputrec     *inputrec   = new t_inputrec();
+            t_inputrec      inputrecInstance;
+            t_inputrec     *inputrec   = &inputrecInstance;
             fill_inputrec(inputrec);
             mp_.setInputrec(inputrec);
 
             mp_.GenerateTopology(aps_, pd_, lot, model, false, false, edih, false, false, nullptr);
 
             // Needed for GenerateCharges
-            real           hfac        = 0;
-            real           watoms      = 0;
-            char          *symm_string = (char *)"";
-            t_commrec     *cr          = init_commrec();
-            auto pnc                   = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
-            auto mdlog                 = getMdLogger(cr, stdout);
-            auto hwinfo                = gmx_detect_hardware(mdlog, pnc);
-            int            qcycle      = 1;
-            real           qtol        = 1e-3;
+            real           hfac                  = 0;
+            real           watoms                = 0;
+            char          *symm_string           = (char *)"";
+            t_commrec     *cr                    = init_commrec();
+            auto           pnc                   = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
+            auto           mdlog                 = getMdLogger(cr, stdout);
+            auto           hwinfo                = gmx_detect_hardware(mdlog, pnc);
+            int            qcycle                = 1;
+            real           qtol                  = 1e-3;
 
-            mp_.GenerateCharges(pd_, mdlog, aps_, model, 
-                                eqgEEM, watoms, hfac, lot, 
+            mp_.GenerateCharges(pd_, mdlog, aps_, model,
+                                eqgEEM, watoms, hfac, lot,
                                 true, symm_string, cr,
-                                nullptr, hwinfo, qcycle, 
+                                nullptr, hwinfo, qcycle,
                                 maxpot, qtol, nullptr);
 
             std::vector<double> qtotValues;

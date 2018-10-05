@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018 
+ * Copyright (C) 2014-2018
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,17 +20,20 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "mymol.h"
+
 #include <assert.h>
+
 #include <cstdio>
 #include <cstring>
 
@@ -52,9 +55,9 @@
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdtypes/enerdata.h"
-#include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
@@ -70,9 +73,8 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringcompare.h"
 
-#include "mymol.h"
 #include "mymol_low.h"
-      
+
 namespace alexandria
 {
 
@@ -80,28 +82,28 @@ static const double A2CM = E_CHARGE*1.0e-10;        /* e Angstrom to Coulomb met
 
 static const double CM2D = SPEED_OF_LIGHT*1.0e+24;  /* Coulomb meter to Debye */
 
-static inline int delta(int a, int b) { return ( a == b ) ? 1 : 0;}
+static inline int delta(int a, int b) { return ( a == b ) ? 1 : 0; }
 
-static inline double e2d(double a) {return a*ENM2DEBYE;}
+static inline double e2d(double a) {return a*ENM2DEBYE; }
 
-static void vsiteType_to_atomType(const std::string &vsiteType, std::string *atomType)  
+static void vsiteType_to_atomType(const std::string &vsiteType, std::string *atomType)
 {
     std::size_t pos = vsiteType.find("L");
-   *atomType        = vsiteType.substr (0, pos);
+    *atomType        = vsiteType.substr (0, pos);
 }
 
 const char *qTypeName(qType qt)
 {
-    switch(qt)
+    switch (qt)
     {
-    case qtESP:       return "ESP";
-    case qtMulliken:  return "Mulliken";
-    case qtHirshfeld: return "Hirshfeld";
-    case qtCM5:       return "CM5";
-    case qtCalc:      return "Calculated";
-    case qtElec:      return "Electronic";
-    default:
-        return "Unknown charge type";
+        case qtESP:       return "ESP";
+        case qtMulliken:  return "Mulliken";
+        case qtHirshfeld: return "Hirshfeld";
+        case qtCM5:       return "CM5";
+        case qtCalc:      return "Calculated";
+        case qtElec:      return "Electronic";
+        default:
+            return "Unknown charge type";
     }
 }
 
@@ -109,65 +111,72 @@ const char *immsg(immStatus imm)
 {
     static const char *msg[immNR] = {
         "Unknown status",
-        "OK", 
-        "Zero Dipole", 
-        "No Quadrupole", 
+        "OK",
+        "Zero Dipole",
+        "No Quadrupole",
         "Charged",
-        "Atom type problem", 
-        "Atom number problem", 
+        "Atom type problem",
+        "Atom number problem",
         "Converting from molprop",
-        "Determining bond order", 
+        "Determining bond order",
         "RESP Initialization",
-        "Charge generation", 
-         "Requested level of theory missing",
+        "Charge generation",
+        "Requested level of theory missing",
         "QM Inconsistency (ESP dipole does not match Elec)",
-        "Not in training set", 
+        "Not in training set",
         "No experimental data",
-        "Generating shells", 
-        "Generating bonds", 
+        "Generating shells",
+        "Generating bonds",
         "Communicating MolProp",
-        "Zeta is zero", 
-        "The number of data is lower than mindata", 
+        "Zeta is zero",
+        "The number of data is lower than mindata",
         "No Dipole moment",
-        "NotSupportedBond", 
-        "NotSupportedAngle", 
+        "NotSupportedBond",
+        "NotSupportedAngle",
         "NotSupportedDihedral"
     };
     return msg[imm];
-} 
+}
 
 class MyForceProvider : public gmx::IForceProvider
 {
     private:
-        std::vector<double> efield_;
-        
+        double efield_[DIM];
+
     public:
-    
+
         MyForceProvider() {}
 
         // From IForceProvider
         //! \copydoc IForceProvider::calculateForces()
         void calculateForces(const gmx::ForceProviderInput &forceProviderInput,
                              gmx::ForceProviderOutput      *forceProviderOutput) override;
-                         
-        void setField(const std::vector<double> &field) { efield_ = field; }
+
+        void setField(const double field[DIM]);
 };
 
+void MyForceProvider::setField(const double field[DIM])
+{
+    for (int m = 0; m < DIM; m++)
+    {
+        efield_[m] = field[m];
+    }
+}
 void MyForceProvider::calculateForces(const gmx::ForceProviderInput &forceProviderInput,
                                       gmx::ForceProviderOutput      *forceProviderOutput)
 {
     const t_commrec cr      = forceProviderInput.cr_;
     const t_mdatoms mdatoms = forceProviderInput.mdatoms_;
     double          t       = forceProviderInput.t_;
-    
-    rvec *f = as_rvec_array(forceProviderOutput->forceWithVirial_.force_.data());
 
-    for(int dim = 0; dim < DIM; dim++)
-    {       
-        double efield = FIELDFAC*efield_[dim]; 
+    rvec           *f = as_rvec_array(forceProviderOutput->forceWithVirial_.force_.data());
+
+    for (int dim = 0; dim < DIM; dim++)
+    {
+        double efield = FIELDFAC*efield_[dim];
         if (efield != 0)
-        {      
-            for(int i = 0; i < mdatoms.nr; ++i)
+        {
+            for (int i = 0; i < mdatoms.nr; ++i)
             {
                 f[i][dim] += mdatoms.chargeA[i]*efield;
             }
@@ -175,13 +184,14 @@ void MyForceProvider::calculateForces(const gmx::ForceProviderInput &forceProvid
     }
     if (MASTER(&cr) && nullptr != debug)
     {
-        fprintf(debug, "Electric Field. t: %4g  Ex: %4g  Ey: %4g  Ez: %4g\n", 
+        fprintf(debug, "Electric Field. t: %4g  Ex: %4g  Ey: %4g  Ez: %4g\n",
                 t, efield_[XX], efield_[YY], efield_[ZZ]);
     }
 }
 
 
 MyMol::MyMol() : gvt_(evtALL)
+
 {
     bHaveShells_       = false;
     bHaveVSites_       = false;
@@ -194,12 +204,11 @@ MyMol::MyMol() : gvt_(evtALL)
     vsite_             = nullptr;
     snew(symtab_, 1);
     open_symtab(symtab_);
-    atype_ = init_atomtype();
+    atype_         = init_atomtype();
     mtop_          = nullptr;
     fr_            = nullptr;
     bt_            = nullptr;
     ltop_          = nullptr;
-    MDatoms_       = nullptr;
     mp_            = new MolProp;
     state_         = new t_state;
     state_->flags |= (1<<estX);
@@ -210,7 +219,7 @@ MyMol::MyMol() : gvt_(evtALL)
     clear_mat(state_->box);
     init_enerdata(1, 0, enerd_);
     init_nrnb(&nrnb_);
-    for(int j=0; j < qtNR; j++)
+    for (int j = 0; j < qtNR; j++)
     {
         clear_rvec(mu_qm_[j]);
         clear_mat(Q_qm_[j]);
@@ -223,7 +232,7 @@ bool MyMol::IsSymmetric(real toler)
     real      mm, tm;
     rvec      com, test;
     gmx_bool *bSymm, bSymmAll;
-    
+
     clear_rvec(com);
     tm = 0;
     for (i = 0; i < topology_->atoms.nr; i++)
@@ -279,10 +288,10 @@ void MyMol::findInPlaneAtoms(int ca, std::vector<int> &atoms)
 {
     int bca = 0;
     /*First try to find the atom bound to the central atom (ca).*/
-    for (auto bi = molProp()->BeginBond(); 
+    for (auto bi = molProp()->BeginBond();
          bi < molProp()->EndBond(); bi++)
     {
-        if ((ca == (bi->getAj() - 1) || 
+        if ((ca == (bi->getAj() - 1) ||
              ca == (bi->getAi() - 1)))
         {
             if (ca == (bi->getAi() - 1))
@@ -296,14 +305,14 @@ void MyMol::findInPlaneAtoms(int ca, std::vector<int> &atoms)
                 atoms.push_back(bca);
             }
         }
-    }   
+    }
     /*Now try to find atoms bound to bca, except ca.*/
-    for (auto bi = molProp()->BeginBond(); 
+    for (auto bi = molProp()->BeginBond();
          bi < molProp()->EndBond(); bi++)
     {
-        if ((ca != (bi->getAj() - 1)   && 
+        if ((ca != (bi->getAj() - 1)   &&
              ca != (bi->getAi() - 1))  &&
-            (bca == (bi->getAj() - 1)  || 
+            (bca == (bi->getAj() - 1)  ||
              bca == (bi->getAi() - 1)))
         {
             if (bca == (bi->getAi() - 1))
@@ -315,16 +324,16 @@ void MyMol::findInPlaneAtoms(int ca, std::vector<int> &atoms)
                 atoms.push_back(bi->getAi() - 1);
             }
         }
-    }   
+    }
 }
 
 void MyMol::findOutPlaneAtoms(int ca, std::vector<int> &atoms)
 {
-    for (auto bi = molProp()->BeginBond(); 
+    for (auto bi = molProp()->BeginBond();
          bi < molProp()->EndBond(); bi++)
     {
-        if (bi->getBondOrder() == 1  && 
-            (ca == (bi->getAj() - 1) || 
+        if (bi->getBondOrder() == 1  &&
+            (ca == (bi->getAj() - 1) ||
              ca == (bi->getAi() - 1)))
         {
             if (ca == (bi->getAi() - 1))
@@ -339,9 +348,9 @@ void MyMol::findOutPlaneAtoms(int ca, std::vector<int> &atoms)
     }
 }
 
-bool MyMol::IsVsiteNeeded(std::string        atype,
+bool MyMol::IsVsiteNeeded(std::string         atype,
                           const Poldata      &pd)
-{    
+{
     auto vsite = pd.findVsite(atype);
     if (vsite != pd.getVsiteEnd())
     {
@@ -359,14 +368,14 @@ bool MyMol::IsVsiteNeeded(std::string        atype,
 void MyMol::MakeSpecialInteractions(const Poldata &pd,
                                     bool           bUseVsites)
 {
-    std::vector<std::vector<unsigned int>> bonds;
+    std::vector < std::vector < unsigned int>> bonds;
     std::vector<int> nbonds;
     t_pbc            pbc;
     real             th_toler = 175;
     real             ph_toler = 5;
 
-    rvec *x = as_rvec_array(state_->x.data());
-    
+    rvec            *x = as_rvec_array(state_->x.data());
+
     clear_mat(state_->box);
     set_pbc(&pbc, epbcNONE, state_->box);
 
@@ -422,32 +431,32 @@ void MyMol::MakeSpecialInteractions(const Poldata &pd,
             if (IsVsiteNeeded(atype, pd))
             {
                 std::vector<int> atoms;
-                auto vsite = pd.findVsite(atype);
-                if(vsite->type() == evtIN_PLANE)
+                auto             vsite = pd.findVsite(atype);
+                if (vsite->type() == evtIN_PLANE)
                 {
                     atoms.push_back(i);
                     findInPlaneAtoms(i, atoms);
                     if (vsite->ncontrolatoms() == static_cast<int>(atoms.size()))
                     {
-                        gvt_.addInPlane(vsite->ncontrolatoms(), 
+                        gvt_.addInPlane(vsite->ncontrolatoms(),
                                         vsite->nvsite(),
-                                        atoms[0], atoms[1], 
+                                        atoms[0], atoms[1],
                                         atoms[2], atoms[3]);
                     }
                 }
                 else if (vsite->type() == evtOUT_OF_PLANE)
-                { 
+                {
                     atoms.push_back(i);
                     findOutPlaneAtoms(i, atoms);
                     if (vsite->ncontrolatoms() == static_cast<int>(atoms.size()))
                     {
                         gvt_.addOutPlane(vsite->ncontrolatoms(),
                                          vsite->nvsite(),
-                                         atoms[0], atoms[1], 
+                                         atoms[0], atoms[1],
                                          atoms[2]);
                     }
                 }
-                if(!bNeedVsites_)
+                if (!bNeedVsites_)
                 {
                     bNeedVsites_ = true;
                 }
@@ -455,7 +464,7 @@ void MyMol::MakeSpecialInteractions(const Poldata &pd,
         }
     }
     auto anr = topology_->atoms.nr;
-    gvt_.generateSpecial(pd, bUseVsites, &topology_->atoms, 
+    gvt_.generateSpecial(pd, bUseVsites, &topology_->atoms,
                          &x, plist_, symtab_, atype_, &excls_, state_);
     bHaveVSites_ = (topology_->atoms.nr > anr);
 }
@@ -572,7 +581,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
     double              xx, yy, zz;
     int                 natom = 0;
     immStatus           imm   = immOK;
-            
+
     ExperimentIterator  ci = molProp()->getLot(lot);
     if (ci < molProp()->EndExperiment())
     {
@@ -591,8 +600,8 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
                 gmx_fatal(FARGS, "Unknown length unit '%s' for atom coordinates",
                           cai->getUnit().c_str());
             }
-            cai->getCoords(&xx, &yy, &zz); 
-                       
+            cai->getCoords(&xx, &yy, &zz);
+
             state_->x[natom][XX] = convert2gmx(xx, myunit);
             state_->x[natom][YY] = convert2gmx(yy, myunit);
             state_->x[natom][ZZ] = convert2gmx(zz, myunit);
@@ -682,25 +691,25 @@ immStatus MyMol::checkAtoms(const Poldata &pd)
 immStatus MyMol::zeta2atoms(ChargeDistributionModel eqdModel,
                             const Poldata          &pd)
 {
-    /*Here, we add zeta for the core. addShell will 
-      take care of the zeta for the shells later*/
+    /*Here, we add zeta for the core. addShell will
+       take care of the zeta for the shells later*/
     auto zeta = 0.0;
     auto row  = 0;
     for (auto i = 0; i < topology_->atoms.nr; i++)
     {
-        zeta = pd.getZeta(eqdModel, *topology_->atoms.atomtype[i], 0); 
-        row  = pd.getRow(eqdModel, *topology_->atoms.atomtype[i], 0);      
-        if (zeta == 0 && (eqdModel != eqdAXp  && 
+        zeta = pd.getZeta(eqdModel, *topology_->atoms.atomtype[i], 0);
+        row  = pd.getRow(eqdModel, *topology_->atoms.atomtype[i], 0);
+        if (zeta == 0 && (eqdModel != eqdAXp  &&
                           eqdModel != eqdAXpp &&
                           eqdModel != eqdAXpg &&
                           eqdModel != eqdBultinck))
         {
             return immZeroZeta;
         }
-        topology_->atoms.atom[i].zetaA = 
+        topology_->atoms.atom[i].zetaA     =
             topology_->atoms.atom[i].zetaB = zeta;
-        topology_->atoms.atom[i].row =  row;
-    }    
+        topology_->atoms.atom[i].row       =  row;
+    }
     return immOK;
 }
 
@@ -719,7 +728,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     int         ftb;
     t_param     b;
     std::string btype1, btype2;
-    
+
     if (nullptr != debug)
     {
         fprintf(debug, "Generating topology_ for %s\n", molProp()->getMolname().c_str());
@@ -735,7 +744,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
         snew(topology_, 1);
         init_top(topology_);
         state_change_natoms(state_, molProp()->NAtom());
-        imm = GenerateAtoms(ap, lot, iChargeDistributionModel);    
+        imm = GenerateAtoms(ap, lot, iChargeDistributionModel);
     }
     if (immOK == imm)
     {
@@ -744,7 +753,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     if (immOK == imm)
     {
         imm = zeta2atoms(iChargeDistributionModel, pd);
-    }   
+    }
     /* Store bonds in harmonic potential list first, update type later */
     ftb = F_BONDS;
     if (immOK == imm)
@@ -754,7 +763,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
             if (eitBONDS == fs->iType())
             {
                 ListedForceConstIterator force;
-                auto lengthUnit = string2unit(fs->unit().c_str());
+                auto                     lengthUnit = string2unit(fs->unit().c_str());
                 if (-1 == lengthUnit)
                 {
                     gmx_fatal(FARGS, "No such length unit '%s' for bonds", fs->unit().c_str());
@@ -819,7 +828,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
             }
         }
         svmul((1.0/atntot), coc_, coc_);
-    }   
+    }
     if (bAddShells && imm == immOK)
     {
         addShells(pd, iChargeDistributionModel);
@@ -849,9 +858,9 @@ void MyMol::addShells(const Poldata          &pd,
 
     int                 shell  = 0;
     int                 nshell = 0;
-    double              pol    = 0; 
-    double              sigpol = 0; 
-      
+    double              pol    = 0;
+    double              sigpol = 0;
+
     std::vector<int>    renum;
     std::vector<int>    inv_renum;
 
@@ -859,33 +868,33 @@ void MyMol::addShells(const Poldata          &pd,
     char              **newname;
     t_atoms            *newatoms;
     t_excls            *newexcls;
-    PaddedRVecVector    newx;    
+    PaddedRVecVector    newx;
     t_param             p;
-    
-    auto polarUnit = string2unit(pd.getPolarUnit().c_str());
+
+    auto                polarUnit = string2unit(pd.getPolarUnit().c_str());
     if (-1 == polarUnit)
     {
         gmx_fatal(FARGS, "No such polarizability unit '%s'", pd.getPolarUnit().c_str());
     }
-    
+
     /*Calculate the total number of Atom and Vsite particles.*/
-    auto nParticles = topology_->atoms.nr;    
-    for(int i = 0; i < topology_->atoms.nr; i++)
+    auto nParticles = topology_->atoms.nr;
+    for (int i = 0; i < topology_->atoms.nr; i++)
     {
         if (topology_->atoms.atom[i].ptype == eptAtom ||
             topology_->atoms.atom[i].ptype == eptVSite)
         {
             nParticles++; // We add 1 shell particle per Atom and Vsite particles
         }
-    }               
+    }
     state_change_natoms(state_, nParticles);
     inv_renum.resize(nParticles, -1);
     renum.resize(topology_->atoms.nr, 0);
-        
+
     /*Renumber the atoms.*/
-    for(int i = 0; i < topology_->atoms.nr; i++)
+    for (int i = 0; i < topology_->atoms.nr; i++)
     {
-        renum[i] = i + nshell;
+        renum[i]              = i + nshell;
         inv_renum[i + nshell] = i;
         if (topology_->atoms.atom[i].ptype == eptAtom ||
             topology_->atoms.atom[i].ptype == eptVSite)
@@ -893,17 +902,17 @@ void MyMol::addShells(const Poldata          &pd,
             nshell++;
         }
     }
-    
+
     /*Add Polarization to the plist.*/
     memset(&p, 0, sizeof(p));
-    for(int i = 0; i < topology_->atoms.nr; i++)
+    for (int i = 0; i < topology_->atoms.nr; i++)
     {
         if (topology_->atoms.atom[i].ptype == eptAtom ||
             topology_->atoms.atom[i].ptype == eptVSite)
         {
             std::string atomtype;
             vsiteType_to_atomType(*topology_->atoms.atomtype[i], &atomtype);
-            auto fa    = pd.findAtype(atomtype);
+            auto        fa    = pd.findAtype(atomtype);
             if (pd.getAtypeEnd() != fa)
             {
                 auto ztype = fa->getZtype();
@@ -912,7 +921,7 @@ void MyMol::addShells(const Poldata          &pd,
                 {
                     p.a[0] = renum[i];
                     p.a[1] = renum[i]+1;
-                    if(bHaveVSites_)
+                    if (bHaveVSites_)
                     {
                         auto vsite = pd.findVsite(atomtype);
                         if (vsite != pd.getVsiteEnd())
@@ -925,7 +934,7 @@ void MyMol::addShells(const Poldata          &pd,
                 }
                 else
                 {
-                    gmx_fatal(FARGS, "Polarizability is %f for %s ztype %s btype %s ptype %s.\n", 
+                    gmx_fatal(FARGS, "Polarizability is %f for %s ztype %s btype %s ptype %s.\n",
                               pol, *topology_->atoms.atomtype[i], ztype.c_str(),
                               fa->getBtype().c_str(), fa->getPtype().c_str());
                 }
@@ -936,7 +945,7 @@ void MyMol::addShells(const Poldata          &pd,
             }
         }
     }
-    
+
     t_atom *shell_atom;
     snew(shell_atom, 1);
     shell_atom->ptype = eptShell;
@@ -949,10 +958,10 @@ void MyMol::addShells(const Poldata          &pd,
     newatoms->nres = topology_->atoms.nres;
     newx.resize(newatoms->nr);
     snew(newname, newatoms->nr);
-    
+
     /* Make a new exclusion array and put the shells in it. */
     snew(newexcls, newatoms->nr);
-    
+
     /* Add exclusion for F_POLARIZATION. */
     auto pw = SearchPlist(plist_, F_POLARIZATION);
     if (plist_.end() != pw)
@@ -986,8 +995,8 @@ void MyMol::addShells(const Poldata          &pd,
             }
         }
     }
-    
-     /* Copy the old atoms to the new structures. */
+
+    /* Copy the old atoms to the new structures. */
     for (int i = 0; i < topology_->atoms.nr; i++)
     {
         newatoms->atom[renum[i]]      = topology_->atoms.atom[i];
@@ -1000,19 +1009,19 @@ void MyMol::addShells(const Poldata          &pd,
                             *topology_->atoms.resinfo[topology_->atoms.atom[i].resind].name,
                             topology_->atoms.atom[i].resind, ' ', 1, ' ');
     }
-    
+
     for (int i = 0; i < topology_->atoms.nr; i++)
     {
         if (topology_->atoms.atom[i].ptype == eptAtom ||
             topology_->atoms.atom[i].ptype == eptVSite)
         {
             std::string atomtype;
-            auto iat = renum[i];  // Atom or Vsite
-            auto j   = iat + 1;   // Shell sits next to the Atom or Vsite
-            
-            auto atomtypeName = get_atomtype_name(topology_->atoms.atom[i].type, atype_);
+            auto        iat = renum[i]; // Atom or Vsite
+            auto        j   = iat + 1;  // Shell sits next to the Atom or Vsite
+
+            auto        atomtypeName = get_atomtype_name(topology_->atoms.atom[i].type, atype_);
             vsiteType_to_atomType(atomtypeName, &atomtype);
-            
+
             newatoms->atom[j]               = topology_->atoms.atom[i];
             newatoms->atom[j].m             = 0;
             newatoms->atom[j].mB            = 0;
@@ -1020,7 +1029,7 @@ void MyMol::addShells(const Poldata          &pd,
             sprintf(buf, "%s_s", topology_->atoms.atom[i].elem);
             newatoms->atomname[j]           = put_symtab(symtab_, buf);
             sprintf(buf, "%s_s", atomtype.c_str());
-            newname[j]                      = strdup(buf);           
+            newname[j]                      = strdup(buf);
             shell                           = add_atomtype(atype_, symtab_, shell_atom, buf, &p, 0, 0);
             newatoms->atom[j].type          = shell;
             newatoms->atom[j].typeB         = shell;
@@ -1030,12 +1039,12 @@ void MyMol::addShells(const Poldata          &pd,
             newatoms->atom[j].zetaA         = pd.getZeta(iModel, atomtype, 1);
             newatoms->atom[j].zetaB         = newatoms->atom[j].zetaA;
             newatoms->atom[j].row           = pd.getRow(iModel, atomtype, 1);
-            newatoms->atom[j].resind        = topology_->atoms.atom[i].resind;            
-            copy_rvec(state_->x[i], newx[j]);   
-                     
-            newatoms->atom[j].q = 
+            newatoms->atom[j].resind        = topology_->atoms.atom[i].resind;
+            copy_rvec(state_->x[i], newx[j]);
+
+            newatoms->atom[j].q      =
                 newatoms->atom[j].qB = pd.getQ(iModel, atomtype, 1);
-            if(bHaveVSites_)
+            if (bHaveVSites_)
             {
                 auto vsite = pd.findVsite(atomtype);
                 if (vsite != pd.getVsiteEnd())
@@ -1044,9 +1053,9 @@ void MyMol::addShells(const Poldata          &pd,
                     newatoms->atom[j].qB = newatoms->atom[j].q;
                 }
             }
-        }   
+        }
     }
-    
+
     /* Copy newatoms to atoms */
     copy_atoms(newatoms, &topology_->atoms);
 
@@ -1054,15 +1063,15 @@ void MyMol::addShells(const Poldata          &pd,
     {
         copy_rvec(newx[i], state_->x[i]);
         topology_->atoms.atomtype[i] = put_symtab(symtab_, newname[i]);
-    }   
+    }
     sfree(newname);
-    
+
     /* Copy exclusions, empty the original first */
     sfree(excls_);
     excls_ = newexcls;
-    
+
     //let_shells_see_shells(excls_, &topology_->atoms, atype_);
-    
+
     /*Now renumber atoms in all other plist interaction types */
     for (auto i = plist_.begin(); i < plist_.end(); ++i)
     {
@@ -1089,14 +1098,18 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
 {
     GMX_RELEASE_ASSERT(nullptr != mtop_, "mtop_ == nullptr. You forgot to call GenerateTopology");
 
-    if (nullptr == fr_)
+    if (!fr_)
     {
         fr_ = mk_forcerec();
     }
-    if (nullptr != tabfn)
+    if (tabfn)
     {
         inputrec_->coulombtype = eelUSER;
     }
+    mdModules_ = new std::unique_ptr<gmx::MDModules>(new gmx::MDModules());
+    mdModules_->get()->assignOptionsToModules(*(inputrec_->params), nullptr);
+    fr_->forceProviders = mdModules_->get()->initForceProviders();
+    fr_->forceProviders->addForceProvider(new MyForceProvider());
 
     gmx::ArrayRef<const std::string>  tabbfnm;
     init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
@@ -1104,19 +1117,22 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
     init_bonded_threading(nullptr, 1, &bt_);
     setup_bonded_threading(bt_, topology_->atoms.nr, &ltop_->idef);
     wcycle_    = wallcycle_init(debug, 0, cr);
-    MDatoms_   = new std::unique_ptr<gmx::MDAtoms>;
-    *MDatoms_  = gmx::makeMDAtoms(nullptr, *mtop_, *inputrec_, false);
+
+    MDatoms_  = new std::unique_ptr<gmx::MDAtoms>(new gmx::MDAtoms());
+    *MDatoms_ = gmx::makeMDAtoms(nullptr, *mtop_, *inputrec_, false);
     atoms2md(mtop_, inputrec_, -1, nullptr, topology_->atoms.nr, MDatoms_->get());
-    
+    auto mdatoms = MDatoms_->get()->mdatoms();
+    f_.resize(gmx::paddedRVecVectorSize(state_->natoms));
+
     if (nullptr != shellfc_)
     {
-        make_local_shells(cr, MDatoms_->get()->mdatoms(), shellfc_);
+        make_local_shells(cr, mdatoms, shellfc_);
     }
     if (ieqd != eqdAXs && ieqd != eqdAXps)
     {
         for (auto i = 0; i < mtop_->natoms; i++)
         {
-            MDatoms_->get()->mdatoms()->row[i] = 0;
+            mdatoms->row[i] = 0;
         }
     }
     return immOK;
@@ -1127,46 +1143,45 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
     tensor          force_vir;
     unsigned long   force_flags = ~0;
     double          t           = 0;
-       
+
+    auto            mdatoms = MDatoms_->get()->mdatoms();
     clear_mat (force_vir);
     for (auto i = 0; i < mtop_->natoms; i++)
     {
-        MDatoms_->get()->mdatoms()->chargeA[i] = mtop_->moltype[0].atoms.atom[i].q;  
+        mdatoms->chargeA[i] = mtop_->moltype[0].atoms.atom[i].q;
+        mdatoms->typeA[i]   = mtop_->moltype[0].atoms.atom[i].type;
         if (nullptr != debug)
         {
-            fprintf(debug, "QQQ Setting q[%d] to %g\n", i, MDatoms_->get()->mdatoms()->chargeA[i]);
+            fprintf(debug, "QQQ Setting q[%d] to %g\n", i, mdatoms->chargeA[i]);
         }
     }
-    if (bHaveVSites_)
-    {
-        vsite_  = new std::unique_ptr<gmx_vsite_t>;
-        *vsite_ = initVsite(*mtop_, cr);
-    }
+    vsite_  = new std::unique_ptr<gmx_vsite_t>(new gmx_vsite_t());
+    *vsite_ = initVsite(*mtop_, cr);
     rvec mu_tot = { 0, 0, 0 };
- 
+
     if (nullptr != shellfc_)
     {
         auto nnodes = cr->nnodes;
         cr->nnodes  = 1;
-        relax_shell_flexcon(fplog, cr, nullptr, false, 
-                            nullptr, 0, inputrec_, 
-                            true, force_flags, ltop_, nullptr, 
+        relax_shell_flexcon(fplog, cr, nullptr, false,
+                            nullptr, 0, inputrec_,
+                            true, force_flags, ltop_, nullptr,
                             enerd_, fcd_, state_,
-                            f_, force_vir, MDatoms_->get()->mdatoms(),
+                            f_, force_vir, mdatoms,
                             &nrnb_, wcycle_, nullptr,
-                            &(mtop_->groups), shellfc_, 
+                            &(mtop_->groups), shellfc_,
                             fr_, t, mu_tot, vsite_->get(),
                             DdOpenBalanceRegionBeforeForceComputation::no,
                             DdCloseBalanceRegionAfterForceComputation::no);
-        cr->nnodes = nnodes;     
+        cr->nnodes = nnodes;
     }
     else
-    {   
+    {
         do_force(fplog, cr, nullptr, inputrec_, nullptr, nullptr, 0,
                  &nrnb_, wcycle_, ltop_,
                  &(mtop_->groups),
                  state_->box, state_->x, nullptr,
-                 f_, force_vir, MDatoms_->get()->mdatoms(),
+                 f_, force_vir, mdatoms,
                  enerd_, fcd_,
                  state_->lambda, nullptr,
                  fr_, vsite_->get(), mu_tot, t,
@@ -1196,10 +1211,10 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                  const gmx_output_env_t    *oenv)
 {
     std::vector<double> qq;
-    immStatus imm         = immOK;
-    bool      converged   = false;
-    int       iter        = 0;
-    
+    immStatus           imm         = immOK;
+    bool                converged   = false;
+    int                 iter        = 0;
+
     gmx_omp_nthreads_init(mdlog, cr, 1, 1, 1, 0, false, false);
     GenerateGromacs(mdlog, cr, tabfn, hwinfo, iChargeDistributionModel);
     if (bSymmetricCharges)
@@ -1232,18 +1247,18 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             }
             return immOK;
         case eqgESP:
-        {          
+        {
             Qgresp_.setChargeDistributionModel(iChargeDistributionModel);
             Qgresp_.setAtomWeight(watoms);
             Qgresp_.setAtomInfo(&topology_->atoms, pd, state_->x, molProp()->getCharge());
             Qgresp_.setAtomSymmetry(symmetric_charges_);
             Qgresp_.setMolecularCharge(molProp()->getCharge());
             Qgresp_.summary(debug);
-            
+
             auto ci = molProp()->getLotPropType(lot, MPO_POTENTIAL, nullptr);
             if (ci != molProp()->EndExperiment())
             {
-                int mod  = 100/maxESP;                
+                int mod  = 100/maxESP;
                 int iesp = 0;
                 for (auto epi = ci->BeginPotential(); epi < ci->EndPotential(); ++epi, ++iesp)
                 {
@@ -1276,7 +1291,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             double chi2[2]   = {1e8, 1e8};
             real   rrms      = 0;
             real   wtot      = 0;
-            int    cur       = 0; 
+            int    cur       = 0;
             EspRms_          = 0;
             iter             = 0;
 
@@ -1316,7 +1331,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 topology_->atoms.atom[i].q      =
                     topology_->atoms.atom[i].qB = Qgresp_.getAtomCharge(i);
             }
-            if(nullptr != oenv)
+            if (nullptr != oenv)
             {
                 Qgresp_.plotLsq(oenv);
             }
@@ -1324,46 +1339,46 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
         break;
         case eqgEEM:
         {
-            Qgeem_.setInfo(pd, 
+            Qgeem_.setInfo(pd,
                            &topology_->atoms,
                            iChargeDistributionModel,
-                           hfac, 
+                           hfac,
                            molProp()->getCharge(),
                            bHaveShells_);
-                                                                                  
+
             auto q     = Qgeem_.q();
             auto natom = Qgeem_.natom();
-            
+
             qq.resize(natom + 1);
             for (auto i = 0; i < natom + 1; i++)
-            {           
+            {
                 qq[i] = q[i][0];
-            }               
+            }
             iter = 0;
             do
-            {         
+            {
                 if (eQGEN_OK == Qgeem_.generateCharges(debug,
                                                        molProp()->getMolname().c_str(),
-                                                       pd, 
+                                                       pd,
                                                        &topology_->atoms,
                                                        state_->x))
-                {        
+                {
                     for (auto i = 0; i < mtop_->natoms; i++)
                     {
-                        mtop_->moltype[0].atoms.atom[i].q = 
-                            mtop_->moltype[0].atoms.atom[i].qB = topology_->atoms.atom[i].q;                         
-                    }                                                        
+                        mtop_->moltype[0].atoms.atom[i].q      =
+                            mtop_->moltype[0].atoms.atom[i].qB = topology_->atoms.atom[i].q;
+                    }
                     if (nullptr != shellfc_)
                     {
                         computeForces(nullptr, cr);
                     }
-                    q       = Qgeem_.q(); 
-                    EemRms_ = 0;                  
+                    q       = Qgeem_.q();
+                    EemRms_ = 0;
                     for (auto i = 0; i < natom + 1; i++)
                     {
                         EemRms_  += gmx::square(qq[i] - q[i][0]);
                         qq[i]     = q[i][0];
-                    }                    
+                    }
                     EemRms_  /= natom;
                     converged = (EemRms_ < tolerance) || (nullptr == shellfc_);
                     iter++;
@@ -1371,14 +1386,14 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 else
                 {
                     imm = immChargeGeneration;
-                }           
+                }
             }
-            while(imm == immOK && (!converged) && (iter < maxiter));
+            while (imm == immOK && (!converged) && (iter < maxiter));
             for (auto i = 0; i < mtop_->natoms; i++)
             {
-                mtop_->moltype[0].atoms.atom[i].q = 
-                    mtop_->moltype[0].atoms.atom[i].qB = topology_->atoms.atom[i].q;                   
-            }             
+                mtop_->moltype[0].atoms.atom[i].q      =
+                    mtop_->moltype[0].atoms.atom[i].qB = topology_->atoms.atom[i].q;
+            }
             if (!converged)
             {
                 printf("EEM did not converge to %g. rms: %g\n", tolerance, EemRms_);
@@ -1403,8 +1418,8 @@ void MyMol::changeCoordinate(ExperimentIterator ei, gmx_bool bpolar)
         for (auto eia = ei->BeginAtom(); eia < ei->EndAtom(); eia++)
         {
             unit = string2unit((char *)eia->getUnit().c_str());
-            eia->getCoords(&xx, &yy, &zz); 
-            //core        
+            eia->getCoords(&xx, &yy, &zz);
+            //core
             state_->x[natom][XX]   = convert2gmx(xx, unit);
             state_->x[natom][YY]   = convert2gmx(yy, unit);
             state_->x[natom++][ZZ] = convert2gmx(zz, unit);
@@ -1419,7 +1434,7 @@ void MyMol::changeCoordinate(ExperimentIterator ei, gmx_bool bpolar)
         for (auto eia = ei->BeginAtom(); eia < ei->EndAtom(); eia++)
         {
             unit = string2unit((char *)eia->getUnit().c_str());
-            eia->getCoords(&xx, &yy, &zz);         
+            eia->getCoords(&xx, &yy, &zz);
             state_->x[natom][XX] = convert2gmx(xx, unit);
             state_->x[natom][YY] = convert2gmx(yy, unit);
             state_->x[natom][ZZ] = convert2gmx(zz, unit);
@@ -1433,8 +1448,8 @@ bool MyMol::getOptimizedGeometry(rvec *x)
     double  xx, yy, zz;
     int     unit, natom = 0;
     bool    opt = false;
-    
-    for (auto ei = molProp()->BeginExperiment(); 
+
+    for (auto ei = molProp()->BeginExperiment();
          (!opt) && (ei < molProp()->EndExperiment()); ++ei)
     {
         if (JOB_OPT == ei->getJobtype())
@@ -1442,10 +1457,10 @@ bool MyMol::getOptimizedGeometry(rvec *x)
             for (auto eia = ei->BeginAtom(); eia < ei->EndAtom(); eia++)
             {
                 unit = string2unit((char *)eia->getUnit().c_str());
-                eia->getCoords(&xx, &yy, &zz);           
+                eia->getCoords(&xx, &yy, &zz);
                 x[natom][XX] = convert2gmx(xx, unit);
                 x[natom][YY] = convert2gmx(yy, unit);
-                x[natom][ZZ] = convert2gmx(zz, unit);           
+                x[natom][ZZ] = convert2gmx(zz, unit);
                 natom++;
             }
             opt = true;
@@ -1478,10 +1493,10 @@ void MyMol::CalcDipole(rvec mu)
 
 void MyMol::CalcQuadrupole()
 {
-    real   r2, q;   
+    real   r2, q;
     rvec   r; /* distance of atoms to center of charge */
     tensor Q;
-    clear_mat(Q);   
+    clear_mat(Q);
     for (auto i = 0; i < topology_->atoms.nr; i++)
     {
         rvec_sub(state_->x[i], coc_, r);
@@ -1489,7 +1504,7 @@ void MyMol::CalcQuadrupole()
         q    = topology_->atoms.atom[i].q;
         for (auto m = 0; m < DIM; m++)
         {
-            for (auto n = 0; n < DIM; n++) 
+            for (auto n = 0; n < DIM; n++)
             {
                 Q[m][n] += 0.5*q*(3.0*r[m]*r[n] - r2*delta(m, n))*NM2A*A2CM*CM2D*10;
             }
@@ -1503,12 +1518,12 @@ void MyMol::CalcQMbasedMoments(double *q, rvec mu, tensor Q)
     int   i, j;
     real  r2;
     rvec  r;  /* distance of atoms to center of charge */
-    
+
     clear_rvec(mu);
-    clear_mat(Q); 
+    clear_mat(Q);
     for (i = j = 0; i < topology_->atoms.nr; i++)
     {
-        if (topology_->atoms.atom[i].ptype == eptAtom || 
+        if (topology_->atoms.atom[i].ptype == eptAtom ||
             topology_->atoms.atom[i].ptype == eptNucleus)
         {
             rvec_sub(state_->x[i], coc_, r);
@@ -1523,7 +1538,7 @@ void MyMol::CalcQMbasedMoments(double *q, rvec mu, tensor Q)
             }
             j++;
         }
-    }       
+    }
 }
 
 void MyMol::CalcQPol(const Poldata &pd, rvec mu)
@@ -1562,7 +1577,7 @@ void MyMol::CalcAnisoPolarizability(tensor polar, double *anisoPol)
     auto b = gmx::square(polar[XX][XX] - polar[ZZ][ZZ]);
     auto c = gmx::square(polar[ZZ][ZZ] - polar[YY][YY]);
     auto d = 6 * (gmx::square(polar[XX][YY]) + gmx::square(polar[XX][ZZ]) + gmx::square(polar[ZZ][YY]));
-    
+
     *anisoPol = sqrt(1/2.0) * sqrt(a + b + c + d);
 }
 
@@ -1570,22 +1585,17 @@ void MyMol::CalcPolarizability(double     efield,
                                t_commrec *cr,
                                FILE      *fplog)
 {
-    const double        POLFAC = 29.957004; /* C.m**2.V*-1 to Å**3 */
-    std::vector<double> field(DIM, 0);
-    MyForceProvider    *myforce;
-    rvec                mu_ref, mu_tot;
-    
-    myforce                            = new MyForceProvider;
-    fr_->forceBufferForDirectVirialContributions  = new std::vector<gmx::RVec>; 
-    fr_->forceBufferForDirectVirialContributions->resize(mtop_->natoms);
+    const double POLFAC     = 29.957004; /* C.m**2.V*-1 to Å**3 */
+    double       field[DIM] = { 0, 0, 0 };
+    rvec         mu_ref, mu_tot;
 
-    myforce->setField(field); 
-    CalcDipole(mu_ref);       
+    myforce_->setField(field);
+    CalcDipole(mu_ref);
     computeForces(fplog, cr);
     for (auto m = 0; m < DIM; m++)
     {
         field[m] = efield;
-        myforce->setField(field);
+        myforce_->setField(field);
         computeForces(fplog, cr);
         CalcDipole(mu_tot);
         for (auto n = 0; n < DIM; n++)
@@ -1593,7 +1603,7 @@ void MyMol::CalcPolarizability(double     efield,
             alpha_calc_[n][m] = ((mu_tot[n]-mu_ref[n])/efield)*(POLFAC);
         }
         isoPol_calc_     += alpha_calc_[m][m];
-        field[m] = 0.0;
+        field[m]          = 0.0;
     }
     isoPol_calc_ /= DIM;
     CalcAnisoPolarizability(alpha_calc_, &anisoPol_calc_);
@@ -1636,9 +1646,9 @@ static void add_tensor(std::vector<std::string> *commercials,
     snprintf(buf, sizeof(buf), "%s:\n"
              "; ( %6.2f %6.2f %6.2f )\n"
              "; ( %6.2f %6.2f %6.2f )\n"
-             "; ( %6.2f %6.2f %6.2f )\n", 
+             "; ( %6.2f %6.2f %6.2f )\n",
              title,
-             Q[XX][XX], Q[XX][YY], Q[XX][ZZ], 
+             Q[XX][XX], Q[XX][YY], Q[XX][ZZ],
              Q[YY][XX], Q[YY][YY], Q[YY][ZZ],
              Q[ZZ][XX], Q[ZZ][YY], Q[ZZ][ZZ]);
     commercials->push_back(buf);
@@ -1652,7 +1662,7 @@ static void rotate_tensor(tensor Q, tensor Qreference)
     // the whole tensor should be taken into account, not
     // just the components. All vectors should be transformed
     // by the same matrix.
-    for(int m = 0; m < DIM; m++)
+    for (int m = 0; m < DIM; m++)
     {
         if (norm(Q[m]) > 0 && norm(Qreference[m]) > 0)
         {
@@ -1677,7 +1687,7 @@ void MyMol::PrintTopology(FILE                   *fp,
     t_mols                   printmol;
     std::vector<std::string> commercials;
     double                   vec[DIM];
-    double                   value, error, T;    
+    double                   value, error, T;
     std::string              myref, mylot;
     rvec                     mu;
 
@@ -1687,7 +1697,7 @@ void MyMol::PrintTopology(FILE                   *fp,
     }
 
     CalcQPol(pd, mu);
-    
+
     if (molProp()->getMolname().size() > 0)
     {
         printmol.name = strdup(molProp()->getMolname().c_str());
@@ -1700,23 +1710,23 @@ void MyMol::PrintTopology(FILE                   *fp,
     {
         printmol.name = strdup("Unknown");
     }
-    
+
     printmol.nr = 1;
-    
+
     snprintf(buf, sizeof(buf), "Total Mass = %.3f (Da)", molProp()->getMass());
     commercials.push_back(buf);
     snprintf(buf, sizeof(buf), "Reference_Enthalpy = %.3f (kJ/mol)", ref_enthalpy_);
-    commercials.push_back(buf);      
+    commercials.push_back(buf);
     snprintf(buf, sizeof(buf), "Total Charge = %d (e)", molProp()->getCharge());
     commercials.push_back(buf);
     snprintf(buf, sizeof(buf), "Charge Type  = %s\n", getEemtypeName(iChargeDistributionModel));
     commercials.push_back(buf);
     snprintf(buf, sizeof(buf), "Alexandria Dipole Moment (Debye):\n"
-             "; ( %.2f %6.2f %6.2f ) Total= %.2f\n", 
-             mu[XX], mu[YY], mu[ZZ], 
+             "; ( %.2f %6.2f %6.2f ) Total= %.2f\n",
+             mu[XX], mu[YY], mu[ZZ],
              norm(mu));
     commercials.push_back(buf);
-    
+
     tensor myQ;
     if (molProp()->getPropRef(MPO_DIPOLE, iqmBoth, lot, "",
                               (char *)"electronic", &value, &error,
@@ -1728,17 +1738,17 @@ void MyMol::PrintTopology(FILE                   *fp,
             rotateDipole(mu_qm_[qtElec], mu);
         }
         snprintf(buf, sizeof(buf), "%s Dipole Moment (Debye):\n"
-                 "; ( %.2f %6.2f %6.2f ) Total= %.2f\n", 
-                 lot, 
-                 mu_qm_[qtElec][XX], mu_qm_[qtElec][YY], mu_qm_[qtElec][ZZ], 
+                 "; ( %.2f %6.2f %6.2f ) Total= %.2f\n",
+                 lot,
+                 mu_qm_[qtElec][XX], mu_qm_[qtElec][YY], mu_qm_[qtElec][ZZ],
                  norm(mu_qm_[qtElec]));
         commercials.push_back(buf);
     }
-    
-    add_tensor(&commercials, 
+
+    add_tensor(&commercials,
                "Alexandria Traceless Quadrupole Moments (Buckingham)",
                QQM(qtCalc));
-    
+
     if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmBoth, lot, "",
                               (char *)"electronic", &value, &error,
                               &T, myref, mylot, vec, myQ))
@@ -1746,23 +1756,23 @@ void MyMol::PrintTopology(FILE                   *fp,
         set_QQM(qtElec, myQ);
         rotate_tensor(Q_qm_[qtElec], Q_qm_[qtCalc]);
         snprintf(buf, sizeof(buf), "%s Traceless Quadrupole Moments (Buckingham)", lot);
-        add_tensor(&commercials, buf , Q_qm_[qtElec]);
+        add_tensor(&commercials, buf, Q_qm_[qtElec]);
     }
-    
+
     snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability (Additive Law): %.2f +/- %.2f (A^3)\n", polarizability_, sig_pol_);
     commercials.push_back(buf);
-       
+
     if (efield > 0 && nullptr != cr)
-    {    
+    {
         CalcPolarizability(efield, cr, debug);
         add_tensor(&commercials, "Alexandria Polarizability components (A^3)", alpha_calc_);
-        
+
         snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability (Interactive): %.2f (A^3)\n", isoPol_calc_);
         commercials.push_back(buf);
-        
+
         snprintf(buf, sizeof(buf), "Alexandria Anisotropic Polarizability: %.2f (A^3)\n", anisoPol_calc_);
         commercials.push_back(buf);
-    
+
         if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmBoth, lot, "",
                                   (char *)"electronic", &isoPol_elec_, &error,
                                   &T, myref, mylot, vec, alpha_elec_))
@@ -1770,14 +1780,14 @@ void MyMol::PrintTopology(FILE                   *fp,
             CalcAnisoPolarizability(alpha_elec_, &anisoPol_elec_);
             snprintf(buf, sizeof(buf), "%s + Polarizability components (A^3)", lot);
             add_tensor(&commercials, buf, alpha_elec_);
-       
+
             snprintf(buf, sizeof(buf), "%s Isotropic Polarizability: %.2f (A^3)\n", lot, isoPol_elec_);
-            commercials.push_back(buf);    
+            commercials.push_back(buf);
             snprintf(buf, sizeof(buf), "%s Anisotropic Polarizability: %.2f (A^3)\n", lot, anisoPol_elec_);
             commercials.push_back(buf);
-        }        
+        }
     }
-          
+
     print_top_header(fp, pd, aps, bHaveShells_, iChargeDistributionModel, commercials, bITP);
     write_top(fp, printmol.name, &topology_->atoms, false,
               plist_, excls_, atype_, cgnr_, nexcl_, pd);
@@ -1904,13 +1914,13 @@ void MyMol::rotateDipole(rvec mu, rvec muReference)
 void MyMol::setQandMoments(qType qt, int natom, double q[])
 {
     int i, j;
-    
+
     if (natom > 0)
     {
         charge_QM_[qt].resize(natom);
         for (i = j = 0; i < topology_->atoms.nr; i++)
         {
-            if (topology_->atoms.atom[i].ptype == eptAtom || 
+            if (topology_->atoms.atom[i].ptype == eptAtom ||
                 topology_->atoms.atom[i].ptype == eptNucleus)
             {
                 charge_QM_[qt][j] = q[j];
@@ -1931,27 +1941,27 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     double       value = 0;
     double       Hatom = 0;
     double       ZPE   = 0;
-    double       error = 0; 
-    double       T     = -1; 
+    double       error = 0;
+    double       T     = -1;
     double       vec[DIM];
-    tensor       quadrupole = {{0,0,0},{0,0,0},{0,0,0}};
-    tensor       polar      = {{0,0,0},{0,0,0},{0,0,0}};
+    tensor       quadrupole = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+    tensor       polar      = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
     std::string  myref;
     std::string  mylot;
     bool         esp_dipole_found  = false;
-    
-    
+
+
     for (auto i = 0; i < topology_->atoms.nr; i++)
     {
-        if (topology_->atoms.atom[i].ptype == eptAtom || 
+        if (topology_->atoms.atom[i].ptype == eptAtom ||
             topology_->atoms.atom[i].ptype == eptNucleus)
         {
             natom++;
         }
-    }   
+    }
     double q[natom];
     if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
-                              (char *)mylot.c_str(), "", 
+                              (char *)mylot.c_str(), "",
                               (char *)"ESP charges",
                               &value, &error, &T,
                               myref, mylot, q, quadrupole))
@@ -1961,7 +1971,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     }
     T = -1;
     if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
-                              (char *)mylot.c_str(), "", 
+                              (char *)mylot.c_str(), "",
                               (char *)"Mulliken charges",
                               &value, &error, &T,
                               myref, mylot, q, quadrupole))
@@ -1974,7 +1984,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     }
     T = -1;
     if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
-                              (char *)mylot.c_str(), "", 
+                              (char *)mylot.c_str(), "",
                               (char *)"Hirshfeld charges",
                               &value, &error, &T,
                               myref, mylot, q, quadrupole))
@@ -1988,7 +1998,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     }
     T = -1;
     if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
-                              (char *)mylot.c_str(), "", 
+                              (char *)mylot.c_str(), "",
                               (char *)"CM5 charges",
                               &value, &error, &T,
                               myref, mylot, q, quadrupole))
@@ -1999,7 +2009,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             rotate_tensor(Q_qm_[qtCM5], Q_qm_[qtESP]);
         }
 
-    } 
+    }
     T = 298.15;
     immStatus imm = immOK;
     if (molProp()->getProp(MPO_ENERGY, (bQM ? iqmQM : iqmBoth),
@@ -2051,15 +2061,15 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         }
     }
     T = -1;
-    if (molProp()->getPropRef(MPO_DIPOLE, iqmQM , lot, "", 
+    if (molProp()->getPropRef(MPO_DIPOLE, iqmQM, lot, "",
                               (char *)"electronic",
                               &value, &error, &T, myref, mylot,
                               vec, quadrupole))
-    {       
+    {
         dip_exp_  = value;
         dip_err_  = error;
         set_muQM(qtElec, vec);
-        
+
         if (error <= 0)
         {
             if (debug)
@@ -2071,10 +2081,10 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             error = 0.1*value;
         }
         dip_weight_ = gmx::square(1.0/error);
-        
+
         if (!bZero && (dipQM(qtElec) - 0.0) < 1e-2)
         {
-          imm = immZeroDip;
+            imm = immZeroDip;
         }
         if (immOK == imm && esp_dipole_found)
         {
@@ -2083,7 +2093,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     }
     else
     {
-      imm = immNoDipole;
+        imm = immNoDipole;
     }
     T = -1;
     if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmQM,
@@ -2097,15 +2107,15 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             rotate_tensor(Q_qm_[qtElec], Q_qm_[qtESP]);
         }
     }
-    T = -1;  
-    if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmQM, 
-                              lot, "", (char *)"electronic", 
-                              &isoPol_elec_, &error, &T, 
+    T = -1;
+    if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmQM,
+                              lot, "", (char *)"electronic",
+                              &isoPol_elec_, &error, &T,
                               myref, mylot, vec, polar))
-    {        
+    {
         copy_mat(polar, alpha_elec_);
         CalcAnisoPolarizability(alpha_elec_, &anisoPol_elec_);
-    } 
+    }
     return imm;
 }
 
@@ -2491,7 +2501,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                         ltop_->idef.iparams[tp].polarize.alpha     = value;
                     }
                 }
-            } 
+            }
         }
         break;
         case eitVSITE2:
@@ -2502,4 +2512,4 @@ void MyMol::UpdateIdef(const Poldata   &pd,
             break;
     }
 }
-}// namespace alexandria
+} // namespace alexandria

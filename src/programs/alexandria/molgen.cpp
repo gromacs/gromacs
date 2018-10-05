@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018 
+ * Copyright (C) 2014-2018
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,18 +20,21 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
- 
- 
+
+
+#include "molgen.h"
+
 #include <cmath>
+
 #include <vector>
 
 #include "gromacs/commandline/pargs.h"
@@ -50,7 +53,6 @@
 #include "fill_inputrec.h"
 #include "getmdlogger.h"
 #include "gmx_simple_comm.h"
-#include "molgen.h"
 #include "molprop_xml.h"
 #include "poldata_xml.h"
 
@@ -327,7 +329,7 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs)
         { "-mindata", FALSE, etINT, {&mindata_},
           "Minimum number of data points to optimize force field parameters" },
         { "-maxpot", FALSE, etINT, {&maxESP_},
-          "Maximum percent of the electrostatic potential points that will be used to fit partial charges." },          
+          "Maximum percent of the electrostatic potential points that will be used to fit partial charges." },
         { "-qdist",   FALSE, etENUM, {cqdist},
           "Model used for charge distribution" },
         { "-qgen",   FALSE, etENUM, {cqgen},
@@ -487,7 +489,7 @@ void MolGen::Read(FILE            *fp,
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         if (pd_.getNexcl() != nexcl_)
         {
-            fprintf(fp, "Exclusion number changed from %d to %d read from the command line.\n", 
+            fprintf(fp, "Exclusion number changed from %d to %d read from the command line.\n",
                     pd_.getNexcl(), nexcl_);
             pd_.setNexcl(nexcl_);
         }
