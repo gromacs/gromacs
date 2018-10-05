@@ -54,6 +54,7 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/real.h"
@@ -82,9 +83,8 @@ static gmx_bool
 ftype_is_bonded_potential(int ftype)
 {
     return
-        (interaction_function[ftype].flags & IF_BOND) &&
-        !(ftype == F_CONNBONDS || ftype == F_POSRES || ftype == F_FBPOSRES) &&
-        (ftype < F_GB12 || ftype > F_GB14);
+        ((interaction_function[ftype].flags & IF_BOND) != 0u) &&
+        !(ftype == F_CONNBONDS || ftype == F_POSRES || ftype == F_FBPOSRES);
 }
 
 // packing some parameters for transfer.
@@ -2340,9 +2340,9 @@ reset_gpu_bonded(const int size, const int nener )
 
 /* -------------- */
 void 
-do_bonded_gpu(t_forcerec *fr, t_inputrec *ir, const t_idef *idef, 
+do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef, 
               int flags,  const t_graph *graph, int natoms, rvec x[], 
-              real *lambda, t_mdatoms *md, 
+              real *lambda, const t_mdatoms *md, 
               rvec *input_force, t_lambda *fepvals, gmx_enerdata_t *enerd)
 //              int *global_atom_index)
 {
@@ -2699,9 +2699,9 @@ do_bonded_gpu(t_forcerec *fr, t_inputrec *ir, const t_idef *idef,
 }
 
 void
-do_bonded_gpu_finalize(t_forcerec *fr, t_inputrec *ir, const t_idef *idef,
+do_bonded_gpu_finalize(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
               int flags,  const t_graph *graph, int natoms, rvec x[],
-              real *lambda, t_mdatoms *md,
+              real *lambda, const t_mdatoms *md,
               rvec *input_force, t_lambda *fepvals, gmx_enerdata_t *enerd)
 //              int *global_atom_index)
 {
