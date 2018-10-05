@@ -71,7 +71,7 @@ msvc-2017 openmp release-with-assert
 # Test without any MPI
 # Test on CentOS (because cmake-3.9.6 is available there)
 # Test hwloc support
-icc-18 no-thread-mpi double openmp mkl cmake-3.9.6 simd=none release hwloc
+icc-19 no-thread-mpi double openmp mkl cmake-3.9.6 simd=none release hwloc
 
 # Test NVIDIA OpenCL
 # Test external clFFT (for build speed)
