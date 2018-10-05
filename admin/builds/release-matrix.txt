@@ -31,7 +31,7 @@ gcc-8 static release
 
 # Test double precision
 # Test with newest supported Intel compiler
-icc-18 double release
+icc-19 double release
 
 # Test static linking with clang
 # Test double precision
