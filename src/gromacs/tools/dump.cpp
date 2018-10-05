@@ -665,7 +665,7 @@ int gmx_dump(int argc, char *argv[])
     }
     else if (ftp2bSet(efCPT, NFILE, fnm))
     {
-        list_checkpoint(ftp2fn(efCPT, NFILE, fnm), stdout);
+        gmx::legacy::list_checkpoint(ftp2fn(efCPT, NFILE, fnm), stdout);
     }
     else if (ftp2bSet(efTOP, NFILE, fnm))
     {

@@ -123,9 +123,10 @@ read_checkpoint_data(const char *filename, int *simulation_part,
         else
         {
             std::vector<gmx_file_position_t> outputfiles;
-            read_checkpoint_simulation_part_and_filenames(fp,
-                                                          simulation_part,
-                                                          &outputfiles);
+            gmx::legacy::read_checkpoint_simulation_part_and_filenames(
+                    fp,
+                    simulation_part,
+                    &outputfiles);
 
             if (bTryToAppendFiles)
             {

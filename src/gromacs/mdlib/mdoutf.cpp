@@ -296,13 +296,14 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
             fflush_tng(of->tng);
             fflush_tng(of->tng_low_prec);
             ivec one_ivec = { 1, 1, 1 };
-            write_checkpoint(of->fn_cpt, of->bKeepAndNumCPT,
-                             fplog, cr,
-                             DOMAINDECOMP(cr) ? cr->dd->nc : one_ivec,
-                             DOMAINDECOMP(cr) ? cr->dd->nnodes : cr->nnodes,
-                             of->eIntegrator, of->simulation_part,
-                             of->bExpanded, of->elamstats, step, t,
-                             state_global, observablesHistory);
+            gmx::legacy::write_checkpoint(
+                    of->fn_cpt, of->bKeepAndNumCPT,
+                    fplog, cr,
+                    DOMAINDECOMP(cr) ? cr->dd->nc : one_ivec,
+                    DOMAINDECOMP(cr) ? cr->dd->nnodes : cr->nnodes,
+                    of->eIntegrator, of->simulation_part,
+                    of->bExpanded, of->elamstats, step, t,
+                    state_global, observablesHistory);
         }
 
         if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))

@@ -54,6 +54,11 @@ struct t_inputrec;
 class t_state;
 struct t_trxframe;
 
+namespace gmx
+{
+namespace legacy
+{
+
 /* the name of the environment variable to disable fsync failure checks with */
 #define GMX_IGNORE_FSYNC_FAILURE_ENV "GMX_IGNORE_FSYNC_FAILURE"
 
@@ -119,5 +124,8 @@ void
 read_checkpoint_simulation_part_and_filenames(struct t_fileio                  *fp,
                                               int                              *simulation_part,
                                               std::vector<gmx_file_position_t> *outputfiles);
+
+}  // namespace legacy
+}  // namespace gmx
 
 #endif

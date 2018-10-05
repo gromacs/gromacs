@@ -957,7 +957,7 @@ bool read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
         case efTRR:
             break;
         case efCPT:
-            read_checkpoint_trxframe(fio, fr);
+            gmx::legacy::read_checkpoint_trxframe(fio, fr);
             bFirst = FALSE;
             break;
         case efG96:

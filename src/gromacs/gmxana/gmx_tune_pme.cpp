@@ -2377,8 +2377,8 @@ int gmx_tune_pme(int argc, char *argv[])
     {
         const char *filename = opt2fn("-cpi", NFILE, fnm);
         int         cpt_sim_part;
-        read_checkpoint_part_and_step(filename,
-                                      &cpt_sim_part, &cpt_steps);
+        gmx::legacy::read_checkpoint_part_and_step(
+                filename, &cpt_sim_part, &cpt_steps);
         if (cpt_sim_part == 0)
         {
             gmx_fatal(FARGS, "Checkpoint file %s could not be read!", filename);

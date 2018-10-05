@@ -784,13 +784,14 @@ int Mdrunner::mdrunner()
          */
         gmx_bool bReadEkin;
 
-        load_checkpoint(opt2fn_master("-cpi", nfile, fnm, cr), &fplog,
-                        cr, domdecOptions.numCells,
-                        inputrec, globalState.get(),
-                        &bReadEkin, &observablesHistory,
-                        continuationOptions.appendFiles,
-                        continuationOptions.appendFilesOptionSet,
-                        mdrunOptions.reproducible);
+        gmx::legacy::load_checkpoint(
+                opt2fn_master("-cpi", nfile, fnm, cr), &fplog,
+                cr, domdecOptions.numCells,
+                inputrec, globalState.get(),
+                &bReadEkin, &observablesHistory,
+                continuationOptions.appendFiles,
+                continuationOptions.appendFilesOptionSet,
+                mdrunOptions.reproducible);
 
         if (bReadEkin)
         {
