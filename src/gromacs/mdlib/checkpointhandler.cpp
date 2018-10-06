@@ -43,17 +43,53 @@
 
 #include "checkpointhandler.h"
 
+#include "buildinfo.h"
+#include "gromacs/compat/make_unique.h"
+#include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/fileio/checkpoint.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/mdlib/checkpointhelper.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/utility/baseversion.h"
+#include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/sysinfo.h"
 
 namespace gmx
 {
+
+// TODO: Put that in the right spot - for now here to make our life easier
+/*! \brief Name of checkpointing keywords
+ *
+ */
+static std::string getCheckpointKeywordName(CheckpointKeyword keyword)
+{
+    static const std::map<CheckpointKeyword, std::string> checkpointKeywordNames = {
+        {CheckpointKeyword::state, "t_state"},
+        {CheckpointKeyword::ekinstate, "ekinstate_t"},
+        {CheckpointKeyword::swaphist, "swaphistory_t"},
+        {CheckpointKeyword::enerhist, "energyhistory_t"},
+        {CheckpointKeyword::dfhist, "df_history_t"},
+        {CheckpointKeyword::edsamhist, "edsamhistory_t"},
+        {CheckpointKeyword::correlationGridHistory, "CorrelationGridHistory"},
+        {CheckpointKeyword::awhBiasHistory, "AwhBiasHistory"},
+        {CheckpointKeyword::awhHistory, "AwhHistory"}
+    };
+
+    return checkpointKeywordNames.at(keyword);
+};
 
 CheckpointHandler::CheckpointHandler(
         compat::not_null<AccumulateGlobalsBuilder*> accumulateGlobalsBuilder,
         bool                                        neverUpdateNeighborList,
         bool                                        isMaster,
         bool                                        writeFinalCheckpoint,
-        real                                        checkpointingPeriod) :
+        real                                        checkpointingPeriod,
+        std::map<CheckpointKeyword, compat::not_null<ICheckpointClient*> > clients,
+        const std::string &writeCheckpointFilename,
+        int simulationPart) :
     hasUnhandledSignal_(false),
     checkpointThisStep_(false),
     numberOfNextCheckpoint_(1),
@@ -61,15 +97,66 @@ CheckpointHandler::CheckpointHandler(
     checkpointingIsActive_(checkpointingPeriod >= 0),
     writeFinalCheckpoint_(writeFinalCheckpoint),
     neverUpdateNeighborlist_(neverUpdateNeighborList),
-    checkpointingPeriod_(checkpointingPeriod)
+    checkpointingPeriod_(checkpointingPeriod),
+    clientMap_(clients),
+    numClients_(static_cast<int>(clients.size())),
+    writeCheckpointFilename_(writeCheckpointFilename),
+    simulationPart_(simulationPart)
 {
     if (checkpointingIsActive_)
     {
         // In multi-sim settings, checkpointing signal needs to be shared across simulations
         accumulateGlobalsBuilder->registerClient(
                 compat::not_null<IAccumulateGlobalsClient*>(this), true);
-
     }
+
+    size_t numInt    = 0;
+    size_t numInt64  = 0;
+    size_t numReal   = 0;
+    size_t numDouble = 0;
+
+    for (auto entry : clientMap_)
+    {
+        auto client = entry.second;
+        numInt    += client->getNumInt();
+        numInt64  += client->getNumInt64();
+        numReal   += client->getNumReal();
+        numDouble += client->getNumDouble();
+    }
+    intData_.resize(numInt);
+    int64Data_.resize(numInt64);
+    realData_.resize(numReal);
+    doubleData_.resize(numDouble);
+
+    ArrayRef<int>     intDataView    = intData_;
+    ArrayRef<int64_t> int64DataView  = int64Data_;
+    ArrayRef<real>    realDataView   = realData_;
+    ArrayRef<double>  doubleDataView = doubleData_;
+
+    size_t            currentStartInt    = 0;
+    size_t            currentStartInt64  = 0;
+    size_t            currentStartReal   = 0;
+    size_t            currentStartDouble = 0;
+
+    for (auto entry : clientMap_)
+    {
+        auto client = entry.second;
+        client->setViews(
+                intDataView.subArray(currentStartInt, client->getNumInt()),
+                int64DataView.subArray(currentStartInt64, client->getNumInt64()),
+                realDataView.subArray(currentStartReal, client->getNumReal()),
+                doubleDataView.subArray(currentStartDouble, client->getNumDouble()));
+        currentStartInt    += client->getNumInt();
+        currentStartInt64  += client->getNumInt64();
+        currentStartReal   += client->getNumReal();
+        currentStartDouble += client->getNumDouble();
+    }
+
+    GMX_ASSERT(currentStartInt == intData_.size() &&
+               currentStartInt64 == int64Data_.size() &&
+               currentStartReal == realData_.size() &&
+               currentStartDouble == doubleData_.size(),
+               "Failed to prepare checkpointing view.");
 }
 
 void CheckpointHandler::setSignalImpl(
@@ -116,6 +203,352 @@ void CheckpointHandler::setViewForGlobals(
 void CheckpointHandler::notifyAfterCommunication()
 {
     // Not sure if we'll need that for anything...
+}
+
+void CheckpointHandler::writeCheckpoint(
+        int64_t step, double time, const t_commrec *cr,
+        bool bExpanded, int elamstats, int eIntegrator,
+        t_state *state, ObservablesHistory *observablesHistory,
+        bool bNumberAndKeep, FILE *fplog)
+{
+    char timebuf[STRLEN];
+    gmx_format_current_time(timebuf, STRLEN);
+
+    if (fplog)
+    {
+        fprintf(fplog, "Writing checkpoint, step %s at %s\n\n",
+                std::to_string(step).c_str(), timebuf);
+    }
+
+    // Create helper & write header
+    const ivec       ones             = {1, 1, 1};
+    CheckpointHelper checkpointHelper = CheckpointHelper(
+                gmx_version(), GMX_DOUBLE, getProgramContext().fullBinaryPath(),
+                timebuf, BUILD_TIME, BUILD_USER, BUILD_HOST,
+                DOMAINDECOMP(cr) ? cr->dd->nnodes : cr->nnodes,
+                DOMAINDECOMP(cr) ? cr->npmenodes : 0,
+                DOMAINDECOMP(cr) ? cr->dd->nc : ones,
+                simulationPart_, step, time,
+                gmx_fio_get_output_file_positions(), writeCheckpointFilename_);
+
+    auto filePointer = checkpointHelper.openWriteCheckpointFile(step);
+
+    checkpointHelper.doHeader(compat::make_unique<XDRWrapper>(filePointer), false);
+
+    if (checkpointHelper.doFiles(compat::make_unique<XDRWrapper>(filePointer), false))
+    {
+        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
+    }
+
+    // Add client info to header
+    auto xdrWrapper = compat::make_unique<XDRWrapper>(filePointer);
+    xdrWrapper->doCptIntErr(&numClients_);
+    for (const auto &entry : clientMap_)
+    {
+        const auto &client  = entry.second;
+        auto        keyword = static_cast<int>(client->getKeyword());
+        auto        version = client->getVersion();
+        xdrWrapper->doCptIntErr(&keyword);
+        xdrWrapper->doCptIntErr(&version);
+        client->notifyWrite();
+    }
+
+    // Write int / real / double data
+    if (xdrWrapper->doVector(&intData_) ||
+        xdrWrapper->doVector(&int64Data_) ||
+        xdrWrapper->doVector(&realData_) ||
+        xdrWrapper->doVector(&doubleData_))
+    {
+        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
+    }
+
+    /* START LEGACY CODE
+     *
+     * The code above would do all the work - but for now, the clients are not implemented. The code
+     * below uses the legacy functions to achieve the same.
+     *
+     */
+
+    CheckpointHelper::writeLegacy(
+            compat::make_unique<XDRWrapper>(filePointer),
+            bExpanded, elamstats, eIntegrator,
+            state, observablesHistory);
+
+    // END LEGACY CODE
+
+    // Write footer
+    checkpointHelper.doFooter(compat::make_unique<XDRWrapper>(filePointer), false);
+    checkpointHelper.closeWriteCheckpointFile(filePointer, bNumberAndKeep);
+
+#if GMX_FAHCORE
+    /*code for alternate checkpointing scheme.  moved from top of loop over
+       steps */
+    fcRequestCheckPoint();
+    if (fcCheckPointParallel( cr->nodeid, NULL, 0) == 0)
+    {
+        gmx_fatal( 3, __FILE__, __LINE__, "Checkpoint error on step %d\n", step );
+    }
+#endif  /* end GMX_FAHCORE block */
+}
+
+void CheckpointHandler::readCheckpoint(
+        std::string readCheckpointFilename, FILE **pfplog,
+        const t_commrec *cr, const DomdecOptions &domdecOptions, t_inputrec *ir,
+        t_state *state, gmx_bool *bReadEkin, ObservablesHistory *observablesHistory,
+        bool bAppendOutputFiles, bool bForceAppend, bool reproducibilityRequested)
+{
+    bool isLegacy = false;
+    if (SIMMASTER(cr))
+    {
+        isLegacy = CheckpointHelper::getCheckpointVersion(readCheckpointFilename) == CheckpointVersion::legacy;
+    }
+    gmx_bcast(sizeof(isLegacy), &isLegacy, cr);
+    if (isLegacy)
+    {
+        legacy::load_checkpoint(
+                readCheckpointFilename.c_str(), pfplog, cr, domdecOptions.numCells,
+                ir, state, bReadEkin, observablesHistory,
+                bAppendOutputFiles, bForceAppend, reproducibilityRequested);
+        return;
+    }
+
+    auto checkpointHelper = CheckpointHelper(readCheckpointFilename);
+    if (SIMMASTER(cr))
+    {
+        readCheckpointImpl(
+                compat::not_null<CheckpointHelper*>(&checkpointHelper), pfplog,
+                cr, domdecOptions, ir, state, bReadEkin, observablesHistory,
+                bAppendOutputFiles, bForceAppend, reproducibilityRequested);
+    }
+    if (PAR(cr))
+    {
+        gmx_bcast(sizeof(checkpointHelper.step_), &checkpointHelper.step_, cr);
+        gmx_bcast(sizeof(*bReadEkin), bReadEkin, cr);
+    }
+    ir->bContinuation    = TRUE;
+    if (ir->nsteps >= 0)
+    {
+        ir->nsteps          += ir->init_step - checkpointHelper.step_;
+    }
+    ir->init_step        = checkpointHelper.step_;
+    ir->simulation_part  = checkpointHelper.simulationPart_ + 1;
+
+    this->simulationPart_ = checkpointHelper.simulationPart_ + 1;
+}
+
+
+void CheckpointHandler::readCheckpointImpl(
+        compat::not_null<CheckpointHelper*> checkpointHelper, FILE **pfplog,
+        const t_commrec *cr, const DomdecOptions &domdecOptions, t_inputrec *ir,
+        t_state *state, gmx_bool *bReadEkin, ObservablesHistory *observablesHistory,
+        bool bAppendOutputFiles, bool bForceAppend, bool reproducibilityRequested)
+{
+    FILE *fplog = *pfplog;
+
+    // Create helper & read header
+    auto filePointer = checkpointHelper->openReadCheckpointFile();
+    checkpointHelper->doHeader(compat::make_unique<XDRWrapper>(filePointer), false);
+
+    if (bAppendOutputFiles && checkpointHelper->doublePrecision_ != GMX_DOUBLE)
+    {
+        gmx_fatal(FARGS, "Output file appending requested, but the code and "
+                  "checkpoint file precision (single/double) don't match");
+    }
+
+    /* This will not be written if we do appending, since fplog is still NULL then */
+    // TODO: More elegant way to check this?
+    if (fplog)
+    {
+        checkpointHelper->printHeader(fplog);
+    }
+
+    if (MASTER(cr))
+    {
+        checkpointHelper->checkMatch(
+                fplog, reproducibilityRequested, cr, domdecOptions);
+    }
+
+    if (checkpointHelper->doFiles(compat::make_unique<XDRWrapper>(filePointer), true))
+    {
+        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
+    }
+
+    // Get client info from header
+    auto xdrWrapper = compat::make_unique<XDRWrapper>(filePointer);
+    int  fileNumClients;
+    xdrWrapper->doCptIntErr(&fileNumClients);
+    if (fileNumClients != numClients_)
+    {
+        gmx_fatal(FARGS, "Mismatch in number of checkpointing clients. File has %d, while current "
+                  "simulation has %d.", fileNumClients, numClients_);
+    }
+    for (int i = 0; i < fileNumClients; ++i)
+    {
+        int intKeyword, version;
+        xdrWrapper->doCptIntErr(&intKeyword);
+        xdrWrapper->doCptIntErr(&version);
+        auto keyword = static_cast<CheckpointKeyword>(intKeyword);
+        if (!clientMap_.count(keyword))
+        {
+            gmx_fatal(FARGS, "Checkpointing client mismatch. Client %s found in file is not registered"
+                      "in current simulation.", getCheckpointKeywordName(keyword).c_str());
+        }
+        if (clientMap_.at(keyword)->getVersion() != version)
+        {
+            gmx_fatal(FARGS, "Version mismatch for checkpointing client %s. File has %d, while current "
+                      "simulation has %d.", getCheckpointKeywordName(keyword).c_str(), version, numClients_);
+        }
+    }
+
+    // Read int / real / double data
+    if (xdrWrapper->doVector(&intData_) ||
+        xdrWrapper->doVector(&int64Data_) ||
+        xdrWrapper->doVector(&realData_) ||
+        xdrWrapper->doVector(&doubleData_))
+    {
+        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
+    }
+
+    for (const auto &entry : clientMap_)
+    {
+        const auto &client = entry.second;
+        client->notifyRead();
+    }
+
+    /* START LEGACY CODE
+     *
+     * The code above would do all the work - but for now, the clients are not implemented. The code
+     * below uses the legacy functions to achieve the same.
+     *
+     */
+
+    CheckpointHelper::readLegacy(
+            compat::make_unique<XDRWrapper>(filePointer), writeCheckpointFilename_, ir,
+            state, bReadEkin, observablesHistory);
+
+    // END LEGACY CODE
+
+    checkpointHelper->doFooter(compat::make_unique<XDRWrapper>(filePointer), true);
+
+    checkpointHelper->closeReadCheckpointFile(filePointer);
+
+    if (bAppendOutputFiles)
+    {
+        checkpointHelper->appendOutputFiles(fplog, pfplog, bForceAppend);
+    }
+}
+
+void CheckpointHandler::readCheckpointTrxframe(
+        t_fileio   *fp,
+        t_trxframe *fr)
+{
+    bool isLegacy =
+        CheckpointHelper::getCheckpointVersion(gmx_fio_getname(fp)) == CheckpointVersion::legacy;
+
+    if (isLegacy)
+    {
+        legacy::read_checkpoint_trxframe(fp, fr);
+    }
+    else
+    {
+        // TODO: Implement this
+        gmx_fatal(FARGS, "Reading checkpoint file to trx not implemented for new "
+                  "checkpoint format.");
+    }
+}
+
+void CheckpointHandler::listCheckpoint(
+        std::string readCheckpointFilename,
+        FILE       *out)
+{
+    bool isLegacy =
+        CheckpointHelper::getCheckpointVersion(readCheckpointFilename) == CheckpointVersion::legacy;
+
+    if (isLegacy)
+    {
+        legacy::list_checkpoint(readCheckpointFilename.c_str(), out);
+    }
+    else
+    {
+        // TODO: Implement this
+        gmx_fatal(FARGS, "Listing checkpoint file not implemented for new "
+                  "checkpoint format.");
+    }
+}
+
+void CheckpointHandler::readCheckpointPartAndStep(
+        std::string readCheckpointFilename,
+        int        *simulationPart,
+        int64_t    *step)
+{
+    bool isLegacy =
+        CheckpointHelper::getCheckpointVersion(readCheckpointFilename) == CheckpointVersion::legacy;
+
+    if (isLegacy)
+    {
+        legacy::read_checkpoint_part_and_step(
+                readCheckpointFilename.c_str(), simulationPart, step);
+    }
+    else
+    {
+        CheckpointHelper checkpointHelper = CheckpointHelper(readCheckpointFilename);
+        auto             fp               = checkpointHelper.openReadCheckpointFile();
+        checkpointHelper.doHeader(compat::make_unique<XDRWrapper>(fp), true);
+        checkpointHelper.closeReadCheckpointFile(fp);
+
+        *simulationPart = checkpointHelper.simulationPart_;
+        *step           = checkpointHelper.step_;
+    }
+}
+
+void CheckpointHandler::readCheckpointSimulationPartAndFilenames(
+        std::string                       readCheckpointFilename,
+        int                              *simulationPart,
+        std::vector<gmx_file_position_t> *outputfiles)
+{
+    bool             isLegacy =
+        CheckpointHelper::getCheckpointVersion(readCheckpointFilename) == CheckpointVersion::legacy;
+    CheckpointHelper checkpointHelper = CheckpointHelper(readCheckpointFilename);
+    auto             fp               = checkpointHelper.openReadCheckpointFile();
+    if (isLegacy)
+    {
+        legacy::read_checkpoint_simulation_part_and_filenames(
+                fp, simulationPart, outputfiles);
+    }
+    else
+    {
+        checkpointHelper.doHeader(compat::make_unique<XDRWrapper>(fp), true);
+        checkpointHelper.doFiles(compat::make_unique<XDRWrapper>(fp), true);
+        *simulationPart = checkpointHelper.simulationPart_;
+        // TODO: Check this actually works...
+        *outputfiles = std::move(checkpointHelper.outputfiles_);
+    }
+    checkpointHelper.closeReadCheckpointFile(fp);
+}
+
+void CheckpointHandlerBuilder::registerCheckpointClient(gmx::compat::not_null<ICheckpointClient *> client)
+{
+    auto module = client->getKeyword();
+    GMX_ASSERT(static_cast<CheckpointKeyword>(0) <= module && module < CheckpointKeyword::count, "Invalid module");
+    GMX_RELEASE_ASSERT(
+            checkpointClients_.insert(
+                    std::pair<CheckpointKeyword, compat::not_null<ICheckpointClient*> >(module, client)).second,
+            "Multiple clients writing to the same keyword.");
+}
+
+std::unique_ptr<CheckpointHandler> CheckpointHandlerBuilder::getCheckpointHandler(
+        compat::not_null<AccumulateGlobalsBuilder*> accumulateGlobalsBuilder,
+        bool                                        neverUpdateNeighborList,
+        bool                                        isMaster,
+        bool                                        writeFinalCheckpoint,
+        real                                        checkpointingPeriod,
+        const std::string                          &writeCheckpointFilename,
+        int                                         simulationPart)
+{
+    return compat::make_unique<CheckpointHandler>(
+            accumulateGlobalsBuilder, neverUpdateNeighborList,
+            isMaster, writeFinalCheckpoint, checkpointingPeriod,
+            checkpointClients_, writeCheckpointFilename, simulationPart);
 }
 
 } // namespace gmx

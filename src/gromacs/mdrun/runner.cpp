@@ -54,6 +54,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <gromacs/mdlib/checkpointhandler.h>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/compat/make_unique.h"
@@ -777,6 +778,16 @@ int Mdrunner::mdrunner()
 
     ContinuationOptions &continuationOptions = mdrunOptions.continuationOptions;
 
+    auto                 checkpointHandlerBuilder = compat::make_unique<CheckpointHandlerBuilder>();
+    // register clients here
+
+    auto accumulateGlobalsBuilder = compat::make_unique<AccumulateGlobalsBuilder>();
+    auto checkpointHandler        = checkpointHandlerBuilder->getCheckpointHandler(
+                compat::not_null<AccumulateGlobalsBuilder*>(accumulateGlobalsBuilder.get()),
+                inputrec->nstlist == 0, MASTER(cr),
+                mdrunOptions.writeConfout, mdrunOptions.checkpointOptions.period,
+                opt2fn("-cpo", nfile, fnm), inputrec->simulation_part);
+
     if (continuationOptions.startedFromCheckpoint)
     {
         /* Check if checkpoint file exists before doing continuation.
@@ -784,11 +795,10 @@ int Mdrunner::mdrunner()
          */
         gmx_bool bReadEkin;
 
-        gmx::legacy::load_checkpoint(
-                opt2fn_master("-cpi", nfile, fnm, cr), &fplog,
-                cr, domdecOptions.numCells,
-                inputrec, globalState.get(),
-                &bReadEkin, &observablesHistory,
+        checkpointHandler->readCheckpoint(
+                opt2fn_master("-cpi", nfile, fnm, cr),
+                &fplog, cr, domdecOptions, inputrec,
+                globalState.get(), &bReadEkin, &observablesHistory,
                 continuationOptions.appendFiles,
                 continuationOptions.appendFilesOptionSet,
                 mdrunOptions.reproducible);
@@ -798,7 +808,6 @@ int Mdrunner::mdrunner()
             continuationOptions.haveReadEkin = true;
         }
     }
-
     if (SIMMASTER(cr) && continuationOptions.appendFiles)
     {
         gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr,
@@ -1321,8 +1330,6 @@ int Mdrunner::mdrunner()
                             fr->cginfo_mb);
         }
 
-        auto accumulateGlobalsBuilder = compat::make_unique<AccumulateGlobalsBuilder>();
-
         /* Create StopHandlerBuilder (could be moved earlier if needed - currently nobody register here */
         auto stopHandlerBuilder = compat::make_unique<StopHandlerBuilder>();
 
@@ -1344,7 +1351,8 @@ int Mdrunner::mdrunner()
             membed,
             accumulateGlobalsBuilder.get(),
             walltime_accounting,
-            std::move(stopHandlerBuilder)
+            std::move(stopHandlerBuilder),
+            std::move(checkpointHandler)
         };
         integrator.run(inputrec->eI, doRerun);
 

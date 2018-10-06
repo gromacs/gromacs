@@ -72,11 +72,11 @@ do_md_trajectory_writing(FILE                     *fplog,
                          t_mdebin                 *mdebin,
                          struct gmx_ekindata_t    *ekind,
                          gmx::ArrayRef<gmx::RVec>  f,
-                         gmx_bool                  bCPT,
                          gmx_bool                  bRerunMD,
                          gmx_bool                  bLastStep,
                          gmx_bool                  bDoConfOut,
-                         gmx_bool                  bSumEkinhOld
+                         gmx_bool                  bSumEkinhOld,
+                         gmx::CheckpointHandler   *checkpointHandler = nullptr
                          );
 
 

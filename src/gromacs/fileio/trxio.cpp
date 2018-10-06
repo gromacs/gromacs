@@ -44,7 +44,6 @@
 #include <cmath>
 #include <cstring>
 
-#include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/g96io.h"
@@ -60,6 +59,7 @@
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/checkpointhandler.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
@@ -957,7 +957,7 @@ bool read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
         case efTRR:
             break;
         case efCPT:
-            gmx::legacy::read_checkpoint_trxframe(fio, fr);
+            gmx::CheckpointHandler::readCheckpointTrxframe(fio, fr);
             bFirst = FALSE;
             break;
         case efG96:

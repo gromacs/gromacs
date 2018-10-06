@@ -420,12 +420,7 @@ void gmx::Integrator::do_md()
                 mdrunOptions.maximumHoursToRun, ir->nstlist == 0,
                 fplog, step, bNS, walltime_accounting);
 
-    auto checkpointHandler = compat::make_unique<CheckpointHandler>(
-                compat::not_null<AccumulateGlobalsBuilder*>(accumulateGlobalsBuilder_),
-                ir->nstlist == 0, MASTER(cr),
-                mdrunOptions.writeConfout, mdrunOptions.checkpointOptions.period);
-
-    auto       resetHandler         = compat::make_unique<ResetHandler>(
+    auto resetHandler = compat::make_unique<ResetHandler>(
                 compat::not_null<AccumulateGlobalsBuilder*>(accumulateGlobalsBuilder_),
                 ir->nsteps, MASTER(cr), mdrunOptions.timingOptions.resetHalfway,
                 mdrunOptions.maximumHoursToRun, mdlog, wcycle, walltime_accounting);
@@ -1040,10 +1035,10 @@ void gmx::Integrator::do_md()
                                  ir, state, state_global, observablesHistory,
                                  top_global, fr,
                                  outf, mdebin, ekind, f,
-                                 checkpointHandler->isCheckpointingStep(),
                                  bRerunMD, bLastStep,
                                  mdrunOptions.writeConfout,
-                                 bSumEkinhOld);
+                                 bSumEkinhOld,
+                                 checkpointHandler.get());
         /* Check if IMD step and do IMD communication, if bIMD is TRUE. */
         bIMDstep = do_IMD(ir->bIMD, step, cr, bNS, state->box, as_rvec_array(state->x.data()), ir, t, wcycle);
 

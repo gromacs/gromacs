@@ -564,14 +564,13 @@ void gmx::Integrator::do_rerun()
          * coordinates at time t.
          */
         {
-            const bool isCheckpointingStep = false;
             const bool doRerun             = true;
             const bool bSumEkinhOld        = false;
             do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
                                      ir, state, state_global, observablesHistory,
                                      top_global, fr,
                                      outf, mdebin, ekind, f,
-                                     isCheckpointingStep, doRerun, isLastStep,
+                                     doRerun, isLastStep,
                                      mdrunOptions.writeConfout,
                                      bSumEkinhOld);
         }

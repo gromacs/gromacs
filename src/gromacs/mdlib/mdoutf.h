@@ -43,6 +43,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "checkpointhandler.h"
 
 class energyhistory_t;
 struct gmx_mtop_t;
@@ -109,7 +110,8 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
                                       int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
                                       ObservablesHistory *observablesHistory,
-                                      gmx::ArrayRef<gmx::RVec> f_local);
+                                      gmx::ArrayRef<gmx::RVec> f_local,
+                                      gmx::CheckpointHandler* checkpointHandler = nullptr);
 
 /*! \brief Get the output interval of box size of uncompressed TNG output.
  * Returns 0 if no uncompressed TNG file is open.

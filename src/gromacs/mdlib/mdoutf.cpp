@@ -252,7 +252,8 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
                                       int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
                                       ObservablesHistory *observablesHistory,
-                                      gmx::ArrayRef<gmx::RVec> f_local)
+                                      gmx::ArrayRef<gmx::RVec> f_local,
+                                      gmx::CheckpointHandler* checkpointHandler)
 {
     rvec *f_global;
 
@@ -295,15 +296,14 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
         {
             fflush_tng(of->tng);
             fflush_tng(of->tng_low_prec);
-            ivec one_ivec = { 1, 1, 1 };
-            gmx::legacy::write_checkpoint(
-                    of->fn_cpt, of->bKeepAndNumCPT,
-                    fplog, cr,
-                    DOMAINDECOMP(cr) ? cr->dd->nc : one_ivec,
-                    DOMAINDECOMP(cr) ? cr->dd->nnodes : cr->nnodes,
-                    of->eIntegrator, of->simulation_part,
-                    of->bExpanded, of->elamstats, step, t,
-                    state_global, observablesHistory);
+            if (checkpointHandler == nullptr)
+            {
+                gmx_fatal(FARGS, "Checkpoint writing required, but no checkpoint handler available.");
+            }
+            checkpointHandler->writeCheckpoint(
+                    step, t, cr, of->bExpanded, of->elamstats,
+                    of->eIntegrator, state_global, observablesHistory,
+                    of->bKeepAndNumCPT, fplog);
         }
 
         if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))

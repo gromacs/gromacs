@@ -54,9 +54,9 @@
 #include <cstring>
 
 #include "gromacs/commandline/filenm.h"
-#include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/mdlib/checkpointhandler.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -122,11 +122,10 @@ read_checkpoint_data(const char *filename, int *simulation_part,
         }
         else
         {
+            gmx_fio_close(fp);
             std::vector<gmx_file_position_t> outputfiles;
-            gmx::legacy::read_checkpoint_simulation_part_and_filenames(
-                    fp,
-                    simulation_part,
-                    &outputfiles);
+            gmx::CheckpointHandler::readCheckpointSimulationPartAndFilenames(
+                    filename, simulation_part, &outputfiles);
 
             if (bTryToAppendFiles)
             {

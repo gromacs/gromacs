@@ -46,7 +46,6 @@
 #include <cstring>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/mtxio.h"
@@ -58,6 +57,7 @@
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/mdrunutility/mdmodules.h"
+#include "gromacs/mdlib/checkpointhandler.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -665,7 +665,7 @@ int gmx_dump(int argc, char *argv[])
     }
     else if (ftp2bSet(efCPT, NFILE, fnm))
     {
-        gmx::legacy::list_checkpoint(ftp2fn(efCPT, NFILE, fnm), stdout);
+        gmx::CheckpointHandler::listCheckpoint(ftp2fn(efCPT, NFILE, fnm), stdout);
     }
     else if (ftp2bSet(efTOP, NFILE, fnm))
     {

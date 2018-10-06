@@ -54,32 +54,33 @@
 #include "gromacs/utility/smalloc.h"
 
 void
-do_md_trajectory_writing(FILE                    *fplog,
-                         t_commrec               *cr,
-                         int                      nfile,
-                         const t_filenm           fnm[],
-                         int64_t                  step,
-                         int64_t                  step_rel,
-                         double                   t,
-                         t_inputrec              *ir,
-                         t_state                 *state,
-                         t_state                 *state_global,
-                         ObservablesHistory      *observablesHistory,
-                         gmx_mtop_t              *top_global,
-                         t_forcerec              *fr,
-                         gmx_mdoutf_t             outf,
-                         t_mdebin                *mdebin,
-                         gmx_ekindata_t          *ekind,
-                         gmx::ArrayRef<gmx::RVec> f,
-                         gmx_bool                 bCPT,
-                         gmx_bool                 bRerunMD,
-                         gmx_bool                 bLastStep,
-                         gmx_bool                 bDoConfOut,
-                         gmx_bool                 bSumEkinhOld
+do_md_trajectory_writing(FILE                     *fplog,
+                         t_commrec                *cr,
+                         int                       nfile,
+                         const t_filenm            fnm[],
+                         int64_t                   step,
+                         int64_t                   step_rel,
+                         double                    t,
+                         t_inputrec               *ir,
+                         t_state                  *state,
+                         t_state                  *state_global,
+                         ObservablesHistory       *observablesHistory,
+                         gmx_mtop_t               *top_global,
+                         t_forcerec               *fr,
+                         gmx_mdoutf_t              outf,
+                         t_mdebin                 *mdebin,
+                         gmx_ekindata_t           *ekind,
+                         gmx::ArrayRef<gmx::RVec>  f,
+                         gmx_bool                  bRerunMD,
+                         gmx_bool                  bLastStep,
+                         gmx_bool                  bDoConfOut,
+                         gmx_bool                  bSumEkinhOld,
+                         gmx::CheckpointHandler   *checkpointHandler
                          )
 {
     int   mdof_flags;
     rvec *x_for_confout = nullptr;
+    bool  bCPT          = checkpointHandler != nullptr && checkpointHandler->isCheckpointingStep();
 
     mdof_flags = 0;
     if (do_per_step(step, ir->nstxout))
@@ -162,7 +163,8 @@ do_md_trajectory_writing(FILE                    *fplog,
             }
         }
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global,
-                                         step, t, state, state_global, observablesHistory, f);
+                                         step, t, state, state_global, observablesHistory, f,
+                                         checkpointHandler);
         if (bLastStep && step_rel == ir->nsteps &&
             bDoConfOut && MASTER(cr) &&
             !bRerunMD)

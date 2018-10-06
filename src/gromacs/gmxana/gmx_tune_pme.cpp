@@ -51,12 +51,12 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fft/calcgrid.h"
-#include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/perf_est.h"
+#include "gromacs/mdlib/checkpointhandler.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -2377,7 +2377,7 @@ int gmx_tune_pme(int argc, char *argv[])
     {
         const char *filename = opt2fn("-cpi", NFILE, fnm);
         int         cpt_sim_part;
-        gmx::legacy::read_checkpoint_part_and_step(
+        gmx::CheckpointHandler::readCheckpointPartAndStep(
                 filename, &cpt_sim_part, &cpt_steps);
         if (cpt_sim_part == 0)
         {

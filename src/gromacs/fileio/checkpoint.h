@@ -42,7 +42,9 @@
 
 #include <vector>
 
+#include "gromacs/fileio/xdrf.h"          // TODO: remove this
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/awh-history.h"  // TODO: remove this
 #include "gromacs/utility/basedefinitions.h"
 
 class energyhistory_t;
@@ -54,6 +56,12 @@ struct t_inputrec;
 class t_state;
 struct t_trxframe;
 
+// TODO: remove these (only needed temporarily)
+struct df_history_t;
+struct edsamhistory_t;
+class ekinstate_t;
+struct swaphistory_t;
+
 namespace gmx
 {
 namespace legacy
@@ -61,18 +69,6 @@ namespace legacy
 
 /* the name of the environment variable to disable fsync failure checks with */
 #define GMX_IGNORE_FSYNC_FAILURE_ENV "GMX_IGNORE_FSYNC_FAILURE"
-
-/* Write a checkpoint to <fn>.cpt
- * Appends the _step<step>.cpt with bNumberAndKeep,
- * otherwise moves the previous <fn>.cpt to <fn>_prev.cpt
- */
-void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
-                      FILE *fplog, const t_commrec *cr,
-                      ivec domdecCells, int nppnodes,
-                      int eIntegrator, int simulation_part,
-                      gmx_bool bExpanded, int elamstats,
-                      int64_t step, double t,
-                      t_state *state, ObservablesHistory *observablesHistory);
 
 /* Loads a checkpoint from fn for run continuation.
  * Generates a fatal error on system size mismatch.
@@ -124,6 +120,61 @@ void
 read_checkpoint_simulation_part_and_filenames(struct t_fileio                  *fp,
                                               int                              *simulation_part,
                                               std::vector<gmx_file_position_t> *outputfiles);
+
+/* Functions that we temporarily need outside of here while not all data structures
+ * are migrated to the new checkpointing system....
+ *
+ * TODO: Get rid of this
+ */
+
+[[ noreturn ]] void cp_error();
+int do_cpt_state(XDR *xd,
+                 int fflags, t_state *state,
+                 FILE *list);
+int do_cpt_ekinstate(XDR *xd, int fflags, ekinstate_t *ekins,
+                     FILE *list);
+int do_cpt_swapstate(XDR *xd, gmx_bool bRead,
+                     int eSwapCoords, swaphistory_t *swapstate, FILE *list);
+int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
+                    int fflags, energyhistory_t *enerhist,
+                    FILE *list);
+int do_cpt_df_hist(XDR *xd, int fflags, int nlambda, df_history_t **dfhistPtr, FILE *list);
+int do_cpt_EDstate(XDR *xd, gmx_bool bRead,
+                   int nED, edsamhistory_t *EDstate, FILE *list);
+int do_cpt_awh(XDR *xd, gmx_bool bRead,
+               int fflags, AwhHistory *awhHistory,
+               FILE *list);
+
+// TODO: put this back in .cpp
+enum {
+    eeksEKIN_N, eeksEKINH, eeksDEKINDL, eeksMVCOS, eeksEKINF, eeksEKINO, eeksEKINSCALEF, eeksEKINSCALEH, eeksVSCALE, eeksEKINTOTAL, eeksNR
+};
+enum {
+    eenhENERGY_N, eenhENERGY_AVER, eenhENERGY_SUM, eenhENERGY_NSUM,
+    eenhENERGY_SUM_SIM, eenhENERGY_NSUM_SIM,
+    eenhENERGY_NSTEPS, eenhENERGY_NSTEPS_SIM,
+    eenhENERGY_DELTA_H_NN,
+    eenhENERGY_DELTA_H_LIST,
+    eenhENERGY_DELTA_H_STARTTIME,
+    eenhENERGY_DELTA_H_STARTLAMBDA,
+    eenhNR
+};
+enum {
+    edfhBEQUIL, edfhNATLAMBDA, edfhWLHISTO, edfhWLDELTA, edfhSUMWEIGHTS, edfhSUMDG, edfhSUMMINVAR, edfhSUMVAR,
+    edfhACCUMP, edfhACCUMM, edfhACCUMP2, edfhACCUMM2, edfhTIJ, edfhTIJEMP, edfhNR
+};
+enum {
+    eawhhIN_INITIAL,
+    eawhhEQUILIBRATEHISTOGRAM,
+    eawhhHISTSIZE,
+    eawhhNPOINTS,
+    eawhhCOORDPOINT, eawhhUMBRELLAGRIDPOINT,
+    eawhhUPDATELIST,
+    eawhhLOGSCALEDSAMPLEWEIGHT,
+    eawhhNUMUPDATES,
+    eawhhFORCECORRELATIONGRID,
+    eawhhNR
+};
 
 }  // namespace legacy
 }  // namespace gmx

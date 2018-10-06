@@ -79,6 +79,7 @@ class IMDOutputProvider;
 class MDLogger;
 class MDAtoms;
 class StopHandlerBuilder;
+class CheckpointHandler;
 
 //! Function type for integrator code.
 using IntegratorFunctionType = void();
@@ -164,6 +165,8 @@ struct Integrator
     gmx_walltime_accounting            *walltime_accounting;
     //! Registers stop conditions
     std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder;
+    //! Registers stop conditions
+    std::unique_ptr<CheckpointHandler>  checkpointHandler;
     //! Implements the normal MD integrators.
     IntegratorFunctionType              do_md;
     //! Implements the rerun functionality.
