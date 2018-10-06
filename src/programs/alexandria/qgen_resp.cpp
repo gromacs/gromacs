@@ -83,7 +83,7 @@ void QgenResp::updateAtomCoords(const gmx::HostVector<gmx::RVec> x)
 {
     for (size_t i = 0; i < ra_.size(); i++)
     {
-        //fprintf(stderr, "x[%u] = %8.3f  %8.3f  %8.3f\n", i, x[i][XX], x[i][YY], x[i][ZZ]);
+        fprintf(stderr, "x[%u] = %8.3f  %8.3f  %8.3f\n", i, x[i][XX], x[i][YY], x[i][ZZ]);
         ra_[i].setX(x[i]);
     }
 }

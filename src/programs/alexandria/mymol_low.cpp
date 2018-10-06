@@ -532,6 +532,9 @@ void getBhamParams(const Poldata     &pd,
     else
     {
         vdwi.resize(3, 0.0);
+        vdwi[0] = 0.05;
+        vdwi[1] = 0.01;
+        vdwi[2] = 10.0;
     }
     auto faj = pd.findAtype(aj);
     if (faj != pd.getAtypeEnd())
@@ -541,6 +544,9 @@ void getBhamParams(const Poldata     &pd,
     else
     {
         vdwj.resize(3, 0.0);
+        vdwj[0] = 0.05;
+        vdwj[1] = 0.01;
+        vdwj[2] = 10.0;
     }
 
     auto si = vdwi[0];
@@ -572,6 +578,10 @@ void getBhamParams(const Poldata     &pd,
         case eCOMB_NONE:
         case eCOMB_NR:
             gmx_fatal(FARGS, "Unsupported combination rule for Buckingham");
+    }
+    if (debug)
+    {
+        fprintf(debug, "BHAM parameters %g %g %g\n", *a, *b, *c);
     }
 }
 

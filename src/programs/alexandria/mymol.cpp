@@ -217,6 +217,10 @@ MyMol::MyMol() : gvt_(evtALL)
     snew(enerd_, 1);
     snew(fcd_, 1);
     clear_mat(state_->box);
+    for(int m = 0; m < DIM; m++)
+    {
+        state_->box[m][m] = 10.0;
+    }
     init_enerdata(1, 0, enerd_);
     init_nrnb(&nrnb_);
     for (int j = 0; j < qtNR; j++)
@@ -376,7 +380,6 @@ void MyMol::MakeSpecialInteractions(const Poldata &pd,
 
     rvec            *x = as_rvec_array(state_->x.data());
 
-    clear_mat(state_->box);
     set_pbc(&pbc, epbcNONE, state_->box);
 
     bonds.resize(topology_->atoms.nr);
@@ -691,8 +694,8 @@ immStatus MyMol::checkAtoms(const Poldata &pd)
 immStatus MyMol::zeta2atoms(ChargeDistributionModel eqdModel,
                             const Poldata          &pd)
 {
-    /*Here, we add zeta for the core. addShell will
-       take care of the zeta for the shells later*/
+    /* Here, we add zeta for the core. addShells will
+       take care of the zeta for the shells later. */
     auto zeta = 0.0;
     auto row  = 0;
     for (auto i = 0; i < topology_->atoms.nr; i++)
@@ -843,6 +846,14 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     }
     if (bAddShells && imm == immOK)
     {
+        // Update mtop internals to account for shell type
+        srenew(mtop_->atomtypes.atomnumber, get_atomtype_ntypes(atype_));
+        for(int i = 0; i < get_atomtype_ntypes(atype_); i++)
+        {
+            mtop_->atomtypes.atomnumber[i] = get_atomtype_atomnumber(i, atype_);
+        }
+        mtop_->ffparams.atnr = get_atomtype_ntypes(atype_);
+        // Generate shell data structure
         shellfc_ = init_shell_flexcon(debug, mtop_, 0, 1, false);
     }
     if (nullptr == ltop_ && imm == immOK)
@@ -855,7 +866,6 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
 void MyMol::addShells(const Poldata          &pd,
                       ChargeDistributionModel iModel)
 {
-
     int                 shell  = 0;
     int                 nshell = 0;
     double              pol    = 0;
@@ -1009,7 +1019,6 @@ void MyMol::addShells(const Poldata          &pd,
                             *topology_->atoms.resinfo[topology_->atoms.atom[i].resind].name,
                             topology_->atoms.atom[i].resind, ' ', 1, ' ');
     }
-
     for (int i = 0; i < topology_->atoms.nr; i++)
     {
         if (topology_->atoms.atom[i].ptype == eptAtom ||
@@ -1055,7 +1064,6 @@ void MyMol::addShells(const Poldata          &pd,
             }
         }
     }
-
     /* Copy newatoms to atoms */
     copy_atoms(newatoms, &topology_->atoms);
 
@@ -1069,8 +1077,6 @@ void MyMol::addShells(const Poldata          &pd,
     /* Copy exclusions, empty the original first */
     sfree(excls_);
     excls_ = newexcls;
-
-    //let_shells_see_shells(excls_, &topology_->atoms, atype_);
 
     /*Now renumber atoms in all other plist interaction types */
     for (auto i = plist_.begin(); i < plist_.end(); ++i)
@@ -1325,7 +1331,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 cur       = 1-cur;
                 iter++;
             }
-            while ((!converged) && (iter < maxiter));
+            while ((!converged) && (iter < 5));
             for (auto i = 0; i < topology_->atoms.nr; i++)
             {
                 topology_->atoms.atom[i].q      =
