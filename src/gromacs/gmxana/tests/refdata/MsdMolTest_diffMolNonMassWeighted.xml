@@ -7,7 +7,7 @@
         <String Name="XvgLegend"><![CDATA[
 title "Diffusion Coefficients / Molecule"
 xaxis  label "Molecule"
-yaxis  label "D"
+yaxis  label "D (1e-5 cm^2/s)"
 TYPE xy
 ]]></String>
       </XvgLegend>
