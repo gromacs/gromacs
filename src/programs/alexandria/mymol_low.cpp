@@ -467,7 +467,7 @@ void getLjParams(const Poldata     &pd,
     }
     else
     {
-        vdwi.resize(2, 0.0);
+        gmx_fatal(FARGS, "Can not find atomtype %s looking for LJ", ai.c_str());
     }
     auto faj = pd.findAtype(aj);
     if (faj != pd.getAtypeEnd())
@@ -476,7 +476,7 @@ void getLjParams(const Poldata     &pd,
     }
     else
     {
-        vdwj.resize(2, 0.0);
+        gmx_fatal(FARGS, "Can not find atomtype %s looking for LJ", aj.c_str());
     }
 
     auto si = vdwi[0];
@@ -511,7 +511,7 @@ void getLjParams(const Poldata     &pd,
         break;
         case eCOMB_NONE:
         case eCOMB_NR:
-            gmx_fatal(FARGS, "Unsupported combination rule for Lennard Jones");
+            gmx_fatal(FARGS, "Unsupported combination rule %d for Lennard Jones", pd.getCombRule());
     }
 }
 
@@ -531,10 +531,7 @@ void getBhamParams(const Poldata     &pd,
     }
     else
     {
-        vdwi.resize(3, 0.0);
-        vdwi[0] = 0.05;
-        vdwi[1] = 0.01;
-        vdwi[2] = 10.0;
+        gmx_fatal(FARGS, "Can not find atomtype %s looking for BHAM", ai.c_str());
     }
     auto faj = pd.findAtype(aj);
     if (faj != pd.getAtypeEnd())
@@ -543,10 +540,7 @@ void getBhamParams(const Poldata     &pd,
     }
     else
     {
-        vdwj.resize(3, 0.0);
-        vdwj[0] = 0.05;
-        vdwj[1] = 0.01;
-        vdwj[2] = 10.0;
+        gmx_fatal(FARGS, "Can not find atomtype %s looking for BHAM", aj.c_str());
     }
 
     auto si = vdwi[0];
@@ -577,7 +571,7 @@ void getBhamParams(const Poldata     &pd,
         case eCOMB_GEOM_SIG_EPS:
         case eCOMB_NONE:
         case eCOMB_NR:
-            gmx_fatal(FARGS, "Unsupported combination rule for Buckingham");
+            gmx_fatal(FARGS, "Unsupported combination rule %d for Buckingham", pd.getCombRule());
     }
     if (debug)
     {
