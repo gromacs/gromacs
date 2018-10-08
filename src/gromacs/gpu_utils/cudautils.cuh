@@ -145,25 +145,25 @@ struct gmx_device_info_t
  *
  *  The copy is launched in stream s or if not specified, in stream 0.
  */
-int cu_copy_D2H(void *h_dest, void *d_src, size_t bytes, GpuApiCallBehavior transferKind, cudaStream_t s /*= 0*/);
+int cu_copy_D2H(void *h_dest, void *d_src, size_t bytes, GpuApiCallBehavior transferKind, cudaStream_t /*s = nullptr*/);
 
 /*! Launches synchronous host to device memory copy in stream 0. */
 int cu_copy_D2H_sync(void * /*h_dest*/, void * /*d_src*/, size_t /*bytes*/);
 
 /*! Launches asynchronous host to device memory copy in stream s. */
-int cu_copy_D2H_async(void * /*h_dest*/, void * /*d_src*/, size_t /*bytes*/, cudaStream_t /*s = 0*/);
+int cu_copy_D2H_async(void * /*h_dest*/, void * /*d_src*/, size_t /*bytes*/, cudaStream_t /*s = nullptr*/);
 
 /*! Launches synchronous or asynchronous host to device memory copy.
  *
  *  The copy is launched in stream s or if not specified, in stream 0.
  */
-int cu_copy_H2D(void *d_dest, void *h_src, size_t bytes, GpuApiCallBehavior transferKind, cudaStream_t /*s = 0*/);
+int cu_copy_H2D(void *d_dest, void *h_src, size_t bytes, GpuApiCallBehavior transferKind, cudaStream_t /*s = nullptr*/);
 
 /*! Launches synchronous host to device memory copy. */
 int cu_copy_H2D_sync(void * /*d_dest*/, void * /*h_src*/, size_t /*bytes*/);
 
 /*! Launches asynchronous host to device memory copy in stream s. */
-int cu_copy_H2D_async(void * /*d_dest*/, void * /*h_src*/, size_t /*bytes*/, cudaStream_t /*s = 0*/);
+int cu_copy_H2D_async(void * /*d_dest*/, void * /*h_src*/, size_t /*bytes*/, cudaStream_t /*s = nullptr*/);
 
 // TODO: the 2 functions below are pretty much a constructor/destructor of a simple
 // GPU table object. There is also almost self-contained fetchFromParamLookupTable()
@@ -188,6 +188,11 @@ void initParamLookupTable(T                        * &d_ptr,
                           int                         numElem,
                           const gmx_device_info_t    *devInfo);
 
+// Add extern declarations so each translation unit understands that
+// there will be a definition provided.
+extern template void initParamLookupTable<int>(int * &, cudaTextureObject_t &, const int *, int, const gmx_device_info_t *);
+extern template void initParamLookupTable<float>(float * &, cudaTextureObject_t &, const float *, int, const gmx_device_info_t *);
+
 /*! \brief Destroy parameter lookup table.
  *
  * Unbinds texture object, deallocates device memory.
@@ -201,6 +206,11 @@ template <typename T>
 void destroyParamLookupTable(T                       *d_ptr,
                              cudaTextureObject_t      texObj,
                              const gmx_device_info_t *devInfo);
+
+// Add extern declarations so each translation unit understands that
+// there will be a definition provided.
+extern template void destroyParamLookupTable<int>(int *, cudaTextureObject_t, const gmx_device_info_t *);
+extern template void destroyParamLookupTable<float>(float *, cudaTextureObject_t, const gmx_device_info_t *);
 
 /*! \brief Add a triplets stored in a float3 to an rvec variable.
  *
