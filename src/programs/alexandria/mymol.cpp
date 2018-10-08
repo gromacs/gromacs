@@ -141,27 +141,28 @@ const char *immsg(immStatus imm)
 class MyForceProvider : public gmx::IForceProvider
 {
     private:
-    double efield_[DIM] = {0, 0, 0};
+    std::vector<double> efield_;
 
     public:
 
-        MyForceProvider() {}
+        MyForceProvider() 
+        {
+            efield_.resize(DIM, 0);
+        }
 
         // From IForceProvider
         //! \copydoc IForceProvider::calculateForces()
         void calculateForces(const gmx::ForceProviderInput &forceProviderInput,
                              gmx::ForceProviderOutput      *forceProviderOutput) override;
 
-        void setField(const double field[DIM]);
+        void setField(const std::vector<double> &efield);
 };
 
-void MyForceProvider::setField(const double field[DIM])
+void MyForceProvider::setField(const std::vector<double> &efield)
 {
-    for (int m = 0; m < DIM; m++)
-    {
-        efield_[m] = field[m];
-    }
+    efield_ = efield;
 }
+
 void MyForceProvider::calculateForces(const gmx::ForceProviderInput &forceProviderInput,
                                       gmx::ForceProviderOutput      *forceProviderOutput)
 {
@@ -202,6 +203,7 @@ MyMol::MyMol() : gvt_(evtALL)
     immCharges_        = immOK;
     shellfc_           = nullptr;
     vsite_             = nullptr;
+    myforce_           = new MyForceProvider;
     snew(symtab_, 1);
     open_symtab(symtab_);
     atype_         = init_atomtype();
@@ -1114,7 +1116,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
     mdModules_ = new std::unique_ptr<gmx::MDModules>(new gmx::MDModules());
     mdModules_->get()->assignOptionsToModules(*(inputrec_->params), nullptr);
     fr_->forceProviders = mdModules_->get()->initForceProviders();
-    fr_->forceProviders->addForceProvider(new MyForceProvider());
+    fr_->forceProviders->addForceProvider(myforce_);
 
     gmx::ArrayRef<const std::string>  tabbfnm;
     init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
@@ -1590,10 +1592,11 @@ void MyMol::CalcPolarizability(double     efield,
                                t_commrec *cr,
                                FILE      *fplog)
 {
-    const double POLFAC     = 29.957004; /* C.m**2.V*-1 to Å**3 */
-    double       field[DIM] = { 0, 0, 0 };
+    const double POLFAC = 29.957004; /* C.m**2.V*-1 to Å**3 */
+    std::vector<double> field;
     rvec         mu_ref, mu_tot;
 
+    field.resize(DIM, 0);
     myforce_->setField(field);
     CalcDipole(mu_ref);
     computeForces(fplog, cr);
