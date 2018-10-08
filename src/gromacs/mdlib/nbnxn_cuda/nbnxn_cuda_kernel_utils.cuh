@@ -318,7 +318,7 @@ float2 fetch_nbfp_comb_c6_c12(const cu_nbparam_t nbparam,
 }
 
 
-/*! Calculate LJ-PME grid force + energy contribution (if E_lj != NULL) with
+/*! Calculate LJ-PME grid force + energy contribution (if E_lj != nullptr) with
  *  Lorentz-Berthelot combination rule.
  *  We use a single F+E kernel with conditional because the performance impact
  *  of this is pretty small and LB on the CPU is anyway very slow.
@@ -357,7 +357,7 @@ void calculate_lj_ewald_comb_LB_F_E(const cu_nbparam_t nbparam,
     /* Subtract the grid force from the total LJ force */
     *F_invr  += c6grid*(inv_r6_nm - expmcr2*(inv_r6_nm*poly + lje_coeff6_6))*inv_r2;
 
-    if (E_lj != NULL)
+    if (E_lj != nullptr)
     {
         float sh_mask;
 

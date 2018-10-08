@@ -532,7 +532,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #ifdef CALC_ENERGIES
                                                                int_bit, &F_invr, &E_lj_p
 #else
-                                                               0, &F_invr, NULL
+                                                               0, &F_invr, nullptr
 #endif /* CALC_ENERGIES */
                                                                );
 #endif /* LJ_EWALD_COMB_GEOM */

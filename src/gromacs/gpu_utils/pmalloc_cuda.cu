@@ -59,7 +59,7 @@ void pmalloc(void **h_ptr, size_t nbytes)
 
     if (nbytes == 0)
     {
-        *h_ptr = NULL;
+        *h_ptr = nullptr;
         return;
     }
 
@@ -82,7 +82,7 @@ void pmalloc_wc(void **h_ptr, size_t nbytes)
 
     if (nbytes == 0)
     {
-        *h_ptr = NULL;
+        *h_ptr = nullptr;
         return;
     }
 
@@ -101,7 +101,7 @@ void pfree(void *h_ptr)
 {
     cudaError_t stat;
 
-    if (h_ptr == NULL)
+    if (h_ptr == nullptr)
     {
         return;
     }

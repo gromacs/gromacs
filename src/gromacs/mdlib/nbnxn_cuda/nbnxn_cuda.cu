@@ -301,7 +301,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     /* CUDA kernel launch-related stuff */
     int                  nblock;
     dim3                 dim_block, dim_grid;
-    nbnxn_cu_kfunc_ptr_t nb_kernel = NULL; /* fn pointer to the nonbonded kernel */
+    nbnxn_cu_kfunc_ptr_t nb_kernel = nullptr; /* fn pointer to the nonbonded kernel */
 
     cu_atomdata_t       *adat    = nb->atdat;
     cu_nbparam_t        *nbp     = nb->nbparam;
