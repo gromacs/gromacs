@@ -33,11 +33,12 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+typedef float  fvec[DIM];
 
 /* maths operations */
 /* imported from cpu versions in math/vec.h */
 __forceinline__ __device__
-void svmul_gpu(real a, const rvec v1, rvec v2)
+void svmul_gpu(float a, const fvec v1, fvec v2)
 {
     v2[XX] = a*v1[XX];
     v2[YY] = a*v1[YY];
@@ -46,9 +47,9 @@ void svmul_gpu(real a, const rvec v1, rvec v2)
 
 
 __forceinline__ __device__
- void rvec_add_gpu(const rvec a, const rvec b, rvec c)
+ void fvec_add_gpu(const fvec a, const fvec b, fvec c)
 {
-    real x, y, z;
+    float x, y, z;
 
     x = a[XX]+b[XX];
     y = a[YY]+b[YY];
@@ -74,7 +75,7 @@ void ivec_add_gpu(const ivec a, const ivec b, ivec c)
 }
 
 __forceinline__ __device__
-void rvec_inc_atomic(rvec a, const rvec b)
+void fvec_inc_atomic(fvec a, const fvec b)
 {
   atomicAdd(&a[XX],b[XX]);
   atomicAdd(&a[YY],b[YY]);
@@ -82,9 +83,9 @@ void rvec_inc_atomic(rvec a, const rvec b)
 }
 
 __forceinline__ __device__
-void rvec_inc_gpu(rvec a, const rvec b)
+void fvec_inc_gpu(fvec a, const fvec b)
 {
-    real x, y, z;
+    float x, y, z;
 
     x = a[XX]+b[XX];
     y = a[YY]+b[YY];
@@ -96,7 +97,7 @@ void rvec_inc_gpu(rvec a, const rvec b)
 }
 
 __forceinline__ __device__
-void rvec_dec_atomic(rvec a, const rvec b)
+void fvec_dec_atomic(fvec a, const fvec b)
 {
 /* real x, y, z;
 
@@ -114,9 +115,9 @@ void rvec_dec_atomic(rvec a, const rvec b)
 }
 
 __forceinline__ __device__
-void rvec_dec_gpu(rvec a, const rvec b)
+void fvec_dec_gpu(fvec a, const fvec b)
 {
-    real x, y, z;
+    float x, y, z;
 
     x = a[XX]-b[XX];
     y = a[YY]-b[YY];
@@ -128,7 +129,7 @@ void rvec_dec_gpu(rvec a, const rvec b)
 }
 
 __forceinline__ __device__
-void cprod_gpu(const rvec a, const rvec b, rvec c)
+void cprod_gpu(const fvec a, const fvec b, fvec c)
 {
     c[XX] = a[YY]*b[ZZ]-a[ZZ]*b[YY];
     c[YY] = a[ZZ]*b[XX]-a[XX]*b[ZZ];
@@ -136,22 +137,22 @@ void cprod_gpu(const rvec a, const rvec b, rvec c)
 }
 
 __forceinline__ __device__
-real iprod_gpu(const rvec a, const rvec b)
+float iprod_gpu(const fvec a, const fvec b)
 {
     return (a[XX]*b[XX]+a[YY]*b[YY]+a[ZZ]*b[ZZ]);
 }
 
 __forceinline__ __device__
-real norm_gpu(const rvec a)
+float norm_gpu(const fvec a)
 {
     return sqrt(iprod_gpu(a, a));
 }
 
 __forceinline__ __device__
-real gmx_angle_gpu(const rvec a, const rvec b)
+float gmx_angle_gpu(const fvec a, const fvec b)
 {
-    rvec w;
-    real wlen, s;
+    fvec w;
+    float wlen, s;
 
     cprod_gpu(a, b, w);
 
@@ -169,9 +170,9 @@ void clear_ivec_gpu(ivec a)
     a[ZZ] = 0;
 }
 __forceinline__ __device__
-void rvec_sub_gpu(const rvec a, const rvec b, rvec c)
+void fvec_sub_gpu(const fvec a, const fvec b, fvec c)
 {
-    real x, y, z;
+    float x, y, z;
 
     x = a[XX]-b[XX];
     y = a[YY]-b[YY];
@@ -183,13 +184,13 @@ void rvec_sub_gpu(const rvec a, const rvec b, rvec c)
 }
 
 __forceinline__ __device__
-real norm2_gpu(const rvec a)
+float norm2_gpu(const fvec a)
 {
   return a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ];
 }
 
 __forceinline__ __device__
-void copy_rvec_gpu(const rvec a, rvec b)
+void copy_fvec_gpu(const fvec a, fvec b)
 {
     b[XX] = a[XX];
     b[YY] = a[YY];
@@ -205,19 +206,19 @@ void copy_ivec_gpu(const ivec a, ivec b)
 }
 
 __forceinline__ __device__
-real cos_angle_gpu(const rvec a, const rvec b)
+float cos_angle_gpu(const fvec a, const fvec b)
 {
     /*
      *                  ax*bx + ay*by + az*bz
      * cos-vec (a,b) =  ---------------------
      *                      ||a|| * ||b||
      */
-    real   cosval;
+    float   cosval;
     int    m;
-    double aa, bb, ip, ipa, ipb, ipab; /* For accuracy these must be double! */
+    float aa, bb, ip, ipa, ipb, ipab;
 
     ip = ipa = ipb = 0.0;
-    for (m = 0; (m < DIM); m++) /* 18 */
+    for (m = 0; (m < DIM); m++)
     {
         aa   = a[m];
         bb   = b[m];
@@ -228,13 +229,12 @@ real cos_angle_gpu(const rvec a, const rvec b)
     ipab = ipa*ipb;
     if (ipab > 0)
     {
-        cosval = ip*rsqrt(ipab);  /*  7 */ //double precision
+        cosval = ip*rsqrt(ipab);
     }
     else
     {
         cosval = 1;
     }
-    /* 25 TOTAL */
     if (cosval > 1.0)
     {
         return 1.0;
@@ -249,146 +249,149 @@ real cos_angle_gpu(const rvec a, const rvec b)
 
 
 
-__device__ static inline float invsqrt(float x)
+__device__
+static inline float invsqrt(float x)
 {
-  return 1.0f/std::sqrt(x);
+    return 1.0f/std::sqrt(x);
 }
 
 
-__device__ static inline void unitv_gpu(const rvec src, rvec dest)
+__device__
+static inline void unitv_gpu(const fvec src, fvec dest)
 {
-  real linv;
+    float linv;
 
-  linv     = invsqrt(norm2_gpu(src));
-  dest[XX] = linv*src[XX];
-  dest[YY] = linv*src[YY];
-  dest[ZZ] = linv*src[ZZ];
+    linv     = invsqrt(norm2_gpu(src));
+    dest[XX] = linv*src[XX];
+    dest[YY] = linv*src[YY];
+    dest[ZZ] = linv*src[ZZ];
 }
 
 
 
 
-__device__ static inline int pbc_dx_aiuc_gpu(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx, const rvec pbc_hbox_diag, const matrix pbc_box, const rvec pbc_mhbox_diag, const rvec  pbc_fbox_diag,  const rvec*  pbc_tric_vec,  const ivec*  pbc_tric_shift  ){
+__device__
+static inline int pbc_dx_aiuc_gpu(const t_pbc *pbc, const fvec x1, const fvec x2, fvec dx,
+                                  const fvec pbc_hbox_diag, const matrix pbc_box,
+                                  const fvec pbc_mhbox_diag, const fvec  pbc_fbox_diag,
+                                  const fvec*  pbc_tric_vec,  const ivec*  pbc_tric_shift)
+{
+    int   i, j, is;
+    fvec  dx_start, trial;
+    float d2min, d2trial;
+    ivec  ishift, ishift_start;
+
+    fvec_sub_gpu(x1, x2, dx);
+    clear_ivec_gpu(ishift);
 
 
-  int  i, j, is;
-  rvec dx_start, trial;
-  real d2min, d2trial;
-  ivec ishift, ishift_start;
-
-  rvec_sub_gpu(x1, x2, dx);
-  clear_ivec_gpu(ishift);
-
-
-  switch (pbc->ePBCDX)
-  {
-  case epbcdxRECTANGULAR:
-      for (i = 0; i < DIM; i++)
-      {
-          if (dx[i] > pbc_hbox_diag[i])
-          {
-              dx[i] -=  pbc_fbox_diag[i];
-              ishift[i]--;
-          }
-          else if (dx[i] <= pbc_mhbox_diag[i])
-          {
-              dx[i] +=  pbc_fbox_diag[i];
-              ishift[i]++;
-          }
-      }
-      break;
-
-  case epbcdxTRICLINIC:
-      
-  for (i = DIM-1; i >= 1; i--)
+    switch (pbc->ePBCDX)
     {
-      if (dx[i] > pbc_hbox_diag[i])
-	{
-	  for (j = i; j >= 0; j--)
-	    {
-	      dx[j] -= pbc_box[i][j];
-	    }
-	  ishift[i]--;
-	}
-      else if (dx[i] <= pbc_mhbox_diag[i])
-	{
-	  for (j = i; j >= 0; j--)
-	    {
-	      dx[j] += pbc_box[i][j];
-	    }
-	  ishift[i]++;
-	}
-    }
+    case epbcdxRECTANGULAR:
+        for (i = 0; i < DIM; i++)
+        {
+            if (dx[i] > pbc_hbox_diag[i])
+            {
+                dx[i] -=  pbc_fbox_diag[i];
+                ishift[i]--;
+            }
+            else if (dx[i] <= pbc_mhbox_diag[i])
+            {
+                dx[i] +=  pbc_fbox_diag[i];
+                ishift[i]++;
+            }
+        }
+        break;
 
-  /* Allow 2 shifts in x */
-  if (dx[XX] > pbc_hbox_diag[XX])
-    {
-      dx[XX] -= pbc_fbox_diag[XX];
-      ishift[XX]--;
-      if (dx[XX] > pbc_hbox_diag[XX])
-	{
-	  dx[XX] -= pbc_fbox_diag[XX];
-	  ishift[XX]--;
-	}
+    case epbcdxTRICLINIC:      
+        for (i = DIM-1; i >= 1; i--)
+        {
+            if (dx[i] > pbc_hbox_diag[i])
+            {
+                for (j = i; j >= 0; j--)
+                {
+                    dx[j] -= pbc_box[i][j];
+                }
+                ishift[i]--;
+            }
+            else if (dx[i] <= pbc_mhbox_diag[i])
+            {
+                for (j = i; j >= 0; j--)
+                {
+                    dx[j] += pbc_box[i][j];
+                }
+                ishift[i]++;
+            }
+        }
+
+        /* Allow 2 shifts in x */
+        if (dx[XX] > pbc_hbox_diag[XX])
+        {
+            dx[XX] -= pbc_fbox_diag[XX];
+            ishift[XX]--;
+            if (dx[XX] > pbc_hbox_diag[XX])
+            {
+                dx[XX] -= pbc_fbox_diag[XX];
+                ishift[XX]--;
+            }
+        }
+        else if (dx[XX] <= pbc_mhbox_diag[XX])
+        {
+            dx[XX] += pbc_fbox_diag[XX];
+            ishift[XX]++;
+            if (dx[XX] <= pbc_mhbox_diag[XX])
+            {
+                dx[XX] += pbc_fbox_diag[XX];
+                ishift[XX]++;
+            }
+        }
+    
+        /* dx is the distance in a rectangular box */
+        d2min = norm2_gpu(dx);
+        if (d2min > pbc->max_cutoff2)
+        {
+            copy_fvec_gpu(dx, dx_start);
+            copy_ivec_gpu(ishift, ishift_start);
+            d2min = norm2_gpu(dx);
+            /* Now try all possible shifts, when the distance is within max_cutoff
+             * it must be the shortest possible distance.
+             */
+            i = 0;
+            while ((d2min > pbc->max_cutoff2) && (i < pbc->ntric_vec))
+            {
+                fvec_add_gpu(dx_start, pbc_tric_vec[i], trial);
+                d2trial = norm2_gpu(trial);
+                if (d2trial < d2min)
+                {
+                    copy_fvec_gpu(trial, dx);
+                    ivec_add_gpu(ishift_start, pbc_tric_shift[i], ishift);
+                    d2min = d2trial;
+                }
+                i++;
+            }
+        }
+    
+        break;
+    case epbcdx2D_RECT:
+        for (i = 0; i < DIM; i++)
+        {
+            if (i != pbc->dim)
+            {
+                if (dx[i] > pbc_hbox_diag[i])
+                {
+                    dx[i] -= pbc_fbox_diag[i];
+                    ishift[i]--;
+                }
+                else if (dx[i] <= pbc_mhbox_diag[i])
+                {
+                    dx[i] += pbc_fbox_diag[i];
+                    ishift[i]++;
+                }
+            }
+        }
+        break;
     }
-  else if (dx[XX] <= pbc_mhbox_diag[XX])
-    {
-      dx[XX] += pbc_fbox_diag[XX];
-      ishift[XX]++;
-      if (dx[XX] <= pbc_mhbox_diag[XX])
-	{
-	  dx[XX] += pbc_fbox_diag[XX];
-	  ishift[XX]++;
-	}
-    }
- 
-  /* dx is the distance in a rectangular box */
-  d2min = norm2_gpu(dx);
-  if (d2min > pbc->max_cutoff2)
-    {
-      copy_rvec_gpu(dx, dx_start);
-      copy_ivec_gpu(ishift, ishift_start);
-      d2min = norm2_gpu(dx);
-      /* Now try all possible shifts, when the distance is within max_cutoff
-       * it must be the shortest possible distance.
-       */
-      i = 0;
-      while ((d2min > pbc->max_cutoff2) && (i < pbc->ntric_vec))
-	{
-	  rvec_add_gpu(dx_start, pbc_tric_vec[i], trial);
-	  d2trial = norm2_gpu(trial);
-	   if (d2trial < d2min)
-	     {
-	            copy_rvec_gpu(trial, dx);
-	       ivec_add_gpu(ishift_start, pbc_tric_shift[i], ishift);
-	       d2min = d2trial;
-	     }
-	  i++;
-	}
-    }
-  
-  break;
-  case epbcdx2D_RECT:
-      for (i = 0; i < DIM; i++)
-      {
-          if (i != pbc->dim)
-          {
-              if (dx[i] > pbc_hbox_diag[i])
-              {
-                  dx[i] -= pbc_fbox_diag[i];
-                  ishift[i]--;
-              }
-              else if (dx[i] <= pbc_mhbox_diag[i])
-              {
-                  dx[i] += pbc_fbox_diag[i];
-                  ishift[i]++;
-              }
-          }
-      }
-      break;
-      
-  }
-  is = IVEC2IS(ishift);
-  return is;
+    is = IVEC2IS(ishift);
+    return is;
 }
 
