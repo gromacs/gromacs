@@ -90,4 +90,3 @@ gcc-8 openmp simd=avx2_256 gpuhw=amd opencl-1.2 clFFT-2.14
 # Test hwloc-2 support
 # Test newest supported LTS Ubuntu
 # Test AVX-512 when hardware is available
-# Add tests that trigger make ocl-kernel
