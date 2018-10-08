@@ -34,6 +34,7 @@
 
 gmx_add_libgromacs_sources(
     integrator.cpp
+    legacyoptions.cpp
     logging.cpp
     md.cpp
     minimize.cpp
