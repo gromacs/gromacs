@@ -44,7 +44,7 @@
 #include <memory>
 #include <string>
 
-#include "gromacs/mdrun/mdfilenames.h"
+#include "gromacs/mdrun/legacymdrunoptions.h"
 
 #include "gmxapi/context.h"
 #include "gmxapi/session.h"
@@ -142,9 +142,13 @@ class ContextImpl final : public std::enable_shared_from_this<ContextImpl>
         MDArgs                  mdArgs_;
 
         /*!
-         * \brief Ensure lifetime of MD filenames options object exceeds that of session.
+         * \brief Legacy option-handling and set up for mdrun.
+         *
+         * This object should not exist, but is necessary now to introduce
+         * the API in a way that means CLI and API work similarly and do not
+         * duplicate definitions e.g. of command-line options.
          */
-        gmx::MdFilenames mdFilenames_;
+        gmx::LegacyMdrunOptions options_;
 };
 
 }      // end namespace gmxapi

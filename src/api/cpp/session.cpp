@@ -165,14 +165,6 @@ Status SessionImpl::close()
     runner_.reset();
     logFilePtr_.reset();
 
-    if (GMX_LIB_MPI)
-    {
-        done_commrec(simulationContext_.communicationRecord_);
-    }
-    // What happens to *cr otherwise?
-
-    done_multisim(multiSim_);
-
     // \todo provide meaningful result.
     // We should be checking that resources were properly shut down, but
     // there isn't currently a way to do that.
@@ -224,6 +216,8 @@ SessionImpl::SessionImpl(std::shared_ptr<ContextImpl>  context,
     GMX_ASSERT(context_, "SessionImpl invariant implies valid ContextImpl handle.");
     GMX_ASSERT(mpiContextManager_, "SessionImpl invariant implies valid MpiContextManager guard.");
     GMX_ASSERT(simulationContext_.communicationRecord_, "SessionImpl invariant implies valid commrec.");
+    GMX_UNUSED_VALUE(multiSim_);
+
     // \todo Session objects can have logic specialized for the runtime environment.
 
     auto stopHandlerBuilder = gmx::compat::make_unique<gmx::StopHandlerBuilder>();
