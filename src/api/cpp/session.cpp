@@ -165,14 +165,6 @@ Status SessionImpl::close()
     runner_.reset();
     logFilePtr_.reset();
 
-    if (GMX_LIB_MPI)
-    {
-        done_commrec(simulationContext_.communicationRecord_);
-    }
-    // What happens to *cr otherwise?
-
-    done_multisim(multiSim_);
-
     // \todo provide meaningful result.
     // We should be checking that resources were properly shut down, but
     // there isn't currently a way to do that.
