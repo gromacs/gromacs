@@ -310,12 +310,12 @@ void convert_sigma_epsilon_to_c6_c12(const float  sigma,
 
 /*! Apply force switch,  force + energy version. */
 gmx_opencl_inline
-void calculate_force_switch_F(cl_nbparam_params_t *nbparam,
-                              float                c6,
-                              float                c12,
-                              float                inv_r,
-                              float                r2,
-                              float               *F_invr)
+void calculate_force_switch_F(const cl_nbparam_params_t *nbparam,
+                              float                      c6,
+                              float                      c12,
+                              float                      inv_r,
+                              float                      r2,
+                              float                     *F_invr)
 {
     float r, r_switch;
 
@@ -336,13 +336,13 @@ void calculate_force_switch_F(cl_nbparam_params_t *nbparam,
 
 /*! Apply force switch, force-only version. */
 gmx_opencl_inline
-void calculate_force_switch_F_E(cl_nbparam_params_t *nbparam,
-                                float                c6,
-                                float                c12,
-                                float                inv_r,
-                                float                r2,
-                                float               *F_invr,
-                                float               *E_lj)
+void calculate_force_switch_F_E(const cl_nbparam_params_t *nbparam,
+                                float                      c6,
+                                float                      c12,
+                                float                      inv_r,
+                                float                      r2,
+                                float                     *F_invr,
+                                float                     *E_lj)
 {
     float r, r_switch;
 
@@ -371,11 +371,11 @@ void calculate_force_switch_F_E(cl_nbparam_params_t *nbparam,
 
 /*! Apply potential switch, force-only version. */
 gmx_opencl_inline
-void calculate_potential_switch_F(cl_nbparam_params_t *nbparam,
-                                  float                inv_r,
-                                  float                r2,
-                                  float               *F_invr,
-                                  const float         *E_lj)
+void calculate_potential_switch_F(const cl_nbparam_params_t *nbparam,
+                                  float                      inv_r,
+                                  float                      r2,
+                                  float                     *F_invr,
+                                  const float               *E_lj)
 {
     float r, r_switch;
     float sw, dsw;
@@ -403,11 +403,11 @@ void calculate_potential_switch_F(cl_nbparam_params_t *nbparam,
 
 /*! Apply potential switch, force + energy version. */
 gmx_opencl_inline
-void calculate_potential_switch_F_E(cl_nbparam_params_t *nbparam,
-                                    float                inv_r,
-                                    float                r2,
-                                    float               *F_invr,
-                                    float               *E_lj)
+void calculate_potential_switch_F_E(const cl_nbparam_params_t *nbparam,
+                                    float                      inv_r,
+                                    float                      r2,
+                                    float                     *F_invr,
+                                    float                     *E_lj)
 {
     float r, r_switch;
     float sw, dsw;
@@ -463,17 +463,17 @@ void calculate_lj_ewald_comb_geom_F(__constant const float *nbfp_comb_climg2d,
  *  geometric combination rule.
  */
 gmx_opencl_inline
-void calculate_lj_ewald_comb_geom_F_E(__constant const float *nbfp_comb_climg2d,
-                                      cl_nbparam_params_t    *nbparam,
-                                      int                     typei,
-                                      int                     typej,
-                                      float                   r2,
-                                      float                   inv_r2,
-                                      float                   lje_coeff2,
-                                      float                   lje_coeff6_6,
-                                      float                   int_bit,
-                                      float                  *F_invr,
-                                      float                  *E_lj)
+void calculate_lj_ewald_comb_geom_F_E(__constant const float    *nbfp_comb_climg2d,
+                                      const cl_nbparam_params_t *nbparam,
+                                      int                        typei,
+                                      int                        typej,
+                                      float                      r2,
+                                      float                      inv_r2,
+                                      float                      lje_coeff2,
+                                      float                      lje_coeff6_6,
+                                      float                      int_bit,
+                                      float                     *F_invr,
+                                      float                     *E_lj)
 {
     float c6grid, inv_r6_nm, cr2, expmcr2, poly, sh_mask;
 
@@ -499,18 +499,18 @@ void calculate_lj_ewald_comb_geom_F_E(__constant const float *nbfp_comb_climg2d,
  *  of this is pretty small and LB on the CPU is anyway very slow.
  */
 gmx_opencl_inline
-void calculate_lj_ewald_comb_LB_F_E(__constant const float *nbfp_comb_climg2d,
-                                    cl_nbparam_params_t    *nbparam,
-                                    int                     typei,
-                                    int                     typej,
-                                    float                   r2,
-                                    float                   inv_r2,
-                                    float                   lje_coeff2,
-                                    float                   lje_coeff6_6,
-                                    float                   int_bit,
-                                    bool                    with_E_lj,
-                                    float                  *F_invr,
-                                    float                  *E_lj)
+void calculate_lj_ewald_comb_LB_F_E(__constant const float    *nbfp_comb_climg2d,
+                                    const cl_nbparam_params_t *nbparam,
+                                    int                        typei,
+                                    int                        typej,
+                                    float                      r2,
+                                    float                      inv_r2,
+                                    float                      lje_coeff2,
+                                    float                      lje_coeff6_6,
+                                    float                      int_bit,
+                                    bool                       with_E_lj,
+                                    float                     *F_invr,
+                                    float                     *E_lj)
 {
     float c6grid, inv_r6_nm, cr2, expmcr2, poly;
     float sigma, sigma2, epsilon;
