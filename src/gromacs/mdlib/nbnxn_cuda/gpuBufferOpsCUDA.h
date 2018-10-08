@@ -76,11 +76,11 @@ gmx_bool gpuBufferOpsTimestepInitFromPP(gmx_bool bNS,
                                             // const t_commrec *cr,
                                             int natoms_all,
                                             int natoms_local,
-                                            int xsize) GPU_FUNC_TERM
+                                            int xsize) GPU_FUNC_TERM_WITH_RETURN(false)
 
     
 GPU_FUNC_QUALIFIER
-gmx_bool gpuBufferOpsActiveThisTimestep() GPU_FUNC_TERM
+gmx_bool gpuBufferOpsActiveThisTimestep() GPU_FUNC_TERM_WITH_RETURN(false)
 
     
 #if defined(__CUDACC__)
