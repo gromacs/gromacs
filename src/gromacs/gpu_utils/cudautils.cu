@@ -48,11 +48,11 @@
 
 // TODO: template on transferKind to avoid runtime conditionals
 int cu_copy_D2H(void *h_dest, void *d_src, size_t bytes,
-                GpuApiCallBehavior transferKind, cudaStream_t s = 0)
+                GpuApiCallBehavior transferKind, cudaStream_t s = nullptr)
 {
     cudaError_t stat;
 
-    if (h_dest == NULL || d_src == NULL || bytes == 0)
+    if (h_dest == nullptr || d_src == nullptr || bytes == 0)
     {
         return -1;
     }
@@ -85,18 +85,18 @@ int cu_copy_D2H_sync(void * h_dest, void * d_src, size_t bytes)
 /*!
  *  The copy is launched in stream s or if not specified, in stream 0.
  */
-int cu_copy_D2H_async(void * h_dest, void * d_src, size_t bytes, cudaStream_t s = 0)
+int cu_copy_D2H_async(void * h_dest, void * d_src, size_t bytes, cudaStream_t s = nullptr)
 {
     return cu_copy_D2H(h_dest, d_src, bytes, GpuApiCallBehavior::Async, s);
 }
 
 // TODO: template on transferKind to avoid runtime conditionals
 int cu_copy_H2D(void *d_dest, void *h_src, size_t bytes,
-                GpuApiCallBehavior transferKind, cudaStream_t s = 0)
+                GpuApiCallBehavior transferKind, cudaStream_t s = nullptr)
 {
     cudaError_t stat;
 
-    if (d_dest == NULL || h_src == NULL || bytes == 0)
+    if (d_dest == nullptr || h_src == nullptr || bytes == 0)
     {
         return -1;
     }
@@ -129,7 +129,7 @@ int cu_copy_H2D_sync(void * d_dest, void * h_src, size_t bytes)
 /*!
  *  The copy is launched in stream s or if not specified, in stream 0.
  */
-int cu_copy_H2D_async(void * d_dest, void * h_src, size_t bytes, cudaStream_t s = 0)
+int cu_copy_H2D_async(void * d_dest, void * h_src, size_t bytes, cudaStream_t s = nullptr)
 {
     return cu_copy_H2D(d_dest, h_src, bytes, GpuApiCallBehavior::Async, s);
 }
@@ -175,7 +175,7 @@ static void setup1DTexture(cudaTextureObject_t &texObj,
 
     memset(&td, 0, sizeof(td));
     td.readMode                 = cudaReadModeElementType;
-    stat = cudaCreateTextureObject(&texObj, &rd, &td, NULL);
+    stat = cudaCreateTextureObject(&texObj, &rd, &td, nullptr);
     CU_RET_ERR(stat, "cudaCreateTextureObject failed");
 }
 

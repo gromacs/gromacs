@@ -104,7 +104,7 @@ static void init_ewald_coulomb_force_table(const interaction_const_t *ic,
                                            cu_nbparam_t              *nbp,
                                            const gmx_device_info_t   *dev_info)
 {
-    if (nbp->coulomb_tab != NULL)
+    if (nbp->coulomb_tab != nullptr)
     {
         nbnxn_cuda_free_nbparam_table(nbp, dev_info);
     }
@@ -134,10 +134,10 @@ static void init_atomdata_first(cu_atomdata_t *ad, int ntypes)
     stat = cudaMalloc((void**)&ad->e_el, sizeof(*ad->e_el));
     CU_RET_ERR(stat, "cudaMalloc failed on ad->e_el");
 
-    /* initialize to NULL poiters to data that is not allocated here and will
+    /* initialize to nullptr poiters to data that is not allocated here and will
        need reallocation in nbnxn_cuda_init_atomdata */
-    ad->xq = NULL;
-    ad->f  = NULL;
+    ad->xq = nullptr;
+    ad->f  = nullptr;
 
     /* size -1 indicates that the respective array hasn't been initialized yet */
     ad->natoms = -1;
@@ -154,8 +154,8 @@ static int pick_ewald_kernel_type(bool                     bTwinCut,
 
     /* Benchmarking/development environment variables to force the use of
        analytical or tabulated Ewald kernel. */
-    bForceAnalyticalEwald = (getenv("GMX_CUDA_NB_ANA_EWALD") != NULL);
-    bForceTabulatedEwald  = (getenv("GMX_CUDA_NB_TAB_EWALD") != NULL);
+    bForceAnalyticalEwald = (getenv("GMX_CUDA_NB_ANA_EWALD") != nullptr);
+    bForceTabulatedEwald  = (getenv("GMX_CUDA_NB_TAB_EWALD") != nullptr);
 
     if (bForceAnalyticalEwald && bForceTabulatedEwald)
     {
@@ -185,7 +185,7 @@ static int pick_ewald_kernel_type(bool                     bTwinCut,
 
     /* Use twin cut-off kernels if requested by bTwinCut or the env. var.
        forces it (use it for debugging/benchmarking only). */
-    if (!bTwinCut && (getenv("GMX_CUDA_NB_EWALD_TWINCUT") == NULL))
+    if (!bTwinCut && (getenv("GMX_CUDA_NB_EWALD_TWINCUT") == nullptr))
     {
         kernel_type = bUseAnalyticalEwald ? eelCuEWALD_ANA : eelCuEWALD_TAB;
     }
@@ -263,7 +263,6 @@ static void init_nbparam(cu_nbparam_t              *nbp,
                         break;
                     default:
                         gmx_incons("The requested LJ combination rule is not implemented in the CUDA GPU accelerated kernels!");
-                        break;
                 }
                 break;
             case eintmodFORCESWITCH:
@@ -274,7 +273,6 @@ static void init_nbparam(cu_nbparam_t              *nbp,
                 break;
             default:
                 gmx_incons("The requested VdW interaction modifier is not implemented in the CUDA GPU accelerated kernels!");
-                break;
         }
     }
     else if (ic->vdwtype == evdwPME)
@@ -315,7 +313,7 @@ static void init_nbparam(cu_nbparam_t              *nbp,
     }
 
     /* generate table for PME */
-    nbp->coulomb_tab = NULL;
+    nbp->coulomb_tab = nullptr;
     if (nbp->eeltype == eelCuEWALD_TAB || nbp->eeltype == eelCuEWALD_TAB_TWIN)
     {
         init_ewald_coulomb_force_table(ic, nbp, dev_info);
@@ -360,12 +358,12 @@ void nbnxn_gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
 /*! Initializes the pair list data structure. */
 static void init_plist(cu_plist_t *pl)
 {
-    /* initialize to NULL pointers to data that is not allocated here and will
+    /* initialize to nullptr pointers to data that is not allocated here and will
        need reallocation in nbnxn_gpu_init_pairlist */
-    pl->sci      = NULL;
-    pl->cj4      = NULL;
-    pl->imask    = NULL;
-    pl->excl     = NULL;
+    pl->sci      = nullptr;
+    pl->cj4      = nullptr;
+    pl->imask    = nullptr;
+    pl->excl     = nullptr;
 
     /* size -1 indicates that the respective array hasn't been initialized yet */
     pl->na_c           = -1;
@@ -440,7 +438,7 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
     cudaError_t       stat;
     gmx_nbnxn_cuda_t *nb;
 
-    if (p_nb == NULL)
+    if (p_nb == nullptr)
     {
         return;
     }
@@ -481,7 +479,7 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
          * case will be a single value.
          */
         int highest_priority;
-        stat = cudaDeviceGetStreamPriorityRange(NULL, &highest_priority);
+        stat = cudaDeviceGetStreamPriorityRange(nullptr, &highest_priority);
         CU_RET_ERR(stat, "cudaDeviceGetStreamPriorityRange failed");
 
         stat = cudaStreamCreateWithPriority(&nb->stream[eintNonlocal],
@@ -500,7 +498,7 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
      *          This is the main reason why they are disabled by default.
      */
     // TODO: Consider turning on by default when we can detect nr of streams.
-    nb->bDoTime = (getenv("GMX_ENABLE_GPU_TIMING") != NULL);
+    nb->bDoTime = (getenv("GMX_ENABLE_GPU_TIMING") != nullptr);
 
     if (nb->bDoTime)
     {
@@ -731,7 +729,7 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
     cu_atomdata_t   *atdat;
     cu_nbparam_t    *nbparam;
 
-    if (nb == NULL)
+    if (nb == nullptr)
     {
         return;
     }
@@ -804,13 +802,13 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
 
     /* Free nbst */
     pfree(nb->nbst.e_lj);
-    nb->nbst.e_lj = NULL;
+    nb->nbst.e_lj = nullptr;
 
     pfree(nb->nbst.e_el);
-    nb->nbst.e_el = NULL;
+    nb->nbst.e_el = nullptr;
 
     pfree(nb->nbst.fshift);
-    nb->nbst.fshift = NULL;
+    nb->nbst.fshift = nullptr;
 
     sfree(atdat);
     sfree(nbparam);
@@ -839,7 +837,7 @@ void nbnxn_gpu_reset_timings(nonbonded_verlet_t* nbv)
 
 int nbnxn_gpu_min_ci_balanced(gmx_nbnxn_cuda_t *nb)
 {
-    return nb != NULL ?
+    return nb != nullptr ?
            gpu_min_ci_balanced_factor*nb->dev_info->prop.multiProcessorCount : 0;
 
 }

@@ -68,7 +68,7 @@
  */
 static int  cuda_max_device_count = 32;
 
-static bool cudaProfilerRun      = ((getenv("NVPROF_ID") != NULL));
+static bool cudaProfilerRun      = ((getenv("NVPROF_ID") != nullptr));
 
 /** Dummy kernel used for sanity checking. */
 static __global__ void k_dummy_test(void)
@@ -421,19 +421,12 @@ bool canDetectGpus(std::string *errorMessage)
 
 void findGpus(gmx_gpu_info_t *gpu_info)
 {
-    int                i, ndev, checkres;
-    cudaError_t        stat;
-    cudaDeviceProp     prop;
-    gmx_device_info_t *devs;
-
     assert(gpu_info);
 
     gpu_info->n_dev_compatible = 0;
 
-    ndev    = 0;
-    devs    = NULL;
-
-    stat = cudaGetDeviceCount(&ndev);
+    int         ndev;
+    cudaError_t stat = cudaGetDeviceCount(&ndev);
     if (stat != cudaSuccess)
     {
         GMX_THROW(gmx::InternalError("Invalid call of findGpus() when CUDA API returned an error, perhaps "
@@ -443,10 +436,12 @@ void findGpus(gmx_gpu_info_t *gpu_info)
     // We expect to start device support/sanity checks with a clean runtime error state
     gmx::ensureNoPendingCudaError("");
 
+    gmx_device_info_t *devs;
     snew(devs, ndev);
-    for (i = 0; i < ndev; i++)
+    for (int i = 0; i < ndev; i++)
     {
-        checkres = is_gmx_supported_gpu_id(i, &prop);
+        cudaDeviceProp prop;
+        int            checkres = is_gmx_supported_gpu_id(i, &prop);
 
         devs[i].id   = i;
         devs[i].prop = prop;
@@ -540,8 +535,8 @@ void gpu_set_host_malloc_and_free(bool               bUseGpuKernels,
     }
     else
     {
-        *nb_alloc = NULL;
-        *nb_free  = NULL;
+        *nb_alloc = nullptr;
+        *nb_free  = nullptr;
     }
 }
 

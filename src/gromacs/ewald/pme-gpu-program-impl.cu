@@ -49,6 +49,12 @@
 #include "pme-gpu-internal.h"                    // for GridOrdering enum
 #include "pme-gpu-types-host.h"
 
+// PME interpolation order
+constexpr int  c_pmeOrder = 4;
+// These hardcoded spread/gather parameters refer to not-implemented PME GPU 2D decomposition in X/Y
+constexpr bool c_wrapX = true;
+constexpr bool c_wrapY = true;
+
 //! PME CUDA kernels forward declarations. Kernels are documented in their respective files.
 template <
     const int order,
@@ -59,11 +65,31 @@ template <
     >
 void pme_spline_and_spread_kernel(const PmeGpuCudaKernelParams kernelParams);
 
+// Add extern declarations to inform that there will be a definition
+// provided in another translation unit.
+extern template
+void pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY>(const PmeGpuCudaKernelParams);
+extern template
+void pme_spline_and_spread_kernel<c_pmeOrder, true, false, c_wrapX, c_wrapY>(const PmeGpuCudaKernelParams);
+extern template
+void pme_spline_and_spread_kernel<c_pmeOrder, false, true, c_wrapX, c_wrapY>(const PmeGpuCudaKernelParams);
+
 template<
     GridOrdering gridOrdering,
     bool computeEnergyAndVirial
     >
 void pme_solve_kernel(const PmeGpuCudaKernelParams kernelParams);
+
+// Add extern declarations to inform that there will be a definition
+// provided in another translation unit.
+extern template
+void pme_solve_kernel<GridOrdering::XYZ, false>(const PmeGpuCudaKernelParams);
+extern template
+void pme_solve_kernel<GridOrdering::XYZ, true>(const PmeGpuCudaKernelParams);
+extern template
+void pme_solve_kernel<GridOrdering::YZX, false>(const PmeGpuCudaKernelParams);
+extern template
+void pme_solve_kernel<GridOrdering::YZX, true>(const PmeGpuCudaKernelParams);
 
 template <
     const int order,
@@ -73,6 +99,12 @@ template <
     >
 void pme_gather_kernel(const PmeGpuCudaKernelParams kernelParams);
 
+// Add extern declarations to inform that there will be a definition
+// provided in another translation unit.
+extern template
+void pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY>(const PmeGpuCudaKernelParams);
+extern template
+void pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY>(const PmeGpuCudaKernelParams);
 
 PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *)
 {
@@ -82,19 +114,11 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *)
     solveMaxWorkGroupSize = c_solveMaxThreadsPerBlock;
     gatherWorkGroupSize   = c_gatherMaxThreadsPerBlock;
 
-    // PME interpolation order
-    constexpr int  pmeOrder = 4;
-    GMX_UNUSED_VALUE(pmeOrder);
-    // These hardcoded spread/gather parameters refer to not-implemented PME GPU 2D decomposition in X/Y
-    constexpr bool wrapX = true;
-    constexpr bool wrapY = true;
-    GMX_UNUSED_VALUE(wrapX);
-    GMX_UNUSED_VALUE(wrapY);
-    splineAndSpreadKernel       = pme_spline_and_spread_kernel<pmeOrder, true, true, wrapX, wrapY>;
-    splineKernel                = pme_spline_and_spread_kernel<pmeOrder, true, false, wrapX, wrapY>;
-    spreadKernel                = pme_spline_and_spread_kernel<pmeOrder, false, true, wrapX, wrapY>;
-    gatherKernel                = pme_gather_kernel<pmeOrder, true, wrapX, wrapY>;
-    gatherReduceWithInputKernel = pme_gather_kernel<pmeOrder, false, wrapX, wrapY>;
+    splineAndSpreadKernel       = pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY>;
+    splineKernel                = pme_spline_and_spread_kernel<c_pmeOrder, true, false, c_wrapX, c_wrapY>;
+    spreadKernel                = pme_spline_and_spread_kernel<c_pmeOrder, false, true, c_wrapX, c_wrapY>;
+    gatherKernel                = pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY>;
+    gatherReduceWithInputKernel = pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY>;
     solveXYZKernel              = pme_solve_kernel<GridOrdering::XYZ, false>;
     solveXYZEnergyKernel        = pme_solve_kernel<GridOrdering::XYZ, true>;
     solveYZXKernel              = pme_solve_kernel<GridOrdering::YZX, false>;

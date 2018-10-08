@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -110,6 +110,17 @@ __global__ void nbnxn_kernel_prune_cuda(const cu_atomdata_t atdat,
                                         int                 part)
 #ifdef FUNCTION_DECLARATION_ONLY
 ;     /* Only do function declaration, omit the function body. */
+
+// Add extern declarations so each translation unit understands that
+// there will be a definition provided.
+extern template
+__global__ void
+nbnxn_kernel_prune_cuda<true>(const cu_atomdata_t, const cu_nbparam_t,
+                              const cu_plist_t, int, int);
+extern template
+__global__ void
+nbnxn_kernel_prune_cuda<false>(const cu_atomdata_t, const cu_nbparam_t,
+                               const cu_plist_t, int, int);
 #else
 {
 
