@@ -51,18 +51,18 @@ namespace alexandria
 namespace
 {
 
-class PoldataTest : public ::testing::Test
+class PoldataTest : public gmx::test::CommandLineTestBase
 {
     protected:
         static  alexandria::Poldata                      pd_;
-        gmx::test::TestReferenceData                     refData_;
         gmx::test::TestReferenceChecker                  checker_;
         static   std::vector<std::string>                atomNames;
         static std::string atomName;
-
-        PoldataTest ( )
-            : refData_(gmx::test::erefdataCreateMissing), checker_(refData_.rootChecker())
+        
+        PoldataTest ( ) : checker_(this->rootChecker())
         {
+            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
+            checker_.setDefaultTolerance(tolerance);
         }
 
         // Static initiation, only run once every test.

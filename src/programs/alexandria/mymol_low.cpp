@@ -590,13 +590,13 @@ void plist_to_mtop(const Poldata             &pd,
     /* Generate pairs */
     fudgeLJ = pd.getFudgeLJ();
 
-    int nfptot = mtop_->ffparams.atnr;
+    int nfptot = gmx::square(mtop_->ffparams.atnr);
     for (auto &pw : plist)
     {
         nfptot += pw.nParam()*NRFPA(pw.getFtype());
     }
-    mtop_->ffparams.functype.resize(nfptot);
-    mtop_->ffparams.iparams.resize(nfptot);
+    mtop_->ffparams.functype.resize(nfptot, {0});
+    mtop_->ffparams.iparams.resize(nfptot, {0});
 
     for (auto &pw : plist)
     {
@@ -609,7 +609,7 @@ void plist_to_mtop(const Poldata             &pd,
             fprintf(debug, "There are %d interactions of type %s\n", nratot/(nra+1),
                     interaction_function[ftype].name);
         }
-        mtop_->moltype[0].ilist[ftype].iatoms.resize(nratot);
+        mtop_->moltype[0].ilist[ftype].iatoms.resize(nratot, {0});
         int k = 0;
         for (auto j = pw.beginParam(); (j < pw.endParam()); ++j)
         {

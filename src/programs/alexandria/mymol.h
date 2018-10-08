@@ -289,7 +289,6 @@ class MyMol
         gmx_enerdata_t                *enerd_;
         t_topology                    *topology_;
         t_fcdata                      *fcd_;
-        struct bonded_threading_t     *bt_;
         t_nrnb                         nrnb_;
         gmx_wallcycle_t                wcycle_;
 

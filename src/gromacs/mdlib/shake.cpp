@@ -50,6 +50,8 @@
 
 #include <algorithm>
 
+#include <cstdlib>
+
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/functions.h"

@@ -141,7 +141,7 @@ const char *immsg(immStatus imm)
 class MyForceProvider : public gmx::IForceProvider
 {
     private:
-        double efield_[DIM];
+    double efield_[DIM] = {0, 0, 0};
 
     public:
 
@@ -207,7 +207,6 @@ MyMol::MyMol() : gvt_(evtALL)
     atype_         = init_atomtype();
     mtop_          = nullptr;
     fr_            = nullptr;
-    bt_            = nullptr;
     ltop_          = nullptr;
     mp_            = new MolProp;
     state_         = new t_state;
@@ -1120,8 +1119,8 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
     gmx::ArrayRef<const std::string>  tabbfnm;
     init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
                   state_->box, tabfn, tabfn, tabbfnm, *hwinfo, nullptr, true, -1);
-    init_bonded_threading(nullptr, 1, &bt_);
-    setup_bonded_threading(bt_, topology_->atoms.nr, &ltop_->idef);
+    init_bonded_threading(nullptr, 1, &fr_->bondedThreading);
+    setup_bonded_threading(fr_->bondedThreading, topology_->atoms.nr, &ltop_->idef);
     wcycle_    = wallcycle_init(debug, 0, cr);
 
     MDatoms_  = new std::unique_ptr<gmx::MDAtoms>(new gmx::MDAtoms());
