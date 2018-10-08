@@ -254,6 +254,16 @@ t_state::t_state() : natoms(0),
     clear_mat(pres_prev);
     clear_mat(svir_prev);
     clear_mat(fvir_prev);
+    
+    intVector_.resize(getNumInt());
+    int64Vector_.resize(getNumInt64());
+    realVector_.resize(getNumReal());
+    doubleVector_.resize(getNumDouble());
+
+    intView_ = intVector_;
+    int64View_ = int64Vector_;
+    realView_ = realVector_;
+    doubleView_ = doubleVector_;
 }
 
 void set_box_rel(const t_inputrec *ir, t_state *state)
@@ -311,25 +321,30 @@ size_t t_state::getNumDouble()
             therm_integral.size() + 1);
 }
 
-void t_state::setViews(
-        gmx::ArrayRef<int> intView,
-        gmx::ArrayRef<int64_t> int64View,
-        gmx::ArrayRef<real> realView,
-        gmx::ArrayRef<double> doubleView)
+
+
+ArrayRef<int> t_state::getIntView()
 {
-    GMX_RELEASE_ASSERT(intView.size() == static_cast<ArrayRef<int>::size_type>(getNumInt()) &&
-                       int64View.size() == static_cast<ArrayRef<int64_t>::size_type>(getNumInt64()) &&
-                       realView.size() == static_cast<ArrayRef<real>::size_type>(getNumReal()) &&
-                       doubleView.size() == static_cast<ArrayRef<double>::size_type>(getNumDouble()),
-                       "Inappropriate view size.");
-    intView_ = intView;
-    realView_ = realView;
-    doubleView_ = doubleView;
+    return intView_;
+}
+ArrayRef<int64_t> t_state::getInt64View()
+{
+    return int64View_;
+}
+ArrayRef<real> t_state::getRealView()
+{
+    return realView_;
+}
+ArrayRef<double> t_state::getDoubleView()
+{
+    return doubleView_;
 }
 
 void t_state::notifyRead()
 {
-
+    // Obviously, we could just use getters and setters and actually use these vectors to store
+    // our data instead of copying it forth and back, but that would require a lot of changes all
+    // over the code. To demonstrate the approach, this should work.
     if (natoms != intView_[0])
     {
         gmx_fatal(FARGS, "Checkpoint file is for a system of %d atoms, while the current system "
@@ -421,6 +436,10 @@ void t_state::notifyWrite()
      *       is imminent. Would it be our job to collect the state? For now, this is done in
      *       mdoutf_write_to_trajectory_files()...
      */
+
+    // Obviously, we could just use getters and setters and actually use these vectors to store
+    // our data instead of copying it forth and back, but that would require a lot of changes all
+    // over the code. To demonstrate the approach, this should work.
 
     intView_[0] = natoms;
     intView_[1] = ngtc;

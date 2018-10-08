@@ -110,54 +110,6 @@ CheckpointHandler::CheckpointHandler(
         accumulateGlobalsBuilder->registerClient(
                 compat::not_null<IAccumulateGlobalsClient*>(this), true);
     }
-
-    size_t numInt    = 0;
-    size_t numInt64  = 0;
-    size_t numReal   = 0;
-    size_t numDouble = 0;
-
-    for (auto entry : clientMap_)
-    {
-        auto client = entry.second;
-        numInt    += client->getNumInt();
-        numInt64  += client->getNumInt64();
-        numReal   += client->getNumReal();
-        numDouble += client->getNumDouble();
-    }
-    intData_.resize(numInt);
-    int64Data_.resize(numInt64);
-    realData_.resize(numReal);
-    doubleData_.resize(numDouble);
-
-    ArrayRef<int>     intDataView    = intData_;
-    ArrayRef<int64_t> int64DataView  = int64Data_;
-    ArrayRef<real>    realDataView   = realData_;
-    ArrayRef<double>  doubleDataView = doubleData_;
-
-    size_t            currentStartInt    = 0;
-    size_t            currentStartInt64  = 0;
-    size_t            currentStartReal   = 0;
-    size_t            currentStartDouble = 0;
-
-    for (auto entry : clientMap_)
-    {
-        auto client = entry.second;
-        client->setViews(
-                intDataView.subArray(currentStartInt, client->getNumInt()),
-                int64DataView.subArray(currentStartInt64, client->getNumInt64()),
-                realDataView.subArray(currentStartReal, client->getNumReal()),
-                doubleDataView.subArray(currentStartDouble, client->getNumDouble()));
-        currentStartInt    += client->getNumInt();
-        currentStartInt64  += client->getNumInt64();
-        currentStartReal   += client->getNumReal();
-        currentStartDouble += client->getNumDouble();
-    }
-
-    GMX_ASSERT(currentStartInt == intData_.size() &&
-               currentStartInt64 == int64Data_.size() &&
-               currentStartReal == realData_.size() &&
-               currentStartDouble == doubleData_.size(),
-               "Failed to prepare checkpointing view.");
 }
 
 void CheckpointHandler::setSignalImpl(
@@ -255,12 +207,16 @@ void CheckpointHandler::writeCheckpoint(
     }
 
     // Write int / real / double data
-    if (xdrWrapper->doVector(&intData_) ||
-        xdrWrapper->doVector(&int64Data_) ||
-        xdrWrapper->doVector(&realData_) ||
-        xdrWrapper->doVector(&doubleData_))
+    for (const auto &entry : clientMap_)
     {
-        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
+        const auto &client  = entry.second;
+        if (xdrWrapper->doArrayRef(client->getIntView()) ||
+            xdrWrapper->doArrayRef(client->getInt64View()) ||
+            xdrWrapper->doArrayRef(client->getRealView()) ||
+            xdrWrapper->doArrayRef(client->getDoubleView()))
+        {
+            gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
+        }
     }
 
     /* START LEGACY CODE
@@ -406,12 +362,16 @@ void CheckpointHandler::readCheckpointImpl(
     }
 
     // Read int / real / double data
-    if (xdrWrapper->doVector(&intData_) ||
-        xdrWrapper->doVector(&int64Data_) ||
-        xdrWrapper->doVector(&realData_) ||
-        xdrWrapper->doVector(&doubleData_))
+    for (const auto &entry : clientMap_)
     {
-        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
+        const auto &client  = entry.second;
+        if (xdrWrapper->doArrayRef(client->getIntView()) ||
+            xdrWrapper->doArrayRef(client->getInt64View()) ||
+            xdrWrapper->doArrayRef(client->getRealView()) ||
+            xdrWrapper->doArrayRef(client->getDoubleView()))
+        {
+            gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
+        }
     }
 
     for (const auto &entry : clientMap_)

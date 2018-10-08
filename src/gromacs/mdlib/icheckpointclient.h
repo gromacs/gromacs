@@ -81,14 +81,10 @@ class ICheckpointClient
         virtual CheckpointKeyword getKeyword() = 0;
         virtual int getVersion()            = 0;
 
-        virtual size_t getNumInt()    = 0;
-        virtual size_t getNumInt64()  = 0;
-        virtual size_t getNumReal()   = 0;
-        virtual size_t getNumDouble() = 0;
-
-        virtual void setViews(
-            ArrayRef<int> intView, ArrayRef<int64_t> int64View,
-            ArrayRef<real> realView, ArrayRef<double> doubleView) = 0;
+        virtual ArrayRef<int> getIntView() = 0;
+        virtual ArrayRef<int64_t> getInt64View() = 0;
+        virtual ArrayRef<real> getRealView() = 0;
+        virtual ArrayRef<double> getDoubleView() = 0;
 
         virtual void notifyRead()  = 0;
         virtual void notifyWrite() = 0;

@@ -233,16 +233,10 @@ class t_state : public ICheckpointClient
         CheckpointKeyword getKeyword() override;
         int getVersion() override;
 
-        size_t getNumInt() override;
-        size_t getNumInt64() override;
-        size_t getNumReal() override;
-        size_t getNumDouble() override;
-
-        void setViews(
-                ArrayRef<int> intView,
-                ArrayRef<int64_t> int64View,
-                ArrayRef<real> realView,
-                ArrayRef<double> doubleView) override;
+        ArrayRef<int> getIntView() override;
+        ArrayRef<int64_t> getInt64View() override;
+        ArrayRef<real> getRealView() override;
+        ArrayRef<double> getDoubleView() override;
 
         void notifyRead() override;
         void notifyWrite() override;
@@ -251,8 +245,19 @@ class t_state : public ICheckpointClient
         static const int checkpointVersion;
 
         ArrayRef<int> intView_;
+        ArrayRef<int64_t> int64View_;
         ArrayRef<real> realView_;
         ArrayRef<double> doubleView_;
+
+        std::vector<int> intVector_;
+        std::vector<int64_t> int64Vector_;
+        std::vector<real> realVector_;
+        std::vector<double> doubleVector_;
+
+        size_t getNumInt();
+        size_t getNumInt64();
+        size_t getNumReal();
+        size_t getNumDouble();
 };
 
 #ifndef DOXYGEN
