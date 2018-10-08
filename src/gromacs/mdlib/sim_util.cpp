@@ -82,6 +82,7 @@
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/update.h"
+#include "gromacs/mdlib/nbnxn_cuda/gpuBufferOpsCUDA.h"
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forceoutput.h"
@@ -1226,6 +1227,16 @@ static void do_force_cutsVERLET(FILE *fplog,
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
+
+    gmx_bool bGPUBufOps;
+    bGPUBufOps=gpuBufferOpsTimestepInitFromPP(bNS,
+                                              bUseGPU,
+                                              thisRankHasDuty(cr, DUTY_PME),
+                                              //cr,
+                                              nbv->nbs->natoms_nonlocal,
+                                              nbv->nbs->natoms_local,
+                                              x.size());
+
     /* do local pair search */
     if (bNS)
     {
@@ -1257,8 +1268,19 @@ static void do_force_cutsVERLET(FILE *fplog,
     }
     else
     {
-        nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatLocal, FALSE, as_rvec_array(x.data()),
-                                        nbv->nbat, wcycle);
+
+        if(bGPUBufOps)
+            nbnxn_atomdata_copy_x_to_nbat_x_gpu(nbv->nbs.get(), eatLocal, FALSE,
+                                                nbv->nbat,fr->pmedata,nbv->gpu_nbv,
+                                                eintLocal,as_rvec_array(x.data()));
+
+        else
+          nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatLocal, FALSE,
+                                          as_rvec_array(x.data()),
+                                          nbv->nbat, wcycle);
+
+
+        
     }
 
     if (bUseGPU)
@@ -1323,8 +1345,15 @@ static void do_force_cutsVERLET(FILE *fplog,
         {
             dd_move_x(cr->dd, box, x, wcycle);
 
-            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatNonlocal, FALSE, as_rvec_array(x.data()),
-                                            nbv->nbat, wcycle);
+            if(bGPUBufOps)
+                nbnxn_atomdata_copy_x_to_nbat_x_gpu(nbv->nbs.get(), eatNonlocal, FALSE,
+                                                    nbv->nbat,fr->pmedata,nbv->gpu_nbv,
+                                                    eintNonlocal,as_rvec_array(x.data()));
+            
+            else
+                
+                nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatNonlocal, FALSE, as_rvec_array(x.data()),
+                                                nbv->nbat, wcycle);
         }
 
         if (bUseGPU)
