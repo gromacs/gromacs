@@ -52,6 +52,7 @@
 #include "gromacs/mdlib/checkpointhelper.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/programcontext.h"
@@ -319,6 +320,10 @@ void CheckpointHandler::readCheckpoint(
                 compat::not_null<CheckpointHelper*>(&checkpointHelper), pfplog,
                 cr, domdecOptions, ir, state, bReadEkin, observablesHistory,
                 bAppendOutputFiles, bForceAppend, reproducibilityRequested);
+
+        // TODO: Copied from legacy checkpoint - clean that up!
+        ir->fepvals->init_fep_state = state->fep_state;  /* there should be a better way to do this than setting it here.
+                                                        Investigate for 5.0. */
     }
     if (PAR(cr))
     {

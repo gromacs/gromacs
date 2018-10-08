@@ -61,6 +61,7 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdlib/icheckpointclient.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -72,6 +73,10 @@ namespace gmx
 {
 struct AwhHistory;
 }
+
+using gmx::ArrayRef;
+using gmx::CheckpointKeyword;
+using gmx::ICheckpointClient;
 
 /*
  * The t_state struct should contain all the (possibly) non-static
@@ -183,7 +188,7 @@ typedef struct df_history_t
  * are used in the global state might not be present in the local state.
  * \todo Move pure observables history to ObservablesHistory.
  */
-class t_state
+class t_state : public ICheckpointClient
 {
     public:
         t_state();
@@ -224,6 +229,30 @@ class t_state
         int                               ddp_count;       //!< The DD partitioning count for this state
         int                               ddp_count_cg_gl; //!< The DD partitioning count for index_gl
         std::vector<int>                  cg_gl;           //!< The global cg number of the local cgs
+
+        CheckpointKeyword getKeyword() override;
+        int getVersion() override;
+
+        size_t getNumInt() override;
+        size_t getNumInt64() override;
+        size_t getNumReal() override;
+        size_t getNumDouble() override;
+
+        void setViews(
+                ArrayRef<int> intView,
+                ArrayRef<int64_t> int64View,
+                ArrayRef<real> realView,
+                ArrayRef<double> doubleView) override;
+
+        void notifyRead() override;
+        void notifyWrite() override;
+
+    private:
+        static const int checkpointVersion;
+
+        ArrayRef<int> intView_;
+        ArrayRef<real> realView_;
+        ArrayRef<double> doubleView_;
 };
 
 #ifndef DOXYGEN

@@ -713,14 +713,8 @@ void CheckpointHelper::readLegacy(
     // Data that used to be in the header but doesn't really belong there in the new scheme
 
     int eIntegrator;
-
     int nlambda;
-    int natoms;
-    int ngtc;
-    int nhchainlength;
-    int nnhpres;
 
-    int flags_state;
     int flags_eks;
     int flags_enh;
     int flags_dfh;
@@ -733,12 +727,6 @@ void CheckpointHelper::readLegacy(
 
     xd->doCptIntErr(&nlambda);
 
-    xd->doCptIntErr(&natoms);
-    xd->doCptIntErr(&ngtc);
-    xd->doCptIntErr(&nhchainlength);
-    xd->doCptIntErr(&nnhpres);
-
-    xd->doCptIntErr(&flags_state);
     xd->doCptIntErr(&flags_eks);
     xd->doCptIntErr(&flags_enh);
     xd->doCptIntErr(&flags_dfh);
@@ -747,46 +735,18 @@ void CheckpointHelper::readLegacy(
     xd->doCptIntErr(&nED);
     xd->doCptIntErr(&eSwapCoords);
 
-    if (natoms != state->natoms)
-    {
-        gmx_fatal(FARGS, "Checkpoint file is for a system of %d atoms, while the current system consists of %d atoms", natoms, state->natoms);
-    }
-    if (ngtc != state->ngtc)
-    {
-        gmx_fatal(FARGS, "Checkpoint file is for a system of %d T-coupling groups, while the current system consists of %d T-coupling groups", ngtc, state->ngtc);
-    }
-    if (nnhpres != state->nnhpres)
-    {
-        gmx_fatal(FARGS, "Checkpoint file is for a system of %d NH-pressure-coupling variables, while the current system consists of %d NH-pressure-coupling variables", nnhpres, state->nnhpres);
-    }
-
     int nlambdaHistory = (state->dfhist ? state->dfhist->nlambda : 0);
     if (nlambda != nlambdaHistory)
     {
         gmx_fatal(FARGS, "Checkpoint file is for a system with %d lambda states, while the current system consists of %d lambda states", nlambda, nlambdaHistory);
     }
 
-    init_gtc_state(state, state->ngtc, state->nnhpres, nhchainlength); /* need to keep this here to keep the tpr format working */
-    /* write over whatever was read; we use the number of Nose-Hoover chains from the checkpoint */
-
     if (eIntegrator != ir->eI)
     {
         gmx_fatal(FARGS, "Cannot change integrator during a checkpoint restart. Perhaps you should make a new .tpr with grompp -f new.mdp -t %s", checkpointFilename.c_str());
     }
 
-    if (flags_state != state->flags)
-    {
-        gmx_fatal(FARGS, "Cannot change a simulation algorithm during a checkpoint restart. Perhaps you should make a new .tpr with grompp -f new.mdp -t %s", checkpointFilename.c_str());
-    }
-
-    int                  ret;
-    ret                         = legacy::do_cpt_state(xd->getXDR(), flags_state, state, nullptr);
-    ir->fepvals->init_fep_state = state->fep_state;  /* there should be a better way to do this than setting it here.
-                                                        Investigate for 5.0. */
-    if (ret)
-    {
-        cp_error();
-    }
+    int ret;
 
     ret = legacy::do_cpt_ekinstate(xd->getXDR(), flags_eks, &state->ekinstate, nullptr);
     if (ret)
@@ -938,22 +898,9 @@ void CheckpointHelper::writeLegacy(
     swaphistory_t           *swaphist    = observablesHistory->swapHistory.get();
     int                      eSwapCoords = (swaphist ? swaphist->eSwapCoords : eswapNO);
 
-    int flags_state   = state->flags;
-    int natoms        = state->natoms;
-    int ngtc          = state->ngtc;
-    int nhchainlength = state->nhchainlength;
-    int nnhpres       = state->nnhpres;
-
     xd->doCptIntErr(&eIntegrator);
-
     xd->doCptIntErr(&nlambda);
 
-    xd->doCptIntErr(&natoms);
-    xd->doCptIntErr(&ngtc);
-    xd->doCptIntErr(&nhchainlength);
-    xd->doCptIntErr(&nnhpres);
-
-    xd->doCptIntErr(&flags_state);
     xd->doCptIntErr(&flags_eks);
     xd->doCptIntErr(&flags_enh);
     xd->doCptIntErr(&flags_dfh);
@@ -962,8 +909,7 @@ void CheckpointHelper::writeLegacy(
     xd->doCptIntErr(&nED);
     xd->doCptIntErr(&eSwapCoords);
 
-    if ((legacy::do_cpt_state(xd->getXDR(), state->flags, state, nullptr) < 0)        ||
-        (legacy::do_cpt_ekinstate(xd->getXDR(), flags_eks, &state->ekinstate, nullptr) < 0) ||
+    if ((legacy::do_cpt_ekinstate(xd->getXDR(), flags_eks, &state->ekinstate, nullptr) < 0) ||
         (legacy::do_cpt_enerhist(xd->getXDR(), FALSE, flags_enh, enerhist, nullptr) < 0)  ||
         (legacy::do_cpt_df_hist(xd->getXDR(), flags_dfh, nlambda, &state->dfhist, nullptr) < 0)  ||
         (legacy::do_cpt_EDstate(xd->getXDR(), FALSE, nED, edsamhist, nullptr) < 0)      ||

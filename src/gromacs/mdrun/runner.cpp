@@ -779,7 +779,10 @@ int Mdrunner::mdrunner()
     ContinuationOptions &continuationOptions = mdrunOptions.continuationOptions;
 
     auto                 checkpointHandlerBuilder = compat::make_unique<CheckpointHandlerBuilder>();
+
     // register clients here
+    checkpointHandlerBuilder->registerCheckpointClient(
+            compat::not_null<ICheckpointClient*>(globalState.get()));
 
     auto accumulateGlobalsBuilder = compat::make_unique<AccumulateGlobalsBuilder>();
     auto checkpointHandler        = checkpointHandlerBuilder->getCheckpointHandler(

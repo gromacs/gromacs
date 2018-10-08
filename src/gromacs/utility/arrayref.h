@@ -51,6 +51,7 @@
 #include <utility>
 #include <vector>
 
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx
@@ -330,6 +331,104 @@ template <typename T>
 std::vector<T> copyOf(const ArrayRef<const T> &arrayRef)
 {
     return std::vector<T>(arrayRef.begin(), arrayRef.end());
+}
+
+// TODO: The following functions are probably an ugly hack - need to clean this up
+
+template <typename AllocatorType>
+static inline void copyRvec(const ArrayRef<real> arrayRef, std::vector < RVec, AllocatorType> &rVec)
+{
+    GMX_RELEASE_ASSERT(arrayRef.size() / DIM <= long(rVec.size()), "rVec too small.");
+    gmx::ArrayRef<real> ref(rVec[0], rVec[0] + arrayRef.size());
+    for (int i = 0; i < arrayRef.size(); ++i)
+    {
+        ref[i] = arrayRef[i];
+    }
+}
+
+template <typename AllocatorType>
+static inline void copyRvec(const std::vector<gmx::RVec, AllocatorType> &rVec, ArrayRef<real> arrayRef)
+{
+    GMX_RELEASE_ASSERT(arrayRef.size() >= long(rVec.size() * DIM), "arrayRef too small.");
+    gmx::ArrayRef<const real> ref(rVec[0], rVec[0] + rVec.size() * DIM);
+    for (int i = 0; i < arrayRef.size(); ++i)
+    {
+        arrayRef[i] = ref[i];
+    }
+}
+
+static inline void copyRvec(const ArrayRef<real> arrayRef, rvec* rVec)
+{
+    gmx::ArrayRef<real> ref(rVec[0], rVec[0] + arrayRef.size());
+    for (int i = 0; i < arrayRef.size(); ++i)
+    {
+        ref[i] = arrayRef[i];
+    }
+}
+
+static inline void copyRvec(const rvec* rVec, ArrayRef<real> arrayRef, size_t nElements)
+{
+    GMX_RELEASE_ASSERT(arrayRef.size() >= long(nElements), "arrayRef too small.");
+    gmx::ArrayRef<const real> ref(rVec[0], rVec[0] + nElements * DIM);
+    for (int i = 0; i < arrayRef.size(); ++i)
+    {
+        arrayRef[i] = ref[i];
+    }
+}
+
+template <typename T>
+static inline void copyVec(const std::vector<T> &vector, ArrayRef<T> &arrayRef)
+{
+    GMX_RELEASE_ASSERT(arrayRef.size() >= long(vector.size()), "arrayRef too small.");
+    for (size_t i = 0; i < vector.size(); ++i)
+    {
+        arrayRef[i] = vector[i];
+    }
+}
+
+template <typename T>
+static inline void copyVec(const ArrayRef<T> &arrayRef, std::vector<T> &vector)
+{
+    GMX_RELEASE_ASSERT(long(vector.size()) >= arrayRef.size(), "vector too small.");
+    for (size_t i = 0; i < size_t(arrayRef.size()); ++i)
+    {
+        vector[i] = arrayRef[i];
+    }
+}
+
+template <typename T>
+static inline void copyVec(const T* vector, ArrayRef<T> &arrayRef, size_t nElements)
+{
+    GMX_RELEASE_ASSERT(arrayRef.size() >= long(nElements), "arrayRef too small.");
+    for (size_t i = 0; i < nElements; ++i)
+    {
+        arrayRef[i] = vector[i];
+    }
+}
+
+template <typename T>
+static inline void copyVec(const ArrayRef<T> &arrayRef, T* vector)
+{
+    for (size_t i = 0; i < size_t(arrayRef.size()); ++i)
+    {
+        vector[i] = arrayRef[i];
+    }
+}
+
+static inline void copyMatrix(const gmx::ArrayRef<real> &arrayRef, matrix matrix)
+{
+    GMX_RELEASE_ASSERT(arrayRef.size() >= 9, "Can't copy ArrayRef in matrix");
+    copy_rvec(&arrayRef[0], matrix[XX]);
+    copy_rvec(&arrayRef[3], matrix[YY]);
+    copy_rvec(&arrayRef[6], matrix[ZZ]);
+}
+
+static inline void copyMatrix(const matrix matrix, gmx::ArrayRef<real> &arrayRef)
+{
+    GMX_RELEASE_ASSERT(arrayRef.size() >= 9, "Can't copy matrix in ArrayRef");
+    copy_rvec(matrix[XX], &arrayRef[0]);
+    copy_rvec(matrix[YY], &arrayRef[3]);
+    copy_rvec(matrix[ZZ], &arrayRef[6]);
 }
 
 } // namespace gmx

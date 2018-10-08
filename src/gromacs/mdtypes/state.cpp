@@ -42,6 +42,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <gromacs/utility/fatalerror.h>
 
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
@@ -276,4 +277,215 @@ void preserve_box_shape(const t_inputrec *ir, matrix box_rel, matrix box)
         const int ndim = ir->epct == epctSEMIISOTROPIC ? 2 : 3;
         do_box_rel(ndim, ir->deform, box_rel, box, false);
     }
+}
+
+const int t_state::checkpointVersion = 1;
+
+CheckpointKeyword t_state::getKeyword()
+{
+    return CheckpointKeyword::state;
+}
+int t_state::getVersion()
+{
+    return checkpointVersion;
+}
+
+size_t t_state::getNumInt()
+{
+    return 8 + cg_gl.size();
+}
+size_t t_state::getNumInt64()
+{
+    return 0;
+}
+size_t t_state::getNumReal()
+{
+    return (lambda.size() +
+            6*DIM*DIM + 2 +  // box (x3), pressure, virial matrices(x2), veta, vol0
+            natoms*DIM*2);   // x, v (not including padding)
+}
+size_t t_state::getNumDouble()
+{
+    return (nosehoover_xi.size() + nosehoover_vxi.size() +
+            nhpres_xi.size() + nhpres_vxi.size() +
+            therm_integral.size() + 1);
+}
+
+void t_state::setViews(
+        gmx::ArrayRef<int> intView,
+        gmx::ArrayRef<int64_t> int64View,
+        gmx::ArrayRef<real> realView,
+        gmx::ArrayRef<double> doubleView)
+{
+    GMX_RELEASE_ASSERT(intView.size() == static_cast<ArrayRef<int>::size_type>(getNumInt()) &&
+                       int64View.size() == static_cast<ArrayRef<int64_t>::size_type>(getNumInt64()) &&
+                       realView.size() == static_cast<ArrayRef<real>::size_type>(getNumReal()) &&
+                       doubleView.size() == static_cast<ArrayRef<double>::size_type>(getNumDouble()),
+                       "Inappropriate view size.");
+    intView_ = intView;
+    realView_ = realView;
+    doubleView_ = doubleView;
+}
+
+void t_state::notifyRead()
+{
+
+    if (natoms != intView_[0])
+    {
+        gmx_fatal(FARGS, "Checkpoint file is for a system of %d atoms, while the current system "
+                         "consists of %d atoms", intView_[0], natoms);
+    }
+    if (ngtc != intView_[1])
+    {
+        gmx_fatal(FARGS, "Checkpoint file is for a system of %d T-coupling groups, while the "
+                         "current system consists of %d T-coupling groups", intView_[1], ngtc);
+    }
+    if (nnhpres != intView_[2])
+    {
+        gmx_fatal(FARGS, "Checkpoint file is for a system of %d NH-pressure-coupling variables, "
+                         "while the current system consists of %d NH-pressure-coupling variables",
+                  intView_[2], nnhpres);
+    }
+
+    /* write over whatever was read; we use the number of Nose-Hoover chains from the checkpoint */
+    nhchainlength = intView_[3];
+
+    /* need to keep this here to keep the tpr format working */
+    init_gtc_state(this, ngtc, nnhpres, nhchainlength);
+
+    if (flags != intView_[4])
+    {
+        gmx_fatal(FARGS, "Cannot change a simulation algorithm during a checkpoint restart. "
+                         "Perhaps you should make a new .tpr with grompp -f new.mdp -t checkpoint.cpt");
+    }
+
+    // TODO: Is this really needed? We checked that natoms didn't change, no?
+    // If reading, state->natoms was probably just read, so
+    // allocations need to be managed. If writing, this won't change
+    // anything that matters.
+    state_change_natoms(this, natoms);
+
+    fep_state = intView_[5];
+    ddp_count = intView_[6];
+    ddp_count_cg_gl = intView_[7];
+    for (unsigned int i = 0; i < cg_gl.size(); ++i)
+    {
+        cg_gl[i] = intView_[7+i];
+    }
+
+    size_t currentReal;
+    for (currentReal = 0; currentReal < efptNR; ++currentReal)
+    {
+        lambda[currentReal] = realView_[currentReal];
+    }
+
+    copyMatrix(realView_.subArray(currentReal, currentReal+DIM*DIM), box);
+    currentReal += DIM*DIM;
+    copyMatrix(realView_.subArray(currentReal, currentReal+DIM*DIM), box_rel);
+    currentReal += DIM*DIM;
+    copyMatrix(realView_.subArray(currentReal, currentReal+DIM*DIM), boxv);
+    currentReal += DIM*DIM;
+    copyMatrix(realView_.subArray(currentReal, currentReal+DIM*DIM), pres_prev);
+    currentReal += DIM*DIM;
+    copyMatrix(realView_.subArray(currentReal, currentReal+DIM*DIM), svir_prev);
+    currentReal += DIM*DIM;
+    copyMatrix(realView_.subArray(currentReal, currentReal+DIM*DIM), fvir_prev);
+    currentReal += DIM*DIM;
+
+    veta = realView_[currentReal++];
+    vol0 = realView_[currentReal++];
+
+    copyRvec(x, realView_.subArray(currentReal, DIM*natoms));
+    currentReal += DIM*natoms;
+    copyRvec(v, realView_.subArray(currentReal, DIM*natoms));
+
+    size_t currentDouble = 0;
+    gmx::copyVec(doubleView_.subArray(currentDouble, nosehoover_xi.size()), nosehoover_xi);
+    currentDouble += nosehoover_xi.size();
+    gmx::copyVec(doubleView_.subArray(currentDouble, nosehoover_vxi.size()), nosehoover_vxi);
+    currentDouble += nosehoover_vxi.size();
+    gmx::copyVec(doubleView_.subArray(currentDouble, nhpres_xi.size()), nhpres_xi);
+    currentDouble += nhpres_xi.size();
+    gmx::copyVec(doubleView_.subArray(currentDouble, nhpres_vxi.size()), nhpres_vxi);
+    currentDouble += nhpres_vxi.size();
+    gmx::copyVec(doubleView_.subArray(currentDouble, therm_integral.size()), therm_integral);
+    currentDouble += therm_integral.size();
+    baros_integral = doubleView_[currentDouble];
+
+    // TODO: What about the distance / orientation restraint history data?
+}
+
+void t_state::notifyWrite()
+{
+    /* TODO: We will register the global state, which will be notified that checkpoint writing
+     *       is imminent. Would it be our job to collect the state? For now, this is done in
+     *       mdoutf_write_to_trajectory_files()...
+     */
+
+    intView_[0] = natoms;
+    intView_[1] = ngtc;
+    intView_[2] = nnhpres;
+    intView_[3] = nhchainlength;
+    intView_[4] = flags;
+    intView_[5] = fep_state;
+    intView_[6] = ddp_count;
+    intView_[7] = ddp_count_cg_gl;
+    for (unsigned int i = 0; i < cg_gl.size(); ++i)
+    {
+        intView_[7+i] = cg_gl[i];
+    }
+
+    size_t currentReal;
+    for (currentReal = 0; currentReal < efptNR; ++currentReal)
+    {
+        realView_[currentReal] = lambda[currentReal];
+    }
+
+    ArrayRef<real> subArrayReal;
+    subArrayReal = realView_.subArray(currentReal, currentReal+DIM*DIM);
+    copyMatrix(box, subArrayReal);
+    currentReal += DIM*DIM;
+    subArrayReal = realView_.subArray(currentReal, currentReal+DIM*DIM);
+    copyMatrix(box_rel, subArrayReal);
+    currentReal += DIM*DIM;
+    subArrayReal = realView_.subArray(currentReal, currentReal+DIM*DIM);
+    copyMatrix(boxv, subArrayReal);
+    currentReal += DIM*DIM;
+    subArrayReal = realView_.subArray(currentReal, currentReal+DIM*DIM);
+    copyMatrix(pres_prev, subArrayReal);
+    currentReal += DIM*DIM;
+    subArrayReal = realView_.subArray(currentReal, currentReal+DIM*DIM);
+    copyMatrix(svir_prev, subArrayReal);
+    currentReal += DIM*DIM;
+    subArrayReal = realView_.subArray(currentReal, currentReal+DIM*DIM);
+    copyMatrix(fvir_prev, subArrayReal);
+    currentReal += DIM*DIM;
+
+    realView_[currentReal++] = veta;
+    realView_[currentReal++] = vol0;
+
+    copyRvec(realView_.subArray(currentReal, DIM*natoms), x);
+    currentReal += DIM*natoms;
+    copyRvec(realView_.subArray(currentReal, DIM*natoms), v);
+
+    size_t currentDouble = 0;
+    ArrayRef<double> subArrayDouble;
+    subArrayDouble = doubleView_.subArray(currentDouble, nosehoover_xi.size());
+    gmx::copyVec(nosehoover_xi, subArrayDouble);
+    currentDouble += nosehoover_xi.size();
+    subArrayDouble = doubleView_.subArray(currentDouble, nosehoover_vxi.size());
+    gmx::copyVec(nosehoover_vxi, subArrayDouble);
+    currentDouble += nosehoover_vxi.size();
+    subArrayDouble = doubleView_.subArray(currentDouble, nhpres_xi.size());
+    gmx::copyVec(nhpres_xi, subArrayDouble);
+    currentDouble += nhpres_xi.size();
+    subArrayDouble = doubleView_.subArray(currentDouble, nhpres_vxi.size());
+    gmx::copyVec(nhpres_vxi, subArrayDouble);
+    currentDouble += nhpres_vxi.size();
+    subArrayDouble = doubleView_.subArray(currentDouble, therm_integral.size());
+    gmx::copyVec(therm_integral, subArrayDouble);
+    currentDouble += therm_integral.size();
+    doubleView_[currentDouble] = baros_integral;
+
+    // TODO: What about the distance / orientation restraint history data?
 }
