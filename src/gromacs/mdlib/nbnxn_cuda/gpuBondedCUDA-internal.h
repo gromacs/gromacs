@@ -32,32 +32,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_MDLIB_NBNXN_CUDA_GPUBONDEDCUDA_H
-#define GMX_MDLIB_NBNXN_CUDA_GPUBONDEDCUDA_H
 
-#include "gromacs/mdlib/nbnxn_gpu_types.h"
-#include "gromacs/ewald/pme-internal.h"
-#include "gromacs/ewald/pme.h"
-#include "gromacs/ewald/pme-grid.h"
-#include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/enerdata.h"
+#ifndef GMX_MDLIB_NBNXN_CUDA_GPUBONDEDCUDA_INTERNAL_H
+#define GMX_MDLIB_NBNXN_CUDA_GPUBONDEDCUDA_INTERNAL_H
 
-#include "gromacs/mdlib/nbnxn_atomdata.h"
-
-#include "gromacs/topology/idef.h"
-#include "gromacs/topology/ifunc.h"
-#include "gromacs/pbcutil/mshift.h"
-
-void update_gpu_bonded(const t_idef *idef,  const t_forcerec *fr, const matrix box,
-                       const int size,  const t_mdatoms *md, gmx_grppairener_t *grppener);
-void do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
-                   int numEnergyGroups,
-                   int flags, const t_graph *graph, int natoms, rvec x[]);
-
-void do_bonded_gpu_finalize(t_forcerec *fr, int flags, int natoms,
-                            rvec *input_force, gmx_enerdata_t *enerd);
-
-void reset_gpu_bonded(const int size, const int nener);
+//CUDA threads per block
+#define TPB_BONDED 256
 
 #endif

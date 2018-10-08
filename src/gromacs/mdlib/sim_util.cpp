@@ -1523,34 +1523,38 @@ static void do_force_cutsVERLET(FILE *fplog,
     {
         update_QMMMrec(cr, fr, as_rvec_array(x.data()), mdatoms, box);
     }
-    if (bUseGPU) {
-     if(bNS) update_gpu_bonded( &(top->idef), fr ,box,
-                              x.size() , mdatoms, lambda,
-                              &(enerd->grpp) );
-     reset_gpu_bonded(nbv->nbs->natoms_nonlocal, enerd->grpp.nener);
-   }
+    if (bUseGPU)
+    {
+        if (bNS)
+        {
+            update_gpu_bonded(&(top->idef), fr, box,
+                              x.size(), mdatoms, &(enerd->grpp));
+        }
+        reset_gpu_bonded(nbv->nbs->natoms_nonlocal, enerd->grpp.nener);
+    }
 
     /* Compute the bonded and non-bonded energies and optionally forces */
 #ifdef DEBUG_JV
-       int rank=0;
-       MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-       real tot_cpu=0;
-       for (i=0 ; i<  SHIFTS ; i++)
-       {
-         tot_cpu +=norm2(fr->fshift[i]);
-       }
-       bool bCalcEnerVir = (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY));
-       if(bCalcEnerVir) {
-         printf("%d (shift force cpu initial) :: %f\n",rank,tot_cpu);
-         for (i = 0; i < F_NRE; i++)
-         {
-           if(enerd->term[i] > 0 )
-           {
-             printf("%d (vtot initial) : %d %f\n",rank,i,enerd->term[i]);
-           }
-         }
-       }
-       do_force_lowlevel(fr, inputrec, &(top->idef),
+    int  rank = 0;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    real tot_cpu = 0;
+    for (i = 0; i <  SHIFTS; i++)
+    {
+        tot_cpu += norm2(fr->fshift[i]);
+    }
+    bool bCalcEnerVir = (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY));
+    if (bCalcEnerVir)
+    {
+        printf("%d (shift force cpu initial) :: %f\n", rank, tot_cpu);
+        for (i = 0; i < F_NRE; i++)
+        {
+            if (enerd->term[i] > 0)
+            {
+                printf("%d (vtot initial) : %d %f\n", rank, i, enerd->term[i]);
+            }
+        }
+    }
+    do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, ms, nrnb, wcycle, mdatoms,
                       as_rvec_array(x.data()), hist, f, &forceWithVirial, enerd, fcd,
                       box,  inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
@@ -1558,23 +1562,21 @@ static void do_force_cutsVERLET(FILE *fplog,
 #endif
 
 
-   if (bUseGPU)
+    if (bUseGPU)
     {
-       do_bonded_gpu(fr,inputrec, &(top->idef),
-                     flags, graph, nbv->nbs->natoms_nonlocal, as_rvec_array(x.data()) ,
-                     lambda,mdatoms,f,inputrec->fepvals,enerd);
-       do_bonded_gpu_finalize(fr,inputrec, &(top->idef),
-                     flags, graph, nbv->nbs->natoms_nonlocal, as_rvec_array(x.data()) ,
-                     lambda,mdatoms,f,inputrec->fepvals,enerd);
-    } else {
-       do_force_lowlevel(fr, inputrec, &(top->idef),
-                      cr, ms, nrnb, wcycle, mdatoms,
-                      as_rvec_array(x.data()), hist, f, &forceWithVirial, enerd, fcd,
-                      box,inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
+        do_bonded_gpu(fr, inputrec, &(top->idef), mdatoms->nenergrp,
+                      flags, graph, nbv->nbs->natoms_nonlocal, as_rvec_array(x.data()));
+        do_bonded_gpu_finalize(fr, flags, nbv->nbs->natoms_nonlocal, f, enerd);
+    }
+    else
+    {
+        do_force_lowlevel(fr, inputrec, &(top->idef),
+                          cr, ms, nrnb, wcycle, mdatoms,
+                          as_rvec_array(x.data()), hist, f, &forceWithVirial, enerd, fcd,
+                          box, inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
+                          flags, &cycles_pme);
 
-                      flags, &cycles_pme);
-
-   }
+    }
 
 
     wallcycle_stop(wcycle, ewcFORCE);
