@@ -1051,7 +1051,6 @@ bool read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
                       "GROMACS is not compiled with plug-in support. Thus it cannot read non-GROMACS trajectory formats using the VMD plug-ins.\n"
                       "Please compile with plug-in support if you want to read non-GROMACS trajectory formats.\n", fn);
 #endif
-            break;
     }
     (*status)->tf = fr->time;
 
