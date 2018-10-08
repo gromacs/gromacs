@@ -87,8 +87,16 @@ class MDModules::Impl : public IMDOutputProvider
         std::unique_ptr<IMDModule>      field_;
         std::unique_ptr<ForceProviders> forceProviders_;
 
-        /*! \brief List of registered MDModules */
-        std::vector < std::shared_ptr < IMDModule>> modules_;
+        /*! \brief List of registered MDModules
+         *
+         * Note that MDModules::Impl owns this container, but it is only used by
+         * the MDModules::initForceProviders() function. To be consistent with
+         * IMDModule's vision, as indicated by its docs, we should
+         * \todo update IMDModule docs to allow nullptr return values
+         * \todo check for nullptr returned by IMDModule methods.
+         * \todo include field_ in modules_
+         */
+        std::vector< std::shared_ptr<IMDModule> > modules_;
 };
 
 MDModules::MDModules() : impl_(new Impl)
