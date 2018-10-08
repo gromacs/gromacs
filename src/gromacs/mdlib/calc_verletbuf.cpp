@@ -1257,7 +1257,7 @@ chanceOfUpdateGroupCrossingCell(const gmx_moltype_t          &moltype,
         /* Determine the number of atoms with constraints and the mass of the COG */
         int         numAtomsWithConstraints = 0;
         real        massSum                 = 0;
-        for (const int &atom : block)
+        for (const int atom : block)
         {
             if (atomConstraintProps[atom].numConstraints > 0)
             {
@@ -1271,7 +1271,7 @@ chanceOfUpdateGroupCrossingCell(const gmx_moltype_t          &moltype,
         real maxComCogDistance = 0;
         if (numAtomsWithConstraints == 2)
         {
-            for (const int &atom : block)
+            for (const int atom : block)
             {
                 if (atomConstraintProps[atom].numConstraints > 0)
                 {
@@ -1284,7 +1284,7 @@ chanceOfUpdateGroupCrossingCell(const gmx_moltype_t          &moltype,
         }
         else if (numAtomsWithConstraints > 2)
         {
-            for (const int &atom : block)
+            for (const int atom : block)
             {
                 if (atomConstraintProps[atom].numConstraints == numAtomsWithConstraints - 1)
                 {
@@ -1296,7 +1296,7 @@ chanceOfUpdateGroupCrossingCell(const gmx_moltype_t          &moltype,
         else if (block.size() > 1)
         {
             // All normal atoms must be connected by SETTLE
-            for (const int &atom : block)
+            for (const int atom : block)
             {
                 const auto &ilist = moltype.ilist[F_SETTLE];
                 GMX_RELEASE_ASSERT(ilist.size() > 0, "There should be at least one settle in this moltype");
