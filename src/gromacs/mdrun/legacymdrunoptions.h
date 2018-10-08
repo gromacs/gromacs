@@ -46,6 +46,9 @@
  * \ingroup module_mdrun
  * \inlibraryapi
  */
+#ifndef GMX_MDRUN_LEGACYMDRUNOPTIONS_H
+#define GMX_MDRUN_LEGACYMDRUNOPTIONS_H
+
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/domdec/domdec.h"
@@ -276,3 +279,5 @@ class LegacyMdrunOptions
 };
 
 } // end namespace gmx
+
+#endif

@@ -238,6 +238,10 @@ class SessionImpl
          * \brief MultiSim resources for Mdrunner instance.
          *
          * May be null for no multi-simulation management at the Mdrunner level.
+         *
+         * \todo Lifetime of the multi-simulation handle is currently
+         * managed by LegacyMdrunOptions, but in the long term,
+         * session needs to manage it.
          */
         gmx_multisim_t* multiSim_;
 
