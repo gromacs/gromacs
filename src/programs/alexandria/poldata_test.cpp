@@ -36,6 +36,7 @@
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/utility/arraysize.h"
 
+#include "alex_modules.h"
 #include "poldata.h"
 #include "poldata_xml.h"
 

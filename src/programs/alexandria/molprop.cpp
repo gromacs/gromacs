@@ -827,7 +827,8 @@ void Experiment::Dump(FILE *fp)
 bool Experiment::getHF(double *value)
 {
     double      T    = -1;
-    double      error, vec[3];
+    double      error;
+    rvec        vec;
     bool        done = false;
     tensor      quad;
 
@@ -945,7 +946,7 @@ bool Experiment::getVal(const std::string  type,
                         double            *value,
                         double            *error,
                         double            *T,
-                        double             vec[3],
+                        rvec               vec,
                         tensor             quad_polar)
 {
     bool   done = false;
@@ -1627,7 +1628,7 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
                          const std::string &type,
                          double *value, double *error, double *T,
                          std::string &ref, std::string &mylot,
-                         double vec[3], tensor quad_polar)
+                         rvec vec, tensor quad_polar)
 {
     bool   done = false;
     double Told = *T;
@@ -1738,7 +1739,8 @@ bool MolProp::getProp(MolPropObservable mpo, iqmType iQM,
                       const std::string &type,
                       double *value, double *error, double *T)
 {
-    double      myerror, vec[3];
+    double      myerror;
+    rvec        vec;
     tensor      quad;
     bool        bReturn;
     std::string myref, mylot;

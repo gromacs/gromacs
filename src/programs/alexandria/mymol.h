@@ -256,7 +256,7 @@ class MyMol
          * \param[in] natom  Number of atoms
          * \param[in] q      The charges
          */
-        void setQandMoments(qType qt, int natom, double q[]);
+        void setQandMoments(qType qt, int natom, real q[]);
 
     public:
         double                         chieq_         = 0;
@@ -567,11 +567,11 @@ class MyMol
          * Compute moments using QM-based charges like
          * Mulliken, Hirshfeld, CM5, etc. Since there is no Shell particle in
          * QM calculations, it loops over eptAtoms, only.
-         * \param[in] q  Array of charges
+         * \param[in]  q  Array of charges
          * \param[out] mu Dipole vector
          * \param[out] Q  Quadrupole tensor
          */
-        void CalcQMbasedMoments(double *q, rvec mu, tensor Q);
+        void CalcQMbasedMoments(real *q, rvec mu, tensor Q);
 
         /*! \brief
          * Generate Charge Groups

@@ -1217,7 +1217,7 @@ class Experiment
                     double            *value,
                     double            *error, 
                     double            *T,
-                    double             vec[3],
+                    rvec               vec,
                     tensor             quadrupole);
 
         /*! \brief
@@ -1414,7 +1414,7 @@ class MolProp
                         const std::string &type,
                         double *value, double *error, double *T,
                         std::string &ref, std::string &mylot,
-                        double vec[3], tensor quadrupole);
+                        rvec vec, tensor quadrupole);
 
         //! And another one
         bool getProp(MolPropObservable mpo, iqmType iQM,

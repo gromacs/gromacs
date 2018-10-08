@@ -107,9 +107,8 @@ class RespTest : public gmx::test::CommandLineTestBase
         void testResp(ChargeDistributionModel qdist, bool bPolar)
         {
             //Generate charges and topology
-            const char               *lot        = "B3LYP/aug-cc-pVTZ";
-
-            t_inputrec               *inputrec   = new t_inputrec();
+            const char   *lot        = "B3LYP/aug-cc-pVTZ";
+            t_inputrec   *inputrec   = new t_inputrec();
             fill_inputrec(inputrec);
             mp_.setInputrec(inputrec);
             mp_.GenerateTopology(aps_, pd_, lot, qdist, false, false, false, bPolar, false, nullptr);

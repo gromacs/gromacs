@@ -1520,7 +1520,7 @@ void MyMol::CalcQuadrupole()
     set_QQM(qtCalc, Q);
 }
 
-void MyMol::CalcQMbasedMoments(double *q, rvec mu, tensor Q)
+void MyMol::CalcQMbasedMoments(real *q, rvec mu, tensor Q)
 {
     int   i, j;
     real  r2;
@@ -1694,7 +1694,7 @@ void MyMol::PrintTopology(FILE                   *fp,
     char                     buf[256];
     t_mols                   printmol;
     std::vector<std::string> commercials;
-    double                   vec[DIM];
+    rvec                     vec;
     double                   value, error, T;
     std::string              myref, mylot;
     rvec                     mu;
@@ -1919,7 +1919,7 @@ void MyMol::rotateDipole(rvec mu, rvec muReference)
     copy_rvec(tmpvec, mu);
 }
 
-void MyMol::setQandMoments(qType qt, int natom, double q[])
+void MyMol::setQandMoments(qType qt, int natom, real q[])
 {
     int i, j;
 
@@ -1951,7 +1951,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     double       ZPE   = 0;
     double       error = 0;
     double       T     = -1;
-    double       vec[DIM];
+    rvec         vec;
     tensor       quadrupole = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
     tensor       polar      = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
     std::string  myref;
@@ -1967,7 +1967,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             natom++;
         }
     }
-    double q[natom];
+    real q[natom];
     if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
                               (char *)mylot.c_str(), "",
                               (char *)"ESP charges",

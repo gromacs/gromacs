@@ -482,7 +482,8 @@ void find_calculations(std::vector<alexandria::MolProp> &mp,
                                                              ci->getBasisset(),
                                                              *ti) > 0))
                 {
-                    double T, value, error, vec[3];
+                    double T, value, error;
+                    rvec   vec;
                     tensor quadrupole;
                     if (ci->getVal(ti->c_str(), mpo, &value, &error, &T,
                                    vec, quadrupole))

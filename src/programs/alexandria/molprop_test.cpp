@@ -35,6 +35,7 @@
 
 #include "gromacs/commandline/pargs.h"
 
+#include "alex_modules.h"
 #include "molprop.h"
 #include "molprop_xml.h"
 #include "poldata_xml.h"

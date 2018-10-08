@@ -99,9 +99,9 @@ static void check_sqlite3(sqlite3 *db, const char *extra, int rc)
 }
 #endif
 
-void getSynonyms(sqlite3              *db,
-                 std::vector<Synonym> &syn,
-                 int                   nMol)
+static void getSynonyms(sqlite3              *db,
+                        std::vector<Synonym> &syn,
+                        int                   nMol)
 {
     sqlite3_stmt *stmt2 = nullptr;
     char          sql_str[1024];
@@ -143,9 +143,9 @@ void getSynonyms(sqlite3              *db,
                   sqlite3_finalize(stmt2));
 }
 
-void getClasses(sqlite3              *db,
-                std::vector<Classes> &classes,
-                int                   nMol)
+static void getClasses(sqlite3              *db,
+                       std::vector<Classes> &classes,
+                       int                   nMol)
 {
     sqlite3_stmt *stmt2 = nullptr;
     char          sql_str[1024];

@@ -42,6 +42,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/futil.h"
 
+#include "alex_modules.h"
 #include "molprop.h"
 #include "molprop_util.h"
 #include "molprop_xml.h"
@@ -54,7 +55,8 @@ static void gmx_molprop_csv(const char *fn,
     alexandria::MolPropIterator mpi;
     FILE                       *fp;
     int                         k, ll;
-    double                      T, d, err, vec[3];
+    double                      T, d, err;
+    rvec                        vec;
     tensor                      quadrupole;
 #define NEMP 3
     MolPropObservable           mpo[NEMP]   = { MPO_DIPOLE, MPO_POLARIZABILITY, MPO_ENERGY  };

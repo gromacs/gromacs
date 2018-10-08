@@ -368,7 +368,8 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
 {
     int                       ntot;
     FILE                     *fp, *gp;
-    double                    T, value, error, vec[3];
+    double                    T, value, error;
+    rvec                      vec;
     tensor                    quadrupole;
     const char               *iupac;
     alexandria::QmCount       qmc;

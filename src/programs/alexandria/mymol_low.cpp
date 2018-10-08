@@ -596,7 +596,8 @@ void plist_to_mtop(const Poldata             &pd,
         nfptot += pw.nParam()*NRFPA(pw.getFtype());
     }
     mtop_->ffparams.functype.resize(nfptot, {0});
-    mtop_->ffparams.iparams.resize(nfptot, {0});
+    t_iparams ip = { { 0 } };
+    mtop_->ffparams.iparams.resize(nfptot, ip);
 
     for (auto &pw : plist)
     {
