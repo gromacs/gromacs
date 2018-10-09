@@ -138,7 +138,7 @@ struct PaddingTraits<test::MoveOnly>
 namespace test
 {
 
-//! The types used in testing.
+//! The types used in testing of all operations.
 typedef ::testing::Types<int32_t, real, RVec, test::MoveOnly> TestTypes;
 
 //! Typed test fixture
@@ -162,7 +162,13 @@ template <typename T>
 struct HostAllocatorTestNoMemCopyable : HostAllocatorTestNoMem<T> {};
 //! The types used in testing minus move only types
 using TestTypesCopyable = ::testing::Types<int32_t, real, RVec>;
+
 TYPED_TEST_CASE(HostAllocatorTestNoMemCopyable, TestTypesCopyable);
+
+//! Typed test fixture for tests requiring a copyable type
+template <typename T>
+using HostAllocatorTestCopyable = HostAllocatorTest<T>;
+TYPED_TEST_CASE(HostAllocatorTestCopyable, TestTypesCopyable);
 
 // Note that in GoogleTest typed tests, the use of TestFixture:: and
 // this-> is sometimes required to get access to things in the fixture
@@ -176,7 +182,7 @@ TYPED_TEST(HostAllocatorTest, EmptyMemoryAlwaysWorks)
     typename TestFixture::VectorType v;
 }
 
-TYPED_TEST(HostAllocatorTest, VectorsWithDefaultHostAllocatorAlwaysWorks)
+TYPED_TEST(HostAllocatorTestCopyable, VectorsWithDefaultHostAllocatorAlwaysWorks)
 {
     typename TestFixture::VectorType input(3), output;
     output.resizeWithPadding(input.size());
@@ -188,7 +194,7 @@ TYPED_TEST(HostAllocatorTest, VectorsWithDefaultHostAllocatorAlwaysWorks)
 // during cudaHostRegister and cudaHostUnregister. Such tests are of
 // value only when this behaviour changes, if ever.
 
-TYPED_TEST(HostAllocatorTest, TransfersWithoutPinningWork)
+TYPED_TEST(HostAllocatorTestCopyable, TransfersWithoutPinningWork)
 {
     typename TestFixture::VectorType input;
     fillInput(&input, 1);
@@ -198,7 +204,7 @@ TYPED_TEST(HostAllocatorTest, TransfersWithoutPinningWork)
     runTest(*this->gpuInfo_, makeArrayRef(input), makeArrayRef(output));
 }
 
-TYPED_TEST(HostAllocatorTest, FillInputAlsoWorksAfterCallingReserve)
+TYPED_TEST(HostAllocatorTestCopyable, FillInputAlsoWorksAfterCallingReserve)
 {
     typename TestFixture::VectorType input;
     input.reserveWithPadding(3);
@@ -282,7 +288,7 @@ TYPED_TEST(HostAllocatorTestNoMem, Comparison)
 
 // Policy suitable for pinning is only supported for a CUDA build
 
-TYPED_TEST(HostAllocatorTest, TransfersWithPinningWorkWithCuda)
+TYPED_TEST(HostAllocatorTestCopyable, TransfersWithPinningWorkWithCuda)
 {
     if (!this->haveValidGpus())
     {
@@ -307,7 +313,7 @@ bool isPinned(const VectorType &v)
     return isHostMemoryPinned(data);
 }
 
-TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkWithCuda)
+TYPED_TEST(HostAllocatorTestCopyable, ManualPinningOperationsWorkWithCuda)
 {
     if (!this->haveValidGpus())
     {
@@ -317,6 +323,9 @@ TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkWithCuda)
     typename TestFixture::VectorType input;
     changePinningPolicy(&input, PinningPolicy::PinnedIfSupported);
     EXPECT_TRUE(input.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    EXPECT_EQ(0, input.size());
+    EXPECT_EQ(0, input.paddedSize());
+    EXPECT_TRUE(input.empty());
     EXPECT_FALSE(isPinned(input));
 
     // Fill some contents, which will be pinned because of the policy.

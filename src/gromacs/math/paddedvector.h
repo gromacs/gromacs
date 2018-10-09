@@ -158,8 +158,11 @@ template <typename T, typename AllocatorType>
 inline void insertPaddingElements(std::vector<T, AllocatorType> *v,
                                   index newPaddedSize)
 {
-    // Ensure the padding region is initialized to zero.
-    v->insert(v->end(), newPaddedSize - v->size());
+    // Ensure the padding region is initialized to zero. There is no
+    // way to insert a number of default-initialized elements. So we
+    // have to provide a value for those elements, which anyway suits
+    // this use case.
+    v->insert(v->end(), newPaddedSize - v->size(), 0);
 }
 
 //! Specialization of helper function to insert padding elements, used for BasicVector<T>.
@@ -279,10 +282,22 @@ class PaddedVector
         }
         //! Move constructor using \c alloc for the new vector.
         PaddedVector(PaddedVector &&o, const Allocator &alloc) noexcept :
-            storage_(std::move(o.storage_), alloc),
-            unpaddedEnd_(std::move(o.unpaddedEnd_))
+            storage_(std::move(alloc)),
+            unpaddedEnd_(begin())
         {
-            unpaddedEnd_ = begin();
+            auto unpaddedSize = o.size();
+            if (alloc == o.storage_.get_allocator())
+            {
+                storage_ = std::move(o.storage_);
+            }
+            else
+            {
+                // If the allocator compares differently, we must
+                // reallocate and copy.
+                resizeWithPadding(unpaddedSize);
+                std::copy(o.begin(), o.end(), storage_.begin());
+            }
+            unpaddedEnd_ = begin() + unpaddedSize;
         }
         //! Construct from an initializer list
         PaddedVector(std::initializer_list<value_type> const &il) :
@@ -331,7 +346,7 @@ class PaddedVector
         //! Return the container size including the padding.
         size_type paddedSize() const { return storage_.size(); }
         //! Return whether the storage is empty.
-        bool empty() const { return storage_.size() == 0; }
+        bool empty() const { return storage_.empty(); }
         //! Swap two PaddedVectors
         void swap(PaddedVector &x)
         {
