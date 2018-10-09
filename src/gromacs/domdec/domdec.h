@@ -177,7 +177,7 @@ struct DomdecOptions
     //! The number of separate PME ranks requested, -1 = auto.
     int               numPmeRanks = -1;
     //! Ordering of the PP and PME ranks, values from enum above.
-    DdRankOrder       rankOrder = DdRankOrder::pp_pme;
+    DdRankOrder       rankOrder = DdRankOrder::interleave;
     //! The minimum communication range, used for extended the communication range for bonded interactions (nm).
     real              minimumCommunicationRange = 0;
     //! Communication range for atom involved in constraints (P-LINCS) (nm).
