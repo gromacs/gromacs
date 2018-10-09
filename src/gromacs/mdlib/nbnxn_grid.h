@@ -94,4 +94,7 @@ gmx::ArrayRef<const int> nbnxn_get_atomorder(const nbnxn_search* nbs);
 /* Renumber the atom indices on the grid to consecutive order */
 void nbnxn_set_atomorder(nbnxn_search_t nbs);
 
+/* Return the index position of the atoms on the pairlist search grid */
+gmx::ArrayRef<const int> nbnxn_get_gridindices(const nbnxn_search* nbs);
+
 #endif
