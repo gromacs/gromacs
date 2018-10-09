@@ -144,7 +144,8 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
 
     setup_bonded_threading(fr->bondedThreading,
                            fr->natoms_force,
-                           &top->idef);
+                           fr->gpuBondedLists != nullptr,
+                           top->idef);
 
     gmx_pme_reinit_atoms(fr->pmedata, numHomeAtoms, mdatoms->chargeA);
     /* This handles the PP+PME rank case where fr->pmedata is valid.
