@@ -192,8 +192,6 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
                                         const t_idef       *idef)
 {
     ilist_data_t ild[F_NRE];
-    int          ntype;
-    int          f;
 
     assert(bt->nthreads > 0);
 
@@ -204,73 +202,68 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
     }
 
     bt->haveBondeds = false;
-    ntype           = 0;
-    for (f = 0; f < F_NRE; f++)
+    int ntype       = 0;
+    for (int ftype = 0; ftype < F_NRE; ftype++)
     {
-        if (!ftype_is_bonded_potential(f))
+        if (!ftype_is_bonded_potential(ftype))
         {
             continue;
         }
 
-        if (idef->il[f].nr > 0)
+        const t_ilist &il = idef->il[ftype];
+
+        if (il.nr > 0)
         {
             bt->haveBondeds = true;
         }
 
-        if (idef->il[f].nr == 0)
+        if (il.nr == 0)
         {
             /* No interactions, avoid all the integer math below */
-            int t;
-            for (t = 0; t <= bt->nthreads; t++)
+            for (int t = 0; t <= bt->nthreads; t++)
             {
-                bt->il_thread_division[f*(bt->nthreads + 1) + t] = 0;
+                bt->il_thread_division[ftype*(bt->nthreads + 1) + t] = 0;
             }
         }
-        else if (bt->nthreads <= bt->max_nthread_uniform || f == F_DISRES)
+        else if (bt->nthreads <= bt->max_nthread_uniform || ftype == F_DISRES)
         {
             /* On up to 4 threads, load balancing the bonded work
              * is more important than minimizing the reduction cost.
              */
-            int nat1, t;
 
-            /* nat1 = 1 + #atoms(ftype) which is the stride use for iatoms */
-            nat1 = 1 + NRAL(f);
+            const int stride = 1 + NRAL(ftype);
 
-            for (t = 0; t <= bt->nthreads; t++)
+            for (int t = 0; t <= bt->nthreads; t++)
             {
-                int nr_t;
-
                 /* Divide equally over the threads */
-                nr_t = (((idef->il[f].nr/nat1)*t)/bt->nthreads)*nat1;
+                int nr_t = (((il.nr/stride)*t)/bt->nthreads)*stride;
 
-                if (f == F_DISRES)
+                if (ftype == F_DISRES)
                 {
                     /* Ensure that distance restraint pairs with the same label
                      * end up on the same thread.
                      */
-                    while (nr_t > 0 && nr_t < idef->il[f].nr &&
-                           idef->iparams[idef->il[f].iatoms[nr_t]].disres.label ==
-                           idef->iparams[idef->il[f].iatoms[nr_t-nat1]].disres.label)
+                    while (nr_t > 0 && nr_t < il.nr &&
+                           idef->iparams[il.iatoms[nr_t]].disres.label ==
+                           idef->iparams[il.iatoms[nr_t - stride]].disres.label)
                     {
-                        nr_t += nat1;
+                        nr_t += stride;
                     }
                 }
 
-                bt->il_thread_division[f*(bt->nthreads + 1) + t] = nr_t;
+                bt->il_thread_division[ftype*(bt->nthreads + 1) + t] = nr_t;
             }
         }
         else
         {
             /* Add this ftype to the list to be distributed */
-            int nat;
-
-            nat              = NRAL(f);
-            ild[ntype].ftype = f;
-            ild[ntype].il    = &idef->il[f];
+            int nat          = NRAL(ftype);
+            ild[ntype].ftype = ftype;
+            ild[ntype].il    = &il;
             ild[ntype].nat   = nat;
 
             /* The first index for the thread division is always 0 */
-            bt->il_thread_division[f*(bt->nthreads + 1)] = 0;
+            bt->il_thread_division[ftype*(bt->nthreads + 1)] = 0;
 
             ntype++;
         }
