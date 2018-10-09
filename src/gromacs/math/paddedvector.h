@@ -279,10 +279,22 @@ class PaddedVector
         }
         //! Move constructor using \c alloc for the new vector.
         PaddedVector(PaddedVector &&o, const Allocator &alloc) noexcept :
-            storage_(std::move(o.storage_), alloc),
-            unpaddedEnd_(std::move(o.unpaddedEnd_))
+            storage_(std::move(alloc)),
+            unpaddedEnd_(begin())
         {
-            unpaddedEnd_ = begin();
+            auto unpaddedSize = o.size();
+            if (alloc == o.storage_.get_allocator())
+            {
+                storage_ = std::move(o.storage_);
+            }
+            else
+            {
+                // If the allocator compares differently, we must
+                // reallocate and copy.
+                resizeWithPadding(unpaddedSize);
+                std::copy(o.begin(), o.end(), storage_.begin());
+            }
+            unpaddedEnd_ = begin() + unpaddedSize;
         }
         //! Construct from an initializer list
         PaddedVector(std::initializer_list<value_type> const &il) :
