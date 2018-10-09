@@ -63,6 +63,7 @@
 #include "gromacs/imd/imd.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/disre.h"
+#include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/listed-forces/orires.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
@@ -1206,6 +1207,17 @@ static void do_force_cutsVERLET(FILE *fplog,
         }
 
         nbnxn_atomdata_set(nbv->nbat, nbv->nbs.get(), mdatoms, fr->cginfo);
+
+        /* Now we put all atoms on the grid, we can assign bonded interactions
+         * to the GPU, where the grid order is needed.
+         */
+        if (fr->gpuBondedLists)
+        {
+            assign_bondeds_to_gpu(fr->gpuBondedLists,
+                                  nbnxn_get_gridindices(fr->nbv->nbs.get()),
+                                  top->idef);
+        }
+
         wallcycle_stop(wcycle, ewcNS);
     }
 

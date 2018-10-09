@@ -48,17 +48,29 @@
 
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/arrayref.h"
 
-/*! \brief Divide the listed interactions over the threads
+struct GpuBondedLists
+{
+    InteractionLists iLists;
+};
+
+/*! \brief Copy bonded interactions assigned to the GPU to \p gpuBondedLists */
+void assign_bondeds_to_gpu(GpuBondedLists           *gpuBondedLists,
+                           gmx::ArrayRef<const int>  nbnxnAtomOrder,
+                           const t_idef             &idef);
+
+/*! \brief Divide the listed interactions over the threads and GPU
  *
  * Uses fr->nthreads for the number of threads, and sets up the
- * thread-force buffer reduction. This should be called each time the
- * bonded setup changes; i.e. at start-up without domain decomposition
- * and at DD.
+ * thread-force buffer reduction.
+ * This should be called each time the bonded setup changes;
+ * i.e. at start-up without domain decomposition and at DD.
  */
 void setup_bonded_threading(bonded_threading_t *bt,
                             int                 numAtoms,
-                            const t_idef       *idef);
+                            bool                useGpuForBondes,
+                            const t_idef       &idef);
 
 //! Destructor.
 void tear_down_bonded_threading(bonded_threading_t *bt);
