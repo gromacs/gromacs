@@ -33,6 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 set(test_sources
+    builder.cpp
     outputadaptercontainer.cpp
     )
 gmx_add_unit_test(CoordinateIOTests coordinateio-test ${test_sources})
