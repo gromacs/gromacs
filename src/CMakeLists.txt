@@ -121,5 +121,11 @@ if (GMXAPI)
    if (GMX_BUILD_MDRUN_ONLY)
        message(FATAL_ERROR "GMXAPI relies on libgromacs and is incompatible with GMX_BUILD_MDRUN_ONLY.")
    endif()
+   if(NOT ${BUILD_SHARED_LIBS})
+   # TODO: this conditional should check for the existence of a libgromacs target supporting PIC.
+   # but the commented version of the conditional didn't do the trick.
+   #   if(NOT $<TARGET_PROPERTY:libgromacs,POSITION_INDEPENDENT_CODE>)
+       message(FATAL_ERROR "GMXAPI requires position-independent code. Set -DGMXAPI=OFF or -DBUILD_SHARED_LIBS=ON.")
+   endif()
    add_subdirectory(api)
 endif()
