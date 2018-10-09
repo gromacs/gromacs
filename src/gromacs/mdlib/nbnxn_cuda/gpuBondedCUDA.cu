@@ -192,7 +192,7 @@ __device__ real harmonic_gpu(real kA, real kB, real xA, real xB, real x, real la
 __global__ 
 void bonds_gpu(real *vtot, int nbonds, int natoms,
                const t_iatom forceatoms[], const t_iparams forceparams[],
-               const rvec x[], rvec f_distributed[], rvec fshift[], 
+               const rvec x[], rvec force[], rvec fshift[],
                const t_pbc *pbc,  const rvec *pbc_hbox_diag, const matrix *pbc_box, 
                const rvec *pbc_mhbox_diag, const rvec  *pbc_fbox_diag,  
                const rvec*  pbc_tric_vec,  const ivec*  pbc_tric_shift,
@@ -260,8 +260,8 @@ void bonds_gpu(real *vtot, int nbonds, int natoms,
     for (m = 0; (m < DIM); m++)  
         {
             fij                 = fbond*dx[m];
-            f_distributed[ai+natoms*li][m] = fij;
-            f_distributed[aj+natoms*lj][m] = -1.0f*fij;
+            atomicAdd(&force[ai][m], fij);
+            atomicAdd(&force[aj][m], -fij);
             if(ki != CENTRAL) {
               atomicAdd(&fshift_loc[ki][m],fij);
               atomicAdd(&fshift_loc[CENTRAL][m],-1.0f*fij);
@@ -277,7 +277,7 @@ void bonds_gpu(real *vtot, int nbonds, int natoms,
 __global__
 void bonds_gpu_noener(real *vtot, int nbonds, int natoms,
                const t_iatom forceatoms[], const t_iparams forceparams[],
-               const rvec x[], rvec f_distributed[], rvec fshift[],
+               const rvec x[], rvec force[], rvec fshift[],
                const t_pbc *pbc, const rvec *pbc_hbox_diag, const matrix *pbc_box,
                const rvec *pbc_mhbox_diag, const rvec  *pbc_fbox_diag,
                const rvec*  pbc_tric_vec,  const ivec*  pbc_tric_shift,
@@ -330,8 +330,8 @@ void bonds_gpu_noener(real *vtot, int nbonds, int natoms,
     for (m = 0; (m < DIM); m++)
         {
             fij                 = fbond*dx[m];
-            f_distributed[ai+natoms*li][m] = fij;
-            f_distributed[aj+natoms*lj][m] = -1.0f*fij;
+            atomicAdd(&force[ai][m], fij);
+            atomicAdd(&force[aj][m], -fij);
         }
   }
   return;
@@ -365,7 +365,7 @@ real bond_angle_gpu(const rvec xi, const rvec xj, const rvec xk, const t_pbc *pb
 __global__
 void angles_gpu(real *vtot, int nbonds, int natoms,
             const t_iatom forceatoms[], const t_iparams forceparams[],
-            const rvec x[], rvec f_distributed[], rvec fshift[],
+            const rvec x[], rvec force[], rvec fshift[],
             const t_pbc *pbc,  const rvec *pbc_hbox_diag, const matrix *pbc_box,
             const rvec *pbc_mhbox_diag, const rvec  *pbc_fbox_diag,
             const rvec*  pbc_tric_vec,  const ivec*  pbc_tric_shift,
@@ -444,9 +444,9 @@ void angles_gpu(real *vtot, int nbonds, int natoms,
                 f_i[m]    = -(cik*r_kj[m] - cii*r_ij[m]);
                 f_k[m]    = -(cik*r_ij[m] - ckk*r_kj[m]);
                 f_j[m]    = -f_i[m] - f_k[m];
-                f_distributed[ai+natoms*li][m] = f_i[m];
-                f_distributed[aj+natoms*lj][m] = f_j[m];
-                f_distributed[ak+natoms*lk][m] = f_k[m];
+                atomicAdd(&force[ai][m], f_i[m]);
+                atomicAdd(&force[aj][m], f_j[m]);
+                atomicAdd(&force[ak][m], f_k[m]);
             }
 /*            if (g != nullptr)
             {
@@ -471,7 +471,7 @@ void angles_gpu(real *vtot, int nbonds, int natoms,
 __global__
 void angles_gpu_noener(real *vtot, int nbonds, int natoms,
             const t_iatom forceatoms[], const t_iparams forceparams[],
-            const rvec x[], rvec f_distributed[], rvec fshift[],
+            const rvec x[], rvec force[], rvec fshift[],
             const t_pbc *pbc, const rvec *pbc_hbox_diag, const matrix *pbc_box,
             const rvec *pbc_mhbox_diag, const rvec  *pbc_fbox_diag,
             const rvec*  pbc_tric_vec,  const ivec*  pbc_tric_shift,
@@ -539,9 +539,9 @@ void angles_gpu_noener(real *vtot, int nbonds, int natoms,
                 f_i[m]    = -(cik*r_kj[m] - cii*r_ij[m]);
                 f_k[m]    = -(cik*r_ij[m] - ckk*r_kj[m]);
                 f_j[m]    = -f_i[m] - f_k[m];
-                f_distributed[ai+natoms*li][m] = f_i[m];
-                f_distributed[aj+natoms*lj][m] = f_j[m];
-                f_distributed[ak+natoms*lk][m] = f_k[m];
+                atomicAdd(&force[ai][m], f_i[m]);
+                atomicAdd(&force[aj][m], f_j[m]);
+                atomicAdd(&force[ak][m], f_k[m]);
             }
 /*            if (g != nullptr)
             {
@@ -562,7 +562,7 @@ void angles_gpu_noener(real *vtot, int nbonds, int natoms,
 __global__
 void urey_bradley_gpu(real *vtot, int nbonds,int natoms,
                   const t_iatom forceatoms[], const t_iparams forceparams[],
-                  const rvec x[], rvec f_distributed[], rvec fshift[],
+                  const rvec x[], rvec force[], rvec fshift[],
                   const t_pbc *pbc, const rvec *pbc_hbox_diag, const matrix *pbc_box,
                   const rvec *pbc_mhbox_diag, const rvec  *pbc_fbox_diag,
                   const rvec*  pbc_tric_vec,  const ivec*  pbc_tric_shift,
@@ -650,9 +650,9 @@ void urey_bradley_gpu(real *vtot, int nbonds,int natoms,
                 f_i[m]    = -(cik*r_kj[m]-cii*r_ij[m]);
                 f_k[m]    = -(cik*r_ij[m]-ckk*r_kj[m]);
                 f_j[m]    = -f_i[m]-f_k[m];
-                f_distributed[ai+natoms*li][m] = f_i[m];
-                f_distributed[aj+natoms*lj][m] = f_j[m];
-                f_distributed[ak+natoms*lk][m] = f_k[m];
+                atomicAdd(&force[ai][m], f_i[m]);
+                atomicAdd(&force[aj][m], f_j[m]);
+                atomicAdd(&force[ak][m], f_k[m]);
             }
 /*            if (g)
             {
@@ -666,13 +666,6 @@ void urey_bradley_gpu(real *vtot, int nbonds,int natoms,
             rvec_inc_atomic(fshift_loc[t1], f_i);
             rvec_inc_atomic(fshift_loc[CENTRAL], f_j);
             rvec_inc_atomic(fshift_loc[t2], f_k);
-        } else {
-           for (m = 0; (m < DIM); m++)  
-           {
-             f_distributed[ai+natoms*li][m] = 0.0;
-             f_distributed[aj+natoms*lj][m] = 0.0;
-             f_distributed[ak+natoms*lk][m] = 0.0;
-           }
         }
 
                              /* 161 TOTAL    */
@@ -691,9 +684,9 @@ void urey_bradley_gpu(real *vtot, int nbonds,int natoms,
         } */
           for (m = 0; (m < DIM); m++)     /*  15          */
           {
-            fik                 = fbond*r_ik[m];
-              f_distributed[ai+natoms*li][m] += fik;
-              f_distributed[ak+natoms*lk][m] -= fik;
+              fik                 = fbond*r_ik[m];
+              atomicAdd(&force[ai][m], fik);
+              atomicAdd(&force[ak][m], -fik);
               if(ki != CENTRAL) {
                 atomicAdd(&fshift_loc[ki][m],fik);
                 atomicAdd(&fshift_loc[CENTRAL][m],-1.0f*fik);
@@ -710,7 +703,7 @@ void urey_bradley_gpu(real *vtot, int nbonds,int natoms,
 __global__
 void urey_bradley_gpu_noener(real *vtot, int nbonds,int natoms,
                   const t_iatom forceatoms[], const t_iparams forceparams[],
-                  const rvec x[], rvec f_distributed[], rvec fshift[],
+                  const rvec x[], rvec force[], rvec fshift[],
                   const t_pbc *pbc, const rvec *pbc_hbox_diag, const matrix *pbc_box,
                   const rvec *pbc_mhbox_diag, const rvec  *pbc_fbox_diag,
                   const rvec*  pbc_tric_vec,  const ivec*  pbc_tric_shift,
@@ -786,19 +779,11 @@ void urey_bradley_gpu_noener(real *vtot, int nbonds,int natoms,
                 f_i[m]    = -(cik*r_kj[m]-cii*r_ij[m]);
                 f_k[m]    = -(cik*r_ij[m]-ckk*r_kj[m]);
                 f_j[m]    = -f_i[m]-f_k[m];
-                f_distributed[ai+natoms*li][m] = f_i[m];
-                f_distributed[aj+natoms*lj][m] = f_j[m];
-                f_distributed[ak+natoms*lk][m] = f_k[m];
+                atomicAdd(&force[ai][m], f_i[m]);
+                atomicAdd(&force[aj][m], f_j[m]);
+                atomicAdd(&force[ak][m], f_k[m]);
             }
-        } else {
-           for (m = 0; (m < DIM); m++)
-           {
-             f_distributed[ai+natoms*li][m] = 0.0;
-             f_distributed[aj+natoms*lj][m] = 0.0;
-             f_distributed[ak+natoms*lk][m] = 0.0;
-           }
         }
-
                              /* 161 TOTAL    */
         /* Time for the bond calculations */
         if (dr2 != 0.0)
@@ -807,9 +792,9 @@ void urey_bradley_gpu_noener(real *vtot, int nbonds,int natoms,
 
           for (m = 0; (m < DIM); m++)     /*  15          */
           {
-            fik                 = fbond*r_ik[m];
-              f_distributed[ai+natoms*li][m] += fik;
-              f_distributed[ak+natoms*lk][m] -= fik;
+              fik                 = fbond*r_ik[m];
+              atomicAdd(&force[ai][m], fik);
+              atomicAdd(&force[ak][m], -fik);
           }
         }
     }
@@ -876,7 +861,7 @@ void do_dih_fup_gpu(int i, int j, int k, int l,
                     int li, int lj, int lk, int ll,int natoms,
                 real ddphi,
                 rvec r_ij, rvec r_kj, rvec r_kl,
-                rvec m, rvec n, rvec f_distributed[], rvec fshift[],
+                rvec m, rvec n, rvec force[], rvec fshift[],
                 const t_pbc *pbc,  const rvec *pbc_hbox_diag, const matrix *pbc_box,
                 const rvec *pbc_mhbox_diag, const rvec  *pbc_fbox_diag,
                 const rvec*  pbc_tric_vec,  const ivec*  pbc_tric_shift,
@@ -914,10 +899,10 @@ void do_dih_fup_gpu(int i, int j, int k, int l,
 #pragma unroll
         for (int m = 0; (m < DIM); m++)
         {
-           f_distributed[i+natoms*li][m] = f_i[m];
-           f_distributed[j+natoms*lj][m] = -1.0*f_j[m];
-           f_distributed[k+natoms*lk][m] = -1.0*f_k[m];
-           f_distributed[l+natoms*ll][m] = f_l[m];
+           atomicAdd(&force[i][m], f_i[m]);
+           atomicAdd(&force[j][m], -f_j[m]);
+           atomicAdd(&force[k][m], -f_k[m]);
+           atomicAdd(&force[l][m], f_l[m]);
         }
           
 
@@ -958,7 +943,7 @@ void do_dih_fup_gpu_noener(int i, int j, int k, int l,
                     int li, int lj, int lk, int ll,int natoms,
                 real ddphi,
                 rvec r_ij, rvec r_kj, rvec r_kl,
-                rvec m, rvec n, rvec f_distributed[], rvec fshift[],
+                rvec m, rvec n, rvec force[], rvec fshift[],
                 const t_pbc *pbc,  const rvec *pbc_hbox_diag, const matrix *pbc_box,
                 const rvec *pbc_mhbox_diag, const rvec  *pbc_fbox_diag,
                 const rvec*  pbc_tric_vec,  const ivec*  pbc_tric_shift,
@@ -996,10 +981,10 @@ void do_dih_fup_gpu_noener(int i, int j, int k, int l,
 #pragma unroll
         for (int m = 0; (m < DIM); m++)
         {
-           f_distributed[i+natoms*li][m] = f_i[m];
-           f_distributed[j+natoms*lj][m] = -1.0*f_j[m];
-           f_distributed[k+natoms*lk][m] = -1.0*f_k[m];
-           f_distributed[l+natoms*ll][m] = f_l[m];
+           atomicAdd(&force[i][m], f_i[m]);
+           atomicAdd(&force[j][m], -f_j[m]);
+           atomicAdd(&force[k][m], -f_k[m]);
+           atomicAdd(&force[l][m], f_l[m]);
         }
         if (pbc)
         {
@@ -1643,7 +1628,7 @@ evaluate_single(real r2, real tabscale, real *vftab, real tableStride,
 __global__
 void pairs_gpu(int ftype, int nbonds,int natoms,
                  const t_iatom iatoms[], const t_iparams iparams[],
-                 const rvec x[], rvec f[], rvec fshift[],
+                 const rvec x[], rvec force[], rvec fshift[],
                  const t_pbc *pbc,  const rvec *pbc_hbox_diag, const matrix *pbc_box,
                  const rvec *pbc_mhbox_diag, const rvec  *pbc_fbox_diag,
                  const rvec*  pbc_tric_vec,  const ivec*  pbc_tric_shift,
@@ -1752,8 +1737,8 @@ void pairs_gpu(int ftype, int nbonds,int natoms,
         /* Add the forces */
           for (int m = 0; m < DIM; m++)
           {
-             f[ai+natoms*li][m] = dx[m];
-             f[aj+natoms*lj][m] = -1.0*dx[m];
+             atomicAdd(&force[ai][m], dx[m]);
+             atomicAdd(&force[aj][m], -dx[m]);
           }
 
 ///////////// No Graphs ///////////
@@ -1778,7 +1763,7 @@ void pairs_gpu(int ftype, int nbonds,int natoms,
 __global__
 void pairs_gpu_noener(int ftype, int nbonds,int natoms,
                  const t_iatom iatoms[], const t_iparams iparams[],
-                 const rvec x[], rvec f[], rvec fshift[],
+                 const rvec x[], rvec force[], rvec fshift[],
                  const t_pbc *pbc,  const rvec *pbc_hbox_diag, const matrix *pbc_box,
                  const rvec *pbc_mhbox_diag, const rvec  *pbc_fbox_diag,
                  const rvec*  pbc_tric_vec,  const ivec*  pbc_tric_shift,
@@ -1874,8 +1859,8 @@ void pairs_gpu_noener(int ftype, int nbonds,int natoms,
         /* Add the forces */
         for (int m = 0; m < DIM; m++)
         {
-           f[ai+natoms*li][m] = dx[m];
-           f[aj+natoms*lj][m] = -1.0*dx[m];
+            atomicAdd(&force[ai][m], dx[m]);
+            atomicAdd(&force[aj][m], -dx[m]);
         }
 
     }
@@ -1909,28 +1894,28 @@ void calc_force_mapping ( int nbonds, int atoms_per_bond,
       force_mapping[atoms_per_bond*i+j]=p;
       atomicMax(force_max,p);
     } 
-    assert(*force_max<BO_MAX_FORCE);
+//     assert(*force_max<BO_MAX_FORCE);
   } 
 }
 
-__global__ 
-void consolidate_forces (int natoms, rvec force[], rvec force_distributed[], int force_next[])
-{
-  int i,j;
-  rvec force_loc = {0.0f, 0.0f, 0.0f };
-
-  i=blockIdx.x*blockDim.x+threadIdx.x;
-  if (i <  natoms )
-  {
-     for(j=0;j<force_next[i];j++) // could do the max as well, should compare.
-     {
-       force_loc[XX]+=force_distributed[j*natoms+i][XX];
-       force_loc[YY]+=force_distributed[j*natoms+i][YY];
-       force_loc[ZZ]+=force_distributed[j*natoms+i][ZZ];
-     }
-  rvec_inc_gpu(force[i],force_loc);
-  }
-}
+// __global__ 
+// void consolidate_forces (int natoms, rvec force[], rvec force_distributed[], int force_next[])
+// {
+//   int i,j;
+//   rvec force_loc = {0.0f, 0.0f, 0.0f };
+// 
+//   i=blockIdx.x*blockDim.x+threadIdx.x;
+//   if (i <  natoms )
+//   {
+//      for(j=0;j<force_next[i];j++) // could do the max as well, should compare.
+//      {
+//        force_loc[XX]+=force_distributed[j*natoms+i][XX];
+//        force_loc[YY]+=force_distributed[j*natoms+i][YY];
+//        force_loc[ZZ]+=force_distributed[j*natoms+i][ZZ];
+//      }
+//   rvec_inc_gpu(force[i],force_loc);
+//   }
+// }
 
 
 /*-------------------------------- End CUDA kernels-----------------------------*/
@@ -1994,7 +1979,7 @@ static int fr_pairsTable_alloc[BO_MAX_RANKS];
 
 static unsigned short *md_cENER_d[BO_MAX_RANKS];
 
-static rvec *force_distributed_d[BO_MAX_RANKS];
+// static rvec *force_distributed_d[BO_MAX_RANKS];
 static int force_distributed_allocated[BO_MAX_RANKS];
 static int *force_next_d[BO_MAX_RANKS][F_NRE];
 static int *force_mapping_d[BO_MAX_RANKS][F_NRE];
@@ -2299,15 +2284,15 @@ int x_needed = (xsize > md->nr) ? xsize : md->nr ;
   CU_RET_ERR(stat, "Async error");
  
 // reallocate force_distributed_d if needed   
-  if(xsize*(force_max[rank]+1)>force_distributed_allocated[rank]) {
-    if(force_distributed_d[rank]) {
-       stat = cudaFree(force_distributed_d[rank]);
-       CU_RET_ERR(stat, "cudaFree failed");
-    }
-    stat = cudaMalloc(&force_distributed_d[rank],sizeof(rvec)*xsize*(force_max[rank]+1));
-    CU_RET_ERR(stat, "cudaMalloc failed");
-    force_distributed_allocated[rank]=xsize*(force_max[rank]+1);
-  }
+//   if(xsize*(force_max[rank]+1)>force_distributed_allocated[rank]) {
+//     if(force_distributed_d[rank]) {
+//        stat = cudaFree(force_distributed_d[rank]);
+//        CU_RET_ERR(stat, "cudaFree failed");
+//     }
+//     stat = cudaMalloc(&force_distributed_d[rank],sizeof(rvec)*xsize*(force_max[rank]+1));
+//     CU_RET_ERR(stat, "cudaMalloc failed");
+//     force_distributed_allocated[rank]=xsize*(force_max[rank]+1);
+//   }
   cudaStreamSynchronize(streamBonded[rank]); 
 }
 
@@ -2431,7 +2416,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
          pdihs_gpu <<<blocks,threads,0,streamBonded[rank]>>>
            (&vtot_d[rank][ftype],nbonds,natoms,
            iatoms_d[rank][ftype],forceparams_d[rank],
-           x_d_in, force_distributed_d[rank], f_shift_d[rank],
+           x_d_in, f_d_in, f_shift_d[rank],
            pbc_d[rank], pbc_hbox_diag_d[rank],
            pbc_box_d[rank],pbc_mhbox_diag_d[rank],
            pbc_fbox_diag_d[rank],pbc_tric_vec_d[rank],      
@@ -2444,7 +2429,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
            pdihs_gpu_noener <<<blocks,threads,0,streamBonded[rank]>>>
            (&vtot_d[rank][ftype],nbonds,natoms,
            iatoms_d[rank][ftype],forceparams_d[rank]  ,
-           x_d_in, force_distributed_d[rank], f_shift_d[rank],
+           x_d_in, f_d_in, f_shift_d[rank],
            pbc_d[rank],pbc_hbox_diag_d[rank],
            pbc_box_d[rank],pbc_mhbox_diag_d[rank],
            pbc_fbox_diag_d[rank],pbc_tric_vec_d[rank],
@@ -2455,8 +2440,8 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
 //          global_atom_index);
 
         }
-        consolidate_forces<<<blocks_natoms,threads,0,streamBonded[rank]>>>
-        (natoms, f_d_in, force_distributed_d[rank],force_next_d[rank][ftype]);
+//         consolidate_forces<<<blocks_natoms,threads,0,streamBonded[rank]>>>
+//         (natoms, f_d_in, force_distributed_d[rank],force_next_d[rank][ftype]);
       }
 
     }
@@ -2487,7 +2472,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
          bonds_gpu <<<blocks,threads,0,streamBonded[rank]>>> 
           (&vtot_d[rank][ftype],nbonds,natoms,
           iatoms_d[rank][ftype],forceparams_d[rank]  ,
-          x_d_in, force_distributed_d[rank], f_shift_d[rank], 
+          x_d_in, f_d_in, f_shift_d[rank],
           pbc_d[rank], pbc_hbox_diag_d[rank],
           pbc_box_d[rank],pbc_mhbox_diag_d[rank],
           pbc_fbox_diag_d[rank],pbc_tric_vec_d[rank],
@@ -2500,7 +2485,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
           bonds_gpu_noener <<<blocks,threads,0,streamBonded[rank]>>>
           (&vtot_d[rank][ftype],nbonds,natoms,
           iatoms_d[rank][ftype],forceparams_d[rank]  ,
-          x_d_in, force_distributed_d[rank], f_shift_d[rank],
+          x_d_in, f_d_in, f_shift_d[rank],
           pbc_d[rank], pbc_hbox_diag_d[rank],
            pbc_box_d[rank],pbc_mhbox_diag_d[rank],
            pbc_fbox_diag_d[rank],pbc_tric_vec_d[rank],
@@ -2512,8 +2497,8 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
 
         }
 
-        consolidate_forces<<<blocks_natoms,threads,0,streamBonded[rank]>>>
-        (natoms, f_d_in, force_distributed_d[rank],force_next_d[rank][ftype]);
+//         consolidate_forces<<<blocks_natoms,threads,0,streamBonded[rank]>>>
+//         (natoms, f_d_in, force_distributed_d[rank],force_next_d[rank][ftype]);
       }
 
       if(ftype == F_ANGLES) {
@@ -2521,7 +2506,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
         angles_gpu <<<blocks,threads,0,streamBonded[rank]>>>
           (&vtot_d[rank][ftype],nbonds,natoms,
           iatoms_d[rank][ftype],forceparams_d[rank]  ,
-          x_d_in, force_distributed_d[rank], f_shift_d[rank],
+          x_d_in, f_d_in, f_shift_d[rank],
           pbc_d[rank], pbc_hbox_diag_d[rank],
            pbc_box_d[rank],pbc_mhbox_diag_d[rank],
           pbc_fbox_diag_d[rank],pbc_tric_vec_d[rank],
@@ -2534,7 +2519,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
           angles_gpu_noener <<<blocks,threads,0,streamBonded[rank]>>>
           (&vtot_d[rank][ftype],nbonds,natoms,
           iatoms_d[rank][ftype],forceparams_d[rank]  ,
-          x_d_in, force_distributed_d[rank], f_shift_d[rank],
+          x_d_in, f_d_in, f_shift_d[rank],
           pbc_d[rank], pbc_hbox_diag_d[rank],
           pbc_box_d[rank],pbc_mhbox_diag_d[rank],
           pbc_fbox_diag_d[rank],pbc_tric_vec_d[rank],
@@ -2546,8 +2531,8 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
 
         }
  
-        consolidate_forces<<<blocks_natoms,threads,0,streamBonded[rank]>>>
-        (natoms, f_d_in, force_distributed_d[rank],force_next_d[rank][ftype]);
+//         consolidate_forces<<<blocks_natoms,threads,0,streamBonded[rank]>>>
+//         (natoms, f_d_in, force_distributed_d[rank],force_next_d[rank][ftype]);
       }
 
       if(ftype == F_UREY_BRADLEY) {
@@ -2555,7 +2540,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
          urey_bradley_gpu <<<blocks,threads,0,streamBonded[rank]>>>
           (&vtot_d[rank][ftype],nbonds,natoms,
           iatoms_d[rank][ftype],forceparams_d[rank]  ,
-          x_d_in, force_distributed_d[rank], f_shift_d[rank],
+          x_d_in, f_d_in, f_shift_d[rank],
           pbc_d[rank], pbc_hbox_diag_d[rank],
           pbc_box_d[rank],pbc_mhbox_diag_d[rank],
           pbc_fbox_diag_d[rank],pbc_tric_vec_d[rank],
@@ -2568,7 +2553,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
          urey_bradley_gpu_noener <<<blocks,threads,0,streamBonded[rank]>>>
           (&vtot_d[rank][ftype],nbonds,natoms,
           iatoms_d[rank][ftype],forceparams_d[rank]  ,
-          x_d_in, force_distributed_d[rank], f_shift_d[rank],
+          x_d_in, f_d_in, f_shift_d[rank],
           pbc_d[rank], pbc_hbox_diag_d[rank],
           pbc_box_d[rank],pbc_mhbox_diag_d[rank],
           pbc_fbox_diag_d[rank],pbc_tric_vec_d[rank],
@@ -2577,8 +2562,8 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
           force_mapping_d[rank][ftype]);
        }
 
-        consolidate_forces<<<blocks_natoms,threads,0,streamBonded[rank]>>>
-        (natoms, f_d_in, force_distributed_d[rank],force_next_d[rank][ftype]);
+//         consolidate_forces<<<blocks_natoms,threads,0,streamBonded[rank]>>>
+//         (natoms, f_d_in, force_distributed_d[rank],force_next_d[rank][ftype]);
       }
 
        if(ftype == F_RBDIHS  ) {
@@ -2586,7 +2571,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
          rbdihs_gpu <<<blocks,threads,0,streamBonded[rank]>>>
            (&vtot_d[rank][ftype],nbonds,natoms,
            iatoms_d[rank][ftype],forceparams_d[rank]  ,
-           x_d_in, force_distributed_d[rank], f_shift_d[rank],
+           x_d_in, f_d_in, f_shift_d[rank],
            pbc_d[rank], pbc_hbox_diag_d[rank],
            pbc_box_d[rank],pbc_mhbox_diag_d[rank],
            pbc_fbox_diag_d[rank],pbc_tric_vec_d[rank],
@@ -2599,7 +2584,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
            rbdihs_gpu_noener <<<blocks,threads,0,streamBonded[rank]>>>
            (&vtot_d[rank][ftype],nbonds,natoms,
            iatoms_d[rank][ftype],forceparams_d[rank]  ,
-           x_d_in, force_distributed_d[rank], f_shift_d[rank],
+           x_d_in, f_d_in, f_shift_d[rank],
            pbc_d[rank], pbc_hbox_diag_d[rank],
            pbc_box_d[rank],pbc_mhbox_diag_d[rank],
            pbc_fbox_diag_d[rank],pbc_tric_vec_d[rank],
@@ -2610,8 +2595,8 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
 //          global_atom_index);
          }
 
-        consolidate_forces<<<blocks_natoms,threads,0,streamBonded[rank]>>>
-        (natoms, f_d_in, force_distributed_d[rank],force_next_d[rank][ftype]);
+//         consolidate_forces<<<blocks_natoms,threads,0,streamBonded[rank]>>>
+//         (natoms, f_d_in, force_distributed_d[rank],force_next_d[rank][ftype]);
       }
 
       if(ftype == F_IDIHS  ) {
@@ -2619,7 +2604,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
          idihs_gpu <<<blocks,threads,0,streamBonded[rank]>>>
            (&vtot_d[rank][ftype],nbonds,natoms,
            iatoms_d[rank][ftype],forceparams_d[rank]  ,
-           x_d_in, force_distributed_d[rank], f_shift_d[rank],
+           x_d_in, f_d_in, f_shift_d[rank],
            pbc_d[rank], pbc_hbox_diag_d[rank],
            pbc_box_d[rank],pbc_mhbox_diag_d[rank],
            pbc_fbox_diag_d[rank],pbc_tric_vec_d[rank],
@@ -2632,7 +2617,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
            idihs_gpu_noener <<<blocks,threads,0,streamBonded[rank]>>>
            (&vtot_d[rank][ftype],nbonds,natoms,
            iatoms_d[rank][ftype],forceparams_d[rank]  ,
-           x_d_in, force_distributed_d[rank], f_shift_d[rank],
+           x_d_in, f_d_in, f_shift_d[rank],
            pbc_d[rank], pbc_hbox_diag_d[rank],
            pbc_box_d[rank],pbc_mhbox_diag_d[rank],
            pbc_fbox_diag_d[rank],pbc_tric_vec_d[rank],
@@ -2642,8 +2627,8 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
 //          md, fcd,
 //          global_atom_index);
          }
-        consolidate_forces<<<blocks_natoms,threads,0,streamBonded[rank]>>>
-        (natoms, f_d_in, force_distributed_d[rank],force_next_d[rank][ftype]);
+//         consolidate_forces<<<blocks_natoms,threads,0,streamBonded[rank]>>>
+//         (natoms, f_d_in, force_distributed_d[rank],force_next_d[rank][ftype]);
 
       }  
      
@@ -2652,7 +2637,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
            pairs_gpu <<<blocks,threads,0,streamBonded[rank]>>>
             (ftype,nbonds,natoms,
             iatoms_d[rank][ftype],forceparams_d[rank]  ,
-            x_d_in, force_distributed_d[rank], f_shift_d[rank],
+            x_d_in, f_d_in, f_shift_d[rank],
             pbc_d[rank], pbc_hbox_diag_d[rank],
             pbc_box_d[rank],pbc_mhbox_diag_d[rank],
             pbc_fbox_diag_d[rank],pbc_tric_vec_d[rank],
@@ -2670,7 +2655,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
             pairs_gpu_noener <<<blocks,threads,0,streamBonded[rank]>>>
             (ftype,nbonds,natoms,
             iatoms_d[rank][ftype],forceparams_d[rank]  ,
-            x_d_in, force_distributed_d[rank], f_shift_d[rank],
+            x_d_in, f_d_in, f_shift_d[rank],
             pbc_d[rank], pbc_hbox_diag_d[rank],
             pbc_box_d[rank],pbc_mhbox_diag_d[rank],
             pbc_fbox_diag_d[rank],pbc_tric_vec_d[rank],
@@ -2686,8 +2671,8 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
             );
 
           }
-          consolidate_forces<<<blocks_natoms,threads,0,streamBonded[rank]>>>
-           (natoms, f_d_in, force_distributed_d[rank],force_next_d[rank][ftype]);
+//           consolidate_forces<<<blocks_natoms,threads,0,streamBonded[rank]>>>
+//            (natoms, f_d_in, force_distributed_d[rank],force_next_d[rank][ftype]);
       } 
     }
   }  
