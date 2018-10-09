@@ -154,6 +154,7 @@
 #ifndef GMX_COORDINATEIO_H
 #define GMX_COORDINATEIO_H
 
+#include "gromacs/coordinateio/builder.h"
 #include "gromacs/coordinateio/enums.h"
 #include "gromacs/coordinateio/ioutputadapter.h"
 #include "gromacs/coordinateio/outputadaptercontainer.h"

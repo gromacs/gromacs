@@ -37,9 +37,12 @@ file(GLOB COORDINATEIO_SOURCES *.cpp outputadapters/*.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${COORDINATEIO_SOURCES} PARENT_SCOPE)
 
 gmx_install_headers(
+    builder.h
     ioutputadapter.h
     outputadaptercontainer.h
+    outputadapters.h
     outputmanager.h
+    requirements.h
     enums.h
     )
 
