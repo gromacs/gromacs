@@ -48,12 +48,177 @@
 
 #include <algorithm>
 
+#include "gromacs/coordinateio/outputadapters.h"
+#include "gromacs/coordinateio/requirements.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/exceptions.h"
 
 namespace gmx
 {
+
+/*!\brief
+ *  Get the internal file type from the \p filename.
+ *
+ *  \param[in] filename Filename of output file.
+ *  \throws InvalidInputError When unable to work on an emoty file name.
+ *  \returns integer value of file type.
+ */
+static int getFileType(const std::string &filename)
+{
+    int filetype = efNR;
+    if (!filename.empty())
+    {
+        filetype = fn2ftp(filename.c_str());
+    }
+    else
+    {
+        GMX_THROW(InvalidInputError("Can not open file with an empty name"));
+    }
+    return filetype;
+}
+
+/*!\brief
+ * Get the flag representing the requirements for a given file output.
+ *
+ * Also checks if the supplied topology is sufficient through the pointer
+ * to \p mtop.
+ *
+ * \param[in] filetype Internal file type used to check requirements.
+ * \throws InvalidInputError When encountering an invalid file type.
+ * \returns Requirements represent by the bitmask in the return type.
+ */
+static unsigned long getSupportedOutputAdapters(int filetype)
+{
+    unsigned long supportedOutputAdapters = 0;
+    supportedOutputAdapters |= convertFlag(CoordinateFileFlags::Base);
+    switch (filetype)
+    {
+        case (efTNG):
+            supportedOutputAdapters |= (convertFlag(CoordinateFileFlags::RequireForceOutput) |
+                                        convertFlag(CoordinateFileFlags::RequireVelocityOutput) |
+                                        convertFlag(CoordinateFileFlags::RequireAtomConnections) |
+                                        convertFlag(CoordinateFileFlags::RequireAtomInformation) |
+                                        convertFlag(CoordinateFileFlags::RequireChangedOutputPrecision));
+            break;
+        case (efPDB):
+            supportedOutputAdapters |= (convertFlag(CoordinateFileFlags::RequireAtomConnections) |
+                                        convertFlag(CoordinateFileFlags::RequireAtomInformation));
+            break;
+        case (efGRO):
+            supportedOutputAdapters |= (convertFlag(CoordinateFileFlags::RequireAtomInformation) |
+                                        convertFlag(CoordinateFileFlags::RequireVelocityOutput));
+            break;
+        case (efTRR):
+            supportedOutputAdapters |= (convertFlag(CoordinateFileFlags::RequireForceOutput) |
+                                        convertFlag(CoordinateFileFlags::RequireVelocityOutput));
+            break;
+        case (efXTC):
+            supportedOutputAdapters |= (convertFlag(CoordinateFileFlags::RequireChangedOutputPrecision));
+            break;
+        case (efG96):
+            break;
+        default:
+            GMX_THROW(InvalidInputError("Invalid file type"));
+    }
+    return supportedOutputAdapters;
+}
+
+/*! \brief
+ * Creates a new container object with the user requested IOutputAdapter derived
+ * methods attached to it.
+ *
+ * \param[in] requirements Specifications for modules to add.
+ * \param[in] sel          Selection to use for choosing atoms to write out.
+ * \param[in] abilities    Specifications for what the output method can do.
+ * \returns   New container for IoutputAdapter derived methods.
+ */
+static OutputAdapterContainer
+addOutputAdapters(const OutputRequirements  &requirements,
+                  AtomsDataPtr                /* atoms */,
+                  const Selection           &sel,
+                  unsigned long              abilities)
+{
+    OutputAdapterContainer output(abilities);
+
+    /* An adapter only gets added if the user has specified a non-default
+     * behaviour. In most cases, this behaviour is passive, meaning that
+     * output gets written if it exists in the input and if the output
+     * type supports it.
+     */
+    if (requirements.velocity != ChangeSettingType::PreservedIfPresent)
+    {
+        // add adapter here
+    }
+    if (requirements.force != ChangeSettingType::PreservedIfPresent)
+    {
+        // add adapter here
+    }
+    if (requirements.precision != ChangeFrameInfoType::PreservedIfPresent)
+    {
+        // add adapter here
+    }
+    if (requirements.atoms != ChangeAtomsType::PreservedIfPresent)
+    {
+        // add adapter here
+    }
+    if (requirements.frameTime != ChangeFrameTimeType::PreservedIfPresent)
+    {
+        // add adapter here
+    }
+    if (requirements.box != ChangeFrameInfoType::PreservedIfPresent)
+    {
+        // add adapter here
+    }
+    if (sel.isValid())
+    {
+        // add adapter here
+    }
+    return output;
+}
+
+std::unique_ptr<TrajectoryFrameWriter>
+createTrajectoryFrameWriter(const gmx_mtop_t   *top,
+                            const Selection    &sel,
+                            const std::string  &filename,
+                            AtomsDataPtr        atoms,
+                            OutputRequirements  requirements)
+{
+    /* TODO
+     * Currently the requirements object is expected to be processed and valid,
+     * meaning that e.g. a new box is specified if requested by the option,
+     * or that time values have been set if the corresponding values are set.
+     * This will need to get revisited when the code that builds this object from
+     * the user options gets merged.
+     */
+    int           filetype          = getFileType(filename);
+    unsigned long abilities         = getSupportedOutputAdapters(filetype);
+
+    // first, check if we have a special output format that needs atoms
+    if ((filetype == efPDB) || (filetype == efGRO))
+    {
+        if (requirements.atoms == ChangeAtomsType::Never)
+        {
+            GMX_THROW(InconsistentInputError("Can not write to PDB or GRO when"
+                                             "explicitly turning atom information off"));
+        }
+        if (requirements.atoms != ChangeAtomsType::AlwaysFromStructure)
+        {
+            requirements.atoms = ChangeAtomsType::Always;
+        }
+    }
+    OutputAdapterContainer outputAdapters = addOutputAdapters(requirements, std::move(atoms),
+                                                              sel, abilities);
+
+    TrajectoryFrameWriterPointer trajectoryFrameWriter(
+            new TrajectoryFrameWriter(filename,
+                                      filetype,
+                                      sel,
+                                      top,
+                                      std::move(outputAdapters)));
+    return trajectoryFrameWriter;
+}
+
 
 /*! \brief
  * Create a deep copy of a t_trxframe \p input into \p copy

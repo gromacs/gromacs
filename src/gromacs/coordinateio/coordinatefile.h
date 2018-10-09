@@ -57,6 +57,36 @@
 namespace gmx
 {
 
+class TrajectoryFrameWriter;
+struct OutputRequirements;
+
+/*! \brief
+ * Factory function for TrajectoryFrameWriter.
+ *
+ * Used to initialize a new instance of TrajectoryFrameWriter with the user supplied information
+ * for writing trajectory data to disk. Information needed is the file type, file name
+ * corresponding to the type, if available topology information and selection information.
+ *
+ * If supplied, the modules contained within \p adapters are registered on
+ * the TrajectoryFrameWriter if possible.
+ *
+ * The factory function is responsible for the initial santity checks concerning file types and
+ * availability of topology information, with the registration of modules being the second part.
+ *
+ * \param[in] top                    Pointer to full topology or null.
+ * \param[in] sel                    Reference to global selection used to construct the object.
+ * \param[in] filename               Name of new output file, used to deduce file type.
+ * \param[in] atoms                  Smart Pointer to atoms data or null.
+ * \param[in] requirements           Container for settings obtained to specify which
+ *                                   OutputAdapters should be registered.
+ * \throws    InconsistentInputError When user input and requirements don't match.
+ */
+std::unique_ptr<TrajectoryFrameWriter> createTrajectoryFrameWriter(const gmx_mtop_t  *top,
+                                                                   const Selection   &sel,
+                                                                   const std::string &filename,
+                                                                   AtomsDataPtr       atoms,
+                                                                   OutputRequirements requirements);
+
 /*!\brief
  * Low level method to take care of only file opening and closing.
  *
@@ -135,6 +165,13 @@ class TrajectoryFileOpener
 class TrajectoryFrameWriter
 {
     public:
+        friend std::unique_ptr<TrajectoryFrameWriter>
+        createTrajectoryFrameWriter(const gmx_mtop_t  *top,
+                                    const Selection   &sel,
+                                    const std::string &filename,
+                                    AtomsDataPtr       atoms,
+                                    OutputRequirements requirements);
+
         /*! \brief
          * Writes the input frame, after applying any IOutputAdapters.
          *

@@ -42,6 +42,7 @@ gmx_install_headers(
     ioutputadapter.h
     outputadaptercontainer.h
     outputadapters.h
+    requirements.h
     )
 
 if (BUILD_TESTING)
