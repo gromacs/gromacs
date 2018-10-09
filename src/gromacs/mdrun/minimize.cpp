@@ -1159,7 +1159,7 @@ Integrator::do_cg()
     if (MASTER(cr))
     {
         /* Copy stuff to the energy bin for easy printing etc. */
-        matrix nullBox;
+        matrix nullBox = {};
         upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(step),
                    mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
                    nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
@@ -1583,7 +1583,7 @@ Integrator::do_cg()
                 fflush(stderr);
             }
             /* Store the new (lower) energies */
-            matrix nullBox;
+            matrix nullBox = {};
             upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(step),
                        mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
                        nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
@@ -1830,7 +1830,7 @@ Integrator::do_lbfgs()
     if (MASTER(cr))
     {
         /* Copy stuff to the energy bin for easy printing etc. */
-        matrix nullBox;
+        matrix nullBox = {};
         upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(step),
                    mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
                    nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
@@ -2317,7 +2317,7 @@ Integrator::do_lbfgs()
                 fflush(stderr);
             }
             /* Store the new (lower) energies */
-            matrix nullBox;
+            matrix nullBox = {};
             upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(step),
                        mdatoms->tmass, enerd, nullptr, nullptr, nullptr, nullBox,
                        nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
@@ -2534,7 +2534,7 @@ Integrator::do_steep()
             if ( (count == 0) || (s_try->epot < s_min->epot) )
             {
                 /* Store the new (lower) energies  */
-                matrix nullBox;
+                matrix nullBox = {};
                 upd_mdebin(mdebin, FALSE, FALSE, static_cast<double>(count),
                            mdatoms->tmass, enerd, nullptr, nullptr, nullptr,
                            nullBox, nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
