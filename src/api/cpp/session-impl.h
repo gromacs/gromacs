@@ -51,6 +51,8 @@
 #include "gmxapi/status.h"
 #include "gmxapi/md/mdmodule.h"
 
+#include "gmxapi/md/mdmodule.h"
+
 namespace gmxapi
 {
 
