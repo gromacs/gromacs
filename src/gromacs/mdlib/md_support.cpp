@@ -565,7 +565,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
         state->flags |= (1<<estFEPSTATE);
     }
     state->flags |= (1<<estX);
-    GMX_RELEASE_ASSERT(state->x.size() == static_cast<unsigned int>(state->natoms), "We should start a run with an initialized state->x");
+    GMX_RELEASE_ASSERT(state->x.size() == state->natoms, "We should start a run with an initialized state->x");
     if (EI_DYNAMICS(ir->eI))
     {
         state->flags |= (1<<estV);
