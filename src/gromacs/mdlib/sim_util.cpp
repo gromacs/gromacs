@@ -82,6 +82,7 @@
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/update.h"
+#include "gromacs/mdlib/nbnxn_cuda/gpuBufferOpsCUDA.h"
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forceoutput.h"
@@ -1226,6 +1227,14 @@ static void do_force_cutsVERLET(FILE *fplog,
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
+
+    gmx_bool bGPUBufOps;
+    bGPUBufOps=gpuBufferOpsTimestepInitFromPP(bNS,
+                                              bUseGPU,
+                                              nbv->nbs->natoms_nonlocal,
+                                              nbv->nbs->natoms_local,
+                                              x.size());
+
     /* do local pair search */
     if (bNS)
     {
@@ -1257,8 +1266,21 @@ static void do_force_cutsVERLET(FILE *fplog,
     }
     else
     {
-        nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatLocal, FALSE, as_rvec_array(x.data()),
-                                        nbv->nbat, wcycle);
+
+        if(bGPUBufOps)
+        {
+            nbnxn_atomdata_copy_x_to_nbat_x_gpu(nbv->nbs.get(), eatLocal, FALSE,
+                                                nbv->nbat,nbv->gpu_nbv,
+                                                eintLocal,as_rvec_array(x.data()));
+        }
+        else
+        {
+          nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatLocal, FALSE,
+                                          as_rvec_array(x.data()),
+                                          nbv->nbat, wcycle);
+        }
+
+        
     }
 
     if (bUseGPU)
@@ -1323,8 +1345,18 @@ static void do_force_cutsVERLET(FILE *fplog,
         {
             dd_move_x(cr->dd, box, x, wcycle);
 
-            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatNonlocal, FALSE, as_rvec_array(x.data()),
-                                            nbv->nbat, wcycle);
+            if(bGPUBufOps)
+            {
+                nbnxn_atomdata_copy_x_to_nbat_x_gpu(nbv->nbs.get(), eatNonlocal, FALSE,
+                                                    nbv->nbat,nbv->gpu_nbv,
+                                                    eintNonlocal,as_rvec_array(x.data()));
+            }
+            
+            else
+            {                
+                nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatNonlocal, FALSE, as_rvec_array(x.data()),
+                                                nbv->nbat, wcycle);
+            }
         }
 
         if (bUseGPU)
@@ -2100,6 +2132,9 @@ void do_force(FILE                                     *fplog,
         flags &= ~GMX_FORCE_NONBONDED;
     }
 
+    GMX_ASSERT(x.size()     >= gmx::paddedRVecVectorSize(fr->natoms_force), "coordinates should be padded");
+    GMX_ASSERT(force.size() >= gmx::paddedRVecVectorSize(fr->natoms_force), "force should be padded");
+
     switch (inputrec->cutoff_scheme)
     {
         case ecutsVERLET:
@@ -2188,7 +2223,7 @@ void do_constrain_first(FILE *fplog, gmx::Constraints *constr,
     /* constrain the current position */
     constr->apply(TRUE, FALSE,
                   step, 0, 1.0,
-                  state->x.rvec_array(), state->x.rvec_array(), nullptr,
+                  as_rvec_array(state->x.data()), as_rvec_array(state->x.data()), nullptr,
                   state->box,
                   state->lambda[efptBONDED], &dvdl_dum,
                   nullptr, nullptr, gmx::ConstraintVariable::Positions);
@@ -2198,7 +2233,7 @@ void do_constrain_first(FILE *fplog, gmx::Constraints *constr,
         /* also may be useful if we need the ekin from the halfstep for velocity verlet */
         constr->apply(TRUE, FALSE,
                       step, 0, 1.0,
-                      state->x.rvec_array(), state->v.rvec_array(), state->v.rvec_array(),
+                      as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), as_rvec_array(state->v.data()),
                       state->box,
                       state->lambda[efptBONDED], &dvdl_dum,
                       nullptr, nullptr, gmx::ConstraintVariable::Velocities);
@@ -2206,16 +2241,14 @@ void do_constrain_first(FILE *fplog, gmx::Constraints *constr,
     /* constrain the inital velocities at t-dt/2 */
     if (EI_STATE_VELOCITY(ir->eI) && ir->eI != eiVV)
     {
-        auto x = makeArrayRef(state->x).subArray(start, end);
-        auto v = makeArrayRef(state->v).subArray(start, end);
         for (i = start; (i < end); i++)
         {
             for (m = 0; (m < DIM); m++)
             {
                 /* Reverse the velocity */
-                v[i][m] = -v[i][m];
+                state->v[i][m] = -state->v[i][m];
                 /* Store the position at t-dt in buf */
-                savex[i][m] = x[i][m] + dt*v[i][m];
+                savex[i][m] = state->x[i][m] + dt*state->v[i][m];
             }
         }
         /* Shake the positions at t=-dt with the positions at t=0
@@ -2230,17 +2263,17 @@ void do_constrain_first(FILE *fplog, gmx::Constraints *constr,
         dvdl_dum = 0;
         constr->apply(TRUE, FALSE,
                       step, -1, 1.0,
-                      state->x.rvec_array(), savex, nullptr,
+                      as_rvec_array(state->x.data()), savex, nullptr,
                       state->box,
                       state->lambda[efptBONDED], &dvdl_dum,
-                      state->v.rvec_array(), nullptr, gmx::ConstraintVariable::Positions);
+                      as_rvec_array(state->v.data()), nullptr, gmx::ConstraintVariable::Positions);
 
         for (i = start; i < end; i++)
         {
             for (m = 0; m < DIM; m++)
             {
                 /* Re-reverse the velocities */
-                v[i][m] = -v[i][m];
+                state->v[i][m] = -state->v[i][m];
             }
         }
     }
