@@ -216,6 +216,7 @@ Status SessionImpl::setRestraint(std::shared_ptr<gmxapi::MDModule> module)
             if (restraint != nullptr)
             {
                 restraints_.emplace(std::make_pair(name, restraint));
+                runner_->addPotential(restraint, module->name());
                 status = true;
             }
         }
