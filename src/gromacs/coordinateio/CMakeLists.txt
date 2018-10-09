@@ -39,6 +39,7 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${COORDINATEIO_SOURCES} PARENT_SCOP
 gmx_install_headers(
     ioutputadapter.h
     outputadaptercontainer.h
+    outputmanager.h
     enums.h
     )
 
