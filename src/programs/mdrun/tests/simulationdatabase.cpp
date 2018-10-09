@@ -43,6 +43,7 @@
 
 #include "simulationdatabase.h"
 
+#include <algorithm>
 #include <map>
 #include <string>
 
@@ -58,97 +59,133 @@ namespace test
 namespace
 {
 
+struct DatabaseEntry
+{
+    MdpFieldValues   mdpFieldValues;
+    std::vector<int> validPpRankCounts;
+};
+
 //! Helper typedef
-using MdpFileValues = std::map<std::string, MdpFieldValues>;
+using MdpFileValues = std::map<std::string, DatabaseEntry>;
 
 //! Database of .mdp strings that supports prepareDefaultMdpValues()
-MdpFileValues mdpFileValueDatabase_g
+const MdpFileValues mdpFileValueDatabase_g
 {
     // Simple system with 12 argon atoms, fairly widely separated
     {
-        "argon12", { {
-                         "ref-t", "80"
-                     },
+        "argon12", { { {
+                           "ref-t", "80"
+                       },
+                       {
+                           "compressibility", "5e-10"
+                       },
+                       {
+                           "tau-p", "1000"
+                       } },
                      {
-                         "compressibility", "5e-10"
-                     },
-                     {
-                         "tau-p", "1000"
+                         1, 2, 3, 4
                      } }
     },
     // Simple system with 5 water molecules, fairly widely separated
     {
-        "spc5", { {
-                      "compressibility", "5e-10"
-                  },
+        "spc5", { { {
+                        "compressibility", "5e-10"
+                    },
+                    {
+                        "tau-p", "1000"
+                    } },
                   {
-                      "tau-p", "1000"
+                      1, 2, 3, 4, 5, 6, 8, 9
                   } }
     },
     // Simple system with 5832 argon atoms, suitable for normal pressure coupling
     {
-        "argon5832", { {
-                           "ref-t", "80"
+        "argon5832", { { {
+                             "ref-t", "80"
+                         } },
+                       {
+                           // TODO This test case is not currently used, so we
+                           // have not tested which rank counts work.
+                           1, 2, 3, 4, 5, 6, 7, 8, 9
                        } }
     },
     // Simple system with 216 water molecules, condensed phase
     {
-        "spc216", { }
+        "spc216", { { },
+                    {
+                        // TODO This test case is not currently used, so we
+                        // have not tested which rank counts work.
+                        1, 2, 3, 4, 5, 6, 7, 8, 9 // TODO tpi test
+                    } }
     },
     // Capped alanine peptide in vacuo with virtual sites
     {
-        "alanine_vsite_vacuo", { {
-                                     "constraints", "all-bonds"
-                                 },
+        "alanine_vsite_vacuo", { { {
+                                       "constraints", "all-bonds"
+                                   },
+                                   {
+                                       "compressibility", "5e-10"
+                                   },
+                                   {
+                                       "tau-p", "1000"
+                                   } },
                                  {
-                                     "compressibility", "5e-10"
-                                 },
-                                 {
-                                     "tau-p", "1000"
+                                     1, 2, 3, 4, 6, 9
                                  } }
     },
     // Capped alanine peptide in aqueous condensed phase, with virtual sites
     {
-        "alanine_vsite_solvated", { {
-                                        "constraints", "all-bonds"
-                                    },
+        "alanine_vsite_solvated", { { {
+                                          "constraints", "all-bonds"
+                                      },
+                                      {
+                                          "compressibility", "5e-10"
+                                      },
+                                      {
+                                          "tau-p", "1000"
+                                      } },
                                     {
-                                        "compressibility", "5e-10"
-                                    },
-                                    {
-                                        "tau-p", "1000"
+                                        // TODO This test case is not currently used, so we
+                                        // have not tested which rank counts work.
+                                        1, 2, 3, 4, 5, 6, 7, 8, 9
                                     } }
     },
     // Zwitterionic glycine in vacuo
     {
-        "glycine_vacuo", { {
-                               "constraints", "h-bonds"
+        "glycine_vacuo", { { {
+                                 "constraints", "h-bonds"
+                             } },
+                           {
+                               1, 2, 3, 4, 5, 6, 7, 8, 9
                            } }
     },
     // Zwitterionic glycine in vacuo, without constraints
     {
-        "glycine_no_constraints_vacuo", { {
-                                              "constraints", "none"
+        "glycine_no_constraints_vacuo", { { {
+                                                "constraints", "none"
+                                            } },
+                                          {
+                                              1, 2, 3, 4, 5, 6, 7, 8, 9
                                           } }
     },
     // Nonanol molecule in vacuo, topology suitable for testing FEP
     // on KE, angles, dihedral restraints, coulomb and vdw
     {
-        "nonanol_vacuo", { {
-                               "nsteps", "16"
-                           },
-                           {
-                               "compressibility", "5e-10"
-                           },
-                           {
-                               "tau-p", "1000"
-                           },
-                           {
-                               "constraints", "h-bonds"
-                           },
-                           {
-                               "other",
-                               R"(free-energy         = yes
+        "nonanol_vacuo", { { {
+                                 "nsteps", "16"
+                             },
+                             {
+                                 "compressibility", "5e-10"
+                             },
+                             {
+                                 "tau-p", "1000"
+                             },
+                             {
+                                 "constraints", "h-bonds"
+                             },
+                             {
+                                 "other",
+                                 R"(free-energy         = yes
                                   sc-alpha            = 0.5
                                   sc-r-power          = 6
                                   nstdhdl             = 4
@@ -162,6 +199,9 @@ MdpFileValues mdpFileValueDatabase_g
                                   ;couple-lambda0      = none
                                   ;couple-lambda1      = vdw-q
                                   ;couple-intramol     = yes)"
+                             } },
+                           {
+                               1, 2, 3, 4, 5, 6, 8, 9
                            } }
     }
 };
@@ -182,7 +222,7 @@ MdpFieldValues prepareDefaultMdpFieldValues(const char *simulationName)
 {
     using MdpField = MdpFieldValues::value_type;
 
-    auto &mdpFieldValues = mdpFileValueDatabase_g.at(simulationName);
+    auto mdpFieldValues = mdpFileValueDatabase_g.at(simulationName).mdpFieldValues;
     mdpFieldValues.insert(MdpField("nsteps", "16"));
     mdpFieldValues.insert(MdpField("ref-t", "298"));
     mdpFieldValues.insert(MdpField("tau-p", "1"));
@@ -194,6 +234,23 @@ MdpFieldValues prepareDefaultMdpFieldValues(const char *simulationName)
 }
 
 }       // namespace
+
+bool
+isNumberOfPpRanksSupported(const std::string &simulationName,
+                           int                possibleNumberOfPpRanks)
+{
+    const auto &possibleNumbers = mdpFileValueDatabase_g.at(simulationName).validPpRankCounts;
+    return (std::find(std::begin(possibleNumbers), std::end(possibleNumbers),
+                      possibleNumberOfPpRanks) != std::end(possibleNumbers));
+}
+
+std::string
+reportNumbersOfPpRanksSupported(const std::string &simulationName)
+{
+    const auto &possibleNumbers = mdpFileValueDatabase_g.at(simulationName).validPpRankCounts;
+    return formatAndJoin(std::begin(possibleNumbers), std::end(possibleNumbers),
+                         ",", StringFormatter("%d"));
+}
 
 MdpFieldValues
 prepareMdpFieldValues(const char *simulationName,

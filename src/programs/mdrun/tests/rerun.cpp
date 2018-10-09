@@ -60,6 +60,7 @@
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/mpitest.h"
 #include "testutils/testasserts.h"
 
 #include "energycomparison.h"
@@ -101,6 +102,17 @@ void executeRerunTest(TestFileManager        *fileManager,
                       const MdpFieldValues   &mdpFieldValues,
                       const EnergyTolerances &energiesToMatch)
 {
+    // TODO At some point we should also test PME-only ranks.
+    int numRanksAvailable = getNumberOfTestMpiRanks();
+    if (!isNumberOfPpRanksSupported(simulationName, numRanksAvailable))
+    {
+        fprintf(stdout, "Test system '%s' cannot run with %d ranks.\n"
+                "The supported numbers are: %s\n",
+                simulationName.c_str(), numRanksAvailable,
+                reportNumbersOfPpRanksSupported(simulationName).c_str());
+        return;
+    }
+
     auto normalRunTrajectoryFileName = fileManager->getTemporaryFilePath("normal.trr");
     auto normalRunEdrFileName        = fileManager->getTemporaryFilePath("normal.edr");
     auto rerunTrajectoryFileName     = fileManager->getTemporaryFilePath("rerun.trr");

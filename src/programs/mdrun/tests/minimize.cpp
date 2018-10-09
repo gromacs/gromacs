@@ -120,6 +120,17 @@ TEST_P(EnergyMinimizationTest, WithinTolerances)
     SCOPED_TRACE(formatString("Comparing '%s' energy minimization for simulation '%s'",
                               minimizer.c_str(), simulationName.c_str()));
 
+    // TODO At some point we should also test PME-only ranks.
+    int numRanksAvailable = getNumberOfTestMpiRanks();
+    if (!isNumberOfPpRanksSupported(simulationName, numRanksAvailable))
+    {
+        fprintf(stdout, "Test system '%s' cannot run with %d ranks.\n"
+                "The supported numbers are: %s\n",
+                simulationName.c_str(), numRanksAvailable,
+                reportNumbersOfPpRanksSupported(simulationName).c_str());
+        return;
+    }
+
     auto mdpFieldValues = prepareMdpFieldValues(simulationName.c_str(),
                                                 minimizer.c_str(),
                                                 "no", "no");
