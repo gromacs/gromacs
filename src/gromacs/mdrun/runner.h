@@ -62,7 +62,6 @@ struct gmx_output_env_t;
 struct ReplicaExchangeParameters;
 struct t_commrec;
 struct t_fileio;
-class PotentialContainer; // defined in pulling/pullpotential.h
 
 namespace gmx
 {

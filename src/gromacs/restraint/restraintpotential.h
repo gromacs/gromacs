@@ -98,21 +98,12 @@ using Vector = ::gmx::detail::vec3<real>;
 class PotentialPointData
 {
     public:
-        /*!
-         * \brief Force vector calculated for first position.
-         */
-        Vector force;
-        /*!
-         * \brief Potential energy calculated for this interaction.
-         */
-        real energy;
 
 
         /*!
          * \brief Initialize a new data structure.
          */
-        PotentialPointData() : PotentialPointData{Vector(), real(0.0)}
-        {}
+        PotentialPointData();
 
         /*!
          * \brief Initialize from an argument list
@@ -125,10 +116,17 @@ class PotentialPointData
          * If this calculation is in a subclass of gmx::RestraintPotential,
          * you should be able to use the make_force_vec() helper function (not yet implemented).
          */
-        PotentialPointData(const Vector &f, const real e) :
-            force {f},
-        energy {e}
-        {}
+        PotentialPointData(const Vector &f, real e);
+
+        /*!
+         * \brief Force vector calculated for first position.
+         */
+        Vector force;
+
+        /*!
+         * \brief Potential energy calculated for this interaction.
+         */
+        real energy;
 };
 
 /*!

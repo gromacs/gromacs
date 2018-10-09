@@ -33,20 +33,16 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 
-file(GLOB RESTRAINT_SOURCES
-     manager.cpp
-     restraintmdmodule.cpp
-     restraintpotential.cpp
-     )
+set(RESTRAINT_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/manager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/restraintmdmodule.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/restraintpotential.cpp
+    )
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${RESTRAINT_SOURCES} PARENT_SCOPE)
 
 # This object target is only used by the internal tests.
 # To do: modernize CMake idioms
-add_library(restraint OBJECT
-            manager.cpp
-            restraintmdmodule.cpp
-            restraintpotential.cpp
-            )
+add_library(restraint OBJECT ${RESTRAINT_SOURCES})
 set_target_properties(restraint PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 gmx_install_headers(restraintpotential.h

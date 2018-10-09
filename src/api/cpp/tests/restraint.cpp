@@ -32,25 +32,58 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include <memory>
 
-#include "gmxpre.h"
+#include "testingconfiguration.h"
+#include "gmxapi/context.h"
+#include "gmxapi/md.h"
+#include "gmxapi/session.h"
+#include "gmxapi/status.h"
+#include "gmxapi/system.h"
+#include "gmxapi/md/mdmodule.h"
+#include <gtest/gtest.h>
 
-#include "restraintpotential.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/restraint/restraintpotential.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/classhelpers.h"
 
-namespace gmx
+namespace
 {
 
-PotentialPointData::PotentialPointData() : PotentialPointData {Vector(), real(0.0)}
-{}
+class NullRestraint : public gmx::IRestraintPotential
+{
+    public:
+        gmx::PotentialPointData evaluate(gmx::Vector r1,
+                                         gmx::Vector r2,
+                                         double      t) override
+        {
+            (void)r1;
+            (void)r2;
+            (void)t;
+            return {};
+        }
 
-PotentialPointData::PotentialPointData(const Vector &f, const real e) :
-    force(f),
-    energy(e)
-{}
+        std::vector<int> sites() const override
+        {
+            return {{0, 1}};
+        }
+};
 
-void gmx::IRestraintPotential::update(gmx::Vector gmx_unused v,
-                                      gmx::Vector gmx_unused v0,
-                                      double gmx_unused      t)
-{}
+class SimpleApiModule : public gmxapi::MDModule
+{
+    public:
+        const char *name() const override
+        {
+            return "SimpleApiModule";
+        }
 
-} // end namespace gmx
+        std::shared_ptr<gmx::IRestraintPotential> getRestraint() override
+        {
+            auto restraint = std::make_shared<NullRestraint>();
+            return restraint;
+        }
+};
+
+
+} // end anonymous namespace
