@@ -37,6 +37,7 @@
 #ifndef GMX_MDTYPES_TYPES_FORCEREC_H
 #define GMX_MDTYPES_TYPES_FORCEREC_H
 
+#include <array>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
@@ -52,6 +53,7 @@ struct gmx_ns_t;
 struct gmx_pme_t;
 struct nonbonded_verlet_t;
 struct bonded_threading_t;
+struct GpuBondedLists;
 struct t_forcetable;
 struct t_nblist;
 struct t_nblists;
@@ -308,6 +310,8 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
 
     /* Pointer to struct for managing threading of bonded force calculation */
     struct bonded_threading_t *bondedThreading;
+
+    GpuBondedLists            *gpuBondedLists;
 
     /* Ewald correction thread local virial and energy data */
     int                         nthread_ewc;

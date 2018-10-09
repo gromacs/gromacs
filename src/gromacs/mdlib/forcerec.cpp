@@ -71,6 +71,7 @@
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_atomdata.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
+#include "gromacs/mdlib/nbnxn_grid.h"
 #include "gromacs/mdlib/nbnxn_internal.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/nbnxn_simd.h"
@@ -3050,6 +3051,16 @@ void init_forcerec(FILE                             *fp,
     /* Initialize the thread working data for bonded interactions */
     init_bonded_threading(fp, mtop->groups.grps[egcENER].nr,
                           &fr->bondedThreading);
+
+    // TODO: Replace this condition by the GPU bonded task boolean
+    if (fr->cutoff_scheme == ecutsVERLET && getenv("GMX_TEST_GPU_BONDEDS"))
+    {
+        fr->gpuBondedLists = new GpuBondedLists;
+    }
+    else
+    {
+        fr->gpuBondedLists = nullptr;
+    }
 
     fr->nthread_ewc = gmx_omp_nthreads_get(emntBonded);
     snew(fr->ewc_t, fr->nthread_ewc);
