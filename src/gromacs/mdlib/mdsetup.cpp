@@ -42,6 +42,8 @@
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdlib/nbnxn_grid.h"
+#include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -144,6 +146,8 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
 
     setup_bonded_threading(fr->bondedThreading,
                            fr->natoms_force,
+                           fr->gpuBondedLists,
+                           nbnxn_get_gridindices(fr->nbv->nbs.get()),
                            &top->idef);
 
     gmx_pme_reinit_atoms(fr->pmedata, numHomeAtoms, mdatoms->chargeA);

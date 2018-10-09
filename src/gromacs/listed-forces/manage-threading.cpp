@@ -53,6 +53,7 @@
 #include <cstdlib>
 
 #include <algorithm>
+#include <array>
 
 #include "gromacs/listed-forces/listed-forces.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -71,6 +72,23 @@ typedef struct {
     int            ftype; /**< the function type index */
     int            nat;   /**< nr of atoms involved in a single ftype interaction */
 } ilist_data_t;
+
+/*! \brief List of all bonded function types supported on a GPUs
+ *
+ * \note Perturbed interactions are not supported on GPUs.
+ * \note The function types in the list are ordered on increasing value.
+ * \note Currently bonded are only supported with CUDA, not with OpenCL.
+ */
+constexpr std::array<int, 7> ftypesOnGpu =
+{
+    F_BONDS,
+    F_ANGLES,
+    F_UREY_BRADLEY,
+    F_PDIHS,
+    F_RBDIHS,
+    F_IDIHS,
+    F_LJ14
+};
 
 /*! \brief Divides listed interactions over threads
  *
@@ -187,9 +205,29 @@ static void divide_bondeds_by_locality(bonded_threading_t *bt,
     }
 }
 
-//! Divides bonded interactions over threads
-static void divide_bondeds_over_threads(bonded_threading_t *bt,
-                                        const t_idef       *idef)
+//! Converts \p src with atom indices in state order to \p dest in nbnxn order
+static void convertIlistToNbnxnOrder(const t_ilist            &src,
+                                     InteractionList          *dest,
+                                     int                       numAtomsPerInteraction,
+                                     gmx::ArrayRef<const int>  nbnxnAtomOrder)
+{
+    dest->iatoms.resize(src.size());
+
+    for (int i = 0; i < src.size(); i += 1 + numAtomsPerInteraction)
+    {
+        dest->iatoms[i] = src.iatoms[i];
+        for (int a = 0; a < numAtomsPerInteraction; a++)
+        {
+            dest->iatoms[i + 1 + a] = nbnxnAtomOrder[src.iatoms[i + 1 + a]];
+        }
+    }
+}
+
+//! Divides bonded interactions over threads and GPU
+static void divide_bondeds_over_resources(bonded_threading_t       *bt,
+                                          GpuBondedLists           *gpuBondedLists,
+                                          gmx::ArrayRef<const int>  nbnxnAtomOrder,
+                                          const t_idef             *idef)
 {
     ilist_data_t ild[F_NRE];
 
@@ -201,8 +239,9 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
         srenew(bt->il_thread_division, bt->il_thread_division_nalloc);
     }
 
-    bt->haveBondeds = false;
-    int ntype       = 0;
+    bt->haveBondeds      = false;
+    int    ntype         = 0;
+    size_t ftypeGpuIndex = 0;
     for (int ftype = 0; ftype < F_NRE; ftype++)
     {
         if (!ftype_is_bonded_potential(ftype))
@@ -211,6 +250,24 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
         }
 
         const t_ilist &il = idef->il[ftype];
+
+        if (gpuBondedLists &&
+            ftypeGpuIndex < ftypesOnGpu.size() &&
+            ftypesOnGpu[ftypeGpuIndex] == ftype)
+        {
+            ftypeGpuIndex++;
+
+            /* Perturbation is not implemented in the GPU bonded kernels.
+             * But instead of doing all on the CPU, we could do only
+             * the actually perturbed interactions on the CPU.
+             */
+            if (il.nr_nonperturbed == il.nr)
+            {
+                convertIlistToNbnxnOrder(il, &gpuBondedLists->iLists[ftype],
+                                         NRAL(ftype), nbnxnAtomOrder);
+                continue;
+            }
+        }
 
         if (il.nr > 0)
         {
@@ -372,16 +429,18 @@ calc_bonded_reduction_mask(int                       natoms,
     }
 }
 
-void setup_bonded_threading(bonded_threading_t *bt,
-                            int                 numAtoms,
-                            const t_idef       *idef)
+void setup_bonded_threading(bonded_threading_t       *bt,
+                            int                       numAtoms,
+                            GpuBondedLists           *gpuBondedLists,
+                            gmx::ArrayRef<const int>  nbnxnAtomOrder,
+                            const t_idef             *idef)
 {
     int                 ctot = 0;
 
     assert(bt->nthreads >= 1);
 
     /* Divide the bonded interaction over the threads */
-    divide_bondeds_over_threads(bt, idef);
+    divide_bondeds_over_resources(bt, gpuBondedLists, nbnxnAtomOrder, idef);
 
     if (!bt->haveBondeds)
     {
