@@ -122,11 +122,15 @@ inline void reduce_atom_forces(__local float * __restrict__  sm_forces,
         int elementIndex = smemReserved + lineIndex;
         // Store input force contributions
         sm_forceReduction[elementIndex] = (dimIndex == XX) ? fx : (dimIndex == YY) ? fy : fz;
-        /* This barrier was not needed in CUDA. Different OpenCL compilers might have different ideas
+
+#if !defined(_AMD_SOURCE_)
+        /* This barrier was not needed in CUDA, nor is it needed on AMD GPUs.
+         * Different OpenCL compilers might have different ideas
          * about #pragma unroll, though. OpenCL 2 has _attribute__((opencl_unroll_hint)).
          * #2519
          */
         barrier(CLK_LOCAL_MEM_FENCE);
+#endif
 
         // Reduce to fit into smemPerDim (warp size)
 #pragma unroll
