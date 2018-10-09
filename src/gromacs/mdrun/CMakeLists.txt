@@ -36,6 +36,7 @@ gmx_add_libgromacs_sources(
     integrator.cpp
     logging.cpp
     md.cpp
+    mdrun.cpp
     minimize.cpp
     multisim.cpp
     replicaexchange.cpp

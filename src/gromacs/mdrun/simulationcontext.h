@@ -50,7 +50,6 @@
 #include <memory>
 
 #include "gromacs/hardware/hw_info.h"
-#include "gromacs/mdrun/mdfilenames.h"
 
 struct t_filenm;
 struct t_commrec;
