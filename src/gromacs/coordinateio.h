@@ -56,7 +56,7 @@
  *
  * The main parts are the outputadapters implemented using the
  * IOutputAdapter interface to change information in a local (deep) copy of t_trxframes
- * stored in the outputmanager.
+ * stored in the coordinatefile.
  *
  * <H3>Outputadapter</H3>
  * Each OutputAdapter module implements the same IOutputAdapter interface and
@@ -66,7 +66,7 @@
  * a new file to disk.
  *
  *
- * The interaction between the OutputManager and the OutputAdapter modules derived from
+ * The interaction between the CoordinateFile and the OutputAdapter modules derived from
  * IOutputAdapter is shown in the diagram below.
  *
  * \msc
@@ -74,8 +74,8 @@
    hscale="2";
 
    analysistool,
-   builder [ label="OutputManagerBuilder" ],
-   outputmanager [ label="OutputManager" ],
+   builder [ label="CoordinateFileBuilder" ],
+   coordinatefile [ label="CoordinateFile" ],
    container [ label="OutputAdapterStorage" ],
    outputadapters [ label="OutputAdapters" ];
 
@@ -85,18 +85,18 @@
    outputadapters => builder [ label="Return or give error for wrong preconditions" ];
    outputadapters => container [ label="Outputadapters are stored" ];
    container => builder [ label="Gives error if storage conditions are violated" ];
-   builder => outputmanager [ label="Constructs new manager according to specifications" ];
+   builder => coordinatefile [ label="Constructs new manager according to specifications" ];
    builder => container [ label="Requests storage object with registered outputadapters" ];
    container => builder [ label="Gives ownership of stored outputadapters" ];
-   builder box builder [ label="Tests preconditions of storage object and new outputmanager" ];
+   builder box builder [ label="Tests preconditions of storage object and new coordinatefile" ];
    builder => analysistool [ label="Raise error if preconditions don't match" ];
-   builder => outputmanager [ label="Add storage object to new outputmanager" ];
-   outputmanager => analysistool [ label="Returns finished outputmanager" ];
-   builder box builder [ label="outputmanager created, can start to work on input data" ];
+   builder => coordinatefile [ label="Add storage object to new coordinatefile" ];
+   coordinatefile => analysistool [ label="Returns finished coordinatefile" ];
+   builder box builder [ label="coordinatefile created, can start to work on input data" ];
 
  * \endmsc
  *
- * Once the OutputManager object and its registered modules are created, they can be used to
+ * Once the CoordinateFile object and its registered modules are created, they can be used to
  * iterate over input data to write new coordinate frames.
  *
  * \msc
@@ -105,18 +105,18 @@
 
    analysistool,
    analysisloop,
-   outputmanager [ label="OutputManager" ],
+   coordinatefile [ label="CoordinateFile" ],
    outputadapters [ label="OutputAdapters" ] ,
    filewriting;
 
-   --- [ label="Setup of outputmanager complete, analysis phase begins" ];
+   --- [ label="Setup of coordinatefile complete, analysis phase begins" ];
     analysistool   => analysisloop [ label="Starts iteration over frames" ];
-    analysisloop   => outputmanager [ label="Provides coordinates" ];
-    outputmanager  => outputadapters [ label="Provide coordinate frames for changing" ];
-    outputadapters => outputmanager [ label="Return after changing data" ];
-    outputmanager  => filewriting [ label="Send new coordinates for writing" ];
-    filewriting    => outputmanager [ label="Continue after writing to disk" ];
-    outputmanager  => analysisloop [ label="Returns after writing" ];
+    analysisloop   => coordinatefile [ label="Provides coordinates" ];
+    coordinatefile  => outputadapters [ label="Provide coordinate frames for changing" ];
+    outputadapters => coordinatefile [ label="Return after changing data" ];
+    coordinatefile  => filewriting [ label="Send new coordinates for writing" ];
+    filewriting    => coordinatefile [ label="Continue after writing to disk" ];
+    coordinatefile  => analysisloop [ label="Returns after writing" ];
     analysisloop box analysisloop [ label="Iterates over frames" ];
     --- [ label="Analysis complete, object is destructed and files are closed" ];
 
@@ -147,6 +147,7 @@
 #ifndef GMX_COORDINATEIO_H
 #define GMX_COORDINATEIO_H
 
+#include "gromacs/coordinateio/coordinatefile.h"
 #include "gromacs/coordinateio/enums.h"
 #include "gromacs/coordinateio/ioutputadapter.h"
 #include "gromacs/coordinateio/outputadaptercontainer.h"
