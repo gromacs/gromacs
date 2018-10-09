@@ -50,6 +50,7 @@
 
 gmx_add_gtest_executable(
     gmxapi-test
+    restraint.cpp
     runner.cpp
     status.cpp
     system.cpp
@@ -73,6 +74,7 @@ set_tests_properties(GmxapiExternalInterfaceTests PROPERTIES
 
 gmx_add_gtest_executable(
     gmxapi-mpi-test MPI
+    restraint.cpp
     runner.cpp
     status.cpp
     system.cpp

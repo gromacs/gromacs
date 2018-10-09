@@ -32,69 +32,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMXAPI_SYSTEM_IMPL_H
-#define GMXAPI_SYSTEM_IMPL_H
 
-/*! \file
- * \brief Declare implementation details for gmxapi::System.
- *
- * \author M. Eric Irrgang <ericirrgang@gmail.com>
- * \ingroup gmxapi
- */
+#include "gmxpre.h"
 
-#include <string>
+#include "restraintpotential.h"
 
-#include "gmxapi/system.h"
-
-namespace gmxapi
+namespace gmx
 {
 
-class Context;
-class Workflow;
+PotentialPointData::PotentialPointData() : PotentialPointData {Vector(), real(0.0)}
+{}
 
-/*!
- * \brief Private implementation for gmxapi::System
- *
- * \ingroup gmxapi
- */
-class System::Impl final
-{
-    public:
-        /*! \cond */
-        ~Impl();
+PotentialPointData::PotentialPointData(const Vector &f, const real e) :
+    force(f),
+    energy(e)
+{}
 
-        Impl(Impl &&) noexcept;
-        Impl &operator=(Impl &&source) noexcept;
-        /*! \endcond */
+void gmx::IRestraintPotential::update(gmx::Vector gmx_unused v,
+                                      gmx::Vector gmx_unused v0,
+                                      double gmx_unused      t)
+{}
 
-        /*!
-         * \brief Initialize from a work description.
-         *
-         * \param workflow Simulation work to perform.
-         */
-        explicit Impl(std::unique_ptr<gmxapi::Workflow> workflow) noexcept;
-
-        /*!
-         * \brief Launch the configured simulation.
-         *
-         * \param context Runtime execution context in which to run simulation.
-         * \return Ownership of a new simulation session.
-         *
-         * The session is returned as a shared pointer so that the Context can
-         * maintain a weak reference to it via std::weak_ptr.
-         */
-        std::shared_ptr<Session> launch(std::shared_ptr<Context> context);
-
-        Status setRestraint(std::shared_ptr<gmxapi::MDModule> module);
-        std::shared_ptr<MDWorkSpec> getSpec();
-
-    private:
-        //! Description of simulation work.
-        std::shared_ptr<Workflow>           workflow_;
-        // \todo merge Workflow and MDWorkSpec
-        std::shared_ptr<gmxapi::MDWorkSpec> spec_;
-};
-
-}      // end namespace gmxapi
-
-#endif // header guard
+} // end namespace gmx

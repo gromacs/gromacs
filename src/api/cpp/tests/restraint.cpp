@@ -32,69 +32,58 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMXAPI_SYSTEM_IMPL_H
-#define GMXAPI_SYSTEM_IMPL_H
+#include <memory>
 
-/*! \file
- * \brief Declare implementation details for gmxapi::System.
- *
- * \author M. Eric Irrgang <ericirrgang@gmail.com>
- * \ingroup gmxapi
- */
-
-#include <string>
-
+#include "testingconfiguration.h"
+#include "gmxapi/context.h"
+#include "gmxapi/md.h"
+#include "gmxapi/session.h"
+#include "gmxapi/status.h"
 #include "gmxapi/system.h"
+#include "gmxapi/md/mdmodule.h"
+#include <gtest/gtest.h>
 
-namespace gmxapi
+#include "gromacs/math/vectypes.h"
+#include "gromacs/restraint/restraintpotential.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/classhelpers.h"
+
+namespace
 {
 
-class Context;
-class Workflow;
-
-/*!
- * \brief Private implementation for gmxapi::System
- *
- * \ingroup gmxapi
- */
-class System::Impl final
+class NullRestraint : public gmx::IRestraintPotential
 {
     public:
-        /*! \cond */
-        ~Impl();
+        gmx::PotentialPointData evaluate(gmx::Vector r1,
+                                         gmx::Vector r2,
+                                         double      t) override
+        {
+            (void)r1;
+            (void)r2;
+            (void)t;
+            return {};
+        }
 
-        Impl(Impl &&) noexcept;
-        Impl &operator=(Impl &&source) noexcept;
-        /*! \endcond */
-
-        /*!
-         * \brief Initialize from a work description.
-         *
-         * \param workflow Simulation work to perform.
-         */
-        explicit Impl(std::unique_ptr<gmxapi::Workflow> workflow) noexcept;
-
-        /*!
-         * \brief Launch the configured simulation.
-         *
-         * \param context Runtime execution context in which to run simulation.
-         * \return Ownership of a new simulation session.
-         *
-         * The session is returned as a shared pointer so that the Context can
-         * maintain a weak reference to it via std::weak_ptr.
-         */
-        std::shared_ptr<Session> launch(std::shared_ptr<Context> context);
-
-        Status setRestraint(std::shared_ptr<gmxapi::MDModule> module);
-        std::shared_ptr<MDWorkSpec> getSpec();
-
-    private:
-        //! Description of simulation work.
-        std::shared_ptr<Workflow>           workflow_;
-        // \todo merge Workflow and MDWorkSpec
-        std::shared_ptr<gmxapi::MDWorkSpec> spec_;
+        std::vector<int> sites() const override
+        {
+            return {{0, 1}};
+        }
 };
 
-}      // end namespace gmxapi
+class SimpleApiModule : public gmxapi::MDModule
+{
+    public:
+        const char *name() const override
+        {
+            return "SimpleApiModule";
+        }
 
-#endif // header guard
+        std::shared_ptr<gmx::IRestraintPotential> getRestraint() override
+        {
+            auto restraint = std::make_shared<NullRestraint>();
+            return restraint;
+        }
+};
+
+
+} // end anonymous namespace

@@ -42,6 +42,9 @@
 #include <memory>
 #include <string>
 
+#include "gmxapi/gmxapi.h"
+#include "gmxapi/status.h"
+
 namespace gmxapi
 {
 
@@ -116,7 +119,6 @@ class System final
          *  Destructor defined later to allow unique_ptr members of partially-defined types.
          */
         ~System();
-        /*! \endcond */
 
         /*!
          * \brief Configure the computing environment for the specified workflow.

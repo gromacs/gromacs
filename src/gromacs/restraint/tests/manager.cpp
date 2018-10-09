@@ -32,69 +32,51 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMXAPI_SYSTEM_IMPL_H
-#define GMXAPI_SYSTEM_IMPL_H
 
-/*! \file
- * \brief Declare implementation details for gmxapi::System.
- *
- * \author M. Eric Irrgang <ericirrgang@gmail.com>
- * \ingroup gmxapi
- */
+#include "gmxpre.h"
 
-#include <string>
+#include "gromacs/restraint/manager.h"
 
-#include "gmxapi/system.h"
+#include <gtest/gtest.h>
 
-namespace gmxapi
+namespace
 {
 
-class Context;
-class Workflow;
-
-/*!
- * \brief Private implementation for gmxapi::System
- *
- * \ingroup gmxapi
- */
-class System::Impl final
+class DummyRestraint : public gmx::IRestraintPotential
 {
     public:
-        /*! \cond */
-        ~Impl();
+        ~DummyRestraint() override = default;
 
-        Impl(Impl &&) noexcept;
-        Impl &operator=(Impl &&source) noexcept;
-        /*! \endcond */
+        gmx::PotentialPointData evaluate(gmx::Vector gmx_unused r1,
+                                         gmx::Vector gmx_unused r2,
+                                         double      gmx_unused t) override
+        {
+            return {};
+        }
 
-        /*!
-         * \brief Initialize from a work description.
-         *
-         * \param workflow Simulation work to perform.
-         */
-        explicit Impl(std::unique_ptr<gmxapi::Workflow> workflow) noexcept;
+        void update(gmx::Vector gmx_unused v,
+                    gmx::Vector gmx_unused v0,
+                    double      gmx_unused t) override
+        {}
 
-        /*!
-         * \brief Launch the configured simulation.
-         *
-         * \param context Runtime execution context in which to run simulation.
-         * \return Ownership of a new simulation session.
-         *
-         * The session is returned as a shared pointer so that the Context can
-         * maintain a weak reference to it via std::weak_ptr.
-         */
-        std::shared_ptr<Session> launch(std::shared_ptr<Context> context);
+        std::vector<int> sites() const override
+        {
+            return std::vector<int>();
+        }
 
-        Status setRestraint(std::shared_ptr<gmxapi::MDModule> module);
-        std::shared_ptr<MDWorkSpec> getSpec();
-
-    private:
-        //! Description of simulation work.
-        std::shared_ptr<Workflow>           workflow_;
-        // \todo merge Workflow and MDWorkSpec
-        std::shared_ptr<gmxapi::MDWorkSpec> spec_;
 };
 
-}      // end namespace gmxapi
+TEST(RestraintManager, restraintList)
+{
+    auto managerInstance = gmx::RestraintManager();
+    managerInstance.addToSpec(std::make_shared<DummyRestraint>(), "a");
+    managerInstance.addToSpec(std::make_shared<DummyRestraint>(), "b");
+    EXPECT_EQ(managerInstance.countRestraints(), 2);
+    managerInstance.clear();
+    EXPECT_EQ(managerInstance.countRestraints(), 0);
+    managerInstance.addToSpec(std::make_shared<DummyRestraint>(), "c");
+    managerInstance.addToSpec(std::make_shared<DummyRestraint>(), "d");
+    EXPECT_EQ(managerInstance.countRestraints(), 2);
+}
 
-#endif // header guard
+} // end namespace
