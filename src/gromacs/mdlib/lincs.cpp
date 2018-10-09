@@ -2049,6 +2049,7 @@ void set_lincs(const t_idef         &idef,
     /* Ensure we have enough padding for aligned loads for each thread */
     if (ncon_tot + li->ntask*simd_width > li->nc_alloc || li->nc_alloc == 0)
     {
+        int old_alloc = li->nc_alloc;
         li->nc_alloc = over_alloc_dd(ncon_tot + li->ntask*simd_width);
         srenew(li->con_index, li->nc_alloc);
         resize_real_aligned(&li->bllen0, li->nc_alloc);
@@ -2059,6 +2060,11 @@ void set_lincs(const t_idef         &idef,
         srenew(li->blnr, li->nc_alloc + 1);
         resize_real_aligned(&li->bllen, li->nc_alloc);
         srenew(li->tmpv, li->nc_alloc);
+        /* Need to clear the SIMD padding */
+        for (int i = old_alloc; i < li->nc_alloc; i++)
+        {
+            clear_rvec(li->tmpv[i]);
+        }
         if (DOMAINDECOMP(cr))
         {
             srenew(li->nlocat, li->nc_alloc);

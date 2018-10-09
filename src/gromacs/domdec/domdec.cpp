@@ -1767,7 +1767,8 @@ static void make_dd_communicators(const gmx::MDLogger &mdlog,
         dd->pme_nodeid = -1;
     }
 
-    if (DDMASTER(dd))
+    /* We can not use DDMASTER(dd), because dd->masterrank is set later */
+    if (MASTER(cr))
     {
         dd->ma = gmx::compat::make_unique<AtomDistribution>(dd->nc,
                                                             comm->cgs_gl.nr,
