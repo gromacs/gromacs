@@ -56,6 +56,7 @@
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_cuda/gpuBufferOpsCUDA.h"
 #include "gromacs/mdlib/nbnxn_gpu_common.h"
 #include "gromacs/mdlib/nbnxn_gpu_common_utils.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
@@ -348,8 +349,11 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     }
 
     /* HtoD x, q */
-    cu_copy_H2D_async(adat->xq + adat_begin, nbatom->x + adat_begin * 4,
-                      adat_len * sizeof(*adat->xq), stream);
+    if (!gpuBufferOpsActiveThisTimestep()) //otherwise nbat conversion will be done on GPU
+    {
+        cu_copy_H2D_async(adat->xq + adat_begin, nbatom->x + adat_begin * 4,
+                          adat_len * sizeof(*adat->xq), stream);
+    }
 
     if (bDoTime)
     {

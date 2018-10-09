@@ -52,6 +52,7 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_cuda/gpuBufferOpsCUDA.h"
 #include "gromacs/mdlib/nbnxn_internal.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/nbnxn_util.h"
@@ -1127,6 +1128,61 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search  *nbs,
     wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
     wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
 }
+
+
+
+/* GPU version of the above. Operates on data already present on GPU */
+/* Copies (and reorders) the coordinates to nbnxn_atomdata_t */
+void nbnxn_atomdata_copy_x_to_nbat_x_gpu(const nbnxn_search   *nbs,
+                                         int                   locality,
+                                         gmx_bool              FillLocal,
+                                         nbnxn_atomdata_t     *nbat,
+                                         gmx_nbnxn_gpu_t      *gpu_nbv,
+                                         int                   iloc,
+                                         rvec                 *x)
+{
+    int g0 = 0, g1 = 0;
+
+
+
+    switch (locality)
+    {
+        case eatAll:
+            g0 = 0;
+            g1 = nbs->grid.size();
+            break;
+        case eatLocal:
+            g0 = 0;
+            g1 = 1;
+            break;
+        case eatNonlocal:
+            g0 = 1;
+            g1 = nbs->grid.size();
+            break;
+    }
+
+    if (FillLocal)
+    {
+        nbat->natoms_local = nbs->grid[0].nc*nbs->grid[0].na_sc;
+    }
+
+
+    for (int g = g0; g < g1; g++)
+    {
+
+        const nbnxn_grid_t &grid       = nbs->grid[g];
+        gpuBufferOpsCopyRvecToNbatReal(grid.numCells[XX]*grid.numCells[YY], g,
+                                       FillLocal, gpu_nbv,
+                                       nbs->a.data(), nbs->a.size(),
+                                       grid.cxy_na.data(),
+                                       grid.cxy_ind.data(),
+                                       grid.cell0, grid.na_sc,
+                                       iloc, STRIDE_XYZQ, x);
+    }
+
+
+}
+
 
 static void
 nbnxn_atomdata_clear_reals(real * gmx_restrict dest,

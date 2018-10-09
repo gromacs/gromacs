@@ -40,6 +40,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
+#include "gromacs/mdlib/nbnxn_gpu_types.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -115,6 +116,15 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search  *nbs,
                                      rvec                *x,
                                      nbnxn_atomdata_t    *nbat,
                                      gmx_wallcycle       *wcycle);
+
+void nbnxn_atomdata_copy_x_to_nbat_x_gpu(const nbnxn_search   *nbs,
+                                         int                   locality,
+                                         gmx_bool              FillLocal,
+                                         nbnxn_atomdata_t     *nbat,
+                                         gmx_nbnxn_gpu_t      *gpu_nbv,
+                                         int                   iloc,
+                                         rvec                 *x);
+
 
 /* Add the forces stored in nbat to f, zeros the forces in nbat */
 void nbnxn_atomdata_add_nbat_f_to_f(nbnxn_search           *nbs,
