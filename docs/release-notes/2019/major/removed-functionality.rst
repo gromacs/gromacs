@@ -1,5 +1,5 @@
-Removed functionality
-^^^^^^^^^^^^^^^^^^^^^
+Removed features
+^^^^^^^^^^^^^^^^
 
 NVML support removed on NVIDIA GPUs
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
