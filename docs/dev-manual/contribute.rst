@@ -167,6 +167,6 @@ Removing functionality
 ----------------------
 
 This is occasionally necessary, and there is :ref:`policy for such
-occasions <deprecation policy>`. For users, there are also lists of
-:ref:`anticipated changes <anticipated changes>` and :ref:`deprecated
-functionality <deprecated functionality>`.
+occasions <deprecation-policy>`. For users, there are also lists of
+:ref:`anticipated changes <anticipated-changes>` and :ref:`deprecated
+functionality <deprecated-functionality>` as of |Gromacs| 2019.
