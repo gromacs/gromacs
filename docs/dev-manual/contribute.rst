@@ -168,4 +168,4 @@ Removing functionality
 
 This is occasionally necessary, and there is :ref:`policy for such
 occasions <deprecation policy>` and a :ref:`list of deprecated
-functionality <deprecated functionality>`.
+functionality <deprecated-2019>` as of |Gromacs| 2019.
