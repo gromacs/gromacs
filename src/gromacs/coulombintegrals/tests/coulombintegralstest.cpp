@@ -202,12 +202,12 @@ TEST_F (CoulombTest, SlaterRow3Row3)
 
 TEST_F (CoulombTest, GaussianLargeDistance)
 {
-    testCoulomb(ecdGaussian, 1, 1, 5.0, 8.0, 2);
+    testCoulomb(ecdGaussian, 1, 1, 5.0, 8.0, 0.23);
 }
 
 TEST_F (CoulombTest, SlaterLargeDistance)
 {
-    testCoulomb(ecdSlater, 3, 3, 11.0, 8.0, 2);
+    testCoulomb(ecdSlater, 3, 3, 11.0, 8.0, 0.23);
 }
 
 TEST_F (CoulombTest, GaussianZeroDistance)
