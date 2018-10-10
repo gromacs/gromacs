@@ -1244,12 +1244,15 @@ init_gpu_bonded(const t_pbc *pbc, const int rank, gmx_grppairener_t *grppener, c
     CU_RET_ERR(stat, "cudaHostAlloc failed");
 
 
-    stat = cudaMalloc(&fr_pairsTable_data_d[rank], (fr->pairsTable->n + 1)*fr->pairsTable->stride*sizeof(float));
-    CU_RET_ERR(stat, "cudaMalloc failed");
+    if (fr->pairsTable)
+    {
+        stat = cudaMalloc(&fr_pairsTable_data_d[rank], (fr->pairsTable->n + 1)*fr->pairsTable->stride*sizeof(float));
+        CU_RET_ERR(stat, "cudaMalloc failed");
 
-    stat = cudaMemcpy(fr_pairsTable_data_d[rank], fr->pairsTable->data,
-                      (fr->pairsTable->n + 1)*fr->pairsTable->stride*sizeof(float), cudaMemcpyHostToDevice);
-    CU_RET_ERR(stat, "cudaMemcpy failed");
+        stat = cudaMemcpy(fr_pairsTable_data_d[rank], fr->pairsTable->data,
+                          (fr->pairsTable->n + 1)*fr->pairsTable->stride*sizeof(float), cudaMemcpyHostToDevice);
+        CU_RET_ERR(stat, "cudaMemcpy failed");
+    }
 
     stat = cudaMalloc(&f_shift_d[rank], sizeof(fvec)*SHIFTS);
     CU_RET_ERR(stat, "cudaMalloc failed");
@@ -1408,22 +1411,25 @@ update_gpu_bonded(const t_idef *idef, const t_forcerec *fr, const matrix box,
         CU_RET_ERR(stat, "cudaMemcpy failed");
     }
 
-    // Packed arrays for LJ14
+    if (fr->pairsTable)
+    {
+        // Packed arrays for LJ14
 
-    pairs_Rpacked[rank][frFUDGEQQ]      = fr->fudgeQQ;
-    pairs_Rpacked[rank][fr_icEPSFAC]    = fr->ic->epsfac;
-    pairs_Rpacked[rank][fr_PAIRS_SCALE] = fr->pairsTable->scale;
+        pairs_Rpacked[rank][frFUDGEQQ]      = fr->fudgeQQ;
+        pairs_Rpacked[rank][fr_icEPSFAC]    = fr->ic->epsfac;
+        pairs_Rpacked[rank][fr_PAIRS_SCALE] = fr->pairsTable->scale;
 
-    stat = cudaMemcpy(pairs_Rpacked_d[rank], pairs_Rpacked[rank],
-                      sizeof(float)*PAIRS_NR, cudaMemcpyHostToDevice);
-    CU_RET_ERR(stat, "cudaMemcpy failed");
+        stat = cudaMemcpy(pairs_Rpacked_d[rank], pairs_Rpacked[rank],
+                          sizeof(float)*PAIRS_NR, cudaMemcpyHostToDevice);
+        CU_RET_ERR(stat, "cudaMemcpy failed");
 
-    pairs_Ipacked[rank][fr_PAIRS_STRIDE] = fr->pairsTable->stride;
-    pairs_Ipacked[rank][md_NENERGRP]     = md->nenergrp;
+        pairs_Ipacked[rank][fr_PAIRS_STRIDE] = fr->pairsTable->stride;
+        pairs_Ipacked[rank][md_NENERGRP]     = md->nenergrp;
 
-    stat = cudaMemcpy(pairs_Ipacked_d[rank], pairs_Ipacked[rank],
-                      sizeof(int)*PAIRS_NI, cudaMemcpyHostToDevice);
-    CU_RET_ERR(stat, "cudaMemcpy failed");
+        stat = cudaMemcpy(pairs_Ipacked_d[rank], pairs_Ipacked[rank],
+                          sizeof(int)*PAIRS_NI, cudaMemcpyHostToDevice);
+        CU_RET_ERR(stat, "cudaMemcpy failed");
+    }
 
     dim3 blocks, blocks_reset;
     dim3 threads (TPB_BONDED, 1, 1);
