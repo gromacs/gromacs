@@ -2909,9 +2909,7 @@ static void combine_nblists(int nnbl, nbnxn_pairlist_t **nbl,
     /* Each thread should copy its own data to the combined arrays,
      * as otherwise data will go back and forth between different caches.
      */
-#if GMX_OPENMP && !(defined __clang_analyzer__)
     int nthreads = gmx_omp_nthreads_get(emntPairsearch);
-#endif
 
 #pragma omp parallel for num_threads(nthreads) schedule(static)
     for (int n = 0; n < nnbl; n++)

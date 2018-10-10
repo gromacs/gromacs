@@ -1664,11 +1664,9 @@ void finish_update(const t_inputrec              *inputrec,  /* input record and
         }
         else
         {
-            auto           xp = makeConstArrayRef(upd->xp).subArray(0, homenr);
-            auto           x  = makeArrayRef(state->x).subArray(0, homenr);
-#ifndef __clang_analyzer__
+            auto           xp  = makeConstArrayRef(upd->xp).subArray(0, homenr);
+            auto           x   = makeArrayRef(state->x).subArray(0, homenr);
             int gmx_unused nth = gmx_omp_nthreads_get(emntUpdate);
-#endif
 #pragma omp parallel for num_threads(nth) schedule(static)
             for (int i = 0; i < homenr; i++)
             {
