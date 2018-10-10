@@ -235,7 +235,7 @@ int ReportMethods::run()
 
 }   // namespace
 
-const char ReportMethodsInfo::name[]             = "report";
+const char ReportMethodsInfo::name[]             = "report-methods";
 const char ReportMethodsInfo::shortDescription[] =
     "Write short summary about the simulation setup to a text file "
     "and/or to the standard output.";

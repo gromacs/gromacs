@@ -186,7 +186,7 @@ TEST(ReportMethodsTest, ToolEndToEndTest)
     TestFileManager   fileManager;
     std::string       tprName   = generateTprInput(&fileManager, "lysozyme");
     const char *const command[] = {
-        "report", "-s", tprName.c_str()
+        "report-methods", "-s", tprName.c_str()
     };
     CommandLine       cmdline(command);
     EXPECT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(

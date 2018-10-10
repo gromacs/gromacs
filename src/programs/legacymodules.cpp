@@ -434,7 +434,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("mk_angndx");
         group.addModule("trjorder");
         group.addModule("xpm2ps");
-        group.addModule("report");
+        group.addModule("report-methods");
     }
     {
         gmx::CommandLineModuleGroup group =
