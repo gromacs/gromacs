@@ -39,6 +39,7 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/gmxpreprocess/convparm.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
 #include "gromacs/gmxpreprocess/notset.h"
@@ -724,7 +725,6 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
                                   bool                    bUseVsites,
                                   bool                    bPairs,
                                   bool                    bDih,
-                                  bool                    bAddShells,
                                   bool                    bBASTAT,
                                   const char             *tabfn)
 {
@@ -833,6 +833,9 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
         }
         svmul((1.0/atntot), coc_, coc_);
     }
+    bool bAddShells = (iChargeDistributionModel == eqdAXpp || 
+                       iChargeDistributionModel == eqdAXpg || 
+                       iChargeDistributionModel == eqdAXps);
     if (bAddShells && imm == immOK)
     {
         addShells(pd, iChargeDistributionModel);
@@ -1117,6 +1120,8 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
     mdModules_->get()->assignOptionsToModules(*(inputrec_->params), nullptr);
     fr_->forceProviders = mdModules_->get()->initForceProviders();
     fr_->forceProviders->addForceProvider(myforce_);
+    // Tell gromacs to use the generic kernel only.
+    gmx_nonbonded_setup(fr_, true);
 
     gmx::ArrayRef<const std::string>  tabbfnm;
     init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,

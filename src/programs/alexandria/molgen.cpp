@@ -551,10 +551,6 @@ void MolGen::Read(FILE            *fp,
                          bFitZeta);
     }
     /*Generate topology for Molecules and distribute them among the nodes*/
-    bool bPolar = (iChargeDistributionModel() == eqdAXpp  ||
-                   iChargeDistributionModel() == eqdAXpg  ||
-                   iChargeDistributionModel() == eqdAXps);
-
     int ntopol = 0;
     if (MASTER(cr_))
     {
@@ -574,7 +570,6 @@ void MolGen::Read(FILE            *fp,
                                              bGenVsite_,
                                              bPairs,
                                              bDihedral,
-                                             bPolar,
                                              false,
                                              tabfn);
                 if (bCheckSupport && immOK == imm)
@@ -706,7 +701,6 @@ void MolGen::Read(FILE            *fp,
                                          bGenVsite_,
                                          bPairs,
                                          bDihedral,
-                                         bPolar,
                                          false,
                                          tabfn);
 

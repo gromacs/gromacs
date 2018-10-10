@@ -149,7 +149,6 @@ int alex_gentop(int argc, char *argv[])
     static char                     *conf           = (char *)"minimum";
     static char                     *basis          = (char *)"";
     static char                     *jobtype        = (char *)"unknown";
-    static gmx_bool                  bPolar         = false;
     static gmx_bool                  bRemoveDih     = false;
     static gmx_bool                  bQsym          = false;
     static gmx_bool                  bCONECT        = false;
@@ -424,12 +423,6 @@ int alex_gentop(int argc, char *argv[])
         mymol.molProp()->Merge(mpi);
     }
     mymol.SetForceField(forcefield);
-    if (iChargeDistributionModel == eqdAXpp  ||
-        iChargeDistributionModel == eqdAXpg  ||
-        iChargeDistributionModel == eqdAXps)
-    {
-        bPolar = true;
-    }
     fill_inputrec(inputrec);
     mymol.setInputrec(inputrec);
     imm = mymol.GenerateTopology(aps,
@@ -439,7 +432,6 @@ int alex_gentop(int argc, char *argv[])
                                  bGenVSites,
                                  bPairs,
                                  bDihedral,
-                                 bPolar,
                                  false,
                                  tabfn);
 

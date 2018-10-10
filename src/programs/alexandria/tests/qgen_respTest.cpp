@@ -69,8 +69,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             alexandria::MolProp     molprop;
             aps_ = gmx_atomprop_init();
 
-            setenv("GMX_NB_GENERIC", "1", 1);
-            //needed for ReadGauss
+            // needed for ReadGauss
             const char *molnm    = (char *)"XXX";
             const char *iupac    = (char *)"";
             const char *conf     = (char *)"minimum";
@@ -104,14 +103,14 @@ class RespTest : public gmx::test::CommandLineTestBase
         {
         }
 
-        void testResp(ChargeDistributionModel qdist, bool bPolar)
+        void testResp(ChargeDistributionModel qdist)
         {
             //Generate charges and topology
             const char   *lot        = "B3LYP/aug-cc-pVTZ";
-            t_inputrec   *inputrec   = new t_inputrec();
-            fill_inputrec(inputrec);
-            mp_.setInputrec(inputrec);
-            mp_.GenerateTopology(aps_, pd_, lot, qdist, false, false, false, bPolar, false, nullptr);
+            t_inputrec    inputrec;
+            fill_inputrec(&inputrec);
+            mp_.SetForceField("gaff");
+            mp_.GenerateTopology(aps_, pd_, lot, qdist, false, false, false,  false, nullptr);
             
             //Needed for GenerateCharges
             real           hfac        = 0;
@@ -124,29 +123,18 @@ class RespTest : public gmx::test::CommandLineTestBase
             int            qcycle      = 1;
             real           qtol        = 1e-3;
             int            maxpot      = 100;
-            
-            if(!bPolar)
+            std::string    tabFile;
+            if (qdist == eqdAXps)
             {
-                mp_.GenerateCharges(pd_, mdlog, aps_, qdist, eqgESP, watoms,
-                                    hfac, lot, false, symm_string, cr, nullptr, hwinfo, qcycle, maxpot, qtol, nullptr);
+                inputrec.coulombtype = eelUSER;
+                tabFile = fileManager().getInputFilePath("table.xvg");
             }
-            else
-            {
-                if (qdist == eqdAXpg)
-                {
-                    mp_.GenerateCharges(pd_, mdlog, aps_, qdist, eqgESP, watoms,
-                                        hfac, lot, false, symm_string, cr, nullptr, hwinfo, qcycle, maxpot, qtol, nullptr);
-                }
-                else if (qdist == eqdAXps)
-                {
-                    inputrec->coulombtype = eelUSER;
-                    mp_.setInputrec(inputrec);
-                    std::string tabFile = fileManager().getInputFilePath("table.xvg");
-                    mp_.GenerateCharges(pd_, mdlog, aps_, qdist, eqgESP, watoms,
-                                        hfac, lot, false, symm_string, cr,
-                                        tabFile.c_str(), hwinfo, qcycle, maxpot, qtol, nullptr);
-                }
-            }
+            mp_.setInputrec(&inputrec);
+            mp_.GenerateCharges(pd_, mdlog, aps_, qdist, eqgESP, watoms,
+                                hfac, lot, false, symm_string, cr, 
+                                tabFile.empty() ? nullptr : tabFile.c_str(),
+                                hwinfo, qcycle, maxpot, qtol, nullptr);
+
             std::vector<double> qtotValues;
             for (int atom = 0; atom < mp_.mtop_->moltype[0].atoms.nr; atom++)
             {
@@ -167,25 +155,25 @@ class RespTest : public gmx::test::CommandLineTestBase
 
 TEST_F (RespTest, AXpValues)
 {
-    testResp(eqdAXp, false);
+    testResp(eqdAXp);
 }
 
 TEST_F (RespTest, AXgValues)
 {
-    testResp(eqdAXg, false);
+    testResp(eqdAXg);
 }
 
 TEST_F (RespTest, AXgPolarValues)
 {
-    testResp(eqdAXpg, true);
+    testResp(eqdAXpg);
 }
 
 TEST_F (RespTest, AXsValues)
 {
-    testResp(eqdAXs, false);
+    testResp(eqdAXs);
 }
 
 TEST_F (RespTest, AXsPolarValues)
 {
-    testResp(eqdAXps, true);
+    testResp(eqdAXps);
 }

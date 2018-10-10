@@ -370,7 +370,6 @@ class MyMol
          * \param[in] bUseVsites  Add virtual sites to the topology structure
          * \param[in] bPairs      Add pairs to the topology structure
          * \param[in] bDih        Add dihedrals to the topology structure
-         * \param[in] bAddShells  Add shells to the topology structure
          */
         immStatus GenerateTopology(gmx_atomprop_t            ap,
                                    const Poldata            &pd,
@@ -379,7 +378,6 @@ class MyMol
                                    bool                      bUseVsites,
                                    bool                      bPairs,
                                    bool                      bDih,
-                                   bool                      bAddShells,
                                    bool                      bBASTAT,
                                    const char               *tabfn);
 
