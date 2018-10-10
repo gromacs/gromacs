@@ -327,6 +327,15 @@ if (SPHINX_FOUND)
         release-notes/removed-functionality.rst
         release-notes/portability.rst
         release-notes/miscellaneous.rst
+        release-notes/2019/major/highlights.rst
+        release-notes/2019/major/features.rst
+        release-notes/2019/major/performance.rst
+        release-notes/2019/major/tools.rst
+        release-notes/2019/major/bugs-fixed.rst
+        release-notes/2019/major/removed-functionality.rst
+        release-notes/2019/major/deprecated-functionality.rst
+        release-notes/2019/major/portability.rst
+        release-notes/2019/major/miscellaneous.rst
         release-notes/2018/2018.4.rst
         release-notes/2018/2018.3.rst
         release-notes/2018/2018.2.rst
@@ -356,6 +365,7 @@ if (SPHINX_FOUND)
         # as it will be included conditionally further down depending on
         # if the documentation will be build with the full reference
         # manual or without.
+        user-guide/deprecation-policy.rst
         user-guide/cmdline.rst
         user-guide/cutoff-schemes.rst
         user-guide/environment-variables.rst
