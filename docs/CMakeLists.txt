@@ -326,6 +326,14 @@ if (SPHINX_FOUND)
         release-notes/removed-features.rst
         release-notes/portability.rst
         release-notes/miscellaneous.rst
+        release-notes/2019/major/highlights.rst
+        release-notes/2019/major/features.rst
+        release-notes/2019/major/performance.rst
+        release-notes/2019/major/tools.rst
+        release-notes/2019/major/bugs-fixed.rst
+        release-notes/2019/major/removed-features.rst
+        release-notes/2019/major/portability.rst
+        release-notes/2019/major/miscellaneous.rst
         release-notes/2018/2018.4.rst
         release-notes/2018/2018.3.rst
         release-notes/2018/2018.2.rst
