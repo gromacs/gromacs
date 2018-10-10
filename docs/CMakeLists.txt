@@ -318,15 +318,15 @@ if (SPHINX_FOUND)
         how-to/visualize.rst
         install-guide/index.rst
         release-notes/index.rst
-        release-notes/highlights.rst
-        release-notes/features.rst
-        release-notes/performance.rst
-        release-notes/tools.rst
-        release-notes/bugs-fixed.rst
-        release-notes/deprecated-functionality.rst
-        release-notes/removed-functionality.rst
-        release-notes/portability.rst
-        release-notes/miscellaneous.rst
+        release-notes/2019/major/highlights.rst
+        release-notes/2019/major/features.rst
+        release-notes/2019/major/performance.rst
+        release-notes/2019/major/tools.rst
+        release-notes/2019/major/bugs-fixed.rst
+        release-notes/2019/major/removed-functionality.rst
+        release-notes/2019/major/deprecated-functionality.rst
+        release-notes/2019/major/portability.rst
+        release-notes/2019/major/miscellaneous.rst
         release-notes/2018/2018.4.rst
         release-notes/2018/2018.3.rst
         release-notes/2018/2018.2.rst
@@ -362,7 +362,6 @@ if (SPHINX_FOUND)
         user-guide/environment-variables.rst
         user-guide/faq.rst
         user-guide/floating-point.rst
-        user-guide/system-preparation.rst
         user-guide/force-fields.rst
         user-guide/getting-started.rst
         user-guide/managing-simulations.rst
