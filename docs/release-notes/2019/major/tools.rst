@@ -12,8 +12,16 @@ per residue, rather than for every atom.
 
 nmeig does thermochemistry
 ---------------------------------------
+
 The nmeig tool that analyzes the Hessian matrix from a normal mode
 analysis now generates thermochemical properties like standard
 entropy, heat capacity at constant volume, internal thermal energy
 and zero-point energy. The analysis is based on the harmonic
 approximation that is the same as what is used in quantum chemistry.
+
+Implement writing of LaTeX methods in report-methods
+----------------------------------------------------
+
+Added a new tool report-methods to write
+a summary of methods used to set up a simulation to an output file
+or to standard output.
