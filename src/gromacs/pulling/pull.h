@@ -53,6 +53,7 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -238,37 +239,12 @@ struct pull_t *init_pull(FILE                      *fplog,
                          gmx::LocalAtomSetManager  *atomSets,
                          real                       lambda);
 
-/*! \brief Set up and open the pull output files, when requested.
- *
- * NOTE: This should only be called on the master rank and only when
- *       doing dynamics (e.g. not with energy minimization).
- *
- * \param pull        The pull work data struct
- * \param nfile       Number of files.
- * \param fnm         Standard filename struct.
- * \param oenv        Output options.
- * \param continuationOptions  Options for continuing from checkpoint file
- */
-void init_pull_output_files(pull_t                    *pull,
-                            int                        nfile,
-                            const t_filenm             fnm[],
-                            const gmx_output_env_t    *oenv,
-                            const ContinuationOptions &continuationOptions);
 
-/*! \brief Close the pull output files.
+/*! \brief Close the pull output files and delete pull.
  *
- * \param pull       The pull group.
+ * \param pull       The pull data structure.
  */
 void finish_pull(struct pull_t *pull);
-
-
-/*! \brief Print the pull output (x and/or f)
- *
- * \param pull     The pull data structure.
- * \param step     Time step number.
- * \param time     Time.
- */
-void pull_print_output(struct pull_t *pull, int64_t step, double time);
 
 
 /*! \brief Calculates centers of mass all pull groups.
