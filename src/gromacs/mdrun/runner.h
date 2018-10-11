@@ -61,7 +61,6 @@
 struct gmx_output_env_t;
 struct ReplicaExchangeParameters;
 struct t_commrec;
-struct t_fileio;
 
 namespace gmx
 {
@@ -214,6 +213,14 @@ class Mdrunner
          * \todo replace with string or enum class and initialize with sensible value.
          */
         const char                             *pme_fft_opt = nullptr;
+
+        /*! \brief Target bonded interations for "cpu", "gpu", or "auto". Default is "auto".
+         *
+         * \internal
+         * \todo replace with string or enum class and initialize with sensible value.
+         */
+        const char                             *bonded_opt = nullptr;
+
         //! Command-line override for the duration of a neighbor list with the Verlet scheme.
         int                                     nstlist_cmdline = 0;
         //! Parameters for replica-exchange simulations.
@@ -222,7 +229,7 @@ class Mdrunner
         real                                    pforce = -1;
 
         //! \brief Non-owning handle to file used for logging.
-        t_fileio                               *logFileHandle = nullptr;
+        FILE                                   *fplog = nullptr;
 
         //! \brief Non-owning handle to communication data structure.
         t_commrec                              *cr = nullptr;
@@ -356,10 +363,32 @@ class MdrunnerBuilder final
          * \internal
          * The arguments are passed as references to elements of arrays of C strings.
          * \todo Replace with modern strings or (better) enum classes.
-         * \todo Make optional and/or encapsulate into electrostatics module.
+         * \todo Make optional and/or encapsulate into task-assignment module.
          */
         MdrunnerBuilder &addElectrostatics(const char* pme_opt,
                                            const char* pme_fft_opt);
+
+        /*!
+         * \brief Assign responsibility for tasks for bonded interactions.
+         *
+         * Required. Director code should provide valid options for
+         * bonded interaction task assignment, whether or not such
+         * interactions are present. The builder does not apply any
+         * defaults, so client code should be prepared to provide
+         * (e.g.) "auto" in the event no user input or logic provides
+         * an alternative argument.
+         *
+         * \param bonded_opt Target bonded interactions for "cpu", "gpu", or "auto".
+         *
+         * Calling must guarantee that the pointed-to C strings are valid through
+         * simulation launch.
+         *
+         * \internal
+         * The arguments are passed as references to elements of arrays of C strings.
+         * \todo Replace with modern strings or (better) enum classes.
+         * \todo Make optional and/or encapsulate into task assignment module.
+         */
+        MdrunnerBuilder &addBondedTaskAssignment(const char *bonded_opt);
 
         /*!
          * \brief Provide access to the multisim communicator to use.
@@ -472,15 +501,15 @@ class MdrunnerBuilder final
         MdrunnerBuilder &addOutputEnvironment(gmx_output_env_t* outputEnvironment);
 
         /*!
-         * \brief Provide the filehandle pointer to be used for the MD log.
+         * \brief Provide the address of the filehandle pointer to be used for the MD log.
          *
-         * Required. Either nullptr if no log should be written, or
-         * valid and open reading for writing.
+         * Required.
          *
          * \param logFileHandle Non-owning handle to file used for logging.
          * \internal
+         * \todo This method becomes unnecessary with resolution of http://redmine.gromacs.org/issues/2651
          */
-        MdrunnerBuilder &addLogFile(t_fileio *logFileHandle);
+        MdrunnerBuilder &addLogFile(FILE** logFileHandle);
 
         ~MdrunnerBuilder();
 

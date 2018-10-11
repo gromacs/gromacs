@@ -2314,6 +2314,7 @@ void init_forcerec(FILE                             *fp,
                    gmx::ArrayRef<const std::string>  tabbfnm,
                    const gmx_hw_info_t              &hardwareInfo,
                    const gmx_device_info_t          *deviceInfo,
+                   const bool                        useGpuForBonded,
                    gmx_bool                          bNoSolvOpt,
                    real                              print_force)
 {
@@ -3050,6 +3051,11 @@ void init_forcerec(FILE                             *fp,
     /* Initialize the thread working data for bonded interactions */
     init_bonded_threading(fp, mtop->groups.grps[egcENER].nr,
                           &fr->bondedThreading);
+
+    if (useGpuForBonded)
+    {
+        // Allocate fr->gpuBondedLists
+    }
 
     fr->nthread_ewc = gmx_omp_nthreads_get(emntBonded);
     snew(fr->ewc_t, fr->nthread_ewc);
