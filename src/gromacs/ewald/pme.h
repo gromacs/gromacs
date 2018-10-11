@@ -88,7 +88,7 @@ enum {
 /*! \brief Possible PME codepaths on a rank.
  * \todo: make this enum class with gmx_pme_t C++ refactoring
  */
-enum PmeRunMode
+enum class PmeRunMode
 {
     None,    //!< No PME task is done
     CPU,     //!< Whole PME computation is done on CPU
