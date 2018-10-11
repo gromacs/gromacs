@@ -69,7 +69,7 @@ void QgenEem::setInfo(const Poldata            &pd,
     hardnessFactor_            = 1;
     if (haveShell)
     {
-        hardnessFactor_ = 4;
+        hardnessFactor_ = 1;
     }
     chieq_                     = 0;
     Jcs_                       = 0;
@@ -86,6 +86,10 @@ void QgenEem::setInfo(const Poldata            &pd,
         {
             coreIndex_.push_back(i);
             natom_++;
+        }
+        else if (atoms->atom[i].ptype == eptShell)
+        {
+            shellIndex_.push_back(i);
         }
     }
 
@@ -146,7 +150,6 @@ void QgenEem::setInfo(const Poldata            &pd,
                     snprintf(buf, sizeof(buf), "Row should be at least 1. Here: atype = %s q = %g zeta = %g row = %d model = %s",
                              atp.c_str(), q_[j][k], zeta_[j][k], row_[j][k],
                              getEemtypeName(iChargeDistributionModel_));
-                    //GMX_RELEASE_ASSERT(iChargeDistributionModel == eqdAXp || row_[j][k] != 0, buf);
                     #if HAVE_LIBCLN
                     if (row_[j][k] > SLATER_MAX_CLN)
                     {
@@ -420,13 +423,13 @@ double QgenEem::calcJ(ChargeDistributionModel iChargeDistributionModel,
 
     rvec_sub(xI, xJ, dx);
     r = norm(dx);
-    if (r == 0)
-    {
-        gmx_fatal(FARGS, "Zero distance between atoms!\n");
-    }
-    if ((zetaI <= 0) || (zetaJ <= 0))
+    if ((zetaI < 0) || (zetaJ < 0))
     {
         iChargeDistributionModel = eqdAXp;
+    }
+    if (r == 0 && (iChargeDistributionModel == eqdAXp || iChargeDistributionModel == eqdAXpp))
+    {
+        gmx_fatal(FARGS, "Zero distance between atoms!\n");
     }
     switch (iChargeDistributionModel)
     {
@@ -507,37 +510,48 @@ void QgenEem::calcJcc(t_atoms *atoms)
 }
 
 void QgenEem::calcJcs(t_atoms *atoms,
-                      int      top_ndx,
-                      int      eem_ndx)
+                      int      core_ndx_gromacs,
+                      int      core_ndx_eem)
 {
-    auto l   = 0;
-    auto k   = 0;
-    auto Jcs = 0.0;
-    Jcs_     = 0;
-    if (atoms->atom[top_ndx].ptype == eptAtom)
+    Jcs_ = 0;
+    if (atoms->atom[core_ndx_gromacs].ptype == eptAtom)
     {
-        auto itsShell = top_ndx + 1;
-        for (l = k = 0; l < atoms->nr; l++)
+        auto itsShell = core_ndx_gromacs + 1;
+        for (auto i = 0; i < natom_; i++)
         {
-            if (atoms->atom[l].ptype == eptShell && (l != itsShell))
+            auto shell_ndx_gromacs = shellIndex_[i];
+            if (atoms->atom[shell_ndx_gromacs].ptype == eptShell)
             {
-                k++;
-                Jcs = calcJ(iChargeDistributionModel_,
-                            x_[top_ndx],
-                            x_[l],
-                            zeta_[eem_ndx][0],
-                            zeta_[k][1],
-                            row_[eem_ndx][0],
-                            row_[k][1]);
-                Jcs   *= q_[k][1];
-                Jcs_  += Jcs;
+                if (shell_ndx_gromacs != itsShell)
+                {
+                    Jcs_ += (q_[i][1]*calcJ(iChargeDistributionModel_,
+                                            x_[core_ndx_gromacs],
+                                            x_[shell_ndx_gromacs],
+                                            zeta_[core_ndx_eem][0],
+                                            zeta_[i][1],
+                                            row_[core_ndx_eem][0],
+                                            row_[i][1]));                    
+                    if (debug)
+                    {
+                        fprintf(debug, "core_ndx: %d shell_ndx: %d shell_charge: %0.1f\n", 
+                                core_ndx_gromacs, shell_ndx_gromacs, q_[i][1]);
+                    }
+                }
+            }
+            else
+            {
+                gmx_fatal(FARGS, "atom %d must be eptShell, but it is not\n", shell_ndx_gromacs);
             }
         }
         Jcs_ *= 0.5;
+        if (debug)
+        {
+            fprintf(debug, "Jcs_:%0.3f\n", Jcs_);
+        }
     }
     else
     {
-        gmx_fatal(FARGS, "atom %d must be eptAtom, but it is not\n", top_ndx);
+        gmx_fatal(FARGS, "atom %d must be eptAtom, but it is not\n", core_ndx_gromacs);
     }
 }
 

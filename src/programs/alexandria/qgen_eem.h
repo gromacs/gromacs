@@ -118,7 +118,7 @@ class QgenEem
         gmx_bool                                           bHaveShell_;
         ChargeDistributionModel                            iChargeDistributionModel_;
                
-        std::vector<int>                                   atomnr_, nZeta_, coreIndex_;
+        std::vector<int>                                   atomnr_, nZeta_, coreIndex_, shellIndex_;
         std::vector<double>                                chi0_, rhs_, j00_;
         std::vector<gmx::RVec>                             x_;   
         std::vector<std::string>                           elem_;            

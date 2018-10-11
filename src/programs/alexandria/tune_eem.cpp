@@ -238,7 +238,7 @@ void OptEEM::calcDeviation()
 {
     int                 i         = 0;
     int                 j         = 0;
-    int                 maxiter   = 100;
+    int                 maxiter   = 10;
     int                 iter      = 0;
     double              qtot      = 0;
     double              EemRms    = 0;
