@@ -71,6 +71,7 @@ class MDModules;
 class IRestraintPotential; // defined in restraint/restraintpotential.h
 class RestraintManager;
 class SimulationContext;
+class StopHandlerBuilder;
 
 //! Work-around for GCC bug 58265
 constexpr bool BUGFREE_NOEXCEPT_STRING = std::is_nothrow_move_assignable<std::string>::value;
@@ -255,6 +256,21 @@ class Mdrunner
          * Use opaque pointer for this implementation detail.
          */
         std::unique_ptr<RestraintManager>     restraintManager_;
+
+        /*!
+         * \brief Builder for stop signal handler
+         *
+         * Optionally provided through MdrunnerBuilder. Client may create a
+         * StopHandlerBuilder and register any number of signal providers before
+         * launching the Mdrunner.
+         *
+         * Default is an empty signal handler that will have local signal issuers
+         * added after being passed into the integrator.
+         *
+         * \internal
+         * We do not need a full type specification here, so we use an opaque pointer.
+         */
+        std::unique_ptr<StopHandlerBuilder>    stopHandlerBuilder_;
 };
 
 /*! \libinternal
@@ -507,6 +523,19 @@ class MdrunnerBuilder final
          * \internal
          */
         MdrunnerBuilder &addLogFile(t_fileio *logFileHandle);
+
+        /*!
+         * \brief Provide a StopHandlerBuilder for the MD stop signal handling.
+         *
+         * Optional. Defaults to empty.
+         *
+         * Client may provide additional (non-default) issuers of simulation stop
+         * signals by preconfiguring the StopHandlerBuilder used later when the
+         * simulation runs.
+         *
+         * \param builder
+         */
+        MdrunnerBuilder &addStopHandlerBuilder(std::unique_ptr<StopHandlerBuilder> builder);
 
         ~MdrunnerBuilder();
 
