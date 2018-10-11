@@ -123,9 +123,9 @@ Other compilers may work (Cray, Pathscale, older clang) but do
 not offer competitive performance. We recommend against PGI because
 the performance with C++ is very bad.
 
-The xlc compiler is not supported and has not been tested on POWER
-architectures for |Gromacs|\ -\ |version|. We recommend to use the gcc
-compiler instead, as it is being extensively tested.
+The xlc compiler is not supported and version 16.1 does not compile on
+POWER architectures for |Gromacs|\ -\ |version|. We recommend to use
+the gcc compiler instead, as it is being extensively tested.
 
 You may also need the most recent version of other compiler toolchain
 components beside the compiler itself (e.g. assembler or linker);
@@ -560,7 +560,7 @@ lead to performance loss, e.g. on Intel Skylake-X/SP and AMD Zen.
 9. ``AVX_512_KNL`` Knights Landing Xeon Phi processors
 10. ``Sparc64_HPC_ACE`` Fujitsu machines like the K computer have this.
 11. ``IBM_VMX`` Power6 and similar Altivec processors have this.
-12. ``IBM_VSX`` Power7, Power8 and later have this.
+12. ``IBM_VSX`` Power7, Power8, Power9 and later have this.
 13. ``ARM_NEON`` 32-bit ARMv7 with NEON support.
 14. ``ARM_NEON_ASIMD`` 64-bit ARMv8 and later.
 
