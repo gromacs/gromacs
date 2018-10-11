@@ -50,7 +50,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
-#include "gromacs/mdlib/simulationsignal.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
@@ -157,7 +156,6 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx::Constraints *constr,
-                     gmx::SimulationSignaller *signalCoordinator,
                      matrix box,
                      gmx::Accumulator<gmx::ISimulationAccumulatorClient> *accumulator,
                      int *totalNumberOfBondedInteractions,
@@ -226,20 +224,17 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
         }
         else
         {
-            gmx::ArrayRef<real> signalBuffer = signalCoordinator->getCommunicationBuffer();
             if (PAR(cr))
             {
                 wallcycle_start(wcycle, ewcMoveE);
                 global_stat(gstat, cr, enerd, force_vir, shake_vir, mu_tot,
                             ir, ekind, constr, bStopCM ? vcm : nullptr,
-                            signalBuffer.size(), signalBuffer.data(),
                             accumulator->getReductionView(),
                             totalNumberOfBondedInteractions,
                             *bSumEkinhOld, flags);
                 accumulator->notifyClientsAfterCommunication();
                 wallcycle_stop(wcycle, ewcMoveE);
             }
-            signalCoordinator->finalizeSignals();
             *bSumEkinhOld = FALSE;
         }
     }

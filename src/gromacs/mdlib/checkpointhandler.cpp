@@ -49,13 +49,15 @@ namespace gmx
 {
 
 CheckpointHandler::CheckpointHandler(
-        compat::not_null<SimulationSignal*> signal,
-        bool                                simulationsShareState,
-        bool                                neverUpdateNeighborList,
-        bool                                isMaster,
-        bool                                writeFinalCheckpoint,
-        real                                checkpointingPeriod) :
-    signal_(*signal),
+        compat::not_null<AccumulatorBuilder<ISimulationAccumulatorClient>*>      simulationAccumulatorBuilder,
+        compat::not_null<AccumulatorBuilder<IMultiSimulationAccumulatorClient>*> multiSimulationAccumulatorBuilder,
+        bool                                                                     neverUpdateNeighborList,
+        bool                                                                     isMaster,
+        bool                                                                     writeFinalCheckpoint,
+        real                                                                     checkpointingPeriod) :
+    multiSimAccumulator_(nullptr),
+    doMultiSim_(false),
+    hasUnhandledSignal_(false),
     checkpointThisStep_(false),
     numberOfNextCheckpoint_(1),
     rankCanSetSignal_(checkpointingPeriod >= 0 && isMaster),
@@ -64,36 +66,89 @@ CheckpointHandler::CheckpointHandler(
     neverUpdateNeighborlist_(neverUpdateNeighborList),
     checkpointingPeriod_(checkpointingPeriod)
 {
-    if (simulationsShareState)
+    if (checkpointingIsActive_)
     {
-        signal_.isLocal = false;
+        simulationAccumulatorBuilder->registerClient(
+                compat::not_null<ISimulationAccumulatorClient*>(this));
+        multiSimulationAccumulatorBuilder->registerClient(
+                compat::not_null<IMultiSimulationAccumulatorClient*>(this));
+
     }
 }
 
 void CheckpointHandler::setSignalImpl(
-        gmx_walltime_accounting_t walltime_accounting) const
+        gmx_walltime_accounting_t walltime_accounting)
 {
-    const double secondsSinceStart = walltime_accounting_get_time_since_start(walltime_accounting);
-    if (static_cast<CheckpointSignal>(signal_.set) == CheckpointSignal::noSignal &&
-        static_cast<CheckpointSignal>(signal_.sig) == CheckpointSignal::noSignal &&
-        (checkpointingPeriod_ == 0 || secondsSinceStart >= numberOfNextCheckpoint_ * checkpointingPeriod_ * 60.0))
+    const bool signalNeeded = !hasUnhandledSignal_ &&
+        (checkpointingPeriod_ == 0 ||
+         walltime_accounting_get_time_since_start(walltime_accounting) >=
+         numberOfNextCheckpoint_ * checkpointingPeriod_ * 60.0);
+    const bool multiSimSignalSet =
+        doMultiSim_ && toCheckpointSignal(multiSimSignalView_[0]) == CheckpointSignal::doCheckpoint;
+    if (signalNeeded && doMultiSim_ && !multiSimSignalSet)
     {
-        signal_.sig = static_cast<signed char>(CheckpointSignal::doCheckpoint);
+        multiSimSignalView_[0] = static_cast<double>(CheckpointSignal::doCheckpoint);
+        multiSimAccumulator_->notifyReductionRequired(compat::not_null<IMultiSimulationAccumulatorClient*>(this));
+    }
+    else if (signalNeeded || multiSimSignalSet)
+    {
+        signalView_[0] = static_cast<double>(CheckpointSignal::doCheckpoint);
     }
 }
 
 void CheckpointHandler::decideIfCheckpointingThisStepImpl(
         bool bNS, bool bFirstStep, bool bLastStep)
 {
-    checkpointThisStep_ = (((static_cast<CheckpointSignal>(signal_.set) == CheckpointSignal::doCheckpoint &&
-                             (bNS || neverUpdateNeighborlist_)) ||
-                            (bLastStep && writeFinalCheckpoint_)) &&
-                           !bFirstStep);
-    if (checkpointThisStep_)
+    if (((hasUnhandledSignal_ && (bNS || neverUpdateNeighborlist_)) ||
+         (bLastStep && writeFinalCheckpoint_)) &&
+        !bFirstStep)
     {
-        signal_.set = static_cast<signed char>(CheckpointSignal::noSignal);
+        checkpointThisStep_ = true;
+        hasUnhandledSignal_ = false;
         numberOfNextCheckpoint_++;
     }
+}
+
+int CheckpointHandler::getNumSimulationGlobalsRequired() const
+{
+    return 1;
+}
+
+void CheckpointHandler::setViewForSimulationGlobals(
+        Accumulator<ISimulationAccumulatorClient> *accumulator gmx_unused,
+        ArrayRef<double>                           view)
+{
+    // No need for SimulationAccumulator pointer
+
+    signalView_ = view;
+    // set signal empty
+    signalView_[0] = static_cast<double>(CheckpointSignal::noSignal);
+}
+
+void CheckpointHandler::notifyAfterSimulationCommunication()
+{
+    // Not sure if we'll need that for anything...
+}
+
+int CheckpointHandler::getNumMultiSimulationGlobalsRequired() const
+{
+    return 1;
+}
+
+void CheckpointHandler::setViewForMultiSimulationGlobals(
+        Accumulator<IMultiSimulationAccumulatorClient> *accumulator,
+        ArrayRef<double>                                view)
+{
+    multiSimAccumulator_ = accumulator;
+    doMultiSim_          = true;
+    multiSimSignalView_  = view;
+    // set signal empty
+    multiSimSignalView_[0] = static_cast<double>(CheckpointSignal::noSignal);
+}
+
+void CheckpointHandler::notifyAfterMultiSimulationCommunication()
+{
+    // Not sure if we'll need that for anything...
 }
 
 } // namespace gmx
