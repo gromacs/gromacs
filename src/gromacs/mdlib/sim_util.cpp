@@ -1527,7 +1527,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     {
         if (bNS)
         {
-            update_gpu_bonded(&(top->idef), fr, box,
+            update_gpu_bonded(&(top->idef), fr,
                               x.size(), mdatoms, &(enerd->grpp));
         }
         reset_gpu_bonded(nbv->nbs->natoms_nonlocal, enerd->grpp.nener);
@@ -1565,7 +1565,8 @@ static void do_force_cutsVERLET(FILE *fplog,
     if (bUseGPU)
     {
         do_bonded_gpu(fr, inputrec, &(top->idef),
-                      flags, graph, nbv->nbs->natoms_nonlocal, as_rvec_array(x.data()));
+                      flags, graph, nbv->nbs->natoms_nonlocal, as_rvec_array(x.data()),
+                      box);
         do_bonded_gpu_finalize(fr, flags, nbv->nbs->natoms_nonlocal, f, enerd);
     }
     else
