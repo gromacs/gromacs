@@ -311,7 +311,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     int                       i, j, type, a_offset, cg, mol, ftype, nra;
     real                      qS, alpha;
     int                       aS, aN = 0; /* Shell and nucleus */
-    int                       bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_ANHARM_POL, F_WATER_POL, F_HYPER_POL };
+    int                       bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_ANHARM_POL, F_WATER_POL/*, F_HYPER_POL*/ };
 #define NBT asize(bondtypes)
     gmx_mtop_atomloop_all_t   aloop;
     const gmx_ffparams_t     *ffparams;
@@ -423,7 +423,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                         case F_CUBICBONDS:
                         case F_POLARIZATION:
                         case F_ANHARM_POL:
-                        case F_HYPER_POL:
+                            /*case F_HYPER_POL:*/
                             if (atom[ia[1]].ptype == eptShell)
                             {
                                 aS = ia[1];
@@ -501,7 +501,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                                 break;
                             case F_POLARIZATION:
                             case F_ANHARM_POL:
-                            case F_HYPER_POL:
+                                /*case F_HYPER_POL:*/
                                 if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS*10))
                                 {
                                     gmx_fatal(FARGS, "polarize can not be used with qA(%e) != qB(%e) for atom %d of molecule block %zu", qS, atom[aS].qB, aS+1, mb+1);
@@ -820,7 +820,7 @@ static void print_epot(FILE *fp, int64_t mdstep, int count, real epot, real df,
     fprintf(fp, "MDStep=%5s/%2d EPot: %12.8e, rmsF: %6.2e POL: %7.3f, Coul: %7.3f",
             gmx_step_str(mdstep, buf), count, epot, df, 
             enerd->term[F_POLARIZATION]+enerd->term[F_WATER_POL]+
-            enerd->term[F_ANHARM_POL]+enerd->term[F_HYPER_POL],
+            enerd->term[F_ANHARM_POL]/*+enerd->term[F_HYPER_POL]*/,
             enerd->term[F_COUL_SR]);
     if (ndir)
     {
