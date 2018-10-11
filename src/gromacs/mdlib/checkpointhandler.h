@@ -55,11 +55,13 @@
 #ifndef GMX_MDLIB_CHECKPOINTHANDLER_H
 #define GMX_MDLIB_CHECKPOINTHANDLER_H
 
+#include <cmath>
+
 #include <memory>
 
 #include "gromacs/compat/pointers.h"
 #include "gromacs/mdlib/mdrun.h"
-#include "gromacs/mdlib/simulationsignal.h"
+#include "gromacs/mdrunutility/accumulator.h"
 
 struct gmx_walltime_accounting;
 
@@ -82,33 +84,47 @@ enum class CheckpointSignal
  * Master rank sets the checkpointing signal periodically
  * All ranks receive checkpointing signal and set the respective flag
  */
-class CheckpointHandler final
+class CheckpointHandler final : public ISimulationAccumulatorClient,
+                                public IMultiSimulationAccumulatorClient
 {
     public:
         /*! \brief CheckpointHandler constructor
          *
-         * Needs a non-null pointer to the signal which is reduced by compute_globals, and
+         * Needs a non-null pointer to the builder to register for global communication, and
          * (const) references to data it needs to determine whether a signal needs to be
          * set or handled.
          */
         CheckpointHandler(
-            compat::not_null<SimulationSignal*> signal,
-            bool                                simulationsShareState,
-            bool                                neverUpdateNeighborList,
-            bool                                isMaster,
-            bool                                writeFinalCheckpoint,
-            real                                checkpointingPeriod);
+            compat::not_null<AccumulatorBuilder<ISimulationAccumulatorClient>*> simulationAccumulatorBuilder,
+            compat::not_null<AccumulatorBuilder<IMultiSimulationAccumulatorClient>*> multiSimulationAccumulatorBuilder,
+            bool                                        neverUpdateNeighborList,
+            bool                                        isMaster,
+            bool                                        writeFinalCheckpoint,
+            real                                        checkpointingPeriod);
 
         /*! \brief Decides whether a checkpointing signal needs to be set
          *
          * Checkpointing signal is set based on the elapsed run time and the checkpointing
          * interval.
          */
-        void setSignal(gmx_walltime_accounting *walltime_accounting) const
+        void setSignal(gmx_walltime_accounting *walltime_accounting)
         {
             if (rankCanSetSignal_)
             {
                 setSignalImpl(walltime_accounting);
+            }
+        }
+
+        /*! \brief Checks whether a signal has been received
+         *
+         */
+        void handleSignal()
+        {
+            if (checkpointingIsActive_ &&
+                toCheckpointSignal(signalView_[0]) == CheckpointSignal::doCheckpoint)
+            {
+                signalView_[0]      = static_cast<double>(CheckpointSignal::noSignal);
+                hasUnhandledSignal_ = true;
             }
         }
 
@@ -134,21 +150,52 @@ class CheckpointHandler final
             return checkpointThisStep_;
         }
 
+        /* From ISimulationAccumulatorClient */
+        //! Return the number of values needed to pass signal.
+        int getNumSimulationGlobalsRequired() const override;
+        //! Store where to write and read signal
+        void setViewForSimulationGlobals(Accumulator<ISimulationAccumulatorClient> *accumulateGlobals,
+                                         ArrayRef<double>                           view) override;
+        //! Called (in debug mode) after MPI reduction is complete.
+        void notifyAfterSimulationCommunication() override;
+
+        /* From IMultiSimulationAccumulatorClient */
+        //! Return the number of values needed to pass signal.
+        int getNumMultiSimulationGlobalsRequired() const override;
+        //! Store where to write and read signal
+        void setViewForMultiSimulationGlobals(Accumulator<IMultiSimulationAccumulatorClient> *accumulateGlobals,
+                                              ArrayRef<double>                                view) override;
+        //! Called (in debug mode) after MPI reduction is complete.
+        void notifyAfterMultiSimulationCommunication() override;
+
     private:
-        void setSignalImpl(gmx_walltime_accounting *walltime_accounting) const;
+        void setSignalImpl(gmx_walltime_accounting *walltime_accounting);
 
         void decideIfCheckpointingThisStepImpl(bool bNS, bool bFirstStep, bool bLastStep);
 
-        SimulationSignal &signal_;
-        bool              checkpointThisStep_;
-        int               numberOfNextCheckpoint_;
+        static inline CheckpointSignal toCheckpointSignal(double d);
 
-        const bool        rankCanSetSignal_;
-        const bool        checkpointingIsActive_;
-        const bool        writeFinalCheckpoint_;
-        const bool        neverUpdateNeighborlist_;
-        const real        checkpointingPeriod_;
+        ArrayRef<double> signalView_;
+        ArrayRef<double> multiSimSignalView_;
+        Accumulator<IMultiSimulationAccumulatorClient>* multiSimAccumulator_;
+
+        bool             doMultiSim_;
+        bool             hasUnhandledSignal_;
+        bool             checkpointThisStep_;
+        int              numberOfNextCheckpoint_;
+
+        const bool       rankCanSetSignal_;
+        const bool       checkpointingIsActive_;
+        const bool       writeFinalCheckpoint_;
+        const bool       neverUpdateNeighborlist_;
+        const real       checkpointingPeriod_;
 };
+
+inline CheckpointSignal CheckpointHandler::toCheckpointSignal(double d)
+{
+    return (d > 0.5) ? CheckpointSignal::doCheckpoint : CheckpointSignal::noSignal;
+}
+
 }      // namespace gmx
 
 #endif // GMX_MDLIB_CHECKPOINTHANDLER_H

@@ -65,13 +65,16 @@
 #ifndef GMX_MDLIB_STOPHANDLER_H
 #define GMX_MDLIB_STOPHANDLER_H
 
+#include <cmath>
+
 #include <functional>
 #include <memory>
 #include <vector>
 
 #include "gromacs/compat/pointers.h"
 #include "gromacs/mdlib/sighandler.h"
-#include "gromacs/mdlib/simulationsignal.h"
+#include "gromacs/mdrunutility/accumulator.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_walltime_accounting;
 
@@ -86,7 +89,7 @@ namespace gmx
  */
 enum class StopSignal
 {
-    noSignal, stopAtNextNSStep, stopImmediately
+    noSignal = 0, stopAtNextNSStep = 1, stopImmediately = -1
 };
 
 /*! \libinternal
@@ -98,24 +101,22 @@ enum class StopSignal
  * The functions are implemented within this header file to avoid leaving
  * the translation unit unnecessarily.
  */
-class StopHandler final
+class StopHandler final : public ISimulationAccumulatorClient,
+                          public IMultiSimulationAccumulatorClient
 {
     public:
         /*! \brief StopHandler constructor (will be called by StopHandlerBuilder)
          *
-         * @param signal Non-null pointer to a signal used for reading and writing of signals
-         * @param simulationShareState Whether this signal needs to be shared across multiple simulations
+         * @param accumulateGlobalsBuilder Non-null pointer to a resource to register the need for simulation reduction
+         * @param accumulateGlobalsBuilder Non-null pointer to a resource to register the need for multisim reduction
          * @param stopConditions Vector of callback functions setting the signal
          * @param neverUpdateNeighborList Whether simulation keeps same neighbor list forever
-         *
-         * Note: As the StopHandler does not work without this signal, it keeps a non-const reference
-         * to it as a member variable.
          */
         StopHandler(
-            compat::not_null<SimulationSignal*>        signal,
-            bool                                       simulationShareState,
-            std::vector< std::function<StopSignal()> > stopConditions,
-            bool                                       neverUpdateNeighborList);
+            compat::not_null<AccumulatorBuilder<ISimulationAccumulatorClient>*> simulationAccumulatorBuilder,
+            compat::not_null<AccumulatorBuilder<IMultiSimulationAccumulatorClient>*> multiSimulationAccumulatorBuilder,
+            std::vector< std::function<StopSignal()> >  stopConditions,
+            bool                                        neverUpdateNeighborList);
 
         /*! \brief Decides whether a stop signal shall be sent
          *
@@ -125,20 +126,68 @@ class StopHandler final
          * Returns as soon as a StopSignal::stopImmediately signal was obtained, or after
          * checking all registered stop conditions.
          */
-        void setSignal() const
+        void setSignal()
         {
+            StopSignal simulationSignal = StopSignal::noSignal;
             for (auto &condition : stopConditions_)
             {
                 const StopSignal sig = condition();
                 if (sig != StopSignal::noSignal)
                 {
-                    signal_.sig = static_cast<signed char>(sig);
+                    simulationSignal = sig;
                     if (sig == StopSignal::stopImmediately)
                     {
                         // We don't want this to be overwritten by a less urgent stop
                         break;
                     }
                 }
+            }
+
+            if (!doMultiSim_)
+            {
+                if (simulationSignal != StopSignal::noSignal)
+                {
+                    signalView_[0] = static_cast<double>(simulationSignal);
+                }
+            }
+            else
+            {
+                const StopSignal multiSimSignal = toStopSignal(multiSimSignalView_[0]);
+                switch (multiSimSignal)
+                {
+                    case StopSignal::noSignal:
+                        if (simulationSignal != StopSignal::noSignal)
+                        {
+                            multiSimSignalView_[0] = static_cast<double>(simulationSignal);
+                        }
+                        break;
+                    case StopSignal::stopImmediately:
+                        signalView_[0] = static_cast<double>(StopSignal::stopImmediately);
+                        multiSimAccumulator_->notifyReductionRequired(
+                            compat::not_null<IMultiSimulationAccumulatorClient*>(this));
+                        break;
+                    case StopSignal::stopAtNextNSStep:
+                        signalView_[0] = static_cast<double>(StopSignal::stopAtNextNSStep);
+                        multiSimAccumulator_->notifyReductionRequired(
+                            compat::not_null<IMultiSimulationAccumulatorClient*>(this));
+                        if (simulationSignal == StopSignal::stopImmediately)
+                        {
+                            multiSimSignalView_[0] = static_cast<double>(StopSignal::stopImmediately);
+                        }
+                }
+            }
+        }
+
+        /*! \brief Checks whether a signal has been received
+         *
+         */
+        void handleSignal()
+        {
+            if (toStopSignal(signalView_[0]) != StopSignal::noSignal)
+            {
+                stopImmediately_ = toStopSignal(signalView_[0]) == StopSignal::stopImmediately;
+                stopAtNextNS_    = toStopSignal(signalView_[0]) == StopSignal::stopAtNextNSStep;
+                signalView_[0]   = static_cast<double>(StopSignal::noSignal);
             }
         }
 
@@ -151,16 +200,55 @@ class StopHandler final
          */
         bool stoppingAfterCurrentStep(bool bNS) const
         {
-            return static_cast<StopSignal>(signal_.set) == StopSignal::stopImmediately ||
-                   (static_cast<StopSignal>(signal_.set) == StopSignal::stopAtNextNSStep &&
-                    (bNS || neverUpdateNeighborlist_));
+            return stopImmediately_ || (stopAtNextNS_ && (bNS || neverUpdateNeighborlist_));
         }
 
+        /* From ISimulationAccumulatorClient */
+        //! Return the number of values needed to pass signal.
+        int getNumSimulationGlobalsRequired() const override;
+        //! Store where to write and read signal
+        void setViewForSimulationGlobals(
+            Accumulator<ISimulationAccumulatorClient> *accumulateGlobals,
+            ArrayRef<double>                           view) override;
+        //! Called (in debug mode) after MPI reduction is complete.
+        void notifyAfterSimulationCommunication() override;
+
+        /* From IMultiSimulationAccumulatorClient */
+        //! Return the number of values needed to pass signal.
+        int getNumMultiSimulationGlobalsRequired() const override;
+        //! Store where to write and read signal
+        void setViewForMultiSimulationGlobals(Accumulator<IMultiSimulationAccumulatorClient> *accumulateGlobals,
+                                              ArrayRef<double>                                view) override;
+        //! Called (in debug mode) after MPI reduction is complete.
+        void notifyAfterMultiSimulationCommunication() override;
+
     private:
-        SimulationSignal &signal_;
-        const             std::vector< std::function<StopSignal()> > stopConditions_;
-        const bool        neverUpdateNeighborlist_;
+        static inline StopSignal toStopSignal(double d);
+
+        ArrayRef<double> signalView_;
+        ArrayRef<double> multiSimSignalView_;
+        Accumulator<IMultiSimulationAccumulatorClient>* multiSimAccumulator_;
+
+        bool             doMultiSim_;
+        bool             stopAtNextNS_;
+        bool             stopImmediately_;
+
+        const            std::vector< std::function<StopSignal()> > stopConditions_;
+        const bool       neverUpdateNeighborlist_;
 };
+
+inline StopSignal StopHandler::toStopSignal(double d)
+{
+    if (d > 0.5)
+    {
+        return StopSignal::stopAtNextNSStep;
+    }
+    if (d < 0.5)
+    {
+        return StopSignal::stopImmediately;
+    }
+    return StopSignal::noSignal;
+}
 
 /*! \libinternal
  * \brief Class setting the stop signal based on gmx_get_stop_condition()
@@ -190,7 +278,6 @@ class StopConditionSignal final
         const bool makeBinaryReproducibleSimulation_;
         const int  nstSignalComm_;
         const int  nstList_;
-
 };
 
 /*! \libinternal
@@ -273,18 +360,18 @@ class StopHandlerBuilder final
          * pointer or reference remain valid for the lifetime of the returned StopHandler.
          */
         std::unique_ptr<StopHandler> getStopHandlerMD (
-            compat::not_null<SimulationSignal*> signal,
-            bool                                simulationShareState,
-            bool                                isMaster,
-            int                                 nstList,
-            bool                                makeBinaryReproducibleSimulation,
-            int                                 nstSignalComm,
-            real                                maximumHoursToRun,
-            bool                                neverUpdateNeighborList,
-            FILE                               *fplog,
-            const int64_t                      &step,
-            const gmx_bool                     &bNS,
-            gmx_walltime_accounting            *walltime_accounting);
+            compat::not_null<AccumulatorBuilder<ISimulationAccumulatorClient>*>      simulationAccumulatorBuilder,
+            compat::not_null<AccumulatorBuilder<IMultiSimulationAccumulatorClient>*> multiSimulationAccumulatorBuilder,
+            bool                                                                     isMaster,
+            int                                                                      nstList,
+            bool                                                                     makeBinaryReproducibleSimulation,
+            int                                                                      nstSignalComm,
+            real                                                                     maximumHoursToRun,
+            bool                                                                     neverUpdateNeighborList,
+            FILE                                                                    *fplog,
+            const int64_t                                                           &step,
+            const gmx_bool                                                          &bNS,
+            gmx_walltime_accounting                                                 *walltime_accounting);
 
     private:
         /*! \brief Initial stopConditions
