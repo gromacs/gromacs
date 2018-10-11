@@ -199,6 +199,8 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
         { nullptr, "auto", "cpu", "gpu", nullptr };
         const char       *pme_fft_opt_choices[] =
         { nullptr, "auto", "cpu", "gpu", nullptr };
+        const char       *bonded_opt_choices[] =
+        { nullptr, "auto", "cpu", "gpu", nullptr };
         gmx_bool          bTryToAppendFiles     = TRUE;
         const char       *gpuIdsAvailable       = "";
         const char       *userGpuTaskAssignment = "";
@@ -268,6 +270,8 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
               "Perform PME calculations on" },
             { "-pmefft", FALSE, etENUM, {pme_fft_opt_choices},
               "Perform PME FFT calculations on" },
+            { "-bonded",     FALSE, etENUM, {bonded_opt_choices},
+              "Perform bonded calculations on" },
             { "-v",       FALSE, etBOOL, {&mdrunOptions.verbose},
               "Be loud and noisy" },
             { "-pforce",  FALSE, etREAL, {&pforce},
@@ -481,6 +485,7 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
         builder.addNonBonded(nbpu_opt_choices[0]);
         // \todo pass by value
         builder.addElectrostatics(pme_opt_choices[0], pme_fft_opt_choices[0]);
+        builder.addBondedTaskAssignment(bonded_opt_choices[0]);
         builder.addNeighborList(nstlist_cmdline);
         builder.addReplicaExchange(replExParams);
         // \todo take ownership of multisim resources (ms)

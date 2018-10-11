@@ -115,6 +115,7 @@ void init_interaction_const_tables(FILE                   *fp,
  * \param[in]  tabbfnm     Table potential files for bonded interactions
  * \param[in]  hardwareInfo  Information about hardware
  * \param[in]  deviceInfo  Info about GPU device to use for short-ranged work
+ * \param[in]  useGpuForBonded  Whether bonded interactions will run on a GPU
  * \param[in]  bNoSolvOpt  Do not use solvent optimization
  * \param[in]  print_force Print forces for atoms with force >= print_force
  */
@@ -131,6 +132,7 @@ void init_forcerec(FILE                             *fplog,
                    gmx::ArrayRef<const std::string>  tabbfnm,
                    const gmx_hw_info_t              &hardwareInfo,
                    const gmx_device_info_t          *deviceInfo,
+                   bool                              useGpuForBonded,
                    gmx_bool                          bNoSolvOpt,
                    real                              print_force);
 
