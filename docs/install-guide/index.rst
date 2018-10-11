@@ -203,15 +203,15 @@ version for |Gromacs| code as used as the host compiler for nvcc.
 To make it possible to use other accelerators, |Gromacs| also includes
 OpenCL_ support. The minimum OpenCL version required is
 |REQUIRED_OPENCL_MIN_VERSION|. The current OpenCL implementation is recommended for
-use with GCN-based AMD GPUs, on Linux we recommend the ROCm runtime.
-For Intel GPUs it is required to compile with ``-DGMX_OCL_NB_CLUSTER_SIZE=4`` and
-the `Neo driver <https://github.com/intel/compute-runtime/releases>`_ is recommended.
-It is also supported with NVIDIA GPUs, but using
+use with GCN-based AMD GPUs, and on Linux we recommend the ROCm runtime.
+Intel integrated GPUs are supported with the Neo drivers.
+OpenCL is also supported with NVIDIA GPUs, but using
 the latest NVIDIA driver (which includes the NVIDIA OpenCL runtime) is
 recommended. Also note that there are performance limitations (inherent
 to the NVIDIA OpenCL runtime).
 It is not possible to configure both CUDA and OpenCL
-support in the same version of |Gromacs|.
+support in the same build of |Gromacs|, nor to support both
+Intel and other vendors' GPUs with OpenCL.
 
 .. _mpi-support:
 
@@ -668,9 +668,11 @@ could be considered in non performance-critical use-cases.
 OpenCL GPU acceleration
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-The primary target of the |Gromacs| OpenCL support is accelerating simulations
-on AMD hardware, both discrete GPUs and APUs (integrated CPU+GPU chips).
-The |Gromacs| OpenCL on NVIDIA GPUs works, but performance
+The primary targets of the |Gromacs| OpenCL support is accelerating
+simulations on AMD and Intel hardware. For AMD, we target both
+discrete GPUs and APUs (integrated CPU+GPU chips), and for Intel we
+target the integrated GPUs found on modern workstation and mobile
+hardware. The |Gromacs| OpenCL on NVIDIA GPUs works, but performance
 and other limitations make it less practical (for details see the user guide).
 
 To build |Gromacs| with OpenCL_ support enabled, two components are
@@ -695,6 +697,11 @@ To trigger an OpenCL_ build the following CMake flags must be set
 ::
 
     cmake .. -DGMX_GPU=ON -DGMX_USE_OPENCL=ON
+
+To build with support for Intel GPUs, it is required to add
+``-DGMX_OPENCL_NB_CLUSTER_SIZE=4`` to the cmake command line. The
+`Neo driver <https://github.com/intel/compute-runtime/releases>`_ is
+recommended.
 
 On Mac OS, an AMD GPU can be used only with OS version 10.10.4 and
 higher; earlier OS versions are known to run incorrectly.

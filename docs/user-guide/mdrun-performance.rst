@@ -108,7 +108,8 @@ definitions. Experienced HPC users can skip this section.
         An open standard-based parallel computing framework that consists
         of a C99-based compiler and a programming API for targeting heterogeneous
         and accelerator hardware. |Gromacs| uses OpenCL for GPU acceleration
-        on AMD devices (both GPUs and APUs); NVIDIA hardware is also supported.
+        on AMD devices (both GPUs and APUs) and Intel integrated GPUs; NVIDIA
+        hardware is also supported.
 
     SIMD
         A type of CPU instruction by which modern CPU cores can execute large
@@ -917,7 +918,7 @@ are a few cases where tweaks can give performance benefits.
 In single-rank runs timing of GPU tasks is by default enabled and,
 while in most cases its impact is small, in fast runs performance can be affected.
 The performance impact will be most significant on NVIDIA GPUs with CUDA,
-less on AMD with OpenCL.
+less on AMD and Intel with OpenCL.
 In these cases, when more than a few percent of "Launch GPU ops" time is observed,
 it is recommended to turn off timing by setting the ``GMX_DISABLE_GPU_TIMING``
 environment variable.
@@ -961,7 +962,9 @@ In addition Mesa version 17.0 or newer with LLVM 4.0 or newer is also supported.
 For NVIDIA GPUs, using the proprietary driver is
 required as the open source nouveau driver (available in Mesa) does not
 provide the OpenCL support.
-TODO: add Intel driver recommendations
+For Intel integrated GPUs, the `Neo driver <https://github.com/intel/compute-runtime/releases>`_ is
+recommended.
+TODO: add more Intel driver recommendations
 The minimum OpenCL version required is |REQUIRED_OPENCL_MIN_VERSION|. See
 also the :ref:`known limitations <opencl-known-limitations>`.
 
