@@ -91,11 +91,7 @@ class CoulombTest : public gmx::test::CommandLineTestBase
         //init set tolecrance
         CoulombTest () : checker_(this->rootChecker())
         {
-#if !HAVE_LIBCLN
             double toler = 1e-8;
-#else
-            double toler = 1e-13;
-#endif
             gmx::test::FloatingPointTolerance tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, toler);
             checker_.setDefaultTolerance(tolerance);
         }
