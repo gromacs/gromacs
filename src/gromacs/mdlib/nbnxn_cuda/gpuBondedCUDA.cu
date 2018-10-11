@@ -182,8 +182,8 @@ void bonds_gpu(float *vtot, const int nbonds, const int natoms,
         int aj   = forceatoms[3*i + 2];
 
         /* dx = xi - xj, corrected for periodic boundry conditions. */
-        fvec dx;
-        int  ki = pbcDxAiuc<calcEnerVir>(pbcAiuc, x[ai], x[aj], dx);
+        fvec  dx;
+        int   ki = pbcDxAiuc<calcEnerVir>(pbcAiuc, x[ai], x[aj], dx);
 
         float dr2 = iprod_gpu(dx, dx);
         float dr  = sqrt(dr2);
@@ -922,8 +922,8 @@ void pairs_gpu(int ftype, const int nbonds, const int natoms,
         float c12   = iparams[itype].lj14.c12A;
 
         /* Do we need to apply full periodic boundary conditions? */
-        fvec dr;
-        int  fshift_index = pbcDxAiuc<calcEnerVir>(pbcAiuc, x[ai], x[aj], dr);
+        fvec  dr;
+        int   fshift_index = pbcDxAiuc<calcEnerVir>(pbcAiuc, x[ai], x[aj], dr);
 
         float r2    = norm2_gpu(dr);
         float rinv  = rsqrtf(r2);
@@ -1038,17 +1038,17 @@ static void setPbcAiuc(int           numPbcDim,
  */
 
 /* variables to be integrated */
-static fvec      *x_bonded_d[BO_MAX_RANKS];
-static fvec      *f_bonded_d[BO_MAX_RANKS];
+static fvec           *x_bonded_d[BO_MAX_RANKS];
+static fvec           *f_bonded_d[BO_MAX_RANKS];
 
-static fvec      *f_bonded[BO_MAX_RANKS];
-static fvec      *f_shift_d[BO_MAX_RANKS];
-static fvec      *f_shift[BO_MAX_RANKS];
+static fvec           *f_bonded[BO_MAX_RANKS];
+static fvec           *f_shift_d[BO_MAX_RANKS];
+static fvec           *f_shift[BO_MAX_RANKS];
 
-static float      vtot[BO_MAX_RANKS][F_NRE];
+static float           vtot[BO_MAX_RANKS][F_NRE];
 
-static float     *vtot_d[BO_MAX_RANKS];
-static t_iparams *forceparams_d[BO_MAX_RANKS];
+static float          *vtot_d[BO_MAX_RANKS];
+static t_iparams      *forceparams_d[BO_MAX_RANKS];
 
 static t_iatom        *iatoms_d[BO_MAX_RANKS][F_NRE];
 static int             device_iatom_alloc[BO_MAX_RANKS][F_NRE];
@@ -1238,7 +1238,7 @@ reset_gpu_bonded(const int size, const int nener)
 
     cudaError_t stat;
 
-    fvec       *f_d_in = f_bonded_d[rank];
+    fvec      * f_d_in = f_bonded_d[rank];
 
     reset_gpu_bonded_kernel <<< blocks, threads, 0, streamBonded[rank]>>>
     (vtot_d[rank], f_d_in, size, energygrp_elec_d[rank],
@@ -1249,23 +1249,128 @@ reset_gpu_bonded(const int size, const int nener)
 }
 
 /* -------------- */
+template <bool calcEnerVir>
+static void
+launch_bonded_kernels(t_forcerec   *fr,
+                      const t_idef *idef,
+                      int           numEnergyGroups,
+                      int           natoms,
+                      const matrix  box)
+{
+    int rank = 0;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    fvec      * x_d_in = x_bonded_d[rank];
+    fvec      * f_d_in = f_bonded_d[rank];
+
+    cudaError_t stat;
+
+    PbcAiuc     pbcAiuc;
+    setPbcAiuc(fr->bMolPBC ? ePBC2npbcdim(fr->ePBC) : 0, box, &pbcAiuc);
+
+// reordered for better overlap
+    dim3 blocks, blocks_natoms;
+    dim3 threads (TPB_BONDED, 1, 1);
+    for (int ftype = 0; ftype < F_NRE; ftype++)
+    {
+        if (idef->il[ftype].nr == 0 || !ftype_is_bonded_potential(ftype))
+        {
+            continue;
+        }
+
+        const int nat1   = interaction_function[ftype].nratoms + 1;
+        const int nbonds = idef->il[ftype].nr/nat1;
+        blocks.x         = (nbonds+TPB_BONDED-1)/TPB_BONDED;
+        blocks_natoms.x  = (natoms+TPB_BONDED-1)/TPB_BONDED;
+        if (ftype == F_PDIHS || ftype == F_PIDIHS)
+        {
+            pdihs_gpu<calcEnerVir> <<< blocks, threads, 0, streamBonded[rank]>>>
+            (&vtot_d[rank][ftype], nbonds, natoms,
+             iatoms_d[rank][ftype], forceparams_d[rank],
+             x_d_in, f_d_in, f_shift_d[rank],
+             pbcAiuc);
+        }
+    }
+
+    for (int ftype = 0; ftype < F_NRE; ftype++)
+    {
+        if (idef->il[ftype].nr == 0 || !ftype_is_bonded_potential(ftype))
+        {
+            continue;
+        }
+        const int nat1   = interaction_function[ftype].nratoms + 1;
+        const int nbonds = idef->il[ftype].nr/nat1;
+        blocks.x         = (nbonds+TPB_BONDED-1)/TPB_BONDED;
+        blocks_natoms.x  = (natoms+TPB_BONDED-1)/TPB_BONDED;
+// in the main code they have a function pointer for this
+// so we need something like that for final version
+// note temp array here for output forces
+
+        if (ftype == F_BONDS)
+        {
+            bonds_gpu<calcEnerVir> <<< blocks, threads, 0, streamBonded[rank]>>>
+            (&vtot_d[rank][ftype], nbonds, natoms,
+             iatoms_d[rank][ftype], forceparams_d[rank],
+             x_d_in, f_d_in, f_shift_d[rank],
+             pbcAiuc);
+        }
+        if (ftype == F_ANGLES)
+        {
+            angles_gpu<calcEnerVir> <<< blocks, threads, 0, streamBonded[rank]>>>
+            (&vtot_d[rank][ftype], nbonds, natoms,
+             iatoms_d[rank][ftype], forceparams_d[rank],
+             x_d_in, f_d_in, f_shift_d[rank],
+             pbcAiuc);
+        }
+        if (ftype == F_UREY_BRADLEY)
+        {
+            urey_bradley_gpu<calcEnerVir> <<< blocks, threads, 0, streamBonded[rank]>>>
+            (&vtot_d[rank][ftype], nbonds, natoms,
+             iatoms_d[rank][ftype], forceparams_d[rank],
+             x_d_in, f_d_in, f_shift_d[rank],
+             pbcAiuc);
+        }
+        if (ftype == F_RBDIHS)
+        {
+            rbdihs_gpu<calcEnerVir> <<< blocks, threads, 0, streamBonded[rank]>>>
+            (&vtot_d[rank][ftype], nbonds, natoms,
+             iatoms_d[rank][ftype], forceparams_d[rank],
+             x_d_in, f_d_in, f_shift_d[rank],
+             pbcAiuc);
+        }
+        if (ftype == F_IDIHS)
+        {
+            idihs_gpu<calcEnerVir> <<< blocks, threads, 0, streamBonded[rank]>>>
+            (&vtot_d[rank][ftype], nbonds, natoms,
+             iatoms_d[rank][ftype], forceparams_d[rank],
+             x_d_in, f_d_in, f_shift_d[rank],
+             pbcAiuc);
+        }
+        if (ftype == F_LJ14)
+        {
+            pairs_gpu<calcEnerVir> <<< blocks, threads, 0, streamBonded[rank]>>>
+            (ftype, nbonds, natoms,
+             iatoms_d[rank][ftype], forceparams_d[rank],
+             x_d_in, f_d_in, f_shift_d[rank],
+             pbcAiuc,
+             md_chargeA_d[rank], md_cENER_d[rank],
+             energygrp_elec_d[rank], energygrp_vdw_d[rank],
+             fr->ic->epsfac*fr->fudgeQQ,
+             numEnergyGroups);
+        }
+    }
+    stat = cudaGetLastError();
+    CU_RET_ERR(stat, "kernels failed");
+    return;
+}
+
 void
 do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
               int numEnergyGroups,
               const int flags,  const t_graph *graph, int natoms, fvec x[],
               const matrix box)
 {
-    int   nat1, nbonds;
-    bool  bCalcEnerVir = (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY));
-
     bool  abort = false;
-    int   rank  = 0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    fvec       *x_d_in = x_bonded_d[rank];
-    fvec       *f_d_in = f_bonded_d[rank];
-
-    cudaError_t stat;
 
 // sanity check
 
@@ -1304,6 +1409,9 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
     PbcAiuc pbcAiuc;
     setPbcAiuc(fr->bMolPBC ? ePBC2npbcdim(fr->ePBC) : 0, box, &pbcAiuc);
 
+    int rank = 0;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
     bool do_copy_this_step = false;
 
     copy_required_this_step[rank] = true;
@@ -1315,189 +1423,23 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
 
     if (do_copy_this_step)
     {
-        stat = cudaMemcpyAsync(x_d_in, x,
-                               natoms*sizeof(fvec), cudaMemcpyHostToDevice, streamBonded[rank]);
+        fvec*       x_d_in = x_bonded_d[rank];
+
+        cudaError_t stat   =
+            cudaMemcpyAsync(x_d_in, x,
+                            natoms*sizeof(fvec), cudaMemcpyHostToDevice, streamBonded[rank]);
         CU_RET_ERR(stat, "cudaMemcpy failed");
     }
 
-// launch kernels
-// reordered for better overlap
-    dim3 blocks, blocks_natoms;
-    dim3 threads (TPB_BONDED, 1, 1);
-    for (int ftype = 0; (ftype < F_NRE); ftype++)
+    bool calcEnerVir = (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY));
+    if (calcEnerVir)
     {
-        if (idef->il[ftype].nr > 0 && ftype_is_bonded_potential(ftype))
-        {
-            nat1            = interaction_function[ftype].nratoms + 1;
-            nbonds          = idef->il[ftype].nr/nat1;
-            blocks.x        = (nbonds+TPB_BONDED-1)/TPB_BONDED;
-            blocks_natoms.x = (natoms+TPB_BONDED-1)/TPB_BONDED;
-            if (ftype == F_PDIHS || ftype == F_PIDIHS)
-            {
-                if (bCalcEnerVir)
-                {
-                    pdihs_gpu<true> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (&vtot_d[rank][ftype], nbonds, natoms,
-                     iatoms_d[rank][ftype], forceparams_d[rank],
-                     x_d_in, f_d_in, f_shift_d[rank],
-                     pbcAiuc);
-                }
-                else
-                {
-                    pdihs_gpu<false> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (nullptr, nbonds, natoms,
-                     iatoms_d[rank][ftype], forceparams_d[rank],
-                     x_d_in, f_d_in, nullptr,
-                     pbcAiuc);
-                }
-            }
-        }
+        launch_bonded_kernels<true>(fr, idef, numEnergyGroups, natoms, box);
     }
-
-    for (int ftype = 0; (ftype < F_NRE); ftype++)
+    else
     {
-        if (idef->il[ftype].nr > 0 && ftype_is_bonded_potential(ftype))
-        {
-            nat1            = interaction_function[ftype].nratoms + 1;
-            nbonds          = idef->il[ftype].nr/nat1;
-            blocks.x        = (nbonds+TPB_BONDED-1)/TPB_BONDED;
-            blocks_natoms.x = (natoms+TPB_BONDED-1)/TPB_BONDED;
-// in the main code they have a function pointer for this
-// so we need something like that for final version
-// note temp array here for output forces
-
-            if (ftype == F_BONDS)
-            {
-                if (bCalcEnerVir)
-                {
-                    bonds_gpu<true> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (&vtot_d[rank][ftype], nbonds, natoms,
-                     iatoms_d[rank][ftype], forceparams_d[rank],
-                     x_d_in, f_d_in, f_shift_d[rank],
-                     pbcAiuc);
-                }
-                else
-                {
-                    bonds_gpu<false> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (nullptr, nbonds, natoms,
-                     iatoms_d[rank][ftype], forceparams_d[rank],
-                     x_d_in, f_d_in, nullptr,
-                     pbcAiuc);
-                }
-            }
-
-            if (ftype == F_ANGLES)
-            {
-                if (bCalcEnerVir)
-                {
-                    angles_gpu<true> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (&vtot_d[rank][ftype], nbonds, natoms,
-                     iatoms_d[rank][ftype], forceparams_d[rank],
-                     x_d_in, f_d_in, f_shift_d[rank],
-                     pbcAiuc);
-                }
-                else
-                {
-                    angles_gpu<false> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (nullptr, nbonds, natoms,
-                     iatoms_d[rank][ftype], forceparams_d[rank],
-                     x_d_in, f_d_in, nullptr,
-                     pbcAiuc);
-                }
-            }
-
-            if (ftype == F_UREY_BRADLEY)
-            {
-                if (bCalcEnerVir)
-                {
-                    urey_bradley_gpu<true> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (&vtot_d[rank][ftype], nbonds, natoms,
-                     iatoms_d[rank][ftype], forceparams_d[rank],
-                     x_d_in, f_d_in, f_shift_d[rank],
-                     pbcAiuc);
-                }
-                else
-                {
-                    urey_bradley_gpu<false> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (nullptr, nbonds, natoms,
-                     iatoms_d[rank][ftype], forceparams_d[rank],
-                     x_d_in, f_d_in, nullptr,
-                     pbcAiuc);
-                }
-            }
-
-            if (ftype == F_RBDIHS)
-            {
-                if (bCalcEnerVir)
-                {
-                    rbdihs_gpu<true> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (&vtot_d[rank][ftype], nbonds, natoms,
-                     iatoms_d[rank][ftype], forceparams_d[rank],
-                     x_d_in, f_d_in, f_shift_d[rank],
-                     pbcAiuc);
-                }
-                else
-                {
-                    rbdihs_gpu<false> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (nullptr, nbonds, natoms,
-                     iatoms_d[rank][ftype], forceparams_d[rank],
-                     x_d_in, f_d_in, nullptr,
-                     pbcAiuc);
-                }
-            }
-
-            if (ftype == F_IDIHS)
-            {
-                if (bCalcEnerVir)
-                {
-                    idihs_gpu<true> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (&vtot_d[rank][ftype], nbonds, natoms,
-                     iatoms_d[rank][ftype], forceparams_d[rank],
-                     x_d_in, f_d_in, f_shift_d[rank],
-                     pbcAiuc);
-                }
-                else
-                {
-                    idihs_gpu<false> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (nullptr, nbonds, natoms,
-                     iatoms_d[rank][ftype], forceparams_d[rank],
-                     x_d_in, f_d_in, nullptr,
-                     pbcAiuc);
-                }
-            }
-
-            if (ftype == F_LJ14)
-            {
-                if (bCalcEnerVir)
-                {
-                    pairs_gpu<true> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (ftype, nbonds, natoms,
-                     iatoms_d[rank][ftype], forceparams_d[rank],
-                     x_d_in, f_d_in, f_shift_d[rank],
-                     pbcAiuc,
-                     md_chargeA_d[rank], md_cENER_d[rank],
-                     energygrp_elec_d[rank], energygrp_vdw_d[rank],
-                     fr->ic->epsfac*fr->fudgeQQ,
-                     numEnergyGroups);
-                }
-                else
-                {
-                    pairs_gpu<false> <<< blocks, threads, 0, streamBonded[rank]>>>
-                    (ftype, nbonds, natoms,
-                     iatoms_d[rank][ftype], forceparams_d[rank],
-                     x_d_in, f_d_in, nullptr,
-                     pbcAiuc,
-                     md_chargeA_d[rank], md_cENER_d[rank],
-                     energygrp_elec_d[rank], energygrp_vdw_d[rank],
-                     fr->ic->epsfac*fr->fudgeQQ,
-                     numEnergyGroups);
-                }
-            }
-        }
+        launch_bonded_kernels<false>(fr, idef, numEnergyGroups, natoms, box);
     }
-    stat = cudaGetLastError();
-    CU_RET_ERR(stat, "kernels failed");
-    return;
 }
 
 void
