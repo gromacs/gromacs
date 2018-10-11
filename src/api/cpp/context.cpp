@@ -58,6 +58,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdlib/stophandler.h"
 #include "gromacs/mdrun/logging.h"
+#include "gromacs/mdrun/mdfilenames.h"
 #include "gromacs/mdrun/multisim.h"
 #include "gromacs/mdrun/runner.h"
 #include "gromacs/mdrunutility/handlerestart.h"
@@ -491,7 +492,7 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
         // Need to establish run-time values from various inputs to provide a resource handle to Mdrunner
         builder.addHardwareOptions(hw_opt);
         // \todo File names are parameters that should be managed modularly through further factoring.
-        builder.addFilenames(filenames);
+        builder.addFilenames(filenames());
         // Note: The gmx_output_env_t life time is not managed after the call to parse_common_args.
         // \todo Implement lifetime management for gmx_output_env_t.
         // \todo Output environment should be configured outside of Mdrunner and provided as a resource.
