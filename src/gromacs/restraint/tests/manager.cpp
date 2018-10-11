@@ -64,6 +64,10 @@ class DummyRestraint : public gmx::IRestraintPotential
             return std::vector<int>();
         }
 
+        void bindSession(gmxapi::SessionResources *session) override
+        {
+            (void)session;
+        }
 };
 
 TEST(RestraintManager, restraintList)

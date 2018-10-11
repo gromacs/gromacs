@@ -73,6 +73,7 @@ struct t_pbc;
 namespace gmxapi
 {
 class Session;
+class SessionResources;
 }
 
 namespace gmx
@@ -217,6 +218,18 @@ class IRestraintPotential
          */
         virtual std::vector<int> sites() const = 0;
 
+        /*!
+         * \brief Allow Session-mediated interaction with other resources or workflow elements.
+         *
+         * \param resources temporary access to the resources provided by the session for additional configuration.
+         *
+         * A module implements this method to receive a handle to resources configured for this particular workflow
+         * element.
+         *
+         * \internal
+         * \todo This should be more general than the RestraintPotential interface.
+         */
+        virtual void bindSession(gmxapi::SessionResources* resources);
 };
 
 }      // end namespace gmx
