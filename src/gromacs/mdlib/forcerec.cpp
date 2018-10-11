@@ -2315,6 +2315,7 @@ void init_forcerec(FILE                             *fp,
                    gmx::ArrayRef<const std::string>  tabbfnm,
                    const gmx_hw_info_t              &hardwareInfo,
                    const gmx_device_info_t          *deviceInfo,
+                   const bool                        useGpuForBonded,
                    gmx_bool                          bNoSolvOpt,
                    real                              print_force)
 {
@@ -3052,14 +3053,9 @@ void init_forcerec(FILE                             *fp,
     init_bonded_threading(fp, mtop->groups.grps[egcENER].nr,
                           &fr->bondedThreading);
 
-    // TODO: Replace this condition by the GPU bonded task boolean
-    if (fr->cutoff_scheme == ecutsVERLET && getenv("GMX_TEST_GPU_BONDEDS"))
+    if (useGpuForBonded)
     {
         fr->gpuBondedLists = new GpuBondedLists;
-    }
-    else
-    {
-        fr->gpuBondedLists = nullptr;
     }
 
     fr->nthread_ewc = gmx_omp_nthreads_get(emntBonded);
@@ -3152,6 +3148,7 @@ void done_forcerec(t_forcerec *fr, int numMolBlocks, int numEnergyGroups)
     done_ns(fr->ns, numEnergyGroups);
     sfree(fr->ewc_t);
     tear_down_bonded_threading(fr->bondedThreading);
+    delete fr->gpuBondedLists;
     fr->bondedThreading = nullptr;
     sfree(fr);
 }

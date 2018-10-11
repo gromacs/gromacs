@@ -45,6 +45,7 @@
 #include <set>
 #include <string>
 
+#include "gromacs/ewald/pme.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/logger.h"
@@ -84,7 +85,9 @@ reportGpuUsage(const MDLogger                &mdlog,
                const GpuTaskAssignments      &gpuTaskAssignmentOnRanksOfThisNode,
                size_t                         numGpuTasksOnThisNode,
                size_t                         numRanks,
-               bool                           bPrintHostName)
+               bool                           bPrintHostName,
+               bool                           useGpuForBonded,
+               PmeRunMode                     pmeRunMode)
 {
     size_t numGpusInUse = countUniqueGpuIdsUsed(gpuTaskAssignmentOnRanksOfThisNode);
     if (numGpusInUse == 0)
@@ -133,6 +136,17 @@ reportGpuUsage(const MDLogger                &mdlog,
                                     numRanks,
                                     (numRanks > 1) ? "s" : "",
                                     gpuIdsString.c_str());
+        // Because there is a GPU in use, there must be a PP task on a GPU.
+        output += gmx::formatString("PP tasks will do short-ranged%s interactions on the GPU\n",
+                                    useGpuForBonded ? "and most bonded" : "");
+        if (pmeRunMode == PmeRunMode::Mixed)
+        {
+            output += gmx::formatString("PME tasks will do only spread and gather on the GPU\n");
+        }
+        else if (pmeRunMode == PmeRunMode::GPU)
+        {
+            output += gmx::formatString("PME tasks will do all aspects on the GPU\n");
+        }
     }
 
     /* NOTE: this print is only for and on one physical node */
