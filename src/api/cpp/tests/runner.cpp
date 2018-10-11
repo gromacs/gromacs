@@ -130,9 +130,13 @@ TEST(ApiRunner, Reinitialize)
 
 }
 
+/*!
+ * \brief Test simulation continuation.
+ *
+ * Run a simulation, then extend the target number of steps and continue the simulation.
+ */
 TEST(ApiRunner, ContinuedMD)
 {
-    // Run a simulation, then extend the target number of steps and continue the simulation
     auto system = gmxapi::fromTprFile(filename);
 
     {
