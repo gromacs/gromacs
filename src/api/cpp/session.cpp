@@ -53,6 +53,7 @@
 #include "gmxapi/status.h"
 #include "gmxapi/md/mdmodule.h"
 
+#include "mdsignals.h"
 #include "session-impl.h"
 #include "sessionresources.h"
 
@@ -122,6 +123,31 @@ class MpiContextManager
         //! \}
 };
 
+SignalManager::SignalManager(gmx::StopHandlerBuilder* stopHandlerBuilder) :
+    state_(std::make_shared<gmx::StopSignal>(gmx::StopSignal::noSignal))
+{
+
+    /*!
+     * \brief Signal issuer managed by this object.
+     *
+     * Created and bound when the runner is built. Subsequently, client
+     * stop signals are proxied to the simulation through the session
+     * resources. The MD internal signal handler calls this functor
+     * during the MD loop to see if the simulation should be stopped.
+     * Thus, this should execute within a very small fraction of an MD
+     * step and not require any synchronization.
+     */
+    auto currentState     = state_;
+    auto stopSignalIssuer = [currentState](){
+            return *currentState;
+        };
+    stopHandlerBuilder->registerStopCondition(stopSignalIssuer);
+}
+
+//! \cond
+SignalManager::~SignalManager() = default;
+//! \endcond
+
 bool SessionImpl::isOpen() const noexcept
 {
     // Currently, an active session is equivalent to an active Mdrunner.
@@ -165,40 +191,46 @@ Status SessionImpl::run() noexcept
     return successful;
 }
 
-std::unique_ptr<SessionImpl> SessionImpl::create(std::shared_ptr<ContextImpl>   context,
-                                                 std::unique_ptr<gmx::Mdrunner> runner,
-                                                 const gmx::SimulationContext  &simulationContext,
-                                                 gmx::LogFilePtr                logFilehandle,
-                                                 gmx_multisim_t               * multiSim)
+std::unique_ptr<SessionImpl> SessionImpl::create(std::shared_ptr<ContextImpl>  context,
+                                                 gmx::MdrunnerBuilder        &&runnerBuilder,
+                                                 const gmx::SimulationContext &simulationContext,
+                                                 gmx::LogFilePtr               logFilehandle,
+                                                 gmx_multisim_t              * multiSim)
 {
     using gmx::compat::make_unique;
     // We should be able to get a communicator (or subcommunicator) through the
     // Context.
     std::unique_ptr<SessionImpl> impl = make_unique<SessionImpl>(std::move(context),
-                                                                 std::move(runner),
+                                                                 std::move(runnerBuilder),
                                                                  simulationContext,
                                                                  std::move(logFilehandle),
                                                                  multiSim);
     return impl;
 }
 
-SessionImpl::SessionImpl(std::shared_ptr<ContextImpl>   context,
-                         std::unique_ptr<gmx::Mdrunner> runner,
-                         const gmx::SimulationContext  &simulationContext,
-                         gmx::LogFilePtr                fplog,
-                         gmx_multisim_t               * multiSim) :
+SessionImpl::SessionImpl(std::shared_ptr<ContextImpl>  context,
+                         gmx::MdrunnerBuilder        &&runnerBuilder,
+                         const gmx::SimulationContext &simulationContext,
+                         gmx::LogFilePtr               fplog,
+                         gmx_multisim_t              * multiSim) :
     context_(std::move(context)),
     mpiContextManager_(gmx::compat::make_unique<MpiContextManager>()),
-    runner_(std::move(runner)),
     simulationContext_(simulationContext),
     logFilePtr_(std::move(fplog)),
     multiSim_(multiSim)
 {
     GMX_ASSERT(context_, "SessionImpl invariant implies valid ContextImpl handle.");
     GMX_ASSERT(mpiContextManager_, "SessionImpl invariant implies valid MpiContextManager guard.");
-    GMX_ASSERT(runner_, "SessionImpl invariant implies valid Mdrunner handle.");
     GMX_ASSERT(simulationContext_.communicationRecord_, "SessionImpl invariant implies valid commrec.");
     // \todo Session objects can have logic specialized for the runtime environment.
+
+    auto stopHandlerBuilder = gmx::compat::make_unique<gmx::StopHandlerBuilder>();
+    signalManager_ = gmx::compat::make_unique<SignalManager>(stopHandlerBuilder.get());
+    GMX_ASSERT(signalManager_, "SessionImpl invariant includes a valid SignalManager.");
+
+    runnerBuilder.addStopHandlerBuilder(std::move(stopHandlerBuilder));
+    runner_ = gmx::compat::make_unique<gmx::Mdrunner>(runnerBuilder.build());
+    GMX_ASSERT(runner_, "SessionImpl invariant implies valid Mdrunner handle.");
 
     // For the libgromacs context, a session should explicitly reset global variables that could
     // have been set in a previous simulation during the same process.
@@ -235,6 +267,17 @@ Status SessionImpl::setRestraint(std::shared_ptr<gmxapi::MDModule> module)
         }
     }
     return status;
+}
+
+
+SignalManager *SessionImpl::getSignalManager()
+{
+    SignalManager* ptr = nullptr;
+    if (isOpen())
+    {
+        ptr = signalManager_.get();
+    }
+    return ptr;
 }
 
 gmx::Mdrunner *SessionImpl::getRunner()
@@ -274,7 +317,8 @@ gmxapi::SessionResources *SessionImpl::createResources(std::shared_ptr<gmxapi::M
         auto resourcesInstance = gmx::compat::make_unique<SessionResources>(this, name);
         resources_.emplace(std::make_pair(name, std::move(resourcesInstance)));
         resources = resources_.at(name).get();
-
+        // To do: This should be more dynamic.
+        getSignalManager()->addSignaller(name);
         std::shared_ptr<gmx::IRestraintPotential> restraint = nullptr;
         if (restraints_.find(name) != restraints_.end())
         {
@@ -379,9 +423,6 @@ SessionResources::SessionResources(gmxapi::SessionImpl *session,
     sessionImpl_(session),
     name_(std::move(name))
 {
-    // Avoid compiler warning.
-    // TODO: remove void cast when sessionImpl_ is used in future functionality.
-    (void)sessionImpl_;
 }
 
 SessionResources::~SessionResources() = default;
@@ -389,6 +430,25 @@ SessionResources::~SessionResources() = default;
 const std::string SessionResources::name() const
 {
     return name_;
+}
+
+Signal SessionResources::getMdrunnerSignal(md::signals signal)
+{
+    //// while there is only one choice...
+    if (signal != md::signals::STOP)
+    {
+        throw gmxapi::NotImplementedError("This signaller only handles stop signals.");
+    }
+
+    // Get a signalling proxy for the caller.
+    auto signalManager = sessionImpl_->getSignalManager();
+    if (signalManager == nullptr)
+    {
+        throw gmxapi::ProtocolError("Client requested access to a signaller that is not available.");
+    }
+    auto functor = signalManager->getSignal(name_, signal);
+
+    return functor;
 }
 
 } // end namespace gmxapi

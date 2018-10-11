@@ -56,6 +56,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/mdlib/stophandler.h"
 #include "gromacs/mdrun/logging.h"
 #include "gromacs/mdrun/multisim.h"
 #include "gromacs/mdrun/runner.h"
@@ -496,7 +497,22 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
         builder.addOutputEnvironment(oenv);
         builder.addLogFile(logFileGuard.get());
 
-        auto newMdRunner = compat::make_unique<gmx::Mdrunner>(builder.build());
+        {
+            //// \todo Need to create the signal manager _here_ but session resources is created later (during SessionImpl::create()
+            auto stopHandlerBuilder = compat::make_unique<StopHandlerBuilder>();
+            builder.addStopHandlerBuilder(std::move(stopHandlerBuilder));
+        }
+
+        {
+            // \todo Use createSession() library free function so ContextImpl doesn't need SessionImpl.
+            // Note, creation is not mature enough to be exposed in the external API yet.
+            auto newSession = SessionImpl::create(shared_from_this(),
+                                                  std::move(builder),
+                                                  simulationContext,
+                                                  std::move(logFileGuard),
+                                                  ms);
+            launchedSession = std::make_shared<Session>(std::move(newSession));
+        }
 
         // Clean up argv once builder is no longer in use
         for (auto && string : argv)
@@ -506,15 +522,6 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
                 delete[] string;
                 string = nullptr;
             }
-        }
-
-        {
-            auto newSession = SessionImpl::create(shared_from_this(),
-                                                  std::move(newMdRunner),
-                                                  simulationContext,
-                                                  std::move(logFileGuard),
-                                                  ms);
-            launchedSession = std::make_shared<Session>(std::move(newSession));
         }
 
     }

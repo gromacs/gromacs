@@ -178,16 +178,17 @@ Mdrunner Mdrunner::cloneOnSpawnedThread() const
     newRunner.hw_opt    = hw_opt;
     newRunner.filenames = filenames;
 
-    newRunner.oenv            = oenv;
-    newRunner.mdrunOptions    = mdrunOptions;
-    newRunner.domdecOptions   = domdecOptions;
-    newRunner.nbpu_opt        = nbpu_opt;
-    newRunner.pme_opt         = pme_opt;
-    newRunner.pme_fft_opt     = pme_fft_opt;
-    newRunner.nstlist_cmdline = nstlist_cmdline;
-    newRunner.replExParams    = replExParams;
-    newRunner.pforce          = pforce;
-    newRunner.ms              = ms;
+    newRunner.oenv                = oenv;
+    newRunner.mdrunOptions        = mdrunOptions;
+    newRunner.domdecOptions       = domdecOptions;
+    newRunner.nbpu_opt            = nbpu_opt;
+    newRunner.pme_opt             = pme_opt;
+    newRunner.pme_fft_opt         = pme_fft_opt;
+    newRunner.nstlist_cmdline     = nstlist_cmdline;
+    newRunner.replExParams        = replExParams;
+    newRunner.pforce              = pforce;
+    newRunner.ms                  = ms;
+    newRunner.stopHandlerBuilder_ = compat::make_unique<StopHandlerBuilder>(*stopHandlerBuilder_);
 
     threadMpiMdrunnerAccessBarrier();
 
@@ -1382,9 +1383,7 @@ int Mdrunner::mdrunner()
                             fr->cginfo_mb);
         }
 
-        /* Create StopHandlerBuilder (could be moved earlier if needed - currently nobody register here */
-        auto stopHandlerBuilder = compat::make_unique<StopHandlerBuilder>();
-
+        GMX_ASSERT(stopHandlerBuilder_, "Runner must provide StopHandlerBuilder to integrator.");
         /* Now do whatever the user wants us to do (how flexible...) */
         Integrator integrator {
             fplog, cr, ms, mdlog, static_cast<int>(filenames().size()), filenames().data(),
@@ -1402,7 +1401,7 @@ int Mdrunner::mdrunner()
             replExParams,
             membed,
             walltime_accounting,
-            std::move(stopHandlerBuilder)
+            std::move(stopHandlerBuilder_)
         };
         integrator.run(inputrec->eI, doRerun);
 
@@ -1557,6 +1556,8 @@ class Mdrunner::BuilderImplementation
 
         void addLogFile(t_fileio *logFileHandle);
 
+        void addStopHandlerBuilder(std::unique_ptr<StopHandlerBuilder> builder);
+
         Mdrunner build();
 
     private:
@@ -1614,6 +1615,11 @@ class Mdrunner::BuilderImplementation
          * nullptr to check whether the filehandle is valid.
          */
         t_fileio* logFileHandle_ = nullptr;
+
+        /*!
+         * \brief Builder for simulation stop signal handler.
+         */
+        std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder_ = nullptr;
 };
 
 Mdrunner::BuilderImplementation::BuilderImplementation(SimulationContext* context) :
@@ -1728,6 +1734,15 @@ Mdrunner Mdrunner::BuilderImplementation::build()
 
     newRunner.restraintManager_ = compat::make_unique<gmx::RestraintManager>();
 
+    if (stopHandlerBuilder_)
+    {
+        newRunner.stopHandlerBuilder_ = std::move(stopHandlerBuilder_);
+    }
+    else
+    {
+        newRunner.stopHandlerBuilder_ = compat::make_unique<StopHandlerBuilder>();
+    }
+
     return newRunner;
 }
 
@@ -1761,6 +1776,11 @@ void Mdrunner::BuilderImplementation::addOutputEnvironment(gmx_output_env_t* out
 void Mdrunner::BuilderImplementation::addLogFile(t_fileio *logFileHandle)
 {
     logFileHandle_ = logFileHandle;
+}
+
+void Mdrunner::BuilderImplementation::addStopHandlerBuilder(std::unique_ptr<StopHandlerBuilder> builder)
+{
+    stopHandlerBuilder_ = std::move(builder);
 }
 
 MdrunnerBuilder::MdrunnerBuilder(compat::not_null<SimulationContext*> context) :
@@ -1850,6 +1870,12 @@ MdrunnerBuilder &MdrunnerBuilder::addOutputEnvironment(gmx_output_env_t* outputE
 MdrunnerBuilder &MdrunnerBuilder::addLogFile(t_fileio *logFileHandle)
 {
     impl_->addLogFile(logFileHandle);
+    return *this;
+}
+
+MdrunnerBuilder &MdrunnerBuilder::addStopHandlerBuilder(std::unique_ptr<StopHandlerBuilder> builder)
+{
+    impl_->addStopHandlerBuilder(std::move(builder));
     return *this;
 }
 
