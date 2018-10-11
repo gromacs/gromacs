@@ -116,10 +116,7 @@ void RestraintForceProvider::calculateForces(const ForceProviderInput &forceProv
                                             x,
                                             t);
         // dr = minimum_image_vector(b - a)
-        pbc_dx(&pbc,
-               b,
-               a,
-               dr);
+        pbc_dx(&pbc, b, a, dr);
         r2[0] += dr[0];
         r2[1] += dr[1];
         r2[2] += dr[2];
@@ -149,12 +146,8 @@ void RestraintForceProvider::calculateForces(const ForceProviderInput &forceProv
     }
 
     // Apply restraint on all thread ranks only after any updates have been made.
-    auto result = restraint_->evaluate(make_vec3<real>(r1[0],
-                                                       r1[1],
-                                                       r1[2]),
-                                       make_vec3<real>(r2[0],
-                                                       r2[1],
-                                                       r2[2]),
+    auto result = restraint_->evaluate(make_vec3<real>(r1[0], r1[1], r1[2]),
+                                       make_vec3<real>(r2[0], r2[1], r2[2]),
                                        t);
 
     // This can easily be generalized for pair restraints that apply to selections instead of
@@ -166,7 +159,7 @@ void RestraintForceProvider::calculateForces(const ForceProviderInput &forceProv
         &site1
     };
     // Set forces using index `site1` if no domain decomposition, otherwise set with local index if available.
-    rvec* force = as_rvec_array(forceProviderOutput->forceWithVirial_.force_.data());
+    rvec *force = as_rvec_array(forceProviderOutput->forceWithVirial_.force_.data());
     if ((cr.dd == nullptr) || (aLocal = cr.dd->ga2la->findHome(site1)))
     {
         force[static_cast<size_t>(*aLocal)][0] += result.force.x;

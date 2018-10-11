@@ -48,9 +48,10 @@
 #include "gromacs/mdrun/simulationcontext.h"
 
 #include "gmxapi/context.h"
-#include "gmxapi/status.h"
+#include "gmxapi/md.h"
 #include "gmxapi/md/mdmodule.h"
-
+#include "gmxapi/session/resources.h"
+#include "gmxapi/status.h"
 #include "gmxapi/md/mdmodule.h"
 
 namespace gmxapi
@@ -133,6 +134,32 @@ class SessionImpl
          */
         Status setRestraint(std::shared_ptr<gmxapi::MDModule> module);
 
+        /*!
+         * \brief Get a handle to the resources for the named session operation.
+         *
+         * \param name unique name of element in workflow
+         * \return temporary access to the resources.
+         *
+         * If called on a non-const Session, creates the resource if it does not yet exist.
+         * If called on a const Session,
+         * returns nullptr if the resource does not exist.
+         */
+        gmxapi::SessionResources* getResources(const std::string &name) const noexcept;
+
+        /*!
+         * \brief Create SessionResources for a module and bind the module.
+         *
+         * Adds a new managed resources object to the Session for the uniquely named module.
+         * Allows the module to bind to the SignalManager and to the resources object.
+         *
+         * \param module
+         * \return non-owning pointer to created resources or nullptr for error.
+         *
+         * If the named module is already registered, calling createResources again is considered an
+         * error and nullptr is returned.
+         */
+        gmxapi::SessionResources* createResources(std::shared_ptr<gmxapi::MDModule> module) noexcept;
+
         /*! \internal
          * \brief API implementation function to retrieve the current runner.
          *
@@ -157,6 +184,11 @@ class SessionImpl
                     gmx_multisim_t               * multiSim);
 
     private:
+        /*!
+         * \brief Manage session resources for named workflow elements.
+         */
+        std::map< std::string, std::unique_ptr<SessionResources> > resources_;
+
         /*!
          * \brief Extend the life of the owning context.
          *

@@ -33,28 +33,28 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "gmxpre.h"
+#ifndef GMXAPI_SESSION_RESOURCES_H
+#define GMXAPI_SESSION_RESOURCES_H
 
-#include "restraintpotential.h"
+/*! \file
+ * \brief Define interface to Session Resources for active (running) gmxapi operations.
+ */
 
-namespace gmx
+namespace gmxapi
 {
 
-PotentialPointData::PotentialPointData() :
-    PotentialPointData {Vector(), real(0.0)}
-{}
+/*!
+ * \brief Handle to Session-provided resources.
+ *
+ * Session handle for workflow elements requiring resources provided through the Session.
+ *
+ * Provided during launch through gmx::IRestraintPotential::bindSession()
+ *
+ * No public interface yet. Use accompanying free functions.
+ * \see gmxapi::getMdrunnerSignal()
+ */
+class SessionResources;
 
-PotentialPointData::PotentialPointData(const Vector &f, const real e) :
-    force(f),
-    energy(e)
-{}
+}      // end namespace gmxapi
 
-void IRestraintPotential::update(gmx::Vector gmx_unused v,
-                                 gmx::Vector gmx_unused v0,
-                                 double gmx_unused      t)
-{}
-
-void IRestraintPotential::bindSession(gmxapi::SessionResources* gmx_unused resources)
-{}
-
-} // end namespace gmx
+#endif //GMXAPI_SESSION_RESOURCES_H
