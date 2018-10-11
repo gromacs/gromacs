@@ -1565,7 +1565,8 @@ static void do_force_cutsVERLET(FILE *fplog,
     if (bUseGPU)
     {
         do_bonded_gpu(fr, inputrec, &(top->idef),
-                      flags, graph, nbv->nbs->natoms_nonlocal, as_rvec_array(x.data()));
+                      flags, graph, nbv->nbs->natoms_nonlocal, as_rvec_array(x.data()),
+                      box);
         do_bonded_gpu_finalize(fr, flags, nbv->nbs->natoms_nonlocal, f, enerd);
     }
     else

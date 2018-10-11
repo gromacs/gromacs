@@ -73,7 +73,8 @@
 void update_gpu_bonded(const t_idef *idef,  const t_forcerec *fr, const matrix box,
                        const int size,  const t_mdatoms *md, gmx_grppairener_t *grppener); 
 void do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef, 
-                   int flags, const t_graph *graph , int natoms, rvec x[]);
+                   int flags, const t_graph *graph , int natoms, rvec x[],
+                   const matrix box);
 
 void do_bonded_gpu_finalize(t_forcerec *fr, int flags, int natoms,
                             rvec *input_force, gmx_enerdata_t *enerd);
