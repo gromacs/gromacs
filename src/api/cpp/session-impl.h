@@ -59,6 +59,7 @@ namespace gmxapi
 // Forward declaration
 class MpiContextManager; // Locally defined in session.cpp
 class ContextImpl;       // locally defined in context.cpp
+class SignalManager;     // defined in mdsignals-impl.h
 
 /*!
  * \brief Implementation class for executing sessions.
@@ -110,7 +111,7 @@ class SessionImpl
          * \brief Create a new implementation object and transfer ownership.
          *
          * \param context Shared ownership of a Context implementation instance.
-         * \param runner MD simulation operation to take ownership of.
+         * \param runnerBuilder MD simulation builder to take ownership of.
          * \param simulationContext Take ownership of the simulation resources.
          * \param logFilehandle Take ownership of filehandle for MD logging
          * \param multiSim Take ownership of resources for Mdrunner multi-sim.
@@ -119,11 +120,11 @@ class SessionImpl
          *
          * \return Ownership of new Session implementation instance.
          */
-        static std::unique_ptr<SessionImpl> create(std::shared_ptr<ContextImpl>   context,
-                                                   std::unique_ptr<gmx::Mdrunner> runner,
-                                                   const gmx::SimulationContext  &simulationContext,
-                                                   gmx::LogFilePtr                logFilehandle,
-                                                   gmx_multisim_t               * multiSim);
+        static std::unique_ptr<SessionImpl> create(std::shared_ptr<ContextImpl>  context,
+                                                   gmx::MdrunnerBuilder        &&runnerBuilder,
+                                                   const gmx::SimulationContext &simulationContext,
+                                                   gmx::LogFilePtr               logFilehandle,
+                                                   gmx_multisim_t              * multiSim);
 
         /*!
          * \brief Add a restraint to the simulation.
@@ -167,20 +168,30 @@ class SessionImpl
         gmx::Mdrunner* getRunner();
 
         /*!
+         * \brief Get a non-owning handle to the SignalManager for the active MD runner.
+         *
+         * Calling code is responsible for ensuring that the SessionImpl is kept alive and "open"
+         * while the returned SignalManager handle is in use.
+         *
+         * \return non-owning pointer if runner and signal manager are active, else nullptr.
+         */
+        SignalManager* getSignalManager();
+
+        /*!
          * \brief Constructor for use by create()
          *
          * \param context specific context to keep alive during session.
-         * \param runner ownership of live Mdrunner object.
+         * \param runnerBuilder ownership of the MdrunnerBuilder object.
          * \param simulationContext take ownership of a SimulationContext
          * \param logFilehandle Take ownership of filehandle for MD logging
          * \param multiSim Take ownership of resources for Mdrunner multi-sim.
          *
          */
-        SessionImpl(std::shared_ptr<ContextImpl>   context,
-                    std::unique_ptr<gmx::Mdrunner> runner,
-                    const gmx::SimulationContext  &simulationContext,
-                    gmx::LogFilePtr                logFilehandle,
-                    gmx_multisim_t               * multiSim);
+        SessionImpl(std::shared_ptr<ContextImpl>  context,
+                    gmx::MdrunnerBuilder        &&runnerBuilder,
+                    const gmx::SimulationContext &simulationContext,
+                    gmx::LogFilePtr               logFilehandle,
+                    gmx_multisim_t              * multiSim);
 
     private:
         /*!
@@ -229,6 +240,15 @@ class SessionImpl
          * May be null for no multi-simulation management at the Mdrunner level.
          */
         gmx_multisim_t* multiSim_;
+
+        /*!
+         * \brief Own and manager the signalling pathways for the current session.
+         *
+         * Registers a stop signal issuer with the stopConditionBuilder that is
+         * passed to the Mdrunner at launch. Session members issuing stop signals
+         * are proxied through this resource.
+         */
+        std::unique_ptr<SignalManager>     signalManager_;
 
         /*!
          * \brief Restraints active in this session.

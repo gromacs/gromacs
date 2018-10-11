@@ -56,6 +56,7 @@ add_library(gmxapi SHARED
             gmxapi.cpp
             md.cpp
             mdmodule.cpp
+            mdsignals.cpp
             session.cpp
             status.cpp
             system.cpp
