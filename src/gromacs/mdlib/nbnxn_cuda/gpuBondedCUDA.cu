@@ -65,17 +65,8 @@
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/mdlib/force_flags.h"
 
-// this needs to be in an include file probably
-// duplicated from  pbcutil/pbc.cpp
-enum {
-    epbcdxRECTANGULAR = 1, epbcdxTRICLINIC,
-    epbcdx2D_RECT,       epbcdx2D_TRIC,
-    epbcdx1D_RECT,       epbcdx1D_TRIC,
-    epbcdxSCREW_RECT,    epbcdxSCREW_TRIC,
-    epbcdxNOPBC,         epbcdxUNSUPPORTED
-};
-
 #include "gromacs/mdlib/nbnxn_cuda/gpu_vec.h"
+#include "gromacs/mdlib/nbnxn_cuda/pbc.h"
 
 #if defined(_MSVC)
 #include <limits>
@@ -142,24 +133,6 @@ reset_gpu_bonded_kernel(float *vtot, fvec *force,
     }
 }
 
-__device__
-static int pbc_fvec_sub_gpu(const t_pbc *pbc, const fvec xi, const fvec xj, fvec dx,
-                            const fvec *pbc_hbox_diag, const matrix *pbc_box,
-                            const fvec *pbc_mhbox_diag, const fvec *pbc_fbox_diag,
-                            const fvec *pbc_tric_vec, const ivec* pbc_tric_shift)
-{
-    /* Need to be careful here, gpu pointer needs to be null if cpu pointer is null */
-    if (pbc)
-    {
-        return pbc_dx_aiuc_gpu(pbc, xi, xj, dx, *pbc_hbox_diag, *pbc_box, *pbc_mhbox_diag,
-                               *pbc_fbox_diag, pbc_tric_vec, pbc_tric_shift);
-    }
-    else
-    {
-        fvec_sub_gpu(xi, xj, dx);
-        return CENTRAL;
-    }
-}
 
 /* Harmonic */
 __device__
@@ -180,9 +153,7 @@ __global__
 void bonds_gpu(float *vtot, const int nbonds, const int natoms,
                const t_iatom forceatoms[], const t_iparams forceparams[],
                const fvec x[], fvec force[], fvec fshift[],
-               const t_pbc *pbc, const fvec *pbc_hbox_diag, const matrix *pbc_box,
-               const fvec *pbc_mhbox_diag, const fvec  *pbc_fbox_diag,
-               const fvec *pbc_tric_vec, const ivec *pbc_tric_shift)
+               const PbcAiuc pbcAiuc)
 {
     const int        i = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -212,10 +183,7 @@ void bonds_gpu(float *vtot, const int nbonds, const int natoms,
 
         /* dx = xi - xj, corrected for periodic boundry conditions. */
         fvec dx;
-        int  ki =
-            pbc_fvec_sub_gpu(pbc, x[ai], x[aj], dx,
-                             pbc_hbox_diag, pbc_box, pbc_mhbox_diag,
-                             pbc_fbox_diag,  pbc_tric_vec, pbc_tric_shift);
+        int  ki = pbcDxAiuc<calcEnerVir>(pbcAiuc, x[ai], x[aj], dx);
 
         float dr2 = iprod_gpu(dx, dx);
         float dr  = sqrt(dr2);
@@ -265,26 +233,19 @@ void bonds_gpu(float *vtot, const int nbonds, const int natoms,
     }
 }
 
+template <bool returnShift>
 __device__
-static float bond_angle_gpu(const fvec xi, const fvec xj, const fvec xk, const t_pbc *pbc,
-                            const fvec *pbc_hbox_diag, const matrix *pbc_box,
-                            const fvec *pbc_mhbox_diag, const fvec  *pbc_fbox_diag,
-                            const fvec*  pbc_tric_vec,  const ivec*  pbc_tric_shift,
+static float bond_angle_gpu(const fvec xi, const fvec xj, const fvec xk,
+                            const PbcAiuc &pbcAiuc,
                             fvec r_ij, fvec r_kj, float *costh,
                             int *t1, int *t2)
 /* Return value is the angle between the bonds i-j and j-k */
 {
-    float th;
+    *t1      = pbcDxAiuc<returnShift>(pbcAiuc, xi, xj, r_ij);
+    *t2      = pbcDxAiuc<returnShift>(pbcAiuc, xk, xj, r_kj);
 
-    *t1 = pbc_fvec_sub_gpu(pbc, xi, xj, r_ij,
-                           pbc_hbox_diag, pbc_box, pbc_mhbox_diag,
-                           pbc_fbox_diag,  pbc_tric_vec, pbc_tric_shift);
-    *t2 = pbc_fvec_sub_gpu(pbc, xk, xj, r_kj,
-                           pbc_hbox_diag, pbc_box, pbc_mhbox_diag,
-                           pbc_fbox_diag,  pbc_tric_vec, pbc_tric_shift);
-
-    *costh = cos_angle_gpu(r_ij, r_kj);
-    th     = acosf(*costh);
+    *costh   = cos_angle_gpu(r_ij, r_kj);
+    float th = acosf(*costh);
 
     return th;
 }
@@ -294,14 +255,12 @@ __global__
 void angles_gpu(float *vtot, const int nbonds, const int natoms,
                 const t_iatom forceatoms[], const t_iparams forceparams[],
                 const fvec x[], fvec force[], fvec fshift[],
-                const t_pbc *pbc, const fvec *pbc_hbox_diag, const matrix *pbc_box,
-                const fvec *pbc_mhbox_diag, const fvec  *pbc_fbox_diag,
-                const fvec*  pbc_tric_vec,  const ivec*  pbc_tric_shift)
+                const PbcAiuc pbcAiuc)
 {
     __shared__ float vtot_loc;
     __shared__ fvec  fshift_loc[SHIFTS];
 
-    const int        i = blockIdx.x*blockDim.x+threadIdx.x;
+    const int        i = blockIdx.x*blockDim.x + threadIdx.x;
 
     if (calcEnerVir)
     {
@@ -332,10 +291,8 @@ void angles_gpu(float *vtot, const int nbonds, const int natoms,
         int   t1;
         int   t2;
         float theta =
-            bond_angle_gpu(x[ai], x[aj], x[ak], pbc,
-                           pbc_hbox_diag, pbc_box, pbc_mhbox_diag,
-                           pbc_fbox_diag,  pbc_tric_vec, pbc_tric_shift,
-                           r_ij, r_kj, &cos_theta, &t1, &t2);
+            bond_angle_gpu<calcEnerVir>(x[ai], x[aj], x[ak], pbcAiuc,
+                                        r_ij, r_kj, &cos_theta, &t1, &t2);
 
         float va;
         float dVdt;
@@ -405,9 +362,7 @@ __global__
 void urey_bradley_gpu(float *vtot, const int nbonds, const int natoms,
                       const t_iatom forceatoms[], const t_iparams forceparams[],
                       const fvec x[], fvec force[], fvec fshift[],
-                      const t_pbc *pbc, const fvec *pbc_hbox_diag, const matrix *pbc_box,
-                      const fvec *pbc_mhbox_diag, const fvec  *pbc_fbox_diag,
-                      const fvec*  pbc_tric_vec,  const ivec*  pbc_tric_shift)
+                      const PbcAiuc pbcAiuc)
 {
     __shared__ float vtot_loc;
     __shared__ fvec  fshift_loc[SHIFTS];
@@ -447,10 +402,8 @@ void urey_bradley_gpu(float *vtot, const int nbonds, const int natoms,
         float cos_theta;
         int   t1;
         int   t2;
-        float theta = bond_angle_gpu(x[ai], x[aj], x[ak], pbc,
-                                     pbc_hbox_diag, pbc_box, pbc_mhbox_diag,
-                                     pbc_fbox_diag,  pbc_tric_vec, pbc_tric_shift,
-                                     r_ij, r_kj, &cos_theta, &t1, &t2);
+        float theta = bond_angle_gpu<calcEnerVir>(x[ai], x[aj], x[ak], pbcAiuc,
+                                                  r_ij, r_kj, &cos_theta, &t1, &t2);
 
         float va;
         float dVdt;
@@ -462,10 +415,7 @@ void urey_bradley_gpu(float *vtot, const int nbonds, const int natoms,
         }
 
         fvec  r_ik;
-        int   ki =
-            pbc_fvec_sub_gpu(pbc, x[ai], x[ak], r_ik,
-                             pbc_hbox_diag, pbc_box, pbc_mhbox_diag,
-                             pbc_fbox_diag,  pbc_tric_vec, pbc_tric_shift);
+        int   ki = pbcDxAiuc<calcEnerVir>(pbcAiuc, x[ai], x[ak], r_ik);
 
         float dr2  = iprod_gpu(r_ik, r_ik);
         float dr   = dr2*rsqrtf(dr2);
@@ -544,23 +494,16 @@ void urey_bradley_gpu(float *vtot, const int nbonds, const int natoms,
     }
 }
 
+template <bool returnShift>
 __device__
 static float dih_angle_gpu(const fvec xi, const fvec xj, const fvec xk, const fvec xl,
-                           const t_pbc *pbc,  const fvec *pbc_hbox_diag, const matrix *pbc_box,
-                           const fvec *pbc_mhbox_diag, const fvec  *pbc_fbox_diag,
-                           const fvec*  pbc_tric_vec,  const ivec*  pbc_tric_shift,
+                           const PbcAiuc &pbcAiuc,
                            fvec r_ij, fvec r_kj, fvec r_kl, fvec m, fvec n,
                            int *t1, int *t2, int *t3)
 {
-    *t1 = pbc_fvec_sub_gpu(pbc, xi, xj, r_ij,
-                           pbc_hbox_diag, pbc_box, pbc_mhbox_diag,
-                           pbc_fbox_diag,  pbc_tric_vec, pbc_tric_shift);
-    *t2 = pbc_fvec_sub_gpu(pbc, xk, xj, r_kj,
-                           pbc_hbox_diag, pbc_box, pbc_mhbox_diag,
-                           pbc_fbox_diag,  pbc_tric_vec, pbc_tric_shift);
-    *t3 = pbc_fvec_sub_gpu(pbc, xk, xl, r_kl,
-                           pbc_hbox_diag, pbc_box, pbc_mhbox_diag,
-                           pbc_fbox_diag,  pbc_tric_vec, pbc_tric_shift);
+    *t1 = pbcDxAiuc<returnShift>(pbcAiuc, xi, xj, r_ij);
+    *t2 = pbcDxAiuc<returnShift>(pbcAiuc, xk, xj, r_kj);
+    *t3 = pbcDxAiuc<returnShift>(pbcAiuc, xk, xl, r_kl);
 
     cprod_gpu(r_ij, r_kj, m);
     cprod_gpu(r_kj, r_kl, n);
@@ -590,9 +533,7 @@ __device__
 static void do_dih_fup_gpu(const int i, const int j, const int k, const int l, const int natoms,
                            const float ddphi, const fvec r_ij, const fvec r_kj, const fvec r_kl,
                            const fvec m, const fvec n, fvec force[], fvec fshift[],
-                           const t_pbc *pbc,  const fvec *pbc_hbox_diag, const matrix *pbc_box,
-                           const fvec *pbc_mhbox_diag, const fvec  *pbc_fbox_diag,
-                           const fvec*  pbc_tric_vec,  const ivec*  pbc_tric_shift,
+                           const PbcAiuc &pbcAiuc,
                            const fvec x[], const int t1, const int t2, const int t3)
 {
     float iprm  = iprod_gpu(m, m);
@@ -636,10 +577,7 @@ static void do_dih_fup_gpu(const int i, const int j, const int k, const int l, c
         if (calcVir)
         {
             fvec dx_jl;
-            int  t3 =
-                pbc_fvec_sub_gpu(pbc, x[l], x[j], dx_jl,
-                                 pbc_hbox_diag, pbc_box, pbc_mhbox_diag,
-                                 pbc_fbox_diag,  pbc_tric_vec, pbc_tric_shift);
+            int  t3 = pbcDxAiuc<calcVir>(pbcAiuc, x[l], x[j], dx_jl);
 
             fvec_inc_atomic(fshift[t1], f_i);
             fvec_dec_atomic(fshift[CENTRAL], f_j);
@@ -654,9 +592,7 @@ __global__
 void  pdihs_gpu(float *vtot, const int nbonds, const int natoms,
                 const t_iatom forceatoms[], const t_iparams forceparams[],
                 const fvec x[], fvec f[], fvec fshift[],
-                const t_pbc *pbc, const fvec *pbc_hbox_diag, const matrix *pbc_box,
-                const fvec *pbc_mhbox_diag, const fvec  *pbc_fbox_diag,
-                const fvec*  pbc_tric_vec,  const ivec*  pbc_tric_shift)
+                const PbcAiuc pbcAiuc)
 {
     const int        i = blockIdx.x*blockDim.x + threadIdx.x;
 
@@ -695,10 +631,8 @@ void  pdihs_gpu(float *vtot, const int nbonds, const int natoms,
         int   t2;
         int   t3;
         float phi  =
-            dih_angle_gpu(x[ai], x[aj], x[ak], x[al], pbc,
-                          pbc_hbox_diag, pbc_box, pbc_mhbox_diag,
-                          pbc_fbox_diag,  pbc_tric_vec, pbc_tric_shift,
-                          r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
+            dih_angle_gpu<calcEnerVir>(x[ai], x[aj], x[ak], x[al], pbcAiuc,
+                                       r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
 
         float vpd;
         float ddphi;
@@ -711,9 +645,7 @@ void  pdihs_gpu(float *vtot, const int nbonds, const int natoms,
 
         do_dih_fup_gpu<calcEnerVir>(ai, aj, ak, al, natoms,
                                     ddphi, r_ij, r_kj, r_kl, m, n,
-                                    f, fshift_loc, pbc,
-                                    pbc_hbox_diag, pbc_box, pbc_mhbox_diag,
-                                    pbc_fbox_diag,  pbc_tric_vec, pbc_tric_shift,
+                                    f, fshift_loc, pbcAiuc,
                                     x, t1, t2, t3);
 
     }
@@ -738,9 +670,7 @@ __global__
 void rbdihs_gpu(float *vtot, const int nbonds, const int natoms,
                 const t_iatom forceatoms[], const t_iparams forceparams[],
                 const fvec x[], fvec f[], fvec fshift[],
-                const t_pbc *pbc,  const fvec *pbc_hbox_diag, const matrix *pbc_box,
-                const fvec *pbc_mhbox_diag, const fvec  *pbc_fbox_diag,
-                const fvec*  pbc_tric_vec,  const ivec*  pbc_tric_shift)
+                const PbcAiuc pbcAiuc)
 {
     constexpr float  c0 = 0.0f, c1 = 1.0f, c2 = 2.0f, c3 = 3.0f, c4 = 4.0f, c5 = 5.0f;
 
@@ -782,10 +712,8 @@ void rbdihs_gpu(float *vtot, const int nbonds, const int natoms,
         int   t2;
         int   t3;
         float phi  =
-            dih_angle_gpu(x[ai], x[aj], x[ak], x[al], pbc,
-                          pbc_hbox_diag, pbc_box, pbc_mhbox_diag,
-                          pbc_fbox_diag, pbc_tric_vec, pbc_tric_shift,
-                          r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
+            dih_angle_gpu<calcEnerVir>(x[ai], x[aj], x[ak], x[al], pbcAiuc,
+                                       r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
 
         /* Change to polymer convention */
         if (phi < c0)
@@ -833,9 +761,7 @@ void rbdihs_gpu(float *vtot, const int nbonds, const int natoms,
 
         do_dih_fup_gpu<calcEnerVir>(ai, aj, ak, al, natoms,
                                     ddphi, r_ij, r_kj, r_kl, m, n,
-                                    f, fshift_loc, pbc,
-                                    pbc_hbox_diag, pbc_box, pbc_mhbox_diag,
-                                    pbc_fbox_diag,  pbc_tric_vec, pbc_tric_shift,
+                                    f, fshift_loc, pbcAiuc,
                                     x, t1, t2, t3);
         if (calcEnerVir)
         {
@@ -878,9 +804,7 @@ __global__
 void  idihs_gpu(float *vtot, const int nbonds, const int natoms,
                 const t_iatom forceatoms[], const t_iparams forceparams[],
                 const fvec x[], fvec f[], fvec fshift[],
-                const t_pbc *pbc,  const fvec *pbc_hbox_diag, const matrix *pbc_box,
-                const fvec *pbc_mhbox_diag, const fvec  *pbc_fbox_diag,
-                const fvec*  pbc_tric_vec,  const ivec*  pbc_tric_shift)
+                const PbcAiuc pbcAiuc)
 {
     const int        i = blockIdx.x*blockDim.x + threadIdx.x;
 
@@ -919,10 +843,8 @@ void  idihs_gpu(float *vtot, const int nbonds, const int natoms,
         int   t2;
         int   t3;
         float phi  =
-            dih_angle_gpu(x[ai], x[aj], x[ak], x[al], pbc,
-                          pbc_hbox_diag, pbc_box, pbc_mhbox_diag,
-                          pbc_fbox_diag,  pbc_tric_vec, pbc_tric_shift,
-                          r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
+            dih_angle_gpu<calcEnerVir>(x[ai], x[aj], x[ak], x[al], pbcAiuc,
+                                       r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
 
         /* phi can jump if phi0 is close to Pi/-Pi, which will cause huge
          * force changes if we just apply a normal harmonic.
@@ -944,9 +866,7 @@ void  idihs_gpu(float *vtot, const int nbonds, const int natoms,
 
         do_dih_fup_gpu<calcEnerVir>(ai, aj, ak, al, natoms,
                                     -ddphi, r_ij, r_kj, r_kl, m, n,
-                                    f, fshift_loc, pbc,
-                                    pbc_hbox_diag, pbc_box, pbc_mhbox_diag,
-                                    pbc_fbox_diag,  pbc_tric_vec, pbc_tric_shift,
+                                    f, fshift_loc, pbcAiuc,
                                     x, t1, t2, t3);
     }
 
@@ -970,11 +890,8 @@ __global__
 void pairs_gpu(int ftype, const int nbonds, const int natoms,
                const t_iatom iatoms[], const t_iparams iparams[],
                const fvec x[], fvec force[], fvec fshift[],
-               const t_pbc *pbc,  const fvec *pbc_hbox_diag, const matrix *pbc_box,
-               const fvec *pbc_mhbox_diag, const fvec  *pbc_fbox_diag,
-               const fvec*  pbc_tric_vec,  const ivec*  pbc_tric_shift,
-               const float md_chargeA[],
-               const unsigned short md_cENER[],
+               const PbcAiuc pbcAiuc,
+               const float md_chargeA[], const unsigned short md_cENER[],
                float energygrp_elec[], float energygrp_vdw[],
                const float scale_factor,
                int numEnergyGroups)
@@ -1006,9 +923,7 @@ void pairs_gpu(int ftype, const int nbonds, const int natoms,
 
         /* Do we need to apply full periodic boundary conditions? */
         fvec dr;
-        int  fshift_index = pbc_fvec_sub_gpu(pbc, x[ai], x[aj], dr,
-                                             pbc_hbox_diag, pbc_box, pbc_mhbox_diag,
-                                             pbc_fbox_diag,  pbc_tric_vec, pbc_tric_shift);
+        int  fshift_index = pbcDxAiuc<calcEnerVir>(pbcAiuc, x[ai], x[aj], dr);
 
         float r2    = norm2_gpu(dr);
         float rinv  = rsqrtf(r2);
@@ -1072,6 +987,48 @@ void reset_next(const int natoms, int force_next[] )
 /*-------------------------------- End CUDA kernels-----------------------------*/
 
 
+static void setPbcAiuc(int           numPbcDim,
+                       const matrix  box,
+                       PbcAiuc      *pbcAiuc)
+{
+    if (numPbcDim > ZZ)
+    {
+        pbcAiuc->invBoxDiagZ = 1/box[ZZ][ZZ];
+        pbcAiuc->boxZX       = box[ZZ][XX];
+        pbcAiuc->boxZY       = box[ZZ][YY];
+        pbcAiuc->boxZZ       = box[ZZ][ZZ];
+    }
+    else
+    {
+        pbcAiuc->invBoxDiagZ = 0;
+        pbcAiuc->boxZX       = 0;
+        pbcAiuc->boxZY       = 0;
+        pbcAiuc->boxZZ       = 0;
+    }
+    if (numPbcDim > YY)
+    {
+        pbcAiuc->invBoxDiagY = 1/box[YY][YY];
+        pbcAiuc->boxYX       = box[YY][XX];
+        pbcAiuc->boxYY       = box[YY][YY];
+    }
+    else
+    {
+        pbcAiuc->invBoxDiagY = 0;
+        pbcAiuc->boxYX       = 0;
+        pbcAiuc->boxYY       = 0;
+    }
+    if (numPbcDim > XX)
+    {
+        pbcAiuc->invBoxDiagX = 1/box[XX][XX];
+        pbcAiuc->boxXX       = box[XX][XX];
+    }
+    else
+    {
+        pbcAiuc->invBoxDiagX = 0;
+        pbcAiuc->boxXX       = 0;
+    }
+}
+
 
 /*------------------------------------------------------------------------------*/
 
@@ -1092,15 +1049,6 @@ static float      vtot[BO_MAX_RANKS][F_NRE];
 
 static float     *vtot_d[BO_MAX_RANKS];
 static t_iparams *forceparams_d[BO_MAX_RANKS];
-
-// TODO : we have duplicate data for constraints
-static t_pbc          *pbc_d[BO_MAX_RANKS];
-static fvec           *pbc_hbox_diag_d[BO_MAX_RANKS];
-static matrix         *pbc_box_d[BO_MAX_RANKS];
-static fvec           *pbc_mhbox_diag_d[BO_MAX_RANKS];
-static fvec           *pbc_fbox_diag_d[BO_MAX_RANKS];
-static fvec           *pbc_tric_vec_d[BO_MAX_RANKS];
-static ivec           *pbc_tric_shift_d[BO_MAX_RANKS];
 
 static t_iatom        *iatoms_d[BO_MAX_RANKS][F_NRE];
 static int             device_iatom_alloc[BO_MAX_RANKS][F_NRE];
@@ -1129,32 +1077,13 @@ static bool            copy_required_this_step[BO_MAX_RANKS];
 
 // initial setup (called once)
 static void
-init_gpu_bonded(const t_pbc *pbc, const int rank, gmx_grppairener_t *grppener)
+init_gpu_bonded(const int rank, gmx_grppairener_t *grppener)
 {
     cudaError_t stat;
 
 // device_iatom_alloc
 // initiaized to 0 as static
 
-    pbc_d[rank] = NULL;
-// null status is used as a marker for no pbc
-    if (pbc)
-    {
-        stat = cudaMalloc(&pbc_d[rank], sizeof(t_pbc));
-        CU_RET_ERR(stat, "cudaMalloc failed");
-        stat = cudaMalloc(&pbc_hbox_diag_d[rank], sizeof(fvec));
-        CU_RET_ERR(stat, "cudaMalloc failed");
-        stat = cudaMalloc(&pbc_box_d[rank], sizeof(matrix));
-        CU_RET_ERR(stat, "cudaMalloc failed");
-        stat = cudaMalloc(&pbc_mhbox_diag_d[rank], sizeof(fvec));
-        CU_RET_ERR(stat, "cudaMalloc failed");
-        stat = cudaMalloc(&pbc_fbox_diag_d[rank], sizeof(fvec));
-        CU_RET_ERR(stat, "cudaMalloc failed");
-        stat = cudaMalloc(&pbc_tric_vec_d[rank], MAX_NTRICVEC*sizeof(fvec));
-        CU_RET_ERR(stat, "cudaMalloc failed");
-        stat = cudaMalloc(&pbc_tric_shift_d[rank], MAX_NTRICVEC*sizeof(ivec));
-        CU_RET_ERR(stat, "cudaMalloc failed");
-    }
 // vtot
     stat = cudaMalloc(&vtot_d[rank], F_NRE*sizeof(real));
     CU_RET_ERR(stat, "cudaMalloc failed");
@@ -1185,7 +1114,7 @@ init_gpu_bonded(const t_pbc *pbc, const int rank, gmx_grppairener_t *grppener)
 //----//
 // update after a neighbour list update step
 void
-update_gpu_bonded(const t_idef *idef, const t_forcerec *fr, const matrix box,
+update_gpu_bonded(const t_idef *idef,
                   const int xsize, const t_mdatoms *md, gmx_grppairener_t *grppener)
 {
     cudaError_t stat;
@@ -1197,22 +1126,9 @@ update_gpu_bonded(const t_idef *idef, const t_forcerec *fr, const matrix box,
 
     copy_required_this_step[rank] = true;
 
-    t_pbc *pbc_null = NULL;
-    t_pbc  pbc;
-    set_pbc(&pbc, fr->ePBC, box);
-
-    if (fr->bMolPBC)
-    {
-        pbc_null = &pbc;
-    }
-    else
-    {
-        pbc_null = NULL;
-    }                            // there is probaly a better way to do this
-
     if (!bonded_init_done[rank]) //static variables init to 0 i.e. false
     {
-        init_gpu_bonded(pbc_null, rank, grppener);
+        init_gpu_bonded(rank, grppener);
         bonded_init_done[rank] = true;
     }
 
@@ -1307,25 +1223,6 @@ update_gpu_bonded(const t_idef *idef, const t_forcerec *fr, const matrix box,
             CU_RET_ERR(stat, "cudaMemcpy failed");
         }
     }
-    //pbc
-    //this can be null
-    if (pbc_null)
-    {
-        stat = cudaMemcpy(pbc_d[rank], pbc_null, sizeof(t_pbc), cudaMemcpyHostToDevice);
-        CU_RET_ERR(stat, "cudaMemcpy failed");
-        stat = cudaMemcpy(pbc_hbox_diag_d[rank], pbc_null->hbox_diag, sizeof(fvec), cudaMemcpyHostToDevice);
-        CU_RET_ERR(stat, "cudaMemcpy failed");
-        stat = cudaMemcpy(pbc_box_d[rank], pbc_null->box, sizeof(matrix), cudaMemcpyHostToDevice);
-        CU_RET_ERR(stat, "cudaMemcpy failed");
-        stat = cudaMemcpy(pbc_mhbox_diag_d[rank], pbc_null->mhbox_diag, sizeof(fvec), cudaMemcpyHostToDevice);
-        CU_RET_ERR(stat, "cudaMemcpy failed");
-        stat = cudaMemcpy(pbc_fbox_diag_d[rank], pbc_null->fbox_diag, sizeof(fvec), cudaMemcpyHostToDevice);
-        CU_RET_ERR(stat, "cudaMemcpy failed");
-        stat = cudaMemcpy(pbc_tric_vec_d[rank], pbc_null->tric_vec, MAX_NTRICVEC*sizeof(fvec), cudaMemcpyHostToDevice);
-        CU_RET_ERR(stat, "cudaMemcpy failed");
-        stat = cudaMemcpy(pbc_tric_shift_d[rank], pbc_null->tric_shift, MAX_NTRICVEC*sizeof(ivec), cudaMemcpyHostToDevice);
-        CU_RET_ERR(stat, "cudaMemcpy failed");
-    }
 }
 
 
@@ -1355,7 +1252,8 @@ reset_gpu_bonded(const int size, const int nener)
 void
 do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
               int numEnergyGroups,
-              const int flags,  const t_graph *graph, int natoms, fvec x[])
+              const int flags,  const t_graph *graph, int natoms, fvec x[],
+              const matrix box)
 {
     int   nat1, nbonds;
     bool  bCalcEnerVir = (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY));
@@ -1403,6 +1301,9 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
+    PbcAiuc pbcAiuc;
+    setPbcAiuc(fr->bMolPBC ? ePBC2npbcdim(fr->ePBC) : 0, box, &pbcAiuc);
+
     bool do_copy_this_step = false;
 
     copy_required_this_step[rank] = true;
@@ -1439,10 +1340,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
                     (&vtot_d[rank][ftype], nbonds, natoms,
                      iatoms_d[rank][ftype], forceparams_d[rank],
                      x_d_in, f_d_in, f_shift_d[rank],
-                     pbc_d[rank], pbc_hbox_diag_d[rank],
-                     pbc_box_d[rank], pbc_mhbox_diag_d[rank],
-                     pbc_fbox_diag_d[rank], pbc_tric_vec_d[rank],
-                     pbc_tric_shift_d[rank]);
+                     pbcAiuc);
                 }
                 else
                 {
@@ -1450,10 +1348,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
                     (nullptr, nbonds, natoms,
                      iatoms_d[rank][ftype], forceparams_d[rank],
                      x_d_in, f_d_in, nullptr,
-                     pbc_d[rank], pbc_hbox_diag_d[rank],
-                     pbc_box_d[rank], pbc_mhbox_diag_d[rank],
-                     pbc_fbox_diag_d[rank], pbc_tric_vec_d[rank],
-                     pbc_tric_shift_d[rank]);
+                     pbcAiuc);
                 }
             }
         }
@@ -1479,10 +1374,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
                     (&vtot_d[rank][ftype], nbonds, natoms,
                      iatoms_d[rank][ftype], forceparams_d[rank],
                      x_d_in, f_d_in, f_shift_d[rank],
-                     pbc_d[rank], pbc_hbox_diag_d[rank],
-                     pbc_box_d[rank], pbc_mhbox_diag_d[rank],
-                     pbc_fbox_diag_d[rank], pbc_tric_vec_d[rank],
-                     pbc_tric_shift_d[rank]);
+                     pbcAiuc);
                 }
                 else
                 {
@@ -1490,10 +1382,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
                     (nullptr, nbonds, natoms,
                      iatoms_d[rank][ftype], forceparams_d[rank],
                      x_d_in, f_d_in, nullptr,
-                     pbc_d[rank], pbc_hbox_diag_d[rank],
-                     pbc_box_d[rank], pbc_mhbox_diag_d[rank],
-                     pbc_fbox_diag_d[rank], pbc_tric_vec_d[rank],
-                     pbc_tric_shift_d[rank]);
+                     pbcAiuc);
                 }
             }
 
@@ -1505,10 +1394,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
                     (&vtot_d[rank][ftype], nbonds, natoms,
                      iatoms_d[rank][ftype], forceparams_d[rank],
                      x_d_in, f_d_in, f_shift_d[rank],
-                     pbc_d[rank], pbc_hbox_diag_d[rank],
-                     pbc_box_d[rank], pbc_mhbox_diag_d[rank],
-                     pbc_fbox_diag_d[rank], pbc_tric_vec_d[rank],
-                     pbc_tric_shift_d[rank]);
+                     pbcAiuc);
                 }
                 else
                 {
@@ -1516,10 +1402,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
                     (nullptr, nbonds, natoms,
                      iatoms_d[rank][ftype], forceparams_d[rank],
                      x_d_in, f_d_in, nullptr,
-                     pbc_d[rank], pbc_hbox_diag_d[rank],
-                     pbc_box_d[rank], pbc_mhbox_diag_d[rank],
-                     pbc_fbox_diag_d[rank], pbc_tric_vec_d[rank],
-                     pbc_tric_shift_d[rank]);
+                     pbcAiuc);
                 }
             }
 
@@ -1531,10 +1414,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
                     (&vtot_d[rank][ftype], nbonds, natoms,
                      iatoms_d[rank][ftype], forceparams_d[rank],
                      x_d_in, f_d_in, f_shift_d[rank],
-                     pbc_d[rank], pbc_hbox_diag_d[rank],
-                     pbc_box_d[rank], pbc_mhbox_diag_d[rank],
-                     pbc_fbox_diag_d[rank], pbc_tric_vec_d[rank],
-                     pbc_tric_shift_d[rank]);
+                     pbcAiuc);
                 }
                 else
                 {
@@ -1542,10 +1422,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
                     (nullptr, nbonds, natoms,
                      iatoms_d[rank][ftype], forceparams_d[rank],
                      x_d_in, f_d_in, nullptr,
-                     pbc_d[rank], pbc_hbox_diag_d[rank],
-                     pbc_box_d[rank], pbc_mhbox_diag_d[rank],
-                     pbc_fbox_diag_d[rank], pbc_tric_vec_d[rank],
-                     pbc_tric_shift_d[rank]);
+                     pbcAiuc);
                 }
             }
 
@@ -1557,10 +1434,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
                     (&vtot_d[rank][ftype], nbonds, natoms,
                      iatoms_d[rank][ftype], forceparams_d[rank],
                      x_d_in, f_d_in, f_shift_d[rank],
-                     pbc_d[rank], pbc_hbox_diag_d[rank],
-                     pbc_box_d[rank], pbc_mhbox_diag_d[rank],
-                     pbc_fbox_diag_d[rank], pbc_tric_vec_d[rank],
-                     pbc_tric_shift_d[rank]);
+                     pbcAiuc);
                 }
                 else
                 {
@@ -1568,10 +1442,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
                     (nullptr, nbonds, natoms,
                      iatoms_d[rank][ftype], forceparams_d[rank],
                      x_d_in, f_d_in, nullptr,
-                     pbc_d[rank], pbc_hbox_diag_d[rank],
-                     pbc_box_d[rank], pbc_mhbox_diag_d[rank],
-                     pbc_fbox_diag_d[rank], pbc_tric_vec_d[rank],
-                     pbc_tric_shift_d[rank]);
+                     pbcAiuc);
                 }
             }
 
@@ -1583,10 +1454,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
                     (&vtot_d[rank][ftype], nbonds, natoms,
                      iatoms_d[rank][ftype], forceparams_d[rank],
                      x_d_in, f_d_in, f_shift_d[rank],
-                     pbc_d[rank], pbc_hbox_diag_d[rank],
-                     pbc_box_d[rank], pbc_mhbox_diag_d[rank],
-                     pbc_fbox_diag_d[rank], pbc_tric_vec_d[rank],
-                     pbc_tric_shift_d[rank]);
+                     pbcAiuc);
                 }
                 else
                 {
@@ -1594,10 +1462,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
                     (nullptr, nbonds, natoms,
                      iatoms_d[rank][ftype], forceparams_d[rank],
                      x_d_in, f_d_in, nullptr,
-                     pbc_d[rank], pbc_hbox_diag_d[rank],
-                     pbc_box_d[rank], pbc_mhbox_diag_d[rank],
-                     pbc_fbox_diag_d[rank], pbc_tric_vec_d[rank],
-                     pbc_tric_shift_d[rank]);
+                     pbcAiuc);
                 }
             }
 
@@ -1609,10 +1474,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
                     (ftype, nbonds, natoms,
                      iatoms_d[rank][ftype], forceparams_d[rank],
                      x_d_in, f_d_in, f_shift_d[rank],
-                     pbc_d[rank], pbc_hbox_diag_d[rank],
-                     pbc_box_d[rank], pbc_mhbox_diag_d[rank],
-                     pbc_fbox_diag_d[rank], pbc_tric_vec_d[rank],
-                     pbc_tric_shift_d[rank],
+                     pbcAiuc,
                      md_chargeA_d[rank], md_cENER_d[rank],
                      energygrp_elec_d[rank], energygrp_vdw_d[rank],
                      fr->ic->epsfac*fr->fudgeQQ,
@@ -1624,10 +1486,7 @@ do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
                     (ftype, nbonds, natoms,
                      iatoms_d[rank][ftype], forceparams_d[rank],
                      x_d_in, f_d_in, nullptr,
-                     pbc_d[rank], pbc_hbox_diag_d[rank],
-                     pbc_box_d[rank], pbc_mhbox_diag_d[rank],
-                     pbc_fbox_diag_d[rank], pbc_tric_vec_d[rank],
-                     pbc_tric_shift_d[rank],
+                     pbcAiuc,
                      md_chargeA_d[rank], md_cENER_d[rank],
                      energygrp_elec_d[rank], energygrp_vdw_d[rank],
                      fr->ic->epsfac*fr->fudgeQQ,

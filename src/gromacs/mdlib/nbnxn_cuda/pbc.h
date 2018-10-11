@@ -32,33 +32,56 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_MDLIB_NBNXN_CUDA_GPUBONDEDCUDA_H
-#define GMX_MDLIB_NBNXN_CUDA_GPUBONDEDCUDA_H
 
-#include "gromacs/mdlib/nbnxn_gpu_types.h"
-#include "gromacs/ewald/pme-internal.h"
-#include "gromacs/ewald/pme.h"
-#include "gromacs/ewald/pme-grid.h"
-#include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/enerdata.h"
+struct PbcAiuc
+{
+    float invBoxDiagZ;
+    float boxZX;
+    float boxZY;
+    float boxZZ;
+    float invBoxDiagY;
+    float boxYX;
+    float boxYY;
+    float invBoxDiagX;
+    float boxXX;
+};
 
-#include "gromacs/mdlib/nbnxn_atomdata.h"
+template <bool returnShift>
+__forceinline__ __device__
+int pbcDxAiuc(const PbcAiuc &pbcAiuc,
+              const fvec     x1,
+              const fvec     x2,
+              fvec           dx)
+{
+    for (int m = 0; m < DIM; m++)
+    {
+        dx[m] = x1[m] - x2[m];
+    }
 
-#include "gromacs/topology/idef.h"
-#include "gromacs/topology/ifunc.h"
-#include "gromacs/pbcutil/mshift.h"
+    float shz  = rintf(dx[ZZ]*pbcAiuc.invBoxDiagZ);
+    dx[XX]    -= shz*pbcAiuc.boxZX;
+    dx[YY]    -= shz*pbcAiuc.boxZY;
+    dx[ZZ]    -= shz*pbcAiuc.boxZZ;
 
-void update_gpu_bonded(const t_idef *idef,
-                       const int size,  const t_mdatoms *md, gmx_grppairener_t *grppener);
-void do_bonded_gpu(t_forcerec *fr, const t_inputrec *ir, const t_idef *idef,
-                   int numEnergyGroups,
-                   int flags, const t_graph *graph, int natoms, rvec x[],
-                   const matrix box);
+    float shy  = rintf(dx[YY]*pbcAiuc.invBoxDiagY);
+    dx[XX]    -= shy*pbcAiuc.boxYX;
+    dx[YY]    -= shy*pbcAiuc.boxYY;
 
-void do_bonded_gpu_finalize(t_forcerec *fr, int flags, int natoms,
-                            rvec *input_force, gmx_enerdata_t *enerd);
+    float shx  = rintf(dx[XX]*pbcAiuc.invBoxDiagX);
+    dx[XX]    -= shx*pbcAiuc.boxXX;
 
-void reset_gpu_bonded(const int size, const int nener);
+    if (returnShift)
+    {
+        ivec ishift;
 
-#endif
+        ishift[XX] = -__float2int_rn(shx);
+        ishift[YY] = -__float2int_rn(shy);
+        ishift[ZZ] = -__float2int_rn(shz);
+        
+        return IVEC2IS(ishift);
+    }
+    else
+    {
+        return 0;
+    }
+}
