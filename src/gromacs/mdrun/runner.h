@@ -47,12 +47,12 @@
 #include <array>
 #include <memory>
 
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/compat/pointers.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
-#include "gromacs/mdrun/mdfilenames.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -181,7 +181,7 @@ class Mdrunner
         gmx_hw_opt_t             hw_opt;
 
         //! Filenames and properties from command-line argument values.
-        MdFilenames filenames;
+        ArrayRef<const t_filenm> filenames;
 
         /*! \brief Output context for writing text files
          *
@@ -442,17 +442,17 @@ class MdrunnerBuilder final
         MdrunnerBuilder &addHardwareOptions(const gmx_hw_opt_t &hardwareOptions);
 
         /*!
-         * \brief Provide the filenames options structure.
+         * \brief Provide the filenames options structure with option values chosen
          *
-         * Required. The validity of a default-constructed MdFilenames object is unspecified.
-         * The object is assumed to have been updated by parse_common_args.
+         * Required. The object is assumed to have been updated by
+         * parse_common_args or equivalent.
          *
          * \param filenames Filenames and properties from command-line argument values or defaults.
          *
          * \internal
          * \todo Modules should manage their own filename options and defaults.
          */
-        MdrunnerBuilder &addFilenames(const MdFilenames &filenames);
+        MdrunnerBuilder &addFilenames(ArrayRef<const t_filenm> filenames);
 
         /*!
          * \brief Provide parameters for setting up output environment.
